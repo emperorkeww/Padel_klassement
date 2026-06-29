@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Padel Tournament Manager</title>
+
+<!-- Tailwind via CDN (used for responsive layout utilities; theme + signature components are in css/styles.css) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          court:  '#0B2B3B',
+          court2: '#103a4f',
+          glass:  '#15A6A6',
+          ball:   '#C9F23E',
+          paper:  '#F4F7F6',
+          ink:    '#0A1A22',
+          muted:  '#5b7682',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+          body:    ['Inter', 'system-ui', 'sans-serif'],
+          mono:    ['"Space Mono"', 'ui-monospace', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<!-- ============================ HEADER ============================ -->
+<header class="court-header">
+  <div class="max-w-6xl mx-auto px-5 pt-7 pb-6 relative" style="z-index:1">
+    <div class="eyebrow">Padel · 2 v 2</div>
+    <h1 class="text-3xl sm:text-4xl font-bold mt-1" style="color:#f1fbfb">Tournament Manager</h1>
+    <p class="mt-1 text-sm" style="color:#a9c8cd">Add players, schedule matches, enter scores court-side, watch the board move.</p>
+  </div>
+  <div class="ball-rule"></div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 py-6">
+
+  <!-- ============================ SETUP ============================ -->
+  <section id="setup">
+    <div class="grid lg:grid-cols-2 gap-5">
+
+      <!-- Players -->
+      <div class="card p-5">
+        <div class="flex items-baseline justify-between">
+          <h2 class="text-lg font-semibold">Players</h2>
+          <span class="panel-label" id="playerCount">0 added</span>
+        </div>
+        <p class="hint mt-1">Need at least 4 to play.</p>
+
+        <div class="flex gap-2 mt-3">
+          <input id="playerInput" class="field" type="text" placeholder="Player name" autocomplete="off" maxlength="24" />
+          <button id="addPlayer" class="btn btn-court whitespace-nowrap">Add</button>
+        </div>
+        <div id="playerList" class="flex flex-wrap gap-2 mt-4"></div>
+      </div>
+
+      <!-- Configuration -->
+      <div class="card p-5">
+        <h2 class="text-lg font-semibold">Setup</h2>
+
+        <div class="mt-4">
+          <label class="panel-label">Team format</label>
+          <div class="seg mt-2" role="group" aria-label="Team format">
+            <button id="modeDynamic" aria-pressed="true">Dynamic teams</button>
+            <button id="modeFixed" aria-pressed="false">Fixed pairs</button>
+          </div>
+          <p class="hint mt-2" id="modeHelp"></p>
+        </div>
+
+        <div class="mt-5">
+          <label class="panel-label" for="numMatches">Number of matches</label>
+          <div class="flex items-center gap-3 mt-2">
+            <div class="stepper">
+              <button type="button" id="mMinus" aria-label="Fewer matches">−</button>
+              <input id="numMatches" type="number" inputmode="numeric" value="6" min="1" max="200" />
+              <button type="button" id="mPlus" aria-label="More matches">+</button>
+            </div>
+            <span class="hint" id="perPlayerHint"></span>
+          </div>
+        </div>
+
+        <!-- Fixed-pair assignment (only shown in fixed mode) -->
+        <div id="pairSetup" class="mt-5 hidden">
+          <div class="flex items-center justify-between">
+            <label class="panel-label">Fixed pairs</label>
+            <button id="shufflePairs" class="btn btn-ghost" style="padding:6px 12px;font-size:13px">Shuffle pairs</button>
+          </div>
+          <div id="pairList" class="mt-2 space-y-2"></div>
+          <p id="pairError" class="err mt-2 hidden"></p>
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-2">
+          <button id="generate" class="btn btn-primary">Generate schedule</button>
+          <button id="loadSaved" class="btn btn-ghost hidden">Resume saved tournament</button>
+        </div>
+        <p id="setupError" class="err mt-3 hidden"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TOURNAMENT ============================ -->
+  <section id="tournament" class="hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <div class="panel-label" id="modeTag"></div>
+        <h2 class="text-2xl font-semibold mt-0.5">Match board</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="regenBtn" class="btn btn-ghost" style="font-size:14px">Regenerate</button>
+        <button id="exportBtn" class="btn btn-ghost" style="font-size:14px">Export</button>
+        <button id="importBtn" class="btn btn-ghost" style="font-size:14px">Import</button>
+        <button id="resetBtn" class="btn btn-danger" style="font-size:14px">New tournament</button>
+        <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card p-4 mb-5">
+      <div class="flex items-center justify-between mb-2">
+        <span class="panel-label">Progress</span>
+        <span class="panel-label" id="progressText">0 / 0</span>
+      </div>
+      <div class="progress-track"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="grid lg:grid-cols-5 gap-5">
+      <!-- Matches -->
+      <div class="lg:col-span-3">
+        <div id="matchList" class="space-y-3"></div>
+      </div>
+
+      <!-- Standings -->
+      <div class="lg:col-span-2">
+        <div class="card p-4 sticky-lg">
+          <div class="flex items-baseline justify-between">
+            <h3 class="text-lg font-semibold">Standings</h3>
+            <span class="panel-label" id="standingsScope"></span>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="standings">
+              <thead>
+                <tr>
+                  <th>#&nbsp;&nbsp;Name</th>
+                  <th title="Matches played">MP</th>
+                  <th title="Wins">W</th>
+                  <th title="Draws">D</th>
+                  <th title="Losses">L</th>
+                  <th title="Game difference (games won − lost)">GD</th>
+                  <th title="Points">Pts</th>
+                </tr>
+              </thead>
+              <tbody id="standingsBody"></tbody>
+            </table>
+          </div>
+          <p class="hint mt-3">
+            Win 3 · Draw 1 · Loss 0. Sorted by points, then game difference, then games won.
+            GD counts games from completed sets; a match tiebreak decides the match but isn't counted as games.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="max-w-6xl mx-auto px-5 pb-10 pt-2 hint">
+  Runs fully in your browser. Progress is saved locally on this device; use Export to back up or move a tournament between devices.
+</footer>
+
+<!-- Classic scripts, loaded in dependency order (each adds globals the next ones use).
+     app.js runs last: it wires events and calls init(). -->
+<script src="js/storage.js"></script>
+<script src="js/scheduling.js"></script>
+<script src="js/results.js"></script>
+<script src="js/state.js"></script>
+<script src="js/standings.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs & temp
+*.log
+node_modules/
+.cache/
+
+# Exported tournaments (local backups — not source)
+padel-tournament-*.json
