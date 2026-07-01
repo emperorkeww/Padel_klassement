@@ -13,5 +13,10 @@ Thumbs.db
 node_modules/
 .cache/
 
-# Exported tournaments (local backups — not source)
-padel-tournament-*.json
+# Env / secrets
+.env
+.env.*
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
