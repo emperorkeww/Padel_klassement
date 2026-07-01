@@ -1,11 +1,15 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "./AuthProvider";
 import "./LoginScreen.css";
 
 type Mode = "signin" | "signup" | "forgot";
 type Status = "idle" | "loading" | "error" | "success";
 
 export function LoginScreen() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +17,11 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+
+  // Zodra er een sessie is (net ingelogd of al ingelogd) door naar het dashboard.
+  useEffect(() => {
+    if (session) navigate("/", { replace: true });
+  }, [session, navigate]);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -48,7 +57,7 @@ export function LoginScreen() {
         password,
       });
       if (error) return fail(error.message);
-      return done("Account aangemaakt — check je mail om te bevestigen.");
+      return done("Account aangemaakt — je wordt ingelogd.");
     }
 
     // mode === "forgot"
