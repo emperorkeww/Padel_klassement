@@ -13,6 +13,7 @@ import { getAllProfiles, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { MatchList } from "./MatchList";
 import type { Profile } from "../../lib/types";
+import "./Matches.css";
 
 export function Matches() {
   const { user } = useAuth();
@@ -138,15 +139,15 @@ function AddMatchForm({
           vrienden toe om een volledige match (4 spelers) te loggen.
         </p>
       )}
-      <form onSubmit={submit} className="stack">
-        <div className="grid grid--2">
-          <div className="stack">
-            <strong>Team A</strong>
+      <form onSubmit={submit} className="stack match-form">
+        <div className="match-teams">
+          <div className="match-team">
+            <span className="match-team__label">Team A</span>
             <PlayerSelect value={a1} onChange={setA1} options={opts([a2, b1, b2])} />
             <PlayerSelect value={a2} onChange={setA2} options={opts([a1, b1, b2])} />
           </div>
-          <div className="stack">
-            <strong>Team B</strong>
+          <div className="match-team">
+            <span className="match-team__label">Team B</span>
             <PlayerSelect value={b1} onChange={setB1} options={opts([a1, a2, b2])} />
             <PlayerSelect value={b2} onChange={setB2} options={opts([a1, a2, b1])} />
           </div>
@@ -154,7 +155,7 @@ function AddMatchForm({
 
         <label className="label">
           Eindscore
-          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center", maxWidth: 240 }}>
+          <span className="match-score">
             <input
               className="input"
               type="number"

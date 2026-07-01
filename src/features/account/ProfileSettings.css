@@ -30,3 +30,12 @@
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* Mobiel: avatar boven de upload-knop i.p.v. ernaast (voorkomt gepropte rij). */
+@media (max-width: 640px) {
+  .avatar-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+}

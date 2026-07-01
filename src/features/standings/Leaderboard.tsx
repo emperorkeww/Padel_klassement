@@ -203,45 +203,47 @@ function StandingsTable({
     return <p className="empty">Nog geen afgeronde matches.</p>;
 
   return (
-    <table className="table">
-      <thead>
-        <tr>
-          <th style={{ width: "2rem" }}>#</th>
-          <th>Naam</th>
-          <th className="num">Gespeeld</th>
-          <th className="num">Winst</th>
-          <th className="num">Gelijk</th>
-          <th className="num">Verlies</th>
-          <th className="num">Saldo</th>
-          <th className="num">Punten</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, i) => (
-          <tr key={r.key} className={r.isMe ? "is-me" : ""}>
-            <td>{i + 1}</td>
-            <td>
-              {r.link ? (
-                <Link className="profile-link" to={r.link}>
-                  {r.name}
-                </Link>
-              ) : (
-                r.name
-              )}
-              {r.sub && <span className="badge" style={{ marginLeft: 6 }}>{r.sub}</span>}
-            </td>
-            <td className="num">{r.played}</td>
-            <td className="num">{r.won}</td>
-            <td className="num">{r.drawn}</td>
-            <td className="num">{r.lost}</td>
-            <td className="num">{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
-            <td className="num">
-              <strong>{r.points}</strong>
-            </td>
+    <div className="table-scroll">
+      <table className="table">
+        <thead>
+          <tr>
+            <th style={{ width: "2rem" }}>#</th>
+            <th>Naam</th>
+            <th className="num col-sec">Gespeeld</th>
+            <th className="num">Winst</th>
+            <th className="num col-sec">Gelijk</th>
+            <th className="num">Verlies</th>
+            <th className="num col-sec">Saldo</th>
+            <th className="num">Punten</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.key} className={r.isMe ? "is-me" : ""}>
+              <td>{i + 1}</td>
+              <td>
+                {r.link ? (
+                  <Link className="profile-link" to={r.link}>
+                    {r.name}
+                  </Link>
+                ) : (
+                  r.name
+                )}
+                {r.sub && <span className="badge" style={{ marginLeft: 6 }}>{r.sub}</span>}
+              </td>
+              <td className="num col-sec">{r.played}</td>
+              <td className="num">{r.won}</td>
+              <td className="num col-sec">{r.drawn}</td>
+              <td className="num">{r.lost}</td>
+              <td className="num col-sec">{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
+              <td className="num">
+                <strong>{r.points}</strong>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

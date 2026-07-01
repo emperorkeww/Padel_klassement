@@ -17,3 +17,15 @@ createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// Service worker voor offline-ondersteuning. Alleen in productie: in dev zou
+// caching Vite's hot-reload in de weg zitten.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .catch(() => {
+        /* offline-ondersteuning is optioneel; registratiefouten negeren */
+      });
+  });
+}

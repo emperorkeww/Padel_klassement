@@ -1,15 +1,17 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { BallIcon } from "./BallIcon";
 import "./ui.css";
 import "./DashboardLayout.css";
 
-const NAV: { to: string; label: string; end?: boolean; icon: ReactNode }[] = [
-  { to: "/", label: "Overzicht", end: true, icon: <IconHome /> },
+// Overzicht staat bewust in het midden van de rij: op mobiel wordt dat de
+// uitstekende ronde padelbal-knop. Op desktop zet CSS (order:-1) 'm weer bovenaan.
+const NAV: { to: string; label: string; end?: boolean; home?: boolean; icon: ReactNode }[] = [
   { to: "/klassement", label: "Klassement", icon: <IconTrophy /> },
   { to: "/matches", label: "Matches", icon: <IconRacket /> },
   { to: "/banen", label: "Banen", icon: <IconCourt /> },
+  { to: "/", label: "Overzicht", end: true, home: true, icon: <BallIcon size={22} /> },
   { to: "/groepen", label: "Groepen", icon: <IconUsers /> },
   { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> },
   { to: "/profiel", label: "Profiel", icon: <IconUser /> },
@@ -33,7 +35,7 @@ export function DashboardLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `sidebar__link ${isActive ? "is-active" : ""}`
+                `sidebar__link ${item.home ? "sidebar__link--home" : ""} ${isActive ? "is-active" : ""}`
               }
             >
               <span className="sidebar__icon">{item.icon}</span>
@@ -54,7 +56,12 @@ export function DashboardLayout() {
 
       <main className="content">
         <div className="content__inner">
-          <Outlet />
+          {/* Suspense hier (i.p.v. rond alle routes) houdt de zijbalk/footer
+              gemount tijdens het lazy-laden van een pagina — zo springt de
+              onderbalk op mobiel niet weg bij navigatie. */}
+          <Suspense fallback={<div className="route-loading">Laden…</div>}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>
@@ -62,14 +69,6 @@ export function DashboardLayout() {
 }
 
 /* ---- Iconen (line-stijl, currentColor) ---- */
-function IconHome() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 10.5 12 4l9 6.5" />
-      <path d="M5 9.5V20h14V9.5" />
-    </svg>
-  );
-}
 function IconTrophy() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

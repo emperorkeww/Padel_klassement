@@ -1,0 +1,51 @@
+/* "Match toevoegen"-formulier. */
+
+.match-form {
+  /* Houdt het formulier compact i.p.v. edge-to-edge op brede kaarten. */
+  max-width: 520px;
+}
+
+/* De twee teams: gestapeld op smal scherm, naast elkaar zodra er ruimte is. */
+.match-teams {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 460px) {
+  .match-teams {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+  }
+}
+
+/* Elk team in een net omkaderd paneeltje, zodat de selects visueel bij elkaar
+   horen en niet als losse volle-breedte balken ogen. */
+.match-team {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.match-team__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Score-invoer: twee compacte velden met een streepje ertussen. */
+.match-score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 220px;
+}
+
+.match-score .input {
+  text-align: center;
+}

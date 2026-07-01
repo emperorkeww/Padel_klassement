@@ -85,3 +85,30 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+
+/* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */
+@media (max-width: 640px) {
+  .hero {
+    /* Van "tekst links, knoppen rechts" naar een nette verticale stapel. */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-left-width: 3px;
+  }
+  .hero__name {
+    font-size: 1.4rem;
+  }
+  .hero__sub {
+    font-size: 0.9rem;
+  }
+  .hero__actions {
+    /* Knoppen onder elkaar, volle breedte = grote taptargets. */
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .hero__actions .btn {
+    width: 100%;
+  }
+}
