@@ -5,16 +5,32 @@
 -- 1) Testgebruikers in auth.users.
 --    De trigger handle_new_user() maakt hieruit automatisch de profiles aan
 --    (username/full_name komen uit raw_user_meta_data).
+--    BELANGRIJK: de token-kolommen (confirmation_token, recovery_token,
+--    email_change, email_change_token_new) MOETEN '' zijn i.p.v. NULL.
+--    GoTrue kan NULL niet in een string scannen en geeft anders bij het
+--    inloggen een 500 "Database error querying schema".
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-  created_at, updated_at
+  created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new
 )
 values
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'alice@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"alice","full_name":"Alice Anders"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'bob@example.com',   extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"bob","full_name":"Bob Boers"}',     now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'carol@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"carol","full_name":"Carol Claes"}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'dave@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"dave","full_name":"Dave De Vos"}',  now(), now());
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'alice@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"alice","full_name":"Alice Anders"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'bob@example.com',   extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"bob","full_name":"Bob Boers"}',     now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'carol@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"carol","full_name":"Carol Claes"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'dave@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"dave","full_name":"Dave De Vos"}',  now(), now(), '', '', '', '');
+
+-- 1b) Bijbehorende identities. Nieuwere GoTrue verwacht voor e-mail/wachtwoord
+--     login een identity-rij per user (met sub + email in identity_data).
+insert into auth.identities (
+  id, user_id, provider_id, provider, identity_data, created_at, updated_at, last_sign_in_at
+)
+values
+  (extensions.gen_random_uuid(), '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'email', '{"sub":"11111111-1111-1111-1111-111111111111","email":"alice@example.com","email_verified":true}', now(), now(), now()),
+  (extensions.gen_random_uuid(), '22222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', 'email', '{"sub":"22222222-2222-2222-2222-222222222222","email":"bob@example.com","email_verified":true}',   now(), now(), now()),
+  (extensions.gen_random_uuid(), '33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333', 'email', '{"sub":"33333333-3333-3333-3333-333333333333","email":"carol@example.com","email_verified":true}', now(), now(), now()),
+  (extensions.gen_random_uuid(), '44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', 'email', '{"sub":"44444444-4444-4444-4444-444444444444","email":"dave@example.com","email_verified":true}',  now(), now(), now());
 
 -- 2) Teams (vaste paren)
 insert into public.teams (id, name, player1_id, player2_id)
