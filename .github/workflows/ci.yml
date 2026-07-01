@@ -8,6 +8,11 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Dummy Supabase-env zodat build/tests niet crashen op ontbrekende vars.
+    # (De echte waarden staan in Cloudflare Pages, niet in CI.)
+    env:
+      VITE_SUPABASE_URL: http://localhost:54321
+      VITE_SUPABASE_ANON_KEY: ci-dummy-anon-key
     steps:
       - uses: actions/checkout@v4
 
