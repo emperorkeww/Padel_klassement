@@ -61,7 +61,9 @@ export function LoginScreen() {
     }
 
     // mode === "forgot"
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/reset-wachtwoord`,
+    });
     if (error) return fail(error.message);
     return done("We hebben je een herstellink gemaild.");
   }
