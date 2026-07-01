@@ -1,57 +1,83 @@
-.dashboard {
-  min-height: 100vh;
-  background: #f6f7f9;
-  color: #111827;
-}
-
-.dashboard__bar {
+/* Hero-begroeting bovenaan het overzicht — rustig, geen glow. */
+.hero {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
-.dashboard__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-}
-
-.dashboard__signout {
-  padding: 0.5rem 0.9rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fff;
-  color: #111827;
-  font-size: 0.9rem;
+.hero__eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.dashboard__signout:hover {
-  background: #fafafa;
-  border-color: #d1d5db;
-}
-
-.dashboard__main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem;
-}
-
-.dashboard__title {
-  margin: 0 0 0.5rem;
-  font-size: 1.75rem;
+.hero__name {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
-.dashboard__subtitle {
+.hero__sub {
   margin: 0;
-  color: #6b7280;
-  font-size: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.hero__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* De primaire stat krijgt een subtiel accentvlak (geen felle vulling). */
+.stat--accent {
+  background: var(--accent-soft);
+  border-color: #dbe4ff;
+}
+
+/* Topspelers-lijstje met genummerde rang. */
+.toplist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.toplist__item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.toplist__rank {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.toplist__name {
+  flex: 1;
+}
+.toplist__pts {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
