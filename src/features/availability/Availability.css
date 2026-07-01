@@ -153,6 +153,109 @@
   box-shadow: 0 6px 20px rgba(17, 24, 39, 0.25);
 }
 
+/* Klik-pop-up met beschikbaarheid + reserveerlink (werkt op touch én desktop). */
+.avail-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: transparent;
+}
+
+.avail-popover {
+  position: fixed;
+  z-index: 61;
+  transform: translateX(-50%);
+  max-width: min(260px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface, #fff);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.22);
+}
+
+.avail-popover__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.avail-popover__time {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.avail-popover .btn {
+  margin-top: 0.15rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+/*
+ * Mobiel: de verankerde pop-up past niet netjes bij smalle kolommen en schuift
+ * buiten beeld. Toon 'm daarom als bottom sheet over de volledige breedte, met
+ * een gedimde achtergrond. De inline left/top uit JS worden hier genegeerd.
+ */
+@media (max-width: 640px) {
+  .avail-popover-backdrop {
+    background: rgba(17, 24, 39, 0.45);
+  }
+
+  .avail-popover {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    gap: 0.6rem;
+    padding: 1rem 1.1rem calc(1rem + env(safe-area-inset-bottom));
+    border: none;
+    border-top: 1px solid var(--line-strong);
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: 0 -8px 30px rgba(17, 24, 39, 0.25);
+    animation: avail-sheet-up 0.18s ease-out;
+  }
+
+  /* Greep-streepje bovenaan de sheet. */
+  .avail-popover::before {
+    content: "";
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    margin-bottom: 0.2rem;
+    border-radius: 999px;
+    background: var(--line-strong);
+  }
+
+  .avail-popover__title {
+    font-size: 1rem;
+  }
+
+  .avail-popover__time {
+    font-size: 0.9rem;
+  }
+
+  .avail-popover .btn {
+    margin-top: 0.35rem;
+    padding-block: 0.7rem;
+    font-size: 0.95rem;
+  }
+}
+
+@keyframes avail-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 .avail-cell--busy {
   /* Grijze diagonale strepen (palet-tokens) = geboekt. */
   background: repeating-linear-gradient(

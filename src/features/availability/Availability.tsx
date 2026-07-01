@@ -94,8 +94,9 @@ export function Availability() {
       </div>
 
       <p className="avail-note">
-        Klik op een vrij (groen) slot of op de knop om Playtomic op de gekozen
-        dag te openen (het uur kies je daar zelf). Tijden kunnen wijzigen; deze
+        Tik op een vrij (groen) slot om te zien tot hoe laat het vrij is; via de
+        knop in dat venster (of de knop hierboven) open je Playtomic voor de
+        gekozen dag (het uur kies je daar zelf). Tijden kunnen wijzigen; deze
         weergave is niet-officieel.
       </p>
     </div>

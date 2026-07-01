@@ -53,6 +53,15 @@ function freeIntervals(times: string[], free: Set<string>): Map<string, Interval
 }
 
 type Tip = { x: number; y: number; text: string };
+// Aangeklikt vrij slot: toont eerst de beschikbaarheid, pas via de link ga je
+// door naar Playtomic. Zo redirect een tik op mobiel niet meteen.
+type Selection = {
+  left: number;
+  top: number;
+  court: string;
+  start: string;
+  end: string;
+};
 
 export function Timetable({ data, date }: { data: DayAvailability; date: string }) {
   const times = useMemo(
@@ -60,6 +69,7 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
     [data.open, data.close],
   );
   const [tip, setTip] = useState<Tip | null>(null);
+  const [sel, setSel] = useState<Selection | null>(null);
 
   return (
     <>
@@ -81,15 +91,53 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
 
           {/* Eén rij per baan. */}
           {data.courts.map((row) => (
-            <Row key={row.court.id} row={row} times={times} date={date} onTip={setTip} />
+            <Row
+              key={row.court.id}
+              row={row}
+              times={times}
+              onTip={setTip}
+              onSelect={setSel}
+            />
           ))}
         </div>
       </div>
 
-      {tip && (
+      {/* Hover-preview (desktop). Verborgen zodra er een pop-up open staat. */}
+      {tip && !sel && (
         <div className="avail-tip" style={{ left: tip.x, top: tip.y }} role="tooltip">
           {tip.text}
         </div>
+      )}
+
+      {/* Aangeklikt slot: beschikbaarheid + expliciete reserveerlink. */}
+      {sel && (
+        <>
+          <div
+            className="avail-popover-backdrop"
+            onClick={() => setSel(null)}
+            aria-hidden="true"
+          />
+          <div
+            className="avail-popover"
+            style={{ left: sel.left, top: sel.top }}
+            role="dialog"
+            aria-label={`Beschikbaarheid ${sel.court}`}
+          >
+            <p className="avail-popover__title">{sel.court}</p>
+            <p className="avail-popover__time">
+              Vrij van {sel.start} tot {sel.end}
+            </p>
+            <a
+              className="btn btn--primary btn--sm"
+              href={bookingUrl(date)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setSel(null)}
+            >
+              Reserveren op Playtomic →
+            </a>
+          </div>
+        </>
       )}
     </>
   );
@@ -98,13 +146,13 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
 function Row({
   row,
   times,
-  date,
   onTip,
+  onSelect,
 }: {
   row: CourtRow;
   times: string[];
-  date: string;
   onTip: (tip: Tip | null) => void;
+  onSelect: (sel: Selection) => void;
 }) {
   const intervals = useMemo(() => freeIntervals(times, row.free), [times, row.free]);
 
@@ -121,18 +169,34 @@ function Row({
       {times.map((t) => {
         const interval = intervals.get(t);
         if (interval) {
-          const text = `${row.court.name}: vrij van ${interval.start} tot ${interval.end} — klik om te reserveren`;
+          const text = `${row.court.name}: vrij van ${interval.start} tot ${interval.end}`;
+          const select = (el: HTMLElement) => {
+            const r = el.getBoundingClientRect();
+            onTip(null);
+            onSelect({
+              left: r.left + r.width / 2,
+              top: r.bottom + 8,
+              court: row.court.name,
+              start: interval.start,
+              end: interval.end,
+            });
+          };
           return (
             <div
               key={t}
               className={`avail-cell avail-cell--free ${t.endsWith(":00") ? "is-hour" : ""}`}
               role="button"
               tabIndex={0}
+              aria-label={`${text} — bekijk reserveren`}
               onMouseMove={(e) => onTip({ x: e.clientX, y: e.clientY, text })}
               onMouseLeave={() => onTip(null)}
-              onClick={() =>
-                window.open(bookingUrl(date), "_blank", "noopener,noreferrer")
-              }
+              onClick={(e) => select(e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  select(e.currentTarget);
+                }
+              }}
             />
           );
         }
