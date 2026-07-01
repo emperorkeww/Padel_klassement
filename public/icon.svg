@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Full-bleed achtergrond: veilig als 'maskable' (OS knipt eigen vorm) én als Apple-icoon (iOS rondt zelf af). -->
+  <rect width="512" height="512" fill="#4f46e5"/>
+  <!-- Padelbal, gecentreerd binnen de maskable safe-zone (r=150 < 205). -->
+  <circle cx="256" cy="256" r="150" fill="#c7e63a"/>
+  <!-- Twee naden; de eindpunten liggen exact op de balrand. -->
+  <g fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round">
+    <path d="M112 214 C 190 176, 322 176, 400 214"/>
+    <path d="M112 298 C 190 336, 322 336, 400 298"/>
+  </g>
+</svg>
