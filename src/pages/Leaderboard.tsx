@@ -8,7 +8,8 @@ import {
   getGroupPlayerStandings,
 } from "../features/standings/api";
 import { getMyGroups } from "../features/groups/api";
-import { displayName } from "../features/profiles/api";
+import { getTeamsMap, teamLabel } from "../features/matches/api";
+import { getProfilesMap, displayName } from "../features/profiles/api";
 
 type Tab = "player" | "team";
 
@@ -24,13 +25,17 @@ export function Leaderboard() {
     [groupId],
   );
   const teams = useAsync(getTeamStandings, []);
+  const teamsMap = useAsync(getTeamsMap, []);
+  const profilesMap = useAsync(getProfilesMap, []);
 
   return (
     <div>
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
-        <p className="page-subtitle">Winst levert 3 punten op. Live berekend.</p>
+        <p className="page-subtitle">Winst levert 3 punten op.</p>
       </header>
+
+      <KlassementUitleg />
 
       <div className="row-between" style={{ marginBottom: "1.25rem" }}>
         <div className="tabs" style={{ marginBottom: 0 }}>
@@ -89,7 +94,7 @@ export function Leaderboard() {
             rows={(teams.data ?? []).map((t) => ({
               key: t.team_id,
               isMe: false,
-              name: t.team_name ?? "Naamloos team",
+              name: teamLabel(teamsMap.data?.[t.team_id], profilesMap.data ?? {}),
               sub: "",
               played: t.played,
               won: t.won,
@@ -100,6 +105,55 @@ export function Leaderboard() {
         )}
       </div>
     </div>
+  );
+}
+
+function KlassementUitleg() {
+  return (
+    <details className="explainer">
+      <summary>Hoe werkt het klassement?</summary>
+      <div className="explainer__body">
+        <dl>
+          <div>
+            <dt>Punten</dt>
+            <dd>
+              Elke gewonnen match levert <strong>3 punten</strong> op, een verlies{" "}
+              <strong>0</strong>. Elke afgeronde match heeft precies één winnend
+              team — gelijkspel bestaat niet.
+            </dd>
+          </div>
+          <div>
+            <dt>Gespeeld · Winst · Verlies</dt>
+            <dd>
+              Tellen alleen <strong>afgeronde</strong> matches. Een geplande
+              Americano-match telt pas mee zodra het resultaat is ingevoerd.
+            </dd>
+          </div>
+          <div>
+            <dt>Spelers versus Teams</dt>
+            <dd>
+              Het spelersklassement telt jouw matches over <em>alle</em> teams
+              waarin je speelde — ook bij wisselende partners in een Americano. Het
+              teamklassement telt per vast spelerspaar.
+            </dd>
+          </div>
+          <div>
+            <dt>Volgorde</dt>
+            <dd>
+              Eerst op punten (hoog naar laag). Bij een gelijke stand telt het
+              aantal gewonnen matches, en daarna de naam (alfabetisch).
+            </dd>
+          </div>
+          <div>
+            <dt>Groepsfilter</dt>
+            <dd>
+              <strong>Alle groepen</strong> toont al je afgeronde matches samen.
+              Kies een groep om enkel de matches binnen die groep te tellen.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </details>
   );
 }
 

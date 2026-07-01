@@ -37,7 +37,7 @@ export function Groups() {
       <header className="page-head">
         <h1 className="page-title">Groepen</h1>
         <p className="page-subtitle">
-          Maak een groep, voeg vrienden toe en genereer Americano-rondes.
+          Maak een groep, voeg vrienden toe en genereer willekeurige wedstrijden.
         </p>
       </header>
 

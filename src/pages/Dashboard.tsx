@@ -44,7 +44,7 @@ export function Dashboard() {
             + Match loggen
           </Link>
           <Link className="btn" to="/groepen">
-            Americano starten
+            Wedstrijden genereren
           </Link>
         </div>
       </section>
