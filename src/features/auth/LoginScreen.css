@@ -1,22 +1,12 @@
 .login {
-  /* Design-tokens */
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-soft: #eff4ff;
-  --ink: #111827;
-  --ink-soft: #6b7280;
-  --line: #e5e7eb;
-  --surface: #ffffff;
-  --radius: 16px;
-  --radius-sm: 10px;
-
+  /* Tokens komen uit :root (gedeeld palet). */
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 2rem 1rem;
   background:
-    radial-gradient(100% 60% at 50% 0%, #f0f4ff 0%, transparent 60%),
-    #f6f7f9;
+    radial-gradient(100% 60% at 50% 0%, var(--accent-soft) 0%, transparent 60%),
+    var(--bg);
   color: var(--ink);
 }
 
@@ -73,7 +63,7 @@
   gap: 0.25rem;
   padding: 0.25rem;
   margin-bottom: 1.25rem;
-  background: #f3f4f6;
+  background: var(--surface-2);
   border-radius: var(--radius-sm);
 }
 
@@ -118,8 +108,8 @@
 }
 
 .social-btn:hover:not(:disabled) {
-  background: #fafafa;
-  border-color: #d1d5db;
+  background: var(--surface-2);
+  border-color: var(--line-strong);
 }
 
 .social-btn:disabled {

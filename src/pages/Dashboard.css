@@ -1,4 +1,4 @@
-/* Hero-begroeting bovenaan het overzicht — rustig, geen glow. */
+/* Hero-begroeting bovenaan het overzicht. */
 .hero {
   display: flex;
   align-items: center;
@@ -6,26 +6,28 @@
   gap: 1.5rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
-  padding: 1.5rem 1.75rem;
+  padding: 1.6rem 1.75rem;
   border-radius: var(--radius);
   background: var(--surface);
   border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
 }
 
 .hero__eyebrow {
   margin: 0 0 0.25rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--accent);
 }
 
 .hero__name {
   margin: 0 0 0.35rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--ink);
 }
 
@@ -41,10 +43,13 @@
   flex-wrap: wrap;
 }
 
-/* De primaire stat krijgt een subtiel accentvlak (geen felle vulling). */
+/* De primaire stat krijgt een indigo accentvlak. */
 .stat--accent {
   background: var(--accent-soft);
-  border-color: #dbe4ff;
+  border-color: var(--accent-line);
+}
+.stat--accent .stat__value {
+  color: var(--accent);
 }
 
 /* Topspelers-lijstje met genummerde rang. */
@@ -53,7 +58,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.7rem;
 }
 .toplist__item {
   display: flex;
@@ -67,11 +72,10 @@
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--ink-soft);
 }
 .toplist__name {
   flex: 1;

@@ -100,7 +100,7 @@ export function LoginScreen() {
       <main className="login-card" role="main">
         <div className="login-brand">
           <BallIcon />
-          <span className="login-brand__name">Padelclub</span>
+          <span className="login-brand__name">Vamos!</span>
         </div>
 
         <header className="login-head">
@@ -276,7 +276,7 @@ export function LoginScreen() {
                 className="login-link"
                 onClick={() => switchMode("signup")}
               >
-                Word clublid
+                Word lid
               </button>
             </>
           )}
