@@ -9,6 +9,8 @@ import { getRecentMatches, getTeamsMap } from "../matches/api";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { MatchList } from "../matches/MatchList";
+import { getClubAvailability } from "../availability/api";
+import { Timetable, localDate } from "../availability/Timetable";
 import "./Dashboard.css";
 
 export function Dashboard() {
@@ -20,6 +22,9 @@ export function Dashboard() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
+
+  const today = localDate(0);
+  const availability = useAsync(() => getClubAvailability(today), [today]);
 
   const onMatches = useCallback(() => {
     standings.reload();
@@ -137,6 +142,24 @@ export function Dashboard() {
           </section>
         </div>
       </div>
+
+      <section className="card" style={{ marginTop: "1.25rem" }}>
+        <div className="row-between" style={{ marginBottom: "1rem" }}>
+          <h2 className="card__title" style={{ margin: 0 }}>
+            Baanbeschikbaarheid vandaag
+          </h2>
+          <Link className="profile-link" to="/banen">
+            Alle dagen →
+          </Link>
+        </div>
+        {availability.loading ? (
+          <Skeleton rows={3} />
+        ) : availability.error ? (
+          <p className="msg msg--error">{availability.error}</p>
+        ) : availability.data ? (
+          <Timetable data={availability.data} date={today} />
+        ) : null}
+      </section>
     </div>
   );
 }
