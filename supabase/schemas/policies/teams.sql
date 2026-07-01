@@ -6,17 +6,8 @@ create policy "Teams zijn publiek leesbaar"
   for select
   using (true);
 
--- Je kunt enkel een team aanmaken waar je zelf in zit
-create policy "Speler kan eigen team aanmaken"
-  on public.teams
-  for insert
-  to authenticated
-  with check ((select auth.uid()) in (player1_id, player2_id));
-
--- Enkel teamleden kunnen het team bijwerken
-create policy "Teamlid kan team bijwerken"
-  on public.teams
-  for update
-  to authenticated
-  using ((select auth.uid()) in (player1_id, player2_id))
-  with check ((select auth.uid()) in (player1_id, player2_id));
+-- Bewust GEEN directe INSERT/UPDATE-policy: teams worden uitsluitend aangemaakt
+-- via public._ensure_team() (SECURITY DEFINER). Directe INSERT liet je zonder
+-- vriend-check een team met een willekeurig slachtoffer vormen; directe UPDATE
+-- liet een teamlid de andere speler vervangen en historische matchstatistiek
+-- verschuiven. Zie migratie 20260701140000 (H1/H2).

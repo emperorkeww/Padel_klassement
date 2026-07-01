@@ -6,12 +6,9 @@ create policy "Matches zijn publiek leesbaar"
   for select
   using (true);
 
--- Je registreert een match op eigen naam (created_by = jij)
-create policy "Gebruiker kan match aanmaken"
-  on public.matches
-  for insert
-  to authenticated
-  with check ((select auth.uid()) = created_by);
+-- Bewust GEEN directe INSERT-policy: matches worden uitsluitend aangemaakt via
+-- de SECURITY DEFINER RPC's (create_completed_match, generate_americano_round),
+-- die deelnemer- en vriend-checks afdwingen. Zie migratie 20260701140000 (K1).
 
 -- Enkel de aanmaker kan de match bijwerken (bv. status/winnaar zetten)
 create policy "Aanmaker kan match bijwerken"
