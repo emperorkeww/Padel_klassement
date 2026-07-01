@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
+import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
 import { getPlayerStandings } from "../standings/api";
 import { getRecentMatches, getTeamsMap } from "../matches/api";
@@ -25,6 +26,8 @@ export function Dashboard() {
 
   const today = localDate(0);
   const availability = useAsync(() => getClubAvailability(today), [today]);
+  // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
+  useRefetchOnFocus(availability.reload);
 
   const onMatches = useCallback(() => {
     standings.reload();
