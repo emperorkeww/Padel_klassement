@@ -73,8 +73,10 @@ export interface TeamStanding {
   team_name: string | null;
   played: number;
   won: number;
+  drawn: number;
   lost: number;
   points: number;
+  goal_diff: number;
 }
 
 export interface PlayerStanding {
@@ -83,6 +85,8 @@ export interface PlayerStanding {
   full_name: string | null;
   played: number;
   won: number;
+  drawn: number;
   lost: number;
   points: number;
+  goal_diff: number;
 }

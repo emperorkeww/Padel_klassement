@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
 import {
   getPlayerStandings,
   getTeamStandings,
   getGroupPlayerStandings,
-} from "../features/standings/api";
-import { getMyGroups } from "../features/groups/api";
-import { getTeamsMap, teamLabel } from "../features/matches/api";
-import { getProfilesMap, displayName } from "../features/profiles/api";
+} from "./api";
+import { getMyGroups } from "../groups/api";
+import { getTeamsMap, teamLabel } from "../matches/api";
+import { getProfilesMap, displayName } from "../profiles/api";
 
 type Tab = "player" | "team";
 
@@ -32,7 +32,7 @@ export function Leaderboard() {
     <div>
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
-        <p className="page-subtitle">Winst levert 3 punten op.</p>
+        <p className="page-subtitle">Winst = 3 punten, gelijkspel = 1, verlies = 0.</p>
       </header>
 
       <KlassementUitleg />
@@ -83,8 +83,10 @@ export function Leaderboard() {
               sub: `@${p.username}`,
               played: p.played,
               won: p.won,
+              drawn: p.drawn ?? 0,
               lost: p.lost,
               points: p.points,
+              goalDiff: p.goal_diff ?? 0,
             }))}
           />
         ) : (
@@ -98,8 +100,10 @@ export function Leaderboard() {
               sub: "",
               played: t.played,
               won: t.won,
+              drawn: t.drawn ?? 0,
               lost: t.lost,
               points: t.points,
+              goalDiff: t.goal_diff ?? 0,
             }))}
           />
         )}
@@ -117,13 +121,14 @@ function KlassementUitleg() {
           <div>
             <dt>Punten</dt>
             <dd>
-              Elke gewonnen match levert <strong>3 punten</strong> op, een verlies{" "}
-              <strong>0</strong>. Elke afgeronde match heeft precies één winnend
-              team — gelijkspel bestaat niet.
+              Elke gewonnen match levert <strong>3 punten</strong> op, een
+              gelijkspel <strong>1</strong> en een verlies <strong>0</strong>.
+              Omdat er meestal op tijd wordt gespeeld, kan een match gelijk
+              eindigen — dan krijgen beide teams één punt.
             </dd>
           </div>
           <div>
-            <dt>Gespeeld · Winst · Verlies</dt>
+            <dt>Gespeeld · Winst · Gelijk · Verlies</dt>
             <dd>
               Tellen alleen <strong>afgeronde</strong> matches. Een geplande
               Americano-match telt pas mee zodra het resultaat is ingevoerd.
@@ -140,8 +145,9 @@ function KlassementUitleg() {
           <div>
             <dt>Volgorde</dt>
             <dd>
-              Eerst op punten (hoog naar laag). Bij een gelijke stand telt het
-              aantal gewonnen matches, en daarna de naam (alfabetisch).
+              Eerst op punten (hoog naar laag). Bij een gelijke stand telt het{" "}
+              <strong>scoresaldo</strong> (punten voor min tegen), daarna het
+              aantal gewonnen matches, en ten slotte de naam (alfabetisch).
             </dd>
           </div>
           <div>
@@ -165,8 +171,10 @@ type Row = {
   sub: string;
   played: number;
   won: number;
+  drawn: number;
   lost: number;
   points: number;
+  goalDiff: number;
 };
 
 function StandingsTable({
@@ -191,7 +199,9 @@ function StandingsTable({
           <th>Naam</th>
           <th className="num">Gespeeld</th>
           <th className="num">Winst</th>
+          <th className="num">Gelijk</th>
           <th className="num">Verlies</th>
+          <th className="num">Saldo</th>
           <th className="num">Punten</th>
         </tr>
       </thead>
@@ -211,7 +221,9 @@ function StandingsTable({
             </td>
             <td className="num">{r.played}</td>
             <td className="num">{r.won}</td>
+            <td className="num">{r.drawn}</td>
             <td className="num">{r.lost}</td>
+            <td className="num">{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
             <td className="num">
               <strong>{r.points}</strong>
             </td>

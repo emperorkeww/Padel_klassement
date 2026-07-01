@@ -81,7 +81,7 @@ export async function createCompletedMatch(params: {
   a2: string;
   b1: string;
   b2: string;
-  winner: "a" | "b";
+  winner: "a" | "b" | "draw";
   scoreA?: number | null;
   scoreB?: number | null;
   groupId?: string | null;
@@ -100,10 +100,10 @@ export async function createCompletedMatch(params: {
   return data as string;
 }
 
-/** Zet het resultaat van een bestaande (geplande) match. */
+/** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel. */
 export async function setMatchResult(params: {
   matchId: string;
-  winnerTeamId: string;
+  winnerTeamId: string | null;
   scoreA?: number | null;
   scoreB?: number | null;
 }): Promise<void> {

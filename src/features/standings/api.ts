@@ -6,6 +6,7 @@ export async function getPlayerStandings(): Promise<PlayerStanding[]> {
     .from("player_standings")
     .select("*")
     .order("points", { ascending: false })
+    .order("goal_diff", { ascending: false })
     .order("won", { ascending: false })
     .order("username", { ascending: true });
   if (error) throw error;
@@ -29,6 +30,7 @@ export async function getTeamStandings(): Promise<TeamStanding[]> {
     .from("standings")
     .select("*")
     .order("points", { ascending: false })
+    .order("goal_diff", { ascending: false })
     .order("won", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -39,9 +41,12 @@ export async function getGroupPlayerStandings(
 ): Promise<PlayerStanding[]> {
   const { data, error } = await supabase
     .from("group_player_standings")
-    .select("player_id, username, full_name, played, won, lost, points")
+    .select(
+      "player_id, username, full_name, played, won, drawn, lost, points, goal_diff",
+    )
     .eq("group_id", groupId)
     .order("points", { ascending: false })
+    .order("goal_diff", { ascending: false })
     .order("won", { ascending: false });
   if (error) throw error;
   return data ?? [];

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import type { Match, Profile, Team } from "../lib/types";
-import { teamLabel } from "../features/matches/api";
-import { formatDate } from "../lib/format";
+import type { Match, Profile, Team } from "../../lib/types";
+import { teamLabel } from "./api";
+import { formatDate } from "../../lib/format";
 
 export function MatchList({
   matches,
@@ -22,6 +22,7 @@ export function MatchList({
         const aWon = m.winner_team_id === m.team_a_id;
         const bWon = m.winner_team_id === m.team_b_id;
         const done = m.status === "completed";
+        const drew = done && m.winner_team_id === null;
         const scored = m.score_a != null && m.score_b != null;
         return (
           <li key={m.id}>
@@ -38,6 +39,7 @@ export function MatchList({
                 </span>
               </span>
               <span className="matchlist__meta">
+                {drew && <span className="badge">gelijk</span>}
                 {m.round_number != null && (
                   <span className="badge">ronde {m.round_number}</span>
                 )}

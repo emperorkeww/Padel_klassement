@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
 import {
   getRecentMatches,
   getTeamsMap,
   createCompletedMatch,
-} from "../features/matches/api";
-import { getAllProfiles, displayName } from "../features/profiles/api";
-import { getMyFriendships, categorize, otherId } from "../features/friends/api";
-import { MatchList } from "../components/MatchList";
-import type { Profile } from "../lib/types";
+} from "./api";
+import { getAllProfiles, displayName } from "../profiles/api";
+import { getMyFriendships, categorize, otherId } from "../friends/api";
+import { MatchList } from "./MatchList";
+import type { Profile } from "../../lib/types";
 
 export function Matches() {
   const { user } = useAuth();
@@ -89,11 +89,9 @@ function AddMatchForm({
     const sb = scoreB === "" ? null : Number(scoreB);
     if (sa === null || sb === null)
       return setMsg({ type: "error", text: "Vul de eindscore in." });
-    if (sa === sb)
-      return setMsg({ type: "error", text: "Gelijkspel kan niet — de scores moeten verschillen." });
 
-    // Winnaar volgt uit de score.
-    const winner: "a" | "b" = sa > sb ? "a" : "b";
+    // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
+    const winner: "a" | "b" | "draw" = sa === sb ? "draw" : sa > sb ? "a" : "b";
 
     setBusy(true);
     try {
@@ -178,7 +176,8 @@ function AddMatchForm({
             />
           </span>
           <span className="page-subtitle" style={{ fontSize: "0.8rem" }}>
-            De winnaar wordt bepaald door de hoogste score.
+            De winnaar wordt bepaald door de hoogste score. Een gelijke score
+            telt als gelijkspel.
           </span>
         </label>
 

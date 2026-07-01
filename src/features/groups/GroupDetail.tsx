@@ -1,28 +1,28 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
 import {
   getGroup,
   getGroupMembers,
   addGroupMember,
   removeGroupMember,
   generateAmericanoRound,
-} from "../features/groups/api";
+} from "./api";
 import {
   getGroupMatches,
   getTeamsMap,
   setMatchResult,
   teamLabel,
-} from "../features/matches/api";
-import { getGroupPlayerStandings } from "../features/standings/api";
-import { getProfilesMap, displayName } from "../features/profiles/api";
+} from "../matches/api";
+import { getGroupPlayerStandings } from "../standings/api";
+import { getProfilesMap, displayName } from "../profiles/api";
 import {
   getMyFriendships,
   categorize,
   otherId,
-} from "../features/friends/api";
-import type { Match } from "../lib/types";
+} from "../friends/api";
+import type { Match } from "../../lib/types";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -164,6 +164,7 @@ export function GroupDetail() {
                   <th>Speler</th>
                   <th className="num">G</th>
                   <th className="num">W</th>
+                  <th className="num">Saldo</th>
                   <th className="num">Ptn</th>
                 </tr>
               </thead>
@@ -173,6 +174,9 @@ export function GroupDetail() {
                     <td>{displayName(p)}</td>
                     <td className="num">{p.played}</td>
                     <td className="num">{p.won}</td>
+                    <td className="num">
+                      {p.goal_diff > 0 ? `+${p.goal_diff}` : p.goal_diff}
+                    </td>
                     <td className="num">
                       <strong>{p.points}</strong>
                     </td>
@@ -234,7 +238,12 @@ export function GroupDetail() {
                         () =>
                           setMatchResult({
                             matchId: m.id,
-                            winnerTeamId: winner === "a" ? m.team_a_id : m.team_b_id,
+                            winnerTeamId:
+                              winner === "a"
+                                ? m.team_a_id
+                                : winner === "b"
+                                  ? m.team_b_id
+                                  : null,
                             scoreA: sa,
                             scoreB: sb,
                           }),
@@ -263,21 +272,25 @@ function MatchRow({
   labelA: string;
   labelB: string;
   busy: boolean;
-  onResult: (winner: "a" | "b", scoreA: number | null, scoreB: number | null) => void;
+  onResult: (
+    winner: "a" | "b" | "draw",
+    scoreA: number | null,
+    scoreB: number | null,
+  ) => void;
 }) {
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
 
   const done = match.status === "completed";
   const aWon = match.winner_team_id === match.team_a_id;
+  const bWon = match.winner_team_id === match.team_b_id;
+  const isDraw = done && match.winner_team_id === null;
   const scored = match.score_a != null && match.score_b != null;
 
-  // Winnaar volgt uit de score; gelijkspel kan niet.
+  // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
-  const bothFilled = saNum !== null && sbNum !== null;
-  const tie = bothFilled && saNum === sbNum;
-  const valid = bothFilled && !tie;
+  const valid = saNum !== null && sbNum !== null;
 
   // Afgeronde match: klikbare rij naar de detailpagina.
   if (done) {
@@ -288,9 +301,10 @@ function MatchRow({
           <span className="matchlist__vs">
             {scored ? `${match.score_a}–${match.score_b}` : "vs"}
           </span>
-          <span className={`matchlist__team ${!aWon ? "is-win" : ""}`}>{labelB}</span>
+          <span className={`matchlist__team ${bWon ? "is-win" : ""}`}>{labelB}</span>
         </span>
         <span className="matchlist__meta">
+          {isDraw && <span className="badge">gelijk</span>}
           <span className="badge">details →</span>
         </span>
       </Link>
@@ -325,11 +339,16 @@ function MatchRow({
           value={sb}
           onChange={(e) => setSb(e.target.value)}
         />
-        {tie && <span className="result-row__hint">Gelijkspel kan niet</span>}
         <button
           className="btn btn--primary btn--sm"
           disabled={busy || !valid}
-          onClick={() => onResult(saNum! > sbNum! ? "a" : "b", saNum, sbNum)}
+          onClick={() =>
+            onResult(
+              saNum === sbNum ? "draw" : saNum! > sbNum! ? "a" : "b",
+              saNum,
+              sbNum,
+            )
+          }
         >
           Opslaan
         </button>

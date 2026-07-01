@@ -1,15 +1,15 @@
 import { Link, useParams } from "react-router-dom";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "../../lib/useAsync";
 import {
   getMatch,
   getMatchPoints,
   getTeamsMap,
   teamLabel,
-} from "../features/matches/api";
-import { getGroup } from "../features/groups/api";
-import { getProfilesMap, displayName } from "../features/profiles/api";
-import { formatDate } from "../lib/format";
-import type { Team } from "../lib/types";
+} from "./api";
+import { getGroup } from "../groups/api";
+import { getProfilesMap, displayName } from "../profiles/api";
+import { formatDate } from "../../lib/format";
+import type { Team } from "../../lib/types";
 import "./MatchDetail.css";
 
 export function MatchDetail() {
@@ -31,6 +31,7 @@ export function MatchDetail() {
   const done = m.status === "completed";
   const aWon = m.winner_team_id === m.team_a_id;
   const bWon = m.winner_team_id === m.team_b_id;
+  const isDraw = done && m.winner_team_id === null;
 
   // Punt-samenvatting (indien punt-voor-punt geregistreerd).
   const pts = points.data ?? [];
@@ -54,6 +55,7 @@ export function MatchDetail() {
           <span className={`badge ${done ? "" : "badge--accent"}`}>
             {done ? "Afgerond" : "Gepland"}
           </span>
+          {isDraw && <span className="badge badge--accent">Gelijkspel</span>}
           <span className="badge">
             {formatDate(m.played_at ?? m.created_at) || "—"}
           </span>
