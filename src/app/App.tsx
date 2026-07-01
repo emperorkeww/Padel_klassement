@@ -1,18 +1,19 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { ProtectedRoute } from "./features/auth/ProtectedRoute";
-import { DashboardLayout } from "./components/DashboardLayout";
+import { ProtectedRoute } from "../features/auth/ProtectedRoute";
+import { DashboardLayout } from "../components/DashboardLayout";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
-const LoginScreen = lazy(() => import("./features/auth/LoginScreen"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Leaderboard = lazy(() => import("./pages/Leaderboard"));
-const Matches = lazy(() => import("./pages/Matches"));
-const Groups = lazy(() => import("./pages/Groups"));
-const GroupDetail = lazy(() => import("./pages/GroupDetail"));
-const Friends = lazy(() => import("./pages/Friends"));
-const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
-const MatchDetail = lazy(() => import("./pages/MatchDetail"));
+const LoginScreen = lazy(() => import("../features/auth/LoginScreen"));
+const Dashboard = lazy(() => import("../features/dashboard/Dashboard"));
+const Leaderboard = lazy(() => import("../features/standings/Leaderboard"));
+const Matches = lazy(() => import("../features/matches/Matches"));
+const Groups = lazy(() => import("../features/groups/Groups"));
+const GroupDetail = lazy(() => import("../features/groups/GroupDetail"));
+const Friends = lazy(() => import("../features/friends/Friends"));
+const PlayerProfile = lazy(() => import("../features/profiles/PlayerProfile"));
+const MatchDetail = lazy(() => import("../features/matches/MatchDetail"));
+const ProfileSettings = lazy(() => import("../features/account/ProfileSettings"));
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/groepen/:id" element={<GroupDetail />} />
             <Route path="/vrienden" element={<Friends />} />
             <Route path="/spelers/:id" element={<PlayerProfile />} />
+            <Route path="/profiel" element={<ProfileSettings />} />
           </Route>
         </Route>
 

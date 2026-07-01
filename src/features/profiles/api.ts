@@ -45,6 +45,31 @@ export async function searchProfiles(
 }
 
 // Accepteert elke rij met username/full_name (Profile, PlayerStanding, ...).
+export async function updateProfile(
+  id: string,
+  patch: { username?: string; full_name?: string | null; avatar_url?: string | null },
+): Promise<void> {
+  const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+/** Uploadt een profielfoto naar de 'avatars'-bucket en geeft de publieke URL terug. */
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${userId}/avatar.${ext}`;
+  const { error } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, {
+      upsert: true,
+      cacheControl: "3600",
+      contentType: file.type || undefined,
+    });
+  if (error) throw error;
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  // Cache-buster zodat een nieuwe foto meteen zichtbaar is.
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
+
 export function displayName(
   p: { username: string; full_name: string | null } | undefined | null,
 ): string {

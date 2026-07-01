@@ -11,6 +11,7 @@ const NAV: { to: string; label: string; end?: boolean; icon: ReactNode }[] = [
   { to: "/matches", label: "Matches", icon: <IconRacket /> },
   { to: "/groepen", label: "Groepen", icon: <IconUsers /> },
   { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> },
+  { to: "/profiel", label: "Profiel", icon: <IconUser /> },
 ];
 
 export function DashboardLayout() {
@@ -100,6 +101,14 @@ function IconUserPlus() {
       <circle cx="9" cy="8" r="3" />
       <path d="M3 20a6 6 0 0 1 11 0" />
       <path d="M18 8v6M15 11h6" />
+    </svg>
+  );
+}
+function IconUser() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 20a7 7 0 0 1 14 0" />
     </svg>
   );
 }

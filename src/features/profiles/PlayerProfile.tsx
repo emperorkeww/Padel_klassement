@@ -1,11 +1,11 @@
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
-import { getProfile, displayName } from "../features/profiles/api";
-import { getProfilesMap } from "../features/profiles/api";
-import { getPlayerStanding } from "../features/standings/api";
-import { getPlayerMatches, getTeamsMap } from "../features/matches/api";
-import { MatchList } from "../components/MatchList";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
+import { getProfile, displayName } from "./api";
+import { getProfilesMap } from "./api";
+import { getPlayerStanding } from "../standings/api";
+import { getPlayerMatches, getTeamsMap } from "../matches/api";
+import { MatchList } from "../matches/MatchList";
 import "./PlayerProfile.css";
 
 export function PlayerProfile() {
@@ -36,7 +36,9 @@ export function PlayerProfile() {
       </header>
 
       <section className="card profile-hero">
-        <div className="profile-hero__avatar">{initials}</div>
+        <div className="profile-hero__avatar">
+          {p.avatar_url ? <img src={p.avatar_url} alt="" /> : initials}
+        </div>
         <div>
           <h1 className="profile-hero__name">
             {displayName(p)}
