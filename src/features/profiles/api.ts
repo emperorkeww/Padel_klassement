@@ -56,7 +56,8 @@ export async function updateProfile(
 /** Uploadt een profielfoto naar de 'avatars'-bucket en geeft de publieke URL terug. */
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `${userId}/avatar.${ext}`;
+  const filename = `avatar.${ext}`;
+  const path = `${userId}/${filename}`;
   const { error } = await supabase.storage
     .from("avatars")
     .upload(path, file, {
@@ -65,6 +66,17 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
       contentType: file.type || undefined,
     });
   if (error) throw error;
+
+  // Ruim eerdere avatarbestanden op (bv. avatar.jpg bij een nieuwe .png),
+  // zodat er geen orphan-bestanden achterblijven.
+  const { data: existing } = await supabase.storage.from("avatars").list(userId);
+  const stale = (existing ?? [])
+    .filter((o) => o.name !== filename)
+    .map((o) => `${userId}/${o.name}`);
+  if (stale.length > 0) {
+    await supabase.storage.from("avatars").remove(stale);
+  }
+
   const { data } = supabase.storage.from("avatars").getPublicUrl(path);
   // Cache-buster zodat een nieuwe foto meteen zichtbaar is.
   return `${data.publicUrl}?v=${Date.now()}`;

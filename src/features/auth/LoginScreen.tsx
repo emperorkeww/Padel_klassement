@@ -14,6 +14,8 @@ export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
@@ -55,13 +57,21 @@ export function LoginScreen() {
       const { error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
+        options: {
+          data: {
+            full_name: fullName.trim() || undefined,
+            username: username.trim() || undefined,
+          },
+        },
       });
       if (error) return fail(error.message);
       return done("Account aangemaakt — je wordt ingelogd.");
     }
 
     // mode === "forgot"
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/reset-wachtwoord`,
+    });
     if (error) return fail(error.message);
     return done("We hebben je een herstellink gemaild.");
   }
@@ -137,6 +147,33 @@ export function LoginScreen() {
         )}
 
         <form className="login-form" onSubmit={handleSubmit} noValidate>
+          {isSignup && (
+            <>
+              <label className="field">
+                <span className="field__label">Naam</span>
+                <input
+                  className="field__input"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Voor- en achternaam"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field__label">Gebruikersnaam</span>
+                <input
+                  className="field__input"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="bijv. remco (optioneel)"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+
           <label className="field">
             <span className="field__label">E-mailadres</span>
             <input

@@ -75,6 +75,14 @@ export function build() {
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://cdn.test/${bucket}/${path}` },
         }),
+        list: (prefix: string) => {
+          calls.push({ method: "list", bucket, args: [prefix] });
+          return Promise.resolve(take());
+        },
+        remove: (paths: string[]) => {
+          calls.push({ method: "remove", bucket, args: [paths] });
+          return Promise.resolve(take());
+        },
       }),
     },
     auth: {

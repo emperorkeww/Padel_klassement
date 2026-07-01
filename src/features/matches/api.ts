@@ -92,9 +92,9 @@ export async function createCompletedMatch(params: {
     p_b1: params.b1,
     p_b2: params.b2,
     p_winner: params.winner,
-    p_score_a: params.scoreA ?? null,
-    p_score_b: params.scoreB ?? null,
-    p_group_id: params.groupId ?? null,
+    p_score_a: params.scoreA ?? undefined,
+    p_score_b: params.scoreB ?? undefined,
+    p_group_id: params.groupId ?? undefined,
   });
   if (error) throw error;
   return data as string;

@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useToast } from "../../components/ToastProvider";
+import { Skeleton } from "../../components/Skeleton";
 import {
   getProfile,
   updateProfile,
@@ -12,14 +14,17 @@ import { formatDate } from "../../lib/format";
 import type { Profile } from "../../lib/types";
 import "./ProfileSettings.css";
 
-type Msg = { type: "error" | "success"; text: string } | null;
-
 export function ProfileSettings() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
 
-  if (profile.loading) return <p className="empty">Laden…</p>;
+  if (profile.loading)
+    return (
+      <div className="card">
+        <Skeleton rows={4} />
+      </div>
+    );
   if (!profile.data) return <p className="msg msg--error">Profiel niet gevonden.</p>;
 
   return (
@@ -30,20 +35,14 @@ export function ProfileSettings() {
       </header>
 
       <div className="grid grid--2">
-        <AvatarCard
-          profile={profile.data}
-          userId={myId}
-          onUpdated={profile.reload}
-        />
+        <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
         <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
       </div>
 
       <EmailCard currentEmail={user?.email ?? ""} />
       <PasswordCard email={user?.email ?? ""} />
 
-      <p className="profile-meta">
-        Lid sinds {formatDate(profile.data.created_at)}.
-      </p>
+      <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
     </div>
   );
 }
@@ -58,24 +57,17 @@ function AvatarCard({
   userId: string;
   onUpdated: () => void;
 }) {
+  const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
 
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
-    setMsg(null);
     if (!f) return;
-    if (!f.type.startsWith("image/")) {
-      setMsg({ type: "error", text: "Kies een afbeelding." });
-      return;
-    }
-    if (f.size > 5 * 1024 * 1024) {
-      setMsg({ type: "error", text: "Maximaal 5 MB." });
-      return;
-    }
+    if (!f.type.startsWith("image/")) return toast.error("Kies een afbeelding.");
+    if (f.size > 5 * 1024 * 1024) return toast.error("Maximaal 5 MB.");
     setFile(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -83,15 +75,14 @@ function AvatarCard({
   async function save() {
     if (!file) return;
     setBusy(true);
-    setMsg(null);
     try {
       const url = await uploadAvatar(userId, file);
       await updateProfile(userId, { avatar_url: url });
-      setMsg({ type: "success", text: "Profielfoto bijgewerkt." });
+      toast.success("Profielfoto bijgewerkt.");
       setFile(null);
       onUpdated();
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -102,7 +93,6 @@ function AvatarCard({
   return (
     <section className="card">
       <h2 className="card__title">Profielfoto</h2>
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
       <div className="avatar-row">
         <div className="avatar-preview">
           {shown ? (
@@ -112,21 +102,11 @@ function AvatarCard({
           )}
         </div>
         <div className="stack">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={pick}
-          />
+          <input ref={inputRef} type="file" accept="image/*" hidden onChange={pick} />
           <button className="btn" onClick={() => inputRef.current?.click()}>
             Foto kiezen
           </button>
-          <button
-            className="btn btn--primary"
-            disabled={busy || !file}
-            onClick={save}
-          >
+          <button className="btn btn--primary" disabled={busy || !file} onClick={save}>
             {busy ? "Uploaden…" : "Opslaan"}
           </button>
         </div>
@@ -145,30 +125,28 @@ function NameCard({
   userId: string;
   onUpdated: () => void;
 }) {
+  const toast = useToast();
   const [username, setUsername] = useState(profile.username);
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMsg(null);
     try {
       await updateProfile(userId, {
         username: username.trim(),
         full_name: fullName.trim() || null,
       });
-      setMsg({ type: "success", text: "Naam bijgewerkt." });
+      toast.success("Naam bijgewerkt.");
       onUpdated();
     } catch (err) {
       const m = err instanceof Error ? err.message : String(err);
-      setMsg({
-        type: "error",
-        text: m.includes("duplicate") || m.includes("unique")
+      toast.error(
+        m.includes("duplicate") || m.includes("unique")
           ? "Die gebruikersnaam is al bezet."
           : m,
-      });
+      );
     } finally {
       setBusy(false);
     }
@@ -177,7 +155,6 @@ function NameCard({
   return (
     <section className="card">
       <h2 className="card__title">Naam</h2>
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
       <form className="stack" onSubmit={save}>
         <label className="label">
           Gebruikersnaam
@@ -209,23 +186,19 @@ function NameCard({
 
 /* ---------- E-mail ---------- */
 function EmailCard({ currentEmail }: { currentEmail: string }) {
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setMsg(null);
     try {
       await changeEmail(email);
-      setMsg({
-        type: "success",
-        text: "Bevestig de wijziging via de link in je mailbox (lokaal: Mailpit).",
-      });
+      toast.success("Bevestig de wijziging via de link in je mailbox (lokaal: Mailpit).");
       setEmail("");
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -234,7 +207,6 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
   return (
     <section className="card">
       <h2 className="card__title">E-mailadres</h2>
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
       <p className="page-subtitle" style={{ marginBottom: "0.75rem" }}>
         Huidig: <strong>{currentEmail}</strong>
       </p>
@@ -262,28 +234,27 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
 
 /* ---------- Wachtwoord ---------- */
 function PasswordCard({ email }: { email: string }) {
+  const toast = useToast();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setMsg(null);
     if (next.length < 6)
-      return setMsg({ type: "error", text: "Nieuw wachtwoord: minstens 6 tekens." });
+      return toast.error("Nieuw wachtwoord: minstens 6 tekens.");
     if (next !== confirm)
-      return setMsg({ type: "error", text: "De nieuwe wachtwoorden komen niet overeen." });
+      return toast.error("De nieuwe wachtwoorden komen niet overeen.");
     setBusy(true);
     try {
       await changePassword(email, current, next);
-      setMsg({ type: "success", text: "Wachtwoord gewijzigd." });
+      toast.success("Wachtwoord gewijzigd.");
       setCurrent("");
       setNext("");
       setConfirm("");
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -292,7 +263,6 @@ function PasswordCard({ email }: { email: string }) {
   return (
     <section className="card">
       <h2 className="card__title">Wachtwoord</h2>
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
       <form className="stack" onSubmit={save}>
         <label className="label">
           Huidig wachtwoord

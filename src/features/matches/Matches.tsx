@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useRealtime } from "../../lib/useRealtime";
+import { useToast } from "../../components/ToastProvider";
+import { Skeleton } from "../../components/Skeleton";
 import {
   getRecentMatches,
   getTeamsMap,
@@ -30,10 +33,12 @@ export function Matches() {
     ...accepted.map((f) => pmap[otherId(f, myId)]),
   ].filter(Boolean) as Profile[];
 
-  function reloadAll() {
+  const reloadAll = useCallback(() => {
     matches.reload();
     teams.reload();
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches.reload, teams.reload]);
+  useRealtime("matches", reloadAll);
 
   return (
     <div>
@@ -46,7 +51,7 @@ export function Matches() {
 
       <section className="card">
         <h2 className="card__title">Recente matches</h2>
-        {matches.loading && <p className="empty">Laden…</p>}
+        {matches.loading && <Skeleton rows={4} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList matches={matches.data ?? []} teams={tmap} profiles={pmap} />
@@ -70,9 +75,7 @@ function AddMatchForm({
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(
-    null,
-  );
+  const toast = useToast();
 
   const chosen = [a1, a2, b1, b2].filter(Boolean);
   const allChosen = chosen.length === 4;
@@ -80,15 +83,13 @@ function AddMatchForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setMsg(null);
-    if (!allChosen) return setMsg({ type: "error", text: "Kies vier spelers." });
+    if (!allChosen) return toast.error("Kies vier spelers.");
     if (!distinct)
-      return setMsg({ type: "error", text: "De vier spelers moeten verschillend zijn." });
+      return toast.error("De vier spelers moeten verschillend zijn.");
 
     const sa = scoreA === "" ? null : Number(scoreA);
     const sb = scoreB === "" ? null : Number(scoreB);
-    if (sa === null || sb === null)
-      return setMsg({ type: "error", text: "Vul de eindscore in." });
+    if (sa === null || sb === null) return toast.error("Vul de eindscore in.");
 
     // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
     const winner: "a" | "b" | "draw" = sa === sb ? "draw" : sa > sb ? "a" : "b";
@@ -104,7 +105,7 @@ function AddMatchForm({
         scoreA: sa,
         scoreB: sb,
       });
-      setMsg({ type: "success", text: "Match toegevoegd." });
+      toast.success("Match toegevoegd.");
       setA1("");
       setA2("");
       setB1("");
@@ -113,7 +114,7 @@ function AddMatchForm({
       setScoreB("");
       onCreated();
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -137,7 +138,6 @@ function AddMatchForm({
           vrienden toe om een volledige match (4 spelers) te loggen.
         </p>
       )}
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
       <form onSubmit={submit} className="stack">
         <div className="grid grid--2">
           <div className="stack">

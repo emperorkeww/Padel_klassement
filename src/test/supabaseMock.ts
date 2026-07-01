@@ -51,5 +51,13 @@ export function makeSupabaseMock(opts: MockOptions = {}) {
       makeQuery({ data: tables[table] ?? [], error: null }),
     ),
     rpc: vi.fn().mockResolvedValue({ data: rpc, error: null }),
+    // Realtime: chainable stub (channel().on().subscribe()).
+    channel: vi.fn(() => {
+      const ch: Record<string, unknown> = {};
+      ch.on = () => ch;
+      ch.subscribe = () => ch;
+      return ch;
+    }),
+    removeChannel: vi.fn(),
   };
 }

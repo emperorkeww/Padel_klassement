@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useRealtime } from "../../lib/useRealtime";
+import { useToast } from "../../components/ToastProvider";
+import { Skeleton } from "../../components/Skeleton";
 import {
   getMyFriendships,
   sendFriendRequest,
@@ -23,13 +26,12 @@ export function Friends() {
 
   const friendships = useAsync(getMyFriendships, []);
   const profiles = useAsync(getProfilesMap, []);
+  useRealtime("friendships", friendships.reload);
 
+  const toast = useToast();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
-  const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(
-    null,
-  );
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
@@ -42,25 +44,22 @@ export function Friends() {
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
     setSearching(true);
-    setMsg(null);
     try {
       setResults(await searchProfiles(query, myId));
     } catch (err) {
-      setMsg({ type: "error", text: errMsg(err) });
+      toast.error(errMsg(err));
     } finally {
       setSearching(false);
     }
   }
 
   async function act(fn: () => Promise<void>, ok: string) {
-    setMsg(null);
     try {
       await fn();
-      setMsg({ type: "success", text: ok });
+      toast.success(ok);
       friendships.reload();
-      setResults((r) => r.filter(Boolean)); // laat resultaten staan; relatedIds herberekent
     } catch (err) {
-      setMsg({ type: "error", text: errMsg(err) });
+      toast.error(errMsg(err));
     }
   }
 
@@ -72,8 +71,6 @@ export function Friends() {
           Zoek spelers, stuur verzoeken en beheer je vrienden.
         </p>
       </header>
-
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
 
       <div className="grid grid--2">
         <section className="card">
@@ -177,7 +174,7 @@ export function Friends() {
       <section className="card">
         <h2 className="card__title">Mijn vrienden</h2>
         <div className="stack">
-          {friendships.loading && <p className="empty">Laden…</p>}
+          {friendships.loading && <Skeleton rows={3} />}
           {!friendships.loading && accepted.length === 0 && (
             <p className="empty">Nog geen vrienden. Zoek hierboven een speler.</p>
           )}

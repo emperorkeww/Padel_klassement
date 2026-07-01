@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useRealtime } from "../../lib/useRealtime";
+import { useToast } from "../../components/ToastProvider";
+import { Skeleton } from "../../components/Skeleton";
 import {
   getGroup,
   getGroupMembers,
@@ -37,9 +40,16 @@ export function GroupDetail() {
   const teams = useAsync(getTeamsMap, []);
   const friendships = useAsync(getMyFriendships, []);
 
-  const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(
-    null,
-  );
+  const onMatches = useCallback(() => {
+    matches.reload();
+    standings.reload();
+    teams.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches.reload, standings.reload, teams.reload]);
+  useRealtime("matches", onMatches);
+  useRealtime("group_members", members.reload);
+
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
 
   const pmap = profiles.data ?? {};
@@ -54,17 +64,16 @@ export function GroupDetail() {
     .filter((pid) => !memberIds.has(pid));
 
   async function act(fn: () => Promise<unknown>, ok: string) {
-    setMsg(null);
     setBusy(true);
     try {
       await fn();
-      setMsg({ type: "success", text: ok });
+      toast.success(ok);
       members.reload();
       matches.reload();
       standings.reload();
       teams.reload();
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -73,7 +82,12 @@ export function GroupDetail() {
   // matches per ronde (aflopend)
   const rounds = groupByRound(matches.data ?? []);
 
-  if (group.loading) return <p className="empty">Laden…</p>;
+  if (group.loading)
+    return (
+      <div className="card">
+        <Skeleton rows={4} />
+      </div>
+    );
   if (!group.data)
     return (
       <p className="msg msg--error">Groep niet gevonden of geen toegang.</p>
@@ -92,8 +106,6 @@ export function GroupDetail() {
           {memberList.length} leden{isOwner ? " · jij bent eigenaar" : ""}
         </p>
       </header>
-
-      {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
 
       <div className="grid grid--2">
         <section className="card">

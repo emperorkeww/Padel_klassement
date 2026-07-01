@@ -5,8 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "../features/auth/AuthProvider";
 
-// Supabase-client mocken zodat de test geen netwerkcall doet.
-vi.mock("./lib/supabase", () => ({
+// Supabase-client mocken zodat de test geen echte client aanmaakt/netwerkcall doet.
+// Pad is relatief t.o.v. src/app/ -> ../lib/supabase.
+vi.mock("../lib/supabase", () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
@@ -16,6 +17,7 @@ vi.mock("./lib/supabase", () => ({
       signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
       signUp: vi.fn().mockResolvedValue({ error: null }),
       resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     },
   },
 }));

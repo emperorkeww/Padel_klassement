@@ -2,31 +2,30 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useToast } from "../../components/ToastProvider";
+import { Skeleton } from "../../components/Skeleton";
 import { getMyGroups, createGroup } from "./api";
 
 export function Groups() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const groups = useAsync(getMyGroups, []);
+  const toast = useToast();
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(
-    null,
-  );
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     setBusy(true);
-    setMsg(null);
     try {
       await createGroup(name, myId);
       setName("");
-      setMsg({ type: "success", text: "Groep aangemaakt." });
+      toast.success("Groep aangemaakt.");
       groups.reload();
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -43,7 +42,6 @@ export function Groups() {
 
       <section className="card">
         <h2 className="card__title">Nieuwe groep</h2>
-        {msg && <p className={`msg msg--${msg.type}`}>{msg.text}</p>}
         <form className="row-between" onSubmit={create}>
           <input
             className="input"
@@ -59,7 +57,7 @@ export function Groups() {
 
       <section className="card">
         <h2 className="card__title">Mijn groepen</h2>
-        {groups.loading && <p className="empty">Laden…</p>}
+        {groups.loading && <Skeleton rows={3} />}
         {groups.error && <p className="msg msg--error">{groups.error}</p>}
         {!groups.loading && (groups.data ?? []).length === 0 && (
           <p className="empty">Je zit nog in geen enkele groep.</p>

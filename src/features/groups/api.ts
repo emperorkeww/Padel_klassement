@@ -27,7 +27,7 @@ export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
     .select("*")
     .eq("group_id", groupId);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as GroupMember[];
 }
 
 export async function createGroup(

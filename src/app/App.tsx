@@ -5,6 +5,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
 const LoginScreen = lazy(() => import("../features/auth/LoginScreen"));
+const ResetPassword = lazy(() => import("../features/auth/ResetPassword"));
 const Dashboard = lazy(() => import("../features/dashboard/Dashboard"));
 const Leaderboard = lazy(() => import("../features/standings/Leaderboard"));
 const Matches = lazy(() => import("../features/matches/Matches"));
@@ -20,6 +21,7 @@ function App() {
     <Suspense fallback={<div className="route-loading">Laden…</div>}>
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
+        <Route path="/reset-wachtwoord" element={<ResetPassword />} />
 
         {/* Beschermde routes delen de dashboard-shell (topbar + navigatie). */}
         <Route element={<ProtectedRoute />}>
