@@ -1,0 +1,11 @@
+# Gehashte build-assets zijn onveranderlijk → lang cachen.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Security-headers voor alle responses.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Permissions-Policy: geolocation=(), camera=(), microphone=()
