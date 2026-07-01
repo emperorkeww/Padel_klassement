@@ -2,6 +2,10 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Service worker altijd revalideren, zodat updates meteen doorkomen.
+/sw.js
+  Cache-Control: no-cache
+
 # Security-headers voor alle responses.
 /*
   X-Content-Type-Options: nosniff
