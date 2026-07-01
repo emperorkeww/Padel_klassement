@@ -1,5 +1,4 @@
 -- pgTAP-tests voor public.profiles
--- Draaien met: supabase test db
 begin;
 
 select plan(6);
