@@ -1,0 +1,198 @@
+/* Header: titel links, reserveer-knop rechtsboven. */
+.avail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.avail-book {
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 0.5rem;
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(17, 24, 39, 0.06));
+}
+
+.avail-book:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.avail-book__logo {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.avail-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.avail-quick {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.avail-date {
+  max-width: 200px;
+}
+
+.avail-day {
+  color: var(--ink-soft);
+  text-transform: capitalize;
+  margin: 0 0 1rem;
+}
+
+/* ---- Tijdraster (Excel-achtig) ---- */
+
+.avail-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.avail-table {
+  --court-col: 130px;
+  --slot-col: 40px;
+  display: grid;
+  min-width: max-content;
+}
+
+/* Kop-cellen */
+.avail-corner {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+  border-right: 1px solid var(--line-strong);
+}
+
+.avail-time {
+  padding: 0.5rem 0 0.4rem;
+  text-align: left;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line);
+}
+
+.avail-time.is-hour {
+  border-left: 1px solid var(--line-strong);
+  padding-left: 0.3rem;
+}
+
+/* Rij-kop: baannaam, blijft links plakken bij horizontaal scrollen */
+.avail-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+}
+
+.avail-rowhead__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.15;
+}
+
+.avail-rowhead__type {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+/* Slot-cellen */
+.avail-cell {
+  height: 44px;
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.avail-cell.is-hour {
+  border-left: 1px solid var(--line-strong);
+}
+
+.avail-cell--free {
+  /* Groen uit het palet = vrij. */
+  background: var(--success);
+  cursor: pointer;
+}
+
+.avail-cell--free:hover {
+  filter: brightness(1.08);
+}
+
+/* Zwevende pop-up met het vrije interval, volgt de muis (position: fixed). */
+.avail-tip {
+  position: fixed;
+  z-index: 50;
+  transform: translate(-50%, calc(-100% - 12px));
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.25);
+}
+
+.avail-cell--busy {
+  /* Grijze diagonale strepen (palet-tokens) = geboekt. */
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--line-strong),
+    var(--line-strong) 5px,
+    var(--ink-soft) 5px,
+    var(--ink-soft) 10px
+  );
+}
+
+/* ---- Legenda & voetnoot ---- */
+
+.avail-legend {
+  display: flex;
+  gap: 1.25rem;
+  margin: 0.9rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.avail-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.avail-legend__swatch {
+  width: 22px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+}
+
+.avail-note {
+  margin-top: 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.avail-note a {
+  color: var(--accent);
+}

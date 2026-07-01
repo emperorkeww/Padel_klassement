@@ -15,6 +15,7 @@ const Friends = lazy(() => import("../features/friends/Friends"));
 const PlayerProfile = lazy(() => import("../features/profiles/PlayerProfile"));
 const MatchDetail = lazy(() => import("../features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("../features/account/ProfileSettings"));
+const Availability = lazy(() => import("../features/availability/Availability"));
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/klassement" element={<Leaderboard />} />
             <Route path="/matches" element={<Matches />} />
+            <Route path="/banen" element={<Availability />} />
             <Route path="/matches/:id" element={<MatchDetail />} />
             <Route path="/groepen" element={<Groups />} />
             <Route path="/groepen/:id" element={<GroupDetail />} />

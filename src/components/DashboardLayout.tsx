@@ -9,6 +9,7 @@ const NAV: { to: string; label: string; end?: boolean; icon: ReactNode }[] = [
   { to: "/", label: "Overzicht", end: true, icon: <IconHome /> },
   { to: "/klassement", label: "Klassement", icon: <IconTrophy /> },
   { to: "/matches", label: "Matches", icon: <IconRacket /> },
+  { to: "/banen", label: "Banen", icon: <IconCourt /> },
   { to: "/groepen", label: "Groepen", icon: <IconUsers /> },
   { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> },
   { to: "/profiel", label: "Profiel", icon: <IconUser /> },
@@ -83,6 +84,14 @@ function IconRacket() {
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="9.5" cy="9.5" r="6" />
       <path d="M5.3 13.7 3 21M9.5 5.5v8M5.5 9.5h8" />
+    </svg>
+  );
+}
+function IconCourt() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <path d="M12 5v14M3 12h18M7 9.5v5M17 9.5v5" />
     </svg>
   );
 }
