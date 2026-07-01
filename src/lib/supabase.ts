@@ -11,4 +11,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Sessie bewaren + token automatisch verversen (standaard, expliciet gemaakt).
+    persistSession: true,
+    autoRefreshToken: true,
+    // PKCE is de veilige OAuth-flow voor SPA's; vangt ook de
+    // redirect-tokens op na Google/Apple-login.
+    flowType: "pkce",
+    detectSessionInUrl: true,
+  },
+});
