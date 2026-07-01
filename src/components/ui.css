@@ -124,6 +124,13 @@
 }
 
 /* ---------- Tabel ---------- */
+/* Brede tabellen scrollen binnen hun eigen container i.p.v. de hele pagina
+   horizontaal te laten overlopen (dat liet o.a. de mobiele footer verschuiven). */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -426,6 +433,73 @@
 }
 .explainer__body dd {
   margin: 0;
+}
+
+/* ---------- Mobiel: compactere, beter passende layout voor álle pagina's ---------- */
+@media (max-width: 640px) {
+  /* Iets kleinere titels; besparen verticale ruimte en voorkomen rare wrap. */
+  .page-title {
+    font-size: 1.4rem;
+  }
+  .page-head {
+    margin-bottom: 1.25rem;
+  }
+
+  /* Kaarten compacter → meer bruikbare breedte voor inhoud/tabellen. */
+  .card {
+    padding: 1.05rem;
+  }
+
+  /* Kop + actie mogen netjes afbreken i.p.v. buiten beeld lopen. */
+  .row-between {
+    flex-wrap: wrap;
+  }
+
+  /* Tabellen dichter zetten zodat brede rijen (bv. klassement) passen. */
+  .table {
+    font-size: 0.85rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.55rem 0.4rem;
+  }
+  .table th {
+    font-size: 0.64rem;
+    letter-spacing: 0.02em;
+  }
+  /* Klassement: secundaire kolommen verbergen zodat naam + punten passen
+     zonder horizontaal te hoeven scrollen (details staan op het spelersprofiel). */
+  .col-sec {
+    display: none;
+  }
+
+  /* Stat-kaarten blijven 2×2 maar worden minder hoog. */
+  .stats {
+    gap: 0.75rem;
+  }
+  .stat {
+    padding: 0.9rem 0.95rem;
+  }
+  .stat__value {
+    font-size: 1.55rem;
+  }
+
+  /* Tabs + filter (bv. klassement): elk op een eigen volle regel. */
+  .row-between > .tabs {
+    flex: 1 1 100%;
+  }
+  .row-between > .select {
+    flex: 1 1 100%;
+    max-width: none !important;
+  }
+
+  /* Zoek-/aanmaakbalken: het invoerveld deelt de regel met de knop
+     (i.p.v. dat de volle-breedte-input de knop naar de volgende regel duwt). */
+  .row-between > .input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
 }
 
 /* ---------- Toegankelijke focus-states ---------- */
