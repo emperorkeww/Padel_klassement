@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAsync } from "../../lib/useAsync";
+import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
 import { getClubAvailability, bookingUrl, CLUB_NAME, type DayAvailability } from "./api";
 import { Timetable, localDate } from "./Timetable";
@@ -20,6 +21,8 @@ export function Availability() {
     () => getClubAvailability(date),
     [date],
   );
+  // Ververs de (Playtomic-)beschikbaarheid zodra de gebruiker terugkeert.
+  useRefetchOnFocus(availability.reload);
 
   return (
     <div>
