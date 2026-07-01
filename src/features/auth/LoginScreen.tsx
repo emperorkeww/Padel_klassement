@@ -76,13 +76,6 @@ export function LoginScreen() {
     setMessage(msg);
   }
 
-  async function handleOAuth(provider: "google" | "apple") {
-    setStatus("loading");
-    setMessage("");
-    const { error } = await supabase.auth.signInWithOAuth({ provider });
-    if (error) fail(error.message);
-  }
-
   const loading = status === "loading";
   const isForgot = mode === "forgot";
   const isSignup = mode === "signup";
@@ -141,34 +134,6 @@ export function LoginScreen() {
               Registreren
             </button>
           </div>
-        )}
-
-        {!isForgot && (
-          <>
-            <div className="login-social">
-              <button
-                type="button"
-                className="social-btn"
-                onClick={() => handleOAuth("google")}
-                disabled={loading}
-              >
-                <GoogleIcon />
-                Doorgaan met Google
-              </button>
-              <button
-                type="button"
-                className="social-btn"
-                onClick={() => handleOAuth("apple")}
-                disabled={loading}
-              >
-                <AppleIcon />
-                Doorgaan met Apple
-              </button>
-            </div>
-            <div className="login-divider">
-              <span>of met e-mail</span>
-            </div>
-          </>
         )}
 
         <form className="login-form" onSubmit={handleSubmit} noValidate>
@@ -305,37 +270,6 @@ function BallIcon() {
         fill="none"
         strokeLinecap="round"
       />
-    </svg>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1 .7-2.4 1.1-4 1.1-3 0-5.6-2-6.5-4.8H1.5v3.1A12 12 0 0 0 12 24z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.5 14.4a7.2 7.2 0 0 1 0-4.6V6.7H1.5a12 12 0 0 0 0 10.8l4-3.1z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.5 6.7l4 3.1C6.4 6.8 9 4.8 12 4.8z"
-      />
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#000">
-      <path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.5.8-.7 0-1.9-.8-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2-.1 1.6-.8 3-.8 1.4 0 1.8.8 3 .7 1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.7zM14.1 5.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.8-1.3z" />
     </svg>
   );
 }
