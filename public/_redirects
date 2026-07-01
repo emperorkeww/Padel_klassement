@@ -1,3 +1,5 @@
-# SPA-fallback: alle paden naar index.html zodat client-side routes
-# (bijv. /login) blijven werken bij refresh en deep-links.
-/*  /index.html  200
+# SPA-fallback wordt bij een Workers-deploy geregeld via wrangler.jsonc
+# (assets.not_found_handling = "single-page-application"), niet hier.
+# Een /* -> /index.html 200 regel wordt door de Workers asset-router
+# afgekeurd als oneindige lus (code 100324). Voeg hier alleen echte
+# redirects toe indien nodig.
