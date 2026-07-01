@@ -38,3 +38,11 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
+
+/* Mobiel: iets kleinere naam; badge mag naast de naam afbreken. */
+@media (max-width: 640px) {
+  .profile-hero__name {
+    font-size: 1.25rem;
+    flex-wrap: wrap;
+  }
+}
