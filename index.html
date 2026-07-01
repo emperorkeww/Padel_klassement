@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Webproject</title>
+    <meta name="theme-color" content="#2563eb" />
+    <meta
+      name="description"
+      content="Padelclub — log in, reserveer een baan en volg je wedstrijden."
+    />
+
+    <!--
+      Start de DNS/TLS-handshake naar Supabase vroeg, zodat de eerste
+      auth-request sneller is. Vite vult %VITE_SUPABASE_URL% bij de build in.
+    -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
+
+    <title>Padelclub</title>
   </head>
   <body>
     <div id="root"></div>

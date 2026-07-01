@@ -55,11 +55,3 @@
   color: #6b7280;
   font-size: 1rem;
 }
-
-.route-loading {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  color: #6b7280;
-  background: #f6f7f9;
-}
