@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
 import { AuthProvider } from "../auth/AuthProvider";
+import { ToastProvider } from "../../components/ToastProvider";
 
 vi.mock("../../lib/supabase", () => ({
   supabase: makeSupabaseMock({
@@ -27,7 +28,9 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <AuthProvider>
-        <Friends />
+        <ToastProvider>
+          <Friends />
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );

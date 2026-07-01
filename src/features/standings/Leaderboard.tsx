@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useRealtime } from "../../lib/useRealtime";
+import { Skeleton } from "../../components/Skeleton";
 import {
   getPlayerStandings,
   getTeamStandings,
@@ -27,6 +29,15 @@ export function Leaderboard() {
   const teams = useAsync(getTeamStandings, []);
   const teamsMap = useAsync(getTeamsMap, []);
   const profilesMap = useAsync(getProfilesMap, []);
+
+  // Live bijwerken bij nieuwe/aangepaste matches.
+  const refresh = useCallback(() => {
+    players.reload();
+    teams.reload();
+    teamsMap.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players.reload, teams.reload, teamsMap.reload]);
+  useRealtime("matches", refresh);
 
   return (
     <div>
@@ -186,7 +197,7 @@ function StandingsTable({
   loading: boolean;
   error: string | null;
 }) {
-  if (loading) return <p className="empty">Laden…</p>;
+  if (loading) return <Skeleton rows={5} />;
   if (error) return <p className="msg msg--error">{error}</p>;
   if (rows.length === 0)
     return <p className="empty">Nog geen afgeronde matches.</p>;

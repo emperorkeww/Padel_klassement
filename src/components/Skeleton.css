@@ -1,0 +1,36 @@
+.skeleton {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+}
+
+.skeleton__row {
+  height: 1.25rem;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    #eceef3 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+.skeleton__row:nth-child(even) {
+  width: 85%;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__row {
+    animation: none;
+  }
+}

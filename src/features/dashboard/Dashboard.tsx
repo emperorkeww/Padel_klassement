@@ -1,6 +1,9 @@
+import { useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useRealtime } from "../../lib/useRealtime";
+import { Skeleton } from "../../components/Skeleton";
 import { getPlayerStandings } from "../standings/api";
 import { getRecentMatches, getTeamsMap } from "../matches/api";
 import { getMyFriendships, categorize } from "../friends/api";
@@ -17,6 +20,16 @@ export function Dashboard() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
+
+  const onMatches = useCallback(() => {
+    standings.reload();
+    matches.reload();
+    teams.reload();
+    // reload-functies zijn stabiel; bewust niet de hele async-objecten.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [standings.reload, matches.reload, teams.reload]);
+  useRealtime("matches", onMatches);
+  useRealtime("friendships", friendships.reload);
 
   const pmap = profiles.data ?? {};
   const rows = standings.data ?? [];
@@ -67,7 +80,7 @@ export function Dashboard() {
             </Link>
           </div>
           {matches.loading ? (
-            <p className="empty">Laden…</p>
+            <Skeleton rows={4} />
           ) : (
             <MatchList
               matches={matches.data ?? []}

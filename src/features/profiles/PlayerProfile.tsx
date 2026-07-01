@@ -6,6 +6,7 @@ import { getProfilesMap } from "./api";
 import { getPlayerStanding } from "../standings/api";
 import { getPlayerMatches, getTeamsMap } from "../matches/api";
 import { MatchList } from "../matches/MatchList";
+import { Skeleton } from "../../components/Skeleton";
 import "./PlayerProfile.css";
 
 export function PlayerProfile() {
@@ -19,7 +20,12 @@ export function PlayerProfile() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
 
-  if (profile.loading) return <p className="empty">Laden…</p>;
+  if (profile.loading)
+    return (
+      <div className="card">
+        <Skeleton rows={4} />
+      </div>
+    );
   if (!profile.data)
     return <p className="msg msg--error">Speler niet gevonden.</p>;
 
@@ -57,7 +63,7 @@ export function PlayerProfile() {
 
       <section className="card">
         <h2 className="card__title">Recente matches</h2>
-        {matches.loading && <p className="empty">Laden…</p>}
+        {matches.loading && <Skeleton rows={3} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList
