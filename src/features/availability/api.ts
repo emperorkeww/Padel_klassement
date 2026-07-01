@@ -9,17 +9,45 @@ const TENANT_ID = "91d8d419-3736-498e-90be-362de786d588";
 const BASE = "/api/playtomic";
 
 export const CLUB_NAME = "LAGO CLUB Padel Beveren";
-export const CLUB_URL =
-  "https://playtomic.com/clubs/lago-club-padel-beveren?q=PADEL~";
+const CLUB_SLUG = "lago-club-padel-beveren";
+
+/**
+ * Deep-link naar de Playtomic-clubpagina, voorgevuld op de gekozen dag.
+ * De clubpagina leest alleen ?sport= en ?date= uit de URL; een specifiek uur
+ * kan niet vooraf geselecteerd worden.
+ */
+export function bookingUrl(date: string): string {
+  const params = new URLSearchParams({ sport: "PADEL", date });
+  return `https://playtomic.com/clubs/${CLUB_SLUG}?${params.toString()}`;
+}
+
+// Playtomic gebruikt Engelse weekdagnamen als sleutel in opening_hours.
+const WEEKDAY_KEYS = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+];
 
 export type Court = { id: string; name: string; type: string };
-export type TimeSlot = { time: string; durations: number[] };
-export type CourtAvailability = { court: Court; times: TimeSlot[] };
+export type CourtRow = { court: Court; free: Set<string> };
+export type DayAvailability = {
+  open: string; // "HH:MM"
+  close: string; // "HH:MM"
+  courts: CourtRow[];
+};
 
 type RawResource = {
   resource_id: string;
   name: string;
   properties?: { resource_type?: string };
+};
+type RawTenant = {
+  resources?: RawResource[];
+  opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
 };
 type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; slots?: RawSlot[] };
@@ -30,18 +58,6 @@ async function getJson<T>(path: string, foutmelding: string): Promise<T> {
   });
   if (!res.ok) throw new Error(`${foutmelding} (status ${res.status}).`);
   return res.json() as Promise<T>;
-}
-
-async function getCourts(): Promise<Court[]> {
-  const data = await getJson<{ resources?: RawResource[] }>(
-    `/v1/tenants/${TENANT_ID}`,
-    "Kon de clubgegevens niet laden",
-  );
-  return (data.resources ?? []).map((r) => ({
-    id: r.resource_id,
-    name: r.name,
-    type: r.properties?.resource_type ?? "",
-  }));
 }
 
 async function getSlotsByCourt(date: string): Promise<Record<string, RawSlot[]>> {
@@ -64,29 +80,37 @@ async function getSlotsByCourt(date: string): Promise<Record<string, RawSlot[]>>
 }
 
 /**
- * Haalt per baan de vrije starttijden op voor een dag (YYYY-MM-DD).
- * Slots met dezelfde starttijd (maar verschillende duur) worden samengevoegd
- * tot één tijd met de beschikbare duren, zodat de weergave leesbaar blijft.
+ * Haalt voor een dag (YYYY-MM-DD) de openingsuren en per baan de vrije
+ * starttijden op. Tijden die niet vrij zijn, zijn (in de weergave) geboekt of
+ * niet meer boekbaar.
  */
 export async function getClubAvailability(
   date: string,
-): Promise<CourtAvailability[]> {
-  const [courts, byCourt] = await Promise.all([
-    getCourts(),
+): Promise<DayAvailability> {
+  const [tenant, byCourt] = await Promise.all([
+    getJson<RawTenant>(`/v1/tenants/${TENANT_ID}`, "Kon de clubgegevens niet laden"),
     getSlotsByCourt(date),
   ]);
 
-  return courts.map((court) => {
-    const durationsByTime = new Map<string, Set<number>>();
-    for (const slot of byCourt[court.id] ?? []) {
-      const time = slot.start_time.slice(0, 5); // "HH:MM"
-      (durationsByTime.get(time) ?? durationsByTime.set(time, new Set()).get(time)!).add(
-        slot.duration,
-      );
+  const weekday = WEEKDAY_KEYS[new Date(`${date}T00:00:00`).getDay()];
+  const hours = tenant.opening_hours?.[weekday];
+  const open = hours?.opening_time ?? "08:00";
+  const close = hours?.closing_time ?? "23:00";
+
+  const courts: CourtRow[] = (tenant.resources ?? []).map((r) => {
+    const free = new Set<string>();
+    for (const slot of byCourt[r.resource_id] ?? []) {
+      free.add(slot.start_time.slice(0, 5)); // "HH:MM"
     }
-    const times = [...durationsByTime.entries()]
-      .map(([time, durs]) => ({ time, durations: [...durs].sort((a, b) => a - b) }))
-      .sort((a, b) => a.time.localeCompare(b.time));
-    return { court, times };
+    return {
+      court: {
+        id: r.resource_id,
+        name: r.name,
+        type: r.properties?.resource_type ?? "",
+      },
+      free,
+    };
   });
+
+  return { open, close, courts };
 }
