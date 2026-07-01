@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { makeSupabaseMock } from "../test/supabaseMock";
-import { AuthProvider } from "../features/auth/AuthProvider";
+import { makeSupabaseMock } from "../../test/supabaseMock";
+import { AuthProvider } from "../auth/AuthProvider";
 
-vi.mock("../lib/supabase", () => ({
+vi.mock("../../lib/supabase", () => ({
   supabase: makeSupabaseMock({
     session: { user: { id: "p1", email: "alice@example.com" } },
     tables: {

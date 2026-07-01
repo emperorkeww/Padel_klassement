@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import App from "./App";
-import { AuthProvider } from "./features/auth/AuthProvider";
+import { AuthProvider } from "../features/auth/AuthProvider";
 
 // Supabase-client mocken zodat de test geen netwerkcall doet.
 vi.mock("./lib/supabase", () => ({

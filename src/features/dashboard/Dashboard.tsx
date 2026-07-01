@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
-import { getPlayerStandings } from "../features/standings/api";
-import { getRecentMatches, getTeamsMap } from "../features/matches/api";
-import { getMyFriendships, categorize } from "../features/friends/api";
-import { getProfilesMap, displayName } from "../features/profiles/api";
-import { MatchList } from "../components/MatchList";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
+import { getPlayerStandings } from "../standings/api";
+import { getRecentMatches, getTeamsMap } from "../matches/api";
+import { getMyFriendships, categorize } from "../friends/api";
+import { getProfilesMap, displayName } from "../profiles/api";
+import { MatchList } from "../matches/MatchList";
 import "./Dashboard.css";
 
 export function Dashboard() {

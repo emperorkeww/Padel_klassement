@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
 import {
   getMyFriendships,
   sendFriendRequest,
@@ -9,13 +9,13 @@ import {
   removeFriendship,
   categorize,
   otherId,
-} from "../features/friends/api";
+} from "./api";
 import {
   getProfilesMap,
   searchProfiles,
   displayName,
-} from "../features/profiles/api";
-import type { Profile } from "../lib/types";
+} from "../profiles/api";
+import type { Profile } from "../../lib/types";
 
 export function Friends() {
   const { user } = useAuth();

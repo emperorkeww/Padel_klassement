@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
-import { useAsync } from "../lib/useAsync";
-import { getMyGroups, createGroup } from "../features/groups/api";
+import { useAuth } from "../auth/AuthProvider";
+import { useAsync } from "../../lib/useAsync";
+import { getMyGroups, createGroup } from "./api";
 
 export function Groups() {
   const { user } = useAuth();
