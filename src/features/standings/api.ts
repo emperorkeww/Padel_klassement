@@ -10,7 +10,8 @@ export async function getPlayerStandings(): Promise<PlayerStanding[]> {
     .order("won", { ascending: false })
     .order("username", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  // Views typen alle kolommen als nullable; in de praktijk zijn ze gevuld.
+  return (data ?? []) as PlayerStanding[];
 }
 
 export async function getPlayerStanding(
@@ -22,7 +23,7 @@ export async function getPlayerStanding(
     .eq("player_id", playerId)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  return data as PlayerStanding | null;
 }
 
 export async function getTeamStandings(): Promise<TeamStanding[]> {
@@ -33,7 +34,7 @@ export async function getTeamStandings(): Promise<TeamStanding[]> {
     .order("goal_diff", { ascending: false })
     .order("won", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as TeamStanding[];
 }
 
 export async function getGroupPlayerStandings(
@@ -49,5 +50,5 @@ export async function getGroupPlayerStandings(
     .order("goal_diff", { ascending: false })
     .order("won", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as PlayerStanding[];
 }
