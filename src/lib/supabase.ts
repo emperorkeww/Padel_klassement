@@ -1,0 +1,14 @@
+import { createClient } from "@supabase/supabase-js";
+
+// Waarden komen uit .env (zie .env.example). Vite exposeert alleen VITE_-prefixed vars.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  // Faalt luid tijdens dev als de env ontbreekt, i.p.v. stille runtime-fouten later.
+  console.warn(
+    "Supabase env ontbreekt: zet VITE_SUPABASE_URL en VITE_SUPABASE_ANON_KEY in .env",
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
