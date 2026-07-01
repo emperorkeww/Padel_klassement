@@ -473,15 +473,23 @@
     display: none;
   }
 
-  /* Stat-kaarten blijven 2×2 maar worden minder hoog. */
+  /* Stat-tegels: compacte rij van 4 i.p.v. grote vierkanten. */
   .stats {
-    gap: 0.75rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
   }
   .stat {
-    padding: 0.9rem 0.95rem;
+    padding: 0.7rem 0.35rem;
+    text-align: center;
+    justify-items: center;
+    gap: 0.15rem;
   }
   .stat__value {
-    font-size: 1.55rem;
+    font-size: 1.35rem;
+  }
+  .stat__label {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
   }
 
   /* Tabs + filter (bv. klassement): elk op een eigen volle regel. */
