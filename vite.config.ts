@@ -5,6 +5,17 @@ import react from "@vitejs/plugin-react";
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // Proxy naar Playtomic zodat de browser geen CORS-blokkade krijgt.
+      // In productie doet de Cloudflare Worker (worker/index.js) hetzelfde.
+      "/api/playtomic": {
+        target: "https://api.playtomic.io",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/playtomic/, ""),
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {

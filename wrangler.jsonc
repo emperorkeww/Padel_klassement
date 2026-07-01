@@ -2,8 +2,12 @@
   // Config voor deploy als Cloudflare Worker met static assets.
   "name": "vamos",
   "compatibility_date": "2026-07-01",
+  // Worker-script: serveert assets én proxyt /api/playtomic/* naar Playtomic.
+  "main": "worker/index.js",
   "assets": {
     "directory": "./dist",
+    // Binding zodat de Worker de static assets kan serveren (env.ASSETS).
+    "binding": "ASSETS",
     // SPA-fallback: serveer index.html voor onbekende paden (client-side routes
     // zoals /login blijven werken bij refresh/deep-links). Dit vervangt de
     // /* -> /index.html 200 regel in _redirects, die door de asset-router als

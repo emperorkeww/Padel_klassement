@@ -1,0 +1,70 @@
+.avail-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.avail-quick {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.avail-date {
+  max-width: 200px;
+}
+
+.avail-day {
+  color: var(--ink-soft);
+  text-transform: capitalize;
+  margin: 0 0 1.25rem;
+}
+
+.avail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.avail-court__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.avail-court__name {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.avail-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.avail-slot {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border: 1px solid var(--accent-line);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.avail-note {
+  margin-top: 1.5rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.avail-note a {
+  color: var(--accent);
+}
