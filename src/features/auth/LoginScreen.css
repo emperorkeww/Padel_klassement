@@ -226,15 +226,15 @@
 }
 
 .login-message--error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  border: 1px solid #f3c9c9;
+  color: var(--danger);
 }
 
 .login-message--success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
+  background: var(--success-soft);
+  border: 1px solid #bfe6cc;
+  color: var(--success);
 }
 
 /* ---------- Primaire knop ---------- */
