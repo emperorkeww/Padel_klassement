@@ -1,14 +1,25 @@
 <!DOCTYPE html>
 <html lang="nl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nieuw project</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <!-- Start hier -->
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d9488" />
+    <meta
+      name="description"
+      content="Vamos! — log in, reserveer een baan en volg je wedstrijden."
+    />
 
-  <script src="js/main.js"></script>
-</body>
+    <!--
+      Start de DNS/TLS-handshake naar Supabase vroeg, zodat de eerste
+      auth-request sneller is. Vite vult %VITE_SUPABASE_URL% bij de build in.
+    -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
+
+    <title>Vamos!</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
 </html>

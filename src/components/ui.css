@@ -1,0 +1,443 @@
+/* Gedeelde UI-bouwstenen — clean, indigo op wit. */
+
+/* ---------- Pagina-koppen ---------- */
+.page-head {
+  margin-bottom: 1.75rem;
+}
+.page-title {
+  margin: 0 0 0.3rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.page-subtitle {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+/* ---------- Kaarten ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.35rem;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+.card + .card {
+  margin-top: 1.25rem;
+}
+.card__title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------- Grid ---------- */
+.grid {
+  display: grid;
+  gap: 1.25rem;
+}
+@media (min-width: 720px) {
+  .grid--2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------- Knoppen ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s, opacity 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--ink-soft);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.btn--danger {
+  color: var(--danger);
+  border-color: #f3c9c9;
+  background: var(--surface);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: #e6a9a9;
+}
+.btn--sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+/* ---------- Formuliervelden ---------- */
+.input,
+.select {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.input::placeholder {
+  color: #9aa1ad;
+}
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ---------- Tabel ---------- */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.table th {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.table td.num,
+.table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table tbody tr:not(.is-me):hover td {
+  background: var(--surface-2);
+}
+.table tr.is-me td {
+  background: var(--accent-soft);
+}
+
+/* ---------- Badges ---------- */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+.badge--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+.badge--win {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: #bfe6cc;
+}
+
+/* ---------- Meldingen ---------- */
+.msg {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+.msg--error {
+  background: var(--danger-soft);
+  border: 1px solid #f3c9c9;
+  color: var(--danger);
+}
+.msg--success {
+  background: var(--success-soft);
+  border: 1px solid #bfe6cc;
+  color: var(--success);
+}
+
+/* ---------- Diverse ---------- */
+.empty {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+.profile-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.profile-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  margin-bottom: 1.25rem;
+}
+.tab {
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab.is-active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.1);
+}
+
+/* ---------- Stat-kaarten ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+@media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  display: grid;
+  gap: 0.2rem;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+.stat__value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.stat__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+/* ---------- Match-lijst ---------- */
+.matchlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.matchlist__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  flex-wrap: wrap;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.matchlist__item:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.matchlist__teams {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+}
+.matchlist__team {
+  color: var(--ink-soft);
+}
+.matchlist__team.is-win {
+  color: var(--ink);
+  font-weight: 700;
+}
+.matchlist__vs {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0.1rem 0.55rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.matchlist__meta {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* ---------- Inline uitslag-invoer (geplande match) ---------- */
+.result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+.result-row__teams {
+  font-size: 0.9rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+.result-row__form {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.result-row__hint {
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
+/* ---------- Uitleg-paneel (inklapbaar), o.a. voor het klassement ---------- */
+.explainer {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 0 0.9rem;
+  margin-bottom: 1.25rem;
+}
+.explainer > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.explainer > summary::-webkit-details-marker {
+  display: none;
+}
+.explainer > summary::before {
+  content: "?";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.explainer[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.explainer__body {
+  padding: 0.7rem 0 0.9rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+.explainer__body dl {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+.explainer__body dt {
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.1rem;
+}
+.explainer__body dd {
+  margin: 0;
+}
+
+/* ---------- Toegankelijke focus-states ---------- */
+.btn:focus-visible,
+.tab:focus-visible,
+.explainer > summary:focus-visible,
+.profile-link:focus-visible,
+.sidebar__link:focus-visible,
+.sidebar__signout:focus-visible,
+.sidebar__brand:focus-visible,
+.matchlist__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
