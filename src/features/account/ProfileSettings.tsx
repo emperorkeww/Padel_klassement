@@ -15,7 +15,7 @@ import type { Profile } from "../../lib/types";
 import "./ProfileSettings.css";
 
 export function ProfileSettings() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
 
@@ -41,6 +41,22 @@ export function ProfileSettings() {
 
       <EmailCard currentEmail={user?.email ?? ""} />
       <PasswordCard email={user?.email ?? ""} />
+
+      <section className="card">
+        <div className="row-between">
+          <div>
+            <h2 className="card__title" style={{ margin: 0 }}>
+              Sessie
+            </h2>
+            <p className="empty" style={{ padding: 0 }}>
+              Ingelogd als {user?.email}
+            </p>
+          </div>
+          <button className="btn btn--danger" onClick={() => signOut()}>
+            Uitloggen
+          </button>
+        </div>
+      </section>
 
       <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
     </div>
