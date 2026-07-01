@@ -186,20 +186,25 @@ export function GroupDetail() {
 
       <section className="card">
         <div className="row-between">
-          <h2 className="card__title" style={{ margin: 0 }}>
-            Americano-rondes
-          </h2>
+          <div>
+            <h2 className="card__title" style={{ margin: 0 }}>
+              Wedstrijdrondes
+            </h2>
+            <p className="page-subtitle" style={{ marginTop: "0.25rem" }}>
+              Verdeelt de leden willekeurig in teams en wedstrijden.
+            </p>
+          </div>
           <button
             className="btn btn--primary"
             disabled={busy || memberList.length < 4}
             onClick={() =>
               act(async () => {
                 const ids = await generateAmericanoRound(id);
-                if (ids.length === 0) throw new Error("Geen matches gegenereerd.");
+                if (ids.length === 0) throw new Error("Geen wedstrijden gegenereerd.");
               }, "Nieuwe ronde gegenereerd.")
             }
           >
-            Genereer Americano-ronde
+            Genereer ronde
           </button>
         </div>
         {memberList.length < 4 && (
@@ -260,67 +265,75 @@ function MatchRow({
   busy: boolean;
   onResult: (winner: "a" | "b", scoreA: number | null, scoreB: number | null) => void;
 }) {
-  const [winner, setWinner] = useState<"a" | "b">("a");
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
 
   const done = match.status === "completed";
   const aWon = match.winner_team_id === match.team_a_id;
+  const scored = match.score_a != null && match.score_b != null;
 
+  // Winnaar volgt uit de score; gelijkspel kan niet.
+  const saNum = sa === "" ? null : Number(sa);
+  const sbNum = sb === "" ? null : Number(sb);
+  const bothFilled = saNum !== null && sbNum !== null;
+  const tie = bothFilled && saNum === sbNum;
+  const valid = bothFilled && !tie;
+
+  // Afgeronde match: klikbare rij naar de detailpagina.
+  if (done) {
+    return (
+      <Link className="matchlist__item" to={`/matches/${match.id}`}>
+        <span className="matchlist__teams">
+          <span className={`matchlist__team ${aWon ? "is-win" : ""}`}>{labelA}</span>
+          <span className="matchlist__vs">
+            {scored ? `${match.score_a}–${match.score_b}` : "vs"}
+          </span>
+          <span className={`matchlist__team ${!aWon ? "is-win" : ""}`}>{labelB}</span>
+        </span>
+        <span className="matchlist__meta">
+          <span className="badge">details →</span>
+        </span>
+      </Link>
+    );
+  }
+
+  // Geplande match: alleen de score invoeren, winnaar volgt automatisch.
   return (
-    <div className="row-between" style={{ flexWrap: "wrap" }}>
-      <span>
-        <span className={done && aWon ? "badge badge--win" : ""}>{labelA}</span>{" "}
-        <span className="badge">vs</span>{" "}
-        <span className={done && !aWon ? "badge badge--win" : ""}>{labelB}</span>
+    <div className="result-row">
+      <span className="result-row__teams">
+        {labelA} <span className="matchlist__vs">vs</span> {labelB}
       </span>
-
-      {done ? (
-        <span className="badge">
-          {match.score_a != null && match.score_b != null
-            ? `${match.score_a}–${match.score_b}`
-            : "afgerond"}
-        </span>
-      ) : (
-        <span style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-          <select
-            className="select"
-            style={{ width: "auto" }}
-            value={winner}
-            onChange={(e) => setWinner(e.target.value as "a" | "b")}
-          >
-            <option value="a">A wint</option>
-            <option value="b">B wint</option>
-          </select>
-          <input
-            className="input"
-            style={{ width: 56 }}
-            type="number"
-            min="0"
-            placeholder="A"
-            value={sa}
-            onChange={(e) => setSa(e.target.value)}
-          />
-          <input
-            className="input"
-            style={{ width: 56 }}
-            type="number"
-            min="0"
-            placeholder="B"
-            value={sb}
-            onChange={(e) => setSb(e.target.value)}
-          />
-          <button
-            className="btn btn--primary btn--sm"
-            disabled={busy}
-            onClick={() =>
-              onResult(winner, sa === "" ? null : Number(sa), sb === "" ? null : Number(sb))
-            }
-          >
-            Opslaan
-          </button>
-        </span>
-      )}
+      <span className="result-row__form">
+        <input
+          className="input"
+          style={{ width: 56 }}
+          type="number"
+          min="0"
+          placeholder="A"
+          aria-label={`Score ${labelA}`}
+          value={sa}
+          onChange={(e) => setSa(e.target.value)}
+        />
+        <span className="matchlist__vs">–</span>
+        <input
+          className="input"
+          style={{ width: 56 }}
+          type="number"
+          min="0"
+          placeholder="B"
+          aria-label={`Score ${labelB}`}
+          value={sb}
+          onChange={(e) => setSb(e.target.value)}
+        />
+        {tie && <span className="result-row__hint">Gelijkspel kan niet</span>}
+        <button
+          className="btn btn--primary btn--sm"
+          disabled={busy || !valid}
+          onClick={() => onResult(saNum! > sbNum! ? "a" : "b", saNum, sbNum)}
+        >
+          Opslaan
+        </button>
+      </span>
     </div>
   );
 }

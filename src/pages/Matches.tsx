@@ -67,7 +67,6 @@ function AddMatchForm({
   const [a2, setA2] = useState("");
   const [b1, setB1] = useState("");
   const [b2, setB2] = useState("");
-  const [winner, setWinner] = useState<"a" | "b">("a");
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,6 +84,17 @@ function AddMatchForm({
     if (!allChosen) return setMsg({ type: "error", text: "Kies vier spelers." });
     if (!distinct)
       return setMsg({ type: "error", text: "De vier spelers moeten verschillend zijn." });
+
+    const sa = scoreA === "" ? null : Number(scoreA);
+    const sb = scoreB === "" ? null : Number(scoreB);
+    if (sa === null || sb === null)
+      return setMsg({ type: "error", text: "Vul de eindscore in." });
+    if (sa === sb)
+      return setMsg({ type: "error", text: "Gelijkspel kan niet — de scores moeten verschillen." });
+
+    // Winnaar volgt uit de score.
+    const winner: "a" | "b" = sa > sb ? "a" : "b";
+
     setBusy(true);
     try {
       await createCompletedMatch({
@@ -93,8 +103,8 @@ function AddMatchForm({
         b1,
         b2,
         winner,
-        scoreA: scoreA === "" ? null : Number(scoreA),
-        scoreB: scoreB === "" ? null : Number(scoreB),
+        scoreA: sa,
+        scoreB: sb,
       });
       setMsg({ type: "success", text: "Match toegevoegd." });
       setA1("");
@@ -144,40 +154,33 @@ function AddMatchForm({
           </div>
         </div>
 
-        <div className="grid grid--2">
-          <label className="label">
-            Winnaar
-            <select
-              className="select"
-              value={winner}
-              onChange={(e) => setWinner(e.target.value as "a" | "b")}
-            >
-              <option value="a">Team A</option>
-              <option value="b">Team B</option>
-            </select>
-          </label>
-          <label className="label">
-            Eindscore (optioneel)
-            <span style={{ display: "flex", gap: "0.5rem" }}>
-              <input
-                className="input"
-                type="number"
-                min="0"
-                placeholder="A"
-                value={scoreA}
-                onChange={(e) => setScoreA(e.target.value)}
-              />
-              <input
-                className="input"
-                type="number"
-                min="0"
-                placeholder="B"
-                value={scoreB}
-                onChange={(e) => setScoreB(e.target.value)}
-              />
-            </span>
-          </label>
-        </div>
+        <label className="label">
+          Eindscore
+          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center", maxWidth: 240 }}>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Team A"
+              aria-label="Score team A"
+              value={scoreA}
+              onChange={(e) => setScoreA(e.target.value)}
+            />
+            <span className="matchlist__vs">–</span>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Team B"
+              aria-label="Score team B"
+              value={scoreB}
+              onChange={(e) => setScoreB(e.target.value)}
+            />
+          </span>
+          <span className="page-subtitle" style={{ fontSize: "0.8rem" }}>
+            De winnaar wordt bepaald door de hoogste score.
+          </span>
+        </label>
 
         <div>
           <button className="btn btn--primary" disabled={busy}>
