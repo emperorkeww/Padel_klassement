@@ -1,0 +1,12 @@
+{
+  "name": "webproject",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Nieuw webproject",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  }
+}
