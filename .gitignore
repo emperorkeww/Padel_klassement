@@ -13,9 +13,18 @@ Thumbs.db
 node_modules/
 .cache/
 
-# Env / secrets
+# Build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Env / secrets (.env.example wordt WEL gecommit)
 .env
-.env.*
+.env.local
+.env.*.local
 
 # Supabase
 supabase/.branches/
