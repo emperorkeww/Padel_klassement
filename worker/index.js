@@ -14,23 +14,13 @@ const PREFIX = "/api/playtomic";
 const ALLOWED_PATHS = [/^\/v1\/availability$/, /^\/v1\/tenants\/[\w-]+$/];
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith(PREFIX)) {
       // Alleen leesverzoeken toestaan; dit is een publieke, read-only proxy.
       if (request.method !== "GET") {
         return new Response("Method Not Allowed", { status: 405 });
-      }
-
-      // Per-IP rate limiting tegen misbruik van de publieke proxy.
-      const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
-      const { success } = await env.PLAYTOMIC_RL.limit({ key: ip });
-      if (!success) {
-        return new Response("Too Many Requests", {
-          status: 429,
-          headers: { "retry-after": "10" },
-        });
       }
 
       const rest = url.pathname.slice(PREFIX.length);
@@ -42,6 +32,25 @@ export default {
       if (target.origin !== UPSTREAM) {
         return new Response("Bad Request", { status: 400 });
       }
+
+      // Edge-cache eerst: gelijktijdige gebruikers delen zo één upstream-call
+      // en een edge-hit kost geen rate-limit-budget en geen Playtomic-verkeer.
+      const cache = caches.default;
+      const cacheKey = new Request(target.toString());
+      const hit = await cache.match(cacheKey);
+      if (hit) return hit;
+
+      // Per-IP rate limiting tegen misbruik van de publieke proxy —
+      // alleen cache-misses tellen mee.
+      const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+      const { success } = await env.PLAYTOMIC_RL.limit({ key: ip });
+      if (!success) {
+        return new Response("Too Many Requests", {
+          status: 429,
+          headers: { "retry-after": "10" },
+        });
+      }
+
       const upstream = await fetch(target, {
         headers: {
           Accept: "application/json",
@@ -53,7 +62,7 @@ export default {
         },
       });
       const body = await upstream.text();
-      return new Response(body, {
+      const response = new Response(body, {
         status: upstream.status,
         headers: {
           "content-type": "application/json; charset=utf-8",
@@ -61,6 +70,11 @@ export default {
           "cache-control": "public, max-age=60",
         },
       });
+      // Alleen geslaagde antwoorden de edge-cache in; fouten blijven vers.
+      if (upstream.ok) {
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      }
+      return response;
     }
 
     return env.ASSETS.fetch(request);

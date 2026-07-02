@@ -60,6 +60,21 @@ async function getJson<T>(path: string, foutmelding: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Clubgegevens (banen, openingsuren) zijn de facto statisch: één keer per
+// sessie ophalen i.p.v. bij elke datumwissel en elk dashboardbezoek.
+let tenantPromise: Promise<RawTenant> | null = null;
+function getTenant(): Promise<RawTenant> {
+  tenantPromise ??= getJson<RawTenant>(
+    `/v1/tenants/${TENANT_ID}`,
+    "Kon de clubgegevens niet laden",
+  ).catch((err: unknown) => {
+    // Fout niet vasthouden; volgende poging mag opnieuw proberen.
+    tenantPromise = null;
+    throw err;
+  });
+  return tenantPromise;
+}
+
 async function getSlotsByCourt(date: string): Promise<Record<string, RawSlot[]>> {
   const params = new URLSearchParams({
     user_id: "me",
@@ -88,7 +103,7 @@ export async function getClubAvailability(
   date: string,
 ): Promise<DayAvailability> {
   const [tenant, byCourt] = await Promise.all([
-    getJson<RawTenant>(`/v1/tenants/${TENANT_ID}`, "Kon de clubgegevens niet laden"),
+    getTenant(),
     getSlotsByCourt(date),
   ]);
 
