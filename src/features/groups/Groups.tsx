@@ -7,6 +7,7 @@ import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { getMyGroups, createGroup } from "./api";
+import "./Groups.css";
 
 export function Groups() {
   const { user } = useAuth();
@@ -33,14 +34,55 @@ export function Groups() {
     }
   }
 
+  const list = groups.data ?? [];
+
   return (
     <div>
       <header className="page-head">
         <h1 className="page-title">Groepen</h1>
         <p className="page-subtitle">
-          Maak een groep, voeg vrienden toe en genereer willekeurige wedstrijden.
+          Maak een groep, voeg vrienden toe en genereer wedstrijdrondes.
         </p>
       </header>
+
+      {groups.loading && (
+        <div className="card">
+          <Skeleton rows={3} />
+        </div>
+      )}
+      {groups.error && <p className="msg msg--error">{groups.error}</p>}
+
+      {!groups.loading && !groups.error && (
+        <>
+          {list.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                <p className="empty-state__title">
+                  Je zit nog in geen enkele groep. Maak er hieronder een aan en
+                  nodig je vrienden uit.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="group-grid">
+              {list.map((g) => (
+                <Link key={g.id} className="group-card" to={`/groepen/${g.id}`}>
+                  <Avatar name={g.name} size={44} />
+                  <span className="group-card__body">
+                    <span className="group-card__name">{g.name}</span>
+                    {g.created_by === myId && (
+                      <span className="badge badge--accent">eigenaar</span>
+                    )}
+                  </span>
+                  <span className="group-card__chevron" aria-hidden="true">
+                    →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       <section className="card">
         <h2 className="card__title">Nieuwe groep</h2>
@@ -55,31 +97,6 @@ export function Groups() {
             {busy ? "Aanmaken…" : "Aanmaken"}
           </button>
         </form>
-      </section>
-
-      <section className="card">
-        <h2 className="card__title">Mijn groepen</h2>
-        {groups.loading && <Skeleton rows={3} />}
-        {groups.error && <p className="msg msg--error">{groups.error}</p>}
-        {!groups.loading && (groups.data ?? []).length === 0 && (
-          <p className="empty">Je zit nog in geen enkele groep.</p>
-        )}
-        <div className="stack">
-          {(groups.data ?? []).map((g) => (
-            <div key={g.id} className="row-between">
-              <span className="cell-player">
-                <Avatar name={g.name} size={28} />
-                {g.name}{" "}
-                {g.created_by === myId && (
-                  <span className="badge badge--accent">eigenaar</span>
-                )}
-              </span>
-              <Link className="btn btn--sm" to={`/groepen/${g.id}`}>
-                Openen
-              </Link>
-            </div>
-          ))}
-        </div>
       </section>
     </div>
   );
