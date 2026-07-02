@@ -59,8 +59,11 @@ declare
   sa numeric;                    -- werkelijke score team A (1/0.5/0)
   da int; db int;                -- rating-delta per team
 begin
-  delete from public.rating_history;
-  delete from public.player_ratings;
+  -- WHERE true is vereist: de authenticator-rol laadt de safeupdate-library,
+  -- die ongekwalificeerde DELETE (zonder WHERE) blokkeert — ook binnen deze
+  -- SECURITY DEFINER-functie, want de library werkt sessiebreed.
+  delete from public.rating_history where true;
+  delete from public.player_ratings where true;
 
   for m in
     select mt.id, mt.team_a_id, mt.team_b_id, mt.winner_team_id,
