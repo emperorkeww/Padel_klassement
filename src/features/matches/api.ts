@@ -1,66 +1,97 @@
 import { supabase } from "../../lib/supabase";
+import { cached, invalidate } from "../../lib/queryCache";
 import type { Match, Profile, Team } from "../../lib/types";
 import { displayName } from "../profiles/api";
 
-export async function getMatch(id: string): Promise<Match | null> {
-  const { data, error } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+// Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe
+// paren bij het loggen) en ratings (trigger herrekent ze).
+function invalidateMatchData() {
+  invalidate("matches", "standings", "teams", "ratings");
 }
 
-export async function getTeamsMap(): Promise<Record<string, Team>> {
-  const { data, error } = await supabase.from("teams").select("*");
-  if (error) throw error;
-  return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
+export function getMatch(id: string): Promise<Match | null> {
+  return cached(`matches:one:${id}`, async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  });
 }
 
-export async function getGroupMatches(groupId: string): Promise<Match[]> {
-  const { data, error } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("group_id", groupId)
-    .order("round_number", { ascending: false })
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+export function getTeamsMap(): Promise<Record<string, Team>> {
+  return cached("teams:all", async () => {
+    const { data, error } = await supabase.from("teams").select("*");
+    if (error) throw error;
+    return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
+  });
+}
+
+/** Alleen de opgegeven teams — voor pagina's die er maar enkele nodig hebben. */
+export function getTeamsByIds(ids: string[]): Promise<Record<string, Team>> {
+  const wanted = [...new Set(ids)].sort();
+  if (wanted.length === 0) return Promise.resolve({});
+  return cached(`teams:ids:${wanted.join(",")}`, async () => {
+    const { data, error } = await supabase
+      .from("teams")
+      .select("*")
+      .in("id", wanted);
+    if (error) throw error;
+    return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
+  });
+}
+
+export function getGroupMatches(groupId: string): Promise<Match[]> {
+  return cached(`matches:group:${groupId}`, async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("group_id", groupId)
+      .order("round_number", { ascending: false })
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 /** Recente matches waarin een speler meedeed (via zijn teams). */
-export async function getPlayerMatches(
+export function getPlayerMatches(
   playerId: string,
   limit = 20,
 ): Promise<Match[]> {
-  const { data: teamRows, error: te } = await supabase
-    .from("teams")
-    .select("id")
-    .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`);
-  if (te) throw te;
-  const ids = (teamRows ?? []).map((t) => t.id);
-  if (ids.length === 0) return [];
+  return cached(`matches:player:${playerId}:${limit}`, async () => {
+    const { data: teamRows, error: te } = await supabase
+      .from("teams")
+      .select("id")
+      .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`);
+    if (te) throw te;
+    const ids = (teamRows ?? []).map((t) => t.id);
+    if (ids.length === 0) return [];
 
-  const list = ids.join(",");
-  const { data, error } = await supabase
-    .from("matches")
-    .select("*")
-    .or(`team_a_id.in.(${list}),team_b_id.in.(${list})`)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data ?? [];
+    const list = ids.join(",");
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .or(`team_a_id.in.(${list}),team_b_id.in.(${list})`)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
-export async function getRecentMatches(limit = 20): Promise<Match[]> {
-  const { data, error } = await supabase
-    .from("matches")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data ?? [];
+export function getRecentMatches(limit = 20): Promise<Match[]> {
+  return cached(`matches:recent:${limit}`, async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 /** Logt een afgeronde match via de SECURITY DEFINER RPC. */
@@ -85,17 +116,20 @@ export async function createCompletedMatch(params: {
     p_group_id: params.groupId ?? undefined,
   });
   if (error) throw error;
+  invalidateMatchData();
   return data as string;
 }
 
-/** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel. */
+/** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel.
+ *  Werkt alleen op een nog niet afgeronde match: als iemand anders net eerder
+ *  opsloeg, faalt dit met een duidelijke melding i.p.v. stil te overschrijven. */
 export async function setMatchResult(params: {
   matchId: string;
   winnerTeamId: string | null;
   scoreA?: number | null;
   scoreB?: number | null;
 }): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("matches")
     .update({
       status: "completed",
@@ -104,8 +138,13 @@ export async function setMatchResult(params: {
       score_b: params.scoreB ?? null,
       played_at: new Date().toISOString(),
     })
-    .eq("id", params.matchId);
+    .eq("id", params.matchId)
+    .neq("status", "completed")
+    .select("id");
   if (error) throw error;
+  invalidateMatchData();
+  if (!data || data.length === 0)
+    throw new Error("Deze uitslag is al door iemand anders ingevuld.");
 }
 
 /**
@@ -128,6 +167,7 @@ export async function updateMatchScore(params: {
     })
     .eq("id", params.matchId);
   if (error) throw error;
+  invalidateMatchData();
 }
 
 /** "Alice & Bob" op basis van een team en de profielen-map. */
