@@ -7,23 +7,15 @@ import {
   type SlotOption,
 } from "./api";
 import {
+  buildTimeAxis,
   dateInZone,
   fromMinutes,
   minutesNowInZone,
   toMinutes,
 } from "../../lib/time";
+import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { courtTypeLabel } from "../../lib/format";
 import "./Availability.css";
-
-const STEP_MIN = 30;
-
-// Bouwt de kolommen: elk halfuur van openingstijd tot sluitingstijd.
-function buildTimeAxis(open: string, close: string): string[] {
-  const times: string[] = [];
-  for (let m = toMinutes(open); m < toMinutes(close); m += STEP_MIN) {
-    times.push(fromMinutes(m));
-  }
-  return times;
-}
 
 type Tip = { x: number; y: number; text: string };
 // Aangeklikt vrij slot: toont eerst de beschikbaarheid, pas via de link ga je
@@ -32,6 +24,7 @@ type Selection = {
   left: number;
   top: number;
   court: string;
+  courtType: string;
   start: string;
   end: string;
   options: SlotOption[];
@@ -127,7 +120,9 @@ export function Timetable({
             role="dialog"
             aria-label={`Beschikbaarheid ${sel.court}`}
           >
-            <p className="avail-popover__title">{sel.court}</p>
+            <p className="avail-popover__title">
+              <CourtTypeIcon type={sel.courtType} /> {sel.court}
+            </p>
             <p className="avail-popover__time">
               Vrij van {sel.start} tot {sel.end}
             </p>
@@ -189,7 +184,8 @@ function Row({
         <span className="avail-rowhead__name">{row.court.name}</span>
         {row.court.type && (
           <span className="avail-rowhead__type">
-            {row.court.type === "roofed" ? "overdekt" : "buiten"}
+            <CourtTypeIcon type={row.court.type} />
+            {courtTypeLabel(row.court.type)}
           </span>
         )}
         <span className="sr-only">
@@ -264,6 +260,7 @@ function Row({
             left,
             top: r.bottom + 8,
             court: row.court.name,
+            courtType: row.court.type,
             start: t,
             end,
             options: shown,
