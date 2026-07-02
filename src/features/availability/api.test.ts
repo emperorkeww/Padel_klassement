@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  bookingUrl,
   coveredTimes,
   formatPrice,
   getClubAvailability,
   getWeekAvailability,
+  searchClubs,
   utcToClubTime,
 } from "./api";
+import { DEFAULT_CLUB } from "./club";
 
 // Playtomic geeft start_time in UTC terug; het raster moet clubtijd tonen.
 // De verschuiving is seizoensafhankelijk (CET/CEST), dus beide gevallen testen.
@@ -58,6 +61,57 @@ describe("formatPrice", () => {
 
   it("onherkenbare invoer gaat onaangeroerd door", () => {
     expect(formatPrice("op aanvraag")).toBe("op aanvraag");
+  });
+});
+
+// De boekingslink gebruikt het tenant-id als slug; Playtomic stuurt door naar
+// de canonieke clubpagina en behoudt daarbij de query.
+describe("bookingUrl", () => {
+  it("linkt naar de gekozen club, voorgevuld op de dag", () => {
+    expect(bookingUrl("2026-07-04")).toBe(
+      `https://playtomic.com/clubs/${DEFAULT_CLUB.id}?sport=PADEL&date=2026-07-04`,
+    );
+  });
+});
+
+describe("searchClubs", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("mapt de tenant-respons naar clubs, met fallback voor stad en tijdzone", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => [
+            {
+              tenant_id: "t-1",
+              tenant_name: "Padel Gent",
+              address: { city: "Gent", timezone: "Europe/Brussels" },
+            },
+            { tenant_id: "t-2", tenant_name: "Padel Zonder Adres" },
+          ],
+        }) as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const clubs = await searchClubs("padel");
+
+    expect(clubs).toEqual([
+      { id: "t-1", name: "Padel Gent", city: "Gent", timezone: "Europe/Brussels" },
+      {
+        id: "t-2",
+        name: "Padel Zonder Adres",
+        city: "",
+        timezone: DEFAULT_CLUB.timezone,
+      },
+    ]);
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("/v1/tenants?");
+    expect(url).toContain("tenant_name=padel");
+    expect(url).toContain("sport_id=PADEL");
   });
 });
 

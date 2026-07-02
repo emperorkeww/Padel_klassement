@@ -17,7 +17,8 @@ import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { MatchList } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
-import { getClubAvailability, CLUB_TIMEZONE } from "../availability/api";
+import { getClubAvailability } from "../availability/api";
+import { useClub } from "../availability/club";
 import { Timetable } from "../availability/Timetable";
 import { dateInZone } from "../../lib/time";
 import "./Dashboard.css";
@@ -41,8 +42,9 @@ export function Dashboard() {
     [myId],
   );
 
-  const today = dateInZone(CLUB_TIMEZONE);
-  const availability = useAsync(() => getClubAvailability(today), [today]);
+  const club = useClub();
+  const today = dateInZone(club.timezone);
+  const availability = useAsync(() => getClubAvailability(today), [today, club.id]);
   // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
   useRefetchOnFocus(availability.reload);
 

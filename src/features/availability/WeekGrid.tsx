@@ -1,10 +1,6 @@
 import { Fragment, useMemo } from "react";
-import {
-  CLUB_TIMEZONE,
-  coveredTimes,
-  type CourtRow,
-  type WeekDay,
-} from "./api";
+import { coveredTimes, type CourtRow, type WeekDay } from "./api";
+import { useClub } from "./club";
 import {
   buildTimeAxis,
   dateInZone,
@@ -45,7 +41,8 @@ export function WeekGrid({
   duration: number | null;
   onPickDay: (date: string) => void;
 }) {
-  const timeZone = week.find((d) => d.data)?.data?.timeZone ?? CLUB_TIMEZONE;
+  const club = useClub();
+  const timeZone = week.find((d) => d.data)?.data?.timeZone ?? club.timezone;
 
   // Tijd-as: de unie van de openingsuren van alle geladen dagen.
   const times = useMemo(() => {

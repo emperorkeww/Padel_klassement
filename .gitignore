@@ -29,3 +29,6 @@ coverage/
 # Supabase
 supabase/.branches/
 supabase/.temp/
+
+# Wrangler/miniflare lokale cache
+.wrangler/

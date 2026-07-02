@@ -1,4 +1,4 @@
-// Baanbeschikbaarheid van LAGO CLUB Padel Beveren via Playtomic.
+// Baanbeschikbaarheid van de gekozen club (zie club.ts) via Playtomic.
 //
 // Playtomic biedt geen publieke, officiële API voor spelers. We gebruiken de
 // (ongedocumenteerde) endpoints die de Playtomic-site zelf ook aanroept. Die
@@ -15,23 +15,19 @@
 // product (60 min) is dus niet te onderscheiden van een boeking.
 
 import { addDays, fromMinutes, toMinutes } from "../../lib/time";
+import { DEFAULT_CLUB, getClub, type Club } from "./club";
 
-const TENANT_ID = "91d8d419-3736-498e-90be-362de786d588";
 const BASE = "/api/playtomic";
-
-export const CLUB_NAME = "LAGO CLUB Padel Beveren";
-const CLUB_SLUG = "lago-club-padel-beveren";
-/** Tijdzone van de club; de tenant-respons kan dit bevestigen/overschrijven. */
-export const CLUB_TIMEZONE = "Europe/Brussels";
 
 /**
  * Deep-link naar de Playtomic-clubpagina, voorgevuld op de gekozen dag.
- * De clubpagina leest alleen ?sport= en ?date= uit de URL; een specifiek uur
- * kan niet vooraf geselecteerd worden.
+ * Het tenant-id werkt als slug: Playtomic stuurt door (308) naar de canonieke
+ * clubpagina, met behoud van de query. De clubpagina leest alleen ?sport= en
+ * ?date= uit de URL; een specifiek uur kan niet vooraf geselecteerd worden.
  */
 export function bookingUrl(date: string): string {
   const params = new URLSearchParams({ sport: "PADEL", date });
-  return `https://playtomic.com/clubs/${CLUB_SLUG}?${params.toString()}`;
+  return `https://playtomic.com/clubs/${getClub().id}?${params.toString()}`;
 }
 
 // Playtomic gebruikt Engelse weekdagnamen als sleutel in opening_hours.
@@ -85,24 +81,31 @@ async function getJson<T>(path: string, foutmelding: string): Promise<T> {
 }
 
 // Clubgegevens (banen, openingsuren) zijn de facto statisch: één keer per
-// sessie ophalen i.p.v. bij elke datumwissel en elk dashboardbezoek.
-let tenantPromise: Promise<RawTenant> | null = null;
-function getTenant(): Promise<RawTenant> {
-  tenantPromise ??= getJson<RawTenant>(
-    `/v1/tenants/${TENANT_ID}`,
-    "Kon de clubgegevens niet laden",
-  ).catch((err: unknown) => {
-    // Fout niet vasthouden; volgende poging mag opnieuw proberen.
-    tenantPromise = null;
-    throw err;
-  });
-  return tenantPromise;
+// sessie per club ophalen i.p.v. bij elke datumwissel en elk dashboardbezoek.
+const tenantPromises = new Map<string, Promise<RawTenant>>();
+function getTenant(tenantId: string): Promise<RawTenant> {
+  let promise = tenantPromises.get(tenantId);
+  if (!promise) {
+    promise = getJson<RawTenant>(
+      `/v1/tenants/${tenantId}`,
+      "Kon de clubgegevens niet laden",
+    ).catch((err: unknown) => {
+      // Fout niet vasthouden; volgende poging mag opnieuw proberen.
+      tenantPromises.delete(tenantId);
+      throw err;
+    });
+    tenantPromises.set(tenantId, promise);
+  }
+  return promise;
 }
 
-async function getSlotsByCourt(date: string): Promise<Record<string, SlotMoment[]>> {
+async function getSlotsByCourt(
+  date: string,
+  tenantId: string,
+): Promise<Record<string, SlotMoment[]>> {
   const params = new URLSearchParams({
     user_id: "me",
-    tenant_id: TENANT_ID,
+    tenant_id: tenantId,
     sport_id: "PADEL",
     local_start_min: `${date}T00:00:00`,
     local_start_max: `${date}T23:59:59`,
@@ -192,9 +195,10 @@ export function utcToClubTime(date: string, time: string, timeZone: string): str
 export async function getClubAvailability(
   date: string,
 ): Promise<DayAvailability> {
+  const club = getClub();
   const [tenant, byCourt] = await Promise.all([
-    getTenant(),
-    getSlotsByCourt(date),
+    getTenant(club.id),
+    getSlotsByCourt(date, club.id),
   ]);
 
   const weekday = WEEKDAY_KEYS[new Date(`${date}T00:00:00`).getDay()];
@@ -202,7 +206,7 @@ export async function getClubAvailability(
 
   // Clubtijdzone, niet die van het apparaat: wie vanuit het buitenland kijkt
   // moet dezelfde tijden zien als op de Playtomic-clubpagina.
-  const timeZone = tenant.address?.timezone ?? CLUB_TIMEZONE;
+  const timeZone = tenant.address?.timezone ?? club.timezone;
 
   const courts: CourtRow[] = (tenant.resources ?? []).map((r) => {
     const free = new Map<string, SlotOption[]>();
@@ -239,6 +243,35 @@ export async function getClubAvailability(
   }
 
   return { open: fromMinutes(openM), close: fromMinutes(closeM), timeZone, courts };
+}
+
+// Wat we van een club uit het zoekendpoint nodig hebben; de respons bevat
+// veel meer (banen, foto's, boekingsinstellingen), maar dat halen we pas op
+// via het tenant-detail zodra de club echt gekozen is.
+type RawTenantSummary = {
+  tenant_id: string;
+  tenant_name: string;
+  address?: { city?: string; timezone?: string };
+};
+
+/** Zoekt actieve Playtomic-clubs met padelbanen op (deel van de) naam. */
+export async function searchClubs(query: string): Promise<Club[]> {
+  const params = new URLSearchParams({
+    playtomic_status: "ACTIVE",
+    sport_id: "PADEL",
+    tenant_name: query,
+    size: "10",
+  });
+  const data = await getJson<RawTenantSummary[]>(
+    `/v1/tenants?${params.toString()}`,
+    "Kon geen clubs zoeken",
+  );
+  return data.map((t) => ({
+    id: t.tenant_id,
+    name: t.tenant_name,
+    city: t.address?.city ?? "",
+    timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
+  }));
 }
 
 /** Eén dag in het weekoverzicht; data of een foutmelding, nooit allebei. */
