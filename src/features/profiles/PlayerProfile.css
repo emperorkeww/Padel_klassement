@@ -55,6 +55,110 @@
   font-size: 0.85rem;
 }
 
+/* Prestaties */
+.achievements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.achievement {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: inherit;
+}
+.achievement--link {
+  transition: border-color 0.15s, background 0.15s;
+}
+.achievement--link:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.achievement__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.achievement__value {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.achievement__label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+/* Onderlinge stand (head-to-head) */
+.h2h {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.h2h__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+.h2h__row + .h2h__row {
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+.h2h__player {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+.h2h__player:hover .h2h__name {
+  color: var(--accent);
+}
+.h2h__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.h2h__record {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.h2h__w {
+  color: var(--success);
+}
+.h2h__d {
+  color: var(--ink-soft);
+}
+.h2h__l {
+  color: var(--danger);
+}
+.h2h__sep {
+  color: var(--line-strong);
+  font-weight: 600;
+}
+
 /* Mobiel: iets kleinere naam; badge mag naast de naam afbreken. */
 @media (max-width: 640px) {
   .profile-hero__name {
