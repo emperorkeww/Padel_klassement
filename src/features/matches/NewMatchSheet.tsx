@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
+import { celebrate } from "../../lib/confetti";
 import { displayName } from "../profiles/api";
 import { createCompletedMatch } from "./api";
 import type { Profile } from "../../lib/types";
@@ -26,6 +28,8 @@ export function NewMatchSheet({
   const [scoreB, setScoreB] = useState("");
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+  const { user } = useAuth();
+  const myId = user?.id ?? "";
 
   // Vers beginnen bij elk openen.
   useEffect(() => {
@@ -94,6 +98,8 @@ export function NewMatchSheet({
         scoreA: sa,
         scoreB: sb,
       });
+      // Vieren als de logger zelf in het winnende team zit.
+      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) celebrate();
       toast.success("Match toegevoegd.");
       onCreated();
       onClose();

@@ -1,10 +1,15 @@
 .rating-chart {
   width: 100%;
+  /* Ankerpunt voor de zwevende tooltip. */
+  position: relative;
 }
 .rating-chart__svg {
   width: 100%;
   height: auto;
   display: block;
+  /* Vegen over de grafiek mag de pagina niet laten scrollen. */
+  touch-action: none;
+  cursor: crosshair;
 }
 .rating-chart__tick {
   fill: var(--ink-soft);
@@ -33,15 +38,63 @@
 .rating-chart__area {
   stroke: none;
 }
-.rating-chart__area.is-up {
-  fill: var(--success-soft);
-}
-.rating-chart__area.is-down {
-  fill: var(--danger-soft);
-}
 .rating-chart__dot.is-up {
   fill: var(--success);
 }
 .rating-chart__dot.is-down {
   fill: var(--danger);
+}
+
+/* Teken-animatie bij verschijnen (pathLength=1 op de lijn). */
+@media (prefers-reduced-motion: no-preference) {
+  .rating-chart__line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: rc-draw 0.9s ease-out forwards;
+  }
+  .rating-chart__area {
+    opacity: 0;
+    animation: rc-fade 0.5s ease-out 0.45s forwards;
+  }
+}
+@keyframes rc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes rc-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scrubber-hulplijn + tooltip. */
+.rating-chart__cursor {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.rating-chart__tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-pop);
+  display: inline-flex;
+  gap: var(--sp-2);
+  align-items: baseline;
+}
+.rating-chart__tip-delta.is-up {
+  color: var(--lime);
+  font-weight: 700;
+}
+.rating-chart__tip-delta.is-down {
+  color: #fca5a5;
+  font-weight: 700;
 }

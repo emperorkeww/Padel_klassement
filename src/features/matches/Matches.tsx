@@ -101,6 +101,7 @@ export function Matches() {
                 match={m}
                 teams={tmap}
                 profiles={pmap}
+                perspectiveId={myId}
                 onSaved={reloadAll}
               />
             ))}

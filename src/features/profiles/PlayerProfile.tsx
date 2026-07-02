@@ -10,6 +10,7 @@ import { MatchList } from "../matches/MatchList";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
+import { CountUp } from "../../components/CountUp";
 import { RatingChart } from "../../components/RatingChart";
 import {
   recentForm,
@@ -79,7 +80,11 @@ export function PlayerProfile() {
       </header>
 
       <section className="card profile-hero">
-        <Avatar profile={p} size={72} />
+        {/* Zelfde view-transition-naam als de aangetikte klassement-avatar:
+            de foto groeit vloeiend door naar deze grote variant. */}
+        <span style={{ viewTransitionName: "player-avatar", display: "inline-flex" }}>
+          <Avatar profile={p} size={72} />
+        </span>
         <div className="profile-hero__body">
           <h1 className="profile-hero__name">
             {displayName(p)}
@@ -99,7 +104,11 @@ export function PlayerProfile() {
       </section>
 
       <div className="stats">
-        <Stat label="Rating" value={myRating ?? "—"} />
+        <Stat
+          label="Rating"
+          value={myRating ?? "—"}
+          delta={rhist.length > 0 ? rhist[rhist.length - 1].delta : null}
+        />
         <Stat label="Punten" value={s?.points ?? 0} />
         <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
         <Stat label="Gespeeld" value={s?.played ?? 0} />
@@ -211,10 +220,26 @@ export function PlayerProfile() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | string }) {
+function Stat({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: number | string;
+  delta?: number | null;
+}) {
   return (
     <div className="stat">
-      <span className="stat__value">{value}</span>
+      <span className="stat__value">
+        {typeof value === "number" ? <CountUp value={value} /> : value}
+        {delta != null && delta !== 0 && (
+          <span className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}>
+            {delta > 0 ? "▲" : "▼"}
+            {Math.abs(delta)}
+          </span>
+        )}
+      </span>
       <span className="stat__label">{label}</span>
     </div>
   );

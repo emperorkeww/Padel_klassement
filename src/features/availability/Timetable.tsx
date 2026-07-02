@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { bookingUrl, type CourtRow, type DayAvailability } from "./api";
+import {
+  bookingUrl,
+  coveredTimes,
+  type CourtRow,
+  type DayAvailability,
+} from "./api";
 import "./Availability.css";
 
 const STEP_MIN = 30;
@@ -28,30 +33,6 @@ function buildTimeAxis(open: string, close: string): string[] {
   return times;
 }
 
-type Interval = { start: string; end: string };
-
-// Voegt aaneengesloten vrije halfuren samen tot één blok en geeft per vrije
-// tijd het interval (begin → einde) van dat volledige blok terug.
-function freeIntervals(times: string[], free: Set<string>): Map<string, Interval> {
-  const byTime = new Map<string, Interval>();
-  let i = 0;
-  while (i < times.length) {
-    if (!free.has(times[i])) {
-      i++;
-      continue;
-    }
-    let j = i;
-    while (j + 1 < times.length && free.has(times[j + 1])) j++;
-    const interval: Interval = {
-      start: times[i],
-      end: fromMinutes(toMinutes(times[j]) + STEP_MIN),
-    };
-    for (let k = i; k <= j; k++) byTime.set(times[k], interval);
-    i = j + 1;
-  }
-  return byTime;
-}
-
 type Tip = { x: number; y: number; text: string };
 // Aangeklikt vrij slot: toont eerst de beschikbaarheid, pas via de link ga je
 // door naar Playtomic. Zo redirect een tik op mobiel niet meteen.
@@ -61,9 +42,19 @@ type Selection = {
   court: string;
   start: string;
   end: string;
+  durations: number[];
 };
 
-export function Timetable({ data, date }: { data: DayAvailability; date: string }) {
+export function Timetable({
+  data,
+  date,
+  duration = null,
+}: {
+  data: DayAvailability;
+  date: string;
+  /** Duurfilter in minuten; null = alle duren tonen. */
+  duration?: number | null;
+}) {
   const times = useMemo(
     () => buildTimeAxis(data.open, data.close),
     [data.open, data.close],
@@ -103,6 +94,7 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
               row={row}
               times={times}
               pastCutoff={pastCutoff}
+              duration={duration}
               onTip={setTip}
               onSelect={setSel}
             />
@@ -148,6 +140,13 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
             <p className="avail-popover__time">
               Vrij van {sel.start} tot {sel.end}
             </p>
+            <p className="avail-popover__durs">
+              {sel.durations.map((d) => (
+                <span key={d} className="badge badge--accent">
+                  {d} min
+                </span>
+              ))}
+            </p>
             <a
               className="btn btn--primary btn--sm"
               href={bookingUrl(date)}
@@ -168,6 +167,7 @@ function Row({
   row,
   times,
   pastCutoff,
+  duration,
   onTip,
   onSelect,
 }: {
@@ -176,19 +176,14 @@ function Row({
   /** Minuten sinds middernacht; sloten die op of vóór dit moment starten zijn
    *  voorbij. -1 = geen (andere dag dan vandaag). */
   pastCutoff: number;
+  duration: number | null;
   onTip: (tip: Tip | null) => void;
   onSelect: (sel: Selection) => void;
 }) {
-  // Verstreken sloten tellen niet mee als vrij: zo begint een blok
-  // "vrij van 12:00 tot 15:00" om 13:10 gewoon bij 13:30.
-  const free = useMemo(
-    () =>
-      pastCutoff < 0
-        ? row.free
-        : new Set([...row.free].filter((t) => toMinutes(t) > pastCutoff)),
-    [row.free, pastCutoff],
-  );
-  const intervals = useMemo(() => freeIntervals(times, free), [times, free]);
+  // Halfuren waarop de baan vrij is (ook zonder boekbare start): de staart
+  // van een lang slot en het laatste halfuur voor sluiting horen niet als
+  // "geboekt" getoond te worden.
+  const covered = useMemo(() => coveredTimes(row.free), [row.free]);
 
   return (
     <>
@@ -201,55 +196,77 @@ function Row({
         )}
       </div>
       {times.map((t) => {
+        const hourClass = t.endsWith(":00") ? "is-hour" : "";
+
         // Voorbij: neutraal vlak, niet klikbaar — geen vrij, geen geboekt.
         if (toMinutes(t) <= pastCutoff) {
           return (
             <div
               key={t}
-              className={`avail-cell avail-cell--past ${t.endsWith(":00") ? "is-hour" : ""}`}
+              className={`avail-cell avail-cell--past ${hourClass}`}
               title={`${row.court.name} — ${t} is al voorbij`}
               aria-hidden="true"
             />
           );
         }
-        const interval = intervals.get(t);
-        if (interval) {
-          const text = `${row.court.name}: vrij van ${interval.start} tot ${interval.end}`;
-          const select = (el: HTMLElement) => {
-            const r = el.getBoundingClientRect();
-            onTip(null);
-            onSelect({
-              left: r.left + r.width / 2,
-              top: r.bottom + 8,
-              court: row.court.name,
-              start: interval.start,
-              end: interval.end,
-            });
-          };
+
+        const durations = row.free.get(t);
+        if (!durations || (duration != null && !durations.includes(duration))) {
+          // Vrij maar niet boekbaar (geen starttijd, of niet met deze duur)?
+          // Anders is het vak echt bezet.
+          if (covered.has(t)) {
+            const reason = durations
+              ? `om ${t} geen ${duration} min vrij (wel ${durations.join("/")} min)`
+              : `om ${t} vrij, maar een boeking kan hier niet starten`;
+            return (
+              <div
+                key={t}
+                className={`avail-cell avail-cell--nofit ${hourClass}`}
+                title={`${row.court.name} — ${reason}`}
+              />
+            );
+          }
           return (
             <div
               key={t}
-              className={`avail-cell avail-cell--free ${t.endsWith(":00") ? "is-hour" : ""}`}
-              role="button"
-              tabIndex={0}
-              aria-label={`${text} — bekijk reserveren`}
-              onMouseMove={(e) => onTip({ x: e.clientX, y: e.clientY, text })}
-              onMouseLeave={() => onTip(null)}
-              onClick={(e) => select(e.currentTarget)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  select(e.currentTarget);
-                }
-              }}
+              className={`avail-cell avail-cell--busy ${hourClass}`}
+              title={`${row.court.name} — ${t} geboekt`}
             />
           );
         }
+
+        // Boekbare start: "vrij tot" = start + langste (gefilterde) duur.
+        const shown = duration != null ? [duration] : durations;
+        const end = fromMinutes(toMinutes(t) + Math.max(...shown));
+        const text = `${row.court.name}: vrij van ${t} tot ${end} (${shown.join("/")} min)`;
+        const select = (el: HTMLElement) => {
+          const r = el.getBoundingClientRect();
+          onTip(null);
+          onSelect({
+            left: r.left + r.width / 2,
+            top: r.bottom + 8,
+            court: row.court.name,
+            start: t,
+            end,
+            durations: shown,
+          });
+        };
         return (
           <div
             key={t}
-            className={`avail-cell avail-cell--busy ${t.endsWith(":00") ? "is-hour" : ""}`}
-            title={`${row.court.name} — ${t} geboekt`}
+            className={`avail-cell avail-cell--free ${hourClass}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`${text} — bekijk reserveren`}
+            onMouseMove={(e) => onTip({ x: e.clientX, y: e.clientY, text })}
+            onMouseLeave={() => onTip(null)}
+            onClick={(e) => select(e.currentTarget)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                select(e.currentTarget);
+              }
+            }}
           />
         );
       })}

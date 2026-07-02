@@ -14,9 +14,13 @@ function formatDay(date: string): string {
   });
 }
 
+// Speelduren die Playtomic aanbiedt; null = geen filter (alle duren tonen).
+const DURATION_FILTERS = [null, 60, 90, 120] as const;
+
 export function Availability() {
   const today = localDate(0);
   const [date, setDate] = useState(today);
+  const [duration, setDuration] = useState<number | null>(null);
   const availability = useAsync<DayAvailability>(
     () => getClubAvailability(date),
     [date],
@@ -77,6 +81,23 @@ export function Availability() {
         />
       </div>
 
+      {/* Duurfilter, zoals op de Playtomic-pagina: toon alleen starttijden
+          waarop de gekozen speelduur ook echt kan beginnen. */}
+      <div className="avail-controls">
+        <div className="tabs">
+          {DURATION_FILTERS.map((d) => (
+            <button
+              key={d ?? "alle"}
+              type="button"
+              className={`tab ${duration === d ? "is-active" : ""}`}
+              onClick={() => setDuration(d)}
+            >
+              {d == null ? "Alle duren" : `${d} min`}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <p className="avail-day">{formatDay(date)}</p>
 
       {availability.loading ? (
@@ -84,7 +105,7 @@ export function Availability() {
       ) : availability.error ? (
         <p className="msg msg--error">{availability.error}</p>
       ) : availability.data ? (
-        <Timetable data={availability.data} date={date} />
+        <Timetable data={availability.data} date={date} duration={duration} />
       ) : null}
 
       <div className="avail-legend">
@@ -93,6 +114,10 @@ export function Availability() {
         </span>
         <span className="avail-legend__item">
           <span className="avail-cell avail-cell--busy avail-legend__swatch" /> Geboekt
+        </span>
+        <span className="avail-legend__item">
+          <span className="avail-cell avail-cell--nofit avail-legend__swatch" /> Vrij,
+          niet boekbaar
         </span>
         {date === today && (
           <span className="avail-legend__item">

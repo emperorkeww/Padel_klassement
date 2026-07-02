@@ -34,6 +34,9 @@
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
+.avail-controls .tabs {
+  margin-bottom: 0;
+}
 
 .avail-quick {
   display: flex;
@@ -190,6 +193,14 @@
   color: var(--ink-soft);
 }
 
+/* Boekbare duren als badges in de klik-pop-up. */
+.avail-popover__durs {
+  margin: 0;
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
 .avail-popover .btn {
   margin-top: 0.15rem;
   text-align: center;
@@ -266,6 +277,18 @@
     var(--line-strong) 5px,
     var(--ink-soft) 5px,
     var(--ink-soft) 10px
+  );
+}
+
+.avail-cell--nofit {
+  /* Vaalgroene strepen: wel vrij, maar de gefilterde duur kan hier niet
+     starten. Bewust duidelijk anders dan vol groen (vrij) en grijs (geboekt). */
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--success-soft),
+    var(--success-soft) 5px,
+    var(--surface-2) 5px,
+    var(--surface-2) 10px
   );
 }
 
