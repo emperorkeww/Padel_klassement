@@ -20,6 +20,7 @@ import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { ShareEvening } from "./ShareEvening";
 import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
 import "./GroupDetail.css";
@@ -140,7 +141,16 @@ export function GroupDetail() {
 
       {view === "rondes" && (
         <section className="card">
-          <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+            {/* Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat. */}
+            <ShareEvening
+              groupName={group.data.name}
+              matches={matches.data ?? []}
+              teams={tmap}
+              profiles={pmap}
+            />
+          </div>
           <p className="card__subtitle">
             {mode === "americano"
               ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
