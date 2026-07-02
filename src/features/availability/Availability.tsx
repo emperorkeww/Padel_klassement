@@ -99,7 +99,7 @@ export function Availability() {
         </a>
       </div>
 
-      <div className="avail-controls">
+      <div className="avail-controls avail-controls--date">
         <div className="avail-quick">
           <button
             type="button"

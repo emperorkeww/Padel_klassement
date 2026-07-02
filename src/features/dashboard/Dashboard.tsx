@@ -122,7 +122,7 @@ export function Dashboard() {
             + Match loggen
           </Link>
           <Link className="btn" to="/groepen">
-            Wedstrijden genereren
+            Rondes genereren
           </Link>
           <Link className="btn" to="/banen">
             Vrije banen
