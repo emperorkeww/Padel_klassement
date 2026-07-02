@@ -89,9 +89,13 @@ describe("searchClubs", () => {
             {
               tenant_id: "t-1",
               tenant_name: "Padel Gent",
-              address: { city: "Gent", timezone: "Europe/Brussels" },
+              address: { city: "Gent", timezone: "Europe/Brussels", country_code: "BE" },
             },
-            { tenant_id: "t-2", tenant_name: "Padel Zonder Adres" },
+            {
+              tenant_id: "t-2",
+              tenant_name: "Padel Zonder Stad",
+              address: { country_code: "BE" },
+            },
           ],
         }) as Response,
     );
@@ -103,7 +107,7 @@ describe("searchClubs", () => {
       { id: "t-1", name: "Padel Gent", city: "Gent", timezone: "Europe/Brussels" },
       {
         id: "t-2",
-        name: "Padel Zonder Adres",
+        name: "Padel Zonder Stad",
         city: "",
         timezone: DEFAULT_CLUB.timezone,
       },
@@ -112,6 +116,37 @@ describe("searchClubs", () => {
     expect(url).toContain("/v1/tenants?");
     expect(url).toContain("tenant_name=padel");
     expect(url).toContain("sport_id=PADEL");
+  });
+
+  // Het zoekendpoint kent geen landparameter; het landfilter is client-side.
+  it("houdt alleen Belgische clubs over; zonder country_code ook weggefilterd (liever te streng dan buitenlandse ruis)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => [
+              {
+                tenant_id: "t-be",
+                tenant_name: "Padel Gent",
+                address: { city: "Gent", country_code: "BE" },
+              },
+              {
+                tenant_id: "t-it",
+                tenant_name: "Padel Genta",
+                address: { city: "Genova", country_code: "IT" },
+              },
+              { tenant_id: "t-x", tenant_name: "Padel Zonder Land" },
+            ],
+          }) as Response,
+      ),
+    );
+
+    const clubs = await searchClubs("gent");
+
+    expect(clubs.map((c) => c.id)).toEqual(["t-be"]);
   });
 });
 
