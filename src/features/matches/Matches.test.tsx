@@ -32,7 +32,7 @@ describe("<Matches />", () => {
     expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
     // De geplande match heeft twee score-invoervelden met teamnamen als label.
     expect(
-      await screen.findByLabelText(/score alice anders & bob boers/i),
+      await screen.findByLabelText(/^score alice anders & bob boers$/i),
     ).toBeInTheDocument();
     expect(await screen.findByText(/recente matches/i)).toBeInTheDocument();
     // De afgeronde match staat in de lijst met de eindscore.

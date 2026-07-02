@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
@@ -89,26 +90,16 @@ export function PlannedMatchCard({
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
       <span className="match-card__mid">
         <span className="planned-score">
-          <input
-            className="input input--score"
-            type="number"
-            min="0"
-            inputMode="numeric"
-            placeholder="0"
-            aria-label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
+          <ScoreStepper
             value={sa}
-            onChange={(e) => setSa(e.target.value)}
+            onChange={setSa}
+            label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
           />
           <span className="planned-score__dash">–</span>
-          <input
-            className="input input--score"
-            type="number"
-            min="0"
-            inputMode="numeric"
-            placeholder="0"
-            aria-label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
+          <ScoreStepper
             value={sb}
-            onChange={(e) => setSb(e.target.value)}
+            onChange={setSb}
+            label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
           />
         </span>
         <button
