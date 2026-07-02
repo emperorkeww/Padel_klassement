@@ -4,8 +4,9 @@
   padding: 0.25rem 0;
 }
 
-.skeleton__row {
-  height: 1.25rem;
+/* Basis-shimmer: elke placeholder-vorm deelt dit. */
+.sk {
+  display: inline-block;
   border-radius: 6px;
   background: linear-gradient(
     90deg,
@@ -15,9 +16,103 @@
   );
   background-size: 400% 100%;
   animation: skeleton-shimmer 1.3s ease-in-out infinite;
+  flex-shrink: 0;
 }
-.skeleton__row:nth-child(even) {
+
+.sk--row {
+  height: 1.25rem;
+}
+.sk--row:nth-child(even) {
   width: 85%;
+}
+
+.sk--circle {
+  border-radius: 50%;
+}
+.sk--line {
+  border-radius: 4px;
+}
+.sk--pill {
+  width: 56px;
+  height: 24px;
+  border-radius: 999px;
+  justify-self: center;
+}
+.sk--rank {
+  width: 22px;
+  height: 22px;
+}
+.sk--points {
+  width: 34px;
+  height: 22px;
+  margin-left: auto;
+}
+.sk--stat {
+  height: 78px;
+  border-radius: var(--radius);
+}
+
+/* Matchkaart-vorm: zelfde raster als .match-card. */
+.sk-matchcard {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.sk-matchcard__side {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.sk-matchcard__side--right {
+  justify-content: flex-end;
+}
+.sk-matchcard__side .sk--circle + .sk--circle {
+  margin-left: -12px;
+}
+.sk-matchcard__names {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Klassementsrij-vorm. */
+.sk-standing {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-1) 0;
+}
+
+/* Profielkop-vorm. */
+.sk-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+}
+.sk-profile__text {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Statblokken-vorm (volgt het .stats-raster). */
+.sk-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+@media (min-width: 640px) {
+  .sk-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 @keyframes skeleton-shimmer {
@@ -30,7 +125,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton__row {
+  .sk {
     animation: none;
   }
 }

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
-import { Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton } from "../../components/Skeleton";
 import { outcomeFor } from "../../lib/results";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllProfiles } from "../profiles/api";
@@ -132,7 +132,7 @@ export function Matches() {
           </div>
         </div>
 
-        {matches.loading && <Skeleton rows={4} />}
+        {matches.loading && <MatchListSkeleton count={4} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && groups.length === 0 && (
           <div className="empty-state">

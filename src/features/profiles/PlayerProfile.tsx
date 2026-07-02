@@ -7,7 +7,7 @@ import { getPlayerStanding } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import { getPlayerMatches, getTeamsMap } from "../matches/api";
 import { MatchList } from "../matches/MatchList";
-import { Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton, ProfileSkeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -44,8 +44,11 @@ export function PlayerProfile() {
 
   if (profile.loading)
     return (
-      <div className="card">
-        <Skeleton rows={4} />
+      <div>
+        <div className="card">
+          <ProfileSkeleton />
+        </div>
+        <StatsSkeleton />
       </div>
     );
   if (!profile.data)
@@ -204,7 +207,7 @@ export function PlayerProfile() {
 
       <section className="card">
         <h2 className="card__title">Recente matches</h2>
-        {matches.loading && <Skeleton rows={3} />}
+        {matches.loading && <MatchListSkeleton count={3} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
-import { Skeleton } from "../../components/Skeleton";
+import { StandingsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -160,7 +160,7 @@ export function Leaderboard() {
 
       <div className="card">
         {loading ? (
-          <Skeleton rows={5} />
+          <StandingsSkeleton rows={6} />
         ) : error ? (
           <p className="msg msg--error">{error}</p>
         ) : rows.length === 0 ? (
