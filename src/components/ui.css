@@ -153,10 +153,20 @@
 .input::placeholder {
   color: var(--placeholder);
 }
-/* Compact score-invoerveld (2 cijfers). */
+/* Compact score-invoerveld (2 cijfers) — groot genoeg om op de baan met de
+   duim te raken, zonder spinner-pijltjes. */
 .input--score {
-  width: 56px;
+  width: 64px;
   text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.input--score::-webkit-outer-spin-button,
+.input--score::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .input:focus,
 .select:focus {
@@ -352,6 +362,19 @@
 .empty--bare {
   padding: 0;
 }
+/* Lege staat met een duidelijke vervolgactie. */
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+}
+.empty-state__title {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+}
 .row-between {
   display: flex;
   align-items: center;
@@ -417,6 +440,7 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
   transition: background 0.15s, color 0.15s;
 }
 .tab:hover:not(.is-active) {
@@ -570,6 +594,38 @@
   gap: var(--sp-1);
 }
 
+/* Geplande match met inline score-invoer (dashboard, matches, groepsrondes). */
+.match-card--planned {
+  border-style: dashed;
+  border-color: var(--accent-line);
+}
+.match-card--planned:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--accent-line);
+}
+.planned-score {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.planned-score__dash {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+/* Smalle schermen: score-invoer onder de teams i.p.v. ertussen geklemd. */
+@media (max-width: 480px) {
+  .match-card--planned {
+    grid-template-columns: 1fr 1fr;
+  }
+  .match-card--planned .match-card__mid {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: var(--sp-3);
+    border-top: 1px dashed var(--line);
+  }
+}
+
 /* Oude klassen die her en der nog gebruikt worden (o.a. score-invoer). */
 .matchlist__vs {
   font-variant-numeric: tabular-nums;
@@ -581,34 +637,6 @@
   border-radius: 999px;
   font-size: var(--fs-sm);
   white-space: nowrap;
-}
-
-/* ---------- Inline uitslag-invoer (geplande match) ---------- */
-.result-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  flex-wrap: wrap;
-}
-.result-row__teams {
-  font-size: var(--fs-md);
-  color: var(--ink);
-  font-weight: 600;
-}
-.result-row__form {
-  display: flex;
-  gap: var(--sp-2);
-  align-items: center;
-  flex-wrap: wrap;
-}
-.result-row__hint {
-  font-size: var(--fs-xs);
-  color: var(--danger);
 }
 
 /* ---------- Uitleg-paneel (inklapbaar), o.a. voor het klassement ---------- */
@@ -697,10 +725,11 @@
     font-size: 0.625rem;
     letter-spacing: 0.02em;
   }
-  /* Klassement: secundaire kolommen verbergen zodat naam + punten passen
-     zonder horizontaal te hoeven scrollen (details staan op het spelersprofiel). */
-  .col-sec {
-    display: none;
+
+  /* Tab-rijen die niet passen scrollen binnen hun eigen strook. */
+  .tabs {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .stats {
@@ -760,6 +789,10 @@
 .sidebar__link:focus-visible,
 .sidebar__signout:focus-visible,
 .sidebar__brand:focus-visible,
+.sidebar__user:focus-visible,
+.tabbar__link:focus-visible,
+.topbar__brand:focus-visible,
+.topbar__profile:focus-visible,
 .match-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

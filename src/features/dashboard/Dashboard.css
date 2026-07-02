@@ -68,6 +68,54 @@
   flex-wrap: wrap;
 }
 
+/* Actiestrook: dingen die op jou wachten (uitslagen, verzoeken). */
+.todo-strip {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+}
+.todo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+  border-radius: 999px;
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+  color: var(--warn);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-decoration: none;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.todo-chip:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.todo-chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--sp-1);
+  border-radius: 999px;
+  background: var(--warn);
+  color: #fff;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.todo-chip--accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.todo-chip--accent .todo-chip__count {
+  background: var(--accent);
+}
+
 /* Topspelers-lijstje met genummerde rang. */
 .toplist {
   list-style: none;

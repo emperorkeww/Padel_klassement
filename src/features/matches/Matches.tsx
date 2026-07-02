@@ -2,18 +2,14 @@ import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
-import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { outcomeFor } from "../../lib/results";
-import { errorMessage } from "../../lib/errors";
-import {
-  getRecentMatches,
-  getTeamsMap,
-  createCompletedMatch,
-} from "./api";
-import { getAllProfiles, displayName } from "../profiles/api";
+import { getRecentMatches, getTeamsMap } from "./api";
+import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { MatchCard } from "./MatchList";
+import { PlannedMatchCard } from "./PlannedMatchCard";
+import { NewMatchSheet } from "./NewMatchSheet";
 import type { Match, Profile, Team } from "../../lib/types";
 import "./Matches.css";
 
@@ -23,6 +19,7 @@ export function Matches() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const [filter, setFilter] = useState<Filter>("all");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const matches = useAsync(() => getRecentMatches(100), []);
   const teams = useAsync(getTeamsMap, []);
@@ -32,7 +29,7 @@ export function Matches() {
   const pmap = Object.fromEntries((profiles.data ?? []).map((p) => [p.id, p]));
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
 
-  // Alleen jezelf en je geaccepteerde vrienden zijn kiesbaar in het formulier.
+  // Alleen jezelf en je geaccepteerde vrienden zijn kiesbaar in de wizard.
   const { accepted } = categorize(friendships.data ?? [], myId);
   const selectablePlayers: Profile[] = [
     pmap[myId],
@@ -46,20 +43,70 @@ export function Matches() {
   }, [matches.reload, teams.reload]);
   useRealtime("matches", reloadAll);
 
+  // Geplande matches waarin ik meedoe: bovenaan met inline score-invoer.
+  const plannedMine = useMemo(
+    () =>
+      (matches.data ?? []).filter(
+        (m) =>
+          m.status !== "completed" &&
+          [tmap[m.team_a_id], tmap[m.team_b_id]].some(
+            (t) => t && (t.player1_id === myId || t.player2_id === myId),
+          ),
+      ),
+    [matches.data, tmap, myId],
+  );
+  const plannedIds = useMemo(
+    () => new Set(plannedMine.map((m) => m.id)),
+    [plannedMine],
+  );
+
   const filtered = useMemo(
-    () => applyFilter(matches.data ?? [], tmap, myId, filter),
-    [matches.data, tmap, myId, filter],
+    () =>
+      applyFilter(matches.data ?? [], tmap, myId, filter).filter(
+        (m) => !plannedIds.has(m.id),
+      ),
+    [matches.data, tmap, myId, filter, plannedIds],
   );
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Matches</h1>
-        <p className="page-subtitle">Log een uitslag of bekijk recente wedstrijden.</p>
+        <div className="row-between">
+          <div>
+            <h1 className="page-title">Matches</h1>
+            <p className="page-subtitle">
+              Log een uitslag of bekijk recente wedstrijden.
+            </p>
+          </div>
+          <button
+            className="btn btn--primary"
+            onClick={() => setSheetOpen(true)}
+          >
+            + Match loggen
+          </button>
+        </div>
       </header>
 
-      <AddMatchForm players={selectablePlayers} onCreated={reloadAll} />
+      {plannedMine.length > 0 && (
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Te spelen</h2>
+            <span className="badge badge--accent">{plannedMine.length}</span>
+          </div>
+          <div className="stack">
+            {plannedMine.map((m) => (
+              <PlannedMatchCard
+                key={m.id}
+                match={m}
+                teams={tmap}
+                profiles={pmap}
+                onSaved={reloadAll}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <div className="card__head">
@@ -87,11 +134,21 @@ export function Matches() {
         {matches.loading && <Skeleton rows={4} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && groups.length === 0 && (
-          <p className="empty">
-            {filter === "all"
-              ? "Nog geen matches."
-              : "Geen matches voor dit filter."}
-          </p>
+          <div className="empty-state">
+            <p className="empty-state__title">
+              {filter === "all"
+                ? "Nog geen matches."
+                : "Geen matches voor dit filter."}
+            </p>
+            {filter === "all" && (
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={() => setSheetOpen(true)}
+              >
+                + Log je eerste match
+              </button>
+            )}
+          </div>
         )}
         {!matches.loading &&
           groups.map(({ day, list }) => (
@@ -112,6 +169,13 @@ export function Matches() {
             </div>
           ))}
       </section>
+
+      <NewMatchSheet
+        open={sheetOpen}
+        players={selectablePlayers}
+        onClose={() => setSheetOpen(false)}
+        onCreated={reloadAll}
+      />
     </div>
   );
 }
@@ -165,183 +229,6 @@ function groupByDay(matches: Match[]): { day: string; list: Match[] }[] {
     else out.push({ day, list: [m] });
   }
   return out;
-}
-
-/* ---------- Formulier ---------- */
-
-function AddMatchForm({
-  players,
-  onCreated,
-}: {
-  players: Profile[];
-  onCreated: () => void;
-}) {
-  const [a1, setA1] = useState("");
-  const [a2, setA2] = useState("");
-  const [b1, setB1] = useState("");
-  const [b2, setB2] = useState("");
-  const [scoreA, setScoreA] = useState("");
-  const [scoreB, setScoreB] = useState("");
-  const [busy, setBusy] = useState(false);
-  const toast = useToast();
-
-  const chosen = [a1, a2, b1, b2].filter(Boolean);
-  const allChosen = chosen.length === 4;
-  const distinct = new Set(chosen).size === chosen.length;
-
-  const sa = scoreA === "" ? null : Number(scoreA);
-  const sb = scoreB === "" ? null : Number(scoreB);
-  const preview =
-    sa !== null && sb !== null
-      ? sa === sb
-        ? "Gelijkspel — beide teams krijgen 1 punt."
-        : `Team ${sa > sb ? "A" : "B"} wint en krijgt 3 punten.`
-      : null;
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!allChosen) return toast.error("Kies vier spelers.");
-    if (!distinct)
-      return toast.error("De vier spelers moeten verschillend zijn.");
-    if (sa === null || sb === null) return toast.error("Vul de eindscore in.");
-
-    // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
-    const winner: "a" | "b" | "draw" = sa === sb ? "draw" : sa > sb ? "a" : "b";
-
-    setBusy(true);
-    try {
-      await createCompletedMatch({
-        a1,
-        a2,
-        b1,
-        b2,
-        winner,
-        scoreA: sa,
-        scoreB: sb,
-      });
-      toast.success("Match toegevoegd.");
-      setA1("");
-      setA2("");
-      setB1("");
-      setB2("");
-      setScoreA("");
-      setScoreB("");
-      onCreated();
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function swapTeams() {
-    setA1(b1);
-    setA2(b2);
-    setB1(a1);
-    setB2(a2);
-    setScoreA(scoreB);
-    setScoreB(scoreA);
-  }
-
-  const opts = (exclude: string[]) =>
-    players
-      .filter((p) => !exclude.includes(p.id))
-      .map((p) => (
-        <option key={p.id} value={p.id}>
-          {displayName(p)}
-        </option>
-      ));
-
-  return (
-    <section className="card">
-      <h2 className="card__title">Match toevoegen</h2>
-      {players.length < 4 && (
-        <p className="empty">
-          Je kunt alleen jezelf en je vrienden toevoegen. Voeg eerst meer
-          vrienden toe om een volledige match (4 spelers) te loggen.
-        </p>
-      )}
-      <form onSubmit={submit} className="stack match-form">
-        <div className="match-teams">
-          <div className="match-team">
-            <span className="match-team__label">Team A</span>
-            <PlayerSelect value={a1} onChange={setA1} options={opts([a2, b1, b2])} />
-            <PlayerSelect value={a2} onChange={setA2} options={opts([a1, b1, b2])} />
-          </div>
-          <button
-            type="button"
-            className="btn btn--sm match-swap"
-            onClick={swapTeams}
-            title="Wissel team A en B"
-            aria-label="Wissel team A en B"
-          >
-            ⇄
-          </button>
-          <div className="match-team">
-            <span className="match-team__label">Team B</span>
-            <PlayerSelect value={b1} onChange={setB1} options={opts([a1, a2, b2])} />
-            <PlayerSelect value={b2} onChange={setB2} options={opts([a1, a2, b1])} />
-          </div>
-        </div>
-
-        <label className="label">
-          Eindscore
-          <span className="match-score">
-            <input
-              className="input"
-              type="number"
-              min="0"
-              placeholder="A"
-              aria-label="Score team A"
-              value={scoreA}
-              onChange={(e) => setScoreA(e.target.value)}
-            />
-            <span className="matchlist__vs">–</span>
-            <input
-              className="input"
-              type="number"
-              min="0"
-              placeholder="B"
-              aria-label="Score team B"
-              value={scoreB}
-              onChange={(e) => setScoreB(e.target.value)}
-            />
-          </span>
-          <span className="match-form__hint">
-            {preview ??
-              "De winnaar wordt bepaald door de hoogste score. Een gelijke score telt als gelijkspel."}
-          </span>
-        </label>
-
-        <div>
-          <button className="btn btn--primary" disabled={busy}>
-            {busy ? "Opslaan…" : "Match opslaan"}
-          </button>
-        </div>
-      </form>
-    </section>
-  );
-}
-
-function PlayerSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: React.ReactNode;
-}) {
-  return (
-    <select
-      className="select"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">— kies speler —</option>
-      {options}
-    </select>
-  );
 }
 
 export default Matches;

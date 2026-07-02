@@ -4,6 +4,11 @@
   background: var(--bg);
 }
 
+/* ---------- Mobiele topbalk (verborgen op desktop) ---------- */
+.topbar {
+  display: none;
+}
+
 /* ---------- Zijbalk (desktop) ---------- */
 .sidebar {
   position: sticky;
@@ -35,8 +40,27 @@
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.sidebar__group + .sidebar__group {
+  margin-top: var(--sp-5);
+}
+.sidebar__group-title {
+  padding: 0 var(--sp-3);
+  margin-bottom: var(--sp-1);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--placeholder);
 }
 
 .sidebar__link {
@@ -63,11 +87,6 @@
 .sidebar__icon {
   display: inline-flex;
 }
-/* Overzicht staat in de NAV-array in het midden (voor de mobiele bal-knop);
-   op desktop hoort 'ie weer bovenaan de verticale lijst. */
-.sidebar__link--home {
-  order: -1;
-}
 
 .sidebar__foot {
   display: flex;
@@ -76,8 +95,34 @@
   padding-top: 1rem;
   border-top: 1px solid var(--line);
 }
-.sidebar__email {
-  font-size: var(--fs-sm);
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  transition: background 0.15s;
+}
+.sidebar__user:hover {
+  background: var(--surface-2);
+}
+.sidebar__user-text {
+  display: grid;
+  min-width: 0;
+}
+.sidebar__user-name {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar__user-mail {
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -115,105 +160,144 @@
   padding: var(--sp-8) var(--sp-8) 3rem;
 }
 
-/* ---------- Mobiel: zijbalk wordt onderbalk ---------- */
+/* Zachte enter-animatie bij paginawissel (het Outlet-kind wordt vers gemount). */
+@media (prefers-reduced-motion: no-preference) {
+  .content__inner > * {
+    animation: page-enter 0.22s ease-out;
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Mobiele onderbalk (verborgen op desktop) ---------- */
+.tabbar {
+  display: none;
+}
+
+/* ---------- Mobiel: topbalk + onderbalk i.p.v. zijbalk ---------- */
 @media (max-width: 760px) {
   .shell {
     flex-direction: column;
   }
-  /* Lichte, zwevende balk met ruimte voor de iOS-safe-area. */
   .sidebar {
+    display: none;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: 0.5rem var(--sp-4);
+    padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+    background: rgba(255, 255, 255, 0.88);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--ink);
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .topbar__profile {
+    display: inline-flex;
+    border-radius: 50%;
+  }
+
+  .tabbar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    top: auto;
-    height: auto;
-    width: auto;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.55rem 0.5rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
     z-index: 20;
-    border-right: none;
-    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: stretch;
+    padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
     background: var(--sidebar-bg);
+    border-top: 1px solid var(--line);
     box-shadow: 0 -6px 24px rgba(20, 40, 28, 0.1);
-    /* Ruimte boven de balk zodat de uitstekende bal-knop niet wordt afgekapt. */
-    overflow: visible;
   }
-  .sidebar__brand,
-  .sidebar__foot {
-    display: none;
-  }
-  .sidebar__nav {
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    width: 100%;
-    gap: 0.1rem;
-  }
-  /* Overzicht terug naar het midden (order:-1 gold alleen voor desktop). */
-  .sidebar__link--home {
-    order: 0;
-  }
-  .sidebar__link {
+  .tabbar__link {
     flex: 1;
     min-width: 0;
-    padding: 0.65rem 0.2rem;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
+    padding: 0.3rem 0.2rem;
     color: var(--sidebar-ink);
+    text-decoration: none;
   }
-  /* Iconen-only op mobiel: grotere, duidelijke symbolen die netjes passen. */
-  .sidebar__icon svg {
-    width: 26px;
-    height: 26px;
+  .tabbar__icon {
+    display: inline-flex;
   }
-  .sidebar__label {
-    display: none;
+  .tabbar__icon svg {
+    width: 24px;
+    height: 24px;
   }
-  .sidebar__link:hover {
-    background: transparent;
-    color: var(--ink);
+  .tabbar__label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .sidebar__link.is-active {
-    background: transparent;
+  .tabbar__link.is-active {
     color: var(--accent);
-    box-shadow: none;
   }
 
   /* ---- Uitstekende ronde padelbal-knop in het midden ----
-     Overzicht houdt een gelijke kolom (geen overflow); de cirkel zweeft
-     absoluut in die kolom en steekt boven de balk uit. */
-  .sidebar__link--home {
+     De cirkel zweeft absoluut in de eigen kolom en steekt boven de balk uit;
+     het tekstlabel vervalt (het icoon ís het label, aria-label dekt de rest). */
+  .tabbar__link--home {
     position: relative;
   }
-  .sidebar__link--home .sidebar__icon {
+  .tabbar__link--home .tabbar__label {
+    display: none;
+  }
+  .tabbar__link--home .tabbar__icon {
     position: absolute;
     left: 50%;
     top: 50%;
-    /* Gecentreerd in de kolom, daarna omhoog zodat 'ie uit de balk steekt. */
     transform: translate(-50%, -50%) translateY(-16px);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 60px;
-    height: 60px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     background: var(--surface);
-    /* Witte rand + zachte schaduw laten de bal boven de balk zweven. */
     border: 4px solid var(--sidebar-bg);
     box-shadow: 0 6px 18px rgba(20, 40, 28, 0.22);
   }
-  .sidebar__link--home .sidebar__icon svg {
-    width: 32px;
-    height: 32px;
+  .tabbar__link--home .tabbar__icon svg {
+    width: 30px;
+    height: 30px;
   }
-  .sidebar__link--home.is-active .sidebar__icon {
+  .tabbar__link--home.is-active .tabbar__icon {
     box-shadow: 0 0 0 3px var(--accent), 0 6px 18px rgba(20, 40, 28, 0.22);
   }
 
   .content__inner {
-    padding: var(--sp-6) var(--sp-4) 5.5rem;
+    padding: var(--sp-5) var(--sp-4) 5.5rem;
   }
 }

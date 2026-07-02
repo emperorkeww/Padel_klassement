@@ -34,6 +34,7 @@
   border-color: color-mix(in srgb, var(--gold) 35%, var(--line));
   padding-top: var(--sp-6);
   padding-bottom: var(--sp-6);
+  box-shadow: var(--shadow-md);
 }
 .podium__spot--2 {
   background:
@@ -156,8 +157,118 @@
   background: var(--accent);
 }
 
+/* ---------- Mobiele ranglijst (vervangt de tabel op smalle schermen) ---------- */
+.ranklist {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ranklist__row {
+  border-bottom: 1px solid var(--line);
+}
+.ranklist__row:last-child {
+  border-bottom: none;
+}
+.ranklist__row.is-me .ranklist__link {
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+}
+.ranklist__link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-2);
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+.ranklist__rank {
+  flex-shrink: 0;
+}
+.ranklist__main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.ranklist__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 700;
+  font-size: var(--fs-base);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranklist__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.ranklist__end {
+  flex-shrink: 0;
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+}
+.ranklist__pts {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ranklist__pts-label {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- "Jouw positie"-knop ---------- */
+.me-chip {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-6);
+  z-index: 15;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: background 0.15s, transform 0.1s;
+}
+.me-chip:hover {
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
 /* ---------- Mobiel ---------- */
 @media (max-width: 640px) {
+  /* Tabel maakt plaats voor de ranglijst; niets wordt verstopt of afgekapt. */
+  .leaderboard-table {
+    display: none;
+  }
+  .ranklist {
+    display: block;
+  }
+  /* Boven de vaste onderbalk blijven. */
+  .me-chip {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
   .podium {
     gap: var(--sp-2);
   }

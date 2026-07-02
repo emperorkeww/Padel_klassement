@@ -19,6 +19,18 @@
   width: auto;
 }
 
+/* Rondekop: titel links, voortgangsbadge rechts. */
+.round-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.round-head .card__title--compact {
+  margin-bottom: 0;
+}
+
 /* Mobiel: knop op volle breedte zodat de rij niet propt. */
 @media (max-width: 640px) {
   .gen-controls {

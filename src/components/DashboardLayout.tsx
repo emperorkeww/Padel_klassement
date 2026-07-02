@@ -1,27 +1,59 @@
 import { Suspense, type ReactNode } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
+import { useAsync } from "../lib/useAsync";
+import { getProfile, displayName } from "../features/profiles/api";
+import { Avatar } from "./Avatar";
 import { BallIcon } from "./BallIcon";
 import "./ui.css";
 import "./DashboardLayout.css";
 
-// Overzicht staat bewust in het midden van de rij: op mobiel wordt dat de
-// uitstekende ronde padelbal-knop. Op desktop zet CSS (order:-1) 'm weer bovenaan.
-const NAV: { to: string; label: string; end?: boolean; home?: boolean; icon: ReactNode }[] = [
-  { to: "/klassement", label: "Klassement", icon: <IconTrophy /> },
-  { to: "/matches", label: "Matches", icon: <IconRacket /> },
-  { to: "/banen", label: "Banen", icon: <IconCourt /> },
-  { to: "/", label: "Overzicht", end: true, home: true, icon: <BallIcon size={22} /> },
-  { to: "/groepen", label: "Groepen", icon: <IconUsers /> },
-  { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> },
-  { to: "/profiel", label: "Profiel", icon: <IconUser /> },
+type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
+
+const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
+const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
+const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconRacket /> };
+const GROEPEN: NavItem = { to: "/groepen", label: "Groepen", icon: <IconUsers /> };
+const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
+const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
+const PROFIEL: NavItem = { to: "/profiel", label: "Profiel", icon: <IconUser /> };
+
+// Desktop: gegroepeerde zijbalk.
+const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
+  { title: "Spelen", items: [OVERZICHT, MATCHES, GROEPEN, BANEN] },
+  { title: "Competitie", items: [KLASSEMENT] },
+  { title: "Account", items: [VRIENDEN, PROFIEL] },
 ];
+
+// Mobiel: vijf tabs; Overzicht is de uitstekende padelbal in het midden.
+// Vrienden en Profiel zitten achter de avatar in de topbalk.
+const TABBAR: NavItem[] = [KLASSEMENT, MATCHES, OVERZICHT, GROEPEN, BANEN];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
+  const myId = user?.id ?? "";
+  // Eigen profiel voor de avatar in topbalk en zijbalk-voet; de layout blijft
+  // gemount tijdens navigatie, dus dit is één query per sessie.
+  const profile = useAsync(
+    () => (myId ? getProfile(myId) : Promise.resolve(null)),
+    [myId],
+  );
+  const me = profile.data ?? null;
 
   return (
     <div className="shell">
+      {/* Mobiele topbalk: merk links, eigen avatar (naar profiel) rechts. */}
+      <header className="topbar">
+        <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
+          <BallIcon size={22} />
+          <span>Vamos!</span>
+        </Link>
+        <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
+          <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
+        </Link>
+      </header>
+
+      {/* Desktop-zijbalk met gegroepeerde navigatie. */}
       <aside className="sidebar">
         <Link to="/" className="sidebar__brand" aria-label="Naar overzicht">
           <BallIcon size={26} />
@@ -29,25 +61,38 @@ export function DashboardLayout() {
         </Link>
 
         <nav className="sidebar__nav">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `sidebar__link ${item.home ? "sidebar__link--home" : ""} ${isActive ? "is-active" : ""}`
-              }
-            >
-              <span className="sidebar__icon">{item.icon}</span>
-              <span className="sidebar__label">{item.label}</span>
-            </NavLink>
+          {SIDEBAR_GROUPS.map((group) => (
+            <div key={group.title} className="sidebar__group">
+              <span className="sidebar__group-title">{group.title}</span>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `sidebar__link ${isActive ? "is-active" : ""}`
+                  }
+                >
+                  <span className="sidebar__icon">{item.icon}</span>
+                  <span className="sidebar__label">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="sidebar__foot">
-          <span className="sidebar__email" title={user?.email ?? ""}>
-            {user?.email}
-          </span>
+          <Link to="/profiel" className="sidebar__user">
+            <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
+            <span className="sidebar__user-text">
+              <span className="sidebar__user-name">
+                {me ? displayName(me) : (user?.email ?? "")}
+              </span>
+              <span className="sidebar__user-mail" title={user?.email ?? ""}>
+                {user?.email}
+              </span>
+            </span>
+          </Link>
           <button className="sidebar__signout" onClick={() => signOut()}>
             Uitloggen
           </button>
@@ -56,14 +101,32 @@ export function DashboardLayout() {
 
       <main className="content">
         <div className="content__inner">
-          {/* Suspense hier (i.p.v. rond alle routes) houdt de zijbalk/footer
-              gemount tijdens het lazy-laden van een pagina — zo springt de
-              onderbalk op mobiel niet weg bij navigatie. */}
+          {/* Suspense hier (i.p.v. rond alle routes) houdt de balken gemount
+              tijdens het lazy-laden van een pagina — zo springt de navigatie
+              op mobiel niet weg. */}
           <Suspense fallback={<div className="route-loading">Laden…</div>}>
             <Outlet />
           </Suspense>
         </div>
       </main>
+
+      {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}
+      <nav className="tabbar" aria-label="Hoofdnavigatie">
+        {TABBAR.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            aria-label={item.label}
+            className={({ isActive }) =>
+              `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isActive ? "is-active" : ""}`
+            }
+          >
+            <span className="tabbar__icon">{item.icon}</span>
+            <span className="tabbar__label">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

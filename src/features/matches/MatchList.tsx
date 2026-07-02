@@ -61,7 +61,7 @@ export function MatchCard({
   );
 }
 
-function TeamSide({
+export function TeamSide({
   team,
   profiles,
   won,

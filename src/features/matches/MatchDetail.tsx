@@ -182,9 +182,10 @@ function ScoreEditor({
         <label className="md-editor__field">
           <span>{labelA}</span>
           <input
-            className="input"
+            className="input input--score"
             type="number"
             min="0"
+            inputMode="numeric"
             aria-label={`Score ${labelA}`}
             value={sa}
             onChange={(e) => setSa(e.target.value)}
@@ -194,9 +195,10 @@ function ScoreEditor({
         <label className="md-editor__field">
           <span>{labelB}</span>
           <input
-            className="input"
+            className="input input--score"
             type="number"
             min="0"
+            inputMode="numeric"
             aria-label={`Score ${labelB}`}
             value={sb}
             onChange={(e) => setSb(e.target.value)}

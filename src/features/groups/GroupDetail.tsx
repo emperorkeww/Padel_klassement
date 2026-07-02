@@ -13,24 +13,18 @@ import {
   generateAmericanoRound,
   generateMexicanoRound,
 } from "./api";
-import {
-  getGroupMatches,
-  getTeamsMap,
-  setMatchResult,
-  teamLabel,
-} from "../matches/api";
+import { getGroupMatches, getTeamsMap } from "../matches/api";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import {
-  getMyFriendships,
-  categorize,
-  otherId,
-} from "../friends/api";
+import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
+import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
 import "./GroupDetail.css";
+
+type View = "rondes" | "stand" | "leden";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -56,6 +50,7 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<View>("rondes");
   const [mode, setMode] = useState<"americano" | "mexicano">("americano");
   const [roundsToGen, setRoundsToGen] = useState(1);
 
@@ -88,6 +83,11 @@ export function GroupDetail() {
 
   // matches per ronde (aflopend)
   const rounds = groupByRound(matches.data ?? []);
+  // Mexicano paart op de stand: pas mogelijk als de vorige ronde compleet is.
+  const openRound = rounds.find(({ list }) =>
+    list.some((m) => m.status !== "completed"),
+  );
+  const mexicanoBlocked = mode === "mexicano" && !!openRound;
 
   if (group.loading)
     return (
@@ -114,7 +114,209 @@ export function GroupDetail() {
         </p>
       </header>
 
-      <div className="grid grid--2">
+      <div className="tabs">
+        <button
+          className={`tab ${view === "rondes" ? "is-active" : ""}`}
+          onClick={() => setView("rondes")}
+        >
+          Rondes
+        </button>
+        <button
+          className={`tab ${view === "stand" ? "is-active" : ""}`}
+          onClick={() => setView("stand")}
+        >
+          Stand
+        </button>
+        <button
+          className={`tab ${view === "leden" ? "is-active" : ""}`}
+          onClick={() => setView("leden")}
+        >
+          Leden
+        </button>
+      </div>
+
+      {view === "rondes" && (
+        <section className="card">
+          <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+          <p className="card__subtitle">
+            {mode === "americano"
+              ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
+              : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
+          </p>
+
+          <SpelvormUitleg />
+
+          <div className="toolbar">
+            <div className="tabs">
+              <button
+                className={`tab ${mode === "americano" ? "is-active" : ""}`}
+                onClick={() => setMode("americano")}
+              >
+                Americano
+              </button>
+              <button
+                className={`tab ${mode === "mexicano" ? "is-active" : ""}`}
+                onClick={() => setMode("mexicano")}
+              >
+                Mexicano
+              </button>
+            </div>
+            <div className="gen-controls">
+              {mode === "americano" && (
+                <label className="gen-controls__rounds">
+                  <span>Rondes</span>
+                  <select
+                    className="select"
+                    value={roundsToGen}
+                    onChange={(e) => setRoundsToGen(Number(e.target.value))}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button
+                className="btn btn--primary"
+                disabled={busy || memberList.length < 4 || mexicanoBlocked}
+                onClick={() =>
+                  act(async () => {
+                    let total = 0;
+                    if (mode === "americano") {
+                      // Meerdere rondes in één keer: elke ronde krijgt een verse
+                      // willekeurige indeling. Sequentieel zodat de rondenummers
+                      // netjes oplopen.
+                      for (let i = 0; i < roundsToGen; i++) {
+                        const ids = await generateAmericanoRound(id);
+                        total += ids.length;
+                      }
+                    } else {
+                      const ids = await generateMexicanoRound(id);
+                      total = ids.length;
+                    }
+                    if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
+                  }, generatedMessage(mode, roundsToGen))
+                }
+              >
+                {mode === "americano"
+                  ? roundsToGen === 1
+                    ? "Genereer Americano-ronde"
+                    : `Genereer ${roundsToGen} Americano-rondes`
+                  : "Genereer Mexicano-ronde"}
+              </button>
+            </div>
+          </div>
+          {memberList.length < 4 && (
+            <p className="empty">
+              Minimaal 4 leden nodig om een ronde te genereren.
+            </p>
+          )}
+          {memberList.length >= 4 && mexicanoBlocked && (
+            <p className="empty">
+              Vul eerst alle uitslagen van ronde {openRound!.round} in — Mexicano
+              paart op basis van de volledige stand.
+            </p>
+          )}
+
+          {rounds.length === 0 && (
+            <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
+          )}
+
+          <div className="stack">
+            {rounds.map(({ round, list }) => {
+              const done = list.filter((m) => m.status === "completed").length;
+              return (
+                <div key={round}>
+                  <div className="round-head">
+                    <h3 className="card__title card__title--compact">
+                      Ronde {round}
+                    </h3>
+                    <span
+                      className={`badge ${
+                        done === list.length ? "badge--win" : "badge--accent"
+                      }`}
+                    >
+                      {done === list.length
+                        ? "Afgerond"
+                        : `${done}/${list.length} uitslagen`}
+                    </span>
+                  </div>
+                  <div className="stack">
+                    {list.map((m) =>
+                      m.status === "completed" ? (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          teams={tmap}
+                          profiles={pmap}
+                          perspectiveId={myId}
+                        />
+                      ) : (
+                        <PlannedMatchCard
+                          key={m.id}
+                          match={m}
+                          teams={tmap}
+                          profiles={pmap}
+                          onSaved={onMatches}
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {view === "stand" && (
+        <section className="card">
+          <h2 className="card__title">Groepsklassement</h2>
+          {(standings.data ?? []).length === 0 ? (
+            <p className="empty">Nog geen afgeronde matches in deze groep.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Speler</th>
+                  <th className="num">G</th>
+                  <th className="num">W</th>
+                  <th className="num">Saldo</th>
+                  <th className="num">Ptn</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(standings.data ?? []).map((p, i) => (
+                  <tr
+                    key={p.player_id}
+                    className={p.player_id === myId ? "is-me" : ""}
+                  >
+                    <td>
+                      <span className="cell-player">
+                        <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                        <Avatar profile={pmap[p.player_id] ?? p} size={24} />
+                        {displayName(p)}
+                      </span>
+                    </td>
+                    <td className="num">{p.played}</td>
+                    <td className="num">{p.won}</td>
+                    <td className="num">
+                      {p.goal_diff > 0 ? `+${p.goal_diff}` : p.goal_diff}
+                    </td>
+                    <td className="num">
+                      <strong>{p.points}</strong>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
+
+      {view === "leden" && (
         <section className="card">
           <h2 className="card__title">Leden</h2>
           <div className="stack">
@@ -132,7 +334,10 @@ export function GroupDetail() {
                     className="btn btn--danger btn--sm"
                     disabled={busy}
                     onClick={() =>
-                      act(() => removeGroupMember(id, m.player_id), "Lid verwijderd.")
+                      act(
+                        () => removeGroupMember(id, m.player_id),
+                        "Lid verwijderd.",
+                      )
                     }
                   >
                     Verwijderen
@@ -144,7 +349,9 @@ export function GroupDetail() {
 
           {isOwner && (
             <>
-              <h3 className="card__title card__title--section">Vriend toevoegen</h3>
+              <h3 className="card__title card__title--section">
+                Vriend toevoegen
+              </h3>
               {addableFriendIds.length === 0 ? (
                 <p className="empty">
                   Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
@@ -173,172 +380,7 @@ export function GroupDetail() {
             </>
           )}
         </section>
-
-        <section className="card">
-          <h2 className="card__title">Groepsklassement</h2>
-          {(standings.data ?? []).length === 0 ? (
-            <p className="empty">Nog geen afgeronde matches in deze groep.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Speler</th>
-                  <th className="num">G</th>
-                  <th className="num">W</th>
-                  <th className="num">Saldo</th>
-                  <th className="num">Ptn</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(standings.data ?? []).map((p) => (
-                  <tr key={p.player_id} className={p.player_id === myId ? "is-me" : ""}>
-                    <td>
-                      <span className="cell-player">
-                        <Avatar profile={pmap[p.player_id] ?? p} size={24} />
-                        {displayName(p)}
-                      </span>
-                    </td>
-                    <td className="num">{p.played}</td>
-                    <td className="num">{p.won}</td>
-                    <td className="num">
-                      {p.goal_diff > 0 ? `+${p.goal_diff}` : p.goal_diff}
-                    </td>
-                    <td className="num">
-                      <strong>{p.points}</strong>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </div>
-
-      <section className="card">
-        <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
-        <p className="card__subtitle">
-          {mode === "americano"
-            ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
-            : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
-        </p>
-
-        <SpelvormUitleg />
-
-        <div className="toolbar">
-          <div className="tabs">
-            <button
-              className={`tab ${mode === "americano" ? "is-active" : ""}`}
-              onClick={() => setMode("americano")}
-            >
-              Americano
-            </button>
-            <button
-              className={`tab ${mode === "mexicano" ? "is-active" : ""}`}
-              onClick={() => setMode("mexicano")}
-            >
-              Mexicano
-            </button>
-          </div>
-          <div className="gen-controls">
-            {mode === "americano" && (
-              <label className="gen-controls__rounds">
-                <span>Rondes</span>
-                <select
-                  className="select"
-                  value={roundsToGen}
-                  onChange={(e) => setRoundsToGen(Number(e.target.value))}
-                >
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <button
-              className="btn btn--primary"
-              disabled={busy || memberList.length < 4}
-              onClick={() =>
-                act(async () => {
-                  let total = 0;
-                  if (mode === "americano") {
-                    // Meerdere rondes in één keer: elke ronde krijgt een verse
-                    // willekeurige indeling. Sequentieel zodat de rondenummers
-                    // netjes oplopen.
-                    for (let i = 0; i < roundsToGen; i++) {
-                      const ids = await generateAmericanoRound(id);
-                      total += ids.length;
-                    }
-                  } else {
-                    const ids = await generateMexicanoRound(id);
-                    total = ids.length;
-                  }
-                  if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
-                }, generatedMessage(mode, roundsToGen))
-              }
-            >
-              {mode === "americano"
-                ? roundsToGen === 1
-                  ? "Genereer Americano-ronde"
-                  : `Genereer ${roundsToGen} Americano-rondes`
-                : "Genereer Mexicano-ronde"}
-            </button>
-          </div>
-        </div>
-        {memberList.length < 4 && (
-          <p className="empty">Minimaal 4 leden nodig om een ronde te genereren.</p>
-        )}
-
-        {rounds.length === 0 && (
-          <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
-        )}
-
-        <div className="stack">
-          {rounds.map(({ round, list }) => (
-            <div key={round}>
-              <h3 className="card__title card__title--compact">Ronde {round}</h3>
-              <div className="stack">
-                {list.map((m) =>
-                  m.status === "completed" ? (
-                    <MatchCard
-                      key={m.id}
-                      match={m}
-                      teams={tmap}
-                      profiles={pmap}
-                      perspectiveId={myId}
-                    />
-                  ) : (
-                    <MatchRow
-                      key={m.id}
-                      labelA={teamLabel(tmap[m.team_a_id], pmap)}
-                      labelB={teamLabel(tmap[m.team_b_id], pmap)}
-                      busy={busy}
-                      onResult={(winner, sa, sb) =>
-                        act(
-                          () =>
-                            setMatchResult({
-                              matchId: m.id,
-                              winnerTeamId:
-                                winner === "a"
-                                  ? m.team_a_id
-                                  : winner === "b"
-                                    ? m.team_b_id
-                                    : null,
-                              scoreA: sa,
-                              scoreB: sb,
-                            }),
-                          "Resultaat opgeslagen.",
-                        )
-                      }
-                    />
-                  ),
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
     </div>
   );
 }
@@ -380,73 +422,6 @@ function SpelvormUitleg() {
         </dl>
       </div>
     </details>
-  );
-}
-
-function MatchRow({
-  labelA,
-  labelB,
-  busy,
-  onResult,
-}: {
-  labelA: string;
-  labelB: string;
-  busy: boolean;
-  onResult: (
-    winner: "a" | "b" | "draw",
-    scoreA: number | null,
-    scoreB: number | null,
-  ) => void;
-}) {
-  const [sa, setSa] = useState("");
-  const [sb, setSb] = useState("");
-
-  // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
-  const saNum = sa === "" ? null : Number(sa);
-  const sbNum = sb === "" ? null : Number(sb);
-  const valid = saNum !== null && sbNum !== null;
-
-  // Geplande match: alleen de score invoeren, winnaar volgt automatisch.
-  return (
-    <div className="result-row">
-      <span className="result-row__teams">
-        {labelA} <span className="matchlist__vs">vs</span> {labelB}
-      </span>
-      <span className="result-row__form">
-        <input
-          className="input input--score"
-          type="number"
-          min="0"
-          placeholder="A"
-          aria-label={`Score ${labelA}`}
-          value={sa}
-          onChange={(e) => setSa(e.target.value)}
-        />
-        <span className="matchlist__vs">–</span>
-        <input
-          className="input input--score"
-          type="number"
-          min="0"
-          placeholder="B"
-          aria-label={`Score ${labelB}`}
-          value={sb}
-          onChange={(e) => setSb(e.target.value)}
-        />
-        <button
-          className="btn btn--primary btn--sm"
-          disabled={busy || !valid}
-          onClick={() =>
-            onResult(
-              saNum === sbNum ? "draw" : saNum! > sbNum! ? "a" : "b",
-              saNum,
-              sbNum,
-            )
-          }
-        >
-          Opslaan
-        </button>
-      </span>
-    </div>
   );
 }
 

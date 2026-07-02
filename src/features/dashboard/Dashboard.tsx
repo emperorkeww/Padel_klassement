@@ -15,6 +15,7 @@ import { getRecentMatches, getPlayerMatches, getTeamsMap } from "../matches/api"
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { MatchList } from "../matches/MatchList";
+import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { getClubAvailability } from "../availability/api";
 import { Timetable, localDate } from "../availability/Timetable";
 import "./Dashboard.css";
@@ -26,7 +27,7 @@ export function Dashboard() {
   const standings = useAsync(getPlayerStandings, []);
   const matches = useAsync(() => getRecentMatches(6), []);
   const myMatches = useAsync(
-    () => (myId ? getPlayerMatches(myId, 15) : Promise.resolve([])),
+    () => (myId ? getPlayerMatches(myId, 30) : Promise.resolve([])),
     [myId],
   );
   const teams = useAsync(getTeamsMap, []);
@@ -80,6 +81,18 @@ export function Dashboard() {
   const myRating = ratings.data?.[myId]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
 
+  // Geplande matches waarin ik meedoe: de laagste ronde eerst — dat is de
+  // eerstvolgende match om te spelen (en de uitslag van in te vullen).
+  const planned = (myMatches.data ?? [])
+    .filter((m) => m.status !== "completed")
+    .sort(
+      (a, b) =>
+        (a.round_number ?? Number.MAX_SAFE_INTEGER) -
+          (b.round_number ?? Number.MAX_SAFE_INTEGER) ||
+        a.created_at.localeCompare(b.created_at),
+    );
+  const nextMatch = planned[0] ?? null;
+
   return (
     <div>
       <section className="hero">
@@ -114,6 +127,46 @@ export function Dashboard() {
           </Link>
         </div>
       </section>
+
+      {(planned.length > 0 || incoming.length > 0) && (
+        <div className="todo-strip">
+          {planned.length > 0 && (
+            <Link className="todo-chip" to="/matches">
+              <span className="todo-chip__count">{planned.length}</span>
+              {planned.length === 1
+                ? "uitslag wacht op jou"
+                : "uitslagen wachten op jou"}
+            </Link>
+          )}
+          {incoming.length > 0 && (
+            <Link className="todo-chip todo-chip--accent" to="/vrienden">
+              <span className="todo-chip__count">{incoming.length}</span>
+              {incoming.length === 1
+                ? "vriendschapsverzoek"
+                : "vriendschapsverzoeken"}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {nextMatch && (
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Jouw volgende match</h2>
+            {nextMatch.group_id && (
+              <Link className="profile-link" to={`/groepen/${nextMatch.group_id}`}>
+                Naar groep →
+              </Link>
+            )}
+          </div>
+          <PlannedMatchCard
+            match={nextMatch}
+            teams={tmap}
+            profiles={pmap}
+            onSaved={onMatches}
+          />
+        </section>
+      )}
 
       <div className="stats">
         <Stat label="Rating" value={myRating ?? "—"} accent />
