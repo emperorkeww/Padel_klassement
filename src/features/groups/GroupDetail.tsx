@@ -11,6 +11,7 @@ import {
   addGroupMember,
   removeGroupMember,
   generateAmericanoRound,
+  generateMexicanoRound,
 } from "./api";
 import {
   getGroupMatches,
@@ -27,6 +28,7 @@ import {
 } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
+import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
 
 export function GroupDetail() {
@@ -53,6 +55,7 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"americano" | "mexicano">("americano");
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -75,7 +78,7 @@ export function GroupDetail() {
       standings.reload();
       teams.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -212,26 +215,46 @@ export function GroupDetail() {
       </div>
 
       <section className="card">
-        <div className="row-between">
-          <div>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Wedstrijdrondes
-            </h2>
-            <p className="page-subtitle" style={{ marginTop: "0.25rem" }}>
-              Verdeelt de leden willekeurig in teams en wedstrijden.
-            </p>
+        <h2 className="card__title" style={{ marginBottom: "0.25rem" }}>
+          Wedstrijdrondes
+        </h2>
+        <p className="page-subtitle" style={{ marginBottom: "1rem" }}>
+          {mode === "americano"
+            ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
+            : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
+        </p>
+
+        <SpelvormUitleg />
+
+        <div className="row-between" style={{ marginTop: "1rem", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div className="tabs" style={{ marginBottom: 0 }}>
+            <button
+              className={`tab ${mode === "americano" ? "is-active" : ""}`}
+              onClick={() => setMode("americano")}
+            >
+              Americano
+            </button>
+            <button
+              className={`tab ${mode === "mexicano" ? "is-active" : ""}`}
+              onClick={() => setMode("mexicano")}
+            >
+              Mexicano
+            </button>
           </div>
           <button
             className="btn btn--primary"
             disabled={busy || memberList.length < 4}
             onClick={() =>
               act(async () => {
-                const ids = await generateAmericanoRound(id);
+                const ids =
+                  mode === "americano"
+                    ? await generateAmericanoRound(id)
+                    : await generateMexicanoRound(id);
                 if (ids.length === 0) throw new Error("Geen wedstrijden gegenereerd.");
-              }, "Nieuwe ronde gegenereerd.")
+              }, `Nieuwe ${mode === "americano" ? "Americano" : "Mexicano"}-ronde gegenereerd.`)
             }
           >
-            Genereer ronde
+            Genereer {mode === "americano" ? "Americano" : "Mexicano"}-ronde
           </button>
         </div>
         {memberList.length < 4 && (
@@ -290,6 +313,39 @@ export function GroupDetail() {
         </div>
       </section>
     </div>
+  );
+}
+
+function SpelvormUitleg() {
+  return (
+    <details className="explainer" style={{ marginBottom: 0 }}>
+      <summary>Americano of Mexicano — wat is het verschil?</summary>
+      <div className="explainer__body">
+        <dl>
+          <div>
+            <dt>Americano</dt>
+            <dd>
+              De leden worden <strong>willekeurig</strong> in teams en
+              wedstrijden verdeeld. Elke ronde wisselt van partner, ongeacht de
+              stand. Gezellig en gelijk verdeeld — ideaal voor een ontspannen
+              avond.
+            </dd>
+          </div>
+          <div>
+            <dt>Mexicano</dt>
+            <dd>
+              De volgende ronde wordt <strong>op basis van de stand</strong>{" "}
+              gemaakt: spelers worden gerangschikt op punten (en saldo), en per
+              baan speelt de <strong>1e met de 4e</strong> tegen de{" "}
+              <strong>2e met de 3e</strong>. Zo blijven de wedstrijden spannend en
+              in balans. Je kunt pas een nieuwe Mexicano-ronde genereren als{" "}
+              <strong>alle uitslagen</strong> van de vorige ronde zijn ingevuld —
+              anders zou er op een halve stand gepaird worden.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </details>
   );
 }
 

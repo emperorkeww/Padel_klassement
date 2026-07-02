@@ -75,3 +75,17 @@ export async function generateAmericanoRound(
   if (error) throw error;
   return (data as string[]) ?? [];
 }
+
+/**
+ * Genereert een Mexicano-ronde: paart op de huidige stand (sterk met zwak).
+ * De RPC blokkeert als de vorige ronde nog niet volledig is ingevuld.
+ */
+export async function generateMexicanoRound(
+  groupId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc("generate_mexicano_round", {
+    p_group_id: groupId,
+  });
+  if (error) throw error;
+  return (data as string[]) ?? [];
+}
