@@ -9,12 +9,20 @@
 // maar de start_time in de respons is UTC. De openingsuren uit de
 // tenant-endpoint zijn dan weer lokaal. Slottijden worden daarom hieronder
 // naar de kloktijd van de club (tenant.address.timezone) omgezet.
+//
+// Beperking van de bron: de API toont boekbare producten (start + duur +
+// prijs), geen werkelijke bezetting. Een vrij gat korter dan het kleinste
+// product (60 min) is dus niet te onderscheiden van een boeking.
+
+import { fromMinutes, toMinutes } from "../../lib/time";
 
 const TENANT_ID = "91d8d419-3736-498e-90be-362de786d588";
 const BASE = "/api/playtomic";
 
 export const CLUB_NAME = "LAGO CLUB Padel Beveren";
 const CLUB_SLUG = "lago-club-padel-beveren";
+/** Tijdzone van de club; de tenant-respons kan dit bevestigen/overschrijven. */
+export const CLUB_TIMEZONE = "Europe/Brussels";
 
 /**
  * Deep-link naar de Playtomic-clubpagina, voorgevuld op de gekozen dag.
@@ -38,11 +46,14 @@ const WEEKDAY_KEYS = [
 ];
 
 export type Court = { id: string; name: string; type: string };
-/** Per baan: vrije starttijd ("HH:MM", clubtijd) → boekbare duren in minuten. */
-export type CourtRow = { court: Court; free: Map<string, number[]> };
+/** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijs. */
+export type SlotOption = { duration: number; price: string };
+/** Per baan: vrije starttijd ("HH:MM", clubtijd) → opties, oplopend op duur. */
+export type CourtRow = { court: Court; free: Map<string, SlotOption[]> };
 export type DayAvailability = {
   open: string; // "HH:MM"
   close: string; // "HH:MM"
+  timeZone: string; // clubtijdzone, voor "vandaag"/"voorbij" in de weergave
   courts: CourtRow[];
 };
 
@@ -60,12 +71,15 @@ type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
 
 // Een slot als UTC-moment: de datum uit de respons-entry + start_time + duur.
-type SlotMoment = { date: string; time: string; duration: number };
+type SlotMoment = { date: string; time: string; duration: number; price: string };
 
 async function getJson<T>(path: string, foutmelding: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { Accept: "application/json" },
   });
+  if (res.status === 429) {
+    throw new Error("Even te veel verzoeken naar Playtomic — probeer zo opnieuw.");
+  }
   if (!res.ok) throw new Error(`${foutmelding} (status ${res.status}).`);
   return res.json() as Promise<T>;
 }
@@ -105,6 +119,7 @@ async function getSlotsByCourt(date: string): Promise<Record<string, SlotMoment[
         date: entry.start_date,
         time: slot.start_time,
         duration: slot.duration,
+        price: slot.price,
       });
     }
   }
@@ -117,17 +132,49 @@ async function getSlotsByCourt(date: string): Promise<Record<string, SlotMoment[
  * te maken tussen "echt bezet" en "vrij, maar geen boeking kan hier starten"
  * (bv. het laatste halfuur voor sluiting, of de staart van een lang slot).
  */
-export function coveredTimes(free: Map<string, number[]>): Set<string> {
+export function coveredTimes(free: Map<string, SlotOption[]>): Set<string> {
   const covered = new Set<string>();
-  for (const [start, durations] of free) {
-    const from = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
-    for (let m = from; m < from + Math.max(...durations); m += 30) {
-      covered.add(
-        `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`,
-      );
+  for (const [start, options] of free) {
+    const from = toMinutes(start);
+    const longest = Math.max(...options.map((o) => o.duration));
+    for (let m = from; m < from + longest; m += 30) {
+      covered.add(fromMinutes(m));
     }
   }
   return covered;
+}
+
+/** Playtomic-prijs ("23.33 EUR") → NL-weergave ("€ 23,33", hele euro's zonder centen). */
+export function formatPrice(raw: string): string {
+  const [num, currency] = raw.split(" ");
+  const n = Number(num);
+  if (!Number.isFinite(n)) return raw;
+  try {
+    return new Intl.NumberFormat("nl-BE", {
+      style: "currency",
+      currency: currency || "EUR",
+      minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return raw;
+  }
+}
+
+// Kloktijd-formatters zijn duur om te maken; één per tijdzone volstaat.
+const clubTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+function clubTimeFormatter(timeZone: string): Intl.DateTimeFormat {
+  let fmt = clubTimeFormatters.get(timeZone);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat("nl-BE", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    clubTimeFormatters.set(timeZone, fmt);
+  }
+  return fmt;
 }
 
 /**
@@ -135,18 +182,12 @@ export function coveredTimes(free: Map<string, number[]>): Set<string> {
  * van de club. Intl handelt zomer-/wintertijd af, ook op omschakeldagen.
  */
 export function utcToClubTime(date: string, time: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("nl-BE", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(new Date(`${date}T${time}Z`));
+  return clubTimeFormatter(timeZone).format(new Date(`${date}T${time}Z`));
 }
 
 /**
  * Haalt voor een dag (YYYY-MM-DD) de openingsuren en per baan de vrije
- * starttijden op. Tijden die niet vrij zijn, zijn (in de weergave) geboekt of
- * niet meer boekbaar.
+ * starttijden (met duren en prijzen) op.
  */
 export async function getClubAvailability(
   date: string,
@@ -158,23 +199,21 @@ export async function getClubAvailability(
 
   const weekday = WEEKDAY_KEYS[new Date(`${date}T00:00:00`).getDay()];
   const hours = tenant.opening_hours?.[weekday];
-  const open = hours?.opening_time ?? "08:00";
-  const close = hours?.closing_time ?? "23:00";
 
   // Clubtijdzone, niet die van het apparaat: wie vanuit het buitenland kijkt
   // moet dezelfde tijden zien als op de Playtomic-clubpagina.
-  const timeZone = tenant.address?.timezone ?? "Europe/Brussels";
+  const timeZone = tenant.address?.timezone ?? CLUB_TIMEZONE;
 
   const courts: CourtRow[] = (tenant.resources ?? []).map((r) => {
-    const free = new Map<string, number[]>();
+    const free = new Map<string, SlotOption[]>();
     for (const slot of byCourt[r.resource_id] ?? []) {
       const t = utcToClubTime(slot.date, slot.time, timeZone);
-      const durations = free.get(t) ?? [];
-      if (!durations.includes(slot.duration)) {
-        durations.push(slot.duration);
-        durations.sort((a, b) => a - b);
+      const options = free.get(t) ?? [];
+      if (!options.some((o) => o.duration === slot.duration)) {
+        options.push({ duration: slot.duration, price: formatPrice(slot.price) });
+        options.sort((a, b) => a.duration - b.duration);
       }
-      free.set(t, durations);
+      free.set(t, options);
     }
     return {
       court: {
@@ -186,5 +225,18 @@ export async function getClubAvailability(
     };
   });
 
-  return { open, close, courts };
+  // Tijd-as: openingsuren, maar opgerekt als er slots buiten vallen (bv.
+  // afwijkende feestdaguren die de tenant-data niet per datum meegeeft).
+  // Zo verdwijnen slots nooit stilletjes buiten het raster.
+  let openM = toMinutes(hours?.opening_time ?? "08:00");
+  let closeM = toMinutes(hours?.closing_time ?? "23:00");
+  for (const row of courts) {
+    for (const [t, options] of row.free) {
+      const from = toMinutes(t);
+      openM = Math.min(openM, from);
+      closeM = Math.max(closeM, from + Math.max(...options.map((o) => o.duration)));
+    }
+  }
+
+  return { open: fromMinutes(openM), close: fromMinutes(closeM), timeZone, courts };
 }

@@ -4,25 +4,17 @@ import {
   coveredTimes,
   type CourtRow,
   type DayAvailability,
+  type SlotOption,
 } from "./api";
+import {
+  dateInZone,
+  fromMinutes,
+  minutesNowInZone,
+  toMinutes,
+} from "../../lib/time";
 import "./Availability.css";
 
 const STEP_MIN = 30;
-
-export function localDate(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 10);
-}
-
-function toMinutes(t: string): number {
-  return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
-}
-
-function fromMinutes(m: number): string {
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
 
 // Bouwt de kolommen: elk halfuur van openingstijd tot sluitingstijd.
 function buildTimeAxis(open: string, close: string): string[] {
@@ -42,7 +34,7 @@ type Selection = {
   court: string;
   start: string;
   end: string;
-  durations: number[];
+  options: SlotOption[];
 };
 
 export function Timetable({
@@ -62,11 +54,10 @@ export function Timetable({
   const [tip, setTip] = useState<Tip | null>(null);
   const [sel, setSel] = useState<Selection | null>(null);
 
-  // Vandaag: sloten die al begonnen of voorbij zijn kun je niet meer boeken —
-  // die krijgen een eigen "voorbij"-aanduiding i.p.v. vrij/geboekt.
-  const now = new Date();
+  // Vandaag (in clubtijd!): sloten die al begonnen of voorbij zijn kun je
+  // niet meer boeken — die krijgen een eigen "voorbij"-aanduiding.
   const pastCutoff =
-    date === localDate(0) ? now.getHours() * 60 + now.getMinutes() : -1;
+    date === dateInZone(data.timeZone) ? minutesNowInZone(data.timeZone) : -1;
   const pastCount = times.filter((t) => toMinutes(t) <= pastCutoff).length;
 
   return (
@@ -122,7 +113,7 @@ export function Timetable({
         </div>
       )}
 
-      {/* Aangeklikt slot: beschikbaarheid + expliciete reserveerlink. */}
+      {/* Aangeklikt slot: beschikbaarheid, prijzen + expliciete reserveerlink. */}
       {sel && (
         <>
           <div
@@ -141,9 +132,9 @@ export function Timetable({
               Vrij van {sel.start} tot {sel.end}
             </p>
             <p className="avail-popover__durs">
-              {sel.durations.map((d) => (
-                <span key={d} className="badge badge--accent">
-                  {d} min
+              {sel.options.map((o) => (
+                <span key={o.duration} className="badge badge--accent">
+                  {o.duration} min · {o.price}
                 </span>
               ))}
             </p>
@@ -173,8 +164,8 @@ function Row({
 }: {
   row: CourtRow;
   times: string[];
-  /** Minuten sinds middernacht; sloten die op of vóór dit moment starten zijn
-   *  voorbij. -1 = geen (andere dag dan vandaag). */
+  /** Minuten sinds middernacht (clubtijd); sloten die op of vóór dit moment
+   *  starten zijn voorbij. -1 = geen (andere dag dan vandaag). */
   pastCutoff: number;
   duration: number | null;
   onTip: (tip: Tip | null) => void;
@@ -185,6 +176,13 @@ function Row({
   // "geboekt" getoond te worden.
   const covered = useMemo(() => coveredTimes(row.free), [row.free]);
 
+  // Voor screenreaders: de losse cellen zijn visueel; dit vat de rij samen.
+  const bookableStarts = times.filter((t) => {
+    if (toMinutes(t) <= pastCutoff) return false;
+    const options = row.free.get(t);
+    return options != null && (duration == null || options.some((o) => o.duration === duration));
+  });
+
   return (
     <>
       <div className="avail-rowhead">
@@ -194,6 +192,11 @@ function Row({
             {row.court.type === "roofed" ? "overdekt" : "buiten"}
           </span>
         )}
+        <span className="sr-only">
+          {bookableStarts.length > 0
+            ? `Boekbare starttijden: ${bookableStarts.join(", ")}.`
+            : "Geen boekbare starttijden."}
+        </span>
       </div>
       {times.map((t) => {
         const hourClass = t.endsWith(":00") ? "is-hour" : "";
@@ -210,19 +213,21 @@ function Row({
           );
         }
 
-        const durations = row.free.get(t);
-        if (!durations || (duration != null && !durations.includes(duration))) {
+        const options = row.free.get(t);
+        if (!options || (duration != null && !options.some((o) => o.duration === duration))) {
           // Vrij maar niet boekbaar (geen starttijd, of niet met deze duur)?
-          // Anders is het vak echt bezet.
+          // Anders is het vak echt bezet. De sr-only samenvatting hierboven
+          // dekt deze cellen; voor de muis blijft de title-uitleg staan.
           if (covered.has(t)) {
-            const reason = durations
-              ? `om ${t} geen ${duration} min vrij (wel ${durations.join("/")} min)`
+            const reason = options
+              ? `om ${t} geen ${duration} min vrij (wel ${options.map((o) => o.duration).join("/")} min)`
               : `om ${t} vrij, maar een boeking kan hier niet starten`;
             return (
               <div
                 key={t}
                 className={`avail-cell avail-cell--nofit ${hourClass}`}
                 title={`${row.court.name} — ${reason}`}
+                aria-hidden="true"
               />
             );
           }
@@ -231,24 +236,37 @@ function Row({
               key={t}
               className={`avail-cell avail-cell--busy ${hourClass}`}
               title={`${row.court.name} — ${t} geboekt`}
+              aria-hidden="true"
             />
           );
         }
 
         // Boekbare start: "vrij tot" = start + langste (gefilterde) duur.
-        const shown = duration != null ? [duration] : durations;
-        const end = fromMinutes(toMinutes(t) + Math.max(...shown));
-        const text = `${row.court.name}: vrij van ${t} tot ${end} (${shown.join("/")} min)`;
+        const shown =
+          duration != null
+            ? options.filter((o) => o.duration === duration)
+            : options;
+        const end = fromMinutes(
+          toMinutes(t) + Math.max(...shown.map((o) => o.duration)),
+        );
+        const text = `${row.court.name}: vrij van ${t} tot ${end} (${shown.map((o) => o.duration).join("/")} min)`;
         const select = (el: HTMLElement) => {
           const r = el.getBoundingClientRect();
           onTip(null);
+          // Houd de pop-up binnen het scherm (mobiel toont een bottom sheet
+          // en negeert deze coördinaten via CSS).
+          const half = Math.min(260, window.innerWidth - 24) / 2;
+          const left = Math.min(
+            Math.max(r.left + r.width / 2, 12 + half),
+            window.innerWidth - 12 - half,
+          );
           onSelect({
-            left: r.left + r.width / 2,
+            left,
             top: r.bottom + 8,
             court: row.court.name,
             start: t,
             end,
-            durations: shown,
+            options: shown,
           });
         };
         return (

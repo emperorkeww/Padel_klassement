@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { coveredTimes, getClubAvailability, utcToClubTime } from "./api";
+import {
+  coveredTimes,
+  formatPrice,
+  getClubAvailability,
+  utcToClubTime,
+} from "./api";
 
 // Playtomic geeft start_time in UTC terug; het raster moet clubtijd tonen.
 // De verschuiving is seizoensafhankelijk (CET/CEST), dus beide gevallen testen.
@@ -23,8 +28,8 @@ describe("coveredTimes", () => {
   it("dekt elk slot tot start + langste duur", () => {
     const covered = coveredTimes(
       new Map([
-        ["16:30", [120]],
-        ["18:30", [60, 90]],
+        ["16:30", [{ duration: 120, price: "€ 40" }]],
+        ["18:30", [{ duration: 60, price: "€ 20" }, { duration: 90, price: "€ 30" }]],
       ]),
     );
     expect([...covered].sort()).toEqual([
@@ -34,8 +39,24 @@ describe("coveredTimes", () => {
   });
 
   it("laatste boekbare start voor sluiting dekt ook het slothalfuur", () => {
-    const covered = coveredTimes(new Map([["22:00", [60]]]));
+    const covered = coveredTimes(new Map([["22:00", [{ duration: 60, price: "€ 20" }]]]));
     expect([...covered].sort()).toEqual(["22:00", "22:30"]);
+  });
+});
+
+describe("formatPrice", () => {
+  it("hele bedragen zonder centen", () => {
+    const p = formatPrice("20 EUR");
+    expect(p).toContain("20");
+    expect(p).not.toContain(",");
+  });
+
+  it("centen blijven staan", () => {
+    expect(formatPrice("23.33 EUR")).toContain("23,33");
+  });
+
+  it("onherkenbare invoer gaat onaangeroerd door", () => {
+    expect(formatPrice("op aanvraag")).toBe("op aanvraag");
   });
 });
 
@@ -57,21 +78,8 @@ describe("getClubAvailability", () => {
       },
     ],
   };
-  const availability = [
-    {
-      resource_id: "court-1",
-      start_date: "2026-07-02",
-      slots: [
-        // Zelfde starttijd, verschillende duren: één vrije kloktijd met
-        // beide duren (oplopend gesorteerd, ook al komt 90 eerst binnen).
-        { start_time: "14:00:00", duration: 90, price: "30 EUR" },
-        { start_time: "14:00:00", duration: 60, price: "20 EUR" },
-        { start_time: "18:30:00", duration: 60, price: "20 EUR" },
-      ],
-    },
-  ];
 
-  it("zet UTC-slottijden om naar clubtijd, met duren per starttijd", async () => {
+  const mockFetch = (availability: unknown) => {
     const mockRes = (body: unknown) =>
       ({ ok: true, status: 200, json: async () => body }) as Response;
     vi.stubGlobal(
@@ -82,15 +90,53 @@ describe("getClubAvailability", () => {
           : mockRes(availability),
       ),
     );
+  };
+
+  it("zet UTC-slottijden om naar clubtijd, met duren en prijzen per start", async () => {
+    mockFetch([
+      {
+        resource_id: "court-1",
+        start_date: "2026-07-02",
+        slots: [
+          // Zelfde starttijd, verschillende duren: één vrije kloktijd met
+          // beide opties (oplopend gesorteerd, ook al komt 90 eerst binnen).
+          { start_time: "14:00:00", duration: 90, price: "30 EUR" },
+          { start_time: "14:00:00", duration: 60, price: "20 EUR" },
+          { start_time: "18:30:00", duration: 60, price: "20 EUR" },
+        ],
+      },
+    ]);
 
     const day = await getClubAvailability("2026-07-02");
 
     expect(day.open).toBe("09:00");
     expect(day.close).toBe("22:00");
+    expect(day.timeZone).toBe("Europe/Brussels");
     expect(day.courts).toHaveLength(1);
     const free = day.courts[0].free;
     expect([...free.keys()].sort()).toEqual(["16:00", "20:30"]);
-    expect(free.get("16:00")).toEqual([60, 90]);
-    expect(free.get("20:30")).toEqual([60]);
+    expect(free.get("16:00")?.map((o) => o.duration)).toEqual([60, 90]);
+    expect(free.get("16:00")?.[0].price).toBe(formatPrice("20 EUR"));
+    expect(free.get("20:30")?.map((o) => o.duration)).toEqual([60]);
+  });
+
+  it("rekt de tijd-as op als slots buiten de openingsuren vallen", async () => {
+    mockFetch([
+      {
+        resource_id: "court-1",
+        start_date: "2026-07-02",
+        slots: [
+          // 06:30 UTC = 08:30 lokaal (vóór open 09:00);
+          // 19:30 UTC = 21:30 lokaal + 120 min = 23:30 (na sluit 22:00).
+          { start_time: "06:30:00", duration: 60, price: "15 EUR" },
+          { start_time: "19:30:00", duration: 120, price: "40 EUR" },
+        ],
+      },
+    ]);
+
+    const day = await getClubAvailability("2026-07-02");
+
+    expect(day.open).toBe("08:30");
+    expect(day.close).toBe("23:30");
   });
 });
