@@ -1,40 +1,64 @@
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* ---- Palet: clean indigo op wit ---- */
-  --bg: #f7f8fb; /* app-achtergrond */
+  /* ---- Palet: fris & licht — wit met smaragd en een vleugje lime ---- */
+  --bg: #f4f7f4; /* app-achtergrond (licht groenig off-white) */
   --surface: #ffffff; /* kaarten */
-  --surface-2: #f3f4f8; /* subtiel vlak / tracks */
-  --ink: #111827; /* tekst */
-  --ink-soft: #6b7280; /* gedempte tekst */
-  --line: #e8eaef; /* haarlijn */
-  --line-strong: #d7dae2;
+  --surface-2: #eef3ee; /* subtiel vlak / tracks */
+  --ink: #1a2620; /* tekst */
+  --ink-soft: #64756c; /* gedempte tekst */
+  --line: #e4eae4; /* haarlijn */
+  --line-strong: #cfd9cf;
 
-  --accent: #4f46e5; /* indigo */
-  --accent-hover: #4338ca;
-  --accent-strong: #4338ca;
-  --accent-soft: #eef0fe; /* licht indigo vlak */
-  --accent-line: #d9dcfb;
-  --accent-ink: #ffffff; /* tekst op indigo */
+  --accent: #0c8a5f; /* smaragd — primaire acties */
+  --accent-hover: #0a744f;
+  --accent-strong: #0a744f;
+  --accent-soft: #e6f5ee; /* licht groen vlak */
+  --accent-line: #bce4d1;
+  --accent-ink: #ffffff; /* tekst op smaragd */
 
-  /* Lichte zijbalk */
+  --lime: #c7e63a; /* padelbal */
+  --lime-deep: #93b515; /* lime met genoeg contrast op licht */
+  --lime-soft: #f4fadb;
+
+  /* Lichte zijbalk / mobiele onderbalk */
   --sidebar-bg: #ffffff;
-  --sidebar-ink: #6b7280;
-  --sidebar-ink-strong: #111827;
+  --sidebar-ink: #64756c;
+  --sidebar-ink-strong: #1a2620;
 
   --success: #16a34a;
-  --success-soft: #f0fdf4;
+  --success-soft: #eaf8ef;
+  --success-line: #bfe6cc;
   --danger: #dc2626;
-  --danger-soft: #fef2f2;
+  --danger-soft: #fdf1f1;
+  --danger-line: #f3c9c9;
+  --warn: #d97706;
+  --warn-soft: #fdf4e7;
 
-  --radius: 14px;
+  /* Podium */
+  --gold: #d4a017;
+  --gold-soft: #faf3dd;
+  --silver: #8c98a4;
+  --silver-soft: #eef1f4;
+  --bronze: #b0722d;
+  --bronze-soft: #f7ece0;
+
+  --placeholder: #97a69b;
+  --skeleton-hi: #e6ece6;
+
+  --shadow-sm: 0 1px 2px rgba(20, 40, 28, 0.05);
+  --shadow-md: 0 4px 16px rgba(20, 40, 28, 0.08);
+  --shadow-lg: 0 12px 32px rgba(20, 40, 28, 0.14);
+
+  --radius: 16px;
   --radius-sm: 10px;
-  --radius-lg: 20px;
+  --radius-lg: 22px;
 
   color: var(--ink);
+  color-scheme: light;
 }
 
 *,

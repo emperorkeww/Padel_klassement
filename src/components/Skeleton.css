@@ -10,7 +10,7 @@
   background: linear-gradient(
     90deg,
     var(--surface-2) 25%,
-    #eceef3 37%,
+    var(--skeleton-hi) 37%,
     var(--surface-2) 63%
   );
   background-size: 400% 100%;
