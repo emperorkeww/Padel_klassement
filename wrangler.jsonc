@@ -13,5 +13,17 @@
     // /* -> /index.html 200 regel in _redirects, die door de asset-router als
     // oneindige lus wordt afgekeurd.
     "not_found_handling": "single-page-application"
+  },
+  // Per-IP rate limiting voor de publieke Playtomic-proxy: max 20 verzoeken
+  // per 10 seconden per IP. period mag alleen 10 of 60 zijn.
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "PLAYTOMIC_RL",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 20, "period": 10 }
+      }
+    ]
   }
 }
