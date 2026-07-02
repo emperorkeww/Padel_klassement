@@ -571,6 +571,26 @@
   gap: var(--sp-1);
 }
 
+/* Geplande match met inline score-invoer (dashboard, matches, groepsrondes). */
+.match-card--planned {
+  border-style: dashed;
+  border-color: var(--accent-line);
+}
+.match-card--planned:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--accent-line);
+}
+.planned-score {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.planned-score__dash {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
 /* Oude klassen die her en der nog gebruikt worden (o.a. score-invoer). */
 .matchlist__vs {
   font-variant-numeric: tabular-nums;
