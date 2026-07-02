@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
-import { Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
 import {
   getGroup,
   getGroupMembers,
@@ -94,7 +94,8 @@ export function GroupDetail() {
   if (group.loading)
     return (
       <div className="card">
-        <Skeleton rows={4} />
+        <Skeleton rows={2} />
+        <MatchListSkeleton count={2} />
       </div>
     );
   if (!group.data)
