@@ -4,6 +4,11 @@
 // (ongedocumenteerde) endpoints die de Playtomic-site zelf ook aanroept. Die
 // staan CORS vanuit de browser niet toe, dus alle calls lopen via een kleine
 // proxy op /api/playtomic (Vite-proxy in dev, Cloudflare Worker in productie).
+//
+// Let op de tijdzones: de local_start_min/max-filters zijn lokale clubtijd,
+// maar de start_time in de respons is UTC. De openingsuren uit de
+// tenant-endpoint zijn dan weer lokaal. Slottijden worden daarom hieronder
+// naar de kloktijd van de club (tenant.address.timezone) omgezet.
 
 const TENANT_ID = "91d8d419-3736-498e-90be-362de786d588";
 const BASE = "/api/playtomic";
@@ -33,7 +38,8 @@ const WEEKDAY_KEYS = [
 ];
 
 export type Court = { id: string; name: string; type: string };
-export type CourtRow = { court: Court; free: Set<string> };
+/** Per baan: vrije starttijd ("HH:MM", clubtijd) → boekbare duren in minuten. */
+export type CourtRow = { court: Court; free: Map<string, number[]> };
 export type DayAvailability = {
   open: string; // "HH:MM"
   close: string; // "HH:MM"
@@ -48,9 +54,13 @@ type RawResource = {
 type RawTenant = {
   resources?: RawResource[];
   opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
+  address?: { timezone?: string };
 };
 type RawSlot = { start_time: string; duration: number; price: string };
-type RawAvailability = { resource_id: string; slots?: RawSlot[] };
+type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
+
+// Een slot als UTC-moment: de datum uit de respons-entry + start_time + duur.
+type SlotMoment = { date: string; time: string; duration: number };
 
 async function getJson<T>(path: string, foutmelding: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -75,7 +85,7 @@ function getTenant(): Promise<RawTenant> {
   return tenantPromise;
 }
 
-async function getSlotsByCourt(date: string): Promise<Record<string, RawSlot[]>> {
+async function getSlotsByCourt(date: string): Promise<Record<string, SlotMoment[]>> {
   const params = new URLSearchParams({
     user_id: "me",
     tenant_id: TENANT_ID,
@@ -87,11 +97,50 @@ async function getSlotsByCourt(date: string): Promise<Record<string, RawSlot[]>>
     `/v1/availability?${params.toString()}`,
     "Kon de beschikbaarheid niet laden",
   );
-  const byCourt: Record<string, RawSlot[]> = {};
+  const byCourt: Record<string, SlotMoment[]> = {};
   for (const entry of data) {
-    (byCourt[entry.resource_id] ??= []).push(...(entry.slots ?? []));
+    const list = (byCourt[entry.resource_id] ??= []);
+    for (const slot of entry.slots ?? []) {
+      list.push({
+        date: entry.start_date,
+        time: slot.start_time,
+        duration: slot.duration,
+      });
+    }
   }
   return byCourt;
+}
+
+/**
+ * Alle halfuren ("HH:MM") waarop de baan vrij is: elk boekbaar slot dekt de
+ * vakken van zijn starttijd tot start + langste duur. Zo is het onderscheid
+ * te maken tussen "echt bezet" en "vrij, maar geen boeking kan hier starten"
+ * (bv. het laatste halfuur voor sluiting, of de staart van een lang slot).
+ */
+export function coveredTimes(free: Map<string, number[]>): Set<string> {
+  const covered = new Set<string>();
+  for (const [start, durations] of free) {
+    const from = Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5));
+    for (let m = from; m < from + Math.max(...durations); m += 30) {
+      covered.add(
+        `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`,
+      );
+    }
+  }
+  return covered;
+}
+
+/**
+ * Zet een UTC-slotmoment (datum + "HH:MM:SS") om naar de kloktijd ("HH:MM")
+ * van de club. Intl handelt zomer-/wintertijd af, ook op omschakeldagen.
+ */
+export function utcToClubTime(date: string, time: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("nl-BE", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(`${date}T${time}Z`));
 }
 
 /**
@@ -112,10 +161,20 @@ export async function getClubAvailability(
   const open = hours?.opening_time ?? "08:00";
   const close = hours?.closing_time ?? "23:00";
 
+  // Clubtijdzone, niet die van het apparaat: wie vanuit het buitenland kijkt
+  // moet dezelfde tijden zien als op de Playtomic-clubpagina.
+  const timeZone = tenant.address?.timezone ?? "Europe/Brussels";
+
   const courts: CourtRow[] = (tenant.resources ?? []).map((r) => {
-    const free = new Set<string>();
+    const free = new Map<string, number[]>();
     for (const slot of byCourt[r.resource_id] ?? []) {
-      free.add(slot.start_time.slice(0, 5)); // "HH:MM"
+      const t = utcToClubTime(slot.date, slot.time, timeZone);
+      const durations = free.get(t) ?? [];
+      if (!durations.includes(slot.duration)) {
+        durations.push(slot.duration);
+        durations.sort((a, b) => a - b);
+      }
+      free.set(t, durations);
     }
     return {
       court: {
