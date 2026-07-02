@@ -25,6 +25,8 @@ import {
   categorize,
   otherId,
 } from "../friends/api";
+import { Avatar } from "../../components/Avatar";
+import { MatchCard } from "../matches/MatchList";
 import type { Match } from "../../lib/types";
 
 export function GroupDetail() {
@@ -113,7 +115,8 @@ export function GroupDetail() {
           <div className="stack">
             {memberList.map((m) => (
               <div key={m.player_id} className="row-between">
-                <span>
+                <span className="cell-player">
+                  <Avatar profile={pmap[m.player_id]} size={28} />
                   {displayName(pmap[m.player_id])}{" "}
                   {m.role === "owner" && (
                     <span className="badge badge--accent">eigenaar</span>
@@ -147,7 +150,10 @@ export function GroupDetail() {
                 <div className="stack">
                   {addableFriendIds.map((pid) => (
                     <div key={pid} className="row-between">
-                      <span>{displayName(pmap[pid])}</span>
+                      <span className="cell-player">
+                        <Avatar profile={pmap[pid]} size={28} />
+                        {displayName(pmap[pid])}
+                      </span>
                       <button
                         className="btn btn--sm"
                         disabled={busy}
@@ -183,7 +189,12 @@ export function GroupDetail() {
               <tbody>
                 {(standings.data ?? []).map((p) => (
                   <tr key={p.player_id} className={p.player_id === myId ? "is-me" : ""}>
-                    <td>{displayName(p)}</td>
+                    <td>
+                      <span className="cell-player">
+                        <Avatar profile={pmap[p.player_id] ?? p} size={24} />
+                        {displayName(p)}
+                      </span>
+                    </td>
                     <td className="num">{p.played}</td>
                     <td className="num">{p.won}</td>
                     <td className="num">
@@ -238,32 +249,41 @@ export function GroupDetail() {
                 Ronde {round}
               </h3>
               <div className="stack">
-                {list.map((m) => (
-                  <MatchRow
-                    key={m.id}
-                    match={m}
-                    labelA={teamLabel(tmap[m.team_a_id], pmap)}
-                    labelB={teamLabel(tmap[m.team_b_id], pmap)}
-                    busy={busy}
-                    onResult={(winner, sa, sb) =>
-                      act(
-                        () =>
-                          setMatchResult({
-                            matchId: m.id,
-                            winnerTeamId:
-                              winner === "a"
-                                ? m.team_a_id
-                                : winner === "b"
-                                  ? m.team_b_id
-                                  : null,
-                            scoreA: sa,
-                            scoreB: sb,
-                          }),
-                        "Resultaat opgeslagen.",
-                      )
-                    }
-                  />
-                ))}
+                {list.map((m) =>
+                  m.status === "completed" ? (
+                    <MatchCard
+                      key={m.id}
+                      match={m}
+                      teams={tmap}
+                      profiles={pmap}
+                      perspectiveId={myId}
+                    />
+                  ) : (
+                    <MatchRow
+                      key={m.id}
+                      labelA={teamLabel(tmap[m.team_a_id], pmap)}
+                      labelB={teamLabel(tmap[m.team_b_id], pmap)}
+                      busy={busy}
+                      onResult={(winner, sa, sb) =>
+                        act(
+                          () =>
+                            setMatchResult({
+                              matchId: m.id,
+                              winnerTeamId:
+                                winner === "a"
+                                  ? m.team_a_id
+                                  : winner === "b"
+                                    ? m.team_b_id
+                                    : null,
+                              scoreA: sa,
+                              scoreB: sb,
+                            }),
+                          "Resultaat opgeslagen.",
+                        )
+                      }
+                    />
+                  ),
+                )}
               </div>
             </div>
           ))}
@@ -274,13 +294,11 @@ export function GroupDetail() {
 }
 
 function MatchRow({
-  match,
   labelA,
   labelB,
   busy,
   onResult,
 }: {
-  match: Match;
   labelA: string;
   labelB: string;
   busy: boolean;
@@ -293,35 +311,10 @@ function MatchRow({
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
 
-  const done = match.status === "completed";
-  const aWon = match.winner_team_id === match.team_a_id;
-  const bWon = match.winner_team_id === match.team_b_id;
-  const isDraw = done && match.winner_team_id === null;
-  const scored = match.score_a != null && match.score_b != null;
-
   // Winnaar volgt uit de score; een gelijke score is een gelijkspel.
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
   const valid = saNum !== null && sbNum !== null;
-
-  // Afgeronde match: klikbare rij naar de detailpagina.
-  if (done) {
-    return (
-      <Link className="matchlist__item" to={`/matches/${match.id}`}>
-        <span className="matchlist__teams">
-          <span className={`matchlist__team ${aWon ? "is-win" : ""}`}>{labelA}</span>
-          <span className="matchlist__vs">
-            {scored ? `${match.score_a}–${match.score_b}` : "vs"}
-          </span>
-          <span className={`matchlist__team ${bWon ? "is-win" : ""}`}>{labelB}</span>
-        </span>
-        <span className="matchlist__meta">
-          {isDraw && <span className="badge">gelijk</span>}
-          <span className="badge">details →</span>
-        </span>
-      </Link>
-    );
-  }
 
   // Geplande match: alleen de score invoeren, winnaar volgt automatisch.
   return (

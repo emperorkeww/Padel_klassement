@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
+import { Avatar } from "../../components/Avatar";
 import { getMyGroups, createGroup } from "./api";
 
 export function Groups() {
@@ -65,7 +66,8 @@ export function Groups() {
         <div className="stack">
           {(groups.data ?? []).map((g) => (
             <div key={g.id} className="row-between">
-              <span>
+              <span className="cell-player">
+                <Avatar name={g.name} size={28} />
                 {g.name}{" "}
                 {g.created_by === myId && (
                   <span className="badge badge--accent">eigenaar</span>
