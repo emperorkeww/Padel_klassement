@@ -14,7 +14,7 @@
 // prijs), geen werkelijke bezetting. Een vrij gat korter dan het kleinste
 // product (60 min) is dus niet te onderscheiden van een boeking.
 
-import { fromMinutes, toMinutes } from "../../lib/time";
+import { addDays, fromMinutes, toMinutes } from "../../lib/time";
 
 const TENANT_ID = "91d8d419-3736-498e-90be-362de786d588";
 const BASE = "/api/playtomic";
@@ -239,4 +239,36 @@ export async function getClubAvailability(
   }
 
   return { open: fromMinutes(openM), close: fromMinutes(closeM), timeZone, courts };
+}
+
+/** Eén dag in het weekoverzicht; data of een foutmelding, nooit allebei. */
+export type WeekDay = {
+  date: string;
+  data: DayAvailability | null;
+  error: string | null;
+};
+
+/**
+ * Beschikbaarheid voor een reeks dagen. De API staat maximaal 25 uur per
+ * aanvraag toe, dus dit zijn parallelle dag-aanvragen (de Worker-cache deelt
+ * ze tussen gebruikers). Eén mislukte dag blokkeert de rest niet.
+ */
+export async function getWeekAvailability(
+  fromDate: string,
+  days = 7,
+): Promise<WeekDay[]> {
+  const dates = Array.from({ length: days }, (_, i) => addDays(fromDate, i));
+  const results = await Promise.allSettled(dates.map(getClubAvailability));
+  return results.map((result, i) =>
+    result.status === "fulfilled"
+      ? { date: dates[i], data: result.value, error: null }
+      : {
+          date: dates[i],
+          data: null,
+          error:
+            result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason),
+        },
+  );
 }

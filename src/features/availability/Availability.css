@@ -118,8 +118,22 @@
 }
 
 .avail-rowhead__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: var(--fs-xs);
   color: var(--ink-soft);
+}
+
+/* Baantype-iconen: dak (overdekt) in accentgroen, zon (buiten) in warm oranje. */
+.court-icon {
+  flex-shrink: 0;
+}
+.court-icon--roofed {
+  color: var(--accent);
+}
+.court-icon--outdoor {
+  color: var(--warn);
 }
 
 /* Slot-cellen */
@@ -278,6 +292,74 @@
     var(--ink-soft) 5px,
     var(--ink-soft) 10px
   );
+}
+
+/* ---- Weekoverzicht: per dag een lage strip per baan ---- */
+.week-strip {
+  height: 22px;
+}
+
+/* Rijkop: daglabel (eerste baanrij) links, kort baanlabel rechts. */
+.week-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-2) 0 var(--sp-3);
+  background: var(--surface);
+  border-right: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+}
+.week-rowhead__day {
+  margin-right: auto;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.week-rowhead__day.is-today {
+  color: var(--accent);
+  font-weight: 700;
+}
+.week-rowhead__court {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+
+/* Dikkere lijn tussen dagen, zodat de blokken van drie banen leesbaar zijn. */
+.week-cell--dayend {
+  border-bottom-color: var(--line-strong);
+}
+
+/* Dag die niet kon laden: één melding over de volledige rij. */
+.avail-week-error {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+/* Navigatie boven het weekoverzicht. */
+.avail-weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.avail-weeknav .avail-day {
+  margin: 0;
 }
 
 .avail-cell--nofit {

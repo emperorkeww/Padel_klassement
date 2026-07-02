@@ -9,6 +9,23 @@ export function fromMinutes(m: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
+/** Kalenderdatum (YYYY-MM-DD) + aantal dagen, zonder tijdzone-verrassingen. */
+export function addDays(date: string, days: number): string {
+  // 's Middags rekenen, zodat een DST-omschakeling de datum niet kan kantelen.
+  const d = new Date(`${date}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Kolommen van het raster: elke stap van openings- tot sluitingstijd. */
+export function buildTimeAxis(open: string, close: string, stepMin = 30): string[] {
+  const times: string[] = [];
+  for (let m = toMinutes(open); m < toMinutes(close); m += stepMin) {
+    times.push(fromMinutes(m));
+  }
+  return times;
+}
+
 /** Datum (YYYY-MM-DD) van vandaag + offsetDays in de opgegeven tijdzone. */
 export function dateInZone(timeZone: string, offsetDays = 0): string {
   const d = new Date(Date.now() + offsetDays * 86_400_000);

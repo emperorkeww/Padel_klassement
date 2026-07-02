@@ -3,6 +3,7 @@ import {
   coveredTimes,
   formatPrice,
   getClubAvailability,
+  getWeekAvailability,
   utcToClubTime,
 } from "./api";
 
@@ -118,6 +119,37 @@ describe("getClubAvailability", () => {
     expect(free.get("16:00")?.map((o) => o.duration)).toEqual([60, 90]);
     expect(free.get("16:00")?.[0].price).toBe(formatPrice("20 EUR"));
     expect(free.get("20:30")?.map((o) => o.duration)).toEqual([60]);
+  });
+
+  it("weekoverzicht: één mislukte dag blokkeert de rest niet", async () => {
+    const mockRes = (body: unknown, ok = true, status = 200) =>
+      ({ ok, status, json: async () => body }) as Response;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/v1/tenants/")) return mockRes(tenant);
+        if (url.includes("2026-07-02")) {
+          return mockRes([
+            {
+              resource_id: "court-1",
+              start_date: "2026-07-02",
+              slots: [{ start_time: "14:00:00", duration: 60, price: "20 EUR" }],
+            },
+          ]);
+        }
+        return mockRes(null, false, 500);
+      }),
+    );
+
+    const week = await getWeekAvailability("2026-07-02", 2);
+
+    expect(week).toHaveLength(2);
+    expect(week[0].date).toBe("2026-07-02");
+    expect([...(week[0].data?.courts[0].free.keys() ?? [])]).toEqual(["16:00"]);
+    expect(week[1].date).toBe("2026-07-03");
+    expect(week[1].data).toBeNull();
+    expect(week[1].error).toContain("500");
   });
 
   it("rekt de tijd-as op als slots buiten de openingsuren vallen", async () => {
