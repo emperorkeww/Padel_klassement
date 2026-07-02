@@ -13,6 +13,7 @@ import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { Avatar } from "../../components/Avatar";
+import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { errorMessage } from "../../lib/errors";
 import type { Match, Profile, Team } from "../../lib/types";
@@ -188,31 +189,17 @@ function ScoreEditor({
   return (
     <div className="md-editor">
       <div className="md-editor__inputs">
-        <label className="md-editor__field">
+        {/* Geen <label>-wrapper: die zou kliks naar de eerste stepper-knop
+            sturen; het aria-label op het veld dekt de toegankelijkheid. */}
+        <div className="md-editor__field">
           <span>{labelA}</span>
-          <input
-            className="input input--score"
-            type="number"
-            min="0"
-            inputMode="numeric"
-            aria-label={`Score ${labelA}`}
-            value={sa}
-            onChange={(e) => setSa(e.target.value)}
-          />
-        </label>
+          <ScoreStepper value={sa} onChange={setSa} label={`Score ${labelA}`} />
+        </div>
         <span className="matchlist__vs">–</span>
-        <label className="md-editor__field">
+        <div className="md-editor__field">
           <span>{labelB}</span>
-          <input
-            className="input input--score"
-            type="number"
-            min="0"
-            inputMode="numeric"
-            aria-label={`Score ${labelB}`}
-            value={sb}
-            onChange={(e) => setSb(e.target.value)}
-          />
-        </label>
+          <ScoreStepper value={sb} onChange={setSb} label={`Score ${labelB}`} />
+        </div>
       </div>
       {preview && <p className="md-editor__preview">{preview}</p>}
       <div className="md-editor__buttons">

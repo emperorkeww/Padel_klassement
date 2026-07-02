@@ -82,8 +82,8 @@ describe("<GroupDetail />", () => {
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
-    const inputA = await screen.findByLabelText(/score alice anders & bob boers/i);
-    const inputB = await screen.findByLabelText(/score carol claes & dave de vos/i);
+    const inputA = await screen.findByLabelText(/^score alice anders & bob boers$/i);
+    const inputB = await screen.findByLabelText(/^score carol claes & dave de vos$/i);
     await userEvent.type(inputA, "7");
     await userEvent.type(inputB, "5");
     await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
