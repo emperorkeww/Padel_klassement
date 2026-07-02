@@ -1,24 +1,46 @@
 import { supabase } from "../../lib/supabase";
+import { cached, invalidate } from "../../lib/queryCache";
+import { downscaleImage } from "../../lib/image";
 import type { Profile } from "../../lib/types";
 
 /** Alle profielen (publiek leesbaar); handig als lookup-map. */
-export async function getAllProfiles(): Promise<Profile[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("username", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+export function getAllProfiles(): Promise<Profile[]> {
+  return cached("profiles:all", async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("username", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
-export async function getProfile(id: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+export function getProfile(id: string): Promise<Profile | null> {
+  return cached(`profiles:one:${id}`, async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  });
+}
+
+/** Alleen de opgegeven profielen — voor pagina's met een handvol spelers. */
+export function getProfilesByIds(
+  ids: string[],
+): Promise<Record<string, Profile>> {
+  const wanted = [...new Set(ids)].sort();
+  if (wanted.length === 0) return Promise.resolve({});
+  return cached(`profiles:ids:${wanted.join(",")}`, async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", wanted);
+    if (error) throw error;
+    return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
+  });
 }
 
 export async function getProfilesMap(): Promise<Record<string, Profile>> {
@@ -51,19 +73,34 @@ export async function updateProfile(
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
   if (error) throw error;
+  // Namen/avatars zitten ook in de standings-views.
+  invalidate("profiles", "standings");
 }
 
-/** Uploadt een profielfoto naar de 'avatars'-bucket en geeft de publieke URL terug. */
+/** Uploadt een profielfoto naar de 'avatars'-bucket en geeft de publieke URL terug.
+ *  De foto wordt eerst client-side verkleind (256px, WebP); lukt dat niet
+ *  (oude browser), dan gaat het origineel omhoog. */
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  let blob: Blob = file;
+  let ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  try {
+    const processed = await downscaleImage(file);
+    blob = processed.blob;
+    ext = processed.ext;
+  } catch {
+    /* verkleinen mislukt — origineel uploaden is prima als terugval */
+  }
+
   const filename = `avatar.${ext}`;
   const path = `${userId}/${filename}`;
   const { error } = await supabase.storage
     .from("avatars")
-    .upload(path, file, {
+    .upload(path, blob, {
       upsert: true,
-      cacheControl: "3600",
-      contentType: file.type || undefined,
+      // Een jaar cachen mag: de URL krijgt bij elke nieuwe upload een verse
+      // ?v=-cachebuster, dus stale avatars bestaan niet.
+      cacheControl: "31536000",
+      contentType: blob.type || undefined,
     });
   if (error) throw error;
 
