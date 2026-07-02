@@ -14,6 +14,7 @@ import { getProfilesMap, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { Avatar } from "../../components/Avatar";
 import { ShareMatch } from "./ShareMatch";
+import { errorMessage } from "../../lib/errors";
 import type { Match, Profile, Team } from "../../lib/types";
 import "./MatchDetail.css";
 
@@ -169,7 +170,7 @@ function ScoreEditor({
       toast.success("Score bijgewerkt.");
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }

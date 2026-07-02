@@ -5,6 +5,7 @@ import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { outcomeFor } from "../../lib/results";
+import { errorMessage } from "../../lib/errors";
 import {
   getRecentMatches,
   getTeamsMap,
@@ -229,7 +230,7 @@ function AddMatchForm({
       setScoreB("");
       onCreated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }

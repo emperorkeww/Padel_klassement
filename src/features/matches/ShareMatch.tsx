@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { formatDate } from "../../lib/format";
+import { errorMessage } from "../../lib/errors";
 import type { Match, Profile, Team } from "../../lib/types";
 import { teamLabel } from "./api";
 
@@ -179,7 +180,7 @@ export function ShareMatch({ match, teams, profiles }: Props) {
     } catch (err) {
       // Gebruiker die het deelvenster sluit is geen fout.
       if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
