@@ -10,9 +10,9 @@
 .avail-book {
   flex-shrink: 0;
   white-space: nowrap;
-  gap: 0.5rem;
+  gap: var(--sp-2);
   border-color: var(--accent-line);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(17, 24, 39, 0.06));
+  box-shadow: var(--shadow-sm);
 }
 
 .avail-book:hover:not(:disabled) {
@@ -77,9 +77,9 @@
 }
 
 .avail-time {
-  padding: 0.5rem 0 0.4rem;
+  padding: var(--sp-2) 0 var(--sp-2);
   text-align: left;
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
   border-bottom: 1px solid var(--line-strong);
@@ -108,12 +108,12 @@
 
 .avail-rowhead__name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   line-height: 1.15;
 }
 
 .avail-rowhead__type {
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
 
@@ -143,14 +143,14 @@
   position: fixed;
   z-index: 50;
   transform: translate(-50%, calc(-100% - 12px));
-  padding: 0.35rem 0.6rem;
+  padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius-sm);
   background: var(--ink);
   color: #fff;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 6px 20px rgba(17, 24, 39, 0.25);
+  box-shadow: var(--shadow-pop);
 }
 
 /* Klik-pop-up met beschikbaarheid + reserveerlink (werkt op touch én desktop). */
@@ -168,23 +168,23 @@
   max-width: min(260px, calc(100vw - 24px));
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.7rem 0.85rem;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
   border-radius: var(--radius-sm);
-  background: var(--surface, #fff);
+  background: var(--surface);
   border: 1px solid var(--line-strong);
-  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.22);
+  box-shadow: var(--shadow-pop);
 }
 
 .avail-popover__title {
   margin: 0;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
 }
 
 .avail-popover__time {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
 
@@ -201,7 +201,7 @@
  */
 @media (max-width: 640px) {
   .avail-popover-backdrop {
-    background: rgba(17, 24, 39, 0.45);
+    background: var(--overlay);
   }
 
   .avail-popover {
@@ -217,7 +217,7 @@
     border: none;
     border-top: 1px solid var(--line-strong);
     border-radius: var(--radius) var(--radius) 0 0;
-    box-shadow: 0 -8px 30px rgba(17, 24, 39, 0.25);
+    box-shadow: 0 -8px 30px rgba(20, 40, 28, 0.25);
     animation: avail-sheet-up 0.18s ease-out;
   }
 
@@ -237,7 +237,7 @@
   }
 
   .avail-popover__time {
-    font-size: 0.9rem;
+    font-size: var(--fs-md);
   }
 
   .avail-popover .btn {
@@ -271,16 +271,16 @@
 
 .avail-legend {
   display: flex;
-  gap: 1.25rem;
-  margin: 0.9rem 0 0;
-  font-size: 0.82rem;
+  gap: var(--sp-5);
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
 
 .avail-legend__item {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--sp-2);
 }
 
 .avail-legend__swatch {
@@ -291,9 +291,9 @@
 }
 
 .avail-note {
-  margin-top: 1.25rem;
+  margin-top: var(--sp-5);
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .avail-note a {

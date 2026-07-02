@@ -62,11 +62,9 @@ export function Matches() {
       <AddMatchForm players={selectablePlayers} onCreated={reloadAll} />
 
       <section className="card">
-        <div className="row-between" style={{ marginBottom: "1rem" }}>
-          <h2 className="card__title" style={{ margin: 0 }}>
-            Recente matches
-          </h2>
-          <div className="tabs" style={{ marginBottom: 0 }}>
+        <div className="card__head">
+          <h2 className="card__title">Recente matches</h2>
+          <div className="tabs">
             {(
               [
                 ["all", "Alles"],

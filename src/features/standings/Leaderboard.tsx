@@ -102,8 +102,8 @@ export function Leaderboard() {
 
       <KlassementUitleg />
 
-      <div className="row-between" style={{ marginBottom: "1.25rem" }}>
-        <div className="tabs" style={{ marginBottom: 0 }}>
+      <div className="toolbar">
+        <div className="tabs">
           <button
             className={`tab ${tab === "player" ? "is-active" : ""}`}
             onClick={() => setTab("player")}
@@ -120,8 +120,7 @@ export function Leaderboard() {
 
         {tab === "player" && (
           <select
-            className="select"
-            style={{ maxWidth: 220 }}
+            className="select select--filter"
             value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
           >
@@ -310,9 +309,7 @@ function StandingsTable({
                     {r.form.length > 0 ? (
                       <FormChips form={r.form} size="sm" />
                     ) : (
-                      <span className="empty" style={{ padding: 0 }}>
-                        —
-                      </span>
+                      <span className="empty empty--bare">—</span>
                     )}
                   </td>
                 )}

@@ -30,6 +30,7 @@ import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
 import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
+import "./GroupDetail.css";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -143,9 +144,7 @@ export function GroupDetail() {
 
           {isOwner && (
             <>
-              <h3 className="card__title" style={{ marginTop: "1.25rem" }}>
-                Vriend toevoegen
-              </h3>
+              <h3 className="card__title card__title--section">Vriend toevoegen</h3>
               {addableFriendIds.length === 0 ? (
                 <p className="empty">
                   Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
@@ -216,10 +215,8 @@ export function GroupDetail() {
       </div>
 
       <section className="card">
-        <h2 className="card__title" style={{ marginBottom: "0.25rem" }}>
-          Wedstrijdrondes
-        </h2>
-        <p className="page-subtitle" style={{ marginBottom: "1rem" }}>
+        <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+        <p className="card__subtitle">
           {mode === "americano"
             ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
             : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
@@ -227,8 +224,8 @@ export function GroupDetail() {
 
         <SpelvormUitleg />
 
-        <div className="row-between" style={{ marginTop: "1rem", flexWrap: "wrap", gap: "0.75rem" }}>
-          <div className="tabs" style={{ marginBottom: 0 }}>
+        <div className="toolbar">
+          <div className="tabs">
             <button
               className={`tab ${mode === "americano" ? "is-active" : ""}`}
               onClick={() => setMode("americano")}
@@ -297,12 +294,10 @@ export function GroupDetail() {
           <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
         )}
 
-        <div className="stack" style={{ marginTop: "1rem" }}>
+        <div className="stack">
           {rounds.map(({ round, list }) => (
             <div key={round}>
-              <h3 className="card__title" style={{ marginBottom: "0.5rem" }}>
-                Ronde {round}
-              </h3>
+              <h3 className="card__title card__title--compact">Ronde {round}</h3>
               <div className="stack">
                 {list.map((m) =>
                   m.status === "completed" ? (
@@ -357,7 +352,7 @@ function generatedMessage(mode: "americano" | "mexicano", rounds: number): strin
 
 function SpelvormUitleg() {
   return (
-    <details className="explainer" style={{ marginBottom: 0 }}>
+    <details className="explainer">
       <summary>Americano of Mexicano — wat is het verschil?</summary>
       <div className="explainer__body">
         <dl>
@@ -419,8 +414,7 @@ function MatchRow({
       </span>
       <span className="result-row__form">
         <input
-          className="input"
-          style={{ width: 56 }}
+          className="input input--score"
           type="number"
           min="0"
           placeholder="A"
@@ -430,8 +424,7 @@ function MatchRow({
         />
         <span className="matchlist__vs">–</span>
         <input
-          className="input"
-          style={{ width: 56 }}
+          className="input input--score"
           type="number"
           min="0"
           placeholder="B"

@@ -3,7 +3,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 2rem 1rem;
+  padding: var(--sp-8) var(--sp-4);
   background:
     radial-gradient(70% 50% at 85% 0%, var(--lime-soft) 0%, transparent 60%),
     radial-gradient(100% 60% at 15% 100%, var(--accent-soft) 0%, transparent 60%),
@@ -14,7 +14,7 @@
 /* ---------- Kaart ---------- */
 .login-card {
   width: min(94vw, 420px);
-  padding: 2.25rem 2rem;
+  padding: var(--sp-8);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -26,24 +26,24 @@
 .login-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-6);
 }
 
 .login-brand__name {
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   letter-spacing: -0.01em;
 }
 
 /* ---------- Koppen ---------- */
 .login-head {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--sp-6);
 }
 
 .login-title {
-  margin: 0 0 0.35rem;
-  font-size: 1.55rem;
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-xl);
   font-weight: 800;
   letter-spacing: -0.025em;
 }
@@ -51,31 +51,37 @@
 .login-subtitle {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.925rem;
+  font-size: var(--fs-base);
   line-height: 1.45;
 }
 
-/* ---------- Tabs (segmented control) ---------- */
+/* ---------- Tabs (segmented control, zelfde pilvorm als de app-tabs) ---------- */
 .login-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  margin-bottom: 1.25rem;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  margin-bottom: var(--sp-5);
   background: var(--surface-2);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 
 .login-tab {
-  padding: 0.55rem;
+  padding: var(--sp-2);
   border: none;
-  border-radius: 7px;
+  border-radius: 999px;
   background: transparent;
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-family: inherit;
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.login-tab:hover:not(.is-active) {
+  color: var(--ink);
 }
 
 .login-tab.is-active {
@@ -87,20 +93,21 @@
 /* ---------- Social ---------- */
 .login-social {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--sp-2);
 }
 
 .social-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  border: 1px solid var(--line);
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font-size: 0.9rem;
+  font-family: inherit;
+  font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -108,7 +115,7 @@
 
 .social-btn:hover:not(:disabled) {
   background: var(--surface-2);
-  border-color: var(--line-strong);
+  border-color: var(--ink-soft);
 }
 
 .social-btn:disabled {
@@ -119,10 +126,10 @@
 .login-divider {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 1.25rem 0;
+  gap: var(--sp-3);
+  margin: var(--sp-5) 0;
   color: var(--ink-soft);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 
 .login-divider::before,
@@ -136,16 +143,16 @@
 /* ---------- Formulier ---------- */
 .login-form {
   display: grid;
-  gap: 1rem;
+  gap: var(--sp-4);
 }
 
 .field {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--sp-1);
 }
 
 .field__label {
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink);
 }
@@ -156,12 +163,13 @@
 
 .field__input {
   width: 100%;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--line);
+  padding: var(--sp-3);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font-size: 0.95rem;
+  font-family: inherit;
+  font-size: var(--fs-base);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -172,20 +180,20 @@
 .field__input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--ring);
 }
 
 .field__toggle {
   position: absolute;
   top: 50%;
-  right: 0.5rem;
+  right: var(--sp-2);
   transform: translateY(-50%);
-  padding: 0.3rem 0.5rem;
+  padding: var(--sp-1) var(--sp-2);
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--accent);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -197,7 +205,7 @@
 .login-row {
   display: flex;
   justify-content: flex-end;
-  margin-top: -0.25rem;
+  margin-top: calc(-1 * var(--sp-1));
 }
 
 /* ---------- Links & meldingen ---------- */
@@ -218,9 +226,9 @@
 
 .login-message {
   margin: 0;
-  padding: 0.65rem 0.8rem;
+  padding: var(--sp-3);
   border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   line-height: 1.4;
 }
 
@@ -238,21 +246,22 @@
 
 /* ---------- Primaire knop ---------- */
 .login-submit {
-  padding: 0.8rem 1rem;
+  padding: var(--sp-3) var(--sp-4);
   border: none;
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-ink);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   font-weight: 700;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 
 .login-submit:hover:not(:disabled) {
   background: var(--accent-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .login-submit:active:not(:disabled) {
@@ -266,9 +275,9 @@
 
 /* ---------- Footer ---------- */
 .login-foot {
-  margin-top: 1.5rem;
+  margin-top: var(--sp-6);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   color: var(--ink-soft);
 }
 

@@ -123,11 +123,9 @@ export function Dashboard() {
       </div>
 
       {rhist.length >= 2 && (
-        <section className="card" style={{ marginBottom: "1.25rem" }}>
-          <div className="row-between" style={{ marginBottom: "1rem" }}>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Je rating-verloop
-            </h2>
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Je rating-verloop</h2>
             <Link className="profile-link" to={`/spelers/${myId}`}>
               Mijn profiel →
             </Link>
@@ -138,10 +136,8 @@ export function Dashboard() {
 
       <div className="grid grid--2">
         <section className="card">
-          <div className="row-between" style={{ marginBottom: "1rem" }}>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Recente matches
-            </h2>
+          <div className="card__head">
+            <h2 className="card__title">Recente matches</h2>
             <Link className="profile-link" to="/matches">
               Alles →
             </Link>
@@ -160,10 +156,8 @@ export function Dashboard() {
 
         <div className="stack">
           <section className="card">
-            <div className="row-between" style={{ marginBottom: "1rem" }}>
-              <h2 className="card__title" style={{ margin: 0 }}>
-                Topspelers
-              </h2>
+            <div className="card__head">
+              <h2 className="card__title">Topspelers</h2>
               <Link className="profile-link" to="/klassement">
                 Klassement →
               </Link>
@@ -212,11 +206,9 @@ export function Dashboard() {
         </div>
       </div>
 
-      <section className="card" style={{ marginTop: "1.25rem" }}>
-        <div className="row-between" style={{ marginBottom: "1rem" }}>
-          <h2 className="card__title" style={{ margin: 0 }}>
-            Baanbeschikbaarheid vandaag
-          </h2>
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Baanbeschikbaarheid vandaag</h2>
           <Link className="profile-link" to="/banen">
             Alle dagen →
           </Link>

@@ -88,7 +88,7 @@ export function Friends() {
             </button>
           </form>
 
-          <div className="stack" style={{ marginTop: "1rem" }}>
+          <div className="stack mt-4">
             {results.length === 0 && <p className="empty">Geen resultaten.</p>}
             {results.map((p) => {
               const already = relatedIds.has(p.id);
@@ -134,7 +134,7 @@ export function Friends() {
                     {displayName(pmap[otherId(f, myId)])}
                   </Link>
                 </span>
-                <span style={{ display: "flex", gap: "0.4rem" }}>
+                <span className="btn-row">
                   <button
                     className="btn btn--primary btn--sm"
                     onClick={() =>
@@ -158,9 +158,7 @@ export function Friends() {
 
           {outgoing.length > 0 && (
             <>
-              <h2 className="card__title" style={{ marginTop: "1.25rem" }}>
-                Verzonden verzoeken
-              </h2>
+              <h2 className="card__title card__title--section">Verzonden verzoeken</h2>
               <div className="stack">
                 {outgoing.map((f) => (
                   <div key={f.id} className="row-between">
