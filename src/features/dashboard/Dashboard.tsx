@@ -7,6 +7,7 @@ import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
+import { CountUp } from "../../components/CountUp";
 import { recentForm, winRate, winStreak } from "../../lib/results";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
@@ -163,13 +164,19 @@ export function Dashboard() {
             match={nextMatch}
             teams={tmap}
             profiles={pmap}
+            perspectiveId={myId}
             onSaved={onMatches}
           />
         </section>
       )}
 
       <div className="stats">
-        <Stat label="Rating" value={myRating ?? "—"} accent />
+        <Stat
+          label="Rating"
+          value={myRating ?? "—"}
+          accent
+          delta={rhist.length > 0 ? rhist[rhist.length - 1].delta : null}
+        />
         <Stat label="Punten" value={me?.points ?? 0} />
         <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
         <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
@@ -300,14 +307,25 @@ function Stat({
   label,
   value,
   accent,
+  delta,
 }: {
   label: string;
   value: number | string;
   accent?: boolean;
+  /** Laatste verandering (bv. rating-delta); toont ▲/▼ naast de waarde. */
+  delta?: number | null;
 }) {
   return (
     <div className={`stat ${accent ? "stat--accent" : ""}`}>
-      <span className="stat__value">{value}</span>
+      <span className="stat__value">
+        {typeof value === "number" ? <CountUp value={value} /> : value}
+        {delta != null && delta !== 0 && (
+          <span className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}>
+            {delta > 0 ? "▲" : "▼"}
+            {Math.abs(delta)}
+          </span>
+        )}
+      </span>
       <span className="stat__label">{label}</span>
     </div>
   );

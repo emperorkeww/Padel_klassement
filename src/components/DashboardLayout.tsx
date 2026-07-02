@@ -69,6 +69,7 @@ export function DashboardLayout() {
                   key={item.to}
                   to={item.to}
                   end={item.end}
+                  viewTransition
                   className={({ isActive }) =>
                     `sidebar__link ${isActive ? "is-active" : ""}`
                   }
@@ -117,6 +118,7 @@ export function DashboardLayout() {
             key={item.to}
             to={item.to}
             end={item.end}
+            viewTransition
             aria-label={item.label}
             className={({ isActive }) =>
               `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isActive ? "is-active" : ""}`

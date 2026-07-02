@@ -7,10 +7,10 @@ export function AccountNav() {
     `tab ${isActive ? "is-active" : ""}`;
   return (
     <nav className="tabs" aria-label="Account">
-      <NavLink to="/profiel" className={cls}>
+      <NavLink to="/profiel" className={cls} viewTransition>
         Profiel
       </NavLink>
-      <NavLink to="/vrienden" className={cls}>
+      <NavLink to="/vrienden" className={cls} viewTransition>
         Vrienden
       </NavLink>
     </nav>

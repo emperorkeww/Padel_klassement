@@ -6,6 +6,8 @@ import { useRealtime } from "../../lib/useRealtime";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
+import { CountUp } from "../../components/CountUp";
+import { useFlip } from "../../lib/useFlip";
 import { recentForm, winRate, type Outcome } from "../../lib/results";
 import {
   getPlayerStandings,
@@ -281,6 +283,15 @@ function KlassementUitleg() {
   );
 }
 
+/** Zet de view-transition-naam op de avatar van de aangeklikte rij, zodat die
+ *  bij het navigeren naar het profiel doorgroeit naar de grote profielfoto. */
+function primeAvatarMorph(e: React.MouseEvent<HTMLElement>) {
+  const avatar = e.currentTarget
+    .closest("[data-flip-key]")
+    ?.querySelector<HTMLElement>(".avatar");
+  if (avatar) avatar.style.viewTransitionName = "player-avatar";
+}
+
 function StandingsTable({
   rows,
   showForm,
@@ -290,6 +301,9 @@ function StandingsTable({
   showForm: boolean;
   meRef?: React.Ref<HTMLTableRowElement>;
 }) {
+  const flipRef = useFlip<HTMLTableSectionElement>(
+    rows.map((r) => r.key).join("|"),
+  );
   return (
     <div className="table-scroll leaderboard-table">
       <table className="table">
@@ -308,12 +322,13 @@ function StandingsTable({
             <th className="num">Punten</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody ref={flipRef}>
           {rows.map((r, i) => {
             const rate = winRate(r.won, r.played);
             return (
               <tr
                 key={r.key}
+                data-flip-key={r.key}
                 ref={r.isMe ? meRef : undefined}
                 className={r.isMe ? "is-me" : ""}
               >
@@ -324,7 +339,12 @@ function StandingsTable({
                   <span className="cell-player">
                     <Avatar profile={r.profile} name={r.name} size={26} />
                     {r.link ? (
-                      <Link className="profile-link" to={r.link}>
+                      <Link
+                        className="profile-link"
+                        to={r.link}
+                        viewTransition
+                        onClick={primeAvatarMorph}
+                      >
                         {r.name}
                       </Link>
                     ) : (
@@ -374,7 +394,9 @@ function StandingsTable({
                   </td>
                 )}
                 <td className="num">
-                  <strong>{r.points}</strong>
+                  <strong>
+                    <CountUp value={r.points} />
+                  </strong>
                 </td>
               </tr>
             );
@@ -393,8 +415,9 @@ function RankList({
   rows: Row[];
   meRef?: React.Ref<HTMLLIElement>;
 }) {
+  const flipRef = useFlip<HTMLOListElement>(rows.map((r) => r.key).join("|"));
   return (
-    <ol className="ranklist">
+    <ol className="ranklist" ref={flipRef}>
       {rows.map((r, i) => {
         const body = (
           <>
@@ -413,7 +436,9 @@ function RankList({
               </span>
             </span>
             <span className="ranklist__end">
-              <span className="ranklist__pts">{r.points}</span>
+              <span className="ranklist__pts">
+                <CountUp value={r.points} />
+              </span>
               <span className="ranklist__pts-label">
                 {r.rating != null ? `ptn · ${r.rating}` : "ptn"}
               </span>
@@ -423,11 +448,17 @@ function RankList({
         return (
           <li
             key={r.key}
+            data-flip-key={r.key}
             ref={r.isMe ? meRef : undefined}
             className={`ranklist__row ${r.isMe ? "is-me" : ""}`}
           >
             {r.link ? (
-              <Link className="ranklist__link" to={r.link}>
+              <Link
+                className="ranklist__link"
+                to={r.link}
+                viewTransition
+                onClick={primeAvatarMorph}
+              >
                 {body}
               </Link>
             ) : (

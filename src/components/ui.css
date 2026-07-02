@@ -494,6 +494,21 @@
 .stat--accent .stat__value {
   color: var(--accent);
 }
+/* Laatste verandering naast een statwaarde (bv. rating na de vorige match). */
+.stat__delta {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  vertical-align: 4px;
+  white-space: nowrap;
+}
+.stat__delta.is-up {
+  color: var(--success);
+}
+.stat__delta.is-down {
+  color: var(--danger);
+}
 
 /* ---------- Matchkaarten (nieuwe lijstweergave) ---------- */
 .matchlist {

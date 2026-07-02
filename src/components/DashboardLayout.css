@@ -11,6 +11,8 @@
 
 /* ---------- Zijbalk (desktop) ---------- */
 .sidebar {
+  /* Eigen view-transition-groep: de zijbalk fadet niet mee bij paginawissel. */
+  view-transition-name: nav-sidebar;
   position: sticky;
   top: 0;
   align-self: flex-start;
@@ -192,6 +194,7 @@
   }
 
   .topbar {
+    view-transition-name: nav-topbar;
     position: sticky;
     top: 0;
     z-index: 20;
@@ -222,6 +225,7 @@
   }
 
   .tabbar {
+    view-transition-name: nav-tabbar;
     position: fixed;
     bottom: 0;
     left: 0;

@@ -261,6 +261,7 @@ export function GroupDetail() {
                           match={m}
                           teams={tmap}
                           profiles={pmap}
+                          perspectiveId={myId}
                           onSaved={onMatches}
                         />
                       ),
