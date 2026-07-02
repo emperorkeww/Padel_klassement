@@ -94,6 +94,11 @@ export function Availability() {
         <span className="avail-legend__item">
           <span className="avail-cell avail-cell--busy avail-legend__swatch" /> Geboekt
         </span>
+        {date === today && (
+          <span className="avail-legend__item">
+            <span className="avail-cell avail-cell--past avail-legend__swatch" /> Voorbij
+          </span>
+        )}
       </div>
 
       <p className="avail-note">

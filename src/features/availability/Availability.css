@@ -64,6 +64,8 @@
   --slot-col: 40px;
   display: grid;
   min-width: max-content;
+  /* Ankerpunt voor de absoluut geplaatste "voorbij"-arcering. */
+  position: relative;
 }
 
 /* Kop-cellen */
@@ -265,6 +267,34 @@
     var(--ink-soft) 5px,
     var(--ink-soft) 10px
   );
+}
+
+.avail-cell--past {
+  /* Gedempte basis; de arcering komt van de overlay die over alle rijen
+     doorloopt (of van de eigen background bij het legenda-vakje). */
+  background: var(--surface-2);
+  cursor: default;
+}
+
+/* Doorlopende schuine arcering over het hele verstreken tijdsvak.
+   position:absolute + een expliciete grid-area: de overlay vult exact dat
+   vak, maar telt niet mee in de auto-plaatsing van de cellen eromheen. */
+.avail-past-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0 9px,
+    var(--line-strong) 9px 11px
+  );
+}
+
+/* Het legenda-vakje is te klein voor de overlay: zelfde arcering lokaal. */
+.avail-cell--past.avail-legend__swatch {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 5px, var(--line-strong) 5px 7px),
+    var(--surface-2);
 }
 
 /* ---- Legenda & voetnoot ---- */
