@@ -8,6 +8,11 @@
 const UPSTREAM = "https://api.playtomic.io";
 const PREFIX = "/api/playtomic";
 
+// Alleen de endpoints die de app echt nodig heeft zijn bereikbaar via de
+// proxy. Zonder allowlist kan een pad als "//evil.com/x" (protocol-relatief)
+// de URL-resolutie naar een ander domein sturen en wordt dit een open proxy.
+const ALLOWED_PATHS = [/^\/v1\/availability$/, /^\/v1\/tenants\/[\w-]+$/];
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -28,10 +33,15 @@ export default {
         });
       }
 
-      const target = new URL(
-        url.pathname.slice(PREFIX.length) + url.search,
-        UPSTREAM,
-      );
+      const rest = url.pathname.slice(PREFIX.length);
+      if (!ALLOWED_PATHS.some((re) => re.test(rest))) {
+        return new Response("Not Found", { status: 404 });
+      }
+
+      const target = new URL(rest + url.search, UPSTREAM);
+      if (target.origin !== UPSTREAM) {
+        return new Response("Bad Request", { status: 400 });
+      }
       const upstream = await fetch(target, {
         headers: {
           Accept: "application/json",
