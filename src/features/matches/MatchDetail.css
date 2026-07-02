@@ -88,6 +88,53 @@
   color: var(--ink-soft);
 }
 
+/* Score corrigeren (alleen de aanmaker). */
+.md-edit-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.md-editor {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.85rem;
+  justify-items: center;
+}
+.md-editor__inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.md-editor__field {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  max-width: 140px;
+  text-align: center;
+}
+.md-editor__field .input {
+  width: 84px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.md-editor__preview {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.md-editor__buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
 @media (max-width: 560px) {
   .md-versus {
     grid-template-columns: 1fr;
