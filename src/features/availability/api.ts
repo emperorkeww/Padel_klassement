@@ -42,8 +42,13 @@ const WEEKDAY_KEYS = [
 ];
 
 export type Court = { id: string; name: string; type: string };
-/** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijs. */
-export type SlotOption = { duration: number; price: string };
+/** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijzen. */
+export type SlotOption = {
+  duration: number;
+  price: string;
+  /** Prijs per persoon (baanprijs ÷ 4); null als de prijs niet numeriek is. */
+  perPerson: string | null;
+};
 /** Per baan: vrije starttijd ("HH:MM", clubtijd) → opties, oplopend op duur. */
 export type CourtRow = { court: Court; free: Map<string, SlotOption[]> };
 export type DayAvailability = {
@@ -147,20 +152,40 @@ export function coveredTimes(free: Map<string, SlotOption[]>): Set<string> {
   return covered;
 }
 
+// Gedeelde weergave: nl-BE, hele euro's zonder centen, anders 2 decimalen.
+function formatAmount(n: number, currency: string): string {
+  return new Intl.NumberFormat("nl-BE", {
+    style: "currency",
+    currency: currency || "EUR",
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
 /** Playtomic-prijs ("23.33 EUR") → NL-weergave ("€ 23,33", hele euro's zonder centen). */
 export function formatPrice(raw: string): string {
   const [num, currency] = raw.split(" ");
   const n = Number(num);
   if (!Number.isFinite(n)) return raw;
   try {
-    return new Intl.NumberFormat("nl-BE", {
-      style: "currency",
-      currency: currency || "EUR",
-      minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(n);
+    return formatAmount(n, currency);
   } catch {
     return raw;
+  }
+}
+
+/**
+ * Prijs per persoon (padel speel je met vier): baanprijs ÷ 4, zelfde weergave
+ * als formatPrice. Niet-numerieke prijs (bv. "op aanvraag") → null.
+ */
+export function perPersonPrice(raw: string): string | null {
+  const [num, currency] = raw.split(" ");
+  const n = Number(num);
+  if (!Number.isFinite(n)) return null;
+  try {
+    return formatAmount(n / 4, currency);
+  } catch {
+    return null;
   }
 }
 
@@ -214,7 +239,11 @@ export async function getClubAvailability(
       const t = utcToClubTime(slot.date, slot.time, timeZone);
       const options = free.get(t) ?? [];
       if (!options.some((o) => o.duration === slot.duration)) {
-        options.push({ duration: slot.duration, price: formatPrice(slot.price) });
+        options.push({
+          duration: slot.duration,
+          price: formatPrice(slot.price),
+          perPerson: perPersonPrice(slot.price),
+        });
         options.sort((a, b) => a.duration - b.duration);
       }
       free.set(t, options);

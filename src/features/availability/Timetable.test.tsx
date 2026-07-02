@@ -17,11 +17,11 @@ function fixture(): DayAvailability {
           [
             "16:00",
             [
-              { duration: 60, price: "€ 20" },
-              { duration: 90, price: "€ 30" },
+              { duration: 60, price: "€ 20", perPerson: "€ 5" },
+              { duration: 90, price: "€ 30", perPerson: "€ 7,50" },
             ],
           ],
-          ["16:30", [{ duration: 120, price: "€ 40" }]],
+          ["16:30", [{ duration: 120, price: "€ 40", perPerson: "€ 10" }]],
         ]),
       },
     ],
@@ -66,7 +66,7 @@ describe("Timetable", () => {
 
     const popover = screen.getByRole("dialog");
     expect(popover).toHaveTextContent("Vrij van 16:30 tot 18:30");
-    expect(popover).toHaveTextContent("120 min · € 40");
+    expect(popover).toHaveTextContent("120 min · € 40 · € 10 p.p.");
     expect(popover).not.toHaveTextContent("60 min");
   });
 
@@ -77,7 +77,7 @@ describe("Timetable", () => {
 
     const popover = screen.getByRole("dialog");
     expect(popover).toHaveTextContent("Vrij van 16:00 tot 17:30");
-    expect(popover).toHaveTextContent("90 min · € 30");
+    expect(popover).toHaveTextContent("90 min · € 30 · € 7,50 p.p.");
     expect(popover).not.toHaveTextContent("60 min");
   });
 

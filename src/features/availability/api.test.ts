@@ -5,6 +5,7 @@ import {
   formatPrice,
   getClubAvailability,
   getWeekAvailability,
+  perPersonPrice,
   searchClubs,
   utcToClubTime,
 } from "./api";
@@ -32,8 +33,14 @@ describe("coveredTimes", () => {
   it("dekt elk slot tot start + langste duur", () => {
     const covered = coveredTimes(
       new Map([
-        ["16:30", [{ duration: 120, price: "€ 40" }]],
-        ["18:30", [{ duration: 60, price: "€ 20" }, { duration: 90, price: "€ 30" }]],
+        ["16:30", [{ duration: 120, price: "€ 40", perPerson: "€ 10" }]],
+        [
+          "18:30",
+          [
+            { duration: 60, price: "€ 20", perPerson: "€ 5" },
+            { duration: 90, price: "€ 30", perPerson: "€ 7,50" },
+          ],
+        ],
       ]),
     );
     expect([...covered].sort()).toEqual([
@@ -43,7 +50,9 @@ describe("coveredTimes", () => {
   });
 
   it("laatste boekbare start voor sluiting dekt ook het slothalfuur", () => {
-    const covered = coveredTimes(new Map([["22:00", [{ duration: 60, price: "€ 20" }]]]));
+    const covered = coveredTimes(
+      new Map([["22:00", [{ duration: 60, price: "€ 20", perPerson: "€ 5" }]]]),
+    );
     expect([...covered].sort()).toEqual(["22:00", "22:30"]);
   });
 });
@@ -61,6 +70,25 @@ describe("formatPrice", () => {
 
   it("onherkenbare invoer gaat onaangeroerd door", () => {
     expect(formatPrice("op aanvraag")).toBe("op aanvraag");
+  });
+});
+
+// Padel speel je met vier: de baanprijs gedeeld door 4, zelfde weergaveregels
+// als formatPrice (hele euro's zonder centen, anders 2 decimalen).
+describe("perPersonPrice", () => {
+  it("deelbaar bedrag: hele euro's zonder centen", () => {
+    const p = perPersonPrice("20 EUR");
+    expect(p).toContain("5");
+    expect(p).not.toContain(",");
+  });
+
+  it("niet-deelbaar bedrag: 2 decimalen", () => {
+    expect(perPersonPrice("30 EUR")).toContain("7,50");
+    expect(perPersonPrice("23.33 EUR")).toContain("5,83");
+  });
+
+  it("niet-numerieke prijs → null (geen p.p. tonen)", () => {
+    expect(perPersonPrice("op aanvraag")).toBeNull();
   });
 });
 
@@ -172,6 +200,7 @@ describe("getClubAvailability", () => {
     expect([...free.keys()].sort()).toEqual(["16:00", "20:30"]);
     expect(free.get("16:00")?.map((o) => o.duration)).toEqual([60, 90]);
     expect(free.get("16:00")?.[0].price).toBe(formatPrice("20 EUR"));
+    expect(free.get("16:00")?.[0].perPerson).toBe(perPersonPrice("20 EUR"));
     expect(free.get("20:30")?.map((o) => o.duration)).toEqual([60]);
   });
 
