@@ -1,5 +1,5 @@
 import { supabase } from "../../lib/supabase";
-import type { Match, MatchPoint, Profile, Team } from "../../lib/types";
+import type { Match, Profile, Team } from "../../lib/types";
 import { displayName } from "../profiles/api";
 
 export async function getMatch(id: string): Promise<Match | null> {
@@ -10,18 +10,6 @@ export async function getMatch(id: string): Promise<Match | null> {
     .maybeSingle();
   if (error) throw error;
   return data;
-}
-
-export async function getMatchPoints(matchId: string): Promise<MatchPoint[]> {
-  const { data, error } = await supabase
-    .from("match_points")
-    .select("*")
-    .eq("match_id", matchId)
-    .order("set_number", { ascending: true })
-    .order("game_number", { ascending: true })
-    .order("point_number", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
 }
 
 export async function getTeamsMap(): Promise<Record<string, Team>> {
@@ -115,6 +103,28 @@ export async function setMatchResult(params: {
       score_a: params.scoreA ?? null,
       score_b: params.scoreB ?? null,
       played_at: new Date().toISOString(),
+    })
+    .eq("id", params.matchId);
+  if (error) throw error;
+}
+
+/**
+ * Corrigeert de eindscore van een reeds afgeronde match. Alleen de aanmaker
+ * mag dit (RLS). Anders dan setMatchResult blijft played_at behouden — het is
+ * een correctie, geen nieuwe uitslag. De winnaar volgt uit de score.
+ */
+export async function updateMatchScore(params: {
+  matchId: string;
+  winnerTeamId: string | null;
+  scoreA: number;
+  scoreB: number;
+}): Promise<void> {
+  const { error } = await supabase
+    .from("matches")
+    .update({
+      winner_team_id: params.winnerTeamId,
+      score_a: params.scoreA,
+      score_b: params.scoreB,
     })
     .eq("id", params.matchId);
   if (error) throw error;

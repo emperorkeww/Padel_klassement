@@ -1,25 +1,29 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
+import { useToast } from "../../components/ToastProvider";
 import {
   getMatch,
-  getMatchPoints,
   getTeamsMap,
   teamLabel,
+  updateMatchScore,
 } from "./api";
 import { getGroup } from "../groups/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { Avatar } from "../../components/Avatar";
-import type { Profile, Team } from "../../lib/types";
+import type { Match, Profile, Team } from "../../lib/types";
 import "./MatchDetail.css";
 
 export function MatchDetail() {
   const { id = "" } = useParams();
+  const { user } = useAuth();
 
   const match = useAsync(() => getMatch(id), [id]);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
-  const points = useAsync(() => getMatchPoints(id), [id]);
+  const [editing, setEditing] = useState(false);
 
   if (match.loading) return <p className="empty">Laden…</p>;
   if (!match.data) return <p className="msg msg--error">Match niet gevonden.</p>;
@@ -33,12 +37,8 @@ export function MatchDetail() {
   const aWon = m.winner_team_id === m.team_a_id;
   const bWon = m.winner_team_id === m.team_b_id;
   const isDraw = done && m.winner_team_id === null;
-
-  // Punt-samenvatting (indien punt-voor-punt geregistreerd).
-  const pts = points.data ?? [];
-  const ptsA = pts.filter((p) => p.won_by_team_id === m.team_a_id).length;
-  const ptsB = pts.filter((p) => p.won_by_team_id === m.team_b_id).length;
-  const golden = pts.filter((p) => p.is_golden_point).length;
+  // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
+  const canEdit = done && !!user && m.created_by === user.id;
 
   return (
     <div>
@@ -91,29 +91,126 @@ export function MatchDetail() {
             won={done && bWon}
           />
         </div>
-      </section>
 
-      {pts.length > 0 && (
-        <section className="card">
-          <h2 className="card__title">Puntenverloop</h2>
-          <div className="stack">
-            <div className="row-between">
-              <span>{teamLabel(teamA, pmap)}</span>
-              <span className="badge">{ptsA} punten</span>
-            </div>
-            <div className="row-between">
-              <span>{teamLabel(teamB, pmap)}</span>
-              <span className="badge">{ptsB} punten</span>
-            </div>
-            {golden > 0 && (
-              <div className="row-between">
-                <span>Gouden punten</span>
-                <span className="badge badge--accent">{golden}</span>
-              </div>
-            )}
+        {canEdit && !editing && (
+          <div className="md-edit-actions">
+            <button className="btn btn--sm" onClick={() => setEditing(true)}>
+              {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
+            </button>
           </div>
-        </section>
-      )}
+        )}
+
+        {canEdit && editing && (
+          <ScoreEditor
+            match={m}
+            labelA={teamLabel(teamA, pmap)}
+            labelB={teamLabel(teamB, pmap)}
+            onClose={() => setEditing(false)}
+            onSaved={() => {
+              setEditing(false);
+              match.reload();
+            }}
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+
+/** Inline correctie van de eindscore; de winnaar volgt automatisch uit de score. */
+function ScoreEditor({
+  match,
+  labelA,
+  labelB,
+  onClose,
+  onSaved,
+}: {
+  match: Match;
+  labelA: string;
+  labelB: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const toast = useToast();
+  const [sa, setSa] = useState(match.score_a != null ? String(match.score_a) : "");
+  const [sb, setSb] = useState(match.score_b != null ? String(match.score_b) : "");
+  const [busy, setBusy] = useState(false);
+
+  const saNum = sa === "" ? null : Number(sa);
+  const sbNum = sb === "" ? null : Number(sb);
+  const valid =
+    saNum !== null && sbNum !== null && saNum >= 0 && sbNum >= 0;
+  const preview =
+    valid
+      ? saNum === sbNum
+        ? "Gelijkspel — beide teams krijgen 1 punt."
+        : `${saNum > sbNum ? labelA : labelB} wint.`
+      : null;
+
+  async function save() {
+    if (!valid) return toast.error("Vul beide scores in (0 of hoger).");
+    setBusy(true);
+    try {
+      await updateMatchScore({
+        matchId: match.id,
+        winnerTeamId:
+          saNum === sbNum
+            ? null
+            : saNum! > sbNum!
+              ? match.team_a_id
+              : match.team_b_id,
+        scoreA: saNum!,
+        scoreB: sbNum!,
+      });
+      toast.success("Score bijgewerkt.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="md-editor">
+      <div className="md-editor__inputs">
+        <label className="md-editor__field">
+          <span>{labelA}</span>
+          <input
+            className="input"
+            type="number"
+            min="0"
+            aria-label={`Score ${labelA}`}
+            value={sa}
+            onChange={(e) => setSa(e.target.value)}
+          />
+        </label>
+        <span className="matchlist__vs">–</span>
+        <label className="md-editor__field">
+          <span>{labelB}</span>
+          <input
+            className="input"
+            type="number"
+            min="0"
+            aria-label={`Score ${labelB}`}
+            value={sb}
+            onChange={(e) => setSb(e.target.value)}
+          />
+        </label>
+      </div>
+      {preview && <p className="md-editor__preview">{preview}</p>}
+      <div className="md-editor__buttons">
+        <button className="btn btn--sm" onClick={onClose} disabled={busy}>
+          Annuleren
+        </button>
+        <button
+          className="btn btn--primary btn--sm"
+          onClick={save}
+          disabled={busy || !valid}
+        >
+          {busy ? "Opslaan…" : "Opslaan"}
+        </button>
+      </div>
     </div>
   );
 }
