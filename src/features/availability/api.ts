@@ -147,6 +147,38 @@ export function coveredTimes(free: Map<string, SlotOption[]>): Set<string> {
   return covered;
 }
 
+/** Eerstvolgende boekbare starttijd van de dag + de banen die dan vrij zijn. */
+export type NextFreeSlot = { time: string; courts: Court[] };
+
+/**
+ * Vroegste vrije starttijd van de dag, over alle banen heen. Respecteert het
+ * duurfilter en telt vandaag (nowMinutes ≠ null) alleen starttijden ná nu —
+ * dezelfde "voorbij"-grens als het raster (start ≤ nu is voorbij).
+ */
+export function nextFreeSlot(
+  data: DayAvailability,
+  duration: number | null,
+  nowMinutes: number | null,
+): NextFreeSlot | null {
+  const cutoff = nowMinutes ?? -1;
+  let best: number | null = null;
+  let courts: Court[] = [];
+  for (const row of data.courts) {
+    for (const [t, options] of row.free) {
+      const m = toMinutes(t);
+      if (m <= cutoff) continue;
+      if (duration != null && !options.some((o) => o.duration === duration)) continue;
+      if (best == null || m < best) {
+        best = m;
+        courts = [row.court];
+      } else if (m === best) {
+        courts.push(row.court);
+      }
+    }
+  }
+  return best == null ? null : { time: fromMinutes(best), courts };
+}
+
 /** Playtomic-prijs ("23.33 EUR") → NL-weergave ("€ 23,33", hele euro's zonder centen). */
 export function formatPrice(raw: string): string {
   const [num, currency] = raw.split(" ");

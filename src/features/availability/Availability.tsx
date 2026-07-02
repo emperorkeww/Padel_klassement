@@ -6,6 +6,7 @@ import {
   getClubAvailability,
   getWeekAvailability,
   bookingUrl,
+  nextFreeSlot,
   type DayAvailability,
   type WeekDay,
 } from "./api";
@@ -13,7 +14,7 @@ import { useClub } from "./club";
 import { ClubPicker } from "./ClubPicker";
 import { Timetable } from "./Timetable";
 import { WeekGrid } from "./WeekGrid";
-import { addDays, dateInZone } from "../../lib/time";
+import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
 import "./Availability.css";
 
@@ -204,7 +205,10 @@ function DaySection({
       ) : availability.error ? (
         <p className="msg msg--error">{availability.error}</p>
       ) : availability.data ? (
-        <Timetable data={availability.data} date={date} duration={duration} />
+        <>
+          <NextFreeLine data={availability.data} date={date} duration={duration} />
+          <Timetable data={availability.data} date={date} duration={duration} />
+        </>
       ) : null}
 
       <div className="avail-legend">
@@ -239,6 +243,45 @@ function DaySection({
         verschijnen. Tijden kunnen wijzigen; deze weergave is niet-officieel.
       </p>
     </>
+  );
+}
+
+/** Samenvatting boven het raster: de eerstvolgende boekbare starttijd,
+ *  zodat je niet zelf het hele raster hoeft af te scannen. */
+function NextFreeLine({
+  data,
+  date,
+  duration,
+}: {
+  data: DayAvailability;
+  date: string;
+  duration: number | null;
+}) {
+  // Zelfde "voorbij"-semantiek als het raster: vandaag (in clubtijd!) tellen
+  // alleen starttijden ná nu mee.
+  const isToday = date === dateInZone(data.timeZone);
+  const next = nextFreeSlot(
+    data,
+    duration,
+    isToday ? minutesNowInZone(data.timeZone) : null,
+  );
+
+  if (!next) {
+    return (
+      <p className="avail-next">
+        {isToday ? "Vandaag niets meer vrij." : "Geen vrije sloten op deze dag."}
+      </p>
+    );
+  }
+  const extra = next.courts.length - 1;
+  return (
+    <p className="avail-next">
+      Eerstvolgend vrij:{" "}
+      <strong className="avail-next__time">{next.time}</strong> ·{" "}
+      {next.courts[0].name}
+      {extra > 0 &&
+        ` (+${extra} ${extra === 1 ? "andere baan" : "andere banen"})`}
+    </p>
   );
 }
 
