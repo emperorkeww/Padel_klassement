@@ -17,6 +17,17 @@ export default {
       if (request.method !== "GET") {
         return new Response("Method Not Allowed", { status: 405 });
       }
+
+      // Per-IP rate limiting tegen misbruik van de publieke proxy.
+      const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+      const { success } = await env.PLAYTOMIC_RL.limit({ key: ip });
+      if (!success) {
+        return new Response("Too Many Requests", {
+          status: 429,
+          headers: { "retry-after": "10" },
+        });
+      }
+
       const target = new URL(
         url.pathname.slice(PREFIX.length) + url.search,
         UPSTREAM,
