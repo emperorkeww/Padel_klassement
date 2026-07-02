@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
+import { errorMessage } from "../../lib/errors";
 import { getMyGroups, createGroup } from "./api";
 
 export function Groups() {
@@ -26,7 +27,7 @@ export function Groups() {
       toast.success("Groep aangemaakt.");
       groups.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
