@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
 import type { Match, Profile, Team } from "../../lib/types";
-import { setMatchResult } from "./api";
+import { setMatchResult, teamLabel } from "./api";
 import { TeamSide } from "./MatchList";
 
 /** Geplande match als kaart met inline score-invoer — dezelfde opbouw als een
@@ -59,7 +59,7 @@ export function PlannedMatchCard({
             min="0"
             inputMode="numeric"
             placeholder="0"
-            aria-label="Score team A"
+            aria-label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
             value={sa}
             onChange={(e) => setSa(e.target.value)}
           />
@@ -70,7 +70,7 @@ export function PlannedMatchCard({
             min="0"
             inputMode="numeric"
             placeholder="0"
-            aria-label="Score team B"
+            aria-label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
             value={sb}
             onChange={(e) => setSb(e.target.value)}
           />
