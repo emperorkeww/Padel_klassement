@@ -23,6 +23,24 @@ create table public.matches (
   constraint matches_winner_valid check (
     winner_team_id is null
     or winner_team_id in (team_a_id, team_b_id)
+  ),
+  -- scores kunnen niet negatief zijn (zou het scoresaldo verpesten)
+  constraint matches_scores_nonneg check (
+    (score_a is null or score_a >= 0)
+    and (score_b is null or score_b >= 0)
+  ),
+  -- rondenummers beginnen bij 1
+  constraint matches_round_positive check (
+    round_number is null or round_number >= 1
+  ),
+  -- als beide scores zijn ingevuld moet de winnaar bij de score passen:
+  -- hoogste score wint, gelijke score = gelijkspel (geen winnaar)
+  constraint matches_result_consistent check (
+    score_a is null
+    or score_b is null
+    or (winner_team_id = team_a_id and score_a > score_b)
+    or (winner_team_id = team_b_id and score_b > score_a)
+    or (winner_team_id is null and score_a = score_b)
   )
 );
 
