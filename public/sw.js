@@ -7,16 +7,49 @@
 //    de service worker zelf, en alle niet-GET-verzoeken.
 //
 // Bump VERSION bij een breaking change om oude caches te verversen.
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `vamos-shell-${VERSION}`;
 const ASSET_CACHE = `vamos-assets-${VERSION}`;
 const OFFLINE_URL = "/index.html";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) => cache.add(new Request(OFFLINE_URL, { cache: "reload" }))),
+    (async () => {
+      // Shell cachen…
+      const shell = await caches.open(SHELL_CACHE);
+      const res = await fetch(new Request(OFFLINE_URL, { cache: "reload" }));
+      await shell.put(OFFLINE_URL, res.clone());
+
+      // …én alle gehashte JS/CSS direct pre-cachen. Bij het allereerste
+      // bezoek laden die assets nog buiten de service worker om, en lazy
+      // route-chunks staan niet in de HTML — zonder deze stap opent de app
+      // offline met een eeuwige "Laden…". Het Vite-manifest kent élk chunk.
+      try {
+        const urls = new Set(["/favicon.svg", "/manifest.webmanifest"]);
+
+        const manifestRes = await fetch(
+          new Request("/.vite/manifest.json", { cache: "reload" }),
+        );
+        if (manifestRes.ok) {
+          const manifest = await manifestRes.json();
+          for (const entry of Object.values(manifest)) {
+            if (entry.file) urls.add(`/${entry.file}`);
+            for (const css of entry.css ?? []) urls.add(`/${css}`);
+          }
+        } else {
+          // Terugval: in elk geval de assets uit de shell-HTML.
+          const html = await res.clone().text();
+          for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)) {
+            urls.add(m[1]);
+          }
+        }
+
+        const assets = await caches.open(ASSET_CACHE);
+        await assets.addAll([...urls]);
+      } catch {
+        // Best effort: runtime-caching vult de rest bij een later bezoek.
+      }
+    })(),
   );
   self.skipWaiting();
 });
@@ -58,7 +91,10 @@ self.addEventListener("fetch", (event) => {
           return fresh;
         } catch {
           const cache = await caches.open(SHELL_CACHE);
-          return (await cache.match(OFFLINE_URL)) ?? Response.error();
+          return (
+            (await cache.match(OFFLINE_URL, { ignoreVary: true })) ??
+            Response.error()
+          );
         }
       })(),
     );
@@ -69,11 +105,18 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       const cache = await caches.open(ASSET_CACHE);
-      const cached = await cache.match(request);
+      // ignoreVary: de server stuurt `Vary: Origin` op assets, waardoor de
+      // crossorigin-requests van de parser (mét Origin-header) anders nooit
+      // matchen met wat de install-stap (zónder Origin) heeft gecachet —
+      // precies het verschil tussen "werkt online" en "wit scherm offline".
+      // Gehashte assets zijn immutable, dus Vary negeren is hier veilig.
+      const cached = await cache.match(request, { ignoreVary: true });
       if (cached) return cached;
       try {
         const fresh = await fetch(request);
-        if (fresh.ok) cache.put(request, fresh.clone());
+        // waitUntil: de put moet ook afronden als het antwoord al terug is,
+        // anders kan de SW stoppen vóór het chunk echt in de cache zit.
+        if (fresh.ok) event.waitUntil(cache.put(request, fresh.clone()));
         return fresh;
       } catch {
         return cached ?? Response.error();
