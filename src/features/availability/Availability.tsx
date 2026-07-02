@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
-import { getClubAvailability, bookingUrl, CLUB_NAME, type DayAvailability } from "./api";
-import { Timetable, localDate } from "./Timetable";
+import {
+  getClubAvailability,
+  bookingUrl,
+  CLUB_NAME,
+  CLUB_TIMEZONE,
+  type DayAvailability,
+} from "./api";
+import { Timetable } from "./Timetable";
+import { dateInZone } from "../../lib/time";
 import "./Availability.css";
 
 function formatDay(date: string): string {
@@ -18,9 +25,33 @@ function formatDay(date: string): string {
 const DURATION_FILTERS = [null, 60, 90, 120] as const;
 
 export function Availability() {
-  const today = localDate(0);
-  const [date, setDate] = useState(today);
-  const [duration, setDuration] = useState<number | null>(null);
+  // "Vandaag" in clubtijd, zodat de dagkeuze klopt vanuit elke tijdzone.
+  const today = dateInZone(CLUB_TIMEZONE);
+
+  // Datum en duurfilter leven in de URL (?datum=…&duur=…): deelbaar en
+  // refresh-bestendig. Ongeldige of verstreken waarden vallen terug op
+  // vandaag / geen filter.
+  const [params, setParams] = useSearchParams();
+  const rawDate = params.get("datum") ?? "";
+  const date =
+    /^\d{4}-\d{2}-\d{2}$/.test(rawDate) && rawDate >= today ? rawDate : today;
+  const rawDuration = Number(params.get("duur"));
+  const duration = (DURATION_FILTERS as readonly (number | null)[]).includes(
+    rawDuration,
+  )
+    ? rawDuration
+    : null;
+
+  function setParam(key: string, value: string | null) {
+    const next = new URLSearchParams(params);
+    if (value == null) next.delete(key);
+    else next.set(key, value);
+    setParams(next, { replace: true });
+  }
+  const setDate = (d: string) => setParam("datum", d === today ? null : d);
+  const setDuration = (d: number | null) =>
+    setParam("duur", d == null ? null : String(d));
+
   const availability = useAsync<DayAvailability>(
     () => getClubAvailability(date),
     [date],
@@ -66,8 +97,8 @@ export function Availability() {
           </button>
           <button
             type="button"
-            className={`tab ${date === localDate(1) ? "is-active" : ""}`}
-            onClick={() => setDate(localDate(1))}
+            className={`tab ${date === dateInZone(CLUB_TIMEZONE, 1) ? "is-active" : ""}`}
+            onClick={() => setDate(dateInZone(CLUB_TIMEZONE, 1))}
           >
             Morgen
           </button>
@@ -127,10 +158,11 @@ export function Availability() {
       </div>
 
       <p className="avail-note">
-        Tik op een vrij (groen) slot om te zien tot hoe laat het vrij is; via de
+        Tik op een vrij (groen) slot om de duren en prijzen te zien; via de
         knop in dat venster (of de knop hierboven) open je Playtomic voor de
-        gekozen dag (het uur kies je daar zelf). Tijden kunnen wijzigen; deze
-        weergave is niet-officieel.
+        gekozen dag (het uur kies je daar zelf). Playtomic verhuurt vanaf 60
+        minuten, dus een korter gat tussen twee boekingen kan als geboekt
+        verschijnen. Tijden kunnen wijzigen; deze weergave is niet-officieel.
       </p>
     </div>
   );
