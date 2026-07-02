@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   bookingUrl,
   coveredTimes,
@@ -53,9 +53,20 @@ export function Timetable({
     date === dateInZone(data.timeZone) ? minutesNowInZone(data.timeZone) : -1;
   const pastCount = times.filter((t) => toMinutes(t) <= pastCutoff).length;
 
+  // Vandaag: automatisch voorbij het verstreken deel scrollen (met één
+  // "voorbij"-kolom als context), zodat het raster bij nú begint in plaats
+  // van bij de openingstijd — vooral op mobiel scheelt dat veel geveeg.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || pastCount === 0) return;
+    const cell = el.querySelector<HTMLElement>(".avail-cell");
+    if (cell) el.scrollLeft = Math.max(0, (pastCount - 1) * cell.offsetWidth);
+  }, [pastCount, date]);
+
   return (
     <>
-      <div className="avail-scroll">
+      <div className="avail-scroll" ref={scrollRef}>
         <div
           className="avail-table"
           style={{ gridTemplateColumns: `var(--court-col) repeat(${times.length}, var(--slot-col))` }}

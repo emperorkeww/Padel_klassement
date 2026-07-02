@@ -406,7 +406,8 @@
 
 .avail-legend {
   display: flex;
-  gap: var(--sp-5);
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
@@ -433,4 +434,65 @@
 
 .avail-note a {
   color: var(--accent);
+}
+
+/* ---- Mobiel: compacte bediening en een raster dat meer uren toont ---- */
+@media (max-width: 640px) {
+  .avail-header {
+    gap: var(--sp-2);
+  }
+  .avail-book {
+    width: 100%;
+  }
+
+  /* Datumrij op één regel: sneltabs links, datumveld vult de rest. */
+  .avail-controls {
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+  }
+  .avail-controls--date {
+    flex-wrap: nowrap;
+  }
+  .avail-quick {
+    flex-shrink: 0;
+  }
+  .avail-date {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+  .avail-controls .tabs {
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .avail-day {
+    margin: var(--sp-1) 0 var(--sp-3);
+  }
+
+  /* Smallere baankolom + vakken: meer uren in beeld zonder te scrollen. */
+  .avail-table {
+    --court-col: 96px;
+    --slot-col: 36px;
+  }
+  .avail-rowhead {
+    padding: 0.4rem 0.5rem;
+  }
+  .avail-rowhead__name {
+    font-size: var(--fs-sm);
+  }
+  .avail-cell {
+    height: 40px;
+  }
+
+  .avail-legend {
+    gap: var(--sp-2) var(--sp-4);
+    font-size: var(--fs-xs);
+  }
+  .avail-legend__swatch {
+    width: 18px;
+    height: 13px;
+  }
+  .avail-note {
+    font-size: var(--fs-sm);
+  }
 }

@@ -181,11 +181,14 @@
   .hero__sub {
     font-size: var(--fs-md);
   }
+  /* Primaire actie op volle breedte, de twee secundaire naast elkaar:
+     scheelt een knophoogte boven de vouw. */
   .hero__actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--sp-2);
   }
-  .hero__actions .btn {
-    width: 100%;
+  .hero__actions .btn--primary {
+    grid-column: 1 / -1;
   }
 }

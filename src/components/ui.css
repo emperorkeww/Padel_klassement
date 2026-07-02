@@ -741,10 +741,15 @@
     letter-spacing: 0.02em;
   }
 
-  /* Tab-rijen die niet passen scrollen binnen hun eigen strook. */
+  /* Tab-rijen die niet passen scrollen binnen hun eigen strook; iets
+     compactere tabs zodat vier filters op een telefoonbreedte passen. */
   .tabs {
     max-width: 100%;
     overflow-x: auto;
+  }
+  .tab {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-sm);
   }
 
   .stats {
@@ -783,16 +788,18 @@
     min-width: 0;
   }
 
-  /* Matchkaarten: namen iets kleiner, score compact. */
+  /* Matchkaarten: namen iets kleiner, score compact — zo houdt de
+     namenkolom maximale ruimte en kapt er minder af. */
   .match-card {
-    gap: var(--sp-2);
-    padding: var(--sp-3);
+    gap: var(--sp-1);
+    padding: var(--sp-2) var(--sp-3);
   }
   .match-card__names {
     font-size: var(--fs-sm);
   }
   .match-card__score {
-    font-size: var(--fs-base);
+    font-size: var(--fs-md);
+    padding: 0.1rem var(--sp-2);
   }
 }
 
