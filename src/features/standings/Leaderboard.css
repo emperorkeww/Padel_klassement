@@ -123,6 +123,30 @@
   color: var(--bronze);
 }
 
+/* Rangnummer + verschuiving (▲2/▼1/nieuw) onder elkaar. */
+.rank-wrap {
+  display: inline-grid;
+  justify-items: center;
+  gap: 1px;
+}
+.rankshift {
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rankshift.is-up {
+  color: var(--success);
+}
+.rankshift.is-down {
+  color: var(--danger);
+}
+.rankshift--new {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
 /* ---------- Rating-cel ---------- */
 .rating-cell {
   display: inline-block;
