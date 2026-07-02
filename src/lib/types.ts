@@ -90,3 +90,18 @@ export interface PlayerStanding {
   points: number;
   goal_diff: number;
 }
+
+export interface PlayerRating {
+  player_id: string;
+  rating: number;
+  games: number;
+  updated_at: string;
+}
+
+export interface RatingPoint {
+  match_id: string;
+  rating_before: number;
+  rating_after: number;
+  delta: number;
+  played_at: string;
+}

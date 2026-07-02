@@ -13,6 +13,7 @@ import {
   getGroupPlayerStandings,
 } from "./api";
 import { getMyGroups } from "../groups/api";
+import { getPlayerRatings } from "./ratingsApi";
 import { getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import type { Profile } from "../../lib/types";
@@ -36,6 +37,7 @@ export function Leaderboard() {
   const profilesMap = useAsync(getProfilesMap, []);
   // Voor de vorm-kolom: recente matches client-side per speler samengevat.
   const recent = useAsync(() => getRecentMatches(250), []);
+  const ratings = useAsync(getPlayerRatings, []);
 
   // Live bijwerken bij nieuwe/aangepaste matches.
   const refresh = useCallback(() => {
@@ -43,12 +45,14 @@ export function Leaderboard() {
     teams.reload();
     teamsMap.reload();
     recent.reload();
+    ratings.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
   const tmap = teamsMap.data ?? {};
+  const rmap = ratings.data ?? {};
   const formFor = (playerId: string): Outcome[] =>
     recentForm(recent.data ?? [], tmap, playerId, 5);
 
@@ -64,6 +68,7 @@ export function Leaderboard() {
     lost: p.lost,
     points: p.points,
     goalDiff: p.goal_diff ?? 0,
+    rating: rmap[p.player_id]?.rating ?? null,
     form: formFor(p.player_id),
   }));
 
@@ -79,6 +84,7 @@ export function Leaderboard() {
     lost: t.lost,
     points: t.points,
     goalDiff: t.goal_diff ?? 0,
+    rating: null,
     form: [] as Outcome[],
   }));
 
@@ -151,6 +157,7 @@ type Row = {
   lost: number;
   points: number;
   goalDiff: number;
+  rating: number | null;
   form: Outcome[];
 };
 
@@ -273,6 +280,7 @@ function StandingsTable({
             <th className="num">Verlies</th>
             <th className="num col-sec">Winrate</th>
             <th className="num col-sec">Saldo</th>
+            {showForm && <th className="num">Rating</th>}
             <th className="num">Punten</th>
           </tr>
         </thead>
@@ -330,6 +338,15 @@ function StandingsTable({
                 <td className="num col-sec">
                   {r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}
                 </td>
+                {showForm && (
+                  <td className="num">
+                    {r.rating != null ? (
+                      <span className="rating-cell">{r.rating}</span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                )}
                 <td className="num">
                   <strong>{r.points}</strong>
                 </td>

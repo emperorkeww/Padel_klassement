@@ -122,6 +122,19 @@
   color: var(--bronze);
 }
 
+/* ---------- Rating-cel ---------- */
+.rating-cell {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Winrate-balkje ---------- */
 .winrate {
   display: inline-flex;
