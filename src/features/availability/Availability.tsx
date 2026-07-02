@@ -6,11 +6,11 @@ import {
   getClubAvailability,
   getWeekAvailability,
   bookingUrl,
-  CLUB_NAME,
-  CLUB_TIMEZONE,
   type DayAvailability,
   type WeekDay,
 } from "./api";
+import { useClub } from "./club";
+import { ClubPicker } from "./ClubPicker";
 import { Timetable } from "./Timetable";
 import { WeekGrid } from "./WeekGrid";
 import { addDays, dateInZone } from "../../lib/time";
@@ -37,8 +37,9 @@ function formatShort(date: string): string {
 const DURATION_FILTERS = [null, 60, 90, 120] as const;
 
 export function Availability() {
+  const club = useClub();
   // "Vandaag" in clubtijd, zodat de dagkeuze klopt vanuit elke tijdzone.
-  const today = dateInZone(CLUB_TIMEZONE);
+  const today = dateInZone(club.timezone);
 
   // Weergave, datum en duurfilter leven in de URL (?weergave=week&datum=…&
   // duur=…): deelbaar en refresh-bestendig — handig om in de vriendengroep
@@ -78,8 +79,9 @@ export function Availability() {
         <header className="page-head">
           <h1 className="page-title">Baanbeschikbaarheid</h1>
           <p className="page-subtitle">
-            Vrije padelbanen bij {CLUB_NAME} — rechtstreeks van Playtomic.
+            Vrije padelbanen — rechtstreeks van Playtomic.
           </p>
+          <ClubPicker />
         </header>
         <a
           className="btn avail-book"
@@ -184,9 +186,11 @@ function DaySection({
   today: string;
   duration: number | null;
 }) {
+  // Clubwissel = andere data: het club-id in de deps zorgt voor een refetch.
+  const club = useClub();
   const availability = useAsync<DayAvailability>(
     () => getClubAvailability(date),
-    [date],
+    [date, club.id],
   );
   // Ververs de (Playtomic-)beschikbaarheid zodra de gebruiker terugkeert.
   useRefetchOnFocus(availability.reload);
@@ -251,7 +255,8 @@ function WeekSection({
   onPickDay: (date: string) => void;
   onShift: (days: number) => void;
 }) {
-  const week = useAsync<WeekDay[]>(() => getWeekAvailability(start), [start]);
+  const club = useClub();
+  const week = useAsync<WeekDay[]>(() => getWeekAvailability(start), [start, club.id]);
   useRefetchOnFocus(week.reload);
 
   return (
