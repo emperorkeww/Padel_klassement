@@ -34,6 +34,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          date: string
+          group_id: string
+          player_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          date: string
+          group_id: string
+          player_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          date?: string
+          group_id?: string
+          player_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           addressee_id: string

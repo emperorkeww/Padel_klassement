@@ -20,6 +20,7 @@ import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { AttendanceCard } from "./AttendanceCard";
 import { ShareEvening } from "./ShareEvening";
 import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
@@ -138,6 +139,15 @@ export function GroupDetail() {
           Leden
         </button>
       </div>
+
+      {view === "rondes" && (
+        <AttendanceCard
+          groupId={id}
+          members={memberList}
+          profiles={pmap}
+          myId={myId}
+        />
+      )}
 
       {view === "rondes" && (
         <section className="card">

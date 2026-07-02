@@ -44,6 +44,18 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
+  it("laat je aanmelden voor de speeldag", async () => {
+    renderPage();
+    expect(
+      await screen.findByRole("heading", { name: /wie speelt er\?/i }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /ik speel mee/i }),
+    );
+    expect(supabase.from).toHaveBeenCalledWith("attendance");
+    expect(screen.getByLabelText(/speeldag/i)).toBeInTheDocument();
+  });
+
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });

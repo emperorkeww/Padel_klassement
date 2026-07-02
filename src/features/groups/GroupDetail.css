@@ -19,6 +19,73 @@
   width: auto;
 }
 
+/* ---- "Wie speelt er?" (aanwezigheid per speeldag) ---- */
+.attendance-date {
+  max-width: 170px;
+}
+.attendance-my {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.attendance-btn.is-active.is-yes {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+.attendance-btn.is-active.is-maybe {
+  background: var(--warn-soft);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.attendance-btn.is-active.is-no {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.attendance-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.attendance-member {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2) 2px 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+.attendance-member.is-yes {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--success);
+}
+.attendance-member.is-maybe {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: var(--warn);
+}
+.attendance-member.is-no {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+.attendance-member__mark {
+  font-weight: 800;
+}
+.attendance-foot {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
 /* Rondekop: titel links, voortgangsbadge rechts. */
 .round-head {
   display: flex;
