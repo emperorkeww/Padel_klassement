@@ -71,6 +71,13 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
   const [tip, setTip] = useState<Tip | null>(null);
   const [sel, setSel] = useState<Selection | null>(null);
 
+  // Vandaag: sloten die al begonnen of voorbij zijn kun je niet meer boeken —
+  // die krijgen een eigen "voorbij"-aanduiding i.p.v. vrij/geboekt.
+  const now = new Date();
+  const pastCutoff =
+    date === localDate(0) ? now.getHours() * 60 + now.getMinutes() : -1;
+  const pastCount = times.filter((t) => toMinutes(t) <= pastCutoff).length;
+
   return (
     <>
       <div className="avail-scroll">
@@ -95,10 +102,24 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
               key={row.court.id}
               row={row}
               times={times}
+              pastCutoff={pastCutoff}
               onTip={setTip}
               onSelect={setSel}
             />
           ))}
+
+          {/* Eén arcering over het volledige "voorbij"-gebied: de schuine
+              strepen lopen zo naadloos door over alle baanrijen heen. */}
+          {pastCount > 0 && (
+            <div
+              className="avail-past-overlay"
+              style={{
+                gridColumn: `2 / ${2 + pastCount}`,
+                gridRow: `2 / ${2 + data.courts.length}`,
+              }}
+              aria-hidden="true"
+            />
+          )}
         </div>
       </div>
 
@@ -146,15 +167,28 @@ export function Timetable({ data, date }: { data: DayAvailability; date: string 
 function Row({
   row,
   times,
+  pastCutoff,
   onTip,
   onSelect,
 }: {
   row: CourtRow;
   times: string[];
+  /** Minuten sinds middernacht; sloten die op of vóór dit moment starten zijn
+   *  voorbij. -1 = geen (andere dag dan vandaag). */
+  pastCutoff: number;
   onTip: (tip: Tip | null) => void;
   onSelect: (sel: Selection) => void;
 }) {
-  const intervals = useMemo(() => freeIntervals(times, row.free), [times, row.free]);
+  // Verstreken sloten tellen niet mee als vrij: zo begint een blok
+  // "vrij van 12:00 tot 15:00" om 13:10 gewoon bij 13:30.
+  const free = useMemo(
+    () =>
+      pastCutoff < 0
+        ? row.free
+        : new Set([...row.free].filter((t) => toMinutes(t) > pastCutoff)),
+    [row.free, pastCutoff],
+  );
+  const intervals = useMemo(() => freeIntervals(times, free), [times, free]);
 
   return (
     <>
@@ -167,6 +201,17 @@ function Row({
         )}
       </div>
       {times.map((t) => {
+        // Voorbij: neutraal vlak, niet klikbaar — geen vrij, geen geboekt.
+        if (toMinutes(t) <= pastCutoff) {
+          return (
+            <div
+              key={t}
+              className={`avail-cell avail-cell--past ${t.endsWith(":00") ? "is-hour" : ""}`}
+              title={`${row.court.name} — ${t} is al voorbij`}
+              aria-hidden="true"
+            />
+          );
+        }
         const interval = intervals.get(t);
         if (interval) {
           const text = `${row.court.name}: vrij van ${interval.start} tot ${interval.end}`;
