@@ -38,7 +38,20 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "html"],
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/main.tsx", "src/test/**"],
+      exclude: [
+        "src/**/*.{test,spec}.{ts,tsx}",
+        // Bootstrap en gegenereerde databanktypes: geen testbare logica.
+        "src/app/main.tsx",
+        "src/lib/database.types.ts",
+        "src/test/**",
+      ],
+      // Ondergrens: `npm run coverage` faalt als de dekking hieronder zakt.
+      thresholds: {
+        statements: 70,
+        lines: 70,
+        functions: 70,
+        branches: 60,
+      },
     },
   },
 });

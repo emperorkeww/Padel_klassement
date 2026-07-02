@@ -26,6 +26,7 @@ export function getRatingHistory(playerId: string): Promise<RatingPoint[]> {
       .limit(HISTORY_LIMIT);
     if (error) throw error;
     // Nieuwste eerst opgehaald (voor de limiet), oudste eerst teruggeven.
-    return ((data ?? []) as RatingPoint[]).reverse();
+    // Kopie i.p.v. in-place reverse: het resultaat niet muteren.
+    return [...((data ?? []) as RatingPoint[])].reverse();
   });
 }
