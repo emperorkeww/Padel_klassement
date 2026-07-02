@@ -11,7 +11,12 @@ const PREFIX = "/api/playtomic";
 // Alleen de endpoints die de app echt nodig heeft zijn bereikbaar via de
 // proxy. Zonder allowlist kan een pad als "//evil.com/x" (protocol-relatief)
 // de URL-resolutie naar een ander domein sturen en wordt dit een open proxy.
-const ALLOWED_PATHS = [/^\/v1\/availability$/, /^\/v1\/tenants\/[\w-]+$/];
+const ALLOWED_PATHS = [
+  /^\/v1\/availability$/,
+  // Detail (clubgegevens) én zoeken op naam voor de locatiekeuze.
+  /^\/v1\/tenants$/,
+  /^\/v1\/tenants\/[\w-]+$/,
+];
 
 // Stale-while-revalidate: tot FRESH_MS oud wordt een antwoord direct
 // geserveerd; daarna nog steeds direct (geen wachttijd voor de bezoeker),
