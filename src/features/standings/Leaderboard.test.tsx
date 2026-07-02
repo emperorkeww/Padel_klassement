@@ -43,7 +43,9 @@ describe("<Leaderboard />", () => {
     expect(
       await screen.findByRole("heading", { name: /klassement/i }),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/alice anders/i)).toBeInTheDocument();
-    expect(await screen.findByText("6")).toBeInTheDocument();
+    // Naam en punten staan zowel in de desktop-tabel als in de mobiele
+    // ranglijst (CSS toont er één van de twee).
+    expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("6")).length).toBeGreaterThan(0);
   });
 });

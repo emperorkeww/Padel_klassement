@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -93,6 +93,17 @@ export function Leaderboard() {
   const error = tab === "player" ? players.error : teams.error;
   const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
 
+  // "Jouw positie": scrolt naar je eigen rij (tabel op desktop, lijst op mobiel).
+  const meRowRef = useRef<HTMLTableRowElement | null>(null);
+  const meItemRef = useRef<HTMLLIElement | null>(null);
+  const myRankIdx = playerRows.findIndex((r) => r.isMe);
+  const scrollToMe = () => {
+    const el = [meItemRef.current, meRowRef.current].find(
+      (e) => e && e.offsetParent !== null,
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   return (
     <div>
       <header className="page-head">
@@ -137,8 +148,29 @@ export function Leaderboard() {
       {showPodium && <Podium rows={playerRows.slice(0, 3)} />}
 
       <div className="card">
-        <StandingsTable rows={rows} loading={loading} error={error} showForm={tab === "player"} />
+        {loading ? (
+          <Skeleton rows={5} />
+        ) : error ? (
+          <p className="msg msg--error">{error}</p>
+        ) : rows.length === 0 ? (
+          <p className="empty">Nog geen afgeronde matches.</p>
+        ) : (
+          <>
+            <StandingsTable
+              rows={rows}
+              showForm={tab === "player"}
+              meRef={meRowRef}
+            />
+            <RankList rows={rows} meRef={meItemRef} />
+          </>
+        )}
       </div>
+
+      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && (
+        <button className="me-chip" onClick={scrollToMe}>
+          Jouw positie · #{myRankIdx + 1}
+        </button>
+      )}
     </div>
   );
 }
@@ -251,22 +283,15 @@ function KlassementUitleg() {
 
 function StandingsTable({
   rows,
-  loading,
-  error,
   showForm,
+  meRef,
 }: {
   rows: Row[];
-  loading: boolean;
-  error: string | null;
   showForm: boolean;
+  meRef?: React.Ref<HTMLTableRowElement>;
 }) {
-  if (loading) return <Skeleton rows={5} />;
-  if (error) return <p className="msg msg--error">{error}</p>;
-  if (rows.length === 0)
-    return <p className="empty">Nog geen afgeronde matches.</p>;
-
   return (
-    <div className="table-scroll">
+    <div className="table-scroll leaderboard-table">
       <table className="table">
         <thead>
           <tr>
@@ -287,7 +312,11 @@ function StandingsTable({
           {rows.map((r, i) => {
             const rate = winRate(r.won, r.played);
             return (
-              <tr key={r.key} className={r.isMe ? "is-me" : ""}>
+              <tr
+                key={r.key}
+                ref={r.isMe ? meRef : undefined}
+                className={r.isMe ? "is-me" : ""}
+              >
                 <td>
                   <span className={`rank rank--${i + 1}`}>{i + 1}</span>
                 </td>
@@ -353,6 +382,61 @@ function StandingsTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/* ---------- Mobiel: klassement als leesbare ranglijst i.p.v. krappe tabel ---------- */
+function RankList({
+  rows,
+  meRef,
+}: {
+  rows: Row[];
+  meRef?: React.Ref<HTMLLIElement>;
+}) {
+  return (
+    <ol className="ranklist">
+      {rows.map((r, i) => {
+        const body = (
+          <>
+            <span className={`rank rank--${i + 1} ranklist__rank`}>{i + 1}</span>
+            <Avatar profile={r.profile} name={r.name} size={36} />
+            <span className="ranklist__main">
+              <span className="ranklist__name">
+                {r.name}
+                {r.isMe && <span className="badge badge--accent">jij</span>}
+              </span>
+              <span className="ranklist__sub">
+                {r.form.length > 0 && <FormChips form={r.form} size="sm" />}
+                <span>
+                  {r.won}W · {r.drawn}G · {r.lost}V
+                </span>
+              </span>
+            </span>
+            <span className="ranklist__end">
+              <span className="ranklist__pts">{r.points}</span>
+              <span className="ranklist__pts-label">
+                {r.rating != null ? `ptn · ${r.rating}` : "ptn"}
+              </span>
+            </span>
+          </>
+        );
+        return (
+          <li
+            key={r.key}
+            ref={r.isMe ? meRef : undefined}
+            className={`ranklist__row ${r.isMe ? "is-me" : ""}`}
+          >
+            {r.link ? (
+              <Link className="ranklist__link" to={r.link}>
+                {body}
+              </Link>
+            ) : (
+              <span className="ranklist__link">{body}</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
