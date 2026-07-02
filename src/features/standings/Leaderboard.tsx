@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -9,6 +9,7 @@ import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { useFlip } from "../../lib/useFlip";
 import { recentForm, winRate, type Outcome } from "../../lib/results";
+import { rankShifts, type Shift } from "../../lib/rankShift";
 import {
   getPlayerStandings,
   getTeamStandings,
@@ -58,6 +59,12 @@ export function Leaderboard() {
   const formFor = (playerId: string): Outcome[] =>
     recentForm(recent.data ?? [], tmap, playerId, 5);
 
+  // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw).
+  const shifts = useMemo(
+    () => rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null),
+    [players.data, recent.data, tmap, groupId],
+  );
+
   const playerRows = (players.data ?? []).map((p) => ({
     key: p.player_id,
     isMe: p.player_id === myId,
@@ -72,6 +79,7 @@ export function Leaderboard() {
     goalDiff: p.goal_diff ?? 0,
     rating: rmap[p.player_id]?.rating ?? null,
     form: formFor(p.player_id),
+    shift: shifts.get(p.player_id),
   }));
 
   const teamRows = (teams.data ?? []).map((t) => ({
@@ -88,6 +96,7 @@ export function Leaderboard() {
     goalDiff: t.goal_diff ?? 0,
     rating: null,
     form: [] as Outcome[],
+    shift: undefined as Shift | undefined,
   }));
 
   const rows = tab === "player" ? playerRows : teamRows;
@@ -192,7 +201,20 @@ type Row = {
   goalDiff: number;
   rating: number | null;
   form: Outcome[];
+  shift?: Shift;
 };
+
+/** ▲2 / ▼1 / "nieuw" onder het rangnummer; niets bij een gelijke positie. */
+function ShiftBadge({ shift }: { shift?: Shift }) {
+  if (shift == null || shift === 0) return null;
+  if (shift === "nieuw")
+    return <span className="rankshift rankshift--new">nieuw</span>;
+  return (
+    <span className={`rankshift ${shift > 0 ? "is-up" : "is-down"}`}>
+      {shift > 0 ? `▲${shift}` : `▼${-shift}`}
+    </span>
+  );
+}
 
 function Podium({ rows }: { rows: Row[] }) {
   const [first, second, third] = rows;
@@ -333,7 +355,10 @@ function StandingsTable({
                 className={r.isMe ? "is-me" : ""}
               >
                 <td>
-                  <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                  <span className="rank-wrap">
+                    <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                    <ShiftBadge shift={r.shift} />
+                  </span>
                 </td>
                 <td>
                   <span className="cell-player">
@@ -421,7 +446,10 @@ function RankList({
       {rows.map((r, i) => {
         const body = (
           <>
-            <span className={`rank rank--${i + 1} ranklist__rank`}>{i + 1}</span>
+            <span className="rank-wrap ranklist__rank">
+              <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+              <ShiftBadge shift={r.shift} />
+            </span>
             <Avatar profile={r.profile} name={r.name} size={36} />
             <span className="ranklist__main">
               <span className="ranklist__name">
