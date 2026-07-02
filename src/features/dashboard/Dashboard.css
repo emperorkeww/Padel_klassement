@@ -1,5 +1,6 @@
-/* Hero-begroeting bovenaan het overzicht. */
+/* Hero-begroeting bovenaan het overzicht: licht, met een zachte lime-gloed. */
 .hero {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7,11 +8,21 @@
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
   padding: 1.6rem 1.75rem;
-  border-radius: var(--radius);
-  background: var(--surface);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--lime-soft) 0%, transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, var(--accent-soft) 0%, transparent 55%),
+    var(--surface);
   border: 1px solid var(--line);
-  border-left: 4px solid var(--accent);
-  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.hero__main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .hero__eyebrow {
@@ -25,7 +36,7 @@
 
 .hero__name {
   margin: 0 0 0.35rem;
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -37,19 +48,24 @@
   font-size: 0.95rem;
 }
 
+.hero__form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0;
+}
+.hero__form-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
 .hero__actions {
   display: flex;
   gap: 0.6rem;
   flex-wrap: wrap;
-}
-
-/* De primaire stat krijgt een indigo accentvlak. */
-.stat--accent {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-}
-.stat--accent .stat__value {
-  color: var(--accent);
 }
 
 /* Topspelers-lijstje met genummerde rang. */
@@ -72,13 +88,29 @@
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface-2);
+  color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 700;
 }
+.toplist__rank--1 {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.toplist__rank--2 {
+  background: var(--silver-soft);
+  color: var(--silver);
+}
+.toplist__rank--3 {
+  background: var(--bronze-soft);
+  color: var(--bronze);
+}
 .toplist__name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .toplist__pts {
   font-variant-numeric: tabular-nums;
@@ -89,13 +121,11 @@
 /* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */
 @media (max-width: 640px) {
   .hero {
-    /* Van "tekst links, knoppen rechts" naar een nette verticale stapel. */
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
     padding: 1.25rem;
     margin-bottom: 1.25rem;
-    border-left-width: 3px;
   }
   .hero__name {
     font-size: 1.4rem;
@@ -104,7 +134,6 @@
     font-size: 0.9rem;
   }
   .hero__actions {
-    /* Knoppen onder elkaar, volle breedte = grote taptargets. */
     flex-direction: column;
     gap: 0.5rem;
   }
