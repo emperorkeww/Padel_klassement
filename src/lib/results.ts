@@ -100,3 +100,72 @@ export function bestPartner(
   }
   return best;
 }
+
+/** Langste winreeks ooit: grootste aaneengesloten rij "W" in de historie. */
+export function longestStreak(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): number {
+  const form = recentForm(matches, teams, playerId, Number.MAX_SAFE_INTEGER);
+  let best = 0;
+  let run = 0;
+  for (const o of form) {
+    run = o === "W" ? run + 1 : 0;
+    if (run > best) best = run;
+  }
+  return best;
+}
+
+/**
+ * Grootste overwinning: de gewonnen match met het hoogste puntenverschil.
+ * Vereist dat beide scores zijn ingevuld; geeft null zonder zulke winst.
+ */
+export function biggestWin(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): { match: Match; margin: number } | null {
+  let best: { match: Match; margin: number } | null = null;
+  for (const m of matches) {
+    if (outcomeFor(m, teams, playerId) !== "W") continue;
+    if (m.score_a == null || m.score_b == null) continue;
+    const margin = Math.abs(m.score_a - m.score_b);
+    if (!best || margin > best.margin) best = { match: m, margin };
+  }
+  return best;
+}
+
+/**
+ * Onderlinge stand tegen elke tegenstander: W/D/L vanuit de speler, geteld
+ * over matches waarin beide meededen maar in verschillende teams. De sleutel
+ * van de map is het speler-id van de tegenstander.
+ */
+export function headToHead(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): Map<string, { won: number; drawn: number; lost: number; played: number }> {
+  const out = new Map<
+    string,
+    { won: number; drawn: number; lost: number; played: number }
+  >();
+  for (const m of matches) {
+    const o = outcomeFor(m, teams, playerId);
+    if (!o) continue;
+    // Het tegenteam is het team waar de speler niet in zit.
+    const oppTeam = inTeam(teams[m.team_a_id], playerId)
+      ? teams[m.team_b_id]
+      : teams[m.team_a_id];
+    if (!oppTeam) continue;
+    for (const oppId of [oppTeam.player1_id, oppTeam.player2_id]) {
+      const s = out.get(oppId) ?? { won: 0, drawn: 0, lost: 0, played: 0 };
+      s.played++;
+      if (o === "W") s.won++;
+      else if (o === "D") s.drawn++;
+      else s.lost++;
+      out.set(oppId, s);
+    }
+  }
+  return out;
+}
