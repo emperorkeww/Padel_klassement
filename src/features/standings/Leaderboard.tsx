@@ -297,13 +297,13 @@ function StandingsTable({
           <tr>
             <th style={{ width: "2rem" }}>#</th>
             <th>Naam</th>
-            {showForm && <th className="col-sec">Vorm</th>}
-            <th className="num col-sec">Gespeeld</th>
+            {showForm && <th>Vorm</th>}
+            <th className="num">Gespeeld</th>
             <th className="num">Winst</th>
-            <th className="num col-sec">Gelijk</th>
+            <th className="num">Gelijk</th>
             <th className="num">Verlies</th>
-            <th className="num col-sec">Winrate</th>
-            <th className="num col-sec">Saldo</th>
+            <th className="num">Winrate</th>
+            <th className="num">Saldo</th>
             {showForm && <th className="num">Rating</th>}
             <th className="num">Punten</th>
           </tr>
@@ -334,7 +334,7 @@ function StandingsTable({
                   </span>
                 </td>
                 {showForm && (
-                  <td className="col-sec">
+                  <td>
                     {r.form.length > 0 ? (
                       <FormChips form={r.form} size="sm" />
                     ) : (
@@ -342,11 +342,11 @@ function StandingsTable({
                     )}
                   </td>
                 )}
-                <td className="num col-sec">{r.played}</td>
+                <td className="num">{r.played}</td>
                 <td className="num">{r.won}</td>
-                <td className="num col-sec">{r.drawn}</td>
+                <td className="num">{r.drawn}</td>
                 <td className="num">{r.lost}</td>
-                <td className="num col-sec">
+                <td className="num">
                   {rate != null ? (
                     <span className="winrate">
                       <span className="winrate__bar">
@@ -361,7 +361,7 @@ function StandingsTable({
                     "—"
                   )}
                 </td>
-                <td className="num col-sec">
+                <td className="num">
                   {r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}
                 </td>
                 {showForm && (

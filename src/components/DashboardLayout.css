@@ -160,6 +160,23 @@
   padding: var(--sp-8) var(--sp-8) 3rem;
 }
 
+/* Zachte enter-animatie bij paginawissel (het Outlet-kind wordt vers gemount). */
+@media (prefers-reduced-motion: no-preference) {
+  .content__inner > * {
+    animation: page-enter 0.22s ease-out;
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------- Mobiele onderbalk (verborgen op desktop) ---------- */
 .tabbar {
   display: none;
