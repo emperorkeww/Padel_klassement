@@ -56,6 +56,7 @@ export function GroupDetail() {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"americano" | "mexicano">("americano");
+  const [roundsToGen, setRoundsToGen] = useState(1);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -241,21 +242,52 @@ export function GroupDetail() {
               Mexicano
             </button>
           </div>
-          <button
-            className="btn btn--primary"
-            disabled={busy || memberList.length < 4}
-            onClick={() =>
-              act(async () => {
-                const ids =
-                  mode === "americano"
-                    ? await generateAmericanoRound(id)
-                    : await generateMexicanoRound(id);
-                if (ids.length === 0) throw new Error("Geen wedstrijden gegenereerd.");
-              }, `Nieuwe ${mode === "americano" ? "Americano" : "Mexicano"}-ronde gegenereerd.`)
-            }
-          >
-            Genereer {mode === "americano" ? "Americano" : "Mexicano"}-ronde
-          </button>
+          <div className="gen-controls">
+            {mode === "americano" && (
+              <label className="gen-controls__rounds">
+                <span>Rondes</span>
+                <select
+                  className="select"
+                  value={roundsToGen}
+                  onChange={(e) => setRoundsToGen(Number(e.target.value))}
+                >
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button
+              className="btn btn--primary"
+              disabled={busy || memberList.length < 4}
+              onClick={() =>
+                act(async () => {
+                  let total = 0;
+                  if (mode === "americano") {
+                    // Meerdere rondes in één keer: elke ronde krijgt een verse
+                    // willekeurige indeling. Sequentieel zodat de rondenummers
+                    // netjes oplopen.
+                    for (let i = 0; i < roundsToGen; i++) {
+                      const ids = await generateAmericanoRound(id);
+                      total += ids.length;
+                    }
+                  } else {
+                    const ids = await generateMexicanoRound(id);
+                    total = ids.length;
+                  }
+                  if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
+                }, generatedMessage(mode, roundsToGen))
+              }
+            >
+              {mode === "americano"
+                ? roundsToGen === 1
+                  ? "Genereer Americano-ronde"
+                  : `Genereer ${roundsToGen} Americano-rondes`
+                : "Genereer Mexicano-ronde"}
+            </button>
+          </div>
         </div>
         {memberList.length < 4 && (
           <p className="empty">Minimaal 4 leden nodig om een ronde te genereren.</p>
@@ -314,6 +346,13 @@ export function GroupDetail() {
       </section>
     </div>
   );
+}
+
+function generatedMessage(mode: "americano" | "mexicano", rounds: number): string {
+  if (mode === "mexicano") return "Nieuwe Mexicano-ronde gegenereerd.";
+  return rounds === 1
+    ? "Nieuwe Americano-ronde gegenereerd."
+    : `${rounds} Americano-rondes gegenereerd.`;
 }
 
 function SpelvormUitleg() {
