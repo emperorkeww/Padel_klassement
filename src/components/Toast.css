@@ -1,24 +1,24 @@
 .toasts {
   position: fixed;
-  bottom: 1.25rem;
-  right: 1.25rem;
+  bottom: var(--sp-5);
+  right: var(--sp-5);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--sp-2);
   z-index: 50;
   max-width: min(90vw, 360px);
 }
 
 .toast {
   text-align: left;
-  padding: 0.7rem 0.9rem;
+  padding: var(--sp-3);
   border-radius: var(--radius-sm);
-  font-size: 0.88rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   color: #fff;
   border: none;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.18);
+  box-shadow: var(--shadow-pop);
   animation: toast-in 0.2s ease both;
 }
 
@@ -43,11 +43,17 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
 @media (max-width: 760px) {
   .toasts {
     bottom: 4.75rem; /* boven de mobiele onderbalk */
-    left: 1rem;
-    right: 1rem;
+    left: var(--sp-4);
+    right: var(--sp-4);
     max-width: none;
   }
 }

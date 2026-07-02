@@ -7,21 +7,21 @@
 
 .md-status {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--sp-2);
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--sp-6);
 }
 
 .md-versus {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: stretch;
-  gap: 1rem;
+  gap: var(--sp-4);
 }
 
 .md-team {
-  padding: 1rem;
+  padding: var(--sp-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -34,10 +34,10 @@
 
 .md-team__name {
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  margin-bottom: var(--sp-2);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sp-2);
   flex-wrap: wrap;
 }
 
@@ -46,26 +46,26 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: var(--sp-2);
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
 }
 .md-team__players li {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sp-2);
 }
 
 .md-score {
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 0.15rem;
+  gap: var(--sp-1);
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0 var(--sp-2);
 }
 .md-score__num {
-  font-size: 2.4rem;
+  font-size: 2.5rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -73,15 +73,15 @@
 }
 .md-score__dash {
   color: var(--ink-soft);
-  padding: 0 0.25rem;
+  padding: 0 var(--sp-1);
 }
 .md-score__vs {
   color: var(--ink-soft);
   font-weight: 600;
-  font-size: 1.2rem;
+  font-size: var(--fs-lg);
 }
 .md-score__note {
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -92,27 +92,27 @@
 .md-edit-actions {
   display: flex;
   justify-content: center;
-  margin-top: 1.25rem;
+  margin-top: var(--sp-5);
 }
 
 .md-editor {
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-5);
   border-top: 1px solid var(--line);
   display: grid;
-  gap: 0.85rem;
+  gap: var(--sp-4);
   justify-items: center;
 }
 .md-editor__inputs {
   display: flex;
   align-items: flex-end;
-  gap: 0.75rem;
+  gap: var(--sp-3);
 }
 .md-editor__field {
   display: grid;
-  gap: 0.3rem;
+  gap: var(--sp-1);
   justify-items: center;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-soft);
   max-width: 140px;
@@ -121,18 +121,18 @@
 .md-editor__field .input {
   width: 84px;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .md-editor__preview {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   color: var(--ink-soft);
 }
 .md-editor__buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--sp-2);
 }
 
 @media (max-width: 560px) {
@@ -141,9 +141,9 @@
   }
   .md-score {
     order: 3;
-    padding: 0.25rem 0;
+    padding: var(--sp-1) 0;
   }
   .md-score__num {
-    font-size: 1.9rem;
+    font-size: var(--fs-2xl);
   }
 }

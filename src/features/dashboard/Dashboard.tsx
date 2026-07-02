@@ -8,7 +8,9 @@ import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { recentForm, winRate, winStreak } from "../../lib/results";
+import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
+import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import { getRecentMatches, getPlayerMatches, getTeamsMap } from "../matches/api";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
@@ -30,6 +32,11 @@ export function Dashboard() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
+  const ratings = useAsync(getPlayerRatings, []);
+  const ratingHistory = useAsync(
+    () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
+    [myId],
+  );
 
   const today = localDate(0);
   const availability = useAsync(() => getClubAvailability(today), [today]);
@@ -41,9 +48,11 @@ export function Dashboard() {
     matches.reload();
     myMatches.reload();
     teams.reload();
+    ratings.reload();
+    ratingHistory.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, matches.reload, myMatches.reload, teams.reload]);
+  }, [standings.reload, matches.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
 
@@ -68,6 +77,8 @@ export function Dashboard() {
   const form = recentForm(myMatches.data ?? [], tmap, myId);
   const streak = winStreak(myMatches.data ?? [], tmap, myId);
   const rate = me ? winRate(me.won, me.played) : null;
+  const myRating = ratings.data?.[myId]?.rating ?? null;
+  const rhist = ratingHistory.data ?? [];
 
   return (
     <div>
@@ -95,6 +106,9 @@ export function Dashboard() {
           <Link className="btn btn--primary" to="/matches">
             + Match loggen
           </Link>
+          <Link className="btn" to="/groepen">
+            Wedstrijden genereren
+          </Link>
           <Link className="btn" to="/banen">
             Vrije banen
           </Link>
@@ -102,18 +116,28 @@ export function Dashboard() {
       </section>
 
       <div className="stats">
-        <Stat label="Punten" value={me?.points ?? 0} accent />
+        <Stat label="Rating" value={myRating ?? "—"} accent />
+        <Stat label="Punten" value={me?.points ?? 0} />
         <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
         <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
-        <Stat label="Gespeeld" value={me?.played ?? 0} />
       </div>
+
+      {rhist.length >= 2 && (
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Je rating-verloop</h2>
+            <Link className="profile-link" to={`/spelers/${myId}`}>
+              Mijn profiel →
+            </Link>
+          </div>
+          <RatingChart history={rhist} />
+        </section>
+      )}
 
       <div className="grid grid--2">
         <section className="card">
-          <div className="row-between" style={{ marginBottom: "1rem" }}>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Recente matches
-            </h2>
+          <div className="card__head">
+            <h2 className="card__title">Recente matches</h2>
             <Link className="profile-link" to="/matches">
               Alles →
             </Link>
@@ -132,10 +156,8 @@ export function Dashboard() {
 
         <div className="stack">
           <section className="card">
-            <div className="row-between" style={{ marginBottom: "1rem" }}>
-              <h2 className="card__title" style={{ margin: 0 }}>
-                Topspelers
-              </h2>
+            <div className="card__head">
+              <h2 className="card__title">Topspelers</h2>
               <Link className="profile-link" to="/klassement">
                 Klassement →
               </Link>
@@ -184,11 +206,9 @@ export function Dashboard() {
         </div>
       </div>
 
-      <section className="card" style={{ marginTop: "1.25rem" }}>
-        <div className="row-between" style={{ marginBottom: "1rem" }}>
-          <h2 className="card__title" style={{ margin: 0 }}>
-            Baanbeschikbaarheid vandaag
-          </h2>
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Baanbeschikbaarheid vandaag</h2>
           <Link className="profile-link" to="/banen">
             Alle dagen →
           </Link>

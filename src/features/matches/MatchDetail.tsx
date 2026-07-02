@@ -13,6 +13,8 @@ import { getGroup } from "../groups/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { Avatar } from "../../components/Avatar";
+import { ShareMatch } from "./ShareMatch";
+import { errorMessage } from "../../lib/errors";
 import type { Match, Profile, Team } from "../../lib/types";
 import "./MatchDetail.css";
 
@@ -43,9 +45,12 @@ export function MatchDetail() {
   return (
     <div>
       <header className="page-head">
-        <Link className="btn btn--sm" to="/matches">
-          ← Matches
-        </Link>
+        <div className="row-between">
+          <Link className="btn btn--sm" to="/matches">
+            ← Matches
+          </Link>
+          {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
+        </div>
       </header>
 
       <section className="card md-board">
@@ -165,7 +170,7 @@ function ScoreEditor({
       toast.success("Score bijgewerkt.");
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }

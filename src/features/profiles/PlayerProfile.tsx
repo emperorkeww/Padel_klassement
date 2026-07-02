@@ -4,13 +4,28 @@ import { useAsync } from "../../lib/useAsync";
 import { getProfile, displayName } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding } from "../standings/api";
+import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import { getPlayerMatches, getTeamsMap } from "../matches/api";
 import { MatchList } from "../matches/MatchList";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
-import { recentForm, winRate, winStreak, bestPartner } from "../../lib/results";
+import { RatingChart } from "../../components/RatingChart";
+import {
+  recentForm,
+  winRate,
+  winStreak,
+  longestStreak,
+  biggestWin,
+  bestPartner,
+  headToHead,
+} from "../../lib/results";
+import { formatDate } from "../../lib/format";
 import "./PlayerProfile.css";
+
+// Aantal recente matches dat we op het profiel tonen (de volledige historie
+// wordt geladen voor de statistieken, maar niet allemaal uitgelijst).
+const RECENT_SHOWN = 8;
 
 export function PlayerProfile() {
   const { id = "" } = useParams();
@@ -19,9 +34,12 @@ export function PlayerProfile() {
 
   const profile = useAsync(() => getProfile(id), [id]);
   const standing = useAsync(() => getPlayerStanding(id), [id]);
-  const matches = useAsync(() => getPlayerMatches(id), [id]);
+  // Ruime limiet: streak/H2H/grootste zege rekenen op de volledige historie.
+  const matches = useAsync(() => getPlayerMatches(id, 200), [id]);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
+  const ratings = useAsync(getPlayerRatings, []);
+  const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
 
   if (profile.loading)
     return (
@@ -40,8 +58,17 @@ export function PlayerProfile() {
 
   const form = recentForm(mlist, tmap, id);
   const streak = winStreak(mlist, tmap, id);
+  const best = longestStreak(mlist, tmap, id);
+  const bigWin = biggestWin(mlist, tmap, id);
   const rate = s ? winRate(s.won, s.played) : null;
   const partner = bestPartner(mlist, tmap, id);
+  const myRating = ratings.data?.[id]?.rating ?? null;
+  const rhist = ratingHistory.data ?? [];
+
+  // Onderlinge stand, gesorteerd op aantal duels (meest gespeeld eerst).
+  const h2h = [...headToHead(mlist, tmap, id).entries()]
+    .map(([oppId, rec]) => ({ oppId, ...rec }))
+    .sort((a, b) => b.played - a.played);
 
   return (
     <div>
@@ -72,11 +99,51 @@ export function PlayerProfile() {
       </section>
 
       <div className="stats">
+        <Stat label="Rating" value={myRating ?? "—"} />
         <Stat label="Punten" value={s?.points ?? 0} />
-        <Stat label="Gespeeld" value={s?.played ?? 0} />
         <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
-        <Stat label="Verloren" value={s?.lost ?? 0} />
+        <Stat label="Gespeeld" value={s?.played ?? 0} />
       </div>
+
+      {rhist.length >= 2 && (
+        <section className="card">
+          <h2 className="card__title">Rating-verloop</h2>
+          <RatingChart history={rhist} />
+        </section>
+      )}
+
+      {(best > 0 || bigWin) && (
+        <section className="card">
+          <h2 className="card__title">Prestaties</h2>
+          <div className="achievements">
+            {best > 0 && (
+              <div className="achievement">
+                <span className="achievement__icon">🔥</span>
+                <div>
+                  <span className="achievement__value">{best}</span>
+                  <span className="achievement__label">Langste winreeks</span>
+                </div>
+              </div>
+            )}
+            {bigWin && (
+              <Link
+                className="achievement achievement--link"
+                to={`/matches/${bigWin.match.id}`}
+              >
+                <span className="achievement__icon">🏆</span>
+                <div>
+                  <span className="achievement__value">
+                    {bigWin.match.score_a}–{bigWin.match.score_b}
+                  </span>
+                  <span className="achievement__label">
+                    Grootste zege · {formatDate(bigWin.match.played_at ?? bigWin.match.created_at)}
+                  </span>
+                </div>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
 
       {partner && (
         <section className="card partner-card">
@@ -99,13 +166,40 @@ export function PlayerProfile() {
         </section>
       )}
 
+      {h2h.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Onderlinge stand</h2>
+          <ul className="h2h">
+            {h2h.map((row) => (
+              <li key={row.oppId} className="h2h__row">
+                <Link className="h2h__player" to={`/spelers/${row.oppId}`}>
+                  <Avatar profile={pmap[row.oppId]} size={28} />
+                  <span className="h2h__name">{displayName(pmap[row.oppId])}</span>
+                </Link>
+                <span className="h2h__record">
+                  <span className="h2h__w">{row.won}</span>
+                  <span className="h2h__sep">–</span>
+                  {row.drawn > 0 && (
+                    <>
+                      <span className="h2h__d">{row.drawn}</span>
+                      <span className="h2h__sep">–</span>
+                    </>
+                  )}
+                  <span className="h2h__l">{row.lost}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="card">
         <h2 className="card__title">Recente matches</h2>
         {matches.loading && <Skeleton rows={3} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList
-            matches={mlist}
+            matches={mlist.slice(0, RECENT_SHOWN)}
             teams={tmap}
             profiles={pmap}
             perspectiveId={id}

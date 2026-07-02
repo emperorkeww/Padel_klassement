@@ -11,6 +11,7 @@ import {
   addGroupMember,
   removeGroupMember,
   generateAmericanoRound,
+  generateMexicanoRound,
 } from "./api";
 import {
   getGroupMatches,
@@ -27,7 +28,9 @@ import {
 } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
+import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
+import "./GroupDetail.css";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -53,6 +56,8 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"americano" | "mexicano">("americano");
+  const [roundsToGen, setRoundsToGen] = useState(1);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -75,7 +80,7 @@ export function GroupDetail() {
       standings.reload();
       teams.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -139,9 +144,7 @@ export function GroupDetail() {
 
           {isOwner && (
             <>
-              <h3 className="card__title" style={{ marginTop: "1.25rem" }}>
-                Vriend toevoegen
-              </h3>
+              <h3 className="card__title card__title--section">Vriend toevoegen</h3>
               {addableFriendIds.length === 0 ? (
                 <p className="empty">
                   Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
@@ -212,27 +215,76 @@ export function GroupDetail() {
       </div>
 
       <section className="card">
-        <div className="row-between">
-          <div>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Wedstrijdrondes
-            </h2>
-            <p className="page-subtitle" style={{ marginTop: "0.25rem" }}>
-              Verdeelt de leden willekeurig in teams en wedstrijden.
-            </p>
+        <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+        <p className="card__subtitle">
+          {mode === "americano"
+            ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
+            : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
+        </p>
+
+        <SpelvormUitleg />
+
+        <div className="toolbar">
+          <div className="tabs">
+            <button
+              className={`tab ${mode === "americano" ? "is-active" : ""}`}
+              onClick={() => setMode("americano")}
+            >
+              Americano
+            </button>
+            <button
+              className={`tab ${mode === "mexicano" ? "is-active" : ""}`}
+              onClick={() => setMode("mexicano")}
+            >
+              Mexicano
+            </button>
           </div>
-          <button
-            className="btn btn--primary"
-            disabled={busy || memberList.length < 4}
-            onClick={() =>
-              act(async () => {
-                const ids = await generateAmericanoRound(id);
-                if (ids.length === 0) throw new Error("Geen wedstrijden gegenereerd.");
-              }, "Nieuwe ronde gegenereerd.")
-            }
-          >
-            Genereer ronde
-          </button>
+          <div className="gen-controls">
+            {mode === "americano" && (
+              <label className="gen-controls__rounds">
+                <span>Rondes</span>
+                <select
+                  className="select"
+                  value={roundsToGen}
+                  onChange={(e) => setRoundsToGen(Number(e.target.value))}
+                >
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button
+              className="btn btn--primary"
+              disabled={busy || memberList.length < 4}
+              onClick={() =>
+                act(async () => {
+                  let total = 0;
+                  if (mode === "americano") {
+                    // Meerdere rondes in één keer: elke ronde krijgt een verse
+                    // willekeurige indeling. Sequentieel zodat de rondenummers
+                    // netjes oplopen.
+                    for (let i = 0; i < roundsToGen; i++) {
+                      const ids = await generateAmericanoRound(id);
+                      total += ids.length;
+                    }
+                  } else {
+                    const ids = await generateMexicanoRound(id);
+                    total = ids.length;
+                  }
+                  if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
+                }, generatedMessage(mode, roundsToGen))
+              }
+            >
+              {mode === "americano"
+                ? roundsToGen === 1
+                  ? "Genereer Americano-ronde"
+                  : `Genereer ${roundsToGen} Americano-rondes`
+                : "Genereer Mexicano-ronde"}
+            </button>
+          </div>
         </div>
         {memberList.length < 4 && (
           <p className="empty">Minimaal 4 leden nodig om een ronde te genereren.</p>
@@ -242,12 +294,10 @@ export function GroupDetail() {
           <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
         )}
 
-        <div className="stack" style={{ marginTop: "1rem" }}>
+        <div className="stack">
           {rounds.map(({ round, list }) => (
             <div key={round}>
-              <h3 className="card__title" style={{ marginBottom: "0.5rem" }}>
-                Ronde {round}
-              </h3>
+              <h3 className="card__title card__title--compact">Ronde {round}</h3>
               <div className="stack">
                 {list.map((m) =>
                   m.status === "completed" ? (
@@ -293,6 +343,46 @@ export function GroupDetail() {
   );
 }
 
+function generatedMessage(mode: "americano" | "mexicano", rounds: number): string {
+  if (mode === "mexicano") return "Nieuwe Mexicano-ronde gegenereerd.";
+  return rounds === 1
+    ? "Nieuwe Americano-ronde gegenereerd."
+    : `${rounds} Americano-rondes gegenereerd.`;
+}
+
+function SpelvormUitleg() {
+  return (
+    <details className="explainer">
+      <summary>Americano of Mexicano — wat is het verschil?</summary>
+      <div className="explainer__body">
+        <dl>
+          <div>
+            <dt>Americano</dt>
+            <dd>
+              De leden worden <strong>willekeurig</strong> in teams en
+              wedstrijden verdeeld. Elke ronde wisselt van partner, ongeacht de
+              stand. Gezellig en gelijk verdeeld — ideaal voor een ontspannen
+              avond.
+            </dd>
+          </div>
+          <div>
+            <dt>Mexicano</dt>
+            <dd>
+              De volgende ronde wordt <strong>op basis van de stand</strong>{" "}
+              gemaakt: spelers worden gerangschikt op punten (en saldo), en per
+              baan speelt de <strong>1e met de 4e</strong> tegen de{" "}
+              <strong>2e met de 3e</strong>. Zo blijven de wedstrijden spannend en
+              in balans. Je kunt pas een nieuwe Mexicano-ronde genereren als{" "}
+              <strong>alle uitslagen</strong> van de vorige ronde zijn ingevuld —
+              anders zou er op een halve stand gepaird worden.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </details>
+  );
+}
+
 function MatchRow({
   labelA,
   labelB,
@@ -324,8 +414,7 @@ function MatchRow({
       </span>
       <span className="result-row__form">
         <input
-          className="input"
-          style={{ width: 56 }}
+          className="input input--score"
           type="number"
           min="0"
           placeholder="A"
@@ -335,8 +424,7 @@ function MatchRow({
         />
         <span className="matchlist__vs">–</span>
         <input
-          className="input"
-          style={{ width: 56 }}
+          className="input input--score"
           type="number"
           min="0"
           placeholder="B"

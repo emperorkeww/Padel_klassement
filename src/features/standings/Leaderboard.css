@@ -3,15 +3,15 @@
   display: grid;
   grid-template-columns: 1fr 1.15fr 1fr;
   align-items: end;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
 }
 
 .podium__spot {
   display: grid;
   justify-items: center;
-  gap: 0.35rem;
-  padding: 1.1rem 0.75rem 0.9rem;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-3);
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
@@ -32,8 +32,8 @@
     radial-gradient(120% 100% at 50% 0%, var(--gold-soft) 0%, transparent 70%),
     var(--surface);
   border-color: color-mix(in srgb, var(--gold) 35%, var(--line));
-  padding-top: 1.4rem;
-  padding-bottom: 1.4rem;
+  padding-top: var(--sp-6);
+  padding-bottom: var(--sp-6);
 }
 .podium__spot--2 {
   background:
@@ -56,7 +56,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   font-weight: 800;
   color: #fff;
 }
@@ -72,7 +72,7 @@
 
 .podium__name {
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: var(--fs-base);
   letter-spacing: -0.01em;
   max-width: 100%;
   overflow: hidden;
@@ -80,18 +80,18 @@
   white-space: nowrap;
 }
 .podium__spot--1 .podium__name {
-  font-size: 1.02rem;
+  font-size: 1rem;
 }
 
 .podium__pts {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   color: var(--accent);
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
 }
 
 .podium__record {
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
@@ -103,7 +103,7 @@
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--ink-soft);
   background: var(--surface-2);
@@ -122,11 +122,24 @@
   color: var(--bronze);
 }
 
+/* ---------- Rating-cel ---------- */
+.rating-cell {
+  display: inline-block;
+  padding: 0.125rem var(--sp-2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Winrate-balkje ---------- */
 .winrate {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--sp-2);
   font-variant-numeric: tabular-nums;
 }
 .winrate__bar {
@@ -146,20 +159,20 @@
 /* ---------- Mobiel ---------- */
 @media (max-width: 640px) {
   .podium {
-    gap: 0.5rem;
+    gap: var(--sp-2);
   }
   .podium__spot {
-    padding: 0.85rem 0.5rem 0.75rem;
+    padding: var(--sp-3) var(--sp-2);
   }
   .podium__spot--1 {
-    padding-top: 1.1rem;
-    padding-bottom: 1.1rem;
+    padding-top: var(--sp-4);
+    padding-bottom: var(--sp-4);
   }
   .podium__name {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
   }
   .podium__spot--1 .podium__name {
-    font-size: 0.88rem;
+    font-size: var(--fs-md);
   }
   .podium__record {
     display: none;

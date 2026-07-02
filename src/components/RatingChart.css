@@ -1,0 +1,47 @@
+.rating-chart {
+  width: 100%;
+}
+.rating-chart__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.rating-chart__tick {
+  fill: var(--ink-soft);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.rating-chart__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+.rating-chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.rating-chart__line.is-up {
+  stroke: var(--success);
+}
+.rating-chart__line.is-down {
+  stroke: var(--danger);
+}
+.rating-chart__area {
+  stroke: none;
+}
+.rating-chart__area.is-up {
+  fill: var(--success-soft);
+}
+.rating-chart__area.is-down {
+  fill: var(--danger-soft);
+}
+.rating-chart__dot.is-up {
+  fill: var(--success);
+}
+.rating-chart__dot.is-down {
+  fill: var(--danger);
+}

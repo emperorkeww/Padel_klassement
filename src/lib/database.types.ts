@@ -368,6 +368,49 @@ export type Database = {
           },
         ]
       }
+      player_ratings: {
+        Row: {
+          games: number
+          player_id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          games?: number
+          player_id: string
+          rating?: number
+          updated_at?: string
+        }
+        Update: {
+          games?: number
+          player_id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_ratings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_ratings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_ratings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -391,6 +434,65 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      rating_history: {
+        Row: {
+          delta: number
+          id: string
+          match_id: string
+          played_at: string
+          player_id: string
+          rating_after: number
+          rating_before: number
+        }
+        Insert: {
+          delta: number
+          id?: string
+          match_id: string
+          played_at: string
+          player_id: string
+          rating_after: number
+          rating_before: number
+        }
+        Update: {
+          delta?: number
+          id?: string
+          match_id?: string
+          played_at?: string
+          player_id?: string
+          rating_after?: number
+          rating_before?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_history_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "rating_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teams: {
         Row: {
@@ -505,6 +607,15 @@ export type Database = {
       }
     }
     Functions: {
+      _apply_rating: {
+        Args: {
+          p_delta: number
+          p_match: string
+          p_player: string
+          p_ts: string
+        }
+        Returns: undefined
+      }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
       create_completed_match: {
@@ -524,6 +635,10 @@ export type Database = {
         Args: { p_group_id: string }
         Returns: string[]
       }
+      generate_mexicano_round: {
+        Args: { p_group_id: string }
+        Returns: string[]
+      }
       is_group_member: {
         Args: { p_group_id: string; p_uid: string }
         Returns: boolean
@@ -532,6 +647,7 @@ export type Database = {
         Args: { p_group_id: string; p_uid: string }
         Returns: boolean
       }
+      recompute_ratings: { Args: never; Returns: undefined }
     }
     Enums: {
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"

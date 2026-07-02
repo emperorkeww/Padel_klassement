@@ -45,12 +45,8 @@ export function ProfileSettings() {
       <section className="card">
         <div className="row-between">
           <div>
-            <h2 className="card__title" style={{ margin: 0 }}>
-              Sessie
-            </h2>
-            <p className="empty" style={{ padding: 0 }}>
-              Ingelogd als {user?.email}
-            </p>
+            <h2 className="card__title card__title--tight">Sessie</h2>
+            <p className="empty empty--bare">Ingelogd als {user?.email}</p>
           </div>
           <button className="btn btn--danger" onClick={() => signOut()}>
             Uitloggen
@@ -222,8 +218,8 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
 
   return (
     <section className="card">
-      <h2 className="card__title">E-mailadres</h2>
-      <p className="page-subtitle" style={{ marginBottom: "0.75rem" }}>
+      <h2 className="card__title card__title--tight">E-mailadres</h2>
+      <p className="card__subtitle">
         Huidig: <strong>{currentEmail}</strong>
       </p>
       <form className="stack" onSubmit={save}>

@@ -5,6 +5,7 @@ import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { outcomeFor } from "../../lib/results";
+import { errorMessage } from "../../lib/errors";
 import {
   getRecentMatches,
   getTeamsMap,
@@ -61,11 +62,9 @@ export function Matches() {
       <AddMatchForm players={selectablePlayers} onCreated={reloadAll} />
 
       <section className="card">
-        <div className="row-between" style={{ marginBottom: "1rem" }}>
-          <h2 className="card__title" style={{ margin: 0 }}>
-            Recente matches
-          </h2>
-          <div className="tabs" style={{ marginBottom: 0 }}>
+        <div className="card__head">
+          <h2 className="card__title">Recente matches</h2>
+          <div className="tabs">
             {(
               [
                 ["all", "Alles"],
@@ -229,7 +228,7 @@ function AddMatchForm({
       setScoreB("");
       onCreated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
