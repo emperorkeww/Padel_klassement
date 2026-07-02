@@ -34,6 +34,9 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Publieke VAPID-sleutel voor push-meldingen (mag leeg zijn:
+          # de app verbergt de optie dan gewoon).
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       # Gebruikt de wrangler-versie uit package.json (devDependency); zonder
       # die pin valt de action terug op een oude wrangler die wrangler.jsonc

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
@@ -12,6 +12,13 @@ import {
 import { changeEmail, changePassword } from "./api";
 import { AccountNav } from "../../components/AccountNav";
 import { formatDate } from "../../lib/format";
+import { errorMessage } from "../../lib/errors";
+import {
+  disablePush,
+  enablePush,
+  getPushSubscription,
+  pushSupported,
+} from "../../lib/push";
 import type { Profile } from "../../lib/types";
 import "./ProfileSettings.css";
 
@@ -42,6 +49,7 @@ export function ProfileSettings() {
         <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
       </div>
 
+      <NotificationsCard userId={myId} />
       <EmailCard currentEmail={user?.email ?? ""} />
       <PasswordCard email={user?.email ?? ""} />
 
@@ -195,6 +203,69 @@ function NameCard({
           </button>
         </div>
       </form>
+    </section>
+  );
+}
+
+/* ---------- Meldingen (web push) ---------- */
+function NotificationsCard({ userId }: { userId: string }) {
+  const toast = useToast();
+  const supported = pushSupported();
+  const [enabled, setEnabled] = useState<boolean | null>(supported ? null : false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!supported) return;
+    getPushSubscription()
+      .then((sub) => setEnabled(!!sub))
+      .catch(() => setEnabled(false));
+  }, [supported]);
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      if (enabled) {
+        await disablePush();
+        setEnabled(false);
+        toast.success("Meldingen uitgeschakeld op dit apparaat.");
+      } else {
+        await enablePush(userId);
+        setEnabled(true);
+        toast.success("Meldingen staan aan — vamos!");
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2 className="card__title card__title--tight">Meldingen</h2>
+      <p className="card__subtitle">
+        Nieuwe rondes, uitslagen van jouw matches en vriendschapsverzoeken —
+        ook als de app dicht is.
+      </p>
+      {!supported ? (
+        <p className="empty">
+          Meldingen worden hier niet ondersteund. Op iPhone/iPad: installeer de
+          app eerst op je beginscherm (Deel → Zet op beginscherm) en probeer
+          het daarna opnieuw.
+        </p>
+      ) : (
+        <button
+          className={`btn ${enabled ? "" : "btn--primary"}`}
+          disabled={busy || enabled == null}
+          onClick={toggle}
+        >
+          {enabled == null
+            ? "Controleren…"
+            : enabled
+              ? "Meldingen uitzetten"
+              : "Meldingen aanzetten"}
+        </button>
+      )}
     </section>
   );
 }
