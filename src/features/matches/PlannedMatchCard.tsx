@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
+import { useAsync } from "../../lib/useAsync";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
+import { winChance } from "../../lib/elo";
+import { getPlayerRatings } from "../standings/ratingsApi";
 import type { Match, Profile, Team } from "../../lib/types";
 import { setMatchResult, teamLabel } from "./api";
 import { TeamSide } from "./MatchList";
@@ -31,6 +34,13 @@ export function PlannedMatchCard({
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
   const [saved, setSaved] = useState<{ a: number; b: number } | null>(null);
+
+  // Verwachte winstkans uit de (gecachte) ratings — zelfde Elo als de databank.
+  const ratings = useAsync(getPlayerRatings, []);
+  const chance =
+    ratings.data && teams[m.team_a_id] && teams[m.team_b_id]
+      ? winChance(teams[m.team_a_id], teams[m.team_b_id], ratings.data)
+      : null;
 
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
@@ -89,6 +99,23 @@ export function PlannedMatchCard({
     <div className="match-card match-card--planned">
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
       <span className="match-card__mid">
+        {chance != null && (
+          <span
+            className="winchance"
+            title="Verwachte winstkans op basis van de huidige ratings"
+          >
+            <span className="winchance__pct">{Math.round(chance * 100)}%</span>
+            <span className="winchance__bar">
+              <span
+                className="winchance__fill"
+                style={{ width: `${Math.round(chance * 100)}%` }}
+              />
+            </span>
+            <span className="winchance__pct">
+              {100 - Math.round(chance * 100)}%
+            </span>
+          </span>
+        )}
         <span className="planned-score">
           <ScoreStepper
             value={sa}
