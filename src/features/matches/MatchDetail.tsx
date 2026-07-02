@@ -5,12 +5,12 @@ import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import {
   getMatch,
-  getTeamsMap,
+  getTeamsByIds,
   teamLabel,
   updateMatchScore,
 } from "./api";
 import { getGroup } from "../groups/api";
-import { getProfilesMap, displayName } from "../profiles/api";
+import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { Avatar } from "../../components/Avatar";
 import { ShareMatch } from "./ShareMatch";
@@ -23,8 +23,17 @@ export function MatchDetail() {
   const { user } = useAuth();
 
   const match = useAsync(() => getMatch(id), [id]);
-  const teams = useAsync(getTeamsMap, []);
-  const profiles = useAsync(getProfilesMap, []);
+  // Alleen de twee teams en vier spelers van déze match ophalen, niet de
+  // volledige teams- en profielentabellen.
+  const teamIds = match.data ? [match.data.team_a_id, match.data.team_b_id] : [];
+  const teamKey = teamIds.join(",");
+  const teams = useAsync(() => getTeamsByIds(teamIds), [teamKey]);
+  const playerIds = teamIds.flatMap((tid) => {
+    const t = teams.data?.[tid];
+    return t ? [t.player1_id, t.player2_id] : [];
+  });
+  const playerKey = playerIds.join(",");
+  const profiles = useAsync(() => getProfilesByIds(playerIds), [playerKey]);
   const [editing, setEditing] = useState(false);
 
   if (match.loading) return <p className="empty">Laden…</p>;

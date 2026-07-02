@@ -1,14 +1,17 @@
 import { supabase } from "../../lib/supabase";
+import { cached, invalidate } from "../../lib/queryCache";
 import type { Friendship, FriendshipStatus } from "../../lib/types";
 
 /** Alle vriendschappen waar de ingelogde gebruiker bij betrokken is (RLS filtert). */
-export async function getMyFriendships(): Promise<Friendship[]> {
-  const { data, error } = await supabase
-    .from("friendships")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Friendship[];
+export function getMyFriendships(): Promise<Friendship[]> {
+  return cached("friendships:mine", async () => {
+    const { data, error } = await supabase
+      .from("friendships")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Friendship[];
+  });
 }
 
 export async function sendFriendRequest(
@@ -19,6 +22,7 @@ export async function sendFriendRequest(
     .from("friendships")
     .insert({ requester_id: requesterId, addressee_id: addresseeId });
   if (error) throw error;
+  invalidate("friendships");
 }
 
 export async function respondToRequest(
@@ -30,11 +34,13 @@ export async function respondToRequest(
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
+  invalidate("friendships");
 }
 
 export async function removeFriendship(id: string): Promise<void> {
   const { error } = await supabase.from("friendships").delete().eq("id", id);
   if (error) throw error;
+  invalidate("friendships");
 }
 
 /** Categoriseert vriendschappen t.o.v. de huidige gebruiker. */

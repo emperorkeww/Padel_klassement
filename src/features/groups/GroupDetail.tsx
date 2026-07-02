@@ -45,8 +45,10 @@ export function GroupDetail() {
     teams.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matches.reload, standings.reload, teams.reload]);
-  useRealtime("matches", onMatches);
-  useRealtime("group_members", members.reload);
+  // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
+  // die ergens anders wordt gelogd.
+  useRealtime("matches", onMatches, `group_id=eq.${id}`);
+  useRealtime("group_members", members.reload, `group_id=eq.${id}`);
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);

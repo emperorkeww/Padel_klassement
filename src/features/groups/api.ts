@@ -1,33 +1,40 @@
 import { supabase } from "../../lib/supabase";
+import { cached, invalidate } from "../../lib/queryCache";
 import type { Group, GroupMember } from "../../lib/types";
 
 /** Groepen waar de gebruiker lid van is (RLS filtert). */
-export async function getMyGroups(): Promise<Group[]> {
-  const { data, error } = await supabase
-    .from("groups")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+export function getMyGroups(): Promise<Group[]> {
+  return cached("groups:mine", async () => {
+    const { data, error } = await supabase
+      .from("groups")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
-export async function getGroup(id: string): Promise<Group | null> {
-  const { data, error } = await supabase
-    .from("groups")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+export function getGroup(id: string): Promise<Group | null> {
+  return cached(`groups:one:${id}`, async () => {
+    const { data, error } = await supabase
+      .from("groups")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  });
 }
 
-export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
-  const { data, error } = await supabase
-    .from("group_members")
-    .select("*")
-    .eq("group_id", groupId);
-  if (error) throw error;
-  return (data ?? []) as GroupMember[];
+export function getGroupMembers(groupId: string): Promise<GroupMember[]> {
+  return cached(`members:${groupId}`, async () => {
+    const { data, error } = await supabase
+      .from("group_members")
+      .select("*")
+      .eq("group_id", groupId);
+    if (error) throw error;
+    return (data ?? []) as GroupMember[];
+  });
 }
 
 export async function createGroup(
@@ -40,6 +47,7 @@ export async function createGroup(
     .select()
     .single();
   if (error) throw error;
+  invalidate("groups");
   return data;
 }
 
@@ -51,6 +59,7 @@ export async function addGroupMember(
     .from("group_members")
     .insert({ group_id: groupId, player_id: playerId });
   if (error) throw error;
+  invalidate(`members:${groupId}`);
 }
 
 export async function removeGroupMember(
@@ -63,6 +72,7 @@ export async function removeGroupMember(
     .eq("group_id", groupId)
     .eq("player_id", playerId);
   if (error) throw error;
+  invalidate(`members:${groupId}`);
 }
 
 /** Genereert een Americano-ronde via de RPC; geeft de nieuwe match-ids terug. */
@@ -73,6 +83,8 @@ export async function generateAmericanoRound(
     p_group_id: groupId,
   });
   if (error) throw error;
+  // Nieuwe geplande matches + eventueel nieuwe teamparen.
+  invalidate("matches", "teams");
   return (data as string[]) ?? [];
 }
 
@@ -87,5 +99,6 @@ export async function generateMexicanoRound(
     p_group_id: groupId,
   });
   if (error) throw error;
+  invalidate("matches", "teams");
   return (data as string[]) ?? [];
 }
