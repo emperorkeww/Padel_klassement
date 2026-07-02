@@ -4,6 +4,7 @@ import { useToast } from "../../components/ToastProvider";
 import { useAsync } from "../../lib/useAsync";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
+import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import type { Match, Profile, Team } from "../../lib/types";
@@ -58,15 +59,17 @@ export function PlannedMatchCard({
         scoreA: a,
         scoreB: b,
       });
-      if (perspectiveId && a !== b) {
-        const winner = teams[a > b ? m.team_a_id : m.team_b_id];
-        if (
-          winner &&
-          (winner.player1_id === perspectiveId ||
-            winner.player2_id === perspectiveId)
-        ) {
-          celebrate();
-        }
+      const winner = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
+      const iWon =
+        !!perspectiveId &&
+        !!winner &&
+        (winner.player1_id === perspectiveId ||
+          winner.player2_id === perspectiveId);
+      if (iWon) {
+        celebrate();
+        winPulse();
+      } else {
+        tap();
       }
       toast.success("Resultaat opgeslagen.");
       onSaved?.();

@@ -12,6 +12,7 @@ import {
 import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
+import { tap } from "../../lib/haptics";
 import { Avatar } from "../../components/Avatar";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
@@ -177,6 +178,7 @@ function ScoreEditor({
         scoreA: saNum!,
         scoreB: sbNum!,
       });
+      tap();
       toast.success("Score bijgewerkt.");
       onSaved();
     } catch (err) {
