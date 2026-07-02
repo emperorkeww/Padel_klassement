@@ -9,7 +9,8 @@ import {
 import { getGroup } from "../groups/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
-import type { Team } from "../../lib/types";
+import { Avatar } from "../../components/Avatar";
+import type { Profile, Team } from "../../lib/types";
 import "./MatchDetail.css";
 
 export function MatchDetail() {
@@ -39,9 +40,6 @@ export function MatchDetail() {
   const ptsB = pts.filter((p) => p.won_by_team_id === m.team_b_id).length;
   const golden = pts.filter((p) => p.is_golden_point).length;
 
-  const players = (t: Team | undefined) =>
-    t ? [displayName(pmap[t.player1_id]), displayName(pmap[t.player2_id])] : [];
-
   return (
     <div>
       <header className="page-head">
@@ -50,7 +48,7 @@ export function MatchDetail() {
         </Link>
       </header>
 
-      <section className="card">
+      <section className="card md-board">
         <div className="md-status">
           <span className={`badge ${done ? "" : "badge--accent"}`}>
             {done ? "Afgerond" : "Gepland"}
@@ -67,22 +65,29 @@ export function MatchDetail() {
 
         <div className="md-versus">
           <TeamBlock
-            title={teamLabel(teamA, pmap)}
-            players={players(teamA)}
+            team={teamA}
+            label={teamLabel(teamA, pmap)}
+            profiles={pmap}
             won={done && aWon}
           />
           <div className="md-score">
             {m.score_a != null && m.score_b != null ? (
               <span className="md-score__num">
-                {m.score_a}–{m.score_b}
+                {m.score_a}
+                <span className="md-score__dash">–</span>
+                {m.score_b}
               </span>
             ) : (
               <span className="md-score__vs">vs</span>
             )}
+            {done && !isDraw && m.score_a != null && m.score_b != null && (
+              <span className="md-score__note">eindstand</span>
+            )}
           </div>
           <TeamBlock
-            title={teamLabel(teamB, pmap)}
-            players={players(teamB)}
+            team={teamB}
+            label={teamLabel(teamB, pmap)}
+            profiles={pmap}
             won={done && bWon}
           />
         </div>
@@ -114,23 +119,31 @@ export function MatchDetail() {
 }
 
 function TeamBlock({
-  title,
-  players,
+  team,
+  label,
+  profiles,
   won,
 }: {
-  title: string;
-  players: string[];
+  team: Team | undefined;
+  label: string;
+  profiles: Record<string, Profile>;
   won: boolean;
 }) {
+  const players = team
+    ? [profiles[team.player1_id], profiles[team.player2_id]]
+    : [];
   return (
     <div className={`md-team ${won ? "is-win" : ""}`}>
       <div className="md-team__name">
-        {title}
+        {label}
         {won && <span className="badge badge--win">Winnaar</span>}
       </div>
       <ul className="md-team__players">
         {players.map((p, i) => (
-          <li key={i}>{p}</li>
+          <li key={p?.id ?? i}>
+            <Avatar profile={p} size={24} />
+            <span>{displayName(p)}</span>
+          </li>
         ))}
       </ul>
     </div>

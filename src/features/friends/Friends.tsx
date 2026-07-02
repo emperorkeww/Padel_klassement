@@ -18,6 +18,7 @@ import {
   searchProfiles,
   displayName,
 } from "../profiles/api";
+import { Avatar } from "../../components/Avatar";
 import type { Profile } from "../../lib/types";
 
 export function Friends() {
@@ -93,7 +94,8 @@ export function Friends() {
               const already = relatedIds.has(p.id);
               return (
                 <div key={p.id} className="row-between">
-                  <span>
+                  <span className="cell-player">
+                    <Avatar profile={p} size={28} />
                     {displayName(p)}{" "}
                     <span className="badge">@{p.username}</span>
                   </span>
@@ -126,9 +128,12 @@ export function Friends() {
             {incoming.length === 0 && <p className="empty">Geen openstaande verzoeken.</p>}
             {incoming.map((f) => (
               <div key={f.id} className="row-between">
-                <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                  {displayName(pmap[otherId(f, myId)])}
-                </Link>
+                <span className="cell-player">
+                  <Avatar profile={pmap[otherId(f, myId)]} size={28} />
+                  <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
+                    {displayName(pmap[otherId(f, myId)])}
+                  </Link>
+                </span>
                 <span style={{ display: "flex", gap: "0.4rem" }}>
                   <button
                     className="btn btn--primary btn--sm"
@@ -159,9 +164,12 @@ export function Friends() {
               <div className="stack">
                 {outgoing.map((f) => (
                   <div key={f.id} className="row-between">
-                    <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                  {displayName(pmap[otherId(f, myId)])}
-                </Link>
+                    <span className="cell-player">
+                      <Avatar profile={pmap[otherId(f, myId)]} size={28} />
+                      <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
+                        {displayName(pmap[otherId(f, myId)])}
+                      </Link>
+                    </span>
                     <span className="badge">In afwachting</span>
                   </div>
                 ))}
@@ -180,9 +188,12 @@ export function Friends() {
           )}
           {accepted.map((f) => (
             <div key={f.id} className="row-between">
-              <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
+              <span className="cell-player">
+                <Avatar profile={pmap[otherId(f, myId)]} size={28} />
+                <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
                   {displayName(pmap[otherId(f, myId)])}
                 </Link>
+              </span>
               <button
                 className="btn btn--danger btn--sm"
                 onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}

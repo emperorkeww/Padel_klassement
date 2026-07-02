@@ -4,14 +4,19 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { Skeleton } from "../../components/Skeleton";
+import { Avatar } from "../../components/Avatar";
+import { FormChips } from "../../components/FormChips";
+import { recentForm, winRate, type Outcome } from "../../lib/results";
 import {
   getPlayerStandings,
   getTeamStandings,
   getGroupPlayerStandings,
 } from "./api";
 import { getMyGroups } from "../groups/api";
-import { getTeamsMap, teamLabel } from "../matches/api";
+import { getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import type { Profile } from "../../lib/types";
+import "./Leaderboard.css";
 
 type Tab = "player" | "team";
 
@@ -29,15 +34,58 @@ export function Leaderboard() {
   const teams = useAsync(getTeamStandings, []);
   const teamsMap = useAsync(getTeamsMap, []);
   const profilesMap = useAsync(getProfilesMap, []);
+  // Voor de vorm-kolom: recente matches client-side per speler samengevat.
+  const recent = useAsync(() => getRecentMatches(250), []);
 
   // Live bijwerken bij nieuwe/aangepaste matches.
   const refresh = useCallback(() => {
     players.reload();
     teams.reload();
     teamsMap.reload();
+    recent.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload]);
   useRealtime("matches", refresh);
+
+  const pmap = profilesMap.data ?? {};
+  const tmap = teamsMap.data ?? {};
+  const formFor = (playerId: string): Outcome[] =>
+    recentForm(recent.data ?? [], tmap, playerId, 5);
+
+  const playerRows = (players.data ?? []).map((p) => ({
+    key: p.player_id,
+    isMe: p.player_id === myId,
+    name: displayName(p),
+    profile: pmap[p.player_id] ?? p,
+    link: `/spelers/${p.player_id}`,
+    played: p.played,
+    won: p.won,
+    drawn: p.drawn ?? 0,
+    lost: p.lost,
+    points: p.points,
+    goalDiff: p.goal_diff ?? 0,
+    form: formFor(p.player_id),
+  }));
+
+  const teamRows = (teams.data ?? []).map((t) => ({
+    key: t.team_id,
+    isMe: false,
+    name: teamLabel(tmap[t.team_id], pmap),
+    profile: null,
+    link: undefined as string | undefined,
+    played: t.played,
+    won: t.won,
+    drawn: t.drawn ?? 0,
+    lost: t.lost,
+    points: t.points,
+    goalDiff: t.goal_diff ?? 0,
+    form: [] as Outcome[],
+  }));
+
+  const rows = tab === "player" ? playerRows : teamRows;
+  const loading = tab === "player" ? players.loading : teams.loading;
+  const error = tab === "player" ? players.error : teams.error;
+  const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
 
   return (
     <div>
@@ -81,44 +129,57 @@ export function Leaderboard() {
         )}
       </div>
 
+      {showPodium && <Podium rows={playerRows.slice(0, 3)} />}
+
       <div className="card">
-        {tab === "player" ? (
-          <StandingsTable
-            loading={players.loading}
-            error={players.error}
-            rows={(players.data ?? []).map((p) => ({
-              key: p.player_id,
-              isMe: p.player_id === myId,
-              name: displayName(p),
-              link: `/spelers/${p.player_id}`,
-              sub: `@${p.username}`,
-              played: p.played,
-              won: p.won,
-              drawn: p.drawn ?? 0,
-              lost: p.lost,
-              points: p.points,
-              goalDiff: p.goal_diff ?? 0,
-            }))}
-          />
-        ) : (
-          <StandingsTable
-            loading={teams.loading}
-            error={teams.error}
-            rows={(teams.data ?? []).map((t) => ({
-              key: t.team_id,
-              isMe: false,
-              name: teamLabel(teamsMap.data?.[t.team_id], profilesMap.data ?? {}),
-              sub: "",
-              played: t.played,
-              won: t.won,
-              drawn: t.drawn ?? 0,
-              lost: t.lost,
-              points: t.points,
-              goalDiff: t.goal_diff ?? 0,
-            }))}
-          />
-        )}
+        <StandingsTable rows={rows} loading={loading} error={error} showForm={tab === "player"} />
       </div>
+    </div>
+  );
+}
+
+/* ---------- Podium: top 3 met goud/zilver/brons ---------- */
+type Row = {
+  key: string;
+  isMe: boolean;
+  name: string;
+  profile: Pick<Profile, "username" | "full_name"> & { avatar_url?: string | null } | null;
+  link?: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  points: number;
+  goalDiff: number;
+  form: Outcome[];
+};
+
+function Podium({ rows }: { rows: Row[] }) {
+  const [first, second, third] = rows;
+  // Visuele volgorde: zilver — goud — brons.
+  const order: { row: Row; place: 1 | 2 | 3 }[] = [
+    { row: second, place: 2 },
+    { row: first, place: 1 },
+    { row: third, place: 3 },
+  ];
+
+  return (
+    <div className="podium" aria-label="Top 3">
+      {order.map(({ row, place }) => (
+        <Link
+          key={row.key}
+          to={row.link ?? "#"}
+          className={`podium__spot podium__spot--${place} ${row.isMe ? "is-me" : ""}`}
+        >
+          <span className="podium__medal">{place}</span>
+          <Avatar profile={row.profile} name={row.name} size={place === 1 ? 56 : 44} />
+          <span className="podium__name">{row.name}</span>
+          <span className="podium__pts">{row.points} ptn</span>
+          <span className="podium__record">
+            {row.won}W · {row.drawn}G · {row.lost}V
+          </span>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -143,6 +204,14 @@ function KlassementUitleg() {
             <dd>
               Tellen alleen <strong>afgeronde</strong> matches. Een geplande
               Americano-match telt pas mee zodra het resultaat is ingevoerd.
+            </dd>
+          </div>
+          <div>
+            <dt>Vorm</dt>
+            <dd>
+              De laatste vijf uitslagen van de speler, nieuwste links:{" "}
+              <strong>W</strong>inst, <strong>D</strong> (gelijk),{" "}
+              <strong>L</strong> (verlies).
             </dd>
           </div>
           <div>
@@ -174,28 +243,16 @@ function KlassementUitleg() {
   );
 }
 
-type Row = {
-  key: string;
-  isMe: boolean;
-  name: string;
-  link?: string;
-  sub: string;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  points: number;
-  goalDiff: number;
-};
-
 function StandingsTable({
   rows,
   loading,
   error,
+  showForm,
 }: {
   rows: Row[];
   loading: boolean;
   error: string | null;
+  showForm: boolean;
 }) {
   if (loading) return <Skeleton rows={5} />;
   if (error) return <p className="msg msg--error">{error}</p>;
@@ -209,38 +266,76 @@ function StandingsTable({
           <tr>
             <th style={{ width: "2rem" }}>#</th>
             <th>Naam</th>
+            {showForm && <th className="col-sec">Vorm</th>}
             <th className="num col-sec">Gespeeld</th>
             <th className="num">Winst</th>
             <th className="num col-sec">Gelijk</th>
             <th className="num">Verlies</th>
+            <th className="num col-sec">Winrate</th>
             <th className="num col-sec">Saldo</th>
             <th className="num">Punten</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.key} className={r.isMe ? "is-me" : ""}>
-              <td>{i + 1}</td>
-              <td>
-                {r.link ? (
-                  <Link className="profile-link" to={r.link}>
-                    {r.name}
-                  </Link>
-                ) : (
-                  r.name
+          {rows.map((r, i) => {
+            const rate = winRate(r.won, r.played);
+            return (
+              <tr key={r.key} className={r.isMe ? "is-me" : ""}>
+                <td>
+                  <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                </td>
+                <td>
+                  <span className="cell-player">
+                    <Avatar profile={r.profile} name={r.name} size={26} />
+                    {r.link ? (
+                      <Link className="profile-link" to={r.link}>
+                        {r.name}
+                      </Link>
+                    ) : (
+                      r.name
+                    )}
+                    {r.isMe && <span className="badge badge--accent">jij</span>}
+                  </span>
+                </td>
+                {showForm && (
+                  <td className="col-sec">
+                    {r.form.length > 0 ? (
+                      <FormChips form={r.form} size="sm" />
+                    ) : (
+                      <span className="empty" style={{ padding: 0 }}>
+                        —
+                      </span>
+                    )}
+                  </td>
                 )}
-                {r.sub && <span className="badge" style={{ marginLeft: 6 }}>{r.sub}</span>}
-              </td>
-              <td className="num col-sec">{r.played}</td>
-              <td className="num">{r.won}</td>
-              <td className="num col-sec">{r.drawn}</td>
-              <td className="num">{r.lost}</td>
-              <td className="num col-sec">{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
-              <td className="num">
-                <strong>{r.points}</strong>
-              </td>
-            </tr>
-          ))}
+                <td className="num col-sec">{r.played}</td>
+                <td className="num">{r.won}</td>
+                <td className="num col-sec">{r.drawn}</td>
+                <td className="num">{r.lost}</td>
+                <td className="num col-sec">
+                  {rate != null ? (
+                    <span className="winrate">
+                      <span className="winrate__bar">
+                        <span
+                          className="winrate__fill"
+                          style={{ width: `${rate}%` }}
+                        />
+                      </span>
+                      {rate}%
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="num col-sec">
+                  {r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}
+                </td>
+                <td className="num">
+                  <strong>{r.points}</strong>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

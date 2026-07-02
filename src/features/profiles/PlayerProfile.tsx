@@ -7,6 +7,9 @@ import { getPlayerStanding } from "../standings/api";
 import { getPlayerMatches, getTeamsMap } from "../matches/api";
 import { MatchList } from "../matches/MatchList";
 import { Skeleton } from "../../components/Skeleton";
+import { Avatar } from "../../components/Avatar";
+import { FormChips } from "../../components/FormChips";
+import { recentForm, winRate, winStreak, bestPartner } from "../../lib/results";
 import "./PlayerProfile.css";
 
 export function PlayerProfile() {
@@ -31,7 +34,14 @@ export function PlayerProfile() {
 
   const p = profile.data;
   const s = standing.data;
-  const initials = displayName(p).slice(0, 1).toUpperCase();
+  const tmap = teams.data ?? {};
+  const pmap = profiles.data ?? {};
+  const mlist = matches.data ?? [];
+
+  const form = recentForm(mlist, tmap, id);
+  const streak = winStreak(mlist, tmap, id);
+  const rate = s ? winRate(s.won, s.played) : null;
+  const partner = bestPartner(mlist, tmap, id);
 
   return (
     <div>
@@ -42,24 +52,52 @@ export function PlayerProfile() {
       </header>
 
       <section className="card profile-hero">
-        <div className="profile-hero__avatar">
-          {p.avatar_url ? <img src={p.avatar_url} alt="" /> : initials}
-        </div>
-        <div>
+        <Avatar profile={p} size={72} />
+        <div className="profile-hero__body">
           <h1 className="profile-hero__name">
             {displayName(p)}
             {isMe && <span className="badge badge--accent">jij</span>}
+            {streak >= 2 && (
+              <span className="badge badge--win">{streak} op rij 🔥</span>
+            )}
           </h1>
           <p className="profile-hero__handle">@{p.username}</p>
+          {form.length > 0 && (
+            <div className="profile-hero__form">
+              <span className="profile-hero__form-label">Vorm</span>
+              <FormChips form={form} />
+            </div>
+          )}
         </div>
       </section>
 
       <div className="stats">
         <Stat label="Punten" value={s?.points ?? 0} />
         <Stat label="Gespeeld" value={s?.played ?? 0} />
-        <Stat label="Gewonnen" value={s?.won ?? 0} />
+        <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
         <Stat label="Verloren" value={s?.lost ?? 0} />
       </div>
+
+      {partner && (
+        <section className="card partner-card">
+          <h2 className="card__title">Beste maatje</h2>
+          <div className="partner-card__row">
+            <Avatar profile={pmap[partner.partnerId]} size={40} />
+            <div>
+              <Link
+                className="profile-link"
+                to={`/spelers/${partner.partnerId}`}
+              >
+                {displayName(pmap[partner.partnerId])}
+              </Link>
+              <p className="partner-card__sub">
+                Samen {partner.played} match{partner.played === 1 ? "" : "es"}{" "}
+                gespeeld, {partner.wins} gewonnen.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h2 className="card__title">Recente matches</h2>
@@ -67,9 +105,10 @@ export function PlayerProfile() {
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList
-            matches={matches.data ?? []}
-            teams={teams.data ?? {}}
-            profiles={profiles.data ?? {}}
+            matches={mlist}
+            teams={tmap}
+            profiles={pmap}
+            perspectiveId={id}
             empty="Deze speler heeft nog geen matches gespeeld."
           />
         )}
@@ -78,7 +117,7 @@ export function PlayerProfile() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="stat">
       <span className="stat__value">{value}</span>
