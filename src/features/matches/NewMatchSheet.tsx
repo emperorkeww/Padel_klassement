@@ -5,6 +5,7 @@ import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
+import { tap, winPulse } from "../../lib/haptics";
 import { displayName } from "../profiles/api";
 import { createCompletedMatch } from "./api";
 import type { Profile } from "../../lib/types";
@@ -100,7 +101,12 @@ export function NewMatchSheet({
         scoreB: sb,
       });
       // Vieren als de logger zelf in het winnende team zit.
-      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) celebrate();
+      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) {
+        celebrate();
+        winPulse();
+      } else {
+        tap();
+      }
       toast.success("Match toegevoegd.");
       onCreated();
       onClose();
