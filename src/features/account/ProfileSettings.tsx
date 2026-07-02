@@ -10,6 +10,7 @@ import {
   displayName,
 } from "../profiles/api";
 import { changeEmail, changePassword } from "./api";
+import { AccountNav } from "../../components/AccountNav";
 import { formatDate } from "../../lib/format";
 import type { Profile } from "../../lib/types";
 import "./ProfileSettings.css";
@@ -33,6 +34,8 @@ export function ProfileSettings() {
         <h1 className="page-title">Profiel</h1>
         <p className="page-subtitle">Beheer je gegevens en accountinstellingen.</p>
       </header>
+
+      <AccountNav />
 
       <div className="grid grid--2">
         <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />

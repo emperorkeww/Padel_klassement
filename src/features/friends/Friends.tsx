@@ -19,6 +19,7 @@ import {
   displayName,
 } from "../profiles/api";
 import { Avatar } from "../../components/Avatar";
+import { AccountNav } from "../../components/AccountNav";
 import type { Profile } from "../../lib/types";
 
 export function Friends() {
@@ -72,6 +73,8 @@ export function Friends() {
           Zoek spelers, stuur verzoeken en beheer je vrienden.
         </p>
       </header>
+
+      <AccountNav />
 
       <div className="grid grid--2">
         <section className="card">
