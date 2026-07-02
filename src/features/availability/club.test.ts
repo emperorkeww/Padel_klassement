@@ -60,3 +60,72 @@ describe("club-store", () => {
     expect(fresh.getClub()).toEqual(fresh.DEFAULT_CLUB);
   });
 });
+
+describe("recente clubs", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const clubje = (id: string, name: string) => ({
+    id,
+    name,
+    city: "Gent",
+    timezone: "Europe/Brussels",
+  });
+
+  it("zet de laatst gekozen club vooraan en bewaart de lijst", async () => {
+    const storage = fakeStorage();
+    vi.stubGlobal("localStorage", storage);
+
+    const store = await freshClubModule();
+    const a = clubje("a", "Club A");
+    const b = clubje("b", "Club B");
+    store.setClub(a);
+    store.setClub(b);
+    expect(store.getRecentClubs()).toEqual([b, a]);
+
+    // "Volgend bezoek": verse module-instantie leest dezelfde opslag.
+    const tweede = await freshClubModule();
+    expect(tweede.getRecentClubs()).toEqual([b, a]);
+  });
+
+  it("houdt geen duplicaten bij: herkozen club schuift naar voren", async () => {
+    vi.stubGlobal("localStorage", fakeStorage());
+
+    const store = await freshClubModule();
+    const a = clubje("a", "Club A");
+    const b = clubje("b", "Club B");
+    store.setClub(a);
+    store.setClub(b);
+    store.setClub(a);
+    expect(store.getRecentClubs()).toEqual([a, b]);
+  });
+
+  it("bewaart maximaal 3 clubs; de oudste valt eruit", async () => {
+    vi.stubGlobal("localStorage", fakeStorage());
+
+    const store = await freshClubModule();
+    const [a, b, c, d] = ["a", "b", "c", "d"].map((id) =>
+      clubje(id, `Club ${id.toUpperCase()}`),
+    );
+    for (const club of [a, b, c, d]) store.setClub(club);
+    expect(store.getRecentClubs()).toEqual([d, c, b]);
+  });
+
+  it("negeert onleesbare of ongeldige opslag en begint leeg", async () => {
+    vi.stubGlobal(
+      "localStorage",
+      fakeStorage({ "recent-clubs": "{dit is geen json" }),
+    );
+    const kapot = await freshClubModule();
+    expect(kapot.getRecentClubs()).toEqual([]);
+
+    // Wél json, maar geen lijst van clubs: ongeldige entries vallen weg.
+    vi.stubGlobal(
+      "localStorage",
+      fakeStorage({ "recent-clubs": JSON.stringify([{ id: 42 }, "x"]) }),
+    );
+    const ongeldig = await freshClubModule();
+    expect(ongeldig.getRecentClubs()).toEqual([]);
+  });
+});
