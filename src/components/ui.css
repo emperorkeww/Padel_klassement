@@ -418,6 +418,21 @@
 .profile-link:hover {
   text-decoration: underline;
 }
+/* "Zet in agenda": onopvallende tekstknop die de ICS-download start
+   (geplande matches en de aanwezigheidskaart). */
+.agenda-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+.agenda-btn:hover {
+  text-decoration: underline;
+}
 
 /* ---------- Tabs ---------- */
 .tabs {
@@ -848,6 +863,7 @@
 .tab:focus-visible,
 .explainer > summary:focus-visible,
 .profile-link:focus-visible,
+.agenda-btn:focus-visible,
 .sidebar__link:focus-visible,
 .sidebar__signout:focus-visible,
 .sidebar__brand:focus-visible,
