@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
-import { Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
 import {
   getGroup,
   getGroupMembers,
@@ -20,6 +20,8 @@ import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { AttendanceCard } from "./AttendanceCard";
+import { ShareEvening } from "./ShareEvening";
 import { errorMessage } from "../../lib/errors";
 import type { Match } from "../../lib/types";
 import "./GroupDetail.css";
@@ -94,7 +96,8 @@ export function GroupDetail() {
   if (group.loading)
     return (
       <div className="card">
-        <Skeleton rows={4} />
+        <Skeleton rows={2} />
+        <MatchListSkeleton count={2} />
       </div>
     );
   if (!group.data)
@@ -138,8 +141,26 @@ export function GroupDetail() {
       </div>
 
       {view === "rondes" && (
+        <AttendanceCard
+          groupId={id}
+          members={memberList}
+          profiles={pmap}
+          myId={myId}
+        />
+      )}
+
+      {view === "rondes" && (
         <section className="card">
-          <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+            {/* Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat. */}
+            <ShareEvening
+              groupName={group.data.name}
+              matches={matches.data ?? []}
+              teams={tmap}
+              profiles={pmap}
+            />
+          </div>
           <p className="card__subtitle">
             {mode === "americano"
               ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."

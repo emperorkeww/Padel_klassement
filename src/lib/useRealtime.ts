@@ -8,6 +8,7 @@ const CACHE_PREFIXES: Record<string, string[]> = {
   matches: ["matches", "standings", "teams", "ratings"],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
+  attendance: ["attendance"],
 };
 
 /**

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { ScoreStepper } from "../../components/ScoreStepper";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
+import { tap, winPulse } from "../../lib/haptics";
 import { displayName } from "../profiles/api";
 import { createCompletedMatch } from "./api";
 import type { Profile } from "../../lib/types";
@@ -99,7 +101,12 @@ export function NewMatchSheet({
         scoreB: sb,
       });
       // Vieren als de logger zelf in het winnende team zit.
-      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) celebrate();
+      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) {
+        celebrate();
+        winPulse();
+      } else {
+        tap();
+      }
       toast.success("Match toegevoegd.");
       onCreated();
       onClose();
@@ -209,40 +216,30 @@ export function NewMatchSheet({
         {step === 2 && (
           <>
             <div className="score-entry">
-              <label className="score-entry__team">
+              <div className="score-entry__team">
                 <span className="pick-teams__label">Team A</span>
                 <span className="score-entry__names">
                   {teamA.map(nameOf).join(" & ")}
                 </span>
-                <input
-                  className="input score-entry__input"
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  placeholder="0"
-                  autoFocus
-                  aria-label="Score team A"
+                <ScoreStepper
                   value={scoreA}
-                  onChange={(e) => setScoreA(e.target.value)}
+                  onChange={setScoreA}
+                  label="Score team A"
+                  autoFocus
                 />
-              </label>
+              </div>
               <span className="score-entry__dash">–</span>
-              <label className="score-entry__team">
+              <div className="score-entry__team">
                 <span className="pick-teams__label">Team B</span>
                 <span className="score-entry__names">
                   {teamB.map(nameOf).join(" & ")}
                 </span>
-                <input
-                  className="input score-entry__input"
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  placeholder="0"
-                  aria-label="Score team B"
+                <ScoreStepper
                   value={scoreB}
-                  onChange={(e) => setScoreB(e.target.value)}
+                  onChange={setScoreB}
+                  label="Score team B"
                 />
-              </label>
+              </div>
             </div>
             <p className="sheet__hint">
               {preview ??

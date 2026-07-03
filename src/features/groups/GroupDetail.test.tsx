@@ -44,6 +44,18 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
+  it("laat je aanmelden voor de speeldag", async () => {
+    renderPage();
+    expect(
+      await screen.findByRole("heading", { name: /wie speelt er\?/i }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /ik speel mee/i }),
+    );
+    expect(supabase.from).toHaveBeenCalledWith("attendance");
+    expect(screen.getByLabelText(/speeldag/i)).toBeInTheDocument();
+  });
+
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
@@ -82,8 +94,8 @@ describe("<GroupDetail />", () => {
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
-    const inputA = await screen.findByLabelText(/score alice anders & bob boers/i);
-    const inputB = await screen.findByLabelText(/score carol claes & dave de vos/i);
+    const inputA = await screen.findByLabelText(/^score alice anders & bob boers$/i);
+    const inputB = await screen.findByLabelText(/^score carol claes & dave de vos$/i);
     await userEvent.type(inputA, "7");
     await userEvent.type(inputB, "5");
     await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
-import { Skeleton } from "../../components/Skeleton";
+import { StandingsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -15,6 +15,7 @@ import {
   computeTeamStandings,
   matchesInSeason,
 } from "../../lib/standings";
+import { rankShifts, type Shift } from "../../lib/rankShift";
 import {
   getPlayerStandings,
   getTeamStandings,
@@ -100,7 +101,8 @@ export function Leaderboard() {
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
-  const tmap = teamsMap.data ?? {};
+  // Stabiele referentie: tmap voedt de useMemo van de rangverschuivingen.
+  const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
   const rmap = ratings.data ?? {};
   const hmap = histories.data ?? {};
 
@@ -127,6 +129,13 @@ export function Leaderboard() {
   const formFor = (playerId: string): Outcome[] =>
     recentForm(formSource, tmap, playerId, 5);
 
+  // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw) — alleen
+  // in "Alle tijden": een seizoensarchief beweegt niet meer.
+  const shifts = useMemo(
+    () => rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null),
+    [players.data, recent.data, tmap, groupId],
+  );
+
   const playerRows = playerStandings.map((p) => ({
     key: p.player_id,
     isMe: p.player_id === myId,
@@ -142,6 +151,7 @@ export function Leaderboard() {
     rating: rmap[p.player_id]?.rating ?? null,
     history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
+    shift: season ? undefined : shifts.get(p.player_id),
   }));
 
   const teamRows = teamStandings.map((t) => ({
@@ -159,6 +169,7 @@ export function Leaderboard() {
     rating: null,
     history: [] as RatingPoint[],
     form: [] as Outcome[],
+    shift: undefined as Shift | undefined,
   }));
 
   const rows = tab === "player" ? playerRows : teamRows;
@@ -267,7 +278,7 @@ export function Leaderboard() {
 
       <div className="card">
         {loading ? (
-          <Skeleton rows={5} />
+          <StandingsSkeleton rows={6} />
         ) : error ? (
           <p className="msg msg--error">{error}</p>
         ) : rows.length === 0 ? (
@@ -313,7 +324,20 @@ type Row = {
   rating: number | null;
   history: RatingPoint[];
   form: Outcome[];
+  shift?: Shift;
 };
+
+/** ▲2 / ▼1 / "nieuw" onder het rangnummer; niets bij een gelijke positie. */
+function ShiftBadge({ shift }: { shift?: Shift }) {
+  if (shift == null || shift === 0) return null;
+  if (shift === "nieuw")
+    return <span className="rankshift rankshift--new">nieuw</span>;
+  return (
+    <span className={`rankshift ${shift > 0 ? "is-up" : "is-down"}`}>
+      {shift > 0 ? `▲${shift}` : `▼${-shift}`}
+    </span>
+  );
+}
 
 function Podium({ rows }: { rows: Row[] }) {
   const [first, second, third] = rows;
@@ -464,7 +488,10 @@ function StandingsTable({
                 className={r.isMe ? "is-me" : ""}
               >
                 <td>
-                  <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                  <span className="rank-wrap">
+                    <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                    <ShiftBadge shift={r.shift} />
+                  </span>
                 </td>
                 <td>
                   <span className="cell-player">
@@ -561,7 +588,10 @@ function RankList({
       {rows.map((r, i) => {
         const body = (
           <>
-            <span className={`rank rank--${i + 1} ranklist__rank`}>{i + 1}</span>
+            <span className="rank-wrap ranklist__rank">
+              <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+              <ShiftBadge shift={r.shift} />
+            </span>
             <Avatar profile={r.profile} name={r.name} size={36} />
             <span className="ranklist__main">
               <span className="ranklist__name">

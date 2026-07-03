@@ -17,6 +17,9 @@ export default defineConfig({
     },
   },
   build: {
+    // Manifest met álle chunks (ook lazy routes): de service worker pre-cachet
+    // hiermee de volledige app-shell voor offline gebruik.
+    manifest: true,
     rollupOptions: {
       output: {
         // Splits grote, stabiele afhankelijkheden af van app-code, zodat

@@ -628,6 +628,33 @@
   color: var(--ink-soft);
   font-weight: 700;
 }
+/* Verwachte winstkans boven de score-invoer van een geplande match. */
+.winchance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 220px;
+}
+.winchance__pct {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.winchance__bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--lime-soft);
+  overflow: hidden;
+}
+.winchance__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
 /* Smalle schermen: score-invoer onder de teams i.p.v. ertussen geklemd. */
 @media (max-width: 480px) {
   .match-card--planned {

@@ -45,7 +45,7 @@ describe("<MatchDetail />", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: /score aanpassen/i }),
     );
-    const inputA = screen.getByLabelText(/score alice anders & bob boers/i);
+    const inputA = screen.getByLabelText(/^score alice anders & bob boers$/i);
     await userEvent.clear(inputA);
     await userEvent.type(inputA, "2");
     // Live voorbeeld: team B wint nu.

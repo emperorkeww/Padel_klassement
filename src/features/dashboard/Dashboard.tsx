@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
-import { Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -206,7 +206,7 @@ export function Dashboard() {
             </Link>
           </div>
           {matches.loading ? (
-            <Skeleton rows={4} />
+            <MatchListSkeleton count={4} />
           ) : (
             <MatchList
               matches={matches.data ?? []}

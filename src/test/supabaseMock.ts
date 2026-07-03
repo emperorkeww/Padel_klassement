@@ -19,6 +19,7 @@ export function makeQuery(result: { data: unknown; error: unknown }) {
     "limit",
     "insert",
     "update",
+    "upsert",
     "delete",
     "match",
   ];
