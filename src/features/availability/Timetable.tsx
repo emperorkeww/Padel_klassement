@@ -2,10 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   bookingUrl,
   coveredTimes,
+  slotShareText,
+  slotShareUrl,
   type CourtRow,
   type DayAvailability,
   type SlotOption,
 } from "./api";
+import { getClub } from "./club";
+import { useToast } from "../../components/ToastProvider";
+import { errorMessage } from "../../lib/errors";
 import {
   buildTimeAxis,
   dateInZone,
@@ -46,6 +51,27 @@ export function Timetable({
   );
   const [tip, setTip] = useState<Tip | null>(null);
   const [sel, setSel] = useState<Selection | null>(null);
+  const toast = useToast();
+
+  // Deelt het aangeklikte slot met de vriendengroep: het native deelvenster
+  // waar dat kan, anders tekst + link naar het klembord.
+  async function share(slot: Selection) {
+    const club = getClub();
+    const text = slotShareText(slot, date, club.name);
+    const url = slotShareUrl(date, club.id);
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: `Vrij slot bij ${club.name}`, text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        toast.success("Link gekopieerd.");
+      }
+    } catch (err) {
+      // Gebruiker die het deelvenster sluit is geen fout.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      toast.error(errorMessage(err));
+    }
+  }
 
   // Vandaag (in clubtijd!): sloten die al begonnen of voorbij zijn kun je
   // niet meer boeken — die krijgen een eigen "voorbij"-aanduiding.
@@ -153,6 +179,13 @@ export function Timetable({
             >
               Reserveren op Playtomic →
             </a>
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => void share(sel)}
+            >
+              ↗ Delen
+            </button>
           </div>
         </>
       )}

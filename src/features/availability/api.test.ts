@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bookingUrl,
   coveredTimes,
+  fetchClub,
   formatPrice,
   getClubAvailability,
   getWeekAvailability,
   searchClubs,
+  slotShareText,
+  slotShareUrl,
   utcToClubTime,
 } from "./api";
 import { DEFAULT_CLUB } from "./club";
@@ -71,6 +74,100 @@ describe("bookingUrl", () => {
     expect(bookingUrl("2026-07-04")).toBe(
       `https://playtomic.com/clubs/${DEFAULT_CLUB.id}?sport=PADEL&date=2026-07-04`,
     );
+  });
+});
+
+// De deeltekst en -link voor een vrij slot in de groepschat.
+describe("slotShareText", () => {
+  it("bouwt de tekst met tijden, dag en clubnaam", () => {
+    expect(
+      slotShareText(
+        { court: "Terrein 3", start: "20:30", end: "21:30" },
+        "2026-07-03",
+        "LAGO CLUB Padel Beveren",
+      ),
+    ).toBe(
+      "Terrein 3 vrij van 20:30 tot 21:30 op vr 3 juli bij LAGO CLUB Padel Beveren",
+    );
+  });
+});
+
+describe("slotShareUrl", () => {
+  it("bouwt een absolute link naar /banen met datum en club-id", () => {
+    expect(slotShareUrl("2026-07-03", "t-1")).toBe(
+      `${window.location.origin}/banen?datum=2026-07-03&club=t-1`,
+    );
+  });
+});
+
+// Ontvangende kant van een gedeelde link: club-id → Club via het
+// tenant-detail-endpoint.
+describe("fetchClub", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("mapt het tenant-detail naar een club", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              tenant_name: "Padel Aalst",
+              address: { city: "Aalst", timezone: "Europe/Brussels" },
+            }),
+          }) as Response,
+      ),
+    );
+
+    await expect(fetchClub("t-aalst")).resolves.toEqual({
+      id: "t-aalst",
+      name: "Padel Aalst",
+      city: "Aalst",
+      timezone: "Europe/Brussels",
+    });
+  });
+
+  it("valt terug op de standaardtijdzone en een lege stad", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({ tenant_name: "Padel Zonder Adres" }),
+          }) as Response,
+      ),
+    );
+
+    await expect(fetchClub("t-kaal")).resolves.toEqual({
+      id: "t-kaal",
+      name: "Padel Zonder Adres",
+      city: "",
+      timezone: DEFAULT_CLUB.timezone,
+    });
+  });
+
+  it("faalt op een onbekend id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }) as Response),
+    );
+
+    await expect(fetchClub("t-onbekend")).rejects.toThrow("404");
+  });
+
+  it("faalt als het detail geen clubnaam bevat", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }) as Response),
+    );
+
+    await expect(fetchClub("t-leeg")).rejects.toThrow("Onbekende club");
   });
 });
 
