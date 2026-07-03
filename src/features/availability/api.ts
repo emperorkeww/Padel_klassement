@@ -251,10 +251,10 @@ export async function getClubAvailability(
 type RawTenantSummary = {
   tenant_id: string;
   tenant_name: string;
-  address?: { city?: string; timezone?: string };
+  address?: { city?: string; timezone?: string; country_code?: string };
 };
 
-/** Zoekt actieve Playtomic-clubs met padelbanen op (deel van de) naam. */
+/** Zoekt actieve Belgische Playtomic-clubs met padelbanen op (deel van de) naam. */
 export async function searchClubs(query: string): Promise<Club[]> {
   const params = new URLSearchParams({
     playtomic_status: "ACTIVE",
@@ -266,12 +266,16 @@ export async function searchClubs(query: string): Promise<Club[]> {
     `/v1/tenants?${params.toString()}`,
     "Kon geen clubs zoeken",
   );
-  return data.map((t) => ({
-    id: t.tenant_id,
-    name: t.tenant_name,
-    city: t.address?.city ?? "",
-    timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
-  }));
+  // Het zoekendpoint kent geen landparameter, dus buitenlandse naamgenoten
+  // ("gent" matcht ook clubs in Italië en Spanje) filteren we hier weg.
+  return data
+    .filter((t) => t.address?.country_code === "BE")
+    .map((t) => ({
+      id: t.tenant_id,
+      name: t.tenant_name,
+      city: t.address?.city ?? "",
+      timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
+    }));
 }
 
 /** Eén dag in het weekoverzicht; data of een foutmelding, nooit allebei. */

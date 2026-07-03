@@ -4,8 +4,8 @@ import { DEFAULT_CLUB, setClub, useClub, type Club } from "./club";
 
 /**
  * Locatiekeuze: knop met de huidige club; opent een paneel met een zoekveld
- * dat Playtomic-clubs met padelbanen op naam zoekt. De keuze geldt voor de
- * hele app (raster, weekoverzicht, dashboard, reserveerlinks).
+ * dat Belgische Playtomic-clubs met padelbanen op naam zoekt. De keuze geldt
+ * voor de hele app (raster, weekoverzicht, dashboard, reserveerlinks).
  */
 export function ClubPicker() {
   const club = useClub();
@@ -102,7 +102,7 @@ export function ClubPicker() {
             <input
               type="search"
               className="select club-picker__search"
-              placeholder="Zoek een club op naam…"
+              placeholder="Zoek een club in België…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               // Het paneel opent alleen op verzoek; direct kunnen typen is
@@ -119,7 +119,7 @@ export function ClubPicker() {
             )}
             {!busy && !error && !results && (
               <p className="club-picker__hint">
-                Typ minstens 2 tekens om Playtomic-clubs te zoeken.
+                Typ minstens 2 tekens om Playtomic-clubs in België te zoeken.
               </p>
             )}
 
