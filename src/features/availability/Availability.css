@@ -169,6 +169,18 @@
   margin: 0 0 1rem;
 }
 
+/* "Eerstvolgend vrij"-regel boven het raster; sober, zoals .avail-day. */
+.avail-next {
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  margin: 0 0 var(--sp-3);
+}
+
+.avail-next__time {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- Tijdraster (Excel-achtig) ---- */
 
 .avail-scroll {

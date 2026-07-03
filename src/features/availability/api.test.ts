@@ -5,9 +5,13 @@ import {
   formatPrice,
   getClubAvailability,
   getWeekAvailability,
+  nextFreeSlot,
   perPersonPrice,
   searchClubs,
   utcToClubTime,
+  type CourtRow,
+  type DayAvailability,
+  type SlotOption,
 } from "./api";
 import { DEFAULT_CLUB } from "./club";
 
@@ -54,6 +58,56 @@ describe("coveredTimes", () => {
       new Map([["22:00", [{ duration: 60, price: "€ 20", perPerson: "€ 5" }]]]),
     );
     expect([...covered].sort()).toEqual(["22:00", "22:30"]);
+  });
+});
+
+// Samenvatting boven het raster: vroegste boekbare start, met dezelfde
+// "voorbij"-grens als het raster (start ≤ nu telt vandaag niet meer mee).
+describe("nextFreeSlot", () => {
+  const row = (id: string, free: [string, number[]][]): CourtRow => ({
+    court: { id, name: `Terrein ${id}`, type: "roofed" },
+    free: new Map(
+      free.map(([t, durations]): [string, SlotOption[]] => [
+        t,
+        durations.map((duration) => ({ duration, price: "€ 20", perPerson: "€ 5" })),
+      ]),
+    ),
+  });
+  const day = (...courts: CourtRow[]): DayAvailability => ({
+    open: "09:00",
+    close: "22:00",
+    timeZone: "Europe/Brussels",
+    courts,
+  });
+
+  it("duurfilter: alleen starttijden met een optie van die duur tellen", () => {
+    const data = day(row("1", [["10:00", [60]], ["14:00", [60, 90]]]));
+    expect(nextFreeSlot(data, null, null)?.time).toBe("10:00");
+    expect(nextFreeSlot(data, 90, null)?.time).toBe("14:00");
+    expect(nextFreeSlot(data, 120, null)).toBeNull();
+  });
+
+  it("vandaag: starttijden op of vóór nu zijn voorbij; andere dag telt alles", () => {
+    const data = day(row("1", [["10:00", [60]], ["14:00", [60]]]));
+    // 10:00 is exact nu → al voorbij (zelfde grens als het raster).
+    expect(nextFreeSlot(data, null, 600)?.time).toBe("14:00");
+    expect(nextFreeSlot(data, null, null)?.time).toBe("10:00");
+  });
+
+  it("niets (meer) vrij: null", () => {
+    expect(nextFreeSlot(day(row("1", [])), null, null)).toBeNull();
+    expect(nextFreeSlot(day(row("1", [["10:00", [60]]])), null, 630)).toBeNull();
+  });
+
+  it("meerdere banen vrij op dezelfde vroegste tijd: allemaal terug", () => {
+    const data = day(
+      row("1", [["12:00", [60]]]),
+      row("2", [["10:00", [60]]]),
+      row("3", [["10:00", [60]]]),
+    );
+    const next = nextFreeSlot(data, null, null);
+    expect(next?.time).toBe("10:00");
+    expect(next?.courts.map((c) => c.name)).toEqual(["Terrein 2", "Terrein 3"]);
   });
 });
 
