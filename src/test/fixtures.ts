@@ -76,6 +76,16 @@ export const PLAYER_RATINGS = [
   { player_id: "p4", rating: 988, games: 1, updated_at: NOW },
 ];
 
+// Alle vier de leden zeiden "ja" voor de speeldag. De mock filtert niet op
+// datum, dus de datum hier hoeft niet gelijk te lopen met "vandaag" in de test.
+export const ATTENDANCE = PROFILES.map((p) => ({
+  group_id: "g1",
+  player_id: p.id,
+  date: "2026-07-02",
+  status: "yes",
+  updated_at: NOW,
+}));
+
 export const RATING_HISTORY = [
   { player_id: "p1", match_id: "m-0", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
   { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: NOW },
@@ -96,6 +106,7 @@ export const TABLES = {
   ],
   player_ratings: PLAYER_RATINGS,
   rating_history: RATING_HISTORY,
+  attendance: ATTENDANCE,
 };
 
 export const SESSION = { user: { id: "p1", email: "alice@example.com" } };

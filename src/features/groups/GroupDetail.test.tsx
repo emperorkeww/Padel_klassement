@@ -56,6 +56,25 @@ describe("<GroupDetail />", () => {
     expect(screen.getByLabelText(/speeldag/i)).toBeInTheDocument();
   });
 
+  it("stelt eerlijke teams voor uit de aanwezigen van de speeldag", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
+    );
+    expect(await screen.findByText(/^baan 1$/i)).toBeInTheDocument();
+    // Ratings uit de fixtures (1012/1012/988/988): sterk speelt met zwak,
+    // dus Alice & Carol tegen Bob & Dave met een 50/50-verwachting.
+    expect(screen.getByText(/alice anders & carol claes/i)).toBeInTheDocument();
+    expect(screen.getByText(/bob boers & dave de vos/i)).toBeInTheDocument();
+    expect(screen.getAllByText("(50%)")).toHaveLength(2);
+
+    // "Opnieuw" toont de op één na eerlijkste verdeling.
+    await userEvent.click(screen.getByRole("button", { name: /^opnieuw$/i }));
+    expect(
+      await screen.findByText(/alice anders & dave de vos/i),
+    ).toBeInTheDocument();
+  });
+
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
