@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { StandingsSkeleton } from "../../components/Skeleton";
+import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -282,11 +283,21 @@ export function Leaderboard() {
         ) : error ? (
           <p className="msg msg--error">{error}</p>
         ) : rows.length === 0 ? (
-          <p className="empty">
-            {season
-              ? "Geen matches in dit seizoen."
-              : "Nog geen afgeronde matches."}
-          </p>
+          season ? (
+            <p className="empty">Geen matches in dit seizoen.</p>
+          ) : (
+            <EmptyState
+              icon="🏆"
+              title="Nog geen afgeronde matches."
+              action={
+                <Link className="btn btn--primary" to="/matches">
+                  Naar matches
+                </Link>
+              }
+            >
+              Het klassement vult zich zodra de eerste uitslag gelogd is.
+            </EmptyState>
+          )
         ) : (
           <>
             <StandingsTable

@@ -20,6 +20,7 @@ import {
 } from "../profiles/api";
 import { Avatar } from "../../components/Avatar";
 import { AccountNav } from "../../components/AccountNav";
+import { EmptyState } from "../../components/EmptyState";
 import type { Profile } from "../../lib/types";
 
 export function Friends() {
@@ -194,11 +195,14 @@ export function Friends() {
 
       <section className="card">
         <h2 className="card__title">Mijn vrienden</h2>
+        {!friendships.loading && accepted.length === 0 && (
+          <EmptyState icon="👋" title="Nog geen vrienden.">
+            Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
+            samen matches loggen begint hier.
+          </EmptyState>
+        )}
         <div className="person-grid">
           {friendships.loading && <Skeleton rows={3} />}
-          {!friendships.loading && accepted.length === 0 && (
-            <p className="empty">Nog geen vrienden. Zoek hierboven een speler.</p>
-          )}
           {accepted.map((f) => (
             <div key={f.id} className="person-row">
               <span className="cell-player">
