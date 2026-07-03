@@ -175,7 +175,23 @@
   font-weight: 700;
 }
 
-/* ---------- Rating-cel ---------- */
+/* Naam nooit over twee regels: de kolommen ernaast zijn compact genoeg. */
+.leaderboard-table .cell-player {
+  white-space: nowrap;
+}
+
+/* W·G·V in één cel; winst krijgt het accent, de rest blijft gedempt. */
+.record-cell {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.record-cell__won {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---------- Rating-cel: pil + ratingverloop samen ---------- */
 .rating-cell {
   display: inline-block;
   padding: 0.125rem var(--sp-2);
@@ -187,10 +203,19 @@
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
+.rating-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
 
-/* ---------- Verloop-kolom (sparkline) ---------- */
-.leaderboard-table .sparkline {
-  display: block;
+/* ---------- Punten: de kolom waar het om draait ---------- */
+.pts-cell {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Winrate-balkje ---------- */
@@ -267,6 +292,16 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
+  /* Eén regel: chips + record wrappen niet, het record kapt netjes af. */
+  min-width: 0;
+  white-space: nowrap;
+}
+.ranklist__sub > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ranklist__sub .formchips {
+  flex-shrink: 0;
 }
 .ranklist__end {
   flex-shrink: 0;
@@ -315,7 +350,7 @@
 /* Op smallere schermen wint de rest van de tabel; het volledige verloop
    staat toch op de profielpagina. */
 @media (max-width: 960px) {
-  .leaderboard-table .col-trend {
+  .rating-wrap .sparkline {
     display: none;
   }
 }
