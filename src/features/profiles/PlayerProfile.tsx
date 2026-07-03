@@ -21,6 +21,7 @@ import {
   bestPartner,
   headToHead,
 } from "../../lib/results";
+import { deriveBadges } from "../../lib/badges";
 import { formatDate } from "../../lib/format";
 import "./PlayerProfile.css";
 
@@ -65,6 +66,7 @@ export function PlayerProfile() {
   const partner = bestPartner(mlist, tmap, id);
   const myRating = ratings.data?.[id]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
+  const badges = deriveBadges(mlist, tmap, id, ratings.data ?? undefined);
 
   // Onderlinge stand, gesorteerd op aantal duels (meest gespeeld eerst).
   const h2h = [...headToHead(mlist, tmap, id).entries()]
@@ -151,6 +153,31 @@ export function PlayerProfile() {
               </Link>
             )}
           </div>
+        </section>
+      )}
+
+      {mlist.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Badges</h2>
+          <ul className="badges">
+            {badges.map((b) => (
+              <li key={b.id} className="badges__item" title={b.omschrijving}>
+                <span
+                  className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
+                >
+                  <span className="badges__emoji" aria-hidden="true">
+                    {b.emoji}
+                  </span>
+                  {b.naam}
+                  {!b.behaald && b.voortgang && (
+                    <span className="badges__progress">
+                      {b.voortgang.nu}/{b.voortgang.doel}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
