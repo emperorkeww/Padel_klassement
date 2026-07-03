@@ -13,5 +13,28 @@
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vrije banen",
+      "short_name": "Banen",
+      "description": "Bekijk de vrije padelbanen van vandaag",
+      "url": "/banen",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Match loggen",
+      "short_name": "Matches",
+      "description": "Log een uitslag of bekijk recente matches",
+      "url": "/matches",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Klassement",
+      "short_name": "Klassement",
+      "description": "Bekijk de actuele stand",
+      "url": "/klassement",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }
