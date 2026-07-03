@@ -74,6 +74,9 @@
 .md-score__dash {
   color: var(--ink-soft);
   padding: 0 var(--sp-1);
+  /* In verhouding met de grote cijfers, anders oogt de score onevenwichtig. */
+  font-size: 1.75rem;
+  font-weight: 800;
 }
 .md-score__vs {
   color: var(--ink-soft);

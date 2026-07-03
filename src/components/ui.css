@@ -74,6 +74,7 @@
 }
 /* Kaarten en grids die elkaar opvolgen houden hetzelfde ritme. */
 .card + .grid,
+.grid + .grid,
 .grid + .card {
   margin-top: var(--sp-5);
 }
@@ -111,6 +112,15 @@
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* Uitgeschakelde primaire knop: duidelijk "nog niet klaar" in plaats van
+   een vale, half-doorzichtige accentkleur. */
+.btn--primary:disabled {
+  opacity: 1;
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+  box-shadow: none;
 }
 .btn--primary {
   background: var(--accent);
@@ -179,6 +189,14 @@
   gap: var(--sp-1);
   font-size: var(--fs-sm);
   font-weight: 600;
+}
+/* Stille hint onder een invoerveld (vereisten, formaat); koppel met
+   aria-describedby en houd 'm buiten het label (schone labeltekst). */
+.field-hint {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--ink-soft);
 }
 /* Compacte filter-select in een toolbar (volle breedte op mobiel). */
 .select--filter {
@@ -499,7 +517,7 @@
   font-size: var(--fs-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--ink-soft);
 }
 .stat--accent {
@@ -606,11 +624,17 @@
   border-radius: 999px;
   white-space: nowrap;
 }
-.match-card--win .match-card__score,
+/* De uitslagbadge kleurt mee vanuit het perspectief van de kijker:
+   groen gewonnen, rood verloren — in één oogopslag scanbaar. */
+.match-card--win .match-card__score {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--success);
+}
 .match-card--loss .match-card__score {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--accent);
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
 }
 .match-card__meta {
   font-size: var(--fs-xs);
@@ -624,32 +648,45 @@
   gap: var(--sp-1);
 }
 
-/* Geplande match met inline score-invoer (dashboard, matches, groepsrondes). */
-.match-card--planned {
-  border-style: dashed;
-  border-color: var(--accent-line);
+/* Geplande match als compact scorebord (dashboard, matches, groepsrondes):
+   per rij een team met zijn eigen stepper, de winkansbalk ertussen. */
+.planned-card {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(160deg, var(--accent-soft) 0%, transparent 45%),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
 }
-.match-card--planned:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--accent-line);
-}
-.planned-score {
-  display: inline-flex;
+.planned-card__row {
+  display: flex;
   align-items: center;
-  gap: var(--sp-1);
+  justify-content: space-between;
+  gap: var(--sp-3);
 }
-.planned-score__dash {
-  color: var(--ink-soft);
-  font-weight: 700;
+.planned-card__row .match-card__side {
+  flex: 1;
+  min-width: 0;
 }
-/* Verwachte winstkans boven de score-invoer van een geplande match. */
+.planned-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+.planned-card__save {
+  margin-left: auto;
+  min-width: 110px;
+}
+/* Verwachte winstkans tussen de twee teamrijen van een geplande match. */
 .winchance {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--sp-2);
-  width: 100%;
-  max-width: 220px;
 }
 .winchance__pct {
   font-size: var(--fs-xs);
@@ -670,16 +707,18 @@
   border-radius: 999px;
   background: var(--accent);
 }
-/* Smalle schermen: score-invoer onder de teams i.p.v. ertussen geklemd. */
+/* Smalle schermen: avatars wijken zodat namen niet afkappen; de voettekst
+   van het scorebord mag wrappen. */
 @media (max-width: 480px) {
-  .match-card--planned {
-    grid-template-columns: 1fr 1fr;
+  .match-card .avatar-pair,
+  .planned-card .avatar-pair {
+    display: none;
   }
-  .match-card--planned .match-card__mid {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    padding-top: var(--sp-3);
-    border-top: 1px dashed var(--line);
+  .planned-card__foot {
+    flex-wrap: wrap;
+  }
+  .planned-card__save {
+    flex: 1 1 100%;
   }
 }
 

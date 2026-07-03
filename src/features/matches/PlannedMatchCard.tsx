@@ -106,7 +106,7 @@ export function PlannedMatchCard({
     const aWon = saved.a > saved.b;
     const bWon = saved.b > saved.a;
     return (
-      <div className="match-card match-card--planned">
+      <div className="match-card">
         <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
         <span className="match-card__mid">
           <span className="match-card__score">
@@ -121,55 +121,61 @@ export function PlannedMatchCard({
     );
   }
 
+  // Scorebord-layout: per rij een team met zijn eigen stepper; de
+  // winkansbalk verbindt beide rijen (percentage A boven, B onder).
   return (
-    <div className="match-card match-card--planned">
-      <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
-      <span className="match-card__mid">
-        {chance != null && (
-          <span
-            className="winchance"
-            title="Verwachte winstkans op basis van de huidige ratings"
-          >
-            <span className="winchance__pct">{Math.round(chance * 100)}%</span>
-            <span className="winchance__bar">
-              <span
-                className="winchance__fill"
-                style={{ width: `${Math.round(chance * 100)}%` }}
-              />
-            </span>
-            <span className="winchance__pct">
-              {100 - Math.round(chance * 100)}%
-            </span>
-          </span>
-        )}
-        <span className="planned-score">
-          <ScoreStepper
-            value={sa}
-            onChange={setSa}
-            label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
-          />
-          <span className="planned-score__dash">–</span>
-          <ScoreStepper
-            value={sb}
-            onChange={setSb}
-            label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
-          />
-        </span>
-        <button
-          className="btn btn--primary btn--sm"
-          disabled={!valid}
-          onClick={save}
+    <div className="planned-card">
+      <div className="planned-card__row">
+        <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
+        <ScoreStepper
+          value={sa}
+          onChange={setSa}
+          label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
+        />
+      </div>
+
+      {chance != null && (
+        <div
+          className="winchance"
+          title="Verwachte winstkans op basis van de huidige ratings"
         >
-          Opslaan
-        </button>
+          <span className="winchance__pct">{Math.round(chance * 100)}%</span>
+          <span className="winchance__bar">
+            <span
+              className="winchance__fill"
+              style={{ width: `${Math.round(chance * 100)}%` }}
+            />
+          </span>
+          <span className="winchance__pct">
+            {100 - Math.round(chance * 100)}%
+          </span>
+        </div>
+      )}
+
+      <div className="planned-card__row">
+        <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={false} />
+        <ScoreStepper
+          value={sb}
+          onChange={setSb}
+          label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
+        />
+      </div>
+
+      <div className="planned-card__foot">
         <span className="match-card__meta">
           {m.round_number != null ? `ronde ${m.round_number} · gepland` : "gepland"}
         </span>
         <button className="agenda-btn" onClick={addToCalendar}>
           Zet in agenda
         </button>
-      </span>
-      <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={false} right />
+        <button
+          className="btn btn--primary btn--sm planned-card__save"
+          disabled={!valid}
+          onClick={save}
+        >
+          Opslaan
+        </button>
+      </div>
     </div>
   );
 }
