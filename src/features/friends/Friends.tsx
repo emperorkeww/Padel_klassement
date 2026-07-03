@@ -34,6 +34,8 @@ export function Friends() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
+  // Puur voor de lege-status: "nog niet gezocht" ≠ "geen resultaten".
+  const [searched, setSearched] = useState(false);
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
@@ -48,6 +50,7 @@ export function Friends() {
     setSearching(true);
     try {
       setResults(await searchProfiles(query, myId));
+      setSearched(true);
     } catch (err) {
       toast.error(errMsg(err));
     } finally {
@@ -91,12 +94,18 @@ export function Friends() {
             </button>
           </form>
 
-          <div className="stack mt-4">
-            {results.length === 0 && <p className="empty">Geen resultaten.</p>}
+          <div className="person-list mt-4">
+            {results.length === 0 && (
+              <p className="empty">
+                {searched
+                  ? `Geen spelers gevonden voor “${query.trim()}”.`
+                  : "Zoek op gebruikersnaam om spelers te vinden."}
+              </p>
+            )}
             {results.map((p) => {
               const already = relatedIds.has(p.id);
               return (
-                <div key={p.id} className="row-between">
+                <div key={p.id} className="person-row">
                   <span className="cell-player">
                     <Avatar profile={p} size={28} />
                     {displayName(p)}{" "}
@@ -127,10 +136,13 @@ export function Friends() {
               <span className="badge badge--accent">{incoming.length}</span>
             )}
           </h2>
-          <div className="stack">
-            {incoming.length === 0 && <p className="empty">Geen openstaande verzoeken.</p>}
+          <div className="person-list">
+            {friendships.loading && <Skeleton rows={2} />}
+            {!friendships.loading && incoming.length === 0 && (
+              <p className="empty">Geen openstaande verzoeken.</p>
+            )}
             {incoming.map((f) => (
-              <div key={f.id} className="row-between">
+              <div key={f.id} className="person-row person-row--attn">
                 <span className="cell-player">
                   <Avatar profile={pmap[otherId(f, myId)]} size={28} />
                   <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
@@ -162,9 +174,9 @@ export function Friends() {
           {outgoing.length > 0 && (
             <>
               <h2 className="card__title card__title--section">Verzonden verzoeken</h2>
-              <div className="stack">
+              <div className="person-list">
                 {outgoing.map((f) => (
-                  <div key={f.id} className="row-between">
+                  <div key={f.id} className="person-row">
                     <span className="cell-player">
                       <Avatar profile={pmap[otherId(f, myId)]} size={28} />
                       <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
@@ -182,13 +194,13 @@ export function Friends() {
 
       <section className="card">
         <h2 className="card__title">Mijn vrienden</h2>
-        <div className="stack">
+        <div className="person-grid">
           {friendships.loading && <Skeleton rows={3} />}
           {!friendships.loading && accepted.length === 0 && (
             <p className="empty">Nog geen vrienden. Zoek hierboven een speler.</p>
           )}
           {accepted.map((f) => (
-            <div key={f.id} className="row-between">
+            <div key={f.id} className="person-row">
               <span className="cell-player">
                 <Avatar profile={pmap[otherId(f, myId)]} size={28} />
                 <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>

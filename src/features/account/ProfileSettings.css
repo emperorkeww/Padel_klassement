@@ -24,6 +24,12 @@
   object-fit: cover;
 }
 
+.avatar-hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
 .profile-meta {
   margin-top: var(--sp-5);
   color: var(--ink-soft);

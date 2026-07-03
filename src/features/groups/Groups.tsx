@@ -6,6 +6,7 @@ import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
+import { formatDate } from "../../lib/format";
 import { getMyGroups, createGroup } from "./api";
 import "./Groups.css";
 
@@ -58,8 +59,8 @@ export function Groups() {
             <div className="card">
               <div className="empty-state">
                 <p className="empty-state__title">
-                  Je zit nog in geen enkele groep. Maak er hieronder een aan en
-                  nodig je vrienden uit.
+                  Je zit nog in geen enkele groep. Maak hieronder je eerste
+                  groep aan ↓ en nodig daarna je vrienden uit.
                 </p>
               </div>
             </div>
@@ -69,10 +70,15 @@ export function Groups() {
                 <Link key={g.id} className="group-card" to={`/groepen/${g.id}`}>
                   <Avatar name={g.name} size={44} />
                   <span className="group-card__body">
-                    <span className="group-card__name">{g.name}</span>
-                    {g.created_by === myId && (
-                      <span className="badge badge--accent">eigenaar</span>
-                    )}
+                    <span className="group-card__top">
+                      <span className="group-card__name">{g.name}</span>
+                      {g.created_by === myId && (
+                        <span className="badge badge--accent">eigenaar</span>
+                      )}
+                    </span>
+                    <span className="group-card__meta">
+                      sinds {formatDate(g.created_at)}
+                    </span>
                   </span>
                   <span className="group-card__chevron" aria-hidden="true">
                     →
@@ -86,7 +92,7 @@ export function Groups() {
 
       <section className="card">
         <h2 className="card__title">Nieuwe groep</h2>
-        <form className="row-between" onSubmit={create}>
+        <form className="row-between account-form" onSubmit={create}>
           <input
             className="input"
             placeholder="Groepsnaam, bijv. Vrijdagavond"

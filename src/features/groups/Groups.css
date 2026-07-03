@@ -37,10 +37,19 @@
 .group-card__body {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+.group-card__top {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   flex-wrap: wrap;
+  min-width: 0;
+}
+.group-card__meta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
 }
 .group-card__name {
   font-weight: 700;

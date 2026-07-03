@@ -139,6 +139,17 @@
   color: var(--ink-soft);
 }
 
+/* Rondeblokken: inzetlijn links + ruimere tussenafstand, zodat rondes bij
+   het scrollen als eenheden lezen. */
+.rounds {
+  display: grid;
+  gap: var(--sp-5);
+}
+.round {
+  border-left: 3px solid var(--line);
+  padding-left: var(--sp-3);
+}
+
 /* Rondekop: titel links, voortgangsbadge rechts. */
 .round-head {
   display: flex;

@@ -1,3 +1,21 @@
+/* Zachte achtergrondwas achter de kop van de pagina: geeft het overzicht een
+   "boven" zonder donkere vlakken. z-index:0 maakt een stacking context zodat
+   de ::before achter de inhoud maar vóór de shell-achtergrond schildert. */
+.dashboard {
+  position: relative;
+  z-index: 0;
+}
+.dashboard::before {
+  content: "";
+  position: absolute;
+  inset: -2.25rem -2rem auto;
+  height: 300px;
+  background: radial-gradient(60% 100% at 50% 0%, var(--lime-soft) 0%, transparent 70%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* Hero-begroeting bovenaan het overzicht: licht, met een zachte lime-gloed. */
 .hero {
   position: relative;
@@ -29,14 +47,14 @@
   margin: 0 0 var(--sp-1);
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--accent);
 }
 
 .hero__name {
   margin: 0 0 var(--sp-1);
-  font-size: 1.75rem;
+  font-size: var(--fs-2xl);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -46,6 +64,14 @@
   margin: 0;
   color: var(--ink-soft);
   font-size: var(--fs-base);
+  line-height: 1.55;
+}
+
+/* Laadstatus van de subregel: één shimmerlijn op tekstbreedte. */
+.hero__sub-sk {
+  width: min(320px, 60vw);
+  height: 14px;
+  margin-top: var(--sp-1);
 }
 
 .hero__form {
@@ -66,6 +92,50 @@
   display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
+}
+
+/* "Jouw volgende match": de meest actionable kaart — zachte accent-gloed en
+   accentrand zodat hij als enige uit de kaartenrij springt. */
+.card--next {
+  border-color: var(--accent-line);
+  background:
+    radial-gradient(110% 130% at 0% 0%, var(--accent-soft) 0%, transparent 55%),
+    var(--surface);
+}
+
+/* Rating: groot getal + delta boven de verloop-grafiek. */
+.rating-card__value {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.rating-card__sk {
+  width: 96px;
+  height: 28px;
+  margin-bottom: var(--sp-4);
+}
+
+/* Sociale voetregel onder de topspelers (voorheen een eigen kaart). */
+.social-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-md);
+  color: var(--ink-soft);
+}
+.social-foot__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.social-foot .profile-link {
+  margin-left: auto;
 }
 
 /* Actiestrook: dingen die op jou wachten (uitslagen, verzoeken). */
@@ -128,6 +198,14 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  /* Hover-vlak iets breder dan de inhoud, zonder de uitlijning te verstoren. */
+  padding: var(--sp-1) var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.toplist__item:hover {
+  background: var(--surface-2);
 }
 .toplist__rank {
   width: 22px;
@@ -164,6 +242,12 @@
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-chip:hover {
+    transform: none;
+  }
 }
 
 /* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */

@@ -202,6 +202,14 @@
 .select--filter {
   max-width: 220px;
 }
+/* Formulieren op leesbreedte: een los veld van 900px oogt leeg. */
+.account-form {
+  max-width: 480px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
 
 /* ---------- Tabel ---------- */
 /* Brede tabellen scrollen binnen hun eigen container i.p.v. de hele pagina
@@ -252,6 +260,48 @@
   min-width: 0;
 }
 
+/* ---------- Persoonsrijen (vrienden, leden, zoekresultaten) ----------
+   Haarlijn-scheiding en een hover-vlak dat iets breder is dan de inhoud. */
+.person-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.person-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.person-row:hover {
+  background: var(--surface-2);
+}
+.person-list > .person-row + .person-row {
+  border-top: 1px solid var(--line);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+/* Rij die om actie vraagt (bv. inkomend verzoek): zacht accentvlak. */
+.person-row--attn,
+.person-row--attn:hover {
+  background: var(--accent-soft);
+}
+.person-list > .person-row--attn + .person-row--attn {
+  border-top-color: var(--accent-line);
+}
+/* Twee kolommen zodra er ruimte is (zonder haarlijnen — het hover-vlak is
+   daar de rij-afbakening). */
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp-1) var(--sp-5);
+}
+
 /* ---------- Badges ---------- */
 .badge {
   display: inline-block;
@@ -268,6 +318,15 @@
   background: var(--accent-soft);
   color: var(--accent);
   border-color: var(--accent-line);
+}
+/* Klikbare badge (bv. groepsnaam op de matchpagina). */
+.badge--link {
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.badge--link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .badge--win {
   background: var(--success-soft);
@@ -364,6 +423,11 @@
   background: var(--danger-soft);
   border: 1px solid var(--danger-line);
   color: var(--danger);
+}
+.msg--warn {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+  color: var(--warn);
 }
 .msg--success {
   background: var(--success-soft);
@@ -483,6 +547,16 @@
   background: var(--surface);
   color: var(--accent);
   box-shadow: var(--shadow-sm);
+}
+/* Teller achter een tablabel ("Leden · 6"). */
+.tab__count {
+  margin-left: var(--sp-1);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tab.is-active .tab__count {
+  color: inherit;
+  opacity: 0.75;
 }
 
 /* ---------- Stat-kaarten ---------- */

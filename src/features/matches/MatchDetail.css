@@ -71,6 +71,10 @@
   letter-spacing: -0.02em;
   color: var(--ink);
 }
+/* Het cijfer van de winnende kant kleurt mee met het winnaarsvak. */
+.md-score__num .is-winside {
+  color: var(--success);
+}
 .md-score__dash {
   color: var(--ink-soft);
   padding: 0 var(--sp-1);
