@@ -295,9 +295,12 @@ describe("searchClubs", () => {
     expect(url).toContain("/v1/tenants?");
     expect(url).toContain("tenant_name=padel");
     expect(url).toContain("sport_id=PADEL");
+    // Server-side landfilter: anders verdringen buitenlandse naamgenoten de
+    // Belgische clubs uit de kleine top-10 ("padel" → nul BE-resultaten).
+    expect(url).toContain("country_code=BE");
   });
 
-  // Het zoekendpoint kent geen landparameter; het landfilter is client-side.
+  // Vangnet bovenop de serverfilter, mocht de ongedocumenteerde parameter wegvallen.
   it("houdt alleen Belgische clubs over; zonder country_code ook weggefilterd (liever te streng dan buitenlandse ruis)", async () => {
     vi.stubGlobal(
       "fetch",
