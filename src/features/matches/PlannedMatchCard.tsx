@@ -6,7 +6,9 @@ import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
+import { downloadIcs, icsEvent, localDate, localTime } from "../../lib/ics";
 import { getPlayerRatings } from "../standings/ratingsApi";
+import { useClub } from "../availability/club";
 import type { Match, Profile, Team } from "../../lib/types";
 import { setMatchResult, teamLabel } from "./api";
 import { TeamSide } from "./MatchList";
@@ -32,6 +34,7 @@ export function PlannedMatchCard({
   onSaved?: () => void;
 }) {
   const toast = useToast();
+  const club = useClub();
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
   const [saved, setSaved] = useState<{ a: number; b: number } | null>(null);
@@ -77,6 +80,26 @@ export function PlannedMatchCard({
       setSaved(null); // terugdraaien; de kaart is weer invulbaar
       toast.error(errorMessage(err));
     }
+  }
+
+  /** ICS-download voor deze match: getimed als er een tijdstip gepland is,
+   *  anders een event voor de hele (plan)dag. */
+  function addToCalendar() {
+    const when = new Date(m.played_at ?? m.created_at);
+    const date = localDate(when);
+    downloadIcs(
+      `padel-${date}.ics`,
+      icsEvent({
+        title: `Padel: ${teamLabel(teams[m.team_a_id], profiles)} vs ${teamLabel(teams[m.team_b_id], profiles)}`,
+        description:
+          m.round_number != null ? `Ronde ${m.round_number}` : undefined,
+        location: club.name,
+        date,
+        startTime: m.played_at ? localTime(when) : undefined,
+        uid: `match-${m.id}@vamos-padel`,
+      }),
+    );
+    tap();
   }
 
   if (saved) {
@@ -142,6 +165,9 @@ export function PlannedMatchCard({
         <span className="match-card__meta">
           {m.round_number != null ? `ronde ${m.round_number} · gepland` : "gepland"}
         </span>
+        <button className="agenda-btn" onClick={addToCalendar}>
+          Zet in agenda
+        </button>
       </span>
       <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={false} right />
     </div>

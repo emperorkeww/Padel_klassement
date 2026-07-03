@@ -6,7 +6,9 @@ import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { tap } from "../../lib/haptics";
+import { downloadIcs, icsEvent } from "../../lib/ics";
 import { displayName } from "../profiles/api";
+import { useClub } from "../availability/club";
 import {
   getAttendance,
   setAttendance,
@@ -44,6 +46,7 @@ export function AttendanceCard({
   myId: string;
 }) {
   const toast = useToast();
+  const club = useClub();
   const today = localToday();
   const [date, setDate] = useState(today);
   const attendance = useAsync(() => getAttendance(groupId, date), [groupId, date]);
@@ -58,6 +61,20 @@ export function AttendanceCard({
     .map((m) => m.player_id);
   const yes = yesIds.length;
   const courts = Math.floor(yes / 4);
+
+  /** ICS-download voor de gekozen speeldag (event voor de hele dag). */
+  function addToCalendar() {
+    downloadIcs(
+      `padel-speeldag-${date}.ics`,
+      icsEvent({
+        title: "Padel: speeldag",
+        location: club.name,
+        date,
+        uid: `matchday-${groupId}-${date}@vamos-padel`,
+      }),
+    );
+    tap();
+  }
 
   async function choose(status: AttendanceStatus) {
     try {
@@ -126,7 +143,10 @@ export function AttendanceCard({
               }.`}{" "}
           <Link className="profile-link" to={`/banen?datum=${date}`}>
             Vrije banen op deze dag →
-          </Link>
+          </Link>{" "}
+          <button className="agenda-btn" onClick={addToCalendar}>
+            Zet in agenda
+          </button>
         </p>
       </section>
 
