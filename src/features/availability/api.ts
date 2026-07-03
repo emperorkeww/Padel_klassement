@@ -364,14 +364,17 @@ export async function searchClubs(query: string): Promise<Club[]> {
     playtomic_status: "ACTIVE",
     sport_id: "PADEL",
     tenant_name: query,
+    // Server-side op België filteren. Zonder deze parameter zeeft een
+    // client-side filter de (wereldwijde) top-10 leeg: op "padel" matchen
+    // duizenden buitenlandse clubs en blijft er geen Belgische over.
+    country_code: "BE",
     size: "10",
   });
   const data = await getJson<RawTenantSummary[]>(
     `/v1/tenants?${params.toString()}`,
     "Kon geen clubs zoeken",
   );
-  // Het zoekendpoint kent geen landparameter, dus buitenlandse naamgenoten
-  // ("gent" matcht ook clubs in Italië en Spanje) filteren we hier weg.
+  // Vangnet voor als de (ongedocumenteerde) landparameter ooit wegvalt.
   return data
     .filter((t) => t.address?.country_code === "BE")
     .map((t) => ({
