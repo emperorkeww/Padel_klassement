@@ -15,6 +15,24 @@ export function getPlayerRatings(): Promise<Record<string, PlayerRating>> {
 // niet elke keer mee over de lijn.
 const HISTORY_LIMIT = 100;
 
+/** Rating-historie van álle spelers in één query, gegroepeerd per speler en
+ *  chronologisch (oud → nieuw) — voor de sparklines in het klassement. */
+export function getAllRatingHistories(): Promise<Record<string, RatingPoint[]>> {
+  return cached("ratings:history:all", async () => {
+    const { data, error } = await supabase
+      .from("rating_history")
+      .select("player_id, match_id, rating_before, rating_after, delta, played_at")
+      .order("played_at", { ascending: true });
+    if (error) throw error;
+    const byPlayer: Record<string, RatingPoint[]> = {};
+    for (const row of (data ?? []) as (RatingPoint & { player_id: string })[]) {
+      const { player_id, ...point } = row;
+      (byPlayer[player_id] ??= []).push(point);
+    }
+    return byPlayer;
+  });
+}
+
 /** Rating-historie van één speler, chronologisch (oud → nieuw) voor de grafiek. */
 export function getRatingHistory(playerId: string): Promise<RatingPoint[]> {
   return cached(`ratings:history:${playerId}`, async () => {
