@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
 import {
+  fetchClub,
   getClubAvailability,
   getWeekAvailability,
   bookingUrl,
@@ -10,7 +12,7 @@ import {
   type DayAvailability,
   type WeekDay,
 } from "./api";
-import { useClub } from "./club";
+import { getClub, setClub, useClub } from "./club";
 import { ClubPicker } from "./ClubPicker";
 import { Timetable } from "./Timetable";
 import { WeekGrid } from "./WeekGrid";
@@ -56,6 +58,39 @@ export function Availability() {
   )
     ? rawDuration
     : null;
+
+  // Gedeelde link met ?club=…: neem die club eenmalig over (de keuze leeft
+  // in localStorage, niet in de URL) en haal de parameter daarna weg.
+  // Ongeldig id of fetch-fout → gewoon de huidige club blijven tonen.
+  const clubParam = params.get("club");
+  useEffect(() => {
+    if (!clubParam) return;
+    let active = true;
+    const clearParam = () =>
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("club");
+          return next;
+        },
+        { replace: true },
+      );
+    if (clubParam === getClub().id) {
+      clearParam();
+      return;
+    }
+    fetchClub(clubParam)
+      .then((c) => {
+        if (active) setClub(c);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) clearParam();
+      });
+    return () => {
+      active = false;
+    };
+  }, [clubParam, setParams]);
 
   function update(changes: Record<string, string | null>) {
     const next = new URLSearchParams(params);

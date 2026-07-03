@@ -30,6 +30,33 @@ export function bookingUrl(date: string): string {
   return `https://playtomic.com/clubs/${getClub().id}?${params.toString()}`;
 }
 
+/**
+ * Deeltekst voor de groepschat, bv. "Terrein 3 vrij van 20:30 tot 21:30 op
+ * vr 3 juli bij LAGO CLUB Padel Beveren".
+ */
+export function slotShareText(
+  slot: { court: string; start: string; end: string },
+  date: string,
+  clubName: string,
+): string {
+  // 's Middags rekenen, zodat een DST-omschakeling de datum niet kan kantelen.
+  const day = new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${date}T12:00:00`));
+  return `${slot.court} vrij van ${slot.start} tot ${slot.end} op ${day} bij ${clubName}`;
+}
+
+/**
+ * Absolute deep-link naar het raster van deze app; dag en club reizen mee in
+ * de URL zodat de ontvanger hetzelfde overzicht ziet (zie Availability.tsx).
+ */
+export function slotShareUrl(date: string, clubId: string): string {
+  const params = new URLSearchParams({ datum: date, club: clubId });
+  return `${window.location.origin}/banen?${params.toString()}`;
+}
+
 // Playtomic gebruikt Engelse weekdagnamen als sleutel in opening_hours.
 const WEEKDAY_KEYS = [
   "SUNDAY",
@@ -64,9 +91,10 @@ type RawResource = {
   properties?: { resource_type?: string };
 };
 type RawTenant = {
+  tenant_name?: string;
   resources?: RawResource[];
   opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
-  address?: { timezone?: string };
+  address?: { city?: string; timezone?: string };
 };
 type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
@@ -102,6 +130,21 @@ function getTenant(tenantId: string): Promise<RawTenant> {
     tenantPromises.set(tenantId, promise);
   }
   return promise;
+}
+
+/**
+ * Clubgegevens op tenant-id, voor gedeelde links met ?club=… — zelfde
+ * tenant-detail (en dus cache) als het beschikbaarheidsraster.
+ */
+export async function fetchClub(id: string): Promise<Club> {
+  const tenant = await getTenant(id);
+  if (!tenant.tenant_name) throw new Error("Onbekende club.");
+  return {
+    id,
+    name: tenant.tenant_name,
+    city: tenant.address?.city ?? "",
+    timezone: tenant.address?.timezone ?? DEFAULT_CLUB.timezone,
+  };
 }
 
 async function getSlotsByCourt(
