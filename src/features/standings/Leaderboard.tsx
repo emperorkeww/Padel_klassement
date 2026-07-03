@@ -15,10 +15,11 @@ import {
   getGroupPlayerStandings,
 } from "./api";
 import { getMyGroups } from "../groups/api";
-import { getPlayerRatings } from "./ratingsApi";
+import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { Sparkline } from "../../components/Sparkline";
 import { getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import type { Profile } from "../../lib/types";
+import type { Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team";
@@ -40,6 +41,8 @@ export function Leaderboard() {
   // Voor de vorm-kolom: recente matches client-side per speler samengevat.
   const recent = useAsync(() => getRecentMatches(250), []);
   const ratings = useAsync(getPlayerRatings, []);
+  // Voor de sparkline-kolom: historie van alle spelers in één batch.
+  const histories = useAsync(getAllRatingHistories, []);
 
   // Live bijwerken bij nieuwe/aangepaste matches.
   const refresh = useCallback(() => {
@@ -48,13 +51,15 @@ export function Leaderboard() {
     teamsMap.reload();
     recent.reload();
     ratings.reload();
+    histories.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
   const tmap = teamsMap.data ?? {};
   const rmap = ratings.data ?? {};
+  const hmap = histories.data ?? {};
   const formFor = (playerId: string): Outcome[] =>
     recentForm(recent.data ?? [], tmap, playerId, 5);
 
@@ -71,6 +76,7 @@ export function Leaderboard() {
     points: p.points,
     goalDiff: p.goal_diff ?? 0,
     rating: rmap[p.player_id]?.rating ?? null,
+    history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
   }));
 
@@ -87,6 +93,7 @@ export function Leaderboard() {
     points: t.points,
     goalDiff: t.goal_diff ?? 0,
     rating: null,
+    history: [] as RatingPoint[],
     form: [] as Outcome[],
   }));
 
@@ -191,6 +198,7 @@ type Row = {
   points: number;
   goalDiff: number;
   rating: number | null;
+  history: RatingPoint[];
   form: Outcome[];
 };
 
@@ -319,6 +327,7 @@ function StandingsTable({
             <th className="num">Winrate</th>
             <th className="num">Saldo</th>
             {showForm && <th className="num">Rating</th>}
+            {showForm && <th className="col-trend">Verloop</th>}
             <th className="num">Punten</th>
           </tr>
         </thead>
@@ -390,6 +399,15 @@ function StandingsTable({
                       <span className="rating-cell">{r.rating}</span>
                     ) : (
                       "—"
+                    )}
+                  </td>
+                )}
+                {showForm && (
+                  <td className="col-trend">
+                    {r.history.length > 0 ? (
+                      <Sparkline history={r.history} name={r.name} />
+                    ) : (
+                      <span className="empty empty--bare">—</span>
                     )}
                   </td>
                 )}

@@ -136,6 +136,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Verloop-kolom (sparkline) ---------- */
+.leaderboard-table .sparkline {
+  display: block;
+}
+
 /* ---------- Winrate-balkje ---------- */
 .winrate {
   display: inline-flex;
@@ -253,6 +258,14 @@
 .me-chip:hover {
   background: var(--accent-soft);
   transform: translateY(-1px);
+}
+
+/* Op smallere schermen wint de rest van de tabel; het volledige verloop
+   staat toch op de profielpagina. */
+@media (max-width: 960px) {
+  .leaderboard-table .col-trend {
+    display: none;
+  }
 }
 
 /* ---------- Mobiel ---------- */

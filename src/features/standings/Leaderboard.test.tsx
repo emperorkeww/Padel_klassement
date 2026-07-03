@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
+import { PLAYER_RATINGS, RATING_HISTORY } from "../../test/fixtures";
 import { AuthProvider } from "../auth/AuthProvider";
 
 vi.mock("../../lib/supabase", () => ({
@@ -21,6 +22,8 @@ vi.mock("../../lib/supabase", () => ({
       ],
       standings: [],
       groups: [],
+      player_ratings: PLAYER_RATINGS,
+      rating_history: RATING_HISTORY,
     },
   }),
 }));
@@ -47,5 +50,14 @@ describe("<Leaderboard />", () => {
     // ranglijst (CSS toont er één van de twee).
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("6")).length).toBeGreaterThan(0);
+  });
+
+  it("toont een sparkline met het ratingverloop van de speler", async () => {
+    renderPage();
+    expect(
+      await screen.findByRole("img", {
+        name: "Ratingverloop van Alice Anders",
+      }),
+    ).toBeInTheDocument();
   });
 });
