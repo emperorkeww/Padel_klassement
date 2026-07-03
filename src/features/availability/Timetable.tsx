@@ -141,6 +141,7 @@ export function Timetable({
               {sel.options.map((o) => (
                 <span key={o.duration} className="badge badge--accent">
                   {o.duration} min · {o.price}
+                  {o.perPerson != null && <> · {o.perPerson} p.p.</>}
                 </span>
               ))}
             </p>

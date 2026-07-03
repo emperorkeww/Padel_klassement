@@ -16,7 +16,7 @@ function day(
       free: new Map(
         c.free.map(([t, durations]) => [
           t,
-          durations.map((d) => ({ duration: d, price: "€ 20" })),
+          durations.map((d) => ({ duration: d, price: "€ 20", perPerson: "€ 5" })),
         ]),
       ),
     })),
