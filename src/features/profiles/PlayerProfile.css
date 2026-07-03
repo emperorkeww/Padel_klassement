@@ -43,6 +43,42 @@
   color: var(--ink-soft);
 }
 
+/* Onderling (ingelogde gebruiker vs. de bekeken speler) */
+.onderling {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.onderling__rij {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.onderling__rij + .onderling__rij {
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-2);
+}
+.onderling__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.onderling__waarde {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.onderling__leeg {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+
 /* Beste maatje */
 .partner-card__row {
   display: flex;
