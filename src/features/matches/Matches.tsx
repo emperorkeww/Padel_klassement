@@ -3,6 +3,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
+import { EmptyState } from "../../components/EmptyState";
 import { outcomeFor } from "../../lib/results";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllProfiles } from "../profiles/api";
@@ -134,23 +135,26 @@ export function Matches() {
 
         {matches.loading && <MatchListSkeleton count={4} />}
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
-        {!matches.loading && groups.length === 0 && (
-          <div className="empty-state">
-            <p className="empty-state__title">
-              {filter === "all"
-                ? "Nog geen matches."
-                : "Geen matches voor dit filter."}
-            </p>
-            {filter === "all" && (
-              <button
-                className="btn btn--primary btn--sm"
-                onClick={() => setSheetOpen(true)}
-              >
-                + Log je eerste match
-              </button>
-            )}
-          </div>
-        )}
+        {!matches.loading &&
+          groups.length === 0 &&
+          (filter === "all" ? (
+            <EmptyState
+              icon="🎾"
+              title="Nog geen matches."
+              action={
+                <button
+                  className="btn btn--primary"
+                  onClick={() => setSheetOpen(true)}
+                >
+                  + Log je eerste match
+                </button>
+              }
+            >
+              Log je eerste uitslag en zie meteen je punten en rating groeien.
+            </EmptyState>
+          ) : (
+            <p className="empty">Geen matches voor dit filter.</p>
+          ))}
         {!matches.loading &&
           groups.map(({ day, list }) => (
             <div key={day} className="match-day">

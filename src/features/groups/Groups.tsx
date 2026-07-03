@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
+import { EmptyState } from "../../components/EmptyState";
 import { errorMessage } from "../../lib/errors";
 import { formatDate } from "../../lib/format";
 import { getMyGroups, createGroup } from "./api";
@@ -18,6 +19,7 @@ export function Groups() {
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -57,12 +59,21 @@ export function Groups() {
         <>
           {list.length === 0 ? (
             <div className="card">
-              <div className="empty-state">
-                <p className="empty-state__title">
-                  Je zit nog in geen enkele groep. Maak hieronder je eerste
-                  groep aan ↓ en nodig daarna je vrienden uit.
-                </p>
-              </div>
+              <EmptyState
+                icon="👥"
+                title="Je zit nog in geen enkele groep."
+                action={
+                  <button
+                    className="btn btn--primary"
+                    onClick={() => nameRef.current?.focus()}
+                  >
+                    Maak een groep
+                  </button>
+                }
+              >
+                Maak hieronder je eerste groep aan en nodig daarna je vrienden
+                uit.
+              </EmptyState>
             </div>
           ) : (
             <div className="group-grid">
@@ -94,6 +105,7 @@ export function Groups() {
         <h2 className="card__title">Nieuwe groep</h2>
         <form className="row-between account-form" onSubmit={create}>
           <input
+            ref={nameRef}
             className="input"
             placeholder="Groepsnaam, bijv. Vrijdagavond"
             value={name}
