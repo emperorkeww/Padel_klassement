@@ -14,6 +14,7 @@ import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
 import { tap } from "../../lib/haptics";
 import { Avatar } from "../../components/Avatar";
+import { Skeleton } from "../../components/Skeleton";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { errorMessage } from "../../lib/errors";
@@ -38,7 +39,27 @@ export function MatchDetail() {
   const profiles = useAsync(() => getProfilesByIds(playerIds), [playerKey]);
   const [editing, setEditing] = useState(false);
 
-  if (match.loading) return <p className="empty">Laden…</p>;
+  if (match.loading)
+    return (
+      // Speelt het scorebord na: twee teamvakken met de score in het midden.
+      <div className="card md-board" aria-hidden="true">
+        <div className="md-status">
+          <span className="sk sk--pill" />
+          <span className="sk sk--pill" />
+        </div>
+        <div className="md-versus">
+          <div className="md-team">
+            <Skeleton rows={2} />
+          </div>
+          <div className="md-score">
+            <span className="sk sk--line" style={{ width: 72, height: 36 }} />
+          </div>
+          <div className="md-team">
+            <Skeleton rows={2} />
+          </div>
+        </div>
+      </div>
+    );
   if (!match.data) return <p className="msg msg--error">Match niet gevonden.</p>;
 
   const m = match.data;
@@ -56,6 +77,8 @@ export function MatchDetail() {
   return (
     <div>
       <header className="page-head">
+        {/* Het scorebord ís de kop; voor screenreaders en de outline toch een h1. */}
+        <h1 className="sr-only">Matchdetail</h1>
         <div className="row-between">
           <Link className="btn btn--sm" to="/matches">
             ← Matches
@@ -89,9 +112,10 @@ export function MatchDetail() {
           <div className="md-score">
             {m.score_a != null && m.score_b != null ? (
               <span className="md-score__num">
-                {m.score_a}
+                {/* Het winnende cijfer kleurt mee: wie won zie je in de score zelf. */}
+                <span className={done && aWon ? "is-winside" : ""}>{m.score_a}</span>
                 <span className="md-score__dash">–</span>
-                {m.score_b}
+                <span className={done && bWon ? "is-winside" : ""}>{m.score_b}</span>
               </span>
             ) : (
               <span className="md-score__vs">vs</span>
@@ -244,7 +268,13 @@ function TeamBlock({
         {players.map((p, i) => (
           <li key={p?.id ?? i}>
             <Avatar profile={p} size={24} />
-            <span>{displayName(p)}</span>
+            {p?.id ? (
+              <Link className="profile-link" to={`/spelers/${p.id}`}>
+                {displayName(p)}
+              </Link>
+            ) : (
+              <span>{displayName(p)}</span>
+            )}
           </li>
         ))}
       </ul>
@@ -257,7 +287,12 @@ function GroupBadge({ groupId }: { groupId: string | null }) {
     groupId,
   ]);
   if (!groupId) return null;
-  return <span className="badge">{group.data?.name ?? "Groep"}</span>;
+  // Klikbaar: de badge is meteen de weg terug naar de groep (en zijn stand).
+  return (
+    <Link className="badge badge--link" to={`/groepen/${groupId}`}>
+      {group.data?.name ?? "Groep"} →
+    </Link>
+  );
 }
 
 export default MatchDetail;

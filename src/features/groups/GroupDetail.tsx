@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
@@ -54,7 +54,18 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<View>("rondes");
+  // De actieve tab leeft in de URL: refresh-bestendig en deelbaar
+  // ("kijk even bij de stand").
+  const [params, setParams] = useSearchParams();
+  const rawTab = params.get("tab");
+  const view: View =
+    rawTab === "stand" || rawTab === "leden" ? rawTab : "rondes";
+  const setView = (v: View) => {
+    const next = new URLSearchParams(params);
+    if (v === "rondes") next.delete("tab");
+    else next.set("tab", v);
+    setParams(next, { replace: true });
+  };
   const [mode, setMode] = useState<"americano" | "mexicano">("americano");
   const [roundsToGen, setRoundsToGen] = useState(1);
 
@@ -125,6 +136,11 @@ export function GroupDetail() {
           onClick={() => setView("rondes")}
         >
           Rondes
+          {rounds.length > 0 && (
+            <span className="tab__count" aria-hidden="true">
+              {rounds.length}
+            </span>
+          )}
         </button>
         <button
           className={`tab ${view === "stand" ? "is-active" : ""}`}
@@ -137,6 +153,11 @@ export function GroupDetail() {
           onClick={() => setView("leden")}
         >
           Leden
+          {memberList.length > 0 && (
+            <span className="tab__count" aria-hidden="true">
+              {memberList.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -232,12 +253,12 @@ export function GroupDetail() {
             </div>
           </div>
           {memberList.length < 4 && (
-            <p className="empty">
+            <p className="msg msg--warn">
               Minimaal 4 leden nodig om een ronde te genereren.
             </p>
           )}
           {memberList.length >= 4 && mexicanoBlocked && (
-            <p className="empty">
+            <p className="msg msg--warn">
               Vul eerst alle uitslagen van ronde {openRound!.round} in — Mexicano
               paart op basis van de volledige stand.
             </p>
@@ -247,11 +268,11 @@ export function GroupDetail() {
             <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
           )}
 
-          <div className="stack">
+          <div className="rounds">
             {rounds.map(({ round, list }) => {
               const done = list.filter((m) => m.status === "completed").length;
               return (
-                <div key={round}>
+                <div key={round} className="round">
                   <div className="round-head">
                     <h3 className="card__title card__title--compact">
                       Ronde {round}
@@ -343,9 +364,9 @@ export function GroupDetail() {
       {view === "leden" && (
         <section className="card">
           <h2 className="card__title">Leden</h2>
-          <div className="stack">
+          <div className="person-list">
             {memberList.map((m) => (
-              <div key={m.player_id} className="row-between">
+              <div key={m.player_id} className="person-row">
                 <span className="cell-player">
                   <Avatar profile={pmap[m.player_id]} size={28} />
                   {displayName(pmap[m.player_id])}{" "}
@@ -381,9 +402,9 @@ export function GroupDetail() {
                   Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
                 </p>
               ) : (
-                <div className="stack">
+                <div className="person-list">
                   {addableFriendIds.map((pid) => (
-                    <div key={pid} className="row-between">
+                    <div key={pid} className="person-row">
                       <span className="cell-player">
                         <Avatar profile={pmap[pid]} size={28} />
                         {displayName(pmap[pid])}

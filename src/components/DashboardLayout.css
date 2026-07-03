@@ -62,10 +62,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--placeholder);
+  color: var(--ink-soft);
 }
 
 .sidebar__link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -81,13 +82,32 @@
   background: var(--surface-2);
   color: var(--ink);
 }
+.sidebar__link:hover .sidebar__icon {
+  color: var(--accent);
+}
 .sidebar__link.is-active {
   background: var(--accent-soft);
   color: var(--accent);
-  box-shadow: inset 3px 0 0 var(--accent);
+}
+/* Afgerond accentstaafje i.p.v. een harde inset-rand. */
+.sidebar__link.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 55%;
+  border-radius: 999px;
+  background: var(--accent);
 }
 .sidebar__icon {
   display: inline-flex;
+  color: var(--ink-soft);
+  transition: color 0.15s;
+}
+.sidebar__link.is-active .sidebar__icon {
+  color: var(--accent);
 }
 
 .sidebar__foot {
@@ -249,9 +269,20 @@
     padding: 0.3rem 0.2rem;
     color: var(--sidebar-ink);
     text-decoration: none;
+    transition: color 0.15s;
   }
   .tabbar__icon {
     display: inline-flex;
+  }
+  /* Zachte pil achter het icoon zodat de actieve tab ook zonder kleur
+     herkenbaar is (de bal-knop in het midden heeft zijn eigen ring). */
+  .tabbar__link:not(.tabbar__link--home) .tabbar__icon {
+    padding: 2px 12px;
+    border-radius: 999px;
+    transition: background 0.15s;
+  }
+  .tabbar__link.is-active:not(.tabbar__link--home) .tabbar__icon {
+    background: var(--accent-soft);
   }
   .tabbar__icon svg {
     width: 24px;
@@ -267,6 +298,9 @@
   }
   .tabbar__link.is-active {
     color: var(--accent);
+  }
+  .tabbar__link.is-active .tabbar__label {
+    font-weight: 700;
   }
 
   /* ---- Uitstekende ronde padelbal-knop in het midden ----

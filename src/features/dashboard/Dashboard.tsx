@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
-import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
+import { MatchListSkeleton, Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -98,19 +98,24 @@ export function Dashboard() {
   const nextMatch = planned[0] ?? null;
 
   return (
-    <div>
+    <div className="dashboard">
       <section className="hero">
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
             <p className="hero__eyebrow">Welkom terug</p>
             <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
-            <p className="hero__sub">
-              {me
-                ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"} met ${me.points} punten.`
-                : "Speel je eerste match om in het klassement te komen."}
-              {streak >= 2 && ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`}
-            </p>
+            {standings.loading ? (
+              // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
+              <span className="sk sk--line hero__sub-sk" aria-hidden="true" />
+            ) : (
+              <p className="hero__sub">
+                {me
+                  ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"} met ${me.points} punten.`
+                  : "Speel je eerste match om in het klassement te komen."}
+                {streak >= 2 && ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`}
+              </p>
+            )}
             {form.length > 0 && (
               <p className="hero__form">
                 <span className="hero__form-label">Vorm</span>
@@ -154,7 +159,7 @@ export function Dashboard() {
       )}
 
       {nextMatch && (
-        <section className="card">
+        <section className="card card--next">
           <div className="card__head">
             <h2 className="card__title">Jouw volgende match</h2>
             {nextMatch.group_id && (
@@ -173,27 +178,43 @@ export function Dashboard() {
         </section>
       )}
 
-      <div className="stats">
-        <Stat
-          label="Rating"
-          value={myRating ?? "—"}
-          accent
-          delta={rhist.length > 0 ? rhist[rhist.length - 1].delta : null}
-        />
-        <Stat label="Punten" value={me?.points ?? 0} />
-        <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
-        <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
-      </div>
+      {standings.loading ? (
+        <StatsSkeleton />
+      ) : (
+        <div className="stats">
+          <Stat label="Punten" value={me?.points ?? 0} accent />
+          <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
+          <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
+          <Stat label="Gespeeld" value={me?.played ?? 0} />
+        </div>
+      )}
 
-      {rhist.length >= 2 && (
-        <section className="card">
+      {/* Rating: groot getal + delta + verloop in één kaart (voorheen een
+          stat-tegel én een losse grafiekkaart met dezelfde informatie). */}
+      {(ratings.loading || myRating != null || rhist.length >= 2) && (
+        <section className="card rating-card">
           <div className="card__head">
-            <h2 className="card__title">Je rating-verloop</h2>
+            <h2 className="card__title">Rating</h2>
             <Link className="profile-link" to={`/spelers/${myId}`}>
               Mijn profiel →
             </Link>
           </div>
-          <RatingChart history={rhist} />
+          {ratings.loading ? (
+            <span className="sk sk--line rating-card__sk" aria-hidden="true" />
+          ) : (
+            <p className="rating-card__value">
+              {myRating != null ? <CountUp value={myRating} /> : "—"}
+              {rhist.length > 0 && rhist[rhist.length - 1].delta !== 0 && (
+                <span
+                  className={`stat__delta ${rhist[rhist.length - 1].delta > 0 ? "is-up" : "is-down"}`}
+                >
+                  {rhist[rhist.length - 1].delta > 0 ? "▲" : "▼"}
+                  {Math.abs(rhist[rhist.length - 1].delta)}
+                </span>
+              )}
+            </p>
+          )}
+          {rhist.length >= 2 && <RatingChart history={rhist} />}
         </section>
       )}
 
@@ -217,56 +238,51 @@ export function Dashboard() {
           )}
         </section>
 
-        <div className="stack">
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title">Topspelers</h2>
-              <Link className="profile-link" to="/klassement">
-                Klassement →
-              </Link>
-            </div>
-            {top.length === 0 ? (
-              <p className="empty">Nog geen klassement.</p>
-            ) : (
-              <ul className="toplist">
-                {top.map((p, i) => (
-                  <li key={p.player_id} className="toplist__item">
-                    <span className={`toplist__rank toplist__rank--${i + 1}`}>
-                      {i + 1}
-                    </span>
-                    <Avatar profile={pmap[p.player_id] ?? p} size={28} />
-                    <Link
-                      className="profile-link toplist__name"
-                      to={`/spelers/${p.player_id}`}
-                    >
-                      {displayName(p)}
-                    </Link>
-                    <span className="toplist__pts">{p.points} ptn</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Topspelers</h2>
+            <Link className="profile-link" to="/klassement">
+              Klassement →
+            </Link>
+          </div>
+          {top.length === 0 ? (
+            <p className="empty">Nog geen klassement.</p>
+          ) : (
+            <ul className="toplist">
+              {top.map((p, i) => (
+                <li key={p.player_id} className="toplist__item">
+                  <span className={`toplist__rank toplist__rank--${i + 1}`}>
+                    {i + 1}
+                  </span>
+                  <Avatar profile={pmap[p.player_id] ?? p} size={28} />
+                  <Link
+                    className="profile-link toplist__name"
+                    to={`/spelers/${p.player_id}`}
+                  >
+                    {displayName(p)}
+                  </Link>
+                  <span className="toplist__pts">{p.points} ptn</span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          <section className="card">
-            <h2 className="card__title">Sociaal</h2>
-            <div className="stack">
-              <div className="row-between">
-                <span>Vrienden</span>
-                <span className="badge">{accepted.length}</span>
-              </div>
-              <div className="row-between">
-                <span>Openstaande verzoeken</span>
-                <span className={`badge ${incoming.length ? "badge--accent" : ""}`}>
-                  {incoming.length}
-                </span>
-              </div>
-              <Link className="btn btn--sm" to="/vrienden">
-                Vrienden beheren
-              </Link>
-            </div>
-          </section>
-        </div>
+          {/* Compacte sociale voetregel (voorheen een eigen kaart). */}
+          <div className="social-foot">
+            <span className="social-foot__item">
+              Vrienden <span className="badge">{accepted.length}</span>
+            </span>
+            <span className="social-foot__item">
+              Verzoeken{" "}
+              <span className={`badge ${incoming.length ? "badge--accent" : ""}`}>
+                {incoming.length}
+              </span>
+            </span>
+            <Link className="profile-link" to="/vrienden">
+              Beheren →
+            </Link>
+          </div>
+        </section>
       </div>
 
       <section className="card">
@@ -310,24 +326,15 @@ function Stat({
   label,
   value,
   accent,
-  delta,
 }: {
   label: string;
   value: number | string;
   accent?: boolean;
-  /** Laatste verandering (bv. rating-delta); toont ▲/▼ naast de waarde. */
-  delta?: number | null;
 }) {
   return (
     <div className={`stat ${accent ? "stat--accent" : ""}`}>
       <span className="stat__value">
         {typeof value === "number" ? <CountUp value={value} /> : value}
-        {delta != null && delta !== 0 && (
-          <span className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}>
-            {delta > 0 ? "▲" : "▼"}
-            {Math.abs(delta)}
-          </span>
-        )}
       </span>
       <span className="stat__label">{label}</span>
     </div>

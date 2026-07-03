@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
-import { Skeleton } from "../../components/Skeleton";
+import { ProfileSkeleton, Skeleton } from "../../components/Skeleton";
 import {
   getProfile,
   updateProfile,
@@ -29,8 +29,14 @@ export function ProfileSettings() {
 
   if (profile.loading)
     return (
-      <div className="card">
-        <Skeleton rows={4} />
+      // Speelt de echte paginavorm na: twee kaarten naast elkaar.
+      <div className="grid grid--2">
+        <div className="card">
+          <ProfileSkeleton />
+        </div>
+        <div className="card">
+          <Skeleton rows={3} />
+        </div>
       </div>
     );
   if (!profile.data) return <p className="msg msg--error">Profiel niet gevonden.</p>;
@@ -49,8 +55,10 @@ export function ProfileSettings() {
         <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
       </div>
 
-      <NotificationsCard userId={myId} />
-      <EmailCard currentEmail={user?.email ?? ""} />
+      <div className="grid grid--2">
+        <NotificationsCard userId={myId} />
+        <EmailCard currentEmail={user?.email ?? ""} />
+      </div>
       <PasswordCard email={user?.email ?? ""} />
 
       <section className="card">
@@ -126,12 +134,16 @@ function AvatarCard({
         </div>
         <div className="stack">
           <input ref={inputRef} type="file" accept="image/*" hidden onChange={pick} />
-          <button className="btn" onClick={() => inputRef.current?.click()}>
-            Foto kiezen
-          </button>
-          <button className="btn btn--primary" disabled={busy || !file} onClick={save}>
-            {busy ? "Uploaden…" : "Opslaan"}
-          </button>
+          <div className="btn-row">
+            <button className="btn" onClick={() => inputRef.current?.click()}>
+              Foto kiezen
+            </button>
+            <button className="btn btn--primary" disabled={busy || !file} onClick={save}>
+              {busy ? "Uploaden…" : "Opslaan"}
+            </button>
+          </div>
+          {file && <span className="badge badge--accent">Nog niet opgeslagen</span>}
+          <p className="avatar-hint">JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
     </section>
@@ -296,7 +308,7 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
       <p className="card__subtitle">
         Huidig: <strong>{currentEmail}</strong>
       </p>
-      <form className="stack" onSubmit={save}>
+      <form className="stack account-form" onSubmit={save}>
         <label className="label">
           Nieuw e-mailadres
           <input
@@ -308,7 +320,7 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
             required
           />
         </label>
-        <div>
+        <div className="form-actions">
           <button className="btn btn--primary" disabled={busy || !email.trim()}>
             {busy ? "Versturen…" : "E-mail wijzigen"}
           </button>
@@ -349,7 +361,7 @@ function PasswordCard({ email }: { email: string }) {
   return (
     <section className="card">
       <h2 className="card__title">Wachtwoord</h2>
-      <form className="stack" onSubmit={save}>
+      <form className="stack account-form" onSubmit={save}>
         <label className="label">
           Huidig wachtwoord
           <input
@@ -368,6 +380,7 @@ function PasswordCard({ email }: { email: string }) {
               className="input"
               type="password"
               autoComplete="new-password"
+              aria-describedby="new-password-hint"
               value={next}
               onChange={(e) => setNext(e.target.value)}
               required
@@ -385,7 +398,10 @@ function PasswordCard({ email }: { email: string }) {
             />
           </label>
         </div>
-        <div>
+        <p className="field-hint" id="new-password-hint">
+          Minstens 6 tekens.
+        </p>
+        <div className="form-actions">
           <button
             className="btn btn--primary"
             disabled={busy || !current || !next || !confirm}
