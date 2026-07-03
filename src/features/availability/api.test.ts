@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  bestWeekMoment,
   bookingUrl,
   coveredTimes,
   fetchClub,
@@ -15,6 +16,7 @@ import {
   type CourtRow,
   type DayAvailability,
   type SlotOption,
+  type WeekDay,
 } from "./api";
 import { DEFAULT_CLUB } from "./club";
 
@@ -64,25 +66,27 @@ describe("coveredTimes", () => {
   });
 });
 
+// Testhulpjes voor de samenvattingsregels: een baan met vrije starttijden
+// (elk met een lijst duren) en een dag met die banen.
+const row = (id: string, free: [string, number[]][]): CourtRow => ({
+  court: { id, name: `Terrein ${id}`, type: "roofed" },
+  free: new Map(
+    free.map(([t, durations]): [string, SlotOption[]] => [
+      t,
+      durations.map((duration) => ({ duration, price: "€ 20", perPerson: "€ 5" })),
+    ]),
+  ),
+});
+const day = (...courts: CourtRow[]): DayAvailability => ({
+  open: "09:00",
+  close: "22:00",
+  timeZone: "Europe/Brussels",
+  courts,
+});
+
 // Samenvatting boven het raster: vroegste boekbare start, met dezelfde
 // "voorbij"-grens als het raster (start ≤ nu telt vandaag niet meer mee).
 describe("nextFreeSlot", () => {
-  const row = (id: string, free: [string, number[]][]): CourtRow => ({
-    court: { id, name: `Terrein ${id}`, type: "roofed" },
-    free: new Map(
-      free.map(([t, durations]): [string, SlotOption[]] => [
-        t,
-        durations.map((duration) => ({ duration, price: "€ 20", perPerson: "€ 5" })),
-      ]),
-    ),
-  });
-  const day = (...courts: CourtRow[]): DayAvailability => ({
-    open: "09:00",
-    close: "22:00",
-    timeZone: "Europe/Brussels",
-    courts,
-  });
-
   it("duurfilter: alleen starttijden met een optie van die duur tellen", () => {
     const data = day(row("1", [["10:00", [60]], ["14:00", [60, 90]]]));
     expect(nextFreeSlot(data, null, null)?.time).toBe("10:00");
@@ -111,6 +115,124 @@ describe("nextFreeSlot", () => {
     const next = nextFreeSlot(data, null, null);
     expect(next?.time).toBe("10:00");
     expect(next?.courts.map((c) => c.name)).toEqual(["Terrein 2", "Terrein 3"]);
+  });
+});
+
+// Samenvatting boven het weekraster: het moment met de meeste tegelijk vrije
+// banen, met dezelfde duur- en "voorbij"-regels als nextFreeSlot.
+describe("bestWeekMoment", () => {
+  const weekDay = (date: string, data: DayAvailability | null, error: string | null = null): WeekDay =>
+    ({ date, data, error: data ? null : (error ?? "mislukt") });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("het moment met de meeste banen tegelijk vrij wint, ook op een latere dag", () => {
+    const week = [
+      weekDay(
+        "2026-07-10",
+        day(row("1", [["10:00", [60]]]), row("2", [["10:00", [60]]])),
+      ),
+      weekDay(
+        "2026-07-11",
+        day(
+          row("1", [["14:00", [60]]]),
+          row("2", [["14:00", [60]]]),
+          row("3", [["14:00", [60]]]),
+        ),
+      ),
+    ];
+    expect(bestWeekMoment(week, null)).toEqual({
+      date: "2026-07-11",
+      time: "14:00",
+      count: 3,
+    });
+  });
+
+  it("gelijke stand: de eerste dag wint, en binnen een dag de vroegste tijd", () => {
+    // Beide tijden op de eerste dag tellen 2 banen; 18:00 komt als eerste in
+    // de Map, maar 10:00 is vroeger op de klok.
+    const week = [
+      weekDay(
+        "2026-07-10",
+        day(
+          row("1", [["18:00", [60]], ["10:00", [60]]]),
+          row("2", [["18:00", [60]], ["10:00", [60]]]),
+        ),
+      ),
+      weekDay(
+        "2026-07-11",
+        day(row("1", [["09:00", [60]]]), row("2", [["09:00", [60]]])),
+      ),
+    ];
+    expect(bestWeekMoment(week, null)).toEqual({
+      date: "2026-07-10",
+      time: "10:00",
+      count: 2,
+    });
+  });
+
+  it("duurfilter: alleen starttijden met een optie van die duur tellen", () => {
+    const week = [
+      weekDay(
+        "2026-07-10",
+        day(
+          row("1", [["10:00", [60]], ["14:00", [60, 90]]]),
+          row("2", [["10:00", [60]], ["14:00", [90]]]),
+        ),
+      ),
+    ];
+    // Zonder filter wint 10:00 (vroegste van twee gelijke standen)…
+    expect(bestWeekMoment(week, null)).toEqual({
+      date: "2026-07-10",
+      time: "10:00",
+      count: 2,
+    });
+    // …met 90-minutenfilter blijft alleen 14:00 over, en met 120 niets.
+    expect(bestWeekMoment(week, 90)).toEqual({
+      date: "2026-07-10",
+      time: "14:00",
+      count: 2,
+    });
+    expect(bestWeekMoment(week, 120)).toBeNull();
+  });
+
+  it("vandaag (in clubtijd) tellen starttijden op of vóór nu niet mee", () => {
+    // 10:00 UTC = 12:00 in Brussel op 6 juli 2026 (zomertijd).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-06T10:00:00Z"));
+    const week = [
+      weekDay(
+        "2026-07-06",
+        day(
+          // 10:00 is voorbij en 12:00 is exact nu → alleen 14:00 telt nog,
+          // ook al waren er eerder méér banen tegelijk vrij.
+          row("1", [["10:00", [60]], ["12:00", [60]], ["14:00", [60]]]),
+          row("2", [["10:00", [60]], ["12:00", [60]]]),
+        ),
+      ),
+    ];
+    expect(bestWeekMoment(week, null)).toEqual({
+      date: "2026-07-06",
+      time: "14:00",
+      count: 1,
+    });
+  });
+
+  it("foutdagen en dagen zonder vrije sloten worden overgeslagen", () => {
+    const week = [
+      weekDay("2026-07-10", null, "Kon de beschikbaarheid niet laden (status 500)."),
+      weekDay("2026-07-11", day(row("1", []))),
+      weekDay("2026-07-12", day(row("1", [["11:00", [60]]]))),
+    ];
+    expect(bestWeekMoment(week, null)).toEqual({
+      date: "2026-07-12",
+      time: "11:00",
+      count: 1,
+    });
+    // Helemaal niets bruikbaars → null (regel weglaten).
+    expect(bestWeekMoment(week.slice(0, 2), null)).toBeNull();
   });
 });
 
