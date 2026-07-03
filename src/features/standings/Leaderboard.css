@@ -21,6 +21,10 @@
 .champion-banner strong {
   font-weight: 800;
 }
+.champion-banner__share {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 
 /* ---------- Podium: top 3 ---------- */
 .podium {
