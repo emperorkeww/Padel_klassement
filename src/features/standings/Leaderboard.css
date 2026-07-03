@@ -1,3 +1,27 @@
+/* ---------- Kampioensbanner: nummer 1 van een afgesloten seizoen ---------- */
+.champion-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--line));
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--gold-soft) 0%, transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--fs-base);
+  color: var(--ink);
+}
+.champion-banner__cup {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.champion-banner strong {
+  font-weight: 800;
+}
+
 /* ---------- Podium: top 3 ---------- */
 .podium {
   display: grid;
@@ -160,6 +184,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- Verloop-kolom (sparkline) ---------- */
+.leaderboard-table .sparkline {
+  display: block;
+}
+
 /* ---------- Winrate-balkje ---------- */
 .winrate {
   display: inline-flex;
@@ -277,6 +306,14 @@
 .me-chip:hover {
   background: var(--accent-soft);
   transform: translateY(-1px);
+}
+
+/* Op smallere schermen wint de rest van de tabel; het volledige verloop
+   staat toch op de profielpagina. */
+@media (max-width: 960px) {
+  .leaderboard-table .col-trend {
+    display: none;
+  }
 }
 
 /* ---------- Mobiel ---------- */

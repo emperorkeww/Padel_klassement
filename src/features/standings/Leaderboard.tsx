@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
@@ -9,6 +9,12 @@ import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { useFlip } from "../../lib/useFlip";
 import { recentForm, winRate, type Outcome } from "../../lib/results";
+import { isSeasonClosed, listSeasons, seasonFromId } from "../../lib/seasons";
+import {
+  computePlayerStandings,
+  computeTeamStandings,
+  matchesInSeason,
+} from "../../lib/standings";
 import { rankShifts, type Shift } from "../../lib/rankShift";
 import {
   getPlayerStandings,
@@ -16,10 +22,17 @@ import {
   getGroupPlayerStandings,
 } from "./api";
 import { getMyGroups } from "../groups/api";
-import { getPlayerRatings } from "./ratingsApi";
-import { getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
+import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { Sparkline } from "../../components/Sparkline";
+import {
+  getCompletedMatchesBetween,
+  getFirstMatchDate,
+  getRecentMatches,
+  getTeamsMap,
+  teamLabel,
+} from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import type { Profile } from "../../lib/types";
+import type { Match, Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team";
@@ -29,6 +42,24 @@ export function Leaderboard() {
   const myId = user?.id ?? "";
   const [tab, setTab] = useState<Tab>("player");
   const [groupId, setGroupId] = useState<string>("");
+
+  // Het gekozen seizoen (kwartaal) leeft in de URL (?seizoen=2026-q3):
+  // deelbaar en refresh-bestendig. Ongeldige waarde → "Alle tijden".
+  const [params, setParams] = useSearchParams();
+  const season = seasonFromId(params.get("seizoen") ?? "");
+  const setSeasonId = (id: string) => {
+    const next = new URLSearchParams(params);
+    if (id) next.set("seizoen", id);
+    else next.delete("seizoen");
+    setParams(next, { replace: true });
+  };
+
+  // Kiezeropties: alle kwartalen sinds de allereerste match.
+  const firstMatch = useAsync(getFirstMatchDate, []);
+  const seasons = useMemo(
+    () => (firstMatch.data ? listSeasons(new Date(firstMatch.data)) : []),
+    [firstMatch.data],
+  );
 
   const groups = useAsync(getMyGroups, []);
   const players = useAsync(
@@ -41,6 +72,20 @@ export function Leaderboard() {
   // Voor de vorm-kolom: recente matches client-side per speler samengevat.
   const recent = useAsync(() => getRecentMatches(250), []);
   const ratings = useAsync(getPlayerRatings, []);
+  // Voor de sparkline-kolom: historie van alle spelers in één batch.
+  const histories = useAsync(getAllRatingHistories, []);
+  // Kwartaalstand: één matches-query per seizoenswissel (gecachet); de stand
+  // zelf wordt client-side berekend met dezelfde logica als de views.
+  const seasonMatches = useAsync<Match[] | null>(
+    () =>
+      season
+        ? getCompletedMatchesBetween(
+            season.start.toISOString(),
+            season.end.toISOString(),
+          )
+        : Promise.resolve(null),
+    [season?.id],
+  );
 
   // Live bijwerken bij nieuwe/aangepaste matches.
   const refresh = useCallback(() => {
@@ -49,23 +94,49 @@ export function Leaderboard() {
     teamsMap.reload();
     recent.reload();
     ratings.reload();
+    histories.reload();
+    seasonMatches.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
-  const tmap = teamsMap.data ?? {};
+  // Stabiele referentie: tmap voedt de useMemo van de rangverschuivingen.
+  const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
   const rmap = ratings.data ?? {};
-  const formFor = (playerId: string): Outcome[] =>
-    recentForm(recent.data ?? [], tmap, playerId, 5);
+  const hmap = histories.data ?? {};
 
-  // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw).
+  // Matches van het gekozen seizoen, met het groepsfilter toegepast.
+  const scoped =
+    season && seasonMatches.data
+      ? matchesInSeason(seasonMatches.data, season).filter(
+          (m) => !groupId || m.group_id === groupId,
+        )
+      : null;
+  const playerStandings = season
+    ? scoped
+      ? computePlayerStandings(scoped, tmap, pmap)
+      : []
+    : (players.data ?? []);
+  const teamStandings = season
+    ? scoped
+      ? computeTeamStandings(scoped, tmap)
+      : []
+    : (teams.data ?? []);
+
+  // Vorm: binnen een seizoen alleen de matches van dat seizoen tonen.
+  const formSource = season ? (scoped ?? []) : (recent.data ?? []);
+  const formFor = (playerId: string): Outcome[] =>
+    recentForm(formSource, tmap, playerId, 5);
+
+  // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw) — alleen
+  // in "Alle tijden": een seizoensarchief beweegt niet meer.
   const shifts = useMemo(
     () => rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null),
     [players.data, recent.data, tmap, groupId],
   );
 
-  const playerRows = (players.data ?? []).map((p) => ({
+  const playerRows = playerStandings.map((p) => ({
     key: p.player_id,
     isMe: p.player_id === myId,
     name: displayName(p),
@@ -78,11 +149,12 @@ export function Leaderboard() {
     points: p.points,
     goalDiff: p.goal_diff ?? 0,
     rating: rmap[p.player_id]?.rating ?? null,
+    history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
-    shift: shifts.get(p.player_id),
+    shift: season ? undefined : shifts.get(p.player_id),
   }));
 
-  const teamRows = (teams.data ?? []).map((t) => ({
+  const teamRows = teamStandings.map((t) => ({
     key: t.team_id,
     isMe: false,
     name: teamLabel(tmap[t.team_id], pmap),
@@ -95,14 +167,30 @@ export function Leaderboard() {
     points: t.points,
     goalDiff: t.goal_diff ?? 0,
     rating: null,
+    history: [] as RatingPoint[],
     form: [] as Outcome[],
     shift: undefined as Shift | undefined,
   }));
 
   const rows = tab === "player" ? playerRows : teamRows;
-  const loading = tab === "player" ? players.loading : teams.loading;
-  const error = tab === "player" ? players.error : teams.error;
+  // In seizoensweergave rekenen we zelf, dus wachten we op matches + lookups.
+  const loading = season
+    ? seasonMatches.loading || teamsMap.loading || profilesMap.loading
+    : tab === "player"
+      ? players.loading
+      : teams.loading;
+  const error = season
+    ? seasonMatches.error
+    : tab === "player"
+      ? players.error
+      : teams.error;
   const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
+
+  // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
+  const champion =
+    season && isSeasonClosed(season) && !loading && !error && playerRows.length > 0
+      ? playerRows[0]
+      : null;
 
   // "Jouw positie": scrolt naar je eigen rij (tabel op desktop, lijst op mobiel).
   const meRowRef = useRef<HTMLTableRowElement | null>(null);
@@ -140,9 +228,28 @@ export function Leaderboard() {
           </button>
         </div>
 
+        <select
+          className="select select--filter"
+          aria-label="Seizoen"
+          value={season?.id ?? ""}
+          onChange={(e) => setSeasonId(e.target.value)}
+        >
+          <option value="">Alle tijden</option>
+          {/* Gedeeld seizoen uit de URL dat (nog) niet in de lijst zit. */}
+          {season && !seasons.some((s) => s.id === season.id) && (
+            <option value={season.id}>{season.label}</option>
+          )}
+          {seasons.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
         {tab === "player" && (
           <select
             className="select select--filter"
+            aria-label="Groep"
             value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
           >
@@ -156,6 +263,17 @@ export function Leaderboard() {
         )}
       </div>
 
+      {champion && season && (
+        <p className="champion-banner" role="status">
+          <span className="champion-banner__cup" aria-hidden="true">
+            🏆
+          </span>
+          <span>
+            Kampioen {season.label}: <strong>{champion.name}</strong>
+          </span>
+        </p>
+      )}
+
       {showPodium && <Podium rows={playerRows.slice(0, 3)} />}
 
       <div className="card">
@@ -164,7 +282,11 @@ export function Leaderboard() {
         ) : error ? (
           <p className="msg msg--error">{error}</p>
         ) : rows.length === 0 ? (
-          <p className="empty">Nog geen afgeronde matches.</p>
+          <p className="empty">
+            {season
+              ? "Geen matches in dit seizoen."
+              : "Nog geen afgeronde matches."}
+          </p>
         ) : (
           <>
             <StandingsTable
@@ -200,6 +322,7 @@ type Row = {
   points: number;
   goalDiff: number;
   rating: number | null;
+  history: RatingPoint[];
   form: Outcome[];
   shift?: Shift;
 };
@@ -293,6 +416,15 @@ function KlassementUitleg() {
             </dd>
           </div>
           <div>
+            <dt>Seizoenen</dt>
+            <dd>
+              Elk kwartaal is een seizoen (bv. <strong>Q3 2026</strong>). Kies
+              een kwartaal om alleen de matches uit die periode te tellen; bij
+              een afgesloten kwartaal zie je meteen de kampioen.{" "}
+              <strong>Alle tijden</strong> telt alles samen.
+            </dd>
+          </div>
+          <div>
             <dt>Groepsfilter</dt>
             <dd>
               <strong>Alle groepen</strong> toont al je afgeronde matches samen.
@@ -341,6 +473,7 @@ function StandingsTable({
             <th className="num">Winrate</th>
             <th className="num">Saldo</th>
             {showForm && <th className="num">Rating</th>}
+            {showForm && <th className="col-trend">Verloop</th>}
             <th className="num">Punten</th>
           </tr>
         </thead>
@@ -415,6 +548,15 @@ function StandingsTable({
                       <span className="rating-cell">{r.rating}</span>
                     ) : (
                       "—"
+                    )}
+                  </td>
+                )}
+                {showForm && (
+                  <td className="col-trend">
+                    {r.history.length > 0 ? (
+                      <Sparkline history={r.history} name={r.name} />
+                    ) : (
+                      <span className="empty empty--bare">—</span>
                     )}
                   </td>
                 )}

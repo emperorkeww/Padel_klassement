@@ -43,6 +43,42 @@
   color: var(--ink-soft);
 }
 
+/* Onderling (ingelogde gebruiker vs. de bekeken speler) */
+.onderling {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.onderling__rij {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.onderling__rij + .onderling__rij {
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-2);
+}
+.onderling__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.onderling__waarde {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.onderling__leeg {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+
 /* Beste maatje */
 .partner-card__row {
   display: flex;
@@ -97,6 +133,46 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+/* Badges: compacte flow van pillen; niet-behaald gedempt met voortgang. */
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.badges__item {
+  display: inline-flex;
+}
+.badges__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.badges__pill--dim {
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-style: dashed;
+}
+.badges__pill--dim .badges__emoji {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.badges__emoji {
+  font-size: 1em;
+  line-height: 1;
+}
+.badges__progress {
+  margin-left: var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--ink-soft);
 }
 

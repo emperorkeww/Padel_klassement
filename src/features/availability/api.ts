@@ -30,6 +30,33 @@ export function bookingUrl(date: string): string {
   return `https://playtomic.com/clubs/${getClub().id}?${params.toString()}`;
 }
 
+/**
+ * Deeltekst voor de groepschat, bv. "Terrein 3 vrij van 20:30 tot 21:30 op
+ * vr 3 juli bij LAGO CLUB Padel Beveren".
+ */
+export function slotShareText(
+  slot: { court: string; start: string; end: string },
+  date: string,
+  clubName: string,
+): string {
+  // 's Middags rekenen, zodat een DST-omschakeling de datum niet kan kantelen.
+  const day = new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${date}T12:00:00`));
+  return `${slot.court} vrij van ${slot.start} tot ${slot.end} op ${day} bij ${clubName}`;
+}
+
+/**
+ * Absolute deep-link naar het raster van deze app; dag en club reizen mee in
+ * de URL zodat de ontvanger hetzelfde overzicht ziet (zie Availability.tsx).
+ */
+export function slotShareUrl(date: string, clubId: string): string {
+  const params = new URLSearchParams({ datum: date, club: clubId });
+  return `${window.location.origin}/banen?${params.toString()}`;
+}
+
 // Playtomic gebruikt Engelse weekdagnamen als sleutel in opening_hours.
 const WEEKDAY_KEYS = [
   "SUNDAY",
@@ -42,8 +69,13 @@ const WEEKDAY_KEYS = [
 ];
 
 export type Court = { id: string; name: string; type: string };
-/** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijs. */
-export type SlotOption = { duration: number; price: string };
+/** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijzen. */
+export type SlotOption = {
+  duration: number;
+  price: string;
+  /** Prijs per persoon (baanprijs ÷ 4); null als de prijs niet numeriek is. */
+  perPerson: string | null;
+};
 /** Per baan: vrije starttijd ("HH:MM", clubtijd) → opties, oplopend op duur. */
 export type CourtRow = { court: Court; free: Map<string, SlotOption[]> };
 export type DayAvailability = {
@@ -59,9 +91,10 @@ type RawResource = {
   properties?: { resource_type?: string };
 };
 type RawTenant = {
+  tenant_name?: string;
   resources?: RawResource[];
   opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
-  address?: { timezone?: string };
+  address?: { city?: string; timezone?: string };
 };
 type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
@@ -97,6 +130,21 @@ function getTenant(tenantId: string): Promise<RawTenant> {
     tenantPromises.set(tenantId, promise);
   }
   return promise;
+}
+
+/**
+ * Clubgegevens op tenant-id, voor gedeelde links met ?club=… — zelfde
+ * tenant-detail (en dus cache) als het beschikbaarheidsraster.
+ */
+export async function fetchClub(id: string): Promise<Club> {
+  const tenant = await getTenant(id);
+  if (!tenant.tenant_name) throw new Error("Onbekende club.");
+  return {
+    id,
+    name: tenant.tenant_name,
+    city: tenant.address?.city ?? "",
+    timezone: tenant.address?.timezone ?? DEFAULT_CLUB.timezone,
+  };
 }
 
 async function getSlotsByCourt(
@@ -147,20 +195,72 @@ export function coveredTimes(free: Map<string, SlotOption[]>): Set<string> {
   return covered;
 }
 
+// Gedeelde weergave: nl-BE, hele euro's zonder centen, anders 2 decimalen.
+function formatAmount(n: number, currency: string): string {
+  return new Intl.NumberFormat("nl-BE", {
+    style: "currency",
+    currency: currency || "EUR",
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+/** Eerstvolgende boekbare starttijd van de dag + de banen die dan vrij zijn. */
+export type NextFreeSlot = { time: string; courts: Court[] };
+
+/**
+ * Vroegste vrije starttijd van de dag, over alle banen heen. Respecteert het
+ * duurfilter en telt vandaag (nowMinutes ≠ null) alleen starttijden ná nu —
+ * dezelfde "voorbij"-grens als het raster (start ≤ nu is voorbij).
+ */
+export function nextFreeSlot(
+  data: DayAvailability,
+  duration: number | null,
+  nowMinutes: number | null,
+): NextFreeSlot | null {
+  const cutoff = nowMinutes ?? -1;
+  let best: number | null = null;
+  let courts: Court[] = [];
+  for (const row of data.courts) {
+    for (const [t, options] of row.free) {
+      const m = toMinutes(t);
+      if (m <= cutoff) continue;
+      if (duration != null && !options.some((o) => o.duration === duration)) continue;
+      if (best == null || m < best) {
+        best = m;
+        courts = [row.court];
+      } else if (m === best) {
+        courts.push(row.court);
+      }
+    }
+  }
+  return best == null ? null : { time: fromMinutes(best), courts };
+}
+
 /** Playtomic-prijs ("23.33 EUR") → NL-weergave ("€ 23,33", hele euro's zonder centen). */
 export function formatPrice(raw: string): string {
   const [num, currency] = raw.split(" ");
   const n = Number(num);
   if (!Number.isFinite(n)) return raw;
   try {
-    return new Intl.NumberFormat("nl-BE", {
-      style: "currency",
-      currency: currency || "EUR",
-      minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(n);
+    return formatAmount(n, currency);
   } catch {
     return raw;
+  }
+}
+
+/**
+ * Prijs per persoon (padel speel je met vier): baanprijs ÷ 4, zelfde weergave
+ * als formatPrice. Niet-numerieke prijs (bv. "op aanvraag") → null.
+ */
+export function perPersonPrice(raw: string): string | null {
+  const [num, currency] = raw.split(" ");
+  const n = Number(num);
+  if (!Number.isFinite(n)) return null;
+  try {
+    return formatAmount(n / 4, currency);
+  } catch {
+    return null;
   }
 }
 
@@ -214,7 +314,11 @@ export async function getClubAvailability(
       const t = utcToClubTime(slot.date, slot.time, timeZone);
       const options = free.get(t) ?? [];
       if (!options.some((o) => o.duration === slot.duration)) {
-        options.push({ duration: slot.duration, price: formatPrice(slot.price) });
+        options.push({
+          duration: slot.duration,
+          price: formatPrice(slot.price),
+          perPerson: perPersonPrice(slot.price),
+        });
         options.sort((a, b) => a.duration - b.duration);
       }
       free.set(t, options);
@@ -251,27 +355,34 @@ export async function getClubAvailability(
 type RawTenantSummary = {
   tenant_id: string;
   tenant_name: string;
-  address?: { city?: string; timezone?: string };
+  address?: { city?: string; timezone?: string; country_code?: string };
 };
 
-/** Zoekt actieve Playtomic-clubs met padelbanen op (deel van de) naam. */
+/** Zoekt actieve Belgische Playtomic-clubs met padelbanen op (deel van de) naam. */
 export async function searchClubs(query: string): Promise<Club[]> {
   const params = new URLSearchParams({
     playtomic_status: "ACTIVE",
     sport_id: "PADEL",
     tenant_name: query,
+    // Server-side op België filteren. Zonder deze parameter zeeft een
+    // client-side filter de (wereldwijde) top-10 leeg: op "padel" matchen
+    // duizenden buitenlandse clubs en blijft er geen Belgische over.
+    country_code: "BE",
     size: "10",
   });
   const data = await getJson<RawTenantSummary[]>(
     `/v1/tenants?${params.toString()}`,
     "Kon geen clubs zoeken",
   );
-  return data.map((t) => ({
-    id: t.tenant_id,
-    name: t.tenant_name,
-    city: t.address?.city ?? "",
-    timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
-  }));
+  // Vangnet voor als de (ongedocumenteerde) landparameter ooit wegvalt.
+  return data
+    .filter((t) => t.address?.country_code === "BE")
+    .map((t) => ({
+      id: t.tenant_id,
+      name: t.tenant_name,
+      city: t.address?.city ?? "",
+      timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
+    }));
 }
 
 /** Eén dag in het weekoverzicht; data of een foutmelding, nooit allebei. */

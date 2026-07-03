@@ -82,6 +82,37 @@ export function getPlayerMatches(
   });
 }
 
+/** Afgeronde matches binnen [start, einde) — voor de seizoensstand. */
+export function getCompletedMatchesBetween(
+  startIso: string,
+  endIso: string,
+): Promise<Match[]> {
+  return cached(`matches:between:${startIso}:${endIso}`, async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("status", "completed")
+      .gte("played_at", startIso)
+      .lt("played_at", endIso);
+    if (error) throw error;
+    return data ?? [];
+  });
+}
+
+/** Datum van de allereerste match (bepaalt de seizoenslijst); null zonder matches. */
+export function getFirstMatchDate(): Promise<string | null> {
+  return cached("matches:first", async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("played_at, created_at")
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (error) throw error;
+    const first = data?.[0];
+    return first ? (first.played_at ?? first.created_at) : null;
+  });
+}
+
 export function getRecentMatches(limit = 20): Promise<Match[]> {
   return cached(`matches:recent:${limit}`, async () => {
     const { data, error } = await supabase

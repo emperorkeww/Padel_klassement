@@ -18,9 +18,10 @@ import {
   winStreak,
   longestStreak,
   biggestWin,
-  bestPartner,
   headToHead,
 } from "../../lib/results";
+import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
+import { deriveBadges } from "../../lib/badges";
 import { formatDate } from "../../lib/format";
 import "./PlayerProfile.css";
 
@@ -68,6 +69,13 @@ export function PlayerProfile() {
   const partner = bestPartner(mlist, tmap, id);
   const myRating = ratings.data?.[id]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
+  const badges = deriveBadges(mlist, tmap, id, ratings.data ?? undefined);
+
+  // Onderlinge balans tussen de ingelogde gebruiker en de bekeken speler.
+  const balans =
+    user && !isMe ? onderlingeBalans(mlist, tmap, user.id, id) : null;
+  const vsGespeeld = balans?.alsTegenstanders.gespeeld ?? 0;
+  const samenGespeeld = balans?.alsPartners.samen ?? 0;
 
   // Onderlinge stand, gesorteerd op aantal duels (meest gespeeld eerst).
   const h2h = [...headToHead(mlist, tmap, id).entries()]
@@ -157,6 +165,62 @@ export function PlayerProfile() {
         </section>
       )}
 
+      {balans && (
+        <section className="card">
+          <h2 className="card__title">Onderling</h2>
+          {vsGespeeld === 0 && samenGespeeld === 0 ? (
+            <p className="onderling__leeg">Nog geen gezamenlijke matches.</p>
+          ) : (
+            <ul className="onderling">
+              {vsGespeeld > 0 && (
+                <li className="onderling__rij">
+                  <span className="onderling__label">Tegen elkaar</span>
+                  <span className="onderling__waarde">
+                    Jij won {balans.alsTegenstanders.gewonnen} van de{" "}
+                    {vsGespeeld}
+                  </span>
+                </li>
+              )}
+              {samenGespeeld > 0 && (
+                <li className="onderling__rij">
+                  <span className="onderling__label">Samen</span>
+                  <span className="onderling__waarde">
+                    {samenGespeeld} {samenGespeeld === 1 ? "match" : "matches"}{" "}
+                    · {winRate(balans.alsPartners.gewonnen, samenGespeeld)}%
+                    gewonnen
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {mlist.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Badges</h2>
+          <ul className="badges">
+            {badges.map((b) => (
+              <li key={b.id} className="badges__item" title={b.omschrijving}>
+                <span
+                  className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
+                >
+                  <span className="badges__emoji" aria-hidden="true">
+                    {b.emoji}
+                  </span>
+                  {b.naam}
+                  {!b.behaald && b.voortgang && (
+                    <span className="badges__progress">
+                      {b.voortgang.nu}/{b.voortgang.doel}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {partner && (
         <section className="card partner-card">
           <h2 className="card__title">Beste maatje</h2>
@@ -170,8 +234,8 @@ export function PlayerProfile() {
                 {displayName(pmap[partner.partnerId])}
               </Link>
               <p className="partner-card__sub">
-                Samen {partner.played} match{partner.played === 1 ? "" : "es"}{" "}
-                gespeeld, {partner.wins} gewonnen.
+                {winRate(partner.gewonnen, partner.samen)}% samen gewonnen (
+                {partner.samen} matches)
               </p>
             </div>
           </div>

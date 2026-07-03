@@ -2,11 +2,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bookingUrl,
   coveredTimes,
+  fetchClub,
   formatPrice,
   getClubAvailability,
   getWeekAvailability,
+  nextFreeSlot,
+  perPersonPrice,
   searchClubs,
+  slotShareText,
+  slotShareUrl,
   utcToClubTime,
+  type CourtRow,
+  type DayAvailability,
+  type SlotOption,
 } from "./api";
 import { DEFAULT_CLUB } from "./club";
 
@@ -32,8 +40,14 @@ describe("coveredTimes", () => {
   it("dekt elk slot tot start + langste duur", () => {
     const covered = coveredTimes(
       new Map([
-        ["16:30", [{ duration: 120, price: "€ 40" }]],
-        ["18:30", [{ duration: 60, price: "€ 20" }, { duration: 90, price: "€ 30" }]],
+        ["16:30", [{ duration: 120, price: "€ 40", perPerson: "€ 10" }]],
+        [
+          "18:30",
+          [
+            { duration: 60, price: "€ 20", perPerson: "€ 5" },
+            { duration: 90, price: "€ 30", perPerson: "€ 7,50" },
+          ],
+        ],
       ]),
     );
     expect([...covered].sort()).toEqual([
@@ -43,8 +57,60 @@ describe("coveredTimes", () => {
   });
 
   it("laatste boekbare start voor sluiting dekt ook het slothalfuur", () => {
-    const covered = coveredTimes(new Map([["22:00", [{ duration: 60, price: "€ 20" }]]]));
+    const covered = coveredTimes(
+      new Map([["22:00", [{ duration: 60, price: "€ 20", perPerson: "€ 5" }]]]),
+    );
     expect([...covered].sort()).toEqual(["22:00", "22:30"]);
+  });
+});
+
+// Samenvatting boven het raster: vroegste boekbare start, met dezelfde
+// "voorbij"-grens als het raster (start ≤ nu telt vandaag niet meer mee).
+describe("nextFreeSlot", () => {
+  const row = (id: string, free: [string, number[]][]): CourtRow => ({
+    court: { id, name: `Terrein ${id}`, type: "roofed" },
+    free: new Map(
+      free.map(([t, durations]): [string, SlotOption[]] => [
+        t,
+        durations.map((duration) => ({ duration, price: "€ 20", perPerson: "€ 5" })),
+      ]),
+    ),
+  });
+  const day = (...courts: CourtRow[]): DayAvailability => ({
+    open: "09:00",
+    close: "22:00",
+    timeZone: "Europe/Brussels",
+    courts,
+  });
+
+  it("duurfilter: alleen starttijden met een optie van die duur tellen", () => {
+    const data = day(row("1", [["10:00", [60]], ["14:00", [60, 90]]]));
+    expect(nextFreeSlot(data, null, null)?.time).toBe("10:00");
+    expect(nextFreeSlot(data, 90, null)?.time).toBe("14:00");
+    expect(nextFreeSlot(data, 120, null)).toBeNull();
+  });
+
+  it("vandaag: starttijden op of vóór nu zijn voorbij; andere dag telt alles", () => {
+    const data = day(row("1", [["10:00", [60]], ["14:00", [60]]]));
+    // 10:00 is exact nu → al voorbij (zelfde grens als het raster).
+    expect(nextFreeSlot(data, null, 600)?.time).toBe("14:00");
+    expect(nextFreeSlot(data, null, null)?.time).toBe("10:00");
+  });
+
+  it("niets (meer) vrij: null", () => {
+    expect(nextFreeSlot(day(row("1", [])), null, null)).toBeNull();
+    expect(nextFreeSlot(day(row("1", [["10:00", [60]]])), null, 630)).toBeNull();
+  });
+
+  it("meerdere banen vrij op dezelfde vroegste tijd: allemaal terug", () => {
+    const data = day(
+      row("1", [["12:00", [60]]]),
+      row("2", [["10:00", [60]]]),
+      row("3", [["10:00", [60]]]),
+    );
+    const next = nextFreeSlot(data, null, null);
+    expect(next?.time).toBe("10:00");
+    expect(next?.courts.map((c) => c.name)).toEqual(["Terrein 2", "Terrein 3"]);
   });
 });
 
@@ -64,6 +130,25 @@ describe("formatPrice", () => {
   });
 });
 
+// Padel speel je met vier: de baanprijs gedeeld door 4, zelfde weergaveregels
+// als formatPrice (hele euro's zonder centen, anders 2 decimalen).
+describe("perPersonPrice", () => {
+  it("deelbaar bedrag: hele euro's zonder centen", () => {
+    const p = perPersonPrice("20 EUR");
+    expect(p).toContain("5");
+    expect(p).not.toContain(",");
+  });
+
+  it("niet-deelbaar bedrag: 2 decimalen", () => {
+    expect(perPersonPrice("30 EUR")).toContain("7,50");
+    expect(perPersonPrice("23.33 EUR")).toContain("5,83");
+  });
+
+  it("niet-numerieke prijs → null (geen p.p. tonen)", () => {
+    expect(perPersonPrice("op aanvraag")).toBeNull();
+  });
+});
+
 // De boekingslink gebruikt het tenant-id als slug; Playtomic stuurt door naar
 // de canonieke clubpagina en behoudt daarbij de query.
 describe("bookingUrl", () => {
@@ -71,6 +156,100 @@ describe("bookingUrl", () => {
     expect(bookingUrl("2026-07-04")).toBe(
       `https://playtomic.com/clubs/${DEFAULT_CLUB.id}?sport=PADEL&date=2026-07-04`,
     );
+  });
+});
+
+// De deeltekst en -link voor een vrij slot in de groepschat.
+describe("slotShareText", () => {
+  it("bouwt de tekst met tijden, dag en clubnaam", () => {
+    expect(
+      slotShareText(
+        { court: "Terrein 3", start: "20:30", end: "21:30" },
+        "2026-07-03",
+        "LAGO CLUB Padel Beveren",
+      ),
+    ).toBe(
+      "Terrein 3 vrij van 20:30 tot 21:30 op vr 3 juli bij LAGO CLUB Padel Beveren",
+    );
+  });
+});
+
+describe("slotShareUrl", () => {
+  it("bouwt een absolute link naar /banen met datum en club-id", () => {
+    expect(slotShareUrl("2026-07-03", "t-1")).toBe(
+      `${window.location.origin}/banen?datum=2026-07-03&club=t-1`,
+    );
+  });
+});
+
+// Ontvangende kant van een gedeelde link: club-id → Club via het
+// tenant-detail-endpoint.
+describe("fetchClub", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("mapt het tenant-detail naar een club", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              tenant_name: "Padel Aalst",
+              address: { city: "Aalst", timezone: "Europe/Brussels" },
+            }),
+          }) as Response,
+      ),
+    );
+
+    await expect(fetchClub("t-aalst")).resolves.toEqual({
+      id: "t-aalst",
+      name: "Padel Aalst",
+      city: "Aalst",
+      timezone: "Europe/Brussels",
+    });
+  });
+
+  it("valt terug op de standaardtijdzone en een lege stad", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({ tenant_name: "Padel Zonder Adres" }),
+          }) as Response,
+      ),
+    );
+
+    await expect(fetchClub("t-kaal")).resolves.toEqual({
+      id: "t-kaal",
+      name: "Padel Zonder Adres",
+      city: "",
+      timezone: DEFAULT_CLUB.timezone,
+    });
+  });
+
+  it("faalt op een onbekend id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }) as Response),
+    );
+
+    await expect(fetchClub("t-onbekend")).rejects.toThrow("404");
+  });
+
+  it("faalt als het detail geen clubnaam bevat", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }) as Response),
+    );
+
+    await expect(fetchClub("t-leeg")).rejects.toThrow("Onbekende club");
   });
 });
 
@@ -89,9 +268,13 @@ describe("searchClubs", () => {
             {
               tenant_id: "t-1",
               tenant_name: "Padel Gent",
-              address: { city: "Gent", timezone: "Europe/Brussels" },
+              address: { city: "Gent", timezone: "Europe/Brussels", country_code: "BE" },
             },
-            { tenant_id: "t-2", tenant_name: "Padel Zonder Adres" },
+            {
+              tenant_id: "t-2",
+              tenant_name: "Padel Zonder Stad",
+              address: { country_code: "BE" },
+            },
           ],
         }) as Response,
     );
@@ -103,7 +286,7 @@ describe("searchClubs", () => {
       { id: "t-1", name: "Padel Gent", city: "Gent", timezone: "Europe/Brussels" },
       {
         id: "t-2",
-        name: "Padel Zonder Adres",
+        name: "Padel Zonder Stad",
         city: "",
         timezone: DEFAULT_CLUB.timezone,
       },
@@ -112,6 +295,40 @@ describe("searchClubs", () => {
     expect(url).toContain("/v1/tenants?");
     expect(url).toContain("tenant_name=padel");
     expect(url).toContain("sport_id=PADEL");
+    // Server-side landfilter: anders verdringen buitenlandse naamgenoten de
+    // Belgische clubs uit de kleine top-10 ("padel" → nul BE-resultaten).
+    expect(url).toContain("country_code=BE");
+  });
+
+  // Vangnet bovenop de serverfilter, mocht de ongedocumenteerde parameter wegvallen.
+  it("houdt alleen Belgische clubs over; zonder country_code ook weggefilterd (liever te streng dan buitenlandse ruis)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => [
+              {
+                tenant_id: "t-be",
+                tenant_name: "Padel Gent",
+                address: { city: "Gent", country_code: "BE" },
+              },
+              {
+                tenant_id: "t-it",
+                tenant_name: "Padel Genta",
+                address: { city: "Genova", country_code: "IT" },
+              },
+              { tenant_id: "t-x", tenant_name: "Padel Zonder Land" },
+            ],
+          }) as Response,
+      ),
+    );
+
+    const clubs = await searchClubs("gent");
+
+    expect(clubs.map((c) => c.id)).toEqual(["t-be"]);
   });
 });
 
@@ -172,6 +389,7 @@ describe("getClubAvailability", () => {
     expect([...free.keys()].sort()).toEqual(["16:00", "20:30"]);
     expect(free.get("16:00")?.map((o) => o.duration)).toEqual([60, 90]);
     expect(free.get("16:00")?.[0].price).toBe(formatPrice("20 EUR"));
+    expect(free.get("16:00")?.[0].perPerson).toBe(perPersonPrice("20 EUR"));
     expect(free.get("20:30")?.map((o) => o.duration)).toEqual([60]);
   });
 
