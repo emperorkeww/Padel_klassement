@@ -69,38 +69,6 @@ export function winRate(won: number, played: number): number | null {
   return Math.round((won / played) * 100);
 }
 
-/**
- * Beste maatje: partner met wie de speler de meeste matches won.
- * Geeft null zonder gewonnen dubbels.
- */
-export function bestPartner(
-  matches: Match[],
-  teams: Record<string, Team>,
-  playerId: string,
-): { partnerId: string; wins: number; played: number } | null {
-  const stats = new Map<string, { wins: number; played: number }>();
-  for (const m of matches) {
-    const o = outcomeFor(m, teams, playerId);
-    if (!o) continue;
-    const myTeam = inTeam(teams[m.team_a_id], playerId)
-      ? teams[m.team_a_id]
-      : teams[m.team_b_id];
-    if (!myTeam) continue;
-    const partnerId =
-      myTeam.player1_id === playerId ? myTeam.player2_id : myTeam.player1_id;
-    const s = stats.get(partnerId) ?? { wins: 0, played: 0 };
-    s.played++;
-    if (o === "W") s.wins++;
-    stats.set(partnerId, s);
-  }
-  let best: { partnerId: string; wins: number; played: number } | null = null;
-  for (const [partnerId, s] of stats) {
-    if (s.wins === 0) continue;
-    if (!best || s.wins > best.wins) best = { partnerId, ...s };
-  }
-  return best;
-}
-
 /** Langste winreeks ooit: grootste aaneengesloten rij "W" in de historie. */
 export function longestStreak(
   matches: Match[],
