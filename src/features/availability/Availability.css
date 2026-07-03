@@ -169,7 +169,8 @@
   margin: 0 0 1rem;
 }
 
-/* "Eerstvolgend vrij"-regel boven het raster; sober, zoals .avail-day. */
+/* Samenvattingsregel boven het raster ("Eerstvolgend vrij" bij de dag,
+   "Beste moment" bij de week); sober, zoals .avail-day. */
 .avail-next {
   color: var(--ink-soft);
   font-size: var(--fs-md);

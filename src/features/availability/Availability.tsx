@@ -8,6 +8,7 @@ import {
   getClubAvailability,
   getWeekAvailability,
   bookingUrl,
+  bestWeekMoment,
   nextFreeSlot,
   type DayAvailability,
   type WeekDay,
@@ -33,6 +34,15 @@ function formatShort(date: string): string {
     weekday: "short",
     day: "numeric",
     month: "short",
+  });
+}
+
+// "za 5 juli" — zelfde dagformaat als de deeltekst (slotShareText in api.ts).
+function formatBestDay(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
   });
 }
 
@@ -320,6 +330,27 @@ function NextFreeLine({
   );
 }
 
+/** Samenvatting boven het weekraster: het moment waarop de meeste banen
+ *  tegelijk vrij zijn — de weektegenhanger van NextFreeLine. Geen data of
+ *  niets vrij → geen regel (de week toont fouten al per dag). */
+function BestWeekLine({
+  week,
+  duration,
+}: {
+  week: WeekDay[];
+  duration: number | null;
+}) {
+  const best = bestWeekMoment(week, duration);
+  if (!best) return null;
+  return (
+    <p className="avail-next">
+      Beste moment: {formatBestDay(best.date)} om{" "}
+      <strong className="avail-next__time">{best.time}</strong> — {best.count}{" "}
+      {best.count === 1 ? "baan" : "banen"} vrij
+    </p>
+  );
+}
+
 function WeekSection({
   start,
   today,
@@ -367,7 +398,10 @@ function WeekSection({
       ) : week.error ? (
         <p className="msg msg--error">{week.error}</p>
       ) : week.data ? (
-        <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
+        <>
+          <BestWeekLine week={week.data} duration={duration} />
+          <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
+        </>
       ) : null}
 
       <div className="avail-legend">

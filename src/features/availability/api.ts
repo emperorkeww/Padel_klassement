@@ -14,7 +14,13 @@
 // prijs), geen werkelijke bezetting. Een vrij gat korter dan het kleinste
 // product (60 min) is dus niet te onderscheiden van een boeking.
 
-import { addDays, fromMinutes, toMinutes } from "../../lib/time";
+import {
+  addDays,
+  dateInZone,
+  fromMinutes,
+  minutesNowInZone,
+  toMinutes,
+} from "../../lib/time";
 import { DEFAULT_CLUB, getClub, type Club } from "./club";
 
 const BASE = "/api/playtomic";
@@ -415,4 +421,56 @@ export async function getWeekAvailability(
               : String(result.reason),
         },
   );
+}
+
+/** Moment in de week waarop de meeste banen tegelijk vrij zijn. */
+export type BestWeekMoment = { date: string; time: string; count: number };
+
+/**
+ * Tijdstip in de week met de meeste tegelijk vrije banen. Respecteert het
+ * duurfilter zoals nextFreeSlot en telt vandaag (in clubtijd!) alleen
+ * starttijden ná nu — dezelfde "voorbij"-grens als het raster. Bij gelijke
+ * stand wint het vroegste moment (eerste dag, dan vroegste tijd). Dagen
+ * zonder data (fout) doen niet mee.
+ */
+export function bestWeekMoment(
+  week: WeekDay[],
+  duration: number | null,
+): BestWeekMoment | null {
+  let best: BestWeekMoment | null = null;
+  for (const day of week) {
+    if (!day.data) continue;
+    const isToday = day.date === dateInZone(day.data.timeZone);
+    const cutoff = isToday ? minutesNowInZone(day.data.timeZone) : -1;
+
+    // Aantal vrije banen per starttijd (minuten sinds middernacht).
+    const counts = new Map<number, number>();
+    for (const row of day.data.courts) {
+      for (const [t, options] of row.free) {
+        const m = toMinutes(t);
+        if (m <= cutoff) continue;
+        if (duration != null && !options.some((o) => o.duration === duration)) continue;
+        counts.set(m, (counts.get(m) ?? 0) + 1);
+      }
+    }
+
+    // Beste van deze dag: meeste banen, bij gelijke stand de vroegste tijd
+    // (de Map volgt de rastervolgorde per baan, niet de kloktijd).
+    let dayBest: { start: number; count: number } | null = null;
+    for (const [start, count] of counts) {
+      if (
+        !dayBest ||
+        count > dayBest.count ||
+        (count === dayBest.count && start < dayBest.start)
+      ) {
+        dayBest = { start, count };
+      }
+    }
+
+    // De week is chronologisch: alleen strikt méér banen verslaat een eerdere dag.
+    if (dayBest && (!best || dayBest.count > best.count)) {
+      best = { date: day.date, time: fromMinutes(dayBest.start), count: dayBest.count };
+    }
+  }
+  return best;
 }
