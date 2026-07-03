@@ -12,6 +12,7 @@ import {
   setAttendance,
   type AttendanceStatus,
 } from "./attendanceApi";
+import { FairTeamsCard } from "./FairTeams";
 import type { GroupMember, Profile } from "../../lib/types";
 
 // "Wie speelt er?" — RSVP per speeldag. Elke tik schrijft alleen je eigen
@@ -52,7 +53,10 @@ export function AttendanceCard({
     (attendance.data ?? []).map((r) => [r.player_id, r.status]),
   );
   const mine = byPlayer.get(myId) ?? null;
-  const yes = members.filter((m) => byPlayer.get(m.player_id) === "yes").length;
+  const yesIds = members
+    .filter((m) => byPlayer.get(m.player_id) === "yes")
+    .map((m) => m.player_id);
+  const yes = yesIds.length;
   const courts = Math.floor(yes / 4);
 
   async function choose(status: AttendanceStatus) {
@@ -66,64 +70,68 @@ export function AttendanceCard({
   }
 
   return (
-    <section className="card">
-      <div className="card__head">
-        <h2 className="card__title">Wie speelt er?</h2>
-        <input
-          type="date"
-          className="select attendance-date"
-          aria-label="Speeldag"
-          value={date}
-          min={today}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </div>
+    <>
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Wie speelt er?</h2>
+          <input
+            type="date"
+            className="select attendance-date"
+            aria-label="Speeldag"
+            value={date}
+            min={today}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
 
-      <div className="attendance-my" role="group" aria-label="Jouw status">
-        {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).map((s) => (
-          <button
-            key={s}
-            className={`btn btn--sm attendance-btn ${mine === s ? `is-active is-${s}` : ""}`}
-            onClick={() => choose(s)}
-          >
-            {STATUS_LABEL[s]}
-          </button>
-        ))}
-      </div>
-
-      <ul className="attendance-list">
-        {members.map((m) => {
-          const s = byPlayer.get(m.player_id);
-          return (
-            <li
-              key={m.player_id}
-              className={`attendance-member is-${s ?? "unknown"}`}
+        <div className="attendance-my" role="group" aria-label="Jouw status">
+          {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).map((s) => (
+            <button
+              key={s}
+              className={`btn btn--sm attendance-btn ${mine === s ? `is-active is-${s}` : ""}`}
+              onClick={() => choose(s)}
             >
-              <Avatar profile={profiles[m.player_id]} size={22} />
-              <span className="attendance-member__name">
-                {displayName(profiles[m.player_id])}
-              </span>
-              <span className="attendance-member__mark" aria-hidden="true">
-                {s ? MARK[s] : "·"}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+              {STATUS_LABEL[s]}
+            </button>
+          ))}
+        </div>
 
-      <p className="attendance-foot">
-        {yes === 0
-          ? "Nog niemand aangemeld."
-          : `${yes} speler${yes === 1 ? "" : "s"} aangemeld${
-              yes >= 4
-                ? ` — genoeg voor ${courts} baan${courts === 1 ? "" : "en"}`
-                : ` — nog ${4 - yes} nodig voor een baan`
-            }.`}{" "}
-        <Link className="profile-link" to={`/banen?datum=${date}`}>
-          Vrije banen op deze dag →
-        </Link>
-      </p>
-    </section>
+        <ul className="attendance-list">
+          {members.map((m) => {
+            const s = byPlayer.get(m.player_id);
+            return (
+              <li
+                key={m.player_id}
+                className={`attendance-member is-${s ?? "unknown"}`}
+              >
+                <Avatar profile={profiles[m.player_id]} size={22} />
+                <span className="attendance-member__name">
+                  {displayName(profiles[m.player_id])}
+                </span>
+                <span className="attendance-member__mark" aria-hidden="true">
+                  {s ? MARK[s] : "·"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p className="attendance-foot">
+          {yes === 0
+            ? "Nog niemand aangemeld."
+            : `${yes} speler${yes === 1 ? "" : "s"} aangemeld${
+                yes >= 4
+                  ? ` — genoeg voor ${courts} baan${courts === 1 ? "" : "en"}`
+                  : ` — nog ${4 - yes} nodig voor een baan`
+              }.`}{" "}
+          <Link className="profile-link" to={`/banen?datum=${date}`}>
+            Vrije banen op deze dag →
+          </Link>
+        </p>
+      </section>
+
+      <FairTeamsCard playerIds={yesIds} profiles={profiles} />
+    </>
   );
 }
 
