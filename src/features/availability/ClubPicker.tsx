@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { searchClubs } from "./api";
-import { DEFAULT_CLUB, setClub, useClub, type Club } from "./club";
+import {
+  DEFAULT_CLUB,
+  setClub,
+  useClub,
+  useRecentClubs,
+  type Club,
+} from "./club";
 
 /**
  * Locatiekeuze: knop met de huidige club; opent een paneel met een zoekveld
@@ -9,6 +15,8 @@ import { DEFAULT_CLUB, setClub, useClub, type Club } from "./club";
  */
 export function ClubPicker() {
   const club = useClub();
+  // Snelle keuzes: recent gekozen clubs, zonder de club die al actief is.
+  const recent = useRecentClubs().filter((c) => c.id !== club.id);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Club[] | null>(null);
@@ -99,6 +107,28 @@ export function ClubPicker() {
             role="dialog"
             aria-label="Kies een club"
           >
+            {recent.length > 0 && (
+              <div className="club-picker__recent">
+                <p className="club-picker__recent-title">Recent</p>
+                <ul className="club-picker__list">
+                  {recent.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        className="club-picker__option"
+                        onClick={() => pick(c)}
+                      >
+                        <span className="club-picker__name">{c.name}</span>
+                        {c.city && (
+                          <span className="club-picker__city">{c.city}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <input
               type="search"
               className="select club-picker__search"
