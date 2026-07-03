@@ -32,6 +32,7 @@ import {
   teamLabel,
 } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { ShareChampion } from "./ShareChampion";
 import type { Match, Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
 
@@ -271,6 +272,7 @@ export function Leaderboard() {
           <span>
             Kampioen {season.label}: <strong>{champion.name}</strong>
           </span>
+          <ShareChampion seasonLabel={season.label} rows={playerRows} />
         </p>
       )}
 
