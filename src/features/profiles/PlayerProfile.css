@@ -136,6 +136,46 @@
   color: var(--ink-soft);
 }
 
+/* Badges: compacte flow van pillen; niet-behaald gedempt met voortgang. */
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.badges__item {
+  display: inline-flex;
+}
+.badges__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-sm);
+}
+.badges__pill--dim {
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-style: dashed;
+}
+.badges__pill--dim .badges__emoji {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.badges__emoji {
+  font-size: 1em;
+  line-height: 1;
+}
+.badges__progress {
+  margin-left: var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
 /* Onderlinge stand (head-to-head) */
 .h2h {
   list-style: none;
