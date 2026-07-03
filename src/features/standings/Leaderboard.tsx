@@ -32,6 +32,7 @@ import {
   teamLabel,
 } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { ShareChampion } from "./ShareChampion";
 import type { Match, Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
 
@@ -210,8 +211,6 @@ export function Leaderboard() {
         <p className="page-subtitle">Winst = 3 punten, gelijkspel = 1, verlies = 0.</p>
       </header>
 
-      <KlassementUitleg />
-
       <div className="toolbar">
         <div className="tabs">
           <button
@@ -271,6 +270,7 @@ export function Leaderboard() {
           <span>
             Kampioen {season.label}: <strong>{champion.name}</strong>
           </span>
+          <ShareChampion seasonLabel={season.label} rows={playerRows} />
         </p>
       )}
 
@@ -298,6 +298,10 @@ export function Leaderboard() {
           </>
         )}
       </div>
+
+      {/* Uitleg onderaan: wie hem nodig heeft vindt hem, wie de stand komt
+          checken krijgt die meteen bovenaan te zien. */}
+      <KlassementUitleg />
 
       {tab === "player" && myRankIdx >= 0 && rows.length > 8 && (
         <button className="me-chip" onClick={scrollToMe}>
@@ -467,13 +471,12 @@ function StandingsTable({
             <th>Naam</th>
             {showForm && <th>Vorm</th>}
             <th className="num">Gespeeld</th>
-            <th className="num">Winst</th>
-            <th className="num">Gelijk</th>
-            <th className="num">Verlies</th>
+            <th className="num" aria-label="Winst · gelijk · verlies">
+              W·G·V
+            </th>
             <th className="num">Winrate</th>
             <th className="num">Saldo</th>
             {showForm && <th className="num">Rating</th>}
-            {showForm && <th className="col-trend">Verloop</th>}
             <th className="num">Punten</th>
           </tr>
         </thead>
@@ -521,9 +524,13 @@ function StandingsTable({
                   </td>
                 )}
                 <td className="num">{r.played}</td>
-                <td className="num">{r.won}</td>
-                <td className="num">{r.drawn}</td>
-                <td className="num">{r.lost}</td>
+                <td
+                  className="num record-cell"
+                  aria-label={`${r.won} winst, ${r.drawn} gelijk, ${r.lost} verlies`}
+                >
+                  <span className="record-cell__won">{r.won}</span>·{r.drawn}·
+                  {r.lost}
+                </td>
                 <td className="num">
                   {rate != null ? (
                     <span className="winrate">
@@ -544,26 +551,22 @@ function StandingsTable({
                 </td>
                 {showForm && (
                   <td className="num">
-                    {r.rating != null ? (
-                      <span className="rating-cell">{r.rating}</span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                )}
-                {showForm && (
-                  <td className="col-trend">
-                    {r.history.length > 0 ? (
-                      <Sparkline history={r.history} name={r.name} />
-                    ) : (
-                      <span className="empty empty--bare">—</span>
-                    )}
+                    <span className="rating-wrap">
+                      {r.rating != null ? (
+                        <span className="rating-cell">{r.rating}</span>
+                      ) : (
+                        "—"
+                      )}
+                      {r.history.length > 0 && (
+                        <Sparkline history={r.history} name={r.name} />
+                      )}
+                    </span>
                   </td>
                 )}
                 <td className="num">
-                  <strong>
+                  <span className="pts-cell">
                     <CountUp value={r.points} />
-                  </strong>
+                  </span>
                 </td>
               </tr>
             );
@@ -600,8 +603,10 @@ function RankList({
               </span>
               <span className="ranklist__sub">
                 {r.form.length > 0 && <FormChips form={r.form} size="sm" />}
-                <span>
-                  {r.won}W · {r.drawn}G · {r.lost}V
+                <span
+                  aria-label={`${r.won} winst, ${r.drawn} gelijk, ${r.lost} verlies`}
+                >
+                  {r.won}·{r.drawn}·{r.lost}
                 </span>
               </span>
             </span>

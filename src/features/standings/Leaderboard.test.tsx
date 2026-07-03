@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
 import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
 import { AuthProvider } from "../auth/AuthProvider";
+import { ToastProvider } from "../../components/ToastProvider";
 
 // Vast "nu" (3 juli 2026, Q3): zo is Q2 2026 een afgesloten seizoen met een
 // kampioen. Alleen Date wordt gefaket, zodat waitFor/findBy gewoon blijven werken.
@@ -44,11 +45,18 @@ function renderPage(url = "/") {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <AuthProvider>
-        <Leaderboard />
+        <ToastProvider>
+          <Leaderboard />
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );
 }
+
+// De ToastProvider rendert zelf een role="status"-regio; de banner zoeken we
+// daarom op zijn tekst (de kampioensnaam staat in een geneste <strong>).
+const bannerText = /^kampioen /i;
+const shareButton = () => screen.queryByRole("button", { name: /deel poster/i });
 
 describe("<Leaderboard />", () => {
   it("toont de titel en een spelerrij (alle tijden als default)", async () => {
@@ -59,6 +67,8 @@ describe("<Leaderboard />", () => {
     // Naam staat zowel in de desktop-tabel als in de mobiele ranglijst.
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
+    // Geen seizoen gekozen → geen kampioensposter om te delen.
+    expect(shareButton()).toBeNull();
   });
 
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {
@@ -70,17 +80,20 @@ describe("<Leaderboard />", () => {
     });
 
     // Q2 is afgesloten: banner met de nummer 1 van dat kwartaal.
-    const banner = await screen.findByRole("status");
+    const banner = await screen.findByText(bannerText);
     expect(banner).toHaveTextContent("Kampioen Q2 2026: Carol Claes");
     // De kwartaalstand telt alleen de Q2-match: Carol & Dave wonnen die.
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
+    // Bij een afgesloten seizoen kan de poster gedeeld worden.
+    expect(shareButton()).toBeInTheDocument();
   });
 
-  it("toont geen banner voor het lopende kwartaal", async () => {
+  it("toont geen banner en geen deelknop voor het lopende kwartaal", async () => {
     renderPage("/?seizoen=2026-q3");
     expect(screen.getByLabelText("Seizoen")).toHaveValue("2026-q3");
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(bannerText)).toBeNull();
+    expect(shareButton()).toBeNull();
   });
 
   it("meldt een seizoen zonder matches en toont dan geen kampioen", async () => {
@@ -88,14 +101,58 @@ describe("<Leaderboard />", () => {
     expect(
       await screen.findByText("Geen matches in dit seizoen."),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(bannerText)).toBeNull();
   });
 
   it("valt bij een ongeldige seizoenswaarde terug op alle tijden", async () => {
     renderPage("/?seizoen=onzin");
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(bannerText)).toBeNull();
+  });
+
+  it("deelt de poster via het klembord en meldt dat met een toast", async () => {
+    // jsdom heeft geen canvas of klembord: net genoeg stubben om de
+    // klembord-terugval van sharePng te doorlopen.
+    const fakeCtx = {
+      fillStyle: "",
+      font: "",
+      textAlign: "",
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      measureText: () => ({ width: 100 }),
+      createRadialGradient: () => ({ addColorStop: vi.fn() }),
+    };
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(fakeCtx as unknown as CanvasRenderingContext2D);
+    const toBlob = vi
+      .spyOn(HTMLCanvasElement.prototype, "toBlob")
+      .mockImplementation((cb) => cb(new Blob(["png"], { type: "image/png" })));
+    const write = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { write },
+      configurable: true,
+    });
+    vi.stubGlobal(
+      "ClipboardItem",
+      class {
+        constructor(public items: Record<string, Blob>) {}
+      },
+    );
+
+    try {
+      renderPage("/?seizoen=2026-q2");
+      fireEvent.click(await screen.findByRole("button", { name: /deel poster/i }));
+      expect(
+        await screen.findByText("Poster gekopieerd naar klembord."),
+      ).toBeInTheDocument();
+      expect(write).toHaveBeenCalledTimes(1);
+    } finally {
+      getContext.mockRestore();
+      toBlob.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("toont een sparkline met het ratingverloop van de speler", async () => {

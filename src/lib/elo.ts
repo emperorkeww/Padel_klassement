@@ -5,7 +5,12 @@
 
 import type { PlayerRating, Team } from "./types";
 
-const BASE_RATING = 1000;
+export const BASE_RATING = 1000;
+
+/** Verwachte score (0..1) van rating a tegen rating b — de kern-Elo-formule. */
+export function expected(ra: number, rb: number): number {
+  return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+}
 
 export function teamRating(
   team: Team | undefined,
@@ -23,7 +28,5 @@ export function winChance(
   teamB: Team | undefined,
   ratings: Record<string, PlayerRating>,
 ): number {
-  const ra = teamRating(teamA, ratings);
-  const rb = teamRating(teamB, ratings);
-  return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+  return expected(teamRating(teamA, ratings), teamRating(teamB, ratings));
 }
