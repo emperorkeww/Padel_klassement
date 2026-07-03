@@ -444,19 +444,7 @@
 .empty--bare {
   padding: 0;
 }
-/* Lege staat met een duidelijke vervolgactie. */
-.empty-state {
-  display: grid;
-  justify-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-6) var(--sp-4);
-  text-align: center;
-}
-.empty-state__title {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: var(--fs-base);
-}
+/* Lege staat met vervolgactie: zie components/EmptyState.css. */
 .row-between {
   display: flex;
   align-items: center;
