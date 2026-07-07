@@ -443,6 +443,9 @@ export function Dashboard() {
                   Alle badges →
                 </Link>
               </div>
+              <p className="next-badge__tally">
+                {earnedBadges.length} van {allBadges.length} badges behaald
+              </p>
               <div className="next-badge__row">
                 <span className="next-badge__emoji" aria-hidden="true">
                   {nextBadge.emoji}
@@ -451,7 +454,10 @@ export function Dashboard() {
                   <span className="next-badge__name">{nextBadge.naam}</span>
                   <span className="next-badge__hint">{nextBadge.omschrijving}</span>
                 </span>
-                <span className="next-badge__count">
+                <span
+                  className="next-badge__count"
+                  title={`Voortgang voor deze badge: ${nextBadge.voortgang.nu} van ${nextBadge.voortgang.doel}`}
+                >
                   {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
                 </span>
               </div>
