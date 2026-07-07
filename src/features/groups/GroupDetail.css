@@ -226,3 +226,28 @@
   flex: 1;
   min-width: 0;
 }
+
+/* Losse match loggen/plannen binnen de groep. */
+.group-log {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.group-log__hint {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.group-log__actions {
+  display: flex;
+  gap: var(--sp-2);
+}

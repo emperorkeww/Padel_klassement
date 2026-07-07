@@ -29,6 +29,7 @@ import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { MatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { AttendanceCard } from "./AttendanceCard";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
@@ -39,7 +40,7 @@ import {
   seasonFromId,
 } from "../../lib/seasons";
 import { errorMessage } from "../../lib/errors";
-import type { Match, PlayerStanding } from "../../lib/types";
+import type { Match, PlayerStanding, Profile } from "../../lib/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "stand" | "leden";
@@ -85,6 +86,9 @@ export function GroupDetail() {
   };
   const [mode, setMode] = useState<"americano" | "mexicano">("americano");
   const [roundsToGen, setRoundsToGen] = useState(1);
+  // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
+  const [logOpen, setLogOpen] = useState(false);
+  const [logMode, setLogMode] = useState<NewMatchMode>("score");
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
@@ -100,6 +104,10 @@ export function GroupDetail() {
   const tmap = teams.data ?? {};
   const memberList = members.data ?? [];
   const isOwner = group.data?.created_by === myId;
+  // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
+  const groupPlayers = memberList
+    .map((m) => pmap[m.player_id])
+    .filter(Boolean) as Profile[];
 
   const memberIds = new Set(memberList.map((m) => m.player_id));
   const { accepted } = categorize(friendships.data ?? [], myId);
@@ -344,6 +352,36 @@ export function GroupDetail() {
               </button>
             </div>
           </div>
+
+          <div className="group-log">
+            <p className="group-log__hint">
+              Zelf een partij gespeeld? Log 'm hier — hij telt mee in de
+              groepsstand en de avondsamenvatting.
+            </p>
+            <div className="group-log__actions">
+              <button
+                className="btn btn--sm"
+                disabled={busy}
+                onClick={() => {
+                  setLogMode("score");
+                  setLogOpen(true);
+                }}
+              >
+                + Log match
+              </button>
+              <button
+                className="btn btn--sm"
+                disabled={busy}
+                onClick={() => {
+                  setLogMode("plan");
+                  setLogOpen(true);
+                }}
+              >
+                Plan match
+              </button>
+            </div>
+          </div>
+
           {memberList.length < 4 && (
             <p className="msg msg--warn">
               Minimaal 4 leden nodig om een ronde te genereren.
@@ -367,7 +405,7 @@ export function GroupDetail() {
                 <div key={round} className="round">
                   <div className="round-head">
                     <h3 className="card__title card__title--compact">
-                      Ronde {round}
+                      {round === 0 ? "Losse matches" : `Ronde ${round}`}
                     </h3>
                     <span
                       className={`badge ${
@@ -405,6 +443,16 @@ export function GroupDetail() {
               );
             })}
           </div>
+
+          <NewMatchSheet
+            open={logOpen}
+            players={groupPlayers}
+            mode={logMode}
+            groupId={id}
+            onClose={() => setLogOpen(false)}
+            onCreated={onMatches}
+            onGuestCreated={profiles.reload}
+          />
         </section>
       )}
 

@@ -11,6 +11,7 @@ import {
 import { getClub } from "./club";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
+import { shareOrCopyText } from "../../lib/shareText";
 import {
   buildTimeAxis,
   dateInZone,
@@ -67,12 +68,12 @@ export function Timetable({
     const text = slotShareText(slot, date, club.name);
     const url = slotShareUrl(date, club.id);
     try {
-      if (typeof navigator.share === "function") {
-        await navigator.share({ title: `Vrij slot bij ${club.name}`, text, url });
-      } else {
-        await navigator.clipboard.writeText(`${text}\n${url}`);
-        toast.success("Link gekopieerd.");
-      }
+      const outcome = await shareOrCopyText({
+        title: `Vrij slot bij ${club.name}`,
+        text,
+        url,
+      });
+      if (outcome === "clipboard") toast.success("Link gekopieerd.");
     } catch (err) {
       // Gebruiker die het deelvenster sluit is geen fout.
       if (err instanceof DOMException && err.name === "AbortError") return;

@@ -30,12 +30,17 @@ begin
     raise exception 'De vier spelers moeten verschillend zijn';
   end if;
 
-  -- Alleen jezelf, je vrienden of je eigen gasten mogen in de match.
-  if not (p_a1 = v_uid or public.are_friends(v_uid, p_a1) or public.is_own_guest(v_uid, p_a1))
-     or not (p_a2 = v_uid or public.are_friends(v_uid, p_a2) or public.is_own_guest(v_uid, p_a2))
-     or not (p_b1 = v_uid or public.are_friends(v_uid, p_b1) or public.is_own_guest(v_uid, p_b1))
-     or not (p_b2 = v_uid or public.are_friends(v_uid, p_b2) or public.is_own_guest(v_uid, p_b2)) then
-    raise exception 'Je kunt alleen jezelf, je vrienden en je eigen gasten aan een match toevoegen';
+  -- Loggen binnen een groep mag alleen als je zelf lid bent.
+  if p_group_id is not null and not public.is_group_member(p_group_id, v_uid) then
+    raise exception 'Geen toegang tot deze groep';
+  end if;
+
+  -- Jezelf, je vrienden, je eigen gasten of (binnen een groep) medeleden.
+  if not public._can_add_player(v_uid, p_a1, p_group_id)
+     or not public._can_add_player(v_uid, p_a2, p_group_id)
+     or not public._can_add_player(v_uid, p_b1, p_group_id)
+     or not public._can_add_player(v_uid, p_b2, p_group_id) then
+    raise exception 'Je kunt alleen jezelf, je vrienden, je eigen gasten en groepsleden aan een match toevoegen';
   end if;
 
   v_team_a := public._ensure_team(p_a1, p_a2);

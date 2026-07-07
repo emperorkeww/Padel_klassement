@@ -17,8 +17,16 @@
   color: var(--ink-soft);
   min-width: 3.2em;
 }
+/* Vaste, gecentreerde separator met lucht naast de ±-knoppen, zodat de "–"
+   niet tegen de min-knop van het tweede team plakt. */
 .setscores__dash {
+  flex: 0 0 auto;
+  width: 1.4em;
+  margin: 0 var(--sp-1);
+  text-align: center;
+  font-size: var(--fs-lg);
   font-weight: 800;
+  line-height: 1;
   color: var(--ink-soft);
 }
 .setscores__rm {

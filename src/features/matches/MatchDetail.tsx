@@ -268,7 +268,7 @@ function ScoreEditor({
           <span>{labelA}</span>
           <ScoreStepper value={sa} onChange={setSa} label={`Score ${labelA}`} />
         </div>
-        <span className="matchlist__vs">–</span>
+        <span className="md-editor__dash">–</span>
         <div className="md-editor__field">
           <span>{labelB}</span>
           <ScoreStepper value={sb} onChange={setSb} label={`Score ${labelB}`} />

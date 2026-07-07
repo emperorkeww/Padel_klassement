@@ -625,3 +625,26 @@
     font-size: var(--fs-sm);
   }
 }
+
+/* Export-blok: deel de dag-/weekbeschikbaarheid in de groepschat. */
+.avail-export {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.avail-export__label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.avail-export__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
