@@ -83,7 +83,7 @@ describe("<Friends />", () => {
     expect(await screen.findByText(/verzoek verstuurd/i)).toBeInTheDocument();
   });
 
-  it("klapt de gemeenschappelijke vrienden van een suggestie uit", async () => {
+  it("opent de gemeenschappelijke vrienden in een popup", async () => {
     renderPage();
     expect(
       await screen.findByRole("heading", { name: /misschien ken je/i }),
@@ -94,8 +94,9 @@ describe("<Friends />", () => {
       name: /2 gemeenschappelijke vrienden/i,
     });
     expect(screen.queryByText(/frank feyen/i)).toBeNull();
-    // Na klikken verschijnt de lijst met gemeenschappelijke vrienden.
+    // Na klikken opent een dialoog met de gemeenschappelijke vrienden.
     await userEvent.click(toggle);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(await screen.findByText(/frank feyen/i)).toBeInTheDocument();
   });
 

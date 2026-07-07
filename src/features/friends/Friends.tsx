@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -13,6 +13,7 @@ import {
   removeFriendship,
   categorize,
   otherId,
+  type FriendSuggestion,
 } from "./api";
 import {
   getProfilesMap,
@@ -42,29 +43,26 @@ export function Friends() {
   const [searching, setSearching] = useState(false);
   // Puur voor de lege-status: "nog niet gezocht" ≠ "geen resultaten".
   const [searched, setSearched] = useState(false);
-  // Welke suggesties hun gemeenschappelijke-vrienden-lijst uitgeklapt hebben.
-  const [openMutual, setOpenMutual] = useState<Set<string>>(new Set());
+  // Suggestie waarvan de gemeenschappelijke vrienden in een popup getoond worden.
+  const [mutualFor, setMutualFor] = useState<FriendSuggestion | null>(null);
+
+  // Escape sluit de popup; de pagina eronder scrollt niet mee.
+  useEffect(() => {
+    if (!mutualFor) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMutualFor(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [mutualFor]);
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
-
-  // Klap de lijst met gemeenschappelijke vrienden van één suggestie open/dicht.
-  function toggleMutual(id: string) {
-    setOpenMutual((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  // Namen van de gemeenschappelijke vrienden (voor de uitgeklapte lijst).
-  function mutualNames(ids: string[]): string {
-    return ids
-      .map((id) => displayName(pmap[id]))
-      .filter(Boolean)
-      .join(", ");
-  }
 
   // ids die al een relatie hebben (om dubbele verzoeken te voorkomen in de zoekresultaten)
   const relatedIds = new Set(
@@ -246,7 +244,6 @@ export function Friends() {
         <div className="suggest-grid">
           {visibleSuggestions.map((s) => {
             const p = pmap[s.id];
-            const open = openMutual.has(s.id);
             return (
               <div key={s.id} className="suggest-card">
                 <Link className="suggest-card__id" to={`/spelers/${s.id}`}>
@@ -259,8 +256,7 @@ export function Friends() {
                   <button
                     type="button"
                     className="mutual-toggle"
-                    aria-expanded={open}
-                    onClick={() => toggleMutual(s.id)}
+                    onClick={() => setMutualFor(s)}
                   >
                     {s.mutual_ids.length > 0 && (
                       <span className="mutual-avatars" aria-hidden="true">
@@ -271,17 +267,9 @@ export function Friends() {
                     )}
                     {s.mutual_count} gemeenschappelijke vriend
                     {s.mutual_count === 1 ? "" : "en"}
-                    <span className="mutual-caret" aria-hidden="true">
-                      {open ? "▲" : "▼"}
-                    </span>
                   </button>
                 ) : (
                   <span className="person-sub">Voorgesteld voor jou</span>
-                )}
-                {open && s.mutual_count > 0 && (
-                  <span className="suggest-card__mutuals">
-                    {mutualNames(s.mutual_ids)}
-                  </span>
                 )}
 
                 <button
@@ -326,6 +314,47 @@ export function Friends() {
           ))}
         </div>
       </section>
+
+      {mutualFor && (
+        <div className="sheet-backdrop" onClick={() => setMutualFor(null)}>
+          <div
+            className="sheet sheet--compact"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Gemeenschappelijke vrienden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="sheet__head">
+              <h2 className="sheet__title">
+                Gemeenschappelijk met {displayName(pmap[mutualFor.id])}
+              </h2>
+              <button
+                className="sheet__close"
+                onClick={() => setMutualFor(null)}
+                aria-label="Sluiten"
+              >
+                ✕
+              </button>
+            </header>
+            <div className="person-list mt-4">
+              {mutualFor.mutual_ids.map((mid) => (
+                <div key={mid} className="person-row">
+                  <span className="cell-player">
+                    <Avatar profile={pmap[mid]} size={28} />
+                    <Link
+                      className="profile-link"
+                      to={`/spelers/${mid}`}
+                      onClick={() => setMutualFor(null)}
+                    >
+                      {displayName(pmap[mid])}
+                    </Link>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
