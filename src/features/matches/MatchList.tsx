@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "../../lib/types";
 import { teamLabel } from "./api";
-import { formatDate } from "../../lib/format";
+import { formatRelativeDay } from "../../lib/format";
 import { outcomeFor } from "../../lib/results";
 import { Avatar } from "../../components/Avatar";
 
@@ -45,7 +45,7 @@ export function MatchCard({
           {drew
             ? "gelijkspel"
             : done
-              ? formatDate(m.played_at ?? m.created_at) || "afgerond"
+              ? formatRelativeDay(m.played_at ?? m.created_at) || "afgerond"
               : m.round_number != null
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
