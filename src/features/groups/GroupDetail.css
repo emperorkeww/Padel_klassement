@@ -214,3 +214,15 @@
   margin-left: auto;
   flex-shrink: 0;
 }
+
+/* Gast toevoegen aan een groep: naam-invoer + knop. */
+.guest-add {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  margin-top: var(--sp-2);
+}
+.guest-add__input {
+  flex: 1;
+  min-width: 0;
+}

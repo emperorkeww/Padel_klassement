@@ -6,7 +6,8 @@ create policy "Groepsleden zijn zichtbaar voor leden"
   to authenticated
   using (public.is_group_member(group_id, (select auth.uid())));
 
--- Een eigenaar kan alleen zichzelf of een geaccepteerde vriend toevoegen.
+-- Een eigenaar kan zichzelf, een geaccepteerde vriend of zijn eigen gast
+-- toevoegen (gasten doen zo mee in gegenereerde rondes).
 create policy "Eigenaar kan vrienden toevoegen"
   on public.group_members for insert
   to authenticated
@@ -15,6 +16,7 @@ create policy "Eigenaar kan vrienden toevoegen"
     and (
       player_id = (select auth.uid())
       or public.are_friends((select auth.uid()), player_id)
+      or public.is_own_guest((select auth.uid()), player_id)
     )
   );
 

@@ -37,6 +37,7 @@ as $$
   from public.profiles p
   left join fof on fof.cand = p.id
   where p.id <> (select uid from me)
+    and not p.is_guest
     and p.id not in (select rid from related)
   order by mutual_count desc, random()
   limit p_limit;

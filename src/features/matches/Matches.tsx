@@ -36,18 +36,25 @@ export function Matches() {
   const pmap = Object.fromEntries((profiles.data ?? []).map((p) => [p.id, p]));
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
 
-  // Alleen jezelf en je geaccepteerde vrienden zijn kiesbaar in de wizard.
+  // Kiesbaar in de wizard: jezelf, je geaccepteerde vrienden en je eigen
+  // gastspelers (naamloze deelnemers zonder account, door jou aangemaakt).
   const { accepted } = categorize(friendships.data ?? [], myId);
+  const myGuests = (profiles.data ?? []).filter(
+    (p) => (p as { is_guest?: boolean }).is_guest &&
+      (p as { owner_id?: string }).owner_id === myId,
+  );
   const selectablePlayers: Profile[] = [
     pmap[myId],
     ...accepted.map((f) => pmap[otherId(f, myId)]),
+    ...myGuests,
   ].filter(Boolean) as Profile[];
 
   const reloadAll = useCallback(() => {
     matches.reload();
     teams.reload();
+    profiles.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, teams.reload]);
+  }, [matches.reload, teams.reload, profiles.reload]);
   useRealtime("matches", reloadAll);
 
   // Geplande matches waarin ik meedoe: bovenaan met inline score-invoer.
@@ -222,6 +229,7 @@ export function Matches() {
         mode={sheetMode}
         onClose={() => setSheetOpen(false)}
         onCreated={reloadAll}
+        onGuestCreated={profiles.reload}
       />
     </div>
   );

@@ -17,7 +17,7 @@ import {
   generateAmericanoRound,
   generateMexicanoRound,
 } from "./api";
-import { getGroupMatches, getTeamsMap } from "../matches/api";
+import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
@@ -82,6 +82,7 @@ export function GroupDetail() {
   const [roundsToGen, setRoundsToGen] = useState(1);
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
+  const [guestName, setGuestName] = useState("");
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteBusy, setInviteBusy] = useState(false);
   // Hernoem-veld volgt de geladen groepsnaam.
@@ -168,6 +169,7 @@ export function GroupDetail() {
       matches.reload();
       standings.reload();
       teams.reload();
+      profiles.reload();
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -560,6 +562,51 @@ export function GroupDetail() {
                   </div>
                 </>
               )}
+
+              <h3 className="card__title card__title--section">
+                Gast toevoegen
+              </h3>
+              <p className="card__subtitle">
+                Speelt er iemand zonder account mee? Voeg 'm als gast toe met een
+                naam; hij telt mee in gegenereerde rondes.
+              </p>
+              <div className="guest-add">
+                <input
+                  className="input guest-add__input"
+                  type="text"
+                  placeholder="Naam van de gast…"
+                  aria-label="Naam van een gastspeler"
+                  value={guestName}
+                  maxLength={40}
+                  disabled={busy}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && guestName.trim()) {
+                      e.preventDefault();
+                      const naam = guestName.trim();
+                      void act(async () => {
+                        const gid = await createGuestPlayer(naam);
+                        await addGroupMembers(id, [gid]);
+                        setGuestName("");
+                      }, "Gast toegevoegd.");
+                    }
+                  }}
+                />
+                <button
+                  className="btn btn--primary btn--sm"
+                  disabled={busy || !guestName.trim()}
+                  onClick={() => {
+                    const naam = guestName.trim();
+                    void act(async () => {
+                      const gid = await createGuestPlayer(naam);
+                      await addGroupMembers(id, [gid]);
+                      setGuestName("");
+                    }, "Gast toegevoegd.");
+                  }}
+                >
+                  + Gast
+                </button>
+              </div>
 
               <h3 className="card__title card__title--section">
                 Uitnodigingslink
