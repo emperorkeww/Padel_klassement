@@ -146,24 +146,50 @@
 .md-editor__inputs {
   display: flex;
   align-items: flex-end;
-  gap: var(--sp-3);
+  justify-content: center;
+  gap: var(--sp-2);
 }
 .md-editor__field {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 160px;
   display: grid;
-  gap: var(--sp-1);
-  justify-items: center;
+  gap: var(--sp-2);
+  justify-items: stretch;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-soft);
-  max-width: 140px;
   text-align: center;
 }
+/* Lange teamnamen niet het veld laten oprekken. */
+.md-editor__field > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* De stepper vult het veld en centreert zichzelf, zodat de ±-knoppen binnen
+   het veld blijven (en niet tegen de separator botsen). */
+.md-editor__field .stepper {
+  width: 100%;
+  justify-content: center;
+}
 .md-editor__field .input {
-  width: 84px;
+  width: 72px;
+  min-width: 0;
   text-align: center;
   font-size: var(--fs-lg);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+/* Separator: op de hoogte van de score-invoer (niet onderaan bij de knoppen),
+   met ruimte aan beide kanten. */
+.md-editor__dash {
+  align-self: flex-end;
+  line-height: 40px;
+  padding: 0 var(--sp-1);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: var(--ink-soft);
 }
 .md-editor__preview {
   margin: 0;
