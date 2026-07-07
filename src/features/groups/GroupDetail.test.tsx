@@ -87,15 +87,23 @@ describe("<GroupDetail />", () => {
     ).toBeInTheDocument();
   });
 
-  it("genereert een Americano-ronde via de RPC", async () => {
+  it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(
       screen.getByRole("button", { name: /genereer americano-ronde/i }),
     );
-    expect(supabase.rpc).toHaveBeenCalledWith("generate_americano_round", {
-      p_group_id: "g1",
-    });
+    // De ronde wordt client-side ingedeeld (geschiedenis-bewust) en via
+    // create_fair_round weggeschreven: g1 heeft 4 leden → één baan van vier.
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_fair_round",
+      expect.objectContaining({ p_group_id: "g1" }),
+    );
+    const call = (supabase.rpc as unknown as { mock: { calls: unknown[][] } })
+      .mock.calls.find((c) => c[0] === "create_fair_round");
+    const players = (call?.[1] as { p_players: string[] }).p_players;
+    expect(players).toHaveLength(4);
+    expect(new Set(players).size).toBe(4); // vier verschillende leden
   });
 
   it("toont Stand en Leden in eigen tabbladen", async () => {

@@ -15,7 +15,14 @@ import { deriveBadges } from "../../lib/badges";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
-import { getRecentResults, getPlayerMatches, getTeamsMap } from "../matches/api";
+import {
+  getRecentResults,
+  getPlayerMatches,
+  getTeamsMap,
+  teamLabel,
+} from "../matches/api";
+import { eveningSummary } from "../../lib/eveningSummary";
+import { ShareEvening } from "../groups/ShareEvening";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyGroups, type GroupSummary } from "../groups/api";
@@ -152,6 +159,12 @@ export function Dashboard() {
   const eveningGroup = evening
     ? (groups.data ?? []).find((g) => g.id === evening.groupId)
     : null;
+  // Echte avondstand (top-spelers + beste duo) voor de speelavond-kaart.
+  const eveningMatches = evening
+    ? completed.filter((m) => m.group_id === evening.groupId)
+    : [];
+  const eveningSum = evening ? eveningSummary(eveningMatches, tmap, evening.day) : null;
+  const eveningMedals = ["🥇", "🥈", "🥉"];
 
   // Eerstvolgende vrije baan bij de club (vandaag).
   const nextFree = availability.data
@@ -343,7 +356,7 @@ export function Dashboard() {
         </section>
       )}
 
-      {evening && eveningGroup && (
+      {evening && eveningGroup && eveningSum && (
         <section className="card card--evening">
           <div className="card__head">
             <h2 className="card__title">
@@ -353,11 +366,63 @@ export function Dashboard() {
               Bekijk →
             </Link>
           </div>
-          <p className="evening__text">
-            {evening.count} {evening.count === 1 ? "uitslag" : "uitslagen"} in{" "}
-            <strong>{eveningGroup.name}</strong>. Bekijk de stand en deel de
-            avondposter met de groep.
+          <p className="evening__sub">
+            <strong>{eveningGroup.name}</strong>
+            <span className="evening__dot" aria-hidden="true">
+              ·
+            </span>
+            {evening.count} {evening.count === 1 ? "uitslag" : "uitslagen"}
           </p>
+
+          {eveningSum.rows.length > 0 && (
+            <ol className="evening-podium">
+              {eveningSum.rows.slice(0, 3).map((row, i) => (
+                <li key={row.playerId} className="evening-podium__row">
+                  <span
+                    className="evening-podium__rank"
+                    data-rank={i + 1}
+                    aria-label={`${i + 1}e`}
+                  >
+                    {eveningMedals[i]}
+                  </span>
+                  <Avatar profile={pmap[row.playerId]} size={30} />
+                  <span className="evening-podium__name">
+                    {displayName(pmap[row.playerId])}
+                  </span>
+                  <span className="evening-podium__form" aria-hidden="true">
+                    <span className="evening-podium__wl">{row.won}W</span>
+                    {row.drawn > 0 && (
+                      <span className="evening-podium__wl">{row.drawn}G</span>
+                    )}
+                    <span className="evening-podium__wl">{row.lost}V</span>
+                  </span>
+                  <span className="evening-podium__pts">
+                    <strong>{row.points}</strong> ptn
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {eveningSum.bestDuo && (
+            <p className="evening__duo">
+              <span aria-hidden="true">🏆</span> Beste duo:{" "}
+              <strong>{teamLabel(tmap[eveningSum.bestDuo.teamId], pmap)}</strong>{" "}
+              ({eveningSum.bestDuo.won} winst
+              {eveningSum.bestDuo.won === 1 ? "" : "en"})
+            </p>
+          )}
+
+          {evening.isToday && (
+            <div className="evening__actions">
+              <ShareEvening
+                groupName={eveningGroup.name}
+                matches={eveningMatches}
+                teams={tmap}
+                profiles={pmap}
+              />
+            </div>
+          )}
         </section>
       )}
 
@@ -687,7 +752,7 @@ function rivalVerdictLabel(rec: RivalRec): string {
 function deriveEvening(
   completed: Match[],
   timezone: string,
-): { groupId: string; count: number; isToday: boolean } | null {
+): { groupId: string; count: number; isToday: boolean; day: string } | null {
   const withGroup = completed.filter((m) => m.group_id);
   if (withGroup.length === 0) return null;
   const day = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
@@ -702,7 +767,7 @@ function deriveEvening(
     perGroup.set(m.group_id!, (perGroup.get(m.group_id!) ?? 0) + 1);
   }
   const [groupId, count] = [...perGroup.entries()].sort((a, b) => b[1] - a[1])[0];
-  return { groupId, count, isToday: latest === todayStr };
+  return { groupId, count, isToday: latest === todayStr, day: latest };
 }
 
 function ShiftDelta({ shift }: { shift: Shift | null }) {

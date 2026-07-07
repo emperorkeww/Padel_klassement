@@ -236,11 +236,99 @@
     radial-gradient(110% 130% at 0% 0%, var(--gold-soft) 0%, transparent 60%),
     var(--surface);
 }
-.evening__text {
-  margin: 0;
+.evening__sub {
+  margin: 0 0 var(--sp-3);
   color: var(--ink-soft);
-  font-size: var(--fs-base);
-  line-height: 1.5;
+  font-size: var(--fs-sm);
+}
+.evening__sub strong {
+  color: var(--ink);
+}
+.evening__dot {
+  margin: 0 var(--sp-2);
+  opacity: 0.6;
+}
+
+/* Mini-avondstand: podium met de top 3 van de avond. */
+.evening-podium {
+  list-style: none;
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.evening-podium__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.evening-podium__row:first-child {
+  border-color: var(--gold-soft);
+  background: linear-gradient(
+    90deg,
+    var(--gold-soft) 0%,
+    var(--surface) 55%
+  );
+}
+.evening-podium__rank {
+  flex-shrink: 0;
+  width: 1.6rem;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.evening-podium__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.evening-podium__form {
+  flex-shrink: 0;
+  display: none;
+  gap: var(--sp-1);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.evening-podium__wl {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.evening-podium__pts {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.evening-podium__pts strong {
+  color: var(--ink);
+  font-size: var(--fs-md);
+}
+/* Op wat bredere kaarten ook de W/G/V-telling tonen. */
+@media (min-width: 400px) {
+  .evening-podium__form {
+    display: inline-flex;
+  }
+}
+
+.evening__duo {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+.evening__duo strong {
+  color: var(--success);
+}
+.evening__actions {
+  display: flex;
 }
 
 /* Rivaal: avatar + naam/balans + verdict-pil. */
