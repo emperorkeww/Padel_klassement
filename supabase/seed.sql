@@ -20,7 +20,11 @@ values
   ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'bob@example.com',   extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"bob","full_name":"Bob Boers"}',     now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'carol@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"carol","full_name":"Carol Claes"}', now(), now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'dave@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"dave","full_name":"Dave De Vos"}',  now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '55555555-5555-5555-5555-555555555555', 'authenticated', 'authenticated', 'erik@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"erik","full_name":"Erik Elzinga"}', now(), now(), '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '55555555-5555-5555-5555-555555555555', 'authenticated', 'authenticated', 'erik@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"erik","full_name":"Erik Elzinga"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '66666666-6666-6666-6666-666666666666', 'authenticated', 'authenticated', 'frank@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"frank","full_name":"Frank Feyen"}',   now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '77777777-7777-7777-7777-777777777777', 'authenticated', 'authenticated', 'grace@example.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"grace","full_name":"Grace Gielen"}',  now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '88888888-8888-8888-8888-888888888888', 'authenticated', 'authenticated', 'henk@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"henk","full_name":"Henk Hendriks"}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '99999999-9999-9999-9999-999999999999', 'authenticated', 'authenticated', 'iris@example.com',  extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"username":"iris","full_name":"Iris Ilic"}',      now(), now(), '', '', '', '');
 
 -- 1b) Bijbehorende identities. Nieuwere GoTrue verwacht voor e-mail/wachtwoord
 --     login een identity-rij per user (met sub + email in identity_data).
@@ -32,7 +36,11 @@ values
   (extensions.gen_random_uuid(), '22222222-2222-2222-2222-222222222222', '22222222-2222-2222-2222-222222222222', 'email', '{"sub":"22222222-2222-2222-2222-222222222222","email":"bob@example.com","email_verified":true}',   now(), now(), now()),
   (extensions.gen_random_uuid(), '33333333-3333-3333-3333-333333333333', '33333333-3333-3333-3333-333333333333', 'email', '{"sub":"33333333-3333-3333-3333-333333333333","email":"carol@example.com","email_verified":true}', now(), now(), now()),
   (extensions.gen_random_uuid(), '44444444-4444-4444-4444-444444444444', '44444444-4444-4444-4444-444444444444', 'email', '{"sub":"44444444-4444-4444-4444-444444444444","email":"dave@example.com","email_verified":true}',  now(), now(), now()),
-  (extensions.gen_random_uuid(), '55555555-5555-5555-5555-555555555555', '55555555-5555-5555-5555-555555555555', 'email', '{"sub":"55555555-5555-5555-5555-555555555555","email":"erik@example.com","email_verified":true}',  now(), now(), now());
+  (extensions.gen_random_uuid(), '55555555-5555-5555-5555-555555555555', '55555555-5555-5555-5555-555555555555', 'email', '{"sub":"55555555-5555-5555-5555-555555555555","email":"erik@example.com","email_verified":true}',  now(), now(), now()),
+  (extensions.gen_random_uuid(), '66666666-6666-6666-6666-666666666666', '66666666-6666-6666-6666-666666666666', 'email', '{"sub":"66666666-6666-6666-6666-666666666666","email":"frank@example.com","email_verified":true}', now(), now(), now()),
+  (extensions.gen_random_uuid(), '77777777-7777-7777-7777-777777777777', '77777777-7777-7777-7777-777777777777', 'email', '{"sub":"77777777-7777-7777-7777-777777777777","email":"grace@example.com","email_verified":true}', now(), now(), now()),
+  (extensions.gen_random_uuid(), '88888888-8888-8888-8888-888888888888', '88888888-8888-8888-8888-888888888888', 'email', '{"sub":"88888888-8888-8888-8888-888888888888","email":"henk@example.com","email_verified":true}',  now(), now(), now()),
+  (extensions.gen_random_uuid(), '99999999-9999-9999-9999-999999999999', '99999999-9999-9999-9999-999999999999', 'email', '{"sub":"99999999-9999-9999-9999-999999999999","email":"iris@example.com","email_verified":true}',   now(), now(), now());
 
 -- 2) Teams (vaste paren)
 insert into public.teams (id, name, player1_id, player2_id)
@@ -83,3 +91,20 @@ values
   ('11111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333', 'accepted'),
   ('11111111-1111-1111-1111-111111111111', '44444444-4444-4444-4444-444444444444', 'accepted'),
   ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'pending');
+
+-- 7) Vrienden-van-vrienden om de "Misschien ken je"-suggesties te demonstreren.
+--    Deze spelers zijn NIET direct met alice verbonden, maar wel met haar
+--    vrienden (bob/carol/dave), zodat ze bij alice bovenaan verschijnen op
+--    aflopend aantal gemeenschappelijke vrienden:
+--      frank -> bob+carol+dave (3 gemeenschappelijk)
+--      grace -> bob+carol      (2 gemeenschappelijk)
+--      henk  -> dave           (1 gemeenschappelijk)
+--      iris  -> geen connectie (0 -> willekeurige aanvulling)
+insert into public.friendships (requester_id, addressee_id, status)
+values
+  ('66666666-6666-6666-6666-666666666666', '22222222-2222-2222-2222-222222222222', 'accepted'),
+  ('66666666-6666-6666-6666-666666666666', '33333333-3333-3333-3333-333333333333', 'accepted'),
+  ('66666666-6666-6666-6666-666666666666', '44444444-4444-4444-4444-444444444444', 'accepted'),
+  ('77777777-7777-7777-7777-777777777777', '22222222-2222-2222-2222-222222222222', 'accepted'),
+  ('77777777-7777-7777-7777-777777777777', '33333333-3333-3333-3333-333333333333', 'accepted'),
+  ('88888888-8888-8888-8888-888888888888', '44444444-4444-4444-4444-444444444444', 'accepted');
