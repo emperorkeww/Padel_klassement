@@ -74,7 +74,18 @@ export function Matches() {
       ),
     [matches.data, tmap, myId, filter, plannedIds],
   );
-  const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  // Sorteer op de dag die het dagkopje bepaalt (played_at, anders created_at)
+  // vóór het groeperen. De lijst zelf komt op created_at binnen, dus zonder deze
+  // sortering raken afgeronde matches met een afwijkende speeldatum verspreid
+  // over meerdere losse dagkopjes.
+  const groups = useMemo(() => {
+    const sorted = [...filtered].sort(
+      (a, b) =>
+        new Date(b.played_at ?? b.created_at).getTime() -
+        new Date(a.played_at ?? a.created_at).getTime(),
+    );
+    return groupByDay(sorted);
+  }, [filtered]);
 
   // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
   const counts = useMemo(() => {

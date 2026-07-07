@@ -11,6 +11,7 @@ const Leaderboard = lazy(() => import("../features/standings/Leaderboard"));
 const Matches = lazy(() => import("../features/matches/Matches"));
 const Groups = lazy(() => import("../features/groups/Groups"));
 const GroupDetail = lazy(() => import("../features/groups/GroupDetail"));
+const JoinGroup = lazy(() => import("../features/groups/JoinGroup"));
 const Friends = lazy(() => import("../features/friends/Friends"));
 const PlayerProfile = lazy(() => import("../features/profiles/PlayerProfile"));
 const MatchDetail = lazy(() => import("../features/matches/MatchDetail"));
@@ -33,6 +34,7 @@ function App() {
             <Route path="/banen" element={<Availability />} />
             <Route path="/matches/:id" element={<MatchDetail />} />
             <Route path="/groepen" element={<Groups />} />
+            <Route path="/groepen/join/:token" element={<JoinGroup />} />
             <Route path="/groepen/:id" element={<GroupDetail />} />
             <Route path="/vrienden" element={<Friends />} />
             <Route path="/spelers/:id" element={<PlayerProfile />} />

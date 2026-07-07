@@ -17,8 +17,15 @@ create table public.matches (
   round_number smallint,
   score_a smallint,
   score_b smallint,
+  -- optionele per-set uitslag, bv. [[6,4],[3,6],[7,5]]. Puur voor weergave;
+  -- score_a/score_b blijven de autoritaire aggregaat voor stand en ratings.
+  set_scores jsonb,
   -- een match is tussen twee verschillende teams
   constraint matches_distinct_teams check (team_a_id <> team_b_id),
+  -- set_scores moet, indien gevuld, een JSON-array zijn
+  constraint matches_set_scores_is_array check (
+    set_scores is null or jsonb_typeof(set_scores) = 'array'
+  ),
   -- de winnaar moet een van beide deelnemende teams zijn
   constraint matches_winner_valid check (
     winner_team_id is null

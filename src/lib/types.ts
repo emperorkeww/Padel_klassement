@@ -8,6 +8,9 @@ export interface Profile {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  /** Door de speler uitgelichte badges (geordende lijst van badge-id's).
+   *  Optioneel: de kolom zit nog niet in de gegenereerde database.types.ts. */
+  featured_badges?: string[] | null;
   created_at: string;
 }
 

@@ -95,6 +95,39 @@
   color: var(--ink-soft);
 }
 
+/* Per-set uitslag onder het scorebord, bv. "6-4 · 3-6 · 7-5". */
+.md-sets {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  flex-wrap: wrap;
+}
+.md-sets__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.md-sets .set-breakdown {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  align-items: center;
+}
+.md-sets .set-breakdown__set {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
 /* Score corrigeren (alleen de aanmaker). */
 .md-edit-actions {
   display: flex;

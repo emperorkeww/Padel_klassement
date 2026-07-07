@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
@@ -8,8 +8,12 @@ import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
 import {
   getGroup,
   getGroupMembers,
-  addGroupMember,
+  addGroupMembers,
   removeGroupMember,
+  renameGroup,
+  deleteGroup,
+  leaveGroup,
+  createGroupInvite,
   generateAmericanoRound,
   generateMexicanoRound,
 } from "./api";
@@ -22,14 +26,22 @@ import { MatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { AttendanceCard } from "./AttendanceCard";
 import { ShareEvening } from "./ShareEvening";
+import { ShareChampion } from "../standings/ShareChampion";
+import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
+import {
+  isSeasonClosed,
+  listSeasons,
+  seasonFromId,
+} from "../../lib/seasons";
 import { errorMessage } from "../../lib/errors";
-import type { Match } from "../../lib/types";
+import type { Match, PlayerStanding } from "../../lib/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "stand" | "leden";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -68,6 +80,15 @@ export function GroupDetail() {
   };
   const [mode, setMode] = useState<"americano" | "mexicano">("americano");
   const [roundsToGen, setRoundsToGen] = useState(1);
+  // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
+  const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  // Hernoem-veld volgt de geladen groepsnaam.
+  const [renameValue, setRenameValue] = useState("");
+  useEffect(() => {
+    if (group.data) setRenameValue(group.data.name);
+  }, [group.data]);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -79,6 +100,64 @@ export function GroupDetail() {
   const addableFriendIds = accepted
     .map((f) => otherId(f, myId))
     .filter((pid) => !memberIds.has(pid));
+
+  // Groepsseizoenen (kwartalen) voor de stand — dezelfde logica als het globale
+  // klassement, maar client-side berekend uit de matches van deze groep.
+  const season = seasonFromId(params.get("seizoen") ?? "");
+  const setSeasonId = (sid: string) => {
+    const next = new URLSearchParams(params);
+    if (sid) next.set("seizoen", sid);
+    else next.delete("seizoen");
+    setParams(next, { replace: true });
+  };
+  const completedMatches = (matches.data ?? []).filter(
+    (m) => m.status === "completed",
+  );
+  const firstMatchDate = completedMatches.reduce<string | null>((min, m) => {
+    const d = m.played_at ?? m.created_at;
+    return min === null || d < min ? d : min;
+  }, null);
+  const seasons = firstMatchDate ? listSeasons(new Date(firstMatchDate)) : [];
+  const seasonStandings: PlayerStanding[] | null = season
+    ? computePlayerStandings(
+        matchesInSeason(completedMatches, season),
+        tmap,
+        pmap,
+      )
+    : null;
+  const shownStandings = season ? (seasonStandings ?? []) : (standings.data ?? []);
+  const champion =
+    season && isSeasonClosed(season) && shownStandings.length > 0
+      ? shownStandings[0]
+      : null;
+
+  function toggleSelected(pid: string) {
+    setSelectedToAdd((prev) => {
+      const next = new Set(prev);
+      if (next.has(pid)) next.delete(pid);
+      else next.add(pid);
+      return next;
+    });
+  }
+
+  async function makeInvite() {
+    setInviteBusy(true);
+    try {
+      const token = await createGroupInvite(id);
+      const url = `${window.location.origin}/groepen/join/${token}`;
+      setInviteUrl(url);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Uitnodigingslink gekopieerd.");
+      } catch {
+        toast.success("Uitnodigingslink klaar — kopieer 'm hieronder.");
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setInviteBusy(false);
+    }
+  }
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     setBusy(true);
@@ -318,9 +397,53 @@ export function GroupDetail() {
 
       {view === "stand" && (
         <section className="card">
-          <h2 className="card__title">Groepsklassement</h2>
-          {(standings.data ?? []).length === 0 ? (
-            <p className="empty">Nog geen afgeronde matches in deze groep.</p>
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">Groepsklassement</h2>
+            {seasons.length > 0 && (
+              <select
+                className="select select--filter"
+                aria-label="Seizoen"
+                value={season?.id ?? ""}
+                onChange={(e) => setSeasonId(e.target.value)}
+              >
+                <option value="">Alle tijden</option>
+                {season && !seasons.some((s) => s.id === season.id) && (
+                  <option value={season.id}>{season.label}</option>
+                )}
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {champion && season && (
+            <p className="champion-banner" role="status">
+              <span className="champion-banner__cup" aria-hidden="true">
+                🏆
+              </span>
+              <span>
+                Kampioen {season.label}:{" "}
+                <strong>{displayName(champion)}</strong>
+              </span>
+              <ShareChampion
+                seasonLabel={season.label}
+                rows={shownStandings.map((p) => ({
+                  name: displayName(p),
+                  points: p.points,
+                }))}
+              />
+            </p>
+          )}
+
+          {shownStandings.length === 0 ? (
+            <p className="empty">
+              {season
+                ? "Geen matches in dit seizoen."
+                : "Nog geen afgeronde matches in deze groep."}
+            </p>
           ) : (
             <table className="table">
               <thead>
@@ -333,7 +456,7 @@ export function GroupDetail() {
                 </tr>
               </thead>
               <tbody>
-                {(standings.data ?? []).map((p, i) => (
+                {shownStandings.map((p, i) => (
                   <tr
                     key={p.player_id}
                     className={p.player_id === myId ? "is-me" : ""}
@@ -395,34 +518,143 @@ export function GroupDetail() {
           {isOwner && (
             <>
               <h3 className="card__title card__title--section">
-                Vriend toevoegen
+                Vrienden toevoegen
               </h3>
               {addableFriendIds.length === 0 ? (
                 <p className="empty">
                   Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
                 </p>
               ) : (
-                <div className="person-list">
-                  {addableFriendIds.map((pid) => (
-                    <div key={pid} className="person-row">
-                      <span className="cell-player">
-                        <Avatar profile={pmap[pid]} size={28} />
-                        {displayName(pmap[pid])}
-                      </span>
-                      <button
-                        className="btn btn--sm"
-                        disabled={busy}
-                        onClick={() =>
-                          act(() => addGroupMember(id, pid), "Lid toegevoegd.")
-                        }
-                      >
-                        Toevoegen
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="person-list">
+                    {addableFriendIds.map((pid) => (
+                      <label key={pid} className="person-row person-row--pick">
+                        <span className="cell-player">
+                          <input
+                            type="checkbox"
+                            className="member-check"
+                            checked={selectedToAdd.has(pid)}
+                            onChange={() => toggleSelected(pid)}
+                          />
+                          <Avatar profile={pmap[pid]} size={28} />
+                          {displayName(pmap[pid])}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="form-actions">
+                    <button
+                      className="btn btn--primary btn--sm"
+                      disabled={busy || selectedToAdd.size === 0}
+                      onClick={() =>
+                        act(async () => {
+                          await addGroupMembers(id, [...selectedToAdd]);
+                          setSelectedToAdd(new Set());
+                        }, "Leden toegevoegd.")
+                      }
+                    >
+                      {selectedToAdd.size <= 1
+                        ? "Voeg toe"
+                        : `Voeg ${selectedToAdd.size} toe`}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <h3 className="card__title card__title--section">
+                Uitnodigingslink
+              </h3>
+              <p className="card__subtitle">
+                Deel deze link; wie 'm opent en ingelogd is, wordt automatisch
+                lid — ook zonder vriendschap.
+              </p>
+              <div className="form-actions">
+                <button
+                  className="btn btn--sm"
+                  disabled={inviteBusy}
+                  onClick={makeInvite}
+                >
+                  {inviteBusy ? "Bezig…" : "Maak uitnodigingslink"}
+                </button>
+              </div>
+              {inviteUrl && (
+                <input
+                  className="input invite-url"
+                  readOnly
+                  value={inviteUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
               )}
             </>
+          )}
+
+          <h3 className="card__title card__title--section">Groep beheren</h3>
+          {isOwner ? (
+            <div className="stack">
+              <form
+                className="row-between"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const name = renameValue.trim();
+                  if (!name || name === group.data!.name) return;
+                  act(() => renameGroup(id, name), "Groepsnaam bijgewerkt.");
+                }}
+              >
+                <input
+                  className="input"
+                  aria-label="Groepsnaam"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                />
+                <button
+                  className="btn btn--sm"
+                  disabled={
+                    busy ||
+                    !renameValue.trim() ||
+                    renameValue.trim() === group.data!.name
+                  }
+                >
+                  Hernoemen
+                </button>
+              </form>
+              <div>
+                <button
+                  className="btn btn--danger btn--sm"
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        "Deze groep en al zijn rondes verwijderen? Dit kan niet ongedaan worden gemaakt.",
+                      )
+                    )
+                      return;
+                    act(async () => {
+                      await deleteGroup(id);
+                      navigate("/groepen", { replace: true });
+                    }, "Groep verwijderd.");
+                  }}
+                >
+                  Groep verwijderen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button
+                className="btn btn--danger btn--sm"
+                disabled={busy}
+                onClick={() => {
+                  if (!window.confirm("Weet je zeker dat je deze groep wilt verlaten?"))
+                    return;
+                  act(async () => {
+                    await leaveGroup(id, myId);
+                    navigate("/groepen", { replace: true });
+                  }, "Je hebt de groep verlaten.");
+                }}
+              >
+                Groep verlaten
+              </button>
+            </div>
           )}
         </section>
       )}

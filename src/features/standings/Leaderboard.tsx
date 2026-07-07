@@ -12,6 +12,7 @@ import { useFlip } from "../../lib/useFlip";
 import { recentForm, winRate, type Outcome } from "../../lib/results";
 import { isSeasonClosed, listSeasons, seasonFromId } from "../../lib/seasons";
 import {
+  byRank,
   computePlayerStandings,
   computeTeamStandings,
   matchesInSeason,
@@ -415,6 +416,16 @@ function KlassementUitleg() {
             </dd>
           </div>
           <div>
+            <dt>Rating</dt>
+            <dd>
+              Iedereen start op <strong>1000</strong>. Na elke match stijgt of
+              daalt je rating op basis van de <strong>sterkte van de
+              tegenstander</strong>: win je van een sterker team, dan levert dat
+              meer op; verlies je van een zwakker team, dan zakt hij sneller. Zo
+              meet de rating je vorm los van het aantal gespeelde matches.
+            </dd>
+          </div>
+          <div>
             <dt>Spelers versus Teams</dt>
             <dd>
               Het spelersklassement telt jouw matches over <em>alle</em> teams
@@ -461,6 +472,64 @@ function primeAvatarMorph(e: React.MouseEvent<HTMLElement>) {
   if (avatar) avatar.style.viewTransitionName = "player-avatar";
 }
 
+/* ---------- Sorteerbaar klassement ---------- */
+type SortKey = "points" | "rating" | "winrate" | "saldo";
+type SortState = { key: SortKey; dir: "asc" | "desc" };
+
+/** Sorteerwaarde per kolom; ontbrekende waarden zakken naar onderen. */
+function sortValue(r: Row, key: SortKey): number {
+  switch (key) {
+    case "points":
+      return r.points;
+    case "rating":
+      return r.rating ?? Number.NEGATIVE_INFINITY;
+    case "winrate":
+      return winRate(r.won, r.played) ?? Number.NEGATIVE_INFINITY;
+    case "saldo":
+      return r.goalDiff;
+  }
+}
+
+/** Klikbare kolomkop met sorteerpijl; hergebruikt de tie-break uit standings.ts. */
+function SortableTh({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  title,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: SortState | null;
+  onSort: (key: SortKey) => void;
+  title?: string;
+}) {
+  const active = sort?.key === sortKey;
+  return (
+    <th
+      className="num th-sort"
+      aria-sort={
+        active ? (sort!.dir === "asc" ? "ascending" : "descending") : "none"
+      }
+    >
+      <button
+        type="button"
+        className="th-sort__btn"
+        onClick={() => onSort(sortKey)}
+        title={title}
+      >
+        {label}
+        <span
+          className={`th-sort__arrow ${active ? "is-active" : ""}`}
+          aria-hidden="true"
+        >
+          {active ? (sort!.dir === "desc" ? "▼" : "▲") : "▾"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 function StandingsTable({
   rows,
   showForm,
@@ -470,8 +539,35 @@ function StandingsTable({
   showForm: boolean;
   meRef?: React.Ref<HTMLTableRowElement>;
 }) {
+  // Sortering is client-side: de serverstand (op punten) is de standaard;
+  // klikken op een kolomkop hersorteert lokaal, met de klassement-tie-break
+  // als tweede sleutel zodat gelijke waarden hun canonieke volgorde houden.
+  const [sort, setSort] = useState<SortState | null>(null);
+  const onSort = (key: SortKey) =>
+    setSort((s) =>
+      s && s.key === key
+        ? { key, dir: s.dir === "desc" ? "asc" : "desc" }
+        : { key, dir: "desc" },
+    );
+
+  const sortedRows = useMemo(() => {
+    if (!sort) return rows;
+    const factor = sort.dir === "asc" ? -1 : 1;
+    return [...rows].sort((a, b) => {
+      const diff = sortValue(b, sort.key) - sortValue(a, sort.key);
+      const base =
+        diff !== 0
+          ? diff
+          : byRank(
+              { points: a.points, goal_diff: a.goalDiff, won: a.won },
+              { points: b.points, goal_diff: b.goalDiff, won: b.won },
+            );
+      return factor * base;
+    });
+  }, [rows, sort]);
+
   const flipRef = useFlip<HTMLTableSectionElement>(
-    rows.map((r) => r.key).join("|"),
+    sortedRows.map((r) => r.key).join("|"),
   );
   return (
     <div className="table-scroll leaderboard-table">
@@ -485,14 +581,37 @@ function StandingsTable({
             <th className="num" aria-label="Winst · gelijk · verlies">
               W·G·V
             </th>
-            <th className="num">Winrate</th>
-            <th className="num">Saldo</th>
-            {showForm && <th className="num">Rating</th>}
-            <th className="num">Punten</th>
+            <SortableTh
+              label="Winrate"
+              sortKey="winrate"
+              sort={sort}
+              onSort={onSort}
+            />
+            <SortableTh
+              label="Saldo"
+              sortKey="saldo"
+              sort={sort}
+              onSort={onSort}
+            />
+            {showForm && (
+              <SortableTh
+                label="Rating"
+                sortKey="rating"
+                sort={sort}
+                onSort={onSort}
+                title="Elo-rating: iedereen start op 1000 en stijgt of daalt na elke match op basis van de sterkte van de tegenstander."
+              />
+            )}
+            <SortableTh
+              label="Punten"
+              sortKey="points"
+              sort={sort}
+              onSort={onSort}
+            />
           </tr>
         </thead>
         <tbody ref={flipRef}>
-          {rows.map((r, i) => {
+          {sortedRows.map((r, i) => {
             const rate = winRate(r.won, r.played);
             return (
               <tr

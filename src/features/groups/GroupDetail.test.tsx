@@ -105,7 +105,7 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/groepsklassement/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /^leden$/i }));
-    expect(await screen.findByText(/vriend toevoegen/i)).toBeInTheDocument();
+    expect(await screen.findByText(/vrienden toevoegen/i)).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: /verwijderen/i }).length,
     ).toBeGreaterThan(0);

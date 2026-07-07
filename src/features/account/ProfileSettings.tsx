@@ -9,7 +9,13 @@ import {
   uploadAvatar,
   displayName,
 } from "../profiles/api";
-import { changeEmail, changePassword } from "./api";
+import {
+  changeEmail,
+  changePassword,
+  getPrivacy,
+  updatePrivacy,
+  type Privacy,
+} from "./api";
 import { AccountNav } from "../../components/AccountNav";
 import { formatDate } from "../../lib/format";
 import { errorMessage } from "../../lib/errors";
@@ -57,6 +63,9 @@ export function ProfileSettings() {
 
       <div className="grid grid--2">
         <NotificationsCard userId={myId} />
+        <PrivacyCard userId={myId} />
+      </div>
+      <div className="grid grid--2">
         <EmailCard currentEmail={user?.email ?? ""} />
       </div>
       <PasswordCard email={user?.email ?? ""} />
@@ -277,6 +286,73 @@ function NotificationsCard({ userId }: { userId: string }) {
               ? "Meldingen uitzetten"
               : "Meldingen aanzetten"}
         </button>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Privacy ---------- */
+function PrivacyCard({ userId }: { userId: string }) {
+  const toast = useToast();
+  const privacy = useAsync(() => getPrivacy(userId), [userId]);
+  const [busy, setBusy] = useState(false);
+
+  async function set(patch: Partial<Privacy>) {
+    setBusy(true);
+    try {
+      await updatePrivacy(userId, patch);
+      toast.success("Privacy bijgewerkt.");
+      privacy.reload();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const p = privacy.data;
+
+  return (
+    <section className="card">
+      <h2 className="card__title card__title--tight">Privacy</h2>
+      <p className="card__subtitle">
+        Bepaal wie je kan vinden en of anderen je verzoeken mogen sturen.
+      </p>
+      {privacy.loading || !p ? (
+        <Skeleton rows={2} />
+      ) : (
+        <div className="stack">
+          <label className="toggle-row">
+            <span className="toggle-row__text">
+              <span className="toggle-row__label">Vindbaar in zoeken</span>
+              <span className="toggle-row__hint">
+                Anderen kunnen je op gebruikersnaam vinden.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={p.discoverable}
+              disabled={busy}
+              onChange={(e) => set({ discoverable: e.target.checked })}
+            />
+          </label>
+          <label className="toggle-row">
+            <span className="toggle-row__text">
+              <span className="toggle-row__label">
+                Vriendschapsverzoeken toestaan
+              </span>
+              <span className="toggle-row__hint">
+                Zet uit om geen nieuwe verzoeken te ontvangen.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={p.allow_friend_requests}
+              disabled={busy}
+              onChange={(e) => set({ allow_friend_requests: e.target.checked })}
+            />
+          </label>
+        </div>
       )}
     </section>
   );

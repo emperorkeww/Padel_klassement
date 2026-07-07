@@ -42,6 +42,10 @@ export function DashboardLayout() {
 
   return (
     <div className="shell">
+      {/* Eerste tab-stop: sla de navigatie over, spring naar de inhoud. */}
+      <a href="#content" className="skip-link">
+        Naar inhoud
+      </a>
       {/* Mobiele topbalk: merk links, eigen avatar (naar profiel) rechts. */}
       <header className="topbar">
         <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
@@ -60,7 +64,7 @@ export function DashboardLayout() {
           <span>Vamos!</span>
         </Link>
 
-        <nav className="sidebar__nav">
+        <nav className="sidebar__nav" aria-label="Hoofdnavigatie">
           {SIDEBAR_GROUPS.map((group) => (
             <div key={group.title} className="sidebar__group">
               <span className="sidebar__group-title">{group.title}</span>
@@ -100,12 +104,22 @@ export function DashboardLayout() {
         </div>
       </aside>
 
-      <main className="content">
+      <main className="content" id="content" tabIndex={-1}>
         <div className="content__inner">
           {/* Suspense hier (i.p.v. rond alle routes) houdt de balken gemount
               tijdens het lazy-laden van een pagina — zo springt de navigatie
-              op mobiel niet weg. */}
-          <Suspense fallback={<div className="route-loading">Laden…</div>}>
+              op mobiel niet weg. Een neutrale, tekstloze skeleton voorkomt de
+              sprong van "Laden…" naar de pagina-eigen skeletons. */}
+          <Suspense
+            fallback={
+              <div className="route-skeleton" aria-hidden="true">
+                <div className="route-skeleton__bar route-skeleton__bar--title" />
+                <div className="route-skeleton__bar route-skeleton__bar--sub" />
+                <div className="route-skeleton__card" />
+                <div className="route-skeleton__card" />
+              </div>
+            }
+          >
             <Outlet />
           </Suspense>
         </div>

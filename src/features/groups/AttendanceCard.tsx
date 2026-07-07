@@ -12,6 +12,7 @@ import { useClub } from "../availability/club";
 import {
   getAttendance,
   setAttendance,
+  remindGroup,
   type AttendanceStatus,
 } from "./attendanceApi";
 import { FairTeamsCard } from "./FairTeams";
@@ -49,6 +50,7 @@ export function AttendanceCard({
   const club = useClub();
   const today = localToday();
   const [date, setDate] = useState(today);
+  const [reminding, setReminding] = useState(false);
   const attendance = useAsync(() => getAttendance(groupId, date), [groupId, date]);
   useRealtime("attendance", attendance.reload, `group_id=eq.${groupId}`);
 
@@ -61,6 +63,24 @@ export function AttendanceCard({
     .map((m) => m.player_id);
   const yes = yesIds.length;
   const courts = Math.floor(yes / 4);
+  // Leden die voor deze dag nog niets aangaven (voor "Herinner de groep").
+  const noReplyCount = members.filter((m) => !byPlayer.has(m.player_id)).length;
+
+  async function remind() {
+    setReminding(true);
+    try {
+      const n = await remindGroup(groupId, date);
+      toast.success(
+        n === 0
+          ? "Iedereen heeft al gereageerd."
+          : `Herinnering gestuurd naar ${n} lid${n === 1 ? "" : "leden"}.`,
+      );
+    } catch {
+      toast.error("Herinneren lukte niet — staan de meldingen aan?");
+    } finally {
+      setReminding(false);
+    }
+  }
 
   /** ICS-download voor de gekozen speeldag (event voor de hele dag). */
   function addToCalendar() {
@@ -147,10 +167,24 @@ export function AttendanceCard({
           <button className="agenda-btn" onClick={addToCalendar}>
             Zet in agenda
           </button>
+          {noReplyCount > 0 && (
+            <>
+              {" "}
+              <button
+                className="agenda-btn"
+                onClick={remind}
+                disabled={reminding}
+              >
+                {reminding
+                  ? "Herinneren…"
+                  : `Herinner de groep (${noReplyCount})`}
+              </button>
+            </>
+          )}
         </p>
       </section>
 
-      <FairTeamsCard playerIds={yesIds} profiles={profiles} />
+      <FairTeamsCard groupId={groupId} playerIds={yesIds} profiles={profiles} />
     </>
   );
 }

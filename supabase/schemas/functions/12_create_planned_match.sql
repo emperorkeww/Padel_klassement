@@ -5,7 +5,9 @@
 create or replace function public.create_planned_match(
   p_a1 uuid, p_a2 uuid, p_b1 uuid, p_b2 uuid,
   p_played_at timestamptz default null,
-  p_group_id uuid default null
+  p_group_id uuid default null,
+  -- optionele per-set uitslag (jsonb-array); meestal null bij plannen
+  p_set_scores jsonb default null
 )
 returns uuid
 language plpgsql
@@ -40,10 +42,10 @@ begin
   v_team_b := public._ensure_team(p_b1, p_b2);
 
   insert into public.matches (
-    team_a_id, team_b_id, status, played_at, created_by, group_id
+    team_a_id, team_b_id, status, played_at, created_by, group_id, set_scores
   )
   values (
-    v_team_a, v_team_b, 'scheduled', p_played_at, v_uid, p_group_id
+    v_team_a, v_team_b, 'scheduled', p_played_at, v_uid, p_group_id, p_set_scores
   )
   returning id into v_match;
 
@@ -51,4 +53,4 @@ begin
 end;
 $$;
 
-grant execute on function public.create_planned_match(uuid, uuid, uuid, uuid, timestamptz, uuid) to authenticated;
+grant execute on function public.create_planned_match(uuid, uuid, uuid, uuid, timestamptz, uuid, jsonb) to authenticated;

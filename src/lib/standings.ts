@@ -59,7 +59,10 @@ function forEachTeamResult(
   }
 }
 
-function byRank(
+/** Tie-break-volgorde van de standen-views: punten ↓, saldo ↓, winst ↓.
+ *  Geëxporteerd zodat de UI dezelfde volgorde als secundaire sortering kan
+ *  hergebruiken (o.a. het sorteerbare klassement). */
+export function byRank(
   a: { points: number; goal_diff: number; won: number },
   b: { points: number; goal_diff: number; won: number },
 ): number {

@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./AuthProvider";
 import { BallIcon } from "../../components/BallIcon";
@@ -10,6 +10,10 @@ type Status = "idle" | "loading" | "error" | "success";
 
 export function LoginScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Bestemming van vóór de redirect (bv. een gedeelde uitnodigingslink).
+  const returnTo =
+    (location.state as { from?: string } | null)?.from || "/";
   const { session } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -20,17 +24,50 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  // Live beschikbaarheid van de gekozen gebruikersnaam bij registreren.
+  const [nameStatus, setNameStatus] = useState<
+    "idle" | "checking" | "available" | "taken"
+  >("idle");
+  const nameSeq = useRef(0);
 
-  // Zodra er een sessie is (net ingelogd of al ingelogd) door naar het dashboard.
+  // Zodra er een sessie is (net ingelogd of al ingelogd) door naar de
+  // oorspronkelijke bestemming (of het dashboard).
   useEffect(() => {
-    if (session) navigate("/", { replace: true });
-  }, [session, navigate]);
+    if (session) navigate(returnTo, { replace: true });
+  }, [session, navigate, returnTo]);
 
   function switchMode(next: Mode) {
     setMode(next);
     setStatus("idle");
     setMessage("");
   }
+
+  // Controleert (met debounce) of de gebruikersnaam nog vrij is. Profielen zijn
+  // publiek leesbaar, dus dit werkt ook vóór het inloggen.
+  useEffect(() => {
+    if (mode !== "signup") {
+      setNameStatus("idle");
+      return;
+    }
+    const u = username.trim();
+    if (u.length < 3) {
+      setNameStatus("idle");
+      return;
+    }
+    const seq = ++nameSeq.current;
+    setNameStatus("checking");
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", u)
+        .limit(1);
+      if (seq !== nameSeq.current) return;
+      if (error) return setNameStatus("idle");
+      setNameStatus(data && data.length > 0 ? "taken" : "available");
+    }, 400);
+    return () => clearTimeout(t);
+  }, [username, mode]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -170,7 +207,21 @@ export function LoginScreen() {
                   placeholder="bijv. remco (optioneel)"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  aria-describedby="username-availability"
                 />
+                {nameStatus !== "idle" && (
+                  <span
+                    id="username-availability"
+                    className={`field__hint field__hint--${nameStatus}`}
+                    role="status"
+                  >
+                    {nameStatus === "checking"
+                      ? "Beschikbaarheid controleren…"
+                      : nameStatus === "available"
+                        ? "✓ Deze gebruikersnaam is vrij."
+                        : "Die naam is bezet — we maken er automatisch iets unieks van."}
+                  </span>
+                )}
               </label>
             </>
           )}

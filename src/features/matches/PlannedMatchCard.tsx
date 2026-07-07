@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -6,12 +6,31 @@ import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
-import { downloadIcs, icsEvent, localDate, localTime } from "../../lib/ics";
 import { getPlayerRatings } from "../standings/ratingsApi";
-import { useClub } from "../availability/club";
 import type { Match, Profile, Team } from "../../lib/types";
-import { setMatchResult, teamLabel } from "./api";
+import {
+  deleteMatch,
+  emptySet,
+  setMatchResult,
+  teamLabel,
+  toSetScores,
+  updatePlannedMatchTime,
+  type SetPair,
+} from "./api";
+import { MatchCalendarButton } from "./MatchCalendarButton";
+import { SetScoresInput } from "./SetScoresInput";
 import { TeamSide } from "./MatchList";
+import "./PlannedMatchCard.css";
+
+const UNDO_MS = 6000;
+
+/** ISO-tijdstip -> waarde voor een <input type="datetime-local"> ("" = geen). */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 /** Geplande match als kaart met inline score-invoer — dezelfde opbouw als een
  *  MatchCard (teams links/rechts), maar met invoervelden in het midden.
@@ -25,6 +44,7 @@ export function PlannedMatchCard({
   profiles,
   perspectiveId,
   onSaved,
+  onDeleted,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -32,12 +52,34 @@ export function PlannedMatchCard({
   /** Speler vanuit wiens oogpunt gevierd wordt (confetti bij eigen winst). */
   perspectiveId?: string;
   onSaved?: () => void;
+  /** Aangeroepen nadat de match echt verwijderd is (bv. terugnavigeren op de
+   *  detailpagina). Zonder deze prop valt het terug op onSaved. */
+  onDeleted?: () => void;
 }) {
   const toast = useToast();
-  const club = useClub();
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
   const [saved, setSaved] = useState<{ a: number; b: number } | null>(null);
+
+  // Optionele per-set invoer (uitklapbaar).
+  const [showSets, setShowSets] = useState(false);
+  const [sets, setSets] = useState<SetPair[]>([emptySet()]);
+
+  // Tijd wijzigen (uitklapbaar).
+  const [editingTime, setEditingTime] = useState(false);
+  const [timeVal, setTimeVal] = useState(() => toLocalInput(m.played_at));
+  const [busyTime, setBusyTime] = useState(false);
+
+  // Verwijderen met undo: we wachten UNDO_MS vóór de server-call, zodat de
+  // gebruiker het ongedaan kan maken zonder dat er iets hersteld hoeft te worden.
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (deleteTimer.current) clearTimeout(deleteTimer.current);
+    },
+    [],
+  );
 
   // Verwachte winstkans uit de (gecachte) ratings — zelfde Elo als de databank.
   const ratings = useAsync(getPlayerRatings, []);
@@ -50,11 +92,15 @@ export function PlannedMatchCard({
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
   const valid = saNum !== null && sbNum !== null && saNum >= 0 && sbNum >= 0;
+  // Alleen de aanmaker mag verplaatsen/verwijderen (de server dwingt dit ook af);
+  // toon die knoppen dus niet aan anderen om een voorspelbare fout te vermijden.
+  const canManage = !!perspectiveId && m.created_by === perspectiveId;
 
   async function save() {
     if (!valid || saved) return;
     const a = saNum!;
     const b = sbNum!;
+    const setScores = toSetScores(sets);
     setSaved({ a, b }); // optimistisch: meteen als uitslag tonen
     try {
       await setMatchResult({
@@ -62,6 +108,7 @@ export function PlannedMatchCard({
         winnerTeamId: a === b ? null : a > b ? m.team_a_id : m.team_b_id,
         scoreA: a,
         scoreB: b,
+        setScores: setScores.length > 0 ? setScores : null,
       });
       const winner = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
       const iWon =
@@ -83,24 +130,54 @@ export function PlannedMatchCard({
     }
   }
 
-  /** ICS-download voor deze match: getimed als er een tijdstip gepland is,
-   *  anders een event voor de hele (plan)dag. */
-  function addToCalendar() {
-    const when = new Date(m.played_at ?? m.created_at);
-    const date = localDate(when);
-    downloadIcs(
-      `padel-${date}.ics`,
-      icsEvent({
-        title: `Padel: ${teamLabel(teams[m.team_a_id], profiles)} vs ${teamLabel(teams[m.team_b_id], profiles)}`,
-        description:
-          m.round_number != null ? `Ronde ${m.round_number}` : undefined,
-        location: club.name,
-        date,
-        startTime: m.played_at ? localTime(when) : undefined,
-        uid: `match-${m.id}@vamos-padel`,
-      }),
+  async function saveTime() {
+    setBusyTime(true);
+    try {
+      await updatePlannedMatchTime({
+        matchId: m.id,
+        playedAt: timeVal ? new Date(timeVal).toISOString() : null,
+      });
+      tap();
+      toast.success("Tijdstip bijgewerkt.");
+      setEditingTime(false);
+      onSaved?.();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyTime(false);
+    }
+  }
+
+  function startDelete() {
+    setPendingDelete(true);
+    deleteTimer.current = setTimeout(async () => {
+      try {
+        await deleteMatch(m.id);
+        tap();
+        (onDeleted ?? onSaved)?.();
+      } catch (err) {
+        setPendingDelete(false); // terug tevoorschijn; niets verwijderd
+        toast.error(errorMessage(err));
+      }
+    }, UNDO_MS);
+  }
+
+  function undoDelete() {
+    if (deleteTimer.current) clearTimeout(deleteTimer.current);
+    deleteTimer.current = null;
+    setPendingDelete(false);
+  }
+
+  // Undo-strook zolang de verwijdering nog kan worden teruggedraaid.
+  if (pendingDelete) {
+    return (
+      <div className="planned-card__undo" role="status">
+        <span>Match verwijderd.</span>
+        <button className="btn btn--sm" onClick={undoDelete}>
+          Ongedaan maken
+        </button>
+      </div>
     );
-    tap();
   }
 
   if (saved) {
@@ -158,13 +235,71 @@ export function PlannedMatchCard({
         />
       </div>
 
-      <div className="planned-card__foot">
+      <div className="planned-card__sets">
+        <button
+          type="button"
+          className="planned-card__sets-toggle"
+          aria-expanded={showSets}
+          onClick={() => setShowSets((s) => !s)}
+        >
+          {showSets ? "− Sets verbergen" : "+ Sets per set invoeren (optioneel)"}
+        </button>
+        {showSets && (
+          <div className="mt-4">
+            <SetScoresInput
+              sets={sets}
+              onChange={setSets}
+              labelA={teamLabel(teams[m.team_a_id], profiles)}
+              labelB={teamLabel(teams[m.team_b_id], profiles)}
+            />
+          </div>
+        )}
+      </div>
+
+      {canManage && editingTime && (
+        <div className="planned-card__time">
+          <input
+            className="input"
+            type="datetime-local"
+            value={timeVal}
+            onChange={(e) => setTimeVal(e.target.value)}
+            aria-label="Nieuw tijdstip"
+          />
+          <button
+            className="btn btn--sm"
+            onClick={() => setEditingTime(false)}
+            disabled={busyTime}
+          >
+            Annuleren
+          </button>
+          <button
+            className="btn btn--primary btn--sm"
+            onClick={saveTime}
+            disabled={busyTime}
+          >
+            {busyTime ? "Opslaan…" : "Tijd opslaan"}
+          </button>
+        </div>
+      )}
+
+      <div className="planned-card__foot planned-card__actions">
         <span className="match-card__meta">
           {m.round_number != null ? `ronde ${m.round_number} · gepland` : "gepland"}
         </span>
-        <button className="agenda-btn" onClick={addToCalendar}>
-          Zet in agenda
-        </button>
+        <MatchCalendarButton match={m} teams={teams} profiles={profiles} />
+        {canManage && (
+          <button
+            className="btn btn--sm"
+            onClick={() => setEditingTime((t) => !t)}
+          >
+            Tijd wijzigen
+          </button>
+        )}
+        {canManage && (
+          <button className="btn btn--sm btn--danger" onClick={startDelete}>
+            Verwijderen
+          </button>
+        )}
         <button
           className="btn btn--primary btn--sm planned-card__save"
           disabled={!valid}

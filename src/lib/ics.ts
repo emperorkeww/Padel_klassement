@@ -20,6 +20,10 @@ export type IcsEventInput = {
 const CRLF = "\r\n";
 const TZID = "Europe/Brussels";
 
+/** Kiesbare duur (minuten) voor een getimede padel-match in de agenda. */
+export const MATCH_DURATIONS = [60, 90, 120] as const;
+export type MatchDuration = (typeof MATCH_DURATIONS)[number];
+
 /* Vaste tijdzonedefinitie voor TZID-verwijzingen (EU-zomertijdregels). */
 const VTIMEZONE = [
   "BEGIN:VTIMEZONE",

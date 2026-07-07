@@ -1,9 +1,10 @@
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
-import { getProfile, displayName } from "./api";
+import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
-import { getPlayerStanding } from "../standings/api";
+import { getPlayerStanding, getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import { getPlayerMatches, getTeamsMap } from "../matches/api";
 import { MatchList } from "../matches/MatchList";
@@ -19,29 +20,54 @@ import {
   longestStreak,
   biggestWin,
   headToHead,
+  outcomeFor,
 } from "../../lib/results";
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { deriveBadges } from "../../lib/badges";
+import { listSeasons, seasonFromId } from "../../lib/seasons";
+import { matchesInSeason } from "../../lib/standings";
 import { formatDate } from "../../lib/format";
+import { ShareProfile, type ProfileShareData } from "./ShareProfile";
+import { useToast } from "../../components/ToastProvider";
+import { errorMessage } from "../../lib/errors";
 import "./PlayerProfile.css";
 
 // Aantal recente matches dat we op het profiel tonen (de volledige historie
 // wordt geladen voor de statistieken, maar niet allemaal uitgelijst).
 const RECENT_SHOWN = 8;
 
+// Zoveel badges mag een speler maximaal uitlichten bovenaan zijn profiel.
+const MAX_FEATURED = 5;
+
 export function PlayerProfile() {
   const { id = "" } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isMe = user?.id === id;
 
   const profile = useAsync(() => getProfile(id), [id]);
   const standing = useAsync(() => getPlayerStanding(id), [id]);
+  // Volledige stand voor de klassementpositie (#N), net als het dashboard.
+  const standings = useAsync(getPlayerStandings, []);
   // Ruime limiet: streak/H2H/grootste zege rekenen op de volledige historie.
   const matches = useAsync(() => getPlayerMatches(id, 200), [id]);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
+
+  // Seizoensfilter: all-time is de standaard; een kwartaal beperkt vorm,
+  // winrate, badges en de onderlinge stand tot die periode.
+  const [seasonId, setSeasonId] = useState("");
+  // Onderlinge stand: standaard de top 5 (meest gespeeld), met een toggle.
+  const [showAllH2H, setShowAllH2H] = useState(false);
+  // Aangetikte badge: toont zijn beschrijving eronder (werkt ook op touch,
+  // waar de title-tooltip onbereikbaar is).
+  const [openBadge, setOpenBadge] = useState<string | null>(null);
+  // Optimistische kopie van de uitgelichte badges: null = nog niets gewijzigd,
+  // dan geldt de waarde uit het geladen profiel.
+  const [featuredOverride, setFeaturedOverride] = useState<string[] | null>(null);
+  const toast = useToast();
 
   if (profile.loading)
     return (
@@ -61,33 +87,163 @@ export function PlayerProfile() {
   const pmap = profiles.data ?? {};
   const mlist = matches.data ?? [];
 
-  const form = recentForm(mlist, tmap, id);
-  const streak = winStreak(mlist, tmap, id);
-  const best = longestStreak(mlist, tmap, id);
-  const bigWin = biggestWin(mlist, tmap, id);
-  const rate = s ? winRate(s.won, s.played) : null;
-  const partner = bestPartner(mlist, tmap, id);
+  // Seizoenskiezer: alle kwartalen sinds de eerste match van deze speler.
+  const seasons =
+    mlist.length > 0
+      ? listSeasons(
+          new Date(
+            mlist.reduce((min, m) => {
+              const d = m.played_at ?? m.created_at;
+              return d < min ? d : min;
+            }, mlist[0].played_at ?? mlist[0].created_at),
+          ),
+        )
+      : [];
+  const season = seasonFromId(seasonId);
+  // De matches waarop de afgeleide stats rekenen: heel de historie, of één
+  // kwartaal wanneer een seizoen gekozen is.
+  const scoped = season ? matchesInSeason(mlist, season) : mlist;
+
+  const form = recentForm(scoped, tmap, id);
+  const streak = winStreak(scoped, tmap, id);
+  const best = longestStreak(scoped, tmap, id);
+  const bigWin = biggestWin(scoped, tmap, id);
+  const partner = bestPartner(scoped, tmap, id);
   const myRating = ratings.data?.[id]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
-  const badges = deriveBadges(mlist, tmap, id, ratings.data ?? undefined);
+  const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
+
+  // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
+  // profielniveau — dus resolven we ze tegen de volledige historie.
+  const badgesAllTime = season
+    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined)
+    : badges;
+  const earnedAllTime = new Set(
+    badgesAllTime.filter((b) => b.behaald).map((b) => b.id),
+  );
+  const allTimeById = new Map(badgesAllTime.map((b) => [b.id, b]));
+  const featuredIds = featuredOverride ?? p.featured_badges ?? [];
+  // Alleen geldige, daadwerkelijk behaalde badges tonen, in de gekozen volgorde.
+  const featuredBadges = featuredIds
+    .map((bid) => allTimeById.get(bid))
+    .filter((b): b is (typeof badgesAllTime)[number] => !!b && b.behaald);
+
+  // Badge uit-/aanvinken als uitgelicht; optimistisch, met terugval bij fout.
+  function toggleFeatured(badgeId: string) {
+    const current = featuredIds;
+    const has = current.includes(badgeId);
+    if (!has && current.length >= MAX_FEATURED) {
+      toast.error(`Je kan maximaal ${MAX_FEATURED} badges uitlichten.`);
+      return;
+    }
+    const next = has
+      ? current.filter((x) => x !== badgeId)
+      : [...current, badgeId];
+    setFeaturedOverride(next);
+    updateFeaturedBadges(id, next).catch((err) => {
+      setFeaturedOverride(current);
+      toast.error(errorMessage(err));
+    });
+  }
+
+  // Klassementpositie (#N): dezelfde afleiding als het dashboard — index in de
+  // volledige stand. Blijft all-time; het klassement kent geen per-kwartaal-rij.
+  const rankIdx = (standings.data ?? []).findIndex((r) => r.player_id === id);
+  const rank = rankIdx >= 0 ? rankIdx + 1 : null;
+
+  // Winrate/gespeeld: binnen een seizoen uit de gefilterde matches, anders uit
+  // de (all-time) serverstand.
+  let scopedPlayed = 0;
+  let scopedWon = 0;
+  for (const m of scoped) {
+    const o = outcomeFor(m, tmap, id);
+    if (!o) continue;
+    scopedPlayed++;
+    if (o === "W") scopedWon++;
+  }
+  const rate = season
+    ? winRate(scopedWon, scopedPlayed)
+    : s
+      ? winRate(s.won, s.played)
+      : null;
+  const playedCount = season ? scopedPlayed : (s?.played ?? 0);
 
   // Onderlinge balans tussen de ingelogde gebruiker en de bekeken speler.
   const balans =
-    user && !isMe ? onderlingeBalans(mlist, tmap, user.id, id) : null;
+    user && !isMe ? onderlingeBalans(scoped, tmap, user.id, id) : null;
   const vsGespeeld = balans?.alsTegenstanders.gespeeld ?? 0;
   const samenGespeeld = balans?.alsPartners.samen ?? 0;
 
   // Onderlinge stand, gesorteerd op aantal duels (meest gespeeld eerst).
-  const h2h = [...headToHead(mlist, tmap, id).entries()]
+  const h2h = [...headToHead(scoped, tmap, id).entries()]
     .map(([oppId, rec]) => ({ oppId, ...rec }))
     .sort((a, b) => b.played - a.played);
+  // Nemesis = de tegenstander tegen wie je het vaakst verloor; favoriet = de
+  // tegenstander tegen wie je het vaakst won. Los uitgelicht boven de lijst.
+  type H2HRow = (typeof h2h)[number];
+  const nemesis = h2h.reduce<H2HRow | null>(
+    (top, r) => (r.lost > 0 && (!top || r.lost > top.lost) ? r : top),
+    null,
+  );
+  const favoriet = h2h.reduce<H2HRow | null>(
+    (top, r) => (r.won > 0 && (!top || r.won > top.won) ? r : top),
+    null,
+  );
+  const h2hShown = showAllH2H ? h2h : h2h.slice(0, 5);
+
+  // Belangrijkste behaalde badge (laatste in de reeks = meest gevorderd) voor
+  // op de deel-kaart.
+  const openBadgeInfo = openBadge
+    ? (badges.find((b) => b.id === openBadge) ?? null)
+    : null;
+  const earned = badges.filter((b) => b.behaald);
+  const topBadge =
+    earned.length > 0
+      ? {
+          emoji: earned[earned.length - 1].emoji,
+          naam: earned[earned.length - 1].naam,
+        }
+      : null;
+  const shareData: ProfileShareData = {
+    name: displayName(p),
+    rating: myRating,
+    rank,
+    form,
+    topBadge,
+  };
 
   return (
     <div>
-      <header className="page-head">
-        <Link className="btn btn--sm" to="/vrienden">
-          ← Vrienden
-        </Link>
+      <header className="page-head profile-head">
+        {/* Terug naar waar je vandaan kwam (klassement, vrienden, …). */}
+        <button
+          type="button"
+          className="btn btn--sm"
+          onClick={() => navigate(-1)}
+        >
+          ← Terug
+        </button>
+        <div className="profile-head__tools">
+          {seasons.length > 0 && (
+            <select
+              className="select select--filter"
+              aria-label="Seizoen"
+              value={season?.id ?? ""}
+              onChange={(e) => setSeasonId(e.target.value)}
+            >
+              <option value="">Alle tijden</option>
+              {seasons.map((s2) => (
+                <option key={s2.id} value={s2.id}>
+                  {s2.label}
+                </option>
+              ))}
+            </select>
+          )}
+          <ShareProfile
+            data={shareData}
+            label={isMe ? "↗ Deel mijn profiel" : "↗ Deel profiel"}
+          />
+        </div>
       </header>
 
       <section className="card profile-hero">
@@ -114,15 +270,37 @@ export function PlayerProfile() {
         </div>
       </section>
 
+      {featuredBadges.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Uitgelichte badges</h2>
+          <ul className="badges">
+            {featuredBadges.map((b) => (
+              <li key={b.id} className="badges__item">
+                <span
+                  className="badge badges__pill badge--accent"
+                  title={b.omschrijving}
+                >
+                  <span className="badges__emoji" aria-hidden="true">
+                    {b.emoji}
+                  </span>
+                  {b.naam}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className="stats">
         <Stat
           label="Rating"
           value={myRating ?? "—"}
           delta={rhist.length > 0 ? rhist[rhist.length - 1].delta : null}
         />
+        <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
         <Stat label="Punten" value={s?.points ?? 0} />
         <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
-        <Stat label="Gespeeld" value={s?.played ?? 0} />
+        <Stat label="Gespeeld" value={playedCount} />
       </div>
 
       {rhist.length >= 2 && (
@@ -156,7 +334,8 @@ export function PlayerProfile() {
                     {bigWin.match.score_a}–{bigWin.match.score_b}
                   </span>
                   <span className="achievement__label">
-                    Grootste zege · {formatDate(bigWin.match.played_at ?? bigWin.match.created_at)}
+                    Grootste zege · +{bigWin.margin} ·{" "}
+                    {formatDate(bigWin.match.played_at ?? bigWin.match.created_at)}
                   </span>
                 </div>
               </Link>
@@ -196,28 +375,75 @@ export function PlayerProfile() {
         </section>
       )}
 
-      {mlist.length > 0 && (
+      {scoped.length > 0 && (
         <section className="card">
           <h2 className="card__title">Badges</h2>
+          <p className="badges__hint">
+            Tik op een badge voor de uitleg
+            {isMe && " · tik op ★ om een behaalde badge uit te lichten op je profiel"}.
+          </p>
           <ul className="badges">
-            {badges.map((b) => (
-              <li key={b.id} className="badges__item" title={b.omschrijving}>
-                <span
-                  className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
-                >
-                  <span className="badges__emoji" aria-hidden="true">
-                    {b.emoji}
-                  </span>
-                  {b.naam}
-                  {!b.behaald && b.voortgang && (
-                    <span className="badges__progress">
-                      {b.voortgang.nu}/{b.voortgang.doel}
+            {badges.map((b) => {
+              const open = openBadge === b.id;
+              const kanUitlichten = isMe && earnedAllTime.has(b.id);
+              const uitgelicht = featuredIds.includes(b.id);
+              return (
+                <li key={b.id} className="badges__item">
+                  <button
+                    type="button"
+                    className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}${open ? " badges__pill--open" : ""}`}
+                    title={b.omschrijving}
+                    aria-expanded={open}
+                    aria-controls="badge-uitleg"
+                    onClick={() => setOpenBadge(open ? null : b.id)}
+                  >
+                    <span className="badges__emoji" aria-hidden="true">
+                      {b.emoji}
                     </span>
+                    {b.naam}
+                    {!b.behaald && b.voortgang && (
+                      <span className="badges__progress">
+                        {b.voortgang.nu}/{b.voortgang.doel}
+                      </span>
+                    )}
+                  </button>
+                  {kanUitlichten && (
+                    <button
+                      type="button"
+                      className={`badges__star${uitgelicht ? " badges__star--on" : ""}`}
+                      aria-pressed={uitgelicht}
+                      title={
+                        uitgelicht
+                          ? "Uit uitgelicht halen"
+                          : "Uitlichten op profiel"
+                      }
+                      onClick={() => toggleFeatured(b.id)}
+                    >
+                      {uitgelicht ? "★" : "☆"}
+                    </button>
                   )}
-                </span>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
+          {openBadgeInfo && (
+            <p id="badge-uitleg" className="badges__desc" role="status">
+              <span className="badges__emoji" aria-hidden="true">
+                {openBadgeInfo.emoji}
+              </span>
+              <span>
+                <strong>{openBadgeInfo.naam}</strong> —{" "}
+                {openBadgeInfo.omschrijving}{" "}
+                <span className="badges__status">
+                  {openBadgeInfo.behaald
+                    ? "Behaald ✓"
+                    : openBadgeInfo.voortgang
+                      ? `Voortgang: ${openBadgeInfo.voortgang.nu}/${openBadgeInfo.voortgang.doel}`
+                      : "Nog niet behaald"}
+                </span>
+              </span>
+            </p>
+          )}
         </section>
       )}
 
@@ -245,8 +471,50 @@ export function PlayerProfile() {
       {h2h.length > 0 && (
         <section className="card">
           <h2 className="card__title">Onderlinge stand</h2>
+
+          {/* Uitgelicht: tegen wie het net niet lukt (nemesis) en tegen wie wél
+              (favoriete tegenstander). */}
+          {(nemesis || favoriet) && (
+            <div className="h2h-highlights">
+              {favoriet && (
+                <div className="h2h-highlight h2h-highlight--fav">
+                  <span className="h2h-highlight__tag">😎 Favoriete tegenstander</span>
+                  <Link
+                    className="h2h-highlight__player"
+                    to={`/spelers/${favoriet.oppId}`}
+                  >
+                    <Avatar profile={pmap[favoriet.oppId]} size={28} />
+                    <span className="h2h__name">
+                      {displayName(pmap[favoriet.oppId])}
+                    </span>
+                  </Link>
+                  <span className="h2h-highlight__meta">
+                    {favoriet.won}× gewonnen van {favoriet.played}
+                  </span>
+                </div>
+              )}
+              {nemesis && nemesis.oppId !== favoriet?.oppId && (
+                <div className="h2h-highlight h2h-highlight--nemesis">
+                  <span className="h2h-highlight__tag">😤 Nemesis</span>
+                  <Link
+                    className="h2h-highlight__player"
+                    to={`/spelers/${nemesis.oppId}`}
+                  >
+                    <Avatar profile={pmap[nemesis.oppId]} size={28} />
+                    <span className="h2h__name">
+                      {displayName(pmap[nemesis.oppId])}
+                    </span>
+                  </Link>
+                  <span className="h2h-highlight__meta">
+                    {nemesis.lost}× verloren van {nemesis.played}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <ul className="h2h">
-            {h2h.map((row) => (
+            {h2hShown.map((row) => (
               <li key={row.oppId} className="h2h__row">
                 <Link className="h2h__player" to={`/spelers/${row.oppId}`}>
                   <Avatar profile={pmap[row.oppId]} size={28} />
@@ -266,6 +534,17 @@ export function PlayerProfile() {
               </li>
             ))}
           </ul>
+          {h2h.length > 5 && (
+            <button
+              type="button"
+              className="btn btn--sm h2h__toggle"
+              onClick={() => setShowAllH2H((v) => !v)}
+            >
+              {showAllH2H
+                ? "Toon minder"
+                : `Toon alles (${h2h.length})`}
+            </button>
+          )}
         </section>
       )}
 
@@ -275,11 +554,15 @@ export function PlayerProfile() {
         {matches.error && <p className="msg msg--error">{matches.error}</p>}
         {!matches.loading && (
           <MatchList
-            matches={mlist.slice(0, RECENT_SHOWN)}
+            matches={scoped.slice(0, RECENT_SHOWN)}
             teams={tmap}
             profiles={pmap}
             perspectiveId={id}
-            empty="Deze speler heeft nog geen matches gespeeld."
+            empty={
+              season
+                ? "Geen matches in dit seizoen."
+                : "Deze speler heeft nog geen matches gespeeld."
+            }
           />
         )}
       </section>

@@ -171,3 +171,46 @@
     flex: 1;
   }
 }
+
+/* Ledenbeheer: meervoudige selectie + uitnodigingslink (Lane D). */
+.person-row--pick {
+  cursor: pointer;
+}
+.member-check {
+  margin-right: var(--sp-2);
+  accent-color: var(--accent);
+}
+.invite-url {
+  width: 100%;
+  margin-top: var(--sp-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-sm);
+}
+
+/* Groepskampioen-banner (zelfde look als het globale klassement). */
+.champion-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--line));
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--gold-soft) 0%, transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--fs-base);
+  color: var(--ink);
+}
+.champion-banner__cup {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.champion-banner strong {
+  font-weight: 800;
+}
+.champion-banner__share {
+  margin-left: auto;
+  flex-shrink: 0;
+}

@@ -77,6 +77,21 @@ export async function updateProfile(
   invalidate("profiles", "standings");
 }
 
+/** Schrijft de uitgelichte badges (geordende lijst van badge-id's) weg voor de
+ *  eigen gebruiker. De RLS-update-policy laat alleen het eigen profiel toe. */
+export async function updateFeaturedBadges(
+  userId: string,
+  badgeIds: string[],
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    // Cast: de kolom bestaat in de databank, maar nog niet in database.types.ts.
+    .update({ featured_badges: badgeIds } as never)
+    .eq("id", userId);
+  if (error) throw error;
+  invalidate("profiles");
+}
+
 /** Uploadt een profielfoto naar de 'avatars'-bucket en geeft de publieke URL terug.
  *  De foto wordt eerst client-side verkleind (256px, WebP); lukt dat niet
  *  (oude browser), dan gaat het origineel omhoog. */

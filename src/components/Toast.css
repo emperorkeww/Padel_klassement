@@ -9,7 +9,20 @@
   max-width: min(90vw, 360px);
 }
 
+/* Twee live-regio's (polite/assertive) stapelen als één kolom. */
+.toasts__live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.toasts__live:empty {
+  display: none;
+}
+
 .toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   text-align: left;
   padding: var(--sp-3);
   border-radius: var(--radius-sm);
@@ -17,9 +30,34 @@
   font-weight: 600;
   color: #fff;
   border: none;
-  cursor: pointer;
   box-shadow: var(--shadow-pop);
   animation: toast-in 0.2s ease both;
+}
+.toast__text {
+  flex: 1;
+  min-width: 0;
+}
+.toast__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.toast__close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+.toast__close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .toast--success {
@@ -49,7 +87,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 720px) {
   .toasts {
     bottom: 4.75rem; /* boven de mobiele onderbalk */
     left: var(--sp-4);

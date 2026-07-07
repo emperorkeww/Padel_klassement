@@ -1,0 +1,42 @@
+/* Optionele per-set score-invoer: compacte rijen met twee steppers. */
+.setscores {
+  display: grid;
+  gap: var(--sp-2);
+}
+.setscores__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.setscores__idx {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  min-width: 3.2em;
+}
+.setscores__dash {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.setscores__rm {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+.setscores__rm:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.setscores__add {
+  justify-self: start;
+}
