@@ -76,28 +76,38 @@ function draw(
     y += 42;
   }
 
+  // Onderste blok (beste duo + accentstreep) staat vast; de uitslagenlijst mag
+  // daar nooit overheen lopen. maxContentY is de harde ondergrens voor de tekst,
+  // met wat lucht boven het beste-duo-blok.
+  const bestDuoY = H - 120;
+  const maxContentY = bestDuoY - 70;
+  const lineH = 44;
+
   // Uitslagen van de avond.
-  y = Math.max(y + 40, 720);
+  y = Math.max(y + 40, 700);
   ctx.fillStyle = c.inkSoft;
   ctx.font = "700 26px Outfit, system-ui, sans-serif";
   ctx.fillText("UITSLAGEN", W / 2, y);
   y += 52;
-  const shown = summary.matches.slice(0, 9);
-  for (const m of shown) {
+  let shownCount = 0;
+  for (const m of summary.matches) {
+    // Reserveer altijd één regel: als er meer volgt, past "+ N meer" er nog.
+    if (y > maxContentY - lineH) break;
     ctx.fillStyle = c.ink;
     ctx.font = "600 27px Outfit, system-ui, sans-serif";
     const line = `${teamLabel(teams[m.team_a_id], profiles)}  ${m.score_a ?? "–"}–${m.score_b ?? "–"}  ${teamLabel(teams[m.team_b_id], profiles)}`;
     ctx.fillText(line, W / 2, y, W - 120);
-    y += 44;
+    y += lineH;
+    shownCount += 1;
   }
-  if (summary.matches.length > shown.length) {
+  const restCount = summary.matches.length - shownCount;
+  if (restCount > 0) {
     ctx.fillStyle = c.inkSoft;
     ctx.font = "600 24px Outfit, system-ui, sans-serif";
-    ctx.fillText(`+ ${summary.matches.length - shown.length} meer`, W / 2, y);
-    y += 44;
+    ctx.fillText(`+ ${restCount} meer`, W / 2, y);
   }
 
-  // Beste duo van de avond.
+  // Beste duo van de avond — vaste plek onderaan, boven de accentstreep.
   if (summary.bestDuo) {
     ctx.fillStyle = c.success;
     ctx.font = "700 32px Outfit, system-ui, sans-serif";
@@ -105,7 +115,7 @@ function draw(
     ctx.fillText(
       `🏆 Beste duo: ${duo} (${summary.bestDuo.won} winst${summary.bestDuo.won === 1 ? "" : "en"})`,
       W / 2,
-      H - 120,
+      bestDuoY,
       W - 120,
     );
   }
