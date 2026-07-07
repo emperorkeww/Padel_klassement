@@ -11,7 +11,7 @@ import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
 import { rankShifts, type Shift } from "../../lib/rankShift";
-import { deriveBadges } from "../../lib/badges";
+import { deriveBadges, type Badge } from "../../lib/badges";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
@@ -235,21 +235,7 @@ export function Dashboard() {
               </Link>
             )}
             {earnedBadges.length > 0 && (
-              <Link
-                className="hero__badges"
-                to={`/spelers/${myId}`}
-                aria-label={`Behaalde badges: ${earnedBadges.map((b) => b.naam).join(", ")}`}
-              >
-                {earnedBadges.slice(0, 6).map((b) => (
-                  <span
-                    key={b.id}
-                    className="hero__badge"
-                    title={`${b.naam} — ${b.omschrijving}`}
-                  >
-                    {b.emoji}
-                  </span>
-                ))}
-              </Link>
+              <BadgeStrip badges={earnedBadges} to={`/spelers/${myId}`} />
             )}
           </div>
         </div>
@@ -768,6 +754,49 @@ function deriveEvening(
   }
   const [groupId, count] = [...perGroup.entries()].sort((a, b) => b[1] - a[1])[0];
   return { groupId, count, isToday: latest === todayStr, day: latest };
+}
+
+/** Behaalde badges als emoji-rij in de hero. Hoveren (of focussen) toont de
+ *  naam + uitleg in één gedeelde tooltip die links van de rij is verankerd,
+ *  zodat de `overflow: hidden` van de hero hem niet afknipt. */
+function BadgeStrip({ badges, to }: { badges: Badge[]; to: string }) {
+  const [active, setActive] = useState<Badge | null>(null);
+  const shown = badges.slice(0, 6);
+  const clear = (b: Badge) => setActive((cur) => (cur === b ? null : cur));
+  return (
+    <div
+      className="hero__badges-wrap"
+      onMouseLeave={() => setActive(null)}
+    >
+      <Link
+        className="hero__badges"
+        to={to}
+        aria-label={`Behaalde badges: ${badges.map((b) => b.naam).join(", ")}`}
+      >
+        {shown.map((b) => (
+          <span
+            key={b.id}
+            className={`hero__badge ${active === b ? "is-active" : ""}`}
+            onMouseEnter={() => setActive(b)}
+            onFocus={() => setActive(b)}
+            onBlur={() => clear(b)}
+            tabIndex={0}
+            aria-label={`${b.naam}: ${b.omschrijving}`}
+          >
+            {b.emoji}
+          </span>
+        ))}
+      </Link>
+      {active && (
+        <span className="hero__badge-tip" role="tooltip">
+          <span className="hero__badge-tip-name">
+            {active.emoji} {active.naam}
+          </span>
+          <span className="hero__badge-tip-desc">{active.omschrijving}</span>
+        </span>
+      )}
+    </div>
+  );
 }
 
 function ShiftDelta({ shift }: { shift: Shift | null }) {
