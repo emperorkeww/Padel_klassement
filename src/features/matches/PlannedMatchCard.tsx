@@ -45,6 +45,7 @@ export function PlannedMatchCard({
     ratings.data && teams[m.team_a_id] && teams[m.team_b_id]
       ? winChance(teams[m.team_a_id], teams[m.team_b_id], ratings.data)
       : null;
+  const pctA = chance != null ? Math.round(chance * 100) : null;
 
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
@@ -121,12 +122,19 @@ export function PlannedMatchCard({
     );
   }
 
-  // Scorebord-layout: per rij een team met zijn eigen stepper; de
-  // winkansbalk verbindt beide rijen (percentage A boven, B onder).
+  // Scorebord-layout: per rij een team met zijn eigen stepper. De verwachte
+  // winstkans staat als pil ín de rij van het team waar hij bij hoort.
   return (
     <div className="planned-card">
       <div className="planned-card__row">
         <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
+        {pctA != null && (
+          <WinChip
+            pct={pctA}
+            favorite={pctA >= 50}
+            teamName={teamLabel(teams[m.team_a_id], profiles)}
+          />
+        )}
         <ScoreStepper
           value={sa}
           onChange={setSa}
@@ -134,26 +142,15 @@ export function PlannedMatchCard({
         />
       </div>
 
-      {chance != null && (
-        <div
-          className="winchance"
-          title="Verwachte winstkans op basis van de huidige ratings"
-        >
-          <span className="winchance__pct">{Math.round(chance * 100)}%</span>
-          <span className="winchance__bar">
-            <span
-              className="winchance__fill"
-              style={{ width: `${Math.round(chance * 100)}%` }}
-            />
-          </span>
-          <span className="winchance__pct">
-            {100 - Math.round(chance * 100)}%
-          </span>
-        </div>
-      )}
-
       <div className="planned-card__row">
         <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={false} />
+        {pctA != null && (
+          <WinChip
+            pct={100 - pctA}
+            favorite={100 - pctA >= 50}
+            teamName={teamLabel(teams[m.team_b_id], profiles)}
+          />
+        )}
         <ScoreStepper
           value={sb}
           onChange={setSb}
@@ -177,6 +174,27 @@ export function PlannedMatchCard({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Pil met de verwachte winstkans van het team in dezelfde rij. */
+function WinChip({
+  pct,
+  favorite,
+  teamName,
+}: {
+  pct: number;
+  favorite: boolean;
+  teamName: string;
+}) {
+  return (
+    <span
+      className={`winchip ${favorite ? "winchip--fav" : ""}`}
+      title={`Verwachte winstkans van ${teamName} op basis van de huidige ratings`}
+    >
+      <span className="winchip__label">winkans</span>
+      {pct}%
+    </span>
   );
 }
 

@@ -969,30 +969,38 @@
   margin-left: auto;
   min-width: 110px;
 }
-/* Verwachte winstkans tussen de twee teamrijen van een geplande match. */
-.winchance {
-  display: flex;
+/* Verwachte winstkans als pil per teamrij: het percentage staat naast het
+   team waar het bij hoort (de favoriet kleurt mee met het accent). */
+.winchip {
+  display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
-}
-.winchance__pct {
+  gap: var(--sp-1);
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-.winchance__bar {
-  flex: 1;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--lime-soft);
-  overflow: hidden;
+.winchip--fav {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
-.winchance__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--accent);
+.winchip__label {
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+/* Smal scherm: alleen het percentage, het woord verdwijnt. */
+@media (max-width: 480px) {
+  .winchip__label {
+    display: none;
+  }
 }
 /* Smalle schermen: avatars wijken zodat namen niet afkappen; de voettekst
    van het scorebord mag wrappen. */
