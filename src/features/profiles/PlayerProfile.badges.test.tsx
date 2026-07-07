@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
@@ -45,5 +45,20 @@ describe("<PlayerProfile /> badges", () => {
     const reus = screen.getByText(/Reuzendoder/).closest(".badge");
     expect(reus).toHaveClass("badges__pill--dim");
     expect(reus).not.toHaveTextContent("/");
+  });
+
+  it("toont de beschrijving na een tik op een badge", async () => {
+    renderProfile("p1");
+
+    const knop = (await screen.findByText(/Eerste overwinning/)).closest("button")!;
+    // Nog geen uitleg zichtbaar.
+    expect(screen.queryByText(/allereerste match/i)).not.toBeInTheDocument();
+
+    fireEvent.click(knop);
+    expect(screen.getByText(/Win je allereerste match/i)).toBeInTheDocument();
+
+    // Opnieuw tikken verbergt de uitleg weer.
+    fireEvent.click(knop);
+    expect(screen.queryByText(/Win je allereerste match/i)).not.toBeInTheDocument();
   });
 });

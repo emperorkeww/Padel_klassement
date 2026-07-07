@@ -148,12 +148,44 @@
 .badges__item {
   display: inline-flex;
 }
+.badges__hint {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
 .badges__pill {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
   padding: var(--sp-1) var(--sp-3);
   font-size: var(--fs-sm);
+  /* Als klikbare knop: knop-standaards resetten, pill-look behouden. */
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.badges__pill:hover {
+  border-color: var(--accent);
+}
+.badges__pill--open {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+/* Uitleg van de aangetikte badge. */
+.badges__desc {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+.badges__status {
+  color: var(--ink-soft);
+  white-space: nowrap;
 }
 .badges__pill--dim {
   color: var(--ink-soft);

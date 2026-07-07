@@ -56,6 +56,9 @@ export function PlayerProfile() {
   const [seasonId, setSeasonId] = useState("");
   // Onderlinge stand: standaard de top 5 (meest gespeeld), met een toggle.
   const [showAllH2H, setShowAllH2H] = useState(false);
+  // Aangetikte badge: toont zijn beschrijving eronder (werkt ook op touch,
+  // waar de title-tooltip onbereikbaar is).
+  const [openBadge, setOpenBadge] = useState<string | null>(null);
 
   if (profile.loading)
     return (
@@ -148,6 +151,9 @@ export function PlayerProfile() {
 
   // Belangrijkste behaalde badge (laatste in de reeks = meest gevorderd) voor
   // op de deel-kaart.
+  const openBadgeInfo = openBadge
+    ? (badges.find((b) => b.id === openBadge) ?? null)
+    : null;
   const earned = badges.filter((b) => b.behaald);
   const topBadge =
     earned.length > 0
@@ -309,25 +315,52 @@ export function PlayerProfile() {
       {scoped.length > 0 && (
         <section className="card">
           <h2 className="card__title">Badges</h2>
+          <p className="badges__hint">Tik op een badge voor de uitleg.</p>
           <ul className="badges">
-            {badges.map((b) => (
-              <li key={b.id} className="badges__item" title={b.omschrijving}>
-                <span
-                  className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
-                >
-                  <span className="badges__emoji" aria-hidden="true">
-                    {b.emoji}
-                  </span>
-                  {b.naam}
-                  {!b.behaald && b.voortgang && (
-                    <span className="badges__progress">
-                      {b.voortgang.nu}/{b.voortgang.doel}
+            {badges.map((b) => {
+              const open = openBadge === b.id;
+              return (
+                <li key={b.id} className="badges__item">
+                  <button
+                    type="button"
+                    className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}${open ? " badges__pill--open" : ""}`}
+                    title={b.omschrijving}
+                    aria-expanded={open}
+                    aria-controls="badge-uitleg"
+                    onClick={() => setOpenBadge(open ? null : b.id)}
+                  >
+                    <span className="badges__emoji" aria-hidden="true">
+                      {b.emoji}
                     </span>
-                  )}
-                </span>
-              </li>
-            ))}
+                    {b.naam}
+                    {!b.behaald && b.voortgang && (
+                      <span className="badges__progress">
+                        {b.voortgang.nu}/{b.voortgang.doel}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+          {openBadgeInfo && (
+            <p id="badge-uitleg" className="badges__desc" role="status">
+              <span className="badges__emoji" aria-hidden="true">
+                {openBadgeInfo.emoji}
+              </span>
+              <span>
+                <strong>{openBadgeInfo.naam}</strong> —{" "}
+                {openBadgeInfo.omschrijving}{" "}
+                <span className="badges__status">
+                  {openBadgeInfo.behaald
+                    ? "Behaald ✓"
+                    : openBadgeInfo.voortgang
+                      ? `Voortgang: ${openBadgeInfo.voortgang.nu}/${openBadgeInfo.voortgang.doel}`
+                      : "Nog niet behaald"}
+                </span>
+              </span>
+            </p>
+          )}
         </section>
       )}
 
