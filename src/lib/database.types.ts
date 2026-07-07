@@ -733,6 +733,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_planned_match: {
+        Args: {
+          p_a1: string
+          p_a2: string
+          p_b1: string
+          p_b2: string
+          p_group_id?: string
+          p_played_at?: string
+        }
+        Returns: string
+      }
       generate_americano_round: {
         Args: { p_group_id: string }
         Returns: string[]

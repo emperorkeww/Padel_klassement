@@ -72,10 +72,11 @@
   display: grid;
   gap: var(--sp-5);
 }
-/* Kaarten en grids die elkaar opvolgen houden hetzelfde ritme. */
+/* Kaarten, grids en statrijen die elkaar opvolgen houden hetzelfde ritme. */
 .card + .grid,
 .grid + .grid,
-.grid + .card {
+.grid + .card,
+.card + .stats {
   margin-top: var(--sp-5);
 }
 @media (min-width: 720px) {
@@ -469,6 +470,82 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--accent);
+}
+/* Stappenindicator in een wizard-sheet: genummerde bolletjes met een
+   verbindingslijn; de actieve stap kleurt accent, afgeronde stappen zacht. */
+.steps {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 var(--sp-4);
+  padding: 0;
+}
+.steps__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.steps__item + .steps__item::before {
+  content: "";
+  width: 24px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  margin-right: var(--sp-1);
+}
+.steps__item.is-done + .steps__item::before {
+  background: var(--accent);
+}
+.steps__dot {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  font-size: 0.625rem;
+  line-height: 1;
+}
+.steps__item.is-current {
+  color: var(--accent);
+}
+.steps__item.is-current .steps__dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.steps__item.is-done {
+  color: var(--accent);
+}
+.steps__item.is-done .steps__dot {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+/* Live uitslag-voorbeeld onder de score-invoer: kleurt mee met de uitkomst. */
+.sheet-preview {
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.sheet-preview--win {
+  background: var(--success-soft);
+  border: 1px solid var(--success-line);
+  color: var(--success);
+}
+.sheet-preview--draw {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
 }
 .sheet__hint {
   margin: var(--sp-3) 0 0;
@@ -969,30 +1046,38 @@
   margin-left: auto;
   min-width: 110px;
 }
-/* Verwachte winstkans tussen de twee teamrijen van een geplande match. */
-.winchance {
-  display: flex;
+/* Verwachte winstkans als pil per teamrij: het percentage staat naast het
+   team waar het bij hoort (de favoriet kleurt mee met het accent). */
+.winchip {
+  display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
-}
-.winchance__pct {
+  gap: var(--sp-1);
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-.winchance__bar {
-  flex: 1;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--lime-soft);
-  overflow: hidden;
+.winchip--fav {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
-.winchance__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--accent);
+.winchip__label {
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+/* Smal scherm: alleen het percentage, het woord verdwijnt. */
+@media (max-width: 480px) {
+  .winchip__label {
+    display: none;
+  }
 }
 /* Smalle schermen: avatars wijken zodat namen niet afkappen; de voettekst
    van het scorebord mag wrappen. */

@@ -2,7 +2,9 @@ import "./ScoreStepper.css";
 
 /** Score-invoer met grote ±-knoppen voor gebruik op de baan: met één duim te
  *  bedienen, zonder toetsenbord. Het veld zelf blijft gewoon typbaar en
- *  draagt het (team)label voor screenreaders en tests. */
+ *  draagt het (team)label voor screenreaders en tests.
+ *  Bij een leeg veld zet − de score direct op 0, zodat een team dat niets
+ *  scoorde niet eerst via de + hoeft. */
 export function ScoreStepper({
   value,
   onChange,
@@ -28,7 +30,7 @@ export function ScoreStepper({
         type="button"
         className="stepper__btn"
         aria-label={`${label}: één minder`}
-        disabled={num == null || num <= 0}
+        disabled={num != null && num <= 0}
         onClick={() => step(-1)}
       >
         −

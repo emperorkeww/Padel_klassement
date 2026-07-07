@@ -10,7 +10,7 @@ import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { MatchCard } from "./MatchList";
 import { PlannedMatchCard } from "./PlannedMatchCard";
-import { NewMatchSheet } from "./NewMatchSheet";
+import { NewMatchSheet, type NewMatchMode } from "./NewMatchSheet";
 import type { Match, Profile, Team } from "../../lib/types";
 import "./Matches.css";
 
@@ -21,6 +21,12 @@ export function Matches() {
   const myId = user?.id ?? "";
   const [filter, setFilter] = useState<Filter>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<NewMatchMode>("score");
+
+  function openSheet(mode: NewMatchMode) {
+    setSheetMode(mode);
+    setSheetOpen(true);
+  }
 
   const matches = useAsync(() => getRecentMatches(100), []);
   const teams = useAsync(getTeamsMap, []);
@@ -70,6 +76,15 @@ export function Matches() {
   );
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
+  // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
+  const counts = useMemo(() => {
+    const list = matches.data ?? [];
+    const count = (f: Filter) =>
+      applyFilter(list, tmap, myId, f).filter((m) => !plannedIds.has(m.id))
+        .length;
+    return { all: count("all"), mine: count("mine"), won: count("won"), lost: count("lost") };
+  }, [matches.data, tmap, myId, plannedIds]);
+
   return (
     <div>
       <header className="page-head">
@@ -77,15 +92,20 @@ export function Matches() {
           <div>
             <h1 className="page-title">Matches</h1>
             <p className="page-subtitle">
-              Log een uitslag of bekijk recente wedstrijden.
+              Plan een match, log een uitslag of bekijk recente wedstrijden.
             </p>
           </div>
-          <button
-            className="btn btn--primary"
-            onClick={() => setSheetOpen(true)}
-          >
-            + Match loggen
-          </button>
+          <div className="btn-row">
+            <button className="btn" onClick={() => openSheet("plan")}>
+              Match plannen
+            </button>
+            <button
+              className="btn btn--primary"
+              onClick={() => openSheet("score")}
+            >
+              + Match loggen
+            </button>
+          </div>
         </div>
       </header>
 
@@ -128,6 +148,11 @@ export function Matches() {
                 onClick={() => setFilter(key)}
               >
                 {label}
+                {!matches.loading && (
+                  <span className="tab__count" aria-hidden="true">
+                    {counts[key]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -144,7 +169,7 @@ export function Matches() {
               action={
                 <button
                   className="btn btn--primary"
-                  onClick={() => setSheetOpen(true)}
+                  onClick={() => openSheet("score")}
                 >
                   + Log je eerste match
                 </button>
@@ -153,12 +178,17 @@ export function Matches() {
               Log je eerste uitslag en zie meteen je punten en rating groeien.
             </EmptyState>
           ) : (
-            <p className="empty">Geen matches voor dit filter.</p>
+            <p className="empty">{EMPTY_BY_FILTER[filter]}</p>
           ))}
         {!matches.loading &&
           groups.map(({ day, list }) => (
             <div key={day} className="match-day">
-              <h3 className="match-day__title">{day}</h3>
+              <h3 className="match-day__title">
+                {day}
+                <span className="match-day__count" aria-hidden="true">
+                  {list.length}
+                </span>
+              </h3>
               <ul className="matchlist">
                 {list.map((m) => (
                   <li key={m.id}>
@@ -178,6 +208,7 @@ export function Matches() {
       <NewMatchSheet
         open={sheetOpen}
         players={selectablePlayers}
+        mode={sheetMode}
         onClose={() => setSheetOpen(false)}
         onCreated={reloadAll}
       />
@@ -186,6 +217,14 @@ export function Matches() {
 }
 
 /* ---------- Filteren & groeperen ---------- */
+
+/** Lege staat per filter: zeg wát er leeg is in plaats van een generiek zinnetje. */
+const EMPTY_BY_FILTER: Record<Filter, string> = {
+  all: "Nog geen matches.",
+  mine: "Geen matches met jou erin — log er eentje via de knop hierboven.",
+  won: "Nog geen gewonnen matches voor dit filter. De volgende pak je!",
+  lost: "Geen verloren matches voor dit filter. Lekker bezig!",
+};
 
 function applyFilter(
   matches: Match[],
