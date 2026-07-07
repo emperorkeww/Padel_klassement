@@ -33,4 +33,5 @@ select
 from team_results tr
 join player_team pt on pt.team_id = tr.team_id
 join public.profiles p on p.id = pt.player_id
+where not p.is_guest
 group by p.id, p.username, p.full_name;

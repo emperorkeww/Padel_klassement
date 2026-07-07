@@ -1,6 +1,10 @@
--- Profielen: 1-op-1 met auth.users
+-- Profielen: echte spelers zijn 1-op-1 met auth.users; gasten (is_guest) zijn
+-- naamloze deelnemers zonder account, aangemaakt door een speler (owner_id).
+-- Daarom géén FK van id naar auth.users: die zou gasten onmogelijk maken. De
+-- cascade-delete bij het verwijderen van een auth-gebruiker regelt de trigger
+-- on_auth_user_deleted hieronder.
 create table public.profiles (
-  id uuid primary key references auth.users (id) on delete cascade,
+  id uuid primary key,
   username text unique not null,
   full_name text,
   avatar_url text,
@@ -11,7 +15,12 @@ create table public.profiles (
   -- Door de speler uitgelichte badges (geordende lijst van badge-id's), die
   -- bovenaan zijn profiel verschijnen. Leeg = niets uitgelicht.
   featured_badges text[] not null default '{}',
-  created_at timestamptz not null default now()
+  -- Gastspeler zonder account, en (voor een gast) de speler die hem aanmaakte.
+  is_guest boolean not null default false,
+  owner_id uuid references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  -- Een gast heeft altijd een eigenaar; een echte gebruiker nooit.
+  constraint profiles_guest_owner_chk check (is_guest = (owner_id is not null))
 );
 
 -- Automatisch een profile aanmaken bij signup. De gebruikersnaam komt uit de
@@ -58,3 +67,23 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Verwijder het profiel wanneer de bijhorende auth-gebruiker verdwijnt (vervangt
+-- de weggevallen FK-cascade van id -> auth.users). Gasten hebben geen
+-- auth-account en worden hierlangs niet geraakt; die vallen onder de
+-- owner_id-cascade.
+create function public.handle_deleted_user()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = ''
+as $$
+begin
+  delete from public.profiles where id = old.id;
+  return old;
+end;
+$$;
+
+create trigger on_auth_user_deleted
+  after delete on auth.users
+  for each row execute function public.handle_deleted_user();

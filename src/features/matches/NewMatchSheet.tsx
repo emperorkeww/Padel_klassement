@@ -9,6 +9,7 @@ import { tap, winPulse } from "../../lib/haptics";
 import { displayName } from "../profiles/api";
 import {
   createCompletedMatch,
+  createGuestPlayer,
   createPlannedMatch,
   emptySet,
   toSetScores,
@@ -29,12 +30,16 @@ export function NewMatchSheet({
   mode = "score",
   onClose,
   onCreated,
+  onGuestCreated,
 }: {
   open: boolean;
   players: Profile[];
   mode?: NewMatchMode;
   onClose: () => void;
   onCreated: () => void;
+  /** Aangeroepen nadat een gastspeler is aangemaakt, zodat de ouder zijn
+   *  spelerslijst kan verversen. */
+  onGuestCreated?: () => void;
 }) {
   // Expliciete team-indeling: twee aparte lijstjes i.p.v. "eerste twee = A".
   // Aantikken vult team A, dan team B; in de teamzones kun je spelers wisselen.
@@ -50,6 +55,10 @@ export function NewMatchSheet({
   const [repeat, setRepeat] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
+  // Gasten die tijdens deze sessie zijn aangemaakt (meteen kiesbaar).
+  const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
+  const [guestName, setGuestName] = useState("");
+  const [addingGuest, setAddingGuest] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
   const { user } = useAuth();
@@ -69,6 +78,9 @@ export function NewMatchSheet({
       setWhen("");
       setRepeat(false);
       setRepeatWeeks(4);
+      setExtraGuests([]);
+      setGuestName("");
+      setAddingGuest(false);
     }
   }, [open]);
 
@@ -97,20 +109,62 @@ export function NewMatchSheet({
 
   if (!open) return null;
 
+  // Kiesbare spelers = de van buiten meegegeven lijst plus de gasten die je
+  // net in deze sessie aanmaakte (ontdubbeld op id).
+  const allPlayers: Profile[] = [
+    ...players,
+    ...extraGuests.filter((g) => !players.some((p) => p.id === g.id)),
+  ];
+  const isGuest = (p: Profile | undefined) =>
+    !!(p as { is_guest?: boolean } | undefined)?.is_guest;
+
   const picked = teamA.length + teamB.length;
   const full = teamA.length === 2 && teamB.length === 2;
-  const byId = (id: string) => players.find((p) => p.id === id);
+  const byId = (id: string) => allPlayers.find((p) => p.id === id);
   const nameOf = (id: string) => displayName(byId(id));
   const teamOf = (id: string): "a" | "b" | null =>
     teamA.includes(id) ? "a" : teamB.includes(id) ? "b" : null;
 
-  // Bij een lange vriendenlijst is zoeken sneller dan scrollen.
-  const searchable = players.length > 8;
+  // Bij een lange spelerslijst is zoeken sneller dan scrollen.
+  const searchable = allPlayers.length > 8;
   const visiblePlayers = searchable
-    ? players.filter((p) =>
+    ? allPlayers.filter((p) =>
         displayName(p).toLowerCase().includes(query.trim().toLowerCase()),
       )
-    : players;
+    : allPlayers;
+
+  /** Voegt een gast toe (naam-only) en selecteert hem meteen in een team. */
+  async function addGuest() {
+    const naam = guestName.trim();
+    if (!naam || addingGuest) return;
+    if (full) {
+      toast.error("Beide teams zijn al vol.");
+      return;
+    }
+    setAddingGuest(true);
+    try {
+      const id = await createGuestPlayer(naam);
+      const guest = {
+        id,
+        username: naam,
+        full_name: naam,
+        avatar_url: null,
+        is_guest: true,
+        created_at: new Date().toISOString(),
+      } as unknown as Profile;
+      setExtraGuests((g) => [...g, guest]);
+      // Meteen selecteren: eerst team A, dan B.
+      if (teamA.length < 2) setTeamA((a) => [...a, id]);
+      else if (teamB.length < 2) setTeamB((b) => [...b, id]);
+      setGuestName("");
+      tap();
+      onGuestCreated?.();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setAddingGuest(false);
+    }
+  }
 
   const sa = scoreA === "" ? null : Number(scoreA);
   const sb = scoreB === "" ? null : Number(scoreB);
@@ -270,59 +324,79 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
-            {/* TODO gastspelers: een match kan nu alleen met app-accounts gelogd
-                worden, want teams verwijzen via FK naar profiles(id). Echte
-                gastondersteuning raakt het datamodel en is bewust NIET blind
-                toegevoegd. Aanbevolen additieve aanpak: "gast-profielen"
-                (profiles-rijen met is_guest = true, aangemaakt door een speler,
-                zonder auth-account), zodat teams/scores/Elo ongewijzigd blijven
-                werken. Zie eindrapport. */}
-            {players.length < 4 ? (
-              <p className="empty">
-                Je kunt alleen jezelf en je vrienden kiezen. Voeg eerst meer
-                vrienden toe voor een volledige match (4 spelers).
-              </p>
-            ) : (
-              <>
-                {searchable && (
-                  <input
-                    className="input pick-search"
-                    type="search"
-                    placeholder="Zoek een speler…"
-                    aria-label="Zoek een speler"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                )}
-                {visiblePlayers.length === 0 && (
-                  <p className="empty empty--bare">
-                    Geen speler gevonden voor "{query.trim()}".
-                  </p>
-                )}
-              <div className="pick-grid">
-                {visiblePlayers.map((p) => {
-                  const team = teamOf(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className={`pick-chip ${team ? `pick-chip--${team}` : ""} ${
-                        !team && full ? "is-dim" : ""
-                      }`}
-                      aria-pressed={team !== null}
-                      onClick={() => toggle(p.id)}
-                    >
-                      <Avatar profile={p} size={30} />
-                      <span className="pick-chip__name">{displayName(p)}</span>
-                      {team && (
-                        <span className="pick-chip__team">{team.toUpperCase()}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              </>
+            {searchable && (
+              <input
+                className="input pick-search"
+                type="search"
+                placeholder="Zoek een speler…"
+                aria-label="Zoek een speler"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             )}
+            {visiblePlayers.length === 0 && (
+              <p className="empty empty--bare">
+                {query.trim()
+                  ? `Geen speler gevonden voor "${query.trim()}".`
+                  : "Nog geen spelers — voeg een vriend of een gast toe."}
+              </p>
+            )}
+            <div className="pick-grid">
+              {visiblePlayers.map((p) => {
+                const team = teamOf(p.id);
+                const guest = isGuest(p);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`pick-chip ${team ? `pick-chip--${team}` : ""} ${
+                      guest ? "pick-chip--guest" : ""
+                    } ${!team && full ? "is-dim" : ""}`}
+                    aria-pressed={team !== null}
+                    onClick={() => toggle(p.id)}
+                  >
+                    <Avatar profile={p} size={30} />
+                    <span className="pick-chip__name">{displayName(p)}</span>
+                    {guest && (
+                      <span className="pick-chip__guest" title="Gastspeler zonder account">
+                        gast
+                      </span>
+                    )}
+                    {team && (
+                      <span className="pick-chip__team">{team.toUpperCase()}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Gast toevoegen: iemand zonder app-account, gewoon met een naam. */}
+            <div className="guest-add">
+              <input
+                className="input guest-add__input"
+                type="text"
+                placeholder="Speelt iemand zonder account mee? Typ zijn naam…"
+                aria-label="Naam van een gastspeler"
+                value={guestName}
+                maxLength={40}
+                disabled={full || addingGuest}
+                onChange={(e) => setGuestName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addGuest();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn--sm"
+                onClick={() => void addGuest()}
+                disabled={!guestName.trim() || full || addingGuest}
+              >
+                {addingGuest ? "Bezig…" : "+ Gast"}
+              </button>
+            </div>
 
             <p className="sheet__hint">
               {full

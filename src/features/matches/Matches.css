@@ -94,6 +94,38 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Gastspeler zonder account: subtiel gestippelde rand + label. */
+.pick-chip--guest {
+  border-style: dashed;
+}
+.pick-chip__guest {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft-strong, var(--ink-soft));
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Als een gast in een team zit, wint het team-bolletje de rechterplek. */
+.pick-chip--guest .pick-chip__team {
+  margin-left: var(--sp-1);
+}
+
+/* Gast toevoegen: naam-invoer + knop. */
+.guest-add {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  margin-top: var(--sp-3);
+}
+.guest-add__input {
+  flex: 1;
+  min-width: 0;
+}
 
 /* Teamoverzicht met wissel-knop. */
 .pick-teams {

@@ -183,6 +183,25 @@ export function getRecentResults(limit = 6): Promise<Match[]> {
   });
 }
 
+/** Maakt een gastspeler aan (naam-only, geen account) en geeft zijn id terug.
+ *  De gast is eigendom van de ingelogde gebruiker en kan meteen in een match. */
+export async function createGuestPlayer(name: string): Promise<string> {
+  // create_guest_player staat nog niet in de gegenereerde types: lokaal casten.
+  // Inline aanroepen (haakjes om supabase.rpc) zodat de this-binding naar de
+  // client behouden blijft — een losse variabele zou 'this' verliezen.
+  const { data, error } = await (
+    supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: string | null; error: { message: string } | null }>
+  )("create_guest_player", { p_name: name });
+  if (error) throw error;
+  // De gecachte profielenlijst is nu verouderd: wissen zodat de gast overal
+  // (spelerskiezer, groep-leden) meteen met zijn naam verschijnt i.p.v. "Onbekend".
+  invalidate("profiles");
+  return data as string;
+}
+
 /** Logt een afgeronde match via de SECURITY DEFINER RPC. */
 export async function createCompletedMatch(params: {
   a1: string;
