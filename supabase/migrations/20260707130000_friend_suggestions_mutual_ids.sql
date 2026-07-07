@@ -1,27 +1,25 @@
--- RPC: stel vrienden voor aan de ingelogde gebruiker.
--- Prioriteit op gemeenschappelijke vrienden (mutual_count desc), daarna willekeurig aangevuld.
--- SECURITY DEFINER omdat vrienden-van-vrienden buiten de eigen RLS-zichtbaarheid vallen.
--- mutual_ids bevat de id's van de gemeenschappelijke vrienden (de client toont hun namen).
-create or replace function public.get_friend_suggestions(p_limit int default 12)
-returns table (id uuid, mutual_count int, mutual_ids uuid[])
-language sql
-security definer
-set search_path = ''
-as $$
+set check_function_bodies = off;
+
+-- Signatuur wijzigt (extra kolom mutual_ids) -> eerst droppen.
+drop function if exists public.get_friend_suggestions(int);
+
+CREATE OR REPLACE FUNCTION public.get_friend_suggestions(p_limit int default 12)
+ RETURNS TABLE (id uuid, mutual_count int, mutual_ids uuid[])
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
   with me as (select auth.uid() as uid),
-  -- Mijn geaccepteerde vrienden.
   my_friends as (
     select case when f.requester_id = m.uid then f.addressee_id else f.requester_id end as friend_id
     from public.friendships f, me m
     where f.status = 'accepted' and m.uid in (f.requester_id, f.addressee_id)
   ),
-  -- Iedereen met wie ik al enige relatie heb (pending/accepted/declined) -> uitsluiten.
   related as (
     select case when f.requester_id = m.uid then f.addressee_id else f.requester_id end as rid
     from public.friendships f, me m
     where m.uid in (f.requester_id, f.addressee_id)
   ),
-  -- Vrienden-van-vrienden met de gemeenschappelijke (geaccepteerde) vrienden.
   fof as (
     select case when f.requester_id = mf.friend_id then f.addressee_id else f.requester_id end as cand,
            count(*)::int as mutual,
@@ -40,6 +38,6 @@ as $$
     and p.id not in (select rid from related)
   order by mutual_count desc, random()
   limit p_limit;
-$$;
+$function$;
 
 grant execute on function public.get_friend_suggestions(int) to authenticated;

@@ -42,13 +42,38 @@ export function Friends() {
   const [searching, setSearching] = useState(false);
   // Puur voor de lege-status: "nog niet gezocht" ≠ "geen resultaten".
   const [searched, setSearched] = useState(false);
+  // Welke suggesties hun gemeenschappelijke-vrienden-lijst uitgeklapt hebben.
+  const [openMutual, setOpenMutual] = useState<Set<string>>(new Set());
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
 
+  // Klap de lijst met gemeenschappelijke vrienden van één suggestie open/dicht.
+  function toggleMutual(id: string) {
+    setOpenMutual((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Namen van de gemeenschappelijke vrienden (voor de uitgeklapte lijst).
+  function mutualNames(ids: string[]): string {
+    return ids
+      .map((id) => displayName(pmap[id]))
+      .filter(Boolean)
+      .join(", ");
+  }
+
   // ids die al een relatie hebben (om dubbele verzoeken te voorkomen in de zoekresultaten)
   const relatedIds = new Set(
     (friendships.data ?? []).flatMap((f) => [f.requester_id, f.addressee_id]),
+  );
+
+  // Suggesties waarvan we het profiel kennen en die nog geen relatie hebben.
+  const visibleSuggestions = (suggestions.data ?? []).filter(
+    (s) => !relatedIds.has(s.id) && pmap[s.id],
   );
 
   async function runSearch(e: React.FormEvent) {
@@ -190,7 +215,17 @@ export function Friends() {
                         {displayName(pmap[otherId(f, myId)])}
                       </Link>
                     </span>
-                    <span className="badge">In afwachting</span>
+                    <span className="btn-row">
+                      <span className="badge">In afwachting</span>
+                      <button
+                        className="btn btn--sm btn--danger"
+                        onClick={() =>
+                          act(() => removeFriendship(f.id), "Verzoek ingetrokken.")
+                        }
+                      >
+                        Intrekken
+                      </button>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -201,48 +236,65 @@ export function Friends() {
 
       <section className="card">
         <h2 className="card__title">Misschien ken je</h2>
-        {!suggestions.loading &&
-          suggestions.data &&
-          suggestions.data.filter((s) => !relatedIds.has(s.id)).length === 0 && (
-            <p className="empty">
-              Nog geen suggesties — voeg vrienden toe en we stellen op basis van
-              gemeenschappelijke vrienden nieuwe spelers voor.
-            </p>
-          )}
-        <div className="person-grid">
-          {suggestions.loading && <Skeleton rows={3} />}
-          {(suggestions.data ?? [])
-            .filter((s) => !relatedIds.has(s.id) && pmap[s.id])
-            .map((s) => {
-              const p = pmap[s.id];
-              return (
-                <div key={s.id} className="person-row">
-                  <span className="cell-player">
-                    <Avatar profile={p} size={28} />
-                    <Link className="profile-link" to={`/spelers/${s.id}`}>
-                      {displayName(p)}
-                    </Link>
-                    {s.mutual_count > 0 && (
-                      <span className="badge badge--accent">
-                        {s.mutual_count} gemeenschappelijke vriend
-                        {s.mutual_count === 1 ? "" : "en"}
+        {suggestions.loading && <Skeleton rows={3} />}
+        {!suggestions.loading && visibleSuggestions.length === 0 && (
+          <p className="empty">
+            Nog geen suggesties — voeg vrienden toe en we stellen op basis van
+            gemeenschappelijke vrienden nieuwe spelers voor.
+          </p>
+        )}
+        <div className="suggest-grid">
+          {visibleSuggestions.map((s) => {
+            const p = pmap[s.id];
+            const open = openMutual.has(s.id);
+            return (
+              <div key={s.id} className="suggest-card">
+                <Link className="suggest-card__id" to={`/spelers/${s.id}`}>
+                  <Avatar profile={p} size={56} />
+                  <span className="suggest-card__name">{displayName(p)}</span>
+                  <span className="badge">@{p.username}</span>
+                </Link>
+
+                {s.mutual_count > 0 ? (
+                  <button
+                    type="button"
+                    className="mutual-toggle"
+                    aria-expanded={open}
+                    onClick={() => toggleMutual(s.id)}
+                  >
+                    {s.mutual_ids.length > 0 && (
+                      <span className="mutual-avatars" aria-hidden="true">
+                        {s.mutual_ids.slice(0, 3).map((mid) => (
+                          <Avatar key={mid} profile={pmap[mid]} size={20} />
+                        ))}
                       </span>
                     )}
-                  </span>
-                  <button
-                    className="btn btn--sm"
-                    onClick={() =>
-                      act(
-                        () => sendFriendRequest(myId, s.id),
-                        "Verzoek verstuurd.",
-                      )
-                    }
-                  >
-                    Verzoek sturen
+                    {s.mutual_count} gemeenschappelijke vriend
+                    {s.mutual_count === 1 ? "" : "en"}
+                    <span className="mutual-caret" aria-hidden="true">
+                      {open ? "▲" : "▼"}
+                    </span>
                   </button>
-                </div>
-              );
-            })}
+                ) : (
+                  <span className="person-sub">Voorgesteld voor jou</span>
+                )}
+                {open && s.mutual_count > 0 && (
+                  <span className="suggest-card__mutuals">
+                    {mutualNames(s.mutual_ids)}
+                  </span>
+                )}
+
+                <button
+                  className="btn btn--sm btn--primary suggest-card__cta"
+                  onClick={() =>
+                    act(() => sendFriendRequest(myId, s.id), "Verzoek verstuurd.")
+                  }
+                >
+                  Verzoek sturen
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

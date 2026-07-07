@@ -259,6 +259,104 @@
   gap: var(--sp-2);
   min-width: 0;
 }
+.person-sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+/* Actieknop in een persoonsrij mag nooit krimpen of overlappen. */
+.person-row > .btn {
+  flex-shrink: 0;
+}
+
+/* ---------- Vriend-suggesties ("Misschien ken je") ----------
+   Kaartjes in "people you may know"-stijl: verticaal gecentreerd, met een
+   primaire actieknop onderaan die op één lijn blijft over de rij. */
+.suggest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+.suggest-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+.suggest-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-sm);
+}
+.suggest-card__id {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  max-width: 100%;
+  text-decoration: none;
+  color: var(--ink);
+}
+.suggest-card__id:hover .suggest-card__name {
+  color: var(--accent);
+}
+.suggest-card__name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-card__mutuals {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+.suggest-card__cta {
+  width: 100%;
+  margin-top: auto;
+}
+/* Gestapelde mini-avatars van de gemeenschappelijke vrienden. */
+.mutual-avatars {
+  display: inline-flex;
+}
+.mutual-avatars > * {
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px var(--surface);
+  border-radius: 999px;
+}
+.mutual-avatars > *:first-child {
+  margin-left: 0;
+}
+/* Klikbare teller die de gemeenschappelijke vrienden in-/uitklapt. */
+.mutual-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--accent);
+}
+.mutual-toggle:hover {
+  text-decoration: underline;
+}
+.mutual-caret {
+  font-size: 0.6em;
+  line-height: 1;
+}
 
 /* ---------- Persoonsrijen (vrienden, leden, zoekresultaten) ----------
    Haarlijn-scheiding en een hover-vlak dat iets breder is dan de inhoud. */
