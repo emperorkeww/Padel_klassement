@@ -186,6 +186,14 @@
   background: var(--accent);
 }
 
+/* Rechterkolom naast de uitslagen: rating + topspelers onder elkaar,
+   bovenaan uitgelijnd zodat er geen kaart wordt uitgerekt. */
+.dashboard__col {
+  display: grid;
+  gap: var(--sp-5);
+  align-content: start;
+}
+
 /* Topspelers-lijstje met genummerde rang. */
 .toplist {
   list-style: none;
@@ -206,6 +214,11 @@
 }
 .toplist__item:hover {
   background: var(--surface-2);
+}
+/* Eigen rij in de top 3 licht groen: "hier sta jij". */
+.toplist__item.is-me,
+.toplist__item.is-me:hover {
+  background: var(--accent-soft);
 }
 .toplist__rank {
   width: 22px;

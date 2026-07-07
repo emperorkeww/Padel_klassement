@@ -72,10 +72,11 @@
   display: grid;
   gap: var(--sp-5);
 }
-/* Kaarten en grids die elkaar opvolgen houden hetzelfde ritme. */
+/* Kaarten, grids en statrijen die elkaar opvolgen houden hetzelfde ritme. */
 .card + .grid,
 .grid + .grid,
-.grid + .card {
+.grid + .card,
+.card + .stats {
   margin-top: var(--sp-5);
 }
 @media (min-width: 720px) {

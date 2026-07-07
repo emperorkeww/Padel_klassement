@@ -12,7 +12,7 @@ import { recentForm, winRate, winStreak } from "../../lib/results";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
-import { getRecentMatches, getPlayerMatches, getTeamsMap } from "../matches/api";
+import { getRecentResults, getPlayerMatches, getTeamsMap } from "../matches/api";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { MatchList } from "../matches/MatchList";
@@ -28,7 +28,9 @@ export function Dashboard() {
   const myId = user?.id ?? "";
 
   const standings = useAsync(getPlayerStandings, []);
-  const matches = useAsync(() => getRecentMatches(6), []);
+  // Alleen gespeelde uitslagen: geplande matches staan al in de actiestrook
+  // en bij "Jouw volgende match" — die hier herhalen is ruis.
+  const matches = useAsync(() => getRecentResults(6), []);
   const myMatches = useAsync(
     () => (myId ? getPlayerMatches(myId, 30) : Promise.resolve([])),
     [myId],
@@ -96,6 +98,14 @@ export function Dashboard() {
         a.created_at.localeCompare(b.created_at),
     );
   const nextMatch = planned[0] ?? null;
+  // Komen alle openstaande uitslagen uit één groep, link dan direct naar de
+  // rondes van die groep in plaats van naar de algemene matchespagina.
+  const plannedGroupId =
+    planned.length > 0 &&
+    planned[0].group_id &&
+    planned.every((m) => m.group_id === planned[0].group_id)
+      ? planned[0].group_id
+      : null;
 
   return (
     <div className="dashboard">
@@ -140,7 +150,10 @@ export function Dashboard() {
       {(planned.length > 0 || incoming.length > 0) && (
         <div className="todo-strip">
           {planned.length > 0 && (
-            <Link className="todo-chip" to="/matches">
+            <Link
+              className="todo-chip"
+              to={plannedGroupId ? `/groepen/${plannedGroupId}` : "/matches"}
+            >
               <span className="todo-chip__count">{planned.length}</span>
               {planned.length === 1
                 ? "uitslag wacht op jou"
@@ -189,39 +202,10 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Rating: groot getal + delta + verloop in één kaart (voorheen een
-          stat-tegel én een losse grafiekkaart met dezelfde informatie). */}
-      {(ratings.loading || myRating != null || rhist.length >= 2) && (
-        <section className="card rating-card">
-          <div className="card__head">
-            <h2 className="card__title">Rating</h2>
-            <Link className="profile-link" to={`/spelers/${myId}`}>
-              Mijn profiel →
-            </Link>
-          </div>
-          {ratings.loading ? (
-            <span className="sk sk--line rating-card__sk" aria-hidden="true" />
-          ) : (
-            <p className="rating-card__value">
-              {myRating != null ? <CountUp value={myRating} /> : "—"}
-              {rhist.length > 0 && rhist[rhist.length - 1].delta !== 0 && (
-                <span
-                  className={`stat__delta ${rhist[rhist.length - 1].delta > 0 ? "is-up" : "is-down"}`}
-                >
-                  {rhist[rhist.length - 1].delta > 0 ? "▲" : "▼"}
-                  {Math.abs(rhist[rhist.length - 1].delta)}
-                </span>
-              )}
-            </p>
-          )}
-          {rhist.length >= 2 && <RatingChart history={rhist} />}
-        </section>
-      )}
-
       <div className="grid grid--2">
         <section className="card">
           <div className="card__head">
-            <h2 className="card__title">Recente matches</h2>
+            <h2 className="card__title">Recente uitslagen</h2>
             <Link className="profile-link" to="/matches">
               Alles →
             </Link>
@@ -234,55 +218,98 @@ export function Dashboard() {
               teams={tmap}
               profiles={pmap}
               perspectiveId={myId}
+              empty="Nog geen uitslagen — vul een geplande match in of log er een."
             />
           )}
         </section>
 
-        <section className="card">
-          <div className="card__head">
-            <h2 className="card__title">Topspelers</h2>
-            <Link className="profile-link" to="/klassement">
-              Klassement →
-            </Link>
-          </div>
-          {top.length === 0 ? (
-            <p className="empty">Nog geen klassement.</p>
-          ) : (
-            <ul className="toplist">
-              {top.map((p, i) => (
-                <li key={p.player_id} className="toplist__item">
-                  <span className={`toplist__rank toplist__rank--${i + 1}`}>
-                    {i + 1}
-                  </span>
-                  <Avatar profile={pmap[p.player_id] ?? p} size={28} />
-                  <Link
-                    className="profile-link toplist__name"
-                    to={`/spelers/${p.player_id}`}
-                  >
-                    {displayName(p)}
-                  </Link>
-                  <span className="toplist__pts">{p.points} ptn</span>
-                </li>
-              ))}
-            </ul>
+        <div className="dashboard__col">
+          {/* Rating: groot getal + delta + verloop in één kaart (voorheen een
+              stat-tegel én een losse grafiekkaart met dezelfde informatie). */}
+          {(ratings.loading || myRating != null || rhist.length >= 2) && (
+            <section className="card rating-card">
+              <div className="card__head">
+                <h2 className="card__title">Rating</h2>
+                <Link className="profile-link" to={`/spelers/${myId}`}>
+                  Mijn profiel →
+                </Link>
+              </div>
+              {ratings.loading ? (
+                <span className="sk sk--line rating-card__sk" aria-hidden="true" />
+              ) : (
+                <p className="rating-card__value">
+                  {myRating != null ? <CountUp value={myRating} /> : "—"}
+                  {rhist.length > 0 && rhist[rhist.length - 1].delta !== 0 && (
+                    <span
+                      className={`stat__delta ${rhist[rhist.length - 1].delta > 0 ? "is-up" : "is-down"}`}
+                    >
+                      {rhist[rhist.length - 1].delta > 0 ? "▲" : "▼"}
+                      {Math.abs(rhist[rhist.length - 1].delta)}
+                    </span>
+                  )}
+                </p>
+              )}
+              {rhist.length >= 2 ? (
+                <RatingChart history={rhist} />
+              ) : (
+                !ratings.loading && (
+                  <p className="empty empty--bare">
+                    Speel meer matches om hier je ratingverloop te zien.
+                  </p>
+                )
+              )}
+            </section>
           )}
 
-          {/* Compacte sociale voetregel (voorheen een eigen kaart). */}
-          <div className="social-foot">
-            <span className="social-foot__item">
-              Vrienden <span className="badge">{accepted.length}</span>
-            </span>
-            <span className="social-foot__item">
-              Verzoeken{" "}
-              <span className={`badge ${incoming.length ? "badge--accent" : ""}`}>
-                {incoming.length}
+          <section className="card">
+            <div className="card__head">
+              <h2 className="card__title">Topspelers</h2>
+              <Link className="profile-link" to="/klassement">
+                Klassement →
+              </Link>
+            </div>
+            {top.length === 0 ? (
+              <p className="empty">Nog geen klassement.</p>
+            ) : (
+              <ul className="toplist">
+                {top.map((p, i) => (
+                  <li
+                    key={p.player_id}
+                    className={`toplist__item ${p.player_id === myId ? "is-me" : ""}`}
+                  >
+                    <span className={`toplist__rank toplist__rank--${i + 1}`}>
+                      {i + 1}
+                    </span>
+                    <Avatar profile={pmap[p.player_id] ?? p} size={28} />
+                    <Link
+                      className="profile-link toplist__name"
+                      to={`/spelers/${p.player_id}`}
+                    >
+                      {displayName(p)}
+                    </Link>
+                    <span className="toplist__pts">{p.points} ptn</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Compacte sociale voetregel (voorheen een eigen kaart). */}
+            <div className="social-foot">
+              <span className="social-foot__item">
+                Vrienden <span className="badge">{accepted.length}</span>
               </span>
-            </span>
-            <Link className="profile-link" to="/vrienden">
-              Beheren →
-            </Link>
-          </div>
-        </section>
+              <span className="social-foot__item">
+                Verzoeken{" "}
+                <span className={`badge ${incoming.length ? "badge--accent" : ""}`}>
+                  {incoming.length}
+                </span>
+              </span>
+              <Link className="profile-link" to="/vrienden">
+                Beheren →
+              </Link>
+            </div>
+          </section>
+        </div>
       </div>
 
       <section className="card">

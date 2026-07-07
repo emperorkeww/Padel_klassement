@@ -60,10 +60,10 @@ describe("<Dashboard />", () => {
     expect(await screen.findByText(/uitslag wacht op jou/i)).toBeInTheDocument();
   });
 
-  it("toont topspelers en recente matches", async () => {
+  it("toont topspelers en recente uitslagen", async () => {
     renderPage();
     expect(await screen.findByText(/topspelers/i)).toBeInTheDocument();
-    expect(await screen.findByText(/recente matches/i)).toBeInTheDocument();
+    expect(await screen.findByText(/recente uitslagen/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
   });
 });
