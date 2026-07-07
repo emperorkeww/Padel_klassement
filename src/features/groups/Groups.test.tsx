@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
 
@@ -16,10 +16,13 @@ import { supabase } from "../../lib/supabase";
 
 function renderPage() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/groepen"]}>
       <AuthProvider>
         <ToastProvider>
-          <Groups />
+          <Routes>
+            <Route path="/groepen" element={<Groups />} />
+            <Route path="/groepen/:id" element={<div>detailpagina</div>} />
+          </Routes>
         </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
@@ -27,14 +30,15 @@ function renderPage() {
 }
 
 describe("<Groups />", () => {
-  it("toont de groep als klikbare kaart met eigenaar-badge", async () => {
+  it("toont de groep als klikbare kaart met eigenaar-badge en ledenaantal", async () => {
     renderPage();
     const kaart = await screen.findByRole("link", { name: /vrijdagavond padel/i });
     expect(kaart).toHaveAttribute("href", "/groepen/g1");
     expect(screen.getByText(/eigenaar/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 leden/i)).toBeInTheDocument();
   });
 
-  it("maakt een nieuwe groep aan", async () => {
+  it("maakt een groep aan en gaat door naar de ledentab", async () => {
     renderPage();
     await screen.findByRole("link", { name: /vrijdagavond padel/i });
     await userEvent.type(
@@ -44,5 +48,7 @@ describe("<Groups />", () => {
     await userEvent.click(screen.getByRole("button", { name: /aanmaken/i }));
     expect(supabase.from).toHaveBeenCalledWith("groups");
     expect(await screen.findByText(/groep aangemaakt/i)).toBeInTheDocument();
+    // Na aanmaken navigeren we naar de detailpagina van de nieuwe groep.
+    expect(await screen.findByText(/detailpagina/i)).toBeInTheDocument();
   });
 });
