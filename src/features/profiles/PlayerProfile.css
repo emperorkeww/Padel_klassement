@@ -136,40 +136,84 @@
   color: var(--ink-soft);
 }
 
-/* Badges: compacte flow van pillen; niet-behaald gedempt met voortgang. */
+/* Badges: raster van duidelijke tegels; niet-behaald gedempt met voortgang. */
 .badges {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: var(--sp-2);
 }
 .badges__item {
-  display: inline-flex;
+  display: block;
 }
 .badges__hint {
-  margin: 0 0 var(--sp-2);
+  margin: 0 0 var(--sp-3);
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
 .badges__pill {
-  display: inline-flex;
+  /* Volwaardige tegel i.p.v. inline-pil: grote emoji boven, naam eronder. */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-1) var(--sp-3);
+  justify-content: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radius);
   font-size: var(--fs-sm);
-  /* Als klikbare knop: knop-standaards resetten, pill-look behouden. */
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 .badges__pill:hover {
   border-color: var(--accent);
 }
+.badges__pill:active {
+  transform: scale(0.97);
+}
 .badges__pill--open {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.badges__pill--dim {
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-style: dashed;
+}
+/* Emoji in een ronde schijf, zodat het icoon duidelijk oppakt. */
+.badges__emoji {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.badge--accent .badges__emoji {
+  background: var(--surface);
+  border-color: var(--accent-line);
+}
+.badges__pill--dim .badges__emoji {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.badges__progress {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
 }
 /* Uitleg van de aangetikte badge. */
 .badges__desc {
@@ -177,35 +221,21 @@
   align-items: baseline;
   gap: var(--sp-2);
   margin: var(--sp-3) 0 0;
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3);
   border-radius: var(--radius);
   background: var(--surface-2);
   font-size: var(--fs-sm);
   color: var(--ink);
 }
+.badges__desc .badges__emoji {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.1rem;
+  flex: none;
+}
 .badges__status {
   color: var(--ink-soft);
   white-space: nowrap;
-}
-.badges__pill--dim {
-  color: var(--ink-soft);
-  background: var(--surface);
-  border-style: dashed;
-}
-.badges__pill--dim .badges__emoji {
-  filter: grayscale(1);
-  opacity: 0.55;
-}
-.badges__emoji {
-  font-size: 1em;
-  line-height: 1;
-}
-.badges__progress {
-  margin-left: var(--sp-1);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-soft);
 }
 
 /* Profielkop: terug-knop links, seizoenskiezer + deelknop rechts. */
