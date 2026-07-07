@@ -375,12 +375,17 @@ export function PlayerProfile() {
         </section>
       )}
 
-      {scoped.length > 0 && (
+      {!matches.loading && (
         <section className="card">
           <h2 className="card__title">Badges</h2>
           <p className="badges__hint">
-            Tik op een badge voor de uitleg
-            {isMe && " · tik op ★ om een behaalde badge uit te lichten op je profiel"}.
+            {badges.some((b) => b.behaald)
+              ? "Tik op een badge voor de uitleg"
+              : "Speel matches om deze badges te verdienen · tik op een badge voor de uitleg"}
+            {isMe &&
+              earnedAllTime.size > 0 &&
+              " · tik op ★ om een behaalde badge uit te lichten op je profiel"}
+            .
           </p>
           <ul className="badges">
             {badges.map((b) => {
