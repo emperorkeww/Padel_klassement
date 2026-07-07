@@ -7,6 +7,7 @@ import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import {
   getMyFriendships,
+  getFriendSuggestions,
   sendFriendRequest,
   respondToRequest,
   removeFriendship,
@@ -29,7 +30,11 @@ export function Friends() {
 
   const friendships = useAsync(getMyFriendships, []);
   const profiles = useAsync(getProfilesMap, []);
-  useRealtime("friendships", friendships.reload);
+  const suggestions = useAsync(getFriendSuggestions, []);
+  useRealtime("friendships", () => {
+    friendships.reload();
+    suggestions.reload();
+  });
 
   const toast = useToast();
   const [query, setQuery] = useState("");
@@ -64,6 +69,7 @@ export function Friends() {
       await fn();
       toast.success(ok);
       friendships.reload();
+      suggestions.reload();
     } catch (err) {
       toast.error(errMsg(err));
     }
@@ -192,6 +198,53 @@ export function Friends() {
           )}
         </section>
       </div>
+
+      <section className="card">
+        <h2 className="card__title">Misschien ken je</h2>
+        {!suggestions.loading &&
+          suggestions.data &&
+          suggestions.data.filter((s) => !relatedIds.has(s.id)).length === 0 && (
+            <p className="empty">
+              Nog geen suggesties — voeg vrienden toe en we stellen op basis van
+              gemeenschappelijke vrienden nieuwe spelers voor.
+            </p>
+          )}
+        <div className="person-grid">
+          {suggestions.loading && <Skeleton rows={3} />}
+          {(suggestions.data ?? [])
+            .filter((s) => !relatedIds.has(s.id) && pmap[s.id])
+            .map((s) => {
+              const p = pmap[s.id];
+              return (
+                <div key={s.id} className="person-row">
+                  <span className="cell-player">
+                    <Avatar profile={p} size={28} />
+                    <Link className="profile-link" to={`/spelers/${s.id}`}>
+                      {displayName(p)}
+                    </Link>
+                    {s.mutual_count > 0 && (
+                      <span className="badge badge--accent">
+                        {s.mutual_count} gemeenschappelijke vriend
+                        {s.mutual_count === 1 ? "" : "en"}
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    className="btn btn--sm"
+                    onClick={() =>
+                      act(
+                        () => sendFriendRequest(myId, s.id),
+                        "Verzoek verstuurd.",
+                      )
+                    }
+                  >
+                    Verzoek sturen
+                  </button>
+                </div>
+              );
+            })}
+        </div>
+      </section>
 
       <section className="card">
         <h2 className="card__title">Mijn vrienden</h2>

@@ -741,6 +741,10 @@ export type Database = {
         Args: { p_group_id: string }
         Returns: string[]
       }
+      get_friend_suggestions: {
+        Args: { p_limit?: number }
+        Returns: { id: string; mutual_count: number }[]
+      }
       is_group_member: {
         Args: { p_group_id: string; p_uid: string }
         Returns: boolean

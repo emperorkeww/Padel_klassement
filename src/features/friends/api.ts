@@ -43,6 +43,27 @@ export async function removeFriendship(id: string): Promise<void> {
   invalidate("friendships");
 }
 
+/** Een voorgestelde vriend: profiel-id + aantal gemeenschappelijke vrienden. */
+export interface FriendSuggestion {
+  id: string;
+  mutual_count: number;
+}
+
+/**
+ * Voorgestelde vrienden voor de ingelogde gebruiker. Mensen met gemeenschappelijke
+ * vrienden staan bovenaan (op aantal), aangevuld met willekeurige spelers.
+ * Draait server-side (RPC) omdat vrienden-van-vrienden buiten de eigen RLS-zichtbaarheid vallen.
+ */
+export function getFriendSuggestions(): Promise<FriendSuggestion[]> {
+  return cached("friendships:suggestions", async () => {
+    const { data, error } = await supabase.rpc("get_friend_suggestions", {
+      p_limit: 12,
+    });
+    if (error) throw error;
+    return (data ?? []) as FriendSuggestion[];
+  });
+}
+
 /** Categoriseert vriendschappen t.o.v. de huidige gebruiker. */
 export function categorize(list: Friendship[], myId: string) {
   const accepted = list.filter((f) => f.status === "accepted");

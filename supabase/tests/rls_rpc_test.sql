@@ -2,7 +2,7 @@
 -- Simuleert gebruikers via request.jwt.claims (auth.uid()) en role-switches.
 begin;
 
-select plan(14);
+select plan(17);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -138,6 +138,38 @@ select throws_ok(
   $$ select public.generate_americano_round('a0000000-0000-0000-0000-0000000000f0') $$,
   'P0001'
 );
+
+------------------------------------------------------------------------
+-- get_friend_suggestions
+-- t1 is bevriend met t2, t3, t4. Als t2 suggesties opvraagt, zijn t3 en t4
+-- kandidaten met 1 gemeenschappelijke vriend (t1); t2 zelf en t1 (al bevriend)
+-- vallen weg.
+------------------------------------------------------------------------
+set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+-- t3 en t4 worden voorgesteld, met mutual_count = 1 (via t1).
+select is(
+  (select count(*)::int from public.get_friend_suggestions(12)
+     where mutual_count = 1
+       and id in ('a0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000004')),
+  2, 'get_friend_suggestions: t3 en t4 hebben 1 gemeenschappelijke vriend voor t2'
+);
+
+-- t2 stelt zichzelf nooit voor.
+select is(
+  (select count(*)::int from public.get_friend_suggestions(12)
+     where id = 'a0000000-0000-0000-0000-000000000002'),
+  0, 'get_friend_suggestions: t2 zit niet in de eigen suggesties'
+);
+
+-- t1 is al een vriend van t2 en valt dus weg als suggestie.
+select is(
+  (select count(*)::int from public.get_friend_suggestions(12)
+     where id = 'a0000000-0000-0000-0000-000000000001'),
+  0, 'get_friend_suggestions: bestaande vriend t1 wordt niet voorgesteld'
+);
+
+reset role;
 
 select * from finish();
 
