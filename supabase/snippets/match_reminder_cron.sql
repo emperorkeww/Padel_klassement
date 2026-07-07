@@ -21,7 +21,7 @@ select cron.schedule(
   '*/15 * * * *',
   $$
   select net.http_post(
-    url := 'https://<PROJECT-REF>.supabase.co/functions/v1/match-reminders',
+    url := 'https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/match-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', '<CRON-SECRET>'
