@@ -16,17 +16,16 @@ describe("<ScoreStepper />", () => {
     const min = screen.getByRole("button", { name: /één minder/i });
     const veld = screen.getByLabelText("Score team A");
 
-    // Leeg: min is uitgeschakeld, plus start op 1.
-    expect(min).toBeDisabled();
-    await userEvent.click(plus);
-    await userEvent.click(plus);
-    expect(veld).toHaveValue(2);
-
-    await userEvent.click(min);
-    expect(veld).toHaveValue(1);
+    // Leeg: min zet de score met één tik op 0 (team dat niets scoorde).
     await userEvent.click(min);
     expect(veld).toHaveValue(0);
     expect(min).toBeDisabled();
+
+    await userEvent.click(plus);
+    await userEvent.click(plus);
+    expect(veld).toHaveValue(2);
+    await userEvent.click(min);
+    expect(veld).toHaveValue(1);
   });
 
   it("blijft gewoon typbaar", async () => {
