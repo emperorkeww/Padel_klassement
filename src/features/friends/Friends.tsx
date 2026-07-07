@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -74,17 +74,46 @@ export function Friends() {
     (s) => !relatedIds.has(s.id) && pmap[s.id],
   );
 
-  async function runSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setSearching(true);
-    try {
-      setResults(await searchProfiles(query, myId));
-      setSearched(true);
-    } catch (err) {
-      toast.error(errMsg(err));
-    } finally {
+  // Oplopend volgnummer per zoekopdracht: een traag, verouderd antwoord mag
+  // een nieuwer resultaat niet overschrijven.
+  const searchSeq = useRef(0);
+
+  const doSearch = useCallback(
+    async (q: string) => {
+      const seq = ++searchSeq.current;
+      setSearching(true);
+      try {
+        const found = await searchProfiles(q, myId);
+        if (seq !== searchSeq.current) return;
+        setResults(found);
+        setSearched(true);
+      } catch (err) {
+        if (seq === searchSeq.current) toast.error(errMsg(err));
+      } finally {
+        if (seq === searchSeq.current) setSearching(false);
+      }
+    },
+    [myId, toast],
+  );
+
+  // Live zoeken terwijl je typt (met debounce); de Zoek-knop blijft voor
+  // Enter en als expliciete bevestiging.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      searchSeq.current++;
+      setResults([]);
+      setSearched(false);
       setSearching(false);
+      return;
     }
+    const t = setTimeout(() => doSearch(q), 300);
+    return () => clearTimeout(t);
+  }, [query, doSearch]);
+
+  function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (query.trim()) doSearch(query.trim());
   }
 
   async function act(fn: () => Promise<void>, ok: string) {
@@ -129,18 +158,14 @@ export function Friends() {
               <p className="empty">
                 {searched
                   ? `Geen spelers gevonden voor “${query.trim()}”.`
-                  : "Zoek op gebruikersnaam om spelers te vinden."}
+                  : "Typ een gebruikersnaam — resultaten verschijnen vanzelf."}
               </p>
             )}
             {results.map((p) => {
               const already = relatedIds.has(p.id);
               return (
                 <div key={p.id} className="person-row">
-                  <span className="cell-player">
-                    <Avatar profile={p} size={28} />
-                    {displayName(p)}{" "}
-                    <span className="badge">@{p.username}</span>
-                  </span>
+                  <PersonCell profile={p} to={`/spelers/${p.id}`} />
                   <button
                     className="btn btn--sm"
                     disabled={already}
@@ -173,12 +198,10 @@ export function Friends() {
             )}
             {incoming.map((f) => (
               <div key={f.id} className="person-row person-row--attn">
-                <span className="cell-player">
-                  <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                  <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                    {displayName(pmap[otherId(f, myId)])}
-                  </Link>
-                </span>
+                <PersonCell
+                  profile={pmap[otherId(f, myId)]}
+                  to={`/spelers/${otherId(f, myId)}`}
+                />
                 <span className="btn-row">
                   <button
                     className="btn btn--primary btn--sm"
@@ -207,12 +230,10 @@ export function Friends() {
               <div className="person-list">
                 {outgoing.map((f) => (
                   <div key={f.id} className="person-row">
-                    <span className="cell-player">
-                      <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                      <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                        {displayName(pmap[otherId(f, myId)])}
-                      </Link>
-                    </span>
+                    <PersonCell
+                      profile={pmap[otherId(f, myId)]}
+                      to={`/spelers/${otherId(f, myId)}`}
+                    />
                     <span className="btn-row">
                       <span className="badge">In afwachting</span>
                       <button
@@ -231,6 +252,38 @@ export function Friends() {
           )}
         </section>
       </div>
+
+      <section className="card">
+        <h2 className="card__title">
+          Mijn vrienden{" "}
+          {accepted.length > 0 && (
+            <span className="badge badge--accent">{accepted.length}</span>
+          )}
+        </h2>
+        {!friendships.loading && accepted.length === 0 && (
+          <EmptyState icon="👋" title="Nog geen vrienden.">
+            Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
+            samen matches loggen begint hier.
+          </EmptyState>
+        )}
+        <div className="person-grid">
+          {friendships.loading && <Skeleton rows={3} />}
+          {accepted.map((f) => (
+            <div key={f.id} className="person-row">
+              <PersonCell
+                profile={pmap[otherId(f, myId)]}
+                to={`/spelers/${otherId(f, myId)}`}
+              />
+              <button
+                className="btn btn--danger btn--sm"
+                onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
+              >
+                Verwijderen
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="card">
         <h2 className="card__title">Misschien ken je</h2>
@@ -286,35 +339,6 @@ export function Friends() {
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="card__title">Mijn vrienden</h2>
-        {!friendships.loading && accepted.length === 0 && (
-          <EmptyState icon="👋" title="Nog geen vrienden.">
-            Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
-            samen matches loggen begint hier.
-          </EmptyState>
-        )}
-        <div className="person-grid">
-          {friendships.loading && <Skeleton rows={3} />}
-          {accepted.map((f) => (
-            <div key={f.id} className="person-row">
-              <span className="cell-player">
-                <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                  {displayName(pmap[otherId(f, myId)])}
-                </Link>
-              </span>
-              <button
-                className="btn btn--danger btn--sm"
-                onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
-              >
-                Verwijderen
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {mutualFor && (
         <div className="sheet-backdrop" onClick={() => setMutualFor(null)}>
           <div
@@ -339,16 +363,11 @@ export function Friends() {
             <div className="person-list mt-4">
               {mutualFor.mutual_ids.map((mid) => (
                 <div key={mid} className="person-row">
-                  <span className="cell-player">
-                    <Avatar profile={pmap[mid]} size={28} />
-                    <Link
-                      className="profile-link"
-                      to={`/spelers/${mid}`}
-                      onClick={() => setMutualFor(null)}
-                    >
-                      {displayName(pmap[mid])}
-                    </Link>
-                  </span>
+                  <PersonCell
+                    profile={pmap[mid]}
+                    to={`/spelers/${mid}`}
+                    onNavigate={() => setMutualFor(null)}
+                  />
                 </div>
               ))}
             </div>
@@ -356,6 +375,35 @@ export function Friends() {
         </div>
       )}
     </div>
+  );
+}
+
+/** Avatar + naam (link naar spelersprofiel) met @gebruikersnaam eronder. */
+function PersonCell({
+  profile,
+  to,
+  onNavigate,
+}: {
+  profile?: Profile | null;
+  to?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <span className="cell-player">
+      <Avatar profile={profile} size={32} />
+      <span className="person-id">
+        {to ? (
+          <Link className="profile-link" to={to} onClick={onNavigate}>
+            {displayName(profile)}
+          </Link>
+        ) : (
+          <span>{displayName(profile)}</span>
+        )}
+        {profile?.username && (
+          <span className="person-sub">@{profile.username}</span>
+        )}
+      </span>
+    </span>
   );
 }
 

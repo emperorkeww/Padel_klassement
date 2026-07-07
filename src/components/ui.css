@@ -263,6 +263,17 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+/* Naam met @gebruikersnaam eronder in een persoonsrij. */
+.person-id {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.person-id > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* Actieknop in een persoonsrij mag nooit krimpen of overlappen. */
 .person-row > .btn {
   flex-shrink: 0;
@@ -276,6 +287,21 @@
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--sp-4);
   margin-top: var(--sp-4);
+}
+/* Mobiel: één horizontaal bladerbare rij i.p.v. een lange verticale stapel. */
+@media (max-width: 639px) {
+  .suggest-grid {
+    display: flex;
+    gap: var(--sp-3);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--sp-2);
+  }
+  .suggest-grid > .suggest-card {
+    flex: 0 0 190px;
+    scroll-snap-align: start;
+  }
 }
 .suggest-card {
   display: flex;
