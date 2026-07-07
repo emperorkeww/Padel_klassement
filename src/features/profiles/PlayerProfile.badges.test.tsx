@@ -61,4 +61,32 @@ describe("<PlayerProfile /> badges", () => {
     fireEvent.click(knop);
     expect(screen.queryByText(/Win je allereerste match/i)).not.toBeInTheDocument();
   });
+
+  it("laat de eigenaar een behaalde badge uitlichten bovenaan het profiel", async () => {
+    // p1 is de ingelogde gebruiker (SESSION), dus dit is haar eigen profiel.
+    renderProfile("p1");
+
+    // Nog niets uitgelicht.
+    const eerste = (await screen.findByText(/Eerste overwinning/)).closest("li")!;
+    expect(
+      screen.queryByRole("heading", { name: "Uitgelichte badges" }),
+    ).not.toBeInTheDocument();
+
+    // De behaalde badge heeft een ster-toggle; aantikken licht hem uit.
+    const ster = eerste.querySelector(".badges__star") as HTMLButtonElement;
+    expect(ster).toBeTruthy();
+    fireEvent.click(ster);
+
+    const sectie = (
+      await screen.findByRole("heading", { name: "Uitgelichte badges" })
+    ).closest("section")!;
+    expect(sectie).toHaveTextContent(/Eerste overwinning/);
+  });
+
+  it("toont geen ster-toggle op andermans profiel", async () => {
+    // p2 is niet de ingelogde gebruiker → geen uitlicht-knoppen.
+    renderProfile("p2");
+    await screen.findByRole("heading", { name: "Badges" });
+    expect(document.querySelector(".badges__star")).toBeNull();
+  });
 });

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
-import { getProfile, displayName } from "./api";
+import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
@@ -28,11 +28,16 @@ import { listSeasons, seasonFromId } from "../../lib/seasons";
 import { matchesInSeason } from "../../lib/standings";
 import { formatDate } from "../../lib/format";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
+import { useToast } from "../../components/ToastProvider";
+import { errorMessage } from "../../lib/errors";
 import "./PlayerProfile.css";
 
 // Aantal recente matches dat we op het profiel tonen (de volledige historie
 // wordt geladen voor de statistieken, maar niet allemaal uitgelijst).
 const RECENT_SHOWN = 8;
+
+// Zoveel badges mag een speler maximaal uitlichten bovenaan zijn profiel.
+const MAX_FEATURED = 5;
 
 export function PlayerProfile() {
   const { id = "" } = useParams();
@@ -59,6 +64,10 @@ export function PlayerProfile() {
   // Aangetikte badge: toont zijn beschrijving eronder (werkt ook op touch,
   // waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
+  // Optimistische kopie van de uitgelichte badges: null = nog niets gewijzigd,
+  // dan geldt de waarde uit het geladen profiel.
+  const [featuredOverride, setFeaturedOverride] = useState<string[] | null>(null);
+  const toast = useToast();
 
   if (profile.loading)
     return (
@@ -103,6 +112,39 @@ export function PlayerProfile() {
   const myRating = ratings.data?.[id]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
+
+  // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
+  // profielniveau — dus resolven we ze tegen de volledige historie.
+  const badgesAllTime = season
+    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined)
+    : badges;
+  const earnedAllTime = new Set(
+    badgesAllTime.filter((b) => b.behaald).map((b) => b.id),
+  );
+  const allTimeById = new Map(badgesAllTime.map((b) => [b.id, b]));
+  const featuredIds = featuredOverride ?? p.featured_badges ?? [];
+  // Alleen geldige, daadwerkelijk behaalde badges tonen, in de gekozen volgorde.
+  const featuredBadges = featuredIds
+    .map((bid) => allTimeById.get(bid))
+    .filter((b): b is (typeof badgesAllTime)[number] => !!b && b.behaald);
+
+  // Badge uit-/aanvinken als uitgelicht; optimistisch, met terugval bij fout.
+  function toggleFeatured(badgeId: string) {
+    const current = featuredIds;
+    const has = current.includes(badgeId);
+    if (!has && current.length >= MAX_FEATURED) {
+      toast.error(`Je kan maximaal ${MAX_FEATURED} badges uitlichten.`);
+      return;
+    }
+    const next = has
+      ? current.filter((x) => x !== badgeId)
+      : [...current, badgeId];
+    setFeaturedOverride(next);
+    updateFeaturedBadges(id, next).catch((err) => {
+      setFeaturedOverride(current);
+      toast.error(errorMessage(err));
+    });
+  }
 
   // Klassementpositie (#N): dezelfde afleiding als het dashboard — index in de
   // volledige stand. Blijft all-time; het klassement kent geen per-kwartaal-rij.
@@ -228,6 +270,27 @@ export function PlayerProfile() {
         </div>
       </section>
 
+      {featuredBadges.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Uitgelichte badges</h2>
+          <ul className="badges">
+            {featuredBadges.map((b) => (
+              <li key={b.id} className="badges__item">
+                <span
+                  className="badge badges__pill badge--accent"
+                  title={b.omschrijving}
+                >
+                  <span className="badges__emoji" aria-hidden="true">
+                    {b.emoji}
+                  </span>
+                  {b.naam}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className="stats">
         <Stat
           label="Rating"
@@ -315,10 +378,15 @@ export function PlayerProfile() {
       {scoped.length > 0 && (
         <section className="card">
           <h2 className="card__title">Badges</h2>
-          <p className="badges__hint">Tik op een badge voor de uitleg.</p>
+          <p className="badges__hint">
+            Tik op een badge voor de uitleg
+            {isMe && " · tik op ★ om een behaalde badge uit te lichten op je profiel"}.
+          </p>
           <ul className="badges">
             {badges.map((b) => {
               const open = openBadge === b.id;
+              const kanUitlichten = isMe && earnedAllTime.has(b.id);
+              const uitgelicht = featuredIds.includes(b.id);
               return (
                 <li key={b.id} className="badges__item">
                   <button
@@ -339,6 +407,21 @@ export function PlayerProfile() {
                       </span>
                     )}
                   </button>
+                  {kanUitlichten && (
+                    <button
+                      type="button"
+                      className={`badges__star${uitgelicht ? " badges__star--on" : ""}`}
+                      aria-pressed={uitgelicht}
+                      title={
+                        uitgelicht
+                          ? "Uit uitgelicht halen"
+                          : "Uitlichten op profiel"
+                      }
+                      onClick={() => toggleFeatured(b.id)}
+                    >
+                      {uitgelicht ? "★" : "☆"}
+                    </button>
+                  )}
                 </li>
               );
             })}

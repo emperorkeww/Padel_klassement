@@ -66,6 +66,18 @@ export const BAGELBAKKER_DOEL = 3;
 /** Duels tegen hetzelfde team voor de Vaste rivaal. */
 export const RIVAAL_DOEL = 10;
 
+/** Winsten met exact één punt verschil voor de Fotofinish. */
+export const FOTOFINISH_DOEL = 3;
+
+/** Verschillende maanden (van het jaar) waarin je speelde voor de Kalenderslokker. */
+export const KALENDER_DOEL = 12;
+
+/** Minimum aantal matches voor de perfect gebalanceerde Yin-yang. */
+export const YINYANG_DOEL = 10;
+
+/** Eigen game-score vanaf wanneer een winst "dubbele cijfers" haalt. */
+export const DUBBELE_CIJFERS_DREMPEL = 10;
+
 const WINSTEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 25, naam: "Winnaarstype", emoji: "🏅" },
   { doel: 50, naam: "Halve eeuw zeges", emoji: "🏆" },
@@ -150,6 +162,7 @@ function hadComeback(
   matches: Match[],
   teams: Record<string, Team>,
   playerId: string,
+  drempel: number = COMEBACK_DREMPEL,
 ): boolean {
   const chrono = [...matches].sort((a, b) =>
     (a.played_at ?? a.created_at).localeCompare(b.played_at ?? b.created_at),
@@ -159,13 +172,35 @@ function hadComeback(
     const o = outcomeFor(m, teams, playerId);
     if (!o) continue;
     if (o === "W") {
-      if (verliezen >= COMEBACK_DREMPEL) return true;
+      if (verliezen >= drempel) return true;
       verliezen = 0;
     } else if (o === "L") {
       verliezen++;
     } else {
       verliezen = 0; // gelijkspel breekt de reeks
     }
+  }
+  return false;
+}
+
+/**
+ * Verloor de speler ooit van een team dat gemiddeld minstens
+ * REUZENDODER_DREMPEL rating LAGER stond dan zijn eigen team? De omgekeerde
+ * reuzendoder: een pijnlijke uitschuiver tegen een (op papier) zwakker team.
+ */
+function isGestruikeld(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+  ratings: Record<string, PlayerRating>,
+): boolean {
+  for (const m of matches) {
+    if (outcomeFor(m, teams, playerId) !== "L") continue;
+    const mineIsA = inTeam(teams[m.team_a_id], playerId);
+    const mine = teamRating(teams[mineIsA ? m.team_a_id : m.team_b_id], ratings);
+    const theirs = teamRating(teams[mineIsA ? m.team_b_id : m.team_a_id], ratings);
+    if (mine == null || theirs == null) continue;
+    if (mine - theirs >= REUZENDODER_DREMPEL) return true;
   }
   return false;
 }
@@ -214,6 +249,24 @@ interface MatchFeiten {
   broodjeAantal: number;
   /** Meeste matches tegen hetzelfde tegenstanderteam. */
   maxTegenstander: number;
+  /** Speelde ooit op Halloween (31 oktober). */
+  halloween: boolean;
+  /** Speelde ooit op sinterklaas (5 december). */
+  sinterklaas: boolean;
+  /** Speelde ooit op een vrijdag de 13e. */
+  vrijdag13: boolean;
+  /** Speelde ooit op 29 februari (schrikkeldag). */
+  schrikkeldag: boolean;
+  /** Speelde ooit tussen 12 en 14 uur (lunchtijd). */
+  lunch: boolean;
+  /** Speelde ooit op een werkdag tussen 9 en 17 uur. */
+  kantooruren: boolean;
+  /** Aantal winsten met exact één punt verschil. */
+  nagelbijterAantal: number;
+  /** Won ooit een match waarin je 10+ games pakte. */
+  dubbeleCijfers: boolean;
+  /** Aantal verschillende maanden (van het jaar) waarin gespeeld werd. */
+  maandenAantal: number;
 }
 
 function verzamelFeiten(
@@ -238,9 +291,18 @@ function verzamelFeiten(
   let verliesZonderScore = false;
   let nachtAantal = 0;
   let broodjeAantal = 0;
+  let halloween = false;
+  let sinterklaas = false;
+  let vrijdag13 = false;
+  let schrikkeldag = false;
+  let lunch = false;
+  let kantooruren = false;
+  let nagelbijterAantal = 0;
+  let dubbeleCijfers = false;
   const perDag = new Map<string, { gespeeld: number; gewonnen: number }>();
   const perPartner = new Map<string, number>();
   const perTegenstander = new Map<string, number>();
+  const maanden = new Set<number>();
 
   for (const m of matches) {
     const o = outcomeFor(m, teams, playerId);
@@ -260,11 +322,18 @@ function verzamelFeiten(
       if (uur < 8) vroeg = true;
       if (uur < 5) naMiddernacht = true;
       if (dag === 5 && uur >= 18) vrijdagavond = true;
+      if (uur === 12 || uur === 13) lunch = true; // 12:00–13:59
+      if (dag >= 1 && dag <= 5 && uur >= 9 && uur <= 16) kantooruren = true;
       const maand = d.getMonth();
       const datum = d.getDate();
+      maanden.add(maand);
       if (maand >= 5 && maand <= 7) zomer = true; // juni, juli, augustus
       if (maand === 0 && datum === 1) nieuwjaar = true;
       if (maand === 11 && datum === 25) kerst = true;
+      if (maand === 9 && datum === 31) halloween = true; // 31 oktober
+      if (maand === 11 && datum === 5) sinterklaas = true; // 5 december
+      if (maand === 1 && datum === 29) schrikkeldag = true; // 29 februari
+      if (dag === 5 && datum === 13) vrijdag13 = true; // vrijdag de 13e
       const key = `${d.getFullYear()}-${maand}-${datum}`;
       const dagRij = perDag.get(key) ?? { gespeeld: 0, gewonnen: 0 };
       dagRij.gespeeld += 1;
@@ -289,12 +358,16 @@ function verzamelFeiten(
       const hen = inA ? m.score_b : m.score_a;
       const verschil = mij - hen;
       if (o === "W") {
-        if (verschil === 1) nagelbijter = true;
+        if (verschil === 1) {
+          nagelbijter = true;
+          nagelbijterAantal++;
+        }
         if (hen === 0 && mij > 0) {
           broodje = true;
           broodjeAantal++;
         }
         if (verschil >= MONSTERZEGE_DREMPEL) monsterzege = true;
+        if (mij >= DUBBELE_CIJFERS_DREMPEL) dubbeleCijfers = true;
       } else if (o === "L") {
         if (hen - mij === 1) verliesMet1 = true;
         if (mij === 0 && hen > 0) verliesZonderScore = true;
@@ -333,6 +406,15 @@ function verzamelFeiten(
     nachtAantal,
     broodjeAantal,
     maxTegenstander: Math.max(0, ...perTegenstander.values()),
+    halloween,
+    sinterklaas,
+    vrijdag13,
+    schrikkeldag,
+    lunch,
+    kantooruren,
+    nagelbijterAantal,
+    dubbeleCijfers,
+    maandenAantal: maanden.size,
   };
 }
 
@@ -686,7 +768,98 @@ export function deriveBadges(
     },
   );
 
-  // 4) Rating-mijlpalen (oplopend; "Levende legende" sluit de rij — de zeldzaamste).
+  // 4) Nog een lading — ludiek, vreemd en (bijna) onmogelijk. Negatieve eerst,
+  //    de knapste achteraan.
+  badges.push(
+    {
+      id: "struikelaar",
+      naam: "Struikelaar",
+      emoji: "🍌",
+      omschrijving: `Verlies van een team dat gemiddeld minstens ${REUZENDODER_DREMPEL} punten lager staat — de omgekeerde reuzendoder.`,
+      behaald: ratings ? isGestruikeld(matches, teams, playerId, ratings) : false,
+    },
+    {
+      id: "lunchmatch",
+      naam: "Lunchmatch",
+      emoji: "🥪",
+      omschrijving: "Speel een match tussen 12 en 14 uur — padel als middagpauze.",
+      behaald: feiten.lunch,
+    },
+    {
+      id: "spijbelaar",
+      naam: "Spijbelaar",
+      emoji: "🕴️",
+      omschrijving: "Speel op een werkdag tussen 9 en 17 uur. Was je niet aan het werk?",
+      behaald: feiten.kantooruren,
+    },
+    {
+      id: "halloweenspook",
+      naam: "Halloweenspook",
+      emoji: "👻",
+      omschrijving: "Speel een match op Halloween (31 oktober).",
+      behaald: feiten.halloween,
+    },
+    {
+      id: "sinterklaas",
+      naam: "Sinterklaas",
+      emoji: "🎁",
+      omschrijving: "Speel een match op sinterklaas (5 december).",
+      behaald: feiten.sinterklaas,
+    },
+    {
+      id: "vrijdag-de-13e",
+      naam: "Vrijdag de 13e",
+      emoji: "🐈‍⬛",
+      omschrijving: "Tart het lot: speel een match op een vrijdag de 13e.",
+      behaald: feiten.vrijdag13,
+    },
+    {
+      id: "schrikkelspringer",
+      naam: "Schrikkelspringer",
+      emoji: "🐸",
+      omschrijving: "Speel op 29 februari — dat kan maar eens in de vier jaar.",
+      behaald: feiten.schrikkeldag,
+    },
+    {
+      id: "dubbele-cijfers",
+      naam: "Dubbele cijfers",
+      emoji: "🔢",
+      omschrijving: `Win een match waarin je minstens ${DUBBELE_CIJFERS_DREMPEL} games pakt.`,
+      behaald: feiten.dubbeleCijfers,
+    },
+    {
+      id: "fotofinish",
+      naam: "Fotofinish",
+      emoji: "📸",
+      omschrijving: `Win ${FOTOFINISH_DOEL} matches met exact één punt verschil.`,
+      behaald: feiten.nagelbijterAantal >= FOTOFINISH_DOEL,
+      voortgang: { nu: feiten.nagelbijterAantal, doel: FOTOFINISH_DOEL },
+    },
+    {
+      id: "yin-yang",
+      naam: "Yin-yang",
+      emoji: "☯️",
+      omschrijving: `Sta na minstens ${YINYANG_DOEL} matches op exact evenveel winst als verlies.`,
+      behaald: gespeeld >= YINYANG_DOEL && gewonnen === verloren,
+    },
+    {
+      id: "kalenderslokker",
+      naam: "Kalenderslokker",
+      emoji: "🗓️",
+      omschrijving: `Speel in alle ${KALENDER_DOEL} maanden van het jaar.`,
+      behaald: feiten.maandenAantal >= KALENDER_DOEL,
+      voortgang: { nu: feiten.maandenAantal, doel: KALENDER_DOEL },
+    },
+    {
+      id: "feniks",
+      naam: "Feniks",
+      emoji: "🐦‍🔥",
+      omschrijving: `Herrijs uit de as: win een match ná ${PECHVOGEL_DREMPEL} verliezen op rij.`,
+      behaald: hadComeback(matches, teams, playerId, PECHVOGEL_DREMPEL),
+    },
+  );
+
+  // 5) Rating-mijlpalen (oplopend; "Levende legende" sluit de rij — de zeldzaamste).
   for (const { drempel, naam, emoji } of RATINGTIERS) {
     badges.push({
       id: `rating-${drempel}`,

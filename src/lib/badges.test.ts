@@ -52,7 +52,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(49);
+    expect(badges).toHaveLength(61);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -405,5 +405,83 @@ describe("deriveBadges — nieuwe ludieke/extreme badges", () => {
     expect(
       badge(deriveBadges([bagel(), bagel()], teams, "p1"), "bagelbakker").behaald,
     ).toBe(false);
+  });
+
+  it("Feestdag- en tijdstipbadges: Halloween, sinterklaas, vrijdag 13, schrikkeldag, lunch, kantooruren", () => {
+    const b = (m: Match, id: string) => badge(deriveBadges([m], teams, "p1"), id).behaald;
+    // 2024-02-29 was een schrikkel-donderdag; 2026-11-13 een vrijdag de 13e.
+    expect(b(match({ played_at: at(2026, 9, 31, 20), winner_team_id: "tA" }), "halloweenspook")).toBe(true);
+    expect(b(match({ played_at: at(2026, 11, 5, 20), winner_team_id: "tA" }), "sinterklaas")).toBe(true);
+    expect(b(match({ played_at: at(2026, 10, 13, 20), winner_team_id: "tA" }), "vrijdag-de-13e")).toBe(true);
+    expect(b(match({ played_at: at(2024, 1, 29, 20), winner_team_id: "tA" }), "schrikkelspringer")).toBe(true);
+    expect(b(match({ played_at: at(2026, 2, 10, 13), winner_team_id: "tA" }), "lunchmatch")).toBe(true);
+    // Maandag (2026-03-09) om 10u = werkdag binnen kantooruren.
+    expect(b(match({ played_at: at(2026, 2, 9, 10), winner_team_id: "tA" }), "spijbelaar")).toBe(true);
+    // Zondag (2026-03-08) om 10u telt niet als kantooruren.
+    expect(b(match({ played_at: at(2026, 2, 8, 10), winner_team_id: "tA" }), "spijbelaar")).toBe(false);
+  });
+
+  it("Fotofinish: drie winsten met exact één punt verschil", () => {
+    const nipt = () => match({ winner_team_id: "tA", score_a: 6, score_b: 5 });
+    const f = badge(deriveBadges([nipt(), nipt(), nipt()], teams, "p1"), "fotofinish");
+    expect(f.behaald).toBe(true);
+    expect(f.voortgang).toEqual({ nu: 3, doel: 3 });
+    expect(badge(deriveBadges([nipt(), nipt()], teams, "p1"), "fotofinish").behaald).toBe(false);
+  });
+
+  it("Dubbele cijfers: winst waarin je 10+ games pakt", () => {
+    expect(
+      badge(deriveBadges([match({ winner_team_id: "tA", score_a: 11, score_b: 9 })], teams, "p1"), "dubbele-cijfers").behaald,
+    ).toBe(true);
+    expect(
+      badge(deriveBadges([match({ winner_team_id: "tA", score_a: 6, score_b: 2 })], teams, "p1"), "dubbele-cijfers").behaald,
+    ).toBe(false);
+  });
+
+  it("Yin-yang: exact evenveel winst als verlies over minstens tien matches", () => {
+    const vijfVijf = [...Array.from({ length: 5 }, win), ...Array.from({ length: 5 }, loss)];
+    expect(badge(deriveBadges(vijfVijf, teams, "p1"), "yin-yang").behaald).toBe(true);
+    // Scheve balans → niet behaald.
+    const scheef = [...Array.from({ length: 6 }, win), ...Array.from({ length: 4 }, loss)];
+    expect(badge(deriveBadges(scheef, teams, "p1"), "yin-yang").behaald).toBe(false);
+    // Balans maar te weinig matches (4-4).
+    const teWeinig = [...Array.from({ length: 4 }, win), ...Array.from({ length: 4 }, loss)];
+    expect(badge(deriveBadges(teWeinig, teams, "p1"), "yin-yang").behaald).toBe(false);
+  });
+
+  it("Kalenderslokker: speel in alle twaalf maanden, met voortgang", () => {
+    const elf = Array.from({ length: 11 }, (_, i) =>
+      match({ played_at: at(2026, i, 10, 12), winner_team_id: "tA" }),
+    );
+    const k11 = badge(deriveBadges(elf, teams, "p1"), "kalenderslokker");
+    expect(k11.behaald).toBe(false);
+    expect(k11.voortgang).toEqual({ nu: 11, doel: 12 });
+    const twaalf = Array.from({ length: 12 }, (_, i) =>
+      match({ played_at: at(2026, i, 10, 12), winner_team_id: "tA" }),
+    );
+    expect(badge(deriveBadges(twaalf, teams, "p1"), "kalenderslokker").behaald).toBe(true);
+  });
+
+  it("Feniks: win meteen na vijf verliezen op rij", () => {
+    const uitDeAs = [...Array.from({ length: 5 }, loss), win()];
+    expect(badge(deriveBadges(uitDeAs, teams, "p1"), "feniks").behaald).toBe(true);
+    // Vier verliezen is te weinig voor de Feniks (maar wel al een comeback).
+    const teKort = [...Array.from({ length: 4 }, loss), win()];
+    expect(badge(deriveBadges(teKort, teams, "p1"), "feniks").behaald).toBe(false);
+  });
+
+  it("Struikelaar: verlies van een team dat gemiddeld minstens de drempel lager staat", () => {
+    const ratings = ratingsFor({
+      p1: 1000 + REUZENDODER_DREMPEL,
+      p2: 1000 + REUZENDODER_DREMPEL,
+      p3: 1000,
+      p4: 1000,
+    });
+    // p1 (sterk team) verliest van het zwakkere team → struikelaar.
+    expect(badge(deriveBadges([loss()], teams, "p1", ratings), "struikelaar").behaald).toBe(true);
+    // Winnen tegen dat zwakkere team telt niet.
+    expect(badge(deriveBadges([win()], teams, "p1", ratings), "struikelaar").behaald).toBe(false);
+    // Zonder ratings onbepaald → niet behaald.
+    expect(badge(deriveBadges([loss()], teams, "p1"), "struikelaar").behaald).toBe(false);
   });
 });
