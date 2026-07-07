@@ -75,10 +75,17 @@
 }
 
 .hero__form {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
   margin: var(--sp-2) 0 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 999px;
+  transition: opacity 0.15s;
+}
+.hero__form:hover {
+  opacity: 0.75;
 }
 .hero__form-label {
   font-size: var(--fs-xs);
@@ -86,6 +93,31 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink-soft);
+}
+
+/* Behaalde prestatiebadges als emoji-rij; linkt naar het eigen profiel. */
+.hero__badges {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+  text-decoration: none;
+  transition: transform 0.1s;
+}
+.hero__badges:hover {
+  transform: translateY(-1px);
+}
+.hero__badge {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .hero__actions {
@@ -184,6 +216,180 @@
 }
 .todo-chip--accent .todo-chip__count {
   background: var(--accent);
+}
+/* Aanwezigheid ("wie speelt er vanavond?") — lime, onderscheidt zich van de
+   groene verzoeken-chip en de oranje uitslagen-chip. */
+.todo-chip--play {
+  background: var(--lime-soft);
+  border-color: var(--lime-deep);
+  color: var(--lime-deep);
+}
+.todo-chip--play .todo-chip__count {
+  background: var(--lime-deep);
+  color: #fff;
+}
+
+/* Speelavond-terugblik: gouden accent, past bij het "kampioen"-gevoel. */
+.card--evening {
+  border-color: var(--gold-soft);
+  background:
+    radial-gradient(110% 130% at 0% 0%, var(--gold-soft) 0%, transparent 60%),
+    var(--surface);
+}
+.evening__text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+}
+
+/* Rivaal: avatar + naam/balans + verdict-pil. */
+.rival {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.rival__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.rival__name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rival__meta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.rival__verdict {
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rival__verdict--lead {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.rival__verdict--trail {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.rival__verdict--even {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+/* Onboarding-checklist voor nieuwe spelers. */
+.onboard__dismiss {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--sp-1);
+  border-radius: var(--radius-sm);
+}
+.onboard__dismiss:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.onboard__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.onboard__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.onboard__item.is-done {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.onboard__check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--line-strong);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+}
+.onboard__item.is-done .onboard__check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.onboard__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.onboard__label {
+  font-weight: 700;
+  font-size: var(--fs-md);
+}
+.onboard__item.is-done .onboard__label {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.onboard__hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.onboard__item .btn {
+  flex-shrink: 0;
+}
+
+/* Push-opt-in: uitleg links, knoppen rechts. */
+.push-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.push-prompt__body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.push-prompt__icon {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.push-prompt__sub {
+  margin: 0;
+  max-width: 52ch;
+}
+.push-prompt__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 
 /* Rechterkolom naast de uitslagen: rating + topspelers onder elkaar,

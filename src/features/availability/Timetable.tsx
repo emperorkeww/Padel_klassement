@@ -39,16 +39,23 @@ export function Timetable({
   data,
   date,
   duration = null,
+  fromNow = false,
 }: {
   data: DayAvailability;
   date: string;
   /** Duurfilter in minuten; null = alle duren tonen. */
   duration?: number | null;
+  /** Voor vandaag: verstreken uren helemaal weglaten i.p.v. arceren en
+   *  wegscrollen. Wint schermruimte op een compacte weergave (dashboard). */
+  fromNow?: boolean;
 }) {
-  const times = useMemo(
-    () => buildTimeAxis(data.open, data.close),
-    [data.open, data.close],
-  );
+  const collapsePast = fromNow && date === dateInZone(data.timeZone);
+  const times = useMemo(() => {
+    const axis = buildTimeAxis(data.open, data.close);
+    if (!collapsePast) return axis;
+    const now = minutesNowInZone(data.timeZone);
+    return axis.filter((t) => toMinutes(t) > now);
+  }, [data.open, data.close, data.timeZone, collapsePast]);
   const [tip, setTip] = useState<Tip | null>(null);
   const [sel, setSel] = useState<Selection | null>(null);
   const toast = useToast();
