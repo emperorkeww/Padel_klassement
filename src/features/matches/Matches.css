@@ -21,6 +21,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Per-set uitslag onder de score op een matchkaart, bv. "6-4 3-6 7-5". */
+.match-card__sets {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
 /* De generieke sheet/dialoog-stijlen staan in components/ui.css. */
 
 /* ---------- Stap 1: spelers aantikken ---------- */
@@ -134,6 +141,77 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Interactieve teamzone (stap 1): gekozen spelers met een wissel-pijl. */
+.teamzone__list {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.teamzone__player {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.teamzone__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.teamzone__switch {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+}
+.teamzone__switch:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Optionele set-invoer in de score-stap. */
+.sheet-sets {
+  margin-top: var(--sp-4);
+}
+
+/* Wekelijks herhalen bij het plannen. */
+.repeat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.repeat-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+.repeat-row__weeks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.repeat-row__weeks .input {
+  width: 72px;
+}
+
 /* Plan-stap: de teams onder elkaar met een "vs" ertussen. */
 .pick-teams--stacked {
   flex-direction: column;

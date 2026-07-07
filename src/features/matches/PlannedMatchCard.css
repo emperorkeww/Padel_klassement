@@ -1,0 +1,58 @@
+/* Extra's op de geplande-match-kaart (sets, tijd wijzigen, verwijderen/undo).
+   De basis-.planned-card-stijlen staan in components/ui.css. */
+
+/* Compacte actiebalk onder de kaart. */
+.planned-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.planned-card__actions .planned-card__save {
+  margin-left: auto;
+}
+
+/* Uitklapbare optionele set-invoer. */
+.planned-card__sets {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--line);
+}
+.planned-card__sets-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+/* Tijd wijzigen. */
+.planned-card__time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.planned-card__time .input {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Undo-strook na verwijderen. */
+.planned-card__undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}

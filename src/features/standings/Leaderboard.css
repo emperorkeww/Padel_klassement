@@ -191,6 +191,48 @@
   font-weight: 700;
 }
 
+/* ---------- Sorteerbare kolomkoppen ---------- */
+.th-sort {
+  padding: 0;
+}
+.th-sort__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  justify-content: flex-end;
+  padding: var(--sp-2) var(--sp-3);
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.th-sort__btn:hover {
+  color: var(--accent);
+}
+.th-sort[aria-sort="ascending"] .th-sort__btn,
+.th-sort[aria-sort="descending"] .th-sort__btn {
+  color: var(--accent);
+}
+.th-sort__arrow {
+  font-size: 0.7em;
+  line-height: 1;
+  opacity: 0.35;
+  transition: opacity 0.12s;
+}
+.th-sort__arrow.is-active {
+  opacity: 1;
+}
+.th-sort__btn:hover .th-sort__arrow {
+  opacity: 0.7;
+}
+
 /* ---------- Rating-cel: pil + ratingverloop samen ---------- */
 .rating-cell {
   display: inline-block;

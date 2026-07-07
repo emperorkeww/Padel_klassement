@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
+import { ToastProvider } from "../../components/ToastProvider";
 import { invalidateAll } from "../../lib/queryCache";
 import { PROFILES, TEAMS, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
 
@@ -57,9 +58,11 @@ function renderProfile(id: string) {
   return render(
     <MemoryRouter initialEntries={[`/spelers/${id}`]}>
       <AuthProvider>
-        <Routes>
-          <Route path="/spelers/:id" element={<PlayerProfile />} />
-        </Routes>
+        <ToastProvider>
+          <Routes>
+            <Route path="/spelers/:id" element={<PlayerProfile />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );

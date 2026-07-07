@@ -1,6 +1,39 @@
 import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
-import type { Friendship, FriendshipStatus } from "../../lib/types";
+import type { Friendship, FriendshipStatus, Profile } from "../../lib/types";
+
+/**
+ * Zoekt spelers op gebruikersnaam, maar toont alleen wie zich vindbaar heeft
+ * gesteld (profiles.discoverable). Vervangt searchProfiles voor de vrienden-
+ * flow, zodat de privacy-instelling gerespecteerd wordt. Default 'discoverable'
+ * is true, dus voor bestaande gebruikers verandert er niets.
+ */
+export async function searchDiscoverableProfiles(
+  query: string,
+  excludeId: string,
+): Promise<Profile[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const base = supabase
+    .from("profiles")
+    .select("*")
+    .ilike("username", `%${q}%`)
+    .neq("id", excludeId)
+    .order("username", { ascending: true })
+    .limit(10);
+  // 'discoverable' bestaat in de databank maar nog niet in database.types.ts:
+  // lokaal casten zodat we die kolom kunnen filteren.
+  const { data, error } = await (
+    base as unknown as {
+      eq: (
+        column: string,
+        value: boolean,
+      ) => PromiseLike<{ data: Profile[] | null; error: { message: string } | null }>;
+    }
+  ).eq("discoverable", true);
+  if (error) throw error;
+  return data ?? [];
+}
 
 /** Alle vriendschappen waar de ingelogde gebruiker bij betrokken is (RLS filtert). */
 export function getMyFriendships(): Promise<Friendship[]> {

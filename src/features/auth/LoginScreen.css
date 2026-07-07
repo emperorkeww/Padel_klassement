@@ -355,3 +355,19 @@
     animation: none;
   }
 }
+
+/* Live beschikbaarheid van de gebruikersnaam bij registreren (Lane D). */
+.field__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+}
+.field__hint--checking {
+  color: var(--ink-soft);
+}
+.field__hint--available {
+  color: var(--accent);
+}
+.field__hint--taken {
+  color: var(--ink-soft);
+}

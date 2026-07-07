@@ -63,6 +63,22 @@ export function winStreak(
   return streak;
 }
 
+/** Huidige verliesreeks (aantal opeenvolgende verliezen, vanaf de recentste
+ *  match). Tegenhanger van winStreak; gelijkspelen en winsten breken de reeks. */
+export function lossStreak(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): number {
+  const form = recentForm(matches, teams, playerId, Number.MAX_SAFE_INTEGER);
+  let streak = 0;
+  for (const o of form) {
+    if (o !== "L") break;
+    streak++;
+  }
+  return streak;
+}
+
 /** Winpercentage (0–100, afgerond) of null zonder gespeelde matches. */
 export function winRate(won: number, played: number): number | null {
   if (!played) return null;
@@ -80,6 +96,23 @@ export function longestStreak(
   let run = 0;
   for (const o of form) {
     run = o === "W" ? run + 1 : 0;
+    if (run > best) best = run;
+  }
+  return best;
+}
+
+/** Langste verliesreeks ooit: grootste aaneengesloten rij "L". Tegenhanger van
+ *  longestStreak, voor badges die (met een knipoog) tegenslag belonen. */
+export function longestLossStreak(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): number {
+  const form = recentForm(matches, teams, playerId, Number.MAX_SAFE_INTEGER);
+  let best = 0;
+  let run = 0;
+  for (const o of form) {
+    run = o === "L" ? run + 1 : 0;
     if (run > best) best = run;
   }
   return best;

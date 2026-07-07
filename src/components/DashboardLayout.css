@@ -171,6 +171,8 @@
 .content {
   flex: 1;
   min-width: 0;
+  /* Programmatische focus vanuit de skip-link toont geen (lelijke) outline. */
+  outline: none;
   /* Voorkomt dat brede inhoud de pagina horizontaal laat scrollen (en daarmee
      de vaste onderbalk laat "wegspringen"). clip i.p.v. hidden zodat er geen
      verticale scroll-container ontstaat. */
@@ -204,8 +206,10 @@
   display: none;
 }
 
-/* ---------- Mobiel: topbalk + onderbalk i.p.v. zijbalk ---------- */
-@media (max-width: 760px) {
+/* ---------- Mobiel: topbalk + onderbalk i.p.v. zijbalk ----------
+   Omslagpunt --bp-mobile (720px): gelijk aan de content-breakpoints in ui.css,
+   zodat de mobiele nav en de mobiele content-layout samen omschakelen. */
+@media (max-width: 720px) {
   .shell {
     flex-direction: column;
   }
@@ -334,8 +338,65 @@
   .tabbar__link--home.is-active .tabbar__icon {
     box-shadow: 0 0 0 3px var(--accent), 0 6px 18px rgba(20, 40, 28, 0.22);
   }
+  /* De uitstekende bal is een cirkel; leg de focus-ring om de bal zelf i.p.v.
+     een hoekige rechthoek om de (lage) tab-cel. De hele 58px-cirkel is de
+     klikbare hit-area (het absoluut geplaatste icoon is kind van de link). */
+  .tabbar__link--home:focus-visible {
+    outline: none;
+  }
+  .tabbar__link--home:focus-visible .tabbar__icon {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
   .content__inner {
     padding: var(--sp-5) var(--sp-4) 5.5rem;
+  }
+}
+
+/* ---------- Route-skeleton (Suspense-fallback) ----------
+   Neutrale, tekstloze placeholder tijdens het lazy-laden van een pagina — zo
+   springt de layout niet van "Laden…" naar de pagina-eigen skeletons. */
+.route-skeleton {
+  display: grid;
+  gap: var(--sp-5);
+}
+.route-skeleton__bar,
+.route-skeleton__card {
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.route-skeleton__bar--title {
+  width: 40%;
+  height: 1.875rem;
+}
+.route-skeleton__bar--sub {
+  width: 60%;
+  height: 1rem;
+}
+.route-skeleton__card {
+  height: 8rem;
+  border-radius: var(--radius);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .route-skeleton__bar,
+  .route-skeleton__card {
+    background: linear-gradient(
+        100deg,
+        var(--surface-2) 30%,
+        var(--skeleton-hi) 50%,
+        var(--surface-2) 70%
+      )
+      var(--surface-2);
+    background-size: 200% 100%;
+    animation: route-skeleton-shimmer 1.3s ease-in-out infinite;
+  }
+}
+@keyframes route-skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
   }
 }

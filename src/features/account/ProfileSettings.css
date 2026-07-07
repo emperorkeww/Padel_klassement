@@ -45,3 +45,30 @@
     gap: var(--sp-4);
   }
 }
+
+/* Privacy-toggels (Lane D). */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+.toggle-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toggle-row__label {
+  font-weight: 600;
+}
+.toggle-row__hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.toggle-row input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}

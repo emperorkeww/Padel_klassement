@@ -288,6 +288,54 @@
   color: var(--ink-soft);
 }
 
+/* Volgende badge: dichtstbijzijnde onbehaalde met voortgangsbalk. */
+.next-badge__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.next-badge__emoji {
+  font-size: 1.75rem;
+  line-height: 1;
+  filter: grayscale(0.4);
+}
+.next-badge__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.next-badge__name {
+  font-weight: 700;
+}
+.next-badge__hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next-badge__count {
+  flex-shrink: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.next-badge__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.next-badge__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
 /* Onboarding-checklist voor nieuwe spelers. */
 .onboard__dismiss {
   flex-shrink: 0;

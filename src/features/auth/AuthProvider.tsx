@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -21,19 +22,34 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  // Laatst bekende gebruiker-id: om een échte accountwissel te onderscheiden van
+  // een her-authenticatie van dezelfde gebruiker (bv. het bevestigen van het
+  // huidige wachtwoord bij het wijzigen ervan). Alleen bij een wissel mag de
+  // querycache geleegd worden; anders knippert de hele app onnodig.
+  const prevUserId = useRef<string | null>(null);
 
   useEffect(() => {
     // Bestaande sessie ophalen bij het laden van de app.
     supabase.auth.getSession().then(({ data }) => {
+      prevUserId.current = data.session?.user?.id ?? null;
       setSession(data.session);
       setLoading(false);
     });
 
     // Meeluisteren op login/logout/token-refresh.
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
-      // Querycache legen bij een sessiewissel: RLS-gefilterde data van de
-      // vorige gebruiker mag nooit doorschemeren naar de volgende.
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") invalidateAll();
+      const nextId = next?.user?.id ?? null;
+      // Querycache alleen legen bij een echte sessiewissel (uitloggen of een
+      // andere gebruiker die inlogt): RLS-gefilterde data van de vorige
+      // gebruiker mag nooit doorschemeren naar de volgende. Een SIGNED_IN met
+      // dezelfde gebruiker (reauth) laat de cache met rust.
+      if (
+        event === "SIGNED_OUT" ||
+        (event === "SIGNED_IN" && nextId !== prevUserId.current)
+      ) {
+        invalidateAll();
+      }
+      prevUserId.current = nextId;
       setSession(next);
     });
 

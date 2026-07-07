@@ -2,7 +2,35 @@
 // dependency. Kleuren uit de huisstijl; respecteert prefers-reduced-motion.
 import { prefersReducedMotion } from "./motion";
 
-const COLORS = ["#0c8a5f", "#c7e63a", "#16a34a", "#d4a017", "#93b515", "#e6f5ee"];
+// Huisstijl-tokens uit :root (single source of truth); fallback voor het geval
+// een token ontbreekt of buiten de DOM wordt aangeroepen.
+const COLOR_TOKENS = [
+  "--accent",
+  "--lime",
+  "--success",
+  "--gold",
+  "--lime-deep",
+  "--accent-soft",
+];
+const FALLBACK_COLORS = [
+  "#0c8a5f",
+  "#c7e63a",
+  "#16a34a",
+  "#d4a017",
+  "#93b515",
+  "#e6f5ee",
+];
+
+function paletteColors(): string[] {
+  if (typeof document === "undefined") return FALLBACK_COLORS;
+  const styles = getComputedStyle(document.documentElement);
+  const colors = COLOR_TOKENS.map((t, i) => {
+    const v = styles.getPropertyValue(t).trim();
+    return v || FALLBACK_COLORS[i];
+  });
+  return colors.some(Boolean) ? colors : FALLBACK_COLORS;
+}
+
 const COUNT = 90;
 const DURATION = 1400; // ms
 
@@ -33,6 +61,7 @@ export function celebrate() {
 
   const w = window.innerWidth;
   const h = window.innerHeight;
+  const colors = paletteColors();
   // Burst vanuit het onderste midden, omhoog uitwaaierend.
   const particles: Particle[] = Array.from({ length: COUNT }, (_, i) => {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
@@ -45,7 +74,7 @@ export function celebrate() {
       size: 5 + Math.random() * 5,
       rot: Math.random() * Math.PI,
       vrot: (Math.random() - 0.5) * 0.4,
-      color: COLORS[i % COLORS.length],
+      color: colors[i % colors.length],
     };
   });
 

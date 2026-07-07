@@ -9,6 +9,50 @@ function invalidateMatchData() {
   invalidate("matches", "standings", "teams", "ratings");
 }
 
+// Per-set uitslag: paar [games team A, games team B]. Lokaal gedefinieerd omdat
+// lib/types.ts (nog) geen set_scores kent — die kolom is additief toegevoegd.
+export type SetScore = [number, number];
+
+/** Leest de optionele per-set uitslag van een match veilig uit (jsonb-kolom die
+ *  nog niet in het Match-type staat). Ongeldige/halfvolle data wordt genegeerd. */
+export function readSetScores(match: Match): SetScore[] | null {
+  const raw = (match as unknown as { set_scores?: unknown }).set_scores;
+  if (!Array.isArray(raw)) return null;
+  const sets = raw.filter(
+    (s): s is SetScore =>
+      Array.isArray(s) &&
+      s.length === 2 &&
+      typeof s[0] === "number" &&
+      typeof s[1] === "number",
+  );
+  return sets.length > 0 ? sets : null;
+}
+
+/** "6-4 3-6 7-5" voor weergave; lege input geeft een lege string. */
+export function formatSetScores(sets: SetScore[] | null | undefined): string {
+  if (!sets || sets.length === 0) return "";
+  return sets.map(([a, b]) => `${a}-${b}`).join(" ");
+}
+
+/** Eén bewerkbare set-rij in de UI; lege strings = nog niet ingevuld. */
+export type SetPair = { a: string; b: string };
+
+export const emptySet = (): SetPair => ({ a: "", b: "" });
+
+/** Bewerkbare rijen -> [games A, games B]-paren. Half-lege of ongeldige rijen
+ *  vallen weg, zodat een lege set-invoer gewoon "geen set-stand" betekent. */
+export function toSetScores(sets: SetPair[]): SetScore[] {
+  const out: SetScore[] = [];
+  for (const s of sets) {
+    if (s.a === "" || s.b === "") continue;
+    const a = Number(s.a);
+    const b = Number(s.b);
+    if (Number.isFinite(a) && Number.isFinite(b) && a >= 0 && b >= 0)
+      out.push([a, b]);
+  }
+  return out;
+}
+
 export function getMatch(id: string): Promise<Match | null> {
   return cached(`matches:one:${id}`, async () => {
     const { data, error } = await supabase
@@ -149,6 +193,7 @@ export async function createCompletedMatch(params: {
   scoreA?: number | null;
   scoreB?: number | null;
   groupId?: string | null;
+  setScores?: SetScore[] | null;
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_completed_match", {
     p_a1: params.a1,
@@ -159,7 +204,9 @@ export async function createCompletedMatch(params: {
     p_score_a: params.scoreA ?? undefined,
     p_score_b: params.scoreB ?? undefined,
     p_group_id: params.groupId ?? undefined,
-  });
+    // p_set_scores staat (nog) niet in de gegenereerde types; cast lokaal.
+    p_set_scores: params.setScores ?? undefined,
+  } as never);
   if (error) throw error;
   invalidateMatchData();
   return data as string;
@@ -175,6 +222,7 @@ export async function createPlannedMatch(params: {
   b2: string;
   playedAt?: string | null;
   groupId?: string | null;
+  setScores?: SetScore[] | null;
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_planned_match", {
     p_a1: params.a1,
@@ -183,7 +231,9 @@ export async function createPlannedMatch(params: {
     p_b2: params.b2,
     p_played_at: params.playedAt ?? undefined,
     p_group_id: params.groupId ?? undefined,
-  });
+    // p_set_scores staat (nog) niet in de gegenereerde types; cast lokaal.
+    p_set_scores: params.setScores ?? undefined,
+  } as never);
   if (error) throw error;
   invalidateMatchData();
   return data as string;
@@ -197,16 +247,19 @@ export async function setMatchResult(params: {
   winnerTeamId: string | null;
   scoreA?: number | null;
   scoreB?: number | null;
+  setScores?: SetScore[] | null;
 }): Promise<void> {
   const { data, error } = await supabase
     .from("matches")
+    // set_scores staat (nog) niet in de gegenereerde Update-types; cast lokaal.
     .update({
       status: "completed",
       winner_team_id: params.winnerTeamId,
       score_a: params.scoreA ?? null,
       score_b: params.scoreB ?? null,
+      set_scores: params.setScores ?? null,
       played_at: new Date().toISOString(),
-    })
+    } as never)
     .eq("id", params.matchId)
     .neq("status", "completed")
     .select("id");
@@ -226,15 +279,48 @@ export async function updateMatchScore(params: {
   winnerTeamId: string | null;
   scoreA: number;
   scoreB: number;
+  /** Optioneel: laat weg om de bestaande set-stand te behouden; null wist hem. */
+  setScores?: SetScore[] | null;
+}): Promise<void> {
+  const patch: Record<string, unknown> = {
+    winner_team_id: params.winnerTeamId,
+    score_a: params.scoreA,
+    score_b: params.scoreB,
+  };
+  // Alleen aanraken als expliciet meegegeven, zodat een score-correctie zonder
+  // set-invoer de bestaande set-stand niet per ongeluk wist.
+  if (params.setScores !== undefined) patch.set_scores = params.setScores;
+  const { error } = await supabase
+    .from("matches")
+    // set_scores staat (nog) niet in de gegenereerde Update-types; cast lokaal.
+    .update(patch as never)
+    .eq("id", params.matchId);
+  if (error) throw error;
+  invalidateMatchData();
+}
+
+/** Verplaatst een geplande match naar een ander tijdstip (of wist het tijdstip
+ *  met null). Alleen de aanmaker mag dit (RLS). */
+export async function updatePlannedMatchTime(params: {
+  matchId: string;
+  playedAt: string | null;
 }): Promise<void> {
   const { error } = await supabase
     .from("matches")
-    .update({
-      winner_team_id: params.winnerTeamId,
-      score_a: params.scoreA,
-      score_b: params.scoreB,
-    })
-    .eq("id", params.matchId);
+    .update({ played_at: params.playedAt })
+    .eq("id", params.matchId)
+    .neq("status", "completed");
+  if (error) throw error;
+  invalidateMatchData();
+}
+
+/** Verwijdert een niet-afgeronde match via de SECURITY DEFINER RPC (alleen de
+ *  aanmaker; een afgeronde match kan niet weg — dat zou stand/ratings raken). */
+export async function deleteMatch(matchId: string): Promise<void> {
+  const { error } = await supabase.rpc(
+    "delete_match" as never,
+    { p_match_id: matchId } as never,
+  );
   if (error) throw error;
   invalidateMatchData();
 }

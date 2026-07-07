@@ -3,7 +3,13 @@
 // de helpers in results.ts.
 
 import type { Match, PlayerRating, Team } from "./types";
-import { inTeam, longestStreak, outcomeFor } from "./results";
+import {
+  inTeam,
+  longestLossStreak,
+  longestStreak,
+  outcomeFor,
+  type Outcome,
+} from "./results";
 
 export interface BadgeVoortgang {
   nu: number;
@@ -23,6 +29,24 @@ export interface Badge {
 
 /** Rating-voorsprong die een tegenstanderteam tot "reus" maakt. */
 export const REUZENDODER_DREMPEL = 50;
+
+/** Puntenverschil vanaf wanneer een winst een "monsterzege" is. */
+export const MONSTERZEGE_DREMPEL = 6;
+
+/** Verliesreeks die de (ludieke) Pechvogel-badge oplevert. */
+export const PECHVOGEL_DREMPEL = 5;
+
+/** Verliezen op rij waarna een winst als "comeback" telt. */
+export const COMEBACK_DREMPEL = 3;
+
+/** Aantal verschillende partners voor de Sociale vlinder. */
+export const SOCIALE_VLINDER_DOEL = 5;
+
+/** Matches met dezelfde partner voor de Trouwe ziel. */
+export const TROUWE_ZIEL_DOEL = 10;
+
+/** Aantal matches op één dag voor de Marathonspeler. */
+export const MARATHON_DOEL = 3;
 
 const MIJLPALEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 10, naam: "Vaste klant", emoji: "🏓" },

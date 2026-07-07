@@ -9,7 +9,7 @@ import { MatchListSkeleton, Skeleton, StatsSkeleton } from "../../components/Ske
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
-import { recentForm, winRate, winStreak, headToHead } from "../../lib/results";
+import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
 import { rankShifts, type Shift } from "../../lib/rankShift";
 import { deriveBadges } from "../../lib/badges";
 import { RatingChart } from "../../components/RatingChart";
@@ -111,6 +111,9 @@ export function Dashboard() {
   const myGames = myMatches.data ?? [];
   const form = recentForm(myGames, tmap, myId);
   const streak = winStreak(myGames, tmap, myId);
+  // Verliesreeks (alleen relevant zonder lopende winstreak) voor een
+  // neutraal-motiverende hero-boodschap.
+  const losing = lossStreak(myGames, tmap, myId);
   const rate = me ? winRate(me.won, me.played) : null;
   const myRating = ratings.data?.[myId]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
@@ -123,13 +126,20 @@ export function Dashboard() {
   // Rangverschuiving t.o.v. vóór de laatste speeldag.
   const myShift = rankShifts(rows, completed, tmap).get(myId) ?? null;
 
-  // Behaalde prestatiebadges (afgeleid, geen extra query).
-  const earnedBadges = deriveBadges(
-    myGames,
-    tmap,
-    myId,
-    ratings.data ?? undefined,
-  ).filter((b) => b.behaald);
+  // Prestatiebadges (afgeleid, geen extra query): behaalde voor de hero, plus
+  // de dichtstbijzijnde onbehaalde met voortgang als aanmoediging.
+  const allBadges = deriveBadges(myGames, tmap, myId, ratings.data ?? undefined);
+  const earnedBadges = allBadges.filter((b) => b.behaald);
+  const nextBadge =
+    allBadges
+      .filter(
+        (b) => !b.behaald && b.voortgang && b.voortgang.doel > 0 && b.voortgang.nu > 0,
+      )
+      .sort(
+        (a, b) =>
+          b.voortgang!.nu / b.voortgang!.doel -
+          a.voortgang!.nu / a.voortgang!.doel,
+      )[0] ?? null;
 
   // Vaste tegenstander: tegen wie speelde ik het vaakst (min. 3 duels)?
   const rival = pickRival(myGames, tmap, myId);
@@ -198,7 +208,11 @@ export function Dashboard() {
                 {me
                   ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"} met ${me.points} punten.`
                   : "Speel je eerste match om in het klassement te komen."}
-                {streak >= 2 && ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`}
+                {streak >= 2
+                  ? ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`
+                  : losing >= 3
+                    ? ` Even ${losing} op rij verloren — de volgende pak je terug. 💪`
+                    : ""}
               </p>
             )}
             {form.length > 0 && (
@@ -418,6 +432,48 @@ export function Dashboard() {
                   </p>
                 )
               )}
+            </section>
+          )}
+
+          {nextBadge && nextBadge.voortgang && (
+            <section className="card next-badge">
+              <div className="card__head">
+                <h2 className="card__title">Volgende badge</h2>
+                <Link className="profile-link" to={`/spelers/${myId}`}>
+                  Alle badges →
+                </Link>
+              </div>
+              <div className="next-badge__row">
+                <span className="next-badge__emoji" aria-hidden="true">
+                  {nextBadge.emoji}
+                </span>
+                <span className="next-badge__body">
+                  <span className="next-badge__name">{nextBadge.naam}</span>
+                  <span className="next-badge__hint">{nextBadge.omschrijving}</span>
+                </span>
+                <span className="next-badge__count">
+                  {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
+                </span>
+              </div>
+              <div
+                className="next-badge__bar"
+                role="progressbar"
+                aria-valuenow={nextBadge.voortgang.nu}
+                aria-valuemin={0}
+                aria-valuemax={nextBadge.voortgang.doel}
+              >
+                <span
+                  className="next-badge__fill"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        (nextBadge.voortgang.nu / nextBadge.voortgang.doel) * 100,
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
             </section>
           )}
 

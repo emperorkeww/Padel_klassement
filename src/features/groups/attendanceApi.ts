@@ -46,3 +46,20 @@ export async function setAttendance(
   if (error) throw error;
   invalidate("attendance");
 }
+
+/**
+ * Stuurt via de edge function "remind-group" een push naar de groepsleden die
+ * voor deze speeldag nog geen aanwezigheid opgaven. Geeft terug hoeveel leden
+ * herinnerd zijn. Vereist een gedeployede edge function (zie het rapport).
+ */
+export async function remindGroup(
+  groupId: string,
+  date: string,
+): Promise<number> {
+  const { data, error } = await supabase.functions.invoke<{ reminded: number }>(
+    "remind-group",
+    { body: { group_id: groupId, date } },
+  );
+  if (error) throw error;
+  return data?.reminded ?? 0;
+}

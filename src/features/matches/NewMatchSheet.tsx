@@ -7,7 +7,14 @@ import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { displayName } from "../profiles/api";
-import { createCompletedMatch, createPlannedMatch } from "./api";
+import {
+  createCompletedMatch,
+  createPlannedMatch,
+  emptySet,
+  toSetScores,
+  type SetPair,
+} from "./api";
+import { SetScoresInput } from "./SetScoresInput";
 import type { Profile } from "../../lib/types";
 
 export type NewMatchMode = "score" | "plan";
@@ -29,13 +36,19 @@ export function NewMatchSheet({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  // Volgorde van aantikken bepaalt de teams: eerste twee = A, laatste twee = B.
-  const [picked, setPicked] = useState<string[]>([]);
+  // Expliciete team-indeling: twee aparte lijstjes i.p.v. "eerste twee = A".
+  // Aantikken vult team A, dan team B; in de teamzones kun je spelers wisselen.
+  const [teamA, setTeamA] = useState<string[]>([]);
+  const [teamB, setTeamB] = useState<string[]>([]);
   const [step, setStep] = useState<1 | 2>(1);
   const [query, setQuery] = useState("");
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
+  const [showSets, setShowSets] = useState(false);
+  const [sets, setSets] = useState<SetPair[]>([emptySet()]);
   const [when, setWhen] = useState(""); // datetime-local; "" = zonder tijdstip
+  const [repeat, setRepeat] = useState(false);
+  const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
@@ -45,12 +58,17 @@ export function NewMatchSheet({
   // Vers beginnen bij elk openen.
   useEffect(() => {
     if (open) {
-      setPicked([]);
+      setTeamA([]);
+      setTeamB([]);
       setStep(1);
       setQuery("");
       setScoreA("");
       setScoreB("");
+      setShowSets(false);
+      setSets([emptySet()]);
       setWhen("");
+      setRepeat(false);
+      setRepeatWeeks(4);
     }
   }, [open]);
 
@@ -79,11 +97,12 @@ export function NewMatchSheet({
 
   if (!open) return null;
 
-  const full = picked.length === 4;
-  const teamA = picked.slice(0, 2);
-  const teamB = picked.slice(2, 4);
+  const picked = teamA.length + teamB.length;
+  const full = teamA.length === 2 && teamB.length === 2;
   const byId = (id: string) => players.find((p) => p.id === id);
   const nameOf = (id: string) => displayName(byId(id));
+  const teamOf = (id: string): "a" | "b" | null =>
+    teamA.includes(id) ? "a" : teamB.includes(id) ? "b" : null;
 
   // Bij een lange vriendenlijst is zoeken sneller dan scrollen.
   const searchable = players.length > 8;
@@ -102,32 +121,66 @@ export function NewMatchSheet({
       : `${(sa > sb ? teamA : teamB).map(nameOf).join(" & ")} winnen — 3 punten.`
     : null;
 
+  /** Aantikken in het rooster: los een gekozen speler weer, of voeg hem toe aan
+   *  het eerste team met plek (A, dan B). */
   function toggle(id: string) {
-    setPicked((p) =>
-      p.includes(id) ? p.filter((x) => x !== id) : p.length >= 4 ? p : [...p, id],
-    );
+    const t = teamOf(id);
+    if (t === "a") setTeamA((a) => a.filter((x) => x !== id));
+    else if (t === "b") setTeamB((b) => b.filter((x) => x !== id));
+    else if (teamA.length < 2) setTeamA((a) => [...a, id]);
+    else if (teamB.length < 2) setTeamB((b) => [...b, id]);
+  }
+
+  /** Verplaats een gekozen speler naar het andere team (als daar plek is). */
+  function switchTeam(id: string) {
+    const t = teamOf(id);
+    if (t === "a" && teamB.length < 2) {
+      setTeamA((a) => a.filter((x) => x !== id));
+      setTeamB((b) => [...b, id]);
+    } else if (t === "b" && teamA.length < 2) {
+      setTeamB((b) => b.filter((x) => x !== id));
+      setTeamA((a) => [...a, id]);
+    }
   }
 
   function swapTeams() {
-    setPicked([...teamB, ...teamA]);
+    setTeamA(teamB);
+    setTeamB(teamA);
     setScoreA(scoreB);
     setScoreB(scoreA);
+    setSets((prev) => prev.map((s) => ({ a: s.b, b: s.a })));
   }
 
-  /** Plan-modus: zet de match klaar zonder uitslag; spelen komt later. */
+  /** Plan-modus: zet de match klaar zonder uitslag; spelen komt later.
+   *  Optioneel wekelijks herhalen (genereert meerdere geplande matches). */
   async function plan() {
     if (!full) return;
     setBusy(true);
     try {
-      await createPlannedMatch({
-        a1: teamA[0],
-        a2: teamA[1],
-        b1: teamB[0],
-        b2: teamB[1],
-        playedAt: when ? new Date(when).toISOString() : null,
-      });
+      const weeks =
+        repeat && when ? Math.max(2, Math.min(12, repeatWeeks)) : 1;
+      const base = when ? new Date(when) : null;
+      for (let i = 0; i < weeks; i++) {
+        let playedAt: string | null = null;
+        if (base) {
+          const d = new Date(base);
+          d.setDate(base.getDate() + i * 7);
+          playedAt = d.toISOString();
+        }
+        await createPlannedMatch({
+          a1: teamA[0],
+          a2: teamA[1],
+          b1: teamB[0],
+          b2: teamB[1],
+          playedAt,
+        });
+      }
       tap();
-      toast.success("Match gepland — je vindt hem bij Te spelen.");
+      toast.success(
+        weeks > 1
+          ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
+          : "Match gepland — je vindt hem bij Te spelen.",
+      );
       onCreated();
       onClose();
     } catch (err) {
@@ -141,6 +194,7 @@ export function NewMatchSheet({
     if (!full || !scored) return;
     setBusy(true);
     try {
+      const setScores = toSetScores(sets);
       await createCompletedMatch({
         a1: teamA[0],
         a2: teamA[1],
@@ -149,6 +203,7 @@ export function NewMatchSheet({
         winner: sa === sb ? "draw" : sa! > sb! ? "a" : "b",
         scoreA: sa,
         scoreB: sb,
+        setScores: setScores.length > 0 ? setScores : null,
       });
       // Vieren als de logger zelf in het winnende team zit.
       if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) {
@@ -215,6 +270,13 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
+            {/* TODO gastspelers: een match kan nu alleen met app-accounts gelogd
+                worden, want teams verwijzen via FK naar profiles(id). Echte
+                gastondersteuning raakt het datamodel en is bewust NIET blind
+                toegevoegd. Aanbevolen additieve aanpak: "gast-profielen"
+                (profiles-rijen met is_guest = true, aangemaakt door een speler,
+                zonder auth-account), zodat teams/scores/Elo ongewijzigd blijven
+                werken. Zie eindrapport. */}
             {players.length < 4 ? (
               <p className="empty">
                 Je kunt alleen jezelf en je vrienden kiezen. Voeg eerst meer
@@ -239,8 +301,7 @@ export function NewMatchSheet({
                 )}
               <div className="pick-grid">
                 {visiblePlayers.map((p) => {
-                  const idx = picked.indexOf(p.id);
-                  const team = idx === -1 ? null : idx < 2 ? "a" : "b";
+                  const team = teamOf(p.id);
                   return (
                     <button
                       key={p.id}
@@ -265,16 +326,21 @@ export function NewMatchSheet({
 
             <p className="sheet__hint">
               {full
-                ? "Tik op een speler om die weer los te laten, of wissel de teams."
-                : `Tik de spelers aan in volgorde: eerst team A, dan team B (${picked.length}/4).`}
+                ? "Tik op een speler om die weer los te laten, of wissel iemand van team met de pijl."
+                : `Tik de spelers aan: ze vullen eerst team A, dan team B (${picked}/4).`}
             </p>
 
-            {picked.length > 0 && (
+            {picked > 0 && (
               <div className="pick-teams">
-                <div className="pick-teams__team pick-teams__team--a">
-                  <span className="pick-teams__label">Team A</span>
-                  <TeamPreview ids={teamA} byId={byId} nameOf={nameOf} />
-                </div>
+                <TeamZone
+                  label="Team A"
+                  side="a"
+                  ids={teamA}
+                  byId={byId}
+                  nameOf={nameOf}
+                  canSwitch={teamB.length < 2}
+                  onSwitch={switchTeam}
+                />
                 <button
                   type="button"
                   className="btn btn--sm"
@@ -285,10 +351,15 @@ export function NewMatchSheet({
                 >
                   ⇄
                 </button>
-                <div className="pick-teams__team pick-teams__team--b">
-                  <span className="pick-teams__label">Team B</span>
-                  <TeamPreview ids={teamB} byId={byId} nameOf={nameOf} />
-                </div>
+                <TeamZone
+                  label="Team B"
+                  side="b"
+                  ids={teamB}
+                  byId={byId}
+                  nameOf={nameOf}
+                  canSwitch={teamA.length < 2}
+                  onSwitch={switchTeam}
+                />
               </div>
             )}
 
@@ -337,6 +408,36 @@ export function NewMatchSheet({
               match komt bij "Te spelen" te staan; de score vul je na afloop in.
             </p>
 
+            <div className="repeat-row">
+              <label className="repeat-row__toggle">
+                <input
+                  type="checkbox"
+                  checked={repeat}
+                  disabled={!when}
+                  onChange={(e) => setRepeat(e.target.checked)}
+                />
+                Herhaal wekelijks
+              </label>
+              {repeat && when && (
+                <label className="repeat-row__weeks">
+                  aantal weken
+                  <input
+                    className="input"
+                    type="number"
+                    min={2}
+                    max={12}
+                    value={repeatWeeks}
+                    onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+                  />
+                </label>
+              )}
+            </div>
+            {!when && (
+              <p className="sheet__hint">
+                Kies eerst een tijdstip om wekelijks te kunnen herhalen.
+              </p>
+            )}
+
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
@@ -346,7 +447,11 @@ export function NewMatchSheet({
                 disabled={busy || !full}
                 onClick={plan}
               >
-                {busy ? "Plannen…" : "Match plannen"}
+                {busy
+                  ? "Plannen…"
+                  : repeat && when
+                    ? `${Math.max(2, Math.min(12, repeatWeeks))} matches plannen`
+                    : "Match plannen"}
               </button>
             </footer>
           </>
@@ -413,6 +518,29 @@ export function NewMatchSheet({
               </p>
             )}
 
+            <div className="sheet-sets">
+              <button
+                type="button"
+                className="planned-card__sets-toggle"
+                aria-expanded={showSets}
+                onClick={() => setShowSets((s) => !s)}
+              >
+                {showSets
+                  ? "− Sets verbergen"
+                  : "+ Sets per set invoeren (optioneel)"}
+              </button>
+              {showSets && (
+                <div className="mt-4">
+                  <SetScoresInput
+                    sets={sets}
+                    onChange={setSets}
+                    labelA={teamA.map(nameOf).join(" & ") || "Team A"}
+                    labelB={teamB.map(nameOf).join(" & ") || "Team B"}
+                  />
+                </div>
+              )}
+            </div>
+
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
@@ -428,6 +556,54 @@ export function NewMatchSheet({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Interactieve teamzone in stap 1: toont de gekozen spelers met per speler een
+ *  pijl om hem naar het andere team te verplaatsen. */
+function TeamZone({
+  label,
+  side,
+  ids,
+  byId,
+  nameOf,
+  canSwitch,
+  onSwitch,
+}: {
+  label: string;
+  side: "a" | "b";
+  ids: string[];
+  byId: (id: string) => Profile | undefined;
+  nameOf: (id: string) => string;
+  canSwitch: boolean;
+  onSwitch: (id: string) => void;
+}) {
+  return (
+    <div className={`pick-teams__team pick-teams__team--${side}`}>
+      <span className="pick-teams__label">{label}</span>
+      {ids.length === 0 ? (
+        <span className="pick-teams__names">—</span>
+      ) : (
+        <ul className="teamzone__list">
+          {ids.map((id) => (
+            <li key={id} className="teamzone__player">
+              <Avatar profile={byId(id)} size={20} short />
+              <span className="teamzone__name">{nameOf(id)}</span>
+              <button
+                type="button"
+                className="teamzone__switch"
+                onClick={() => onSwitch(id)}
+                disabled={!canSwitch}
+                title={`Verplaats naar team ${side === "a" ? "B" : "A"}`}
+                aria-label={`${nameOf(id)} naar team ${side === "a" ? "B" : "A"}`}
+              >
+                {side === "a" ? "→" : "←"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

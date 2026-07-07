@@ -42,24 +42,54 @@ const SPLITS: [[number, number], [number, number]][] = [
   ],
 ];
 
+/** Opties voor {@link fairTeams}. */
+export interface FairTeamsOptions {
+  /**
+   * Hoe vaak elke speler tot nu toe op de bank zat. Bepaalt wie er deze keer
+   * reserve is wanneer het aantal spelers geen veelvoud van 4 is: wie het minst
+   * heeft gezeten, blijft nu zitten — zo rouleren de bankbeurten eerlijk in
+   * plaats van steeds bij de laagst geratede speler te belanden. Bij gelijke
+   * (of ontbrekende) tellingen valt het terug op het oude gedrag: de laagst
+   * geratede speler zit.
+   */
+  benched?: Record<string, number>;
+}
+
 /**
  * Verdeelt spelers over banen van 4 met zo eerlijk mogelijke teams.
  * `variant` kiest per baan de n-de eerlijkste splitsing (0 = eerlijkst,
  * 1 = op één na eerlijkst, …) — voor de "Opnieuw"-knop; cyclisch over de 3.
+ * `options.benched` roteert de bankbeurten (zie {@link FairTeamsOptions}).
  */
 export function fairTeams(
   playerIds: string[],
   ratings: Record<string, PlayerRating>,
   variant = 0,
+  options: FairTeamsOptions = {},
 ): FairTeamsResult {
   const ratingOf = (id: string) => ratings[id]?.rating ?? BASE_RATING;
+  const benchedOf = (id: string) => options.benched?.[id] ?? 0;
   const sorted = [...playerIds].sort((a, b) => ratingOf(b) - ratingOf(a));
   const courtCount = Math.floor(sorted.length / 4);
-  const reserves = sorted.slice(courtCount * 4);
+  const reserveCount = sorted.length - courtCount * 4;
+
+  // Kies wie reserve is: wie het minst zat, zit nu (eerlijke rotatie). Bij
+  // gelijke tellingen sorteert de laagste rating naar voren — identiek aan het
+  // oude "laagst geratede zit"-gedrag wanneer er geen bankhistorie is.
+  const benchSet = new Set(
+    [...sorted]
+      .sort(
+        (a, b) => benchedOf(a) - benchedOf(b) || ratingOf(a) - ratingOf(b),
+      )
+      .slice(0, reserveCount),
+  );
+  // Reserves in rating-aflopende volgorde teruggeven (zoals voorheen).
+  const reserves = sorted.filter((id) => benchSet.has(id));
+  const playing = sorted.filter((id) => !benchSet.has(id));
 
   const courts: CourtProposal[] = [];
   for (let c = 0; c < courtCount; c++) {
-    const quad = sorted.slice(c * 4, c * 4 + 4);
+    const quad = playing.slice(c * 4, c * 4 + 4);
     const options = SPLITS.map(([a, b]) => {
       const teamA = makeTeam(quad, a, ratingOf);
       const teamB = makeTeam(quad, b, ratingOf);

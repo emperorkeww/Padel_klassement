@@ -4,6 +4,10 @@ create table public.profiles (
   username text unique not null,
   full_name text,
   avatar_url text,
+  -- Privacy: verschijn je in het zoeken naar spelers, en mogen anderen je een
+  -- vriendschapsverzoek sturen? Beide standaard 'true' = bestaand gedrag.
+  discoverable boolean not null default true,
+  allow_friend_requests boolean not null default true,
   created_at timestamptz not null default now()
 );
 

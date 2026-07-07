@@ -95,6 +95,6 @@
   font-weight: 700;
 }
 .rating-chart__tip-delta.is-down {
-  color: #fca5a5;
+  color: var(--danger-bright);
   font-weight: 700;
 }

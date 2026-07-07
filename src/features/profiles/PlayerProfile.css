@@ -176,6 +176,76 @@
   color: var(--ink-soft);
 }
 
+/* Profielkop: terug-knop links, seizoenskiezer + deelknop rechts. */
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.profile-head__tools {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* Onderlinge stand: uitgelichte nemesis + favoriete tegenstander. */
+.h2h-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.h2h-highlight {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.h2h-highlight--fav {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--line));
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--success) 12%, transparent) 0%, transparent 70%),
+    var(--surface-2);
+}
+.h2h-highlight--nemesis {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--line));
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--danger) 12%, transparent) 0%, transparent 70%),
+    var(--surface-2);
+}
+.h2h-highlight__tag {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.h2h-highlight__player {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 700;
+}
+.h2h-highlight__player:hover .h2h__name {
+  color: var(--accent);
+}
+.h2h-highlight__meta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.h2h__toggle {
+  margin-top: var(--sp-3);
+}
+
 /* Onderlinge stand (head-to-head) */
 .h2h {
   list-style: none;

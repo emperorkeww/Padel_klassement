@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "../../lib/types";
-import { teamLabel } from "./api";
+import { formatSetScores, readSetScores, teamLabel } from "./api";
 import { formatRelativeDay } from "../../lib/format";
 import { outcomeFor } from "../../lib/results";
 import { Avatar } from "../../components/Avatar";
@@ -23,6 +23,7 @@ export function MatchCard({
   const bWon = done && m.winner_team_id === m.team_b_id;
   const drew = done && m.winner_team_id === null;
   const scored = m.score_a != null && m.score_b != null;
+  const setLine = formatSetScores(readSetScores(m));
 
   const outcome = perspectiveId ? outcomeFor(m, teams, perspectiveId) : null;
   const outcomeClass =
@@ -50,6 +51,9 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {setLine && (
+          <span className="match-card__meta match-card__sets">{setLine}</span>
+        )}
       </span>
       <TeamSide
         team={teams[m.team_b_id]}

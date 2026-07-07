@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import {
+  formatSetScores,
   getMatch,
   getTeamsByIds,
+  readSetScores,
   teamLabel,
   updateMatchScore,
 } from "./api";
+import { PlannedMatchCard } from "./PlannedMatchCard";
 import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "../../lib/format";
@@ -24,6 +27,7 @@ import "./MatchDetail.css";
 export function MatchDetail() {
   const { id = "" } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const match = useAsync(() => getMatch(id), [id]);
   // Alleen de twee teams en vier spelers van déze match ophalen, niet de
@@ -73,6 +77,17 @@ export function MatchDetail() {
   const isDraw = done && m.winner_team_id === null;
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
+  // Per-set uitslag (optioneel), bv. "6-4 3-6 7-5".
+  const setLine = formatSetScores(readSetScores(m));
+  // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
+  // hem hebt aangemaakt (de server dwingt de rechten sowieso af).
+  const amParticipant =
+    !!user &&
+    [teamA, teamB].some(
+      (t) => t && (t.player1_id === user.id || t.player2_id === user.id),
+    );
+  const showPlanned =
+    !done && (amParticipant || (!!user && m.created_by === user.id));
 
   return (
     <div>
@@ -80,9 +95,9 @@ export function MatchDetail() {
         {/* Het scorebord ís de kop; voor screenreaders en de outline toch een h1. */}
         <h1 className="sr-only">Matchdetail</h1>
         <div className="row-between">
-          <Link className="btn btn--sm" to="/matches">
-            ← Matches
-          </Link>
+          <button className="btn btn--sm" onClick={() => navigate(-1)}>
+            ← Terug
+          </button>
           {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
         </div>
       </header>
@@ -132,6 +147,19 @@ export function MatchDetail() {
           />
         </div>
 
+        {setLine && (
+          <div className="md-sets">
+            <span className="md-sets__label">Sets</span>
+            <span className="set-breakdown">
+              {setLine.split(" ").map((s, i) => (
+                <span key={i} className="set-breakdown__set">
+                  {s}
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
+
         {canEdit && !editing && (
           <div className="md-edit-actions">
             <button className="btn btn--sm" onClick={() => setEditing(true)}>
@@ -153,6 +181,25 @@ export function MatchDetail() {
           />
         )}
       </section>
+
+      {showPlanned && (
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title">Uitslag invullen</h2>
+          </div>
+          {/* Dezelfde inline invoer als bij "Te spelen": score/sets opslaan,
+              agenda, tijd wijzigen en verwijderen. Rechten worden serverzijdig
+              afgedwongen. Na verwijderen navigeren we terug. */}
+          <PlannedMatchCard
+            match={m}
+            teams={tmap}
+            profiles={pmap}
+            perspectiveId={user?.id}
+            onSaved={() => match.reload()}
+            onDeleted={() => navigate(-1)}
+          />
+        </section>
+      )}
     </div>
   );
 }

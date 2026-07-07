@@ -33,7 +33,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (type: ToastType, text: string) => {
       const id = ++counter;
       setToasts((t) => [...t, { id, type, text }]);
-      setTimeout(() => remove(id), 3800);
+      // Fouten blijven staan tot ze weggeklikt worden (assertief aangekondigd);
+      // succes/info verdwijnen vanzelf.
+      if (type !== "error") setTimeout(() => remove(id), 4000);
     },
     [remove],
   );
@@ -47,22 +49,54 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [push],
   );
 
+  const errors = toasts.filter((t) => t.type === "error");
+  const polite = toasts.filter((t) => t.type !== "error");
+
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="toasts" role="status" aria-live="polite">
-        {toasts.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`toast toast--${t.type}`}
-            onClick={() => remove(t.id)}
-          >
-            {t.text}
-          </button>
-        ))}
+      <div className="toasts">
+        {/* Succes/info: rustig aangekondigd (polite). */}
+        <div className="toasts__live" role="status" aria-live="polite">
+          {polite.map((t) => (
+            <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
+          ))}
+        </div>
+        {/* Fouten: direct aangekondigd (assertive) en blijven staan. */}
+        <div className="toasts__live" role="alert" aria-live="assertive">
+          {errors.map((t) => (
+            <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
+          ))}
+        </div>
       </div>
     </ToastContext.Provider>
+  );
+}
+
+function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  return (
+    <div className={`toast toast--${toast.type}`}>
+      <span className="toast__text">{toast.text}</span>
+      <button
+        type="button"
+        className="toast__close"
+        aria-label="Sluiten"
+        onClick={onClose}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
   );
 }
 

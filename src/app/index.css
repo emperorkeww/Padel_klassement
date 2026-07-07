@@ -9,7 +9,10 @@
   --surface: #ffffff; /* kaarten */
   --surface-2: #eef3ee; /* subtiel vlak / tracks */
   --ink: #1a2620; /* tekst */
-  --ink-soft: #64756c; /* gedempte tekst */
+  --ink-soft: #64756c; /* gedempte tekst (≥AA op wit/bg) */
+  /* Donkerdere gedempte tint voor kleine tekst op --surface-2 (badges e.d.),
+     waar --ink-soft net onder AA 4.5:1 uitkomt. */
+  --ink-soft-strong: #586a60;
   --line: #e4eae4; /* haarlijn */
   --line-strong: #cfd9cf;
 
@@ -35,6 +38,7 @@
   --danger: #dc2626;
   --danger-soft: #fdf1f1;
   --danger-line: #f3c9c9;
+  --danger-bright: #fca5a5; /* lichtrode tekst op donkere vlakken (tooltips) */
   --warn: #d97706;
   --warn-soft: #fdf4e7;
   --warn-line: #f0ddba;
@@ -47,7 +51,7 @@
   --bronze: #b0722d;
   --bronze-soft: #f7ece0;
 
-  --placeholder: #97a69b;
+  --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
 
   --shadow-sm: 0 1px 2px rgba(20, 40, 28, 0.05);
@@ -60,6 +64,14 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 22px;
+
+  /* ---- Breakpoints (referentie) ----
+     CSS-media-queries kunnen geen var() lezen, dus deze tokens documenteren
+     de canonieke waarden; de @media-regels gebruiken dezelfde getallen.
+     Eén mobiel-omslagpunt voor zowel de shell-navigatie als de content-layout,
+     zodat er geen dode zone ontstaat (mobiele nav met desktop-content). */
+  --bp-mobile: 720px; /* shell wisselt naar topbalk + onderbalk, content wordt mobiel */
+  --bp-narrow: 480px; /* extra-smalle telefoon-tweaks */
 
   /* ---- Spacing: 4px-grid ---- */
   --sp-1: 0.25rem; /* 4px */

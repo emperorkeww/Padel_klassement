@@ -11,15 +11,12 @@ import {
   sendFriendRequest,
   respondToRequest,
   removeFriendship,
+  searchDiscoverableProfiles,
   categorize,
   otherId,
   type FriendSuggestion,
 } from "./api";
-import {
-  getProfilesMap,
-  searchProfiles,
-  displayName,
-} from "../profiles/api";
+import { getProfilesMap, displayName } from "../profiles/api";
 import { Avatar } from "../../components/Avatar";
 import { AccountNav } from "../../components/AccountNav";
 import { EmptyState } from "../../components/EmptyState";
@@ -83,7 +80,7 @@ export function Friends() {
       const seq = ++searchSeq.current;
       setSearching(true);
       try {
-        const found = await searchProfiles(q, myId);
+        const found = await searchDiscoverableProfiles(q, myId);
         if (seq !== searchSeq.current) return;
         setResults(found);
         setSearched(true);

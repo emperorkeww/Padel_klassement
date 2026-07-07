@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
+import { ToastProvider } from "../../components/ToastProvider";
 
 vi.mock("../../lib/supabase", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
@@ -15,9 +16,11 @@ function renderProfile(id: string) {
   return render(
     <MemoryRouter initialEntries={[`/spelers/${id}`]}>
       <AuthProvider>
-        <Routes>
-          <Route path="/spelers/:id" element={<PlayerProfile />} />
-        </Routes>
+        <ToastProvider>
+          <Routes>
+            <Route path="/spelers/:id" element={<PlayerProfile />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );
