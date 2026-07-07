@@ -47,6 +47,8 @@ export async function removeFriendship(id: string): Promise<void> {
 export interface FriendSuggestion {
   id: string;
   mutual_count: number;
+  /** Ids van de gemeenschappelijke vrienden (de UI toont hun namen). */
+  mutual_ids: string[];
 }
 
 /**

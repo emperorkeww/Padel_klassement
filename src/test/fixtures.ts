@@ -51,15 +51,22 @@ export const FRIENDSHIPS = [
   { id: "f4", requester_id: "p4", addressee_id: "p1", status: "accepted", created_at: NOW, updated_at: NOW },
 ];
 
-export const GROUPS = [
-  { id: "g1", name: "Vrijdagavond Padel", created_by: "p1", created_at: NOW },
-];
-
 export const GROUP_MEMBERS = [
   { group_id: "g1", player_id: "p1", role: "owner", joined_at: NOW },
   { group_id: "g1", player_id: "p2", role: "member", joined_at: NOW },
   { group_id: "g1", player_id: "p3", role: "member", joined_at: NOW },
   { group_id: "g1", player_id: "p4", role: "member", joined_at: NOW },
+];
+
+export const GROUPS = [
+  {
+    id: "g1",
+    name: "Vrijdagavond Padel",
+    created_by: "p1",
+    created_at: NOW,
+    // PostgREST-embed zoals getMyGroups hem opvraagt.
+    group_members: GROUP_MEMBERS.map((m) => ({ player_id: m.player_id })),
+  },
 ];
 
 export const PLAYER_STANDINGS = [

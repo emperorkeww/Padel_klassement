@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
@@ -8,14 +8,23 @@ import { Avatar } from "../../components/Avatar";
 import { EmptyState } from "../../components/EmptyState";
 import { errorMessage } from "../../lib/errors";
 import { formatDate } from "../../lib/format";
+import { getProfilesMap } from "../profiles/api";
 import { getMyGroups, createGroup } from "./api";
 import "./Groups.css";
+
+const MAX_MEMBER_AVATARS = 4;
+
+function ledenLabel(n: number): string {
+  return n === 1 ? "1 lid" : `${n} leden`;
+}
 
 export function Groups() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const groups = useAsync(getMyGroups, []);
+  const profiles = useAsync(getProfilesMap, []);
   const toast = useToast();
+  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,18 +35,19 @@ export function Groups() {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await createGroup(name, myId);
-      setName("");
-      toast.success("Groep aangemaakt.");
-      groups.reload();
+      const g = await createGroup(name, myId);
+      toast.success("Groep aangemaakt — voeg nu leden toe.");
+      // Meteen door naar de ledentab van de nieuwe groep: daar gebeurt de
+      // logische vervolgstap (vrienden toevoegen).
+      navigate(`/groepen/${g.id}?tab=leden`);
     } catch (err) {
       toast.error(errorMessage(err));
-    } finally {
       setBusy(false);
     }
   }
 
   const list = groups.data ?? [];
+  const pmap = profiles.data ?? {};
 
   return (
     <div>
@@ -88,7 +98,30 @@ export function Groups() {
                       )}
                     </span>
                     <span className="group-card__meta">
-                      sinds {formatDate(g.created_at)}
+                      {g.member_ids.length > 0 && (
+                        <span
+                          className="group-card__members"
+                          aria-hidden="true"
+                        >
+                          {g.member_ids.slice(0, MAX_MEMBER_AVATARS).map((pid) => (
+                            <Avatar
+                              key={pid}
+                              profile={pmap[pid]}
+                              size={20}
+                              short
+                            />
+                          ))}
+                          {g.member_ids.length > MAX_MEMBER_AVATARS && (
+                            <span className="group-card__more">
+                              +{g.member_ids.length - MAX_MEMBER_AVATARS}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                      <span>
+                        {ledenLabel(g.member_ids.length)} · sinds{" "}
+                        {formatDate(g.created_at)}
+                      </span>
                     </span>
                   </span>
                   <span className="group-card__chevron" aria-hidden="true">
@@ -108,6 +141,7 @@ export function Groups() {
             ref={nameRef}
             className="input"
             placeholder="Groepsnaam, bijv. Vrijdagavond"
+            maxLength={60}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

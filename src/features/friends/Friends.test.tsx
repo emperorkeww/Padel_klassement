@@ -13,16 +13,19 @@ vi.mock("../../lib/supabase", () => ({
       friendships: [
         { id: "f1", requester_id: "p2", addressee_id: "p1", status: "pending" },
         { id: "f2", requester_id: "p1", addressee_id: "p3", status: "accepted" },
+        { id: "f3", requester_id: "p1", addressee_id: "p5", status: "pending" },
       ],
       profiles: [
         { id: "p1", username: "alice", full_name: "Alice Anders" },
         { id: "p2", username: "bob", full_name: "Bob Boers" },
         { id: "p3", username: "carol", full_name: "Carol Claes" },
         { id: "p4", username: "dave", full_name: "Dave De Vos" },
+        { id: "p5", username: "eva", full_name: "Eva Evers" },
+        { id: "p6", username: "frank", full_name: "Frank Feyen" },
       ],
     },
-    // get_friend_suggestions: dave heeft 2 gemeenschappelijke vrienden.
-    rpc: [{ id: "p4", mutual_count: 2 }],
+    // get_friend_suggestions: dave heeft 2 gemeenschappelijke vrienden (carol + frank).
+    rpc: [{ id: "p4", mutual_count: 2, mutual_ids: ["p3", "p6"] }],
   }),
 }));
 
@@ -80,16 +83,30 @@ describe("<Friends />", () => {
     expect(await screen.findByText(/verzoek verstuurd/i)).toBeInTheDocument();
   });
 
-  it("toont een voorgestelde vriend met gemeenschappelijke vrienden", async () => {
+  it("opent de gemeenschappelijke vrienden in een popup", async () => {
     renderPage();
     expect(
       await screen.findByRole("heading", { name: /misschien ken je/i }),
     ).toBeInTheDocument();
-    // Dave (p4) is voorgesteld met 2 gemeenschappelijke vrienden.
+    // Dave (p4) is voorgesteld met een klikbare teller; de namen zijn verborgen.
     expect(await screen.findByText(/dave de vos/i)).toBeInTheDocument();
-    expect(
-      await screen.findByText(/2 gemeenschappelijke vrienden/i),
-    ).toBeInTheDocument();
+    const toggle = await screen.findByRole("button", {
+      name: /2 gemeenschappelijke vrienden/i,
+    });
+    expect(screen.queryByText(/frank feyen/i)).toBeNull();
+    // Na klikken opent een dialoog met de gemeenschappelijke vrienden.
+    await userEvent.click(toggle);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByText(/frank feyen/i)).toBeInTheDocument();
+  });
+
+  it("trekt een verzonden verzoek in", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /intrekken/i }),
+    );
+    expect(supabase.from).toHaveBeenCalledWith("friendships");
+    expect(await screen.findByText(/verzoek ingetrokken/i)).toBeInTheDocument();
   });
 
   it("verwijdert een vriend", async () => {

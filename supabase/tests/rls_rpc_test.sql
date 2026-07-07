@@ -2,7 +2,7 @@
 -- Simuleert gebruikers via request.jwt.claims (auth.uid()) en role-switches.
 begin;
 
-select plan(17);
+select plan(18);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -153,6 +153,14 @@ select is(
      where mutual_count = 1
        and id in ('a0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000004')),
   2, 'get_friend_suggestions: t3 en t4 hebben 1 gemeenschappelijke vriend voor t2'
+);
+
+-- De gemeenschappelijke vriend van t2 en t3 is t1.
+select is(
+  (select mutual_ids from public.get_friend_suggestions(12)
+     where id = 'a0000000-0000-0000-0000-000000000003'),
+  array['a0000000-0000-0000-0000-000000000001']::uuid[],
+  'get_friend_suggestions: mutual_ids voor t3 bevat t1'
 );
 
 -- t2 stelt zichzelf nooit voor.

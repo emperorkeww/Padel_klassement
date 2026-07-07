@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -13,6 +13,7 @@ import {
   removeFriendship,
   categorize,
   otherId,
+  type FriendSuggestion,
 } from "./api";
 import {
   getProfilesMap,
@@ -42,6 +43,23 @@ export function Friends() {
   const [searching, setSearching] = useState(false);
   // Puur voor de lege-status: "nog niet gezocht" ≠ "geen resultaten".
   const [searched, setSearched] = useState(false);
+  // Suggestie waarvan de gemeenschappelijke vrienden in een popup getoond worden.
+  const [mutualFor, setMutualFor] = useState<FriendSuggestion | null>(null);
+
+  // Escape sluit de popup; de pagina eronder scrollt niet mee.
+  useEffect(() => {
+    if (!mutualFor) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMutualFor(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [mutualFor]);
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
@@ -51,17 +69,51 @@ export function Friends() {
     (friendships.data ?? []).flatMap((f) => [f.requester_id, f.addressee_id]),
   );
 
-  async function runSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setSearching(true);
-    try {
-      setResults(await searchProfiles(query, myId));
-      setSearched(true);
-    } catch (err) {
-      toast.error(errMsg(err));
-    } finally {
+  // Suggesties waarvan we het profiel kennen en die nog geen relatie hebben.
+  const visibleSuggestions = (suggestions.data ?? []).filter(
+    (s) => !relatedIds.has(s.id) && pmap[s.id],
+  );
+
+  // Oplopend volgnummer per zoekopdracht: een traag, verouderd antwoord mag
+  // een nieuwer resultaat niet overschrijven.
+  const searchSeq = useRef(0);
+
+  const doSearch = useCallback(
+    async (q: string) => {
+      const seq = ++searchSeq.current;
+      setSearching(true);
+      try {
+        const found = await searchProfiles(q, myId);
+        if (seq !== searchSeq.current) return;
+        setResults(found);
+        setSearched(true);
+      } catch (err) {
+        if (seq === searchSeq.current) toast.error(errMsg(err));
+      } finally {
+        if (seq === searchSeq.current) setSearching(false);
+      }
+    },
+    [myId, toast],
+  );
+
+  // Live zoeken terwijl je typt (met debounce); de Zoek-knop blijft voor
+  // Enter en als expliciete bevestiging.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      searchSeq.current++;
+      setResults([]);
+      setSearched(false);
       setSearching(false);
+      return;
     }
+    const t = setTimeout(() => doSearch(q), 300);
+    return () => clearTimeout(t);
+  }, [query, doSearch]);
+
+  function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (query.trim()) doSearch(query.trim());
   }
 
   async function act(fn: () => Promise<void>, ok: string) {
@@ -106,18 +158,14 @@ export function Friends() {
               <p className="empty">
                 {searched
                   ? `Geen spelers gevonden voor “${query.trim()}”.`
-                  : "Zoek op gebruikersnaam om spelers te vinden."}
+                  : "Typ een gebruikersnaam — resultaten verschijnen vanzelf."}
               </p>
             )}
             {results.map((p) => {
               const already = relatedIds.has(p.id);
               return (
                 <div key={p.id} className="person-row">
-                  <span className="cell-player">
-                    <Avatar profile={p} size={28} />
-                    {displayName(p)}{" "}
-                    <span className="badge">@{p.username}</span>
-                  </span>
+                  <PersonCell profile={p} to={`/spelers/${p.id}`} />
                   <button
                     className="btn btn--sm"
                     disabled={already}
@@ -150,12 +198,10 @@ export function Friends() {
             )}
             {incoming.map((f) => (
               <div key={f.id} className="person-row person-row--attn">
-                <span className="cell-player">
-                  <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                  <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                    {displayName(pmap[otherId(f, myId)])}
-                  </Link>
-                </span>
+                <PersonCell
+                  profile={pmap[otherId(f, myId)]}
+                  to={`/spelers/${otherId(f, myId)}`}
+                />
                 <span className="btn-row">
                   <button
                     className="btn btn--primary btn--sm"
@@ -184,13 +230,21 @@ export function Friends() {
               <div className="person-list">
                 {outgoing.map((f) => (
                   <div key={f.id} className="person-row">
-                    <span className="cell-player">
-                      <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                      <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                        {displayName(pmap[otherId(f, myId)])}
-                      </Link>
+                    <PersonCell
+                      profile={pmap[otherId(f, myId)]}
+                      to={`/spelers/${otherId(f, myId)}`}
+                    />
+                    <span className="btn-row">
+                      <span className="badge">In afwachting</span>
+                      <button
+                        className="btn btn--sm btn--danger"
+                        onClick={() =>
+                          act(() => removeFriendship(f.id), "Verzoek ingetrokken.")
+                        }
+                      >
+                        Intrekken
+                      </button>
                     </span>
-                    <span className="badge">In afwachting</span>
                   </div>
                 ))}
               </div>
@@ -200,54 +254,12 @@ export function Friends() {
       </div>
 
       <section className="card">
-        <h2 className="card__title">Misschien ken je</h2>
-        {!suggestions.loading &&
-          suggestions.data &&
-          suggestions.data.filter((s) => !relatedIds.has(s.id)).length === 0 && (
-            <p className="empty">
-              Nog geen suggesties — voeg vrienden toe en we stellen op basis van
-              gemeenschappelijke vrienden nieuwe spelers voor.
-            </p>
+        <h2 className="card__title">
+          Mijn vrienden{" "}
+          {accepted.length > 0 && (
+            <span className="badge badge--accent">{accepted.length}</span>
           )}
-        <div className="person-grid">
-          {suggestions.loading && <Skeleton rows={3} />}
-          {(suggestions.data ?? [])
-            .filter((s) => !relatedIds.has(s.id) && pmap[s.id])
-            .map((s) => {
-              const p = pmap[s.id];
-              return (
-                <div key={s.id} className="person-row">
-                  <span className="cell-player">
-                    <Avatar profile={p} size={28} />
-                    <Link className="profile-link" to={`/spelers/${s.id}`}>
-                      {displayName(p)}
-                    </Link>
-                    {s.mutual_count > 0 && (
-                      <span className="badge badge--accent">
-                        {s.mutual_count} gemeenschappelijke vriend
-                        {s.mutual_count === 1 ? "" : "en"}
-                      </span>
-                    )}
-                  </span>
-                  <button
-                    className="btn btn--sm"
-                    onClick={() =>
-                      act(
-                        () => sendFriendRequest(myId, s.id),
-                        "Verzoek verstuurd.",
-                      )
-                    }
-                  >
-                    Verzoek sturen
-                  </button>
-                </div>
-              );
-            })}
-        </div>
-      </section>
-
-      <section className="card">
-        <h2 className="card__title">Mijn vrienden</h2>
+        </h2>
         {!friendships.loading && accepted.length === 0 && (
           <EmptyState icon="👋" title="Nog geen vrienden.">
             Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
@@ -258,12 +270,10 @@ export function Friends() {
           {friendships.loading && <Skeleton rows={3} />}
           {accepted.map((f) => (
             <div key={f.id} className="person-row">
-              <span className="cell-player">
-                <Avatar profile={pmap[otherId(f, myId)]} size={28} />
-                <Link className="profile-link" to={`/spelers/${otherId(f, myId)}`}>
-                  {displayName(pmap[otherId(f, myId)])}
-                </Link>
-              </span>
+              <PersonCell
+                profile={pmap[otherId(f, myId)]}
+                to={`/spelers/${otherId(f, myId)}`}
+              />
               <button
                 className="btn btn--danger btn--sm"
                 onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
@@ -274,7 +284,126 @@ export function Friends() {
           ))}
         </div>
       </section>
+
+      <section className="card">
+        <h2 className="card__title">Misschien ken je</h2>
+        {suggestions.loading && <Skeleton rows={3} />}
+        {!suggestions.loading && visibleSuggestions.length === 0 && (
+          <p className="empty">
+            Nog geen suggesties — voeg vrienden toe en we stellen op basis van
+            gemeenschappelijke vrienden nieuwe spelers voor.
+          </p>
+        )}
+        <div className="suggest-grid">
+          {visibleSuggestions.map((s) => {
+            const p = pmap[s.id];
+            return (
+              <div key={s.id} className="suggest-card">
+                <Link className="suggest-card__id" to={`/spelers/${s.id}`}>
+                  <Avatar profile={p} size={56} />
+                  <span className="suggest-card__name">{displayName(p)}</span>
+                  <span className="badge">@{p.username}</span>
+                </Link>
+
+                {s.mutual_count > 0 ? (
+                  <button
+                    type="button"
+                    className="mutual-toggle"
+                    onClick={() => setMutualFor(s)}
+                  >
+                    {s.mutual_ids.length > 0 && (
+                      <span className="mutual-avatars" aria-hidden="true">
+                        {s.mutual_ids.slice(0, 3).map((mid) => (
+                          <Avatar key={mid} profile={pmap[mid]} size={20} />
+                        ))}
+                      </span>
+                    )}
+                    {s.mutual_count} gemeenschappelijke vriend
+                    {s.mutual_count === 1 ? "" : "en"}
+                  </button>
+                ) : (
+                  <span className="person-sub">Voorgesteld voor jou</span>
+                )}
+
+                <button
+                  className="btn btn--sm btn--primary suggest-card__cta"
+                  onClick={() =>
+                    act(() => sendFriendRequest(myId, s.id), "Verzoek verstuurd.")
+                  }
+                >
+                  Verzoek sturen
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {mutualFor && (
+        <div className="sheet-backdrop" onClick={() => setMutualFor(null)}>
+          <div
+            className="sheet sheet--compact"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Gemeenschappelijke vrienden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="sheet__head">
+              <h2 className="sheet__title">
+                Gemeenschappelijk met {displayName(pmap[mutualFor.id])}
+              </h2>
+              <button
+                className="sheet__close"
+                onClick={() => setMutualFor(null)}
+                aria-label="Sluiten"
+              >
+                ✕
+              </button>
+            </header>
+            <div className="person-list mt-4">
+              {mutualFor.mutual_ids.map((mid) => (
+                <div key={mid} className="person-row">
+                  <PersonCell
+                    profile={pmap[mid]}
+                    to={`/spelers/${mid}`}
+                    onNavigate={() => setMutualFor(null)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Avatar + naam (link naar spelersprofiel) met @gebruikersnaam eronder. */
+function PersonCell({
+  profile,
+  to,
+  onNavigate,
+}: {
+  profile?: Profile | null;
+  to?: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <span className="cell-player">
+      <Avatar profile={profile} size={32} />
+      <span className="person-id">
+        {to ? (
+          <Link className="profile-link" to={to} onClick={onNavigate}>
+            {displayName(profile)}
+          </Link>
+        ) : (
+          <span>{displayName(profile)}</span>
+        )}
+        {profile?.username && (
+          <span className="person-sub">@{profile.username}</span>
+        )}
+      </span>
+    </span>
   );
 }
 

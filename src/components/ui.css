@@ -259,6 +259,231 @@
   gap: var(--sp-2);
   min-width: 0;
 }
+.person-sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+/* Naam met @gebruikersnaam eronder in een persoonsrij. */
+.person-id {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.person-id > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Actieknop in een persoonsrij mag nooit krimpen of overlappen. */
+.person-row > .btn {
+  flex-shrink: 0;
+}
+
+/* ---------- Vriend-suggesties ("Misschien ken je") ----------
+   Kaartjes in "people you may know"-stijl: verticaal gecentreerd, met een
+   primaire actieknop onderaan die op één lijn blijft over de rij. */
+.suggest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+/* Mobiel: één horizontaal bladerbare rij i.p.v. een lange verticale stapel. */
+@media (max-width: 639px) {
+  .suggest-grid {
+    display: flex;
+    gap: var(--sp-3);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--sp-2);
+  }
+  .suggest-grid > .suggest-card {
+    flex: 0 0 190px;
+    scroll-snap-align: start;
+  }
+}
+.suggest-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+.suggest-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-sm);
+}
+.suggest-card__id {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  max-width: 100%;
+  text-decoration: none;
+  color: var(--ink);
+}
+.suggest-card__id:hover .suggest-card__name {
+  color: var(--accent);
+}
+.suggest-card__name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-card__cta {
+  width: 100%;
+  margin-top: auto;
+}
+/* Gestapelde mini-avatars van de gemeenschappelijke vrienden. */
+.mutual-avatars {
+  display: inline-flex;
+}
+.mutual-avatars > * {
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px var(--surface);
+  border-radius: 999px;
+}
+.mutual-avatars > *:first-child {
+  margin-left: 0;
+}
+/* Klikbare teller die de gemeenschappelijke vrienden in een popup opent. */
+.mutual-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--accent);
+}
+.mutual-toggle:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Sheet / dialoog: bottom sheet (mobiel) / gecentreerde dialoog (desktop) ----------
+   Generiek herbruikbaar (match loggen, gemeenschappelijke vrienden, …). */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: sheet-fade 0.15s ease-out;
+}
+.sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-lg);
+  animation: sheet-up 0.2s ease-out;
+}
+.sheet--compact {
+  max-width: 420px;
+}
+@media (min-width: 640px) {
+  .sheet-backdrop {
+    align-items: center;
+    padding: var(--sp-6);
+  }
+  .sheet {
+    border-radius: var(--radius-lg);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-backdrop {
+    animation: none;
+  }
+}
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.sheet__title {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sheet__close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sheet__close:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+.sheet__step {
+  margin: var(--sp-1) 0 var(--sp-4);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.sheet__hint {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.sheet__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+.sheet__foot .btn--primary {
+  flex: 1;
+}
 
 /* ---------- Persoonsrijen (vrienden, leden, zoekresultaten) ----------
    Haarlijn-scheiding en een hover-vlak dat iets breder is dan de inhoud. */

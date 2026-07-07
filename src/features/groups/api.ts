@@ -2,15 +2,23 @@ import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
 import type { Group, GroupMember } from "../../lib/types";
 
-/** Groepen waar de gebruiker lid van is (RLS filtert). */
-export function getMyGroups(): Promise<Group[]> {
+/** Groep + leden-ids, zodat het overzicht kan tonen wie erin zit. */
+export interface GroupSummary extends Group {
+  member_ids: string[];
+}
+
+/** Groepen waar de gebruiker lid van is (RLS filtert), met hun leden. */
+export function getMyGroups(): Promise<GroupSummary[]> {
   return cached("groups:mine", async () => {
     const { data, error } = await supabase
       .from("groups")
-      .select("*")
+      .select("*, group_members(player_id)")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []).map(({ group_members, ...g }) => ({
+      ...g,
+      member_ids: (group_members ?? []).map((m) => m.player_id),
+    }));
   });
 }
 
@@ -59,7 +67,8 @@ export async function addGroupMember(
     .from("group_members")
     .insert({ group_id: groupId, player_id: playerId });
   if (error) throw error;
-  invalidate(`members:${groupId}`);
+  // Ook het groepenoverzicht toont leden, dus die cache moet mee.
+  invalidate(`members:${groupId}`, "groups");
 }
 
 export async function removeGroupMember(
@@ -72,7 +81,7 @@ export async function removeGroupMember(
     .eq("group_id", groupId)
     .eq("player_id", playerId);
   if (error) throw error;
-  invalidate(`members:${groupId}`);
+  invalidate(`members:${groupId}`, "groups");
 }
 
 /** Genereert een Americano-ronde via de RPC; geeft de nieuwe match-ids terug. */
