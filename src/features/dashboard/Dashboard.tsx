@@ -1,26 +1,42 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
+import { useToast } from "../../components/ToastProvider";
 import { MatchListSkeleton, Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
-import { recentForm, winRate, winStreak } from "../../lib/results";
+import { recentForm, winRate, winStreak, headToHead } from "../../lib/results";
+import { rankShifts, type Shift } from "../../lib/rankShift";
+import { deriveBadges } from "../../lib/badges";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import { getRecentResults, getPlayerMatches, getTeamsMap } from "../matches/api";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { getMyGroups, type GroupSummary } from "../groups/api";
+import { getAttendance, type Attendance } from "../groups/attendanceApi";
 import { MatchList } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
-import { getClubAvailability } from "../availability/api";
+import {
+  getClubAvailability,
+  nextFreeSlot,
+  type NextFreeSlot,
+} from "../availability/api";
 import { useClub } from "../availability/club";
 import { Timetable } from "../availability/Timetable";
-import { dateInZone } from "../../lib/time";
+import { dateInZone, minutesNowInZone } from "../../lib/time";
+import {
+  pushSupported,
+  enablePush,
+  getPushSubscription,
+} from "../../lib/push";
+import { errorMessage } from "../../lib/errors";
+import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
 export function Dashboard() {
@@ -28,16 +44,18 @@ export function Dashboard() {
   const myId = user?.id ?? "";
 
   const standings = useAsync(getPlayerStandings, []);
-  // Alleen gespeelde uitslagen: geplande matches staan al in de actiestrook
-  // en bij "Jouw volgende match" — die hier herhalen is ruis.
-  const matches = useAsync(() => getRecentResults(6), []);
+  // Ruime venster van gespeelde uitslagen: voedt zowel de recente-lijst als de
+  // rangverschuiving (die de hele laatste speeldag nodig heeft) en de
+  // avondsamenvatting.
+  const results = useAsync(() => getRecentResults(80), []);
   const myMatches = useAsync(
-    () => (myId ? getPlayerMatches(myId, 30) : Promise.resolve([])),
+    () => (myId ? getPlayerMatches(myId, 100) : Promise.resolve([])),
     [myId],
   );
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
+  const groups = useAsync(getMyGroups, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
@@ -50,18 +68,27 @@ export function Dashboard() {
   // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
   useRefetchOnFocus(availability.reload);
 
+  // Aanwezigheid van vandaag per eigen groep; hangt af van welke groepen we al
+  // kennen, dus opnieuw ophalen zodra die lijst binnen is.
+  const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
+  const attendance = useAsync(
+    () => loadTodayAttendance(groups.data ?? [], today),
+    [groupKey, today],
+  );
+
   const onMatches = useCallback(() => {
     standings.reload();
-    matches.reload();
+    results.reload();
     myMatches.reload();
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, matches.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
+  useRealtime("attendance", attendance.reload);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -81,15 +108,63 @@ export function Dashboard() {
   }, [myProfile, myId]);
   const top = rows.slice(0, 3);
 
-  const form = recentForm(myMatches.data ?? [], tmap, myId);
-  const streak = winStreak(myMatches.data ?? [], tmap, myId);
+  const myGames = myMatches.data ?? [];
+  const form = recentForm(myGames, tmap, myId);
+  const streak = winStreak(myGames, tmap, myId);
   const rate = me ? winRate(me.won, me.played) : null;
   const myRating = ratings.data?.[myId]?.rating ?? null;
   const rhist = ratingHistory.data ?? [];
 
+  // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
+  // filteren houdt afgeleide weergaven robuust (o.a. in tests).
+  const completed = (results.data ?? []).filter((m) => m.status === "completed");
+  const recentResults = completed.slice(0, 6);
+
+  // Rangverschuiving t.o.v. vóór de laatste speeldag.
+  const myShift = rankShifts(rows, completed, tmap).get(myId) ?? null;
+
+  // Behaalde prestatiebadges (afgeleid, geen extra query).
+  const earnedBadges = deriveBadges(
+    myGames,
+    tmap,
+    myId,
+    ratings.data ?? undefined,
+  ).filter((b) => b.behaald);
+
+  // Vaste tegenstander: tegen wie speelde ik het vaakst (min. 3 duels)?
+  const rival = pickRival(myGames, tmap, myId);
+
+  // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
+  const attendancePick = pickAttendance(attendance.data ?? [], myId);
+
+  // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
+  const evening = deriveEvening(completed, club.timezone);
+  const eveningGroup = evening
+    ? (groups.data ?? []).find((g) => g.id === evening.groupId)
+    : null;
+
+  // Eerstvolgende vrije baan bij de club (vandaag).
+  const nextFree = availability.data
+    ? nextFreeSlot(availability.data, null, minutesNowInZone(club.timezone))
+    : null;
+
+  // Onboarding: pas beslissen als de bronnen binnen zijn, zodat de checklist
+  // niet even flitst voor een bestaande speler.
+  const [onbDismissed, setOnbDismissed] = useState(() => readFlag("onboarding-dismissed"));
+  const hasFriend = accepted.length > 0;
+  const hasGroup = (groups.data ?? []).length > 0;
+  const hasPlayed = (me?.played ?? 0) > 0;
+  const coreLoading = standings.loading || friendships.loading || groups.loading;
+  const showOnboarding =
+    !coreLoading && !onbDismissed && !(hasFriend && hasGroup && hasPlayed);
+  function dismissOnboarding() {
+    setOnbDismissed(true);
+    writeFlag("onboarding-dismissed");
+  }
+
   // Geplande matches waarin ik meedoe: de laagste ronde eerst — dat is de
   // eerstvolgende match om te spelen (en de uitslag van in te vullen).
-  const planned = (myMatches.data ?? [])
+  const planned = myGames
     .filter((m) => m.status !== "completed")
     .sort(
       (a, b) =>
@@ -127,10 +202,27 @@ export function Dashboard() {
               </p>
             )}
             {form.length > 0 && (
-              <p className="hero__form">
+              <Link className="hero__form" to={`/spelers/${myId}`}>
                 <span className="hero__form-label">Vorm</span>
                 <FormChips form={form} />
-              </p>
+              </Link>
+            )}
+            {earnedBadges.length > 0 && (
+              <Link
+                className="hero__badges"
+                to={`/spelers/${myId}`}
+                aria-label={`Behaalde badges: ${earnedBadges.map((b) => b.naam).join(", ")}`}
+              >
+                {earnedBadges.slice(0, 6).map((b) => (
+                  <span
+                    key={b.id}
+                    className="hero__badge"
+                    title={`${b.naam} — ${b.omschrijving}`}
+                  >
+                    {b.emoji}
+                  </span>
+                ))}
+              </Link>
             )}
           </div>
         </div>
@@ -147,7 +239,42 @@ export function Dashboard() {
         </div>
       </section>
 
-      {(planned.length > 0 || incoming.length > 0) && (
+      {showOnboarding && (
+        <section className="card onboard">
+          <div className="card__head">
+            <h2 className="card__title">Zo kom je op gang</h2>
+            <button
+              className="onboard__dismiss"
+              onClick={dismissOnboarding}
+              aria-label="Verberg deze checklist"
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="onboard__list">
+            <OnboardStep
+              done={hasFriend}
+              to="/vrienden"
+              label="Voeg een vriend toe"
+              hint="Zoek een speler op gebruikersnaam en stuur een verzoek."
+            />
+            <OnboardStep
+              done={hasGroup}
+              to="/groepen"
+              label="Maak of kies een groep"
+              hint="Een groep speelt samen rondes en houdt een stand bij."
+            />
+            <OnboardStep
+              done={hasPlayed}
+              to="/matches"
+              label="Speel je eerste match"
+              hint="Log een uitslag of genereer een ronde in je groep."
+            />
+          </ul>
+        </section>
+      )}
+
+      {(planned.length > 0 || incoming.length > 0 || attendancePick) && (
         <div className="todo-strip">
           {planned.length > 0 && (
             <Link
@@ -166,6 +293,17 @@ export function Dashboard() {
               {incoming.length === 1
                 ? "vriendschapsverzoek"
                 : "vriendschapsverzoeken"}
+            </Link>
+          )}
+          {attendancePick && (
+            <Link
+              className="todo-chip todo-chip--play"
+              to={`/groepen/${attendancePick.group.id}`}
+            >
+              <span className="todo-chip__count">{attendancePick.yes}</span>
+              {attendancePick.mine
+                ? `spelen mee · ${attendancePick.group.name}`
+                : `spelen mee — jij nog niet · ${attendancePick.group.name}`}
             </Link>
           )}
         </div>
@@ -191,12 +329,34 @@ export function Dashboard() {
         </section>
       )}
 
+      {evening && eveningGroup && (
+        <section className="card card--evening">
+          <div className="card__head">
+            <h2 className="card__title">
+              Speelavond {evening.isToday ? "vandaag" : "gisteren"}
+            </h2>
+            <Link className="profile-link" to={`/groepen/${evening.groupId}`}>
+              Bekijk →
+            </Link>
+          </div>
+          <p className="evening__text">
+            {evening.count} {evening.count === 1 ? "uitslag" : "uitslagen"} in{" "}
+            <strong>{eveningGroup.name}</strong>. Bekijk de stand en deel de
+            avondposter met de groep.
+          </p>
+        </section>
+      )}
+
       {standings.loading ? (
         <StatsSkeleton />
       ) : (
         <div className="stats">
           <Stat label="Punten" value={me?.points ?? 0} accent />
-          <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
+          <Stat
+            label="Positie"
+            value={rank ? `#${rank}` : "—"}
+            delta={<ShiftDelta shift={myShift} />}
+          />
           <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
           <Stat label="Gespeeld" value={me?.played ?? 0} />
         </div>
@@ -210,11 +370,11 @@ export function Dashboard() {
               Alles →
             </Link>
           </div>
-          {matches.loading ? (
+          {results.loading ? (
             <MatchListSkeleton count={4} />
           ) : (
             <MatchList
-              matches={matches.data ?? []}
+              matches={recentResults}
               teams={tmap}
               profiles={pmap}
               perspectiveId={myId}
@@ -258,6 +418,35 @@ export function Dashboard() {
                   </p>
                 )
               )}
+            </section>
+          )}
+
+          {rival && (
+            <section className="card rival-card">
+              <div className="card__head">
+                <h2 className="card__title">Jouw rivaal</h2>
+                <Link className="profile-link" to={`/spelers/${rival.oppId}`}>
+                  Profiel →
+                </Link>
+              </div>
+              <div className="rival">
+                <Avatar profile={pmap[rival.oppId]} size={40} />
+                <span className="rival__body">
+                  <Link
+                    className="profile-link rival__name"
+                    to={`/spelers/${rival.oppId}`}
+                  >
+                    {displayName(pmap[rival.oppId])}
+                  </Link>
+                  <span className="rival__meta">
+                    {rival.rec.played} duels · {rival.rec.won}–{rival.rec.lost}
+                    {rival.rec.drawn > 0 && ` · ${rival.rec.drawn} gelijk`}
+                  </span>
+                </span>
+                <span className={`rival__verdict rival__verdict--${rivalVerdict(rival.rec)}`}>
+                  {rivalVerdictLabel(rival.rec)}
+                </span>
+              </div>
             </section>
           )}
 
@@ -312,6 +501,8 @@ export function Dashboard() {
         </div>
       </div>
 
+      <PushPrompt userId={myId} />
+
       <section className="card">
         <div className="card__head">
           <h2 className="card__title">Baanbeschikbaarheid vandaag</h2>
@@ -324,7 +515,10 @@ export function Dashboard() {
         ) : availability.error ? (
           <p className="msg msg--error">{availability.error}</p>
         ) : availability.data ? (
-          <Timetable data={availability.data} date={today} />
+          <>
+            <NextFreeLine slot={nextFree} />
+            <Timetable data={availability.data} date={today} fromNow />
+          </>
         ) : null}
       </section>
     </div>
@@ -349,19 +543,258 @@ function rememberName(userId: string, name: string) {
   }
 }
 
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string) {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    /* privémodus — dan geldt de keuze alleen voor deze sessie */
+  }
+}
+
+/** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
+async function loadTodayAttendance(
+  groups: GroupSummary[],
+  date: string,
+): Promise<{ group: GroupSummary; att: Attendance[] }[]> {
+  if (groups.length === 0) return [];
+  return Promise.all(
+    groups.map((group) =>
+      getAttendance(group.id, date).then((att) => ({ group, att })),
+    ),
+  );
+}
+
+type AttendancePick = {
+  group: GroupSummary;
+  yes: number;
+  mine: boolean;
+};
+
+/** Groep met de meeste ja-stemmen vandaag; null als niemand ja zei. */
+function pickAttendance(
+  rows: { group: GroupSummary; att: Attendance[] }[],
+  myId: string,
+): AttendancePick | null {
+  const scored = rows
+    .map(({ group, att }) => ({
+      group,
+      yes: att.filter((a) => a.status === "yes").length,
+      mine: att.some((a) => a.player_id === myId),
+    }))
+    .filter((x) => x.yes > 0)
+    .sort((a, b) => b.yes - a.yes);
+  return scored[0] ?? null;
+}
+
+type RivalRec = { won: number; drawn: number; lost: number; played: number };
+
+/** Tegenstander met de meeste onderlinge duels (min. 3), of null. */
+function pickRival(
+  matches: Match[],
+  teams: Record<string, Team>,
+  myId: string,
+): { oppId: string; rec: RivalRec } | null {
+  let best: { oppId: string; rec: RivalRec } | null = null;
+  for (const [oppId, rec] of headToHead(matches, teams, myId)) {
+    if (rec.played < 3) continue;
+    if (!best || rec.played > best.rec.played) best = { oppId, rec };
+  }
+  return best;
+}
+
+function rivalVerdict(rec: RivalRec): "lead" | "trail" | "even" {
+  if (rec.won > rec.lost) return "lead";
+  if (rec.won < rec.lost) return "trail";
+  return "even";
+}
+
+function rivalVerdictLabel(rec: RivalRec): string {
+  const v = rivalVerdict(rec);
+  return v === "lead" ? "jij leidt" : v === "trail" ? "jij volgt" : "gelijk";
+}
+
+/** Uitslagen van de laatste speeldag als die vandaag of gisteren was. */
+function deriveEvening(
+  completed: Match[],
+  timezone: string,
+): { groupId: string; count: number; isToday: boolean } | null {
+  const withGroup = completed.filter((m) => m.group_id);
+  if (withGroup.length === 0) return null;
+  const day = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+  const latest = withGroup.map(day).sort().at(-1)!;
+  const todayStr = dateInZone(timezone);
+  const yesterdayStr = dateInZone(timezone, -1);
+  if (latest !== todayStr && latest !== yesterdayStr) return null;
+
+  const dayMatches = withGroup.filter((m) => day(m) === latest);
+  const perGroup = new Map<string, number>();
+  for (const m of dayMatches) {
+    perGroup.set(m.group_id!, (perGroup.get(m.group_id!) ?? 0) + 1);
+  }
+  const [groupId, count] = [...perGroup.entries()].sort((a, b) => b[1] - a[1])[0];
+  return { groupId, count, isToday: latest === todayStr };
+}
+
+function ShiftDelta({ shift }: { shift: Shift | null }) {
+  if (typeof shift !== "number" || shift === 0) return null;
+  const up = shift > 0;
+  return (
+    <span className={`stat__delta ${up ? "is-up" : "is-down"}`}>
+      {up ? "▲" : "▼"}
+      {Math.abs(shift)}
+    </span>
+  );
+}
+
+function OnboardStep({
+  done,
+  to,
+  label,
+  hint,
+}: {
+  done: boolean;
+  to: string;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <li className={`onboard__item ${done ? "is-done" : ""}`}>
+      <span className="onboard__check" aria-hidden="true">
+        {done ? "✓" : ""}
+      </span>
+      <span className="onboard__text">
+        <span className="onboard__label">{label}</span>
+        <span className="onboard__hint">{hint}</span>
+      </span>
+      {!done && (
+        <Link className="btn btn--sm" to={to}>
+          Start
+        </Link>
+      )}
+    </li>
+  );
+}
+
+function NextFreeLine({ slot }: { slot: NextFreeSlot | null }) {
+  if (!slot) return <p className="avail-next">Vandaag niets meer vrij.</p>;
+  const extra = slot.courts.length - 1;
+  return (
+    <p className="avail-next">
+      Eerstvolgend vrij:{" "}
+      <strong className="avail-next__time">{slot.time}</strong> ·{" "}
+      {slot.courts[0].name}
+      {extra > 0 &&
+        ` (+${extra} ${extra === 1 ? "andere baan" : "andere banen"})`}
+    </p>
+  );
+}
+
+/** Eenmalige, wegklikbare uitnodiging om pushmeldingen aan te zetten. Toont
+ *  niets als push niet ondersteund wordt, al aan staat, of eerder geweigerd/
+ *  weggeklikt is. */
+function PushPrompt({ userId }: { userId: string }) {
+  const toast = useToast();
+  const supported = pushSupported();
+  const [dismissed, setDismissed] = useState(() => readFlag("push-prompt-dismissed"));
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  // null = nog aan het controleren; false = geen abonnement; true = al aan.
+  const [alreadyOn, setAlreadyOn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!supported) return;
+    getPushSubscription()
+      .then((sub) => setAlreadyOn(!!sub))
+      .catch(() => setAlreadyOn(false));
+  }, [supported]);
+
+  const permission =
+    supported && typeof Notification !== "undefined"
+      ? Notification.permission
+      : "denied";
+
+  if (
+    !supported ||
+    dismissed ||
+    done ||
+    alreadyOn !== false ||
+    permission !== "default"
+  ) {
+    return null;
+  }
+
+  async function enable() {
+    setBusy(true);
+    try {
+      await enablePush(userId);
+      toast.success("Meldingen staan aan — vamos!");
+      setDone(true);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function dismiss() {
+    setDismissed(true);
+    writeFlag("push-prompt-dismissed");
+  }
+
+  return (
+    <section className="card push-prompt">
+      <div className="push-prompt__body">
+        <span className="push-prompt__icon" aria-hidden="true">
+          🔔
+        </span>
+        <div>
+          <h2 className="card__title card__title--tight">Blijf op de hoogte</h2>
+          <p className="card__subtitle push-prompt__sub">
+            Krijg een seintje bij nieuwe rondes, uitslagen van jouw matches en
+            vriendschapsverzoeken — ook als de app dicht is.
+          </p>
+        </div>
+      </div>
+      <div className="push-prompt__actions">
+        <button
+          className="btn btn--primary btn--sm"
+          onClick={enable}
+          disabled={busy}
+        >
+          {busy ? "Aanzetten…" : "Meldingen aanzetten"}
+        </button>
+        <button className="btn btn--sm" onClick={dismiss}>
+          Niet nu
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function Stat({
   label,
   value,
   accent,
+  delta,
 }: {
   label: string;
   value: number | string;
   accent?: boolean;
+  delta?: ReactNode;
 }) {
   return (
     <div className={`stat ${accent ? "stat--accent" : ""}`}>
       <span className="stat__value">
         {typeof value === "number" ? <CountUp value={value} /> : value}
+        {delta}
       </span>
       <span className="stat__label">{label}</span>
     </div>
