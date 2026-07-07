@@ -14,9 +14,14 @@ import {
   deleteGroup,
   leaveGroup,
   createGroupInvite,
-  generateAmericanoRound,
+  createFairRound,
   generateMexicanoRound,
 } from "./api";
+import {
+  americanoRound,
+  applyRound,
+  historyFromMatches,
+} from "../../lib/americano";
 import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getProfilesMap, displayName } from "../profiles/api";
@@ -265,7 +270,7 @@ export function GroupDetail() {
           </div>
           <p className="card__subtitle">
             {mode === "americano"
-              ? "Americano: verdeelt de leden willekeurig in teams en wedstrijden."
+              ? "Americano: wisselt de teams elke ronde af, zodat je zo veel mogelijk met en tegen verschillende spelers speelt."
               : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
           </p>
 
@@ -310,12 +315,18 @@ export function GroupDetail() {
                   act(async () => {
                     let total = 0;
                     if (mode === "americano") {
-                      // Meerdere rondes in één keer: elke ronde krijgt een verse
-                      // willekeurige indeling. Sequentieel zodat de rondenummers
-                      // netjes oplopen.
+                      // Geschiedenis-bewuste indeling: laat partners (en
+                      // tegenstanders) zo veel mogelijk wisselen op basis van de
+                      // eerdere rondes. Sequentieel zodat de rondenummers oplopen;
+                      // elke nieuwe ronde telt meteen mee voor de volgende.
+                      const history = historyFromMatches(matches.data ?? [], tmap);
+                      const memberIds = memberList.map((m) => m.player_id);
                       for (let i = 0; i < roundsToGen; i++) {
-                        const ids = await generateAmericanoRound(id);
+                        const { courts } = americanoRound(memberIds, history);
+                        if (courts.length === 0) break;
+                        const ids = await createFairRound(id, courts);
                         total += ids.length;
+                        applyRound(history, courts);
                       }
                     } else {
                       const ids = await generateMexicanoRound(id);
@@ -725,10 +736,11 @@ function SpelvormUitleg() {
           <div>
             <dt>Americano</dt>
             <dd>
-              De leden worden <strong>willekeurig</strong> in teams en
-              wedstrijden verdeeld. Elke ronde wisselt van partner, ongeacht de
-              stand. Gezellig en gelijk verdeeld — ideaal voor een ontspannen
-              avond.
+              Elke ronde krijg je een <strong>andere partner</strong> en andere
+              tegenstanders: de indeling houdt rekening met eerdere rondes zodat
+              je zo veel mogelijk met en tegen verschillende spelers speelt,
+              ongeacht de stand. Gezellig en gelijk verdeeld — ideaal voor een
+              ontspannen avond.
             </dd>
           </div>
           <div>

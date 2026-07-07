@@ -187,19 +187,6 @@ export async function removeGroupMember(
   invalidate(`members:${groupId}`, "groups");
 }
 
-/** Genereert een Americano-ronde via de RPC; geeft de nieuwe match-ids terug. */
-export async function generateAmericanoRound(
-  groupId: string,
-): Promise<string[]> {
-  const { data, error } = await supabase.rpc("generate_americano_round", {
-    p_group_id: groupId,
-  });
-  if (error) throw error;
-  // Nieuwe geplande matches + eventueel nieuwe teamparen.
-  invalidate("matches", "teams");
-  return (data as string[]) ?? [];
-}
-
 /**
  * Genereert een Mexicano-ronde: paart op de huidige stand (sterk met zwak).
  * De RPC blokkeert als de vorige ronde nog niet volledig is ingevuld.
