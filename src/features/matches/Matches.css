@@ -13,10 +13,21 @@
 .match-day__title::first-letter {
   text-transform: uppercase;
 }
+/* Aantal matches achter het dagkopje. */
+.match-day__count {
+  margin-left: var(--sp-2);
+  font-weight: 600;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
 
 /* De generieke sheet/dialoog-stijlen staan in components/ui.css. */
 
 /* ---------- Stap 1: spelers aantikken ---------- */
+/* Zoekveld boven het spelersrooster (alleen bij een lange vriendenlijst). */
+.pick-search {
+  margin-bottom: var(--sp-3);
+}
 .pick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -103,6 +114,41 @@
   letter-spacing: 0.04em;
   color: var(--ink-soft);
 }
+/* Teamvakken kleuren mee met de aangetikte chips: A smaragd, B lime. */
+.pick-teams__team--a {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.pick-teams__team--b {
+  background: var(--lime-soft);
+  border-color: var(--lime-deep);
+}
+.pick-teams__players {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.pick-teams__names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Plan-stap: de teams onder elkaar met een "vs" ertussen. */
+.pick-teams--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-1);
+  margin-top: 0;
+}
+.pick-teams__vs {
+  align-self: center;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
 
 /* ---------- Stap 2: grote score-invoer ---------- */
 .score-entry {
@@ -117,6 +163,15 @@
   gap: var(--sp-1);
   justify-items: center;
   text-align: center;
+  padding: var(--sp-3) var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, border-color 0.15s;
+}
+/* Het team dat op winst staat licht zachtgroen op terwijl je typt. */
+.score-entry__team.is-leading {
+  background: var(--success-soft);
+  border-color: var(--success-line);
 }
 .score-entry__names {
   font-size: var(--fs-sm);

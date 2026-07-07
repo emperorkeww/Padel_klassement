@@ -46,7 +46,9 @@ describe("<Matches />", () => {
     expect(screen.getByText("6–3")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^verloren$/i }));
     expect(screen.queryByText("6–3")).not.toBeInTheDocument();
-    expect(screen.getByText(/geen matches voor dit filter/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/geen verloren matches voor dit filter/i),
+    ).toBeInTheDocument();
   });
 
   it("logt een match via de wizard (spelers → score → opslaan)", async () => {
@@ -74,6 +76,31 @@ describe("<Matches />", () => {
       expect.objectContaining({ p_winner: "a", p_score_a: 6, p_score_b: 4 }),
     );
     // Sheet sluit na opslaan.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("plant een match via de wizard (spelers → tijdstip → plannen)", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^match plannen$/i }),
+    );
+    const sheet = within(await screen.findByRole("dialog"));
+    expect(sheet.getByText(/wie spelen er/i)).toBeInTheDocument();
+
+    for (const naam of [/alice anders/i, /bob boers/i, /carol claes/i, /dave de vos/i]) {
+      await userEvent.click(sheet.getByRole("button", { name: naam }));
+    }
+    await userEvent.click(sheet.getByRole("button", { name: /naar plannen/i }));
+    expect(sheet.getByText(/wanneer spelen jullie/i)).toBeInTheDocument();
+
+    // Zonder tijdstip plannen kan gewoon; de match komt bij "Te spelen".
+    await userEvent.click(
+      sheet.getByRole("button", { name: /^match plannen$/i }),
+    );
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_planned_match",
+      expect.objectContaining({ p_played_at: undefined }),
+    );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 

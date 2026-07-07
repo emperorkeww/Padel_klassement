@@ -125,6 +125,20 @@ export function getRecentMatches(limit = 20): Promise<Match[]> {
   });
 }
 
+/** Laatst gespeelde uitslagen (alleen afgeronde matches), nieuwste eerst. */
+export function getRecentResults(limit = 6): Promise<Match[]> {
+  return cached(`matches:results:${limit}`, async () => {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("status", "completed")
+      .order("played_at", { ascending: false, nullsFirst: false })
+      .limit(limit);
+    if (error) throw error;
+    return data ?? [];
+  });
+}
+
 /** Logt een afgeronde match via de SECURITY DEFINER RPC. */
 export async function createCompletedMatch(params: {
   a1: string;
@@ -144,6 +158,30 @@ export async function createCompletedMatch(params: {
     p_winner: params.winner,
     p_score_a: params.scoreA ?? undefined,
     p_score_b: params.scoreB ?? undefined,
+    p_group_id: params.groupId ?? undefined,
+  });
+  if (error) throw error;
+  invalidateMatchData();
+  return data as string;
+}
+
+/** Plant een match vooraf (status 'scheduled') via de SECURITY DEFINER RPC.
+ *  playedAt is het optionele geplande tijdstip; de uitslag volgt later via
+ *  setMatchResult (inline op de kaart "Te spelen"). */
+export async function createPlannedMatch(params: {
+  a1: string;
+  a2: string;
+  b1: string;
+  b2: string;
+  playedAt?: string | null;
+  groupId?: string | null;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc("create_planned_match", {
+    p_a1: params.a1,
+    p_a2: params.a2,
+    p_b1: params.b1,
+    p_b2: params.b2,
+    p_played_at: params.playedAt ?? undefined,
     p_group_id: params.groupId ?? undefined,
   });
   if (error) throw error;
