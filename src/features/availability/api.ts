@@ -58,8 +58,13 @@ export function slotShareText(
  * Absolute deep-link naar het raster van deze app; dag en club reizen mee in
  * de URL zodat de ontvanger hetzelfde overzicht ziet (zie Availability.tsx).
  */
-export function slotShareUrl(date: string, clubId: string): string {
+export function slotShareUrl(
+  date: string,
+  clubId: string,
+  view?: "week",
+): string {
   const params = new URLSearchParams({ datum: date, club: clubId });
+  if (view === "week") params.set("weergave", "week");
   return `${window.location.origin}/banen?${params.toString()}`;
 }
 

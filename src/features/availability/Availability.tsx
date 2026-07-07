@@ -17,6 +17,7 @@ import { getClub, setClub, useClub } from "./club";
 import { ClubPicker } from "./ClubPicker";
 import { Timetable } from "./Timetable";
 import { WeekGrid } from "./WeekGrid";
+import { ShareAvailability } from "./ShareAvailability";
 import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
 import "./Availability.css";
@@ -253,6 +254,13 @@ function DaySection({
         <>
           <NextFreeLine data={availability.data} date={date} duration={duration} />
           <Timetable data={availability.data} date={date} duration={duration} />
+          <ShareAvailability
+            mode="dag"
+            data={availability.data}
+            date={date}
+            duration={duration}
+            club={club}
+          />
         </>
       ) : null}
 
@@ -401,6 +409,13 @@ function WeekSection({
         <>
           <BestWeekLine week={week.data} duration={duration} />
           <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
+          <ShareAvailability
+            mode="week"
+            week={week.data}
+            date={start}
+            duration={duration}
+            club={club}
+          />
         </>
       ) : null}
 

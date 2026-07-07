@@ -28,6 +28,7 @@ export function NewMatchSheet({
   open,
   players,
   mode = "score",
+  groupId,
   onClose,
   onCreated,
   onGuestCreated,
@@ -35,6 +36,9 @@ export function NewMatchSheet({
   open: boolean;
   players: Profile[];
   mode?: NewMatchMode;
+  /** Als gezet: de match wordt aan deze groep gekoppeld (telt mee in de
+   *  groepsstand en avondsamenvatting). */
+  groupId?: string | null;
   onClose: () => void;
   onCreated: () => void;
   /** Aangeroepen nadat een gastspeler is aangemaakt, zodat de ouder zijn
@@ -227,6 +231,7 @@ export function NewMatchSheet({
           b1: teamB[0],
           b2: teamB[1],
           playedAt,
+          groupId,
         });
       }
       tap();
@@ -258,6 +263,7 @@ export function NewMatchSheet({
         scoreA: sa,
         scoreB: sb,
         setScores: setScores.length > 0 ? setScores : null,
+        groupId,
       });
       // Vieren als de logger zelf in het winnende team zit.
       if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) {
