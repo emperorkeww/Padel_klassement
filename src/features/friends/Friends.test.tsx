@@ -21,6 +21,8 @@ vi.mock("../../lib/supabase", () => ({
         { id: "p4", username: "dave", full_name: "Dave De Vos" },
       ],
     },
+    // get_friend_suggestions: dave heeft 2 gemeenschappelijke vrienden.
+    rpc: [{ id: "p4", mutual_count: 2 }],
   }),
 }));
 
@@ -76,6 +78,18 @@ describe("<Friends />", () => {
     ).toBeGreaterThan(0);
     await userEvent.click(sturen[0]);
     expect(await screen.findByText(/verzoek verstuurd/i)).toBeInTheDocument();
+  });
+
+  it("toont een voorgestelde vriend met gemeenschappelijke vrienden", async () => {
+    renderPage();
+    expect(
+      await screen.findByRole("heading", { name: /misschien ken je/i }),
+    ).toBeInTheDocument();
+    // Dave (p4) is voorgesteld met 2 gemeenschappelijke vrienden.
+    expect(await screen.findByText(/dave de vos/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/2 gemeenschappelijke vrienden/i),
+    ).toBeInTheDocument();
   });
 
   it("verwijdert een vriend", async () => {
