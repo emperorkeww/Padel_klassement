@@ -943,18 +943,24 @@ textarea {
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
-/* Verwijderbare matchkaart: knop rechtsboven over de kaart heen (buiten de
-   Link, dus een klik verwijdert i.p.v. te navigeren). */
+/* Verwijderbare matchkaart: de kaart reserveert rechts een eigen gutter
+   zodat de knop nooit over de teamnamen valt; de knop hangt verticaal
+   gecentreerd in die gutter. Hij staat buiten de Link (klik verwijdert
+   i.p.v. te navigeren) en krijgt via ::after een raakvlak van ±46px. */
 .match-card-wrap {
   position: relative;
 }
+.match-card-wrap .match-card {
+  padding-right: 54px;
+}
 .match-card__del {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
   z-index: 1;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -967,6 +973,12 @@ textarea {
   cursor: pointer;
   opacity: 0.65;
   transition: opacity 0.15s, border-color 0.15s, color 0.15s, background 0.15s;
+}
+.match-card__del::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
 }
 .match-card__del:hover {
   opacity: 1;
@@ -1311,6 +1323,13 @@ textarea {
   .match-card {
     gap: var(--sp-1);
     padding: var(--sp-2) var(--sp-3);
+  }
+  /* Smallere gutter voor de verwijderknop op smalle schermen. */
+  .match-card-wrap .match-card {
+    padding-right: 48px;
+  }
+  .match-card__del {
+    right: 7px;
   }
   .match-card__names {
     font-size: var(--fs-sm);
