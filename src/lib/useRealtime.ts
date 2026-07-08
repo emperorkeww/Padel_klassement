@@ -9,7 +9,15 @@ const CACHE_PREFIXES: Record<string, string[]> = {
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   attendance: ["attendance"],
+  slot_availability: ["slot-availability"],
+  play_proposals: ["play-proposal"],
+  play_proposal_votes: ["play-proposal"],
 };
+
+// Kanaalnamen moeten uniek zijn per abonnee: twee hooks met dezelfde tabel en
+// filter (bv. Voorstellen + Vanavond op één pagina) zouden anders hetzelfde
+// kanaal delen, en `.on()` na `subscribe()` gooit een runtime-fout.
+let channelSeq = 0;
 
 /**
  * Abonneert op wijzigingen (insert/update/delete) op een public-tabel en roept
@@ -40,7 +48,7 @@ export function useRealtime(
     };
 
     const channel = supabase
-      .channel(`realtime:${table}:${filter ?? "all"}`)
+      .channel(`realtime:${table}:${filter ?? "all"}:${++channelSeq}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table, ...(filter ? { filter } : {}) },
