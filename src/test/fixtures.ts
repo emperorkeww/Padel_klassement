@@ -93,6 +93,26 @@ export const ATTENDANCE = PROFILES.map((p) => ({
   updated_at: NOW,
 }));
 
+// Eén komend speelvoorstel van Alice; Bob doet mee, Carol twijfelt. De datum
+// ligt ver vooruit omdat de component client-side op "vandaag of later" filtert.
+export const PLAY_PROPOSALS = [
+  {
+    id: "prop-1",
+    group_id: "g1",
+    created_by: "p1",
+    date: "2030-01-05",
+    start_time: "20:00",
+    courts: 1,
+    club_name: null,
+    created_at: NOW,
+  },
+];
+export const PLAY_PROPOSAL_VOTES = [
+  { proposal_id: "prop-1", group_id: "g1", player_id: "p1", status: "yes", updated_at: NOW },
+  { proposal_id: "prop-1", group_id: "g1", player_id: "p2", status: "yes", updated_at: NOW },
+  { proposal_id: "prop-1", group_id: "g1", player_id: "p3", status: "maybe", updated_at: NOW },
+];
+
 export const RATING_HISTORY = [
   { player_id: "p1", match_id: "m-0", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
   { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: NOW },
@@ -114,6 +134,8 @@ export const TABLES = {
   player_ratings: PLAYER_RATINGS,
   rating_history: RATING_HISTORY,
   attendance: ATTENDANCE,
+  play_proposals: PLAY_PROPOSALS,
+  play_proposal_votes: PLAY_PROPOSAL_VOTES,
 };
 
 export const SESSION = { user: { id: "p1", email: "alice@example.com" } };

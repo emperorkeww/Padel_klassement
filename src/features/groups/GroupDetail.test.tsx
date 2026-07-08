@@ -106,13 +106,31 @@ describe("<GroupDetail />", () => {
     expect(new Set(players).size).toBe(4); // vier verschillende leden
   });
 
-  it("opent het 'Plan samen'-tabblad", async () => {
+  it("toont speelvoorstellen op het plannen-tabblad; het raster zit achter 'geavanceerd'", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+
     expect(
-      await screen.findByRole("heading", { name: /plan samen/i }),
+      await screen.findByRole("heading", { name: /speelvoorstellen/i }),
     ).toBeInTheDocument();
+    // Het voorstel uit de fixtures: 2 doen mee, nog 2 nodig, 1 misschien.
+    expect(
+      await screen.findByText(/zaterdag 5 januari · 20:00/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2 mee · nog 2 nodig/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 misschien/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ik doe mee/i }),
+    ).toBeInTheDocument();
+
+    // Het slot-raster blijft bestaan, maar ingeklapt als geavanceerde weergave.
+    expect(
+      screen.getByText(/geavanceerd: beschikbaarheid per tijdslot/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /plan samen/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("toont Stand en Leden in eigen tabbladen", async () => {

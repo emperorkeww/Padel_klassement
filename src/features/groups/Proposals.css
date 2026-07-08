@@ -1,0 +1,122 @@
+/* Speelvoorstellen: lijst van concrete momenten met reacties. */
+
+.proposals__hint {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.proposal-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.proposal-form__field {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.proposal-form__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.proposal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-3);
+}
+.proposal {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.proposal--playable {
+  border-color: var(--success);
+}
+.proposal__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.proposal__when {
+  font-weight: 700;
+}
+.proposal__when::first-letter {
+  text-transform: uppercase;
+}
+.proposal__meta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.proposal__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.proposal__maybe {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal__names {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.proposal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.proposal__vote,
+.proposal__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.proposal__withdraw.is-confirm {
+  color: var(--danger);
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+
+/* Het oude slot-raster als geavanceerde weergave onder de voorstellen. */
+.plan-advanced > summary {
+  cursor: pointer;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  list-style: none;
+}
+.plan-advanced > summary::before {
+  content: "▸ ";
+}
+.plan-advanced[open] > summary {
+  margin-bottom: var(--sp-3);
+}
+.plan-advanced[open] > summary::before {
+  content: "▾ ";
+}
+.plan-advanced > summary::-webkit-details-marker {
+  display: none;
+}
