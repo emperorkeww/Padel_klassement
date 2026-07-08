@@ -1,0 +1,26 @@
+name: 💡 Feature voorstellen
+description: Een idee voor een nieuwe feature of verbetering
+labels: [enhancement]
+body:
+  - type: textarea
+    id: probleem
+    attributes:
+      label: Probleem
+      description: Welk probleem lost dit op? Waarom is het nu lastig?
+    validations:
+      required: true
+  - type: textarea
+    id: voorstel
+    attributes:
+      label: Voorstel
+      description: Hoe zou de feature moeten werken?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptatie
+    attributes:
+      label: Acceptatiecriteria
+      description: Wanneer is dit af?
+      placeholder: |
+        - [ ] …
+        - [ ] …
