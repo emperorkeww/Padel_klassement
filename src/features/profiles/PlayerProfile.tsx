@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -6,7 +6,11 @@ import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
-import { getPlayerMatches, getTeamsMap } from "../matches/api";
+import {
+  getPlayerMatches,
+  getTeamsMap,
+  getCompletedMatchesBetween,
+} from "../matches/api";
 import { MatchList } from "../matches/MatchList";
 import { MatchListSkeleton, ProfileSkeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
@@ -25,7 +29,8 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { deriveBadges } from "../../lib/badges";
 import { listSeasons, seasonFromId } from "../../lib/seasons";
-import { matchesInSeason } from "../../lib/standings";
+import { matchesInSeason, rankProgression } from "../../lib/standings";
+import { RankChart } from "../../components/RankChart";
 import { formatDate } from "../../lib/format";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
 import { useToast } from "../../components/ToastProvider";
@@ -55,15 +60,51 @@ export function PlayerProfile() {
   const profiles = useAsync(getProfilesMap, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
+  // Alle afgeronde matches, nodig om de klassementspositie op elke speeldag te
+  // herrekenen (rang-verloop). Vast bereik → gedeelde cache met het klassement.
+  const allMatches = useAsync(
+    () =>
+      getCompletedMatchesBetween(
+        "2000-01-01T00:00:00Z",
+        "2100-01-01T00:00:00Z",
+      ),
+    [],
+  );
+  // Rang-verloop: positie in het klassement ná elke eigen speeldag (all-time).
+  // Als hook vóór eventuele vroege returns, met stabiele async-data als deps.
+  const rankPoints = useMemo(
+    () =>
+      rankProgression(
+        allMatches.data ?? [],
+        teams.data ?? {},
+        profiles.data ?? {},
+        id,
+      ),
+    [allMatches.data, teams.data, profiles.data, id],
+  );
 
   // Seizoensfilter: all-time is de standaard; een kwartaal beperkt vorm,
   // winrate, badges en de onderlinge stand tot die periode.
   const [seasonId, setSeasonId] = useState("");
   // Onderlinge stand: standaard de top 5 (meest gespeeld), met een toggle.
   const [showAllH2H, setShowAllH2H] = useState(false);
-  // Aangetikte badge: toont zijn beschrijving eronder (werkt ook op touch,
-  // waar de title-tooltip onbereikbaar is).
+  // Aangetikte badge: opent een pop-up met naam, uitleg en voortgang (werkt
+  // ook op touch, waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
+  // Escape sluit de badge-pop-up; de pagina eronder scrollt niet mee.
+  useEffect(() => {
+    if (!openBadge) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenBadge(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [openBadge]);
   // Optimistische kopie van de uitgelichte badges: null = nog niets gewijzigd,
   // dan geldt de waarde uit het geladen profiel.
   const [featuredOverride, setFeaturedOverride] = useState<string[] | null>(null);
@@ -310,6 +351,17 @@ export function PlayerProfile() {
         </section>
       )}
 
+      {rankPoints.length >= 2 && (
+        <section className="card">
+          <h2 className="card__title">Positie-verloop</h2>
+          <p className="card__subtitle">
+            Klassementspositie na elke speeldag — de stand is telkens berekend uit
+            alle matches t/m die dag.
+          </p>
+          <RankChart points={rankPoints} />
+        </section>
+      )}
+
       {(best > 0 || bigWin) && (
         <section className="card">
           <h2 className="card__title">Prestaties</h2>
@@ -389,18 +441,16 @@ export function PlayerProfile() {
           </p>
           <ul className="badges">
             {badges.map((b) => {
-              const open = openBadge === b.id;
               const kanUitlichten = isMe && earnedAllTime.has(b.id);
               const uitgelicht = featuredIds.includes(b.id);
               return (
                 <li key={b.id} className="badges__item">
                   <button
                     type="button"
-                    className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}${open ? " badges__pill--open" : ""}`}
+                    className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
                     title={b.omschrijving}
-                    aria-expanded={open}
-                    aria-controls="badge-uitleg"
-                    onClick={() => setOpenBadge(open ? null : b.id)}
+                    aria-haspopup="dialog"
+                    onClick={() => setOpenBadge(b.id)}
                   >
                     <span className="badges__emoji" aria-hidden="true">
                       {b.emoji}
@@ -431,25 +481,63 @@ export function PlayerProfile() {
               );
             })}
           </ul>
-          {openBadgeInfo && (
-            <p id="badge-uitleg" className="badges__desc" role="status">
-              <span className="badges__emoji" aria-hidden="true">
+        </section>
+      )}
+
+      {openBadgeInfo && (
+        <div className="sheet-backdrop" onClick={() => setOpenBadge(null)}>
+          <div
+            className="sheet sheet--compact badge-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Badge: ${openBadgeInfo.naam}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sheet__head">
+              <h2 className="sheet__title">Badge</h2>
+              <button
+                className="sheet__close"
+                onClick={() => setOpenBadge(null)}
+                aria-label="Sluiten"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="badge-sheet__body">
+              <span
+                className={`badge-sheet__medal${openBadgeInfo.behaald ? "" : " is-locked"}`}
+                aria-hidden="true"
+              >
                 {openBadgeInfo.emoji}
               </span>
-              <span>
-                <strong>{openBadgeInfo.naam}</strong> —{" "}
-                {openBadgeInfo.omschrijving}{" "}
-                <span className="badges__status">
-                  {openBadgeInfo.behaald
-                    ? "Behaald ✓"
-                    : openBadgeInfo.voortgang
-                      ? `Voortgang: ${openBadgeInfo.voortgang.nu}/${openBadgeInfo.voortgang.doel}`
-                      : "Nog niet behaald"}
+              <h3 className="badge-sheet__name">{openBadgeInfo.naam}</h3>
+              <p className="badge-sheet__desc">{openBadgeInfo.omschrijving}</p>
+              {openBadgeInfo.behaald ? (
+                <span className="badge-sheet__status badge-sheet__status--done">
+                  Behaald ✓
                 </span>
-              </span>
-            </p>
-          )}
-        </section>
+              ) : openBadgeInfo.voortgang ? (
+                <div className="badge-sheet__progress">
+                  <div className="badge-sheet__bar">
+                    <span
+                      className="badge-sheet__fill"
+                      style={{
+                        width: `${Math.min(100, Math.round((openBadgeInfo.voortgang.nu / openBadgeInfo.voortgang.doel) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="badge-sheet__count">
+                    {openBadgeInfo.voortgang.nu}/{openBadgeInfo.voortgang.doel}
+                    {openBadgeInfo.voortgang.doel - openBadgeInfo.voortgang.nu > 0 &&
+                      ` · nog ${openBadgeInfo.voortgang.doel - openBadgeInfo.voortgang.nu} te gaan`}
+                  </span>
+                </div>
+              ) : (
+                <span className="badge-sheet__status">Nog niet behaald</span>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {partner && (

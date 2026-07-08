@@ -47,18 +47,22 @@ describe("<PlayerProfile /> badges", () => {
     expect(reus).not.toHaveTextContent("/");
   });
 
-  it("toont de beschrijving na een tik op een badge", async () => {
+  it("opent een pop-up met de uitleg na een tik op een badge", async () => {
     renderProfile("p1");
 
     const knop = (await screen.findByText(/Eerste overwinning/)).closest("button")!;
-    // Nog geen uitleg zichtbaar.
-    expect(screen.queryByText(/allereerste match/i)).not.toBeInTheDocument();
+    // Nog geen pop-up en geen uitleg zichtbaar.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Win je allereerste match/i)).not.toBeInTheDocument();
 
     fireEvent.click(knop);
-    expect(screen.getByText(/Win je allereerste match/i)).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent(/Win je allereerste match/i);
+    expect(dialog).toHaveTextContent(/Behaald/i);
 
-    // Opnieuw tikken verbergt de uitleg weer.
-    fireEvent.click(knop);
+    // Sluiten verbergt de pop-up en de uitleg weer.
+    fireEvent.click(screen.getByRole("button", { name: /sluiten/i }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByText(/Win je allereerste match/i)).not.toBeInTheDocument();
   });
 

@@ -108,11 +108,49 @@ export function weekHeatmap(
   return { times, days };
 }
 
+/** Eén moment in de week (dag + uur) met een aantal tegelijk vrije banen. */
+export interface HeatMoment {
+  date: string;
+  time: string;
+  count: number;
+}
+
+/** Een aaneengesloten vrij tijdsblok binnen één dag (opeenvolgende halfuren). */
+export interface FreeBlock {
+  /** Vroegste vrije starttijd van het blok ("HH:MM"). */
+  start: string;
+  /** Laatste vrije starttijd van het blok ("HH:MM"); gelijk aan start bij één slot. */
+  end: string;
+  /** Minste en meeste tegelijk vrije banen binnen het blok. */
+  min: number;
+  max: number;
+}
+
+/**
+ * Voegt de vrije starttijden van een dag samen tot aaneengesloten blokken: een
+ * reeks halfuren die telkens 30 min na elkaar liggen wordt één blok. Zo toon je
+ * "18:00–21:30 · 2–4 banen" i.p.v. een lange lijst losse tijden.
+ */
+export function freeBlocks(counts: Record<string, number>): FreeBlock[] {
+  const times = Object.keys(counts).sort();
+  const blocks: FreeBlock[] = [];
+  for (const t of times) {
+    const n = counts[t];
+    const prev = blocks[blocks.length - 1];
+    if (prev && toMinutes(t) - toMinutes(prev.end) === 30) {
+      prev.end = t;
+      prev.min = Math.min(prev.min, n);
+      prev.max = Math.max(prev.max, n);
+    } else {
+      blocks.push({ start: t, end: t, min: n, max: n });
+    }
+  }
+  return blocks;
+}
+
 /** Het moment in de week met de meeste tegelijk vrije banen (of null). */
-export function bestHeatMoment(
-  heat: WeekHeatmap,
-): { date: string; time: string; count: number } | null {
-  let best: { date: string; time: string; count: number } | null = null;
+export function bestHeatMoment(heat: WeekHeatmap): HeatMoment | null {
+  let best: HeatMoment | null = null;
   for (const day of heat.days) {
     for (const [time, count] of Object.entries(day.counts)) {
       if (!best || count > best.count) best = { date: day.date, time, count };
