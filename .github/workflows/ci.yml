@@ -19,7 +19,7 @@ jobs:
       VITE_SUPABASE_URL: http://localhost:54321
       VITE_SUPABASE_ANON_KEY: ci-dummy-anon-key
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v5
         with:
@@ -42,7 +42,7 @@ jobs:
   db-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # Versie gepind op de lokaal geverifieerde CLI: nieuwere versies passen
       # migrations bij `db start` anders toe, waardoor de default-grants voor
