@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
@@ -85,6 +85,24 @@ describe("<PlayerProfile /> badges", () => {
       await screen.findByRole("heading", { name: "Uitgelichte badges" })
     ).closest("section")!;
     expect(sectie).toHaveTextContent(/Eerste overwinning/);
+  });
+
+  it("opent de uitleg-pop-up via een uitgelichte badge", async () => {
+    renderProfile("p1");
+
+    // Licht een behaalde badge uit zodat de sectie verschijnt.
+    const eerste = (await screen.findByText(/Eerste overwinning/)).closest("li")!;
+    fireEvent.click(eerste.querySelector(".badges__star") as HTMLButtonElement);
+    const sectie = (
+      await screen.findByRole("heading", { name: "Uitgelichte badges" })
+    ).closest("section")!;
+
+    // De uitgelichte pil is tikbaar en opent dezelfde uitleg-pop-up.
+    fireEvent.click(
+      within(sectie).getByRole("button", { name: /Eerste overwinning/ }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent(/Win je allereerste match/i);
   });
 
   it("toont geen ster-toggle op andermans profiel", async () => {

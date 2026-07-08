@@ -113,6 +113,7 @@
   place-items: center;
   width: 26px;
   height: 26px;
+  padding: 0;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -121,6 +122,26 @@
   line-height: 1;
   cursor: pointer;
   transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+/* Link naar de volledige badge-collectie, achteraan de rij. */
+.hero__badges-more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+.hero__badges-more:hover,
+.hero__badges-more:focus-visible {
+  border-color: var(--accent-line);
+  color: var(--accent);
 }
 .hero__badge:hover,
 .hero__badge.is-active {

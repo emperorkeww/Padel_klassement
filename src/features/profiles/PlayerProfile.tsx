@@ -234,8 +234,12 @@ export function PlayerProfile() {
 
   // Belangrijkste behaalde badge (laatste in de reeks = meest gevorderd) voor
   // op de deel-kaart.
+  // Terugval op de all-time-lijst: uitgelichte badges kunnen buiten het
+  // gekozen seizoen behaald zijn en ontbreken dan in `badges`.
   const openBadgeInfo = openBadge
-    ? (badges.find((b) => b.id === openBadge) ?? null)
+    ? (badges.find((b) => b.id === openBadge) ??
+      allTimeById.get(openBadge) ??
+      null)
     : null;
   const earned = badges.filter((b) => b.behaald);
   const topBadge =
@@ -317,15 +321,18 @@ export function PlayerProfile() {
           <ul className="badges">
             {featuredBadges.map((b) => (
               <li key={b.id} className="badges__item">
-                <span
+                <button
+                  type="button"
                   className="badge badges__pill badge--accent"
                   title={b.omschrijving}
+                  aria-haspopup="dialog"
+                  onClick={() => setOpenBadge(b.id)}
                 >
                   <span className="badges__emoji" aria-hidden="true">
                     {b.emoji}
                   </span>
                   {b.naam}
-                </span>
+                </button>
               </li>
             ))}
           </ul>
