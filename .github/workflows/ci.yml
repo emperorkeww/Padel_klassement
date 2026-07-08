@@ -47,7 +47,7 @@ jobs:
       # Versie gepind op de lokaal geverifieerde CLI: nieuwere versies passen
       # migrations bij `db start` anders toe, waardoor de default-grants voor
       # authenticated ontbreken en rls_rpc_test faalt op "permission denied".
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.75.0
 
