@@ -3,6 +3,11 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Mobiel: laat de browser tekst niet automatisch opschalen (o.a. iOS in
+     landschap), en verberg de grijze tap-flits — voelt meer als een app. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 
   /* ---- Palet: fris & licht — wit met smaragd en een vleugje lime ---- */
   --bg: #f4f7f4; /* app-achtergrond (licht groenig off-white) */
