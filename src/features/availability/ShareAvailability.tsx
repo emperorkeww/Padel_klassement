@@ -7,7 +7,6 @@ import { dateInZone, minutesNowInZone } from "../../lib/time";
 import { bookingUrl, slotShareUrl, type DayAvailability, type WeekDay } from "./api";
 import type { Club } from "./club";
 import {
-  bestHeatMoment,
   dayShareText,
   freeStartTimes,
   weekHeatmap,
@@ -194,10 +193,27 @@ function dayHead(date: string): { top: string; bottom: string } {
   return { top: top.replace(".", ""), bottom: `${d.getDate()}/${d.getMonth() + 1}` };
 }
 
+// Sectielabel met lime streepje, links uitgelijnd (zoals ShareEvening).
+function sectionLabel(
+  ctx: CanvasRenderingContext2D,
+  c: ReturnType<typeof canvasPalette>,
+  text: string,
+  y: number,
+) {
+  ctx.fillStyle = c.lime;
+  rrect(ctx, M, y - 20, 8, 26, 4);
+  ctx.fill();
+  ctx.textAlign = "left";
+  ctx.fillStyle = c.inkSoft;
+  ctx.font = "700 25px Outfit, system-ui, sans-serif";
+  ctx.fillText(text.toUpperCase(), M + 24, y);
+}
+
 /**
- * Weekposter als heatmap: rijen = starttijden, kolommen = de 7 dagen, elke cel
- * toont hoeveel banen er dan tegelijk vrij zijn. Het drukste moment krijgt een
- * accentrand — zo prik je in één oogopslag een dag én uur.
+ * Weekposter als planning-hulp: één grote tijdlijn per dag die álle vrije
+ * halfuren toont (kleur + cijfer = aantal vrije banen). Zo zie je in de
+ * groepschat meteen wanneer er deze week plaats is en kun je samen een moment
+ * kiezen. Begrensd tot 7 dagrijen → past altijd, niets overlapt of verbergt.
  */
 function drawWeek(
   ctx: CanvasRenderingContext2D,
@@ -214,86 +230,66 @@ function drawWeek(
     return;
   }
 
-  const best = bestHeatMoment(info.heat);
-  const timeColW = 108;
-  const colW = (CW - timeColW) / days.length;
-  const headH = 84;
-  const footerTop = H - 92;
-  const availTotal = footerTop - y;
+  sectionLabel(ctx, c, "Vrije banen per halfuur", y + 8);
+  y += 40;
 
-  // Rijhoogte groeit tot een ruime maximumhoogte zodat het raster de poster
-  // vult en goed leesbaar blijft; past niet alles → bovenaan afkappen.
-  const rowH = Math.min(88, Math.floor((availTotal - headH) / times.length));
-  const maxRows = Math.floor((availTotal - headH) / rowH);
-  const capped = times.length > maxRows;
-  const shownTimes = capped ? times.slice(0, maxRows - 1) : times;
-
-  // Het raster verticaal centreren in de resterende ruimte.
-  const blockH = headH + shownTimes.length * rowH + (capped ? 44 : 0);
-  y += Math.max(0, Math.floor((availTotal - blockH) / 2));
-
-  // Kolomkoppen (dagen).
+  // Raster: dagen als (brede) kolommen, elk vrij halfuur als rij, in elke cel
+  // het exacte aantal vrije banen op dat halfuur. Tijd-labels links (nooit
+  // overlap), dagkoppen bovenaan. Alleen halfuren waarop érgens iets vrij is.
+  const footerTop = H - 80;
+  const timeColW = 104;
   const gridX = M + timeColW;
+  const dayColW = (CW - timeColW) / days.length;
+  const headH = 66;
+
+  // Dagkoppen (kolommen).
   ctx.textAlign = "center";
-  days.forEach((day, i) => {
-    const cx = gridX + i * colW + colW / 2;
+  days.forEach((day, di) => {
+    const cx = gridX + di * dayColW + dayColW / 2;
     const { top, bottom } = dayHead(day.date);
     ctx.fillStyle = c.ink;
-    ctx.font = "800 31px Outfit, system-ui, sans-serif";
-    ctx.fillText(top, cx, y + 30, colW - 4);
+    ctx.font = "800 27px Outfit, system-ui, sans-serif";
+    ctx.fillText(top, cx, y + 26, dayColW - 6);
     ctx.fillStyle = c.inkSoft;
-    ctx.font = "600 25px Outfit, system-ui, sans-serif";
-    ctx.fillText(bottom, cx, y + 62, colW - 4);
+    ctx.font = "600 22px Outfit, system-ui, sans-serif";
+    ctx.fillText(bottom, cx, y + 52, dayColW - 6);
   });
-  // Scheidingslijn onder de koppen.
   ctx.fillStyle = c.line;
   ctx.fillRect(M, y + headH - 8, CW, 2);
   y += headH;
 
-  // Rijen (tijden) met cellen.
-  const pad = 5;
-  const cellFont = Math.min(34, Math.round(rowH * 0.42));
-  for (const t of shownTimes) {
+  // Rijen (halfuren) — vullen de resterende ruimte.
+  const rowH = Math.floor((footerTop - y) / times.length);
+  const cellH = rowH - 6;
+  const numFont = Math.min(30, Math.round(rowH * 0.5));
+  times.forEach((t) => {
     // Tijdlabel links.
     ctx.textAlign = "right";
     ctx.fillStyle = c.ink;
-    ctx.font = "800 28px Outfit, system-ui, sans-serif";
-    ctx.fillText(t, M + timeColW - 14, y + rowH / 2 + 10);
+    ctx.font = "800 24px Outfit, system-ui, sans-serif";
+    ctx.fillText(t, M + timeColW - 14, y + rowH / 2 + 8);
 
-    days.forEach((day, i) => {
+    days.forEach((day, di) => {
       const n = day.counts[t] ?? 0;
-      const cx = gridX + i * colW;
-      rrect(ctx, cx + pad, y + pad, colW - pad * 2, rowH - pad * 2, 12);
-      ctx.fillStyle = day.error ? "#f7f2ee" : heatShade(n);
+      const cx = gridX + di * dayColW;
+      rrect(ctx, cx + 4, y + 2, dayColW - 8, cellH, 8);
+      ctx.fillStyle = day.error ? "#f7f2ee" : n > 0 ? heatShade(n) : "#eef2f0";
       ctx.fill();
-      // Accentrand om het drukste moment.
-      if (best && day.date === best.date && t === best.time) {
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = c.gold;
-        ctx.stroke();
-      }
       if (n > 0) {
         ctx.textAlign = "center";
         ctx.fillStyle = n >= 3 ? "#ffffff" : c.ink;
-        ctx.font = `800 ${cellFont}px Outfit, system-ui, sans-serif`;
-        ctx.fillText(String(n), cx + colW / 2, y + rowH / 2 + cellFont / 3);
+        ctx.font = `800 ${numFont}px Outfit, system-ui, sans-serif`;
+        ctx.fillText(String(n), cx + dayColW / 2, y + rowH / 2 + numFont / 3);
       }
     });
     y += rowH;
-  }
+  });
 
-  if (capped) {
-    ctx.textAlign = "center";
-    ctx.fillStyle = c.inkSoft;
-    ctx.font = "600 24px Outfit, system-ui, sans-serif";
-    ctx.fillText(`+ ${times.length - shownTimes.length} latere tijden`, W / 2, y + 28);
-  }
-
-  // Mini-legenda onder het raster.
+  // Footer-uitleg.
   ctx.textAlign = "center";
   ctx.fillStyle = c.inkSoft;
   ctx.font = "600 23px Outfit, system-ui, sans-serif";
-  ctx.fillText("cijfer = aantal vrije banen tegelijk · goud = drukste moment", W / 2, footerTop + 26);
+  ctx.fillText("cijfer = aantal vrije banen op dat halfuur · leeg = bezet", W / 2, footerTop + 28);
 }
 
 export function ShareAvailability(props: Props) {

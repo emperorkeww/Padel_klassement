@@ -3,6 +3,7 @@ import {
   freeStartTimes,
   weekHeatmap,
   bestHeatMoment,
+  freeBlocks,
   dayShareText,
   weekShareText,
 } from "./availabilityShare";
@@ -81,6 +82,30 @@ describe("weekHeatmap", () => {
       count: 2,
     });
     expect(bestHeatMoment(weekHeatmap([week[2]], null))).toBeNull();
+  });
+});
+
+describe("freeBlocks", () => {
+  it("voegt aaneengesloten halfuren samen tot blokken met het baanbereik", () => {
+    // 18:00–19:00 aaneengesloten (2,3,4 banen), gaatje, dan 20:00–20:30 (2,1).
+    const blocks = freeBlocks({
+      "18:00": 2,
+      "18:30": 3,
+      "19:00": 4,
+      "20:00": 2,
+      "20:30": 1,
+    });
+    expect(blocks).toEqual([
+      { start: "18:00", end: "19:00", min: 2, max: 4 },
+      { start: "20:00", end: "20:30", min: 1, max: 2 },
+    ]);
+  });
+
+  it("een los halfuur is een blok met start === end", () => {
+    expect(freeBlocks({ "20:00": 3 })).toEqual([
+      { start: "20:00", end: "20:00", min: 3, max: 3 },
+    ]);
+    expect(freeBlocks({})).toEqual([]);
   });
 });
 
