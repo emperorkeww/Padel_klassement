@@ -150,7 +150,8 @@
 
 /* ---------- Formuliervelden ---------- */
 .input,
-.select {
+.select,
+textarea {
   width: 100%;
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--line-strong);
@@ -158,7 +159,9 @@
   background: var(--surface);
   color: var(--ink);
   font-family: inherit;
-  font-size: var(--fs-base);
+  /* Minstens 16px: iOS Safari zoomt automatisch in bij het focussen van een
+     kleiner invoerveld (en zoomt niet terug). 16px voorkomt dat. */
+  font-size: 1rem;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input::placeholder {
