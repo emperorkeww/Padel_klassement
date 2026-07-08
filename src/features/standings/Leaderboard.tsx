@@ -16,6 +16,7 @@ import {
   computePlayerStandings,
   computeTeamStandings,
   matchesInSeason,
+  matchesUpTo,
 } from "../../lib/standings";
 import { rankShifts, type Shift } from "../../lib/rankShift";
 import {
@@ -40,6 +41,21 @@ import "./Leaderboard.css";
 
 type Tab = "player" | "team";
 
+/** Rating van een speler zoals die was op (of vóór) een datum, uit de historie
+ *  (rating_after van de laatste match ≤ die dag). Null als er niets is. */
+function ratingAsOf(
+  history: RatingPoint[] | undefined,
+  isoDate: string,
+): number | null {
+  if (!history || history.length === 0) return null;
+  let best: RatingPoint | null = null;
+  for (const p of history) {
+    if (p.played_at.slice(0, 10) <= isoDate && (!best || p.played_at > best.played_at))
+      best = p;
+  }
+  return best ? best.rating_after : null;
+}
+
 export function Leaderboard() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -52,8 +68,30 @@ export function Leaderboard() {
   const season = seasonFromId(params.get("seizoen") ?? "");
   const setSeasonId = (id: string) => {
     const next = new URLSearchParams(params);
-    if (id) next.set("seizoen", id);
-    else next.delete("seizoen");
+    if (id) {
+      next.set("seizoen", id);
+      next.delete("stand"); // seizoen en "stand op datum" sluiten elkaar uit
+    } else next.delete("seizoen");
+    setParams(next, { replace: true });
+  };
+
+  // "Stand op datum" (tijdmachine): de ranglijst zoals hij was t/m een datum,
+  // met ieders punten cumulatief uit alle matches op of vóór die dag.
+  const asof = params.get("stand") ?? ""; // YYYY-MM-DD; "" = uit
+  const setAsof = (d: string) => {
+    const next = new URLSearchParams(params);
+    if (d) {
+      next.set("stand", d);
+      next.delete("seizoen");
+    } else next.delete("stand");
+    setParams(next, { replace: true });
+  };
+  // Minimaal aantal gespeelde matches om in de lijst te verschijnen (eerlijkheid).
+  const minMatches = Math.max(0, Math.floor(Number(params.get("min") ?? "0")) || 0);
+  const setMin = (n: number) => {
+    const next = new URLSearchParams(params);
+    if (n > 0) next.set("min", String(n));
+    else next.delete("min");
     setParams(next, { replace: true });
   };
 
@@ -89,6 +127,18 @@ export function Leaderboard() {
         : Promise.resolve(null),
     [season?.id],
   );
+  // Alle afgeronde matches, voor de tijdmachine. Vast bereik → de cache blijft
+  // staan terwijl je de datum verschuift (alleen de eerste keer een query).
+  const allCompleted = useAsync<Match[] | null>(
+    () =>
+      asof
+        ? getCompletedMatchesBetween(
+            "2000-01-01T00:00:00Z",
+            "2100-01-01T00:00:00Z",
+          )
+        : Promise.resolve(null),
+    [asof ? "on" : "off"],
+  );
 
   // Live bijwerken bij nieuwe/aangepaste matches.
   const refresh = useCallback(() => {
@@ -99,8 +149,9 @@ export function Leaderboard() {
     ratings.reload();
     histories.reload();
     seasonMatches.reload();
+    allCompleted.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload, allCompleted.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
@@ -109,26 +160,34 @@ export function Leaderboard() {
   const rmap = ratings.data ?? {};
   const hmap = histories.data ?? {};
 
-  // Matches van het gekozen seizoen, met het groepsfilter toegepast.
-  const scoped =
-    season && seasonMatches.data
-      ? matchesInSeason(seasonMatches.data, season).filter(
-          (m) => !groupId || m.group_id === groupId,
-        )
+  // Gescopete matches (seizoen óf "stand op datum"), met groepsfilter. Beide
+  // rekenen client-side met dezelfde logica als de server-views.
+  const usingScope = !!(season || asof);
+  const scopedSource = season
+    ? seasonMatches.data
+      ? matchesInSeason(seasonMatches.data, season)
+      : null
+    : asof
+      ? allCompleted.data
+        ? matchesUpTo(allCompleted.data, asof)
+        : null
       : null;
-  const playerStandings = season
+  const scoped = scopedSource
+    ? scopedSource.filter((m) => !groupId || m.group_id === groupId)
+    : null;
+  const playerStandings = usingScope
     ? scoped
       ? computePlayerStandings(scoped, tmap, pmap)
       : []
     : (players.data ?? []);
-  const teamStandings = season
+  const teamStandings = usingScope
     ? scoped
       ? computeTeamStandings(scoped, tmap)
       : []
     : (teams.data ?? []);
 
-  // Vorm: binnen een seizoen alleen de matches van dat seizoen tonen.
-  const formSource = season ? (scoped ?? []) : (recent.data ?? []);
+  // Vorm: binnen een scope alleen de matches van die scope tonen.
+  const formSource = usingScope ? (scoped ?? []) : (recent.data ?? []);
   const formFor = (playerId: string): Outcome[] =>
     recentForm(formSource, tmap, playerId, 5);
 
@@ -138,6 +197,25 @@ export function Leaderboard() {
     () => rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null),
     [players.data, recent.data, tmap, groupId],
   );
+
+  // Datum van mijn laatste afgeronde match — preset voor "stand op datum".
+  const myLastMatchDay = useMemo(() => {
+    let latest = "";
+    for (const m of recent.data ?? []) {
+      if (m.status !== "completed") continue;
+      const a = tmap[m.team_a_id];
+      const b = tmap[m.team_b_id];
+      const mine =
+        a?.player1_id === myId ||
+        a?.player2_id === myId ||
+        b?.player1_id === myId ||
+        b?.player2_id === myId;
+      if (!mine) continue;
+      const d = (m.played_at ?? m.created_at).slice(0, 10);
+      if (d > latest) latest = d;
+    }
+    return latest;
+  }, [recent.data, tmap, myId]);
 
   const playerRows = playerStandings.map((p) => ({
     key: p.player_id,
@@ -151,10 +229,14 @@ export function Leaderboard() {
     lost: p.lost,
     points: p.points,
     goalDiff: p.goal_diff ?? 0,
-    rating: rmap[p.player_id]?.rating ?? null,
+    // Bij "stand op datum" de rating zoals die tóén was (uit de historie),
+    // anders de huidige rating.
+    rating: asof
+      ? ratingAsOf(hmap[p.player_id], asof)
+      : (rmap[p.player_id]?.rating ?? null),
     history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
-    shift: season ? undefined : shifts.get(p.player_id),
+    shift: usingScope ? undefined : shifts.get(p.player_id),
   }));
 
   const teamRows = teamStandings.map((t) => ({
@@ -175,15 +257,21 @@ export function Leaderboard() {
     shift: undefined as Shift | undefined,
   }));
 
-  const rows = tab === "player" ? playerRows : teamRows;
-  // In seizoensweergave rekenen we zelf, dus wachten we op matches + lookups.
-  const loading = season
-    ? seasonMatches.loading || teamsMap.loading || profilesMap.loading
+  // Minimaal-aantal-matches: verberg spelers/teams onder de drempel (de
+  // overgebleven lijst wordt opnieuw genummerd 1..k).
+  const atLeastMin = <T extends { played: number }>(list: T[]): T[] =>
+    minMatches > 0 ? list.filter((r) => r.played >= minMatches) : list;
+  const shownPlayerRows = atLeastMin(playerRows);
+  const rows = tab === "player" ? shownPlayerRows : atLeastMin(teamRows);
+  // In seizoens-/datumweergave rekenen we zelf, dus wachten we op matches + lookups.
+  const scopeAsync = season ? seasonMatches : allCompleted;
+  const loading = usingScope
+    ? scopeAsync.loading || teamsMap.loading || profilesMap.loading
     : tab === "player"
       ? players.loading
       : teams.loading;
-  const error = season
-    ? seasonMatches.error
+  const error = usingScope
+    ? scopeAsync.error
     : tab === "player"
       ? players.error
       : teams.error;
@@ -191,14 +279,14 @@ export function Leaderboard() {
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
   const champion =
-    season && isSeasonClosed(season) && !loading && !error && playerRows.length > 0
-      ? playerRows[0]
+    season && isSeasonClosed(season) && !loading && !error && shownPlayerRows.length > 0
+      ? shownPlayerRows[0]
       : null;
 
   // "Jouw positie": scrolt naar je eigen rij (tabel op desktop, lijst op mobiel).
   const meRowRef = useRef<HTMLTableRowElement | null>(null);
   const meItemRef = useRef<HTMLLIElement | null>(null);
-  const myRankIdx = playerRows.findIndex((r) => r.isMe);
+  const myRankIdx = shownPlayerRows.findIndex((r) => r.isMe);
   const scrollToMe = () => {
     const el = [meItemRef.current, meRowRef.current].find(
       (e) => e && e.offsetParent !== null,
@@ -262,7 +350,49 @@ export function Leaderboard() {
             ))}
           </select>
         )}
+
+        {/* Stand op datum: de ranglijst zoals hij was t/m die dag. */}
+        <input
+          className="input select--filter lb-date"
+          type="date"
+          aria-label="Stand op datum"
+          title="Bekijk de stand zoals hij was t/m deze datum"
+          value={asof}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(e) => setAsof(e.target.value)}
+        />
+        {myLastMatchDay && (
+          <button
+            type="button"
+            className={`tab ${asof === myLastMatchDay ? "is-active" : ""}`}
+            onClick={() => setAsof(asof === myLastMatchDay ? "" : myLastMatchDay)}
+          >
+            Mijn laatste match
+          </button>
+        )}
+
+        {/* Minimaal aantal matches om mee te tellen in de lijst. */}
+        <select
+          className="select select--filter"
+          aria-label="Minimaal aantal matches"
+          value={minMatches}
+          onChange={(e) => setMin(Number(e.target.value))}
+        >
+          <option value={0}>Alle spelers</option>
+          {[3, 5, 10, 20].map((n) => (
+            <option key={n} value={n}>
+              ≥ {n} matches
+            </option>
+          ))}
+        </select>
       </div>
+
+      {asof && (
+        <p className="lb-asof-note" role="status">
+          Stand zoals op <strong>{asof}</strong> — punten en saldo berekend uit
+          alle matches t/m die dag.
+        </p>
+      )}
 
       {champion && season && (
         <p className="champion-banner" role="status">
@@ -272,11 +402,11 @@ export function Leaderboard() {
           <span>
             Kampioen {season.label}: <strong>{champion.name}</strong>
           </span>
-          <ShareChampion seasonLabel={season.label} rows={playerRows} />
+          <ShareChampion seasonLabel={season.label} rows={shownPlayerRows} />
         </p>
       )}
 
-      {showPodium && <Podium rows={playerRows.slice(0, 3)} />}
+      {showPodium && <Podium rows={shownPlayerRows.slice(0, 3)} />}
 
       <div className="card">
         {loading ? (
@@ -286,6 +416,16 @@ export function Leaderboard() {
         ) : rows.length === 0 ? (
           season ? (
             <p className="empty">Geen matches in dit seizoen.</p>
+          ) : asof ? (
+            <p className="empty">
+              {minMatches > 0
+                ? `Geen spelers met minstens ${minMatches} matches t/m ${asof}.`
+                : `Nog geen matches t/m ${asof}.`}
+            </p>
+          ) : minMatches > 0 ? (
+            <p className="empty">
+              Geen spelers met minstens {minMatches} gespeelde matches.
+            </p>
           ) : (
             <EmptyState
               icon="🏆"

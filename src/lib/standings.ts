@@ -120,3 +120,58 @@ export function matchesInSeason(matches: Match[], season: Season): Match[] {
     return d >= season.start && d < season.end;
   });
 }
+
+const dayOf = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+
+/** Matches gespeeld op of vóór een kalenderdatum (YYYY-MM-DD), o.b.v. de
+ *  speeldatum. Voedt de "stand op datum"-tijdmachine. */
+export function matchesUpTo(matches: Match[], isoDate: string): Match[] {
+  return matches.filter((m) => dayOf(m) <= isoDate);
+}
+
+/** Deed de speler mee in deze match? */
+function playedIn(
+  m: Match,
+  teams: Record<string, Team>,
+  playerId: string,
+): boolean {
+  const a = teams[m.team_a_id];
+  const b = teams[m.team_b_id];
+  return (
+    a?.player1_id === playerId ||
+    a?.player2_id === playerId ||
+    b?.player1_id === playerId ||
+    b?.player2_id === playerId
+  );
+}
+
+/**
+ * Rang-verloop van een speler: zijn positie in het (volledige) klassement
+ * telkens ná een dag waarop hij speelde. Berekend door de stand cumulatief tot
+ * en met elke speeldag te herrekenen — precies de "stand op datum"-methode,
+ * maar dan op elk van de eigen speeldagen. `matches` = alle afgeronde matches.
+ */
+export function rankProgression(
+  matches: Match[],
+  teams: Record<string, Team>,
+  profiles: Record<string, Profile>,
+  playerId: string,
+): { date: string; rank: number; points: number }[] {
+  const myDays = [
+    ...new Set(
+      matches.filter((m) => playedIn(m, teams, playerId)).map(dayOf),
+    ),
+  ].sort();
+  const out: { date: string; rank: number; points: number }[] = [];
+  for (const day of myDays) {
+    const standings = computePlayerStandings(
+      matchesUpTo(matches, day),
+      teams,
+      profiles,
+    );
+    const idx = standings.findIndex((s) => s.player_id === playerId);
+    if (idx >= 0)
+      out.push({ date: day, rank: idx + 1, points: standings[idx].points });
+  }
+  return out;
+}

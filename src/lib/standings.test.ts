@@ -3,6 +3,8 @@ import {
   computePlayerStandings,
   computeTeamStandings,
   matchesInSeason,
+  matchesUpTo,
+  rankProgression,
 } from "./standings";
 import { seasonFromId } from "./seasons";
 import type { Match, Profile, Team } from "./types";
@@ -142,5 +144,33 @@ describe("matchesInSeason", () => {
     const m = match({ id: "c", team_a_id: "t-ab", team_b_id: "t-cd", played_at: null, created_at: "2026-05-01T10:00:00.000Z" });
     expect(matchesInSeason([m], q2)).toHaveLength(1);
     expect(matchesInSeason([m], seasonFromId("2026-q1")!)).toHaveLength(0);
+  });
+});
+
+describe("matchesUpTo", () => {
+  const ms: Match[] = [
+    match({ id: "a", team_a_id: "t-ab", team_b_id: "t-cd", played_at: "2026-01-01T10:00:00Z", winner_team_id: "t-ab" }),
+    match({ id: "b", team_a_id: "t-ab", team_b_id: "t-cd", played_at: "2026-02-01T10:00:00Z", winner_team_id: "t-ab" }),
+    match({ id: "c", team_a_id: "t-ab", team_b_id: "t-cd", played_at: "2026-03-01T10:00:00Z", winner_team_id: "t-ab" }),
+  ];
+  it("houdt alleen matches op of vóór de datum (inclusief die dag)", () => {
+    expect(matchesUpTo(ms, "2026-02-01").map((m) => m.id)).toEqual(["a", "b"]);
+    expect(matchesUpTo(ms, "2026-01-15").map((m) => m.id)).toEqual(["a"]);
+    expect(matchesUpTo(ms, "2025-12-31")).toEqual([]);
+  });
+});
+
+describe("rankProgression", () => {
+  it("geeft de positie na elke eigen speeldag, cumulatief herrekend", () => {
+    // Dag 1: alice&bob winnen (3 ptn); dag 2: carol&dave winnen twee keer (6 ptn).
+    const ms: Match[] = [
+      match({ id: "1", team_a_id: "t-ab", team_b_id: "t-cd", played_at: "2026-01-01T10:00:00Z", winner_team_id: "t-ab", score_a: 6, score_b: 0 }),
+      match({ id: "2", team_a_id: "t-cd", team_b_id: "t-ab", played_at: "2026-01-02T10:00:00Z", winner_team_id: "t-cd", score_a: 6, score_b: 0 }),
+      match({ id: "3", team_a_id: "t-cd", team_b_id: "t-ab", played_at: "2026-01-02T12:00:00Z", winner_team_id: "t-cd", score_a: 6, score_b: 0 }),
+    ];
+    const prog = rankProgression(ms, TEAMS, PROFILES, "p3"); // carol
+    expect(prog.map((p) => p.date)).toEqual(["2026-01-01", "2026-01-02"]);
+    expect(prog[0].rank).toBe(3); // dag 1: nog onderaan (0 ptn)
+    expect(prog[prog.length - 1].rank).toBe(1); // dag 2: naar de top
   });
 });
