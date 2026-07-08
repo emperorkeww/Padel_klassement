@@ -13,6 +13,12 @@ updates:
       minor-en-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+    ignore:
+      # TypeScript 7 wordt nog niet ondersteund door typescript-eslint
+      # (peer dep eist < 6.1.0); npm ci faalt dan al. Verwijder deze regel
+      # zodra typescript-eslint TS 7 toestaat en bump dan samen.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
