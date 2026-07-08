@@ -1,8 +1,8 @@
--- RPC: verwijder een match (geplande én afgeronde). Veilig want de stand is een
--- live view en de ratings worden na elke wijziging aan public.matches automatisch
--- herrekend (trigger matches_recompute_ratings); rating_history hangt met
--- on delete cascade aan de match. Verwijderen mag door de aanmaker of door de
--- eigenaar van de groep waarin de match hoort.
+-- Matches verwijderen verruimen: ook afgeronde matches mogen weg. Dat is veilig
+-- want de stand is een live view en de ratings worden na elke wijziging aan
+-- public.matches automatisch herrekend (trigger matches_recompute_ratings);
+-- rating_history hangt met on delete cascade aan de match. Naast de aanmaker mag
+-- ook de eigenaar van de groep (waarin de match hoort) hem verwijderen.
 create or replace function public.delete_match(p_match_id uuid)
 returns void
 language plpgsql

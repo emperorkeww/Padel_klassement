@@ -8,7 +8,7 @@ import { outcomeFor } from "../../lib/results";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
-import { MatchCard } from "./MatchList";
+import { DeletableMatchCard } from "./MatchList";
 import { PlannedMatchCard } from "./PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "./NewMatchSheet";
 import type { Match, Profile, Team } from "../../lib/types";
@@ -210,11 +210,12 @@ export function Matches() {
               <ul className="matchlist">
                 {list.map((m) => (
                   <li key={m.id}>
-                    <MatchCard
+                    <DeletableMatchCard
                       match={m}
                       teams={tmap}
                       profiles={pmap}
                       perspectiveId={myId}
+                      onDeleted={reloadAll}
                     />
                   </li>
                 ))}

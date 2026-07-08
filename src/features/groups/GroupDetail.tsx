@@ -27,10 +27,11 @@ import { getGroupPlayerStandings } from "../standings/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
-import { MatchCard } from "../matches/MatchList";
+import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { AttendanceCard } from "./AttendanceCard";
+import { PlanTogether } from "./PlanTogether";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
 import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
@@ -43,7 +44,7 @@ import { errorMessage } from "../../lib/errors";
 import type { Match, PlayerStanding, Profile } from "../../lib/types";
 import "./GroupDetail.css";
 
-type View = "rondes" | "stand" | "leden";
+type View = "rondes" | "plannen" | "stand" | "leden";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -77,7 +78,9 @@ export function GroupDetail() {
   const [params, setParams] = useSearchParams();
   const rawTab = params.get("tab");
   const view: View =
-    rawTab === "stand" || rawTab === "leden" ? rawTab : "rondes";
+    rawTab === "stand" || rawTab === "leden" || rawTab === "plannen"
+      ? rawTab
+      : "rondes";
   const setView = (v: View) => {
     const next = new URLSearchParams(params);
     if (v === "rondes") next.delete("tab");
@@ -235,6 +238,12 @@ export function GroupDetail() {
               {rounds.length}
             </span>
           )}
+        </button>
+        <button
+          className={`tab ${view === "plannen" ? "is-active" : ""}`}
+          onClick={() => setView("plannen")}
+        >
+          Plannen
         </button>
         <button
           className={`tab ${view === "stand" ? "is-active" : ""}`}
@@ -420,12 +429,14 @@ export function GroupDetail() {
                   <div className="stack">
                     {list.map((m) =>
                       m.status === "completed" ? (
-                        <MatchCard
+                        <DeletableMatchCard
                           key={m.id}
                           match={m}
                           teams={tmap}
                           profiles={pmap}
                           perspectiveId={myId}
+                          canManage={isOwner}
+                          onDeleted={onMatches}
                         />
                       ) : (
                         <PlannedMatchCard
@@ -454,6 +465,15 @@ export function GroupDetail() {
             onGuestCreated={profiles.reload}
           />
         </section>
+      )}
+
+      {view === "plannen" && (
+        <PlanTogether
+          groupId={id}
+          members={memberList}
+          profiles={pmap}
+          myId={myId}
+        />
       )}
 
       {view === "stand" && (

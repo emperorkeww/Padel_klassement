@@ -1,9 +1,17 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "../../lib/types";
-import { formatSetScores, readSetScores, teamLabel } from "./api";
+import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "./api";
 import { formatRelativeDay } from "../../lib/format";
 import { outcomeFor } from "../../lib/results";
 import { Avatar } from "../../components/Avatar";
+import { useAuth } from "../auth/AuthProvider";
+import { useToast } from "../../components/ToastProvider";
+import { errorMessage } from "../../lib/errors";
+import { tap } from "../../lib/haptics";
+
+/** Grace-window waarin een verwijderde match nog teruggehaald kan worden. */
+const UNDO_MS = 5000;
 
 /** Eén match als kaart: teams met avatars links/rechts, score in het midden.
  *  Met `perspectiveId` kleurt de kaart mee met winst/verlies van die speler. */
@@ -62,6 +70,93 @@ export function MatchCard({
         right
       />
     </Link>
+  );
+}
+
+/** MatchCard met een verwijder-knop (aanmaker of groepseigenaar). Na klik een
+ *  korte undo-strook zodat een vergissing teruggedraaid kan worden. */
+export function DeletableMatchCard({
+  match: m,
+  teams,
+  profiles,
+  perspectiveId,
+  canManage = false,
+  onDeleted,
+}: {
+  match: Match;
+  teams: Record<string, Team>;
+  profiles: Record<string, Profile>;
+  perspectiveId?: string;
+  /** True voor de groepseigenaar: mag ook matches van anderen verwijderen. */
+  canManage?: boolean;
+  onDeleted: () => void;
+}) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [pending, setPending] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canDelete = !!user && (m.created_by === user.id || canManage);
+
+  function startDelete() {
+    setPending(true);
+    timer.current = setTimeout(async () => {
+      try {
+        await deleteMatch(m.id);
+        tap();
+        onDeleted();
+      } catch (err) {
+        setPending(false); // niets verwijderd; kaart komt terug
+        toast.error(errorMessage(err));
+      }
+    }, UNDO_MS);
+  }
+
+  function undoDelete() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    setPending(false);
+  }
+
+  if (pending) {
+    return (
+      <div className="match-card__undo" role="status">
+        <span>Match verwijderd.</span>
+        <button className="btn btn--sm" onClick={undoDelete}>
+          Ongedaan maken
+        </button>
+      </div>
+    );
+  }
+
+  if (!canDelete) {
+    return (
+      <MatchCard
+        match={m}
+        teams={teams}
+        profiles={profiles}
+        perspectiveId={perspectiveId}
+      />
+    );
+  }
+
+  return (
+    <div className="match-card-wrap">
+      <MatchCard
+        match={m}
+        teams={teams}
+        profiles={profiles}
+        perspectiveId={perspectiveId}
+      />
+      <button
+        type="button"
+        className="match-card__del"
+        aria-label="Match verwijderen"
+        title="Match verwijderen"
+        onClick={startDelete}
+      >
+        🗑
+      </button>
+    </div>
   );
 }
 
