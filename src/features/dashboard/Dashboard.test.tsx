@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
@@ -65,5 +65,28 @@ describe("<Dashboard />", () => {
     expect(await screen.findByText(/topspelers/i)).toBeInTheDocument();
     expect(await screen.findByText(/recente uitslagen/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
+  });
+
+  it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {
+    renderPage();
+    const badge = await screen.findByRole("button", {
+      name: /Eerste overwinning/,
+    });
+
+    // De badge zit niet meer in een link; navigeren kan alleen via de pijl.
+    expect(badge.closest("a")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Alle badges bekijken" }),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    fireEvent.click(badge);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      /Eerste overwinning/,
+    );
+
+    // Nogmaals tikken sluit de uitleg weer.
+    fireEvent.click(badge);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });
