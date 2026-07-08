@@ -5,6 +5,11 @@ on:
     branches: [main, develop]
   pull_request:
 
+# Een nieuwere push op dezelfde branch/PR vervangt een lopende run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -32,3 +37,22 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # pgTAP-databasetests (RLS-policies, RPC's) tegen een lokale Supabase-stack.
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Versie gepind op de lokaal geverifieerde CLI: nieuwere versies passen
+      # migrations bij `db start` anders toe, waardoor de default-grants voor
+      # authenticated ontbreken en rls_rpc_test faalt op "permission denied".
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.0
+
+      - name: Start lokale database
+        run: supabase db start
+
+      - name: Databasetests (pgTAP)
+        run: supabase test db

@@ -1,0 +1,33 @@
+name: 🐛 Bug melden
+description: Iets werkt niet zoals verwacht
+labels: [bug]
+body:
+  - type: textarea
+    id: probleem
+    attributes:
+      label: Probleem
+      description: Wat gaat er mis? Wat verwachtte je?
+      placeholder: "Als ik op … tik, gebeurt … terwijl ik … verwachtte."
+    validations:
+      required: true
+  - type: textarea
+    id: stappen
+    attributes:
+      label: Stappen om te reproduceren
+      placeholder: |
+        1. Ga naar …
+        2. Tik op …
+        3. Zie …
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options:
+        - Mobiel (iOS)
+        - Mobiel (Android)
+        - Desktop
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots / extra context
