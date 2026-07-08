@@ -26,7 +26,12 @@ import { ShareEvening } from "../groups/ShareEvening";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyGroups, type GroupSummary } from "../groups/api";
-import { getAttendance, type Attendance } from "../groups/attendanceApi";
+import {
+  getGroupProposals,
+  getGroupProposalVotes,
+  type PlayProposal,
+  type ProposalVote,
+} from "../groups/proposalsApi";
 import { MatchList } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import {
@@ -75,11 +80,11 @@ export function Dashboard() {
   // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
   useRefetchOnFocus(availability.reload);
 
-  // Aanwezigheid van vandaag per eigen groep; hangt af van welke groepen we al
-  // kennen, dus opnieuw ophalen zodra die lijst binnen is.
+  // Komende speelvoorstellen per eigen groep; hangt af van welke groepen we
+  // al kennen, dus opnieuw ophalen zodra die lijst binnen is.
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
-  const attendance = useAsync(
-    () => loadTodayAttendance(groups.data ?? [], today),
+  const openProposals = useAsync(
+    () => loadOpenProposals(groups.data ?? [], today),
     [groupKey, today],
   );
 
@@ -95,7 +100,8 @@ export function Dashboard() {
   }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
-  useRealtime("attendance", attendance.reload);
+  useRealtime("play_proposals", openProposals.reload);
+  useRealtime("play_proposal_votes", openProposals.reload);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -152,7 +158,7 @@ export function Dashboard() {
   const rival = pickRival(myGames, tmap, myId);
 
   // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
-  const attendancePick = pickAttendance(attendance.data ?? [], myId);
+  const proposalPick = pickOpenProposal(openProposals.data ?? [], myId);
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
@@ -287,7 +293,7 @@ export function Dashboard() {
         </section>
       )}
 
-      {(planned.length > 0 || incoming.length > 0 || attendancePick) && (
+      {(planned.length > 0 || incoming.length > 0 || proposalPick) && (
         <div className="todo-strip">
           {planned.length > 0 && (
             <Link
@@ -308,15 +314,13 @@ export function Dashboard() {
                 : "vriendschapsverzoeken"}
             </Link>
           )}
-          {attendancePick && (
+          {proposalPick && (
             <Link
               className="todo-chip todo-chip--play"
-              to={`/groepen/${attendancePick.group.id}`}
+              to={`/groepen/${proposalPick.group.id}?tab=plannen`}
             >
-              <span className="todo-chip__count">{attendancePick.yes}</span>
-              {attendancePick.mine
-                ? `spelen mee · ${attendancePick.group.name}`
-                : `spelen mee — jij nog niet · ${attendancePick.group.name}`}
+              <span className="todo-chip__count">{proposalPick.yes}</span>
+              {`speelvoorstel ${proposalDay(proposalPick.proposal.date)} ${proposalPick.proposal.start_time} — reageer · ${proposalPick.group.name}`}
             </Link>
           )}
         </div>
@@ -673,38 +677,66 @@ function writeFlag(key: string) {
 }
 
 /** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
-async function loadTodayAttendance(
+async function loadOpenProposals(
   groups: GroupSummary[],
-  date: string,
-): Promise<{ group: GroupSummary; att: Attendance[] }[]> {
+  fromDate: string,
+): Promise<
+  { group: GroupSummary; proposals: PlayProposal[]; votes: ProposalVote[] }[]
+> {
   if (groups.length === 0) return [];
   return Promise.all(
-    groups.map((group) =>
-      getAttendance(group.id, date).then((att) => ({ group, att })),
-    ),
+    groups.map(async (group) => {
+      const [proposals, votes] = await Promise.all([
+        getGroupProposals(group.id, fromDate),
+        getGroupProposalVotes(group.id),
+      ]);
+      return { group, proposals, votes };
+    }),
   );
 }
 
-type AttendancePick = {
+type ProposalPick = {
   group: GroupSummary;
+  proposal: PlayProposal;
   yes: number;
-  mine: boolean;
 };
 
-/** Groep met de meeste ja-stemmen vandaag; null als niemand ja zei. */
-function pickAttendance(
-  rows: { group: GroupSummary; att: Attendance[] }[],
+/** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
+function proposalDay(date: string): string {
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T12:00:00`));
+}
+
+/** Eerstvolgend speelvoorstel waarop ik nog niet reageerde, of null. */
+function pickOpenProposal(
+  rows: { group: GroupSummary; proposals: PlayProposal[]; votes: ProposalVote[] }[],
   myId: string,
-): AttendancePick | null {
-  const scored = rows
-    .map(({ group, att }) => ({
-      group,
-      yes: att.filter((a) => a.status === "yes").length,
-      mine: att.some((a) => a.player_id === myId),
-    }))
-    .filter((x) => x.yes > 0)
-    .sort((a, b) => b.yes - a.yes);
-  return scored[0] ?? null;
+): ProposalPick | null {
+  const open: ProposalPick[] = [];
+  for (const { group, proposals, votes } of rows) {
+    for (const p of proposals) {
+      const mine = votes.some(
+        (v) => v.proposal_id === p.id && v.player_id === myId,
+      );
+      if (mine) continue;
+      open.push({
+        group,
+        proposal: p,
+        yes: votes.filter(
+          (v) => v.proposal_id === p.id && v.status === "yes",
+        ).length,
+      });
+    }
+  }
+  open.sort((a, b) =>
+    a.proposal.date === b.proposal.date
+      ? a.proposal.start_time.localeCompare(b.proposal.start_time)
+      : a.proposal.date.localeCompare(b.proposal.date),
+  );
+  return open[0] ?? null;
 }
 
 type RivalRec = { won: number; drawn: number; lost: number; played: number };

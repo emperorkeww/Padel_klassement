@@ -3,8 +3,15 @@ import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
-import { dateInZone } from "../../lib/time";
-import { bookingUrl } from "../availability/api";
+import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
+import {
+  bookingUrl,
+  getClubAvailability,
+  getWeekAvailability,
+  type DayAvailability,
+  type WeekDay,
+} from "../availability/api";
+import { freeStartTimes, weekHeatmap } from "../availability/availabilityShare";
 import { useClub } from "../availability/club";
 import { displayName } from "../profiles/api";
 import {
@@ -12,6 +19,7 @@ import {
   getGroupProposalVotes,
   createProposal,
   deleteProposal,
+  remindProposal,
   setProposalVote,
   clearProposalVote,
   type PlayProposal,
@@ -32,6 +40,9 @@ const STATUS_LABEL: Record<ProposalStatus, string> = {
   no: "Kan niet",
 };
 
+/** Sentinel in de uur-select voor "zelf een uur intikken". */
+const CUSTOM_TIME = "custom";
+
 // 's Middags formatteren zodat DST de datum niet kantelt.
 function longDay(date: string): string {
   return new Intl.DateTimeFormat("nl-BE", {
@@ -39,6 +50,12 @@ function longDay(date: string): string {
     day: "numeric",
     month: "long",
   }).format(new Date(`${date}T12:00:00`));
+}
+
+/** "20:15" → "20:00": lookup-sleutel voor het halfuur-raster. */
+function floorHalfHour(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return `${String(h).padStart(2, "0")}:${m < 30 ? "00" : "30"}`;
 }
 
 export function Proposals({
@@ -58,11 +75,13 @@ export function Proposals({
 
   const [formOpen, setFormOpen] = useState(false);
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("20:00");
+  const [timeChoice, setTimeChoice] = useState<string>("");
+  const [customTime, setCustomTime] = useState("20:00");
   const [courts, setCourts] = useState(1);
   const [saving, setSaving] = useState(false);
   // Twee-taps intrekken: eerste tik vraagt bevestiging, tweede tik verwijdert.
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [reminded, setReminded] = useState<Set<string>>(new Set());
 
   const proposals = useAsync<PlayProposal[]>(
     () => getGroupProposals(groupId, today),
@@ -73,6 +92,46 @@ export function Proposals({
   useRealtime("play_proposals", proposals.reload, `group_id=eq.${groupId}`);
   useRealtime("play_proposal_votes", votes.reload, `group_id=eq.${groupId}`);
 
+  // Vrije banen deze week: voedt de live-indicator per voorstel.
+  const week = useAsync<WeekDay[]>(() => getWeekAvailability(today), [today, club.id]);
+  const heat = useMemo(() => weekHeatmap(week.data ?? [], null), [week.data]);
+  const weekEnd = addDays(today, 6);
+
+  /** Vrije banen op het moment van een voorstel, of null buiten het week-venster. */
+  function freeAt(p: PlayProposal): number | null {
+    if (p.date < today || p.date > weekEnd || week.data == null) return null;
+    const day = heat.days.find((d) => d.date === p.date);
+    if (!day || day.error) return null;
+    return day.counts[floorHalfHour(p.start_time)] ?? 0;
+  }
+
+  // Hybride uur-keuze: vrije starttijden van de gekozen dag als opties,
+  // met "ander uur" als ontsnapping (mét waarschuwing).
+  const dayAvail = useAsync<DayAvailability | null>(
+    () => (formOpen && date ? getClubAvailability(date) : Promise.resolve(null)),
+    [formOpen, date, club.id],
+  );
+  const freeStarts = useMemo(() => {
+    if (!dayAvail.data) return [];
+    const nowMin =
+      date === today ? minutesNowInZone(dayAvail.data.timeZone) : null;
+    return freeStartTimes(dayAvail.data, null, nowMin);
+  }, [dayAvail.data, date, today]);
+  // Zolang er geen opties zijn (dag nog niet gekozen, laden, of niets vrij)
+  // valt de keuze terug op zelf intikken.
+  const effectiveChoice =
+    freeStarts.length === 0
+      ? CUSTOM_TIME
+      : timeChoice || freeStarts[0]?.time || CUSTOM_TIME;
+  const chosenTime =
+    effectiveChoice === CUSTOM_TIME ? customTime : effectiveChoice;
+  const customLooksBusy =
+    effectiveChoice === CUSTOM_TIME &&
+    date !== "" &&
+    !dayAvail.loading &&
+    dayAvail.data != null &&
+    !freeStarts.some((s) => floorHalfHour(s.time) === floorHalfHour(customTime));
+
   const upcoming = useMemo(
     () => upcomingProposals(proposals.data ?? [], today),
     [proposals.data, today],
@@ -82,14 +141,14 @@ export function Proposals({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!date || !time) return;
+    if (!date || !chosenTime) return;
     setSaving(true);
     try {
       await createProposal({
         groupId,
         createdBy: myId,
         date,
-        startTime: time,
+        startTime: chosenTime,
         courts,
         clubName: club.name ?? null,
       });
@@ -97,6 +156,7 @@ export function Proposals({
       votes.reload();
       setFormOpen(false);
       setDate("");
+      setTimeChoice("");
       toast.success("Voorstel geplaatst — jij doet alvast mee.");
     } catch (err) {
       toast.error(errorMessage(err));
@@ -139,6 +199,23 @@ export function Proposals({
     }
   }
 
+  async function remind(p: PlayProposal) {
+    setSaving(true);
+    try {
+      const n = await remindProposal(groupId, p.id);
+      setReminded((cur) => new Set(cur).add(p.id));
+      toast.success(
+        n === 0
+          ? "Iedereen heeft al gereageerd."
+          : `${n} ${n === 1 ? "lid" : "leden"} herinnerd.`,
+      );
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="card">
       <div className="card__head">
@@ -164,20 +241,52 @@ export function Proposals({
               required
               min={today}
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setTimeChoice("");
+              }}
             />
           </label>
           <label className="proposal-form__field">
             <span>Uur</span>
-            <input
-              type="time"
-              className="select"
-              required
-              step={1800}
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
+            {freeStarts.length > 0 ? (
+              <select
+                className="select"
+                value={effectiveChoice}
+                onChange={(e) => setTimeChoice(e.target.value)}
+              >
+                {freeStarts.map((s) => (
+                  <option key={s.time} value={s.time}>
+                    {s.time} · {s.courts.length}{" "}
+                    {s.courts.length === 1 ? "baan" : "banen"}
+                  </option>
+                ))}
+                <option value={CUSTOM_TIME}>Ander uur…</option>
+              </select>
+            ) : (
+              <input
+                type="time"
+                className="select"
+                required
+                step={1800}
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+              />
+            )}
           </label>
+          {effectiveChoice === CUSTOM_TIME && freeStarts.length > 0 && (
+            <label className="proposal-form__field">
+              <span>Ander uur</span>
+              <input
+                type="time"
+                className="select"
+                required
+                step={1800}
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+              />
+            </label>
+          )}
           <label className="proposal-form__field">
             <span>Banen</span>
             <select
@@ -204,6 +313,23 @@ export function Proposals({
               Annuleren
             </button>
           </div>
+          {date !== "" && dayAvail.loading && (
+            <p className="proposal-form__note">Vrije banen checken…</p>
+          )}
+          {customLooksBusy && (
+            <p className="proposal-form__note proposal-form__note--warn">
+              ⚠ Op dit uur is er momenteel geen baan vrij bij {club.name}. Je
+              kunt het toch voorstellen, maar boeken wordt lastig.
+            </p>
+          )}
+          {date !== "" &&
+            !dayAvail.loading &&
+            dayAvail.data != null &&
+            freeStarts.length === 0 && (
+              <p className="proposal-form__note proposal-form__note--warn">
+                ⚠ Geen vrije banen gevonden op deze dag bij {club.name}.
+              </p>
+            )}
         </form>
       )}
 
@@ -221,6 +347,7 @@ export function Proposals({
             (v) => v.proposal_id === p.id && v.player_id === myId,
           )?.status ?? null;
           const canWithdraw = p.created_by === myId || isOwner;
+          const free = freeAt(p);
           return (
             <li key={p.id} className={`proposal${t.playable ? " proposal--playable" : ""}`}>
               <div className="proposal__head">
@@ -242,6 +369,15 @@ export function Proposals({
                 ) : (
                   <span className="badge">
                     {t.yes.length} mee · nog {t.needed} nodig
+                  </span>
+                )}
+                {free != null && (
+                  <span
+                    className={`proposal__free${free === 0 ? " proposal__free--none" : ""}`}
+                  >
+                    {free === 0
+                      ? "⚠ geen baan meer vrij"
+                      : `${free} ${free === 1 ? "baan" : "banen"} vrij`}
                   </span>
                 )}
                 {t.maybe.length > 0 && (
@@ -280,6 +416,16 @@ export function Proposals({
                     >
                       Boek op Playtomic ↗
                     </a>
+                  )}
+                  {!t.playable && !reminded.has(p.id) && (
+                    <button
+                      className="btn btn--sm"
+                      disabled={saving}
+                      onClick={() => remind(p)}
+                      title="Push naar leden die nog niet reageerden"
+                    >
+                      🔔 Herinner
+                    </button>
                   )}
                   {canWithdraw && (
                     <button

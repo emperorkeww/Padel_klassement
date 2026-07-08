@@ -140,6 +140,22 @@ export async function setProposalVote(
   invalidate("play-proposal-votes");
 }
 
+/**
+ * Stuurt via de edge function "remind-group" een push naar de groepsleden die
+ * nog niet op dit voorstel reageerden. Geeft terug hoeveel leden herinnerd zijn.
+ */
+export async function remindProposal(
+  groupId: string,
+  proposalId: string,
+): Promise<number> {
+  const { data, error } = await supabase.functions.invoke<{ reminded: number }>(
+    "remind-group",
+    { body: { group_id: groupId, proposal_id: proposalId } },
+  );
+  if (error) throw error;
+  return data?.reminded ?? 0;
+}
+
 /** Haalt je eigen reactie weg ("Wissen"). */
 export async function clearProposalVote(
   proposalId: string,

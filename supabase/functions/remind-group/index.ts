@@ -1,6 +1,6 @@
 // Edge Function: "Herinner de groep". De ingelogde gebruiker (een groepslid)
-// stuurt een push naar de groepsleden die nog GEEN aanwezigheid (RSVP) hebben
-// opgegeven voor een gekozen speeldag.
+// stuurt een push naar de groepsleden die nog NIET gereageerd hebben op een
+// speelvoorstel (play_proposals).
 //
 // Aanroep vanaf de client via supabase.functions.invoke("remind-group", {...}),
 // waarbij de Authorization-header van de gebruiker automatisch wordt meegestuurd.
@@ -78,15 +78,27 @@ Deno.serve(async (req) => {
   const uid = userData.user?.id;
   if (!uid) return json({ error: "Niet ingelogd" }, 401);
 
-  let body: { group_id?: string; date?: string };
+  let body: { group_id?: string; proposal_id?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "Geen geldige payload" }, 400);
   }
   const groupId = body.group_id;
-  const date = body.date;
-  if (!groupId || !date) return json({ error: "group_id en date vereist" }, 400);
+  const proposalId = body.proposal_id;
+  if (!groupId || !proposalId) {
+    return json({ error: "group_id en proposal_id vereist" }, 400);
+  }
+
+  // Het voorstel zelf (voor de datum/tijd in de melding) — moet bij de groep horen.
+  const { data: proposal } = await admin
+    .from("play_proposals")
+    .select("date, start_time, group_id")
+    .eq("id", proposalId)
+    .maybeSingle();
+  if (!proposal || proposal.group_id !== groupId) {
+    return json({ error: "Voorstel niet gevonden" }, 404);
+  }
 
   // Alle leden van de groep.
   const { data: members } = await admin
@@ -98,21 +110,26 @@ Deno.serve(async (req) => {
   // Aanroeper moet zelf lid zijn.
   if (!memberIds.includes(uid)) return json({ error: "Geen toegang" }, 403);
 
-  // Leden die voor deze datum al een RSVP hebben ingevuld.
-  const { data: rsvps } = await admin
-    .from("attendance")
+  // Leden die al op dit voorstel reageerden.
+  const { data: reacted } = await admin
+    .from("play_proposal_votes")
     .select("player_id")
-    .eq("group_id", groupId)
-    .eq("date", date);
-  const responded = new Set((rsvps ?? []).map((r) => r.player_id));
+    .eq("proposal_id", proposalId);
+  const responded = new Set((reacted ?? []).map((r) => r.player_id));
 
-  // Herinner iedereen zonder status — behalve de aanroeper zelf.
+  // Herinner iedereen zonder reactie — behalve de aanroeper zelf.
   const recipients = memberIds.filter((id) => id !== uid && !responded.has(id));
+
+  const day = new Intl.DateTimeFormat("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${proposal.date}T12:00:00`));
 
   const sent = await pushTo(recipients, {
     title: "Speel je mee? 🎾",
-    body: "Je groep wacht op jouw aanwezigheid voor de volgende speeldag.",
-    url: `/groepen/${groupId}`,
+    body: `Er ligt een speelvoorstel voor ${day} om ${proposal.start_time} — laat weten of je kunt.`,
+    url: `/groepen/${groupId}?tab=plannen`,
   });
 
   return json({ reminded: recipients.length, sent });

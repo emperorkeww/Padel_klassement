@@ -28,6 +28,15 @@
   display: flex;
   gap: var(--sp-2);
 }
+.proposal-form__note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal-form__note--warn {
+  color: var(--danger);
+}
 
 .proposal-list {
   list-style: none;
@@ -72,6 +81,14 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+.proposal__free {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal__free--none {
+  color: var(--danger);
+  font-weight: 600;
+}
 .proposal__names {
   margin: 0;
   font-size: var(--fs-sm);
@@ -94,6 +111,13 @@
   color: var(--danger);
   border-color: var(--danger-line);
   background: var(--danger-soft);
+}
+
+/* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
+.tonight__players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
 /* Het oude slot-raster als geavanceerde weergave onder de voorstellen. */

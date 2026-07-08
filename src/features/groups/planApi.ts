@@ -2,9 +2,10 @@ import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
 import { addDays } from "../../lib/time";
 
-// Slot-beschikbaarheid per groepslid (datum + "HH:MM" in clubtijd), de fijnere
-// tegenhanger van attendanceApi. Voedt het "Plan samen"-raster dat de stemmen
-// combineert met de vrije banen. Zelfde upsert/cache/RLS-patroon als attendance.
+// Slot-beschikbaarheid per groepslid (datum + "HH:MM" in clubtijd). Voedt het
+// "Plan samen"-raster dat de stemmen combineert met de vrije banen, en weegt
+// mee in de suggestiekaart. Zelfde upsert/cache/RLS-patroon als attendance
+// (de tabel bestaat nog; de RSVP-kaart is vervangen door speelvoorstellen).
 
 export type SlotStatus = "yes" | "no" | "maybe";
 export type SlotVote = {

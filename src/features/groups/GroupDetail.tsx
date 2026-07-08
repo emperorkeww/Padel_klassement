@@ -30,9 +30,10 @@ import { Avatar } from "../../components/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
-import { AttendanceCard } from "./AttendanceCard";
 import { PlanTogether } from "./PlanTogether";
 import { Proposals } from "./Proposals";
+import { SuggestionsCard } from "./SuggestionsCard";
+import { Tonight } from "./Tonight";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
 import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
@@ -268,12 +269,18 @@ export function GroupDetail() {
       </div>
 
       {view === "rondes" && (
-        <AttendanceCard
-          groupId={id}
-          members={memberList}
-          profiles={pmap}
-          myId={myId}
-        />
+        <>
+          {/* Suggesties (beste momenten komende week) vervangen de vroegere
+              aanwezigheids-RSVP; "Vanavond" voedt de teamgenerator met de
+              deelnemers van het speelvoorstel van vandaag. */}
+          <SuggestionsCard groupId={id} myId={myId} matches={matches.data ?? []} />
+          <Tonight
+            groupId={id}
+            members={memberList}
+            profiles={pmap}
+            myId={myId}
+          />
+        </>
       )}
 
       {view === "rondes" && (
