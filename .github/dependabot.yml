@@ -4,6 +4,8 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # PR's tegen develop, zodat updates de normale develop → main-flow volgen.
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -14,5 +16,6 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: monthly
