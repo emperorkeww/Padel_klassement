@@ -106,6 +106,15 @@ describe("<GroupDetail />", () => {
     expect(new Set(players).size).toBe(4); // vier verschillende leden
   });
 
+  it("opent het 'Plan samen'-tabblad", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /^ronde 2$/i });
+    await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+    expect(
+      await screen.findByRole("heading", { name: /plan samen/i }),
+    ).toBeInTheDocument();
+  });
+
   it("toont Stand en Leden in eigen tabbladen", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
