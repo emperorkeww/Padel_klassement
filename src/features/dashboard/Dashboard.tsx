@@ -27,11 +27,13 @@ import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyGroups, type GroupSummary } from "../groups/api";
 import {
-  getGroupProposals,
-  getGroupProposalVotes,
-  type PlayProposal,
-  type ProposalVote,
-} from "../groups/proposalsApi";
+  getGroupPolls,
+  getGroupPollOptions,
+  getGroupPollVotes,
+  type PlayPoll,
+  type PollOption,
+  type PollVote,
+} from "../groups/pollsApi";
 import { MatchList } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import {
@@ -80,13 +82,10 @@ export function Dashboard() {
   // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
   useRefetchOnFocus(availability.reload);
 
-  // Komende speelvoorstellen per eigen groep; hangt af van welke groepen we
+  // Lopende speeldag-polls per eigen groep; hangt af van welke groepen we
   // al kennen, dus opnieuw ophalen zodra die lijst binnen is.
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
-  const openProposals = useAsync(
-    () => loadOpenProposals(groups.data ?? [], today),
-    [groupKey, today],
-  );
+  const openPolls = useAsync(() => loadOpenPolls(groups.data ?? []), [groupKey]);
 
   const onMatches = useCallback(() => {
     standings.reload();
@@ -100,8 +99,8 @@ export function Dashboard() {
   }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
-  useRealtime("play_proposals", openProposals.reload);
-  useRealtime("play_proposal_votes", openProposals.reload);
+  useRealtime("play_polls", openPolls.reload);
+  useRealtime("play_poll_votes", openPolls.reload);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -158,7 +157,7 @@ export function Dashboard() {
   const rival = pickRival(myGames, tmap, myId);
 
   // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
-  const proposalPick = pickOpenProposal(openProposals.data ?? [], myId);
+  const pollPick = pickOpenPoll(openPolls.data ?? [], myId);
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
@@ -293,7 +292,7 @@ export function Dashboard() {
         </section>
       )}
 
-      {(planned.length > 0 || incoming.length > 0 || proposalPick) && (
+      {(planned.length > 0 || incoming.length > 0 || pollPick) && (
         <div className="todo-strip">
           {planned.length > 0 && (
             <Link
@@ -314,13 +313,13 @@ export function Dashboard() {
                 : "vriendschapsverzoeken"}
             </Link>
           )}
-          {proposalPick && (
+          {pollPick && (
             <Link
               className="todo-chip todo-chip--play"
-              to={`/groepen/${proposalPick.group.id}?tab=plannen`}
+              to={`/groepen/${pollPick.group.id}?tab=plannen`}
             >
-              <span className="todo-chip__count">{proposalPick.yes}</span>
-              {`speelvoorstel ${proposalDay(proposalPick.proposal.date)} ${proposalPick.proposal.start_time} — reageer · ${proposalPick.group.name}`}
+              <span className="todo-chip__count">{pollPick.optionCount}</span>
+              {`speeldag-poll — stem over ${pollPick.optionCount === 1 ? "het moment" : `${pollPick.optionCount} momenten`} · ${pollPick.group.name}`}
             </Link>
           )}
         </div>
@@ -677,66 +676,51 @@ function writeFlag(key: string) {
 }
 
 /** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
-async function loadOpenProposals(
+async function loadOpenPolls(
   groups: GroupSummary[],
-  fromDate: string,
 ): Promise<
-  { group: GroupSummary; proposals: PlayProposal[]; votes: ProposalVote[] }[]
+  { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
 > {
   if (groups.length === 0) return [];
   return Promise.all(
     groups.map(async (group) => {
-      const [proposals, votes] = await Promise.all([
-        getGroupProposals(group.id, fromDate),
-        getGroupProposalVotes(group.id),
+      const [polls, options, votes] = await Promise.all([
+        getGroupPolls(group.id),
+        getGroupPollOptions(group.id),
+        getGroupPollVotes(group.id),
       ]);
-      return { group, proposals, votes };
+      return { group, polls, options, votes };
     }),
   );
 }
 
-type ProposalPick = {
+type PollPick = {
   group: GroupSummary;
-  proposal: PlayProposal;
-  yes: number;
+  optionCount: number;
 };
 
-/** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
-function proposalDay(date: string): string {
-  return new Intl.DateTimeFormat("nl-BE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00`));
-}
-
-/** Eerstvolgend speelvoorstel waarop ik nog niet reageerde, of null. */
-function pickOpenProposal(
-  rows: { group: GroupSummary; proposals: PlayProposal[]; votes: ProposalVote[] }[],
+/** Open speeldag-poll waarop ik nog op geen enkele optie stemde, of null. */
+function pickOpenPoll(
+  rows: {
+    group: GroupSummary;
+    polls: PlayPoll[];
+    options: PollOption[];
+    votes: PollVote[];
+  }[],
   myId: string,
-): ProposalPick | null {
-  const open: ProposalPick[] = [];
-  for (const { group, proposals, votes } of rows) {
-    for (const p of proposals) {
-      const mine = votes.some(
-        (v) => v.proposal_id === p.id && v.player_id === myId,
-      );
-      if (mine) continue;
-      open.push({
-        group,
-        proposal: p,
-        yes: votes.filter(
-          (v) => v.proposal_id === p.id && v.status === "yes",
-        ).length,
-      });
-    }
+): PollPick | null {
+  for (const { group, polls, options, votes } of rows) {
+    const open = polls.find((p) => p.status === "open");
+    if (!open) continue;
+    const optionIds = new Set(
+      options.filter((o) => o.poll_id === open.id).map((o) => o.id),
+    );
+    const mine = votes.some(
+      (v) => optionIds.has(v.option_id) && v.player_id === myId,
+    );
+    if (!mine) return { group, optionCount: optionIds.size };
   }
-  open.sort((a, b) =>
-    a.proposal.date === b.proposal.date
-      ? a.proposal.start_time.localeCompare(b.proposal.start_time)
-      : a.proposal.date.localeCompare(b.proposal.date),
-  );
-  return open[0] ?? null;
+  return null;
 }
 
 type RivalRec = { won: number; drawn: number; lost: number; played: number };

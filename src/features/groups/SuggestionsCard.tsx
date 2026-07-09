@@ -1,20 +1,21 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
-import { addDays, dateInZone } from "../../lib/time";
+import { dateInZone } from "../../lib/time";
 import { getWeekAvailability, type WeekDay } from "../availability/api";
 import { weekHeatmap } from "../availability/availabilityShare";
 import { useClub } from "../availability/club";
 import { getGroupSlotVotes, type SlotVote } from "./planApi";
 import {
-  getGroupProposals,
-  getGroupProposalVotes,
-  createProposal,
-  type PlayProposal,
-} from "./proposalsApi";
-import { tallyProposal } from "./proposalLogic";
+  getGroupPolls,
+  getGroupPollOptions,
+  getGroupPollVotes,
+  createPoll,
+} from "./pollsApi";
+import { tallyOption } from "./pollLogic";
 import {
   playedMoments,
   suggestMoments,
@@ -24,12 +25,9 @@ import type { Match } from "../../lib/types";
 import "./Proposals.css";
 
 // Suggestiekaart: stelt de beste speelmomenten van de komende week voor op
-// basis van vrije banen, slot-stemmen van leden, de speelhistoriek van de
-// groep en eerder succesvolle voorstellen. Eén tik zet een suggestie om in
-// een echt speelvoorstel (op de Plannen-tab).
-
-/** Zoveel dagen terug kijken we voor historiek en eerdere voorstellen. */
-const HISTORY_DAYS = 60;
+// basis van vrije banen, wie al aangaf te kunnen (poll- en slot-stemmen),
+// de speelhistoriek van de groep en eerder goed gesteunde poll-opties.
+// Eén tik start er een speeldag-poll mee (als er nog geen loopt).
 
 function shortDay(date: string): string {
   return new Intl.DateTimeFormat("nl-BE", {
@@ -52,65 +50,89 @@ export function SuggestionsCard({
   const club = useClub();
   const toast = useToast();
   const today = dateInZone(club.timezone);
-  const [proposing, setProposing] = useState<string | null>(null);
 
   const week = useAsync<WeekDay[]>(() => getWeekAvailability(today), [today, club.id]);
   const slotVotes = useAsync<SlotVote[]>(
     () => getGroupSlotVotes(groupId, today),
     [groupId, today],
   );
-  const proposals = useAsync<PlayProposal[]>(
-    () => getGroupProposals(groupId, addDays(today, -HISTORY_DAYS)),
-    [groupId, today],
+  const polls = useAsync(() => getGroupPolls(groupId), [groupId]);
+  const options = useAsync(() => getGroupPollOptions(groupId), [groupId]);
+  const votes = useAsync(() => getGroupPollVotes(groupId), [groupId]);
+  useRealtime("play_polls", polls.reload, `group_id=eq.${groupId}`);
+  useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
+
+  const livePolls = useMemo(
+    () => (polls.data ?? []).filter((p) => p.status !== "cancelled"),
+    [polls.data],
   );
-  const propVotes = useAsync(() => getGroupProposalVotes(groupId), [groupId]);
-  useRealtime("play_proposals", proposals.reload, `group_id=eq.${groupId}`);
-  useRealtime("slot_availability", slotVotes.reload, `group_id=eq.${groupId}`);
+  const hasRunningPoll = livePolls.some(
+    (p) => p.status === "open" || p.status === "locked",
+  );
 
   const suggestions: Suggestion[] = useMemo(() => {
     const heat = weekHeatmap(week.data ?? [], null);
-    const all = proposals.data ?? [];
-    const past = all.filter((p) => p.date < today);
-    const pastPlayable = past.filter(
-      (p) => tallyProposal(p, propVotes.data ?? []).playable,
+    const liveIds = new Set(livePolls.map((p) => p.id));
+    const allOptions = (options.data ?? []).filter((o) => liveIds.has(o.poll_id));
+
+    // Stemmen op komende poll-opties tellen mee als "kan dan"-signaal,
+    // naast de (historische) slot-stemmen uit het vroegere raster.
+    const optionById = new Map(allOptions.map((o) => [o.id, o]));
+    const pollVoteSignals: SlotVote[] = (votes.data ?? []).flatMap((v) => {
+      const o = optionById.get(v.option_id);
+      if (!o || o.date < today) return [];
+      return [
+        {
+          group_id: v.group_id,
+          player_id: v.player_id,
+          date: o.date,
+          start_time: o.start_time,
+          status: v.status,
+          updated_at: v.updated_at,
+        },
+      ];
+    });
+
+    // Eerdere opties met genoeg spelers = bewezen goede momenten.
+    const pastPlayable = allOptions.filter(
+      (o) =>
+        o.date < today && tallyOption(o, votes.data ?? []).enoughPlayers,
     );
+
     const history = playedMoments(
       matches
         .filter((m) => m.status === "completed")
         .map((m) => m.played_at ?? m.created_at),
       club.timezone,
     );
+
     return suggestMoments({
       heat,
-      slotVotes: slotVotes.data ?? [],
+      slotVotes: [...(slotVotes.data ?? []), ...pollVoteSignals],
       history,
       pastPlayable,
-      existing: all.filter((p) => p.date >= today),
+      existing: allOptions.filter((o) => o.date >= today),
     });
-  }, [week.data, slotVotes.data, proposals.data, propVotes.data, matches, today, club.timezone]);
+  }, [week.data, slotVotes.data, livePolls, options.data, votes.data, matches, today, club.timezone]);
 
-  async function propose(s: Suggestion) {
-    setProposing(`${s.date}|${s.time}`);
+  async function startPoll(s: Suggestion) {
     try {
-      await createProposal({
+      await createPoll({
         groupId,
         createdBy: myId,
-        date: s.date,
-        startTime: s.time,
-        courts: 1,
-        clubName: club.name ?? null,
+        options: [
+          { date: s.date, startTime: s.time, duration: 90, courtsFree: s.freeCourts },
+        ],
       });
-      proposals.reload();
-      propVotes.reload();
-      toast.success("Voorstel geplaatst — bekijk het op de Plannen-tab.");
+      polls.reload();
+      options.reload();
+      toast.success("Poll gestart — de groep kan stemmen op de Plannen-tab.");
     } catch (err) {
       toast.error(errorMessage(err));
-    } finally {
-      setProposing(null);
     }
   }
 
-  const loading = week.loading || proposals.loading;
+  const loading = week.loading || polls.loading;
 
   return (
     <section className="card">
@@ -125,7 +147,7 @@ export function SuggestionsCard({
       {!loading && suggestions.length === 0 && (
         <p className="empty">
           Geen vrije momenten gevonden deze week. Kijk op de Plannen-tab voor
-          het volledige overzicht.
+          de lopende poll of start er zelf één.
         </p>
       )}
 
@@ -139,13 +161,18 @@ export function SuggestionsCard({
               <span className="proposal__meta">{s.reasons.join(" · ")}</span>
             </div>
             <div className="proposal__actions">
-              <button
-                className="btn btn--sm btn--primary"
-                disabled={proposing !== null}
-                onClick={() => propose(s)}
-              >
-                {proposing === `${s.date}|${s.time}` ? "Bezig…" : "Stel voor"}
-              </button>
+              {hasRunningPoll ? (
+                <Link className="btn btn--sm" to={`/groepen/${groupId}?tab=plannen`}>
+                  Bekijk de lopende poll →
+                </Link>
+              ) : (
+                <button
+                  className="btn btn--sm btn--primary"
+                  onClick={() => startPoll(s)}
+                >
+                  Start poll met dit moment
+                </button>
+              )}
             </div>
           </li>
         ))}

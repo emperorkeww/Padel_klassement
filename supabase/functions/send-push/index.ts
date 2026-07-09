@@ -108,7 +108,107 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
     };
   }
 
+  // Speeldag-polls: nieuwe poll → hele groep; gelockt/geboekt → de stemmers.
+  if (payload.table === "play_polls") {
+    const rec = payload.record as {
+      id: string;
+      group_id: string;
+      created_by: string;
+      status: string;
+      locked_option_id: string | null;
+    };
+    const old = payload.old_record as { status?: string } | null;
+
+    if (payload.type === "INSERT") {
+      const { data: members } = await supabase
+        .from("group_members")
+        .select("player_id")
+        .eq("group_id", rec.group_id);
+      return {
+        recipients: (members ?? [])
+          .map((m) => m.player_id)
+          .filter((id) => id !== rec.created_by),
+        title: "Nieuwe speeldag-poll 🎾",
+        body: `${await nameOf(rec.created_by)} stelt momenten voor — stem wanneer je kunt.`,
+        url: `/groepen/${rec.group_id}?tab=plannen`,
+      };
+    }
+
+    if (
+      payload.type === "UPDATE" &&
+      old?.status === "open" &&
+      rec.status === "locked" &&
+      rec.locked_option_id
+    ) {
+      const moment = await pollMoment(rec.locked_option_id);
+      const voters = await pollVoters(rec.id);
+      return {
+        recipients: voters,
+        title: "Speelmoment gekozen 🎾",
+        body: `De groep speelt ${moment}. Kijk of je erbij bent.`,
+        url: `/groepen/${rec.group_id}?tab=plannen`,
+      };
+    }
+
+    if (
+      payload.type === "UPDATE" &&
+      old?.status !== "booked" &&
+      rec.status === "booked" &&
+      rec.locked_option_id
+    ) {
+      const moment = await pollMoment(rec.locked_option_id);
+      const yes = await optionYesVoters(rec.locked_option_id);
+      return {
+        recipients: yes,
+        title: "Baan geboekt ✓",
+        body: `Jullie spelen ${moment}. Zet het in je agenda!`,
+        url: `/groepen/${rec.group_id}?tab=plannen`,
+      };
+    }
+  }
+
   return null;
+}
+
+/** "vrijdag 11 juli om 20:00" van de gekozen optie. */
+async function pollMoment(optionId: string): Promise<string> {
+  const { data } = await supabase
+    .from("play_poll_options")
+    .select("date, start_time")
+    .eq("id", optionId)
+    .maybeSingle();
+  if (!data) return "binnenkort";
+  const day = new Intl.DateTimeFormat("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${data.date}T12:00:00`));
+  return `${day} om ${data.start_time}`;
+}
+
+/** Alle unieke stemmers op een poll (welke optie of status dan ook). */
+async function pollVoters(pollId: string): Promise<string[]> {
+  const { data: options } = await supabase
+    .from("play_poll_options")
+    .select("id")
+    .eq("poll_id", pollId);
+  const ids = (options ?? []).map((o) => o.id);
+  if (ids.length === 0) return [];
+  const { data: votes } = await supabase
+    .from("play_poll_votes")
+    .select("player_id")
+    .in("option_id", ids);
+  return [...new Set((votes ?? []).map((v) => v.player_id))];
+}
+
+/** De "ja"-stemmers op één optie. */
+async function optionYesVoters(optionId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("play_poll_votes")
+    .select("player_id")
+    .eq("option_id", optionId)
+    .eq("status", "yes");
+  return [...new Set((data ?? []).map((v) => v.player_id))];
 }
 
 Deno.serve(async (req) => {

@@ -5,19 +5,19 @@ import { dateInZone } from "../../lib/time";
 import { useClub } from "../availability/club";
 import { displayName } from "../profiles/api";
 import {
-  getGroupProposals,
-  getGroupProposalVotes,
-  type PlayProposal,
-} from "./proposalsApi";
-import { tallyProposal } from "./proposalLogic";
+  getGroupPolls,
+  getGroupPollOptions,
+  getGroupPollVotes,
+  type PollOption,
+} from "./pollsApi";
+import { tallyOption } from "./pollLogic";
 import { FairTeamsCard } from "./FairTeams";
 import type { GroupMember, Profile } from "../../lib/types";
 import "./Proposals.css";
 
-// "Vanavond": de deelnemers van het speelvoorstel van vandaag, met de
-// eerlijke-teams-generator eronder. Vervangt de aanwezigheids-RSVP als bron
-// voor wie er meespeelt; de selectie is handmatig bij te sturen (invaller,
-// late beslisser) vóór het genereren.
+// "Vanavond": de deelnemers van het gekozen/meest gesteunde poll-moment van
+// vandaag, met de eerlijke-teams-generator eronder. De selectie is handmatig
+// bij te sturen (invaller, late beslisser) vóór het genereren.
 
 export function Tonight({
   groupId,
@@ -33,29 +33,45 @@ export function Tonight({
   const club = useClub();
   const today = dateInZone(club.timezone);
 
-  const proposals = useAsync<PlayProposal[]>(
-    () => getGroupProposals(groupId, today),
-    [groupId, today],
-  );
-  const votes = useAsync(() => getGroupProposalVotes(groupId), [groupId]);
-  useRealtime("play_proposals", proposals.reload, `group_id=eq.${groupId}`);
-  useRealtime("play_proposal_votes", votes.reload, `group_id=eq.${groupId}`);
+  const polls = useAsync(() => getGroupPolls(groupId), [groupId]);
+  const options = useAsync(() => getGroupPollOptions(groupId), [groupId]);
+  const votes = useAsync(() => getGroupPollVotes(groupId), [groupId]);
+  useRealtime("play_polls", polls.reload, `group_id=eq.${groupId}`);
+  useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
-  // Het voorstel van vandaag met de meeste deelnemers (meestal is er maar één).
+  // Het moment van vandaag: het gelockte/geboekte moment wint; anders de
+  // best gesteunde optie van vandaag uit een open poll.
   const tonight = useMemo(() => {
-    const todays = (proposals.data ?? []).filter((p) => p.date === today);
-    let best: { proposal: PlayProposal; yes: string[] } | null = null;
-    for (const p of todays) {
-      const t = tallyProposal(p, votes.data ?? []);
-      if (!best || t.yes.length > best.yes.length) {
-        best = { proposal: p, yes: t.yes };
+    const live = (polls.data ?? []).filter((p) => p.status !== "cancelled");
+    const todaysOptions = (options.data ?? []).filter(
+      (o) => o.date === today && live.some((p) => p.id === o.poll_id),
+    );
+    if (todaysOptions.length === 0) return null;
+
+    const chosen = todaysOptions.find((o) =>
+      live.some(
+        (p) =>
+          p.locked_option_id === o.id &&
+          (p.status === "locked" || p.status === "booked"),
+      ),
+    );
+    let best: PollOption | null = chosen ?? null;
+    if (!best) {
+      let bestYes = -1;
+      for (const o of todaysOptions) {
+        const yes = tallyOption(o, votes.data ?? []).yes.length;
+        if (yes > bestYes) {
+          bestYes = yes;
+          best = o;
+        }
       }
     }
-    return best;
-  }, [proposals.data, votes.data, today]);
+    if (!best) return null;
+    return { option: best, yes: tallyOption(best, votes.data ?? []).yes };
+  }, [polls.data, options.data, votes.data, today]);
 
-  // Handmatig bij te sturen selectie, voorgevuld met de "mee"-stemmers.
-  // Nieuwe stemmen overschrijven een handmatige keuze bewust: de reacties
+  // Handmatig bij te sturen selectie, voorgevuld met de "kan"-stemmers.
+  // Nieuwe stemmen overschrijven een handmatige keuze bewust: de stemmen
   // zijn de bron van waarheid, de toggles zijn een last-minute correctie.
   const yesKey = tonight?.yes.join(",") ?? "";
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -78,10 +94,10 @@ export function Tonight({
     <>
       <section className="card">
         <h2 className="card__title">
-          Vanavond · {tonight.proposal.start_time}
+          Vanavond · {tonight.option.start_time}
         </h2>
         <p className="proposals__hint">
-          Deelnemers uit het voorstel van vandaag; tik namen aan of uit om
+          Deelnemers uit de poll van vandaag; tik namen aan of uit om
           last-minute te corrigeren.
         </p>
         <div className="tonight__players" role="group" aria-label="Deelnemers">

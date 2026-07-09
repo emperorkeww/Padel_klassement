@@ -9,21 +9,22 @@ vi.mock("../../lib/supabase", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
   const { dateInZone } = await import("../../lib/time");
-  // Eén voorstel voor vandaag waar alle vier de leden op "mee" staan, zodat
-  // de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen hebben.
+  // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,
+  // zodat de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen
+  // hebben.
   const today = dateInZone("Europe/Brussels");
-  const tonight = {
-    id: "prop-today",
+  const tonightOption = {
+    id: "opt-today",
+    poll_id: "poll-1",
     group_id: "g1",
-    created_by: "p1",
     date: today,
     start_time: "20:00",
-    courts: 1,
-    club_name: null,
+    duration: 90,
+    courts_free: 2,
     created_at: "2026-07-08T10:00:00.000Z",
   };
   const tonightVotes = ["p1", "p2", "p3", "p4"].map((pid) => ({
-    proposal_id: "prop-today",
+    option_id: "opt-today",
     group_id: "g1",
     player_id: pid,
     status: "yes",
@@ -34,8 +35,8 @@ vi.mock("../../lib/supabase", async () => {
       session: SESSION,
       tables: {
         ...TABLES,
-        play_proposals: [...TABLES.play_proposals, tonight],
-        play_proposal_votes: [...TABLES.play_proposal_votes, ...tonightVotes],
+        play_poll_options: [...TABLES.play_poll_options, tonightOption],
+        play_poll_votes: [...TABLES.play_poll_votes, ...tonightVotes],
       },
       rpc: ["m-x"],
     }),
@@ -161,31 +162,27 @@ describe("<GroupDetail />", () => {
     expect(new Set(players).size).toBe(4); // vier verschillende leden
   });
 
-  it("toont speelvoorstellen op het plannen-tabblad; het raster zit achter 'geavanceerd'", async () => {
+  it("toont de speeldag-poll op het plannen-tabblad met banen-balans", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
 
     expect(
-      await screen.findByRole("heading", { name: /speelvoorstellen/i }),
+      await screen.findByRole("heading", { name: /speeldag-poll/i }),
     ).toBeInTheDocument();
-    // Het voorstel uit de fixtures: 2 doen mee, nog 2 nodig, 1 misschien.
+    // De optie uit de fixtures: 2 kunnen (→ 1 baan nodig), snapshot 2 vrij.
     expect(
       await screen.findByText(/zaterdag 5 januari · 20:00/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/2 mee · nog 2 nodig/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 mee → 1 baan nodig/i)).toBeInTheDocument();
     expect(screen.getByText(/1 misschien/i)).toBeInTheDocument();
     expect(
-      screen.getAllByRole("button", { name: /ik doe mee/i }).length,
+      screen.getAllByRole("button", { name: /^ik kan$/i }).length,
     ).toBeGreaterThan(0);
-
-    // Het slot-raster blijft bestaan, maar ingeklapt als geavanceerde weergave.
+    // Alice is de maker: zij kan een moment vastleggen.
     expect(
-      screen.getByText(/geavanceerd: beschikbaarheid per tijdslot/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: /plan samen/i }),
-    ).not.toBeInTheDocument();
+      screen.getAllByRole("button", { name: /kies dit moment/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("toont Stand en Leden in eigen tabbladen", async () => {

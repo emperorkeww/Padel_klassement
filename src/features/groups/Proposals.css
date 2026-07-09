@@ -113,6 +113,52 @@
   background: var(--danger-soft);
 }
 
+/* Poll-wizard: vrije slots per dag als tikbare chips. */
+.poll-wizard {
+  display: grid;
+  gap: var(--sp-3);
+}
+.poll-wizard__day {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.poll-wizard__daylabel {
+  min-width: 84px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.poll-wizard__daylabel::first-letter {
+  text-transform: uppercase;
+}
+.poll-wizard__manual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--line);
+}
+
+/* Poll-opties: linkerrand kleurt mee met de haalbaarheid. */
+.poll-option--haalbaar {
+  border-left: 3px solid var(--success);
+}
+.poll-option--krap {
+  border-left: 3px solid var(--gold);
+}
+.poll-option--onhaalbaar {
+  border-left: 3px solid var(--danger);
+  opacity: 0.85;
+}
+.poll-option--onbekend {
+  border-left: 3px dashed var(--line-strong);
+}
+.poll-card__footer {
+  margin-top: var(--sp-3);
+}
+
 /* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
 .tonight__players {
   display: flex;

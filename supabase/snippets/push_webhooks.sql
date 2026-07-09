@@ -42,3 +42,13 @@ create trigger push_on_match_update
 create trigger push_on_friendship_insert
   after insert on public.friendships
   for each row execute function public.notify_send_push();
+
+-- Speeldag-polls: nieuwe poll (naar de groep) en gelockt/geboekt (naar de
+-- stemmers) — zie de play_polls-handlers in send-push.
+create trigger push_on_poll_insert
+  after insert on public.play_polls
+  for each row execute function public.notify_send_push();
+
+create trigger push_on_poll_update
+  after update on public.play_polls
+  for each row execute function public.notify_send_push();

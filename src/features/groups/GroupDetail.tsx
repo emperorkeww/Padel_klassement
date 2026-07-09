@@ -30,8 +30,7 @@ import { Avatar } from "../../components/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
-import { PlanTogether } from "./PlanTogether";
-import { Proposals } from "./Proposals";
+import { PollSection } from "./PlanPoll";
 import { SuggestionsCard } from "./SuggestionsCard";
 import { Tonight } from "./Tonight";
 import { ShareEvening } from "./ShareEvening";
@@ -94,8 +93,6 @@ export function GroupDetail() {
   // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
-  // Slot-raster ("geavanceerd" op de plan-tab) pas mounten bij openklappen.
-  const [showGrid, setShowGrid] = useState(false);
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
@@ -478,31 +475,12 @@ export function GroupDetail() {
       )}
 
       {view === "plannen" && (
-        <>
-          <Proposals
-            groupId={id}
-            profiles={pmap}
-            myId={myId}
-            isOwner={isOwner}
-          />
-          {/* Het fijnmazige slot-raster blijft als geavanceerde weergave;
-              pas mounten bij openklappen zodat de Playtomic-data niet
-              onnodig geladen wordt. */}
-          <details
-            className="plan-advanced"
-            onToggle={(e) => setShowGrid((e.target as HTMLDetailsElement).open)}
-          >
-            <summary>Geavanceerd: beschikbaarheid per tijdslot</summary>
-            {showGrid && (
-              <PlanTogether
-                groupId={id}
-                members={memberList}
-                profiles={pmap}
-                myId={myId}
-              />
-            )}
-          </details>
-        </>
+        <PollSection
+          groupId={id}
+          profiles={pmap}
+          myId={myId}
+          isOwner={isOwner}
+        />
       )}
 
       {view === "stand" && (
