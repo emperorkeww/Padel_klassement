@@ -916,7 +916,7 @@ function PollCard({
                     ))}
                   </span>
                 ) : (
-                  <span className="proposal__meta">
+                  <span className="proposal__meta poll-row__alt">
                     {o.date < today ? "voorbij" : `${t.yes.length} mee`}
                   </span>
                 )}

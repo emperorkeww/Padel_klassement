@@ -225,6 +225,7 @@
 .wizard-footer {
   position: sticky;
   bottom: 0;
+  z-index: 2; /* boven de content die eronderdoor scrolt */
   display: grid;
   gap: var(--sp-2);
   padding: var(--sp-3) 0 var(--sp-1);
@@ -402,6 +403,78 @@
   border-left: 3px solid var(--line);
   background: var(--surface-2);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Mobiel: de stemrij past niet op één regel (moment + avatars + status +
+   segment ≈ 420px). Op smal formaat wordt hij een 2-regel grid en groeien
+   de tikdoelen naar ≥ 40-44px. */
+@media (max-width: 480px) {
+  .poll-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "when state"
+      "people votes";
+    row-gap: var(--sp-2);
+    align-items: center;
+  }
+  .poll-row__when {
+    grid-area: when;
+    white-space: normal;
+  }
+  .poll-row__state {
+    grid-area: state;
+    justify-self: end;
+    width: 36px;
+    height: 36px;
+  }
+  .poll-row__people {
+    grid-area: people;
+  }
+  .seg,
+  .poll-row__alt {
+    grid-area: votes;
+    justify-self: end;
+  }
+  .seg__btn {
+    width: 48px;
+    height: 44px;
+  }
+  .slot-chip {
+    padding: var(--sp-3) var(--sp-4);
+  }
+  .day-chip {
+    min-width: 52px;
+    padding: var(--sp-2);
+  }
+  .winner-card__when {
+    font-size: var(--fs-md);
+  }
+  .winner-card__actions .btn,
+  .winner-card__rounds .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
+  }
+  /* "Ander moment": velden in een net 2-koloms grid i.p.v. een
+     overlopende flexrij; knop en toelichting over de volle breedte. */
+  .poll-wizard__manual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+    align-items: end;
+  }
+  .poll-wizard__manual .proposal-form__field {
+    min-width: 0;
+  }
+  .poll-wizard__manual .select {
+    width: 100%;
+    min-width: 0;
+  }
+  .poll-wizard__manual .btn,
+  .poll-wizard__manual .proposal-form__note {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Winnaar-kaart: baangroene kopbalk, lichte body met nette secties.
