@@ -824,9 +824,9 @@ function PollCard({
                 )}
                 {/* Rondes genereren: expliciete actie zodra de datum vastligt
                     en er genoeg bevestigde spelers zijn (4 per baan). */}
-                <div className="proposal__links">
+                <div className="winner-card__rounds">
                   <button
-                    className={`btn btn--sm${roundsMade === 0 ? " btn--primary" : ""}`}
+                    className="btn btn--sm winner-card__rounds-btn"
                     disabled={busy || t.yes.length < 4}
                     title={
                       t.yes.length < 4
@@ -840,10 +840,10 @@ function PollCard({
                       ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
                   </button>
                   {t.yes.length < 4 && (
-                    <span className="proposal__meta">
-                      nog {4 - t.yes.length} bevestigde{" "}
-                      {4 - t.yes.length === 1 ? "speler" : "spelers"} nodig voor
-                      rondes
+                    <span className="winner-card__rounds-hint">
+                      Nog <strong>{4 - t.yes.length}</strong> bevestigde{" "}
+                      {4 - t.yes.length === 1 ? "speler" : "spelers"} nodig om
+                      rondes te maken
                     </span>
                   )}
                 </div>
