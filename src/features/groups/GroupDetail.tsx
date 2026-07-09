@@ -477,6 +477,7 @@ export function GroupDetail() {
       {view === "plannen" && (
         <PollSection
           groupId={id}
+          groupName={group.data.name}
           profiles={pmap}
           myId={myId}
           isOwner={isOwner}

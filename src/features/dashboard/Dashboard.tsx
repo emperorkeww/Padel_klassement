@@ -157,7 +157,7 @@ export function Dashboard() {
   const rival = pickRival(myGames, tmap, myId);
 
   // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
-  const pollPick = pickOpenPoll(openPolls.data ?? [], myId);
+  const pollPick = pickPollBanner(openPolls.data ?? [], myId, today);
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
@@ -316,9 +316,9 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Lopende speeldag-poll: prominent op het overzicht, zodat niemand
-          mist dat er nog een datum geprikt moet worden. */}
-      {pollPick && (
+      {/* Speeldag op het overzicht: een lopende poll om op te stemmen, of de
+          vastgelegde/geboekte datum als reminder bij het inloggen. */}
+      {pollPick?.kind === "open" && (
         <section className="card poll-banner">
           <div className="card__head">
             <h2 className="card__title card__title--tight">
@@ -340,6 +340,26 @@ export function Dashboard() {
             to={`/groepen/${pollPick.group.id}?tab=plannen`}
           >
             {pollPick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
+          </Link>
+        </section>
+      )}
+      {pollPick?.kind === "fixed" && (
+        <section className="card poll-banner poll-banner--fixed">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              🎾 Speeldag {pollPick.booked ? "geboekt" : "gekozen"} ·{" "}
+              {pollPick.group.name}
+            </h2>
+          </div>
+          <p className="poll-banner__text">
+            Jullie spelen {pollDay(pollPick.date)} om {pollPick.startTime}
+            {pollPick.booked ? " — baan geboekt ✓" : " — baan nog te boeken."}
+          </p>
+          <Link
+            className={`btn btn--sm${pollPick.booked ? "" : " btn--primary"}`}
+            to={`/groepen/${pollPick.group.id}?tab=plannen`}
+          >
+            {pollPick.booked ? "Bekijk →" : "Regel de baan →"}
           </Link>
         </section>
       )}
@@ -713,15 +733,36 @@ async function loadOpenPolls(
   );
 }
 
-type PollPick = {
-  group: GroupSummary;
-  optionCount: number;
-  voterCount: number;
-  iVoted: boolean;
-};
+type PollPick =
+  | {
+      kind: "open";
+      group: GroupSummary;
+      optionCount: number;
+      voterCount: number;
+      iVoted: boolean;
+    }
+  | {
+      kind: "fixed";
+      group: GroupSummary;
+      booked: boolean;
+      date: string;
+      startTime: string;
+    };
 
-/** Eerste lopende (open) speeldag-poll in mijn groepen, of null. */
-function pickOpenPoll(
+/** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
+function pollDay(date: string): string {
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T12:00:00`));
+}
+
+/**
+ * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
+ * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
+ */
+function pickPollBanner(
   rows: {
     group: GroupSummary;
     polls: PlayPoll[];
@@ -729,20 +770,39 @@ function pickOpenPoll(
     votes: PollVote[];
   }[],
   myId: string,
+  today: string,
 ): PollPick | null {
   for (const { group, polls, options, votes } of rows) {
     const open = polls.find((p) => p.status === "open");
-    if (!open) continue;
-    const optionIds = new Set(
-      options.filter((o) => o.poll_id === open.id).map((o) => o.id),
+    if (open) {
+      const optionIds = new Set(
+        options.filter((o) => o.poll_id === open.id).map((o) => o.id),
+      );
+      const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
+      return {
+        kind: "open",
+        group,
+        optionCount: optionIds.size,
+        voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
+        iVoted: pollVotes.some((v) => v.player_id === myId),
+      };
+    }
+    const fixed = polls.find(
+      (p) =>
+        (p.status === "locked" || p.status === "booked") && p.locked_option_id,
     );
-    const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
-    return {
-      group,
-      optionCount: optionIds.size,
-      voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
-      iVoted: pollVotes.some((v) => v.player_id === myId),
-    };
+    if (fixed) {
+      const opt = options.find((o) => o.id === fixed.locked_option_id);
+      if (opt && opt.date >= today) {
+        return {
+          kind: "fixed",
+          group,
+          booked: fixed.status === "booked",
+          date: opt.date,
+          startTime: opt.start_time,
+        };
+      }
+    }
   }
   return null;
 }

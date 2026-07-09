@@ -196,6 +196,15 @@ export async function markPollBooked(pollId: string): Promise<void> {
   invalidate("play-poll");
 }
 
+/** Heropent een gelockte poll: terug naar stemmen (maker of eigenaar). */
+export async function reopenPoll(pollId: string): Promise<void> {
+  const { error } = await pollTable()
+    .update({ status: "open", locked_option_id: null })
+    .eq("id", pollId);
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
 /** Annuleert een poll (maker of eigenaar); stemmen blijven bewaard. */
 export async function cancelPoll(pollId: string): Promise<void> {
   const { error } = await pollTable()

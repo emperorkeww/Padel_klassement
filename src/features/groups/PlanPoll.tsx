@@ -9,6 +9,7 @@ import { icsEvent, downloadIcs } from "../../lib/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";
 import { dayStarts } from "../availability/availabilityShare";
 import { useClub } from "../availability/club";
+import { shareOrCopyText } from "../../lib/shareText";
 import { displayName } from "../profiles/api";
 import {
   getGroupPolls,
@@ -19,6 +20,7 @@ import {
   clearPollVote,
   lockPoll,
   markPollBooked,
+  reopenPoll,
   cancelPoll,
   remindPoll,
   type PlayPoll,
@@ -79,11 +81,13 @@ function floorHalfHour(time: string): string {
 
 export function PollSection({
   groupId,
+  groupName,
   profiles,
   myId,
   isOwner,
 }: {
   groupId: string;
+  groupName: string;
   profiles: Record<string, Profile>;
   myId: string;
   isOwner: boolean;
@@ -129,6 +133,7 @@ export function PollSection({
     return (
       <PollCard
         poll={active}
+        groupName={groupName}
         options={pollOptions(active, options.data ?? [])}
         votes={votes.data ?? []}
         week={week.data ?? []}
@@ -479,6 +484,7 @@ function PollWizard({
 
 function PollCard({
   poll,
+  groupName,
   options,
   votes,
   week,
@@ -489,6 +495,7 @@ function PollCard({
   onChanged,
 }: {
   poll: PlayPoll;
+  groupName: string;
   options: PollOption[];
   votes: PollVote[];
   week: WeekDay[];
@@ -587,6 +594,33 @@ function PollCard({
     );
   }
 
+  /** Deeltekst voor de groepschat: het vastgelegde moment + deelnemers. */
+  async function shareWinner() {
+    if (!locked) return;
+    const t = tallyOption(locked, votes);
+    const lines = [
+      `🎾 Padel — ${groupName}`,
+      `📅 ${longDay(locked.date)} om ${locked.start_time} (${locked.duration} min)`,
+      `📍 ${club.name}`,
+      t.yes.length > 0
+        ? `👥 Doet mee: ${t.yes.map(name).join(", ")}`
+        : "👥 Nog geen bevestigde deelnemers — stem mee in de app!",
+      poll.status === "booked"
+        ? "✅ Baan geboekt — tot dan!"
+        : `⏳ Baan nog boeken: ${bookingUrl(locked.date)}`,
+    ];
+    try {
+      const outcome = await shareOrCopyText({
+        title: `Padel ${shortDay(locked.date)}`,
+        text: lines.join("\n"),
+      });
+      if (outcome === "clipboard") toast.success("Tekst gekopieerd naar klembord.");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      toast.error(errorMessage(err));
+    }
+  }
+
   const phase = poll.status === "open" ? 0 : poll.status === "locked" ? 1 : 2;
   const steps = ["Stemmen", "Gekozen", "Geboekt"];
 
@@ -671,6 +705,9 @@ function PollCard({
                         Baan geboekt ✓
                       </button>
                     )}
+                    <button className="btn btn--sm" onClick={shareWinner}>
+                      ↗ Deel
+                    </button>
                   </div>
                 )}
                 {poll.status === "booked" && (
@@ -678,6 +715,9 @@ function PollCard({
                     <span className="badge badge--win">Geboekt ✓</span>
                     <button className="btn btn--sm" onClick={exportIcs}>
                       📅 Zet in agenda
+                    </button>
+                    <button className="btn btn--sm" onClick={shareWinner}>
+                      ↗ Deel
                     </button>
                   </div>
                 )}
@@ -789,7 +829,17 @@ function PollCard({
             Kies {shortDay(bestOption.date)} · {bestOption.start_time}
           </button>
         )}
-        {isManager && poll.status !== "booked" && (
+        {isManager && poll.status === "locked" && (
+          <button
+            className="btn btn--sm"
+            disabled={busy}
+            title="Terug naar de stemfase; het gekozen moment vervalt"
+            onClick={() => run(() => reopenPoll(poll.id), "Stemmen heropend.")}
+          >
+            ↩ Heropen stemmen
+          </button>
+        )}
+        {isManager && (
           <button
             className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
             disabled={busy}
@@ -798,11 +848,18 @@ function PollCard({
                 setConfirmCancel(true);
                 return;
               }
-              run(() => cancelPoll(poll.id), "Poll geannuleerd.");
+              run(
+                () => cancelPoll(poll.id),
+                poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
+              );
             }}
             onBlur={() => setConfirmCancel(false)}
           >
-            {confirmCancel ? "Zeker? Tik nogmaals" : "Annuleer poll"}
+            {confirmCancel
+              ? "Zeker? Tik nogmaals"
+              : poll.status === "open"
+                ? "Annuleer poll"
+                : "Annuleer speeldag"}
           </button>
         )}
       </div>
