@@ -26,6 +26,7 @@ import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api"
 import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
+import { Podium } from "../../components/Podium";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
@@ -531,65 +532,94 @@ export function GroupDetail() {
                   played,
                   (pid) => displayName(pmap[pid]),
                 );
+                const lastDelta = (pid: string) => {
+                  const hist = histories.data?.[pid] ?? [];
+                  return hist[hist.length - 1]?.delta ?? null;
+                };
+                // Top 3 met rating op het podium; de tabel begint vanaf #4.
+                const podium = rows.filter((r) => r.rating != null).slice(0, 3);
+                const rest = rows.slice(podium.length);
                 return (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Speler</th>
-                        <th className="num">Rating</th>
-                        <th className="num">Δ</th>
-                        <th className="num">G</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r, i) => {
-                        const hist = histories.data?.[r.playerId] ?? [];
-                        const last = hist[hist.length - 1];
-                        return (
-                          <tr
-                            key={r.playerId}
-                            className={`${r.playerId === myId ? "is-me" : ""}${r.thin ? " rating-thin" : ""}`}
-                          >
-                            <td>
-                              <span className="cell-player">
-                                <span className={`rank rank--${i + 1}`}>{i + 1}</span>
-                                <Avatar profile={pmap[r.playerId]} size={24} />
-                                {displayName(pmap[r.playerId])}
-                              </span>
-                            </td>
-                            <td className="num">
-                              {r.rating != null ? (
-                                <span className="rating-wrap">
-                                  <span className="rating-cell">
-                                    <strong>{r.rating}</strong>
-                                  </span>
-                                  {hist.length > 0 && (
-                                    <Sparkline
-                                      history={hist}
-                                      name={displayName(pmap[r.playerId])}
-                                    />
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="rating-none">nog geen matches</span>
-                              )}
-                            </td>
-                            <td className="num">
-                              {last && last.delta !== 0 && (
-                                <span
-                                  className={`stat__delta ${last.delta > 0 ? "is-up" : "is-down"}`}
-                                >
-                                  {last.delta > 0 ? "▲" : "▼"}
-                                  {Math.abs(last.delta)}
-                                </span>
-                              )}
-                            </td>
-                            <td className="num">{r.playedInGroup}</td>
+                  <>
+                    <Podium
+                      entries={podium.map((r) => ({
+                        key: r.playerId,
+                        name: displayName(pmap[r.playerId]),
+                        profile: pmap[r.playerId] ?? null,
+                        link: `/spelers/${r.playerId}`,
+                        isMe: r.playerId === myId,
+                        rating: r.rating,
+                        delta: lastDelta(r.playerId),
+                        dimmed: r.thin,
+                        sub: `${r.playedInGroup}× in deze groep`,
+                      }))}
+                    />
+                    {rest.length > 0 && (
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Speler</th>
+                            <th className="num">Rating</th>
+                            <th className="num">Δ</th>
+                            <th className="num">G</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {rest.map((r, i) => {
+                            const rank = i + 1 + podium.length;
+                            const hist = histories.data?.[r.playerId] ?? [];
+                            const last = hist[hist.length - 1];
+                            return (
+                              <tr
+                                key={r.playerId}
+                                className={`${r.playerId === myId ? "is-me" : ""}${r.thin ? " rating-thin" : ""}`}
+                              >
+                                <td>
+                                  <span className="cell-player">
+                                    <span className={`rank rank--${rank}`}>
+                                      {rank}
+                                    </span>
+                                    <Avatar profile={pmap[r.playerId]} size={24} />
+                                    {displayName(pmap[r.playerId])}
+                                  </span>
+                                </td>
+                                <td className="num">
+                                  {r.rating != null ? (
+                                    <span className="rating-wrap">
+                                      <span className="rating-cell">
+                                        <strong>{r.rating}</strong>
+                                      </span>
+                                      {hist.length > 0 && (
+                                        <Sparkline
+                                          history={hist}
+                                          name={displayName(pmap[r.playerId])}
+                                        />
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="rating-none">
+                                      nog geen matches
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="num">
+                                  {last && last.delta !== 0 && (
+                                    <span
+                                      className={`stat__delta ${last.delta > 0 ? "is-up" : "is-down"}`}
+                                    >
+                                      {last.delta > 0 ? "▲" : "▼"}
+                                      {Math.abs(last.delta)}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="num">{r.playedInGroup}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
                 );
               })()}
             </>
@@ -643,6 +673,23 @@ export function GroupDetail() {
             </p>
           )}
           {standMode === "punten" && shownStandings.length > 0 && (
+            <Podium
+              entries={shownStandings.slice(0, 3).map((p) => ({
+                key: p.player_id,
+                name: displayName(p),
+                profile: pmap[p.player_id] ?? p,
+                link: `/spelers/${p.player_id}`,
+                isMe: p.player_id === myId,
+                rating: ratings.data?.[p.player_id]?.rating ?? null,
+                dimmed:
+                  (ratings.data?.[p.player_id]?.games ?? 0) > 0 &&
+                  (ratings.data?.[p.player_id]?.games ?? 0) < 3,
+                sub: `${p.points} ptn`,
+                record: `${p.won}W · ${p.drawn ?? 0}G · ${p.lost}V`,
+              }))}
+            />
+          )}
+          {standMode === "punten" && shownStandings.length > 3 && (
             <table className="table">
               <thead>
                 <tr>
@@ -654,14 +701,14 @@ export function GroupDetail() {
                 </tr>
               </thead>
               <tbody>
-                {shownStandings.map((p, i) => (
+                {shownStandings.slice(3).map((p, i) => (
                   <tr
                     key={p.player_id}
                     className={p.player_id === myId ? "is-me" : ""}
                   >
                     <td>
                       <span className="cell-player">
-                        <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                        <span className={`rank rank--${i + 4}`}>{i + 4}</span>
                         <Avatar profile={pmap[p.player_id] ?? p} size={24} />
                         {displayName(p)}
                       </span>

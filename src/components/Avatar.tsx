@@ -1,7 +1,7 @@
 // Speler-avatar: foto indien aanwezig, anders initialen op een kleur die
 // stabiel uit de naam volgt (dezelfde speler krijgt overal dezelfde tint).
 
-type AvatarSource = {
+export type AvatarSource = {
   username?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
