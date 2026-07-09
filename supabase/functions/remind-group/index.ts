@@ -1,6 +1,6 @@
 // Edge Function: "Herinner de groep". De ingelogde gebruiker (een groepslid)
-// stuurt een push naar de groepsleden die nog GEEN aanwezigheid (RSVP) hebben
-// opgegeven voor een gekozen speeldag.
+// stuurt een push naar de groepsleden die nog op GEEN ENKELE optie van een
+// speeldag-poll (play_polls) gestemd hebben.
 //
 // Aanroep vanaf de client via supabase.functions.invoke("remind-group", {...}),
 // waarbij de Authorization-header van de gebruiker automatisch wordt meegestuurd.
@@ -78,15 +78,30 @@ Deno.serve(async (req) => {
   const uid = userData.user?.id;
   if (!uid) return json({ error: "Niet ingelogd" }, 401);
 
-  let body: { group_id?: string; date?: string };
+  let body: { group_id?: string; poll_id?: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "Geen geldige payload" }, 400);
   }
   const groupId = body.group_id;
-  const date = body.date;
-  if (!groupId || !date) return json({ error: "group_id en date vereist" }, 400);
+  const pollId = body.poll_id;
+  if (!groupId || !pollId) {
+    return json({ error: "group_id en poll_id vereist" }, 400);
+  }
+
+  // De poll moet bij de groep horen en nog open staan.
+  const { data: poll } = await admin
+    .from("play_polls")
+    .select("group_id, status")
+    .eq("id", pollId)
+    .maybeSingle();
+  if (!poll || poll.group_id !== groupId) {
+    return json({ error: "Poll niet gevonden" }, 404);
+  }
+  if (poll.status !== "open") {
+    return json({ error: "Poll is niet meer open" }, 400);
+  }
 
   // Alle leden van de groep.
   const { data: members } = await admin
@@ -98,21 +113,28 @@ Deno.serve(async (req) => {
   // Aanroeper moet zelf lid zijn.
   if (!memberIds.includes(uid)) return json({ error: "Geen toegang" }, 403);
 
-  // Leden die voor deze datum al een RSVP hebben ingevuld.
-  const { data: rsvps } = await admin
-    .from("attendance")
-    .select("player_id")
-    .eq("group_id", groupId)
-    .eq("date", date);
-  const responded = new Set((rsvps ?? []).map((r) => r.player_id));
+  // Leden die al op minstens één optie stemden.
+  const { data: options } = await admin
+    .from("play_poll_options")
+    .select("id")
+    .eq("poll_id", pollId);
+  const optionIds = (options ?? []).map((o) => o.id);
+  const responded = new Set<string>();
+  if (optionIds.length > 0) {
+    const { data: votes } = await admin
+      .from("play_poll_votes")
+      .select("player_id")
+      .in("option_id", optionIds);
+    for (const v of votes ?? []) responded.add(v.player_id);
+  }
 
-  // Herinner iedereen zonder status — behalve de aanroeper zelf.
+  // Herinner iedereen zonder enige stem — behalve de aanroeper zelf.
   const recipients = memberIds.filter((id) => id !== uid && !responded.has(id));
 
   const sent = await pushTo(recipients, {
     title: "Speel je mee? 🎾",
-    body: "Je groep wacht op jouw aanwezigheid voor de volgende speeldag.",
-    url: `/groepen/${groupId}`,
+    body: "Er loopt een speeldag-poll — laat weten wanneer je kunt.",
+    url: `/groepen/${groupId}?tab=plannen`,
   });
 
   return json({ reminded: recipients.length, sent });

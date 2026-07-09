@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -8,13 +8,57 @@ import { ToastProvider } from "../../components/ToastProvider";
 vi.mock("../../lib/supabase", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
+  const { dateInZone } = await import("../../lib/time");
+  // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,
+  // zodat de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen
+  // hebben.
+  const today = dateInZone("Europe/Brussels");
+  const tonightOption = {
+    id: "opt-today",
+    poll_id: "poll-1",
+    group_id: "g1",
+    date: today,
+    start_time: "20:00",
+    duration: 90,
+    courts_free: 2,
+    created_at: "2026-07-08T10:00:00.000Z",
+  };
+  const tonightVotes = ["p1", "p2", "p3", "p4"].map((pid) => ({
+    option_id: "opt-today",
+    group_id: "g1",
+    player_id: pid,
+    status: "yes",
+    updated_at: "2026-07-08T10:00:00.000Z",
+  }));
   return {
-    supabase: makeSupabaseMock({ session: SESSION, tables: TABLES, rpc: ["m-x"] }),
+    supabase: makeSupabaseMock({
+      session: SESSION,
+      tables: {
+        ...TABLES,
+        play_poll_options: [...TABLES.play_poll_options, tonightOption],
+        play_poll_votes: [...TABLES.play_poll_votes, ...tonightVotes],
+      },
+      rpc: ["m-x"],
+    }),
   };
 });
 
 import GroupDetail from "./GroupDetail";
 import { supabase } from "../../lib/supabase";
+
+// De suggestiekaart haalt baanbeschikbaarheid via fetch (Playtomic-proxy);
+// een leeg antwoord volstaat.
+function stubPlaytomic() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const body = String(input).includes("/v1/tenants/")
+        ? { resources: [], opening_hours: {}, address: { timezone: "Europe/Brussels" } }
+        : [];
+      return { ok: true, status: 200, json: async () => body } as Response;
+    }),
+  );
+}
 
 function renderPage() {
   return render(
@@ -31,6 +75,9 @@ function renderPage() {
 }
 
 describe("<GroupDetail />", () => {
+  beforeEach(stubPlaytomic);
+  afterEach(() => vi.unstubAllGlobals());
+
   it("toont de rondes met voortgang; ronde 2 heeft open uitslagen", async () => {
     renderPage();
     expect(
@@ -44,19 +91,31 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
-  it("laat je aanmelden voor de speeldag", async () => {
+  it("toont suggesties en 'Vanavond' in plaats van de aanwezigheids-RSVP", async () => {
     renderPage();
     expect(
-      await screen.findByRole("heading", { name: /wie speelt er\?/i }),
+      await screen.findByRole("heading", { name: /suggesties/i }),
     ).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole("button", { name: /ik speel mee/i }),
-    );
-    expect(supabase.from).toHaveBeenCalledWith("attendance");
-    expect(screen.getByLabelText(/speeldag/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /wie speelt er\?/i }),
+    ).not.toBeInTheDocument();
+    // Er loopt al een poll (fixtures) → de kaart verwijst daarnaar.
+    expect(
+      await screen.findByText(/er loopt een speeldag-poll/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /ga naar de poll/i }),
+    ).toBeInTheDocument();
+    // Het voorstel van vandaag voedt de "Vanavond"-kaart met alle deelnemers.
+    expect(
+      await screen.findByRole("heading", { name: /vanavond · 20:00/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /alice anders \(jij\)/i }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("stelt eerlijke teams voor uit de aanwezigen van de speeldag", async () => {
+  it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
@@ -106,13 +165,33 @@ describe("<GroupDetail />", () => {
     expect(new Set(players).size).toBe(4); // vier verschillende leden
   });
 
-  it("opent het 'Plan samen'-tabblad", async () => {
+  it("toont de speeldag-poll op het plannen-tabblad met banen-balans", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
     await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+
     expect(
-      await screen.findByRole("heading", { name: /plan samen/i }),
+      await screen.findByRole("heading", { name: /speeldag-poll/i }),
     ).toBeInTheDocument();
+    // Fase-verloop en de optie-rij uit de fixtures.
+    expect(screen.getByText(/^stemmen$/i)).toBeInTheDocument();
+    // De optie-rij én de "Kies …"-knop van de maker noemen het moment.
+    expect((await screen.findAllByText(/za 5 jan/i)).length).toBeGreaterThan(0);
+    // Stemmen via het ✓ ? ✗-segment.
+    expect(
+      screen.getAllByRole("button", { name: /^ik kan$/i }).length,
+    ).toBeGreaterThan(0);
+
+    // De haalbaarheids-knop klapt de banen-balans uit (2 kan → 1 baan nodig).
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /haalbaarheid/i })[1],
+    );
+    expect(await screen.findByText(/1 baan nodig/i)).toBeInTheDocument();
+
+    // Alice is de maker: zij ziet de "Kies …"-knop voor de beste optie.
+    expect(
+      screen.getAllByRole("button", { name: /^kies /i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("toont Stand en Leden in eigen tabbladen", async () => {

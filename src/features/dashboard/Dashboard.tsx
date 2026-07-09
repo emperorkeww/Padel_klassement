@@ -26,7 +26,14 @@ import { ShareEvening } from "../groups/ShareEvening";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyGroups, type GroupSummary } from "../groups/api";
-import { getAttendance, type Attendance } from "../groups/attendanceApi";
+import {
+  getGroupPolls,
+  getGroupPollOptions,
+  getGroupPollVotes,
+  type PlayPoll,
+  type PollOption,
+  type PollVote,
+} from "../groups/pollsApi";
 import { MatchList } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import {
@@ -75,13 +82,10 @@ export function Dashboard() {
   // Ververs de beschikbaarheid zodra de gebruiker terugkeert naar het tabblad.
   useRefetchOnFocus(availability.reload);
 
-  // Aanwezigheid van vandaag per eigen groep; hangt af van welke groepen we al
-  // kennen, dus opnieuw ophalen zodra die lijst binnen is.
+  // Lopende speeldag-polls per eigen groep; hangt af van welke groepen we
+  // al kennen, dus opnieuw ophalen zodra die lijst binnen is.
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
-  const attendance = useAsync(
-    () => loadTodayAttendance(groups.data ?? [], today),
-    [groupKey, today],
-  );
+  const openPolls = useAsync(() => loadOpenPolls(groups.data ?? []), [groupKey]);
 
   const onMatches = useCallback(() => {
     standings.reload();
@@ -95,7 +99,8 @@ export function Dashboard() {
   }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
-  useRealtime("attendance", attendance.reload);
+  useRealtime("play_polls", openPolls.reload);
+  useRealtime("play_poll_votes", openPolls.reload);
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -152,7 +157,7 @@ export function Dashboard() {
   const rival = pickRival(myGames, tmap, myId);
 
   // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
-  const attendancePick = pickAttendance(attendance.data ?? [], myId);
+  const pollPick = pickPollBanner(openPolls.data ?? [], myId, today);
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
@@ -287,7 +292,7 @@ export function Dashboard() {
         </section>
       )}
 
-      {(planned.length > 0 || incoming.length > 0 || attendancePick) && (
+      {(planned.length > 0 || incoming.length > 0) && (
         <div className="todo-strip">
           {planned.length > 0 && (
             <Link
@@ -308,18 +313,55 @@ export function Dashboard() {
                 : "vriendschapsverzoeken"}
             </Link>
           )}
-          {attendancePick && (
-            <Link
-              className="todo-chip todo-chip--play"
-              to={`/groepen/${attendancePick.group.id}`}
-            >
-              <span className="todo-chip__count">{attendancePick.yes}</span>
-              {attendancePick.mine
-                ? `spelen mee · ${attendancePick.group.name}`
-                : `spelen mee — jij nog niet · ${attendancePick.group.name}`}
-            </Link>
-          )}
         </div>
+      )}
+
+      {/* Speeldag op het overzicht: een lopende poll om op te stemmen, of de
+          vastgelegde/geboekte datum als reminder bij het inloggen. */}
+      {pollPick?.kind === "open" && (
+        <section className="card poll-banner">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              📆 Speeldag-poll loopt · {pollPick.group.name}
+            </h2>
+          </div>
+          <p className="poll-banner__text">
+            {pollPick.optionCount === 1
+              ? "Eén moment staat open"
+              : `${pollPick.optionCount} momenten staan open`}
+            {" · "}
+            {pollPick.voterCount === 0
+              ? "nog niemand stemde"
+              : `${pollPick.voterCount} ${pollPick.voterCount === 1 ? "lid" : "leden"} stemden al`}
+            {pollPick.iVoted ? "." : " — jij nog niet."}
+          </p>
+          <Link
+            className={`btn btn--sm${pollPick.iVoted ? "" : " btn--primary"}`}
+            to={`/groepen/${pollPick.group.id}?tab=plannen`}
+          >
+            {pollPick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
+          </Link>
+        </section>
+      )}
+      {pollPick?.kind === "fixed" && (
+        <section className="card poll-banner poll-banner--fixed">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              🎾 Speeldag {pollPick.booked ? "geboekt" : "gekozen"} ·{" "}
+              {pollPick.group.name}
+            </h2>
+          </div>
+          <p className="poll-banner__text">
+            Jullie spelen {pollDay(pollPick.date)} om {pollPick.startTime}
+            {pollPick.booked ? " — baan geboekt ✓" : " — baan nog te boeken."}
+          </p>
+          <Link
+            className={`btn btn--sm${pollPick.booked ? "" : " btn--primary"}`}
+            to={`/groepen/${pollPick.group.id}?tab=plannen`}
+          >
+            {pollPick.booked ? "Bekijk →" : "Regel de baan →"}
+          </Link>
+        </section>
       )}
 
       {nextMatch && (
@@ -673,38 +715,96 @@ function writeFlag(key: string) {
 }
 
 /** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
-async function loadTodayAttendance(
+async function loadOpenPolls(
   groups: GroupSummary[],
-  date: string,
-): Promise<{ group: GroupSummary; att: Attendance[] }[]> {
+): Promise<
+  { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
+> {
   if (groups.length === 0) return [];
   return Promise.all(
-    groups.map((group) =>
-      getAttendance(group.id, date).then((att) => ({ group, att })),
-    ),
+    groups.map(async (group) => {
+      const [polls, options, votes] = await Promise.all([
+        getGroupPolls(group.id),
+        getGroupPollOptions(group.id),
+        getGroupPollVotes(group.id),
+      ]);
+      return { group, polls, options, votes };
+    }),
   );
 }
 
-type AttendancePick = {
-  group: GroupSummary;
-  yes: number;
-  mine: boolean;
-};
+type PollPick =
+  | {
+      kind: "open";
+      group: GroupSummary;
+      optionCount: number;
+      voterCount: number;
+      iVoted: boolean;
+    }
+  | {
+      kind: "fixed";
+      group: GroupSummary;
+      booked: boolean;
+      date: string;
+      startTime: string;
+    };
 
-/** Groep met de meeste ja-stemmen vandaag; null als niemand ja zei. */
-function pickAttendance(
-  rows: { group: GroupSummary; att: Attendance[] }[],
+/** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
+function pollDay(date: string): string {
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T12:00:00`));
+}
+
+/**
+ * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
+ * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
+ */
+function pickPollBanner(
+  rows: {
+    group: GroupSummary;
+    polls: PlayPoll[];
+    options: PollOption[];
+    votes: PollVote[];
+  }[],
   myId: string,
-): AttendancePick | null {
-  const scored = rows
-    .map(({ group, att }) => ({
-      group,
-      yes: att.filter((a) => a.status === "yes").length,
-      mine: att.some((a) => a.player_id === myId),
-    }))
-    .filter((x) => x.yes > 0)
-    .sort((a, b) => b.yes - a.yes);
-  return scored[0] ?? null;
+  today: string,
+): PollPick | null {
+  for (const { group, polls, options, votes } of rows) {
+    const open = polls.find((p) => p.status === "open");
+    if (open) {
+      const optionIds = new Set(
+        options.filter((o) => o.poll_id === open.id).map((o) => o.id),
+      );
+      const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
+      return {
+        kind: "open",
+        group,
+        optionCount: optionIds.size,
+        voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
+        iVoted: pollVotes.some((v) => v.player_id === myId),
+      };
+    }
+    const fixed = polls.find(
+      (p) =>
+        (p.status === "locked" || p.status === "booked") && p.locked_option_id,
+    );
+    if (fixed) {
+      const opt = options.find((o) => o.id === fixed.locked_option_id);
+      if (opt && opt.date >= today) {
+        return {
+          kind: "fixed",
+          group,
+          booked: fixed.status === "booked",
+          date: opt.date,
+          startTime: opt.start_time,
+        };
+      }
+    }
+  }
+  return null;
 }
 
 type RivalRec = { won: number; drawn: number; lost: number; played: number };

@@ -1,0 +1,504 @@
+/* Speelvoorstellen: lijst van concrete momenten met reacties. */
+
+.proposals__hint {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.proposal-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.proposal-form__field {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.proposal-form__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+.proposal-form__note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal-form__note--warn {
+  color: var(--danger);
+}
+
+.proposal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-3);
+}
+.proposal {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.proposal--playable {
+  border-color: var(--success);
+}
+.proposal__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.proposal__when {
+  font-weight: 700;
+}
+.proposal__when::first-letter {
+  text-transform: uppercase;
+}
+.proposal__meta {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.proposal__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.proposal__maybe {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal__free {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.proposal__free--none {
+  color: var(--danger);
+  font-weight: 600;
+}
+.proposal__names {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.proposal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.proposal__vote,
+.proposal__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.proposal__withdraw.is-confirm {
+  color: var(--danger);
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+
+/* Poll-wizard: dag-navigator met vrije slots van de gekozen dag. */
+.poll-wizard {
+  display: grid;
+  gap: var(--sp-3);
+}
+.day-strip {
+  display: flex;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.day-chip {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.day-chip__name {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  text-transform: capitalize;
+}
+.day-chip__num {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.day-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.day-chip.is-empty .day-chip__num {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+.poll-wizard__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-height: 44px;
+}
+.slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 700;
+  cursor: pointer;
+}
+.slot-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.slot-chip__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+/* Teller als padelbal: geel bolletje, voller geel naarmate meer banen vrij. */
+.slot-chip__count--c1 {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border: 1px solid var(--gold);
+}
+.slot-chip__count--c2 {
+  background: var(--gold-soft);
+  color: var(--ink);
+}
+.slot-chip__count--c3,
+.slot-chip__count--c4 {
+  background: var(--gold);
+  color: var(--ink);
+}
+.poll-wizard__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.poll-wizard__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.poll-wizard__manual-details > summary {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.poll-wizard__manual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  padding-top: var(--sp-2);
+}
+.wizard-footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-1);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.wizard-footer__picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.picked-chip {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Fase-verloop: Stemmen → Gekozen → Geboekt. */
+.poll-steps {
+  display: flex;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.poll-steps__step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.poll-steps__step:not(:last-child)::after {
+  content: "→";
+  color: var(--line-strong);
+}
+.poll-steps__step.is-active {
+  color: var(--accent);
+}
+.poll-steps__step.is-done {
+  color: var(--success);
+}
+
+/* Compacte stemrijen. */
+.poll-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.poll-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.poll-row__when {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.poll-row__when::first-letter {
+  text-transform: uppercase;
+}
+.poll-row__people {
+  display: inline-flex;
+  align-items: center;
+}
+.poll-row__people > * {
+  margin-left: -6px;
+}
+.poll-row__people > :first-child {
+  margin-left: 0;
+}
+.poll-row__more {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  margin-left: 2px !important;
+}
+.poll-row__maybe {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--gold);
+  margin-left: 4px !important;
+}
+.poll-waiting {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.poll-row__state {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.poll-state--haalbaar {
+  color: var(--success);
+  border-color: var(--success);
+}
+.poll-state--krap {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.poll-state--onhaalbaar {
+  color: var(--danger);
+  border-color: var(--danger-line);
+}
+.poll-state--onbekend {
+  color: var(--ink-soft);
+  border-style: dashed;
+}
+.poll-option--onhaalbaar {
+  opacity: 0.75;
+}
+
+/* Jouw stem: segmented ✓ ? ✗. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.seg__btn {
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: var(--surface);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.seg__btn + .seg__btn {
+  border-left: 1px solid var(--line);
+}
+.seg__btn.is-active.is-yes {
+  background: var(--success);
+  color: #fff;
+}
+.seg__btn.is-active.is-maybe {
+  background: var(--gold);
+  color: #fff;
+}
+.seg__btn.is-active.is-no {
+  background: var(--danger);
+  color: #fff;
+}
+
+.poll-row-detail {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--line);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Winnaar-kaart: baangroene kopbalk, lichte body met nette secties.
+   Bewust géén overlay over de content — dat gaf overlap en scheve offsets. */
+.winner-card {
+  border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.winner-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(135deg, var(--accent), var(--success));
+  color: #fff;
+}
+.winner-card__when {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  line-height: 1.3;
+}
+.winner-card__status {
+  padding: 2px var(--sp-3);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.winner-card__body {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+.winner-card__meta {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.winner-card__players {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.winner-card__players > :not(.winner-card__names) {
+  margin-right: -8px;
+}
+.winner-card__names {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+.winner-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+/* Rondes-blok: eigen voet, gescheiden met een stippellijn. */
+.winner-card__rounds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--line-strong);
+}
+.winner-card__rounds-hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.winner-card__rounds-hint strong {
+  color: var(--ink);
+}
+
+/* Fase-bal. */
+.poll-steps__ball {
+  font-size: 0.85em;
+}
+.poll-card__showlosers {
+  margin-top: var(--sp-2);
+}
+.poll-card__footer {
+  margin-top: var(--sp-3);
+  justify-content: space-between;
+}
+
+/* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
+.tonight__players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+

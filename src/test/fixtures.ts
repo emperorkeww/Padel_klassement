@@ -93,6 +93,37 @@ export const ATTENDANCE = PROFILES.map((p) => ({
   updated_at: NOW,
 }));
 
+// Eén open speeldag-poll van Alice met een optie ver vooruit; Bob kan,
+// Carol twijfelt. De datum ligt ver vooruit omdat de UI client-side op
+// "vandaag of later" filtert.
+export const PLAY_POLLS = [
+  {
+    id: "poll-1",
+    group_id: "g1",
+    created_by: "p1",
+    status: "open",
+    locked_option_id: null,
+    created_at: NOW,
+  },
+];
+export const PLAY_POLL_OPTIONS = [
+  {
+    id: "opt-far",
+    poll_id: "poll-1",
+    group_id: "g1",
+    date: "2030-01-05",
+    start_time: "20:00",
+    duration: 90,
+    courts_free: 2,
+    created_at: NOW,
+  },
+];
+export const PLAY_POLL_VOTES = [
+  { option_id: "opt-far", group_id: "g1", player_id: "p1", status: "yes", updated_at: NOW },
+  { option_id: "opt-far", group_id: "g1", player_id: "p2", status: "yes", updated_at: NOW },
+  { option_id: "opt-far", group_id: "g1", player_id: "p3", status: "maybe", updated_at: NOW },
+];
+
 export const RATING_HISTORY = [
   { player_id: "p1", match_id: "m-0", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
   { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: NOW },
@@ -114,6 +145,9 @@ export const TABLES = {
   player_ratings: PLAYER_RATINGS,
   rating_history: RATING_HISTORY,
   attendance: ATTENDANCE,
+  play_polls: PLAY_POLLS,
+  play_poll_options: PLAY_POLL_OPTIONS,
+  play_poll_votes: PLAY_POLL_VOTES,
 };
 
 export const SESSION = { user: { id: "p1", email: "alice@example.com" } };
