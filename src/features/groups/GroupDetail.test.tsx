@@ -99,9 +99,12 @@ describe("<GroupDetail />", () => {
     expect(
       screen.queryByRole("heading", { name: /wie speelt er\?/i }),
     ).not.toBeInTheDocument();
-    // Lege Playtomic-stub → geen vrije momenten, nette lege staat.
+    // Er loopt al een poll (fixtures) → de kaart verwijst daarnaar.
     expect(
-      await screen.findByText(/geen vrije momenten gevonden/i),
+      await screen.findByText(/er loopt een speeldag-poll/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /ga naar de poll/i }),
     ).toBeInTheDocument();
     // Het voorstel van vandaag voedt de "Vanavond"-kaart met alle deelnemers.
     expect(

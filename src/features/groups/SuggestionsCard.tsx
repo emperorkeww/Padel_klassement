@@ -134,6 +134,26 @@ export function SuggestionsCard({
 
   const loading = week.loading || polls.loading;
 
+  // Loopt er al een poll? Dan zijn nieuwe suggesties niet te starten;
+  // verwijs er dan gewoon duidelijk naar in plaats van dode suggesties.
+  if (!loading && hasRunningPoll) {
+    return (
+      <section className="card">
+        <h2 className="card__title">Suggesties</h2>
+        <p className="proposals__hint">
+          Er loopt een speeldag-poll voor deze groep — nieuwe suggesties
+          verschijnen zodra die is afgerond.
+        </p>
+        <Link
+          className="btn btn--sm btn--primary"
+          to={`/groepen/${groupId}?tab=plannen`}
+        >
+          Ga naar de poll →
+        </Link>
+      </section>
+    );
+  }
+
   return (
     <section className="card">
       <h2 className="card__title">Suggesties</h2>
@@ -146,8 +166,8 @@ export function SuggestionsCard({
       {loading && <p className="empty">Momenten zoeken…</p>}
       {!loading && suggestions.length === 0 && (
         <p className="empty">
-          Geen vrije momenten gevonden deze week. Kijk op de Plannen-tab voor
-          de lopende poll of start er zelf één.
+          Geen vrije momenten gevonden deze week. Start zelf een poll op de
+          Plannen-tab.
         </p>
       )}
 
@@ -161,18 +181,12 @@ export function SuggestionsCard({
               <span className="proposal__meta">{s.reasons.join(" · ")}</span>
             </div>
             <div className="proposal__actions">
-              {hasRunningPoll ? (
-                <Link className="btn btn--sm" to={`/groepen/${groupId}?tab=plannen`}>
-                  Bekijk de lopende poll →
-                </Link>
-              ) : (
-                <button
-                  className="btn btn--sm btn--primary"
-                  onClick={() => startPoll(s)}
-                >
-                  Start poll met dit moment
-                </button>
-              )}
+              <button
+                className="btn btn--sm btn--primary"
+                onClick={() => startPoll(s)}
+              >
+                Start poll met dit moment
+              </button>
             </div>
           </li>
         ))}
