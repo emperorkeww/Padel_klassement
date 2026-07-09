@@ -194,6 +194,21 @@ describe("<GroupDetail />", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("toont het groepsklassement standaard op rating, met punten-toggle", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /^ronde 2$/i });
+    await userEvent.click(screen.getByRole("button", { name: /^stand$/i }));
+
+    // Rating is de standaardweergave (fixtures: 1012/1012/988/988).
+    expect(await screen.findByText(/gesorteerd op rating/i)).toBeInTheDocument();
+    expect((await screen.findAllByText("1012")).length).toBe(2);
+
+    // Toggle naar punten: de vertrouwde puntentabel met Ptn-kolom.
+    await userEvent.click(screen.getByRole("button", { name: /^punten$/i }));
+    expect(await screen.findByText("Ptn")).toBeInTheDocument();
+    expect(screen.queryByText(/gesorteerd op rating/i)).not.toBeInTheDocument();
+  });
+
   it("toont Stand en Leden in eigen tabbladen", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
