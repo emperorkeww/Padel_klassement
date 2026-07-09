@@ -170,18 +170,24 @@ describe("<GroupDetail />", () => {
     expect(
       await screen.findByRole("heading", { name: /speeldag-poll/i }),
     ).toBeInTheDocument();
-    // De optie uit de fixtures: 2 kunnen (→ 1 baan nodig), snapshot 2 vrij.
-    expect(
-      await screen.findByText(/zaterdag 5 januari · 20:00/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/2 mee → 1 baan nodig/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 misschien/i)).toBeInTheDocument();
+    // Fase-verloop en de optie-rij uit de fixtures.
+    expect(screen.getByText(/^stemmen$/i)).toBeInTheDocument();
+    // De optie-rij én de "Kies …"-knop van de maker noemen het moment.
+    expect((await screen.findAllByText(/za 5 jan/i)).length).toBeGreaterThan(0);
+    // Stemmen via het ✓ ? ✗-segment.
     expect(
       screen.getAllByRole("button", { name: /^ik kan$/i }).length,
     ).toBeGreaterThan(0);
-    // Alice is de maker: zij kan een moment vastleggen.
+
+    // De haalbaarheids-knop klapt de banen-balans uit (2 kan → 1 baan nodig).
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /haalbaarheid/i })[1],
+    );
+    expect(await screen.findByText(/1 baan nodig/i)).toBeInTheDocument();
+
+    // Alice is de maker: zij ziet de "Kies …"-knop voor de beste optie.
     expect(
-      screen.getAllByRole("button", { name: /kies dit moment/i }).length,
+      screen.getAllByRole("button", { name: /^kies /i }).length,
     ).toBeGreaterThan(0);
   });
 

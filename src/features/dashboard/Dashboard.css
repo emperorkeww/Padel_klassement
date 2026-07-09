@@ -200,6 +200,19 @@
   }
 }
 
+/* Lopende speeldag-poll op het overzicht. */
+.poll-banner {
+  border-left: 3px solid var(--accent);
+}
+.poll-banner__text {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.poll-banner .btn {
+  justify-self: start;
+}
+
 .hero__actions {
   display: flex;
   gap: var(--sp-2);

@@ -292,7 +292,7 @@ export function Dashboard() {
         </section>
       )}
 
-      {(planned.length > 0 || incoming.length > 0 || pollPick) && (
+      {(planned.length > 0 || incoming.length > 0) && (
         <div className="todo-strip">
           {planned.length > 0 && (
             <Link
@@ -313,16 +313,35 @@ export function Dashboard() {
                 : "vriendschapsverzoeken"}
             </Link>
           )}
-          {pollPick && (
-            <Link
-              className="todo-chip todo-chip--play"
-              to={`/groepen/${pollPick.group.id}?tab=plannen`}
-            >
-              <span className="todo-chip__count">{pollPick.optionCount}</span>
-              {`speeldag-poll — stem over ${pollPick.optionCount === 1 ? "het moment" : `${pollPick.optionCount} momenten`} · ${pollPick.group.name}`}
-            </Link>
-          )}
         </div>
+      )}
+
+      {/* Lopende speeldag-poll: prominent op het overzicht, zodat niemand
+          mist dat er nog een datum geprikt moet worden. */}
+      {pollPick && (
+        <section className="card poll-banner">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              📆 Speeldag-poll loopt · {pollPick.group.name}
+            </h2>
+          </div>
+          <p className="poll-banner__text">
+            {pollPick.optionCount === 1
+              ? "Eén moment staat open"
+              : `${pollPick.optionCount} momenten staan open`}
+            {" · "}
+            {pollPick.voterCount === 0
+              ? "nog niemand stemde"
+              : `${pollPick.voterCount} ${pollPick.voterCount === 1 ? "lid" : "leden"} stemden al`}
+            {pollPick.iVoted ? "." : " — jij nog niet."}
+          </p>
+          <Link
+            className={`btn btn--sm${pollPick.iVoted ? "" : " btn--primary"}`}
+            to={`/groepen/${pollPick.group.id}?tab=plannen`}
+          >
+            {pollPick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
+          </Link>
+        </section>
       )}
 
       {nextMatch && (
@@ -697,9 +716,11 @@ async function loadOpenPolls(
 type PollPick = {
   group: GroupSummary;
   optionCount: number;
+  voterCount: number;
+  iVoted: boolean;
 };
 
-/** Open speeldag-poll waarop ik nog op geen enkele optie stemde, of null. */
+/** Eerste lopende (open) speeldag-poll in mijn groepen, of null. */
 function pickOpenPoll(
   rows: {
     group: GroupSummary;
@@ -715,10 +736,13 @@ function pickOpenPoll(
     const optionIds = new Set(
       options.filter((o) => o.poll_id === open.id).map((o) => o.id),
     );
-    const mine = votes.some(
-      (v) => optionIds.has(v.option_id) && v.player_id === myId,
-    );
-    if (!mine) return { group, optionCount: optionIds.size };
+    const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
+    return {
+      group,
+      optionCount: optionIds.size,
+      voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
+      iVoted: pollVotes.some((v) => v.player_id === myId),
+    };
   }
   return null;
 }

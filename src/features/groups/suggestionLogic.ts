@@ -40,6 +40,14 @@ export function weekdayOf(date: string): number {
 
 const hourOf = (time: string) => Number(time.slice(0, 2));
 
+/** Voorkeur per dagdeel: avond > randen > overdag > vroege ochtend. */
+export function timeOfDayPrior(hour: number): number {
+  if (hour >= 18 && hour <= 21) return 2;
+  if (hour === 17 || hour === 22) return 1;
+  if (hour >= 12) return 0;
+  return -2;
+}
+
 /** ISO-tijdstippen → speel-momenten (weekdag + uur) in de clubtijdzone. */
 export function playedMoments(
   playedAtIsos: string[],
@@ -88,9 +96,16 @@ export function suggestMoments(
       const reasons = [
         freeCourts === 1 ? "1 baan vrij" : `${freeCourts} banen vrij`,
       ];
-      let score = Math.min(freeCourts, 4);
+      // Banen zijn een randvoorwaarde, geen doel: laag plafond zodat een
+      // lege ochtend niet wint van een realistisch avonduur.
+      let score = Math.min(freeCourts, 3);
 
-      // Leden die in het slot-raster aangaven te kunnen op dit moment.
+      // Dagdeel-prior: zolang er weinig historiek is, sturen we naar de
+      // uren waarop vriendengroepen realistisch spelen (avond).
+      const hour = hourOf(time);
+      score += timeOfDayPrior(hour);
+
+      // Leden die aangaven te kunnen op dit moment (poll- of slot-stemmen).
       const votes = sources.slotVotes.filter(
         (v) => v.date === day.date && v.start_time === time,
       );
@@ -101,12 +116,12 @@ export function suggestMoments(
         reasons.push(yes === 1 ? "1 lid kan dan" : `${yes} leden kunnen dan`);
       }
 
-      // Historiek: de groep speelde eerder op deze weekdag rond dit uur.
-      const hour = hourOf(time);
+      // Historiek weegt zwaar: hoe meer de groep speelt, hoe meer de
+      // suggesties naar de eigen vaste uren toegroeien.
       const played = sources.history.filter(
         (h) => h.weekday === weekday && Math.abs(h.hour - hour) <= 1,
       ).length;
-      score += Math.min(played, 4);
+      score += Math.min(played * 2, 8);
       if (played > 0) {
         reasons.push(
           played === 1

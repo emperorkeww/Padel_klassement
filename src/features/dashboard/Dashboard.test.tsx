@@ -67,6 +67,17 @@ describe("<Dashboard />", () => {
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
   });
 
+  it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
+    renderPage();
+    expect(
+      await screen.findByText(/speeldag-poll loopt · vrijdagavond padel/i),
+    ).toBeInTheDocument();
+    // Alice stemde al (fixtures) → neutrale call-to-action.
+    expect(
+      screen.getByRole("link", { name: /bekijk de poll/i }),
+    ).toBeInTheDocument();
+  });
+
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {
     renderPage();
     const badge = await screen.findByRole("button", {

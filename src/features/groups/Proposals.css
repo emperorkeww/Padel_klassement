@@ -113,24 +113,107 @@
   background: var(--danger-soft);
 }
 
-/* Poll-wizard: vrije slots per dag als tikbare chips. */
+/* Poll-wizard: dag-navigator met vrije slots van de gekozen dag. */
 .poll-wizard {
   display: grid;
   gap: var(--sp-3);
 }
-.poll-wizard__day {
+.day-strip {
+  display: flex;
+  gap: var(--sp-1);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.day-chip {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  line-height: 1.2;
+}
+.day-chip__name {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  text-transform: capitalize;
+}
+.day-chip__num {
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.day-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.day-chip.is-empty .day-chip__num {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+.poll-wizard__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-height: 44px;
+}
+.slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 700;
+  cursor: pointer;
+}
+.slot-chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.slot-chip__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+/* Teller als padelbal: geel bolletje, voller geel naarmate meer banen vrij. */
+.slot-chip__count--c1 {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border: 1px solid var(--gold);
+}
+.slot-chip__count--c2 {
+  background: var(--gold-soft);
+  color: var(--ink);
+}
+.slot-chip__count--c3,
+.slot-chip__count--c4 {
+  background: var(--gold);
+  color: var(--ink);
+}
+.poll-wizard__controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: var(--sp-4);
+}
+.poll-wizard__toggle {
+  display: inline-flex;
+  align-items: center;
   gap: var(--sp-2);
-}
-.poll-wizard__daylabel {
-  min-width: 84px;
   font-size: var(--fs-sm);
-  font-weight: 700;
+  color: var(--ink-soft);
 }
-.poll-wizard__daylabel::first-letter {
-  text-transform: uppercase;
+.poll-wizard__manual-details > summary {
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
 }
 .poll-wizard__manual {
   display: flex;
@@ -138,25 +221,236 @@
   align-items: flex-end;
   gap: var(--sp-3);
   padding-top: var(--sp-2);
-  border-top: 1px dashed var(--line);
+}
+.wizard-footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) 0 var(--sp-1);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.wizard-footer__picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.picked-chip {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
 }
 
-/* Poll-opties: linkerrand kleurt mee met de haalbaarheid. */
-.poll-option--haalbaar {
-  border-left: 3px solid var(--success);
+/* Fase-verloop: Stemmen → Gekozen → Geboekt. */
+.poll-steps {
+  display: flex;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
 }
-.poll-option--krap {
-  border-left: 3px solid var(--gold);
+.poll-steps__step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.poll-steps__step:not(:last-child)::after {
+  content: "→";
+  color: var(--line-strong);
+}
+.poll-steps__step.is-active {
+  color: var(--accent);
+}
+.poll-steps__step.is-done {
+  color: var(--success);
+}
+
+/* Compacte stemrijen. */
+.poll-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.poll-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.poll-row__when {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.poll-row__when::first-letter {
+  text-transform: uppercase;
+}
+.poll-row__people {
+  display: inline-flex;
+  align-items: center;
+}
+.poll-row__people > * {
+  margin-left: -6px;
+}
+.poll-row__people > :first-child {
+  margin-left: 0;
+}
+.poll-row__more {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  margin-left: 2px !important;
+}
+.poll-row__state {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.poll-state--haalbaar {
+  color: var(--success);
+  border-color: var(--success);
+}
+.poll-state--krap {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.poll-state--onhaalbaar {
+  color: var(--danger);
+  border-color: var(--danger-line);
+}
+.poll-state--onbekend {
+  color: var(--ink-soft);
+  border-style: dashed;
 }
 .poll-option--onhaalbaar {
-  border-left: 3px solid var(--danger);
-  opacity: 0.85;
+  opacity: 0.75;
 }
-.poll-option--onbekend {
-  border-left: 3px dashed var(--line-strong);
+
+/* Jouw stem: segmented ✓ ? ✗. */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.seg__btn {
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: var(--surface);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.seg__btn + .seg__btn {
+  border-left: 1px solid var(--line);
+}
+.seg__btn.is-active.is-yes {
+  background: var(--success);
+  color: #fff;
+}
+.seg__btn.is-active.is-maybe {
+  background: var(--gold);
+  color: #fff;
+}
+.seg__btn.is-active.is-no {
+  background: var(--danger);
+  color: #fff;
+}
+
+.poll-row-detail {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--line);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Winnaar-kaart als padelbaan: baangroen met witte baanlijnen. */
+.winner-card {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), var(--success));
+  color: #fff;
+  overflow: hidden;
+}
+.winner-card::before {
+  /* Baanlijnen: buitenrand + middenlijn, subtiel wit. */
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: linear-gradient(
+    to bottom,
+    transparent calc(50% - 1px),
+    rgba(255, 255, 255, 0.28) calc(50% - 1px),
+    rgba(255, 255, 255, 0.28) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  pointer-events: none;
+}
+.winner-card > * {
+  position: relative;
+}
+.winner-card__when {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+}
+.winner-card__when::first-letter {
+  text-transform: uppercase;
+}
+.winner-card__meta {
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.85);
+}
+.winner-card .proposal__names {
+  color: rgba(255, 255, 255, 0.92);
+}
+.winner-card .btn:not(.btn--primary) {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* Fase-bal. */
+.poll-steps__ball {
+  font-size: 0.85em;
+}
+.poll-card__showlosers {
+  margin-top: var(--sp-2);
 }
 .poll-card__footer {
   margin-top: var(--sp-3);
+  justify-content: space-between;
 }
 
 /* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
@@ -166,27 +460,3 @@
   gap: var(--sp-2);
 }
 
-/* Het oude slot-raster als geavanceerde weergave onder de voorstellen. */
-.plan-advanced > summary {
-  cursor: pointer;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-soft);
-  list-style: none;
-}
-.plan-advanced > summary::before {
-  content: "▸ ";
-}
-.plan-advanced[open] > summary {
-  margin-bottom: var(--sp-3);
-}
-.plan-advanced[open] > summary::before {
-  content: "▾ ";
-}
-.plan-advanced > summary::-webkit-details-marker {
-  display: none;
-}

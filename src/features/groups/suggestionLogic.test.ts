@@ -92,6 +92,48 @@ describe("suggestMoments", () => {
   });
 });
 
+describe("dagdeel-prior en leren van historiek", () => {
+  it("verkiest een avonduur boven een lege ochtend", () => {
+    const s = suggestMoments({
+      ...base,
+      heat: {
+        times: ["09:00", "20:00"],
+        days: [
+          {
+            date: "2026-07-10",
+            counts: { "09:00": 4, "20:00": 1 }, // ochtend leger dan avond
+            error: null,
+          },
+        ],
+      },
+    });
+    // 09:00: min(4,3)=3 + prior(-2) = 1; 20:00: min(1,3)=1 + prior(2) = 3.
+    expect(`${s[0].date} ${s[0].time}`).toBe("2026-07-10 20:00");
+  });
+
+  it("groeit met historiek naar de vaste uren van de groep toe", () => {
+    const vrijdag = weekdayOf("2026-07-10");
+    // Groep die structureel op vrijdagmiddag 14:00 speelt (4× gespeeld).
+    const s = suggestMoments({
+      ...base,
+      heat: {
+        times: ["14:00", "20:00"],
+        days: [
+          {
+            date: "2026-07-10",
+            counts: { "14:00": 2, "20:00": 2 },
+            error: null,
+          },
+        ],
+      },
+      history: Array.from({ length: 4 }, () => ({ weekday: vrijdag, hour: 14 })),
+    });
+    // 14:00: 2 + 0 + min(8,8) = 10 verslaat 20:00: 2 + 2 = 4.
+    expect(`${s[0].date} ${s[0].time}`).toBe("2026-07-10 14:00");
+    expect(s[0].reasons).toContain("jullie speelden hier al 4 keer");
+  });
+});
+
 describe("playedMoments", () => {
   it("zet ISO-tijdstippen om naar weekdag + uur in clubtijd", () => {
     // 18:30 UTC in juli = 20:30 in Brussel; 2026-07-03 is een vrijdag.

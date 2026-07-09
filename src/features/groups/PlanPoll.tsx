@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
+import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { addDays, dateInZone } from "../../lib/time";
 import { icsEvent, downloadIcs } from "../../lib/ics";
@@ -36,23 +37,26 @@ import {
 import type { Profile } from "../../lib/types";
 import "./Proposals.css";
 
-// Speeldag-poll: de doodle van de Plannen-tab. Een lid stelt 1-5 momenten
-// voor — gekozen uit échte vrije slots — de groep stemt per optie, en de
-// maker/eigenaar legt het winnende moment vast en boekt op Playtomic.
+// Speeldag-poll: de doodle van de Plannen-tab. Wizard met dag-navigator
+// (alleen échte vrije slots kiesbaar), stemmen per optie in compacte rijen
+// met een ✓ ? ✗-segment, en een duidelijk fase-verloop:
+// Stemmen → Gekozen → Geboekt.
 
-const VOTE_LABEL: Record<PollVoteStatus, string> = {
-  yes: "Ik kan",
-  maybe: "Misschien",
-  no: "Kan niet",
-};
-const STATE_LABEL: Record<OptionState, string> = {
-  haalbaar: "haalbaar",
-  krap: "krap — precies genoeg banen",
-  onhaalbaar: "onhaalbaar — te weinig banen vrij",
-  onbekend: "beschikbaarheid onbekend",
+const VOTE_SEGMENTS: { status: PollVoteStatus; icon: string; label: string }[] = [
+  { status: "yes", icon: "✓", label: "Ik kan" },
+  { status: "maybe", icon: "?", label: "Misschien" },
+  { status: "no", icon: "✗", label: "Kan niet" },
+];
+const STATE_ICON: Record<OptionState, string> = {
+  haalbaar: "✓",
+  krap: "⚠",
+  onhaalbaar: "✕",
+  onbekend: "?",
 };
 const MAX_OPTIONS = 5;
 const DURATIONS = [60, 90, 120] as const;
+/** Avonduren als standaardvenster in de wizard. */
+const EVENING_FROM = 17;
 
 // 's Middags formatteren zodat DST de datum niet kantelt.
 function fmtDate(date: string, opts: Intl.DateTimeFormatOptions): string {
@@ -68,8 +72,6 @@ function floorHalfHour(time: string): string {
   const [h, m] = time.split(":").map(Number);
   return `${String(h).padStart(2, "0")}:${m < 30 ? "00" : "30"}`;
 }
-
-const optKey = (o: { date: string; startTime: string }) => `${o.date}|${o.startTime}`;
 
 /* ------------------------------------------------------------------ */
 /* Sectie: haalt de data op en kiest tussen poll-kaart en wizard.      */
@@ -154,8 +156,8 @@ export function PollSection({
       </div>
       {!wizardOpen && (
         <p className="empty">
-          Geen lopende poll. Start er één: kies kandidaat-momenten uit de vrije
-          banen en laat de groep stemmen.
+          Geen lopende poll. Kies een paar momenten waarop banen vrij zijn en
+          laat de groep stemmen.
         </p>
       )}
       {wizardOpen && (
@@ -177,8 +179,10 @@ export function PollSection({
 }
 
 /* ------------------------------------------------------------------ */
-/* Wizard: kandidaat-momenten kiezen uit de vrije slots.               */
+/* Wizard: dag-navigator, alleen vrije slots kiesbaar.                 */
 /* ------------------------------------------------------------------ */
+
+const optKey = (o: { date: string; startTime: string }) => `${o.date}|${o.startTime}`;
 
 function PollWizard({
   groupId,
@@ -199,6 +203,8 @@ function PollWizard({
 }) {
   const toast = useToast();
   const [duration, setDuration] = useState<number>(90);
+  const [selectedDay, setSelectedDay] = useState(today);
+  const [wholeDay, setWholeDay] = useState(false);
   const [picked, setPicked] = useState<Map<string, NewPollOption>>(new Map());
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("20:00");
@@ -206,15 +212,22 @@ function PollWizard({
 
   const weekEnd = addDays(today, 6);
 
-  // Vrije starttijden per dag, gefilterd op de gekozen duur.
-  const dayChips = useMemo(
-    () =>
-      week.map((day) => ({
-        date: day.date,
-        starts: day.data ? dayStarts(day, duration) : null,
-      })),
-    [week, duration],
-  );
+  // Vrije starttijden per dag, gefilterd op duur (en standaard op avond).
+  const startsByDay = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof dayStarts> | null>();
+    for (const day of week) {
+      map.set(day.date, day.data ? dayStarts(day, duration) : null);
+    }
+    return map;
+  }, [week, duration]);
+
+  const visibleStarts = (date: string) => {
+    const starts = startsByDay.get(date);
+    if (starts == null) return null;
+    return wholeDay
+      ? starts
+      : starts.filter((s) => Number(s.time.slice(0, 2)) >= EVENING_FROM);
+  };
 
   function toggle(date: string, time: string, courtsFree: number) {
     setPicked((cur) => {
@@ -224,7 +237,7 @@ function PollWizard({
         next.delete(key);
       } else {
         if (next.size >= MAX_OPTIONS) {
-          toast.error(`Maximaal ${MAX_OPTIONS} opties per poll.`);
+          toast.error(`Maximaal ${MAX_OPTIONS} momenten per poll.`);
           return cur;
         }
         next.set(key, { date, startTime: time, duration, courtsFree });
@@ -236,22 +249,20 @@ function PollWizard({
   function addManual() {
     if (!manualDate || !manualTime) return;
     if (picked.size >= MAX_OPTIONS) {
-      toast.error(`Maximaal ${MAX_OPTIONS} opties per poll.`);
+      toast.error(`Maximaal ${MAX_OPTIONS} momenten per poll.`);
       return;
     }
     // Binnen het datavenster is de beschikbaarheid bekend → hard afdwingen.
     let courtsFree: number | null = null;
     if (manualDate >= today && manualDate <= weekEnd) {
-      const day = dayChips.find((d) => d.date === manualDate);
-      if (day?.starts) {
-        const slot = day.starts.find(
+      const starts = startsByDay.get(manualDate);
+      if (starts) {
+        const slot = starts.find(
           (s) => floorHalfHour(s.time) === floorHalfHour(manualTime),
         );
         courtsFree = slot ? slot.courts.length : 0;
         if (courtsFree === 0) {
-          toast.error(
-            "Op dit uur is er geen baan vrij — kies een ander moment.",
-          );
+          toast.error("Op dit uur is er geen baan vrij — kies een ander moment.");
           return;
         }
       }
@@ -287,121 +298,183 @@ function PollWizard({
     }
   }
 
+  const dayStartsVisible = visibleStarts(selectedDay);
+
   return (
     <div className="poll-wizard">
       <p className="proposals__hint">
-        Kies tot {MAX_OPTIONS} kandidaat-momenten. Alleen uren met een vrije
-        baan zijn kiesbaar; verder vooruit plannen kan handmatig (beschikbaarheid
-        dan nog onbekend).
+        Kies tot {MAX_OPTIONS} momenten waarop een baan vrij is — de groep
+        stemt daarna per moment.
       </p>
 
-      <label className="proposal-form__field">
-        <span>Speelduur</span>
-        <select
-          className="select"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-        >
-          {DURATIONS.map((d) => (
-            <option key={d} value={d}>
-              {d} min
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {weekLoading && <p className="empty">Vrije banen laden…</p>}
-      {!weekLoading &&
-        dayChips.map(({ date, starts }) => (
-          <div key={date} className="poll-wizard__day">
-            <span className="poll-wizard__daylabel">{shortDay(date)}</span>
-            {starts == null && (
-              <span className="proposal__meta">geen gegevens</span>
-            )}
-            {starts != null && starts.length === 0 && (
-              <span className="proposal__meta">niets vrij</span>
-            )}
-            {starts != null &&
-              starts.map((s) => {
-                const key = `${date}|${s.time}`;
-                const on = picked.has(key);
-                return (
-                  <button
-                    key={s.time}
-                    type="button"
-                    className={`btn btn--sm attendance-btn ${on ? "is-active is-yes" : ""}`}
-                    aria-pressed={on}
-                    onClick={() => toggle(date, s.time, s.courts.length)}
-                  >
-                    {s.time} · {s.courts.length}
-                  </button>
-                );
-              })}
-          </div>
-        ))}
-
-      <div className="poll-wizard__manual">
-        <label className="proposal-form__field">
-          <span>Ander moment (verder vooruit)</span>
-          <input
-            type="date"
-            className="select"
-            min={today}
-            value={manualDate}
-            onChange={(e) => setManualDate(e.target.value)}
-          />
-        </label>
-        <label className="proposal-form__field">
-          <span>Uur</span>
-          <input
-            type="time"
-            className="select"
-            step={1800}
-            value={manualTime}
-            onChange={(e) => setManualTime(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          className="btn btn--sm"
-          disabled={!manualDate}
-          onClick={addManual}
-        >
-          + Voeg toe
-        </button>
+      {/* Dag-navigator. */}
+      <div className="day-strip" role="tablist" aria-label="Kies een dag">
+        {week.map((d) => {
+          const starts = visibleStarts(d.date);
+          const n = starts?.length ?? 0;
+          const on = selectedDay === d.date;
+          return (
+            <button
+              key={d.date}
+              role="tab"
+              aria-selected={on}
+              className={`day-chip${on ? " is-active" : ""}${n === 0 ? " is-empty" : ""}`}
+              onClick={() => setSelectedDay(d.date)}
+            >
+              <span className="day-chip__name">
+                {fmtDate(d.date, { weekday: "short" }).replace(".", "")}
+              </span>
+              <span className="day-chip__num">
+                {fmtDate(d.date, { day: "numeric" })}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {picked.size > 0 && (
-        <p className="proposal__names">
-          Gekozen:{" "}
+      {/* Uren van de gekozen dag. */}
+      <div className="poll-wizard__slots">
+        {weekLoading && <p className="empty">Vrije banen laden…</p>}
+        {!weekLoading && dayStartsVisible == null && (
+          <p className="empty">Geen beschikbaarheidsgegevens voor deze dag.</p>
+        )}
+        {!weekLoading && dayStartsVisible != null && dayStartsVisible.length === 0 && (
+          <p className="empty">
+            {wholeDay ? "Niets vrij op deze dag." : "Geen vrij avondslot op deze dag."}
+          </p>
+        )}
+        {dayStartsVisible?.map((s) => {
+          const key = `${selectedDay}|${s.time}`;
+          const on = picked.has(key);
+          return (
+            <button
+              key={s.time}
+              type="button"
+              className={`slot-chip${on ? " is-active" : ""}`}
+              aria-pressed={on}
+              onClick={() => toggle(selectedDay, s.time, s.courts.length)}
+            >
+              {s.time}
+              <span
+                className={`slot-chip__count slot-chip__count--c${Math.min(s.courts.length, 4)}`}
+                title={`${s.courts.length} ${s.courts.length === 1 ? "baan" : "banen"} vrij`}
+              >
+                {s.courts.length}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="poll-wizard__controls">
+        <label className="poll-wizard__toggle">
+          <input
+            type="checkbox"
+            checked={wholeDay}
+            onChange={(e) => setWholeDay(e.target.checked)}
+          />
+          Hele dag tonen
+        </label>
+        <label className="poll-wizard__toggle">
+          Duur{" "}
+          <select
+            className="select"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+          >
+            {DURATIONS.map((d) => (
+              <option key={d} value={d}>
+                {d} min
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <details className="poll-wizard__manual-details">
+        <summary>Ander moment (verder vooruit)</summary>
+        <div className="poll-wizard__manual">
+          <label className="proposal-form__field">
+            <span>Datum</span>
+            <input
+              type="date"
+              className="select"
+              min={today}
+              value={manualDate}
+              onChange={(e) => setManualDate(e.target.value)}
+            />
+          </label>
+          <label className="proposal-form__field">
+            <span>Uur</span>
+            <input
+              type="time"
+              className="select"
+              step={1800}
+              value={manualTime}
+              onChange={(e) => setManualTime(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn--sm"
+            disabled={!manualDate}
+            onClick={addManual}
+          >
+            + Voeg toe
+          </button>
+          <p className="proposal-form__note">
+            Buiten deze week is de beschikbaarheid nog onbekend; de poll
+            markeert dat bij het moment.
+          </p>
+        </div>
+      </details>
+
+      {/* Sticky selectiebalk: gekozen momenten + start-knop altijd in beeld. */}
+      <div className="wizard-footer">
+        <div className="wizard-footer__picked">
+          {picked.size === 0 && (
+            <span className="proposal__meta">Nog geen momenten gekozen.</span>
+          )}
           {[...picked.values()]
             .sort((a, b) => optKey(a).localeCompare(optKey(b)))
-            .map(
-              (o) =>
-                `${shortDay(o.date)} ${o.startTime}${o.courtsFree == null ? " (onbekend)" : ""}`,
-            )
-            .join(" · ")}
-        </p>
-      )}
-
-      <div className="proposal-form__actions">
-        <button
-          className="btn btn--sm btn--primary"
-          disabled={saving || picked.size === 0}
-          onClick={publish}
-        >
-          {saving ? "Bezig…" : `Start poll (${picked.size})`}
-        </button>
-        <button type="button" className="btn btn--sm" onClick={onClose}>
-          Annuleren
-        </button>
+            .map((o) => (
+              <button
+                key={optKey(o)}
+                type="button"
+                className="picked-chip"
+                title="Verwijderen"
+                onClick={() =>
+                  setPicked((cur) => {
+                    const next = new Map(cur);
+                    next.delete(optKey(o));
+                    return next;
+                  })
+                }
+              >
+                {shortDay(o.date)} {o.startTime}
+                {o.courtsFree == null ? " ?" : ""} ×
+              </button>
+            ))}
+        </div>
+        <div className="proposal-form__actions">
+          <button
+            className="btn btn--sm btn--primary"
+            disabled={saving || picked.size === 0}
+            onClick={publish}
+          >
+            {saving ? "Bezig…" : `Start poll (${picked.size})`}
+          </button>
+          <button type="button" className="btn btn--sm" onClick={onClose}>
+            Annuleren
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Poll-kaart: stemmen per optie, banen-balans, lock → geboekt.        */
+/* Poll-kaart: fase-verloop + compacte stemrijen.                      */
 /* ------------------------------------------------------------------ */
 
 function PollCard({
@@ -430,6 +503,8 @@ function PollCard({
   const [busy, setBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [remindedDone, setRemindedDone] = useState(false);
+  const [openDetail, setOpenDetail] = useState<string | null>(null);
+  const [showLosers, setShowLosers] = useState(false);
 
   const isManager = poll.created_by === myId || isOwner;
   const weekEnd = addDays(today, 6);
@@ -463,14 +538,6 @@ function PollCard({
     }
   }
 
-  async function vote(o: PollOption, status: PollVoteStatus, mine: PollVoteStatus | null) {
-    await run(() =>
-      mine === status
-        ? clearPollVote(o.id, myId)
-        : setPollVote(o.id, poll.group_id, myId, status),
-    );
-  }
-
   async function remind() {
     setBusy(true);
     try {
@@ -490,6 +557,19 @@ function PollCard({
     ? options.find((o) => o.id === poll.locked_option_id) ?? null
     : null;
 
+  // Beste kandidaat voor de "Kies …"-knop: meeste ja's onder de haalbare.
+  const bestOption = useMemo(() => {
+    let best: { option: PollOption; yes: number } | null = null;
+    for (const o of options) {
+      const t = tallyOption(o, votes);
+      const state = optionState(t.yes.length, liveFree(o));
+      if (state === "onhaalbaar" || o.date < today) continue;
+      if (!best || t.yes.length > best.yes) best = { option: o, yes: t.yes.length };
+    }
+    return best?.option ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, votes, week, today]);
+
   function exportIcs() {
     if (!locked) return;
     const t = tallyOption(locked, votes);
@@ -507,141 +587,208 @@ function PollCard({
     );
   }
 
-  const statusLine =
-    poll.status === "open"
-      ? `Poll van ${name(poll.created_by)} — stem per moment.`
-      : poll.status === "locked" && locked
-        ? `Gekozen: ${longDay(locked.date)} om ${locked.start_time}. Boek de baan en markeer als geboekt.`
-        : poll.status === "booked" && locked
-          ? `Geboekt ✓ ${longDay(locked.date)} om ${locked.start_time} bij ${club.name}.`
-          : "";
+  const phase = poll.status === "open" ? 0 : poll.status === "locked" ? 1 : 2;
+  const steps = ["Stemmen", "Gekozen", "Geboekt"];
+
+  // Bij locked/booked: winnaar groot, de rest ingeklapt.
+  const winnerFirst =
+    locked && poll.status !== "open"
+      ? [locked, ...options.filter((o) => o.id !== locked.id)]
+      : options;
+  const collapsed = poll.status !== "open" && !showLosers;
 
   return (
     <section className="card">
       <div className="card__head">
-        <h2 className="card__title">
-          {poll.status === "booked" ? "Speeldag geboekt" : "Speeldag-poll"}
-        </h2>
+        <h2 className="card__title">Speeldag-poll</h2>
         {poll.status === "open" && !remindedDone && (
           <button className="btn btn--sm" disabled={busy} onClick={remind}>
             🔔 Herinner
           </button>
         )}
       </div>
-      <p className="proposals__hint">{statusLine}</p>
 
-      <ul className="proposal-list">
-        {options.map((o) => {
+      <ol className="poll-steps" aria-label="Fase van de poll">
+        {steps.map((s, i) => (
+          <li
+            key={s}
+            className={`poll-steps__step${i === phase ? " is-active" : ""}${i < phase ? " is-done" : ""}`}
+          >
+            {i === phase && (
+              <span aria-hidden="true" className="poll-steps__ball">
+                🎾
+              </span>
+            )}
+            {s}
+          </li>
+        ))}
+      </ol>
+
+      <ul className="poll-rows">
+        {winnerFirst.map((o, idx) => {
+          if (collapsed && idx > 0) return null;
           const t = tallyOption(o, votes);
           const free = liveFree(o);
           const state = optionState(t.yes.length, free);
           const mine =
             votes.find((v) => v.option_id === o.id && v.player_id === myId)
               ?.status ?? null;
-          const isChosen = poll.locked_option_id === o.id;
-          const past = o.date < today;
-          return (
-            <li
-              key={o.id}
-              className={`proposal poll-option--${state}${isChosen ? " proposal--playable" : ""}`}
-            >
-              <div className="proposal__head">
-                <span className="proposal__when">
-                  {longDay(o.date)} · {o.start_time}
-                  {isChosen && " ★"}
-                </span>
-                <span className="proposal__meta">{o.duration} min</span>
-              </div>
+          const isChosen = poll.locked_option_id === o.id && poll.status !== "open";
+          const detailOpen = openDetail === o.id;
 
-              <div className="proposal__status">
-                <span className="badge">
-                  {t.yes.length} mee → {t.needed}{" "}
-                  {t.needed === 1 ? "baan" : "banen"} nodig
+          if (isChosen) {
+            return (
+              <li key={o.id} className="winner-card">
+                <span className="winner-card__when">
+                  🎾 {longDay(o.date)} · {o.start_time}
                 </span>
-                <span
-                  className={`proposal__free${state === "onhaalbaar" ? " proposal__free--none" : ""}`}
-                >
-                  {free == null
-                    ? "beschikbaarheid onbekend"
-                    : `${free} vrij · ${STATE_LABEL[state]}`}
+                <span className="winner-card__meta">
+                  {o.duration} min · {club.name}
                 </span>
-                {t.maybe.length > 0 && (
-                  <span className="proposal__maybe">{t.maybe.length} misschien</span>
-                )}
-              </div>
-
-              {t.yes.length > 0 && (
-                <p className="proposal__names">Kan: {t.yes.map(name).join(", ")}</p>
-              )}
-
-              <div className="proposal__actions">
-                {poll.status === "open" && !past && (
-                  <div role="group" aria-label="Jouw stem" className="proposal__vote">
-                    {(Object.keys(VOTE_LABEL) as PollVoteStatus[]).map((s) => (
+                <p className="proposal__names">
+                  {t.yes.length > 0
+                    ? `Spelen mee: ${t.yes.map(name).join(", ")}`
+                    : "Nog geen deelnemers bevestigd."}
+                </p>
+                {poll.status === "locked" && (
+                  <div className="proposal__links">
+                    <a
+                      className="btn btn--sm btn--primary"
+                      href={bookingUrl(o.date)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Boek op Playtomic ↗
+                    </a>
+                    {isManager && (
                       <button
-                        key={s}
-                        className={`btn btn--sm attendance-btn ${mine === s ? `is-active is-${s}` : ""}`}
+                        className="btn btn--sm"
                         disabled={busy}
-                        onClick={() => vote(o, s, mine)}
+                        onClick={() =>
+                          run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
+                        }
                       >
-                        {VOTE_LABEL[s]}
+                        Baan geboekt ✓
                       </button>
-                    ))}
+                    )}
                   </div>
                 )}
-                {poll.status === "open" && isManager && (
-                  <button
-                    className="btn btn--sm"
-                    disabled={busy || state === "onhaalbaar"}
-                    title={
-                      state === "onhaalbaar"
-                        ? "Te weinig banen vrij voor dit aantal spelers"
-                        : "Leg dit moment vast voor de groep"
-                    }
-                    onClick={() =>
-                      run(() => lockPoll(poll.id, o.id), "Moment vastgelegd.")
-                    }
-                  >
-                    Kies dit moment
-                  </button>
+                {poll.status === "booked" && (
+                  <div className="proposal__links">
+                    <span className="badge badge--win">Geboekt ✓</span>
+                    <button className="btn btn--sm" onClick={exportIcs}>
+                      📅 Zet in agenda
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          }
+
+          return (
+            <li key={o.id} className="poll-row-wrap">
+              <div className={`poll-row poll-option--${state}`}>
+                <span className="poll-row__when">
+                  {shortDay(o.date)} · {o.start_time}
+                </span>
+                <span className="poll-row__people" aria-hidden="true">
+                  {t.yes.slice(0, 4).map((pid) => (
+                    <Avatar key={pid} profile={profiles[pid]} size={22} />
+                  ))}
+                  {t.yes.length > 4 && (
+                    <span className="poll-row__more">+{t.yes.length - 4}</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className={`poll-row__state poll-state--${state}`}
+                  aria-label={`Haalbaarheid: ${state} — uitleg`}
+                  aria-expanded={detailOpen}
+                  onClick={() => setOpenDetail(detailOpen ? null : o.id)}
+                >
+                  {STATE_ICON[state]}
+                </button>
+                {poll.status === "open" && o.date >= today ? (
+                  <span className="seg" role="group" aria-label="Jouw stem">
+                    {VOTE_SEGMENTS.map((s) => (
+                      <button
+                        key={s.status}
+                        className={`seg__btn${mine === s.status ? ` is-active is-${s.status}` : ""}`}
+                        aria-label={s.label}
+                        title={s.label}
+                        disabled={busy}
+                        onClick={() =>
+                          run(() =>
+                            mine === s.status
+                              ? clearPollVote(o.id, myId)
+                              : setPollVote(o.id, poll.group_id, myId, s.status),
+                          )
+                        }
+                      >
+                        {s.icon}
+                      </button>
+                    ))}
+                  </span>
+                ) : (
+                  <span className="proposal__meta">
+                    {o.date < today ? "voorbij" : `${t.yes.length} mee`}
+                  </span>
                 )}
               </div>
+              {detailOpen && (
+                <div className="poll-row-detail">
+                  <p className="proposal__meta">
+                    {t.yes.length} {t.yes.length === 1 ? "speler" : "spelers"} →{" "}
+                    {t.needed} {t.needed === 1 ? "baan" : "banen"} nodig ·{" "}
+                    {free == null
+                      ? "beschikbaarheid onbekend"
+                      : `${free} vrij (${state})`}
+                    {t.maybe.length > 0 && ` · ${t.maybe.length} misschien`}
+                  </p>
+                  {t.yes.length > 0 && (
+                    <p className="proposal__names">
+                      Kan: {t.yes.map(name).join(", ")}
+                    </p>
+                  )}
+                  {poll.status === "open" && isManager && (
+                    <button
+                      className="btn btn--sm"
+                      disabled={busy || state === "onhaalbaar" || o.date < today}
+                      onClick={() =>
+                        run(() => lockPoll(poll.id, o.id), "Moment vastgelegd.")
+                      }
+                    >
+                      Kies dit moment
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}
       </ul>
 
+      {collapsed && options.length > 1 && (
+        <button
+          className="btn btn--sm poll-card__showlosers"
+          onClick={() => setShowLosers(true)}
+        >
+          Andere opties tonen ({options.length - 1})
+        </button>
+      )}
+
       <div className="proposal__actions poll-card__footer">
-        <div className="proposal__links">
-          {poll.status === "locked" && locked && (
-            <>
-              <a
-                className="btn btn--sm btn--primary"
-                href={bookingUrl(locked.date)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Boek op Playtomic ↗
-              </a>
-              {isManager && (
-                <button
-                  className="btn btn--sm"
-                  disabled={busy}
-                  onClick={() =>
-                    run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
-                  }
-                >
-                  Baan geboekt ✓
-                </button>
-              )}
-            </>
-          )}
-          {poll.status === "booked" && locked && (
-            <button className="btn btn--sm" onClick={exportIcs}>
-              📅 Zet in agenda
-            </button>
-          )}
-        </div>
+        {poll.status === "open" && isManager && bestOption && (
+          <button
+            className="btn btn--sm btn--primary"
+            disabled={busy}
+            onClick={() =>
+              run(() => lockPoll(poll.id, bestOption.id), "Moment vastgelegd.")
+            }
+          >
+            Kies {shortDay(bestOption.date)} · {bestOption.start_time}
+          </button>
+        )}
         {isManager && poll.status !== "booked" && (
           <button
             className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
