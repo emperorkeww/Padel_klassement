@@ -18,6 +18,8 @@ import {
   getGroupPollOptions,
   getGroupPollVotes,
   createPoll,
+  addPollOption,
+  removePollOption,
   setPollVote,
   clearPollVote,
   lockPoll,
@@ -33,6 +35,7 @@ import {
 } from "./pollsApi";
 import {
   activePoll,
+  diffPollOptions,
   nonVoters,
   optionState,
   pollOptions,
@@ -100,6 +103,7 @@ export function PollSection({
   isOwner: boolean;
 }) {
   const club = useClub();
+  const toast = useToast();
   const today = dateInZone(club.timezone);
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -145,6 +149,7 @@ export function PollSection({
         options={pollOptions(active, options.data ?? [])}
         votes={votes.data ?? []}
         week={week.data ?? []}
+        weekLoading={week.loading}
         profiles={profiles}
         myId={myId}
         isOwner={isOwner}
@@ -175,13 +180,16 @@ export function PollSection({
       )}
       {wizardOpen && (
         <PollWizard
-          groupId={groupId}
-          myId={myId}
           today={today}
           week={week.data ?? []}
           weekLoading={week.loading}
+          submitLabel={(n) => `Start poll (${n})`}
+          onSubmit={async (options) => {
+            await createPoll({ groupId, createdBy: myId, options });
+            toast.success("Poll gestart — de groep kan stemmen.");
+          }}
           onClose={() => setWizardOpen(false)}
-          onCreated={() => {
+          onDone={() => {
             setWizardOpen(false);
             reloadAll();
           }}
@@ -198,30 +206,40 @@ export function PollSection({
 const optKey = (o: { date: string; startTime: string }) => `${o.date}|${o.startTime}`;
 
 function PollWizard({
-  groupId,
-  myId,
   today,
   week,
   weekLoading,
+  initialPicked,
+  submitLabel,
+  confirmHint,
+  onSubmit,
   onClose,
-  onCreated,
+  onDone,
 }: {
-  groupId: string;
-  myId: string;
   today: string;
   week: WeekDay[];
   weekLoading: boolean;
+  /** Bestaande selectie voor de "Dagen aanpassen"-modus (#128). */
+  initialPicked?: Map<string, NewPollOption>;
+  submitLabel: (count: number) => string;
+  /** Waarschuwing die eerst bevestigd moet worden (bv. momenten vervallen). */
+  confirmHint?: (picked: Map<string, NewPollOption>) => string | null;
+  onSubmit: (options: NewPollOption[], picked: Map<string, NewPollOption>) => Promise<void>;
   onClose: () => void;
-  onCreated: () => void;
+  onDone: () => void;
 }) {
   const toast = useToast();
   const [duration, setDuration] = useState<number>(90);
   const [selectedDay, setSelectedDay] = useState(today);
   const [wholeDay, setWholeDay] = useState(false);
-  const [picked, setPicked] = useState<Map<string, NewPollOption>>(new Map());
+  const [picked, setPicked] = useState<Map<string, NewPollOption>>(
+    () => new Map(initialPicked ?? []),
+  );
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("20:00");
   const [saving, setSaving] = useState(false);
+  // Twee-taps bevestiging wanneer de wijziging iets laat vervallen.
+  const [armed, setArmed] = useState(false);
 
   const weekEnd = addDays(today, 6);
 
@@ -243,6 +261,7 @@ function PollWizard({
   };
 
   function toggle(date: string, time: string, courtsFree: number) {
+    setArmed(false);
     setPicked((cur) => {
       const next = new Map(cur);
       const key = `${date}|${time}`;
@@ -293,17 +312,19 @@ function PollWizard({
     setManualDate("");
   }
 
+  const hint = confirmHint?.(picked) ?? null;
+
   async function publish() {
     if (picked.size === 0) return;
+    // Vervalt er iets (bv. momenten met stemmen)? Eerst bevestigen.
+    if (hint && !armed) {
+      setArmed(true);
+      return;
+    }
     setSaving(true);
     try {
-      await createPoll({
-        groupId,
-        createdBy: myId,
-        options: [...picked.values()],
-      });
-      toast.success("Poll gestart — de groep kan stemmen.");
-      onCreated();
+      await onSubmit([...picked.values()], picked);
+      onDone();
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -456,26 +477,36 @@ function PollWizard({
                 type="button"
                 className="picked-chip"
                 title="Verwijderen"
-                onClick={() =>
+                onClick={() => {
+                  setArmed(false);
                   setPicked((cur) => {
                     const next = new Map(cur);
                     next.delete(optKey(o));
                     return next;
-                  })
-                }
+                  });
+                }}
               >
                 {shortDay(o.date)} {o.startTime}
                 {o.courtsFree == null ? " ?" : ""} ×
               </button>
             ))}
         </div>
+        {armed && hint && (
+          <p className="proposal-form__note proposal-form__note--warn" role="alert">
+            ⚠ {hint} Tik nogmaals om te bevestigen.
+          </p>
+        )}
         <div className="proposal-form__actions">
           <button
             className="btn btn--sm btn--primary"
             disabled={saving || picked.size === 0}
             onClick={publish}
           >
-            {saving ? "Bezig…" : `Start poll (${picked.size})`}
+            {saving
+              ? "Bezig…"
+              : armed && hint
+                ? "Zeker? Tik nogmaals"
+                : submitLabel(picked.size)}
           </button>
           <button type="button" className="btn btn--sm" onClick={onClose}>
             Annuleren
@@ -497,6 +528,7 @@ function PollCard({
   options,
   votes,
   week,
+  weekLoading,
   profiles,
   myId,
   isOwner,
@@ -509,6 +541,7 @@ function PollCard({
   options: PollOption[];
   votes: PollVote[];
   week: WeekDay[];
+  weekLoading: boolean;
   profiles: Record<string, Profile>;
   myId: string;
   isOwner: boolean;
@@ -522,6 +555,8 @@ function PollCard({
   const [remindedDone, setRemindedDone] = useState(false);
   const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [showLosers, setShowLosers] = useState(false);
+  // "Dagen aanpassen" (#128): wizard heropent met de bestaande momenten.
+  const [editing, setEditing] = useState(false);
   // Optimistisch stemmen: de tik is meteen zichtbaar, de server volgt.
   const [voteOverlay, setVoteOverlay] = useState<
     Map<string, PollVoteStatus | null>
@@ -727,15 +762,82 @@ function PollCard({
       : options;
   const collapsed = poll.status !== "open" && !showLosers;
 
+  // "Dagen aanpassen": wizard voorgevuld met de huidige momenten; het
+  // verschil wordt bij bewaren als losse add/removes doorgevoerd zodat
+  // stemmen op ongewijzigde momenten blijven staan.
+  if (editing) {
+    const initialPicked = new Map<string, NewPollOption>(
+      options.map((o) => [
+        `${o.date}|${o.start_time}`,
+        {
+          date: o.date,
+          startTime: o.start_time,
+          duration: o.duration,
+          courtsFree: o.courts_free,
+        },
+      ]),
+    );
+    return (
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Dagen aanpassen</h2>
+        </div>
+        <PollWizard
+          today={today}
+          week={week}
+          weekLoading={weekLoading}
+          initialPicked={initialPicked}
+          submitLabel={(n) => `Bewaar dagen (${n})`}
+          confirmHint={(picked) => {
+            const removed = options.filter(
+              (o) => !picked.has(`${o.date}|${o.start_time}`),
+            );
+            if (removed.length === 0) return null;
+            const votesLost = removed.some((o) =>
+              votes.some((v) => v.option_id === o.id),
+            );
+            return `${removed.length} ${removed.length === 1 ? "moment vervalt" : "momenten vervallen"}${votesLost ? ", inclusief de stemmen daarop" : ""}.`;
+          }}
+          onSubmit={async (_options, picked) => {
+            const { toAdd, toRemoveIds } = diffPollOptions(options, picked);
+            for (const optionId of toRemoveIds) {
+              await removePollOption(optionId);
+            }
+            for (const o of toAdd) {
+              await addPollOption(poll.id, poll.group_id, o);
+            }
+            toast.success("Dagen bijgewerkt — de stemmen op behouden momenten staan er nog.");
+          }}
+          onClose={() => setEditing(false)}
+          onDone={() => {
+            setEditing(false);
+            onChanged();
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="card">
       <div className="card__head">
         <h2 className="card__title">Speeldag-poll</h2>
-        {poll.status === "open" && !remindedDone && (
-          <button className="btn btn--sm" disabled={busy} onClick={remind}>
-            🔔 Herinner
-          </button>
-        )}
+        <div className="proposal__links">
+          {poll.status === "open" && isManager && (
+            <button
+              className="btn btn--sm"
+              disabled={busy}
+              onClick={() => setEditing(true)}
+            >
+              ✏️ Dagen aanpassen
+            </button>
+          )}
+          {poll.status === "open" && !remindedDone && (
+            <button className="btn btn--sm" disabled={busy} onClick={remind}>
+              🔔 Herinner
+            </button>
+          )}
+        </div>
       </div>
 
       <ol className="poll-steps" aria-label="Fase van de poll">

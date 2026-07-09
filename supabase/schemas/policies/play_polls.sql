@@ -31,7 +31,8 @@ create policy "play_polls_delete_manager" on public.play_polls
   );
 
 -- Opties: leesbaar voor leden; alleen de poll-maker/eigenaar voegt ze toe of
--- haalt ze weg, en de group_id moet echt bij de poll horen (anti-spoof).
+-- haalt ze weg, de group_id moet echt bij de poll horen (anti-spoof), en
+-- bewerken kan alleen zolang de poll open staat ("Dagen aanpassen", #128).
 create policy "play_poll_options_select_member" on public.play_poll_options
   for select
   using (public.is_group_member(group_id, (select auth.uid())));
@@ -44,6 +45,7 @@ create policy "play_poll_options_insert_manager" on public.play_poll_options
       select 1 from public.play_polls p
       where p.id = poll_id
         and p.group_id = play_poll_options.group_id
+        and p.status = 'open'
         and (
           p.created_by = (select auth.uid())
           or public.is_group_owner(p.group_id, (select auth.uid()))
@@ -57,6 +59,7 @@ create policy "play_poll_options_delete_manager" on public.play_poll_options
     exists (
       select 1 from public.play_polls p
       where p.id = poll_id
+        and p.status = 'open'
         and (
           p.created_by = (select auth.uid())
           or public.is_group_owner(p.group_id, (select auth.uid()))
