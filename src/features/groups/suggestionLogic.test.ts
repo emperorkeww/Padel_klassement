@@ -3,10 +3,10 @@ import {
   playedMoments,
   suggestMoments,
   weekdayOf,
+  type CanSignal,
   type SuggestionSources,
 } from "./suggestionLogic";
 import type { WeekHeatmap } from "../availability/availabilityShare";
-import type { SlotVote } from "./planApi";
 
 // 2026-07-10 is een vrijdag, 2026-07-11 een zaterdag.
 const HEAT: WeekHeatmap = {
@@ -21,14 +21,12 @@ const vote = (
   date: string,
   time: string,
   playerId: string,
-  status: SlotVote["status"] = "yes",
-): SlotVote => ({
-  group_id: "g1",
+  status: CanSignal["status"] = "yes",
+): CanSignal => ({
   player_id: playerId,
   date,
   start_time: time,
   status,
-  updated_at: "2026-07-08T10:00:00Z",
 });
 
 const base: SuggestionSources = {

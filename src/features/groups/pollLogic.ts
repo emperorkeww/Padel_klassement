@@ -1,4 +1,3 @@
-import { PLAYERS_PER_COURT } from "./planGrid";
 import type {
   PlayPoll,
   PollOption,
@@ -8,6 +7,9 @@ import type {
 
 // Pure logica rond speeldag-polls: banen-behoefte, haalbaarheid per optie en
 // welke poll de groepspagina toont. Getest in pollLogic.test.ts.
+
+/** Vier spelers per baan (padel). */
+export const PLAYERS_PER_COURT = 4;
 
 /** Banen nodig voor dit aantal ja-stemmers (minimaal 1). */
 export function courtsNeeded(yesCount: number): number {
