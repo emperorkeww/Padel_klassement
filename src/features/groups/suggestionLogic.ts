@@ -1,9 +1,9 @@
 import type { WeekHeatmap } from "../availability/availabilityShare";
-import type { SlotVote } from "./planApi";
 
-// Pure scoring voor de suggestiekaart: combineert vrije banen, slot-stemmen
-// van leden, de speelhistoriek van de groep en eerder succesvolle voorstellen
-// tot een top-N van concrete momenten. Getest in suggestionLogic.test.ts.
+// Pure scoring voor de suggestiekaart: combineert vrije banen, "kan dan"-
+// signalen uit poll-stemmen, de speelhistoriek van de groep en eerder
+// succesvolle voorstellen tot een top-N van concrete momenten. Getest in
+// suggestionLogic.test.ts.
 
 /** Een moment in de groepshistoriek: weekdag (0=zo..6=za) + beginuur. */
 export interface PlayedMoment {
@@ -11,11 +11,24 @@ export interface PlayedMoment {
   hour: number;
 }
 
+/**
+ * "Kan dan"-signaal van een lid op een concreet moment. Komt uitsluitend uit
+ * stemmen op poll-opties: die zijn zichtbaar en intrekbaar via de poll zelf.
+ * (Voorheen telden ook stemmen uit het verwijderde slot-raster mee — spook-
+ * signalen die niemand nog kon zien of beheren; zie issue #121.)
+ */
+export interface CanSignal {
+  player_id: string;
+  date: string; // YYYY-MM-DD
+  start_time: string; // "HH:MM" clubtijd
+  status: "yes" | "no" | "maybe";
+}
+
 export interface SuggestionSources {
   /** Vrije banen per halfuur voor de komende week. */
   heat: WeekHeatmap;
-  /** "Plan samen"-stemmen: leden die aangaven te kunnen op een slot. */
-  slotVotes: SlotVote[];
+  /** Leden die aangaven te kunnen op een moment (uit poll-stemmen). */
+  slotVotes: CanSignal[];
   /** Wanneer de groep eerder speelde (weekdag + uur, in clubtijd). */
   history: PlayedMoment[];
   /** Eerdere voorstellen die speelbaar raakten (datum + "HH:MM"). */

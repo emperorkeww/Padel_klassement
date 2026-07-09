@@ -2,8 +2,8 @@ import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
-// dependency. Zelfde losse typering en cache/RLS-patroon als planApi.ts, tot
-// database.types.ts opnieuw gegenereerd wordt.
+// dependency. Losse typering (tabel-shim) tot database.types.ts opnieuw
+// gegenereerd wordt; zelfde cache/RLS-patroon als attendanceApi.
 
 export type PollStatus = "open" | "locked" | "booked" | "cancelled";
 export type PollVoteStatus = "yes" | "no" | "maybe";

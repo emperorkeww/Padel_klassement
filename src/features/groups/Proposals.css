@@ -134,6 +134,10 @@
   background: var(--surface);
   cursor: pointer;
   line-height: 1.2;
+  /* Buttons erven kleur/font niet: zonder dit kleurt iOS Safari de cijfers
+     systeemblauw en gebruikt het systeemfont. */
+  color: var(--ink);
+  font-family: inherit;
 }
 .day-chip__name {
   font-size: var(--fs-xs);
@@ -168,6 +172,9 @@
   background: var(--surface);
   font-weight: 700;
   cursor: pointer;
+  /* Zie .day-chip: expliciete kleur/font tegen iOS-systeemblauw. */
+  color: var(--ink);
+  font-family: inherit;
 }
 .slot-chip.is-active {
   border-color: var(--accent);
@@ -221,6 +228,18 @@
   align-items: flex-end;
   gap: var(--sp-3);
   padding-top: var(--sp-2);
+}
+/* iOS Safari geeft native date/time-inputs een intrinsieke breedte en negeert
+   de kolombreedte — daardoor schoof het Uur-veld over het Datum-veld heen
+   (issue #121). appearance: none laat ze de toegewezen breedte respecteren;
+   de native picker blijft gewoon werken. */
+.poll-wizard__manual .select {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  /* Leeg date-veld heeft zonder appearance geen tekst-inhoud: borg de hoogte
+     (44px = iOS-tikdoel). */
+  min-height: 44px;
 }
 .wizard-footer {
   position: sticky;
