@@ -682,40 +682,34 @@ function PollCard({
     }
   }
 
+  // Eén of meer rondes al gegenereerd vanuit deze kaart (sessie-lokaal).
+  const [roundsMade, setRoundsMade] = useState(0);
+
   /**
-   * Boekt de speeldag en zet meteen eerlijke rondes klaar met de ja-stemmers
-   * (best effort: mislukt de teamindeling, dan blijft de boeking gewoon staan).
+   * Zet eerlijke rondes klaar met de ja-stemmers van het gekozen moment
+   * (Elo-gebalanceerd via create_fair_round). Expliciete actie: de gebruiker
+   * kiest zelf wanneer — zodra de datum vastligt en genoeg mensen bevestigden.
    */
-  async function book() {
+  async function generateRounds() {
     if (!locked) return;
     setBusy(true);
     try {
-      await markPollBooked(poll.id);
-      let extra = "";
       const t = tallyOption(locked, votes);
-      if (t.yes.length >= 4) {
-        try {
-          const ratings = await getPlayerRatings();
-          const teams = fairTeams(t.yes, ratings, 0);
-          const courts = teams.courts.map((c) => ({
-            teamA: c.teamA.playerIds,
-            teamB: c.teamB.playerIds,
-          }));
-          if (courts.length > 0) {
-            const ids = await createFairRound(poll.group_id, courts);
-            if (ids.length > 0) {
-              extra =
-                ids.length === 1
-                  ? " Eerlijke match klaargezet bij Wedstrijdrondes."
-                  : ` ${ids.length} eerlijke matches klaargezet bij Wedstrijdrondes.`;
-            }
-          }
-        } catch {
-          // Rondes klaarzetten is een extraatje; de boeking zelf staat.
-        }
-      }
+      const ratings = await getPlayerRatings();
+      const teams = fairTeams(t.yes, ratings, roundsMade);
+      const courts = teams.courts.map((c) => ({
+        teamA: c.teamA.playerIds,
+        teamB: c.teamB.playerIds,
+      }));
+      if (courts.length === 0) throw new Error("Geen volledige banen te vullen.");
+      const ids = await createFairRound(poll.group_id, courts);
+      setRoundsMade((n) => n + 1);
       onChanged();
-      toast.success(`Speeldag geboekt ✓${extra}`);
+      toast.success(
+        ids.length === 1
+          ? "Eerlijke match klaargezet — zie Wedstrijdrondes."
+          : `${ids.length} eerlijke matches klaargezet — zie Wedstrijdrondes.`,
+      );
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -802,7 +796,13 @@ function PollCard({
                       Boek op Playtomic ↗
                     </a>
                     {isManager && (
-                      <button className="btn btn--sm" disabled={busy} onClick={book}>
+                      <button
+                        className="btn btn--sm"
+                        disabled={busy}
+                        onClick={() =>
+                          run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
+                        }
+                      >
                         Baan geboekt ✓
                       </button>
                     )}
@@ -822,6 +822,31 @@ function PollCard({
                     </button>
                   </div>
                 )}
+                {/* Rondes genereren: expliciete actie zodra de datum vastligt
+                    en er genoeg bevestigde spelers zijn (4 per baan). */}
+                <div className="proposal__links">
+                  <button
+                    className={`btn btn--sm${roundsMade === 0 ? " btn--primary" : ""}`}
+                    disabled={busy || t.yes.length < 4}
+                    title={
+                      t.yes.length < 4
+                        ? "Minstens 4 bevestigde spelers nodig"
+                        : "Elo-gebalanceerde teams per baan, als geplande matches"
+                    }
+                    onClick={generateRounds}
+                  >
+                    ⚡ {roundsMade === 0 ? "Genereer rondes" : "Nog een ronde"}
+                    {t.yes.length >= 4 &&
+                      ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
+                  </button>
+                  {t.yes.length < 4 && (
+                    <span className="proposal__meta">
+                      nog {4 - t.yes.length} bevestigde{" "}
+                      {4 - t.yes.length === 1 ? "speler" : "spelers"} nodig voor
+                      rondes
+                    </span>
+                  )}
+                </div>
               </li>
             );
           }
