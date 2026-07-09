@@ -24,6 +24,10 @@ import {
 } from "../../lib/americano";
 import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
 import { getGroupPlayerStandings } from "../standings/api";
+import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
+import { Sparkline } from "../../components/Sparkline";
+import { Podium } from "../../components/Podium";
+import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
@@ -61,12 +65,18 @@ export function GroupDetail() {
   const teams = useAsync(getTeamsMap, []);
   const friendships = useAsync(getMyFriendships, []);
 
+  // Voor het rating-klassement op de Stand-tab (#52).
+  const ratings = useAsync(getPlayerRatings, []);
+  const histories = useAsync(getAllRatingHistories, []);
+
   const onMatches = useCallback(() => {
     matches.reload();
     standings.reload();
     teams.reload();
+    ratings.reload();
+    histories.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, standings.reload, teams.reload]);
+  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload]);
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
@@ -93,6 +103,9 @@ export function GroupDetail() {
   // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
+  // Stand-tab: rating is de standaard (#52); de punten-weergave blijft als
+  // toggle tot eendaagse tornooien (#124) die rol overnemen — dan kan hij weg.
+  const [standMode, setStandMode] = useState<"rating" | "punten">("rating");
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
@@ -489,7 +502,131 @@ export function GroupDetail() {
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Groepsklassement</h2>
-            {seasons.length > 0 && (
+            <div className="tabs tabs--head" role="group" aria-label="Klassement-weergave">
+              <button
+                className={`tab ${standMode === "rating" ? "is-active" : ""}`}
+                onClick={() => setStandMode("rating")}
+              >
+                Rating
+              </button>
+              <button
+                className={`tab ${standMode === "punten" ? "is-active" : ""}`}
+                onClick={() => setStandMode("punten")}
+              >
+                Punten
+              </button>
+            </div>
+          </div>
+
+          {standMode === "rating" && (
+            <>
+              <p className="card__subtitle">
+                Gesorteerd op rating — hoe vaak iemand speelt telt niet mee.
+                Gedimde ratings zijn op minder dan 3 matches gebouwd.
+              </p>
+              {(() => {
+                const played = playedInGroup(matches.data ?? [], tmap);
+                const rows = groupRatingStandings(
+                  memberList.map((m) => m.player_id),
+                  ratings.data ?? {},
+                  played,
+                  (pid) => displayName(pmap[pid]),
+                );
+                const lastDelta = (pid: string) => {
+                  const hist = histories.data?.[pid] ?? [];
+                  return hist[hist.length - 1]?.delta ?? null;
+                };
+                // Top 3 met rating op het podium; de tabel begint vanaf #4.
+                const podium = rows.filter((r) => r.rating != null).slice(0, 3);
+                const rest = rows.slice(podium.length);
+                return (
+                  <>
+                    <Podium
+                      entries={podium.map((r) => ({
+                        key: r.playerId,
+                        name: displayName(pmap[r.playerId]),
+                        profile: pmap[r.playerId] ?? null,
+                        link: `/spelers/${r.playerId}`,
+                        isMe: r.playerId === myId,
+                        rating: r.rating,
+                        delta: lastDelta(r.playerId),
+                        dimmed: r.thin,
+                        sub: `${r.playedInGroup}× in deze groep`,
+                      }))}
+                    />
+                    {rest.length > 0 && (
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Speler</th>
+                            <th className="num">Rating</th>
+                            <th className="num">Δ</th>
+                            <th className="num">G</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rest.map((r, i) => {
+                            const rank = i + 1 + podium.length;
+                            const hist = histories.data?.[r.playerId] ?? [];
+                            const last = hist[hist.length - 1];
+                            return (
+                              <tr
+                                key={r.playerId}
+                                className={`${r.playerId === myId ? "is-me" : ""}${r.thin ? " rating-thin" : ""}`}
+                              >
+                                <td>
+                                  <span className="cell-player">
+                                    <span className={`rank rank--${rank}`}>
+                                      {rank}
+                                    </span>
+                                    <Avatar profile={pmap[r.playerId]} size={24} />
+                                    {displayName(pmap[r.playerId])}
+                                  </span>
+                                </td>
+                                <td className="num">
+                                  {r.rating != null ? (
+                                    <span className="rating-wrap">
+                                      <span className="rating-cell">
+                                        <strong>{r.rating}</strong>
+                                      </span>
+                                      {hist.length > 0 && (
+                                        <Sparkline
+                                          history={hist}
+                                          name={displayName(pmap[r.playerId])}
+                                        />
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="rating-none">
+                                      nog geen matches
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="num">
+                                  {last && last.delta !== 0 && (
+                                    <span
+                                      className={`stat__delta ${last.delta > 0 ? "is-up" : "is-down"}`}
+                                    >
+                                      {last.delta > 0 ? "▲" : "▼"}
+                                      {Math.abs(last.delta)}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="num">{r.playedInGroup}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {standMode === "punten" && seasons.length > 0 && (
+            <div className="stand-season">
               <select
                 className="select select--filter"
                 aria-label="Seizoen"
@@ -506,10 +643,10 @@ export function GroupDetail() {
                   </option>
                 ))}
               </select>
-            )}
-          </div>
+            </div>
+          )}
 
-          {champion && season && (
+          {standMode === "punten" && champion && season && (
             <p className="champion-banner" role="status">
               <span className="champion-banner__cup" aria-hidden="true">
                 🏆
@@ -528,13 +665,31 @@ export function GroupDetail() {
             </p>
           )}
 
-          {shownStandings.length === 0 ? (
+          {standMode === "punten" && shownStandings.length === 0 && (
             <p className="empty">
               {season
                 ? "Geen matches in dit seizoen."
                 : "Nog geen afgeronde matches in deze groep."}
             </p>
-          ) : (
+          )}
+          {standMode === "punten" && shownStandings.length > 0 && (
+            <Podium
+              entries={shownStandings.slice(0, 3).map((p) => ({
+                key: p.player_id,
+                name: displayName(p),
+                profile: pmap[p.player_id] ?? p,
+                link: `/spelers/${p.player_id}`,
+                isMe: p.player_id === myId,
+                rating: ratings.data?.[p.player_id]?.rating ?? null,
+                dimmed:
+                  (ratings.data?.[p.player_id]?.games ?? 0) > 0 &&
+                  (ratings.data?.[p.player_id]?.games ?? 0) < 3,
+                sub: `${p.points} ptn`,
+                record: `${p.won}W · ${p.drawn ?? 0}G · ${p.lost}V`,
+              }))}
+            />
+          )}
+          {standMode === "punten" && shownStandings.length > 3 && (
             <table className="table">
               <thead>
                 <tr>
@@ -546,14 +701,14 @@ export function GroupDetail() {
                 </tr>
               </thead>
               <tbody>
-                {shownStandings.map((p, i) => (
+                {shownStandings.slice(3).map((p, i) => (
                   <tr
                     key={p.player_id}
                     className={p.player_id === myId ? "is-me" : ""}
                   >
                     <td>
                       <span className="cell-player">
-                        <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                        <span className={`rank rank--${i + 4}`}>{i + 4}</span>
                         <Avatar profile={pmap[p.player_id] ?? p} size={24} />
                         {displayName(p)}
                       </span>

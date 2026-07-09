@@ -27,6 +27,7 @@ import {
 import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
+import { Podium } from "../../components/Podium";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,
@@ -263,6 +264,19 @@ export function Leaderboard() {
     minMatches > 0 ? list.filter((r) => r.played >= minMatches) : list;
   const shownPlayerRows = atLeastMin(playerRows);
   const rows = tab === "player" ? shownPlayerRows : atLeastMin(teamRows);
+  // Rating is de leidende volgorde voor spelers (#52) — speelfrequentie telt
+  // niet; de klassieke punten-tie-break geldt bij gelijke/ontbrekende rating.
+  const displayRows =
+    tab === "player"
+      ? [...rows].sort(
+          (a, b) =>
+            (b.rating ?? -Infinity) - (a.rating ?? -Infinity) ||
+            byRank(
+              { points: a.points, goal_diff: a.goalDiff, won: a.won },
+              { points: b.points, goal_diff: b.goalDiff, won: b.won },
+            ),
+        )
+      : rows;
   // In seizoens-/datumweergave rekenen we zelf, dus wachten we op matches + lookups.
   const scopeAsync = season ? seasonMatches : allCompleted;
   const loading = usingScope
@@ -286,7 +300,8 @@ export function Leaderboard() {
   // "Jouw positie": scrolt naar je eigen rij (tabel op desktop, lijst op mobiel).
   const meRowRef = useRef<HTMLTableRowElement | null>(null);
   const meItemRef = useRef<HTMLLIElement | null>(null);
-  const myRankIdx = shownPlayerRows.findIndex((r) => r.isMe);
+  const myRankIdx =
+    tab === "player" ? displayRows.findIndex((r) => r.isMe) : -1;
   const scrollToMe = () => {
     const el = [meItemRef.current, meRowRef.current].find(
       (e) => e && e.offsetParent !== null,
@@ -298,7 +313,9 @@ export function Leaderboard() {
     <div>
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
-        <p className="page-subtitle">Winst = 3 punten, gelijkspel = 1, verlies = 0.</p>
+        <p className="page-subtitle">
+          Gesorteerd op rating — hoe vaak je speelt telt niet mee.
+        </p>
       </header>
 
       <div className="toolbar">
@@ -351,40 +368,61 @@ export function Leaderboard() {
           </select>
         )}
 
-        {/* Stand op datum: de ranglijst zoals hij was t/m die dag. */}
-        <input
-          className="input select--filter lb-date"
-          type="date"
-          aria-label="Stand op datum"
-          title="Bekijk de stand zoals hij was t/m deze datum"
-          value={asof}
-          max={new Date().toISOString().slice(0, 10)}
-          onChange={(e) => setAsof(e.target.value)}
-        />
-        {myLastMatchDay && (
-          <button
-            type="button"
-            className={`tab ${asof === myLastMatchDay ? "is-active" : ""}`}
-            onClick={() => setAsof(asof === myLastMatchDay ? "" : myLastMatchDay)}
-          >
-            Mijn laatste match
-          </button>
-        )}
-
-        {/* Minimaal aantal matches om mee te tellen in de lijst. */}
-        <select
-          className="select select--filter"
-          aria-label="Minimaal aantal matches"
-          value={minMatches}
-          onChange={(e) => setMin(Number(e.target.value))}
-        >
-          <option value={0}>Alle spelers</option>
-          {[3, 5, 10, 20].map((n) => (
-            <option key={n} value={n}>
-              ≥ {n} matches
-            </option>
-          ))}
-        </select>
+        {/* Geavanceerde filters achter een uitklap: de ranglijst blijft het
+            hoofdpodium, wie wil verdiepen vindt ze hier (#71). */}
+        <details className="lb-filters">
+          <summary>
+            Filters
+            {(asof ? 1 : 0) + (minMatches > 0 ? 1 : 0) > 0 && (
+              <span className="lb-filters__count">
+                {(asof ? 1 : 0) + (minMatches > 0 ? 1 : 0)}
+              </span>
+            )}
+          </summary>
+          <div className="lb-filters__body">
+            {/* Stand op datum: de ranglijst zoals hij was t/m die dag. */}
+            <label className="lb-filters__field">
+              <span>Stand op datum</span>
+              <input
+                className="input select--filter lb-date"
+                type="date"
+                aria-label="Stand op datum"
+                title="Bekijk de stand zoals hij was t/m deze datum"
+                value={asof}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setAsof(e.target.value)}
+              />
+            </label>
+            {myLastMatchDay && (
+              <button
+                type="button"
+                className={`tab ${asof === myLastMatchDay ? "is-active" : ""}`}
+                onClick={() =>
+                  setAsof(asof === myLastMatchDay ? "" : myLastMatchDay)
+                }
+              >
+                Mijn laatste match
+              </button>
+            )}
+            {/* Minimaal aantal matches om mee te tellen in de lijst. */}
+            <label className="lb-filters__field">
+              <span>Minimaal gespeeld</span>
+              <select
+                className="select select--filter"
+                aria-label="Minimaal aantal matches"
+                value={minMatches}
+                onChange={(e) => setMin(Number(e.target.value))}
+              >
+                <option value={0}>Alle spelers</option>
+                {[3, 5, 10, 20].map((n) => (
+                  <option key={n} value={n}>
+                    ≥ {n} matches
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </details>
       </div>
 
       {asof && (
@@ -406,7 +444,24 @@ export function Leaderboard() {
         </p>
       )}
 
-      {showPodium && <Podium rows={shownPlayerRows.slice(0, 3)} />}
+      {showPodium && (
+        <Podium
+          entries={displayRows
+            .filter((r) => r.rating != null)
+            .slice(0, 3)
+            .map((r) => ({
+              key: r.key,
+              name: r.name,
+              profile: r.profile,
+              link: r.link,
+              isMe: r.isMe,
+              rating: r.rating,
+              delta: r.history[r.history.length - 1]?.delta ?? null,
+              sub: `${r.points} ptn`,
+              record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
+            }))}
+        />
+      )}
 
       <div className="card">
         {loading ? (
@@ -442,11 +497,11 @@ export function Leaderboard() {
         ) : (
           <>
             <StandingsTable
-              rows={rows}
+              rows={displayRows}
               showForm={tab === "player"}
               meRef={meRowRef}
             />
-            <RankList rows={rows} meRef={meItemRef} />
+            <RankList rows={displayRows} meRef={meItemRef} />
           </>
         )}
       </div>
@@ -495,36 +550,6 @@ function ShiftBadge({ shift }: { shift?: Shift }) {
   );
 }
 
-function Podium({ rows }: { rows: Row[] }) {
-  const [first, second, third] = rows;
-  // Visuele volgorde: zilver — goud — brons.
-  const order: { row: Row; place: 1 | 2 | 3 }[] = [
-    { row: second, place: 2 },
-    { row: first, place: 1 },
-    { row: third, place: 3 },
-  ];
-
-  return (
-    <div className="podium" aria-label="Top 3">
-      {order.map(({ row, place }) => (
-        <Link
-          key={row.key}
-          to={row.link ?? "#"}
-          className={`podium__spot podium__spot--${place} ${row.isMe ? "is-me" : ""}`}
-        >
-          <span className="podium__medal">{place}</span>
-          <Avatar profile={row.profile} name={row.name} size={place === 1 ? 56 : 44} />
-          <span className="podium__name">{row.name}</span>
-          <span className="podium__pts">{row.points} ptn</span>
-          <span className="podium__record">
-            {row.won}W · {row.drawn}G · {row.lost}V
-          </span>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
 function KlassementUitleg() {
   return (
     <details className="explainer">
@@ -532,12 +557,23 @@ function KlassementUitleg() {
       <div className="explainer__body">
         <dl>
           <div>
+            <dt>Rating</dt>
+            <dd>
+              De basis van het klassement. Iedereen start op{" "}
+              <strong>1000</strong>. Na elke match stijgt of daalt je rating op
+              basis van de <strong>sterkte van de tegenstander</strong>: win je
+              van een sterker team, dan levert dat meer op; verlies je van een
+              zwakker team, dan zakt hij sneller. Zo meet de rating hoe goed je
+              speelt, los van hoe váák je speelt.
+            </dd>
+          </div>
+          <div>
             <dt>Punten</dt>
             <dd>
               Elke gewonnen match levert <strong>3 punten</strong> op, een
               gelijkspel <strong>1</strong> en een verlies <strong>0</strong>.
-              Omdat er meestal op tijd wordt gespeeld, kan een match gelijk
-              eindigen — dan krijgen beide teams één punt.
+              Punten zijn vooral zinvol binnen een afgebakende periode of
+              competitie, zoals een seizoen.
             </dd>
           </div>
           <div>
@@ -556,16 +592,6 @@ function KlassementUitleg() {
             </dd>
           </div>
           <div>
-            <dt>Rating</dt>
-            <dd>
-              Iedereen start op <strong>1000</strong>. Na elke match stijgt of
-              daalt je rating op basis van de <strong>sterkte van de
-              tegenstander</strong>: win je van een sterker team, dan levert dat
-              meer op; verlies je van een zwakker team, dan zakt hij sneller. Zo
-              meet de rating je vorm los van het aantal gespeelde matches.
-            </dd>
-          </div>
-          <div>
             <dt>Spelers versus Teams</dt>
             <dd>
               Het spelersklassement telt jouw matches over <em>alle</em> teams
@@ -576,9 +602,11 @@ function KlassementUitleg() {
           <div>
             <dt>Volgorde</dt>
             <dd>
-              Eerst op punten (hoog naar laag). Bij een gelijke stand telt het{" "}
-              <strong>scoresaldo</strong> (punten voor min tegen), daarna het
-              aantal gewonnen matches, en ten slotte de naam (alfabetisch).
+              Spelers staan standaard op <strong>rating</strong> (hoog naar
+              laag); tik op een kolomkop om anders te sorteren. Bij een gelijke
+              rating telt eerst het aantal punten, dan het{" "}
+              <strong>scoresaldo</strong>, het aantal gewonnen matches en ten
+              slotte de naam. Het teamklassement sorteert op punten.
             </dd>
           </div>
           <div>
@@ -679,9 +707,10 @@ function StandingsTable({
   showForm: boolean;
   meRef?: React.Ref<HTMLTableRowElement>;
 }) {
-  // Sortering is client-side: de serverstand (op punten) is de standaard;
-  // klikken op een kolomkop hersorteert lokaal, met de klassement-tie-break
-  // als tweede sleutel zodat gelijke waarden hun canonieke volgorde houden.
+  // Sortering is client-side: de aangeleverde volgorde (spelers op rating,
+  // teams op punten) is de standaard; klikken op een kolomkop hersorteert
+  // lokaal, met de klassement-tie-break als tweede sleutel zodat gelijke
+  // waarden hun canonieke volgorde houden.
   const [sort, setSort] = useState<SortState | null>(null);
   const onSort = (key: SortKey) =>
     setSort((s) =>
