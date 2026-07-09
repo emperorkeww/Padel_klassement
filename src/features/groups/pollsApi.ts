@@ -144,6 +144,39 @@ export async function createPoll(input: {
   invalidate("play-poll");
 }
 
+/**
+ * Voegt een kandidaat-moment toe aan een open poll ("Dagen aanpassen").
+ * RLS: alleen de maker of groepseigenaar, en alleen bij status open.
+ */
+export async function addPollOption(
+  pollId: string,
+  groupId: string,
+  option: NewPollOption,
+): Promise<void> {
+  const { error } = await optionTable()
+    .insert({
+      poll_id: pollId,
+      group_id: groupId,
+      date: option.date,
+      start_time: option.startTime,
+      duration: option.duration,
+      courts_free: option.courtsFree,
+    })
+    .select();
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
+/**
+ * Verwijdert een kandidaat-moment uit een open poll; stemmen op dat moment
+ * vervallen mee (cascade). RLS: maker/eigenaar, alleen bij status open.
+ */
+export async function removePollOption(optionId: string): Promise<void> {
+  const { error } = await optionTable().delete().eq("id", optionId);
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
 /** Zet (of wijzig) je eigen stem op één optie. */
 export async function setPollVote(
   optionId: string,

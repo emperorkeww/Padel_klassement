@@ -2,12 +2,18 @@ import { describe, it, expect } from "vitest";
 import {
   activePoll,
   courtsNeeded,
+  diffPollOptions,
   nonVoters,
   optionState,
   pollOptions,
   tallyOption,
 } from "./pollLogic";
-import type { PlayPoll, PollOption, PollVote } from "./pollsApi";
+import type {
+  NewPollOption,
+  PlayPoll,
+  PollOption,
+  PollVote,
+} from "./pollsApi";
 
 function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
   return {
@@ -122,6 +128,30 @@ describe("nonVoters", () => {
     expect(nonVoters(["p1", "p2", "p3", "p4"], opts, votes)).toEqual([
       "p3",
       "p4",
+    ]);
+  });
+});
+
+describe("diffPollOptions", () => {
+  it("berekent toe te voegen en te verwijderen momenten; ongewijzigd blijft staan", () => {
+    const existing = [
+      option({ id: "keep", date: "2026-07-10", start_time: "20:00" }),
+      option({ id: "drop", date: "2026-07-11", start_time: "19:00" }),
+    ];
+    const picked = new Map<string, NewPollOption>([
+      [
+        "2026-07-10|20:00",
+        { date: "2026-07-10", startTime: "20:00", duration: 90, courtsFree: 2 },
+      ],
+      [
+        "2026-07-12|21:00",
+        { date: "2026-07-12", startTime: "21:00", duration: 90, courtsFree: 1 },
+      ],
+    ]);
+    const diff = diffPollOptions(existing, picked);
+    expect(diff.toRemoveIds).toEqual(["drop"]);
+    expect(diff.toAdd.map((o) => `${o.date}|${o.startTime}`)).toEqual([
+      "2026-07-12|21:00",
     ]);
   });
 });

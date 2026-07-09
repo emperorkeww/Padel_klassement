@@ -1,4 +1,5 @@
 import type {
+  NewPollOption,
   PlayPoll,
   PollOption,
   PollVote,
@@ -81,6 +82,27 @@ export function activePoll(
       return !!opt && opt.date >= today;
     }) ?? null
   );
+}
+
+/**
+ * Verschil tussen de bestaande opties en de bewerkte selectie ("Dagen
+ * aanpassen"): wat moet erbij, en welke optie-id's moeten weg. Ongewijzigde
+ * momenten blijven onaangeraakt, zodat de stemmen erop behouden blijven.
+ */
+export function diffPollOptions(
+  existing: PollOption[],
+  picked: Map<string, NewPollOption>,
+): { toAdd: NewPollOption[]; toRemoveIds: string[] } {
+  const key = (date: string, time: string) => `${date}|${time}`;
+  const existingKeys = new Set(existing.map((o) => key(o.date, o.start_time)));
+  return {
+    toAdd: [...picked.values()].filter(
+      (o) => !existingKeys.has(key(o.date, o.startTime)),
+    ),
+    toRemoveIds: existing
+      .filter((o) => !picked.has(key(o.date, o.start_time)))
+      .map((o) => o.id),
+  };
 }
 
 /** Leden die nog op geen enkele optie van de poll stemden. */

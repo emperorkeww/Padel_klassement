@@ -192,6 +192,22 @@ describe("<GroupDetail />", () => {
     expect(
       screen.getAllByRole("button", { name: /^kies /i }).length,
     ).toBeGreaterThan(0);
+
+    // ... en kan de kandidaat-dagen aanpassen (#128): de wizard heropent
+    // met de bestaande momenten voorgeselecteerd.
+    await userEvent.click(
+      screen.getByRole("button", { name: /dagen aanpassen/i }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: /dagen aanpassen/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /bewaar dagen \(2\)/i }),
+    ).toBeInTheDocument();
+    // De bestaande momenten staan als verwijderbare chips in de balk.
+    expect(
+      screen.getByRole("button", { name: /za 5 jan.*×/i }),
+    ).toBeInTheDocument();
   });
 
   it("toont het groepsklassement standaard op rating, met punten-toggle", async () => {
