@@ -771,81 +771,100 @@ function PollCard({
           const detailOpen = openDetail === o.id;
 
           if (isChosen) {
+            const pp = perPersonAt(o);
             return (
               <li key={o.id} className="winner-card">
-                <span className="winner-card__when">
-                  🎾 {longDay(o.date)} · {o.start_time}
-                </span>
-                <span className="winner-card__meta">
-                  {o.duration} min · {club.name}
-                  {perPersonAt(o) ? ` · ± ${perPersonAt(o)} p.p.` : ""}
-                </span>
-                <p className="proposal__names">
-                  {t.yes.length > 0
-                    ? `Spelen mee: ${t.yes.map(name).join(", ")}`
-                    : "Nog geen deelnemers bevestigd."}
-                </p>
-                {poll.status === "locked" && (
-                  <div className="proposal__links">
-                    <a
-                      className="btn btn--sm btn--primary"
-                      href={bookingUrl(o.date)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Boek op Playtomic ↗
-                    </a>
-                    {isManager && (
-                      <button
-                        className="btn btn--sm"
-                        disabled={busy}
-                        onClick={() =>
-                          run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
-                        }
-                      >
-                        Baan geboekt ✓
+                {/* Kop: baangroene band met het moment + status. */}
+                <div className="winner-card__head">
+                  <span className="winner-card__when">
+                    🎾 {longDay(o.date)} · {o.start_time}
+                  </span>
+                  <span className="winner-card__status">
+                    {poll.status === "booked" ? "Geboekt ✓" : "Gekozen"}
+                  </span>
+                </div>
+
+                <div className="winner-card__body">
+                  <p className="winner-card__meta">
+                    {o.duration} min · {club.name}
+                    {pp ? ` · ± ${pp} p.p.` : ""}
+                  </p>
+
+                  <div className="winner-card__players">
+                    {t.yes.slice(0, 6).map((pid) => (
+                      <Avatar key={pid} profile={profiles[pid]} size={26} />
+                    ))}
+                    <span className="winner-card__names">
+                      {t.yes.length > 0
+                        ? t.yes.map(name).join(", ")
+                        : "Nog geen deelnemers bevestigd."}
+                    </span>
+                  </div>
+
+                  <div className="winner-card__actions">
+                    {poll.status === "locked" && (
+                      <>
+                        <a
+                          className="btn btn--sm btn--primary"
+                          href={bookingUrl(o.date)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Boek op Playtomic ↗
+                        </a>
+                        {isManager && (
+                          <button
+                            className="btn btn--sm"
+                            disabled={busy}
+                            onClick={() =>
+                              run(
+                                () => markPollBooked(poll.id),
+                                "Speeldag geboekt ✓",
+                              )
+                            }
+                          >
+                            Baan geboekt ✓
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {poll.status === "booked" && (
+                      <button className="btn btn--sm" onClick={exportIcs}>
+                        📅 Zet in agenda
                       </button>
                     )}
                     <button className="btn btn--sm" onClick={shareWinner}>
                       ↗ Deel
                     </button>
                   </div>
-                )}
-                {poll.status === "booked" && (
-                  <div className="proposal__links">
-                    <span className="badge badge--win">Geboekt ✓</span>
-                    <button className="btn btn--sm" onClick={exportIcs}>
-                      📅 Zet in agenda
+
+                  {/* Rondes genereren: expliciete actie zodra er genoeg
+                      bevestigde spelers zijn (4 per baan). */}
+                  <div className="winner-card__rounds">
+                    <button
+                      className={`btn btn--sm${roundsMade === 0 && t.yes.length >= 4 ? " btn--primary" : ""}`}
+                      disabled={busy || t.yes.length < 4}
+                      title={
+                        t.yes.length < 4
+                          ? "Minstens 4 bevestigde spelers nodig"
+                          : "Elo-gebalanceerde teams per baan, als geplande matches"
+                      }
+                      onClick={generateRounds}
+                    >
+                      ⚡ {roundsMade === 0 ? "Genereer rondes" : "Nog een ronde"}
+                      {t.yes.length >= 4 &&
+                        ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
                     </button>
-                    <button className="btn btn--sm" onClick={shareWinner}>
-                      ↗ Deel
-                    </button>
+                    {t.yes.length < 4 && (
+                      <span className="winner-card__rounds-hint">
+                        Nog <strong>{4 - t.yes.length}</strong>{" "}
+                        {4 - t.yes.length === 1
+                          ? "bevestigde speler"
+                          : "bevestigde spelers"}{" "}
+                        nodig voor rondes
+                      </span>
+                    )}
                   </div>
-                )}
-                {/* Rondes genereren: expliciete actie zodra de datum vastligt
-                    en er genoeg bevestigde spelers zijn (4 per baan). */}
-                <div className="winner-card__rounds">
-                  <button
-                    className="btn btn--sm winner-card__rounds-btn"
-                    disabled={busy || t.yes.length < 4}
-                    title={
-                      t.yes.length < 4
-                        ? "Minstens 4 bevestigde spelers nodig"
-                        : "Elo-gebalanceerde teams per baan, als geplande matches"
-                    }
-                    onClick={generateRounds}
-                  >
-                    ⚡ {roundsMade === 0 ? "Genereer rondes" : "Nog een ronde"}
-                    {t.yes.length >= 4 &&
-                      ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
-                  </button>
-                  {t.yes.length < 4 && (
-                    <span className="winner-card__rounds-hint">
-                      Nog <strong>{4 - t.yes.length}</strong> bevestigde{" "}
-                      {4 - t.yes.length === 1 ? "speler" : "spelers"} nodig om
-                      rondes te maken
-                    </span>
-                  )}
                 </div>
               </li>
             );

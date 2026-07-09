@@ -404,86 +404,83 @@
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
-/* Winnaar-kaart als padelbaan: baangroen met witte baanlijnen. */
+/* Winnaar-kaart: baangroene kopbalk, lichte body met nette secties.
+   Bewust géén overlay over de content — dat gaf overlap en scheve offsets. */
 .winner-card {
-  position: relative;
-  display: grid;
-  gap: var(--sp-2);
-  padding: var(--sp-4);
+  border: 1px solid var(--success);
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), var(--success));
-  color: #fff;
+  background: var(--surface);
   overflow: hidden;
 }
-.winner-card::before {
-  /* Baanlijnen: buitenrand + middenlijn, subtiel wit. */
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: 6px;
-  background: linear-gradient(
-    to bottom,
-    transparent calc(50% - 1px),
-    rgba(255, 255, 255, 0.28) calc(50% - 1px),
-    rgba(255, 255, 255, 0.28) calc(50% + 1px),
-    transparent calc(50% + 1px)
-  );
-  pointer-events: none;
-}
-.winner-card > * {
-  position: relative;
+.winner-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(135deg, var(--accent), var(--success));
+  color: #fff;
 }
 .winner-card__when {
   font-size: var(--fs-lg);
   font-weight: 800;
+  line-height: 1.3;
 }
-.winner-card__when::first-letter {
-  text-transform: uppercase;
+.winner-card__status {
+  padding: 2px var(--sp-3);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.winner-card__body {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
 }
 .winner-card__meta {
+  margin: 0;
   font-size: var(--fs-sm);
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--ink-soft);
 }
-.winner-card .proposal__names {
-  color: rgba(255, 255, 255, 0.92);
+.winner-card__players {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
-.winner-card .btn:not(.btn--primary) {
-  background: rgba(255, 255, 255, 0.92);
+.winner-card__players > :not(.winner-card__names) {
+  margin-right: -8px;
 }
-/* Alle knoppen op de baangroene kaart: wit vlak, accent-tekst — accentgroen
-   op baangroen is onleesbaar. */
-.winner-card .btn--primary {
-  background: #fff;
-  border-color: #fff;
-  color: var(--accent);
+.winner-card__names {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+.winner-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
-/* Rondes-blok: eigen voet binnen de kaart, gescheiden door een baanlijn. */
+/* Rondes-blok: eigen voet, gescheiden met een stippellijn. */
 .winner-card__rounds {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
-  margin-top: var(--sp-2);
   padding-top: var(--sp-3);
-  border-top: 1px solid rgba(255, 255, 255, 0.28);
-}
-.winner-card__rounds-btn {
-  background: rgba(255, 255, 255, 0.92);
-  font-weight: 700;
-}
-.winner-card__rounds-btn:disabled {
-  background: rgba(255, 255, 255, 0.35);
-  color: rgba(255, 255, 255, 0.75);
-  border-color: transparent;
+  border-top: 1px dashed var(--line-strong);
 }
 .winner-card__rounds-hint {
   font-size: var(--fs-sm);
-  color: #fff;
+  color: var(--ink-soft);
 }
 .winner-card__rounds-hint strong {
-  font-size: var(--fs-md);
+  color: var(--ink);
 }
 
 /* Fase-bal. */
