@@ -478,6 +478,7 @@ export function GroupDetail() {
         <PollSection
           groupId={id}
           groupName={group.data.name}
+          members={memberList}
           profiles={pmap}
           myId={myId}
           isOwner={isOwner}

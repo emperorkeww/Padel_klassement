@@ -11,6 +11,10 @@ create table public.play_polls (
     check (status in ('open', 'locked', 'booked', 'cancelled')),
   -- Gezet zodra de maker/eigenaar een optie kiest (fk volgt na de options-tabel).
   locked_option_id uuid,
+  -- Dedup voor de cron-meldingen (edge function poll-deadline):
+  -- laatste-kans-push bij een naderende deadline, en de speeldag-herinnering.
+  deadline_notified_at timestamptz,
+  dayof_notified_at timestamptz,
   created_at timestamptz not null default now()
 );
 

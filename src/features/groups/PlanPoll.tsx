@@ -3,7 +3,9 @@ import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
+import { Skeleton } from "../../components/Skeleton";
 import { errorMessage } from "../../lib/errors";
+import { fairTeams } from "../../lib/fairTeams";
 import { addDays, dateInZone } from "../../lib/time";
 import { icsEvent, downloadIcs } from "../../lib/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";
@@ -31,12 +33,15 @@ import {
 } from "./pollsApi";
 import {
   activePoll,
+  nonVoters,
   optionState,
   pollOptions,
   tallyOption,
   type OptionState,
 } from "./pollLogic";
-import type { Profile } from "../../lib/types";
+import { createFairRound } from "./api";
+import { getPlayerRatings } from "../standings/ratingsApi";
+import type { GroupMember, Profile } from "../../lib/types";
 import "./Proposals.css";
 
 // Speeldag-poll: de doodle van de Plannen-tab. Wizard met dag-navigator
@@ -82,12 +87,14 @@ function floorHalfHour(time: string): string {
 export function PollSection({
   groupId,
   groupName,
+  members,
   profiles,
   myId,
   isOwner,
 }: {
   groupId: string;
   groupName: string;
+  members: GroupMember[];
   profiles: Record<string, Profile>;
   myId: string;
   isOwner: boolean;
@@ -124,7 +131,7 @@ export function PollSection({
     return (
       <section className="card">
         <h2 className="card__title">Speeldag plannen</h2>
-        <p className="empty">Poll laden…</p>
+        <Skeleton rows={3} />
       </section>
     );
   }
@@ -134,6 +141,7 @@ export function PollSection({
       <PollCard
         poll={active}
         groupName={groupName}
+        members={members}
         options={pollOptions(active, options.data ?? [])}
         votes={votes.data ?? []}
         week={week.data ?? []}
@@ -485,6 +493,7 @@ function PollWizard({
 function PollCard({
   poll,
   groupName,
+  members,
   options,
   votes,
   week,
@@ -496,6 +505,7 @@ function PollCard({
 }: {
   poll: PlayPoll;
   groupName: string;
+  members: GroupMember[];
   options: PollOption[];
   votes: PollVote[];
   week: WeekDay[];
@@ -512,6 +522,10 @@ function PollCard({
   const [remindedDone, setRemindedDone] = useState(false);
   const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [showLosers, setShowLosers] = useState(false);
+  // Optimistisch stemmen: de tik is meteen zichtbaar, de server volgt.
+  const [voteOverlay, setVoteOverlay] = useState<
+    Map<string, PollVoteStatus | null>
+  >(new Map());
 
   const isManager = poll.created_by === myId || isOwner;
   const weekEnd = addDays(today, 6);
@@ -560,9 +574,55 @@ function PollCard({
     }
   }
 
+  /** Mijn stem op een optie, inclusief de optimistische overlay. */
+  function myVote(optionId: string): PollVoteStatus | null {
+    if (voteOverlay.has(optionId)) return voteOverlay.get(optionId) ?? null;
+    return (
+      votes.find((v) => v.option_id === optionId && v.player_id === myId)
+        ?.status ?? null
+    );
+  }
+
+  /** Stem zetten/wisselen: meteen zichtbaar, server volgt op de achtergrond. */
+  function castVote(o: PollOption, status: PollVoteStatus) {
+    const previous = myVote(o.id);
+    const next = previous === status ? null : status;
+    setVoteOverlay((cur) => new Map(cur).set(o.id, next));
+    const call =
+      next === null
+        ? clearPollVote(o.id, myId)
+        : setPollVote(o.id, poll.group_id, myId, next);
+    call.then(onChanged).catch((err) => {
+      setVoteOverlay((cur) => new Map(cur).set(o.id, previous));
+      toast.error(errorMessage(err));
+    });
+  }
+
   const locked = poll.locked_option_id
     ? options.find((o) => o.id === poll.locked_option_id) ?? null
     : null;
+
+  /** ± prijs per persoon voor een optie, uit de Playtomic-slotdata. */
+  function perPersonAt(o: PollOption): string | null {
+    const day = week.find((d) => d.date === o.date);
+    if (!day?.data) return null;
+    for (const row of day.data.courts) {
+      const slotOptions = row.free.get(o.start_time);
+      const match = slotOptions?.find((s) => s.duration === o.duration);
+      if (match?.perPerson) return match.perPerson;
+    }
+    return null;
+  }
+
+  // Wie stemde nog op geen enkele optie? Maakt de herinnering gericht.
+  const waiting =
+    poll.status === "open"
+      ? nonVoters(
+          members.map((m) => m.player_id),
+          options,
+          votes,
+        )
+      : [];
 
   // Beste kandidaat voor de "Kies …"-knop: meeste ja's onder de haalbare.
   const bestOption = useMemo(() => {
@@ -598,10 +658,11 @@ function PollCard({
   async function shareWinner() {
     if (!locked) return;
     const t = tallyOption(locked, votes);
+    const pp = perPersonAt(locked);
     const lines = [
       `🎾 Padel — ${groupName}`,
       `📅 ${longDay(locked.date)} om ${locked.start_time} (${locked.duration} min)`,
-      `📍 ${club.name}`,
+      `📍 ${club.name}${pp ? ` · ± ${pp} p.p.` : ""}`,
       t.yes.length > 0
         ? `👥 Doet mee: ${t.yes.map(name).join(", ")}`
         : "👥 Nog geen bevestigde deelnemers — stem mee in de app!",
@@ -618,6 +679,47 @@ function PollCard({
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       toast.error(errorMessage(err));
+    }
+  }
+
+  /**
+   * Boekt de speeldag en zet meteen eerlijke rondes klaar met de ja-stemmers
+   * (best effort: mislukt de teamindeling, dan blijft de boeking gewoon staan).
+   */
+  async function book() {
+    if (!locked) return;
+    setBusy(true);
+    try {
+      await markPollBooked(poll.id);
+      let extra = "";
+      const t = tallyOption(locked, votes);
+      if (t.yes.length >= 4) {
+        try {
+          const ratings = await getPlayerRatings();
+          const teams = fairTeams(t.yes, ratings, 0);
+          const courts = teams.courts.map((c) => ({
+            teamA: c.teamA.playerIds,
+            teamB: c.teamB.playerIds,
+          }));
+          if (courts.length > 0) {
+            const ids = await createFairRound(poll.group_id, courts);
+            if (ids.length > 0) {
+              extra =
+                ids.length === 1
+                  ? " Eerlijke match klaargezet bij Wedstrijdrondes."
+                  : ` ${ids.length} eerlijke matches klaargezet bij Wedstrijdrondes.`;
+            }
+          }
+        } catch {
+          // Rondes klaarzetten is een extraatje; de boeking zelf staat.
+        }
+      }
+      onChanged();
+      toast.success(`Speeldag geboekt ✓${extra}`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -658,15 +760,19 @@ function PollCard({
         ))}
       </ol>
 
+      {waiting.length > 0 && (
+        <p className="poll-waiting">
+          Wacht op: {waiting.map(name).join(", ")}
+        </p>
+      )}
+
       <ul className="poll-rows">
         {winnerFirst.map((o, idx) => {
           if (collapsed && idx > 0) return null;
           const t = tallyOption(o, votes);
           const free = liveFree(o);
           const state = optionState(t.yes.length, free);
-          const mine =
-            votes.find((v) => v.option_id === o.id && v.player_id === myId)
-              ?.status ?? null;
+          const mine = myVote(o.id);
           const isChosen = poll.locked_option_id === o.id && poll.status !== "open";
           const detailOpen = openDetail === o.id;
 
@@ -678,6 +784,7 @@ function PollCard({
                 </span>
                 <span className="winner-card__meta">
                   {o.duration} min · {club.name}
+                  {perPersonAt(o) ? ` · ± ${perPersonAt(o)} p.p.` : ""}
                 </span>
                 <p className="proposal__names">
                   {t.yes.length > 0
@@ -695,13 +802,7 @@ function PollCard({
                       Boek op Playtomic ↗
                     </a>
                     {isManager && (
-                      <button
-                        className="btn btn--sm"
-                        disabled={busy}
-                        onClick={() =>
-                          run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
-                        }
-                      >
+                      <button className="btn btn--sm" disabled={busy} onClick={book}>
                         Baan geboekt ✓
                       </button>
                     )}
@@ -738,6 +839,14 @@ function PollCard({
                   {t.yes.length > 4 && (
                     <span className="poll-row__more">+{t.yes.length - 4}</span>
                   )}
+                  {t.maybe.length > 0 && (
+                    <span
+                      className="poll-row__maybe"
+                      title={`${t.maybe.length} misschien`}
+                    >
+                      +{t.maybe.length}?
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"
@@ -756,14 +865,7 @@ function PollCard({
                         className={`seg__btn${mine === s.status ? ` is-active is-${s.status}` : ""}`}
                         aria-label={s.label}
                         title={s.label}
-                        disabled={busy}
-                        onClick={() =>
-                          run(() =>
-                            mine === s.status
-                              ? clearPollVote(o.id, myId)
-                              : setPollVote(o.id, poll.group_id, myId, s.status),
-                          )
-                        }
+                        onClick={() => castVote(o, s.status)}
                       >
                         {s.icon}
                       </button>

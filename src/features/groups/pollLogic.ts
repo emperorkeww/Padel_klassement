@@ -81,6 +81,19 @@ export function activePoll(
   );
 }
 
+/** Leden die nog op geen enkele optie van de poll stemden. */
+export function nonVoters(
+  memberIds: string[],
+  options: PollOption[],
+  votes: PollVote[],
+): string[] {
+  const optionIds = new Set(options.map((o) => o.id));
+  const voted = new Set(
+    votes.filter((v) => optionIds.has(v.option_id)).map((v) => v.player_id),
+  );
+  return memberIds.filter((id) => !voted.has(id));
+}
+
 /** Opties van één poll, oplopend op datum + tijd. */
 export function pollOptions(
   poll: PlayPoll,

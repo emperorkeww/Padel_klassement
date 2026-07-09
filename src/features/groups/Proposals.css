@@ -317,6 +317,17 @@
   color: var(--ink-soft);
   margin-left: 2px !important;
 }
+.poll-row__maybe {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--gold);
+  margin-left: 4px !important;
+}
+.poll-waiting {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
 .poll-row__state {
   display: inline-grid;
   place-items: center;

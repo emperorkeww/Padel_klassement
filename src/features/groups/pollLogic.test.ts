@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   activePoll,
   courtsNeeded,
+  nonVoters,
   optionState,
   pollOptions,
   tallyOption,
@@ -107,6 +108,21 @@ describe("activePoll", () => {
     expect(
       activePoll([poll({ status: "cancelled" })], [], "2026-07-08"),
     ).toBeNull();
+  });
+});
+
+describe("nonVoters", () => {
+  it("vindt leden zonder enige stem op de poll", () => {
+    const opts = [option({ id: "a" }), option({ id: "b" })];
+    const votes = [
+      vote("p1", "yes", "a"),
+      vote("p2", "no", "b"),
+      vote("p9", "yes", "andere-poll-optie"),
+    ];
+    expect(nonVoters(["p1", "p2", "p3", "p4"], opts, votes)).toEqual([
+      "p3",
+      "p4",
+    ]);
   });
 });
 
