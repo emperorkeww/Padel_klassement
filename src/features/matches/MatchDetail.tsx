@@ -4,13 +4,17 @@ import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import {
+  emptySet,
   formatSetScores,
   getMatch,
   getTeamsByIds,
   readSetScores,
   teamLabel,
+  toSetScores,
   updateMatchScore,
+  type SetPair,
 } from "./api";
+import { SetScoresInput } from "./SetScoresInput";
 import { PlannedMatchCard } from "./PlannedMatchCard";
 import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
@@ -221,6 +225,14 @@ function ScoreEditor({
   const toast = useToast();
   const [sa, setSa] = useState(match.score_a != null ? String(match.score_a) : "");
   const [sb, setSb] = useState(match.score_b != null ? String(match.score_b) : "");
+  // Sets zijn hier óók te corrigeren — zelfde invoer als bij het loggen
+  // (#106: één uitslag-patroon), voorgevuld met de bestaande set-stand.
+  const [sets, setSets] = useState<SetPair[]>(() => {
+    const existing = readSetScores(match);
+    return existing && existing.length > 0
+      ? existing.map(([a, b]) => ({ a: String(a), b: String(b) }))
+      : [emptySet()];
+  });
   const [busy, setBusy] = useState(false);
 
   const saNum = sa === "" ? null : Number(sa);
@@ -238,6 +250,7 @@ function ScoreEditor({
     if (!valid) return toast.error("Vul beide scores in (0 of hoger).");
     setBusy(true);
     try {
+      const setScores = toSetScores(sets);
       await updateMatchScore({
         matchId: match.id,
         winnerTeamId:
@@ -248,6 +261,8 @@ function ScoreEditor({
               : match.team_b_id,
         scoreA: saNum!,
         scoreB: sbNum!,
+        // Alle set-rijen leeg = sets bewust wissen; anders de nieuwe stand.
+        setScores: setScores.length > 0 ? setScores : null,
       });
       tap();
       toast.success("Score bijgewerkt.");
@@ -275,6 +290,12 @@ function ScoreEditor({
         </div>
       </div>
       {preview && <p className="md-editor__preview">{preview}</p>}
+      <SetScoresInput
+        sets={sets}
+        onChange={setSets}
+        labelA={labelA}
+        labelB={labelB}
+      />
       <div className="md-editor__buttons">
         <button className="btn btn--sm" onClick={onClose} disabled={busy}>
           Annuleren
