@@ -424,6 +424,7 @@ export function Dashboard() {
             teams={tmap}
             profiles={pmap}
             perspectiveId={myId}
+            history={myMatches.data ?? []}
             onSaved={onMatches}
           />
         </section>

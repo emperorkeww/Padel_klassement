@@ -28,6 +28,7 @@ import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { RivalryCard } from "./RivalryCard";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { PollSection } from "./PlanPoll";
 import { SuggestionsCard } from "./SuggestionsCard";
@@ -403,6 +404,7 @@ export function GroupDetail() {
                           teams={tmap}
                           profiles={pmap}
                           perspectiveId={myId}
+                          history={matches.data ?? []}
                           onSaved={onMatches}
                         />
                       ),
@@ -437,6 +439,12 @@ export function GroupDetail() {
       )}
 
       {view === "stand" && (
+        <>
+        <RivalryCard
+          matches={matches.data ?? []}
+          teams={tmap}
+          profiles={pmap}
+        />
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Groepsklassement</h2>
@@ -665,6 +673,7 @@ export function GroupDetail() {
             </table>
           )}
         </section>
+        </>
       )}
 
       {view === "leden" && (

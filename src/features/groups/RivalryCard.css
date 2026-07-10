@@ -1,0 +1,55 @@
+/* Uitgelichte rivaliteit van de groep: twee spelers rond een grote stand. */
+
+.rivalry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.rivalry__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.rivalry__name {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rivalry__stand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rivalry__score {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.rivalry__draws {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--ink-soft);
+}
+
+.rivalry__meta {
+  margin: var(--sp-3) 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

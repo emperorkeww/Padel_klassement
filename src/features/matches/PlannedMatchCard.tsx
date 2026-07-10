@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -6,7 +6,15 @@ import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
+import { inTeam } from "../../lib/results";
+import {
+  groupRivalries,
+  rivalryForMatch,
+  rivalryHeadline,
+  standAfter,
+} from "../../lib/rivalry";
 import { getPlayerRatings } from "../standings/ratingsApi";
+import { displayName } from "../profiles/api";
 import type { Match, Profile, Team } from "../../lib/types";
 import {
   deleteMatch,
@@ -43,6 +51,7 @@ export function PlannedMatchCard({
   teams,
   profiles,
   perspectiveId,
+  history,
   onSaved,
   onDeleted,
 }: {
@@ -51,6 +60,9 @@ export function PlannedMatchCard({
   profiles: Record<string, Profile>;
   /** Speler vanuit wiens oogpunt gevierd wordt (confetti bij eigen winst). */
   perspectiveId?: string;
+  /** Eerdere matches waaruit de onderlinge rivaliteit wordt afgeleid; zonder
+   *  deze prop toont de kaart geen head-to-head-balans. */
+  history?: Match[];
   onSaved?: () => void;
   /** Aangeroepen nadat de match echt verwijderd is (bv. terugnavigeren op de
    *  detailpagina). Zonder deze prop valt het terug op onSaved. */
@@ -59,7 +71,13 @@ export function PlannedMatchCard({
   const toast = useToast();
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
-  const [saved, setSaved] = useState<{ a: number; b: number } | null>(null);
+  const [saved, setSaved] = useState<{
+    a: number;
+    b: number;
+    /** Bijgewerkte onderlinge stand, bevroren op het moment van opslaan
+     *  (daarna telt de match zelf mee in `history`). */
+    rivalryLine?: string;
+  } | null>(null);
 
   // Optionele per-set invoer (uitklapbaar).
   const [showSets, setShowSets] = useState(false);
@@ -81,6 +99,14 @@ export function PlannedMatchCard({
     [],
   );
 
+  // Spannendste rivaliteit tussen de vier tegenover-elkaar-paren, afgeleid
+  // uit de meegegeven historiek (alleen afgeronde matches tellen mee).
+  const rivalry = useMemo(() => {
+    if (!history?.length) return null;
+    return rivalryForMatch(m, teams, groupRivalries(history, teams));
+  }, [history, teams, m]);
+  const nameOf = (id: string) => displayName(profiles[id]);
+
   // Verwachte winstkans uit de (gecachte) ratings — zelfde Elo als de databank.
   const ratings = useAsync(getPlayerRatings, []);
   const chance =
@@ -101,7 +127,26 @@ export function PlannedMatchCard({
     const a = saNum!;
     const b = sbNum!;
     const setScores = toSetScores(sets);
-    setSaved({ a, b }); // optimistisch: meteen als uitslag tonen
+
+    // Rivaliteitsmoment: wie van het rivalenpaar won dit duel (null = gelijk),
+    // en hoe staat het daarna? Vastleggen vóór de herlaadde data binnenkomt.
+    const winnerTeam = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
+    const rivalWinner =
+      rivalry === null
+        ? null
+        : winnerTeam === null
+          ? null
+          : inTeam(winnerTeam, rivalry.a)
+            ? rivalry.a
+            : rivalry.b;
+    const rivalryLine = rivalry
+      ? (() => {
+          const after = standAfter(rivalry, rivalWinner);
+          return `${nameOf(rivalry.a)} ${after.winsA}–${after.winsB} ${nameOf(rivalry.b)}`;
+        })()
+      : undefined;
+
+    setSaved({ a, b, rivalryLine }); // optimistisch: meteen als uitslag tonen
     try {
       await setMatchResult({
         matchId: m.id,
@@ -110,19 +155,22 @@ export function PlannedMatchCard({
         scoreB: b,
         setScores: setScores.length > 0 ? setScores : null,
       });
-      const winner = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
       const iWon =
         !!perspectiveId &&
-        !!winner &&
-        (winner.player1_id === perspectiveId ||
-          winner.player2_id === perspectiveId);
+        !!winnerTeam &&
+        (winnerTeam.player1_id === perspectiveId ||
+          winnerTeam.player2_id === perspectiveId);
       if (iWon) {
         celebrate();
         winPulse();
       } else {
         tap();
       }
-      toast.success("Resultaat opgeslagen.");
+      if (rivalry) {
+        toast.success(`🔥 ${rivalryHeadline(rivalry, rivalWinner, nameOf)}`);
+      } else {
+        toast.success("Resultaat opgeslagen.");
+      }
       onSaved?.();
     } catch (err) {
       setSaved(null); // terugdraaien; de kaart is weer invulbaar
@@ -192,6 +240,7 @@ export function PlannedMatchCard({
           </span>
           <span className="match-card__meta">
             {aWon || bWon ? "opgeslagen ✓" : "gelijkspel · opgeslagen ✓"}
+            {saved.rivalryLine ? ` · 🔥 ${saved.rivalryLine}` : ""}
           </span>
         </span>
         <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={bWon} right />
@@ -234,6 +283,17 @@ export function PlannedMatchCard({
           label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
         />
       </div>
+
+      {rivalry && (
+        <p className="planned-card__rivalry">
+          🔥 Onderling: {nameOf(rivalry.a)}{" "}
+          <strong>
+            {rivalry.winsA}–{rivalry.winsB}
+          </strong>{" "}
+          {nameOf(rivalry.b)}
+          {rivalry.draws > 0 ? ` (${rivalry.draws} gelijk)` : ""}
+        </p>
+      )}
 
       <div className="planned-card__sets">
         <button
