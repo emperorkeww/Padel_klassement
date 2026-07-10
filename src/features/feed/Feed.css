@@ -21,8 +21,18 @@
   text-transform: uppercase;
 }
 
-/* Vriendschaps-item: zelfde kaartvorm als een matchkaart, maar één regel. */
-.feed-friend {
+/* Highlight-chips onder een matchkaart (upset, score, reeks, rating, ▲/▼). */
+.feed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+  padding: 0 var(--sp-1);
+}
+
+/* Eén compacte feedregel (vriendschap, gepland, groep, poll, klassement,
+   kampioen): zelfde kaartvorm als een matchkaart, maar één regel. */
+.feed-line {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -34,21 +44,28 @@
   color: inherit;
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.feed-friend:hover {
+.feed-line:hover {
   border-color: var(--accent-line);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
-.feed-friend__icon {
+.feed-line__icon {
   font-size: 1.1rem;
 }
-.feed-friend__avatars {
+.feed-line__avatars {
   display: inline-flex;
 }
-.feed-friend__avatars > :last-child {
+.feed-line__avatars > :not(:first-child) {
   margin-left: -8px;
 }
-.feed-friend__text {
+.feed-line__text {
   font-size: var(--fs-md);
   min-width: 0;
+}
+
+/* "Toon meer" onder de lijst. */
+.feed__more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-4);
 }
