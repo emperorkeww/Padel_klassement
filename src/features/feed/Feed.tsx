@@ -17,12 +17,12 @@ import {
   type Highlight,
 } from "../../lib/feed";
 import { formatDate, formatRelativeDay } from "../../lib/format";
-import { getGroupMatches, getRecentMatches, getTeamsMap } from "../matches/api";
+import { getGroupMatches, getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
 import { MatchCard } from "../matches/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships } from "../friends/api";
 import { getMyGroups, getGroupMembers } from "../groups/api";
-import { getGroupPolls } from "../groups/pollsApi";
+import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
 import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import type { GroupMember, Match, Profile } from "../../lib/types";
@@ -62,13 +62,26 @@ export function Feed() {
         id: g.id,
         members: await getGroupMembers(g.id),
         polls: await getGroupPolls(g.id),
+        options: await getGroupPollOptions(g.id),
       })),
     );
     const membersByGroup: Record<string, GroupMember[]> = {};
     const pollsByGroup: Record<string, FeedPoll[]> = {};
     for (const e of perGroup) {
       membersByGroup[e.id] = e.members;
-      pollsByGroup[e.id] = e.polls;
+      // Het gekozen moment (datum + tijd) van een vastgelegde/geboekte poll
+      // resolven uit de optie, zodat de feed "ligt vast: vr 20:00" kan tonen.
+      const optionById = new Map(e.options.map((o) => [o.id, o]));
+      pollsByGroup[e.id] = e.polls.map((p) => ({
+        ...p,
+        locked_date:
+          (p.locked_option_id && optionById.get(p.locked_option_id)?.date) ??
+          null,
+        locked_time:
+          (p.locked_option_id &&
+            optionById.get(p.locked_option_id)?.start_time) ??
+          null,
+      }));
     }
     return { membersByGroup, pollsByGroup };
      
@@ -93,6 +106,15 @@ export function Feed() {
   const error = matches.error ?? friendships.error;
 
   const [limit, setLimit] = useState(FEED_LIMIT);
+  // Filterchips: soortgroep → event-kinds (werkt vóór de limiet).
+  const FILTERS: Record<string, ReadonlySet<string> | null> = {
+    Alles: null,
+    Matches: new Set(["match", "evening", "planned"]),
+    Groepen: new Set(["group-created", "group-joined", "poll", "poll-locked", "poll-booked", "season-champion"]),
+    Klassement: new Set(["rank"]),
+    Sociaal: new Set(["friendship"]),
+  };
+  const [activeFilter, setActiveFilter] = useState<keyof typeof FILTERS>("Alles");
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -111,6 +133,9 @@ export function Feed() {
         pollsByGroup: groupExtras.data?.pollsByGroup,
         groupMatchesByGroup: groupMatches.data ?? undefined,
         profiles: pmap,
+        filter: FILTERS[activeFilter]
+          ? (e) => FILTERS[activeFilter]!.has(e.kind)
+          : undefined,
       });
 
   // "Jij" voor jezelf, anders de weergavenaam — leest prettiger in zinnetjes.
@@ -135,6 +160,21 @@ export function Feed() {
         </div>
       )}
       {!loading && error && <p className="msg msg--error">{error}</p>}
+
+      {!loading && !error && (
+        <div className="tabs feed__filters">
+          {Object.keys(FILTERS).map((label) => (
+            <button
+              key={label}
+              type="button"
+              className={`tab ${activeFilter === label ? "is-active" : ""}`}
+              onClick={() => setActiveFilter(label as keyof typeof FILTERS)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!loading && !error && feed.length === 0 && (
         <div className="card">
@@ -205,6 +245,11 @@ function eventKey(event: FeedEvent): string {
       return `gj-${event.groupId}-${event.playerId}`;
     case "poll":
       return `poll-${event.groupId}-${event.at}`;
+    case "poll-locked":
+    case "poll-booked":
+      return `${event.kind}-${event.groupId}-${event.at}`;
+    case "evening":
+      return `e-${event.groupId}-${event.day}`;
     case "rank":
       return `r-${event.playerId}-${event.at}`;
     case "season-champion":
@@ -246,7 +291,7 @@ function FeedItem({
               )}
               {event.highlights.map((h, i) => (
                 <span key={i} className="badge badge--accent">
-                  {highlightText(h, name)}
+                  {highlightText(h, name, (tid) => teamLabel(tmap[tid], pmap))}
                 </span>
               ))}
             </div>
@@ -328,6 +373,60 @@ function FeedItem({
           mee!
         </FeedLine>
       );
+    case "poll-locked":
+    case "poll-booked":
+      return (
+        <FeedLine
+          icon={event.kind === "poll-locked" ? "📌" : "✅"}
+          to={`/groepen/${event.groupId}?tab=plannen`}
+          pmap={pmap}
+        >
+          {event.kind === "poll-locked" ? "Speeldag ligt vast" : "Baan geboekt"}
+          {event.date && (
+            <>
+              : <strong>{formatDate(event.date)}
+              {event.time ? ` om ${event.time}` : ""}</strong>
+            </>
+          )}{" "}
+          — <strong>{event.groupName}</strong>
+        </FeedLine>
+      );
+    case "evening":
+      return (
+        <div className="feed-match">
+          <FeedLine
+            icon="🎾"
+            to={`/groepen/${event.groupId}`}
+            avatars={event.topPlayerId ? [event.topPlayerId] : []}
+            pmap={pmap}
+          >
+            Speelavond in <strong>{event.groupName}</strong>: {event.count}{" "}
+            matches
+            {event.topPlayerId && (
+              <>
+                {" "}
+                — {name(event.topPlayerId)}{" "}
+                {event.topPlayerId === myId ? "was" : "was"} avondkoning
+              </>
+            )}
+            {event.bestDuoTeamId && (
+              <>
+                , beste duo <strong>{teamLabel(tmap[event.bestDuoTeamId], pmap)}</strong>
+              </>
+            )}
+            .
+          </FeedLine>
+          {event.highlights.length > 0 && (
+            <div className="feed-chips">
+              {event.highlights.map((h, i) => (
+                <span key={i} className="badge badge--accent">
+                  {highlightText(h, name, (tid) => teamLabel(tmap[tid], pmap))}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
     case "rank":
       return (
         <FeedLine
@@ -368,11 +467,15 @@ function FeedItem({
   }
 }
 
-/** Chip-tekst per highlight; namen komen uit de meegegeven resolver. */
-function highlightText(h: Highlight, name: (pid: string) => string): string {
+/** Chip-tekst per highlight; namen/teams komen uit de meegegeven resolvers. */
+function highlightText(
+  h: Highlight,
+  name: (pid: string) => string,
+  team: (teamId: string) => string,
+): string {
   switch (h.type) {
     case "upset":
-      return `🎯 Upset — ${Math.round(h.chance * 100)}% kans`;
+      return `🎯 ${team(h.winnerTeamId)} verrasten (${Math.round(h.chance * 100)}% kans)`;
     case "score":
       return h.label === "bagel"
         ? "🥯 Broodje bal"
@@ -381,6 +484,8 @@ function highlightText(h: Highlight, name: (pid: string) => string): string {
           : "😬 Nagelbijter";
     case "streak":
       return `🔥 ${name(h.playerId)} ${h.count} op rij`;
+    case "duo":
+      return `👯 ${team(h.teamId)} ${h.count} samen op rij`;
     case "rating":
       return `📈 ${name(h.playerId)} door de ${h.threshold}`;
   }

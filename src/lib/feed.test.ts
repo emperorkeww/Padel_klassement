@@ -125,10 +125,12 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     const top = feed[0];
     if (top.kind !== "match") throw new Error("verwacht match-event");
     const types = top.highlights.map((h) => h.type).sort();
-    // upset + bagel + streak (alleen p1 zit in het netwerk; p2 is geen vriend).
-    expect(types).toEqual(["score", "streak", "upset"]);
+    // upset + bagel + spelers-reeks (alleen p1 in het netwerk) + duo-reeks.
+    expect(types).toEqual(["duo", "score", "streak", "upset"]);
     const upset = top.highlights.find((h) => h.type === "upset");
-    expect(upset && upset.type === "upset" && upset.chance).toBeLessThan(UPSET_MAX_KANS);
+    if (!upset || upset.type !== "upset") throw new Error("verwacht upset");
+    expect(upset.chance).toBeLessThan(UPSET_MAX_KANS);
+    expect(upset.winnerTeamId).toBe("t-ab");
   });
 
   it("rating-mijlpaal: grens gekruist bij deze match", () => {
@@ -323,6 +325,103 @@ describe("buildFeed — klassementsprong", () => {
     expect(rankEvents.map((e) => (e.kind === "rank" ? e.playerId : ""))).toContain("p1");
     // p2 steeg mee maar p8/p9 (geen netwerk) verschijnen nooit.
     expect(rankEvents.some((e) => e.kind === "rank" && e.playerId === "p8")).toBe(false);
+  });
+});
+
+describe("buildFeed — feed v2 (#143)", () => {
+  const groups = [
+    { id: "g1", name: "Vrijdagavond", created_at: "2026-06-01T10:00:00Z", created_by: "p1" },
+  ];
+
+  it("bundelt 3+ groepsmatches op één dag tot één avond-item", () => {
+    const avond = Array.from({ length: 3 }, (_, i) =>
+      match(`2026-07-10T${18 + i}:00:00Z`, "t-ab", "t-cd", "completed", {
+        group_id: "g1",
+      }),
+    );
+    const feed = buildFeed({
+      matches: avond,
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+    });
+    const evening = feed.find((e) => e.kind === "evening");
+    if (!evening || evening.kind !== "evening") throw new Error("verwacht evening");
+    expect(evening.count).toBe(3);
+    expect(evening.groupName).toBe("Vrijdagavond");
+    expect(evening.topPlayerId).toBe("p1"); // t-ab won alles
+    expect(evening.bestDuoTeamId).toBe("t-ab");
+    // De losse matchkaarten zijn opgegaan in het bundel-item; het duo-chipje
+    // (t-ab 3 samen op rij) reist mee.
+    expect(feed.filter((e) => e.kind === "match")).toHaveLength(0);
+    expect(evening.highlights.some((h) => h.type === "duo")).toBe(true);
+  });
+
+  it("bundelt niet onder de drempel of buiten eigen groepen", () => {
+    const twee = Array.from({ length: 2 }, (_, i) =>
+      match(`2026-07-10T${18 + i}:00:00Z`, "t-ab", "t-cd", "completed", {
+        group_id: "g1",
+      }),
+    );
+    const vreemdeGroep = Array.from({ length: 3 }, (_, i) =>
+      match(`2026-07-09T${18 + i}:00:00Z`, "t-ab", "t-cd", "completed", {
+        group_id: "g-onbekend",
+      }),
+    );
+    const feed = buildFeed({
+      matches: [...twee, ...vreemdeGroep],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+    });
+    expect(feed.some((e) => e.kind === "evening")).toBe(false);
+    expect(feed.filter((e) => e.kind === "match")).toHaveLength(5);
+  });
+
+  it("poll vastgelegd/geboekt worden events met het gekozen moment", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      pollsByGroup: {
+        g1: [
+          {
+            group_id: "g1",
+            status: "booked",
+            created_at: "2026-07-08T10:00:00Z",
+            locked_at: "2026-07-09T12:00:00Z",
+            booked_at: "2026-07-09T13:00:00Z",
+            locked_date: "2026-07-11",
+            locked_time: "20:00",
+          },
+        ],
+      },
+    });
+    expect(kinds(feed)).toEqual([
+      "poll-booked",
+      "poll-locked",
+      "poll",
+      "group-created",
+    ]);
+    const booked = feed[0];
+    if (booked.kind !== "poll-booked") throw new Error("verwacht poll-booked");
+    expect(booked.date).toBe("2026-07-11");
+    expect(booked.time).toBe("20:00");
+  });
+
+  it("filter werkt vóór de limiet", () => {
+    const feed = buildFeed({
+      matches: [match("2026-07-10T18:00:00Z")],
+      teams: TEAMS,
+      friendships: [friend("f1", "p2", "2026-07-09T12:00:00Z")],
+      myId: "p1",
+      filter: (e) => e.kind === "friendship",
+    });
+    expect(kinds(feed)).toEqual(["friendship"]);
   });
 });
 

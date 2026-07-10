@@ -15,6 +15,9 @@ export type PlayPoll = {
   status: PollStatus;
   locked_option_id: string | null;
   created_at: string;
+  /** Momenten van vastleggen/boeken (feed v2, #143); null tot die stap. */
+  locked_at: string | null;
+  booked_at: string | null;
 };
 
 export type PollOption = {
@@ -214,7 +217,11 @@ export async function clearPollVote(
 /** Legt het winnende moment vast (RLS: maker of groepseigenaar). */
 export async function lockPoll(pollId: string, optionId: string): Promise<void> {
   const { error } = await pollTable()
-    .update({ status: "locked", locked_option_id: optionId })
+    .update({
+      status: "locked",
+      locked_option_id: optionId,
+      locked_at: new Date().toISOString(),
+    })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");
@@ -223,7 +230,7 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
 /** Markeert de gelockte poll als geboekt op Playtomic. */
 export async function markPollBooked(pollId: string): Promise<void> {
   const { error } = await pollTable()
-    .update({ status: "booked" })
+    .update({ status: "booked", booked_at: new Date().toISOString() })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");
@@ -232,7 +239,12 @@ export async function markPollBooked(pollId: string): Promise<void> {
 /** Heropent een gelockte poll: terug naar stemmen (maker of eigenaar). */
 export async function reopenPoll(pollId: string): Promise<void> {
   const { error } = await pollTable()
-    .update({ status: "open", locked_option_id: null })
+    .update({
+      status: "open",
+      locked_option_id: null,
+      locked_at: null,
+      booked_at: null,
+    })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");

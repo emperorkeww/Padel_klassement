@@ -69,3 +69,4 @@
   justify-content: center;
   margin-top: var(--sp-4);
 }
+.feed__filters { margin-bottom: var(--sp-3); }
