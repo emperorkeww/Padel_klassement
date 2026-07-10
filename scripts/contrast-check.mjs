@@ -58,6 +58,9 @@ const PAIRS = [
   ["lime-deep", "surface", 3.0, "lime-tekstaccent (groot/UI)"],
   ["sidebar-ink", "sidebar-bg", 4.5, "navigatielabels"],
   ["sidebar-ink-strong", "sidebar-bg", 4.5, "actief navigatielabel"],
+  ["toast-ink", "success", 3.0, "toast-tekst op succes-toast (groot/UI)"],
+  ["toast-ink", "danger", 4.5, "toast-tekst op fout-toast (blijft staan)"],
+  ["toast-ink", "ink", 4.5, "toast-tekst op info-toast"],
 ];
 
 // Licht is de bestaande huisstijl: tekorten daar zijn bekend en rapporteren we

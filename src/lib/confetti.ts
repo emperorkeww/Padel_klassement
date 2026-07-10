@@ -2,17 +2,10 @@
 // dependency. Kleuren uit de huisstijl; respecteert prefers-reduced-motion.
 import { prefersReducedMotion } from "./motion";
 
-// Huisstijl-tokens uit :root (single source of truth); fallback voor het geval
-// een token ontbreekt of buiten de DOM wordt aangeroepen.
-const COLOR_TOKENS = [
-  "--accent",
-  "--lime",
-  "--success",
-  "--gold",
-  "--lime-deep",
-  "--accent-soft",
-];
-const FALLBACK_COLORS = [
+// Vaste, felle huisstijlkleuren (het lichte palet). Bewust NIET de live
+// CSS-tokens: in dark mode zijn die gedempt en valt confetti weg tegen de
+// donkere achtergrond — feest hoort fel te zijn in beide thema's (#125).
+const CONFETTI_COLORS = [
   "#0c8a5f",
   "#c7e63a",
   "#16a34a",
@@ -22,13 +15,7 @@ const FALLBACK_COLORS = [
 ];
 
 function paletteColors(): string[] {
-  if (typeof document === "undefined") return FALLBACK_COLORS;
-  const styles = getComputedStyle(document.documentElement);
-  const colors = COLOR_TOKENS.map((t, i) => {
-    const v = styles.getPropertyValue(t).trim();
-    return v || FALLBACK_COLORS[i];
-  });
-  return colors.some(Boolean) ? colors : FALLBACK_COLORS;
+  return CONFETTI_COLORS;
 }
 
 const COUNT = 90;

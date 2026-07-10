@@ -63,8 +63,18 @@
   --shadow-md: 0 4px 16px rgba(20, 40, 28, 0.08);
   --shadow-lg: 0 12px 32px rgba(20, 40, 28, 0.14);
   --shadow-pop: 0 10px 30px rgba(20, 40, 28, 0.2); /* popovers/tooltips */
+  --shadow-up: 0 -6px 24px rgba(20, 40, 28, 0.1); /* mobiele onderbalk */
+  --shadow-up-lg: 0 -8px 30px rgba(20, 40, 28, 0.25); /* bottom-sheets */
+  --shadow-ball: 0 6px 18px rgba(20, 40, 28, 0.22); /* zwevende home-bal */
   --overlay: rgba(20, 40, 28, 0.45); /* gedimde achtergrond (sheets/backdrops) */
   --ring: 0 0 0 3px var(--accent-soft); /* focusring op invoervelden */
+
+  /* Toasts: tekst op de gekleurde vlakken (succes/fout/info). Licht thema:
+     wit op verzadigde kleuren; donker thema draait dit om (donkere tekst op
+     de gedempte kleuren), zelfde principe als --accent-ink op knoppen. */
+  --toast-ink: #ffffff;
+  --toast-close-bg: rgba(255, 255, 255, 0.18);
+  --toast-close-bg-hover: rgba(255, 255, 255, 0.32);
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -167,7 +177,16 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
   --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-up: 0 -6px 24px rgba(0, 0, 0, 0.4);
+  --shadow-up-lg: 0 -8px 30px rgba(0, 0, 0, 0.55);
+  --shadow-ball: 0 6px 18px rgba(0, 0, 0, 0.5);
   --overlay: rgba(0, 0, 0, 0.6);
+
+  /* Toasts: donkere tekst op de gedempte statuskleuren (die zijn hier licht
+     genoeg als vlak), anders wit-op-licht bij --ink/--danger. */
+  --toast-ink: #0f1512;
+  --toast-close-bg: rgba(0, 0, 0, 0.15);
+  --toast-close-bg-hover: rgba(0, 0, 0, 0.28);
 
   --bar-glass: rgba(18, 24, 20, 0.88);
 

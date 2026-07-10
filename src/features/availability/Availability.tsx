@@ -18,6 +18,13 @@ import { ClubPicker } from "./ClubPicker";
 import { Timetable } from "./Timetable";
 import { WeekGrid } from "./WeekGrid";
 import { ShareAvailability } from "./ShareAvailability";
+import { getWeekWeather } from "./weatherApi";
+import {
+  summarizeDay,
+  summarizeParts,
+  type WeatherSummary,
+} from "./weatherLogic";
+import { WeatherDays, WeatherParts } from "./WeatherStrip";
 import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
 import "./Availability.css";
@@ -242,6 +249,17 @@ function DaySection({
   // Ververs de (Playtomic-)beschikbaarheid zodra de gebruiker terugkeert.
   useRefetchOnFocus(availability.reload);
 
+  // Weer alleen relevant bij buitenbanen (#83); laadt async ná de banen en
+  // faalt stil (null) zodat de bestaande flow er nooit op wacht.
+  const hasOutdoor = (availability.data?.courts ?? []).some(
+    (r) => r.court.type !== "roofed",
+  );
+  const weather = useAsync(
+    () => (hasOutdoor ? getWeekWeather(club) : Promise.resolve(null)),
+    [hasOutdoor, club.id],
+  );
+  const parts = summarizeParts(weather.data?.[date] ?? []);
+
   return (
     <>
       <p className="avail-day">{formatDay(date)}</p>
@@ -252,6 +270,7 @@ function DaySection({
         <p className="msg msg--error">{availability.error}</p>
       ) : availability.data ? (
         <>
+          {hasOutdoor && <WeatherParts parts={parts} />}
           <NextFreeLine data={availability.data} date={date} duration={duration} />
           <Timetable data={availability.data} date={date} duration={duration} />
           <ShareAvailability
@@ -376,6 +395,21 @@ function WeekSection({
   const week = useAsync<WeekDay[]>(() => getWeekAvailability(start), [start, club.id]);
   useRefetchOnFocus(week.reload);
 
+  // Weer per dagkolom, alleen bij buitenbanen (#83); stil bij falen.
+  const hasOutdoor = (week.data ?? []).some((d) =>
+    (d.data?.courts ?? []).some((r) => r.court.type !== "roofed"),
+  );
+  const weather = useAsync(
+    () => (hasOutdoor ? getWeekWeather(club) : Promise.resolve(null)),
+    [hasOutdoor, club.id],
+  );
+  const weatherDays = (week.data ?? [])
+    .map((d) => {
+      const summary = summarizeDay(weather.data?.[d.date] ?? []);
+      return summary ? { date: d.date, summary } : null;
+    })
+    .filter((d): d is { date: string; summary: WeatherSummary } => d !== null);
+
   return (
     <>
       <div className="avail-weeknav">
@@ -407,6 +441,7 @@ function WeekSection({
         <p className="msg msg--error">{week.error}</p>
       ) : week.data ? (
         <>
+          {hasOutdoor && <WeatherDays days={weatherDays} />}
           <BestWeekLine week={week.data} duration={duration} />
           <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
           <ShareAvailability
