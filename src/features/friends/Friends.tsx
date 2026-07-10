@@ -20,9 +20,11 @@ import { getProfilesMap, displayName } from "../profiles/api";
 import { Avatar } from "../../components/Avatar";
 import { AccountNav } from "../../components/AccountNav";
 import { EmptyState } from "../../components/EmptyState";
+import { useSkinText } from "../../lib/skin";
 import type { Profile } from "../../lib/types";
 
 export function Friends() {
+  const t = useSkinText(); // themabare copy (#134)
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -127,9 +129,9 @@ export function Friends() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Vrienden</h1>
+        <h1 className="page-title">{t("Vrienden")}</h1>
         <p className="page-subtitle">
-          Zoek spelers, stuur verzoeken en beheer je vrienden.
+          {t("Zoek spelers, stuur verzoeken en beheer je vrienden.")}
         </p>
       </header>
 
@@ -277,7 +279,7 @@ export function Friends() {
           )}
         </h2>
         {!friendships.loading && !friendships.error && accepted.length === 0 && (
-          <EmptyState icon="👋" title="Nog geen vrienden.">
+          <EmptyState icon={t("👋")} title="Nog geen vrienden.">
             Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
             samen matches loggen begint hier.
           </EmptyState>

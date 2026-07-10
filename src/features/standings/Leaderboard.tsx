@@ -316,7 +316,7 @@ export function Leaderboard() {
       <header className="page-head">
         <h1 className="page-title">{t("Klassement")}</h1>
         <p className="page-subtitle">
-          Gesorteerd op rating — hoe vaak je speelt telt niet mee.
+          {t("Gesorteerd op rating — hoe vaak je speelt telt niet mee.")}
         </p>
       </header>
 

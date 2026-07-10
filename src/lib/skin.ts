@@ -6,36 +6,62 @@ import { useTheme, type ResolvedTheme } from "./theme";
 
 const SMURF_COPY: Record<string, string> = {
   // Navigatie
-  Overzicht: "Smurfdorp",
-  Spelen: "Smurfen",
-  Feed: "Smurfnieuws",
-  Klassement: "Smurfklassement",
-  Ik: "Mijn smurf",
-  Matcharchief: "Smurfarchief",
-  Banen: "Smurfbanen",
+  Overzicht: "Het Smurfendorp",
+  Spelen: "Smurfen maar!",
+  Feed: "Dorpsnieuws",
+  Klassement: "Smurfenklassement",
+  Ik: "Deze smurf",
+  Matcharchief: "Smurfenarchief",
+  Banen: "Smurfenbanen",
   Vrienden: "Mede-smurfen",
   Groepen: "Smurfengroepen",
 
   // Koppen & CTA's
   Matches: "Gesmurfde matches",
+  Baanbeschikbaarheid: "Vrije smurfenbanen",
   "+ Match loggen": "+ Smurf een match",
-  "Match plannen": "Match smurfen",
+  "Match plannen": "Plan een smurfmatch",
   "+ Log match": "+ Smurf match",
-  "Plan match": "Match smurfen",
+  "Plan match": "Plan een smurfmatch",
   "+ Plan een speeldag": "+ Smurf een speeldag",
-  "Welkom terug": "Welkom terug, smurf",
+  "Welkom terug": "Gesmurfde dag!",
   // Kampioensbanner: "Kampioen {seizoen}: naam" → "Grote Smurf van {seizoen}: naam".
   Kampioen: "Grote Smurf van",
+
+  // Page-subtitles
+  "Gesorteerd op rating — hoe vaak je speelt telt niet mee.":
+    "Wie is de Grote Smurf? Gesorteerd op rating.",
+  "Plan een match, log een uitslag of bekijk recente wedstrijden.":
+    "Smurf een match, smurf een uitslag of blader door het archief.",
+  "Van moment prikken tot uitslag — je groepen zijn het vertrekpunt.":
+    "Van moment smurfen tot uitslag — het dorp speelt samen.",
+  "Wat er speelt bij jou en je vrienden — nieuwste bovenaan.":
+    "Wat er smurft in het dorp — nieuwste bovenaan.",
+  "Zoek spelers, stuur verzoeken en beheer je vrienden.":
+    "Zoek mede-smurfen en breid het dorp uit.",
+  "Vrije padelbanen — rechtstreeks van Playtomic.":
+    "Vrije smurfenbanen — rechtstreeks van Playtomic.",
+
+  // Wizard (NewMatchSheet)
+  "Wie speelden er?": "Welke smurfen speelden er?",
+  "Wie spelen er?": "Welke smurfen spelen er?",
+  "Wat was de eindscore?": "Hoe hard werd er gesmurfd?",
+
+  // Succes-toasts (alleen deze vaste teksten; fouten blijven standaard)
+  "Match toegevoegd.": "Gesmurfd! Match toegevoegd.",
+  "Match gepland — je vindt hem bij Te spelen.":
+    "Gesmurfd! Match gepland — je vindt hem bij Te spelen.",
 
   // Lege staten
   "Nog geen matches.": "Nog niets gesmurfd hier…",
   "Nog geen afgeronde matches.": "Nog geen gesmurfde matches.",
   "🎾": "🍄",
+  "👋": "🍄",
 
   // Profiel (fun-verwijzingen uit de issue)
   "😤 Nemesis": "😈 Jouw Gargamel",
-  "😎 Favoriete tegenstander": "😎 Favoriete smurf",
-  "Beste maatje": "Jouw Brilsmurf",
+  "😎 Favoriete tegenstander": "😎 Jouw Azraël",
+  "Beste maatje": "Jouw smurfenmaatje",
 };
 
 /** Vertaal een standaardtekst naar de skin-variant van het gegeven thema. */

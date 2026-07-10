@@ -237,7 +237,7 @@ export function Dashboard() {
             <Avatar profile={myProfile} name={myName || undefined} size={56} />
             <div className="hero__text">
               <p className="hero__eyebrow">{t("Welkom terug")}</p>
-              <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
+              <h1 className="hero__name">{theme === "smurf" ? (myName ? `Salut, ${myName}!` : "Salut, smurf!") : myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
             </div>
           </div>
         </section>
@@ -266,7 +266,7 @@ export function Dashboard() {
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
             <p className="hero__eyebrow">{t("Welkom terug")}</p>
-            <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
+            <h1 className="hero__name">{theme === "smurf" ? (myName ? `Salut, ${myName}!` : "Salut, smurf!") : myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
             {standings.loading ? (
               // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
               <span className="sk sk--line hero__sub-sk" aria-hidden="true" />

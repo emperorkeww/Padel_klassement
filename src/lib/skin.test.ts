@@ -8,9 +8,10 @@ describe("skinText", () => {
   });
 
   it("vertaalt gecureerde teksten in het smurf-thema", () => {
-    expect(skinText("Klassement", "smurf")).toBe("Smurfklassement");
+    expect(skinText("Klassement", "smurf")).toBe("Smurfenklassement");
     expect(skinText("+ Match loggen", "smurf")).toBe("+ Smurf een match");
     expect(skinText("😤 Nemesis", "smurf")).toBe("😈 Jouw Gargamel");
+    expect(skinText("Beste maatje", "smurf")).toBe("Jouw smurfenmaatje");
   });
 
   it("valt bij een onbekende tekst terug op de tekst zelf", () => {

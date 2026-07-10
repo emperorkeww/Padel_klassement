@@ -125,7 +125,7 @@ export function Matches() {
           <div>
             <h1 className="page-title">{t("Matches")}</h1>
             <p className="page-subtitle">
-              Plan een match, log een uitslag of bekijk recente wedstrijden.
+              {t("Plan een match, log een uitslag of bekijk recente wedstrijden.")}
             </p>
           </div>
           <div className="btn-row">

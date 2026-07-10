@@ -27,6 +27,7 @@ import {
 import { WeatherDays, WeatherParts } from "./WeatherStrip";
 import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { useSkinText } from "../../lib/skin";
 import "./Availability.css";
 
 function formatDay(date: string): string {
@@ -58,6 +59,7 @@ function formatBestDay(date: string): string {
 const DURATION_FILTERS = [null, 60, 90, 120] as const;
 
 export function Availability() {
+  const t = useSkinText(); // themabare copy (#134)
   const club = useClub();
   // "Vandaag" in clubtijd, zodat de dagkeuze klopt vanuit elke tijdzone.
   const today = dateInZone(club.timezone);
@@ -131,9 +133,9 @@ export function Availability() {
     <div>
       <div className="avail-header">
         <header className="page-head">
-          <h1 className="page-title">Baanbeschikbaarheid</h1>
+          <h1 className="page-title">{t("Baanbeschikbaarheid")}</h1>
           <p className="page-subtitle">
-            Vrije padelbanen — rechtstreeks van Playtomic.
+            {t("Vrije padelbanen — rechtstreeks van Playtomic.")}
           </p>
           <ClubPicker />
         </header>

@@ -6,23 +6,37 @@ import { getProfile, displayName } from "../features/profiles/api";
 import { Avatar } from "./Avatar";
 import { BallIcon } from "./BallIcon";
 import { useSkinText } from "../lib/skin";
+import { useTheme } from "../lib/theme";
+import {
+  IconSmurfHat,
+  IconSmurfHatPlus,
+  IconBird,
+  MushroomIcon,
+} from "./SmurfIcons";
 import "./ui.css";
 import "./DashboardLayout.css";
 
-type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
+type NavItem = {
+  to: string;
+  label: string;
+  end?: boolean;
+  icon: ReactNode;
+  /** Vervangend icoon in het smurf-thema (#134); anders het standaardicoon. */
+  smurfIcon?: ReactNode;
+};
 
 // Taakgerichte navigatie (#106): vier taken i.p.v. zeven datatabellen.
 // Matches en Banen blijven als routes bestaan (bereikbaar bínnen de flow);
 // de zijbalk toont ze als secundaire items, de mobiele balk niet meer (#69:
 // Ik/Vrienden zijn nu wél direct bereikbaar).
-const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
+const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} />, smurfIcon: <MushroomIcon size={22} /> };
 const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket /> };
-const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed /> };
+const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed />, smurfIcon: <IconBird /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
-const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
+const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser />, smurfIcon: <IconSmurfHat /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matcharchief", icon: <IconUsers /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
-const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
+const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus />, smurfIcon: <IconSmurfHatPlus /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -40,6 +54,10 @@ const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, FEED];
 export function DashboardLayout() {
   // Nav-labels via de skin-catalogus: wisselen live mee met het thema (#134).
   const t = useSkinText();
+  const theme = useTheme();
+  // Icoonkeuze per thema: smurf-variant waar die bestaat, anders standaard.
+  const iconOf = (item: NavItem) =>
+    theme === "smurf" && item.smurfIcon ? item.smurfIcon : item.icon;
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   // Eigen profiel voor de avatar in topbalk en zijbalk-voet; de layout blijft
@@ -88,7 +106,7 @@ export function DashboardLayout() {
                     `sidebar__link ${isActive ? "is-active" : ""}`
                   }
                 >
-                  <span className="sidebar__icon">{item.icon}</span>
+                  <span className="sidebar__icon">{iconOf(item)}</span>
                   <span className="sidebar__label">{t(item.label)}</span>
                 </NavLink>
               ))}
@@ -148,7 +166,7 @@ export function DashboardLayout() {
               `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isActive ? "is-active" : ""}`
             }
           >
-            <span className="tabbar__icon">{item.icon}</span>
+            <span className="tabbar__icon">{iconOf(item)}</span>
             <span className="tabbar__label">{t(item.label)}</span>
           </NavLink>
         ))}

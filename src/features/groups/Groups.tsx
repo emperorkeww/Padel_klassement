@@ -11,6 +11,7 @@ import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { EmptyState } from "../../components/EmptyState";
+import { useSkinText } from "../../lib/skin";
 import { errorMessage } from "../../lib/errors";
 import { formatDate } from "../../lib/format";
 import { dateInZone } from "../../lib/time";
@@ -101,6 +102,7 @@ async function loadJourneys(
 }
 
 export function Groups() {
+  const t = useSkinText(); // themabare copy (#134)
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const groups = useAsync(getMyGroups, []);
@@ -159,9 +161,9 @@ export function Groups() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Spelen</h1>
+        <h1 className="page-title">{t("Spelen")}</h1>
         <p className="page-subtitle">
-          Van moment prikken tot uitslag — je groepen zijn het vertrekpunt.
+          {t("Van moment prikken tot uitslag — je groepen zijn het vertrekpunt.")}
         </p>
       </header>
 

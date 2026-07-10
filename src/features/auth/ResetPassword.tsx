@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./AuthProvider";
-import { BallIcon } from "../../components/BallIcon";
+import { ThemedBallIcon } from "../../components/SmurfIcons";
 import "./LoginScreen.css";
 
 type Status = "idle" | "loading" | "error" | "success";
@@ -44,7 +44,7 @@ export function ResetPassword() {
     <div className="login">
       <main className="login-card" role="main">
         <div className="login-brand">
-          <BallIcon />
+          <ThemedBallIcon />
           <span className="login-brand__name">Vamos!</span>
         </div>
 

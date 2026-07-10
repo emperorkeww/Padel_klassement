@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
+import { useSkinText } from "../../lib/skin";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
@@ -65,6 +66,7 @@ export function NewMatchSheet({
   const [addingGuest, setAddingGuest] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
+  const t = useSkinText(); // themabare copy (#134)
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -238,7 +240,7 @@ export function NewMatchSheet({
       toast.success(
         weeks > 1
           ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
-          : "Match gepland — je vindt hem bij Te spelen.",
+          : t("Match gepland — je vindt hem bij Te spelen."),
       );
       onCreated();
       onClose();
@@ -272,7 +274,7 @@ export function NewMatchSheet({
       } else {
         tap();
       }
-      toast.success("Match toegevoegd.");
+      toast.success(t("Match toegevoegd."));
       onCreated();
       onClose();
     } catch (err) {
@@ -297,11 +299,11 @@ export function NewMatchSheet({
           <h2 className="sheet__title">
             {step === 1
               ? mode === "plan"
-                ? "Wie spelen er?"
-                : "Wie speelden er?"
+                ? t("Wie spelen er?")
+                : t("Wie speelden er?")
               : mode === "plan"
-                ? "Wanneer spelen jullie?"
-                : "Wat was de eindscore?"}
+                ? t("Wanneer spelen jullie?")
+                : t("Wat was de eindscore?")}
           </h2>
           <button className="sheet__close" onClick={onClose} aria-label="Sluiten">
             ✕
