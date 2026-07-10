@@ -11,6 +11,8 @@ import { addDays, dateInZone } from "../../lib/time";
 import { icsEvent, downloadIcs } from "../../lib/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";
 import { dayStarts } from "../availability/availabilityShare";
+import { getWeekWeather } from "../availability/weatherApi";
+import { summarizeDay } from "../availability/weatherLogic";
 import { useClub } from "../availability/club";
 import { shareOrCopyText } from "../../lib/shareText";
 import { displayName } from "../profiles/api";
@@ -265,9 +267,20 @@ function PollWizard({
   onDone: () => void;
 }) {
   const toast = useToast();
+  const wizardClub = useClub();
   const [duration, setDuration] = useState<number>(90);
   const [selectedDay, setSelectedDay] = useState(today);
   const [wholeDay, setWholeDay] = useState(false);
+  // Weericoontjes in de dag-navigator (#83-bonus): alleen bij buitenbanen,
+  // en stil bij ontbrekende data — zelfde regels als op de Banen-pagina.
+  const wizardOutdoor = week.some((d) =>
+    (d.data?.courts ?? []).some((r) => r.court.type !== "roofed"),
+  );
+  const wizardWeather = useAsync(
+    () =>
+      wizardOutdoor ? getWeekWeather(wizardClub) : Promise.resolve(null),
+    [wizardOutdoor, wizardClub.id],
+  );
   const [picked, setPicked] = useState<Map<string, NewPollOption>>(() => {
     if (initialPicked) return new Map(initialPicked);
     if (storageKey) {
@@ -426,6 +439,20 @@ function PollWizard({
               <span className="day-chip__num">
                 {fmtDate(d.date, { day: "numeric" })}
               </span>
+              {(() => {
+                const w = summarizeDay(wizardWeather.data?.[d.date] ?? []);
+                return (
+                  w && (
+                    <span
+                      className={`day-chip__weather${w.warn ? " is-warn" : ""}`}
+                      title={`${w.temp}° · ${w.rainPct}% regenkans`}
+                      aria-label={`Weer: ${w.temp} graden, ${w.rainPct}% regenkans`}
+                    >
+                      {w.icon}
+                    </span>
+                  )
+                );
+              })()}
             </button>
           );
         })}

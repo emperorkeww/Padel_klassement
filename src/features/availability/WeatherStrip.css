@@ -28,3 +28,15 @@
   background: var(--warn-soft);
   color: var(--warn);
 }
+
+/* Weericoontje in de dag-navigator van de poll-wizard (#83-bonus). */
+.day-chip__weather {
+  font-size: 0.7rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+.day-chip__weather.is-warn {
+  background: var(--warn-soft);
+  border-radius: 999px;
+  padding: 1px 4px;
+}

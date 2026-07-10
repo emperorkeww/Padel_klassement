@@ -10,19 +10,24 @@ import type { HourWeather } from "./weatherLogic";
 /** Uurdata per kalenderdag (YYYY-MM-DD, in clubtijd). */
 export type WeekWeather = Record<string, HourWeather[]>;
 
-/** Locatie via de stadnaam als Playtomic geen coördinaat meegeeft. */
+/**
+ * Locatie via de stadnaam als Playtomic geen coördinaat meegeeft (vangnet;
+ * in de praktijk hebben alle tenants er een). Belgische treffer wint —
+ * stadsnamen als "Beveren" bestaan in meerdere landen.
+ */
 async function geocodeCity(
   city: string,
 ): Promise<{ lat: number; lon: number } | null> {
   if (!city) return null;
   const res = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=nl`,
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=nl`,
   );
   if (!res.ok) return null;
   const json = (await res.json()) as {
-    results?: { latitude?: number; longitude?: number }[];
+    results?: { latitude?: number; longitude?: number; country_code?: string }[];
   };
-  const hit = json.results?.[0];
+  const results = json.results ?? [];
+  const hit = results.find((r) => r.country_code === "BE") ?? results[0];
   return typeof hit?.latitude === "number" && typeof hit?.longitude === "number"
     ? { lat: hit.latitude, lon: hit.longitude }
     : null;
