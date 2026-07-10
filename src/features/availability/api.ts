@@ -105,7 +105,12 @@ type RawTenant = {
   tenant_name?: string;
   resources?: RawResource[];
   opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
-  address?: { city?: string; timezone?: string };
+  address?: {
+    city?: string;
+    timezone?: string;
+    // Playtomic levert de clublocatie onder wisselende veldnamen.
+    coordinate?: { lat?: number; lon?: number; latitude?: number; longitude?: number };
+  };
 };
 type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
@@ -156,6 +161,16 @@ export async function fetchClub(id: string): Promise<Club> {
     city: tenant.address?.city ?? "",
     timezone: tenant.address?.timezone ?? DEFAULT_CLUB.timezone,
   };
+}
+
+/** Clublocatie voor de weerstrip (#83); null als Playtomic er geen meegeeft. */
+export async function getClubCoordinate(
+  tenantId: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const c = (await getTenant(tenantId)).address?.coordinate;
+  const lat = c?.lat ?? c?.latitude;
+  const lon = c?.lon ?? c?.longitude;
+  return typeof lat === "number" && typeof lon === "number" ? { lat, lon } : null;
 }
 
 async function getSlotsByCourt(

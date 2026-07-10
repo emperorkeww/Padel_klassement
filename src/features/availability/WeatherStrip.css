@@ -1,0 +1,30 @@
+/* Weerstrip voor buitenbanen (#83): compacte chips, licht en onopvallend. */
+.weather-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.weather-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.weather-chip__part {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.weather-chip__meta {
+  font-variant-numeric: tabular-nums;
+}
+.weather-chip--warn {
+  border-color: var(--warn-line);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
