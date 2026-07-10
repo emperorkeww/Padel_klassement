@@ -279,6 +279,22 @@ export function Groups() {
         </div>
       </section>
 
+      {/* Duidelijke mobiele ingang naar de baanbeschikbaarheid (zit niet in
+          de onderbalk; binnen de plan-flow is hij er ook). */}
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title card__title--tight">Vrije banen</h2>
+        </div>
+        <p className="card__subtitle">
+          Bekijk per dag of week welke banen vrij zijn bij {club.name}.
+        </p>
+        <div className="proposal__links">
+          <Link className="btn btn--sm" to="/banen">
+            🎾 Vrije banen bekijken →
+          </Link>
+        </div>
+      </section>
+
       <section className="card">
         <h2 className="card__title">Nieuwe groep</h2>
         <form className="row-between account-form" onSubmit={create}>

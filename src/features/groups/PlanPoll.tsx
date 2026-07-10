@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
@@ -106,7 +106,24 @@ export function PollSection({
   const club = useClub();
   const toast = useToast();
   const today = dateInZone(club.timezone);
-  const [wizardOpen, setWizardOpen] = useState(false);
+  // De wizard-selectie overleeft een uitstap naar /banen (zelfde tabblad,
+  // swipe-terug): picks staan in sessionStorage en de wizard heropent vanzelf.
+  const wizardStorageKey = `poll-wizard:${groupId}`;
+  const [wizardOpen, setWizardOpen] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(wizardStorageKey) != null;
+    } catch {
+      return false;
+    }
+  });
+  const closeWizard = () => {
+    try {
+      sessionStorage.removeItem(wizardStorageKey);
+    } catch {
+      /* opslag niet beschikbaar — geen probleem */
+    }
+    setWizardOpen(false);
+  };
 
   const polls = useAsync<PlayPoll[]>(() => getGroupPolls(groupId), [groupId]);
   const options = useAsync<PollOption[]>(
@@ -184,14 +201,15 @@ export function PollSection({
           today={today}
           week={week.data ?? []}
           weekLoading={week.loading}
+          storageKey={wizardStorageKey}
           submitLabel={(n) => `Start poll (${n})`}
           onSubmit={async (options) => {
             await createPoll({ groupId, createdBy: myId, options });
             toast.success("Poll gestart — de groep kan stemmen.");
           }}
-          onClose={() => setWizardOpen(false)}
+          onClose={closeWizard}
           onDone={() => {
-            setWizardOpen(false);
+            closeWizard();
             reloadAll();
           }}
         />
@@ -211,6 +229,7 @@ function PollWizard({
   week,
   weekLoading,
   initialPicked,
+  storageKey,
   submitLabel,
   confirmHint,
   onSubmit,
@@ -222,6 +241,8 @@ function PollWizard({
   weekLoading: boolean;
   /** Bestaande selectie voor de "Dagen aanpassen"-modus (#128). */
   initialPicked?: Map<string, NewPollOption>;
+  /** sessionStorage-sleutel: selectie overleeft een uitstap naar /banen. */
+  storageKey?: string;
   submitLabel: (count: number) => string;
   /** Waarschuwing die eerst bevestigd moet worden (bv. momenten vervallen). */
   confirmHint?: (picked: Map<string, NewPollOption>) => string | null;
@@ -233,9 +254,38 @@ function PollWizard({
   const [duration, setDuration] = useState<number>(90);
   const [selectedDay, setSelectedDay] = useState(today);
   const [wholeDay, setWholeDay] = useState(false);
-  const [picked, setPicked] = useState<Map<string, NewPollOption>>(
-    () => new Map(initialPicked ?? []),
-  );
+  const [picked, setPicked] = useState<Map<string, NewPollOption>>(() => {
+    if (initialPicked) return new Map(initialPicked);
+    if (storageKey) {
+      try {
+        const raw = sessionStorage.getItem(storageKey);
+        if (raw) {
+          return new Map(
+            Object.entries(JSON.parse(raw)) as [string, NewPollOption][],
+          );
+        }
+      } catch {
+        /* ongeldige of onbeschikbare opslag → verse start */
+      }
+    }
+    return new Map();
+  });
+  // Selectie live wegschrijven zodat een swipe-terug vanuit /banen hem
+  // terugvindt; leeg = sleutel weg (dan heropent de wizard ook niet).
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      if (picked.size === 0) sessionStorage.removeItem(storageKey);
+      else {
+        sessionStorage.setItem(
+          storageKey,
+          JSON.stringify(Object.fromEntries(picked)),
+        );
+      }
+    } catch {
+      /* opslag niet beschikbaar — geen probleem */
+    }
+  }, [picked, storageKey]);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("20:00");
   const [saving, setSaving] = useState(false);
@@ -410,15 +460,14 @@ function PollWizard({
           />
           Hele dag tonen
         </label>
-        {/* Banen-verkenning in context (#106): opent de Banen-pagina met de
-            gekozen dag al ingesteld. */}
+        {/* Banen-verkenning in context (#106): opent de Banen-pagina in de
+            app zelf met de gekozen dag al ingesteld — swipe/ga terug en de
+            wizard staat er nog, mét je selectie (sessionStorage). */}
         <Link
           className="poll-wizard__toggle"
           to={`/banen?datum=${selectedDay}`}
-          target="_blank"
-          rel="noreferrer"
         >
-          Verken alle vrije banen ↗
+          Verken alle vrije banen →
         </Link>
         <label className="poll-wizard__toggle">
           Duur{" "}
