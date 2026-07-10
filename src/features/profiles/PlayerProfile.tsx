@@ -6,6 +6,7 @@ import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
+import { bestWeekday, monthlyWinRate, opponentExtremes } from "../../lib/trends";
 import {
   getPlayerMatches,
   getTeamsMap,
@@ -368,6 +369,74 @@ export function PlayerProfile() {
           <RankChart points={rankPoints} />
         </section>
       )}
+
+      {/* Trends (#58): win% per maand + sterkste/lastigste tegenstander en
+          beste weekdag — afgeleid uit de al opgehaalde matches. */}
+      {!matches.loading &&
+        (() => {
+          const months = monthlyWinRate(scoped, tmap, id);
+          const { favorite, hardest } = opponentExtremes(scoped, tmap, id);
+          const day = bestWeekday(scoped, tmap, id);
+          if (months.length < 2 && !favorite && !hardest && !day) return null;
+          return (
+            <section className="card">
+              <h2 className="card__title">Trends</h2>
+              {months.length >= 2 && (
+                <div
+                  className="trend-months"
+                  role="img"
+                  aria-label={`Win-percentage per maand: ${months
+                    .map((mo) => `${mo.label} ${mo.rate}%`)
+                    .join(", ")}`}
+                >
+                  {months.map((mo) => (
+                    <div key={mo.month} className="trend-month">
+                      <span className="trend-month__rate">{mo.rate}%</span>
+                      <span className="trend-month__barwrap" aria-hidden="true">
+                        <span
+                          className="trend-month__bar"
+                          style={{ height: `${Math.max(mo.rate, 4)}%` }}
+                          title={`${mo.won} van ${mo.played} gewonnen`}
+                        />
+                      </span>
+                      <span className="trend-month__label">{mo.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(favorite || hardest || day) && (
+                <ul className="trend-facts">
+                  {favorite && (
+                    <li>
+                      <span aria-hidden="true">💪</span> Sterkst tegen{" "}
+                      <Link to={`/spelers/${favorite.oppId}`}>
+                        {displayName(pmap[favorite.oppId])}
+                      </Link>{" "}
+                      — {favorite.won}–{favorite.lost} in {favorite.played}{" "}
+                      duels
+                    </li>
+                  )}
+                  {hardest && (
+                    <li>
+                      <span aria-hidden="true">😅</span> Lastigst:{" "}
+                      <Link to={`/spelers/${hardest.oppId}`}>
+                        {displayName(pmap[hardest.oppId])}
+                      </Link>{" "}
+                      — {hardest.won}–{hardest.lost} in {hardest.played} duels
+                    </li>
+                  )}
+                  {day && (
+                    <li>
+                      <span aria-hidden="true">📅</span> Beste dag:{" "}
+                      <strong>{day.label}</strong> — {day.rate}% winst over{" "}
+                      {day.played} matches
+                    </li>
+                  )}
+                </ul>
+              )}
+            </section>
+          );
+        })()}
 
       {(best > 0 || bigWin) && (
         <section className="card">
