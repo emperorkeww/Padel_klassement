@@ -15,6 +15,9 @@ create table public.play_polls (
   -- laatste-kans-push bij een naderende deadline, en de speeldag-herinnering.
   deadline_notified_at timestamptz,
   dayof_notified_at timestamptz,
+  -- Momenten van vastleggen/boeken (feed v2, #143); reopen wist ze weer.
+  locked_at timestamptz,
+  booked_at timestamptz,
   created_at timestamptz not null default now()
 );
 

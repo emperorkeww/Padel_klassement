@@ -23,6 +23,8 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     status: "open",
     locked_option_id: null,
     created_at: "2026-07-08T10:00:00Z",
+    locked_at: null,
+    booked_at: null,
     ...overrides,
   };
 }

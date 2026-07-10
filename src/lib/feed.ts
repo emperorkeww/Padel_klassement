@@ -13,6 +13,7 @@ import { outcomeFor } from "./results";
 import { rankShifts, type Shift } from "./rankShift";
 import { computePlayerStandings, matchesInSeason } from "./standings";
 import { isSeasonClosed, seasonFor, type Season } from "./seasons";
+import { eveningSummary } from "./eveningSummary";
 
 /** De ándere speler in een vriendschap (zelfde logica als friends/api). */
 const otherId = (f: Friendship, myId: string) =>
@@ -35,11 +36,14 @@ export const RATING_DREMPELS = [1100, 1200, 1300] as const;
 export const RANK_SPRONG = 3;
 /** Zo lang na het sluiten van een kwartaal melden we de kampioen nog. */
 export const KAMPIOEN_VENSTER_DAGEN = 21;
+/** Vanaf zoveel groepsmatches op één dag bundelen we ze tot één avond-item. */
+export const AVOND_BUNDEL_MIN = 3;
 
 export type Highlight =
-  | { type: "upset"; chance: number }
+  | { type: "upset"; chance: number; winnerTeamId: string }
   | { type: "score"; label: "bagel" | "monsterzege" | "nagelbijter" }
   | { type: "streak"; playerId: string; count: number }
+  | { type: "duo"; teamId: string; count: number }
   | { type: "rating"; playerId: string; threshold: number };
 
 export type FeedEvent =
@@ -49,6 +53,8 @@ export type FeedEvent =
   | { kind: "group-created"; at: string; groupId: string; groupName: string; playerId: string | null }
   | { kind: "group-joined"; at: string; groupId: string; groupName: string; playerId: string }
   | { kind: "poll"; at: string; groupId: string; groupName: string }
+  | { kind: "poll-locked" | "poll-booked"; at: string; groupId: string; groupName: string; date: string | null; time: string | null }
+  | { kind: "evening"; at: string; groupId: string; groupName: string; day: string; count: number; topPlayerId: string | null; bestDuoTeamId: string | null; highlights: Highlight[] }
   | { kind: "rank"; at: string; playerId: string; shift: Shift; rank: number }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string };
 
@@ -66,6 +72,11 @@ export interface FeedPoll {
   group_id: string;
   status: string;
   created_at: string;
+  locked_at?: string | null;
+  booked_at?: string | null;
+  /** Gekozen moment (datum + "HH:MM"), door de UI geresolved uit de optie. */
+  locked_date?: string | null;
+  locked_time?: string | null;
 }
 
 /** Speler-ids in je netwerk: jijzelf + geaccepteerde vrienden. */
@@ -144,7 +155,9 @@ export function upsetHighlight(
   const l = avg(loser);
   if (w == null || l == null) return null;
   const chance = expected(w, l);
-  return chance < UPSET_MAX_KANS ? { type: "upset", chance } : null;
+  return chance < UPSET_MAX_KANS
+    ? { type: "upset", chance, winnerTeamId: m.winner_team_id }
+    : null;
 }
 
 /**
@@ -169,6 +182,8 @@ export function buildFeed(input: {
   groupMatchesByGroup?: Record<string, Match[]>;
   profiles?: Record<string, Profile>;
   now?: Date;
+  /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
+  filter?: (e: FeedEvent) => boolean;
 }): FeedEvent[] {
   const {
     matches,
@@ -184,6 +199,7 @@ export function buildFeed(input: {
     groupMatchesByGroup = {},
     profiles = {},
     now = new Date(),
+    filter,
   } = input;
   // Publiek van de feed: jijzelf + vrienden + iedereen met wie je een groep
   //  deelt — hun matches, reeksen, rating- en klassementsnieuws zijn zichtbaar.
@@ -207,6 +223,21 @@ export function buildFeed(input: {
     (a.played_at ?? a.created_at).localeCompare(b.played_at ?? b.created_at),
   );
   const streakAt = new Map<string, Highlight[]>(); // match_id → streak-chips
+  // Duo-reeksen: winstreeks van een vast duo (team-id) over dezelfde matches.
+  const duoRun = new Map<string, number>();
+  for (const m of chrono) {
+    if (m.status !== "completed" || !m.winner_team_id) continue;
+    const winners = m.winner_team_id;
+    const losers = winners === m.team_a_id ? m.team_b_id : m.team_a_id;
+    duoRun.set(winners, (duoRun.get(winners) ?? 0) + 1);
+    duoRun.set(losers, 0);
+    const run = duoRun.get(winners)!;
+    if ((REEKS_STAPPEN as readonly number[]).includes(run)) {
+      const list = streakAt.get(m.id) ?? [];
+      list.push({ type: "duo", teamId: winners, count: run });
+      streakAt.set(m.id, list);
+    }
+  }
   for (const pid of network) {
     let run = 0;
     for (const m of chrono) {
@@ -304,6 +335,26 @@ export function buildFeed(input: {
         groupId: g.id,
         groupName: g.name,
       });
+      if (poll.locked_at) {
+        events.push({
+          kind: "poll-locked",
+          at: poll.locked_at,
+          groupId: g.id,
+          groupName: g.name,
+          date: poll.locked_date ?? null,
+          time: poll.locked_time ?? null,
+        });
+      }
+      if (poll.booked_at) {
+        events.push({
+          kind: "poll-booked",
+          at: poll.booked_at,
+          groupId: g.id,
+          groupName: g.name,
+          date: poll.locked_date ?? null,
+          time: poll.locked_time ?? null,
+        });
+      }
     }
 
     // Seizoenskampioen: alleen als het vorige kwartaal recent sloot.
@@ -357,7 +408,43 @@ export function buildFeed(input: {
     }
   }
 
-  return events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);
+  // ── Avond-bundeling: N of meer groepsmatches op één dag worden één item
+  //    met samenvatting en de chips van die avond (alleen eigen groepen —
+  //    namen van andermans groepen zijn per RLS niet beschikbaar). ──
+  const groupNameById = new Map(groups.map((g) => [g.id, g.name]));
+  const buckets = new Map<string, Extract<FeedEvent, { kind: "match" }>[]>();
+  for (const e of events) {
+    if (e.kind !== "match" || !e.match.group_id) continue;
+    if (!groupNameById.has(e.match.group_id)) continue;
+    const key = `${e.match.group_id}|${e.at.slice(0, 10)}`;
+    const list = buckets.get(key) ?? [];
+    list.push(e);
+    buckets.set(key, list);
+  }
+  const bundled = new Set<FeedEvent>();
+  for (const [key, list] of buckets) {
+    if (list.length < AVOND_BUNDEL_MIN) continue;
+    const [groupId, day] = key.split("|");
+    const summary = eveningSummary(list.map((e) => e.match), teams, day);
+    for (const e of list) bundled.add(e);
+    events.push({
+      kind: "evening",
+      at: list.map((e) => e.at).sort().pop()!,
+      groupId,
+      groupName: groupNameById.get(groupId)!,
+      day,
+      count: list.length,
+      topPlayerId: summary.rows[0]?.playerId ?? null,
+      bestDuoTeamId: summary.bestDuo?.teamId ?? null,
+      highlights: list.flatMap((e) => e.highlights).slice(0, 6),
+    });
+  }
+
+  return events
+    .filter((e) => !bundled.has(e))
+    .filter((e) => (filter ? filter(e) : true))
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, limit);
 }
 
 /** Het vorige kwartaal, maar alleen zolang het "vers" gesloten is (venster). */
