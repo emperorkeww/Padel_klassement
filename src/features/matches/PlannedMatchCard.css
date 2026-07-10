@@ -12,6 +12,17 @@
   margin-left: auto;
 }
 
+/* Onderlinge rivaliteitsbalans tussen twee spelers uit tegengestelde teams. */
+.planned-card__rivalry {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.planned-card__rivalry strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Uitklapbare optionele set-invoer. */
 .planned-card__sets {
   margin-top: var(--sp-3);

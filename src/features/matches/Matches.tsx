@@ -154,6 +154,7 @@ export function Matches() {
                 teams={tmap}
                 profiles={pmap}
                 perspectiveId={myId}
+                history={matches.data ?? []}
                 onSaved={reloadAll}
               />
             ))}
