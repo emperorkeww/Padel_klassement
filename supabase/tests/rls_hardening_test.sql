@@ -1,7 +1,7 @@
 -- pgTAP-tests voor de RLS-hardening (audit 2026-07-01, migratie 20260701140000).
 begin;
 
-select plan(9);
+select plan(10);
 
 ------------------------------------------------------------------------
 -- matches: geen directe INSERT-policy meer; enkel SELECT + UPDATE.
@@ -25,7 +25,9 @@ select policies_are(
 );
 
 ------------------------------------------------------------------------
--- friendships: alle vier de policies bestaan nog, insert blijft INSERT.
+-- friendships: de vier hardening-policies bestaan nog, plus de
+-- groupmates-select uit #138 (geaccepteerde vriendschappen leesbaar voor
+-- groepsgenoten, t.b.v. de feed). Insert blijft INSERT.
 ------------------------------------------------------------------------
 select policies_are(
   'public', 'friendships',
@@ -33,7 +35,8 @@ select policies_are(
     'Eigen vriendschappen zijn leesbaar',
     'Verzoek sturen als verzoeker',
     'Ontvanger kan verzoek beantwoorden',
-    'Betrokkene kan vriendschap verwijderen'
+    'Betrokkene kan vriendschap verwijderen',
+    'friendships_select_groupmates'
   ],
   'friendships heeft de verwachte policies'
 );
@@ -41,6 +44,11 @@ select policies_are(
 select policy_cmd_is(
   'public', 'friendships', 'Verzoek sturen als verzoeker', 'INSERT',
   'friendships insert-policy geldt voor INSERT'
+);
+
+select policy_cmd_is(
+  'public', 'friendships', 'friendships_select_groupmates', 'SELECT',
+  'groupmates-policy geldt alleen voor SELECT'
 );
 
 ------------------------------------------------------------------------
