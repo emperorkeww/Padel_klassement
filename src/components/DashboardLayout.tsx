@@ -30,8 +30,9 @@ const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
-// (2 links · bal · 2 rechts). Vrienden is daarmee ook één tik bereikbaar (#69).
-const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, IK];
+// (2 links · bal · 2 rechts). Vrienden is één tik bereikbaar (#69); het
+// profiel zit achter de avatar rechtsboven, dus die plek gaat naar Banen.
+const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, BANEN];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
