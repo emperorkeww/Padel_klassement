@@ -60,7 +60,7 @@
   border-radius: 50%;
   font-size: var(--fs-sm);
   font-weight: 800;
-  color: #fff;
+  color: var(--accent-ink);
 }
 .podium__spot--1 .podium__medal {
   background: var(--gold);

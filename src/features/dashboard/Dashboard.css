@@ -300,7 +300,7 @@
   padding: 0 var(--sp-1);
   border-radius: 999px;
   background: var(--warn);
-  color: #fff;
+  color: var(--accent-ink);
   font-size: var(--fs-sm);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -322,7 +322,7 @@
 }
 .todo-chip--play .todo-chip__count {
   background: var(--lime-deep);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 /* Speelavond-terugblik: gouden accent, past bij het "kampioen"-gevoel. */

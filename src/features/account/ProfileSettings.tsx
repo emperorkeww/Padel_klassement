@@ -25,6 +25,11 @@ import {
   getPushSubscription,
   pushSupported,
 } from "../../lib/push";
+import {
+  getThemePreference,
+  setThemePreference,
+  type ThemePreference,
+} from "../../lib/theme";
 import type { Profile } from "../../lib/types";
 import "./ProfileSettings.css";
 
@@ -67,6 +72,7 @@ export function ProfileSettings() {
       </div>
       <div className="grid grid--2">
         <EmailCard currentEmail={user?.email ?? ""} />
+        <ThemeCard />
       </div>
       <PasswordCard email={user?.email ?? ""} />
 
@@ -287,6 +293,46 @@ function NotificationsCard({ userId }: { userId: string }) {
               : "Meldingen aanzetten"}
         </button>
       )}
+    </section>
+  );
+}
+
+/* ---------- Weergave (thema) ---------- */
+const THEMA_OPTIES: { value: ThemePreference; label: string }[] = [
+  { value: "system", label: "Systeem" },
+  { value: "light", label: "Licht" },
+  { value: "dark", label: "Donker" },
+];
+
+function ThemeCard() {
+  const [pref, setPref] = useState<ThemePreference>(getThemePreference);
+
+  function choose(next: ThemePreference) {
+    setPref(next);
+    // Past direct toe én bewaart in localStorage (src/lib/theme.ts).
+    setThemePreference(next);
+  }
+
+  return (
+    <section className="card">
+      <h2 className="card__title card__title--tight">Weergave</h2>
+      <p className="card__subtitle">
+        Kies licht of donker, of volg automatisch je systeeminstelling.
+      </p>
+      <div className="tabs" role="radiogroup" aria-label="Thema">
+        {THEMA_OPTIES.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={pref === o.value}
+            className={`tab ${pref === o.value ? "is-active" : ""}`}
+            onClick={() => choose(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

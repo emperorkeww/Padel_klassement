@@ -676,6 +676,15 @@ textarea {
 .avatar--h5 { background: #cffafe; color: #0e7490; }
 .avatar--h6 { background: #fef3c7; color: #a16207; }
 .avatar--h7 { background: #e2e8f0; color: #334155; }
+/* Donker thema: zelfde hue-familie, gedempte donkere vlakken + lichte initialen. */
+:root[data-theme="dark"] .avatar--h0 { background: #22392a; color: #a7d4b0; }
+:root[data-theme="dark"] .avatar--h1 { background: #1e2a44; color: #a9c4f5; }
+:root[data-theme="dark"] .avatar--h2 { background: #3a2a1a; color: #e6b98a; }
+:root[data-theme="dark"] .avatar--h3 { background: #2c2542; color: #c6b6ee; }
+:root[data-theme="dark"] .avatar--h4 { background: #3a2230; color: #eaaccb; }
+:root[data-theme="dark"] .avatar--h5 { background: #16333a; color: #93d3e0; }
+:root[data-theme="dark"] .avatar--h6 { background: #37301a; color: #dfc687; }
+:root[data-theme="dark"] .avatar--h7 { background: #262d36; color: #b9c4d1; }
 
 /* Overlappende avatar-paren (team in een matchkaart). */
 .avatar-pair {

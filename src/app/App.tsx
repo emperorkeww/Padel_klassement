@@ -7,6 +7,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 const LoginScreen = lazy(() => import("../features/auth/LoginScreen"));
 const ResetPassword = lazy(() => import("../features/auth/ResetPassword"));
 const Dashboard = lazy(() => import("../features/dashboard/Dashboard"));
+const Feed = lazy(() => import("../features/feed/Feed"));
 const Leaderboard = lazy(() => import("../features/standings/Leaderboard"));
 const Matches = lazy(() => import("../features/matches/Matches"));
 const Groups = lazy(() => import("../features/groups/Groups"));
@@ -29,6 +30,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/feed" element={<Feed />} />
             <Route path="/klassement" element={<Leaderboard />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/banen" element={<Availability />} />

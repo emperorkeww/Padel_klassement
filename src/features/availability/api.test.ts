@@ -120,6 +120,8 @@ describe("nextFreeSlot", () => {
 
 // Samenvatting boven het weekraster: het moment met de meeste tegelijk vrije
 // banen, met dezelfde duur- en "voorbij"-regels als nextFreeSlot.
+// Verre datums (2099): zodra een fixture-datum "vandaag" wordt, filtert de
+// nu-grens ochtendtijden weg en wordt de test datumafhankelijk flaky.
 describe("bestWeekMoment", () => {
   const weekDay = (date: string, data: DayAvailability | null, error: string | null = null): WeekDay =>
     ({ date, data, error: data ? null : (error ?? "mislukt") });
@@ -131,11 +133,11 @@ describe("bestWeekMoment", () => {
   it("het moment met de meeste banen tegelijk vrij wint, ook op een latere dag", () => {
     const week = [
       weekDay(
-        "2026-07-10",
+        "2099-07-10",
         day(row("1", [["10:00", [60]]]), row("2", [["10:00", [60]]])),
       ),
       weekDay(
-        "2026-07-11",
+        "2099-07-11",
         day(
           row("1", [["14:00", [60]]]),
           row("2", [["14:00", [60]]]),
@@ -144,7 +146,7 @@ describe("bestWeekMoment", () => {
       ),
     ];
     expect(bestWeekMoment(week, null)).toEqual({
-      date: "2026-07-11",
+      date: "2099-07-11",
       time: "14:00",
       count: 3,
     });
@@ -155,19 +157,19 @@ describe("bestWeekMoment", () => {
     // de Map, maar 10:00 is vroeger op de klok.
     const week = [
       weekDay(
-        "2026-07-10",
+        "2099-07-10",
         day(
           row("1", [["18:00", [60]], ["10:00", [60]]]),
           row("2", [["18:00", [60]], ["10:00", [60]]]),
         ),
       ),
       weekDay(
-        "2026-07-11",
+        "2099-07-11",
         day(row("1", [["09:00", [60]]]), row("2", [["09:00", [60]]])),
       ),
     ];
     expect(bestWeekMoment(week, null)).toEqual({
-      date: "2026-07-10",
+      date: "2099-07-10",
       time: "10:00",
       count: 2,
     });
@@ -176,7 +178,7 @@ describe("bestWeekMoment", () => {
   it("duurfilter: alleen starttijden met een optie van die duur tellen", () => {
     const week = [
       weekDay(
-        "2026-07-10",
+        "2099-07-10",
         day(
           row("1", [["10:00", [60]], ["14:00", [60, 90]]]),
           row("2", [["10:00", [60]], ["14:00", [90]]]),
@@ -185,13 +187,13 @@ describe("bestWeekMoment", () => {
     ];
     // Zonder filter wint 10:00 (vroegste van twee gelijke standen)…
     expect(bestWeekMoment(week, null)).toEqual({
-      date: "2026-07-10",
+      date: "2099-07-10",
       time: "10:00",
       count: 2,
     });
     // …met 90-minutenfilter blijft alleen 14:00 over, en met 120 niets.
     expect(bestWeekMoment(week, 90)).toEqual({
-      date: "2026-07-10",
+      date: "2099-07-10",
       time: "14:00",
       count: 2,
     });
@@ -222,12 +224,12 @@ describe("bestWeekMoment", () => {
 
   it("foutdagen en dagen zonder vrije sloten worden overgeslagen", () => {
     const week = [
-      weekDay("2026-07-10", null, "Kon de beschikbaarheid niet laden (status 500)."),
-      weekDay("2026-07-11", day(row("1", []))),
-      weekDay("2026-07-12", day(row("1", [["11:00", [60]]]))),
+      weekDay("2099-07-10", null, "Kon de beschikbaarheid niet laden (status 500)."),
+      weekDay("2099-07-11", day(row("1", []))),
+      weekDay("2099-07-12", day(row("1", [["11:00", [60]]]))),
     ];
     expect(bestWeekMoment(week, null)).toEqual({
-      date: "2026-07-12",
+      date: "2099-07-12",
       time: "11:00",
       count: 1,
     });

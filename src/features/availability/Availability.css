@@ -294,7 +294,7 @@
   padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius-sm);
   background: var(--ink);
-  color: #fff;
+  color: var(--surface);
   font-size: var(--fs-sm);
   white-space: nowrap;
   pointer-events: none;

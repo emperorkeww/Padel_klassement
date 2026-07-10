@@ -4,7 +4,12 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { AuthProvider } from "../features/auth/AuthProvider";
 import { ToastProvider } from "../components/ToastProvider";
+import { watchSystemTheme } from "../lib/theme";
 import "./index.css";
+
+// Het inline script in index.html zette het thema al vóór de eerste paint;
+// hier alleen nog OS-wissels blijven volgen zolang de voorkeur "systeem" is.
+watchSystemTheme();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

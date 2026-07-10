@@ -43,6 +43,9 @@ describe("<DashboardLayout />", () => {
     expect(
       screen.getAllByRole("link", { name: /vrienden/i }).length,
     ).toBe(2);
+    // Feed (#120): zijbalk + mobiele onderbalk; Banen alleen nog in de zijbalk.
+    expect(screen.getAllByRole("link", { name: /^feed$/i }).length).toBe(2);
+    expect(screen.getAllByRole("link", { name: /banen/i }).length).toBe(1);
     expect(
       screen.getAllByRole("link", { name: /naar overzicht/i }).length,
     ).toBeGreaterThan(0);

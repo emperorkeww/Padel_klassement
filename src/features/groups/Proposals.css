@@ -403,15 +403,15 @@
 }
 .seg__btn.is-active.is-yes {
   background: var(--success);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .seg__btn.is-active.is-maybe {
   background: var(--gold);
-  color: #fff;
+  color: var(--accent-ink);
 }
 .seg__btn.is-active.is-no {
   background: var(--danger);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .poll-row-detail {
@@ -512,7 +512,7 @@
   gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
   background: linear-gradient(135deg, var(--accent), var(--success));
-  color: #fff;
+  color: var(--accent-ink);
 }
 .winner-card__when {
   font-size: var(--fs-lg);
@@ -522,7 +522,7 @@
 .winner-card__status {
   padding: 2px var(--sp-3);
   border-radius: 999px;
-  background: #fff;
+  background: var(--surface);
   color: var(--accent);
   font-size: var(--fs-xs);
   font-weight: 800;
