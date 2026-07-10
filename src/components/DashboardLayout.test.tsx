@@ -39,7 +39,10 @@ describe("<DashboardLayout />", () => {
     expect(screen.getAllByRole("link", { name: /^spelen$/i }).length).toBe(2);
     // #69: "Ik" (profiel) zit nu in de mobiele balk; Vrienden in de zijbalk.
     expect(screen.getAllByRole("link", { name: /^ik$/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /vrienden/i })).toBeInTheDocument();
+    // Vrienden: in de zijbalk én (symmetrie) in de mobiele onderbalk.
+    expect(
+      screen.getAllByRole("link", { name: /vrienden/i }).length,
+    ).toBe(2);
     expect(
       screen.getAllByRole("link", { name: /naar overzicht/i }).length,
     ).toBeGreaterThan(0);

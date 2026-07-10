@@ -29,8 +29,9 @@ const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: "Ik", items: [VRIENDEN, IK] },
 ];
 
-// Mobiel: vier taken; Overzicht is de uitstekende padelbal.
-const TABBAR: NavItem[] = [SPELEN, OVERZICHT, KLASSEMENT, IK];
+// Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
+// (2 links · bal · 2 rechts). Vrienden is daarmee ook één tik bereikbaar (#69).
+const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, IK];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();

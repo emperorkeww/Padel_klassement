@@ -587,10 +587,12 @@
   justify-content: space-between;
 }
 
-/* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
+/* Maak teams: aan/uit te tikken deelnemers voor de teamgenerator. */
 .tonight__players {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
+  /* Ademruimte naar de waarschuwing/knoppen eronder (raakte elkaar). */
+  margin-bottom: var(--sp-3);
 }
 
