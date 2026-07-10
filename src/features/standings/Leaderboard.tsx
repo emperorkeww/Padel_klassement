@@ -314,7 +314,9 @@ export function Leaderboard() {
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
         <p className="page-subtitle">
-          Gesorteerd op rating — hoe vaak je speelt telt niet mee.
+          {tab === "player"
+            ? "Gesorteerd op rating — hoe vaak je speelt telt niet mee."
+            : "Teams gesorteerd op punten."}
         </p>
       </header>
 
@@ -501,7 +503,11 @@ export function Leaderboard() {
               showForm={tab === "player"}
               meRef={meRowRef}
             />
-            <RankList rows={displayRows} meRef={meItemRef} />
+            <RankList
+              rows={displayRows}
+              meRef={meItemRef}
+              lead={tab === "player" ? "rating" : "points"}
+            />
           </>
         )}
       </div>
@@ -762,6 +768,12 @@ function StandingsTable({
               sort={sort}
               onSort={onSort}
             />
+            <SortableTh
+              label="Punten"
+              sortKey="points"
+              sort={sort}
+              onSort={onSort}
+            />
             {showForm && (
               <SortableTh
                 label="Rating"
@@ -771,12 +783,6 @@ function StandingsTable({
                 title="Elo-rating: iedereen start op 1000 en stijgt of daalt na elke match op basis van de sterkte van de tegenstander."
               />
             )}
-            <SortableTh
-              label="Punten"
-              sortKey="points"
-              sort={sort}
-              onSort={onSort}
-            />
           </tr>
         </thead>
         <tbody ref={flipRef}>
@@ -848,11 +854,18 @@ function StandingsTable({
                 <td className="num">
                   {r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}
                 </td>
+                <td className="num">
+                  <span className={showForm ? "pts-cell pts-cell--sub" : "pts-cell"}>
+                    {showForm ? r.points : <CountUp value={r.points} />}
+                  </span>
+                </td>
                 {showForm && (
                   <td className="num">
                     <span className="rating-wrap">
                       {r.rating != null ? (
-                        <span className="rating-cell">{r.rating}</span>
+                        <span className="rating-cell rating-cell--lead">
+                          <CountUp value={r.rating} />
+                        </span>
                       ) : (
                         "—"
                       )}
@@ -862,11 +875,6 @@ function StandingsTable({
                     </span>
                   </td>
                 )}
-                <td className="num">
-                  <span className="pts-cell">
-                    <CountUp value={r.points} />
-                  </span>
-                </td>
               </tr>
             );
           })}
@@ -880,9 +888,12 @@ function StandingsTable({
 function RankList({
   rows,
   meRef,
+  lead,
 }: {
   rows: Row[];
   meRef?: React.Ref<HTMLLIElement>;
+  /** Welk getal groot staat: rating (spelers, #139) of punten (teams). */
+  lead: "rating" | "points";
 }) {
   const flipRef = useFlip<HTMLOListElement>(rows.map((r) => r.key).join("|"));
   return (
@@ -910,11 +921,19 @@ function RankList({
               </span>
             </span>
             <span className="ranklist__end">
-              <span className="ranklist__pts">
-                <CountUp value={r.points} />
+              <span className="ranklist__lead">
+                {lead === "rating" ? (
+                  r.rating != null ? (
+                    <CountUp value={r.rating} />
+                  ) : (
+                    "—"
+                  )
+                ) : (
+                  <CountUp value={r.points} />
+                )}
               </span>
-              <span className="ranklist__pts-label">
-                {r.rating != null ? `ptn · ${r.rating}` : "ptn"}
+              <span className="ranklist__lead-label">
+                {lead === "rating" ? `${r.points} ptn` : "ptn"}
               </span>
             </span>
           </>

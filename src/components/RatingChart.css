@@ -45,26 +45,32 @@
   fill: var(--danger);
 }
 
-/* Teken-animatie bij verschijnen (pathLength=1 op de lijn). */
+/* Teken-animatie bij verschijnen (pathLength=1 op de lijn). De zichtbare
+   toestand is de basis: wordt de animatie onderbroken of overgeslagen, dan
+   staat de lijn er gewoon volledig (#139). De verborgen starttoestand leeft
+   alleen in de keyframes; het vlak blijft via `backwards` enkel tijdens de
+   delay onzichtbaar. */
 @media (prefers-reduced-motion: no-preference) {
   .rating-chart__line {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: rc-draw 0.9s ease-out forwards;
+    animation: rc-draw 0.9s ease-out;
   }
   .rating-chart__area {
-    opacity: 0;
-    animation: rc-fade 0.5s ease-out 0.45s forwards;
+    animation: rc-fade 0.5s ease-out 0.45s backwards;
   }
 }
 @keyframes rc-draw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
   to {
+    stroke-dasharray: 1;
     stroke-dashoffset: 0;
   }
 }
 @keyframes rc-fade {
-  to {
-    opacity: 1;
+  from {
+    opacity: 0;
   }
 }
 
