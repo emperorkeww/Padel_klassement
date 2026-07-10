@@ -106,13 +106,16 @@ describe("<GroupDetail />", () => {
     expect(
       screen.getByRole("link", { name: /ga naar de poll/i }),
     ).toBeInTheDocument();
-    // Het voorstel van vandaag voedt de "Vanavond"-kaart met alle deelnemers.
+    // Eén teamgenerator: deelnemers uit de poll van vandaag, formaatkeuze.
     expect(
-      await screen.findByRole("heading", { name: /vanavond · 20:00/i }),
+      await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /alice anders \(jij\)/i }),
     ).toHaveAttribute("aria-pressed", "true");
+    for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
+      expect(screen.getByRole("button", { name: f })).toBeInTheDocument();
+    }
   });
 
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
@@ -149,6 +152,10 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
+    // Formaat kiezen in de ene teamgenerator, dan genereren.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^americano$/i }),
+    );
     await userEvent.click(
       screen.getByRole("button", { name: /genereer americano-ronde/i }),
     );

@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
@@ -27,6 +28,18 @@ export function Matches() {
     setSheetMode(mode);
     setSheetOpen(true);
   }
+
+  // Vanuit de Spelen-hub: "/matches?log=1" opent meteen de log-sheet (#106).
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.has("log")) {
+      openSheet("score");
+      const next = new URLSearchParams(params);
+      next.delete("log");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const matches = useAsync(() => getRecentMatches(100), []);
   const teams = useAsync(getTeamsMap, []);

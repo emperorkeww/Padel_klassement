@@ -587,10 +587,26 @@
   justify-content: space-between;
 }
 
-/* "Vanavond": aan/uit te tikken deelnemers voor de teamgenerator. */
+/* Vaste banen-ingang op de Plannen-tab. */
+.plan-banen {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.plan-banen a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.plan-banen a:hover {
+  text-decoration: underline;
+}
+
+/* Maak teams: aan/uit te tikken deelnemers voor de teamgenerator. */
 .tonight__players {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
+  /* Ademruimte naar de waarschuwing/knoppen eronder (raakte elkaar). */
+  margin-bottom: var(--sp-3);
 }
 

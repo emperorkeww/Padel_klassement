@@ -1,5 +1,10 @@
-import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useToast } from "../../components/ToastProvider";
@@ -8,14 +13,91 @@ import { Avatar } from "../../components/Avatar";
 import { EmptyState } from "../../components/EmptyState";
 import { errorMessage } from "../../lib/errors";
 import { formatDate } from "../../lib/format";
+import { dateInZone } from "../../lib/time";
+import { useClub } from "../availability/club";
 import { getProfilesMap } from "../profiles/api";
-import { getMyGroups, createGroup } from "./api";
+import { getMyGroups, createGroup, type GroupSummary } from "./api";
+import {
+  getGroupPolls,
+  getGroupPollOptions,
+  getGroupPollVotes,
+  type PlayPoll,
+  type PollOption,
+  type PollVote,
+} from "./pollsApi";
+import { activePoll } from "./pollLogic";
 import "./Groups.css";
+
+// "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
+// de reis (poll loopt → gekozen → geboekt) met één duidelijke vervolgstap;
+// losse matches en het archief zijn hiervandaan bereikbaar. Bij precies één
+// groep opent de tab direct de groepspagina (terug via "← Spelen").
 
 const MAX_MEMBER_AVATARS = 4;
 
 function ledenLabel(n: number): string {
   return n === 1 ? "1 lid" : `${n} leden`;
+}
+
+function shortDay(date: string): string {
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T12:00:00`));
+}
+
+type Journey = {
+  label: string;
+  /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
+  tone: "act" | "info" | "idle";
+  tab: "plannen" | "rondes";
+};
+
+/** Reis-status van een groep: waar zit de groep in de kernreis? */
+function journeyFor(
+  polls: PlayPoll[],
+  options: PollOption[],
+  today: string,
+): Journey {
+  const active = activePoll(polls, options, today);
+  const locked = active?.locked_option_id
+    ? (options.find((o) => o.id === active.locked_option_id) ?? null)
+    : null;
+  if (active?.status === "open") {
+    return { label: "📊 Poll loopt — stem mee", tone: "act", tab: "plannen" };
+  }
+  if (active?.status === "locked" && locked) {
+    return {
+      label: `📆 ${shortDay(locked.date)} gekozen — boek de baan`,
+      tone: "act",
+      tab: "plannen",
+    };
+  }
+  if (active?.status === "booked" && locked) {
+    return {
+      label: `🎾 ${shortDay(locked.date)} · ${locked.start_time} geboekt`,
+      tone: "info",
+      tab: locked.date === today ? "rondes" : "plannen",
+    };
+  }
+  return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
+}
+
+async function loadJourneys(
+  groups: GroupSummary[],
+): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }>> {
+  const rows = await Promise.all(
+    groups.map(async (g) => {
+      const [polls, options, votes] = await Promise.all([
+        getGroupPolls(g.id),
+        getGroupPollOptions(g.id),
+        getGroupPollVotes(g.id),
+      ]);
+      return [g.id, { polls, options, votes }] as const;
+    }),
+  );
+  return Object.fromEntries(rows);
 }
 
 export function Groups() {
@@ -25,6 +107,32 @@ export function Groups() {
   const profiles = useAsync(getProfilesMap, []);
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const club = useClub();
+  const today = dateInZone(club.timezone);
+
+  const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
+  const journeys = useAsync(
+    () => loadJourneys(groups.data ?? []),
+     
+    [groupKey],
+  );
+
+  // Eén groep → direct de groepspagina (alleen op /spelen; "?hub=1" of de
+  // legacy /groepen-route toont altijd de hub, o.a. voor de terugknop).
+  const list = groups.data ?? [];
+  useEffect(() => {
+    if (
+      location.pathname === "/spelen" &&
+      !params.has("hub") &&
+      !groups.loading &&
+      list.length === 1
+    ) {
+      navigate(`/groepen/${list[0].id}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups.loading, groupKey, location.pathname]);
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,15 +154,14 @@ export function Groups() {
     }
   }
 
-  const list = groups.data ?? [];
   const pmap = profiles.data ?? {};
 
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Groepen</h1>
+        <h1 className="page-title">Spelen</h1>
         <p className="page-subtitle">
-          Maak een groep, voeg vrienden toe en genereer wedstrijdrondes.
+          Van moment prikken tot uitslag — je groepen zijn het vertrekpunt.
         </p>
       </header>
 
@@ -87,52 +194,106 @@ export function Groups() {
             </div>
           ) : (
             <div className="group-grid">
-              {list.map((g) => (
-                <Link key={g.id} className="group-card" to={`/groepen/${g.id}`}>
-                  <Avatar name={g.name} size={44} />
-                  <span className="group-card__body">
-                    <span className="group-card__top">
-                      <span className="group-card__name">{g.name}</span>
-                      {g.created_by === myId && (
-                        <span className="badge badge--accent">eigenaar</span>
-                      )}
-                    </span>
-                    <span className="group-card__meta">
-                      {g.member_ids.length > 0 && (
+              {list.map((g) => {
+                const j = journeys.data?.[g.id];
+                const journey = j
+                  ? journeyFor(j.polls, j.options, today)
+                  : null;
+                return (
+                  <Link
+                    key={g.id}
+                    className="group-card"
+                    to={`/groepen/${g.id}${journey && journey.tab !== "rondes" ? "?tab=plannen" : ""}`}
+                  >
+                    <Avatar name={g.name} size={44} />
+                    <span className="group-card__body">
+                      <span className="group-card__top">
+                        <span className="group-card__name">{g.name}</span>
+                        {g.created_by === myId && (
+                          <span className="badge badge--accent">eigenaar</span>
+                        )}
+                      </span>
+                      <span className="group-card__meta">
+                        {g.member_ids.length > 0 && (
+                          <span
+                            className="group-card__members"
+                            aria-hidden="true"
+                          >
+                            {g.member_ids
+                              .slice(0, MAX_MEMBER_AVATARS)
+                              .map((pid) => (
+                                <Avatar
+                                  key={pid}
+                                  profile={pmap[pid]}
+                                  size={20}
+                                  short
+                                />
+                              ))}
+                            {g.member_ids.length > MAX_MEMBER_AVATARS && (
+                              <span className="group-card__more">
+                                +{g.member_ids.length - MAX_MEMBER_AVATARS}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        <span>
+                          {ledenLabel(g.member_ids.length)} · sinds{" "}
+                          {formatDate(g.created_at)}
+                        </span>
+                      </span>
+                      {journey && (
                         <span
-                          className="group-card__members"
-                          aria-hidden="true"
+                          className={`group-card__journey group-card__journey--${journey.tone}`}
                         >
-                          {g.member_ids.slice(0, MAX_MEMBER_AVATARS).map((pid) => (
-                            <Avatar
-                              key={pid}
-                              profile={pmap[pid]}
-                              size={20}
-                              short
-                            />
-                          ))}
-                          {g.member_ids.length > MAX_MEMBER_AVATARS && (
-                            <span className="group-card__more">
-                              +{g.member_ids.length - MAX_MEMBER_AVATARS}
-                            </span>
-                          )}
+                          {journey.label}
                         </span>
                       )}
-                      <span>
-                        {ledenLabel(g.member_ids.length)} · sinds{" "}
-                        {formatDate(g.created_at)}
-                      </span>
                     </span>
-                  </span>
-                  <span className="group-card__chevron" aria-hidden="true">
-                    →
-                  </span>
-                </Link>
-              ))}
+                    <span className="group-card__chevron" aria-hidden="true">
+                      →
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </>
       )}
+
+      {/* Losse matches (buiten een groep) + het archief. */}
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title card__title--tight">Losse match</h2>
+        </div>
+        <p className="card__subtitle">
+          Buiten een groep om gespeeld? Log de uitslag — hij telt gewoon mee
+          voor je rating.
+        </p>
+        <div className="proposal__links">
+          <Link className="btn btn--sm btn--primary" to="/matches?log=1">
+            + Match loggen
+          </Link>
+          <Link className="btn btn--sm" to="/matches">
+            Matcharchief →
+          </Link>
+        </div>
+      </section>
+
+      {/* Duidelijke mobiele ingang naar de baanbeschikbaarheid (zit niet in
+          de onderbalk; binnen de plan-flow is hij er ook). */}
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title card__title--tight">Vrije banen</h2>
+        </div>
+        <p className="card__subtitle">
+          Bekijk per dag of week welke banen vrij zijn bij {club.name}.
+        </p>
+        <div className="proposal__links">
+          <Link className="btn btn--sm" to="/banen">
+            🎾 Vrije banen bekijken →
+          </Link>
+        </div>
+      </section>
 
       <section className="card">
         <h2 className="card__title">Nieuwe groep</h2>

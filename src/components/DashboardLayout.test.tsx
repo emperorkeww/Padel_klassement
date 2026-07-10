@@ -31,11 +31,18 @@ describe("<DashboardLayout />", () => {
   it("toont de gegroepeerde zijbalk, onderbalk en de pagina-inhoud", async () => {
     renderShell();
     expect(await screen.findByText("pagina-inhoud")).toBeInTheDocument();
-    for (const groep of ["Spelen", "Competitie", "Account"]) {
-      expect(screen.getByText(groep)).toBeInTheDocument();
+    for (const groep of ["Competitie", "Ik"]) {
+      expect(screen.getAllByText(groep).length).toBeGreaterThan(0);
     }
     // Zijbalk + mobiele onderbalk samen: links naar de hoofdonderdelen.
     expect(screen.getAllByRole("link", { name: /klassement/i }).length).toBe(2);
+    expect(screen.getAllByRole("link", { name: /^spelen$/i }).length).toBe(2);
+    // #69: "Ik" (profiel) zit nu in de mobiele balk; Vrienden in de zijbalk.
+    expect(screen.getAllByRole("link", { name: /^ik$/i }).length).toBeGreaterThan(0);
+    // Vrienden: in de zijbalk én (symmetrie) in de mobiele onderbalk.
+    expect(
+      screen.getAllByRole("link", { name: /vrienden/i }).length,
+    ).toBe(2);
     expect(
       screen.getAllByRole("link", { name: /naar overzicht/i }).length,
     ).toBeGreaterThan(0);

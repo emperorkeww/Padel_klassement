@@ -95,3 +95,20 @@
   color: var(--accent);
   font-weight: 700;
 }
+
+/* Reis-status op de groepskaart: waar zit de groep in de kernreis? */
+.group-card__journey {
+  display: inline-block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.group-card__journey--act {
+  color: var(--accent);
+}
+.group-card__journey--info {
+  color: var(--success);
+}
+.group-card__journey--idle {
+  color: var(--ink-soft);
+}
