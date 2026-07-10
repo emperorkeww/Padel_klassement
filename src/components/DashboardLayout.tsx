@@ -10,24 +10,27 @@ import "./DashboardLayout.css";
 
 type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
 
+// Taakgerichte navigatie (#106): vier taken i.p.v. zeven datatabellen.
+// Matches en Banen blijven als routes bestaan (bereikbaar bínnen de flow);
+// de zijbalk toont ze als secundaire items, de mobiele balk niet meer (#69:
+// Ik/Vrienden zijn nu wél direct bereikbaar).
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
+const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
-const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconRacket /> };
-const GROEPEN: NavItem = { to: "/groepen", label: "Groepen", icon: <IconUsers /> };
+const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
+const MATCHES: NavItem = { to: "/matches", label: "Matcharchief", icon: <IconUsers /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
-const PROFIEL: NavItem = { to: "/profiel", label: "Profiel", icon: <IconUser /> };
 
-// Desktop: gegroepeerde zijbalk.
+// Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
-  { title: "Spelen", items: [OVERZICHT, MATCHES, GROEPEN, BANEN] },
+  { title: "Spelen", items: [OVERZICHT, SPELEN, MATCHES, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
-  { title: "Account", items: [VRIENDEN, PROFIEL] },
+  { title: "Ik", items: [VRIENDEN, IK] },
 ];
 
-// Mobiel: vijf tabs; Overzicht is de uitstekende padelbal in het midden.
-// Vrienden en Profiel zitten achter de avatar in de topbalk.
-const TABBAR: NavItem[] = [KLASSEMENT, MATCHES, OVERZICHT, GROEPEN, BANEN];
+// Mobiel: vier taken; Overzicht is de uitstekende padelbal.
+const TABBAR: NavItem[] = [SPELEN, OVERZICHT, KLASSEMENT, IK];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();

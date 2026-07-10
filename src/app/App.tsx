@@ -33,7 +33,10 @@ function App() {
             <Route path="/matches" element={<Matches />} />
             <Route path="/banen" element={<Availability />} />
             <Route path="/matches/:id" element={<MatchDetail />} />
-            <Route path="/groepen" element={<Groups />} />
+            {/* "Spelen" is de hub van de kernreis (#106); de oude
+                groepen-URL blijft werken via een redirect. */}
+            <Route path="/spelen" element={<Groups />} />
+            <Route path="/groepen" element={<Navigate to="/spelen" replace />} />
             <Route path="/groepen/join/:token" element={<JoinGroup />} />
             <Route path="/groepen/:id" element={<GroupDetail />} />
             <Route path="/vrienden" element={<Friends />} />

@@ -232,8 +232,8 @@ export function GroupDetail() {
       <header className="page-head">
         <div className="row-between">
           <h1 className="page-title">{group.data.name}</h1>
-          <Link className="btn btn--sm" to="/groepen">
-            ← Alle groepen
+          <Link className="btn btn--sm" to="/spelen?hub=1">
+            ← Spelen
           </Link>
         </div>
         <p className="page-subtitle">
