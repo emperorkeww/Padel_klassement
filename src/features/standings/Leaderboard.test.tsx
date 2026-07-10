@@ -163,4 +163,29 @@ describe("<Leaderboard />", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("toont rating als hoofdgetal in de mobiele ranglijst, punten als label", async () => {
+    const { container } = renderPage();
+    await screen.findAllByText(/alice anders/i);
+    // Bovenaan staan p1/p2 (rating 1012, 3 ptn); rating is het grote getal.
+    const lead = container.querySelector(".ranklist__lead");
+    const label = container.querySelector(".ranklist__lead-label");
+    expect(lead).toHaveTextContent("1012");
+    expect(label).toHaveTextContent("3 ptn");
+  });
+
+  it("zet Rating als laatste kolom bij spelers, Punten bij teams", async () => {
+    renderPage();
+    await screen.findAllByText(/alice anders/i);
+    const playerHeaders = screen.getAllByRole("columnheader");
+    expect(playerHeaders[playerHeaders.length - 1]).toHaveTextContent(/rating/i);
+    expect(
+      screen.getByText("Gesorteerd op rating — hoe vaak je speelt telt niet mee."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+    expect(await screen.findByText("Teams gesorteerd op punten.")).toBeInTheDocument();
+    const teamHeaders = await screen.findAllByRole("columnheader");
+    expect(teamHeaders[teamHeaders.length - 1]).toHaveTextContent(/punten/i);
+  });
 });
