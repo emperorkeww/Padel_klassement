@@ -52,7 +52,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(61);
+    expect(badges).toHaveLength(84);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -483,5 +483,214 @@ describe("deriveBadges — nieuwe ludieke/extreme badges", () => {
     expect(badge(deriveBadges([win()], teams, "p1", ratings), "struikelaar").behaald).toBe(false);
     // Zonder ratings onbepaald → niet behaald.
     expect(badge(deriveBadges([loss()], teams, "p1"), "struikelaar").behaald).toBe(false);
+  });
+});
+
+describe("deriveBadges — nieuwe lading (#119)", () => {
+  // Lokale Date → ISO, zodat getDay()/getHours() deterministisch zijn los van TZ.
+  const at = (y: number, mo: number, d: number, h: number, min = 0) =>
+    new Date(y, mo, d, h, min).toISOString();
+  const winOp = (y: number, mo: number, d: number, h = 12, min = 0) =>
+    match({ played_at: at(y, mo, d, h, min), winner_team_id: "tA" });
+  const verliesOp = (y: number, mo: number, d: number, h = 12, min = 0) =>
+    match({ played_at: at(y, mo, d, h, min), winner_team_id: "tB" });
+
+  it("Nieuwe mijlpalen: Halve legende (500) en Onsterfelijk (1000) staan in de set", () => {
+    const badges = deriveBadges([], teams, "p1");
+    expect(badge(badges, "matches-500").naam).toBe("Halve legende");
+    expect(badge(badges, "matches-500").voortgang).toEqual({ nu: 0, doel: 500 });
+    expect(badge(badges, "matches-1000").naam).toBe("Onsterfelijk");
+  });
+
+  it("Diepzeeduiker: rating onder 900; zonder ratings-data niet behaald", () => {
+    expect(
+      badge(deriveBadges([win()], teams, "p1", ratingsFor({ p1: 899 })), "diepzeeduiker").behaald,
+    ).toBe(true);
+    // Exact op de drempel is nog niet "onder".
+    expect(
+      badge(deriveBadges([win()], teams, "p1", ratingsFor({ p1: 900 })), "diepzeeduiker").behaald,
+    ).toBe(false);
+    expect(badge(deriveBadges([win()], teams, "p1"), "diepzeeduiker").behaald).toBe(false);
+  });
+
+  it("De verloren zoon: minstens 60 dagen tussen twee matches", () => {
+    // 1 januari → 2 maart 2026 = 60 dagen.
+    const lang = [winOp(2026, 0, 1), winOp(2026, 2, 2)];
+    expect(badge(deriveBadges(lang, teams, "p1"), "verloren-zoon").behaald).toBe(true);
+    // 59 dagen is nét te kort.
+    const kort = [winOp(2026, 0, 1), winOp(2026, 2, 1)];
+    expect(badge(deriveBadges(kort, teams, "p1"), "verloren-zoon").behaald).toBe(false);
+  });
+
+  it("Roestvrij: win meteen na minstens 30 dagen pauze", () => {
+    expect(
+      badge(deriveBadges([verliesOp(2026, 0, 1), winOp(2026, 1, 1)], teams, "p1"), "roestvrij").behaald,
+    ).toBe(true);
+    // Verliezen na de pauze telt niet.
+    expect(
+      badge(deriveBadges([verliesOp(2026, 0, 1), verliesOp(2026, 1, 1)], teams, "p1"), "roestvrij").behaald,
+    ).toBe(false);
+    // Te korte pauze (29 dagen) telt niet.
+    expect(
+      badge(deriveBadges([verliesOp(2026, 0, 1), winOp(2026, 0, 30)], teams, "p1"), "roestvrij").behaald,
+    ).toBe(false);
+  });
+
+  it("Achtbaan: win én verlies op dezelfde dag", () => {
+    const dag = [winOp(2026, 2, 10, 10), verliesOp(2026, 2, 10, 14)];
+    expect(badge(deriveBadges(dag, teams, "p1"), "achtbaan").behaald).toBe(true);
+    const alleenWinst = [winOp(2026, 2, 10, 10), winOp(2026, 2, 10, 14)];
+    expect(badge(deriveBadges(alleenWinst, teams, "p1"), "achtbaan").behaald).toBe(false);
+    // Win en verlies op verschillende dagen telt niet.
+    const tweeDagen = [winOp(2026, 2, 10, 10), verliesOp(2026, 2, 11, 14)];
+    expect(badge(deriveBadges(tweeDagen, teams, "p1"), "achtbaan").behaald).toBe(false);
+  });
+
+  it("Jojo: zes matches lang winst en verlies afwisselen; gelijkspel breekt het ritme", () => {
+    const zes = [win(), loss(), win(), loss(), win(), loss()];
+    const j = badge(deriveBadges(zes, teams, "p1"), "jojo");
+    expect(j.behaald).toBe(true);
+    expect(j.voortgang).toEqual({ nu: 6, doel: 6 });
+    const vijf = [win(), loss(), win(), loss(), win()];
+    expect(badge(deriveBadges(vijf, teams, "p1"), "jojo").voortgang).toEqual({ nu: 5, doel: 6 });
+    const gebroken = [win(), loss(), win(), match({ winner_team_id: null }), loss(), win(), loss()];
+    expect(badge(deriveBadges(gebroken, teams, "p1"), "jojo").behaald).toBe(false);
+  });
+
+  it("Kalenderbadges: Valentijnsdate, Oudejaarsknaller, Geen grap en Palindroomdag", () => {
+    const b = (m: Match, id: string) => badge(deriveBadges([m], teams, "p1"), id).behaald;
+    expect(b(winOp(2026, 1, 14, 19), "valentijnsdate")).toBe(true);
+    expect(b(winOp(2026, 11, 31, 19), "oudejaarsknaller")).toBe(true);
+    // Geen grap vraagt een wínst op 1 april; verlies telt niet.
+    expect(b(winOp(2026, 3, 1, 19), "geen-grap")).toBe(true);
+    expect(b(verliesOp(2026, 3, 1, 19), "geen-grap")).toBe(false);
+    // 22-02-2022 is een palindroom; 22-02-2026 niet.
+    expect(b(winOp(2022, 1, 22, 19), "palindroomdag")).toBe(true);
+    expect(b(winOp(2026, 1, 22, 19), "palindroomdag")).toBe(false);
+  });
+
+  it("Winterkoning: december, januari én februari nodig", () => {
+    const drie = [winOp(2025, 11, 10), winOp(2026, 0, 10), winOp(2026, 1, 10)];
+    expect(badge(deriveBadges(drie, teams, "p1"), "winterkoning").behaald).toBe(true);
+    const twee = [winOp(2025, 11, 10), winOp(2026, 0, 10)];
+    expect(badge(deriveBadges(twee, teams, "p1"), "winterkoning").behaald).toBe(false);
+  });
+
+  it("Vier seizoenen: minstens één match per seizoen", () => {
+    const vier = [winOp(2026, 3, 10), winOp(2026, 6, 10), winOp(2026, 9, 10), winOp(2026, 0, 10)];
+    expect(badge(deriveBadges(vier, teams, "p1"), "vier-seizoenen").behaald).toBe(true);
+    // Zonder wintermaand geen vier seizoenen.
+    const drie = [winOp(2026, 3, 10), winOp(2026, 6, 10), winOp(2026, 9, 10)];
+    expect(badge(deriveBadges(drie, teams, "p1"), "vier-seizoenen").behaald).toBe(false);
+  });
+
+  it("Dubbele dienst: op één dag zowel vóór 12u als na 18u", () => {
+    const dienst = [winOp(2026, 2, 10, 9), winOp(2026, 2, 10, 19)];
+    expect(badge(deriveBadges(dienst, teams, "p1"), "dubbele-dienst").behaald).toBe(true);
+    const overdag = [winOp(2026, 2, 10, 9), winOp(2026, 2, 10, 14)];
+    expect(badge(deriveBadges(overdag, teams, "p1"), "dubbele-dienst").behaald).toBe(false);
+  });
+
+  it("Back-to-back: twee starts binnen 90 minuten; identieke tijdstippen tellen niet", () => {
+    const vlak = [winOp(2026, 2, 10, 19, 0), winOp(2026, 2, 10, 20, 0)];
+    expect(badge(deriveBadges(vlak, teams, "p1"), "back-to-back").behaald).toBe(true);
+    const ver = [winOp(2026, 2, 10, 19, 0), winOp(2026, 2, 10, 21, 0)];
+    expect(badge(deriveBadges(ver, teams, "p1"), "back-to-back").behaald).toBe(false);
+    // Zelfde tijdstip = gedeeld aanmaakmoment van rondes, geen back-to-back.
+    const zelfde = [winOp(2026, 2, 10, 19, 0), winOp(2026, 2, 10, 19, 0)];
+    expect(badge(deriveBadges(zelfde, teams, "p1"), "back-to-back").behaald).toBe(false);
+  });
+
+  it("Klokvast: tien matches met exact dezelfde starttijd (uur + minuut)", () => {
+    const tien = Array.from({ length: 10 }, (_, i) => winOp(2026, 2, i + 1, 20, 30));
+    const k = badge(deriveBadges(tien, teams, "p1"), "klokvast");
+    expect(k.behaald).toBe(true);
+    expect(k.voortgang).toEqual({ nu: 10, doel: 10 });
+    // Eén match op een andere minuut hoort niet bij de reeks.
+    const negen = [...tien.slice(0, 9), winOp(2026, 2, 10, 20, 31)];
+    expect(badge(deriveBadges(negen, teams, "p1"), "klokvast").voortgang).toEqual({ nu: 9, doel: 10 });
+  });
+
+  it("Weekritme: vijf opeenvolgende kalenderweken met minstens één match", () => {
+    // Vijf woensdagen op rij (weken van 2 t/m 30 maart 2026).
+    const vijf = [4, 11, 18, 25].map((d) => winOp(2026, 2, d)).concat(winOp(2026, 3, 1));
+    const w = badge(deriveBadges(vijf, teams, "p1"), "weekritme");
+    expect(w.behaald).toBe(true);
+    expect(w.voortgang).toEqual({ nu: 5, doel: 5 });
+    // Een overgeslagen week breekt de reeks.
+    const gat = [4, 11, 25].map((d) => winOp(2026, 2, d)).concat([winOp(2026, 3, 1), winOp(2026, 3, 8)]);
+    expect(badge(deriveBadges(gat, teams, "p1"), "weekritme").behaald).toBe(false);
+  });
+
+  it("Neutraal als Zwitserland: vijf gelijke spelen", () => {
+    const remise = () => match({ winner_team_id: null });
+    const vijf = Array.from({ length: 5 }, remise);
+    const z = badge(deriveBadges(vijf, teams, "p1"), "neutraal-zwitserland");
+    expect(z.behaald).toBe(true);
+    expect(z.voortgang).toEqual({ nu: 5, doel: 5 });
+    expect(badge(deriveBadges(vijf.slice(0, 4), teams, "p1"), "neutraal-zwitserland").behaald).toBe(false);
+  });
+
+  it("Déjà vu: drie matches op rij met dezelfde eindscore, vanuit eigen perspectief", () => {
+    const zesDrie = () => match({ winner_team_id: "tA", score_a: 6, score_b: 3 });
+    expect(badge(deriveBadges([zesDrie(), zesDrie(), zesDrie()], teams, "p1"), "deja-vu").behaald).toBe(true);
+    // Dezelfde cijfers maar gespiegeld (3-6-verlies) breekt de reeks.
+    const gespiegeld = [zesDrie(), match({ winner_team_id: "tB", score_a: 3, score_b: 6 }), zesDrie()];
+    expect(badge(deriveBadges(gespiegeld, teams, "p1"), "deja-vu").behaald).toBe(false);
+    // Een match zonder score breekt de reeks ook.
+    const zonderScore = [zesDrie(), zesDrie(), win(), zesDrie()];
+    expect(badge(deriveBadges(zonderScore, teams, "p1"), "deja-vu").behaald).toBe(false);
+  });
+
+  it("Sniper: vijf winsten met exact hetzelfde puntenverschil", () => {
+    const met2 = (eigen: number) =>
+      match({ winner_team_id: "tA", score_a: eigen, score_b: eigen - 2 });
+    const vijf = [met2(6), met2(7), met2(6), met2(7), met2(6)];
+    const s = badge(deriveBadges(vijf, teams, "p1"), "sniper");
+    expect(s.behaald).toBe(true);
+    expect(s.voortgang).toEqual({ nu: 5, doel: 5 });
+    expect(badge(deriveBadges(vijf.slice(0, 4), teams, "p1"), "sniper").behaald).toBe(false);
+  });
+
+  it("Puntenmachine: vijfhonderd games in totaal", () => {
+    const tienNul = () => match({ winner_team_id: "tA", score_a: 10, score_b: 0 });
+    const vijftig = Array.from({ length: 50 }, tienNul);
+    const p = badge(deriveBadges(vijftig, teams, "p1"), "puntenmachine");
+    expect(p.behaald).toBe(true);
+    expect(p.voortgang).toEqual({ nu: 500, doel: 500 });
+    expect(badge(deriveBadges(vijftig.slice(0, 49), teams, "p1"), "puntenmachine").behaald).toBe(false);
+  });
+
+  it("Tweelingzielen: vijf winsten op rij met dezelfde partner", () => {
+    const vijf = Array.from({ length: 5 }, win);
+    const t = badge(deriveBadges(vijf, teams, "p1"), "tweelingzielen");
+    expect(t.behaald).toBe(true);
+    expect(t.voortgang).toEqual({ nu: 5, doel: 5 });
+    // Een verlies onderbreekt de reeks.
+    expect(
+      badge(deriveBadges([win(), win(), win(), win(), loss(), win()], teams, "p1"), "tweelingzielen").behaald,
+    ).toBe(false);
+    // Een partnerwissel onderbreekt de reeks ook, al blijft het winst.
+    const teamsMetWissel: Record<string, Team> = {
+      ...teams,
+      tC: { id: "tC", name: null, player1_id: "p1", player2_id: "p5", created_at: "" },
+    };
+    const wissel = [
+      win(),
+      win(),
+      win(),
+      match({ team_a_id: "tC", winner_team_id: "tC" }),
+      match({ team_a_id: "tC", winner_team_id: "tC" }),
+    ];
+    expect(badge(deriveBadges(wissel, teamsMetWissel, "p1"), "tweelingzielen").behaald).toBe(false);
+  });
+
+  it("Angstgegner verslagen: win van een team na vijf verliezen op rij; een remise reset", () => {
+    const vijfPlusWinst = [...Array.from({ length: 5 }, loss), win()];
+    expect(badge(deriveBadges(vijfPlusWinst, teams, "p1"), "angstgegner").behaald).toBe(true);
+    const vierPlusWinst = [...Array.from({ length: 4 }, loss), win()];
+    expect(badge(deriveBadges(vierPlusWinst, teams, "p1"), "angstgegner").behaald).toBe(false);
+    const metRemise = [...Array.from({ length: 5 }, loss), match({ winner_team_id: null }), win()];
+    expect(badge(deriveBadges(metRemise, teams, "p1"), "angstgegner").behaald).toBe(false);
   });
 });
