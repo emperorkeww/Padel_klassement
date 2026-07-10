@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
@@ -41,6 +41,28 @@ describe("<Feed />", () => {
     expect(
       (await screen.findAllByText(/zijn nu vrienden/i)).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("filtert de feed op soort via de chips", async () => {
+    renderPage();
+    const list = await screen.findByRole("list", {
+      name: /recente gebeurtenissen/i,
+    });
+    // Ongefilterd bevat de lijst de matchkaart (met Alice erin) …
+    expect(list).toHaveTextContent(/alice/i);
+
+    // … na "Sociaal" alleen nog vriendschapsregels (Alice heet daar "Jij").
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    expect(screen.getAllByText(/zijn nu vrienden/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("list", { name: /recente gebeurtenissen/i }),
+    ).not.toHaveTextContent(/alice/i);
+
+    // Terug naar "Alles" toont de matchkaart weer.
+    fireEvent.click(screen.getByRole("button", { name: "Alles" }));
+    expect(
+      screen.getByRole("list", { name: /recente gebeurtenissen/i }),
+    ).toHaveTextContent(/alice/i);
   });
 
   it("linkt een vriendschap door naar het spelersprofiel", async () => {
