@@ -115,7 +115,7 @@ export function Groups() {
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
   const journeys = useAsync(
     () => loadJourneys(groups.data ?? []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [groupKey],
   );
 
