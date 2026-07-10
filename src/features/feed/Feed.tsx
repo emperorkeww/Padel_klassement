@@ -132,15 +132,6 @@ export function Feed() {
   const error = matches.error ?? friendships.error;
 
   const [limit, setLimit] = useState(FEED_LIMIT);
-  // Filterchips: soortgroep → event-kinds (werkt vóór de limiet).
-  const FILTERS: Record<string, ReadonlySet<string> | null> = {
-    Alles: null,
-    Matches: new Set(["match", "evening", "planned"]),
-    Groepen: new Set(["group-created", "group-joined", "poll", "poll-locked", "poll-booked", "season-champion"]),
-    Klassement: new Set(["rank"]),
-    Sociaal: new Set(["friendship"]),
-  };
-  const [activeFilter, setActiveFilter] = useState<keyof typeof FILTERS>("Alles");
 
   // Het actieve filter leeft in de URL (?filter=matches): het overleeft zo
   // navigeren + terugknop en een gefilterde feed is deelbaar als link.
@@ -205,25 +196,6 @@ export function Feed() {
     : allEvents;
   const feed = filtered.slice(0, limit);
   const remaining = filtered.length - feed.length;
-  const feed = loading
-    ? []
-    : buildFeed({
-        matches: matches.data ?? [],
-        teams: tmap,
-        friendships: friendships.data ?? [],
-        myId,
-        limit,
-        histories: histories.data ?? undefined,
-        standings: standings.data ?? undefined,
-        groups: groups.data ?? undefined,
-        membersByGroup: groupExtras.data?.membersByGroup,
-        pollsByGroup: groupExtras.data?.pollsByGroup,
-        groupMatchesByGroup: groupMatches.data ?? undefined,
-        profiles: pmap,
-        filter: FILTERS[activeFilter]
-          ? (e) => FILTERS[activeFilter]!.has(e.kind)
-          : undefined,
-      });
 
   // "Jij" voor jezelf, anders de weergavenaam — leest prettiger in zinnetjes.
   const name = (pid: string) =>
