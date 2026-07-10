@@ -28,7 +28,8 @@
   border-radius: var(--radius-sm);
   font-size: var(--fs-md);
   font-weight: 600;
-  color: #fff;
+  /* Thema-bewust: wit op licht, donker op dark (zie --toast-ink in index.css). */
+  color: var(--toast-ink);
   border: none;
   box-shadow: var(--shadow-pop);
   animation: toast-in 0.2s ease both;
@@ -47,16 +48,16 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  background: var(--toast-close-bg);
+  color: inherit;
   cursor: pointer;
   transition: background 0.15s;
 }
 .toast__close:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--toast-close-bg-hover);
 }
 .toast__close:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid currentColor;
   outline-offset: 2px;
 }
 
