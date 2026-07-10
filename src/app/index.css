@@ -99,6 +99,79 @@
 
   color: var(--ink);
   color-scheme: light;
+
+  /* Frosted navigatiebalk (DashboardLayout): licht glas op licht thema. */
+  --bar-glass: rgba(255, 255, 255, 0.88);
+}
+
+/* ---- Donker thema (issue #125) ----
+   Rustige, groengetinte donkere neutralen (geen puur zwart) met een gedempte
+   maar heldere smaragd. Alleen kleur-tokens worden overschreven; spacing,
+   radius en typografie zijn thema-onafhankelijk. De resolver (inline script in
+   index.html + src/lib/theme.ts) zet altijd expliciet data-theme="light|dark"
+   op <html>, dus een @media-duplicaat van dit blok is niet nodig.
+   AA-contrast van de paren wordt bewaakt door scripts/contrast-check.mjs. */
+:root[data-theme="dark"] {
+  --bg: #0f1512; /* groen-zwarte app-achtergrond */
+  --surface: #171f1a; /* kaarten */
+  --surface-2: #1f2922; /* subtiel vlak / tracks */
+  /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
+  --ink: #dde5df;
+  --ink-soft: #9fb0a6;
+  --ink-soft-strong: #b3c2b8;
+  --line: #2a352e;
+  --line-strong: #3a473f;
+
+  /* Gedempte salie-smaragd: rustig op donker maar nog ≥AA als tekstkleur;
+     knoppen krijgen donkere tekst (--accent-ink) zodat ook die AA halen. */
+  --accent: #4b9474;
+  --accent-hover: #57a282;
+  --accent-strong: #3f7d61;
+  --accent-soft: #10231b;
+  --accent-line: #27453a;
+  --accent-ink: #0f1512;
+
+  /* Lime (padelbal) een tint stiller — accentje, geen schreeuw. */
+  --lime: #a9bd55;
+  --lime-deep: #93a848;
+  --lime-soft: #252e14;
+
+  /* Donkere zijbalk / mobiele onderbalk, net los van de achtergrond. */
+  --sidebar-bg: #121814;
+  --sidebar-ink: #9fb0a6;
+  --sidebar-ink-strong: #dde5df;
+
+  /* Statuskleuren gedempt: duidelijk, niet fluorescerend. */
+  --success: #4fa46c;
+  --success-soft: #12291b;
+  --success-line: #29513a;
+  --danger: #d18a8a;
+  --danger-soft: #331b1b;
+  --danger-line: #5c2f2f;
+  --warn: #cb9750;
+  --warn-soft: #32260f;
+  --warn-line: #5f4c24;
+
+  --gold: #c09b4e;
+  --gold-soft: #322810;
+  --silver: #a8b2bd;
+  --silver-soft: #232930;
+  --bronze: #ad8155;
+  --bronze-soft: #33241a;
+
+  --placeholder: #8a9a90;
+  --skeleton-hi: #26312a;
+
+  /* Op donker dragen randen de hiërarchie; schaduwen dieper en subtieler. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --overlay: rgba(0, 0, 0, 0.6);
+
+  --bar-glass: rgba(18, 24, 20, 0.88);
+
+  color-scheme: dark;
 }
 
 *,

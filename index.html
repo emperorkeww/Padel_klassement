@@ -9,6 +9,30 @@
       content="Vamos! — log in, reserveer een baan en volg je wedstrijden."
     />
 
+    <!--
+      Thema vóór de eerste paint toepassen (geen lichte flits bij donker
+      thema). Zelfde resolutie als src/lib/theme.ts: localStorage["theme"]
+      (system|light|dark, default system), waarbij "system" de OS-voorkeur
+      volgt. Houd dit script en theme.ts samen in sync.
+    -->
+    <script>
+      (function () {
+        var pref = null;
+        try {
+          pref = localStorage.getItem("theme");
+        } catch (e) {
+          /* private mode e.d.: val terug op systeem */
+        }
+        var dark =
+          pref === "dark" ||
+          (pref !== "light" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", dark ? "#121814" : "#0c8a5f");
+      })();
+    </script>
+
     <!-- PWA: installeerbaar op het beginscherm (Add to Home Screen) -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

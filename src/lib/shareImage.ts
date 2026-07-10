@@ -4,21 +4,23 @@
 
 export type ShareOutcome = "shared" | "clipboard" | "download" | "cancelled";
 
-/** Huisstijlkleuren uit de CSS-variabelen, met vaste terugvalwaarden. */
+/**
+ * Huisstijlkleuren voor de deel-posters — bewust vastgepind op het LICHTE
+ * palet i.p.v. de live CSS-variabelen. De posters bevatten lichte literals
+ * (zebra-strepen, wit) en worden buiten de app bekeken; in dark mode zouden
+ * live tokens ze donker en inconsistent maken (issue #125).
+ */
 export function canvasPalette() {
-  const css = getComputedStyle(document.documentElement);
-  const get = (name: string, fallback: string) =>
-    css.getPropertyValue(name).trim() || fallback;
   return {
-    bg: get("--surface", "#ffffff"),
-    ink: get("--ink", "#1a2620"),
-    inkSoft: get("--ink-soft", "#64756c"),
-    accent: get("--accent", "#0c8a5f"),
-    accentSoft: get("--accent-soft", "#e6f5ee"),
-    line: get("--line", "#e4eae4"),
-    lime: get("--lime", "#c7e63a"),
-    success: get("--success", "#16a34a"),
-    gold: get("--gold", "#d4a017"),
+    bg: "#ffffff",
+    ink: "#1a2620",
+    inkSoft: "#64756c",
+    accent: "#0c8a5f",
+    accentSoft: "#e6f5ee",
+    line: "#e4eae4",
+    lime: "#c7e63a",
+    success: "#16a34a",
+    gold: "#d4a017",
   };
 }
 

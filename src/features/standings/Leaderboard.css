@@ -359,7 +359,7 @@
   height: 18px;
   border-radius: 999px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   font-size: var(--fs-xs);
   font-weight: 700;
 }

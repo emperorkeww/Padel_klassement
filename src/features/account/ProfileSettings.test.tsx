@@ -43,6 +43,34 @@ describe("<ProfileSettings />", () => {
     ).toBeInTheDocument();
   });
 
+  it("wisselt het thema via de weergavekaart", async () => {
+    // jsdom kent geen matchMedia; alleen nodig zodra de keuze "systeem" is.
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    try {
+      renderPage();
+      expect(
+        await screen.findByRole("heading", { name: /weergave/i }),
+      ).toBeInTheDocument();
+      const donker = screen.getByRole("radio", { name: /donker/i });
+      await userEvent.click(donker);
+      expect(donker).toHaveAttribute("aria-checked", "true");
+      expect(document.documentElement.dataset.theme).toBe("dark");
+
+      await userEvent.click(screen.getByRole("radio", { name: /licht/i }));
+      expect(document.documentElement.dataset.theme).toBe("light");
+    } finally {
+      vi.unstubAllGlobals();
+      delete document.documentElement.dataset.theme;
+    }
+  });
+
   it("slaat een nieuwe naam op", async () => {
     renderPage();
     const veld = await screen.findByDisplayValue("Alice Anders");

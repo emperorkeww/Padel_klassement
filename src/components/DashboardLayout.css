@@ -228,7 +228,7 @@
     gap: var(--sp-3);
     padding: 0.5rem var(--sp-4);
     padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
-    background: rgba(255, 255, 255, 0.88);
+    background: var(--bar-glass);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
