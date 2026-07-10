@@ -158,22 +158,33 @@ export function PollSection({
     );
   }
 
+  // Banen-verkenning altijd zichtbaar op de Plannen-tab (niet alleen in de
+  // wizard): in de app zelf, dus swipe-terug brengt je hier weer terug.
+  const banenLink = (
+    <p className="plan-banen">
+      <Link to={`/banen?datum=${today}`}>🎾 Vrije banen bekijken →</Link>
+    </p>
+  );
+
   if (active) {
     return (
-      <PollCard
-        poll={active}
-        groupName={groupName}
-        members={members}
-        options={pollOptions(active, options.data ?? [])}
-        votes={votes.data ?? []}
-        week={week.data ?? []}
-        weekLoading={week.loading}
-        profiles={profiles}
-        myId={myId}
-        isOwner={isOwner}
-        today={today}
-        onChanged={reloadAll}
-      />
+      <>
+        <PollCard
+          poll={active}
+          groupName={groupName}
+          members={members}
+          options={pollOptions(active, options.data ?? [])}
+          votes={votes.data ?? []}
+          week={week.data ?? []}
+          weekLoading={week.loading}
+          profiles={profiles}
+          myId={myId}
+          isOwner={isOwner}
+          today={today}
+          onChanged={reloadAll}
+        />
+        {banenLink}
+      </>
     );
   }
 
@@ -191,10 +202,13 @@ export function PollSection({
         )}
       </div>
       {!wizardOpen && (
-        <p className="empty">
-          Geen lopende poll. Kies een paar momenten waarop banen vrij zijn en
-          laat de groep stemmen.
-        </p>
+        <>
+          <p className="empty">
+            Geen lopende poll. Kies een paar momenten waarop banen vrij zijn en
+            laat de groep stemmen.
+          </p>
+          {banenLink}
+        </>
       )}
       {wizardOpen && (
         <PollWizard
