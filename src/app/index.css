@@ -221,8 +221,9 @@
   --lime-deep: #8a6d03;
   --lime-soft: #fff3cd;
 
-  --sidebar-bg: #ffffff;
-  --sidebar-ink: #4d6280;
+  /* Blauwgetinte navigatie: het dorp is nooit wit. */
+  --sidebar-bg: #dcebfc;
+  --sidebar-ink: #3e5878;
   --sidebar-ink-strong: #16325e;
 
   --success: #1f7a3f; /* dorp-groen */
@@ -259,7 +260,7 @@
   --toast-close-bg: rgba(255, 255, 255, 0.18);
   --toast-close-bg-hover: rgba(255, 255, 255, 0.32);
 
-  --bar-glass: rgba(255, 255, 255, 0.88);
+  --bar-glass: rgba(220, 235, 252, 0.9);
 
   /* Iets ronder — de "bubbelige" smurfen-look. */
   --radius: 18px;
@@ -269,16 +270,36 @@
   color-scheme: light;
 }
 
-/* Smurf-sfeer: heel subtiele dorpsdeco (paddenstoeltje + wolkje, ~4.5%) op de
-   app-achtergrond — nooit op kaarten, dus tekstcontrast blijft onaangetast. */
+/* Smurf-sfeer: hemelsgradiënt (lucht boven, dorpsgroen zweempje onder) met
+   subtiele dorpsdeco (paddenstoelhuisje + wolkjes, ~5%) — nooit op kaarten,
+   dus tekstcontrast blijft onaangetast. */
 :root[data-theme="smurf"] body {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%2316325e' fill-opacity='0.045'%3E%3Cpath d='M22 26c0-6 5-10 11-10s11 4 11 10c0 1.4-1 2.4-2.4 2.4H24.4C23 28.4 22 27.4 22 26Z'/%3E%3Crect x='29' y='28' width='8' height='9' rx='3'/%3E%3Cellipse cx='88' cy='84' rx='16' ry='7'/%3E%3Cellipse cx='76' cy='80' rx='9' ry='5'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%2316325e' fill-opacity='0.05'%3E%3Cpath d='M24 30c0-7 6-12 13-12s13 5 13 12c0 1.6-1.2 2.8-2.8 2.8H26.8C25.2 32.8 24 31.6 24 30Z'/%3E%3Crect x='31' y='32' width='12' height='13' rx='4'/%3E%3Crect x='35' y='38' width='4' height='7' rx='1.6'/%3E%3Cellipse cx='118' cy='108' rx='20' ry='8'/%3E%3Cellipse cx='103' cy='103' rx='11' ry='6'/%3E%3Ccircle cx='132' cy='36' r='4'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg, #cfe6ff 0%, #eaf3ff 34%, #eef7ee 100%);
+  background-attachment: fixed;
 }
 
 /* Smurf-boing op primaire knoppen — speels maar kort; uit bij reduced motion. */
 @media (prefers-reduced-motion: no-preference) {
   :root[data-theme="smurf"] .btn--primary:active:not(:disabled) {
     animation: smurf-boing 0.18s ease-out;
+  }
+  /* Paddenstoel-logo veert bij hover/focus; nav-iconen wiebelen even mee. */
+  :root[data-theme="smurf"] .tabbar__link--home:hover .tabbar__icon,
+  :root[data-theme="smurf"] .tabbar__link--home:focus-visible .tabbar__icon {
+    animation: smurf-boing 0.3s ease-out;
+  }
+  :root[data-theme="smurf"] .sidebar__link:hover .sidebar__icon {
+    animation: smurf-wiggle 0.35s ease-in-out;
+  }
+}
+@keyframes smurf-wiggle {
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
   }
 }
 @keyframes smurf-boing {
