@@ -35,6 +35,7 @@ import { RankChart } from "../../components/RankChart";
 import { formatDate } from "../../lib/format";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
 import { useToast } from "../../components/ToastProvider";
+import { useSkinText } from "../../lib/skin";
 import { errorMessage } from "../../lib/errors";
 import "./PlayerProfile.css";
 
@@ -46,6 +47,7 @@ const RECENT_SHOWN = 8;
 const MAX_FEATURED = 5;
 
 export function PlayerProfile() {
+  const t = useSkinText(); // themabare copy (#134)
   const { id = "" } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -618,7 +620,7 @@ export function PlayerProfile() {
 
       {partner && (
         <section className="card partner-card">
-          <h2 className="card__title">Beste maatje</h2>
+          <h2 className="card__title">{t("Beste maatje")}</h2>
           <div className="partner-card__row">
             <Avatar profile={pmap[partner.partnerId]} size={40} />
             <div>
@@ -647,7 +649,7 @@ export function PlayerProfile() {
             <div className="h2h-highlights">
               {favoriet && (
                 <div className="h2h-highlight h2h-highlight--fav">
-                  <span className="h2h-highlight__tag">😎 Favoriete tegenstander</span>
+                  <span className="h2h-highlight__tag">{t("😎 Favoriete tegenstander")}</span>
                   <Link
                     className="h2h-highlight__player"
                     to={`/spelers/${favoriet.oppId}`}
@@ -664,7 +666,7 @@ export function PlayerProfile() {
               )}
               {nemesis && nemesis.oppId !== favoriet?.oppId && (
                 <div className="h2h-highlight h2h-highlight--nemesis">
-                  <span className="h2h-highlight__tag">😤 Nemesis</span>
+                  <span className="h2h-highlight__tag">{t("😤 Nemesis")}</span>
                   <Link
                     className="h2h-highlight__player"
                     to={`/spelers/${nemesis.oppId}`}

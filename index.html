@@ -23,13 +23,18 @@
         } catch (e) {
           /* private mode e.d.: val terug op systeem */
         }
-        var dark =
-          pref === "dark" ||
-          (pref !== "light" &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        var theme =
+          pref === "smurf"
+            ? "smurf"
+            : pref === "dark" ||
+                (pref !== "light" &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches)
+              ? "dark"
+              : "light";
+        document.documentElement.dataset.theme = theme;
+        var colors = { light: "#0c8a5f", dark: "#121814", smurf: "#1c66c8" };
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", dark ? "#121814" : "#0c8a5f");
+        if (meta) meta.setAttribute("content", colors[theme]);
       })();
     </script>
 
@@ -54,7 +59,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..800&family=Fredoka:wght@400..700&display=swap"
     />
 
     <title>Vamos!</title>

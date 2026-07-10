@@ -41,12 +41,14 @@ import {
   seasonFromId,
 } from "../../lib/seasons";
 import { errorMessage } from "../../lib/errors";
+import { useSkinText } from "../../lib/skin";
 import type { Match, PlayerStanding, Profile } from "../../lib/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "plannen" | "stand" | "leden";
 
 export function GroupDetail() {
+  const t = useSkinText(); // themabare copy (#134)
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -344,7 +346,7 @@ export function GroupDetail() {
                   setLogOpen(true);
                 }}
               >
-                + Log match
+                {t("+ Log match")}
               </button>
               <button
                 className="btn btn--sm"
@@ -354,7 +356,7 @@ export function GroupDetail() {
                   setLogOpen(true);
                 }}
               >
-                Plan match
+                {t("Plan match")}
               </button>
             </div>
           </div>

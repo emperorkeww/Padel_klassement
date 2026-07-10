@@ -69,6 +69,36 @@ describe("getThemePreference", () => {
     window.localStorage.setItem("theme", "dark");
     expect(getThemePreference()).toBe("dark");
   });
+
+  it("leest ook het smurf-thema", () => {
+    window.localStorage.setItem("theme", "smurf");
+    expect(getThemePreference()).toBe("smurf");
+  });
+});
+
+describe("smurf-thema", () => {
+  it("resolvet naar zichzelf, wat het OS ook zegt", () => {
+    systemDark = true;
+    expect(resolveTheme("smurf")).toBe("smurf");
+  });
+
+  it("zet data-theme en de smurfblauwe theme-color", () => {
+    setThemePreference("smurf");
+    expect(window.localStorage.getItem("theme")).toBe("smurf");
+    expect(document.documentElement.dataset.theme).toBe("smurf");
+    expect(
+      document.querySelector('meta[name="theme-color"]')?.getAttribute("content"),
+    ).toBe("#1c66c8");
+  });
+
+  it("negeert OS-wissels — smurf is een expliciete keuze", () => {
+    setThemePreference("smurf");
+    const stop = watchSystemTheme();
+    systemDark = true;
+    fireSystemChange();
+    expect(document.documentElement.dataset.theme).toBe("smurf");
+    stop();
+  });
 });
 
 describe("resolveTheme", () => {

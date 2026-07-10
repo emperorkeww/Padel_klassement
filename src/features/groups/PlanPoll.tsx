@@ -16,6 +16,7 @@ import { summarizeDay } from "../availability/weatherLogic";
 import { useClub } from "../availability/club";
 import { shareOrCopyText } from "../../lib/shareText";
 import { displayName } from "../profiles/api";
+import { useSkinText } from "../../lib/skin";
 import {
   getGroupPolls,
   getGroupPollOptions,
@@ -108,6 +109,7 @@ export function PollSection({
   const club = useClub();
   const toast = useToast();
   const today = dateInZone(club.timezone);
+  const t = useSkinText(); // themabare copy (#134)
   // De wizard-selectie overleeft een uitstap naar /banen (zelfde tabblad,
   // swipe-terug): picks staan in sessionStorage en de wizard heropent vanzelf.
   const wizardStorageKey = `poll-wizard:${groupId}`;
@@ -199,7 +201,7 @@ export function PollSection({
             className="btn btn--sm btn--primary"
             onClick={() => setWizardOpen(true)}
           >
-            + Plan een speeldag
+            {t("+ Plan een speeldag")}
           </button>
         )}
       </div>

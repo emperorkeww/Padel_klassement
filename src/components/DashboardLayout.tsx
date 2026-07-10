@@ -5,6 +5,7 @@ import { useAsync } from "../lib/useAsync";
 import { getProfile, displayName } from "../features/profiles/api";
 import { Avatar } from "./Avatar";
 import { BallIcon } from "./BallIcon";
+import { useSkinText } from "../lib/skin";
 import "./ui.css";
 import "./DashboardLayout.css";
 
@@ -37,6 +38,8 @@ const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
 const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, FEED];
 
 export function DashboardLayout() {
+  // Nav-labels via de skin-catalogus: wisselen live mee met het thema (#134).
+  const t = useSkinText();
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   // Eigen profiel voor de avatar in topbalk en zijbalk-voet; de layout blijft
@@ -86,7 +89,7 @@ export function DashboardLayout() {
                   }
                 >
                   <span className="sidebar__icon">{item.icon}</span>
-                  <span className="sidebar__label">{item.label}</span>
+                  <span className="sidebar__label">{t(item.label)}</span>
                 </NavLink>
               ))}
             </div>
@@ -140,13 +143,13 @@ export function DashboardLayout() {
             to={item.to}
             end={item.end}
             viewTransition
-            aria-label={item.label}
+            aria-label={t(item.label)}
             className={({ isActive }) =>
               `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isActive ? "is-active" : ""}`
             }
           >
             <span className="tabbar__icon">{item.icon}</span>
-            <span className="tabbar__label">{item.label}</span>
+            <span className="tabbar__label">{t(item.label)}</span>
           </NavLink>
         ))}
       </nav>

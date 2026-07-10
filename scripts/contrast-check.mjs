@@ -19,8 +19,10 @@ function tokensOf(block) {
 
 const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
 const darkBlock = css.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+const smurfBlock = css.match(/:root\[data-theme="smurf"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
 const light = tokensOf(rootBlock);
 const dark = { ...light, ...tokensOf(darkBlock) };
+const smurf = { ...light, ...tokensOf(smurfBlock) };
 
 function luminance(hex) {
   const h = hex.replace("#", "");
@@ -65,11 +67,12 @@ const PAIRS = [
 
 // Licht is de bestaande huisstijl: tekorten daar zijn bekend en rapporteren we
 // als waarschuwing (aanpakken = bewuste designwijziging, zie issue #74/#125).
-// Het donkere thema is nieuw en moet wél hard aan AA voldoen.
+// Nieuwe thema's (donker, smurf) moeten wél hard aan AA voldoen.
 let darkFailures = 0;
 for (const [name, tokens, strict] of [
   ["licht", light, false],
   ["donker", dark, true],
+  ["smurf", smurf, true],
 ]) {
   console.log(`\n— Thema: ${name}${strict ? "" : " (informatief)"} —`);
   for (const [fg, bg, min, label] of PAIRS) {
@@ -86,7 +89,9 @@ for (const [name, tokens, strict] of [
 }
 
 if (darkFailures > 0) {
-  console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+  console.error(`\n${darkFailures} strikte contrastpa(a)r(en) onder de drempel.`);
   process.exit(1);
 }
-console.log("\nDonker thema voldoet aan AA (licht: zie eventuele let-op-regels).");
+console.log(
+  "\nDonker en smurf thema voldoen aan AA (licht: zie eventuele let-op-regels).",
+);

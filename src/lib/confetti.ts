@@ -14,7 +14,22 @@ const CONFETTI_COLORS = [
   "#e6f5ee",
 ];
 
+// Smurf-thema: blauw/wit/rood/geel — het dorp viert mee (#134).
+const SMURF_CONFETTI = [
+  "#3aa0ff",
+  "#ffffff",
+  "#e4483b",
+  "#ffd34e",
+  "#1c66c8",
+  "#a5d3ff",
+];
+
 function paletteColors(): string[] {
+  if (
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.theme === "smurf"
+  )
+    return SMURF_CONFETTI;
   return CONFETTI_COLORS;
 }
 

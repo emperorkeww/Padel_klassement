@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { StandingsSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
+import { useSkinText } from "../../lib/skin";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
@@ -58,6 +59,7 @@ function ratingAsOf(
 }
 
 export function Leaderboard() {
+  const t = useSkinText(); // themabare copy (#134)
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const [tab, setTab] = useState<Tab>("player");
@@ -312,7 +314,7 @@ export function Leaderboard() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Klassement</h1>
+        <h1 className="page-title">{t("Klassement")}</h1>
         <p className="page-subtitle">
           Gesorteerd op rating — hoe vaak je speelt telt niet mee.
         </p>
@@ -438,7 +440,7 @@ export function Leaderboard() {
             🏆
           </span>
           <span>
-            Kampioen {season.label}: <strong>{champion.name}</strong>
+            {t("Kampioen")} {season.label}: <strong>{champion.name}</strong>
           </span>
           <ShareChampion seasonLabel={season.label} rows={shownPlayerRows} />
         </p>
@@ -484,7 +486,7 @@ export function Leaderboard() {
           ) : (
             <EmptyState
               icon="🏆"
-              title="Nog geen afgeronde matches."
+              title={t("Nog geen afgeronde matches.")}
               action={
                 <Link className="btn btn--primary" to="/matches">
                   Naar matches

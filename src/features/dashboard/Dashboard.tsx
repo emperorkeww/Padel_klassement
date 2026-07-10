@@ -50,10 +50,14 @@ import {
   getPushSubscription,
 } from "../../lib/push";
 import { errorMessage } from "../../lib/errors";
+import { useTheme } from "../../lib/theme";
+import { useSkinText } from "../../lib/skin";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
 export function Dashboard() {
+  const t = useSkinText(); // themabare copy (#134)
+  const theme = useTheme();
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -232,7 +236,7 @@ export function Dashboard() {
           <div className="hero__main">
             <Avatar profile={myProfile} name={myName || undefined} size={56} />
             <div className="hero__text">
-              <p className="hero__eyebrow">Welkom terug</p>
+              <p className="hero__eyebrow">{t("Welkom terug")}</p>
               <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
             </div>
           </div>
@@ -261,7 +265,7 @@ export function Dashboard() {
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
-            <p className="hero__eyebrow">Welkom terug</p>
+            <p className="hero__eyebrow">{t("Welkom terug")}</p>
             <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
             {standings.loading ? (
               // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
@@ -274,7 +278,9 @@ export function Dashboard() {
                 {streak >= 2
                   ? ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`
                   : losing >= 3
-                    ? ` Even ${losing} op rij verloren — de volgende pak je terug. 💪`
+                    ? theme === "smurf"
+                      ? ` Gargamel had je ${losing}× te pakken — tijd voor revanche! 💪`
+                      : ` Even ${losing} op rij verloren — de volgende pak je terug. 💪`
                     : ""}
               </p>
             )}

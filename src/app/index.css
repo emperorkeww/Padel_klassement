@@ -193,6 +193,82 @@
   color-scheme: dark;
 }
 
+/* ---- Smurfen-thema (issue #134): speels blauw/wit, licht-gebaseerd ----
+   Smurfblauw als accent, hemelsblauwe achtergrond, geel als padelbal-accent,
+   Gargamel-rood voor fouten. Zelfde AA-regime als dark (strikt bewaakt door
+   scripts/contrast-check.mjs). Copy/iconen wisselen mee via src/lib/skin.ts. */
+:root[data-theme="smurf"] {
+  font-family: "Fredoka", "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --bg: #eaf3ff; /* hemelsblauwe app-achtergrond */
+  --surface: #ffffff;
+  --surface-2: #ddeafc;
+  --ink: #16325e; /* marineblauw */
+  --ink-soft: #4d6280;
+  --ink-soft-strong: #44597a;
+  --line: #dbe6f4;
+  --line-strong: #c2d4ea;
+
+  --accent: #1c66c8; /* smurfblauw, AA als tekst op wit */
+  --accent-hover: #1554a8;
+  --accent-strong: #1554a8;
+  --accent-soft: #e3efff;
+  --accent-line: #b9d4f5;
+  --accent-ink: #ffffff;
+
+  /* Padelbal-accent wordt vrolijk geel (mutsje-wit is te stil). */
+  --lime: #ffd34e;
+  --lime-deep: #8a6d03;
+  --lime-soft: #fff3cd;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-ink: #4d6280;
+  --sidebar-ink-strong: #16325e;
+
+  --success: #1f7a3f; /* dorp-groen */
+  --success-soft: #e7f6ec;
+  --success-line: #bfe4cb;
+  --danger: #c62828; /* Gargamel-rood */
+  --danger-soft: #fdecea;
+  --danger-line: #f3c1c1;
+  --warn: #9c5700;
+  --warn-soft: #fdf1e0;
+  --warn-line: #eed9b5;
+
+  --gold: #a67c00;
+  --gold-soft: #f8f0d8;
+  --silver: #6b7c92;
+  --silver-soft: #e8eef5;
+  --bronze: #a05f2c;
+  --bronze-soft: #f5e7da;
+
+  --placeholder: #5b7089;
+  --skeleton-hi: #e2ecfa;
+
+  /* Blauw getinte schaduwen i.p.v. groen. */
+  --shadow-sm: 0 1px 2px rgba(23, 49, 94, 0.05);
+  --shadow-md: 0 4px 16px rgba(23, 49, 94, 0.08);
+  --shadow-lg: 0 12px 32px rgba(23, 49, 94, 0.14);
+  --shadow-pop: 0 10px 30px rgba(23, 49, 94, 0.2);
+  --shadow-up: 0 -6px 24px rgba(23, 49, 94, 0.1);
+  --shadow-up-lg: 0 -8px 30px rgba(23, 49, 94, 0.25);
+  --shadow-ball: 0 6px 18px rgba(23, 49, 94, 0.22);
+  --overlay: rgba(23, 49, 94, 0.45);
+
+  --toast-ink: #ffffff;
+  --toast-close-bg: rgba(255, 255, 255, 0.18);
+  --toast-close-bg-hover: rgba(255, 255, 255, 0.32);
+
+  --bar-glass: rgba(255, 255, 255, 0.88);
+
+  /* Iets ronder — de "bubbelige" smurfen-look. */
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+
+  color-scheme: light;
+}
+
 *,
 *::before,
 *::after {

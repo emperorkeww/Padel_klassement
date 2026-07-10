@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
+import { useSkinText } from "../../lib/skin";
 import { outcomeFor } from "../../lib/results";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllProfiles } from "../profiles/api";
@@ -18,6 +19,7 @@ import "./Matches.css";
 type Filter = "all" | "mine" | "won" | "lost";
 
 export function Matches() {
+  const t = useSkinText(); // themabare copy (#134)
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const [filter, setFilter] = useState<Filter>("all");
@@ -121,20 +123,20 @@ export function Matches() {
       <header className="page-head">
         <div className="row-between">
           <div>
-            <h1 className="page-title">Matches</h1>
+            <h1 className="page-title">{t("Matches")}</h1>
             <p className="page-subtitle">
               Plan een match, log een uitslag of bekijk recente wedstrijden.
             </p>
           </div>
           <div className="btn-row">
             <button className="btn" onClick={() => openSheet("plan")}>
-              Match plannen
+              {t("Match plannen")}
             </button>
             <button
               className="btn btn--primary"
               onClick={() => openSheet("score")}
             >
-              + Match loggen
+              {t("+ Match loggen")}
             </button>
           </div>
         </div>
@@ -195,8 +197,8 @@ export function Matches() {
           groups.length === 0 &&
           (filter === "all" ? (
             <EmptyState
-              icon="🎾"
-              title="Nog geen matches."
+              icon={t("🎾")}
+              title={t("Nog geen matches.")}
               action={
                 <button
                   className="btn btn--primary"

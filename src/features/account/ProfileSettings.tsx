@@ -302,6 +302,7 @@ const THEMA_OPTIES: { value: ThemePreference; label: string }[] = [
   { value: "system", label: "Systeem" },
   { value: "light", label: "Licht" },
   { value: "dark", label: "Donker" },
+  { value: "smurf", label: "Smurf" },
 ];
 
 function ThemeCard() {
@@ -317,7 +318,7 @@ function ThemeCard() {
     <section className="card">
       <h2 className="card__title card__title--tight">Weergave</h2>
       <p className="card__subtitle">
-        Kies licht of donker, of volg automatisch je systeeminstelling.
+        Kies licht, donker of smurf, of volg automatisch je systeeminstelling.
       </p>
       <div className="tabs" role="radiogroup" aria-label="Thema">
         {THEMA_OPTIES.map((o) => (
