@@ -260,7 +260,7 @@
     padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
     background: var(--sidebar-bg);
     border-top: 1px solid var(--line);
-    box-shadow: 0 -6px 24px rgba(20, 40, 28, 0.1);
+    box-shadow: var(--shadow-up);
   }
   .tabbar__link {
     flex: 1;
@@ -329,7 +329,7 @@
     border-radius: 50%;
     background: var(--surface);
     border: 4px solid var(--sidebar-bg);
-    box-shadow: 0 6px 18px rgba(20, 40, 28, 0.22);
+    box-shadow: var(--shadow-ball);
   }
   .tabbar__link--home .tabbar__icon svg {
     width: 30px;
