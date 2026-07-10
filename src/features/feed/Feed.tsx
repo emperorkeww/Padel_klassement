@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Fragment, useCallback, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -16,7 +16,7 @@ import {
   type FeedPoll,
   type Highlight,
 } from "../../lib/feed";
-import { formatDate, formatRelativeDay } from "../../lib/format";
+import { formatDate, formatRelativeDay, formatTime } from "../../lib/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
 import { MatchCard } from "../matches/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
@@ -38,6 +38,24 @@ import "./Feed.css";
 /** Ruim venster aan recente uitslagen om de feed uit te filteren. */
 const MATCH_WINDOW = 250;
 
+/** Filterchips: soortgroep → event-kinds. `null` = alles. */
+const FILTERS = {
+  Alles: null,
+  Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
+  Groepen: new Set<FeedEvent["kind"]>([
+    "group-created",
+    "group-joined",
+    "poll",
+    "poll-locked",
+    "poll-booked",
+    "season-champion",
+  ]),
+  Klassement: new Set<FeedEvent["kind"]>(["rank"]),
+  Sociaal: new Set<FeedEvent["kind"]>(["friendship"]),
+} as const;
+type FilterLabel = keyof typeof FILTERS;
+const FILTER_LABELS = Object.keys(FILTERS) as FilterLabel[];
+
 export function Feed() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -47,12 +65,20 @@ export function Feed() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
-  useRealtime("matches", matches.reload);
   useRealtime("friendships", friendships.reload);
 
   // Verrijkende bronnen (progressief; buildFeed werkt ook zonder).
   const histories = useAsync(getAllRatingHistories, []);
   const standings = useAsync(getPlayerStandings, []);
+  // Een nieuwe uitslag verandert ook ratings en klassement: alle drie de
+  // bronnen verversen, anders blijven ▲/▼-delta's en rank-items achterlopen.
+  const reloadMatchSources = useCallback(() => {
+    matches.reload();
+    histories.reload();
+    standings.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches.reload, histories.reload, standings.reload]);
+  useRealtime("matches", reloadMatchSources);
   const groups = useAsync(getMyGroups, []);
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
   const groupExtras = useAsync(async () => {
@@ -106,37 +132,70 @@ export function Feed() {
   const error = matches.error ?? friendships.error;
 
   const [limit, setLimit] = useState(FEED_LIMIT);
-  // Filterchips: soortgroep → event-kinds (werkt vóór de limiet).
-  const FILTERS: Record<string, ReadonlySet<string> | null> = {
-    Alles: null,
-    Matches: new Set(["match", "evening", "planned"]),
-    Groepen: new Set(["group-created", "group-joined", "poll", "poll-locked", "poll-booked", "season-champion"]),
-    Klassement: new Set(["rank"]),
-    Sociaal: new Set(["friendship"]),
+
+  // Het actieve filter leeft in de URL (?filter=matches): het overleeft zo
+  // navigeren + terugknop en een gefilterde feed is deelbaar als link.
+  const [params, setParams] = useSearchParams();
+  const filterParam = params.get("filter");
+  const activeFilter =
+    FILTER_LABELS.find((l) => l.toLowerCase() === filterParam) ?? "Alles";
+  const selectFilter = (label: FilterLabel) => {
+    const next = new URLSearchParams(params);
+    if (label === "Alles") next.delete("filter");
+    else next.set("filter", label.toLowerCase());
+    setParams(next, { replace: true });
+    setLimit(FEED_LIMIT);
   };
-  const [activeFilter, setActiveFilter] = useState<keyof typeof FILTERS>("Alles");
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
-  const feed = loading
-    ? []
-    : buildFeed({
-        matches: matches.data ?? [],
-        teams: tmap,
-        friendships: friendships.data ?? [],
-        myId,
-        limit,
-        histories: histories.data ?? undefined,
-        standings: standings.data ?? undefined,
-        groups: groups.data ?? undefined,
-        membersByGroup: groupExtras.data?.membersByGroup,
-        pollsByGroup: groupExtras.data?.pollsByGroup,
-        groupMatchesByGroup: groupMatches.data ?? undefined,
-        profiles: pmap,
-        filter: FILTERS[activeFilter]
-          ? (e) => FILTERS[activeFilter]!.has(e.kind)
-          : undefined,
-      });
+  // De volledige feed één keer bouwen (gememoiseerd — buildFeed doet reeks-
+  // en bundel-werk over honderden matches); filteren en de "toon meer"-limiet
+  // zijn daarna goedkoop, en de chips kunnen zo tellers tonen.
+  const allEvents = useMemo(
+    () =>
+      loading
+        ? []
+        : buildFeed({
+            matches: matches.data ?? [],
+            teams: teams.data ?? {},
+            friendships: friendships.data ?? [],
+            myId,
+            limit: Number.MAX_SAFE_INTEGER,
+            histories: histories.data ?? undefined,
+            standings: standings.data ?? undefined,
+            groups: groups.data ?? undefined,
+            membersByGroup: groupExtras.data?.membersByGroup,
+            pollsByGroup: groupExtras.data?.pollsByGroup,
+            groupMatchesByGroup: groupMatches.data ?? undefined,
+            profiles: profiles.data ?? {},
+          }),
+    [
+      loading,
+      matches.data,
+      teams.data,
+      friendships.data,
+      myId,
+      histories.data,
+      standings.data,
+      groups.data,
+      groupExtras.data,
+      groupMatches.data,
+      profiles.data,
+    ],
+  );
+  const countFor = (label: FilterLabel) => {
+    const kinds = FILTERS[label];
+    return kinds
+      ? allEvents.filter((e) => kinds.has(e.kind)).length
+      : allEvents.length;
+  };
+  const activeKinds = FILTERS[activeFilter];
+  const filtered = activeKinds
+    ? allEvents.filter((e) => activeKinds.has(e.kind))
+    : allEvents;
+  const feed = filtered.slice(0, limit);
+  const remaining = filtered.length - feed.length;
 
   // "Jij" voor jezelf, anders de weergavenaam — leest prettiger in zinnetjes.
   const name = (pid: string) =>
@@ -163,20 +222,45 @@ export function Feed() {
 
       {!loading && !error && (
         <div className="tabs feed__filters">
-          {Object.keys(FILTERS).map((label) => (
+          {FILTER_LABELS.map((label) => (
             <button
               key={label}
               type="button"
               className={`tab ${activeFilter === label ? "is-active" : ""}`}
-              onClick={() => setActiveFilter(label as keyof typeof FILTERS)}
+              onClick={() => selectFilter(label)}
             >
               {label}
+              {label !== "Alles" && (
+                <span className="tab__count" aria-hidden="true">
+                  {countFor(label)}
+                </span>
+              )}
             </button>
           ))}
         </div>
       )}
 
-      {!loading && !error && feed.length === 0 && (
+      {!loading && !error && feed.length === 0 && activeFilter !== "Alles" && (
+        <div className="card">
+          <EmptyState
+            icon="🔎"
+            title="Niets in deze categorie."
+            action={
+              <button
+                type="button"
+                className="btn"
+                onClick={() => selectFilter("Alles")}
+              >
+                Toon alles
+              </button>
+            }
+          >
+            Recent geen nieuws van dit soort bij jou en je vrienden.
+          </EmptyState>
+        </div>
+      )}
+
+      {!loading && !error && feed.length === 0 && activeFilter === "Alles" && (
         <div className="card">
           <EmptyState
             icon="📣"
@@ -214,14 +298,14 @@ export function Feed() {
               );
             })}
           </ol>
-          {feed.length >= limit && (
+          {remaining > 0 && (
             <div className="feed__more">
               <button
                 type="button"
                 className="btn"
                 onClick={() => setLimit((l) => l + FEED_LIMIT)}
               >
-                Toon meer
+                Toon meer ({remaining})
               </button>
             </div>
           )}
@@ -308,6 +392,7 @@ function FeedItem({
           to={`/spelers/${involvesMe ? other : event.a}`}
           avatars={[event.a, event.b]}
           pmap={pmap}
+          at={event.at}
         >
           {involvesMe ? (
             <>
@@ -325,7 +410,12 @@ function FeedItem({
     }
     case "planned":
       return (
-        <FeedLine icon="🗓️" to={`/matches/${event.match.id}`} pmap={pmap}>
+        <FeedLine
+          icon="🗓️"
+          to={`/matches/${event.match.id}`}
+          pmap={pmap}
+          at={event.at}
+        >
           Nieuwe match gepland op{" "}
           <strong>{formatDate(event.match.played_at)}</strong>.
         </FeedLine>
@@ -337,6 +427,7 @@ function FeedItem({
           to={`/groepen/${event.groupId}`}
           avatars={event.playerId ? [event.playerId] : []}
           pmap={pmap}
+          at={event.at}
         >
           {event.playerId ? (
             <>
@@ -357,6 +448,7 @@ function FeedItem({
           to={`/groepen/${event.groupId}`}
           avatars={[event.playerId]}
           pmap={pmap}
+          at={event.at}
         >
           {name(event.playerId)} {event.playerId === myId ? "bent" : "is"} lid
           geworden van <strong>{event.groupName}</strong>.
@@ -368,6 +460,7 @@ function FeedItem({
           icon="🗳️"
           to={`/groepen/${event.groupId}?tab=plannen`}
           pmap={pmap}
+          at={event.at}
         >
           Speeldag-poll gestart in <strong>{event.groupName}</strong> — stem
           mee!
@@ -380,6 +473,7 @@ function FeedItem({
           icon={event.kind === "poll-locked" ? "📌" : "✅"}
           to={`/groepen/${event.groupId}?tab=plannen`}
           pmap={pmap}
+          at={event.at}
         >
           {event.kind === "poll-locked" ? "Speeldag ligt vast" : "Baan geboekt"}
           {event.date && (
@@ -497,12 +591,16 @@ function FeedLine({
   to,
   avatars = [],
   pmap,
+  at,
   children,
 }: {
   icon: string;
   to: string;
   avatars?: string[];
   pmap: Record<string, Profile>;
+  /** Klok-tijd rechts; alleen meegeven bij een écht gebeurtenismoment
+      (rank/kampioen hebben een kunstmatige tijd en tonen er dus geen). */
+  at?: string;
   children: ReactNode;
 }) {
   return (
@@ -518,6 +616,11 @@ function FeedLine({
         </span>
       )}
       <span className="feed-line__text">{children}</span>
+      {at && (
+        <time className="feed-line__time" dateTime={at}>
+          {formatTime(at)}
+        </time>
+      )}
     </Link>
   );
 }

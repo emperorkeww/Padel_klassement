@@ -14,6 +14,15 @@ export function formatDate(iso: string | null | undefined): string {
   });
 }
 
+/** Klok-tijd, bv. "14:32". Leeg bij ontbrekende datum. */
+export function formatTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("nl-NL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Aantal hele kalenderdagen tussen twee momenten (lokale tijd). */
 function calendarDayDiff(a: Date, b: Date): number {
   const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());

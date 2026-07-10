@@ -62,6 +62,16 @@
   font-size: var(--fs-md);
   min-width: 0;
 }
+/* Klok-tijd rechts op een feedregel; het dag-kopje geeft de dag al. */
+.feed-line__time {
+  margin-left: auto;
+  padding-left: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  align-self: flex-start;
+}
 
 /* "Toon meer" onder de lijst. */
 .feed__more {
