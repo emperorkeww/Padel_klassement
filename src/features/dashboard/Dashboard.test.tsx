@@ -11,6 +11,9 @@ vi.mock("../../lib/supabase", async () => {
 });
 
 import Dashboard from "./Dashboard";
+import { supabase } from "../../lib/supabase";
+import { makeQuery } from "../../test/supabaseMock";
+import { invalidateAll } from "../../lib/queryCache";
 
 // De baanbeschikbaarheid komt via fetch (Playtomic-proxy); leeg antwoord volstaat.
 function stubPlaytomic() {
@@ -58,6 +61,36 @@ describe("<Dashboard />", () => {
     ).toBeInTheDocument();
     // Actiestrook: één openstaande uitslag.
     expect(await screen.findByText(/uitslag wacht op jou/i)).toBeInTheDocument();
+  });
+
+  it("toont een foutstaat i.p.v. onboarding als een kernquery faalt", async () => {
+    // Verse cache, en de klassement-query laten falen (issue #67).
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    fromMock.mockImplementation((table) =>
+      table === "player_standings"
+        ? makeQuery({ data: null, error: new Error("boem") })
+        : orig(table),
+    );
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/het dashboard kon niet laden/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /opnieuw proberen/i }),
+      ).toBeInTheDocument();
+      // Geen misleidende onboarding-tekst of lege stats.
+      expect(screen.queryByText(/speel je eerste match/i)).toBeNull();
+      expect(screen.queryByText(/topspelers/i)).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
   });
 
   it("toont topspelers en recente uitslagen", async () => {
