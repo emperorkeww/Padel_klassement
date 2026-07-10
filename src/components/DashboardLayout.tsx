@@ -16,6 +16,7 @@ type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
 // Ik/Vrienden zijn nu wél direct bereikbaar).
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
 const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket /> };
+const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matcharchief", icon: <IconUsers /> };
@@ -24,15 +25,16 @@ const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserP
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
-  { title: "Spelen", items: [OVERZICHT, SPELEN, MATCHES, BANEN] },
+  { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, MATCHES, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
   { title: "Ik", items: [VRIENDEN, IK] },
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
-// (2 links · bal · 2 rechts). Vrienden is één tik bereikbaar (#69); het
-// profiel zit achter de avatar rechtsboven, dus die plek gaat naar Banen.
-const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, BANEN];
+// (2 links · bal · 2 rechts). Vrienden is één tik bereikbaar (#69); profiel
+// zit achter de avatar rechtsboven en Banen in de plan-flow/Spelen-hub —
+// de vijfde plek is voor de Feed (#120).
+const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, FEED];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
@@ -196,6 +198,14 @@ function IconUserPlus() {
     </svg>
   );
 }
+function IconFeed() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 12h4l3-8 4 16 3-8h4" />
+    </svg>
+  );
+}
+
 function IconUser() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

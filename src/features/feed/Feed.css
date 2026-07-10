@@ -1,0 +1,54 @@
+/* Feed: chronologische gebeurtenissen met dag-kopjes. */
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.feed__day {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.feed__day:first-child {
+  margin-top: 0;
+}
+.feed__day::first-letter {
+  text-transform: uppercase;
+}
+
+/* Vriendschaps-item: zelfde kaartvorm als een matchkaart, maar één regel. */
+.feed-friend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.feed-friend:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.feed-friend__icon {
+  font-size: 1.1rem;
+}
+.feed-friend__avatars {
+  display: inline-flex;
+}
+.feed-friend__avatars > :last-child {
+  margin-left: -8px;
+}
+.feed-friend__text {
+  font-size: var(--fs-md);
+  min-width: 0;
+}
