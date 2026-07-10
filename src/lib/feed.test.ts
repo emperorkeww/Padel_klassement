@@ -1,6 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { buildFeed, feedDay, networkIds } from "./feed";
-import type { Friendship, Match, Team } from "./types";
+import {
+  buildFeed,
+  feedDay,
+  networkIds,
+  recentlyClosedSeason,
+  scoreHighlight,
+  UPSET_MAX_KANS,
+  type FeedEvent,
+} from "./feed";
+import type {
+  Friendship,
+  GroupMember,
+  Match,
+  PlayerStanding,
+  RatingPoint,
+  Team,
+} from "./types";
 
 const TEAMS: Record<string, Team> = {
   "t-ab": { id: "t-ab", player1_id: "p1", player2_id: "p2" } as Team,
@@ -19,18 +34,39 @@ const friend = (id: string, other: string, at: string, status = "accepted") =>
   }) as Friendship;
 
 let seq = 0;
-const match = (at: string, a = "t-ab", b = "t-cd", status = "completed") =>
+const match = (
+  at: string,
+  a = "t-ab",
+  b = "t-cd",
+  status = "completed",
+  extra: Partial<Match> = {},
+) =>
   ({
     id: `m-${seq++}`,
     team_a_id: a,
     team_b_id: b,
     status,
-    winner_team_id: a,
+    winner_team_id: status === "completed" ? a : null,
     played_at: at,
     created_at: at,
+    score_a: null,
+    score_b: null,
+    ...extra,
   }) as Match;
 
-describe("buildFeed", () => {
+/** rating_history-punt; histories is per speler, chronologisch. */
+const point = (matchId: string, before: number, after: number): RatingPoint =>
+  ({
+    match_id: matchId,
+    rating_before: before,
+    rating_after: after,
+    delta: after - before,
+    played_at: "",
+  }) as RatingPoint;
+
+const kinds = (feed: FeedEvent[]) => feed.map((e) => e.kind);
+
+describe("buildFeed — basis (bestaand gedrag)", () => {
   it("mengt matches en vriendschappen, nieuwste boven", () => {
     const feed = buildFeed({
       matches: [match("2026-07-08T18:00:00Z"), match("2026-07-10T18:00:00Z")],
@@ -38,13 +74,12 @@ describe("buildFeed", () => {
       friendships: [friend("f1", "p2", "2026-07-09T12:00:00Z")],
       myId: "p1",
     });
-    expect(feed.map((e) => e.kind)).toEqual(["match", "friendship", "match"]);
+    expect(kinds(feed)).toEqual(["match", "friendship", "match"]);
     expect(feed[0].at).toBe("2026-07-10T18:00:00Z");
   });
 
   it("filtert matches buiten je netwerk weg", () => {
     const feed = buildFeed({
-      // p8/p9 tegen elkaar: geen vriend van p1 → onzichtbaar.
       matches: [match("2026-07-10T18:00:00Z", "t-xy", "t-xy")],
       teams: TEAMS,
       friendships: [friend("f1", "p2", "2026-07-01T12:00:00Z")],
@@ -53,28 +88,251 @@ describe("buildFeed", () => {
     expect(feed.filter((e) => e.kind === "match")).toHaveLength(0);
   });
 
-  it("negeert geplande matches en niet-geaccepteerde vriendschappen", () => {
-    const feed = buildFeed({
-      matches: [match("2026-07-10T18:00:00Z", "t-ab", "t-cd", "planned")],
-      teams: TEAMS,
-      friendships: [friend("f1", "p2", "2026-07-09T12:00:00Z", "pending")],
-      myId: "p1",
-    });
-    expect(feed).toHaveLength(0);
-  });
-
   it("respecteert de limiet", () => {
     const matches = Array.from({ length: 10 }, (_, i) =>
       match(`2026-07-0${(i % 9) + 1}T18:00:00Z`),
     );
+    const feed = buildFeed({ matches, teams: TEAMS, friendships: [], myId: "p1", limit: 3 });
+    expect(feed).toHaveLength(3);
+  });
+});
+
+describe("buildFeed — highlights op het match-item (dedup)", () => {
+  it("bundelt upset + score + reeks als chips op één event", () => {
+    // p1+p2 winnen 3× op rij; de derde is een 6-0 én een upset (winnaars
+    // stonden vooraf ver onder de verliezers).
+    const m1 = match("2026-07-08T18:00:00Z");
+    const m2 = match("2026-07-09T18:00:00Z");
+    const m3 = match("2026-07-10T18:00:00Z", "t-ab", "t-cd", "completed", {
+      score_a: 6,
+      score_b: 0,
+    });
+    const histories: Record<string, RatingPoint[]> = {
+      p1: [point(m3.id, 900, 930)],
+      p2: [point(m3.id, 900, 930)],
+      p3: [point(m3.id, 1100, 1070)],
+      p4: [point(m3.id, 1100, 1070)],
+    };
     const feed = buildFeed({
-      matches,
+      matches: [m1, m2, m3],
       teams: TEAMS,
       friendships: [],
       myId: "p1",
-      limit: 3,
+      histories,
     });
-    expect(feed).toHaveLength(3);
+    // Drie match-events, geen losse extra items.
+    expect(kinds(feed)).toEqual(["match", "match", "match"]);
+    const top = feed[0];
+    if (top.kind !== "match") throw new Error("verwacht match-event");
+    const types = top.highlights.map((h) => h.type).sort();
+    // upset + bagel + streak (alleen p1 zit in het netwerk; p2 is geen vriend).
+    expect(types).toEqual(["score", "streak", "upset"]);
+    const upset = top.highlights.find((h) => h.type === "upset");
+    expect(upset && upset.type === "upset" && upset.chance).toBeLessThan(UPSET_MAX_KANS);
+  });
+
+  it("rating-mijlpaal: grens gekruist bij deze match", () => {
+    const m = match("2026-07-10T18:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [point(m.id, 1095, 1104)] },
+    });
+    const top = feed[0];
+    if (top.kind !== "match") throw new Error("verwacht match-event");
+    expect(top.highlights).toContainEqual({
+      type: "rating",
+      playerId: "p1",
+      threshold: 1100,
+    });
+    expect(top.myDelta).toBe(9);
+  });
+
+  it("geen chips zonder aanleiding; myDelta null zonder history", () => {
+    const feed = buildFeed({
+      matches: [match("2026-07-10T18:00:00Z")],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+    });
+    const top = feed[0];
+    if (top.kind !== "match") throw new Error("verwacht match-event");
+    expect(top.highlights.filter((h) => h.type !== "streak")).toHaveLength(0);
+    expect(top.myDelta).toBeNull();
+  });
+});
+
+describe("scoreHighlight — één chip, sterkste verhaal eerst", () => {
+  const scored = (a: number, b: number) =>
+    match("2026-07-10T18:00:00Z", "t-ab", "t-cd", "completed", { score_a: a, score_b: b });
+  it("bagel boven monsterzege; nagelbijter bij 1 verschil", () => {
+    expect(scoreHighlight(scored(6, 0))).toEqual({ type: "score", label: "bagel" });
+    expect(scoreHighlight(scored(6, 2))).toEqual({ type: "score", label: "monsterzege" });
+    expect(scoreHighlight(scored(6, 5))).toEqual({ type: "score", label: "nagelbijter" });
+    expect(scoreHighlight(scored(6, 3))).toBeNull();
+  });
+});
+
+describe("buildFeed — geplande matches", () => {
+  it("nieuw gepland mét speeltijd verschijnt; zonder tijd (ronde) niet", () => {
+    const gepland = match("2026-07-12T20:00:00Z", "t-ab", "t-cd", "scheduled", {
+      created_at: "2026-07-10T09:00:00Z",
+    });
+    const ronde = match("", "t-ab", "t-cd", "scheduled", {
+      created_at: "2026-07-10T09:00:00Z",
+      played_at: null,
+    });
+    const feed = buildFeed({
+      matches: [gepland, ronde],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+    });
+    expect(kinds(feed)).toEqual(["planned"]);
+    expect(feed[0].at).toBe("2026-07-10T09:00:00Z"); // moment van plannen
+  });
+});
+
+describe("buildFeed — groepen en polls", () => {
+  const groups = [
+    { id: "g1", name: "Vrijdagavond", created_at: "2026-07-01T10:00:00Z", created_by: "p1" },
+  ];
+  it("groep aangemaakt + latere toetreder; oprichters geen apart item", () => {
+    const members: Record<string, GroupMember[]> = {
+      g1: [
+        { group_id: "g1", player_id: "p1", role: "owner", joined_at: "2026-07-01T10:00:30Z" },
+        { group_id: "g1", player_id: "p5", role: "member", joined_at: "2026-07-09T08:00:00Z" },
+      ],
+    };
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      membersByGroup: members,
+    });
+    expect(kinds(feed)).toEqual(["group-joined", "group-created"]);
+    const joined = feed[0];
+    if (joined.kind !== "group-joined") throw new Error("verwacht group-joined");
+    expect(joined.playerId).toBe("p5");
+  });
+
+  it("poll gestart verschijnt; geannuleerde niet", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      pollsByGroup: {
+        g1: [
+          { group_id: "g1", status: "open", created_at: "2026-07-10T12:00:00Z" },
+          { group_id: "g1", status: "cancelled", created_at: "2026-07-09T12:00:00Z" },
+        ],
+      },
+    });
+    expect(kinds(feed)).toEqual(["poll", "group-created"]);
+  });
+});
+
+describe("buildFeed — publiek: groepsgenoten (#138)", () => {
+  const groups = [
+    { id: "g1", name: "Club", created_at: "2026-06-01T10:00:00Z", created_by: "p8" },
+  ];
+  const members: Record<string, GroupMember[]> = {
+    g1: [
+      { group_id: "g1", player_id: "p1", role: "member", joined_at: "2026-06-01T10:00:10Z" },
+      { group_id: "g1", player_id: "p8", role: "owner", joined_at: "2026-06-01T10:00:00Z" },
+      { group_id: "g1", player_id: "p9", role: "member", joined_at: "2026-06-01T10:00:20Z" },
+    ],
+  };
+
+  it("matches van groepsgenoten zijn zichtbaar zonder vriendschap", () => {
+    const feed = buildFeed({
+      matches: [match("2026-07-10T18:00:00Z", "t-xy", "t-xy")], // p8/p9
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      membersByGroup: members,
+    });
+    expect(feed.some((e) => e.kind === "match")).toBe(true);
+  });
+
+  it("andermans (zichtbare) vriendschap wordt een event met beide namen", () => {
+    const tussenAnderen = {
+      id: "f9",
+      requester_id: "p8",
+      addressee_id: "p9",
+      status: "accepted",
+      created_at: "2026-07-10T09:00:00Z",
+      updated_at: "2026-07-10T09:00:00Z",
+    } as Friendship;
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [tussenAnderen],
+      myId: "p1",
+      groups,
+      membersByGroup: members,
+    });
+    const ev = feed.find((e) => e.kind === "friendship");
+    if (!ev || ev.kind !== "friendship") throw new Error("verwacht friendship");
+    expect([ev.a, ev.b]).toEqual(["p8", "p9"]);
+    // Maar p8/p9 worden er géén vrienden van p1 door (networkIds-guard).
+    expect([...networkIds([tussenAnderen], "p1")]).toEqual(["p1"]);
+  });
+});
+
+describe("buildFeed — klassementsprong", () => {
+  const standing = (pid: string, points: number, gd: number): PlayerStanding =>
+    ({
+      player_id: pid,
+      username: pid,
+      full_name: pid,
+      played: 5,
+      won: Math.floor(points / 3),
+      drawn: 0,
+      lost: 5 - Math.floor(points / 3),
+      points,
+      goal_diff: gd,
+    }) as PlayerStanding;
+
+  it("meldt alleen grote sprongen van netwerk-spelers", () => {
+    // rankShifts reconstrueert de stand van vóór de laatste speeldag door de
+    // winst van vandaag terug te draaien: p1 zakt dan naar 9 punten met de
+    // laagste goal_diff → plek 4 vóór, plek 1 nu = sprong van 3.
+    const today = match("2026-07-10T18:00:00Z"); // p1+p2 winnen
+    const standings = [
+      standing("p1", 12, 0),
+      standing("p8", 9, 5),
+      standing("p9", 9, 4),
+      standing("p3", 9, 3),
+    ];
+    const feed = buildFeed({
+      matches: [today],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      standings,
+    });
+    const rankEvents = feed.filter((e) => e.kind === "rank");
+    expect(rankEvents.map((e) => (e.kind === "rank" ? e.playerId : ""))).toContain("p1");
+    // p2 steeg mee maar p8/p9 (geen netwerk) verschijnen nooit.
+    expect(rankEvents.some((e) => e.kind === "rank" && e.playerId === "p8")).toBe(false);
+  });
+});
+
+describe("recentlyClosedSeason", () => {
+  it("geeft het vorige kwartaal alleen kort na de wissel", () => {
+    // 5 juli: Q2 sloot 5 dagen geleden → melden.
+    const s = recentlyClosedSeason(new Date("2026-07-05T12:00:00Z"));
+    expect(s?.id).toBe("2026-q2");
+    // 15 augustus: venster (21 dagen) voorbij → niets.
+    expect(recentlyClosedSeason(new Date("2026-08-15T12:00:00Z"))).toBeNull();
   });
 });
 
@@ -92,7 +350,7 @@ describe("networkIds / feedDay", () => {
 
   it("feedDay pakt de kalenderdag", () => {
     expect(
-      feedDay({ kind: "friendship", at: "2026-07-09T12:34:00Z", meId: "a", friendId: "b" }),
+      feedDay({ kind: "friendship", at: "2026-07-09T12:34:00Z", a: "a", b: "b" }),
     ).toBe("2026-07-09");
   });
 });

@@ -101,7 +101,13 @@ export function getFriendSuggestions(): Promise<FriendSuggestion[]> {
 
 /** Categoriseert vriendschappen t.o.v. de huidige gebruiker. */
 export function categorize(list: Friendship[], myId: string) {
-  const accepted = list.filter((f) => f.status === "accepted");
+  // Sinds #138 zijn ook geaccepteerde vriendschappen van groepsgenoten
+  // leesbaar (voor de feed); "mijn vrienden" blijft strikt eigen betrokkenheid.
+  const accepted = list.filter(
+    (f) =>
+      f.status === "accepted" &&
+      (f.requester_id === myId || f.addressee_id === myId),
+  );
   const incoming = list.filter(
     (f) => f.status === "pending" && f.addressee_id === myId,
   );
