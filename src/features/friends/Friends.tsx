@@ -135,6 +135,24 @@ export function Friends() {
 
       <AccountNav />
 
+      {/* Mislukte query → echte foutmelding i.p.v. "geen vrienden" (issue #67). */}
+      {(friendships.error ?? profiles.error) && (
+        <div className="msg msg--error">
+          Je vrienden laden mislukte: {friendships.error ?? profiles.error}{" "}
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => {
+              if (friendships.error) friendships.reload();
+              if (profiles.error) profiles.reload();
+              if (suggestions.error) suggestions.reload();
+            }}
+          >
+            Opnieuw proberen
+          </button>
+        </div>
+      )}
+
       <div className="grid grid--2">
         <section className="card">
           <h2 className="card__title">Speler zoeken</h2>
@@ -190,7 +208,8 @@ export function Friends() {
           </h2>
           <div className="person-list">
             {friendships.loading && <Skeleton rows={2} />}
-            {!friendships.loading && incoming.length === 0 && (
+            {/* Lege staat alleen als de query slaagde en écht leeg is. */}
+            {!friendships.loading && !friendships.error && incoming.length === 0 && (
               <p className="empty">Geen openstaande verzoeken.</p>
             )}
             {incoming.map((f) => (
@@ -257,7 +276,7 @@ export function Friends() {
             <span className="badge badge--accent">{accepted.length}</span>
           )}
         </h2>
-        {!friendships.loading && accepted.length === 0 && (
+        {!friendships.loading && !friendships.error && accepted.length === 0 && (
           <EmptyState icon="👋" title="Nog geen vrienden.">
             Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
             samen matches loggen begint hier.
@@ -285,7 +304,12 @@ export function Friends() {
       <section className="card">
         <h2 className="card__title">Misschien ken je</h2>
         {suggestions.loading && <Skeleton rows={3} />}
-        {!suggestions.loading && visibleSuggestions.length === 0 && (
+        {suggestions.error && (
+          <p className="msg msg--error">
+            Suggesties laden mislukte: {suggestions.error}
+          </p>
+        )}
+        {!suggestions.loading && !suggestions.error && visibleSuggestions.length === 0 && (
           <p className="empty">
             Nog geen suggesties — voeg vrienden toe en we stellen op basis van
             gemeenschappelijke vrienden nieuwe spelers voor.

@@ -210,6 +210,51 @@ export function Dashboard() {
       ? planned[0].group_id
       : null;
 
+  // Mislukte kernquery → echte foutstaat i.p.v. lege stats en onboarding-
+  // teksten die doen alsof de data weg is (issue #67). Baanbeschikbaarheid
+  // heeft verderop zijn eigen melding en blijft hier bewust buiten.
+  const coreQueries = [
+    standings,
+    results,
+    myMatches,
+    teams,
+    profiles,
+    friendships,
+    groups,
+    ratings,
+    ratingHistory,
+  ];
+  const coreError = coreQueries.find((q) => q.error)?.error ?? null;
+  if (coreError) {
+    return (
+      <div className="dashboard">
+        <section className="hero">
+          <div className="hero__main">
+            <Avatar profile={myProfile} name={myName || undefined} size={56} />
+            <div className="hero__text">
+              <p className="hero__eyebrow">Welkom terug</p>
+              <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
+            </div>
+          </div>
+        </section>
+        <section className="card">
+          <p className="msg msg--error">
+            Het dashboard kon niet laden: {coreError}
+          </p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              for (const q of coreQueries) if (q.error) q.reload();
+            }}
+          >
+            Opnieuw proberen
+          </button>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
       <section className="hero">

@@ -31,6 +31,8 @@ vi.mock("../../lib/supabase", () => ({
 
 import Friends from "./Friends";
 import { supabase } from "../../lib/supabase";
+import { makeQuery } from "../../test/supabaseMock";
+import { invalidateAll } from "../../lib/queryCache";
 
 function renderPage() {
   return render(
@@ -107,6 +109,36 @@ describe("<Friends />", () => {
     );
     expect(supabase.from).toHaveBeenCalledWith("friendships");
     expect(await screen.findByText(/verzoek ingetrokken/i)).toBeInTheDocument();
+  });
+
+  it("toont een foutstaat i.p.v. lege lijsten als vrienden laden faalt", async () => {
+    // Verse cache, en de friendships-query laten falen (issue #67).
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    fromMock.mockImplementation((table) =>
+      table === "friendships"
+        ? makeQuery({ data: null, error: new Error("boem") })
+        : orig(table),
+    );
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/je vrienden laden mislukte/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /opnieuw proberen/i }),
+      ).toBeInTheDocument();
+      // Geen misleidende lege staten.
+      expect(screen.queryByText(/geen openstaande verzoeken/i)).toBeNull();
+      expect(screen.queryByText(/nog geen vrienden/i)).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
   });
 
   it("verwijdert een vriend", async () => {
