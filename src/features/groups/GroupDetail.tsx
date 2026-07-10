@@ -14,15 +14,10 @@ import {
   deleteGroup,
   leaveGroup,
   createGroupInvite,
-  createFairRound,
-  generateMexicanoRound,
 } from "./api";
-import {
-  americanoRound,
-  applyRound,
-  historyFromMatches,
-} from "../../lib/americano";
 import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
+import { dateInZone } from "../../lib/time";
+import { useClub } from "../availability/club";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
@@ -36,7 +31,7 @@ import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { PollSection } from "./PlanPoll";
 import { SuggestionsCard } from "./SuggestionsCard";
-import { Tonight } from "./Tonight";
+import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
 import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
@@ -98,8 +93,6 @@ export function GroupDetail() {
     else next.set("tab", v);
     setParams(next, { replace: true });
   };
-  const [mode, setMode] = useState<"americano" | "mexicano">("americano");
-  const [roundsToGen, setRoundsToGen] = useState(1);
   // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
@@ -209,11 +202,20 @@ export function GroupDetail() {
 
   // matches per ronde (aflopend)
   const rounds = groupByRound(matches.data ?? []);
-  // Mexicano paart op de stand: pas mogelijk als de vorige ronde compleet is.
+  // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams).
   const openRound = rounds.find(({ list }) =>
     list.some((m) => m.status !== "completed"),
   );
-  const mexicanoBlocked = mode === "mexicano" && !!openRound;
+
+  // Reis-CTA: alles van vandaag gespeeld → door naar de stand (#106).
+  const club = useClub();
+  const today = dateInZone(club.timezone);
+  const todaysMatches = (matches.data ?? []).filter(
+    (m) => (m.played_at ?? m.created_at).slice(0, 10) === today,
+  );
+  const dayDone =
+    todaysMatches.length > 0 &&
+    todaysMatches.every((m) => m.status === "completed");
 
   if (group.loading)
     return (
@@ -241,23 +243,24 @@ export function GroupDetail() {
         </p>
       </header>
 
+      {/* Tabs in reis-volgorde (#106): plannen → spelen → stand. */}
       <div className="tabs">
-        <button
-          className={`tab ${view === "rondes" ? "is-active" : ""}`}
-          onClick={() => setView("rondes")}
-        >
-          Rondes
-          {rounds.length > 0 && (
-            <span className="tab__count" aria-hidden="true">
-              {rounds.length}
-            </span>
-          )}
-        </button>
         <button
           className={`tab ${view === "plannen" ? "is-active" : ""}`}
           onClick={() => setView("plannen")}
         >
           Plannen
+        </button>
+        <button
+          className={`tab ${view === "rondes" ? "is-active" : ""}`}
+          onClick={() => setView("rondes")}
+        >
+          Vandaag
+          {rounds.length > 0 && (
+            <span className="tab__count" aria-hidden="true">
+              {rounds.length}
+            </span>
+          )}
         </button>
         <button
           className={`tab ${view === "stand" ? "is-active" : ""}`}
@@ -280,15 +283,32 @@ export function GroupDetail() {
 
       {view === "rondes" && (
         <>
-          {/* Suggesties (beste momenten komende week) vervangen de vroegere
-              aanwezigheids-RSVP; "Vanavond" voedt de teamgenerator met de
-              deelnemers van het speelvoorstel van vandaag. */}
+          {/* Reis-CTA: alle uitslagen van vandaag binnen → door naar de stand. */}
+          {dayDone && (
+            <div className="card flow-next" role="status">
+              <span>
+                🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!
+              </span>
+              <button
+                className="btn btn--sm btn--primary"
+                onClick={() => setView("stand")}
+              >
+                Bekijk de stand →
+              </button>
+            </div>
+          )}
           <SuggestionsCard groupId={id} myId={myId} matches={matches.data ?? []} />
-          <Tonight
+          {/* Eén teamgenerator: deelnemers uit de poll van vandaag +
+              formaatkeuze (eerlijk/americano/mexicano). */}
+          <MakeTeams
             groupId={id}
             members={memberList}
             profiles={pmap}
             myId={myId}
+            matches={matches.data ?? []}
+            teams={tmap}
+            openRound={openRound ?? null}
+            onGenerated={onMatches}
           />
         </>
       )}
@@ -306,81 +326,9 @@ export function GroupDetail() {
             />
           </div>
           <p className="card__subtitle">
-            {mode === "americano"
-              ? "Americano: wisselt de teams elke ronde af, zodat je zo veel mogelijk met en tegen verschillende spelers speelt."
-              : "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
+            De gegenereerde rondes en gelogde partijen van de groep — vul de
+            uitslagen in en de stand rekent live mee.
           </p>
-
-          <SpelvormUitleg />
-
-          <div className="toolbar">
-            <div className="tabs">
-              <button
-                className={`tab ${mode === "americano" ? "is-active" : ""}`}
-                onClick={() => setMode("americano")}
-              >
-                Americano
-              </button>
-              <button
-                className={`tab ${mode === "mexicano" ? "is-active" : ""}`}
-                onClick={() => setMode("mexicano")}
-              >
-                Mexicano
-              </button>
-            </div>
-            <div className="gen-controls">
-              {mode === "americano" && (
-                <label className="gen-controls__rounds">
-                  <span>Rondes</span>
-                  <select
-                    className="select"
-                    value={roundsToGen}
-                    onChange={(e) => setRoundsToGen(Number(e.target.value))}
-                  >
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button
-                className="btn btn--primary"
-                disabled={busy || memberList.length < 4 || mexicanoBlocked}
-                onClick={() =>
-                  act(async () => {
-                    let total = 0;
-                    if (mode === "americano") {
-                      // Geschiedenis-bewuste indeling: laat partners (en
-                      // tegenstanders) zo veel mogelijk wisselen op basis van de
-                      // eerdere rondes. Sequentieel zodat de rondenummers oplopen;
-                      // elke nieuwe ronde telt meteen mee voor de volgende.
-                      const history = historyFromMatches(matches.data ?? [], tmap);
-                      const memberIds = memberList.map((m) => m.player_id);
-                      for (let i = 0; i < roundsToGen; i++) {
-                        const { courts } = americanoRound(memberIds, history);
-                        if (courts.length === 0) break;
-                        const ids = await createFairRound(id, courts);
-                        total += ids.length;
-                        applyRound(history, courts);
-                      }
-                    } else {
-                      const ids = await generateMexicanoRound(id);
-                      total = ids.length;
-                    }
-                    if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
-                  }, generatedMessage(mode, roundsToGen))
-                }
-              >
-                {mode === "americano"
-                  ? roundsToGen === 1
-                    ? "Genereer Americano-ronde"
-                    : `Genereer ${roundsToGen} Americano-rondes`
-                  : "Genereer Mexicano-ronde"}
-              </button>
-            </div>
-          </div>
 
           <div className="group-log">
             <p className="group-log__hint">
@@ -411,20 +359,10 @@ export function GroupDetail() {
             </div>
           </div>
 
-          {memberList.length < 4 && (
-            <p className="msg msg--warn">
-              Minimaal 4 leden nodig om een ronde te genereren.
-            </p>
-          )}
-          {memberList.length >= 4 && mexicanoBlocked && (
-            <p className="msg msg--warn">
-              Vul eerst alle uitslagen van ronde {openRound!.round} in — Mexicano
-              paart op basis van de volledige stand.
-            </p>
-          )}
-
           {rounds.length === 0 && (
-            <p className="empty">Nog geen rondes. Genereer er hierboven een.</p>
+            <p className="empty">
+              Nog geen rondes — maak teams via de kaart hierboven.
+            </p>
           )}
 
           <div className="rounds">
@@ -952,46 +890,7 @@ export function GroupDetail() {
   );
 }
 
-function generatedMessage(mode: "americano" | "mexicano", rounds: number): string {
-  if (mode === "mexicano") return "Nieuwe Mexicano-ronde gegenereerd.";
-  return rounds === 1
-    ? "Nieuwe Americano-ronde gegenereerd."
-    : `${rounds} Americano-rondes gegenereerd.`;
-}
 
-function SpelvormUitleg() {
-  return (
-    <details className="explainer">
-      <summary>Americano of Mexicano — wat is het verschil?</summary>
-      <div className="explainer__body">
-        <dl>
-          <div>
-            <dt>Americano</dt>
-            <dd>
-              Elke ronde krijg je een <strong>andere partner</strong> en andere
-              tegenstanders: de indeling houdt rekening met eerdere rondes zodat
-              je zo veel mogelijk met en tegen verschillende spelers speelt,
-              ongeacht de stand. Gezellig en gelijk verdeeld — ideaal voor een
-              ontspannen avond.
-            </dd>
-          </div>
-          <div>
-            <dt>Mexicano</dt>
-            <dd>
-              De volgende ronde wordt <strong>op basis van de stand</strong>{" "}
-              gemaakt: spelers worden gerangschikt op punten (en saldo), en per
-              baan speelt de <strong>1e met de 4e</strong> tegen de{" "}
-              <strong>2e met de 3e</strong>. Zo blijven de wedstrijden spannend en
-              in balans. Je kunt pas een nieuwe Mexicano-ronde genereren als{" "}
-              <strong>alle uitslagen</strong> van de vorige ronde zijn ingevuld —
-              anders zou er op een halve stand gepaird worden.
-            </dd>
-          </div>
-        </dl>
-      </div>
-    </details>
-  );
-}
 
 function groupByRound(matches: Match[]): { round: number; list: Match[] }[] {
   const map = new Map<number, Match[]>();

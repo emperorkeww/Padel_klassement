@@ -1,3 +1,13 @@
+/* Reis-CTA: volgende stap in de kernreis (#106). */
+.flow-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  border-left: 3px solid var(--success);
+}
+
 /* Stand-tab: Rating/Punten-toggle in de kaartkop + rating-weergave (#52). */
 .card__head .tabs--head {
   margin: 0;

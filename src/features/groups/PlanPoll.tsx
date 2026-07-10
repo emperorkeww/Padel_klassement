@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
@@ -409,6 +410,16 @@ function PollWizard({
           />
           Hele dag tonen
         </label>
+        {/* Banen-verkenning in context (#106): opent de Banen-pagina met de
+            gekozen dag al ingesteld. */}
+        <Link
+          className="poll-wizard__toggle"
+          to={`/banen?datum=${selectedDay}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Verken alle vrije banen ↗
+        </Link>
         <label className="poll-wizard__toggle">
           Duur{" "}
           <select
@@ -957,6 +968,15 @@ function PollCard({
                       {t.yes.length >= 4 &&
                         ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
                     </button>
+                    {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. */}
+                    {roundsMade > 0 && (
+                      <Link
+                        className="btn btn--sm"
+                        to={`/groepen/${poll.group_id}`}
+                      >
+                        Bekijk de rondes →
+                      </Link>
+                    )}
                     {t.yes.length < 4 && (
                       <span className="winner-card__rounds-hint">
                         Nog <strong>{4 - t.yes.length}</strong>{" "}
