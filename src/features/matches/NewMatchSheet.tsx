@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
+import { Sheet } from "../../components/Sheet";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
@@ -63,7 +64,6 @@ export function NewMatchSheet({
   const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
   const [guestName, setGuestName] = useState("");
   const [addingGuest, setAddingGuest] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -87,29 +87,6 @@ export function NewMatchSheet({
       setAddingGuest(false);
     }
   }, [open]);
-
-  // Focus in de dialoog bij openen; terug naar de opener bij sluiten.
-  useEffect(() => {
-    if (!open) return;
-    const opener = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
-    return () => opener?.focus?.();
-  }, [open]);
-
-  // Escape sluit; de pagina eronder scrollt niet mee.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -283,16 +260,11 @@ export function NewMatchSheet({
   }
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div
-        className="sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={mode === "plan" ? "Match plannen" : "Match loggen"}
-        ref={dialogRef}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Sheet
+      open
+      onClose={onClose}
+      ariaLabel={mode === "plan" ? "Match plannen" : "Match loggen"}
+    >
         <header className="sheet__head">
           <h2 className="sheet__title">
             {step === 1
@@ -635,8 +607,7 @@ export function NewMatchSheet({
             </footer>
           </>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 }
 

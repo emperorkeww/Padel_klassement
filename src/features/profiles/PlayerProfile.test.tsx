@@ -54,6 +54,20 @@ function setTables(viewedId: string) {
   state.tables.rating_history = [];
 }
 
+function renderProfileAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AuthProvider>
+        <ToastProvider>
+          <Routes>
+            <Route path="/spelers/:id" element={<PlayerProfile />} />
+          </Routes>
+        </ToastProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
 function renderProfile(id: string) {
   return render(
     <MemoryRouter initialEntries={[`/spelers/${id}`]}>
@@ -66,6 +80,11 @@ function renderProfile(id: string) {
       </AuthProvider>
     </MemoryRouter>,
   );
+}
+
+// De profielinhoud zit sinds #103 achter tabs; deze helper opent er één.
+function clickTab(name: string) {
+  fireEvent.click(screen.getByRole("button", { name }));
 }
 
 beforeEach(() => {
@@ -82,17 +101,21 @@ describe("<PlayerProfile />", () => {
     ];
     renderProfile("p2");
     expect(
-      await screen.findByRole("heading", { name: /bob boers/i }),
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    expect(await screen.findByText("6")).toBeInTheDocument();
-    // Tier-badge (#127) in de hero: rating 1012 = Bink III, gedimd (1 match).
+    // Tier-badge (#127) op de rating-tegel: rating 1012 = Bink III, gedimd (1 match).
     expect(await screen.findByText("Bink III")).toHaveClass("is-dim");
+    // Punten (6) staan onder de Statistieken-tab.
+    clickTab("Statistieken");
+    expect(await screen.findByText("6")).toBeInTheDocument();
   });
 
-  it("toont de onderlinge balans op andermans profiel", async () => {
+  it("toont de jij-vs-balans op het overzicht van andermans profiel", async () => {
     setTables("p2");
     renderProfile("p2");
-    expect(await screen.findByText("Onderling")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /jij vs bob boers/i }),
+    ).toBeInTheDocument();
     // Als tegenstanders: alice won 1 van de 1 (m-tegen).
     expect(screen.getByText(/jij won 1 van de 1/i)).toBeInTheDocument();
     // Als partners: 3 matches, 2 gewonnen → 67%. De geplande match telt niet.
@@ -102,21 +125,25 @@ describe("<PlayerProfile />", () => {
   it("toont het beste maatje met winstpercentage en profiellink", async () => {
     setTables("p2");
     renderProfile("p2");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    // Beste maatje staat onder Statistieken.
+    clickTab("Statistieken");
     expect(await screen.findByText("Beste maatje")).toBeInTheDocument();
     // Bobs beste maatje is alice: 3 samen, 2 gewonnen (dave haalt het minimum niet).
     expect(screen.getByText(/67% samen gewonnen \(3 matches\)/)).toBeInTheDocument();
   });
 
-  it("verbergt de Onderling-sectie op het eigen profiel", async () => {
+  it("toont geen jij-vs-balans op het eigen profiel", async () => {
     setTables("p1");
     renderProfile("p1");
     expect(
-      await screen.findByRole("heading", { name: /alice anders/i }),
+      await screen.findByRole("heading", { name: /alice anders/i, level: 1 }),
     ).toBeInTheDocument();
-    // Beste maatje staat er wél (ook op het eigen profiel)...
+    // Geen balans-met-jezelf op het overzicht...
+    expect(screen.queryByText(/jij vs/i)).not.toBeInTheDocument();
+    // ...maar het beste maatje staat er wél (onder Statistieken).
+    clickTab("Statistieken");
     expect(await screen.findByText("Beste maatje")).toBeInTheDocument();
-    // ...maar de balans met jezelf niet.
-    expect(screen.queryByText("Onderling")).not.toBeInTheDocument();
   });
 
   it("wisselt tussen rating- en positie-grafiek via tabs", async () => {
@@ -133,6 +160,9 @@ describe("<PlayerProfile />", () => {
       MATCH_PLANNED,
     ];
     renderProfile("p1");
+    await screen.findByRole("heading", { name: /alice anders/i, level: 1 });
+    // De verloop-grafiek staat onder Statistieken.
+    clickTab("Statistieken");
 
     expect(
       await screen.findByRole("heading", { name: "Rating-verloop" }),
@@ -150,7 +180,7 @@ describe("<PlayerProfile />", () => {
     setTables("p5");
     renderProfile("p5");
     expect(
-      await screen.findByRole("heading", { name: /erik evers/i }),
+      await screen.findByRole("heading", { name: /erik evers/i, level: 1 }),
     ).toBeInTheDocument();
     expect(
       await screen.findByText(/nog geen gezamenlijke matches/i),
@@ -182,13 +212,30 @@ describe("<PlayerProfile />", () => {
     }
   });
 
+  it("opent rechtstreeks de Statistieken-tab via ?tab= in de URL", async () => {
+    setTables("p2");
+    renderProfileAt("/spelers/p2?tab=statistieken");
+    // Beste maatje hoort bij Statistieken en verschijnt zonder te klikken.
+    expect(await screen.findByText("Beste maatje")).toBeInTheDocument();
+  });
+
+  it("valt terug op Overzicht bij een onbekende ?tab=", async () => {
+    setTables("p2");
+    renderProfileAt("/spelers/p2?tab=bestaatniet");
+    // Overzicht toont de jij-vs-kaart; de Statistieken-inhoud staat er niet.
+    expect(
+      await screen.findByRole("heading", { name: /jij vs bob boers/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Beste maatje")).not.toBeInTheDocument();
+  });
+
   it("verbergt de Wrapped-knop op andermans profiel", async () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 11, 20, 12) });
     try {
       setTables("p2");
       renderProfile("p2");
       expect(
-        await screen.findByRole("heading", { name: /bob boers/i }),
+        await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
       ).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /wrapped/i })).toBeNull();
     } finally {

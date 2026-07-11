@@ -531,3 +531,49 @@
   letter-spacing: 0.05em;
   color: var(--ink-soft);
 }
+
+/* ── #103: tab-herontwerp ─────────────────────────────────────────────── */
+
+/* Paginabrede tabbar onder de hero; schuift horizontaal op smalle schermen. */
+.tabs--page {
+  margin-bottom: var(--sp-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs--page::-webkit-scrollbar {
+  display: none;
+}
+
+/* Handle + tier-pil naast elkaar in de hero. */
+.profile-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  flex-wrap: wrap;
+}
+.profile-hero__meta .profile-hero__handle {
+  margin: 0;
+}
+
+/* Vorm-tegel op Overzicht: chips i.p.v. één groot getal. */
+.stat__value--form {
+  display: flex;
+  align-items: center;
+  min-height: 1.4em;
+}
+
+/* Inline "link-knop" in de highlight-lijst (opent de badge-popup). */
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.link-btn:hover {
+  opacity: 0.8;
+}
