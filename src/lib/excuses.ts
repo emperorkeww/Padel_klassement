@@ -3,28 +3,33 @@
 // deterministische keuze op een seed, zodat dezelfde (match, worp) altijd
 // hetzelfde smoesje geeft en "opnieuw" een nieuwe trekt.
 
-/** De volledige smoezenpool. Plagend, nooit echt beledigend. */
+/** De volledige smoezenpool. Zelfspottend en plagend — donker mag, echt
+ *  beledigend of grof nooit. */
 export const SMOESJES: string[] = [
-  "De zon stond verkeerd.",
-  "Nieuwe schoenen, nog niet ingelopen.",
-  "M'n maat sliep nog half.",
-  "Het net stond te hoog.",
-  "De ballen waren te licht.",
-  "Mijn racket was niet goed opgespannen.",
-  "Te veel wind op de baan.",
-  "Ik was m'n dag gewoon niet.",
-  "De baan was nog een beetje nat.",
-  "Ik had te veel gegeten voor de match.",
-  "De verlichting flikkerde de hele tijd.",
-  "Warming-up overgeslagen, foutje.",
-  "Mijn bril besloeg constant.",
-  "Ik gaf ze bewust een kansje.",
-  "Powernap gemist vanmiddag.",
-  "Verkeerde snaren in m'n racket.",
-  "De wind zat tegen — aan béíde kanten.",
-  "M'n koffie was nog niet op.",
-  "De tegenstander had gewoon geluk.",
-  "Ik spaarde m'n energie voor de volgende keer.",
+  "De zon scheen recht in m'n ego.",
+  "M'n racket had er duidelijk geen zin meer in.",
+  "Ik liet ze winnen, puur uit medelijden.",
+  "De ballen luisterden gewoon niet naar mij.",
+  "Statistisch gezien moest er íémand verliezen. Blijkbaar altijd ik.",
+  "M'n vorm ligt nog bij de stomerij.",
+  "Ik gaf 110% — jammer genoeg langs de verkeerde kant van het net.",
+  "M'n partner was de handicap. Ik niet. Echt niet.",
+  "Ik train enkel voor de derde set, en die kwam er nooit.",
+  "M'n rug, m'n knie en m'n excuses zijn even versleten.",
+  "De tegenstander speelde vals: die was gewoon beter.",
+  "Ik zat er met m'n hoofd al op café.",
+  "M'n motivatie checkte na de eerste opslag alweer uit.",
+  "Verloren, maar mét stijl. Dat telt toch ook?",
+  "Nederlagen bouwen karakter. Ik zit ondertussen bomvol karakter.",
+  "M'n beste shots bewaar ik voor in m'n dromen.",
+  "De wind zat tegen — aan béíde kanten van de baan.",
+  "Het licht viel verkeerd. Net als de rest van m'n dag.",
+  "M'n padel-app voorspelde winst. De app liegt dus.",
+  "Ik hou de spanning erin voor m'n fans thuis.",
+  "De baan lag scheef. Toevallig enkel voor mij.",
+  "Ik speelde bewust slecht, anders wordt het te makkelijk voor de rest.",
+  "Peptalk gemist, en meteen ook elke bal.",
+  "Ik was aan het sparen. Voor m'n oude dag.",
 ];
 
 /**
