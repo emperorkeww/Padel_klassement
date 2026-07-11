@@ -18,9 +18,9 @@ describe("<TierBadge />", () => {
     expect(screen.getByText("Wannabe III")).toHaveClass("is-dim");
   });
 
-  it("kent het kleine formaat en de sub-niveaus van Nachtmerrie", () => {
+  it("kent het kleine formaat en de sub-niveaus van Roofdier", () => {
     render(<TierBadge rating={1250} size="sm" />);
-    const diamant = screen.getByText("Nachtmerrie II");
+    const diamant = screen.getByText("Roofdier II");
     expect(diamant).toHaveClass("tier-badge--sm");
     expect(diamant).toHaveClass("tier-badge--diamant");
   });
