@@ -10,10 +10,10 @@ import {
 describe("tierFor", () => {
   it.each([
     // Ludieke tiers onder Bankvuller (open naar beneden).
-    [400, "Kluns III"],
-    [533, "Kluns III"],
-    [534, "Kluns II"],
-    [599, "Kluns I"],
+    [400, "Ballenjongen III"],
+    [533, "Ballenjongen III"],
+    [534, "Ballenjongen II"],
+    [599, "Ballenjongen I"],
     [600, "Sukkel III"],
     [700, "Prutser III"],
     [799, "Prutser I"],
@@ -29,10 +29,10 @@ describe("tierFor", () => {
     [1100, "Pletwals III"],
     [1199, "Pletwals I"],
     // Nieuwe hoge tiers.
-    [1200, "Nachtmerrie III"],
-    [1299, "Nachtmerrie I"],
-    [1300, "Tiran III"],
-    [1399, "Tiran I"],
+    [1200, "Roofdier III"],
+    [1299, "Roofdier I"],
+    [1300, "Eindbaas III"],
+    [1399, "Eindbaas I"],
     [1400, "GOAT"],
     [1600, "GOAT"],
   ])("rating %i → %s", (rating, label) => {
@@ -52,14 +52,14 @@ describe("tierFor", () => {
   it("alleen de hoogste tier (GOAT) heeft geen sub-niveaus", () => {
     expect(tierFor(1400)?.sub).toBeNull();
     expect(tierFor(1600)?.sub).toBeNull();
-    // Nachtmerrie is nu begrensd en heeft dus wél sub-niveaus.
+    // Roofdier is nu begrensd en heeft dus wél sub-niveaus.
     expect(tierFor(1200)?.sub).toBe(3);
   });
 
   it("draagt emoji en ludieke bijnaam", () => {
     expect(tierFor(1000)?.emoji).toBe("😤");
     expect(tierFor(1000)?.flavor).toBe("denkt dat-ie goed is — schattig");
-    expect(tierFor(450)?.emoji).toBe("🤡");
+    expect(tierFor(450)?.emoji).toBe("🎾");
   });
 
   it("rang stijgt strikt over de hele schaal", () => {
@@ -75,7 +75,7 @@ describe("tierFor", () => {
 
 describe("tierTitle", () => {
   it("bevat de bijnaam en het rating-bereik", () => {
-    expect(tierTitle(tierFor(450)!)).toBe("Kluns III · struikelt over z'n eigen racket · rating tot 533");
+    expect(tierTitle(tierFor(450)!)).toBe("Ballenjongen III · mag de ballen oprapen, meer niet · rating tot 533");
     expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066");
     expect(tierTitle(tierFor(1500)!)).toBe("GOAT · onaantastbaar — en dat weet iedereen · rating 1400+");
   });
@@ -109,7 +109,7 @@ describe("tierChange", () => {
     expect(w.naar.label).toBe("Bankvuller III");
   });
 
-  it("promotie naar de hoogste tier (Tiran → GOAT)", () => {
+  it("promotie naar de hoogste tier (Eindbaas → GOAT)", () => {
     const w = tierChange(1399, 1400)!;
     expect(w.richting).toBe("promotie");
     expect(w.naar.label).toBe("GOAT");
@@ -159,7 +159,7 @@ describe("tierLegend", () => {
     expect(legend[0].vanaf).toBe(1400);
     // De laagste tier heeft geen instapdrempel.
     const laagste = legend[legend.length - 1];
-    expect(laagste.naam).toBe("Kluns");
+    expect(laagste.naam).toBe("Ballenjongen");
     expect(laagste.vanaf).toBeNull();
     // Elke tier draagt emoji + bijnaam.
     expect(legend.every((l) => l.emoji && l.flavor)).toBe(true);
