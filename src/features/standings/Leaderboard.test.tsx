@@ -77,6 +77,23 @@ describe("<Leaderboard />", () => {
     expect((await screen.findAllByText("Zilver I")).length).toBeGreaterThan(0);
   });
 
+  it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
+    renderPage();
+    await screen.findAllByText("Goud III");
+    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+
+    // Sectiekop per hoofd-divisie: fixtures 1012 = Goud, 988 = Zilver.
+    expect(await screen.findByRole("heading", { name: /goud/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /zilver/i })).toBeInTheDocument();
+    // Legenda met de ludieke bijnaam en de instapdrempel.
+    expect(screen.getByText(/wat betekenen de divisies/i)).toBeInTheDocument();
+    expect(screen.getAllByText("goudhaantje").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/vanaf 1100/i).length).toBeGreaterThan(0);
+    // Persoonlijke promotie-hint: jouw divisie + rating tot de volgende.
+    expect(screen.getByText(/^jij:/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/platina/i).length).toBeGreaterThan(0);
+  });
+
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {
     renderPage();
     // Wachten tot de kwartalen geladen zijn (afgeleid van de eerste match).

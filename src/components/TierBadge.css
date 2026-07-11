@@ -13,6 +13,18 @@
   color: var(--tier);
   border: 1px solid color-mix(in srgb, var(--tier) 35%, var(--line));
 }
+.tier-badge--slof {
+  --tier: var(--slof);
+  --tier-soft: var(--slof-soft);
+}
+.tier-badge--karton {
+  --tier: var(--karton);
+  --tier-soft: var(--karton-soft);
+}
+.tier-badge--hout {
+  --tier: var(--hout);
+  --tier-soft: var(--hout-soft);
+}
 .tier-badge--brons {
   --tier: var(--bronze);
   --tier-soft: var(--bronze-soft);
@@ -33,11 +45,17 @@
   --tier: var(--diamant);
   --tier-soft: var(--diamant-soft);
 }
-.tier-badge__dot {
-  width: 0.5em;
-  height: 0.5em;
-  border-radius: 50%;
-  background: currentColor;
+.tier-badge--meester {
+  --tier: var(--meester);
+  --tier-soft: var(--meester-soft);
+}
+.tier-badge--legende {
+  --tier: var(--legende);
+  --tier-soft: var(--legende-soft);
+}
+.tier-badge__icon {
+  font-size: 0.95em;
+  line-height: 1;
 }
 .tier-badge--sm {
   font-size: 0.6875rem;

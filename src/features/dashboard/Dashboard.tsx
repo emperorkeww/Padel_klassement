@@ -66,6 +66,7 @@ import {
 } from "../../lib/push";
 import { errorMessage } from "../../lib/errors";
 import { TierBadge } from "../../components/TierBadge";
+import { tierProgress } from "../../lib/tiers";
 import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
@@ -155,6 +156,10 @@ export function Dashboard() {
   const rate = me ? winRate(me.won, me.played) : null;
   const myRating = ratings.data?.[myId]?.rating ?? null;
   const myRatingGames = ratings.data?.[myId]?.games ?? 0;
+  // "Nog X tot [volgende divisie]" — alleen tonen als er een volgende tier is.
+  const myProgress = tierProgress(myRating);
+  const myTierNext =
+    myProgress && myProgress.volgende ? myProgress : null;
   const rhist = ratingHistory.data ?? [];
 
   // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
@@ -694,6 +699,12 @@ export function Dashboard() {
                     rating={myRating}
                     dimmed={myRatingGames > 0 && myRatingGames < THIN_GAMES}
                   />
+                </p>
+              )}
+              {!ratings.loading && myTierNext && (
+                <p className="rating-card__next">
+                  Nog <strong>{myTierNext.puntenNodig}</strong> rating tot{" "}
+                  {myTierNext.volgende!.emoji} {myTierNext.volgende!.naam}.
                 </p>
               )}
               {rhist.length >= 2 ? (

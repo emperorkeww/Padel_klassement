@@ -1,0 +1,104 @@
+/* Divisie-legenda (#127): uitleg bij de tiers, zelfde look als de filters. */
+.tier-legend {
+  margin: var(--sp-3) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: var(--sp-2) var(--sp-3);
+}
+.tier-legend > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.tier-legend__intro {
+  margin: var(--sp-2) 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.tier-legend__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.tier-legend__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: var(--tier-soft);
+  color: var(--tier);
+  font-size: var(--fs-sm);
+  border: 1px solid color-mix(in srgb, var(--tier) 30%, var(--line));
+}
+.tier-legend__emoji {
+  font-size: 1.1em;
+  line-height: 1;
+}
+.tier-legend__naam {
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.tier-legend__flavor {
+  font-weight: 500;
+  font-style: italic;
+  font-size: var(--fs-xs);
+  opacity: 0.8;
+}
+.tier-legend__nodig {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tier-legend__range {
+  min-width: 8.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+.tier-legend--slof {
+  --tier: var(--slof);
+  --tier-soft: var(--slof-soft);
+}
+.tier-legend--karton {
+  --tier: var(--karton);
+  --tier-soft: var(--karton-soft);
+}
+.tier-legend--hout {
+  --tier: var(--hout);
+  --tier-soft: var(--hout-soft);
+}
+.tier-legend--brons {
+  --tier: var(--bronze);
+  --tier-soft: var(--bronze-soft);
+}
+.tier-legend--zilver {
+  --tier: var(--silver);
+  --tier-soft: var(--silver-soft);
+}
+.tier-legend--goud {
+  --tier: var(--gold);
+  --tier-soft: var(--gold-soft);
+}
+.tier-legend--platina {
+  --tier: var(--platina);
+  --tier-soft: var(--platina-soft);
+}
+.tier-legend--diamant {
+  --tier: var(--diamant);
+  --tier-soft: var(--diamant-soft);
+}
+.tier-legend--meester {
+  --tier: var(--meester);
+  --tier-soft: var(--meester-soft);
+}
+.tier-legend--legende {
+  --tier: var(--legende);
+  --tier-soft: var(--legende-soft);
+}

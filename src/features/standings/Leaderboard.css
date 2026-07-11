@@ -390,3 +390,111 @@
   font-weight: 600;
   color: var(--ink-soft);
 }
+
+/* ---------- Divisies-overzicht (#127) ---------- */
+.tier-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  margin: var(--sp-3) 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--tier-soft);
+  border: 1px solid color-mix(in srgb, var(--tier) 30%, var(--line));
+}
+.tier-progress__now {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tier-progress__next {
+  color: var(--tier);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.divisions {
+  display: grid;
+  gap: var(--sp-4);
+}
+.division {
+  border-left: 3px solid var(--tier);
+  padding-left: var(--sp-3);
+}
+.division__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-md);
+  color: var(--tier);
+}
+.division__emoji {
+  font-size: 1.2em;
+  line-height: 1;
+}
+.division__count {
+  margin-left: auto;
+  min-width: 1.6em;
+  text-align: center;
+  padding: 0 var(--sp-1);
+  border-radius: 999px;
+  background: var(--tier-soft);
+  color: var(--tier);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.division__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.division__row {
+  border-radius: var(--radius-sm);
+}
+.division__row.is-me {
+  background: var(--accent-soft);
+}
+.division__link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  color: inherit;
+  text-decoration: none;
+}
+.division__name {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+}
+.division__sub {
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.division__rating {
+  min-width: 3.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Tier-kleuren voor de divisie-secties en de progress-banner. */
+.division--slof, .tier-progress--slof { --tier: var(--slof); --tier-soft: var(--slof-soft); }
+.division--karton, .tier-progress--karton { --tier: var(--karton); --tier-soft: var(--karton-soft); }
+.division--hout, .tier-progress--hout { --tier: var(--hout); --tier-soft: var(--hout-soft); }
+.division--brons, .tier-progress--brons { --tier: var(--bronze); --tier-soft: var(--bronze-soft); }
+.division--zilver, .tier-progress--zilver { --tier: var(--silver); --tier-soft: var(--silver-soft); }
+.division--goud, .tier-progress--goud { --tier: var(--gold); --tier-soft: var(--gold-soft); }
+.division--platina, .tier-progress--platina { --tier: var(--platina); --tier-soft: var(--platina-soft); }
+.division--diamant, .tier-progress--diamant { --tier: var(--diamant); --tier-soft: var(--diamant-soft); }
+.division--meester, .tier-progress--meester { --tier: var(--meester); --tier-soft: var(--meester-soft); }
+.division--legende, .tier-progress--legende { --tier: var(--legende); --tier-soft: var(--legende-soft); }

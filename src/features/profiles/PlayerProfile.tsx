@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -30,7 +30,7 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { deriveBadges } from "../../lib/badges";
 import { listSeasons, seasonFromId } from "../../lib/seasons";
-import { matchesInSeason, rankProgression } from "../../lib/standings";
+import { matchesInSeason, rankProgression, byRank } from "../../lib/standings";
 import { RankChart } from "../../components/RankChart";
 import { formatDate } from "../../lib/format";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
@@ -196,9 +196,15 @@ export function PlayerProfile() {
     });
   }
 
-  // Klassementpositie (#N): dezelfde afleiding als het dashboard — index in de
-  // volledige stand. Blijft all-time; het klassement kent geen per-kwartaal-rij.
-  const rankIdx = (standings.data ?? []).findIndex((r) => r.player_id === id);
+  // Klassementpositie (#N) op ELO — dezelfde volgorde als het ratingklassement
+  // (#52): rating aflopend, met de klassieke punten-tie-break bij gelijke of
+  // ontbrekende rating. Blijft all-time; het klassement kent geen kwartaalrij.
+  const ratingRank = [...(standings.data ?? [])].sort(
+    (a, b) =>
+      (ratings.data?.[b.player_id]?.rating ?? -Infinity) -
+        (ratings.data?.[a.player_id]?.rating ?? -Infinity) || byRank(a, b),
+  );
+  const rankIdx = ratingRank.findIndex((r) => r.player_id === id);
   const rank = rankIdx >= 0 ? rankIdx + 1 : null;
 
   // Winrate/gespeeld: binnen een seizoen uit de gefilterde matches, anders uit
@@ -339,7 +345,6 @@ export function PlayerProfile() {
           <h1 className="profile-hero__name">
             {displayName(p)}
             {isMe && <span className="badge badge--accent">jij</span>}
-            <TierBadge rating={myRating} dimmed={thinRating} />
             {streak >= 2 && (
               <span className="badge badge--win">{streak} op rij 🔥</span>
             )}
@@ -383,6 +388,12 @@ export function PlayerProfile() {
           label="Rating"
           value={myRating ?? "—"}
           delta={rhist.length > 0 ? rhist[rhist.length - 1].delta : null}
+          primary
+          badge={
+            myRating != null ? (
+              <TierBadge rating={myRating} dimmed={thinRating} size="sm" />
+            ) : undefined
+          }
         />
         <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
         <Stat label="Punten" value={s?.points ?? 0} />
@@ -781,13 +792,19 @@ function Stat({
   label,
   value,
   delta,
+  primary = false,
+  badge,
 }: {
   label: string;
   value: number | string;
   delta?: number | null;
+  /** Geaccentueerde hoofdstat (de rating springt eruit t.o.v. de rest). */
+  primary?: boolean;
+  /** Extra pil op een eigen regel onder de waarde (bv. de tier-badge). */
+  badge?: ReactNode;
 }) {
   return (
-    <div className="stat">
+    <div className={`stat${primary ? " stat--accent" : ""}`}>
       <span className="stat__value">
         {typeof value === "number" ? <CountUp value={value} /> : value}
         {delta != null && delta !== 0 && (
@@ -797,6 +814,7 @@ function Stat({
           </span>
         )}
       </span>
+      {badge && <span className="stat__badge">{badge}</span>}
       <span className="stat__label">{label}</span>
     </div>
   );

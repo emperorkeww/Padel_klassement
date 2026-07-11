@@ -22,7 +22,9 @@ export function TierBadge({
       className={`tier-badge tier-badge--${tier.key}${size === "sm" ? " tier-badge--sm" : ""}${dimmed ? " is-dim" : ""}`}
       title={tierTitle(tier)}
     >
-      <span className="tier-badge__dot" aria-hidden="true" />
+      <span className="tier-badge__icon" aria-hidden="true">
+        {tier.emoji}
+      </span>
       {tier.label}
     </span>
   );
