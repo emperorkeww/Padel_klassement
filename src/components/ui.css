@@ -649,6 +649,12 @@ textarea {
   color: var(--danger);
   border-color: var(--danger-line);
 }
+/* Big Daddy: de #1 van het klassement (#127-vervolg). */
+.badge--bigdaddy {
+  background: var(--bigdaddy-soft);
+  color: var(--bigdaddy);
+  border-color: color-mix(in srgb, var(--bigdaddy) 40%, var(--line));
+}
 
 /* ---------- Avatar (initialen of foto) ---------- */
 .avatar {
