@@ -26,6 +26,30 @@
   flex-shrink: 0;
 }
 
+/* ---------- Pias van de week: grootste choke van de groep (#127) ---------- */
+.pias-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--warn-soft) 0%, transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--fs-base);
+  color: var(--ink);
+}
+.pias-banner__nose {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.pias-banner strong {
+  font-weight: 800;
+}
+
 /* ---------- Rangnummer in de tabel ---------- */
 .rank {
   display: inline-grid;

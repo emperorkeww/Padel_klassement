@@ -113,5 +113,17 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         tekst: `${naam(ctx, e.playerId)} ${e.playerId === ctx.myId ? "bent" : "is"} kampioen van ${e.groupName} (${e.seasonLabel})`,
         to: `/groepen/${e.groupId}?tab=stand&seizoen=${e.seasonLabel}`,
       };
+    case "maand-pias":
+      return {
+        icon: "🤡",
+        tekst: `${naam(ctx, e.playerId)} is de pias van de maand (${e.periodeLabel}): ${e.detail}`,
+        to: `/groepen/${e.groupId}`,
+      };
+    case "pias-week":
+      return {
+        icon: "🤡",
+        tekst: `${naam(ctx, e.playerId)} is de pias van de week in ${e.groupName}: verloor als torenhoge favoriet (${Math.round(e.winChance * 100)}%)`,
+        to: `/groepen/${e.groupId}`,
+      };
   }
 }

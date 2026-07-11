@@ -15,6 +15,8 @@ import { computePlayerStandings, matchesInSeason } from "./standings";
 import { isSeasonClosed, seasonFor, type Season } from "./seasons";
 import { eveningSummary } from "./eveningSummary";
 import { tierChange } from "./tiers";
+import { bepaalPias, type PiasReden } from "./maandpias";
+import type { PiasWeek } from "./pias";
 
 /** De ándere speler in een vriendschap (zelfde logica als friends/api). */
 const otherId = (f: Friendship, myId: string) =>
@@ -37,6 +39,8 @@ export const RATING_DREMPELS = [1100, 1200, 1300] as const;
 export const RANK_SPRONG = 3;
 /** Zo lang na het sluiten van een kwartaal melden we de kampioen nog. */
 export const KAMPIOEN_VENSTER_DAGEN = 21;
+/** Zo lang na het sluiten van een maand melden we de pias van de maand nog (#167). */
+export const MAANDPIAS_VENSTER_DAGEN = 14;
 /** Vanaf zoveel groepsmatches op één dag bundelen we ze tot één avond-item. */
 export const AVOND_BUNDEL_MIN = 3;
 
@@ -65,7 +69,9 @@ export type FeedEvent =
   | { kind: "poll-locked" | "poll-booked"; at: string; groupId: string; groupName: string; date: string | null; time: string | null }
   | { kind: "evening"; at: string; groupId: string; groupName: string; day: string; count: number; topPlayerId: string | null; bestDuoTeamId: string | null; highlights: Highlight[] }
   | { kind: "rank"; at: string; playerId: string; shift: Shift; rank: number }
-  | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string };
+  | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
+  | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
+  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
 export const FEED_LIMIT = 50;
@@ -189,6 +195,8 @@ export function buildFeed(input: {
   pollsByGroup?: Record<string, FeedPoll[]>;
   /** Afgeronde matches per groep → seizoenskampioenen (alleen recent gesloten). */
   groupMatchesByGroup?: Record<string, Match[]>;
+  /** Serverside aangeduide pias van de week per groep (#127) → pias-items. */
+  piasWeeks?: PiasWeek[];
   profiles?: Record<string, Profile>;
   now?: Date;
   /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
@@ -206,6 +214,7 @@ export function buildFeed(input: {
     membersByGroup = {},
     pollsByGroup = {},
     groupMatchesByGroup = {},
+    piasWeeks = [],
     profiles = {},
     now = new Date(),
     filter,
@@ -402,7 +411,50 @@ export function buildFeed(input: {
           });
         }
       }
+
+      // Pias van de maand (#167): de anti-MVP van de net-gesloten maand — de
+      // maandelijkse tegenhanger van de wekelijkse pias (#127). byMatch levert
+      // de pre-match ratings voor de choke-detectie.
+      const maand = recentlyClosedMonth(now);
+      if (maand) {
+        const pias = bepaalPias(
+          groupMatches.filter((m) => m.status === "completed"),
+          teams,
+          maand,
+          byMatch,
+        );
+        if (pias) {
+          events.push({
+            kind: "maand-pias",
+            at: maand.end.toISOString(),
+            groupId: g.id,
+            groupName: g.name,
+            playerId: pias.playerId,
+            reden: pias.reden,
+            detail: pias.detail,
+            periodeLabel: maand.label,
+          });
+        }
+      }
     }
+  }
+
+  // ── Pias van de week (#127): serverside aangeduid per groep, de grootste
+  //    choke. We tonen enkel piassen van groepen die de feed kent (jouw
+  //    groepen) zodat we een groepsnaam hebben. ──
+  const groupNamesById = new Map(groups.map((g) => [g.id, g.name]));
+  for (const p of piasWeeks) {
+    const groupName = groupNamesById.get(p.groupId);
+    if (!groupName) continue;
+    events.push({
+      kind: "pias-week",
+      at: p.weekStart,
+      groupId: p.groupId,
+      groupName,
+      playerId: p.playerId,
+      winChance: p.winChance,
+      weekStart: p.weekStart,
+    });
   }
 
   // ── Klassementsprongen (dag-granulair, na de laatste speeldag) ──
@@ -480,6 +532,30 @@ export function feedPrivacyFilter(
 ): (e: FeedEvent) => boolean {
   const zichtbaar = (id: string) => profiles[id]?.discoverable !== false;
   return (e) => e.kind !== "friendship" || (zichtbaar(e.a) && zichtbaar(e.b));
+}
+
+const MAANDEN_NL = [
+  "januari", "februari", "maart", "april", "mei", "juni",
+  "juli", "augustus", "september", "oktober", "november", "december",
+];
+
+/**
+ * De vorige kalendermaand als half-open bereik + NL-label, maar alleen zolang
+ * de nieuwe maand nog "vers" is (venster). Tegenhanger van
+ * recentlyClosedSeason, voor de maandelijkse pias van de maand (#167).
+ */
+export function recentlyClosedMonth(
+  now: Date,
+): { start: Date; end: Date; label: string } | null {
+  const eersteVanDeze = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sinceClose = now.getTime() - eersteVanDeze.getTime();
+  if (sinceClose > MAANDPIAS_VENSTER_DAGEN * 24 * 3600_000) return null;
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return {
+    start,
+    end: eersteVanDeze,
+    label: `${MAANDEN_NL[start.getMonth()]} ${start.getFullYear()}`,
+  };
 }
 
 /** Het vorige kwartaal, maar alleen zolang het "vers" gesloten is (venster). */

@@ -26,6 +26,8 @@ import {
 } from "./api";
 import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { getPiasWeeks } from "./piasApi";
+import { currentPias } from "../../lib/pias";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
 import { TierBadge } from "../../components/TierBadge";
@@ -124,6 +126,9 @@ export function Leaderboard() {
   const ratings = useAsync(getPlayerRatings, []);
   // Voor de sparkline-kolom: historie van alle spelers in één batch.
   const histories = useAsync(getAllRatingHistories, []);
+  // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
+  // tonen de pias van de geselecteerde groep.
+  const piasWeeks = useAsync(getPiasWeeks, []);
   // Kwartaalstand: één matches-query per seizoenswissel (gecachet); de stand
   // zelf wordt client-side berekend met dezelfde logica als de views.
   const seasonMatches = useAsync<Match[] | null>(
@@ -159,8 +164,9 @@ export function Leaderboard() {
     histories.reload();
     seasonMatches.reload();
     allCompleted.reload();
+    piasWeeks.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload, allCompleted.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload, allCompleted.reload, piasWeeks.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
@@ -168,6 +174,16 @@ export function Leaderboard() {
   const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
   const rmap = ratings.data ?? {};
   const hmap = histories.data ?? {};
+
+  // Pias van de week voor de gekozen groep (niets bij "Alle groepen").
+  const groupPias = useMemo(() => {
+    if (!groupId) return null;
+    const rows = piasWeeks.data?.[groupId];
+    const pias = rows ? currentPias(rows) : null;
+    if (!pias) return null;
+    const profile = (profilesMap.data ?? {})[pias.playerId];
+    return { naam: displayName(profile), winChance: pias.winChance };
+  }, [groupId, piasWeeks.data, profilesMap.data]);
 
   // Gescopete matches (seizoen óf "stand op datum"), met groepsfilter. Beide
   // rekenen client-side met dezelfde logica als de server-views.
@@ -489,7 +505,8 @@ export function Leaderboard() {
       {tab === "divisies" && (
         <>
           <TierProgressBanner rating={rmap[myId]?.rating ?? null} />
-          <TierLegend />
+          {groupPias && <PiasBanner pias={groupPias} />}
+          <TierLegend pias={groupPias} />
         </>
       )}
 
@@ -598,6 +615,27 @@ function TierProgressBanner({ rating }: { rating: number | null }) {
         <span className="tier-progress__next">de hoogste divisie — chapeau!</span>
       )}
     </div>
+  );
+}
+
+/** Pias van de week: de speler die als grootste favoriet toch verloor. Alleen
+ *  zichtbaar wanneer een groep gekozen is en die groep deze/vorige week een
+ *  choke had. */
+function PiasBanner({
+  pias,
+}: {
+  pias: { naam: string; winChance: number };
+}) {
+  return (
+    <p className="pias-banner" role="status">
+      <span className="pias-banner__nose" aria-hidden="true">
+        🤡
+      </span>
+      <span>
+        Pias van de week: <strong>{pias.naam}</strong> — verloor als torenhoge
+        favoriet ({Math.round(pias.winChance * 100)}%).
+      </span>
+    </p>
   );
 }
 

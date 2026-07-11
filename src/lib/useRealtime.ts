@@ -13,7 +13,10 @@ const CACHE_PREFIXES: Record<string, string[]> = {
     // De grading-trigger beoordeelt tips bij een uitslag/correctie (#116).
     "match-predictions",
     "prediction-standings",
+    // De pias-trigger duidt bij elke uitslag/correctie de pias opnieuw aan.
+    "pias",
   ],
+  pias_of_week: ["pias"],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   attendance: ["attendance"],
