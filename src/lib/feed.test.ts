@@ -154,6 +154,40 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     expect(top.myDelta).toBe(9);
   });
 
+  it("ranking-wissel: promotie naar een nieuwe divisie komt in de feed", () => {
+    const m = match("2026-07-10T18:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [point(m.id, 1095, 1105)] }, // Bink I → Netbeul III
+    });
+    const top = feed[0];
+    if (top.kind !== "match") throw new Error("verwacht match-event");
+    expect(top.highlights).toContainEqual({
+      type: "tier",
+      playerId: "p1",
+      naam: "Netbeul",
+      emoji: "💥",
+      richting: "promotie",
+    });
+  });
+
+  it("ranking-wissel: enkel een sub-niveau (III→II) geeft géén feed-item", () => {
+    const m = match("2026-07-10T18:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [point(m.id, 1005, 1040)] }, // Bink III → Bink II
+    });
+    const top = feed[0];
+    if (top.kind !== "match") throw new Error("verwacht match-event");
+    expect(top.highlights.some((h) => h.type === "tier")).toBe(false);
+  });
+
   it("geen chips zonder aanleiding; myDelta null zonder history", () => {
     const feed = buildFeed({
       matches: [match("2026-07-10T18:00:00Z")],
