@@ -8,7 +8,7 @@ describe("<TierBadge />", () => {
     const badge = screen.getByText("Bink II");
     expect(badge).toHaveAttribute(
       "title",
-      "Bink II · begint het te geloven · rating 1034–1066",
+      "Bink II · begint het gevaarlijk te geloven · rating 1034–1066",
     );
     expect(badge).toHaveClass("tier-badge--goud");
   });
