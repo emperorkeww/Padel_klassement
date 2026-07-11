@@ -26,6 +26,7 @@ import { getMyGroups, getGroupMembers } from "../groups/api";
 import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
 import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
+import { getPiasWeeks } from "../standings/piasApi";
 import type { GroupMember, Match, Profile } from "../../lib/types";
 import "./Feed.css";
 
@@ -50,6 +51,8 @@ const FILTERS = {
     "poll-locked",
     "poll-booked",
     "season-champion",
+    "maand-pias",
+    "pias-week",
   ]),
   Klassement: new Set<FeedEvent["kind"]>(["rank"]),
   Sociaal: new Set<FeedEvent["kind"]>(["friendship"]),
@@ -71,14 +74,19 @@ export function Feed() {
   // Verrijkende bronnen (progressief; buildFeed werkt ook zonder).
   const histories = useAsync(getAllRatingHistories, []);
   const standings = useAsync(getPlayerStandings, []);
-  // Een nieuwe uitslag verandert ook ratings en klassement: alle drie de
-  // bronnen verversen, anders blijven ▲/▼-delta's en rank-items achterlopen.
+  // Pias van de week per groep (serverside aangeduid; de trigger herrekent bij
+  // elke uitslag). Alle groepen tegelijk — RLS beperkt tot de eigen groepen.
+  const piasWeeks = useAsync(getPiasWeeks, []);
+  // Een nieuwe uitslag verandert ook ratings, klassement én de pias-aanduiding:
+  // al die bronnen verversen, anders blijven ▲/▼-delta's, rank- en pias-items
+  // achterlopen.
   const reloadMatchSources = useCallback(() => {
     matches.reload();
     histories.reload();
     standings.reload();
+    piasWeeks.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, histories.reload, standings.reload]);
+  }, [matches.reload, histories.reload, standings.reload, piasWeeks.reload]);
   useRealtime("matches", reloadMatchSources);
   const groups = useAsync(getMyGroups, []);
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
@@ -169,6 +177,7 @@ export function Feed() {
             membersByGroup: groupExtras.data?.membersByGroup,
             pollsByGroup: groupExtras.data?.pollsByGroup,
             groupMatchesByGroup: groupMatches.data ?? undefined,
+            piasWeeks: Object.values(piasWeeks.data ?? {}).flat(),
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
             // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
@@ -185,6 +194,7 @@ export function Feed() {
       groups.data,
       groupExtras.data,
       groupMatches.data,
+      piasWeeks.data,
       profiles.data,
     ],
   );
@@ -342,6 +352,10 @@ function eventKey(event: FeedEvent): string {
       return `r-${event.playerId}-${event.at}`;
     case "season-champion":
       return `sc-${event.groupId}-${event.seasonLabel}`;
+    case "maand-pias":
+      return `mp-${event.groupId}-${event.periodeLabel}`;
+    case "pias-week":
+      return `pw-${event.groupId}-${event.weekStart}`;
   }
 }
 
@@ -560,6 +574,50 @@ function FeedItem({
           {name(event.playerId)} {event.playerId === myId ? "bent" : "is"}{" "}
           kampioen van <strong>{event.groupName}</strong> ({event.seasonLabel}
           )!
+        </FeedLine>
+      );
+    case "maand-pias":
+      return (
+        <FeedLine
+          icon="🤡"
+          to={`/groepen/${event.groupId}`}
+          avatars={[event.playerId]}
+          pmap={pmap}
+        >
+          {event.playerId === myId ? (
+            <>
+              Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}):
+              je {event.detail}. 🤡
+            </>
+          ) : (
+            <>
+              {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):
+              {event.detail}. 🤡
+            </>
+          )}
+        </FeedLine>
+      );
+    case "pias-week":
+      return (
+        <FeedLine
+          icon="🤡"
+          to={`/groepen/${event.groupId}`}
+          avatars={[event.playerId]}
+          pmap={pmap}
+        >
+          {event.playerId === myId ? (
+            <>
+              Jij bent de <strong>pias van de week</strong> in{" "}
+              {event.groupName}: verloor als torenhoge favoriet (
+              {Math.round(event.winChance * 100)}%). 🤡
+            </>
+          ) : (
+            <>
+              {name(event.playerId)} is de <strong>pias van de week</strong> in{" "}
+              {event.groupName}: verloor als torenhoge favoriet (
+              {Math.round(event.winChance * 100)}%). 🤡
+            </>
+          )}
         </FeedLine>
       );
   }
