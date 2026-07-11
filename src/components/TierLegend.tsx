@@ -11,8 +11,9 @@ export function TierLegend() {
     <details className="tier-legend">
       <summary>Wat betekenen de divisies?</summary>
       <p className="tier-legend__intro">
-        Je divisie volgt je rating. Elke tier heeft drie niveaus (III → II → I);
-        win je genoeg, dan promoveer je naar de volgende.
+        Je divisie volgt je rating — van hopeloze Sloffer tot onaantastbare
+        GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
+        klim je omhoog (en verlies je te veel, dan zak je genadeloos weg).
       </p>
       <ul className="tier-legend__list">
         {rijen.map((r) => (
