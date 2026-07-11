@@ -23,6 +23,7 @@ import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import {
   getRecentResults,
+  getRecentMatches,
   getPlayerMatches,
   getTeamsMap,
   teamLabel,
@@ -38,6 +39,8 @@ import {
   wrappedJaar,
 } from "../wrapped/wrapped";
 import { getMyGroups, type GroupSummary } from "../groups/api";
+import { buildFeed, feedPrivacyFilter, type FeedEvent } from "../../lib/feed";
+import { feedSummary } from "../feed/feedSummary";
 import {
   getGroupPolls,
   getGroupPollOptions,
@@ -67,6 +70,11 @@ import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
+/** Zoveel recente (all-status) matches voeden de activiteitenfeed-preview. */
+const FEED_PREVIEW_MATCHES = 120;
+/** Zoveel gebeurtenissen toont de compacte feed-preview op het dashboard. */
+const FEED_PREVIEW_LIMIT = 5;
+
 export function Dashboard() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -80,6 +88,9 @@ export function Dashboard() {
     () => (myId ? getPlayerMatches(myId, 100) : Promise.resolve([])),
     [myId],
   );
+  // Alle statussen (dus ook geplande matches) voor de activiteitenfeed-preview
+  // (#59); buildFeed scoped hierna zelf op je netwerk.
+  const feedMatches = useAsync(() => getRecentMatches(FEED_PREVIEW_MATCHES), []);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -105,12 +116,13 @@ export function Dashboard() {
     standings.reload();
     results.reload();
     myMatches.reload();
+    feedMatches.reload();
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, feedMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -152,6 +164,21 @@ export function Dashboard() {
 
   // Rangverschuiving t.o.v. vóór de laatste speeldag.
   const myShift = rankShifts(rows, completed, tmap).get(myId) ?? null;
+
+  // Activiteitenfeed-preview (#59): compacte kop van de volledige /feed,
+  // opgebouwd uit al geladen bronnen. buildFeed scoped op je netwerk; de
+  // privacyfilter verbergt vriendschapsitems van niet-vindbare spelers.
+  const feedPreview: FeedEvent[] = buildFeed({
+    matches: feedMatches.data ?? [],
+    teams: tmap,
+    friendships: friendships.data ?? [],
+    myId,
+    standings: rows,
+    groups: groups.data ?? [],
+    profiles: pmap,
+    limit: FEED_PREVIEW_LIMIT,
+    filter: feedPrivacyFilter(pmap),
+  });
 
   // Prestatiebadges (afgeleid, geen extra query): behaalde voor de hero, plus
   // de dichtstbijzijnde onbehaalde met voortgang als aanmoediging.
@@ -586,6 +613,37 @@ export function Dashboard() {
           <Stat label="Gespeeld" value={me?.played ?? 0} />
         </div>
       )}
+
+      {/* Activiteitenfeed-preview (#59): recente gebeurtenissen uit je netwerk. */}
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Recente activiteit</h2>
+          <Link className="profile-link" to="/feed">
+            Naar feed →
+          </Link>
+        </div>
+        {feedMatches.loading || friendships.loading || profiles.loading ? (
+          <MatchListSkeleton count={3} />
+        ) : feedPreview.length === 0 ? (
+          <p className="empty">Nog geen activiteit in je netwerk.</p>
+        ) : (
+          <ul className="feed-preview">
+            {feedPreview.map((event, i) => {
+              const r = feedSummary(event, { profiles: pmap, teams: tmap, myId });
+              return (
+                <li key={`${event.kind}-${event.at}-${i}`}>
+                  <Link className="feed-preview__item" to={r.to}>
+                    <span className="feed-preview__icon" aria-hidden="true">
+                      {r.icon}
+                    </span>
+                    <span className="feed-preview__text">{r.tekst}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <div className="grid grid--2">
         <section className="card">
