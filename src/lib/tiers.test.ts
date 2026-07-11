@@ -9,21 +9,21 @@ import {
 
 describe("tierFor", () => {
   it.each([
-    // Ludieke tiers onder Muurtje (open naar beneden).
-    [400, "Sloffer III"],
-    [533, "Sloffer III"],
-    [534, "Sloffer II"],
-    [599, "Sloffer I"],
-    [600, "Kegel III"],
-    [700, "Prutser III"],
-    [799, "Prutser I"],
+    // Ludieke tiers onder Muurbloempje (open naar beneden).
+    [400, "Kneus III"],
+    [533, "Kneus III"],
+    [534, "Kneus II"],
+    [599, "Kneus I"],
+    [600, "Pylon III"],
+    [700, "Luchtmepper III"],
+    [799, "Luchtmepper I"],
     // Bestaande banden (vanaf 800) — ongewijzigd.
-    [800, "Muurtje III"],
-    [833, "Muurtje III"],
-    [834, "Muurtje II"],
-    [899, "Muurtje I"],
-    [900, "Toerist III"],
-    [999, "Toerist I"],
+    [800, "Muurbloempje III"],
+    [833, "Muurbloempje III"],
+    [834, "Muurbloempje II"],
+    [899, "Muurbloempje I"],
+    [900, "Terrastijger III"],
+    [999, "Terrastijger I"],
     [1000, "Bink III"],
     [1099, "Bink I"],
     [1100, "Netbeul III"],
@@ -58,8 +58,8 @@ describe("tierFor", () => {
 
   it("draagt emoji en ludieke bijnaam", () => {
     expect(tierFor(1000)?.emoji).toBe("😎");
-    expect(tierFor(1000)?.flavor).toBe("begint het te geloven");
-    expect(tierFor(450)?.emoji).toBe("🩴");
+    expect(tierFor(1000)?.flavor).toBe("begint het gevaarlijk te geloven");
+    expect(tierFor(450)?.emoji).toBe("🩹");
   });
 
   it("rang stijgt strikt over de hele schaal", () => {
@@ -75,9 +75,9 @@ describe("tierFor", () => {
 
 describe("tierTitle", () => {
   it("bevat de bijnaam en het rating-bereik", () => {
-    expect(tierTitle(tierFor(450)!)).toBe("Sloffer III · speelt op sloffen · rating tot 533");
-    expect(tierTitle(tierFor(1040)!)).toBe("Bink II · begint het te geloven · rating 1034–1066");
-    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · onaantastbaar · rating 1400+");
+    expect(tierTitle(tierFor(450)!)).toBe("Kneus III · meer blessure dan speler · rating tot 533");
+    expect(tierTitle(tierFor(1040)!)).toBe("Bink II · begint het gevaarlijk te geloven · rating 1034–1066");
+    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · onaantastbaar — en dat weet iedereen · rating 1400+");
   });
 });
 
@@ -101,12 +101,12 @@ describe("tierChange", () => {
     expect(w.naar.label).toBe("Netbeul III");
   });
 
-  it("promotie over de nieuwe onderste grens (Prutser → Muurtje)", () => {
+  it("promotie over de nieuwe onderste grens (Luchtmepper → Muurbloempje)", () => {
     const w = tierChange(790, 810)!;
     expect(w.richting).toBe("promotie");
     expect(w.hoofdtier).toBe(true);
-    expect(w.van.naam).toBe("Prutser");
-    expect(w.naar.label).toBe("Muurtje III");
+    expect(w.van.naam).toBe("Luchtmepper");
+    expect(w.naar.label).toBe("Muurbloempje III");
   });
 
   it("promotie naar de hoogste tier (Padelbaas → GOAT)", () => {
@@ -159,7 +159,7 @@ describe("tierLegend", () => {
     expect(legend[0].vanaf).toBe(1400);
     // De laagste tier heeft geen instapdrempel.
     const laagste = legend[legend.length - 1];
-    expect(laagste.naam).toBe("Sloffer");
+    expect(laagste.naam).toBe("Kneus");
     expect(laagste.vanaf).toBeNull();
     // Elke tier draagt emoji + bijnaam.
     expect(legend.every((l) => l.emoji && l.flavor)).toBe(true);
