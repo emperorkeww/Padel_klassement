@@ -72,9 +72,9 @@
   /* Big Daddy (#1 van het klassement): zacht pastelroze. --bigdaddy is de vlak-
      kleur (medaille/kroon), -ink de tekst dáárop, -text de leesbare roze tekst
      op de paginakleur (naam/badge). */
-  --bigdaddy: #f4a9cc;
-  --bigdaddy-soft: #fdeef5;
-  --bigdaddy-ink: #8e2a5b;
+  --bigdaddy: #ef7fb2;
+  --bigdaddy-soft: #fce2ee;
+  --bigdaddy-ink: #7d1f4d;
   --bigdaddy-text: #b23a74;
 
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
@@ -204,9 +204,9 @@
   --legende: #f7869f;
   --legende-soft: #3a1a24;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
-  --bigdaddy: #f2a6c9;
-  --bigdaddy-soft: #3a2030;
-  --bigdaddy-ink: #3a0f22;
+  --bigdaddy: #f288bc;
+  --bigdaddy-soft: #40213a;
+  --bigdaddy-ink: #37101f;
   --bigdaddy-text: #f6b3d2;
 
   --placeholder: #8a9a90;
