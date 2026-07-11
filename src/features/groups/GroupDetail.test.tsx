@@ -225,9 +225,9 @@ describe("<GroupDetail />", () => {
     // Rating is de standaardweergave (fixtures: 1012/1012/988/988).
     expect(await screen.findByText(/gesorteerd op rating/i)).toBeInTheDocument();
     expect((await screen.findAllByText("1012")).length).toBe(2);
-    // Tier-badges (#127): 1012 = Wannabe III (podium), 988 = Terrastijger I.
+    // Tier-badges (#127): 1012 = Wannabe III (podium), 988 = Blaaskaak I.
     expect((await screen.findAllByText("Wannabe III")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Terrastijger I")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Blaaskaak I")).length).toBeGreaterThan(0);
 
     // Toggle naar punten: de vertrouwde puntentabel met Ptn-kolom.
     await userEvent.click(screen.getByRole("button", { name: /^punten$/i }));
