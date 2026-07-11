@@ -437,6 +437,15 @@
 .evening__duo strong {
   color: var(--success);
 }
+/* Grootste upset van de avond (#85). */
+.evening__upset {
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+.evening__upset strong {
+  color: var(--accent);
+}
 .evening__actions {
   display: flex;
 }

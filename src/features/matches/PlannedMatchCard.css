@@ -184,3 +184,10 @@
   font-size: var(--fs-sm);
   font-weight: 600;
 }
+
+/* Korte uitleg onder de winkans-pillen (#85). */
+.planned-card__winhint {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

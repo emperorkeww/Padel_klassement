@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { eveningSummary } from "./eveningSummary";
-import type { Match, Team } from "./types";
+import type { Match, RatingPoint, Team } from "./types";
+
+const pt = (matchId: string, before: number): RatingPoint => ({
+  match_id: matchId,
+  rating_before: before,
+  rating_after: before,
+  delta: 0,
+  played_at: "2026-07-02T19:00:00.000Z",
+});
 
 const TEAMS: Record<string, Team> = {
   "t-ab": { id: "t-ab", name: null, player1_id: "a", player2_id: "b", created_at: "x" },
@@ -62,5 +70,41 @@ describe("eveningSummary", () => {
     );
     expect(s.bestDuo).toBeNull();
     expect(s.rows[0].points).toBe(1);
+  });
+});
+
+describe("eveningSummary — grootste upset (#85)", () => {
+  it("is null zonder rating-historie", () => {
+    const s = eveningSummary([match({ id: "m1" })], TEAMS, "2026-07-02");
+    expect(s.biggestUpset).toBeNull();
+  });
+
+  it("kiest de gewonnen match met de laagste winkans", () => {
+    // m1: t-ab (950) wint van t-cd (1150) → ≈24% (upset).
+    // m2: t-ab (990) wint van t-cd (1090) → ≈36% (geen upset).
+    const matches = [
+      match({ id: "m1", winner_team_id: "t-ab" }),
+      match({ id: "m2", winner_team_id: "t-ab" }),
+    ];
+    const histories: Record<string, RatingPoint[]> = {
+      a: [pt("m1", 950), pt("m2", 990)],
+      b: [pt("m1", 950), pt("m2", 990)],
+      c: [pt("m1", 1150), pt("m2", 1090)],
+      d: [pt("m1", 1150), pt("m2", 1090)],
+    };
+    const s = eveningSummary(matches, TEAMS, "2026-07-02", histories);
+    expect(s.biggestUpset?.matchId).toBe("m1");
+    expect(s.biggestUpset?.winnerTeamId).toBe("t-ab");
+    expect(Math.round((s.biggestUpset?.chance ?? 0) * 100)).toBe(24);
+  });
+
+  it("negeert gelijkspel", () => {
+    const s = eveningSummary(
+      [match({ id: "m1", winner_team_id: null, score_a: 5, score_b: 5 })],
+      TEAMS,
+      "2026-07-02",
+      { a: [pt("m1", 950)], b: [pt("m1", 950)], c: [pt("m1", 1150)], d: [pt("m1", 1150)] },
+    );
+    expect(s.biggestUpset).toBeNull();
   });
 });

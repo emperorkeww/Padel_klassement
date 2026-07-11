@@ -26,6 +26,8 @@ import { Skeleton } from "../../components/Skeleton";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { errorMessage } from "../../lib/errors";
+import { getAllRatingHistories } from "../standings/ratingsApi";
+import { matchUpset, preMatchPoints } from "../../lib/upset";
 import type { Match, Profile, Team } from "../../lib/types";
 import "./MatchDetail.css";
 
@@ -46,6 +48,9 @@ export function MatchDetail() {
   });
   const playerKey = playerIds.join(",");
   const profiles = useAsync(() => getProfilesByIds(playerIds), [playerKey]);
+  // Rating-historie (gecacht, app-breed gedeeld) om de pre-match winkans en dus
+  // een eventuele upset te bepalen (#85).
+  const histories = useAsync(getAllRatingHistories, []);
   const [editing, setEditing] = useState(false);
 
   if (match.loading)
@@ -80,6 +85,11 @@ export function MatchDetail() {
   const aWon = m.winner_team_id === m.team_a_id;
   const bWon = m.winner_team_id === m.team_b_id;
   const isDraw = done && m.winner_team_id === null;
+  // Upset: won de underdog? (winkans vooraf < 35%, uit de echte pre-match ratings)
+  const upset =
+    done && !isDraw
+      ? matchUpset(m, tmap, preMatchPoints(histories.data ?? {}, m.id))
+      : null;
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
   // Per-set uitslag (optioneel), bv. "6-4 3-6 7-5".
@@ -113,6 +123,14 @@ export function MatchDetail() {
             {done ? "Afgerond" : "Gepland"}
           </span>
           {isDraw && <span className="badge badge--accent">Gelijkspel</span>}
+          {upset && (
+            <span
+              className="badge badge--accent"
+              title="De underdog won: winkans vooraf lager dan 35%."
+            >
+              🎯 Upset · {Math.round(upset.chance * 100)}% kans
+            </span>
+          )}
           <span className="badge">
             {formatDate(m.played_at ?? m.created_at) || "—"}
           </span>

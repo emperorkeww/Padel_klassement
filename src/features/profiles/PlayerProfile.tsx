@@ -5,7 +5,12 @@ import { useAsync } from "../../lib/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
-import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
+import {
+  getPlayerRatings,
+  getRatingHistory,
+  getAllRatingHistories,
+} from "../standings/ratingsApi";
+import { upsetsByMatch } from "../../lib/upset";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "../../lib/trends";
 import {
   getPlayerMatches,
@@ -66,6 +71,8 @@ export function PlayerProfile() {
   const profiles = useAsync(getProfilesMap, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
+  // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
+  const allHistories = useAsync(getAllRatingHistories, []);
   // Alle afgeronde matches, nodig om de klassementspositie op elke speeldag te
   // herrekenen (rang-verloop). Vast bereik → gedeelde cache met het klassement.
   const allMatches = useAsync(
@@ -87,6 +94,11 @@ export function PlayerProfile() {
         id,
       ),
     [allMatches.data, teams.data, profiles.data, id],
+  );
+  // Upsets per match-id (#85) — hook vóór eventuele vroege returns.
+  const upsets = useMemo(
+    () => upsetsByMatch(matches.data ?? [], teams.data ?? {}, allHistories.data ?? {}),
+    [matches.data, teams.data, allHistories.data],
   );
 
   // Seizoensfilter: all-time is de standaard; een kwartaal beperkt vorm,
@@ -758,6 +770,7 @@ export function PlayerProfile() {
                 teams={tmap}
                 profiles={pmap}
                 perspectiveId={id}
+                upsets={upsets}
                 empty={
                   season
                     ? "Geen matches in dit seizoen."

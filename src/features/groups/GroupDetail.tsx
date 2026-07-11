@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -37,6 +37,7 @@ import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
 import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
+import { upsetsByMatch } from "../../lib/upset";
 import { computePredictionStandings } from "../../lib/predictions";
 import {
   getGroupPredictions,
@@ -138,6 +139,11 @@ export function GroupDetail() {
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
+  // Upsets per match-id (#85) uit de al geladen rating-historie.
+  const upsets = useMemo(
+    () => upsetsByMatch(matches.data ?? [], tmap, histories.data ?? {}),
+    [matches.data, tmap, histories.data],
+  );
   const memberList = members.data ?? [];
   const isOwner = group.data?.created_by === myId;
   // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
@@ -362,6 +368,7 @@ export function GroupDetail() {
               matches={matches.data ?? []}
               teams={tmap}
               profiles={pmap}
+              histories={histories.data ?? undefined}
             />
           </div>
           <p className="card__subtitle">
@@ -432,6 +439,7 @@ export function GroupDetail() {
                           teams={tmap}
                           profiles={pmap}
                           perspectiveId={myId}
+                          upset={upsets.get(m.id) ?? null}
                           canManage={isOwner}
                           onDeleted={onMatches}
                         />

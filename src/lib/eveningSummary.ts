@@ -1,7 +1,8 @@
 // Samenvatting van één speelavond in een groep: de stand over alleen de
 // afgeronde matches van die dag, plus het best presterende duo.
 
-import type { Match, Team } from "./types";
+import type { Match, RatingPoint, Team } from "./types";
+import { matchUpset, preMatchPoints } from "./upset";
 
 export type EveningRow = {
   playerId: string;
@@ -20,6 +21,9 @@ export type EveningSummary = {
   rows: EveningRow[];
   /** Team met de meeste winsten die avond (bij gelijk: beste saldo). */
   bestDuo: { teamId: string; won: number } | null;
+  /** Grootste upset van de avond: de gewonnen match met de laagste winkans
+   *  vooraf. Null zonder rating-historie of zonder upset. */
+  biggestUpset: { winnerTeamId: string; chance: number; matchId: string } | null;
 };
 
 const dayOf = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
@@ -28,6 +32,7 @@ export function eveningSummary(
   matches: Match[],
   teams: Record<string, Team>,
   day: string,
+  histories?: Record<string, RatingPoint[]>,
 ): EveningSummary {
   const todays = matches
     .filter((m) => m.status === "completed" && dayOf(m) === day)
@@ -108,5 +113,16 @@ export function eveningSummary(
   }
   if (bestDuo && bestDuo.won === 0) bestDuo = null;
 
-  return { matches: todays, rows: sorted, bestDuo };
+  // Grootste upset: de gewonnen match met de laagste pre-match winkans.
+  let biggestUpset: EveningSummary["biggestUpset"] = null;
+  if (histories) {
+    for (const m of todays) {
+      const u = matchUpset(m, teams, preMatchPoints(histories, m.id));
+      if (u && (!biggestUpset || u.chance < biggestUpset.chance)) {
+        biggestUpset = { winnerTeamId: u.winnerTeamId, chance: u.chance, matchId: m.id };
+      }
+    }
+  }
+
+  return { matches: todays, rows: sorted, bestDuo, biggestUpset };
 }
