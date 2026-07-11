@@ -22,8 +22,8 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
     <details className="tier-legend">
       <summary>Wat betekenen de divisies?</summary>
       <p className="tier-legend__intro">
-        Je divisie volgt je rating — van hopeloze Ballenjongen tot onaantastbare
-        GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
+        Je divisie volgt je rating — onderaan het Sletje van de baan, bovenaan
+        de onaantastbare GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
         klim je omhoog (en verlies je te veel, dan zak je genadeloos weg).
       </p>
       <ul className="tier-legend__list">
