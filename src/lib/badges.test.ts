@@ -52,10 +52,33 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(84);
+    expect(badges).toHaveLength(86);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
+    expect(badge(badges, "perfecte-weken-10").voortgang).toEqual({ nu: 0, doel: 10 });
+  });
+});
+
+describe("deriveBadges — perfecte weken (#118)", () => {
+  it("kent 'Perfecte week' toe na één week met alle weekmissies gehaald", () => {
+    // Vette week: dekt de volledige missiepool ongeacht het geseede trio —
+    // zie missions.test.ts. Verlies vooraf voor de boemerang, ma-winst 6-1
+    // met een verse partner (tC), tweede partner op di, weekendmatch op za.
+    const tC: Team = { id: "tC", name: null, player1_id: "p1", player2_id: "p5", created_at: "" };
+    const alleTeams = { ...teams, tC };
+    const op = (iso: string, part: Partial<Match> = {}) =>
+      match({ played_at: iso, created_at: iso, ...part });
+    const vetteWeek = [
+      op("2026-07-03T20:00:00", { winner_team_id: "tB" }),
+      op("2026-07-06T10:00:00", { team_a_id: "tC", winner_team_id: "tC", score_a: 6, score_b: 1 }),
+      op("2026-07-07T18:00:00", { winner_team_id: "tA" }),
+      op("2026-07-11T10:00:00", { winner_team_id: "tA" }),
+    ];
+    const badges = deriveBadges(vetteWeek, alleTeams, "p1");
+    expect(badge(badges, "perfecte-weken-1").behaald).toBe(true);
+    expect(badge(badges, "perfecte-weken-10").behaald).toBe(false);
+    expect(badge(badges, "perfecte-weken-10").voortgang).toEqual({ nu: 1, doel: 10 });
   });
 });
 
