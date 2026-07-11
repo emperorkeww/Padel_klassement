@@ -34,6 +34,8 @@ import { matchesInSeason, rankProgression } from "../../lib/standings";
 import { RankChart } from "../../components/RankChart";
 import { formatDate } from "../../lib/format";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
+import { WrappedSheet } from "../wrapped/WrappedSheet";
+import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
 import "./PlayerProfile.css";
@@ -92,6 +94,7 @@ export function PlayerProfile() {
   // Aangetikte badge: opent een pop-up met naam, uitleg en voortgang (werkt
   // ook op touch, waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
+  const [wrappedOpen, setWrappedOpen] = useState(false);
   // Escape sluit de badge-pop-up; de pagina eronder scrollt niet mee.
   useEffect(() => {
     if (!openBadge) return;
@@ -258,6 +261,12 @@ export function PlayerProfile() {
     topBadge,
   };
 
+  // Padel Wrapped (#115): jaarrond terugvindbaar op het eigen profiel zodra
+  // er in het beschikbare jaar gespeeld is (vanaf 15 dec = het lopende jaar).
+  const wrappedYr = wrappedJaar(new Date());
+  const heeftWrapped =
+    isMe && matchesInYear(mlist, wrappedYr).length > 0;
+
   return (
     <div>
       <header className="page-head profile-head">
@@ -285,12 +294,34 @@ export function PlayerProfile() {
               ))}
             </select>
           )}
+          {heeftWrapped && (
+            <button
+              className="btn btn--sm"
+              aria-haspopup="dialog"
+              onClick={() => setWrappedOpen(true)}
+            >
+              🎁 Wrapped {wrappedYr}
+            </button>
+          )}
           <ShareProfile
             data={shareData}
             label={isMe ? "↗ Deel mijn profiel" : "↗ Deel profiel"}
           />
         </div>
       </header>
+
+      {wrappedOpen && heeftWrapped && (
+        <WrappedSheet
+          jaar={wrappedYr}
+          playerId={id}
+          naam={displayName(p)}
+          matches={mlist}
+          teams={tmap}
+          profiles={pmap}
+          ratingHistory={rhist}
+          onClose={() => setWrappedOpen(false)}
+        />
+      )}
 
       <section className="card profile-hero">
         {/* Zelfde view-transition-naam als de aangetikte klassement-avatar:

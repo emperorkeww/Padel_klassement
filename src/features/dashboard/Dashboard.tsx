@@ -31,6 +31,12 @@ import { eveningSummary } from "../../lib/eveningSummary";
 import { ShareEvening } from "../groups/ShareEvening";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { WrappedSheet } from "../wrapped/WrappedSheet";
+import {
+  matchesInYear,
+  toonWrappedBanner,
+  wrappedJaar,
+} from "../wrapped/wrapped";
 import { getMyGroups, type GroupSummary } from "../groups/api";
 import {
   getGroupPolls,
@@ -185,6 +191,23 @@ export function Dashboard() {
   // Onboarding: pas beslissen als de bronnen binnen zijn, zodat de checklist
   // niet even flitst voor een bestaande speler.
   const [onbDismissed, setOnbDismissed] = useState(() => readFlag("onboarding-dismissed"));
+
+  // Padel Wrapped (#115): banner in het eindejaarsvenster, weg te klikken per
+  // jaar. De sheet hergebruikt de al geladen data (nieuwste 100 matches —
+  // in het bannervenster zijn de jaarmatches per definitie recent).
+  const wrappedYr = wrappedJaar(new Date());
+  const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [wrappedDismissed, setWrappedDismissed] = useState(() =>
+    readFlag(`wrapped-${wrappedYr}-dismissed`),
+  );
+  const toonWrapped =
+    toonWrappedBanner(new Date()) &&
+    !wrappedDismissed &&
+    matchesInYear(myGames, wrappedYr).length > 0;
+  const dismissWrapped = () => {
+    writeFlag(`wrapped-${wrappedYr}-dismissed`);
+    setWrappedDismissed(true);
+  };
   const hasFriend = accepted.length > 0;
   const hasGroup = (groups.data ?? []).length > 0;
   const hasPlayed = (me?.played ?? 0) > 0;
@@ -413,6 +436,46 @@ export function Dashboard() {
             {pollPick.booked ? "Bekijk →" : "Regel de baan →"}
           </Link>
         </section>
+      )}
+
+      {/* Padel Wrapped (#115): eindejaarsbanner, 15 dec t/m 31 jan. */}
+      {toonWrapped && (
+        <section className="card wrapped-banner">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              Jouw jaar in padel is klaar 🎁
+            </h2>
+          </div>
+          <p className="wrapped-banner__text">
+            Bekijk je Wrapped {wrappedYr}: jouw matches, reeksen en rivalen van
+            het afgelopen jaar.
+          </p>
+          <div className="wrapped-banner__actions">
+            <button
+              className="btn btn--sm btn--primary"
+              aria-haspopup="dialog"
+              onClick={() => setWrappedOpen(true)}
+            >
+              Bekijk
+            </button>
+            <button className="btn btn--sm" onClick={dismissWrapped}>
+              Later
+            </button>
+          </div>
+        </section>
+      )}
+
+      {wrappedOpen && (
+        <WrappedSheet
+          jaar={wrappedYr}
+          playerId={myId}
+          naam={myName}
+          matches={myGames}
+          teams={tmap}
+          profiles={profiles.data ?? {}}
+          ratingHistory={ratingHistory.data ?? []}
+          onClose={() => setWrappedOpen(false)}
+        />
       )}
 
       {nextMatch && (
