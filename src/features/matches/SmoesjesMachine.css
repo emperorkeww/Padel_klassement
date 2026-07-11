@@ -1,0 +1,21 @@
+/* Smoesjesmachine: een ludiek excuus na een verlies. */
+
+.smoesjes__quote {
+  margin: var(--sp-2) 0;
+  font-size: var(--fs-lg, 1.25rem);
+  font-style: italic;
+  text-align: center;
+  font-weight: 600;
+}
+
+.smoesjes__hint {
+  margin: var(--sp-2) 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.smoesjes__trek {
+  display: block;
+  margin: 0 auto;
+}

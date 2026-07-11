@@ -25,6 +25,8 @@ import { Avatar } from "../../components/Avatar";
 import { Skeleton } from "../../components/Skeleton";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
+import { SmoesjesMachine } from "./SmoesjesMachine";
+import { outcomeFor } from "../../lib/results";
 import { errorMessage } from "../../lib/errors";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "../../lib/upset";
@@ -90,6 +92,8 @@ export function MatchDetail() {
     done && !isDraw
       ? matchUpset(m, tmap, preMatchPoints(histories.data ?? {}, m.id))
       : null;
+  // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
+  const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
   // Per-set uitslag (optioneel), bv. "6-4 3-6 7-5".
@@ -204,6 +208,8 @@ export function MatchDetail() {
           />
         )}
       </section>
+
+      {iLost && <SmoesjesMachine matchId={m.id} />}
 
       {m.group_id != null && (
         <TotoSection match={m} teams={tmap} teamProfiles={pmap} />
