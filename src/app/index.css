@@ -69,6 +69,10 @@
   --meester-soft: #f0ebfe;
   --legende: #c2185b;
   --legende-soft: #fce7ef;
+  /* Big Daddy (#1 van het klassement): knalroze, feller dan --legende. */
+  --bigdaddy: #e6007e;
+  --bigdaddy-soft: #ffdcef;
+  --bigdaddy-ink: #ffffff;
 
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
@@ -196,6 +200,10 @@
   --meester-soft: #241d3a;
   --legende: #f7869f;
   --legende-soft: #3a1a24;
+  /* Big Daddy (#1 van het klassement): knalroze, feller dan --legende. */
+  --bigdaddy: #ff7ac0;
+  --bigdaddy-soft: #3a1330;
+  --bigdaddy-ink: #2a0a1c;
 
   --placeholder: #8a9a90;
   --skeleton-hi: #26312a;

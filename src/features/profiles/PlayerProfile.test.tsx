@@ -110,6 +110,40 @@ describe("<PlayerProfile />", () => {
     expect(await screen.findByText("6")).toBeInTheDocument();
   });
 
+  it("kroont de #1 van het klassement met een Big Daddy-badge in de hero", async () => {
+    setTables("p2");
+    state.tables.player_standings = [
+      { player_id: "p1", username: "x", full_name: null, played: 4, won: 1, drawn: 0, lost: 3, points: 3, goal_diff: 0 },
+      { player_id: "p2", username: "x", full_name: null, played: 4, won: 3, drawn: 0, lost: 1, points: 9, goal_diff: 0 },
+    ];
+    state.tables.player_ratings = [
+      { player_id: "p2", rating: 1300, games: 5, updated_at: "" },
+      { player_id: "p1", rating: 1000, games: 5, updated_at: "" },
+    ];
+    renderProfile("p2");
+    expect(
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Big Daddy/)).toBeInTheDocument();
+  });
+
+  it("toont geen Big Daddy-badge als de speler niet #1 staat", async () => {
+    setTables("p2");
+    state.tables.player_standings = [
+      { player_id: "p1", username: "x", full_name: null, played: 4, won: 3, drawn: 0, lost: 1, points: 9, goal_diff: 0 },
+      { player_id: "p2", username: "x", full_name: null, played: 4, won: 1, drawn: 0, lost: 3, points: 3, goal_diff: 0 },
+    ];
+    state.tables.player_ratings = [
+      { player_id: "p1", rating: 1300, games: 5, updated_at: "" },
+      { player_id: "p2", rating: 1000, games: 5, updated_at: "" },
+    ];
+    renderProfile("p2");
+    expect(
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Big Daddy/)).not.toBeInTheDocument();
+  });
+
   it("toont de jij-vs-balans op het overzicht van andermans profiel", async () => {
     setTables("p2");
     renderProfile("p2");

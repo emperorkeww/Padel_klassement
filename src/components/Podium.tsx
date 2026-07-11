@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "./Avatar";
 import { TierBadge } from "./TierBadge";
+import { BIG_DADDY_EMOJI, BIG_DADDY_TITEL, bigDaddyRoast } from "../lib/bigDaddy";
 import "./Podium.css";
 
 // Gedeeld podium voor de top 3 van een klassement (globaal én per groep):
@@ -41,8 +42,19 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
   return (
     <div className="podium" aria-label="Top 3">
       {order.map(({ entry, place }) => {
+        // De #1 van een rating-podium (tier: true) is de "Big Daddy": roze kroon
+        // + spot. Punten/toto-podia (geen tier) blijven ongemoeid.
+        const isBigDaddy = place === 1 && !!entry.tier;
         const body = (
           <>
+            {isBigDaddy && (
+              <span className="podium__crown">
+                <span className="podium__crown-title">
+                  {BIG_DADDY_EMOJI} {BIG_DADDY_TITEL}
+                </span>
+                <span className="podium__roast">{bigDaddyRoast(entry.key)}</span>
+              </span>
+            )}
             <span className="podium__medal">{place}</span>
             <Avatar
               profile={entry.profile}
@@ -74,7 +86,7 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
             )}
           </>
         );
-        const className = `podium__spot podium__spot--${place} ${entry.isMe ? "is-me" : ""}`;
+        const className = `podium__spot podium__spot--${place}${isBigDaddy ? " is-bigdaddy" : ""} ${entry.isMe ? "is-me" : ""}`;
         return entry.link ? (
           <Link key={entry.key} to={entry.link} className={className}>
             {body}

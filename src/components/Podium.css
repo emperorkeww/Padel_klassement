@@ -37,6 +37,49 @@
   padding-bottom: var(--sp-6);
   box-shadow: var(--shadow-md);
 }
+/* Big Daddy: de #1 van het klassement torent er knalroze bovenuit. */
+.podium__spot--1.is-bigdaddy {
+  background:
+    radial-gradient(120% 100% at 50% 0%, var(--bigdaddy-soft) 0%, transparent 72%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--bigdaddy) 45%, var(--line));
+}
+.podium__spot--1.is-bigdaddy .podium__medal {
+  background: var(--bigdaddy);
+  color: var(--bigdaddy-ink);
+}
+.podium__spot--1.is-bigdaddy .podium__name {
+  color: var(--bigdaddy);
+}
+.podium__crown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: var(--sp-1);
+}
+.podium__crown-title {
+  padding: 0.1rem var(--sp-3);
+  border-radius: 999px;
+  background: var(--bigdaddy);
+  color: var(--bigdaddy-ink);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.podium__roast {
+  max-width: 14ch;
+  color: var(--bigdaddy);
+  font-size: var(--fs-2xs, 0.68rem);
+  font-style: italic;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+}
+
 .podium__spot--2 {
   background:
     radial-gradient(120% 100% at 50% 0%, var(--silver-soft) 0%, transparent 70%),
