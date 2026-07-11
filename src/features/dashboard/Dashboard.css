@@ -216,6 +216,20 @@
   justify-self: start;
 }
 
+/* Padel Wrapped-banner in het eindejaarsvenster (#115). */
+.wrapped-banner {
+  border-left: 3px solid var(--lime);
+}
+.wrapped-banner__text {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.wrapped-banner__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
 .hero__actions {
   display: flex;
   gap: var(--sp-2);
@@ -525,6 +539,78 @@
   transition: width 0.3s ease;
 }
 
+/* Weekmissies (#118): drie kleine weekdoelen met voortgangsbalkjes. */
+.week-missions__range {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.missions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-4);
+}
+.missions__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: var(--sp-3);
+  row-gap: var(--sp-2);
+}
+.missions__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.missions__body {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.missions__name {
+  font-weight: 700;
+}
+.missions__hint {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.missions__count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.missions__check {
+  font-weight: 800;
+  color: var(--success);
+}
+.missions__bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.missions__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.missions__item.is-done .missions__fill {
+  background: var(--success);
+}
+.missions__perfect {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--success);
+}
+
 /* Onboarding-checklist voor nieuwe spelers. */
 .onboard__dismiss {
   flex-shrink: 0;
@@ -644,6 +730,41 @@
   padding: 0;
   display: grid;
   gap: var(--sp-3);
+}
+
+/* Activiteitenfeed-preview op het dashboard (#59): compacte regels. */
+.feed-preview {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.feed-preview__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.feed-preview__item:hover {
+  background: var(--surface-2);
+}
+.feed-preview__icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.feed-preview__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
 }
 .toplist__item {
   display: flex;

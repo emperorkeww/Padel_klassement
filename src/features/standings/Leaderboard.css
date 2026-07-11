@@ -146,6 +146,13 @@
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
+/* Rating is het hoofdgetal van het spelersklassement (#139). */
+.rating-cell--lead {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 0.15rem var(--sp-3);
+}
 .rating-wrap {
   display: inline-flex;
   align-items: center;
@@ -153,12 +160,17 @@
   gap: var(--sp-2);
 }
 
-/* ---------- Punten: de kolom waar het om draait ---------- */
+/* ---------- Punten: hoofdgetal in het teamklassement; bij spelers gedempt ---------- */
 .pts-cell {
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+.pts-cell--sub {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--ink-soft);
 }
 
 /* ---------- Winrate-balkje ---------- */
@@ -252,7 +264,8 @@
   justify-items: end;
   gap: 0.1rem;
 }
-.ranklist__pts {
+/* Hoofdgetal rechts: rating bij spelers, punten bij teams (#139). */
+.ranklist__lead {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -260,7 +273,7 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.ranklist__pts-label {
+.ranklist__lead-label {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;

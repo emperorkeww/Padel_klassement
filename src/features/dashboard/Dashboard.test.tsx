@@ -41,6 +41,9 @@ function renderPage() {
 }
 
 describe("<Dashboard />", () => {
+  // Vierings-flags van de weekmissies hoeven hier niet opgeruimd: localStorage
+  // heeft in deze testomgeving geen werkende methodes (zie test/setup.ts) en
+  // readFlag/writeFlag vangen dat met try/catch af.
   beforeEach(stubPlaytomic);
   afterEach(() => vi.unstubAllGlobals());
 
@@ -51,8 +54,8 @@ describe("<Dashboard />", () => {
     expect((await screen.findAllByText("1012")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/▲/)).length).toBeGreaterThan(0);
     expect(screen.getByText("Rating")).toBeInTheDocument();
-    // Tier-badge (#127) bij de rating: 1012 = Goud III, gedimd (1 match).
-    const tiers = await screen.findAllByText("Goud III");
+    // Tier-badge (#127) bij de rating: 1012 = Bink III, gedimd (1 match).
+    const tiers = await screen.findAllByText("Bink III");
     expect(tiers.length).toBeGreaterThan(0);
     expect(tiers[0]).toHaveClass("is-dim");
   });
@@ -104,6 +107,17 @@ describe("<Dashboard />", () => {
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
   });
 
+  it("toont een activiteitenfeed-preview met doorlink naar /feed", async () => {
+    const { container } = renderPage();
+    expect(await screen.findByText(/recente activiteit/i)).toBeInTheDocument();
+    // Doorlink naar de volledige feed.
+    const link = screen.getByRole("link", { name: /naar feed/i });
+    expect(link).toHaveAttribute("href", "/feed");
+    // Minstens één gebeurtenis uit de fixtures (uitslag/vriendschap).
+    const items = container.querySelectorAll(".feed-preview__item");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
   it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
     renderPage();
     expect(
@@ -113,6 +127,49 @@ describe("<Dashboard />", () => {
     expect(
       screen.getByRole("link", { name: /bekijk de poll/i }),
     ).toBeInTheDocument();
+  });
+
+  it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {
+    const { container } = renderPage();
+    expect(await screen.findByText("Weekmissies")).toBeInTheDocument();
+    const kaart = container.querySelector(".week-missions");
+    expect(kaart).not.toBeNull();
+    // Precies drie missies (welke is seed-afhankelijk — alleen structuur checken).
+    const balken = kaart!.querySelectorAll('[role="progressbar"]');
+    expect(balken).toHaveLength(3);
+    for (const balk of balken) {
+      expect(balk).toHaveAttribute("aria-valuemin", "0");
+      expect(Number(balk.getAttribute("aria-valuemax"))).toBeGreaterThan(0);
+    }
+  });
+
+  it("toont de Wrapped-banner alleen in het eindejaarsvenster", async () => {
+    // Vast "nu" op 20 december: bannervenster open, beschikbaar jaar 2026
+    // (de fixture-match van juli 2026 telt mee). Alleen Date faken.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 11, 20, 12) });
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/jouw jaar in padel is klaar/i),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Bekijk" }));
+      expect(
+        await screen.findByRole("dialog", { name: /wrapped 2026/i }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("verbergt de Wrapped-banner buiten het venster", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 6, 11, 12) });
+    try {
+      renderPage();
+      expect(await screen.findByText(/hoi, alice anders/i)).toBeInTheDocument();
+      expect(screen.queryByText(/jouw jaar in padel is klaar/i)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
@@ -85,8 +85,8 @@ describe("<PlayerProfile />", () => {
       await screen.findByRole("heading", { name: /bob boers/i }),
     ).toBeInTheDocument();
     expect(await screen.findByText("6")).toBeInTheDocument();
-    // Tier-badge (#127) in de hero: rating 1012 = Goud III, gedimd (1 match).
-    expect(await screen.findByText("Goud III")).toHaveClass("is-dim");
+    // Tier-badge (#127) in de hero: rating 1012 = Bink III, gedimd (1 match).
+    expect(await screen.findByText("Bink III")).toHaveClass("is-dim");
   });
 
   it("toont de onderlinge balans op andermans profiel", async () => {
@@ -155,5 +155,44 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByText(/nog geen gezamenlijke matches/i),
     ).toBeInTheDocument();
+  });
+
+  it("opent Wrapped vanaf het eigen profiel, met deelbare kaarten", async () => {
+    // Vast "nu" in het eindejaarsvenster: beschikbaar jaar = 2026, waarin de
+    // fixture-matches (juli 2026) vallen. Alleen Date faken.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 11, 20, 12) });
+    try {
+      setTables("p1");
+      renderProfile("p1");
+      const knop = await screen.findByRole("button", { name: /wrapped 2026/i });
+      fireEvent.click(knop);
+      const dialog = await screen.findByRole("dialog", { name: /wrapped 2026/i });
+      // Elke kaart heeft een eigen deelknop; navigatie met dots aanwezig.
+      expect(
+        within(dialog).getAllByRole("button", { name: /deel/i }).length,
+      ).toBeGreaterThan(0);
+      expect(
+        within(dialog).getAllByRole("button", { name: /kaart \d+ van/i }).length,
+      ).toBeGreaterThan(2);
+      // Sluiten geeft de focus terug aan de pagina.
+      fireEvent.click(within(dialog).getByRole("button", { name: "Sluiten" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("verbergt de Wrapped-knop op andermans profiel", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 11, 20, 12) });
+    try {
+      setTables("p2");
+      renderProfile("p2");
+      expect(
+        await screen.findByRole("heading", { name: /bob boers/i }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /wrapped/i })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

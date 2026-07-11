@@ -12,11 +12,18 @@ import { CountUp } from "../../components/CountUp";
 import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
 import { rankShifts, type Shift } from "../../lib/rankShift";
 import { deriveBadges, type Badge } from "../../lib/badges";
+import {
+  deriveMissions,
+  weekIndex,
+  weekStartOf,
+} from "../../lib/missions";
+import { celebrate } from "../../lib/confetti";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
 import {
   getRecentResults,
+  getRecentMatches,
   getPlayerMatches,
   getTeamsMap,
   teamLabel,
@@ -25,7 +32,15 @@ import { eveningSummary } from "../../lib/eveningSummary";
 import { ShareEvening } from "../groups/ShareEvening";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { WrappedSheet } from "../wrapped/WrappedSheet";
+import {
+  matchesInYear,
+  toonWrappedBanner,
+  wrappedJaar,
+} from "../wrapped/wrapped";
 import { getMyGroups, type GroupSummary } from "../groups/api";
+import { buildFeed, feedPrivacyFilter, type FeedEvent } from "../../lib/feed";
+import { feedSummary } from "../feed/feedSummary";
 import {
   getGroupPolls,
   getGroupPollOptions,
@@ -56,6 +71,11 @@ import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
+/** Zoveel recente (all-status) matches voeden de activiteitenfeed-preview. */
+const FEED_PREVIEW_MATCHES = 120;
+/** Zoveel gebeurtenissen toont de compacte feed-preview op het dashboard. */
+const FEED_PREVIEW_LIMIT = 5;
+
 export function Dashboard() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -69,6 +89,9 @@ export function Dashboard() {
     () => (myId ? getPlayerMatches(myId, 100) : Promise.resolve([])),
     [myId],
   );
+  // Alle statussen (dus ook geplande matches) voor de activiteitenfeed-preview
+  // (#59); buildFeed scoped hierna zelf op je netwerk.
+  const feedMatches = useAsync(() => getRecentMatches(FEED_PREVIEW_MATCHES), []);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -94,12 +117,13 @@ export function Dashboard() {
     standings.reload();
     results.reload();
     myMatches.reload();
+    feedMatches.reload();
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, feedMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -146,6 +170,21 @@ export function Dashboard() {
   // Rangverschuiving t.o.v. vóór de laatste speeldag.
   const myShift = rankShifts(rows, completed, tmap).get(myId) ?? null;
 
+  // Activiteitenfeed-preview (#59): compacte kop van de volledige /feed,
+  // opgebouwd uit al geladen bronnen. buildFeed scoped op je netwerk; de
+  // privacyfilter verbergt vriendschapsitems van niet-vindbare spelers.
+  const feedPreview: FeedEvent[] = buildFeed({
+    matches: feedMatches.data ?? [],
+    teams: tmap,
+    friendships: friendships.data ?? [],
+    myId,
+    standings: rows,
+    groups: groups.data ?? [],
+    profiles: pmap,
+    limit: FEED_PREVIEW_LIMIT,
+    filter: feedPrivacyFilter(pmap),
+  });
+
   // Prestatiebadges (afgeleid, geen extra query): behaalde voor de hero, plus
   // de dichtstbijzijnde onbehaalde met voortgang als aanmoediging.
   const allBadges = deriveBadges(myGames, tmap, myId, ratings.data ?? undefined);
@@ -187,6 +226,23 @@ export function Dashboard() {
   // Onboarding: pas beslissen als de bronnen binnen zijn, zodat de checklist
   // niet even flitst voor een bestaande speler.
   const [onbDismissed, setOnbDismissed] = useState(() => readFlag("onboarding-dismissed"));
+
+  // Padel Wrapped (#115): banner in het eindejaarsvenster, weg te klikken per
+  // jaar. De sheet hergebruikt de al geladen data (nieuwste 100 matches —
+  // in het bannervenster zijn de jaarmatches per definitie recent).
+  const wrappedYr = wrappedJaar(new Date());
+  const [wrappedOpen, setWrappedOpen] = useState(false);
+  const [wrappedDismissed, setWrappedDismissed] = useState(() =>
+    readFlag(`wrapped-${wrappedYr}-dismissed`),
+  );
+  const toonWrapped =
+    toonWrappedBanner(new Date()) &&
+    !wrappedDismissed &&
+    matchesInYear(myGames, wrappedYr).length > 0;
+  const dismissWrapped = () => {
+    writeFlag(`wrapped-${wrappedYr}-dismissed`);
+    setWrappedDismissed(true);
+  };
   const hasFriend = accepted.length > 0;
   const hasGroup = (groups.data ?? []).length > 0;
   const hasPlayed = (me?.played ?? 0) > 0;
@@ -417,6 +473,46 @@ export function Dashboard() {
         </section>
       )}
 
+      {/* Padel Wrapped (#115): eindejaarsbanner, 15 dec t/m 31 jan. */}
+      {toonWrapped && (
+        <section className="card wrapped-banner">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              Jouw jaar in padel is klaar 🎁
+            </h2>
+          </div>
+          <p className="wrapped-banner__text">
+            Bekijk je Wrapped {wrappedYr}: jouw matches, reeksen en rivalen van
+            het afgelopen jaar.
+          </p>
+          <div className="wrapped-banner__actions">
+            <button
+              className="btn btn--sm btn--primary"
+              aria-haspopup="dialog"
+              onClick={() => setWrappedOpen(true)}
+            >
+              Bekijk
+            </button>
+            <button className="btn btn--sm" onClick={dismissWrapped}>
+              Later
+            </button>
+          </div>
+        </section>
+      )}
+
+      {wrappedOpen && (
+        <WrappedSheet
+          jaar={wrappedYr}
+          playerId={myId}
+          naam={myName}
+          matches={myGames}
+          teams={tmap}
+          profiles={profiles.data ?? {}}
+          ratingHistory={ratingHistory.data ?? []}
+          onClose={() => setWrappedOpen(false)}
+        />
+      )}
+
       {nextMatch && (
         <section className="card card--next">
           <div className="card__head">
@@ -523,6 +619,37 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* Activiteitenfeed-preview (#59): recente gebeurtenissen uit je netwerk. */}
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">Recente activiteit</h2>
+          <Link className="profile-link" to="/feed">
+            Naar feed →
+          </Link>
+        </div>
+        {feedMatches.loading || friendships.loading || profiles.loading ? (
+          <MatchListSkeleton count={3} />
+        ) : feedPreview.length === 0 ? (
+          <p className="empty">Nog geen activiteit in je netwerk.</p>
+        ) : (
+          <ul className="feed-preview">
+            {feedPreview.map((event, i) => {
+              const r = feedSummary(event, { profiles: pmap, teams: tmap, myId });
+              return (
+                <li key={`${event.kind}-${event.at}-${i}`}>
+                  <Link className="feed-preview__item" to={r.to}>
+                    <span className="feed-preview__icon" aria-hidden="true">
+                      {r.icon}
+                    </span>
+                    <span className="feed-preview__text">{r.tekst}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       <div className="grid grid--2">
         <section className="card">
           <div className="card__head">
@@ -590,6 +717,10 @@ export function Dashboard() {
                 )
               )}
             </section>
+          )}
+
+          {myMatches.data && teams.data && (
+            <WeekMissions matches={myMatches.data} teams={tmap} myId={myId} />
           )}
 
           {nextBadge && nextBadge.voortgang && (
@@ -760,6 +891,110 @@ function rememberName(userId: string, name: string) {
   } catch {
     /* opslag niet beschikbaar (privémodus) — geen probleem */
   }
+}
+
+/* ---------- Weekmissies (#118): kleine, verversende doelen per week ---------- */
+function WeekMissions({
+  matches,
+  teams,
+  myId,
+}: {
+  matches: Match[];
+  teams: Record<string, Team>;
+  myId: string;
+}) {
+  const nu = new Date();
+  const weekIdx = weekIndex(nu);
+  const missies = deriveMissions(matches, teams, myId, nu);
+  const allesBehaald = missies.every((m) => m.behaald);
+
+  const start = weekStartOf(nu);
+  const eind = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 12);
+  const fmt = new Intl.DateTimeFormat("nl-BE", { day: "numeric", month: "short" });
+
+  // Vier elke missie hoogstens één keer: flag per week + missie, zodat de
+  // teller elke maandag vanzelf reset. Eén confettisalvo per pass, ook als
+  // meerdere missies tegelijk binnenkomen (bv. na een realtime refresh).
+  const seintje = missies.map((m) => `${m.id}:${m.behaald}`).join(",");
+  useEffect(() => {
+    let vier = false;
+    for (const m of missies) {
+      if (!m.behaald) continue;
+      const key = `missie-gevierd:${weekIdx}:${m.id}`;
+      if (!readFlag(key)) {
+        writeFlag(key);
+        vier = true;
+      }
+    }
+    if (allesBehaald) {
+      const key = `perfecte-week-gevierd:${weekIdx}`;
+      if (!readFlag(key)) {
+        writeFlag(key);
+        vier = true;
+      }
+    }
+    if (vier) celebrate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seintje]);
+
+  return (
+    <section className="card week-missions" aria-label="Weekmissies">
+      <div className="card__head">
+        <h2 className="card__title">Weekmissies</h2>
+        <span className="week-missions__range">
+          {fmt.format(start)} – {fmt.format(eind)}
+        </span>
+      </div>
+      <ul className="missions">
+        {missies.map((m) => (
+          <li
+            key={m.id}
+            className={`missions__item ${m.behaald ? "is-done" : ""}`}
+          >
+            <span className="missions__emoji" aria-hidden="true">
+              {m.emoji}
+            </span>
+            <span className="missions__body">
+              <span className="missions__name">{m.naam}</span>
+              <span className="missions__hint">{m.omschrijving}</span>
+            </span>
+            {m.behaald ? (
+              <span className="missions__check" aria-label="behaald">
+                ✓
+              </span>
+            ) : (
+              <span className="missions__count">
+                {m.voortgang.nu}/{m.voortgang.doel}
+              </span>
+            )}
+            <span
+              className="missions__bar"
+              role="progressbar"
+              aria-label={m.naam}
+              aria-valuenow={m.voortgang.nu}
+              aria-valuemin={0}
+              aria-valuemax={m.voortgang.doel}
+            >
+              <span
+                className="missions__fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round((m.voortgang.nu / m.voortgang.doel) * 100),
+                  )}%`,
+                }}
+              />
+            </span>
+          </li>
+        ))}
+      </ul>
+      {allesBehaald && (
+        <p className="missions__perfect">
+          🎉 Perfecte week! Dit telt mee voor de Weekheld-badge.
+        </p>
+      )}
+    </section>
+  );
 }
 
 function readFlag(key: string): boolean {
