@@ -22,6 +22,7 @@ import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
+import { TierBadge } from "../../components/TierBadge";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
@@ -540,6 +541,7 @@ export function GroupDetail() {
                         rating: r.rating,
                         delta: lastDelta(r.playerId),
                         dimmed: r.thin,
+                        tier: true,
                         sub: `${r.playedInGroup}× in deze groep`,
                       }))}
                     />
@@ -575,6 +577,11 @@ export function GroupDetail() {
                                 <td className="num">
                                   {r.rating != null ? (
                                     <span className="rating-wrap">
+                                      <TierBadge
+                                        rating={r.rating}
+                                        dimmed={r.thin}
+                                        size="sm"
+                                      />
                                       <span className="rating-cell">
                                         <strong>{r.rating}</strong>
                                       </span>

@@ -38,6 +38,9 @@ import { WrappedSheet } from "../wrapped/WrappedSheet";
 import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
+import { TierBadge } from "../../components/TierBadge";
+import { tierFor } from "../../lib/tiers";
+import { THIN_GAMES } from "../groups/groupRating";
 import "./PlayerProfile.css";
 
 // Aantal recente matches dat we op het profiel tonen (de volledige historie
@@ -155,6 +158,8 @@ export function PlayerProfile() {
   const bigWin = biggestWin(scoped, tmap, id);
   const partner = bestPartner(scoped, tmap, id);
   const myRating = ratings.data?.[id]?.rating ?? null;
+  const myGames = ratings.data?.[id]?.games ?? 0;
+  const thinRating = myGames > 0 && myGames < THIN_GAMES;
   const rhist = ratingHistory.data ?? [];
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
 
@@ -256,6 +261,7 @@ export function PlayerProfile() {
   const shareData: ProfileShareData = {
     name: displayName(p),
     rating: myRating,
+    tier: tierFor(myRating),
     rank,
     form,
     topBadge,
@@ -333,6 +339,7 @@ export function PlayerProfile() {
           <h1 className="profile-hero__name">
             {displayName(p)}
             {isMe && <span className="badge badge--accent">jij</span>}
+            <TierBadge rating={myRating} dimmed={thinRating} />
             {streak >= 2 && (
               <span className="badge badge--win">{streak} op rij 🔥</span>
             )}

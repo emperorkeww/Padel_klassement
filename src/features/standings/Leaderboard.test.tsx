@@ -69,6 +69,12 @@ describe("<Leaderboard />", () => {
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
     // Geen seizoen gekozen → geen kampioensposter om te delen.
     expect(shareButton()).toBeNull();
+    // Tier-badges (#127) bij de ratings: 1012 = Goud III, 988 = Zilver I,
+    // gedimd want alle fixtures hebben maar 1 match.
+    const tiers = await screen.findAllByText("Goud III");
+    expect(tiers.length).toBeGreaterThan(0);
+    expect(tiers[0]).toHaveClass("is-dim");
+    expect((await screen.findAllByText("Zilver I")).length).toBeGreaterThan(0);
   });
 
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {

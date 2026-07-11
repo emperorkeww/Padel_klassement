@@ -62,6 +62,8 @@ import {
   getPushSubscription,
 } from "../../lib/push";
 import { errorMessage } from "../../lib/errors";
+import { TierBadge } from "../../components/TierBadge";
+import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
@@ -140,6 +142,7 @@ export function Dashboard() {
   const losing = lossStreak(myGames, tmap, myId);
   const rate = me ? winRate(me.won, me.played) : null;
   const myRating = ratings.data?.[myId]?.rating ?? null;
+  const myRatingGames = ratings.data?.[myId]?.games ?? 0;
   const rhist = ratingHistory.data ?? [];
 
   // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
@@ -629,6 +632,10 @@ export function Dashboard() {
                       {Math.abs(rhist[rhist.length - 1].delta)}
                     </span>
                   )}
+                  <TierBadge
+                    rating={myRating}
+                    dimmed={myRatingGames > 0 && myRatingGames < THIN_GAMES}
+                  />
                 </p>
               )}
               {rhist.length >= 2 ? (

@@ -48,13 +48,17 @@
   --warn-soft: #fdf4e7;
   --warn-line: #f0ddba;
 
-  /* Podium */
+  /* Podium + tiers (#127) */
   --gold: #d4a017;
   --gold-soft: #faf3dd;
   --silver: #8c98a4;
   --silver-soft: #eef1f4;
   --bronze: #b0722d;
   --bronze-soft: #f7ece0;
+  --platina: #4e7d8f;
+  --platina-soft: #e9f2f6;
+  --diamant: #4f46e5;
+  --diamant-soft: #eceafc;
 
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
@@ -168,6 +172,10 @@
   --silver-soft: #232930;
   --bronze: #ad8155;
   --bronze-soft: #33241a;
+  --platina: #8fb3c2;
+  --platina-soft: #1d2b31;
+  --diamant: #a49df0;
+  --diamant-soft: #232041;
 
   --placeholder: #8a9a90;
   --skeleton-hi: #26312a;
