@@ -28,6 +28,7 @@ import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
 import { coachOpmerking } from "./coachFeed";
+import { getZwartePiet } from "../groups/zwartePietApi";
 import type {
   GroupMember,
   Match,
@@ -59,6 +60,7 @@ const FILTERS = {
     "season-champion",
     "maand-pias",
     "pias-week",
+    "zwarte-piet",
   ]),
   Klassement: new Set<FeedEvent["kind"]>(["rank"]),
   Sociaal: new Set<FeedEvent["kind"]>(["friendship"]),
@@ -83,16 +85,18 @@ export function Feed() {
   // Pias van de week per groep (serverside aangeduid; de trigger herrekent bij
   // elke uitslag). Alle groepen tegelijk — RLS beperkt tot de eigen groepen.
   const piasWeeks = useAsync(getPiasWeeks, []);
-  // Een nieuwe uitslag verandert ook ratings, klassement én de pias-aanduiding:
-  // al die bronnen verversen, anders blijven ▲/▼-delta's, rank- en pias-items
-  // achterlopen.
+  // De huidige Zwarte Piet-drager per groep (#185), voor de overdracht-items.
+  const shame = useAsync(getZwartePiet, []);
+  // Een nieuwe uitslag verandert ook ratings, klassement, de pias-aanduiding én
+  // de Zwarte Piet: al die bronnen verversen, anders lopen ze achter.
   const reloadMatchSources = useCallback(() => {
     matches.reload();
     histories.reload();
     standings.reload();
     piasWeeks.reload();
+    shame.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, histories.reload, standings.reload, piasWeeks.reload]);
+  }, [matches.reload, histories.reload, standings.reload, piasWeeks.reload, shame.reload]);
   useRealtime("matches", reloadMatchSources);
   const groups = useAsync(getMyGroups, []);
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
@@ -184,6 +188,7 @@ export function Feed() {
             pollsByGroup: groupExtras.data?.pollsByGroup,
             groupMatchesByGroup: groupMatches.data ?? undefined,
             piasWeeks: Object.values(piasWeeks.data ?? {}).flat(),
+            shameTransfers: Object.values(shame.data ?? {}),
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
             // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
@@ -201,6 +206,7 @@ export function Feed() {
       groupExtras.data,
       groupMatches.data,
       piasWeeks.data,
+      shame.data,
       profiles.data,
     ],
   );
@@ -376,6 +382,8 @@ function eventKey(event: FeedEvent): string {
       return `mp-${event.groupId}-${event.periodeLabel}`;
     case "pias-week":
       return `pw-${event.groupId}-${event.weekStart}`;
+    case "zwarte-piet":
+      return `zp-${event.groupId}-${event.at}`;
   }
 }
 
@@ -638,6 +646,19 @@ function FeedItem({
               {Math.round(event.winChance * 100)}%).
             </>
           )}
+        </FeedLine>
+      );
+    case "zwarte-piet":
+      return (
+        <FeedLine
+          icon="🃏"
+          to={`/groepen/${event.groupId}`}
+          avatars={[event.toPlayerId]}
+          pmap={pmap}
+        >
+          {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`}{" "}
+          de <strong>Zwarte Piet</strong> in {event.groupName}
+          {event.fromPlayerId ? ` af van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
         </FeedLine>
       );
   }

@@ -144,5 +144,15 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         ),
         to: `/groepen/${e.groupId}`,
       };
+    case "zwarte-piet":
+      return {
+        icon: "🃏",
+        tekst: kleurRoast(
+          `${naam(ctx, e.toPlayerId)} pakte de Zwarte Piet in ${e.groupName}${e.fromPlayerId ? ` af van ${naam(ctx, e.fromPlayerId)}` : ""}: ${e.detail}`,
+          piasCtx(ctx, e.groupId, e.toPlayerId),
+          roastSeed(e.toPlayerId, e.at),
+        ),
+        to: `/groepen/${e.groupId}`,
+      };
   }
 }
