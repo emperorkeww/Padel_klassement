@@ -3,22 +3,22 @@
 // met drempels; alle UI (badges, toasts, posters) leest hieruit.
 //
 // Banden van 100 rating-punten met sub-niveaus III/II/I van ~33 (III laagst).
-// De onderste tier (Ballenjongen) is open naar beneden, de hoogste (GOAT) open naar
+// De onderste tier (Sletje van de baan) is open naar beneden, de hoogste (GOAT) open naar
 // boven en zonder sub-niveaus. Iedereen start op 1000 = Wannabe III.
 //
 // De namen zijn bewust ludiek/beledigend — dit draait onder vrienden: onderaan
 // genadeloze roast, bovenaan absurde grootspraak.
 
 export type TierNaam =
-  | "Ballenjongen"
-  | "Sukkel"
+  | "Sletje van de baan"
+  | "No show"
   | "Prutser"
   | "Bankvuller"
   | "Blaaskaak"
   | "Wannabe"
   | "Pletwals"
-  | "Roofdier"
-  | "Eindbaas"
+  | "De excuses verzamelaar"
+  | "Forever second"
   | "GOAT";
 export type TierKey =
   | "slof"
@@ -44,19 +44,19 @@ export interface Tier {
   sub: 3 | 2 | 1 | null;
   /** Sub-niveau als Romeins cijfer ("II"); null in de hoogste tier. */
   subLabel: string | null;
-  /** Weergavenaam, bv. "Wannabe II" of "Eindbaas". */
+  /** Weergavenaam, bv. "Wannabe II" of "Forever second". */
   label: string;
   /** Ondergrens van dit (sub-)niveau, inclusief; null = open naar beneden. */
   min: number | null;
   /** Bovengrens, exclusief; null = open naar boven. */
   max: number | null;
-  /** Monotone index over alle niveaus (Ballenjongen III = 0) voor vergelijkingen. */
+  /** Monotone index over alle niveaus (Sletje van de baan III = 0) voor vergelijkingen. */
   rang: number;
 }
 
-/** Hoofdtier-banden, van laag naar hoog. De onderste band (Ballenjongen) is open
+/** Hoofdtier-banden, van laag naar hoog. De onderste band (Sletje van de baan) is open
  *  naar beneden: zijn min van 500 is virtueel en dient alleen om de sub-niveaus
- *  te snijden — alles daaronder klemt op Ballenjongen III. De rating-drempels zijn
+ *  te snijden — alles daaronder klemt op Sletje van de baan III. De rating-drempels zijn
  *  ongewijzigd t.o.v. de eerste versie; alleen de namen zijn ludieker.
  *  De `key` blijft de kleur-/tokensleutel (brons = bronskleur enz.). */
 export const TIER_BANDEN: ReadonlyArray<{
@@ -67,15 +67,15 @@ export const TIER_BANDEN: ReadonlyArray<{
   min: number;
   max: number | null;
 }> = [
-  { naam: "Ballenjongen", key: "slof", emoji: "🎾", flavor: "mag de ballen oprapen, meer niet", min: 500, max: 600 },
-  { naam: "Sukkel", key: "karton", emoji: "🥴", flavor: "denkt dat een lob een broodje is", min: 600, max: 700 },
+  { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "geeft elk punt zomaar weg", min: 500, max: 600 },
+  { naam: "No show", key: "karton", emoji: "🫥", flavor: "lichamelijk aanwezig, verder afwezig", min: 600, max: 700 },
   { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "raakt de bal puur per ongeluk", min: 700, max: 800 },
   { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat erbij en kijkt ernaar", min: 800, max: 900 },
   { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "grote bek, klein spelletje", min: 900, max: 1000 },
   { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "denkt dat-ie goed is — schattig", min: 1000, max: 1100 },
   { naam: "Pletwals", key: "platina", emoji: "🚜", flavor: "walst de tegenstander plat", min: 1100, max: 1200 },
-  { naam: "Roofdier", key: "diamant", emoji: "🐅", flavor: "jaagt op elke zwakke return", min: 1200, max: 1300 },
-  { naam: "Eindbaas", key: "meester", emoji: "👹", flavor: "de laatste horde voor de GOAT", min: 1300, max: 1400 },
+  { naam: "De excuses verzamelaar", key: "diamant", emoji: "😏", flavor: "verzamelt de smoesjes van z'n slachtoffers", min: 1200, max: 1300 },
+  { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "altijd tweede, nooit de GOAT", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "onaantastbaar — en dat weet iedereen", min: 1400, max: null },
 ];
 
@@ -125,22 +125,22 @@ export function tierFor(rating: number | null): Tier | null {
     sub: (3 - subIdx) as 3 | 2 | 1,
     subLabel: ROMEINS[subIdx],
     label: `${band.naam} ${ROMEINS[subIdx]}`,
-    // De onderste tier (Ballenjongen III) is open naar beneden (de 500-vloer is virtueel).
+    // De onderste tier (Sletje van de baan III) is open naar beneden (de 500-vloer is virtueel).
     min: bandIdx === 0 && subIdx === 0 ? null : subMin,
     max: subMax,
     rang: bandIdx * 3 + subIdx,
   };
 }
 
-/** De hoofdtiers van hoog (GOAT) naar laag (Ballenjongen) — voor het divisie-
+/** De hoofdtiers van hoog (GOAT) naar laag (Sletje van de baan) — voor het divisie-
  *  overzicht en de legenda. */
 export const TIER_BANDEN_HOOG_NAAR_LAAG = [...TIER_BANDEN].reverse();
 
 /** Rating-bereik van een hoofdtier als leesbare tekst voor de legenda,
- *  bv. "tot 599" (Ballenjongen, open omlaag), "1000–1099" of "1400+" (GOAT). */
+ *  bv. "tot 599" (Sletje van de baan, open omlaag), "1000–1099" of "1400+" (GOAT). */
 export function bandRangeLabel(band: (typeof TIER_BANDEN)[number]): string {
   if (band.max == null) return `${band.min}+`;
-  // De laagste band (Ballenjongen) is open naar beneden; de 500-vloer is virtueel.
+  // De laagste band (Sletje van de baan) is open naar beneden; de 500-vloer is virtueel.
   if (band.naam === TIER_BANDEN[0].naam) return `tot ${band.max - 1}`;
   return `${band.min}–${band.max - 1}`;
 }

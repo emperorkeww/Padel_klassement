@@ -1,18 +1,23 @@
 import { supabase } from "../../lib/supabase";
 import { invalidate } from "../../lib/queryCache";
 
-/** Privacy-instellingen van het profiel (kolommen uit migratie 20260707162000). */
+/** Privacy-instellingen van het profiel (kolommen uit migratie 20260707162000,
+ *  roast_schild uit 20260711202439). */
 export interface Privacy {
   /** Verschijn je in het zoeken naar spelers? */
   discoverable: boolean;
   /** Mogen anderen je een vriendschapsverzoek sturen? */
   allow_friend_requests: boolean;
+  /** Roast-schild (#183): aan → het systeem roast je niet meer (neutrale
+   *  variant overal). Default 'false' = schild neer. */
+  roast_schild: boolean;
 }
 
 /** Haalt de privacy-instellingen van de gebruiker op (default = alles open). */
 export async function getPrivacy(userId: string): Promise<Privacy> {
-  // select("*") i.p.v. de kolomnamen: database.types.ts kent 'discoverable' en
-  // 'allow_friend_requests' nog niet, dus lezen we ze via een cast van de rij.
+  // select("*") i.p.v. de kolomnamen: database.types.ts kent 'discoverable',
+  // 'allow_friend_requests' en 'roast_schild' nog niet, dus lezen we ze via een
+  // cast van de rij.
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -24,6 +29,7 @@ export async function getPrivacy(userId: string): Promise<Privacy> {
     discoverable: (row.discoverable as boolean | undefined) ?? true,
     allow_friend_requests:
       (row.allow_friend_requests as boolean | undefined) ?? true,
+    roast_schild: (row.roast_schild as boolean | undefined) ?? false,
   };
 }
 

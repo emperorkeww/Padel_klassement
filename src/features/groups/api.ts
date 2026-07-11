@@ -1,6 +1,6 @@
 import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
-import type { Group, GroupMember } from "../../lib/types";
+import type { Group, GroupMember, RoastIntensiteit } from "../../lib/types";
 
 // database.types.ts kent de nieuwe RPC's (create_group_invite,
 // redeem_group_invite, create_fair_round) nog niet — die wordt later opnieuw
@@ -105,6 +105,20 @@ export async function renameGroup(
   const { error } = await supabase
     .from("groups")
     .update({ name: name.trim() })
+    .eq("id", groupId);
+  if (error) throw error;
+  invalidate(`groups:one:${groupId}`, "groups");
+}
+
+/** Zet de roast-intensiteit van een groep (#183; alleen de eigenaar, RLS). */
+export async function setRoastIntensiteit(
+  groupId: string,
+  intensiteit: RoastIntensiteit,
+): Promise<void> {
+  const { error } = await supabase
+    .from("groups")
+    // Cast: kolom bestaat in de databank, nog niet in database.types.ts.
+    .update({ roast_intensiteit: intensiteit } as never)
     .eq("id", groupId);
   if (error) throw error;
   invalidate(`groups:one:${groupId}`, "groups");

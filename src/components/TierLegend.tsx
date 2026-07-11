@@ -1,11 +1,14 @@
 import { tierLegend } from "../lib/tiers";
 import "./TierLegend.css";
 
-/** Pias van de week voor de voetnoot: de naam en hoe hoog de favoriet stond. */
+/** Pias van de week voor de voetnoot: de naam, hoe hoog de favoriet stond en de
+ *  commentator-sneer (#183; "" als de pias een roast-schild aan heeft). */
 export interface TierLegendPias {
   naam: string;
   /** Pre-match winkans van de verloren favoriet (0..1). */
   winChance: number;
+  /** Kant-en-klare sneer-staart van de commentator, of "" bij schild. */
+  sneer: string;
 }
 
 /**
@@ -22,8 +25,8 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
     <details className="tier-legend">
       <summary>Wat betekenen de divisies?</summary>
       <p className="tier-legend__intro">
-        Je divisie volgt je rating — van hopeloze Ballenjongen tot onaantastbare
-        GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
+        Je divisie volgt je rating — onderaan het Sletje van de baan, bovenaan
+        de onaantastbare GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
         klim je omhoog (en verlies je te veel, dan zak je genadeloos weg).
       </p>
       <ul className="tier-legend__list">
@@ -50,6 +53,7 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
           <>
             🤡 Pias van de week: <strong>{pias.naam}</strong> — ging als
             torenhoge favoriet ({Math.round(pias.winChance * 100)}%) onderuit.
+            {pias.sneer}
           </>
         ) : (
           "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."

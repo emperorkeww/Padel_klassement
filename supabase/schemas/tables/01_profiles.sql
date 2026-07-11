@@ -15,6 +15,10 @@ create table public.profiles (
   -- Door de speler uitgelichte badges (geordende lijst van badge-id's), die
   -- bovenaan zijn profiel verschijnen. Leeg = niets uitgelicht.
   featured_badges text[] not null default '{}',
+  -- Roast-schild (#183): zet de speler dit aan, dan roast het systeem hem niet
+  -- meer — pias/feed/profiel tonen dan een neutrale, feitelijke variant. Default
+  -- 'false' = schild neer = bestaand gedrag.
+  roast_schild boolean not null default false,
   -- Gastspeler zonder account, en (voor een gast) de speler die hem aanmaakte.
   is_guest boolean not null default false,
   owner_id uuid references auth.users (id) on delete cascade,
