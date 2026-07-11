@@ -3,21 +3,22 @@
 // met drempels; alle UI (badges, toasts, posters) leest hieruit.
 //
 // Banden van 100 rating-punten met sub-niveaus III/II/I van ~33 (III laagst).
-// De onderste tier (Kneus) is open naar beneden, de hoogste (GOAT) open naar
-// boven en zonder sub-niveaus. Iedereen start op 1000 = Bink III.
+// De onderste tier (Balkip) is open naar beneden, de hoogste (GOAT) open naar
+// boven en zonder sub-niveaus. Iedereen start op 1000 = Wannabe III.
 //
-// De namen zijn bewust ludiek/beledigend — dit draait onder vrienden.
+// De namen zijn bewust ludiek/beledigend — dit draait onder vrienden: onderaan
+// genadeloze roast, bovenaan absurde grootspraak.
 
 export type TierNaam =
-  | "Kneus"
-  | "Pylon"
-  | "Luchtmepper"
-  | "Muurbloempje"
+  | "Balkip"
+  | "Lantaarnpaal"
+  | "Luchtgitarist"
+  | "Bankwarmer"
   | "Terrastijger"
-  | "Bink"
+  | "Wannabe"
   | "Netbeul"
-  | "Haai"
-  | "Padelbaas"
+  | "Sluipmoordenaar"
+  | "Halfgod"
   | "GOAT";
 export type TierKey =
   | "slof"
@@ -37,25 +38,25 @@ export interface Tier {
   key: TierKey;
   /** Herkenbaar icoon per divisie (naast de kleur). */
   emoji: string;
-  /** Ludieke bijnaam van de divisie, bv. "begint het gevaarlijk te geloven". */
+  /** Ludieke bijnaam van de divisie, bv. "denkt dat-ie goed is". */
   flavor: string;
   /** Sub-niveau: III laagst, I hoogst; de hoogste tier heeft er geen. */
   sub: 3 | 2 | 1 | null;
   /** Sub-niveau als Romeins cijfer ("II"); null in de hoogste tier. */
   subLabel: string | null;
-  /** Weergavenaam, bv. "Bink II" of "Haai". */
+  /** Weergavenaam, bv. "Wannabe II" of "Halfgod". */
   label: string;
   /** Ondergrens van dit (sub-)niveau, inclusief; null = open naar beneden. */
   min: number | null;
   /** Bovengrens, exclusief; null = open naar boven. */
   max: number | null;
-  /** Monotone index over alle niveaus (Muurbloempje III = 0) voor vergelijkingen. */
+  /** Monotone index over alle niveaus (Balkip III = 0) voor vergelijkingen. */
   rang: number;
 }
 
-/** Hoofdtier-banden, van laag naar hoog. De onderste band (Kneus) is open
+/** Hoofdtier-banden, van laag naar hoog. De onderste band (Balkip) is open
  *  naar beneden: zijn min van 500 is virtueel en dient alleen om de sub-niveaus
- *  te snijden — alles daaronder klemt op Kneus III. De rating-drempels zijn
+ *  te snijden — alles daaronder klemt op Balkip III. De rating-drempels zijn
  *  ongewijzigd t.o.v. de eerste versie; alleen de namen zijn ludieker.
  *  De `key` blijft de kleur-/tokensleutel (brons = bronskleur enz.). */
 export const TIER_BANDEN: ReadonlyArray<{
@@ -66,15 +67,15 @@ export const TIER_BANDEN: ReadonlyArray<{
   min: number;
   max: number | null;
 }> = [
-  { naam: "Kneus", key: "slof", emoji: "🩹", flavor: "meer blessure dan speler", min: 500, max: 600 },
-  { naam: "Pylon", key: "karton", emoji: "🚧", flavor: "staat erbij als een verkeerskegel", min: 600, max: 700 },
-  { naam: "Luchtmepper", key: "hout", emoji: "🌀", flavor: "raakt vaker lucht dan bal", min: 700, max: 800 },
-  { naam: "Muurbloempje", key: "brons", emoji: "🧱", flavor: "durft de bal amper te raken", min: 800, max: 900 },
-  { naam: "Terrastijger", key: "zilver", emoji: "🍹", flavor: "op z'n best aan de bar", min: 900, max: 1000 },
-  { naam: "Bink", key: "goud", emoji: "😎", flavor: "begint het gevaarlijk te geloven", min: 1000, max: 1100 },
+  { naam: "Balkip", key: "slof", emoji: "🐔", flavor: "rent kakelend achter elke bal aan", min: 500, max: 600 },
+  { naam: "Lantaarnpaal", key: "karton", emoji: "🗿", flavor: "beweegt met de snelheid van nat beton", min: 600, max: 700 },
+  { naam: "Luchtgitarist", key: "hout", emoji: "🎸", flavor: "slaat meer lucht dan bal — mét gevoel", min: 700, max: 800 },
+  { naam: "Bankwarmer", key: "brons", emoji: "🪑", flavor: "z'n racket is puur decoratie", min: 800, max: 900 },
+  { naam: "Terrastijger", key: "zilver", emoji: "🍺", flavor: "ongeslagen… aan de bar", min: 900, max: 1000 },
+  { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "denkt dat-ie goed is — schattig", min: 1000, max: 1100 },
   { naam: "Netbeul", key: "platina", emoji: "💥", flavor: "meppt 'm dwars door je ziel", min: 1100, max: 1200 },
-  { naam: "Haai", key: "diamant", emoji: "🦈", flavor: "ruikt bloed zodra je opslaat", min: 1200, max: 1300 },
-  { naam: "Padelbaas", key: "meester", emoji: "👑", flavor: "schrijft zelf de spelregels", min: 1300, max: 1400 },
+  { naam: "Sluipmoordenaar", key: "diamant", emoji: "🥷", flavor: "je ziet 'm niet tot je al verloren hebt", min: 1200, max: 1300 },
+  { naam: "Halfgod", key: "meester", emoji: "⚡", flavor: "buigt de zwaartekracht naar z'n hand", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "onaantastbaar — en dat weet iedereen", min: 1400, max: null },
 ];
 
@@ -124,22 +125,22 @@ export function tierFor(rating: number | null): Tier | null {
     sub: (3 - subIdx) as 3 | 2 | 1,
     subLabel: ROMEINS[subIdx],
     label: `${band.naam} ${ROMEINS[subIdx]}`,
-    // De onderste tier (Kneus III) is open naar beneden (de 500-vloer is virtueel).
+    // De onderste tier (Balkip III) is open naar beneden (de 500-vloer is virtueel).
     min: bandIdx === 0 && subIdx === 0 ? null : subMin,
     max: subMax,
     rang: bandIdx * 3 + subIdx,
   };
 }
 
-/** De hoofdtiers van hoog (GOAT) naar laag (Kneus) — voor het divisie-
+/** De hoofdtiers van hoog (GOAT) naar laag (Balkip) — voor het divisie-
  *  overzicht en de legenda. */
 export const TIER_BANDEN_HOOG_NAAR_LAAG = [...TIER_BANDEN].reverse();
 
 /** Rating-bereik van een hoofdtier als leesbare tekst voor de legenda,
- *  bv. "tot 599" (Kneus, open omlaag), "1000–1099" of "1400+" (GOAT). */
+ *  bv. "tot 599" (Balkip, open omlaag), "1000–1099" of "1400+" (GOAT). */
 export function bandRangeLabel(band: (typeof TIER_BANDEN)[number]): string {
   if (band.max == null) return `${band.min}+`;
-  // De laagste band (Kneus) is open naar beneden; de 500-vloer is virtueel.
+  // De laagste band (Balkip) is open naar beneden; de 500-vloer is virtueel.
   if (band.naam === TIER_BANDEN[0].naam) return `tot ${band.max - 1}`;
   return `${band.min}–${band.max - 1}`;
 }
@@ -171,7 +172,7 @@ export function tierLegend(): TierLegendItem[] {
 }
 
 /** Tooltip-tekst met bijnaam en rating-grenzen, bv.
- *  "Bink II · begint het gevaarlijk te geloven · rating 1034–1066", "GOAT · onaantastbaar — en dat weet iedereen ·
+ *  "Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066", "GOAT · onaantastbaar — en dat weet iedereen ·
  *  rating 1400+". De bovengrens is exclusief en wordt als max − 1 getoond. */
 export function tierTitle(t: Tier): string {
   const bereik =
@@ -187,7 +188,7 @@ export interface TierWissel {
   richting: "promotie" | "degradatie";
   van: Tier;
   naar: Tier;
-  /** True als ook de hoofdtier wisselde (Bink → Netbeul); false bij III → II. */
+  /** True als ook de hoofdtier wisselde (Wannabe → Netbeul); false bij III → II. */
   hoofdtier: boolean;
 }
 

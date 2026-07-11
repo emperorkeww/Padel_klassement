@@ -5,22 +5,22 @@ import { TierBadge } from "./TierBadge";
 describe("<TierBadge />", () => {
   it("toont het tier-label met bijnaam en rating-grenzen als tooltip", () => {
     render(<TierBadge rating={1040} />);
-    const badge = screen.getByText("Bink II");
+    const badge = screen.getByText("Wannabe II");
     expect(badge).toHaveAttribute(
       "title",
-      "Bink II · begint het gevaarlijk te geloven · rating 1034–1066",
+      "Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066",
     );
     expect(badge).toHaveClass("tier-badge--goud");
   });
 
   it("dimt bij een dunne rating", () => {
     render(<TierBadge rating={1012} dimmed />);
-    expect(screen.getByText("Bink III")).toHaveClass("is-dim");
+    expect(screen.getByText("Wannabe III")).toHaveClass("is-dim");
   });
 
-  it("kent het kleine formaat en de sub-niveaus van Haai", () => {
+  it("kent het kleine formaat en de sub-niveaus van Sluipmoordenaar", () => {
     render(<TierBadge rating={1250} size="sm" />);
-    const diamant = screen.getByText("Haai II");
+    const diamant = screen.getByText("Sluipmoordenaar II");
     expect(diamant).toHaveClass("tier-badge--sm");
     expect(diamant).toHaveClass("tier-badge--diamant");
   });

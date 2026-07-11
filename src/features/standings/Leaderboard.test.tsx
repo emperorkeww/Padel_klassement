@@ -69,9 +69,9 @@ describe("<Leaderboard />", () => {
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
     // Geen seizoen gekozen → geen kampioensposter om te delen.
     expect(shareButton()).toBeNull();
-    // Tier-badges (#127) bij de ratings: 1012 = Bink III, 988 = Terrastijger I,
+    // Tier-badges (#127) bij de ratings: 1012 = Wannabe III, 988 = Terrastijger I,
     // gedimd want alle fixtures hebben maar 1 match.
-    const tiers = await screen.findAllByText("Bink III");
+    const tiers = await screen.findAllByText("Wannabe III");
     expect(tiers.length).toBeGreaterThan(0);
     expect(tiers[0]).toHaveClass("is-dim");
     expect((await screen.findAllByText("Terrastijger I")).length).toBeGreaterThan(0);
@@ -79,15 +79,15 @@ describe("<Leaderboard />", () => {
 
   it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
     renderPage();
-    await screen.findAllByText("Bink III");
+    await screen.findAllByText("Wannabe III");
     fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
 
-    // Sectiekop per hoofd-divisie: fixtures 1012 = Bink, 988 = Terrastijger.
-    expect(await screen.findByRole("heading", { name: /bink/i })).toBeInTheDocument();
+    // Sectiekop per hoofd-divisie: fixtures 1012 = Wannabe, 988 = Terrastijger.
+    expect(await screen.findByRole("heading", { name: /wannabe/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /terrastijger/i })).toBeInTheDocument();
     // Legenda met de ludieke bijnaam en de instapdrempel.
     expect(screen.getByText(/wat betekenen de divisies/i)).toBeInTheDocument();
-    expect(screen.getAllByText("begint het gevaarlijk te geloven").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("denkt dat-ie goed is — schattig").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/vanaf 1100/i).length).toBeGreaterThan(0);
     // Persoonlijke promotie-hint: jouw divisie + rating tot de volgende.
     expect(screen.getByText(/^jij:/i)).toBeInTheDocument();

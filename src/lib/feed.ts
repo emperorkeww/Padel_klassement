@@ -54,7 +54,7 @@ export type Highlight =
   | {
       type: "tier";
       playerId: string;
-      /** Volledige divisie waarin de speler nu zit, incl. sub-niveau ("Bink II"). */
+      /** Volledige divisie waarin de speler nu zit, incl. sub-niveau ("Wannabe II"). */
       label: string;
       emoji: string;
       richting: "promotie" | "degradatie";
@@ -278,7 +278,7 @@ export function buildFeed(input: {
             }
           }
           // Ranking-nieuws: elke divisiewissel (ook een sub-niveau als
-          // Bink III → II) komt op de feed.
+          // Wannabe III → II) komt op de feed.
           const wissel = tierChange(p.rating_before, p.rating_after);
           if (wissel) {
             highlights.push({
