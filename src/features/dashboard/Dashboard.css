@@ -216,6 +216,20 @@
   justify-self: start;
 }
 
+/* Padel Wrapped-banner in het eindejaarsvenster (#115). */
+.wrapped-banner {
+  border-left: 3px solid var(--lime);
+}
+.wrapped-banner__text {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.wrapped-banner__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
 .hero__actions {
   display: flex;
   gap: var(--sp-2);

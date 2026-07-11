@@ -128,6 +128,35 @@ describe("<Dashboard />", () => {
     }
   });
 
+  it("toont de Wrapped-banner alleen in het eindejaarsvenster", async () => {
+    // Vast "nu" op 20 december: bannervenster open, beschikbaar jaar 2026
+    // (de fixture-match van juli 2026 telt mee). Alleen Date faken.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 11, 20, 12) });
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/jouw jaar in padel is klaar/i),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Bekijk" }));
+      expect(
+        await screen.findByRole("dialog", { name: /wrapped 2026/i }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("verbergt de Wrapped-banner buiten het venster", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 6, 11, 12) });
+    try {
+      renderPage();
+      expect(await screen.findByText(/hoi, alice anders/i)).toBeInTheDocument();
+      expect(screen.queryByText(/jouw jaar in padel is klaar/i)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {
     renderPage();
     const badge = await screen.findByRole("button", {
