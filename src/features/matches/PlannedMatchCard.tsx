@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -6,7 +6,22 @@ import { errorMessage } from "../../lib/errors";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
+import { inTeam } from "../../lib/results";
+import {
+  groupRivalries,
+  rivalryForMatch,
+  rivalryHeadline,
+  standAfter,
+} from "../../lib/rivalry";
 import { getPlayerRatings } from "../standings/ratingsApi";
+import { displayName } from "../profiles/api";
+import { useAuth } from "../auth/AuthProvider";
+import { predictionPoints } from "../../lib/predictions";
+import {
+  clearPrediction,
+  getMatchPredictions,
+  setPrediction,
+} from "./predictionsApi";
 import type { Match, Profile, Team } from "../../lib/types";
 import {
   deleteMatch,
@@ -43,6 +58,7 @@ export function PlannedMatchCard({
   teams,
   profiles,
   perspectiveId,
+  history,
   onSaved,
   onDeleted,
 }: {
@@ -51,6 +67,9 @@ export function PlannedMatchCard({
   profiles: Record<string, Profile>;
   /** Speler vanuit wiens oogpunt gevierd wordt (confetti bij eigen winst). */
   perspectiveId?: string;
+  /** Eerdere matches waaruit de onderlinge rivaliteit wordt afgeleid; zonder
+   *  deze prop toont de kaart geen head-to-head-balans. */
+  history?: Match[];
   onSaved?: () => void;
   /** Aangeroepen nadat de match echt verwijderd is (bv. terugnavigeren op de
    *  detailpagina). Zonder deze prop valt het terug op onSaved. */
@@ -59,7 +78,13 @@ export function PlannedMatchCard({
   const toast = useToast();
   const [sa, setSa] = useState("");
   const [sb, setSb] = useState("");
-  const [saved, setSaved] = useState<{ a: number; b: number } | null>(null);
+  const [saved, setSaved] = useState<{
+    a: number;
+    b: number;
+    /** Bijgewerkte onderlinge stand, bevroren op het moment van opslaan
+     *  (daarna telt de match zelf mee in `history`). */
+    rivalryLine?: string;
+  } | null>(null);
 
   // Optionele per-set invoer (uitklapbaar).
   const [showSets, setShowSets] = useState(false);
@@ -81,6 +106,14 @@ export function PlannedMatchCard({
     [],
   );
 
+  // Spannendste rivaliteit tussen de vier tegenover-elkaar-paren, afgeleid
+  // uit de meegegeven historiek (alleen afgeronde matches tellen mee).
+  const rivalry = useMemo(() => {
+    if (!history?.length) return null;
+    return rivalryForMatch(m, teams, groupRivalries(history, teams));
+  }, [history, teams, m]);
+  const nameOf = (id: string) => displayName(profiles[id]);
+
   // Verwachte winstkans uit de (gecachte) ratings — zelfde Elo als de databank.
   const ratings = useAsync(getPlayerRatings, []);
   const chance =
@@ -88,6 +121,64 @@ export function PlannedMatchCard({
       ? winChance(teams[m.team_a_id], teams[m.team_b_id], ratings.data)
       : null;
   const pctA = chance != null ? Math.round(chance * 100) : null;
+
+  // Toto (#116): tips op deze match. Alleen groepsmatches zijn tipbaar; de
+  // guard-trigger dwingt dat ook serverside af.
+  const { user } = useAuth();
+  const myId = user?.id ?? null;
+  const isGroupMatch = m.group_id != null;
+  const predictions = useAsync(
+    () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
+    [m.id, isGroupMatch],
+  );
+  const preds = predictions.data ?? [];
+  const myPrediction = myId
+    ? (preds.find((p) => p.player_id === myId) ?? null)
+    : null;
+  const tippingOpen =
+    isGroupMatch &&
+    m.status === "scheduled" &&
+    (!m.played_at || new Date(m.played_at).getTime() > Date.now());
+  const showTips = isGroupMatch && !!myId && (tippingOpen || preds.length > 0);
+  const [busyTip, setBusyTip] = useState(false);
+
+  async function tip(teamId: string) {
+    if (!myId || !m.group_id || busyTip || !tippingOpen) return;
+    setBusyTip(true);
+    try {
+      if (myPrediction?.predicted_team_id === teamId) {
+        await clearPrediction(m.id, myId);
+        toast.success("Tip ingetrokken.");
+      } else {
+        await setPrediction({
+          matchId: m.id,
+          groupId: m.group_id,
+          playerId: myId,
+          predictedTeamId: teamId,
+        });
+        toast.success(`Tip geplaatst op ${teamLabel(teams[teamId], profiles)}.`);
+      }
+      tap();
+      predictions.reload();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyTip(false);
+    }
+  }
+
+  /** Chip-gegevens per team: tippers, of het mijn tip is en de te winnen
+   *  punten volgens de huidige winkans (de server bevriest de definitieve). */
+  function tipChipFor(teamId: string, teamChance: number | null) {
+    const tippers = preds.filter((p) => p.predicted_team_id === teamId);
+    return {
+      teamId,
+      mine: myPrediction?.predicted_team_id === teamId,
+      count: tippers.length,
+      names: tippers.map((p) => displayName(profiles[p.player_id])),
+      pts: teamChance != null ? predictionPoints(teamChance) : null,
+    };
+  }
 
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
@@ -101,7 +192,26 @@ export function PlannedMatchCard({
     const a = saNum!;
     const b = sbNum!;
     const setScores = toSetScores(sets);
-    setSaved({ a, b }); // optimistisch: meteen als uitslag tonen
+
+    // Rivaliteitsmoment: wie van het rivalenpaar won dit duel (null = gelijk),
+    // en hoe staat het daarna? Vastleggen vóór de herlaadde data binnenkomt.
+    const winnerTeam = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
+    const rivalWinner =
+      rivalry === null
+        ? null
+        : winnerTeam === null
+          ? null
+          : inTeam(winnerTeam, rivalry.a)
+            ? rivalry.a
+            : rivalry.b;
+    const rivalryLine = rivalry
+      ? (() => {
+          const after = standAfter(rivalry, rivalWinner);
+          return `${nameOf(rivalry.a)} ${after.winsA}–${after.winsB} ${nameOf(rivalry.b)}`;
+        })()
+      : undefined;
+
+    setSaved({ a, b, rivalryLine }); // optimistisch: meteen als uitslag tonen
     try {
       await setMatchResult({
         matchId: m.id,
@@ -110,19 +220,22 @@ export function PlannedMatchCard({
         scoreB: b,
         setScores: setScores.length > 0 ? setScores : null,
       });
-      const winner = a === b ? null : teams[a > b ? m.team_a_id : m.team_b_id];
       const iWon =
         !!perspectiveId &&
-        !!winner &&
-        (winner.player1_id === perspectiveId ||
-          winner.player2_id === perspectiveId);
+        !!winnerTeam &&
+        (winnerTeam.player1_id === perspectiveId ||
+          winnerTeam.player2_id === perspectiveId);
       if (iWon) {
         celebrate();
         winPulse();
       } else {
         tap();
       }
-      toast.success("Resultaat opgeslagen.");
+      if (rivalry) {
+        toast.success(`🔥 ${rivalryHeadline(rivalry, rivalWinner, nameOf)}`);
+      } else {
+        toast.success("Resultaat opgeslagen.");
+      }
       onSaved?.();
     } catch (err) {
       setSaved(null); // terugdraaien; de kaart is weer invulbaar
@@ -192,6 +305,7 @@ export function PlannedMatchCard({
           </span>
           <span className="match-card__meta">
             {aWon || bWon ? "opgeslagen ✓" : "gelijkspel · opgeslagen ✓"}
+            {saved.rivalryLine ? ` · 🔥 ${saved.rivalryLine}` : ""}
           </span>
         </span>
         <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={bWon} right />
@@ -212,6 +326,14 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_a_id], profiles)}
           />
         )}
+        {showTips && (
+          <TipChip
+            {...tipChipFor(m.team_a_id, chance)}
+            teamName={teamLabel(teams[m.team_a_id], profiles)}
+            disabled={!tippingOpen || busyTip}
+            onClick={() => tip(m.team_a_id)}
+          />
+        )}
         <ScoreStepper
           value={sa}
           onChange={setSa}
@@ -228,12 +350,38 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_b_id], profiles)}
           />
         )}
+        {showTips && (
+          <TipChip
+            {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
+            teamName={teamLabel(teams[m.team_b_id], profiles)}
+            disabled={!tippingOpen || busyTip}
+            onClick={() => tip(m.team_b_id)}
+          />
+        )}
         <ScoreStepper
           value={sb}
           onChange={setSb}
           label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
         />
       </div>
+
+      {showTips && tippingOpen && !myPrediction && (
+        <p className="planned-card__toto-hint">
+          🎯 Tip de winnaar — een juiste tip op de underdog levert meer punten
+          op. Tippen kan tot de starttijd.
+        </p>
+      )}
+
+      {rivalry && (
+        <p className="planned-card__rivalry">
+          🔥 Onderling: {nameOf(rivalry.a)}{" "}
+          <strong>
+            {rivalry.winsA}–{rivalry.winsB}
+          </strong>{" "}
+          {nameOf(rivalry.b)}
+          {rivalry.draws > 0 ? ` (${rivalry.draws} gelijk)` : ""}
+        </p>
+      )}
 
       <div className="planned-card__sets">
         <button
@@ -309,6 +457,46 @@ export function PlannedMatchCard({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Tapbare toto-pil per teamrij: tip dit team (nogmaals tikken trekt de tip
+ *  in). Toont de te winnen punten en hoeveel groepsleden dit team tippen. */
+function TipChip({
+  teamName,
+  mine,
+  count,
+  names,
+  pts,
+  disabled,
+  onClick,
+}: {
+  teamName: string;
+  mine: boolean;
+  count: number;
+  names: string[];
+  pts: number | null;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`tipchip ${mine ? "tipchip--mine" : ""}`}
+      disabled={disabled}
+      aria-pressed={mine}
+      aria-label={`Tip ${teamName}`}
+      onClick={onClick}
+      title={
+        count > 0
+          ? `Getipt door ${names.join(", ")}`
+          : `Tip ${teamName} als winnaar`
+      }
+    >
+      <span className="tipchip__label">{mine ? "jouw tip ✓" : "tip"}</span>
+      {pts != null && <span className="tipchip__pts">+{pts}</span>}
+      {count > 0 && <span className="tipchip__count">{count}</span>}
+    </button>
   );
 }
 

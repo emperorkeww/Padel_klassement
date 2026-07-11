@@ -1,7 +1,7 @@
 -- pgTAP-tests voor de RLS-hardening (audit 2026-07-01, migratie 20260701140000).
 begin;
 
-select plan(10);
+select plan(15);
 
 ------------------------------------------------------------------------
 -- matches: geen directe INSERT-policy meer; enkel SELECT + UPDATE.
@@ -75,6 +75,40 @@ select has_trigger(
 );
 
 ------------------------------------------------------------------------
+-- match_predictions (toto, #116): policies, guards en grading-trigger.
+------------------------------------------------------------------------
+select policies_are(
+  'public', 'match_predictions',
+  array[
+    'match_predictions_select_member',
+    'match_predictions_insert_own',
+    'match_predictions_update_own',
+    'match_predictions_delete_own'
+  ],
+  'match_predictions heeft de vier lidmaatschaps-policies'
+);
+
+select has_function(
+  'public', 'prediction_points',
+  'functie public.prediction_points() bestaat'
+);
+
+select has_trigger(
+  'public', 'match_predictions', 'match_predictions_guard',
+  'match_predictions valideert tips via de guard-trigger'
+);
+
+select has_trigger(
+  'public', 'match_predictions', 'match_predictions_delete_guard',
+  'match_predictions vergrendelt beoordeelde tips tegen verwijderen'
+);
+
+select has_trigger(
+  'public', 'matches', 'matches_grade_predictions',
+  'matches beoordeelt tips bij afronding/correctie'
+);
+
+------------------------------------------------------------------------
 -- RLS staat nog steeds aan op de gehardde tabellen.
 ------------------------------------------------------------------------
 select is(
@@ -84,10 +118,11 @@ select is(
       'public.matches'::regclass,
       'public.teams'::regclass,
       'public.friendships'::regclass,
-      'public.match_points'::regclass
+      'public.match_points'::regclass,
+      'public.match_predictions'::regclass
     )),
   true,
-  'RLS staat aan op matches, teams, friendships en match_points'
+  'RLS staat aan op matches, teams, friendships, match_points en match_predictions'
 );
 
 select * from finish();

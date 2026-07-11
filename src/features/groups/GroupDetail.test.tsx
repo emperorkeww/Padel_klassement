@@ -232,6 +232,22 @@ describe("<GroupDetail />", () => {
     expect(screen.queryByText(/gesorteerd op rating/i)).not.toBeInTheDocument();
   });
 
+  it("toont het voorspellersklassement onder Stand → Toto", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /^ronde 2$/i });
+    await userEvent.click(screen.getByRole("button", { name: /^stand$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^toto$/i }));
+
+    expect(
+      await screen.findByText(/wie tipt de meeste winnaars/i),
+    ).toBeInTheDocument();
+    // Fixtures: Carol leidt met 5 punten (2/3 juist), Alice volgt (1/2 juist).
+    expect(await screen.findByText("2/3 juist")).toBeInTheDocument();
+    expect(screen.getByText("1/2 juist")).toBeInTheDocument();
+    // Het seizoensfilter is er ook in de toto-weergave.
+    expect(screen.getByLabelText(/seizoen/i)).toBeInTheDocument();
+  });
+
   it("toont Stand en Leden in eigen tabbladen", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });

@@ -32,3 +32,6 @@ supabase/.temp/
 
 # Wrangler/miniflare lokale cache
 .wrangler/
+
+# Claude Code lokale sessie-bestanden en worktrees
+.claude/
