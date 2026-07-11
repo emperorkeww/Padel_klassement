@@ -5,6 +5,7 @@ import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
+import { Sheet } from "../../components/Sheet";
 import {
   getMyFriendships,
   getFriendSuggestions,
@@ -42,21 +43,6 @@ export function Friends() {
   const [searched, setSearched] = useState(false);
   // Suggestie waarvan de gemeenschappelijke vrienden in een popup getoond worden.
   const [mutualFor, setMutualFor] = useState<FriendSuggestion | null>(null);
-
-  // Escape sluit de popup; de pagina eronder scrollt niet mee.
-  useEffect(() => {
-    if (!mutualFor) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMutualFor(null);
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [mutualFor]);
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
@@ -361,39 +347,24 @@ export function Friends() {
       </section>
 
       {mutualFor && (
-        <div className="sheet-backdrop" onClick={() => setMutualFor(null)}>
-          <div
-            className="sheet sheet--compact"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Gemeenschappelijke vrienden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header className="sheet__head">
-              <h2 className="sheet__title">
-                Gemeenschappelijk met {displayName(pmap[mutualFor.id])}
-              </h2>
-              <button
-                className="sheet__close"
-                onClick={() => setMutualFor(null)}
-                aria-label="Sluiten"
-              >
-                ✕
-              </button>
-            </header>
-            <div className="person-list mt-4">
-              {mutualFor.mutual_ids.map((mid) => (
-                <div key={mid} className="person-row">
-                  <PersonCell
-                    profile={pmap[mid]}
-                    to={`/spelers/${mid}`}
-                    onNavigate={() => setMutualFor(null)}
-                  />
-                </div>
-              ))}
-            </div>
+        <Sheet
+          open
+          onClose={() => setMutualFor(null)}
+          compact
+          title={`Gemeenschappelijk met ${displayName(pmap[mutualFor.id])}`}
+        >
+          <div className="person-list mt-4">
+            {mutualFor.mutual_ids.map((mid) => (
+              <div key={mid} className="person-row">
+                <PersonCell
+                  profile={pmap[mid]}
+                  to={`/spelers/${mid}`}
+                  onNavigate={() => setMutualFor(null)}
+                />
+              </div>
+            ))}
           </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );

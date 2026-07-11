@@ -26,11 +26,17 @@ function renderProfile(id: string) {
   );
 }
 
+// Badges zitten sinds #103 achter een tab; open die eerst (wacht op het laden).
+async function openBadges() {
+  fireEvent.click(await screen.findByRole("button", { name: "Badges" }));
+}
+
 describe("<PlayerProfile /> badges", () => {
   it("toont de badge-sectie: behaald vol kleur, niet-behaald gedempt met voortgang", async () => {
     // Fixtures: p1 won haar enige afgewerkte match (geen reus als tegenstander).
     renderProfile("p1");
 
+    await openBadges();
     expect(await screen.findByRole("heading", { name: "Badges" })).toBeInTheDocument();
 
     const eerste = (await screen.findByText(/Eerste overwinning/)).closest(".badge");
@@ -49,6 +55,7 @@ describe("<PlayerProfile /> badges", () => {
 
   it("opent een pop-up met de uitleg na een tik op een badge", async () => {
     renderProfile("p1");
+    await openBadges();
 
     const knop = (await screen.findByText(/Eerste overwinning/)).closest("button")!;
     // Nog geen pop-up en geen uitleg zichtbaar.
@@ -69,6 +76,7 @@ describe("<PlayerProfile /> badges", () => {
   it("laat de eigenaar een behaalde badge uitlichten bovenaan het profiel", async () => {
     // p1 is de ingelogde gebruiker (SESSION), dus dit is haar eigen profiel.
     renderProfile("p1");
+    await openBadges();
 
     // Nog niets uitgelicht.
     const eerste = (await screen.findByText(/Eerste overwinning/)).closest("li")!;
@@ -89,6 +97,7 @@ describe("<PlayerProfile /> badges", () => {
 
   it("opent de uitleg-pop-up via een uitgelichte badge", async () => {
     renderProfile("p1");
+    await openBadges();
 
     // Licht een behaalde badge uit zodat de sectie verschijnt.
     const eerste = (await screen.findByText(/Eerste overwinning/)).closest("li")!;
@@ -110,6 +119,7 @@ describe("<PlayerProfile /> badges", () => {
   it("toont geen ster-toggle op andermans profiel", async () => {
     // p2 is niet de ingelogde gebruiker → geen uitlicht-knoppen.
     renderProfile("p2");
+    await openBadges();
     await screen.findByRole("heading", { name: "Badges" });
     expect(document.querySelector(".badges__star")).toBeNull();
   });

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
+import { Sheet } from "../../components/Sheet";
 import { errorMessage } from "../../lib/errors";
 import { sharePng } from "../../lib/shareImage";
 import { prefersReducedMotion } from "../../lib/motion";
@@ -39,7 +40,6 @@ export function WrappedSheet({
 }) {
   const toast = useToast();
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
   const [actief, setActief] = useState(0);
   const [busyKind, setBusyKind] = useState<string | null>(null);
 
@@ -68,27 +68,6 @@ export function WrappedSheet({
     [jaar, matches, teams, profiles, playerId, ratingHistory, clubMatches.data],
   );
   const cards = wrapped?.cards ?? [];
-
-  // Focus in de dialoog bij openen; terug naar de opener bij sluiten.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
-    return () => opener?.focus?.();
-  }, []);
-
-  // Escape sluit; de pagina eronder scrollt niet mee.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
 
   const naar = (i: number) => {
     const track = trackRef.current;
@@ -128,27 +107,17 @@ export function WrappedSheet({
   if (!wrapped) return null;
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div
-        className="sheet wrapped-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Wrapped ${jaar}`}
-        ref={dialogRef}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") naar(actief + 1);
-          if (e.key === "ArrowLeft") naar(actief - 1);
-        }}
-      >
-        <div className="sheet__head">
-          <h2 className="sheet__title">🎁 Wrapped {jaar}</h2>
-          <button className="sheet__close" onClick={onClose} aria-label="Sluiten">
-            ✕
-          </button>
-        </div>
-
+    <Sheet
+      open
+      onClose={onClose}
+      className="wrapped-sheet"
+      title={`🎁 Wrapped ${jaar}`}
+      ariaLabel={`Wrapped ${jaar}`}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowRight") naar(actief + 1);
+        if (e.key === "ArrowLeft") naar(actief - 1);
+      }}
+    >
         <div className="wrapped-track" ref={trackRef} onScroll={onScroll}>
           {cards.map((card) => {
             const l = posterLayout(card, naam, jaar);
@@ -210,8 +179,7 @@ export function WrappedSheet({
             Volgende ›
           </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
 
