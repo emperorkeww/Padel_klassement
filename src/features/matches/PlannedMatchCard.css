@@ -12,6 +12,62 @@
   margin-left: auto;
 }
 
+/* Toto (#116): tapbare tip-pil per teamrij, in de stijl van de winchip. */
+.tipchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.tipchip:hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+.tipchip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.tipchip--mine {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tipchip__label {
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tipchip__count {
+  padding: 0 var(--sp-1);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+/* Smal scherm: alleen de punten, het woord verdwijnt (zoals de winchip). */
+@media (max-width: 640px) {
+  .tipchip__label {
+    display: none;
+  }
+}
+
+/* Korte uitleg zolang je zelf nog niet getipt hebt. */
+.planned-card__toto-hint {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
 /* Onderlinge rivaliteitsbalans tussen twee spelers uit tegengestelde teams. */
 .planned-card__rivalry {
   margin: var(--sp-2) 0 0;

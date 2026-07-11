@@ -5,10 +5,19 @@ import { invalidate } from "./queryCache";
 // Welke cache-prefixen een wijziging op een tabel raakt: matches beïnvloeden
 // ook de standen (views), teams (nieuwe paren) en ratings (trigger).
 const CACHE_PREFIXES: Record<string, string[]> = {
-  matches: ["matches", "standings", "teams", "ratings"],
+  matches: [
+    "matches",
+    "standings",
+    "teams",
+    "ratings",
+    // De grading-trigger beoordeelt tips bij een uitslag/correctie (#116).
+    "match-predictions",
+    "prediction-standings",
+  ],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   attendance: ["attendance"],
+  match_predictions: ["match-predictions", "prediction-standings"],
   slot_availability: ["slot-availability"],
   play_proposals: ["play-proposal"],
   play_proposal_votes: ["play-proposal"],

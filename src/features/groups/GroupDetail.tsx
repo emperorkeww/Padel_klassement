@@ -36,6 +36,11 @@ import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
 import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
+import { computePredictionStandings } from "../../lib/predictions";
+import {
+  getGroupPredictions,
+  getGroupPredictionStandings,
+} from "../matches/predictionsApi";
 import {
   isSeasonClosed,
   listSeasons,
@@ -65,18 +70,34 @@ export function GroupDetail() {
   const ratings = useAsync(getPlayerRatings, []);
   const histories = useAsync(getAllRatingHistories, []);
 
+  // Toto (#116): tips + voorspellersklassement van deze groep.
+  const predictions = useAsync(() => getGroupPredictions(id), [id]);
+  const predictionStandings = useAsync(
+    () => getGroupPredictionStandings(id),
+    [id],
+  );
+
+  const onPredictions = useCallback(() => {
+    predictions.reload();
+    predictionStandings.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [predictions.reload, predictionStandings.reload]);
+
   const onMatches = useCallback(() => {
     matches.reload();
     standings.reload();
     teams.reload();
     ratings.reload();
     histories.reload();
+    // Een uitslag of correctie beoordeelt ook de tips (grading-trigger).
+    onPredictions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload]);
+  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, onPredictions]);
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
   useRealtime("group_members", members.reload, `group_id=eq.${id}`);
+  useRealtime("match_predictions", onPredictions, `group_id=eq.${id}`);
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -99,7 +120,10 @@ export function GroupDetail() {
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
   // Stand-tab: rating is de standaard (#52); de punten-weergave blijft als
   // toggle tot eendaagse tornooien (#124) die rol overnemen — dan kan hij weg.
-  const [standMode, setStandMode] = useState<"rating" | "punten">("rating");
+  // "toto" = het voorspellersklassement (#116).
+  const [standMode, setStandMode] = useState<"rating" | "punten" | "toto">(
+    "rating",
+  );
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
@@ -155,6 +179,19 @@ export function GroupDetail() {
     season && isSeasonClosed(season) && shownStandings.length > 0
       ? shownStandings[0]
       : null;
+
+  // Voorspellersklassement: all-time uit de view; per seizoen client-side uit
+  // de tips van de matches in dat kwartaal — zelfde hybride als de punten.
+  const shownPredictionStandings = (() => {
+    if (!season) return predictionStandings.data ?? [];
+    const inSeason = new Set(
+      matchesInSeason(completedMatches, season).map((m) => m.id),
+    );
+    return computePredictionStandings(
+      (predictions.data ?? []).filter((p) => inSeason.has(p.match_id)),
+      pmap,
+    );
+  })();
 
   function toggleSelected(pid: string) {
     setSelectedToAdd((prev) => {
@@ -461,6 +498,12 @@ export function GroupDetail() {
               >
                 Punten
               </button>
+              <button
+                className={`tab ${standMode === "toto" ? "is-active" : ""}`}
+                onClick={() => setStandMode("toto")}
+              >
+                Toto
+              </button>
             </div>
           </div>
 
@@ -571,7 +614,7 @@ export function GroupDetail() {
             </>
           )}
 
-          {standMode === "punten" && seasons.length > 0 && (
+          {standMode !== "rating" && seasons.length > 0 && (
             <div className="stand-season">
               <select
                 className="select select--filter"
@@ -671,6 +714,68 @@ export function GroupDetail() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {standMode === "toto" && (
+            <>
+              <p className="card__subtitle">
+                Wie tipt de meeste winnaars? Een juiste tip levert 1–4 punten
+                op — hoe kleiner de winkans, hoe meer punten.
+              </p>
+              {shownPredictionStandings.length === 0 && (
+                <p className="empty">
+                  {season
+                    ? "Geen beoordeelde tips in dit seizoen."
+                    : "Nog geen tips in deze groep. Tip de winnaar op een geplande match!"}
+                </p>
+              )}
+              {shownPredictionStandings.length > 0 && (
+                <Podium
+                  entries={shownPredictionStandings.slice(0, 3).map((p) => ({
+                    key: p.player_id,
+                    name: displayName(p),
+                    profile: pmap[p.player_id] ?? p,
+                    link: `/spelers/${p.player_id}`,
+                    isMe: p.player_id === myId,
+                    rating: p.points,
+                    sub: `${p.correct}/${p.predicted} juist`,
+                  }))}
+                />
+              )}
+              {shownPredictionStandings.length > 3 && (
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Speler</th>
+                      <th className="num">Getipt</th>
+                      <th className="num">Juist</th>
+                      <th className="num">Ptn</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shownPredictionStandings.slice(3).map((p, i) => (
+                      <tr
+                        key={p.player_id}
+                        className={p.player_id === myId ? "is-me" : ""}
+                      >
+                        <td>
+                          <span className="cell-player">
+                            <span className={`rank rank--${i + 4}`}>{i + 4}</span>
+                            <Avatar profile={pmap[p.player_id] ?? p} size={24} />
+                            {displayName(p)}
+                          </span>
+                        </td>
+                        <td className="num">{p.predicted}</td>
+                        <td className="num">{p.correct}</td>
+                        <td className="num">
+                          <strong>{p.points}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
           )}
         </section>
         </>

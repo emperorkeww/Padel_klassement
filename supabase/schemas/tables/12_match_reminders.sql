@@ -5,3 +5,5 @@ create table public.match_reminders (
   match_id uuid primary key references public.matches (id) on delete cascade,
   sent_at timestamptz not null default now()
 );
+
+alter table public.match_reminders enable row level security;

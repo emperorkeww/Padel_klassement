@@ -4,9 +4,17 @@ import type { Match, Profile, Team } from "../../lib/types";
 import { displayName } from "../profiles/api";
 
 // Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe
-// paren bij het loggen) en ratings (trigger herrekent ze).
+// paren bij het loggen), ratings (trigger herrekent ze) en tips (de
+// grading-trigger beoordeelt ze bij een uitslag of correctie, #116).
 function invalidateMatchData() {
-  invalidate("matches", "standings", "teams", "ratings");
+  invalidate(
+    "matches",
+    "standings",
+    "teams",
+    "ratings",
+    "match-predictions",
+    "prediction-standings",
+  );
 }
 
 // Per-set uitslag: paar [games team A, games team B]. Lokaal gedefinieerd omdat

@@ -213,3 +213,29 @@
     font-size: var(--fs-2xl);
   }
 }
+
+/* Toto (#116): tips en toegekende punten bij deze match. */
+.md-toto {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.md-toto__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.md-toto__pick {
+  color: var(--ink-soft);
+}
+.md-toto__row .badge {
+  margin-left: auto;
+}
+.md-toto__note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

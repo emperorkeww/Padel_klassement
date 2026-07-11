@@ -15,6 +15,13 @@ import {
 } from "../../lib/rivalry";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";
+import { useAuth } from "../auth/AuthProvider";
+import { predictionPoints } from "../../lib/predictions";
+import {
+  clearPrediction,
+  getMatchPredictions,
+  setPrediction,
+} from "./predictionsApi";
 import type { Match, Profile, Team } from "../../lib/types";
 import {
   deleteMatch,
@@ -114,6 +121,64 @@ export function PlannedMatchCard({
       ? winChance(teams[m.team_a_id], teams[m.team_b_id], ratings.data)
       : null;
   const pctA = chance != null ? Math.round(chance * 100) : null;
+
+  // Toto (#116): tips op deze match. Alleen groepsmatches zijn tipbaar; de
+  // guard-trigger dwingt dat ook serverside af.
+  const { user } = useAuth();
+  const myId = user?.id ?? null;
+  const isGroupMatch = m.group_id != null;
+  const predictions = useAsync(
+    () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
+    [m.id, isGroupMatch],
+  );
+  const preds = predictions.data ?? [];
+  const myPrediction = myId
+    ? (preds.find((p) => p.player_id === myId) ?? null)
+    : null;
+  const tippingOpen =
+    isGroupMatch &&
+    m.status === "scheduled" &&
+    (!m.played_at || new Date(m.played_at).getTime() > Date.now());
+  const showTips = isGroupMatch && !!myId && (tippingOpen || preds.length > 0);
+  const [busyTip, setBusyTip] = useState(false);
+
+  async function tip(teamId: string) {
+    if (!myId || !m.group_id || busyTip || !tippingOpen) return;
+    setBusyTip(true);
+    try {
+      if (myPrediction?.predicted_team_id === teamId) {
+        await clearPrediction(m.id, myId);
+        toast.success("Tip ingetrokken.");
+      } else {
+        await setPrediction({
+          matchId: m.id,
+          groupId: m.group_id,
+          playerId: myId,
+          predictedTeamId: teamId,
+        });
+        toast.success(`Tip geplaatst op ${teamLabel(teams[teamId], profiles)}.`);
+      }
+      tap();
+      predictions.reload();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyTip(false);
+    }
+  }
+
+  /** Chip-gegevens per team: tippers, of het mijn tip is en de te winnen
+   *  punten volgens de huidige winkans (de server bevriest de definitieve). */
+  function tipChipFor(teamId: string, teamChance: number | null) {
+    const tippers = preds.filter((p) => p.predicted_team_id === teamId);
+    return {
+      teamId,
+      mine: myPrediction?.predicted_team_id === teamId,
+      count: tippers.length,
+      names: tippers.map((p) => displayName(profiles[p.player_id])),
+      pts: teamChance != null ? predictionPoints(teamChance) : null,
+    };
+  }
 
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
@@ -261,6 +326,14 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_a_id], profiles)}
           />
         )}
+        {showTips && (
+          <TipChip
+            {...tipChipFor(m.team_a_id, chance)}
+            teamName={teamLabel(teams[m.team_a_id], profiles)}
+            disabled={!tippingOpen || busyTip}
+            onClick={() => tip(m.team_a_id)}
+          />
+        )}
         <ScoreStepper
           value={sa}
           onChange={setSa}
@@ -277,12 +350,27 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_b_id], profiles)}
           />
         )}
+        {showTips && (
+          <TipChip
+            {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
+            teamName={teamLabel(teams[m.team_b_id], profiles)}
+            disabled={!tippingOpen || busyTip}
+            onClick={() => tip(m.team_b_id)}
+          />
+        )}
         <ScoreStepper
           value={sb}
           onChange={setSb}
           label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
         />
       </div>
+
+      {showTips && tippingOpen && !myPrediction && (
+        <p className="planned-card__toto-hint">
+          🎯 Tip de winnaar — een juiste tip op de underdog levert meer punten
+          op. Tippen kan tot de starttijd.
+        </p>
+      )}
 
       {rivalry && (
         <p className="planned-card__rivalry">
@@ -369,6 +457,46 @@ export function PlannedMatchCard({
         </button>
       </div>
     </div>
+  );
+}
+
+/** Tapbare toto-pil per teamrij: tip dit team (nogmaals tikken trekt de tip
+ *  in). Toont de te winnen punten en hoeveel groepsleden dit team tippen. */
+function TipChip({
+  teamName,
+  mine,
+  count,
+  names,
+  pts,
+  disabled,
+  onClick,
+}: {
+  teamName: string;
+  mine: boolean;
+  count: number;
+  names: string[];
+  pts: number | null;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`tipchip ${mine ? "tipchip--mine" : ""}`}
+      disabled={disabled}
+      aria-pressed={mine}
+      aria-label={`Tip ${teamName}`}
+      onClick={onClick}
+      title={
+        count > 0
+          ? `Getipt door ${names.join(", ")}`
+          : `Tip ${teamName} als winnaar`
+      }
+    >
+      <span className="tipchip__label">{mine ? "jouw tip ✓" : "tip"}</span>
+      {pts != null && <span className="tipchip__pts">+{pts}</span>}
+      {count > 0 && <span className="tipchip__count">{count}</span>}
+    </button>
   );
 }
 

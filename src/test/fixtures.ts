@@ -124,6 +124,26 @@ export const PLAY_POLL_VOTES = [
   { option_id: "opt-far", group_id: "g1", player_id: "p3", status: "maybe", updated_at: NOW },
 ];
 
+// Toto (#116): Carol tipte team A op de geplande match (nog niet beoordeeld);
+// het klassement heeft twee voorspellers met beoordeelde tips.
+export const MATCH_PREDICTIONS = [
+  {
+    match_id: "m-plan",
+    player_id: "p3",
+    group_id: "g1",
+    predicted_team_id: "t-ab",
+    win_chance: 0.53,
+    points: null,
+    created_at: NOW,
+    updated_at: NOW,
+  },
+];
+
+export const PREDICTION_STANDINGS = [
+  { group_id: "g1", player_id: "p3", username: "carol", full_name: "Carol Claes", predicted: 3, correct: 2, points: 5 },
+  { group_id: "g1", player_id: "p1", username: "alice", full_name: "Alice Anders", predicted: 2, correct: 1, points: 2 },
+];
+
 export const RATING_HISTORY = [
   { player_id: "p1", match_id: "m-0", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
   { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: NOW },
@@ -148,6 +168,8 @@ export const TABLES = {
   play_polls: PLAY_POLLS,
   play_poll_options: PLAY_POLL_OPTIONS,
   play_poll_votes: PLAY_POLL_VOTES,
+  match_predictions: MATCH_PREDICTIONS,
+  group_prediction_standings: PREDICTION_STANDINGS,
 };
 
 export const SESSION = { user: { id: "p1", email: "alice@example.com" } };
