@@ -11,6 +11,10 @@ export interface Profile {
   /** Door de speler uitgelichte badges (geordende lijst van badge-id's).
    *  Optioneel: de kolom zit nog niet in de gegenereerde database.types.ts. */
   featured_badges?: string[] | null;
+  /** Verschijn je in het zoeken naar spelers? Bepaalt ook of 'nieuwe vriendschap'-
+   *  items in de feed getoond worden (#59). Kolom bestaat in de DB, nog niet in
+   *  database.types.ts — daarom optioneel; ontbreekt/true = zichtbaar. */
+  discoverable?: boolean;
   created_at: string;
 }
 

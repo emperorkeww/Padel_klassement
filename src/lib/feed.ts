@@ -447,6 +447,20 @@ export function buildFeed(input: {
     .slice(0, limit);
 }
 
+/**
+ * Privacyfilter (#59): verbergt 'nieuwe vriendschap'-items waarbij een van
+ * beide personen niet vindbaar is (`discoverable === false`). Match-, groeps-
+ * en klassementitems blijven — dat is gedeelde activiteit waar de persoon zelf
+ * aan meedeed. `discoverable` ontbreekt of true = zichtbaar. Bedoeld om als
+ * `filter` aan `buildFeed` mee te geven (of te componeren met een soortfilter).
+ */
+export function feedPrivacyFilter(
+  profiles: Record<string, Profile>,
+): (e: FeedEvent) => boolean {
+  const zichtbaar = (id: string) => profiles[id]?.discoverable !== false;
+  return (e) => e.kind !== "friendship" || (zichtbaar(e.a) && zichtbaar(e.b));
+}
+
 /** Het vorige kwartaal, maar alleen zolang het "vers" gesloten is (venster). */
 export function recentlyClosedSeason(now: Date): Season | null {
   const current = seasonFor(now);

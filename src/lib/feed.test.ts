@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildFeed,
   feedDay,
+  feedPrivacyFilter,
   networkIds,
   recentlyClosedSeason,
   scoreHighlight,
@@ -13,6 +14,7 @@ import type {
   GroupMember,
   Match,
   PlayerStanding,
+  Profile,
   RatingPoint,
   Team,
 } from "./types";
@@ -451,5 +453,52 @@ describe("networkIds / feedDay", () => {
     expect(
       feedDay({ kind: "friendship", at: "2026-07-09T12:34:00Z", a: "a", b: "b" }),
     ).toBe("2026-07-09");
+  });
+});
+
+describe("feedPrivacyFilter", () => {
+  const prof = (id: string, discoverable?: boolean): Profile =>
+    ({ id, username: id, full_name: null, discoverable } as Profile);
+  const vriendschap = (a: string, b: string): FeedEvent =>
+    ({ kind: "friendship", at: "2026-07-01T12:00:00Z", a, b });
+  const matchEvent: FeedEvent = {
+    kind: "match",
+    at: "2026-07-02T12:00:00Z",
+    match: match("2026-07-02T12:00:00Z"),
+    highlights: [],
+    myDelta: null,
+  };
+
+  it("verbergt een vriendschap met een niet-vindbare speler", () => {
+    const filter = feedPrivacyFilter({
+      p1: prof("p1", true),
+      p2: prof("p2", false),
+    });
+    expect(filter(vriendschap("p1", "p2"))).toBe(false);
+  });
+
+  it("laat vriendschappen door als beiden vindbaar zijn of het veld ontbreekt", () => {
+    const filter = feedPrivacyFilter({
+      p1: prof("p1", true),
+      p2: prof("p2"), // discoverable ontbreekt → zichtbaar
+    });
+    expect(filter(vriendschap("p1", "p2"))).toBe(true);
+  });
+
+  it("raakt niet-vriendschapitems niet, ook niet van een niet-vindbare speler", () => {
+    const filter = feedPrivacyFilter({ p1: prof("p1", false) });
+    expect(filter(matchEvent)).toBe(true);
+  });
+
+  it("werkt als filter binnen buildFeed", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [friend("f1", "p2", "2026-07-01T12:00:00Z")],
+      myId: "p1",
+      profiles: { p1: prof("p1", true), p2: prof("p2", false) },
+      filter: feedPrivacyFilter({ p1: prof("p1", true), p2: prof("p2", false) }),
+    });
+    expect(kinds(feed)).toEqual([]);
   });
 });
