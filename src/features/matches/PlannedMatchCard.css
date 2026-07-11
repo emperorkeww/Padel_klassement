@@ -12,60 +12,121 @@
   margin-left: auto;
 }
 
-/* Toto (#116): tapbare tip-pil per teamrij, in de stijl van de winchip. */
-.tipchip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  flex-shrink: 0;
-  padding: 2px var(--sp-2);
+/* Toto (#116): een eigen, duidelijk gelabeld blok — losgetrokken van de
+   score-invoer, want tippen gebeurt vóór de match en score-invoer erna. */
+.toto {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+  padding: var(--sp-3);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: var(--fs-xs);
+}
+.toto__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.toto__title {
+  font-size: var(--fs-sm);
   font-weight: 700;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
 }
-.tipchip:hover:not(:disabled) {
-  border-color: var(--accent-line);
-}
-.tipchip:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-.tipchip--mine {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.tipchip__label {
-  font-size: 0.85em;
+.toto__state {
+  font-size: var(--fs-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-.tipchip__count {
-  padding: 0 var(--sp-1);
-  border-radius: 999px;
-  background: var(--surface-2);
   color: var(--ink-soft);
-  font-size: 0.85em;
 }
-/* Smal scherm: alleen de punten, het woord verdwijnt (zoals de winchip). */
-@media (max-width: 640px) {
-  .tipchip__label {
-    display: none;
-  }
+.toto__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
 }
 
-/* Korte uitleg zolang je zelf nog niet getipt hebt. */
-.planned-card__toto-hint {
-  margin: var(--sp-2) 0 0;
+/* Grote tapbare tip-keuze per team. */
+.toto-opt {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.toto-opt:hover:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.toto-opt:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.toto-opt--mine {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.toto-opt__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1);
+}
+.toto-opt__team {
   font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 0;
+}
+.toto-opt__mine-flag {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+}
+.toto-opt__reward {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.toto-opt__pts {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.toto-opt__pts-unit {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.toto-opt__tier {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   color: var(--ink-soft);
+}
+.toto-opt__count {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.toto__legend {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* Smal scherm: de twee keuzes onder elkaar zodat teamnamen niet knellen. */
+@media (max-width: 520px) {
+  .toto__options {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Onderlinge rivaliteitsbalans tussen twee spelers uit tegengestelde teams. */

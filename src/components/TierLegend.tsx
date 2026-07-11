@@ -35,8 +35,7 @@ export function TierLegend() {
         ))}
       </ul>
       <p className="tier-legend__pias">
-        🤡 Twijfelgeval? De pias van de groep zweert dat-ie GOAT is — de rest
-        weet wel beter.
+        🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet.
       </p>
     </details>
   );
