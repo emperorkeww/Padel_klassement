@@ -331,14 +331,6 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_a_id], profiles)}
           />
         )}
-        {showTips && (
-          <TipChip
-            {...tipChipFor(m.team_a_id, chance)}
-            teamName={teamLabel(teams[m.team_a_id], profiles)}
-            disabled={!tippingOpen || busyTip}
-            onClick={() => tip(m.team_a_id)}
-          />
-        )}
         <ScoreStepper
           value={sa}
           onChange={setSa}
@@ -360,14 +352,6 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_b_id], profiles)}
           />
         )}
-        {showTips && (
-          <TipChip
-            {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
-            teamName={teamLabel(teams[m.team_b_id], profiles)}
-            disabled={!tippingOpen || busyTip}
-            onClick={() => tip(m.team_b_id)}
-          />
-        )}
         <ScoreStepper
           value={sb}
           onChange={setSb}
@@ -375,11 +359,38 @@ export function PlannedMatchCard({
         />
       </div>
 
-      {showTips && tippingOpen && !myPrediction && (
-        <p className="planned-card__toto-hint">
-          🎯 Tip de winnaar — een juiste tip op de underdog levert meer punten
-          op. Tippen kan tot de starttijd.
-        </p>
+      {showTips && (
+        <div className="toto">
+          <div className="toto__head">
+            <span className="toto__title">🎯 Toto</span>
+            <span className="toto__state">
+              {tippingOpen ? "Tip de winnaar" : "Tippen gesloten"}
+            </span>
+          </div>
+          <div className="toto__options">
+            <TipOption
+              {...tipChipFor(m.team_a_id, chance)}
+              teamName={teamLabel(teams[m.team_a_id], profiles)}
+              pct={pctA}
+              disabled={!tippingOpen || busyTip}
+              onClick={() => tip(m.team_a_id)}
+            />
+            <TipOption
+              {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
+              teamName={teamLabel(teams[m.team_b_id], profiles)}
+              pct={pctA != null ? 100 - pctA : null}
+              disabled={!tippingOpen || busyTip}
+              onClick={() => tip(m.team_b_id)}
+            />
+          </div>
+          {tippingOpen && (
+            <p className="toto__legend">
+              {myPrediction
+                ? "Je kunt je tip nog wijzigen tot de starttijd."
+                : "Kies wie er wint. Hoe kleiner de winkans van je team, hoe meer punten een juiste tip oplevert (+1 tot +4). Tippen kan tot de starttijd."}
+            </p>
+          )}
+        </div>
       )}
 
       {rivalry && (
@@ -470,14 +481,24 @@ export function PlannedMatchCard({
   );
 }
 
-/** Tapbare toto-pil per teamrij: tip dit team (nogmaals tikken trekt de tip
- *  in). Toont de te winnen punten en hoeveel groepsleden dit team tippen. */
-function TipChip({
+/** Risico-etiket bij een winkans: de underdog levert de meeste toto-punten. */
+function tipTier(pct: number | null): string | null {
+  if (pct == null) return null;
+  if (pct >= 60) return "favoriet";
+  if (pct <= 40) return "underdog";
+  return "fifty-fifty";
+}
+
+/** Grote, tapbare tip-keuze per team: teamnaam, de te winnen punten met hun
+ *  risico-etiket (favoriet/underdog), en hoeveel groepsleden dit team tippen.
+ *  Nogmaals tikken op je eigen keuze trekt de tip in. */
+function TipOption({
   teamName,
   mine,
   count,
   names,
   pts,
+  pct,
   disabled,
   onClick,
 }: {
@@ -486,13 +507,15 @@ function TipChip({
   count: number;
   names: string[];
   pts: number | null;
+  pct: number | null;
   disabled: boolean;
   onClick: () => void;
 }) {
+  const tier = tipTier(pct);
   return (
     <button
       type="button"
-      className={`tipchip ${mine ? "tipchip--mine" : ""}`}
+      className={`toto-opt ${mine ? "toto-opt--mine" : ""}`}
       disabled={disabled}
       aria-pressed={mine}
       aria-label={`Tip ${teamName}`}
@@ -503,9 +526,22 @@ function TipChip({
           : `Tip ${teamName} als winnaar`
       }
     >
-      <span className="tipchip__label">{mine ? "jouw tip ✓" : "tip"}</span>
-      {pts != null && <span className="tipchip__pts">+{pts}</span>}
-      {count > 0 && <span className="tipchip__count">{count}</span>}
+      <span className="toto-opt__top">
+        <span className="toto-opt__team">{teamName}</span>
+        {mine && <span className="toto-opt__mine-flag">jouw tip ✓</span>}
+      </span>
+      <span className="toto-opt__reward">
+        {pts != null && (
+          <span className="toto-opt__pts">
+            +{pts}
+            <span className="toto-opt__pts-unit"> pt</span>
+          </span>
+        )}
+        {tier && <span className="toto-opt__tier">{tier}</span>}
+      </span>
+      <span className="toto-opt__count">
+        {count > 0 ? `${count}× getipt` : "nog niemand"}
+      </span>
     </button>
   );
 }
