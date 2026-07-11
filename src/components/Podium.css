@@ -49,7 +49,7 @@
   color: var(--bigdaddy-ink);
 }
 .podium__spot--1.is-bigdaddy .podium__name {
-  color: var(--bigdaddy);
+  color: var(--bigdaddy-text);
 }
 .podium__crown {
   display: flex;
@@ -72,7 +72,7 @@
 }
 .podium__roast {
   max-width: 14ch;
-  color: var(--bigdaddy);
+  color: var(--bigdaddy-text);
   font-size: var(--fs-2xs, 0.68rem);
   font-style: italic;
   line-height: 1.15;

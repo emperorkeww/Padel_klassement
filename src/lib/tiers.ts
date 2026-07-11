@@ -3,22 +3,22 @@
 // met drempels; alle UI (badges, toasts, posters) leest hieruit.
 //
 // Banden van 100 rating-punten met sub-niveaus III/II/I van ~33 (III laagst).
-// De onderste tier (Balkip) is open naar beneden, de hoogste (GOAT) open naar
+// De onderste tier (Kluns) is open naar beneden, de hoogste (GOAT) open naar
 // boven en zonder sub-niveaus. Iedereen start op 1000 = Wannabe III.
 //
 // De namen zijn bewust ludiek/beledigend — dit draait onder vrienden: onderaan
 // genadeloze roast, bovenaan absurde grootspraak.
 
 export type TierNaam =
-  | "Balkip"
-  | "Lantaarnpaal"
-  | "Luchtgitarist"
-  | "Bankwarmer"
-  | "Terrastijger"
+  | "Kluns"
+  | "Sukkel"
+  | "Prutser"
+  | "Bankvuller"
+  | "Blaaskaak"
   | "Wannabe"
-  | "Netbeul"
-  | "Sluipmoordenaar"
-  | "Halfgod"
+  | "Pletwals"
+  | "Nachtmerrie"
+  | "Tiran"
   | "GOAT";
 export type TierKey =
   | "slof"
@@ -44,19 +44,19 @@ export interface Tier {
   sub: 3 | 2 | 1 | null;
   /** Sub-niveau als Romeins cijfer ("II"); null in de hoogste tier. */
   subLabel: string | null;
-  /** Weergavenaam, bv. "Wannabe II" of "Halfgod". */
+  /** Weergavenaam, bv. "Wannabe II" of "Tiran". */
   label: string;
   /** Ondergrens van dit (sub-)niveau, inclusief; null = open naar beneden. */
   min: number | null;
   /** Bovengrens, exclusief; null = open naar boven. */
   max: number | null;
-  /** Monotone index over alle niveaus (Balkip III = 0) voor vergelijkingen. */
+  /** Monotone index over alle niveaus (Kluns III = 0) voor vergelijkingen. */
   rang: number;
 }
 
-/** Hoofdtier-banden, van laag naar hoog. De onderste band (Balkip) is open
+/** Hoofdtier-banden, van laag naar hoog. De onderste band (Kluns) is open
  *  naar beneden: zijn min van 500 is virtueel en dient alleen om de sub-niveaus
- *  te snijden — alles daaronder klemt op Balkip III. De rating-drempels zijn
+ *  te snijden — alles daaronder klemt op Kluns III. De rating-drempels zijn
  *  ongewijzigd t.o.v. de eerste versie; alleen de namen zijn ludieker.
  *  De `key` blijft de kleur-/tokensleutel (brons = bronskleur enz.). */
 export const TIER_BANDEN: ReadonlyArray<{
@@ -67,15 +67,15 @@ export const TIER_BANDEN: ReadonlyArray<{
   min: number;
   max: number | null;
 }> = [
-  { naam: "Balkip", key: "slof", emoji: "🐔", flavor: "rent kakelend achter elke bal aan", min: 500, max: 600 },
-  { naam: "Lantaarnpaal", key: "karton", emoji: "🗿", flavor: "beweegt met de snelheid van nat beton", min: 600, max: 700 },
-  { naam: "Luchtgitarist", key: "hout", emoji: "🎸", flavor: "slaat meer lucht dan bal — mét gevoel", min: 700, max: 800 },
-  { naam: "Bankwarmer", key: "brons", emoji: "🪑", flavor: "z'n racket is puur decoratie", min: 800, max: 900 },
-  { naam: "Terrastijger", key: "zilver", emoji: "🍺", flavor: "ongeslagen… aan de bar", min: 900, max: 1000 },
+  { naam: "Kluns", key: "slof", emoji: "🤡", flavor: "struikelt over z'n eigen racket", min: 500, max: 600 },
+  { naam: "Sukkel", key: "karton", emoji: "🥴", flavor: "denkt dat een lob een broodje is", min: 600, max: 700 },
+  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "raakt de bal puur per ongeluk", min: 700, max: 800 },
+  { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat erbij en kijkt ernaar", min: 800, max: 900 },
+  { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "grote bek, klein spelletje", min: 900, max: 1000 },
   { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "denkt dat-ie goed is — schattig", min: 1000, max: 1100 },
-  { naam: "Netbeul", key: "platina", emoji: "💥", flavor: "meppt 'm dwars door je ziel", min: 1100, max: 1200 },
-  { naam: "Sluipmoordenaar", key: "diamant", emoji: "🥷", flavor: "je ziet 'm niet tot je al verloren hebt", min: 1200, max: 1300 },
-  { naam: "Halfgod", key: "meester", emoji: "⚡", flavor: "buigt de zwaartekracht naar z'n hand", min: 1300, max: 1400 },
+  { naam: "Pletwals", key: "platina", emoji: "🚜", flavor: "walst de tegenstander plat", min: 1100, max: 1200 },
+  { naam: "Nachtmerrie", key: "diamant", emoji: "😱", flavor: "de speler die je 's nachts bijblijft", min: 1200, max: 1300 },
+  { naam: "Tiran", key: "meester", emoji: "👺", flavor: "heerst met ijzeren racket", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "onaantastbaar — en dat weet iedereen", min: 1400, max: null },
 ];
 
@@ -125,22 +125,22 @@ export function tierFor(rating: number | null): Tier | null {
     sub: (3 - subIdx) as 3 | 2 | 1,
     subLabel: ROMEINS[subIdx],
     label: `${band.naam} ${ROMEINS[subIdx]}`,
-    // De onderste tier (Balkip III) is open naar beneden (de 500-vloer is virtueel).
+    // De onderste tier (Kluns III) is open naar beneden (de 500-vloer is virtueel).
     min: bandIdx === 0 && subIdx === 0 ? null : subMin,
     max: subMax,
     rang: bandIdx * 3 + subIdx,
   };
 }
 
-/** De hoofdtiers van hoog (GOAT) naar laag (Balkip) — voor het divisie-
+/** De hoofdtiers van hoog (GOAT) naar laag (Kluns) — voor het divisie-
  *  overzicht en de legenda. */
 export const TIER_BANDEN_HOOG_NAAR_LAAG = [...TIER_BANDEN].reverse();
 
 /** Rating-bereik van een hoofdtier als leesbare tekst voor de legenda,
- *  bv. "tot 599" (Balkip, open omlaag), "1000–1099" of "1400+" (GOAT). */
+ *  bv. "tot 599" (Kluns, open omlaag), "1000–1099" of "1400+" (GOAT). */
 export function bandRangeLabel(band: (typeof TIER_BANDEN)[number]): string {
   if (band.max == null) return `${band.min}+`;
-  // De laagste band (Balkip) is open naar beneden; de 500-vloer is virtueel.
+  // De laagste band (Kluns) is open naar beneden; de 500-vloer is virtueel.
   if (band.naam === TIER_BANDEN[0].naam) return `tot ${band.max - 1}`;
   return `${band.min}–${band.max - 1}`;
 }
@@ -188,7 +188,7 @@ export interface TierWissel {
   richting: "promotie" | "degradatie";
   van: Tier;
   naar: Tier;
-  /** True als ook de hoofdtier wisselde (Wannabe → Netbeul); false bij III → II. */
+  /** True als ook de hoofdtier wisselde (Wannabe → Pletwals); false bij III → II. */
   hoofdtier: boolean;
 }
 
@@ -224,7 +224,7 @@ export interface TierProgress {
 }
 
 /** Hoe ver een speler van de volgende hoofd-divisie af staat — voedt de
- *  "nog X tot Netbeul"-hint. Null bij een ontbrekende rating. */
+ *  "nog X tot Pletwals"-hint. Null bij een ontbrekende rating. */
 export function tierProgress(rating: number | null): TierProgress | null {
   const huidig = tierFor(rating);
   if (huidig == null || rating == null) return null;
