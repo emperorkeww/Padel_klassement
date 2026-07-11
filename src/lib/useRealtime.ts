@@ -15,8 +15,11 @@ const CACHE_PREFIXES: Record<string, string[]> = {
     "prediction-standings",
     // De pias-trigger duidt bij elke uitslag/correctie de pias opnieuw aan.
     "pias",
+    // De Zwarte Piet verhuist ook bij elke uitslag/correctie (#185).
+    "shame",
   ],
   pias_of_week: ["pias"],
+  zwarte_piet: ["shame"],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   attendance: ["attendance"],

@@ -26,6 +26,8 @@ import { Podium } from "../../components/Podium";
 import { TierBadge } from "../../components/TierBadge";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { getZwartePiet } from "./zwartePietApi";
+import { ZwartePietCard } from "./ZwartePietCard";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { Avatar } from "../../components/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
@@ -72,6 +74,7 @@ export function GroupDetail() {
   const members = useAsync(() => getGroupMembers(id), [id]);
   const matches = useAsync(() => getGroupMatches(id), [id]);
   const standings = useAsync(() => getGroupPlayerStandings(id), [id]);
+  const piet = useAsync(getZwartePiet, []);
   const profiles = useAsync(getProfilesMap, []);
   const teams = useAsync(getTeamsMap, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -99,10 +102,12 @@ export function GroupDetail() {
     teams.reload();
     ratings.reload();
     histories.reload();
+    // De Zwarte Piet verhuist ook bij een uitslag/correctie (#185).
+    piet.reload();
     // Een uitslag of correctie beoordeelt ook de tips (grading-trigger).
     onPredictions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, onPredictions]);
+  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, piet.reload, onPredictions]);
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
@@ -153,6 +158,8 @@ export function GroupDetail() {
     [matches.data, tmap, histories.data],
   );
   const memberList = members.data ?? [];
+  // De huidige Zwarte Piet-drager van déze groep (#185), of null als de Piet vrij is.
+  const zwartePiet = piet.data?.[id] ?? null;
   const isOwner = group.data?.created_by === myId;
   // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
   const groupPlayers = memberList
@@ -511,6 +518,9 @@ export function GroupDetail() {
           ratingsByMatch={piasRatings}
           intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
         />
+        {zwartePiet && (
+          <ZwartePietCard piet={zwartePiet} group={group.data} profiles={pmap} />
+        )}
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Groepsklassement</h2>
@@ -827,6 +837,11 @@ export function GroupDetail() {
                   {displayName(pmap[m.player_id])}{" "}
                   {m.role === "owner" && (
                     <span className="badge badge--accent">eigenaar</span>
+                  )}
+                  {zwartePiet?.holderId === m.player_id && (
+                    <span className="badge badge--loss" title="Draagt de Zwarte Piet">
+                      🃏
+                    </span>
                   )}
                 </span>
                 {isOwner && m.player_id !== myId && (

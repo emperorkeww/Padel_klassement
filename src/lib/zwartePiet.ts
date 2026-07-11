@@ -10,7 +10,7 @@
 // de spiegel van recompute_pias is. Kwalificerende afgangen en hun ernst-scores
 // zijn dezelfde als de pias van de maand (maandpias.ts).
 
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, Team } from "./types";
 import { inTeam } from "./results";
 import { expected } from "./elo";
 import {
@@ -176,9 +176,10 @@ export function zwartePiet(
       // Recency: een nieuwe flopper pakt de Piet af. Dezelfde drager die opnieuw
       // flopt houdt 'm (since blijft lopen).
       if (!piet || piet.holderId !== worst.playerId) {
+        const vorige: string | null = piet ? piet.holderId : null;
         piet = {
           holderId: worst.playerId,
-          fromId: piet?.holderId ?? null,
+          fromId: vorige,
           reden: worst.reden,
           ernst: worst.ernst,
           detail: worst.detail,
