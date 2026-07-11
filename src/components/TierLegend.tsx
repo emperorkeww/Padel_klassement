@@ -20,14 +20,16 @@ export function TierLegend() {
             <span className="tier-legend__emoji" aria-hidden="true">
               {r.emoji}
             </span>
-            <span className="tier-legend__naam">
-              {r.naam}
+            <span className="tier-legend__body">
+              <span className="tier-legend__naam">{r.naam}</span>
               <span className="tier-legend__flavor">{r.flavor}</span>
             </span>
-            <span className="tier-legend__nodig">
-              {r.vanaf != null ? `vanaf ${r.vanaf}` : "instapdivisie"}
+            <span className="tier-legend__req">
+              <span className="tier-legend__nodig">
+                {r.vanaf != null ? `vanaf ${r.vanaf}` : "instap"}
+              </span>
+              <span className="tier-legend__range">{r.range}</span>
             </span>
-            <span className="tier-legend__range">rating {r.range}</span>
           </li>
         ))}
       </ul>

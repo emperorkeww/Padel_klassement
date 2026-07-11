@@ -451,23 +451,33 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-1) var(--sp-2);
+  /* Ruim tapdoel op mobiel (≈44px hoog met de avatar van 28px). */
+  padding: var(--sp-2);
+  min-height: 44px;
   color: inherit;
   text-decoration: none;
 }
 .division__name {
   flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
   font-weight: 600;
 }
+.division__playername {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .division__sub {
+  flex-shrink: 0;
   color: var(--ink-soft);
   font-size: var(--fs-xs);
   font-weight: 700;
 }
 .division__rating {
+  flex-shrink: 0;
   min-width: 3.2em;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -485,3 +495,19 @@
 .division--diamant, .tier-progress--diamant { --tier: var(--diamant); --tier-soft: var(--diamant-soft); }
 .division--meester, .tier-progress--meester { --tier: var(--meester); --tier-soft: var(--meester-soft); }
 .division--legende, .tier-progress--legende { --tier: var(--legende); --tier-soft: var(--legende-soft); }
+
+/* Mobiel: de promotie-banner stapelt netjes en de secties staan dichter op
+   elkaar zodat er meer divisies tegelijk in beeld passen. */
+@media (max-width: 640px) {
+  .tier-progress {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+  }
+  .tier-progress__next {
+    font-size: var(--fs-base);
+  }
+  .divisions {
+    gap: var(--sp-3);
+  }
+}

@@ -631,7 +631,7 @@ function TierDivisions({ rows }: { rows: Row[] }) {
                 <>
                   <Avatar profile={r.profile} name={r.name} size={28} />
                   <span className="division__name">
-                    {r.name}
+                    <span className="division__playername">{r.name}</span>
                     {r.isMe && <span className="badge badge--accent">jij</span>}
                   </span>
                   {sub && <span className="division__sub">{sub}</span>}
