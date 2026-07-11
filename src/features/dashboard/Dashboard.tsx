@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -19,7 +19,12 @@ import {
 import { celebrate } from "../../lib/confetti";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
-import { getPlayerRatings, getRatingHistory } from "../standings/ratingsApi";
+import {
+  getPlayerRatings,
+  getRatingHistory,
+  getAllRatingHistories,
+} from "../standings/ratingsApi";
+import { upsetsByMatch } from "../../lib/upset";
 import {
   getRecentResults,
   getRecentMatches,
@@ -101,6 +106,8 @@ export function Dashboard() {
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
     [myId],
   );
+  // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
+  const histories = useAsync(getAllRatingHistories, []);
 
   const club = useClub();
   const today = dateInZone(club.timezone);
@@ -225,8 +232,15 @@ export function Dashboard() {
   const eveningMatches = evening
     ? completed.filter((m) => m.group_id === evening.groupId)
     : [];
-  const eveningSum = evening ? eveningSummary(eveningMatches, tmap, evening.day) : null;
+  const eveningSum = evening
+    ? eveningSummary(eveningMatches, tmap, evening.day, histories.data ?? undefined)
+    : null;
   const eveningMedals = ["🥇", "🥈", "🥉"];
+  // Upsets bij de recente uitslagen (#85).
+  const recentUpsets = useMemo(
+    () => upsetsByMatch(recentResults, tmap, histories.data ?? {}),
+    [recentResults, tmap, histories.data],
+  );
 
   // Eerstvolgende vrije baan bij de club (vandaag).
   const nextFree = availability.data
@@ -607,6 +621,16 @@ export function Dashboard() {
             </p>
           )}
 
+          {eveningSum.biggestUpset && (
+            <p className="evening__upset">
+              <span aria-hidden="true">🎯</span> Grootste upset:{" "}
+              <strong>
+                {teamLabel(tmap[eveningSum.biggestUpset.winnerTeamId], pmap)}
+              </strong>{" "}
+              ({Math.round(eveningSum.biggestUpset.chance * 100)}% kans)
+            </p>
+          )}
+
           {evening.isToday && (
             <div className="evening__actions">
               <ShareEvening
@@ -614,6 +638,7 @@ export function Dashboard() {
                 matches={eveningMatches}
                 teams={tmap}
                 profiles={pmap}
+                histories={histories.data ?? undefined}
               />
             </div>
           )}
@@ -678,6 +703,7 @@ export function Dashboard() {
               teams={tmap}
               profiles={pmap}
               perspectiveId={myId}
+              upsets={recentUpsets}
               empty="Nog geen uitslagen — vul een geplande match in of log er een."
             />
           )}

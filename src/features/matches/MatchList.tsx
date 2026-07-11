@@ -4,6 +4,7 @@ import type { Match, PlayerRating, Profile, Team } from "../../lib/types";
 import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "./api";
 import { formatRelativeDay } from "../../lib/format";
 import { outcomeFor } from "../../lib/results";
+import type { Upset } from "../../lib/upset";
 import { Avatar } from "../../components/Avatar";
 import { TierBadge } from "../../components/TierBadge";
 import { THIN_GAMES } from "../groups/groupRating";
@@ -22,11 +23,14 @@ export function MatchCard({
   teams,
   profiles,
   perspectiveId,
+  upset,
 }: {
   match: Match;
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   perspectiveId?: string;
+  /** Upset-indicatie (#85): getoond bij een afgeronde underdog-winst. */
+  upset?: Upset | null;
 }) {
   const done = m.status === "completed";
   const aWon = done && m.winner_team_id === m.team_a_id;
@@ -61,6 +65,14 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {done && upset && (
+          <span
+            className="match-card__meta match-card__upset"
+            title="Underdog won — winkans vooraf lager dan 35%"
+          >
+            🎯 upset · {Math.round(upset.chance * 100)}% kans
+          </span>
+        )}
         {setLine && (
           <span className="match-card__meta match-card__sets">{setLine}</span>
         )}
@@ -82,6 +94,7 @@ export function DeletableMatchCard({
   teams,
   profiles,
   perspectiveId,
+  upset,
   canManage = false,
   onDeleted,
 }: {
@@ -89,6 +102,7 @@ export function DeletableMatchCard({
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   perspectiveId?: string;
+  upset?: Upset | null;
   /** True voor de groepseigenaar: mag ook matches van anderen verwijderen. */
   canManage?: boolean;
   onDeleted: () => void;
@@ -137,6 +151,7 @@ export function DeletableMatchCard({
         teams={teams}
         profiles={profiles}
         perspectiveId={perspectiveId}
+        upset={upset}
       />
     );
   }
@@ -148,6 +163,7 @@ export function DeletableMatchCard({
         teams={teams}
         profiles={profiles}
         perspectiveId={perspectiveId}
+        upset={upset}
       />
       <button
         type="button"
@@ -225,12 +241,15 @@ export function MatchList({
   profiles,
   empty = "Nog geen matches.",
   perspectiveId,
+  upsets,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   empty?: string;
   perspectiveId?: string;
+  /** Upsets per match-id (#85); ontbrekend = geen upset-chip. */
+  upsets?: Map<string, Upset>;
 }) {
   if (matches.length === 0) return <p className="empty">{empty}</p>;
 
@@ -243,6 +262,7 @@ export function MatchList({
             teams={teams}
             profiles={profiles}
             perspectiveId={perspectiveId}
+            upset={upsets?.get(m.id) ?? null}
           />
         </li>
       ))}

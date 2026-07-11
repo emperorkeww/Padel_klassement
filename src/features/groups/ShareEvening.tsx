@@ -5,7 +5,7 @@ import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
 import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
 import { displayName } from "../profiles/api";
 import { teamLabel } from "../matches/api";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
 
 // Deelbare poster (4:5) met de samenvatting van vanavond: avondstand-top-3,
 // alle uitslagen en het beste duo. Verschijnt zodra er vandaag minstens één
@@ -88,6 +88,20 @@ function draw(
     W / 2,
     hy + 182,
   );
+
+  // Grootste upset van de avond, als accent-regel in de ruimte onder de header.
+  if (summary.biggestUpset) {
+    const bu = summary.biggestUpset;
+    ctx.textAlign = "center";
+    ctx.fillStyle = c.accent;
+    ctx.font = "700 24px Outfit, system-ui, sans-serif";
+    ctx.fillText(
+      `🎯 Grootste upset: ${teamLabel(teams[bu.winnerTeamId], profiles)} · ${Math.round(bu.chance * 100)}% kans`,
+      W / 2,
+      288,
+      CW,
+    );
+  }
 
   // Sectielabel met lime streepje, links uitgelijnd.
   const sectionLabel = (text: string, yy: number) => {
@@ -221,19 +235,22 @@ export function ShareEvening({
   matches,
   teams,
   profiles,
+  histories,
 }: {
   groupName: string;
   matches: Match[];
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
+  /** Rating-historie om de grootste upset van de avond te bepalen (#85). */
+  histories?: Record<string, RatingPoint[]>;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const summary = useMemo(
-    () => eveningSummary(matches, teams, today),
-    [matches, teams, today],
+    () => eveningSummary(matches, teams, today, histories),
+    [matches, teams, today, histories],
   );
 
   if (summary.matches.length === 0) return null;

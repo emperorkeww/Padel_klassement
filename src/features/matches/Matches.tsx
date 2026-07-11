@@ -7,6 +7,8 @@ import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { outcomeFor } from "../../lib/results";
 import { getRecentMatches, getTeamsMap } from "./api";
+import { getAllRatingHistories } from "../standings/ratingsApi";
+import { upsetsByMatch } from "../../lib/upset";
 import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { DeletableMatchCard } from "./MatchList";
@@ -45,9 +47,15 @@ export function Matches() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
+  const histories = useAsync(getAllRatingHistories, []);
 
   const pmap = Object.fromEntries((profiles.data ?? []).map((p) => [p.id, p]));
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
+  // Upsets per match-id (#85), één keer berekend voor alle kaarten.
+  const upsets = useMemo(
+    () => upsetsByMatch(matches.data ?? [], tmap, histories.data ?? {}),
+    [matches.data, tmap, histories.data],
+  );
 
   // Kiesbaar in de wizard: jezelf, je geaccepteerde vrienden en je eigen
   // gastspelers (naamloze deelnemers zonder account, door jou aangemaakt).
@@ -229,6 +237,7 @@ export function Matches() {
                       teams={tmap}
                       profiles={pmap}
                       perspectiveId={myId}
+                      upset={upsets.get(m.id) ?? null}
                       onDeleted={reloadAll}
                     />
                   </li>

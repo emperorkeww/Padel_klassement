@@ -359,6 +359,12 @@ export function PlannedMatchCard({
         />
       </div>
 
+      {pctA != null && (
+        <p className="planned-card__winhint">
+          Winkans op basis van de huidige ratings.
+        </p>
+      )}
+
       {showTips && (
         <div className="toto">
           <div className="toto__head">

@@ -7,7 +7,7 @@ import type {
   RatingPoint,
   Team,
 } from "./types";
-import { expected } from "./elo";
+import { matchUpset } from "./upset";
 import { MONSTERZEGE_DREMPEL } from "./badges";
 import { outcomeFor } from "./results";
 import { rankShifts, type Shift } from "./rankShift";
@@ -27,8 +27,9 @@ const otherId = (f: Friendship, myId: string) =>
 // match-item — losse items zijn er alleen voor niet-match-gebeurtenissen.
 // Puur en getest in feed.test.ts; de UI (features/feed) doet alleen weergave.
 
-/** Winkans-grens: won een team met minder kans dan dit, dan is het een upset. */
-export const UPSET_MAX_KANS = 0.35;
+// De upset-drempel en -math staan nu centraal in ./upset; hier her-geëxporteerd
+// omdat feed.test.ts (en de UI) UPSET_MAX_KANS vanaf feed.ts importeren.
+export { UPSET_MAX_KANS } from "./upset";
 /** Winreeksen die een highlight verdienen (zelfde stappen als de badges). */
 export const REEKS_STAPPEN = [3, 5, 10] as const;
 /** Rating-grenzen die een highlight verdienen (zelfde tiers als de badges). */
@@ -150,22 +151,9 @@ export function upsetHighlight(
   teams: Record<string, Team>,
   points: Map<string, RatingPoint> | undefined,
 ): Highlight | null {
-  if (!m.winner_team_id || !points) return null;
-  const winner = teams[m.winner_team_id];
-  const loserId = m.winner_team_id === m.team_a_id ? m.team_b_id : m.team_a_id;
-  const loser = teams[loserId];
-  if (!winner || !loser) return null;
-  const avg = (t: Team): number | null => {
-    const p1 = points.get(t.player1_id)?.rating_before;
-    const p2 = points.get(t.player2_id)?.rating_before;
-    return p1 == null || p2 == null ? null : (p1 + p2) / 2;
-  };
-  const w = avg(winner);
-  const l = avg(loser);
-  if (w == null || l == null) return null;
-  const chance = expected(w, l);
-  return chance < UPSET_MAX_KANS
-    ? { type: "upset", chance, winnerTeamId: m.winner_team_id }
+  const u = matchUpset(m, teams, points);
+  return u
+    ? { type: "upset", chance: u.chance, winnerTeamId: u.winnerTeamId }
     : null;
 }
 
@@ -446,7 +434,7 @@ export function buildFeed(input: {
   for (const [key, list] of buckets) {
     if (list.length < AVOND_BUNDEL_MIN) continue;
     const [groupId, day] = key.split("|");
-    const summary = eveningSummary(list.map((e) => e.match), teams, day);
+    const summary = eveningSummary(list.map((e) => e.match), teams, day, histories);
     for (const e of list) bundled.add(e);
     events.push({
       kind: "evening",

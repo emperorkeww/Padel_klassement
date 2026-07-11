@@ -1089,6 +1089,11 @@ textarea {
   color: var(--ink-soft);
   white-space: nowrap;
 }
+/* Upset-chip op een afgeronde matchkaart (#85). */
+.match-card__upset {
+  color: var(--accent);
+  font-weight: 700;
+}
 
 /* Compacte badge-strook (gelijk / ronde). */
 .match-card__tags {
