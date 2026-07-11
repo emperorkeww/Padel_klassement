@@ -731,6 +731,41 @@
   display: grid;
   gap: var(--sp-3);
 }
+
+/* Activiteitenfeed-preview op het dashboard (#59): compacte regels. */
+.feed-preview {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.feed-preview__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.feed-preview__item:hover {
+  background: var(--surface-2);
+}
+.feed-preview__icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.feed-preview__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
 .toplist__item {
   display: flex;
   align-items: center;

@@ -10,6 +10,7 @@ import { Avatar } from "../../components/Avatar";
 import {
   buildFeed,
   feedDay,
+  feedPrivacyFilter,
   recentlyClosedSeason,
   FEED_LIMIT,
   type FeedEvent,
@@ -169,6 +170,9 @@ export function Feed() {
             pollsByGroup: groupExtras.data?.pollsByGroup,
             groupMatchesByGroup: groupMatches.data ?? undefined,
             profiles: profiles.data ?? {},
+            // Respecteer 'discoverable': verberg vriendschapsitems van niet-
+            // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
+            filter: feedPrivacyFilter(profiles.data ?? {}),
           }),
     [
       loading,

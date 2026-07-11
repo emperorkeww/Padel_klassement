@@ -107,6 +107,17 @@ describe("<Dashboard />", () => {
     expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
   });
 
+  it("toont een activiteitenfeed-preview met doorlink naar /feed", async () => {
+    const { container } = renderPage();
+    expect(await screen.findByText(/recente activiteit/i)).toBeInTheDocument();
+    // Doorlink naar de volledige feed.
+    const link = screen.getByRole("link", { name: /naar feed/i });
+    expect(link).toHaveAttribute("href", "/feed");
+    // Minstens één gebeurtenis uit de fixtures (uitslag/vriendschap).
+    const items = container.querySelectorAll(".feed-preview__item");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
   it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
     renderPage();
     expect(
