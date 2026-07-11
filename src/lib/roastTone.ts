@@ -58,6 +58,17 @@ export function sneerSuffix(ctx: RoastCtx, seed: number): string {
 }
 
 /**
+ * De kále sneer-tekst (zonder streepje/emoji), of null wanneer het doelwit
+ * zijn roast-schild aan heeft. Voor oppervlakken die Coach Rudy als aparte,
+ * geattribueerde commentator tonen (bv. de feed-speech-bubble) i.p.v. een
+ * inline staart.
+ */
+export function coachSneer(ctx: RoastCtx, seed: number): string | null {
+  if (ctx.schild) return null;
+  return kies(SNEER[ctx.intensiteit], seed);
+}
+
+/**
  * Kleurt een feitelijke observatie met de commentator-toon op het gekozen
  * niveau. Schild aan → het kále feit (neutrale variant, geen sneer). `seed`
  * (bv. hash van playerId + periode) kiest deterministisch de sneer, zodat de

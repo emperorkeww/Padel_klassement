@@ -27,7 +27,7 @@ import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
 import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
-import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import { coachOpmerking } from "./coachFeed";
 import type {
   GroupMember,
   Match,
@@ -323,7 +323,9 @@ export function Feed() {
                       tmap={tmap}
                       myId={myId}
                       name={name}
-                      intensiteitVoor={intensiteitVoor}
+                    />
+                    <CoachComment
+                      tekst={coachOpmerking(event, { intensiteitVoor, profiles: pmap })}
                     />
                   </li>
                 </Fragment>
@@ -383,14 +385,12 @@ function FeedItem({
   tmap,
   myId,
   name,
-  intensiteitVoor,
 }: {
   event: FeedEvent;
   pmap: Record<string, Profile>;
   tmap: Parameters<typeof MatchCard>[0]["teams"];
   myId: string;
   name: (pid: string) => string;
-  intensiteitVoor: (groupId: string) => RoastIntensiteit;
 }) {
   switch (event.kind) {
     case "match":
@@ -596,12 +596,7 @@ function FeedItem({
           )!
         </FeedLine>
       );
-    case "maand-pias": {
-      const ctx = roastCtx(
-        { roast_intensiteit: intensiteitVoor(event.groupId) },
-        pmap[event.playerId],
-      );
-      const staart = sneerSuffix(ctx, roastSeed(event.playerId, event.periodeLabel));
+    case "maand-pias":
       return (
         <FeedLine
           icon="🤡"
@@ -612,23 +607,17 @@ function FeedItem({
           {event.playerId === myId ? (
             <>
               Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              je {event.detail}.{staart}
+              je {event.detail}.
             </>
           ) : (
             <>
               {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              {" "}{event.detail}.{staart}
+              {" "}{event.detail}.
             </>
           )}
         </FeedLine>
       );
-    }
-    case "pias-week": {
-      const ctx = roastCtx(
-        { roast_intensiteit: intensiteitVoor(event.groupId) },
-        pmap[event.playerId],
-      );
-      const staart = sneerSuffix(ctx, roastSeed(event.playerId, event.weekStart));
+    case "pias-week":
       return (
         <FeedLine
           icon="🤡"
@@ -640,18 +629,17 @@ function FeedItem({
             <>
               Jij bent de <strong>pias van de week</strong> in{" "}
               {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%).{staart}
+              {Math.round(event.winChance * 100)}%).
             </>
           ) : (
             <>
               {name(event.playerId)} is de <strong>pias van de week</strong> in{" "}
               {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%).{staart}
+              {Math.round(event.winChance * 100)}%).
             </>
           )}
         </FeedLine>
       );
-    }
   }
 }
 
@@ -684,6 +672,21 @@ function highlightText(
 }
 
 /** Eén compacte feedregel: icoon + (optionele) avatars + tekst, als link. */
+/** Coach Rudy's commentaar onder een feed-item: een nette speech-bubble met
+ *  zijn micro-avatar en naam. Rendert niets als hij bij dit item zwijgt. */
+function CoachComment({ tekst }: { tekst: string | null }) {
+  if (!tekst) return null;
+  return (
+    <div className="coach-comment">
+      <span className="coach-comment__mic" aria-hidden="true">🎙️</span>
+      <div className="coach-comment__bubble">
+        <span className="coach-comment__name">Coach Rudy</span>
+        <span className="coach-comment__text">{tekst}</span>
+      </div>
+    </div>
+  );
+}
+
 function FeedLine({
   icon,
   to,

@@ -80,3 +80,59 @@
   margin-top: var(--sp-4);
 }
 .feed__filters { margin-bottom: var(--sp-3); }
+
+/* Coach Rudy: commentaar-speech-bubble onder een feed-item (#183). Ingesprongen
+   onder de kaart, met zijn micro-avatar links en een naam-label. */
+.coach-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-1) 0 0 var(--sp-4);
+  padding-left: var(--sp-2);
+}
+.coach-comment__mic {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.coach-comment__bubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+/* Klein pijltje naar de micro-avatar toe. */
+.coach-comment__bubble::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  background: var(--surface-2);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.coach-comment__name {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+.coach-comment__text {
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink-soft);
+}
