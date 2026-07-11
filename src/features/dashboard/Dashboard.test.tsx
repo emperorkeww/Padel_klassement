@@ -41,6 +41,9 @@ function renderPage() {
 }
 
 describe("<Dashboard />", () => {
+  // Vierings-flags van de weekmissies hoeven hier niet opgeruimd: localStorage
+  // heeft in deze testomgeving geen werkende methodes (zie test/setup.ts) en
+  // readFlag/writeFlag vangen dat met try/catch af.
   beforeEach(stubPlaytomic);
   afterEach(() => vi.unstubAllGlobals());
 
@@ -109,6 +112,20 @@ describe("<Dashboard />", () => {
     expect(
       screen.getByRole("link", { name: /bekijk de poll/i }),
     ).toBeInTheDocument();
+  });
+
+  it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {
+    const { container } = renderPage();
+    expect(await screen.findByText("Weekmissies")).toBeInTheDocument();
+    const kaart = container.querySelector(".week-missions");
+    expect(kaart).not.toBeNull();
+    // Precies drie missies (welke is seed-afhankelijk — alleen structuur checken).
+    const balken = kaart!.querySelectorAll('[role="progressbar"]');
+    expect(balken).toHaveLength(3);
+    for (const balk of balken) {
+      expect(balk).toHaveAttribute("aria-valuemin", "0");
+      expect(Number(balk.getAttribute("aria-valuemax"))).toBeGreaterThan(0);
+    }
   });
 
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {
