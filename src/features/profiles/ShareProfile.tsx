@@ -72,11 +72,16 @@ function draw(ctx: CanvasRenderingContext2D, d: ProfileShareData) {
   // Divisie-chip onder de rating (#127).
   if (d.tier) {
     const tint: Record<TierKey, { fg: string; soft: string }> = {
+      slof: { fg: c.slof, soft: c.slofSoft },
+      karton: { fg: c.karton, soft: c.kartonSoft },
+      hout: { fg: c.hout, soft: c.houtSoft },
       brons: { fg: c.bronze, soft: c.bronzeSoft },
       zilver: { fg: c.silver, soft: c.silverSoft },
       goud: { fg: c.gold, soft: c.goldSoft },
       platina: { fg: c.platina, soft: c.platinaSoft },
       diamant: { fg: c.diamant, soft: c.diamantSoft },
+      meester: { fg: c.meester, soft: c.meesterSoft },
+      legende: { fg: c.legende, soft: c.legendeSoft },
     };
     const { fg, soft } = tint[d.tier.key];
     ctx.font = "800 44px Outfit, system-ui, sans-serif";

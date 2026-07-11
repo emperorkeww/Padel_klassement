@@ -1,35 +1,40 @@
 import { describe, it, expect } from "vitest";
-import { tierChange, tierFor, tierTitle } from "./tiers";
+import {
+  tierChange,
+  tierFor,
+  tierTitle,
+  tierProgress,
+  tierLegend,
+} from "./tiers";
 
 describe("tierFor", () => {
   it.each([
-    // Alle bandranden: min inclusief, max exclusief.
-    [700, "Brons III"],
+    // Ludieke tiers onder Brons (open naar beneden).
+    [400, "Slof III"],
+    [533, "Slof III"],
+    [534, "Slof II"],
+    [599, "Slof I"],
+    [600, "Karton III"],
+    [700, "Hout III"],
+    [799, "Hout I"],
+    // Bestaande banden (vanaf 800) — ongewijzigd.
+    [800, "Brons III"],
     [833, "Brons III"],
     [834, "Brons II"],
-    [866, "Brons II"],
-    [867, "Brons I"],
     [899, "Brons I"],
     [900, "Zilver III"],
-    [933, "Zilver III"],
-    [934, "Zilver II"],
-    [966, "Zilver II"],
-    [967, "Zilver I"],
     [999, "Zilver I"],
     [1000, "Goud III"],
-    [1033, "Goud III"],
-    [1034, "Goud II"],
-    [1066, "Goud II"],
-    [1067, "Goud I"],
     [1099, "Goud I"],
     [1100, "Platina III"],
-    [1133, "Platina III"],
-    [1134, "Platina II"],
-    [1166, "Platina II"],
-    [1167, "Platina I"],
     [1199, "Platina I"],
-    [1200, "Diamant"],
-    [1450, "Diamant"],
+    // Nieuwe hoge tiers.
+    [1200, "Diamant III"],
+    [1299, "Diamant I"],
+    [1300, "Meester III"],
+    [1399, "Meester I"],
+    [1400, "Legende"],
+    [1600, "Legende"],
   ])("rating %i → %s", (rating, label) => {
     expect(tierFor(rating)?.label).toBe(label);
   });
@@ -44,13 +49,23 @@ describe("tierFor", () => {
     expect(t.sub).toBe(3);
   });
 
-  it("Diamant heeft geen sub-niveaus", () => {
-    expect(tierFor(1200)?.sub).toBeNull();
-    expect(tierFor(1500)?.sub).toBeNull();
+  it("alleen de hoogste tier (Legende) heeft geen sub-niveaus", () => {
+    expect(tierFor(1400)?.sub).toBeNull();
+    expect(tierFor(1600)?.sub).toBeNull();
+    // Diamant is nu begrensd en heeft dus wél sub-niveaus.
+    expect(tierFor(1200)?.sub).toBe(3);
+  });
+
+  it("draagt emoji en ludieke bijnaam", () => {
+    expect(tierFor(1000)?.emoji).toBe("🥇");
+    expect(tierFor(1000)?.flavor).toBe("goudhaantje");
+    expect(tierFor(450)?.emoji).toBe("🩴");
   });
 
   it("rang stijgt strikt over de hele schaal", () => {
-    const ratings = [700, 834, 867, 900, 934, 967, 1000, 1034, 1067, 1100, 1134, 1167, 1200];
+    const ratings = [
+      450, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400,
+    ];
     const rangen = ratings.map((r) => tierFor(r)!.rang);
     for (let i = 1; i < rangen.length; i++) {
       expect(rangen[i]).toBeGreaterThan(rangen[i - 1]);
@@ -59,10 +74,10 @@ describe("tierFor", () => {
 });
 
 describe("tierTitle", () => {
-  it("toont de drie grensvormen: open omlaag, gesloten band, open omhoog", () => {
-    expect(tierTitle(tierFor(700)!)).toBe("Brons III · rating tot 833");
-    expect(tierTitle(tierFor(1040)!)).toBe("Goud II · rating 1034–1066");
-    expect(tierTitle(tierFor(1300)!)).toBe("Diamant · rating 1200+");
+  it("bevat de bijnaam en het rating-bereik", () => {
+    expect(tierTitle(tierFor(450)!)).toBe("Slof III · op je slippers · rating tot 533");
+    expect(tierTitle(tierFor(1040)!)).toBe("Goud II · goudhaantje · rating 1034–1066");
+    expect(tierTitle(tierFor(1500)!)).toBe("Legende · levende legende · rating 1400+");
   });
 });
 
@@ -86,31 +101,67 @@ describe("tierChange", () => {
     expect(w.naar.label).toBe("Platina III");
   });
 
+  it("promotie over de nieuwe onderste grens (Hout → Brons)", () => {
+    const w = tierChange(790, 810)!;
+    expect(w.richting).toBe("promotie");
+    expect(w.hoofdtier).toBe(true);
+    expect(w.van.naam).toBe("Hout");
+    expect(w.naar.label).toBe("Brons III");
+  });
+
+  it("promotie naar de hoogste tier (Meester → Legende)", () => {
+    const w = tierChange(1399, 1400)!;
+    expect(w.richting).toBe("promotie");
+    expect(w.naar.label).toBe("Legende");
+  });
+
   it("degradatie", () => {
     const w = tierChange(1100, 1095)!;
     expect(w.richting).toBe("degradatie");
-    expect(w.hoofdtier).toBe(true);
     expect(w.naar.label).toBe("Goud I");
-  });
-
-  it("sprong over meerdere tiers", () => {
-    const w = tierChange(950, 1150)!;
-    expect(w.richting).toBe("promotie");
-    expect(w.hoofdtier).toBe(true);
-    expect(w.van.naam).toBe("Zilver");
-    expect(w.naar.label).toBe("Platina II");
-  });
-
-  it("exact op de Diamant-grens", () => {
-    const w = tierChange(1199, 1200)!;
-    expect(w.richting).toBe("promotie");
-    expect(w.hoofdtier).toBe(true);
-    expect(w.naar.label).toBe("Diamant");
   });
 
   it("null-inputs geven null", () => {
     expect(tierChange(null, 1100)).toBeNull();
     expect(tierChange(1100, null)).toBeNull();
-    expect(tierChange(null, null)).toBeNull();
+  });
+});
+
+describe("tierProgress", () => {
+  it("berekent de punten tot de volgende hoofd-divisie", () => {
+    const p = tierProgress(1045)!;
+    expect(p.huidig.naam).toBe("Goud");
+    expect(p.volgende?.naam).toBe("Platina");
+    expect(p.volgende?.vanaf).toBe(1100);
+    expect(p.puntenNodig).toBe(55);
+  });
+
+  it("op een banddrempel is de volle 100 nodig", () => {
+    expect(tierProgress(1000)?.puntenNodig).toBe(100);
+  });
+
+  it("in de hoogste tier is er geen volgende", () => {
+    const p = tierProgress(1500)!;
+    expect(p.volgende).toBeNull();
+    expect(p.puntenNodig).toBeNull();
+  });
+
+  it("null zonder rating", () => {
+    expect(tierProgress(null)).toBeNull();
+  });
+});
+
+describe("tierLegend", () => {
+  it("somt alle tiers op van hoog naar laag met instapdrempel", () => {
+    const legend = tierLegend();
+    expect(legend).toHaveLength(10);
+    expect(legend[0].naam).toBe("Legende");
+    expect(legend[0].vanaf).toBe(1400);
+    // De laagste tier heeft geen instapdrempel.
+    const laagste = legend[legend.length - 1];
+    expect(laagste.naam).toBe("Slof");
+    expect(laagste.vanaf).toBeNull();
+    // Elke tier draagt emoji + bijnaam.
+    expect(legend.every((l) => l.emoji && l.flavor)).toBe(true);
   });
 });

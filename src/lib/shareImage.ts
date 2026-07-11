@@ -20,6 +20,12 @@ export function canvasPalette() {
     line: "#e4eae4",
     lime: "#c7e63a",
     success: "#16a34a",
+    slof: "#6b7280",
+    slofSoft: "#f1f3f5",
+    karton: "#9a6b3a",
+    kartonSoft: "#f6efe3",
+    hout: "#6f4a26",
+    houtSoft: "#efe6da",
     gold: "#d4a017",
     goldSoft: "#faf3dd",
     silver: "#8c98a4",
@@ -30,6 +36,10 @@ export function canvasPalette() {
     platinaSoft: "#e9f2f6",
     diamant: "#4f46e5",
     diamantSoft: "#eceafc",
+    meester: "#7c3aed",
+    meesterSoft: "#f0ebfe",
+    legende: "#c2185b",
+    legendeSoft: "#fce7ef",
   };
 }
 

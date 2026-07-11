@@ -49,6 +49,12 @@
   --warn-line: #f0ddba;
 
   /* Podium + tiers (#127) */
+  --slof: #6b7280;
+  --slof-soft: #f1f3f5;
+  --karton: #9a6b3a;
+  --karton-soft: #f6efe3;
+  --hout: #6f4a26;
+  --hout-soft: #efe6da;
   --gold: #d4a017;
   --gold-soft: #faf3dd;
   --silver: #8c98a4;
@@ -59,6 +65,10 @@
   --platina-soft: #e9f2f6;
   --diamant: #4f46e5;
   --diamant-soft: #eceafc;
+  --meester: #7c3aed;
+  --meester-soft: #f0ebfe;
+  --legende: #c2185b;
+  --legende-soft: #fce7ef;
 
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
@@ -166,6 +176,12 @@
   --warn-soft: #32260f;
   --warn-line: #5f4c24;
 
+  --slof: #a1a8b0;
+  --slof-soft: #21262b;
+  --karton: #c6975f;
+  --karton-soft: #2c2417;
+  --hout: #bb8f66;
+  --hout-soft: #281d14;
   --gold: #c09b4e;
   --gold-soft: #322810;
   --silver: #a8b2bd;
@@ -176,6 +192,10 @@
   --platina-soft: #1d2b31;
   --diamant: #a49df0;
   --diamant-soft: #232041;
+  --meester: #c4b5fd;
+  --meester-soft: #241d3a;
+  --legende: #f7869f;
+  --legende-soft: #3a1a24;
 
   --placeholder: #8a9a90;
   --skeleton-hi: #26312a;

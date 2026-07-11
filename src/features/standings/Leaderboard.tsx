@@ -29,7 +29,13 @@ import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
 import { TierBadge } from "../../components/TierBadge";
+import { TierLegend } from "../../components/TierLegend";
 import { THIN_GAMES } from "../groups/groupRating";
+import {
+  tierFor,
+  tierProgress,
+  TIER_BANDEN_HOOG_NAAR_LAAG,
+} from "../../lib/tiers";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,
@@ -42,7 +48,7 @@ import { ShareChampion } from "./ShareChampion";
 import type { Match, Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
 
-type Tab = "player" | "team";
+type Tab = "player" | "team" | "divisies";
 
 /** Rating van een speler zoals die was op (of vóór) een datum, uit de historie
  *  (rating_after van de laatste match ≤ die dag). Null als er niets is. */
@@ -269,32 +275,33 @@ export function Leaderboard() {
   const atLeastMin = <T extends { played: number }>(list: T[]): T[] =>
     minMatches > 0 ? list.filter((r) => r.played >= minMatches) : list;
   const shownPlayerRows = atLeastMin(playerRows);
-  const rows = tab === "player" ? shownPlayerRows : atLeastMin(teamRows);
+  // Divisies gebruiken dezelfde spelerslijst als het speler-klassement.
+  const rows = tab === "team" ? atLeastMin(teamRows) : shownPlayerRows;
   // Rating is de leidende volgorde voor spelers (#52) — speelfrequentie telt
   // niet; de klassieke punten-tie-break geldt bij gelijke/ontbrekende rating.
   const displayRows =
-    tab === "player"
-      ? [...rows].sort(
+    tab === "team"
+      ? rows
+      : [...rows].sort(
           (a, b) =>
             (b.rating ?? -Infinity) - (a.rating ?? -Infinity) ||
             byRank(
               { points: a.points, goal_diff: a.goalDiff, won: a.won },
               { points: b.points, goal_diff: b.goalDiff, won: b.won },
             ),
-        )
-      : rows;
+        );
   // In seizoens-/datumweergave rekenen we zelf, dus wachten we op matches + lookups.
   const scopeAsync = season ? seasonMatches : allCompleted;
   const loading = usingScope
     ? scopeAsync.loading || teamsMap.loading || profilesMap.loading
-    : tab === "player"
-      ? players.loading
-      : teams.loading;
+    : tab === "team"
+      ? teams.loading
+      : players.loading;
   const error = usingScope
     ? scopeAsync.error
-    : tab === "player"
-      ? players.error
-      : teams.error;
+    : tab === "team"
+      ? teams.error
+      : players.error;
   const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
@@ -338,6 +345,12 @@ export function Leaderboard() {
           >
             Teams
           </button>
+          <button
+            className={`tab ${tab === "divisies" ? "is-active" : ""}`}
+            onClick={() => setTab("divisies")}
+          >
+            Divisies
+          </button>
         </div>
 
         <select
@@ -358,7 +371,7 @@ export function Leaderboard() {
           ))}
         </select>
 
-        {tab === "player" && (
+        {tab !== "team" && (
           <select
             className="select select--filter"
             aria-label="Groep"
@@ -471,6 +484,13 @@ export function Leaderboard() {
         />
       )}
 
+      {tab === "divisies" && (
+        <>
+          <TierProgressBanner rating={rmap[myId]?.rating ?? null} />
+          <TierLegend />
+        </>
+      )}
+
       <div className="card">
         {loading ? (
           <StandingsSkeleton rows={6} />
@@ -502,6 +522,8 @@ export function Leaderboard() {
               Het klassement vult zich zodra de eerste uitslag gelogd is.
             </EmptyState>
           )
+        ) : tab === "divisies" ? (
+          <TierDivisions rows={displayRows} />
         ) : (
           <>
             <StandingsTable
@@ -547,6 +569,100 @@ type Row = {
   form: Outcome[];
   shift?: Shift;
 };
+
+/* ---------- Divisies: spelers gegroepeerd per tier (#127) ---------- */
+
+/** Persoonlijke banner: jouw divisie + hoeveel rating je nog nodig hebt voor
+ *  de volgende. Zichtbaar zodra je een rating hebt. */
+function TierProgressBanner({ rating }: { rating: number | null }) {
+  const prog = tierProgress(rating);
+  if (!prog) return null;
+  const { huidig, volgende, puntenNodig } = prog;
+  return (
+    <div className={`tier-progress tier-progress--${huidig.key}`} role="status">
+      <span className="tier-progress__now">
+        Jij: <TierBadge rating={rating} /> ({rating})
+      </span>
+      {volgende ? (
+        <span className="tier-progress__next">
+          nog <strong>{puntenNodig}</strong> rating tot {volgende.emoji}{" "}
+          {volgende.naam}
+        </span>
+      ) : (
+        <span className="tier-progress__next">de hoogste divisie — chapeau!</span>
+      )}
+    </div>
+  );
+}
+
+function TierDivisions({ rows }: { rows: Row[] }) {
+  // Alleen spelers met een rating hebben een divisie; hoog (Diamant) → laag.
+  const withRating = rows.filter((r) => r.rating != null);
+  const groups = TIER_BANDEN_HOOG_NAAR_LAAG.map((band) => ({
+    band,
+    members: withRating.filter(
+      (r) => tierFor(r.rating)?.naam === band.naam,
+    ),
+  })).filter((g) => g.members.length > 0);
+
+  if (groups.length === 0)
+    return <p className="empty">Nog geen spelers met een rating.</p>;
+
+  return (
+    <div className="divisions">
+      {groups.map(({ band, members }) => (
+        <section
+          key={band.key}
+          className={`division division--${band.key}`}
+        >
+          <h3 className="division__head">
+            <span className="division__emoji" aria-hidden="true">
+              {band.emoji}
+            </span>
+            <span className="division__naam">{band.naam}</span>
+            <span className="division__count" aria-label={`${members.length} spelers`}>
+              {members.length}
+            </span>
+          </h3>
+          <ul className="division__list">
+            {members.map((r) => {
+              const sub = tierFor(r.rating)?.subLabel;
+              const content = (
+                <>
+                  <Avatar profile={r.profile} name={r.name} size={28} />
+                  <span className="division__name">
+                    {r.name}
+                    {r.isMe && <span className="badge badge--accent">jij</span>}
+                  </span>
+                  {sub && <span className="division__sub">{sub}</span>}
+                  <span className="division__rating">{r.rating}</span>
+                </>
+              );
+              return (
+                <li
+                  key={r.key}
+                  className={`division__row ${r.isMe ? "is-me" : ""}`}
+                >
+                  {r.link ? (
+                    <Link
+                      className="division__link"
+                      to={r.link}
+                      onClick={primeAvatarMorph}
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <span className="division__link">{content}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
 
 /** ▲2 / ▼1 / "nieuw" onder het rangnummer; niets bij een gelijke positie. */
 function ShiftBadge({ shift }: { shift?: Shift }) {

@@ -732,3 +732,14 @@
     grid-column: 1 / -1;
   }
 }
+
+/* "Nog X tot [volgende divisie]" onder de rating (#127). */
+.rating-card__next {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.rating-card__next strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
