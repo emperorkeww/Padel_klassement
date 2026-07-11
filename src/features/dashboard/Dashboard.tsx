@@ -10,7 +10,6 @@ import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
-import { rankShifts, type Shift } from "../../lib/rankShift";
 import { deriveBadges, type Badge } from "../../lib/badges";
 import {
   deriveMissions,
@@ -67,6 +66,7 @@ import {
 import { errorMessage } from "../../lib/errors";
 import { TierBadge } from "../../components/TierBadge";
 import { tierProgress } from "../../lib/tiers";
+import { byRank } from "../../lib/standings";
 import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
@@ -133,7 +133,20 @@ export function Dashboard() {
   const tmap = teams.data ?? {};
   const rows = standings.data ?? [];
   const me = rows.find((p) => p.player_id === myId);
-  const rankIdx = rows.findIndex((p) => p.player_id === myId);
+  // Positie volgt het klassement, dat op rating (Elo) is gesorteerd — niet op
+  // punten. Zelfde volgorde als de Leaderboard: rating ↓, dan de punten-
+  // tie-break bij gelijke/ontbrekende rating.
+  const rmap = ratings.data ?? {};
+  const eloRanked = [...rows].sort(
+    (a, b) =>
+      (rmap[b.player_id]?.rating ?? -Infinity) -
+        (rmap[a.player_id]?.rating ?? -Infinity) ||
+      byRank(
+        { points: a.points, goal_diff: a.goal_diff, won: a.won },
+        { points: b.points, goal_diff: b.goal_diff, won: b.won },
+      ),
+  );
+  const rankIdx = eloRanked.findIndex((p) => p.player_id === myId);
   const rank = rankIdx >= 0 ? rankIdx + 1 : null;
   const { incoming, accepted } = categorize(friendships.data ?? [], myId);
   const myProfile = pmap[myId];
@@ -166,9 +179,6 @@ export function Dashboard() {
   // filteren houdt afgeleide weergaven robuust (o.a. in tests).
   const completed = (results.data ?? []).filter((m) => m.status === "completed");
   const recentResults = completed.slice(0, 6);
-
-  // Rangverschuiving t.o.v. vóór de laatste speeldag.
-  const myShift = rankShifts(rows, completed, tmap).get(myId) ?? null;
 
   // Activiteitenfeed-preview (#59): compacte kop van de volledige /feed,
   // opgebouwd uit al geladen bronnen. buildFeed scoped op je netwerk; de
@@ -326,14 +336,20 @@ export function Dashboard() {
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
             <p className="hero__eyebrow">Welkom terug</p>
-            <h1 className="hero__name">{myName ? `Hoi, ${myName}` : "Hoi!"}</h1>
+            <h1 className="hero__name">
+              {myName ? `Hoi, ${myName}` : "Hoi!"}
+              <TierBadge
+                rating={myRating}
+                dimmed={myRatingGames > 0 && myRatingGames < THIN_GAMES}
+              />
+            </h1>
             {standings.loading ? (
               // Geen "speel je eerste match"-flits terwijl de stand nog laadt.
               <span className="sk sk--line hero__sub-sk" aria-hidden="true" />
             ) : (
               <p className="hero__sub">
                 {me
-                  ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"} met ${me.points} punten.`
+                  ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"}${myRating != null ? ` met rating ${myRating}` : ""}.`
                   : "Speel je eerste match om in het klassement te komen."}
                 {streak >= 2
                   ? ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`
@@ -609,11 +625,7 @@ export function Dashboard() {
       ) : (
         <div className="stats">
           <Stat label="Punten" value={me?.points ?? 0} accent />
-          <Stat
-            label="Positie"
-            value={rank ? `#${rank}` : "—"}
-            delta={<ShiftDelta shift={myShift} />}
-          />
+          <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
           <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
           <Stat label="Gespeeld" value={me?.played ?? 0} />
         </div>
@@ -1220,17 +1232,6 @@ function BadgeStrip({ badges, to }: { badges: Badge[]; to: string }) {
         </span>
       )}
     </div>
-  );
-}
-
-function ShiftDelta({ shift }: { shift: Shift | null }) {
-  if (typeof shift !== "number" || shift === 0) return null;
-  const up = shift > 0;
-  return (
-    <span className={`stat__delta ${up ? "is-up" : "is-down"}`}>
-      {up ? "▲" : "▼"}
-      {Math.abs(shift)}
-    </span>
   );
 }
 
