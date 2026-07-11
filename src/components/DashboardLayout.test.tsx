@@ -162,7 +162,7 @@ describe("tier-aankondiging (#127)", () => {
       pt("m-x", 1105, 1095),
     ]);
     renderShell();
-    expect(await screen.findByText(/je zakt naar bink i/i)).toBeInTheDocument();
+    expect(await screen.findByText(/je zakt naar wannabe i/i)).toBeInTheDocument();
     expect(celebrate).not.toHaveBeenCalled();
   });
 });

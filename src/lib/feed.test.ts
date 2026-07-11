@@ -161,7 +161,7 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       teams: TEAMS,
       friendships: [],
       myId: "p1",
-      histories: { p1: [point(m.id, 1095, 1105)] }, // Bink I → Netbeul III
+      histories: { p1: [point(m.id, 1095, 1105)] }, // Wannabe I → Netbeul III
     });
     const top = feed[0];
     if (top.kind !== "match") throw new Error("verwacht match-event");
@@ -181,15 +181,15 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       teams: TEAMS,
       friendships: [],
       myId: "p1",
-      histories: { p1: [point(m.id, 1005, 1040)] }, // Bink III → Bink II
+      histories: { p1: [point(m.id, 1005, 1040)] }, // Wannabe III → Wannabe II
     });
     const top = feed[0];
     if (top.kind !== "match") throw new Error("verwacht match-event");
     expect(top.highlights).toContainEqual({
       type: "tier",
       playerId: "p1",
-      label: "Bink II",
-      emoji: "😎",
+      label: "Wannabe II",
+      emoji: "😤",
       richting: "promotie",
     });
   });

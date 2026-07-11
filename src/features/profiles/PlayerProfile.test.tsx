@@ -103,8 +103,8 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    // Tier-badge (#127) op de rating-tegel: rating 1012 = Bink III, gedimd (1 match).
-    expect(await screen.findByText("Bink III")).toHaveClass("is-dim");
+    // Tier-badge (#127) op de rating-tegel: rating 1012 = Wannabe III, gedimd (1 match).
+    expect(await screen.findByText("Wannabe III")).toHaveClass("is-dim");
     // Punten (6) staan onder de Statistieken-tab.
     clickTab("Statistieken");
     expect(await screen.findByText("6")).toBeInTheDocument();
