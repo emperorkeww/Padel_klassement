@@ -77,11 +77,16 @@ beforeEach(() => {
 describe("<PlayerProfile />", () => {
   it("toont naam en statistieken van de speler", async () => {
     setTables("p2");
+    state.tables.player_ratings = [
+      { player_id: "p2", rating: 1012, games: 1, updated_at: "" },
+    ];
     renderProfile("p2");
     expect(
       await screen.findByRole("heading", { name: /bob boers/i }),
     ).toBeInTheDocument();
     expect(await screen.findByText("6")).toBeInTheDocument();
+    // Tier-badge (#127) in de hero: rating 1012 = Goud III, gedimd (1 match).
+    expect(await screen.findByText("Goud III")).toHaveClass("is-dim");
   });
 
   it("toont de onderlinge balans op andermans profiel", async () => {

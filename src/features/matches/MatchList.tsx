@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, PlayerRating, Profile, Team } from "../../lib/types";
 import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "./api";
 import { formatRelativeDay } from "../../lib/format";
 import { outcomeFor } from "../../lib/results";
 import { Avatar } from "../../components/Avatar";
+import { TierBadge } from "../../components/TierBadge";
+import { THIN_GAMES } from "../groups/groupRating";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
@@ -165,15 +167,20 @@ export function TeamSide({
   profiles,
   won,
   right = false,
+  ratings,
 }: {
   team: Team | undefined;
   profiles: Record<string, Profile>;
   won: boolean;
   right?: boolean;
+  /** Optioneel: toont per speler de divisie-badge (#127). Alleen kaarten die
+   *  de ratings toch al laden (PlannedMatchCard) geven dit mee. */
+  ratings?: Record<string, PlayerRating>;
 }) {
   const players = team
     ? [profiles[team.player1_id], profiles[team.player2_id]]
     : [];
+  const playerIds = team ? [team.player1_id, team.player2_id] : [];
   return (
     <span
       className={`match-card__side ${right ? "match-card__side--right" : ""} ${won ? "is-win" : ""}`}
@@ -189,6 +196,19 @@ export function TeamSide({
             <span key={p?.id ?? i}>
               {won && i === 0 && <span aria-label="winnaar">🏆 </span>}
               {p?.full_name?.trim() || p?.username || "Onbekend"}
+              {ratings && (
+                <>
+                  {" "}
+                  <TierBadge
+                    rating={ratings[playerIds[i]]?.rating ?? null}
+                    dimmed={
+                      (ratings[playerIds[i]]?.games ?? 0) > 0 &&
+                      (ratings[playerIds[i]]?.games ?? 0) < THIN_GAMES
+                    }
+                    size="sm"
+                  />
+                </>
+              )}
             </span>
           ))
         ) : (

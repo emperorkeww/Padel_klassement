@@ -28,6 +28,8 @@ import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
+import { TierBadge } from "../../components/TierBadge";
+import { THIN_GAMES } from "../groups/groupRating";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,
@@ -235,6 +237,9 @@ export function Leaderboard() {
     rating: asof
       ? ratingAsOf(hmap[p.player_id], asof)
       : (rmap[p.player_id]?.rating ?? null),
+    // Voor de tier-dimming (#127); bij "stand op datum" is dit de huidige
+    // teller — kleine bekende onzuiverheid, de tier volgt wel de toenmalige rating.
+    games: rmap[p.player_id]?.games ?? 0,
     history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
     shift: usingScope ? undefined : shifts.get(p.player_id),
@@ -253,6 +258,7 @@ export function Leaderboard() {
     points: t.points,
     goalDiff: t.goal_diff ?? 0,
     rating: null,
+    games: 0,
     history: [] as RatingPoint[],
     form: [] as Outcome[],
     shift: undefined as Shift | undefined,
@@ -457,6 +463,8 @@ export function Leaderboard() {
               isMe: r.isMe,
               rating: r.rating,
               delta: r.history[r.history.length - 1]?.delta ?? null,
+              dimmed: r.games > 0 && r.games < THIN_GAMES,
+              tier: true,
               sub: `${r.points} ptn`,
               record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
             }))}
@@ -533,6 +541,8 @@ type Row = {
   points: number;
   goalDiff: number;
   rating: number | null;
+  /** Aantal matches achter de rating — voor de tier-dimming (#127). */
+  games: number;
   history: RatingPoint[];
   form: Outcome[];
   shift?: Shift;
@@ -851,6 +861,11 @@ function StandingsTable({
                 {showForm && (
                   <td className="num">
                     <span className="rating-wrap">
+                      <TierBadge
+                        rating={r.rating}
+                        dimmed={r.games > 0 && r.games < THIN_GAMES}
+                        size="sm"
+                      />
                       {r.rating != null ? (
                         <span className="rating-cell">{r.rating}</span>
                       ) : (
@@ -901,6 +916,11 @@ function RankList({
                 {r.isMe && <span className="badge badge--accent">jij</span>}
               </span>
               <span className="ranklist__sub">
+                <TierBadge
+                  rating={r.rating}
+                  dimmed={r.games > 0 && r.games < THIN_GAMES}
+                  size="sm"
+                />
                 {r.form.length > 0 && <FormChips form={r.form} size="sm" />}
                 <span
                   aria-label={`${r.won} winst, ${r.drawn} gelijk, ${r.lost} verlies`}

@@ -51,6 +51,10 @@ describe("<Dashboard />", () => {
     expect((await screen.findAllByText("1012")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/▲/)).length).toBeGreaterThan(0);
     expect(screen.getByText("Rating")).toBeInTheDocument();
+    // Tier-badge (#127) bij de rating: 1012 = Goud III, gedimd (1 match).
+    const tiers = await screen.findAllByText("Goud III");
+    expect(tiers.length).toBeGreaterThan(0);
+    expect(tiers[0]).toHaveClass("is-dim");
   });
 
   it("toont de eerstvolgende geplande match met score-invoer", async () => {

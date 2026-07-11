@@ -21,6 +21,15 @@ export function canvasPalette() {
     lime: "#c7e63a",
     success: "#16a34a",
     gold: "#d4a017",
+    goldSoft: "#faf3dd",
+    silver: "#8c98a4",
+    silverSoft: "#eef1f4",
+    bronze: "#b0722d",
+    bronzeSoft: "#f7ece0",
+    platina: "#4e7d8f",
+    platinaSoft: "#e9f2f6",
+    diamant: "#4f46e5",
+    diamantSoft: "#eceafc",
   };
 }
 

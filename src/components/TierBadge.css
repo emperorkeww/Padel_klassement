@@ -1,0 +1,49 @@
+/* Divisie-badge (#127): pill in het .badge-recept met tier-kleurtokens uit
+   index.css (licht + donker). Het rondje in currentColor is het kleuranker. */
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.125rem var(--sp-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--tier-soft);
+  color: var(--tier);
+  border: 1px solid color-mix(in srgb, var(--tier) 35%, var(--line));
+}
+.tier-badge--brons {
+  --tier: var(--bronze);
+  --tier-soft: var(--bronze-soft);
+}
+.tier-badge--zilver {
+  --tier: var(--silver);
+  --tier-soft: var(--silver-soft);
+}
+.tier-badge--goud {
+  --tier: var(--gold);
+  --tier-soft: var(--gold-soft);
+}
+.tier-badge--platina {
+  --tier: var(--platina);
+  --tier-soft: var(--platina-soft);
+}
+.tier-badge--diamant {
+  --tier: var(--diamant);
+  --tier-soft: var(--diamant-soft);
+}
+.tier-badge__dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+}
+.tier-badge--sm {
+  font-size: 0.6875rem;
+  padding: 0 0.4rem;
+}
+/* Dunne rating (< 3 matches): zelfde dimming als .rating-thin. */
+.tier-badge.is-dim {
+  opacity: 0.55;
+}

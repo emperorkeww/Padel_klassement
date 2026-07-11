@@ -55,6 +55,8 @@ const PAIRS = [
   ["danger", "danger-soft", 4.5, "verlies-tekst op verliesvlak"],
   ["warn", "warn-soft", 4.5, "waarschuwing op waarschuwingsvlak"],
   ["gold", "gold-soft", 3.0, "goud-badge (groot/UI)"],
+  ["platina", "platina-soft", 3.0, "platina-tierbadge (groot/UI)"],
+  ["diamant", "diamant-soft", 3.0, "diamant-tierbadge (groot/UI)"],
   ["lime-deep", "surface", 3.0, "lime-tekstaccent (groot/UI)"],
   ["sidebar-ink", "sidebar-bg", 4.5, "navigatielabels"],
   ["sidebar-ink-strong", "sidebar-bg", 4.5, "actief navigatielabel"],

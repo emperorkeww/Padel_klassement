@@ -318,7 +318,12 @@ export function PlannedMatchCard({
   return (
     <div className="planned-card">
       <div className="planned-card__row">
-        <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={false} />
+        <TeamSide
+          team={teams[m.team_a_id]}
+          profiles={profiles}
+          won={false}
+          ratings={ratings.data ?? undefined}
+        />
         {pctA != null && (
           <WinChip
             pct={pctA}
@@ -342,7 +347,12 @@ export function PlannedMatchCard({
       </div>
 
       <div className="planned-card__row">
-        <TeamSide team={teams[m.team_b_id]} profiles={profiles} won={false} />
+        <TeamSide
+          team={teams[m.team_b_id]}
+          profiles={profiles}
+          won={false}
+          ratings={ratings.data ?? undefined}
+        />
         {pctA != null && (
           <WinChip
             pct={100 - pctA}

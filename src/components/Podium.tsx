@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "./Avatar";
+import { TierBadge } from "./TierBadge";
 import "./Podium.css";
 
 // Gedeeld podium voor de top 3 van een klassement (globaal én per groep):
@@ -22,6 +23,9 @@ export interface PodiumEntry {
   record?: string | null;
   /** Rating op weinig matches → gedimd. */
   dimmed?: boolean;
+  /** Toon de divisie-badge (#127), afgeleid van `rating`. Opt-in zodat
+   *  punten-podia schoon blijven. */
+  tier?: boolean;
 }
 
 export function Podium({ entries }: { entries: PodiumEntry[] }) {
@@ -57,6 +61,13 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
                 </span>
               )}
             </span>
+            {entry.tier && (
+              <TierBadge
+                rating={entry.rating}
+                dimmed={entry.dimmed}
+                size="sm"
+              />
+            )}
             {entry.sub && <span className="podium__sub">{entry.sub}</span>}
             {entry.record && (
               <span className="podium__record">{entry.record}</span>

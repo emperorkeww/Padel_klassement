@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { useAsync } from "../lib/useAsync";
 import { getProfile, displayName } from "../features/profiles/api";
+import { useTierAnnouncement } from "../features/standings/useTierAnnouncement";
 import { Avatar } from "./Avatar";
 import { BallIcon } from "./BallIcon";
 import "./ui.css";
@@ -46,6 +47,9 @@ export function DashboardLayout() {
     [myId],
   );
   const me = profile.data ?? null;
+  // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
+  // je rating over een divisiegrens tilt.
+  useTierAnnouncement(myId);
 
   return (
     <div className="shell">
