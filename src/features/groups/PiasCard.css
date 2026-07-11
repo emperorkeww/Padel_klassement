@@ -1,0 +1,45 @@
+/* De Pias-kaart: de anti-MVP van de groep/periode, één ongelukkige in beeld. */
+
+.pias-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  padding: var(--sp-2);
+  border-radius: var(--radius, 12px);
+  text-decoration: none;
+  color: inherit;
+}
+
+.pias-card__emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pias-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pias-card__name {
+  font-weight: 700;
+  font-size: var(--fs-md, 1rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pias-card__detail {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.pias-card__meta {
+  margin: var(--sp-3) 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

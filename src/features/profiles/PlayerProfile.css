@@ -35,6 +35,19 @@
   font-size: var(--fs-base);
 }
 
+.profile-hero__nick {
+  margin: var(--sp-1) 0 0;
+  font-weight: 600;
+  font-style: italic;
+  font-size: var(--fs-sm);
+}
+
+.profile-hero__roast {
+  margin: var(--sp-1) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
 .profile-hero__form {
   display: flex;
   align-items: center;

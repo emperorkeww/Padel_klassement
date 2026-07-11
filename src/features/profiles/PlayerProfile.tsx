@@ -37,6 +37,8 @@ import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
 import { Sheet } from "../../components/Sheet";
 import { tierFor, tierProgress } from "../../lib/tiers";
+import { bijnaam } from "../../lib/nickname";
+import { roast } from "../../lib/roast";
 import { THIN_GAMES } from "../groups/groupRating";
 import { ProfileHero } from "./profile/ProfileHero";
 import { ProfileOverview } from "./profile/ProfileOverview";
@@ -189,6 +191,16 @@ export function PlayerProfile() {
           a.voortgang!.nu / a.voortgang!.doel,
       )[0] ?? null;
 
+  // Bijnaam + roast (#167): gedeelde grap voor de hele groep, dus deterministisch
+  // geseed op het speler-id en berekend over de volledige historie (los van het
+  // seizoensfilter). Plagen, geen kwetsen; roast is null als er niets te melden is.
+  const roastSeed = [...id].reduce(
+    (h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) | 0,
+    5381,
+  );
+  const nick = bijnaam(mlist, tmap, id);
+  const roastText = roast(mlist, tmap, id, roastSeed, ratings.data ?? undefined);
+
   // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
   // profielniveau — dus resolven we ze tegen de volledige historie.
   const badgesAllTime = season
@@ -303,6 +315,8 @@ export function PlayerProfile() {
     id,
     p,
     isMe,
+    nick,
+    roast: roastText,
     s: s ?? null,
     myRating,
     thinRating,

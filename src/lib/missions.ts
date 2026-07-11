@@ -36,6 +36,30 @@ export function weekStartOf(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - maandagOffset, 12);
 }
 
+/** Half-open bereik [maandag 00:00, volgende maandag 00:00) van de week van `d`. */
+export function weekRange(d: Date): { start: Date; end: Date } {
+  const maandag = weekStartOf(d);
+  const start = new Date(maandag.getFullYear(), maandag.getMonth(), maandag.getDate());
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+  return { start, end };
+}
+
+/**
+ * Doorlopende maandindex (jaar × 12 + maand) om opeenvolgende kalendermaanden
+ * te tellen: opeenvolgende maanden verschillen exact 1. Tegenhanger van
+ * weekIndex, voor de maandelijkse afgeleide features (o.a. de pias van de maand).
+ */
+export function monthIndex(d: Date): number {
+  return d.getFullYear() * 12 + d.getMonth();
+}
+
+/** Half-open bereik [1e van de maand, 1e van de volgende maand) van `d`. */
+export function monthRange(d: Date): { start: Date; end: Date } {
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return { start, end };
+}
+
 /** Chronologisch gesorteerde kopie van de matches (op speeltijd). */
 function chronologisch(matches: Match[]): Match[] {
   return [...matches].sort((a, b) =>

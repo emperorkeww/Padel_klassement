@@ -41,6 +41,10 @@ export interface ProfileData {
   id: string;
   p: Profile;
   isMe: boolean;
+  /** Ludieke bijnaam (#167), deterministisch op het speler-id. */
+  nick: string;
+  /** Eén rake plaag-observatie (#167), of null als er niets te roasten valt. */
+  roast: string | null;
 
   // Kerncijfers
   s: StandingLite | null;

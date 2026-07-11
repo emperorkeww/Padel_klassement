@@ -477,6 +477,51 @@ describe("recentlyClosedSeason", () => {
   });
 });
 
+describe("buildFeed — Pias van de maand (#167)", () => {
+  const groups = [
+    { id: "g1", name: "Vrijdagavond", created_at: "2026-06-01T10:00:00Z", created_by: "p1" },
+  ];
+  // "Nu" valt vroeg in juli → juni is de net-gesloten maand (binnen venster).
+  const now = new Date("2026-07-03T12:00:00Z");
+  // Een bagel in juni: team t-cd (p3/p4) wint met 6–0 van t-ab (p1/p2).
+  const bagel = match("2026-06-15T18:00:00Z", "t-ab", "t-cd", "completed", {
+    winner_team_id: "t-cd",
+    score_a: 0,
+    score_b: 6,
+  });
+
+  it("levert een maand-pias-event voor de net-gesloten maand", () => {
+    const feed = buildFeed({
+      matches: [bagel],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      groupMatchesByGroup: { g1: [bagel] },
+      now,
+    });
+    const pias = feed.find((e) => e.kind === "maand-pias");
+    expect(pias).toBeTruthy();
+    if (pias?.kind !== "maand-pias") throw new Error("verwacht maand-pias");
+    expect(["p1", "p2"]).toContain(pias.playerId);
+    expect(pias.reden).toBe("bagel");
+    expect(pias.periodeLabel).toBe("juni 2026");
+  });
+
+  it("geen maand-pias-event lang na het sluiten van de maand", () => {
+    const feed = buildFeed({
+      matches: [bagel],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      groupMatchesByGroup: { g1: [bagel] },
+      now: new Date("2026-07-28T12:00:00Z"),
+    });
+    expect(feed.some((e) => e.kind === "maand-pias")).toBe(false);
+  });
+});
+
 describe("networkIds / feedDay", () => {
   it("netwerk = ik + geaccepteerde vrienden", () => {
     const ids = networkIds(

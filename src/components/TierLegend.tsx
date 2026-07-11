@@ -1,11 +1,22 @@
 import { tierLegend } from "../lib/tiers";
 import "./TierLegend.css";
 
+/** Pias van de week voor de voetnoot: de naam en hoe hoog de favoriet stond. */
+export interface TierLegendPias {
+  naam: string;
+  /** Pre-match winkans van de verloren favoriet (0..1). */
+  winChance: number;
+}
+
 /**
  * Uitklapbare uitleg (#127): wat de divisies betekenen en bij welke rating je
  * in welke tier zit. Zelfde <details>-patroon als de klassement-filters.
+ *
+ * De voetnoot noemt sinds #127 de echte pias van de week (grootste choke) als
+ * die er is; anders valt hij terug op de vaste grap — het easter egg verdwijnt
+ * nooit.
  */
-export function TierLegend() {
+export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
   const rijen = tierLegend();
   return (
     <details className="tier-legend">
@@ -35,7 +46,14 @@ export function TierLegend() {
         ))}
       </ul>
       <p className="tier-legend__pias">
-        🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet.
+        {pias ? (
+          <>
+            🤡 Pias van de week: <strong>{pias.naam}</strong> — ging als
+            torenhoge favoriet ({Math.round(pias.winChance * 100)}%) onderuit.
+          </>
+        ) : (
+          "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."
+        )}
       </p>
     </details>
   );

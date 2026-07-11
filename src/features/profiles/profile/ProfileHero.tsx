@@ -6,7 +6,7 @@ import type { ProfileData } from "./types";
 // zichtbaar, ongeacht welke tab open staat. De tier-pil hoort bij de
 // rating-tegel (in de tabs), zodat de naam nooit dubbel als kop verschijnt.
 export function ProfileHero({ d }: { d: ProfileData }) {
-  const { p, isMe, streak } = d;
+  const { p, isMe, streak, nick, roast } = d;
   return (
     <section className="card profile-hero">
       {/* Zelfde view-transition-naam als de aangetikte klassement-avatar:
@@ -23,6 +23,12 @@ export function ProfileHero({ d }: { d: ProfileData }) {
           )}
         </h1>
         <p className="profile-hero__handle">@{p.username}</p>
+        <p className="profile-hero__nick">“{nick}”</p>
+        {roast && (
+          <p className="profile-hero__roast" role="note">
+            🔥 {roast}
+          </p>
+        )}
       </div>
     </section>
   );

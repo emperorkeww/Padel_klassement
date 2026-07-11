@@ -30,6 +30,8 @@ import { Avatar } from "../../components/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { RivalryCard } from "./RivalryCard";
+import { PiasCard } from "./PiasCard";
+import { buildMatchRatings } from "../../lib/maandpias";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { PollSection } from "./PlanPoll";
 import { SuggestionsCard } from "./SuggestionsCard";
@@ -168,6 +170,11 @@ export function GroupDetail() {
   };
   const completedMatches = (matches.data ?? []).filter(
     (m) => m.status === "completed",
+  );
+  // Pre-match ratings voor de choke-detectie van de pias van de maand.
+  const piasRatings = useMemo(
+    () => buildMatchRatings(histories.data ?? {}),
+    [histories.data],
   );
   const firstMatchDate = completedMatches.reduce<string | null>((min, m) => {
     const d = m.played_at ?? m.created_at;
@@ -490,6 +497,12 @@ export function GroupDetail() {
           matches={matches.data ?? []}
           teams={tmap}
           profiles={pmap}
+        />
+        <PiasCard
+          matches={completedMatches}
+          teams={tmap}
+          profiles={pmap}
+          ratingsByMatch={piasRatings}
         />
         <section className="card">
           <div className="card__head">

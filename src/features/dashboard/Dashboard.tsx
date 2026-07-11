@@ -34,6 +34,7 @@ import {
 } from "../matches/api";
 import { eveningSummary } from "../../lib/eveningSummary";
 import { ShareEvening } from "../groups/ShareEvening";
+import { PiasCard } from "../groups/PiasCard";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
@@ -759,6 +760,17 @@ export function Dashboard() {
 
           {myMatches.data && teams.data && (
             <WeekMissions matches={myMatches.data} teams={tmap} myId={myId} />
+          )}
+
+          {myMatches.data && teams.data && (
+            <PiasCard
+              matches={myMatches.data}
+              teams={tmap}
+              profiles={pmap}
+              scope="week"
+              restrictTo={myId}
+              selfId={myId}
+            />
           )}
 
           {nextBadge && nextBadge.voortgang && (
