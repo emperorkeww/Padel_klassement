@@ -14,6 +14,7 @@ import { rankShifts, type Shift } from "./rankShift";
 import { computePlayerStandings, matchesInSeason } from "./standings";
 import { isSeasonClosed, seasonFor, type Season } from "./seasons";
 import { eveningSummary } from "./eveningSummary";
+import { tierChange, type TierNaam } from "./tiers";
 
 /** De ándere speler in een vriendschap (zelfde logica als friends/api). */
 const otherId = (f: Friendship, myId: string) =>
@@ -44,7 +45,15 @@ export type Highlight =
   | { type: "score"; label: "bagel" | "monsterzege" | "nagelbijter" }
   | { type: "streak"; playerId: string; count: number }
   | { type: "duo"; teamId: string; count: number }
-  | { type: "rating"; playerId: string; threshold: number };
+  | { type: "rating"; playerId: string; threshold: number }
+  | {
+      type: "tier";
+      playerId: string;
+      /** De divisie waarin de speler nu zit (na de wissel). */
+      naam: TierNaam;
+      emoji: string;
+      richting: "promotie" | "degradatie";
+    };
 
 export type FeedEvent =
   | { kind: "match"; at: string; match: Match; highlights: Highlight[]; myDelta: number | null }
@@ -270,6 +279,18 @@ export function buildFeed(input: {
             if (p.rating_before < t && p.rating_after >= t) {
               highlights.push({ type: "rating", playerId: pid, threshold: t });
             }
+          }
+          // Ranking-nieuws: promotie of degradatie naar een andere divisie.
+          // Alleen hoofdtier-wissels (III→II telt niet) om ruis te beperken.
+          const wissel = tierChange(p.rating_before, p.rating_after);
+          if (wissel && wissel.hoofdtier) {
+            highlights.push({
+              type: "tier",
+              playerId: pid,
+              naam: wissel.naar.naam,
+              emoji: wissel.naar.emoji,
+              richting: wissel.richting,
+            });
           }
         }
       }

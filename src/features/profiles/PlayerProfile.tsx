@@ -94,6 +94,8 @@ export function PlayerProfile() {
   const [seasonId, setSeasonId] = useState("");
   // Onderlinge stand: standaard de top 5 (meest gespeeld), met een toggle.
   const [showAllH2H, setShowAllH2H] = useState(false);
+  // Grafiekkaart: één kaart met een Rating/Positie-tab i.p.v. twee kaarten.
+  const [chartTab, setChartTab] = useState<"rating" | "positie">("rating");
   // Aangetikte badge: opent een pop-up met naam, uitleg en voortgang (werkt
   // ook op touch, waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
@@ -161,6 +163,11 @@ export function PlayerProfile() {
   const myGames = ratings.data?.[id]?.games ?? 0;
   const thinRating = myGames > 0 && myGames < THIN_GAMES;
   const rhist = ratingHistory.data ?? [];
+  // Welke grafiek de verloop-kaart toont: de tab-keuze, of — met maar één
+  // bruikbare dataset — automatisch de grafiek die wél genoeg punten heeft.
+  const hasRating = rhist.length >= 2;
+  const hasRank = rankPoints.length >= 2;
+  const chartShown = hasRating && hasRank ? chartTab : hasRating ? "rating" : "positie";
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
 
   // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
@@ -359,30 +366,6 @@ export function PlayerProfile() {
         </div>
       </section>
 
-      {featuredBadges.length > 0 && (
-        <section className="card">
-          <h2 className="card__title">Uitgelichte badges</h2>
-          <ul className="badges">
-            {featuredBadges.map((b) => (
-              <li key={b.id} className="badges__item">
-                <button
-                  type="button"
-                  className="badge badges__pill badge--accent"
-                  title={b.omschrijving}
-                  aria-haspopup="dialog"
-                  onClick={() => setOpenBadge(b.id)}
-                >
-                  <span className="badges__emoji" aria-hidden="true">
-                    {b.emoji}
-                  </span>
-                  {b.naam}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div className="stats">
         <Stat
           label="Rating"
@@ -401,213 +384,390 @@ export function PlayerProfile() {
         <Stat label="Gespeeld" value={playedCount} />
       </div>
 
-      {rhist.length >= 2 && (
+      {(hasRating || hasRank) && (
         <section className="card">
-          <h2 className="card__title">Rating-verloop</h2>
-          <RatingChart history={rhist} />
-        </section>
-      )}
-
-      {rankPoints.length >= 2 && (
-        <section className="card">
-          <h2 className="card__title">Positie-verloop</h2>
-          <p className="card__subtitle">
-            Klassementspositie na elke speeldag — de stand is telkens berekend uit
-            alle matches t/m die dag.
-          </p>
-          <RankChart points={rankPoints} />
-        </section>
-      )}
-
-      {/* Trends (#58): win% per maand + sterkste/lastigste tegenstander en
-          beste weekdag — afgeleid uit de al opgehaalde matches. */}
-      {!matches.loading &&
-        (() => {
-          const months = monthlyWinRate(scoped, tmap, id);
-          const { favorite, hardest } = opponentExtremes(scoped, tmap, id);
-          const day = bestWeekday(scoped, tmap, id);
-          if (months.length < 2 && !favorite && !hardest && !day) return null;
-          return (
-            <section className="card">
-              <h2 className="card__title">Trends</h2>
-              {months.length >= 2 && (
-                <div
-                  className="trend-months"
-                  role="img"
-                  aria-label={`Win-percentage per maand: ${months
-                    .map((mo) => `${mo.label} ${mo.rate}%`)
-                    .join(", ")}`}
+          <div className="card__head">
+            <h2 className="card__title">
+              {chartShown === "rating" ? "Rating-verloop" : "Positie-verloop"}
+            </h2>
+            {hasRating && hasRank && (
+              <div
+                className="tabs tabs--head"
+                role="group"
+                aria-label="Grafiek-weergave"
+              >
+                <button
+                  type="button"
+                  className={`tab ${chartShown === "rating" ? "is-active" : ""}`}
+                  onClick={() => setChartTab("rating")}
                 >
-                  {months.map((mo) => (
-                    <div key={mo.month} className="trend-month">
-                      <span className="trend-month__rate">{mo.rate}%</span>
-                      <span className="trend-month__barwrap" aria-hidden="true">
-                        <span
-                          className="trend-month__bar"
-                          style={{ height: `${Math.max(mo.rate, 4)}%` }}
-                          title={`${mo.won} van ${mo.played} gewonnen`}
-                        />
-                      </span>
-                      <span className="trend-month__label">{mo.label}</span>
+                  Rating
+                </button>
+                <button
+                  type="button"
+                  className={`tab ${chartShown === "positie" ? "is-active" : ""}`}
+                  onClick={() => setChartTab("positie")}
+                >
+                  Positie
+                </button>
+              </div>
+            )}
+          </div>
+          {chartShown === "rating" ? (
+            <RatingChart history={rhist} />
+          ) : (
+            <>
+              <p className="card__subtitle">
+                Klassementspositie na elke speeldag — de stand is telkens berekend uit
+                alle matches t/m die dag.
+              </p>
+              <RankChart points={rankPoints} />
+            </>
+          )}
+        </section>
+      )}
+
+      {/* Verdieping in twee kolommen op desktop: links analyse (trends,
+          prestaties, badges), rechts sociaal (onderling, maatje, onderlinge
+          stand) en de recente matches. Onder 720px stapelt alles vanzelf. */}
+      <div className="grid grid--2">
+        <div className="profile-grid__col">
+          {/* Trends (#58): win% per maand + sterkste/lastigste tegenstander en
+              beste weekdag — afgeleid uit de al opgehaalde matches. */}
+          {!matches.loading &&
+            (() => {
+              const months = monthlyWinRate(scoped, tmap, id);
+              const { favorite, hardest } = opponentExtremes(scoped, tmap, id);
+              const day = bestWeekday(scoped, tmap, id);
+              if (months.length < 2 && !favorite && !hardest && !day) return null;
+              return (
+                <section className="card">
+                  <h2 className="card__title">Trends</h2>
+                  {months.length >= 2 && (
+                    <div
+                      className="trend-months"
+                      role="img"
+                      aria-label={`Win-percentage per maand: ${months
+                        .map((mo) => `${mo.label} ${mo.rate}%`)
+                        .join(", ")}`}
+                    >
+                      {months.map((mo) => (
+                        <div key={mo.month} className="trend-month">
+                          <span className="trend-month__rate">{mo.rate}%</span>
+                          <span className="trend-month__barwrap" aria-hidden="true">
+                            <span
+                              className="trend-month__bar"
+                              style={{ height: `${Math.max(mo.rate, 4)}%` }}
+                              title={`${mo.won} van ${mo.played} gewonnen`}
+                            />
+                          </span>
+                          <span className="trend-month__label">{mo.label}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {(favorite || hardest || day) && (
+                    <ul className="trend-facts">
+                      {favorite && (
+                        <li>
+                          <span aria-hidden="true">💪</span> Sterkst tegen{" "}
+                          <Link to={`/spelers/${favorite.oppId}`}>
+                            {displayName(pmap[favorite.oppId])}
+                          </Link>{" "}
+                          — {favorite.won}–{favorite.lost} in {favorite.played}{" "}
+                          duels
+                        </li>
+                      )}
+                      {hardest && (
+                        <li>
+                          <span aria-hidden="true">😅</span> Lastigst:{" "}
+                          <Link to={`/spelers/${hardest.oppId}`}>
+                            {displayName(pmap[hardest.oppId])}
+                          </Link>{" "}
+                          — {hardest.won}–{hardest.lost} in {hardest.played} duels
+                        </li>
+                      )}
+                      {day && (
+                        <li>
+                          <span aria-hidden="true">📅</span> Beste dag:{" "}
+                          <strong>{day.label}</strong> — {day.rate}% winst over{" "}
+                          {day.played} matches
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </section>
+              );
+            })()}
+
+          {(best > 0 || bigWin) && (
+            <section className="card">
+              <h2 className="card__title">Prestaties</h2>
+              <div className="achievements">
+                {best > 0 && (
+                  <div className="achievement">
+                    <span className="achievement__icon">🔥</span>
+                    <div>
+                      <span className="achievement__value">{best}</span>
+                      <span className="achievement__label">Langste winreeks</span>
+                    </div>
+                  </div>
+                )}
+                {bigWin && (
+                  <Link
+                    className="achievement achievement--link"
+                    to={`/matches/${bigWin.match.id}`}
+                  >
+                    <span className="achievement__icon">🏆</span>
+                    <div>
+                      <span className="achievement__value">
+                        {bigWin.match.score_a}–{bigWin.match.score_b}
+                      </span>
+                      <span className="achievement__label">
+                        Grootste zege · +{bigWin.margin} ·{" "}
+                        {formatDate(bigWin.match.played_at ?? bigWin.match.created_at)}
+                      </span>
+                    </div>
+                  </Link>
+                )}
+              </div>
+            </section>
+          )}
+
+          {!matches.loading && (
+            <section className="card">
+              <h2 className="card__title">Badges</h2>
+              {featuredBadges.length > 0 && (
+                <div className="badges-featured">
+                  <h3 className="badges-featured__title">Uitgelichte badges</h3>
+                  <ul className="badges">
+                    {featuredBadges.map((b) => (
+                      <li key={b.id} className="badges__item">
+                        <button
+                          type="button"
+                          className="badge badges__pill badge--accent"
+                          title={b.omschrijving}
+                          aria-haspopup="dialog"
+                          onClick={() => setOpenBadge(b.id)}
+                        >
+                          <span className="badges__emoji" aria-hidden="true">
+                            {b.emoji}
+                          </span>
+                          {b.naam}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
-              {(favorite || hardest || day) && (
-                <ul className="trend-facts">
-                  {favorite && (
-                    <li>
-                      <span aria-hidden="true">💪</span> Sterkst tegen{" "}
-                      <Link to={`/spelers/${favorite.oppId}`}>
-                        {displayName(pmap[favorite.oppId])}
-                      </Link>{" "}
-                      — {favorite.won}–{favorite.lost} in {favorite.played}{" "}
-                      duels
+              <p className="badges__hint">
+                {badges.some((b) => b.behaald)
+                  ? "Tik op een badge voor de uitleg"
+                  : "Speel matches om deze badges te verdienen · tik op een badge voor de uitleg"}
+                {isMe &&
+                  earnedAllTime.size > 0 &&
+                  " · tik op ★ om een behaalde badge uit te lichten op je profiel"}
+                .
+              </p>
+              <ul className="badges">
+                {badges.map((b) => {
+                  const kanUitlichten = isMe && earnedAllTime.has(b.id);
+                  const uitgelicht = featuredIds.includes(b.id);
+                  return (
+                    <li key={b.id} className="badges__item">
+                      <button
+                        type="button"
+                        className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
+                        title={b.omschrijving}
+                        aria-haspopup="dialog"
+                        onClick={() => setOpenBadge(b.id)}
+                      >
+                        <span className="badges__emoji" aria-hidden="true">
+                          {b.emoji}
+                        </span>
+                        {b.naam}
+                        {!b.behaald && b.voortgang && (
+                          <span className="badges__progress">
+                            {b.voortgang.nu}/{b.voortgang.doel}
+                          </span>
+                        )}
+                      </button>
+                      {kanUitlichten && (
+                        <button
+                          type="button"
+                          className={`badges__star${uitgelicht ? " badges__star--on" : ""}`}
+                          aria-pressed={uitgelicht}
+                          title={
+                            uitgelicht
+                              ? "Uit uitgelicht halen"
+                              : "Uitlichten op profiel"
+                          }
+                          onClick={() => toggleFeatured(b.id)}
+                        >
+                          {uitgelicht ? "★" : "☆"}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        <div className="profile-grid__col">
+          {balans && (
+            <section className="card">
+              <h2 className="card__title">Onderling</h2>
+              {vsGespeeld === 0 && samenGespeeld === 0 ? (
+                <p className="onderling__leeg">Nog geen gezamenlijke matches.</p>
+              ) : (
+                <ul className="onderling">
+                  {vsGespeeld > 0 && (
+                    <li className="onderling__rij">
+                      <span className="onderling__label">Tegen elkaar</span>
+                      <span className="onderling__waarde">
+                        Jij won {balans.alsTegenstanders.gewonnen} van de{" "}
+                        {vsGespeeld}
+                      </span>
                     </li>
                   )}
-                  {hardest && (
-                    <li>
-                      <span aria-hidden="true">😅</span> Lastigst:{" "}
-                      <Link to={`/spelers/${hardest.oppId}`}>
-                        {displayName(pmap[hardest.oppId])}
-                      </Link>{" "}
-                      — {hardest.won}–{hardest.lost} in {hardest.played} duels
-                    </li>
-                  )}
-                  {day && (
-                    <li>
-                      <span aria-hidden="true">📅</span> Beste dag:{" "}
-                      <strong>{day.label}</strong> — {day.rate}% winst over{" "}
-                      {day.played} matches
+                  {samenGespeeld > 0 && (
+                    <li className="onderling__rij">
+                      <span className="onderling__label">Samen</span>
+                      <span className="onderling__waarde">
+                        {samenGespeeld} {samenGespeeld === 1 ? "match" : "matches"}{" "}
+                        · {winRate(balans.alsPartners.gewonnen, samenGespeeld)}%
+                        gewonnen
+                      </span>
                     </li>
                   )}
                 </ul>
               )}
             </section>
-          );
-        })()}
+          )}
 
-      {(best > 0 || bigWin) && (
-        <section className="card">
-          <h2 className="card__title">Prestaties</h2>
-          <div className="achievements">
-            {best > 0 && (
-              <div className="achievement">
-                <span className="achievement__icon">🔥</span>
+          {partner && (
+            <section className="card partner-card">
+              <h2 className="card__title">Beste maatje</h2>
+              <div className="partner-card__row">
+                <Avatar profile={pmap[partner.partnerId]} size={40} />
                 <div>
-                  <span className="achievement__value">{best}</span>
-                  <span className="achievement__label">Langste winreeks</span>
+                  <Link
+                    className="profile-link"
+                    to={`/spelers/${partner.partnerId}`}
+                  >
+                    {displayName(pmap[partner.partnerId])}
+                  </Link>
+                  <p className="partner-card__sub">
+                    {winRate(partner.gewonnen, partner.samen)}% samen gewonnen (
+                    {partner.samen} matches)
+                  </p>
                 </div>
               </div>
-            )}
-            {bigWin && (
-              <Link
-                className="achievement achievement--link"
-                to={`/matches/${bigWin.match.id}`}
-              >
-                <span className="achievement__icon">🏆</span>
-                <div>
-                  <span className="achievement__value">
-                    {bigWin.match.score_a}–{bigWin.match.score_b}
-                  </span>
-                  <span className="achievement__label">
-                    Grootste zege · +{bigWin.margin} ·{" "}
-                    {formatDate(bigWin.match.played_at ?? bigWin.match.created_at)}
-                  </span>
-                </div>
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
-
-      {balans && (
-        <section className="card">
-          <h2 className="card__title">Onderling</h2>
-          {vsGespeeld === 0 && samenGespeeld === 0 ? (
-            <p className="onderling__leeg">Nog geen gezamenlijke matches.</p>
-          ) : (
-            <ul className="onderling">
-              {vsGespeeld > 0 && (
-                <li className="onderling__rij">
-                  <span className="onderling__label">Tegen elkaar</span>
-                  <span className="onderling__waarde">
-                    Jij won {balans.alsTegenstanders.gewonnen} van de{" "}
-                    {vsGespeeld}
-                  </span>
-                </li>
-              )}
-              {samenGespeeld > 0 && (
-                <li className="onderling__rij">
-                  <span className="onderling__label">Samen</span>
-                  <span className="onderling__waarde">
-                    {samenGespeeld} {samenGespeeld === 1 ? "match" : "matches"}{" "}
-                    · {winRate(balans.alsPartners.gewonnen, samenGespeeld)}%
-                    gewonnen
-                  </span>
-                </li>
-              )}
-            </ul>
+            </section>
           )}
-        </section>
-      )}
 
-      {!matches.loading && (
-        <section className="card">
-          <h2 className="card__title">Badges</h2>
-          <p className="badges__hint">
-            {badges.some((b) => b.behaald)
-              ? "Tik op een badge voor de uitleg"
-              : "Speel matches om deze badges te verdienen · tik op een badge voor de uitleg"}
-            {isMe &&
-              earnedAllTime.size > 0 &&
-              " · tik op ★ om een behaalde badge uit te lichten op je profiel"}
-            .
-          </p>
-          <ul className="badges">
-            {badges.map((b) => {
-              const kanUitlichten = isMe && earnedAllTime.has(b.id);
-              const uitgelicht = featuredIds.includes(b.id);
-              return (
-                <li key={b.id} className="badges__item">
-                  <button
-                    type="button"
-                    className={`badge badges__pill${b.behaald ? " badge--accent" : " badges__pill--dim"}`}
-                    title={b.omschrijving}
-                    aria-haspopup="dialog"
-                    onClick={() => setOpenBadge(b.id)}
-                  >
-                    <span className="badges__emoji" aria-hidden="true">
-                      {b.emoji}
-                    </span>
-                    {b.naam}
-                    {!b.behaald && b.voortgang && (
-                      <span className="badges__progress">
-                        {b.voortgang.nu}/{b.voortgang.doel}
+          {h2h.length > 0 && (
+            <section className="card">
+              <h2 className="card__title">Onderlinge stand</h2>
+
+              {/* Uitgelicht: tegen wie het net niet lukt (nemesis) en tegen wie wél
+                  (favoriete tegenstander). */}
+              {(nemesis || favoriet) && (
+                <div className="h2h-highlights">
+                  {favoriet && (
+                    <div className="h2h-highlight h2h-highlight--fav">
+                      <span className="h2h-highlight__tag">😎 Favoriete tegenstander</span>
+                      <Link
+                        className="h2h-highlight__player"
+                        to={`/spelers/${favoriet.oppId}`}
+                      >
+                        <Avatar profile={pmap[favoriet.oppId]} size={28} />
+                        <span className="h2h__name">
+                          {displayName(pmap[favoriet.oppId])}
+                        </span>
+                      </Link>
+                      <span className="h2h-highlight__meta">
+                        {favoriet.won}× gewonnen van {favoriet.played}
                       </span>
-                    )}
-                  </button>
-                  {kanUitlichten && (
-                    <button
-                      type="button"
-                      className={`badges__star${uitgelicht ? " badges__star--on" : ""}`}
-                      aria-pressed={uitgelicht}
-                      title={
-                        uitgelicht
-                          ? "Uit uitgelicht halen"
-                          : "Uitlichten op profiel"
-                      }
-                      onClick={() => toggleFeatured(b.id)}
-                    >
-                      {uitgelicht ? "★" : "☆"}
-                    </button>
+                    </div>
                   )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+                  {nemesis && nemesis.oppId !== favoriet?.oppId && (
+                    <div className="h2h-highlight h2h-highlight--nemesis">
+                      <span className="h2h-highlight__tag">😤 Nemesis</span>
+                      <Link
+                        className="h2h-highlight__player"
+                        to={`/spelers/${nemesis.oppId}`}
+                      >
+                        <Avatar profile={pmap[nemesis.oppId]} size={28} />
+                        <span className="h2h__name">
+                          {displayName(pmap[nemesis.oppId])}
+                        </span>
+                      </Link>
+                      <span className="h2h-highlight__meta">
+                        {nemesis.lost}× verloren van {nemesis.played}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <ul className="h2h">
+                {h2hShown.map((row) => (
+                  <li key={row.oppId} className="h2h__row">
+                    <Link className="h2h__player" to={`/spelers/${row.oppId}`}>
+                      <Avatar profile={pmap[row.oppId]} size={28} />
+                      <span className="h2h__name">{displayName(pmap[row.oppId])}</span>
+                    </Link>
+                    <span className="h2h__record">
+                      <span className="h2h__w">{row.won}</span>
+                      <span className="h2h__sep">–</span>
+                      {row.drawn > 0 && (
+                        <>
+                          <span className="h2h__d">{row.drawn}</span>
+                          <span className="h2h__sep">–</span>
+                        </>
+                      )}
+                      <span className="h2h__l">{row.lost}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {h2h.length > 5 && (
+                <button
+                  type="button"
+                  className="btn btn--sm h2h__toggle"
+                  onClick={() => setShowAllH2H((v) => !v)}
+                >
+                  {showAllH2H
+                    ? "Toon minder"
+                    : `Toon alles (${h2h.length})`}
+                </button>
+              )}
+            </section>
+          )}
+
+          <section className="card">
+            <h2 className="card__title">Recente matches</h2>
+            {matches.loading && <MatchListSkeleton count={3} />}
+            {matches.error && <p className="msg msg--error">{matches.error}</p>}
+            {!matches.loading && (
+              <MatchList
+                matches={scoped.slice(0, RECENT_SHOWN)}
+                teams={tmap}
+                profiles={pmap}
+                perspectiveId={id}
+                empty={
+                  season
+                    ? "Geen matches in dit seizoen."
+                    : "Deze speler heeft nog geen matches gespeeld."
+                }
+              />
+            )}
+          </section>
+        </div>
+      </div>
 
       {openBadgeInfo && (
         <div className="sheet-backdrop" onClick={() => setOpenBadge(null)}>
@@ -664,126 +824,6 @@ export function PlayerProfile() {
           </div>
         </div>
       )}
-
-      {partner && (
-        <section className="card partner-card">
-          <h2 className="card__title">Beste maatje</h2>
-          <div className="partner-card__row">
-            <Avatar profile={pmap[partner.partnerId]} size={40} />
-            <div>
-              <Link
-                className="profile-link"
-                to={`/spelers/${partner.partnerId}`}
-              >
-                {displayName(pmap[partner.partnerId])}
-              </Link>
-              <p className="partner-card__sub">
-                {winRate(partner.gewonnen, partner.samen)}% samen gewonnen (
-                {partner.samen} matches)
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {h2h.length > 0 && (
-        <section className="card">
-          <h2 className="card__title">Onderlinge stand</h2>
-
-          {/* Uitgelicht: tegen wie het net niet lukt (nemesis) en tegen wie wél
-              (favoriete tegenstander). */}
-          {(nemesis || favoriet) && (
-            <div className="h2h-highlights">
-              {favoriet && (
-                <div className="h2h-highlight h2h-highlight--fav">
-                  <span className="h2h-highlight__tag">😎 Favoriete tegenstander</span>
-                  <Link
-                    className="h2h-highlight__player"
-                    to={`/spelers/${favoriet.oppId}`}
-                  >
-                    <Avatar profile={pmap[favoriet.oppId]} size={28} />
-                    <span className="h2h__name">
-                      {displayName(pmap[favoriet.oppId])}
-                    </span>
-                  </Link>
-                  <span className="h2h-highlight__meta">
-                    {favoriet.won}× gewonnen van {favoriet.played}
-                  </span>
-                </div>
-              )}
-              {nemesis && nemesis.oppId !== favoriet?.oppId && (
-                <div className="h2h-highlight h2h-highlight--nemesis">
-                  <span className="h2h-highlight__tag">😤 Nemesis</span>
-                  <Link
-                    className="h2h-highlight__player"
-                    to={`/spelers/${nemesis.oppId}`}
-                  >
-                    <Avatar profile={pmap[nemesis.oppId]} size={28} />
-                    <span className="h2h__name">
-                      {displayName(pmap[nemesis.oppId])}
-                    </span>
-                  </Link>
-                  <span className="h2h-highlight__meta">
-                    {nemesis.lost}× verloren van {nemesis.played}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <ul className="h2h">
-            {h2hShown.map((row) => (
-              <li key={row.oppId} className="h2h__row">
-                <Link className="h2h__player" to={`/spelers/${row.oppId}`}>
-                  <Avatar profile={pmap[row.oppId]} size={28} />
-                  <span className="h2h__name">{displayName(pmap[row.oppId])}</span>
-                </Link>
-                <span className="h2h__record">
-                  <span className="h2h__w">{row.won}</span>
-                  <span className="h2h__sep">–</span>
-                  {row.drawn > 0 && (
-                    <>
-                      <span className="h2h__d">{row.drawn}</span>
-                      <span className="h2h__sep">–</span>
-                    </>
-                  )}
-                  <span className="h2h__l">{row.lost}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          {h2h.length > 5 && (
-            <button
-              type="button"
-              className="btn btn--sm h2h__toggle"
-              onClick={() => setShowAllH2H((v) => !v)}
-            >
-              {showAllH2H
-                ? "Toon minder"
-                : `Toon alles (${h2h.length})`}
-            </button>
-          )}
-        </section>
-      )}
-
-      <section className="card">
-        <h2 className="card__title">Recente matches</h2>
-        {matches.loading && <MatchListSkeleton count={3} />}
-        {matches.error && <p className="msg msg--error">{matches.error}</p>}
-        {!matches.loading && (
-          <MatchList
-            matches={scoped.slice(0, RECENT_SHOWN)}
-            teams={tmap}
-            profiles={pmap}
-            perspectiveId={id}
-            empty={
-              season
-                ? "Geen matches in dit seizoen."
-                : "Deze speler heeft nog geen matches gespeeld."
-            }
-          />
-        )}
-      </section>
     </div>
   );
 }

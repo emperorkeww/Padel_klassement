@@ -119,6 +119,33 @@ describe("<PlayerProfile />", () => {
     expect(screen.queryByText("Onderling")).not.toBeInTheDocument();
   });
 
+  it("wisselt tussen rating- en positie-grafiek via tabs", async () => {
+    setTables("p1");
+    // Beide grafieken bruikbaar: twee ratingpunten én twee speeldagen
+    // (rankProgression telt unieke dagen) → de kaart toont tabs.
+    state.tables.rating_history = [
+      { player_id: "p1", match_id: "m-dag1", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
+      { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: "2026-07-02T10:00:00.000Z" },
+    ];
+    state.tables.matches = [
+      { ...MATCH_DONE, id: "m-dag1", played_at: "2026-07-01T10:00:00.000Z" },
+      MATCH_DONE,
+      MATCH_PLANNED,
+    ];
+    renderProfile("p1");
+
+    expect(
+      await screen.findByRole("heading", { name: "Rating-verloop" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Positie" }));
+    expect(
+      await screen.findByText(/Klassementspositie na elke speeldag/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Positie-verloop" }),
+    ).toBeInTheDocument();
+  });
+
   it("meldt sober dat er nog geen gezamenlijke matches zijn", async () => {
     setTables("p5");
     renderProfile("p5");

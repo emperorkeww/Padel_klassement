@@ -510,3 +510,24 @@
   gap: var(--sp-2);
   font-size: var(--fs-sm);
 }
+
+/* Verdieping in twee kolommen op desktop (via .grid--2). Blok-flow zodat het
+   bestaande .card + .card-ritme de afstand regelt (geen dubbele gap). */
+.profile-grid__col {
+  min-width: 0; /* grid-item mag krimpen; lange namen blijven ellipsen */
+}
+
+/* Uitgelichte badges als subsectie bovenaan de badge-kaart. */
+.badges-featured {
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+.badges-featured__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}

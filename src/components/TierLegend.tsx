@@ -34,6 +34,10 @@ export function TierLegend() {
           </li>
         ))}
       </ul>
+      <p className="tier-legend__pias">
+        🤡 Twijfelgeval? De pias van de groep zweert dat-ie GOAT is — de rest
+        weet wel beter.
+      </p>
     </details>
   );
 }
