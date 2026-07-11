@@ -89,6 +89,14 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         ),
         roastSeed(event.playerId, event.weekStart),
       );
+    case "zwarte-piet":
+      return coachSneer(
+        roastCtx(
+          { roast_intensiteit: ctx.intensiteitVoor(event.groupId) },
+          ctx.profiles[event.toPlayerId],
+        ),
+        roastSeed(event.toPlayerId, event.at),
+      );
     case "season-champion":
       return kies(KAMPIOEN, roastSeed(event.playerId, event.seasonLabel));
     case "rank": {

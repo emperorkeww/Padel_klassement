@@ -17,6 +17,7 @@ import { eveningSummary } from "./eveningSummary";
 import { tierChange } from "./tiers";
 import { bepaalPias, type PiasReden } from "./maandpias";
 import type { PiasWeek } from "./pias";
+import type { ZwartePiet } from "./zwartePiet";
 
 /** De ándere speler in een vriendschap (zelfde logica als friends/api). */
 const otherId = (f: Friendship, myId: string) =>
@@ -72,7 +73,8 @@ export type FeedEvent =
   | { kind: "rank"; at: string; playerId: string; shift: Shift; rank: number }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
-  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string };
+  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
+  | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
 export const FEED_LIMIT = 50;
@@ -185,6 +187,8 @@ export function buildFeed(input: {
   groupMatchesByGroup?: Record<string, Match[]>;
   /** Serverside aangeduide pias van de week per groep (#127) → pias-items. */
   piasWeeks?: PiasWeek[];
+  /** Huidige Zwarte Piet-drager per groep (#185) → overdracht-items. */
+  shameTransfers?: Array<ZwartePiet & { groupId: string }>;
   profiles?: Record<string, Profile>;
   now?: Date;
   /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
@@ -203,6 +207,7 @@ export function buildFeed(input: {
     pollsByGroup = {},
     groupMatchesByGroup = {},
     piasWeeks = [],
+    shameTransfers = [],
     profiles = {},
     now = new Date(),
     filter,
@@ -442,6 +447,23 @@ export function buildFeed(input: {
       playerId: p.playerId,
       winChance: p.winChance,
       weekStart: p.weekStart,
+    });
+  }
+
+  // ── Zwarte Piet (#185): de huidige drager per groep, gedateerd op de
+  //    overname-match. Eén item per groep (geen stroom van overdrachten). ──
+  for (const t of shameTransfers) {
+    const groupName = groupNamesById.get(t.groupId);
+    if (!groupName) continue;
+    events.push({
+      kind: "zwarte-piet",
+      at: t.since,
+      groupId: t.groupId,
+      groupName,
+      toPlayerId: t.holderId,
+      fromPlayerId: t.fromId,
+      reden: t.reden,
+      detail: t.detail,
     });
   }
 

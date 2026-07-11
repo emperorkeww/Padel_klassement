@@ -11,7 +11,7 @@ import type { ZwartePietHolder } from "./zwartePietApi";
 import "./PiasCard.css";
 
 /** Hele dagen sinds `since` (YYYY-MM-DD), in UTC zodat het stabiel is. */
-export function dagenSinds(since: string, now: Date = new Date()): number {
+function dagenSinds(since: string, now: Date = new Date()): number {
   const d = Date.parse(`${since}T00:00:00Z`);
   const t = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return Math.max(0, Math.round((t - d) / 86_400_000));
