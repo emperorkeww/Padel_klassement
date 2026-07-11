@@ -97,9 +97,11 @@ describe("<PlayerProfile /> badges", () => {
       await screen.findByRole("heading", { name: "Uitgelichte badges" })
     ).closest("section")!;
 
-    // De uitgelichte pil is tikbaar en opent dezelfde uitleg-pop-up.
+    // De uitgelichte pil is tikbaar en opent dezelfde uitleg-pop-up. De kaart
+    // bevat de badge nu twee keer (uitgelicht + volledige lijst); de
+    // uitgelichte subsectie staat eerst in de DOM.
     fireEvent.click(
-      within(sectie).getByRole("button", { name: /Eerste overwinning/ }),
+      within(sectie).getAllByRole("button", { name: /Eerste overwinning/ })[0],
     );
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent(/Win je allereerste match/i);
