@@ -1,6 +1,7 @@
 import type { FeedEvent } from "../../lib/feed";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
 import { formatDate } from "../../lib/format";
+import { kleurRoast, roastCtx, roastSeed } from "../../lib/roastTone";
 import { teamLabel } from "../matches/api";
 import { displayName } from "../profiles/api";
 
@@ -23,6 +24,16 @@ export interface FeedSummaryCtx {
   profiles: Record<string, Profile>;
   teams: Record<string, Team>;
   myId: string;
+  /** Roast-toon per groep (#183); ontbreekt → 'gemeen' (de DB-default). */
+  intensiteitVoor?: (groupId: string) => RoastIntensiteit;
+}
+
+/** Roast-context voor een pias-item: groeps-intensiteit + schild van het doelwit. */
+function piasCtx(ctx: FeedSummaryCtx, groupId: string, playerId: string) {
+  return roastCtx(
+    { roast_intensiteit: ctx.intensiteitVoor?.(groupId) ?? "gemeen" },
+    ctx.profiles[playerId],
+  );
 }
 
 const naam = (ctx: FeedSummaryCtx, id: string) => displayName(ctx.profiles[id]);
@@ -116,13 +127,21 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
     case "maand-pias":
       return {
         icon: "🤡",
-        tekst: `${naam(ctx, e.playerId)} is de pias van de maand (${e.periodeLabel}): ${e.detail}`,
+        tekst: kleurRoast(
+          `${naam(ctx, e.playerId)} is de pias van de maand (${e.periodeLabel}): ${e.detail}`,
+          piasCtx(ctx, e.groupId, e.playerId),
+          roastSeed(e.playerId, e.periodeLabel),
+        ),
         to: `/groepen/${e.groupId}`,
       };
     case "pias-week":
       return {
         icon: "🤡",
-        tekst: `${naam(ctx, e.playerId)} is de pias van de week in ${e.groupName}: verloor als torenhoge favoriet (${Math.round(e.winChance * 100)}%)`,
+        tekst: kleurRoast(
+          `${naam(ctx, e.playerId)} is de pias van de week in ${e.groupName}: verloor als torenhoge favoriet (${Math.round(e.winChance * 100)}%)`,
+          piasCtx(ctx, e.groupId, e.playerId),
+          roastSeed(e.playerId, e.weekStart),
+        ),
         to: `/groepen/${e.groupId}`,
       };
   }

@@ -10,7 +10,8 @@ import { Link } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
 import { bepaalPias, type MatchRatings } from "../../lib/maandpias";
 import { monthRange, weekRange } from "../../lib/missions";
-import type { Match, Profile, Team } from "../../lib/types";
+import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
 import { displayName } from "../profiles/api";
 import { SharePias } from "./SharePias";
 import "./PiasCard.css";
@@ -29,6 +30,7 @@ export function PiasCard({
   now = new Date(),
   restrictTo,
   selfId,
+  intensiteit = "gemeen",
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -40,6 +42,8 @@ export function PiasCard({
   restrictTo?: string;
   /** Speler die "jij" is → tweede persoon in de tekst. */
   selfId?: string;
+  /** Roast-toon van de groep (#183); bepaalt de commentator-sneer. */
+  intensiteit?: RoastIntensiteit;
 }) {
   const period = useMemo(
     () => (scope === "maand" ? monthRange(now) : weekRange(now)),
@@ -59,6 +63,11 @@ export function PiasCard({
   const isZelf = selfId != null && pias.playerId === selfId;
   const naam = isZelf ? "Jij" : displayName(profiles[pias.playerId]);
   const titel = scope === "week" ? "🤡 Pias-alarm" : "🤡 Op weg naar de pias van de maand";
+  // Commentator-sneer (#183): schild van de pias respecteren, toon = groep.
+  const sneer = sneerSuffix(
+    roastCtx({ roast_intensiteit: intensiteit }, profiles[pias.playerId]),
+    roastSeed(pias.playerId, periodeLabel),
+  );
 
   return (
     <section className="card pias-card">
@@ -78,7 +87,10 @@ export function PiasCard({
         <Avatar profile={profiles[pias.playerId]} size={44} />
         <span className="pias-card__body">
           <span className="pias-card__name">{naam}</span>
-          <span className="pias-card__detail">{pias.detail}</span>
+          <span className="pias-card__detail">
+            {pias.detail}
+            {sneer}
+          </span>
         </span>
       </Link>
 

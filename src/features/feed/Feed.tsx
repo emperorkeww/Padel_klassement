@@ -27,7 +27,13 @@ import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
 import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
-import type { GroupMember, Match, Profile } from "../../lib/types";
+import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import type {
+  GroupMember,
+  Match,
+  Profile,
+  RoastIntensiteit,
+} from "../../lib/types";
 import "./Feed.css";
 
 // Feed (#120, uitgebreid in #138): wat gebeurde er bij jou en je vrienden —
@@ -215,6 +221,11 @@ export function Feed() {
   const name = (pid: string) =>
     pid === myId ? "Jij" : displayName(pmap[pid]);
 
+  // Roast-toon per groep (#183): de intensiteit die de pias-items kleurt.
+  const intensiteitVoor = (groupId: string): RoastIntensiteit =>
+    (groups.data ?? []).find((g) => g.id === groupId)?.roast_intensiteit ??
+    "gemeen";
+
   // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli".
   let lastDay = "";
 
@@ -306,7 +317,14 @@ export function Feed() {
                     </li>
                   )}
                   <li className="feed__item">
-                    <FeedItem event={event} pmap={pmap} tmap={tmap} myId={myId} name={name} />
+                    <FeedItem
+                      event={event}
+                      pmap={pmap}
+                      tmap={tmap}
+                      myId={myId}
+                      name={name}
+                      intensiteitVoor={intensiteitVoor}
+                    />
                   </li>
                 </Fragment>
               );
@@ -365,12 +383,14 @@ function FeedItem({
   tmap,
   myId,
   name,
+  intensiteitVoor,
 }: {
   event: FeedEvent;
   pmap: Record<string, Profile>;
   tmap: Parameters<typeof MatchCard>[0]["teams"];
   myId: string;
   name: (pid: string) => string;
+  intensiteitVoor: (groupId: string) => RoastIntensiteit;
 }) {
   switch (event.kind) {
     case "match":
@@ -576,7 +596,12 @@ function FeedItem({
           )!
         </FeedLine>
       );
-    case "maand-pias":
+    case "maand-pias": {
+      const ctx = roastCtx(
+        { roast_intensiteit: intensiteitVoor(event.groupId) },
+        pmap[event.playerId],
+      );
+      const staart = sneerSuffix(ctx, roastSeed(event.playerId, event.periodeLabel));
       return (
         <FeedLine
           icon="🤡"
@@ -587,17 +612,23 @@ function FeedItem({
           {event.playerId === myId ? (
             <>
               Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              je {event.detail}. 🤡
+              je {event.detail}.{staart}
             </>
           ) : (
             <>
               {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              {event.detail}. 🤡
+              {" "}{event.detail}.{staart}
             </>
           )}
         </FeedLine>
       );
-    case "pias-week":
+    }
+    case "pias-week": {
+      const ctx = roastCtx(
+        { roast_intensiteit: intensiteitVoor(event.groupId) },
+        pmap[event.playerId],
+      );
+      const staart = sneerSuffix(ctx, roastSeed(event.playerId, event.weekStart));
       return (
         <FeedLine
           icon="🤡"
@@ -609,17 +640,18 @@ function FeedItem({
             <>
               Jij bent de <strong>pias van de week</strong> in{" "}
               {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%). 🤡
+              {Math.round(event.winChance * 100)}%).{staart}
             </>
           ) : (
             <>
               {name(event.playerId)} is de <strong>pias van de week</strong> in{" "}
               {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%). 🤡
+              {Math.round(event.winChance * 100)}%).{staart}
             </>
           )}
         </FeedLine>
       );
+    }
   }
 }
 

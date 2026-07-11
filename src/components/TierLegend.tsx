@@ -1,11 +1,14 @@
 import { tierLegend } from "../lib/tiers";
 import "./TierLegend.css";
 
-/** Pias van de week voor de voetnoot: de naam en hoe hoog de favoriet stond. */
+/** Pias van de week voor de voetnoot: de naam, hoe hoog de favoriet stond en de
+ *  commentator-sneer (#183; "" als de pias een roast-schild aan heeft). */
 export interface TierLegendPias {
   naam: string;
   /** Pre-match winkans van de verloren favoriet (0..1). */
   winChance: number;
+  /** Kant-en-klare sneer-staart van de commentator, of "" bij schild. */
+  sneer: string;
 }
 
 /**
@@ -50,6 +53,7 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
           <>
             🤡 Pias van de week: <strong>{pias.naam}</strong> — ging als
             torenhoge favoriet ({Math.round(pias.winChance * 100)}%) onderuit.
+            {pias.sneer}
           </>
         ) : (
           "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."

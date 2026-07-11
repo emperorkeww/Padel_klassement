@@ -398,6 +398,21 @@ function PrivacyCard({ userId }: { userId: string }) {
               onChange={(e) => set({ allow_friend_requests: e.target.checked })}
             />
           </label>
+          <label className="toggle-row">
+            <span className="toggle-row__text">
+              <span className="toggle-row__label">Roast-schild 🛡️</span>
+              <span className="toggle-row__hint">
+                Zet aan als je niet geroast wilt worden: pias, feed en profiel
+                tonen dan een neutrale variant zonder spot.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={p.roast_schild}
+              disabled={busy}
+              onChange={(e) => set({ roast_schild: e.target.checked })}
+            />
+          </label>
         </div>
       )}
     </section>

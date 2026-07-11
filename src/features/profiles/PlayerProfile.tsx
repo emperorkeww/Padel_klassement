@@ -37,7 +37,7 @@ import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "../../lib/errors";
 import { Sheet } from "../../components/Sheet";
 import { tierFor, tierProgress } from "../../lib/tiers";
-import { bijnaam } from "../../lib/nickname";
+import { bijnaam, neutraleBijnaam } from "../../lib/nickname";
 import { roast } from "../../lib/roast";
 import { THIN_GAMES } from "../groups/groupRating";
 import { ProfileHero } from "./profile/ProfileHero";
@@ -198,8 +198,13 @@ export function PlayerProfile() {
     (h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) | 0,
     5381,
   );
-  const nick = bijnaam(mlist, tmap, id);
-  const roastText = roast(mlist, tmap, id, roastSeed, ratings.data ?? undefined);
+  // Roast-schild (#183): wie het aanzet krijgt een neutrale bijnaam en geen
+  // plaag-regel — plagen, geen kwetsen, en wie niet wil hoeft niet.
+  const schild = p.roast_schild ?? false;
+  const nick = schild ? neutraleBijnaam(id) : bijnaam(mlist, tmap, id);
+  const roastText = schild
+    ? null
+    : roast(mlist, tmap, id, roastSeed, ratings.data ?? undefined);
 
   // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
   // profielniveau — dus resolven we ze tegen de volledige historie.
