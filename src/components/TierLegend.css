@@ -115,3 +115,11 @@
   --tier: var(--legende);
   --tier-soft: var(--legende-soft);
 }
+
+/* Interne grap voor de vriendengroep: de pias-voetnoot. */
+.tier-legend__pias {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  font-style: italic;
+  color: var(--ink-soft);
+}
