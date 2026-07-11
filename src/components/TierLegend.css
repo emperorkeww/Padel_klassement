@@ -36,14 +36,20 @@
   border: 1px solid color-mix(in srgb, var(--tier) 30%, var(--line));
 }
 .tier-legend__emoji {
-  font-size: 1.1em;
+  font-size: 1.3em;
   line-height: 1;
+  flex-shrink: 0;
+}
+/* Naam + bijnaam gestapeld: blijft smal genoeg voor mobiel. */
+.tier-legend__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 .tier-legend__naam {
   font-weight: 700;
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
 }
 .tier-legend__flavor {
   font-weight: 500;
@@ -51,14 +57,21 @@
   font-size: var(--fs-xs);
   opacity: 0.8;
 }
+/* Instapdrempel prominent, het volledige bereik als subtiele tweede regel. */
+.tier-legend__req {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  line-height: 1.2;
+}
 .tier-legend__nodig {
-  margin-left: auto;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .tier-legend__range {
-  min-width: 8.5em;
-  text-align: right;
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ink-soft);
 }
