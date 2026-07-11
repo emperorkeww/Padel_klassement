@@ -8,6 +8,12 @@
     var(--surface);
 }
 
+/* Tier-pil op een eigen regel binnen de (geaccentueerde) rating-tegel, zodat
+   hij nooit botst met de delta naast de ratingwaarde. */
+.stat__badge {
+  display: flex;
+}
+
 .profile-hero__body {
   min-width: 0;
 }
