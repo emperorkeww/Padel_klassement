@@ -1,4 +1,5 @@
 import { Avatar } from "../../../components/Avatar";
+import { COMMENTATOR } from "../../../lib/roastTone";
 import { displayName } from "../api";
 import type { ProfileData } from "./types";
 
@@ -26,7 +27,7 @@ export function ProfileHero({ d }: { d: ProfileData }) {
         <p className="profile-hero__nick">“{nick}”</p>
         {roast && (
           <p className="profile-hero__roast" role="note">
-            🔥 {roast}
+            {COMMENTATOR.emoji} {COMMENTATOR.naam}: {roast}
           </p>
         )}
       </div>

@@ -2,6 +2,8 @@
 
 export type MatchStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 export type FriendshipStatus = "pending" | "accepted" | "declined";
+/** Roast-toon van een groep (#183): hoe hard het systeem de leden roast. */
+export type RoastIntensiteit = "mild" | "gemeen" | "radioactief";
 
 export interface Profile {
   id: string;
@@ -15,6 +17,10 @@ export interface Profile {
    *  items in de feed getoond worden (#59). Kolom bestaat in de DB, nog niet in
    *  database.types.ts — daarom optioneel; ontbreekt/true = zichtbaar. */
   discoverable?: boolean;
+  /** Roast-schild (#183): zet de speler dit aan, dan toont het systeem overal een
+   *  neutrale variant i.p.v. spot. Kolom bestaat in de DB, nog niet in
+   *  database.types.ts — daarom optioneel; ontbreekt/false = schild neer. */
+  roast_schild?: boolean;
   created_at: string;
 }
 
@@ -56,6 +62,9 @@ export interface Group {
   id: string;
   name: string;
   created_by: string | null;
+  /** Roast-toon van de groep (#183). Kolom bestaat in de DB, nog niet in
+   *  database.types.ts — optioneel; ontbreekt = 'gemeen' (de DB-default). */
+  roast_intensiteit?: RoastIntensiteit;
   created_at: string;
 }
 

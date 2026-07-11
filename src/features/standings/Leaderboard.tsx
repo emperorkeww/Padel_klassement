@@ -28,6 +28,7 @@ import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "../../lib/pias";
+import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
 import { TierBadge } from "../../components/TierBadge";
@@ -175,15 +176,26 @@ export function Leaderboard() {
   const rmap = ratings.data ?? {};
   const hmap = histories.data ?? {};
 
-  // Pias van de week voor de gekozen groep (niets bij "Alle groepen").
+  // Pias van de week voor de gekozen groep (niets bij "Alle groepen"). De
+  // commentator-sneer (#183) volgt de roast-intensiteit van die groep en het
+  // roast-schild van de pias zelf.
   const groupPias = useMemo(() => {
     if (!groupId) return null;
     const rows = piasWeeks.data?.[groupId];
     const pias = rows ? currentPias(rows) : null;
     if (!pias) return null;
     const profile = (profilesMap.data ?? {})[pias.playerId];
-    return { naam: displayName(profile), winChance: pias.winChance };
-  }, [groupId, piasWeeks.data, profilesMap.data]);
+    const groep = (groups.data ?? []).find((g) => g.id === groupId);
+    const ctx = roastCtx(
+      { roast_intensiteit: groep?.roast_intensiteit ?? "gemeen" },
+      profile,
+    );
+    return {
+      naam: displayName(profile),
+      winChance: pias.winChance,
+      sneer: sneerSuffix(ctx, roastSeed(pias.playerId, pias.weekStart)),
+    };
+  }, [groupId, piasWeeks.data, profilesMap.data, groups.data]);
 
   // Gescopete matches (seizoen óf "stand op datum"), met groepsfilter. Beide
   // rekenen client-side met dezelfde logica als de server-views.
@@ -624,7 +636,7 @@ function TierProgressBanner({ rating }: { rating: number | null }) {
 function PiasBanner({
   pias,
 }: {
-  pias: { naam: string; winChance: number };
+  pias: { naam: string; winChance: number; sneer: string };
 }) {
   return (
     <p className="pias-banner" role="status">
@@ -633,7 +645,7 @@ function PiasBanner({
       </span>
       <span>
         Pias van de week: <strong>{pias.naam}</strong> — verloor als torenhoge
-        favoriet ({Math.round(pias.winChance * 100)}%).
+        favoriet ({Math.round(pias.winChance * 100)}%).{pias.sneer}
       </span>
     </p>
   );

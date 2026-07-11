@@ -11,6 +11,7 @@ import {
   addGroupMembers,
   removeGroupMember,
   renameGroup,
+  setRoastIntensiteit,
   deleteGroup,
   leaveGroup,
   createGroupInvite,
@@ -51,7 +52,12 @@ import {
   seasonFromId,
 } from "../../lib/seasons";
 import { errorMessage } from "../../lib/errors";
-import type { Match, PlayerStanding, Profile } from "../../lib/types";
+import type {
+  Match,
+  PlayerStanding,
+  Profile,
+  RoastIntensiteit,
+} from "../../lib/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "plannen" | "stand" | "leden";
@@ -503,6 +509,7 @@ export function GroupDetail() {
           teams={tmap}
           profiles={pmap}
           ratingsByMatch={piasRatings}
+          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
         />
         <section className="card">
           <div className="card__head">
@@ -987,6 +994,32 @@ export function GroupDetail() {
                   Hernoemen
                 </button>
               </form>
+              <div className="stack">
+                <div className="row-between">
+                  <span>Roast-intensiteit 🎙️</span>
+                  <select
+                    className="select"
+                    aria-label="Roast-intensiteit"
+                    disabled={busy}
+                    value={group.data!.roast_intensiteit ?? "gemeen"}
+                    onChange={(e) => {
+                      const val = e.target.value as RoastIntensiteit;
+                      act(async () => {
+                        await setRoastIntensiteit(id, val);
+                        group.reload();
+                      }, "Roast-intensiteit bijgewerkt.");
+                    }}
+                  >
+                    <option value="mild">Mild — zachte por</option>
+                    <option value="gemeen">Gemeen — standaard</option>
+                    <option value="radioactief">Radioactief — genadeloos</option>
+                  </select>
+                </div>
+                <p className="field-hint">
+                  Hoe hard het systeem de leden van deze groep roast. Spelers met
+                  een roast-schild blijven altijd gespaard.
+                </p>
+              </div>
               <div>
                 <button
                   className="btn btn--danger btn--sm"

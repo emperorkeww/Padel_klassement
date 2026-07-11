@@ -672,7 +672,14 @@ export function Dashboard() {
         ) : (
           <ul className="feed-preview">
             {feedPreview.map((event, i) => {
-              const r = feedSummary(event, { profiles: pmap, teams: tmap, myId });
+              const r = feedSummary(event, {
+                profiles: pmap,
+                teams: tmap,
+                myId,
+                intensiteitVoor: (gid) =>
+                  (groups.data ?? []).find((g) => g.id === gid)
+                    ?.roast_intensiteit ?? "gemeen",
+              });
               return (
                 <li key={`${event.kind}-${event.at}-${i}`}>
                   <Link className="feed-preview__item" to={r.to}>

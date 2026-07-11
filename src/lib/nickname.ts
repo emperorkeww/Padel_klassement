@@ -85,6 +85,13 @@ const KANDIDATEN: BijnaamDef[] = [
 /** Neutrale terugval als geen enkele kandidaat past (bv. 0 matches). */
 const NEUTRAAL = ["De Racketzwaaier", "De Baanbewoner", "De Puntenpakker"];
 
+/** Alleen een neutrale bijnaam (#183): voor spelers met een roast-schild aan,
+ *  die geen plagende bijnaam willen. Deterministisch op het speler-id. */
+export function neutraleBijnaam(playerId: string): string {
+  const i = ((hash(playerId) % NEUTRAAL.length) + NEUTRAAL.length) % NEUTRAAL.length;
+  return NEUTRAAL[i];
+}
+
 /** Deterministische ludieke bijnaam voor een speler. */
 export function bijnaam(
   matches: Match[],
