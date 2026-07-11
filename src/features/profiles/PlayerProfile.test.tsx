@@ -85,8 +85,8 @@ describe("<PlayerProfile />", () => {
       await screen.findByRole("heading", { name: /bob boers/i }),
     ).toBeInTheDocument();
     expect(await screen.findByText("6")).toBeInTheDocument();
-    // Tier-badge (#127) in de hero: rating 1012 = Goud III, gedimd (1 match).
-    expect(await screen.findByText("Goud III")).toHaveClass("is-dim");
+    // Tier-badge (#127) in de hero: rating 1012 = Bink III, gedimd (1 match).
+    expect(await screen.findByText("Bink III")).toHaveClass("is-dim");
   });
 
   it("toont de onderlinge balans op andermans profiel", async () => {

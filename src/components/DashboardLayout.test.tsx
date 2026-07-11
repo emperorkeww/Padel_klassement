@@ -149,7 +149,7 @@ describe("tier-aankondiging (#127)", () => {
     ]);
     renderShell();
     expect(
-      await screen.findByText(/gepromoveerd naar platina iii/i),
+      await screen.findByText(/gepromoveerd naar netbeul iii/i),
     ).toBeInTheDocument();
     expect(celebrate).toHaveBeenCalled();
     expect(window.localStorage.getItem("tier-announced:p1")).toBe("m-x");
@@ -162,7 +162,7 @@ describe("tier-aankondiging (#127)", () => {
       pt("m-x", 1105, 1095),
     ]);
     renderShell();
-    expect(await screen.findByText(/je zakt naar goud i/i)).toBeInTheDocument();
+    expect(await screen.findByText(/je zakt naar bink i/i)).toBeInTheDocument();
     expect(celebrate).not.toHaveBeenCalled();
   });
 });
