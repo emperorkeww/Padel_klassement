@@ -588,8 +588,8 @@ function highlightText(
       return `📈 ${name(h.playerId)} door de ${h.threshold}`;
     case "tier":
       return h.richting === "promotie"
-        ? `${h.emoji} ${name(h.playerId)} promoveert naar ${h.naam}`
-        : `${h.emoji} ${name(h.playerId)} zakt naar ${h.naam}`;
+        ? `${h.emoji} ${name(h.playerId)} promoveert naar ${h.label}`
+        : `${h.emoji} ${name(h.playerId)} zakt naar ${h.label}`;
   }
 }
 

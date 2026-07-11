@@ -168,13 +168,13 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     expect(top.highlights).toContainEqual({
       type: "tier",
       playerId: "p1",
-      naam: "Netbeul",
+      label: "Netbeul III",
       emoji: "💥",
       richting: "promotie",
     });
   });
 
-  it("ranking-wissel: enkel een sub-niveau (III→II) geeft géén feed-item", () => {
+  it("ranking-wissel: ook een sub-niveau (III→II) komt in de feed", () => {
     const m = match("2026-07-10T18:00:00Z");
     const feed = buildFeed({
       matches: [m],
@@ -185,7 +185,13 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     });
     const top = feed[0];
     if (top.kind !== "match") throw new Error("verwacht match-event");
-    expect(top.highlights.some((h) => h.type === "tier")).toBe(false);
+    expect(top.highlights).toContainEqual({
+      type: "tier",
+      playerId: "p1",
+      label: "Bink II",
+      emoji: "😎",
+      richting: "promotie",
+    });
   });
 
   it("geen chips zonder aanleiding; myDelta null zonder history", () => {

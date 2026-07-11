@@ -14,7 +14,7 @@ import { rankShifts, type Shift } from "./rankShift";
 import { computePlayerStandings, matchesInSeason } from "./standings";
 import { isSeasonClosed, seasonFor, type Season } from "./seasons";
 import { eveningSummary } from "./eveningSummary";
-import { tierChange, type TierNaam } from "./tiers";
+import { tierChange } from "./tiers";
 
 /** De ándere speler in een vriendschap (zelfde logica als friends/api). */
 const otherId = (f: Friendship, myId: string) =>
@@ -49,8 +49,8 @@ export type Highlight =
   | {
       type: "tier";
       playerId: string;
-      /** De divisie waarin de speler nu zit (na de wissel). */
-      naam: TierNaam;
+      /** Volledige divisie waarin de speler nu zit, incl. sub-niveau ("Bink II"). */
+      label: string;
       emoji: string;
       richting: "promotie" | "degradatie";
     };
@@ -280,14 +280,14 @@ export function buildFeed(input: {
               highlights.push({ type: "rating", playerId: pid, threshold: t });
             }
           }
-          // Ranking-nieuws: promotie of degradatie naar een andere divisie.
-          // Alleen hoofdtier-wissels (III→II telt niet) om ruis te beperken.
+          // Ranking-nieuws: elke divisiewissel (ook een sub-niveau als
+          // Bink III → II) komt op de feed.
           const wissel = tierChange(p.rating_before, p.rating_after);
-          if (wissel && wissel.hoofdtier) {
+          if (wissel) {
             highlights.push({
               type: "tier",
               playerId: pid,
-              naam: wissel.naar.naam,
+              label: wissel.naar.label,
               emoji: wissel.naar.emoji,
               richting: wissel.richting,
             });
