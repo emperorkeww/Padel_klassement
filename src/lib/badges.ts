@@ -9,6 +9,7 @@ import {
   longestStreak,
   outcomeFor,
 } from "./results";
+import { matchDate, perfecteWeken, weekIndex } from "./missions";
 
 export interface BadgeVoortgang {
   nu: number;
@@ -129,6 +130,12 @@ const RATINGTIERS: Array<{ drempel: number; naam: string; emoji: string }> = [
   { drempel: 1300, naam: "Levende legende", emoji: "👑" },
 ];
 
+/** Perfecte weken (alle weekmissies van die week gehaald, #118). */
+const PERFECTE_WEKEN: Array<{ doel: number; naam: string; emoji: string }> = [
+  { doel: 1, naam: "Perfecte week", emoji: "🌠" },
+  { doel: 10, naam: "Weekheld", emoji: "🦸" },
+];
+
 const MIJLPALEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 10, naam: "Vaste klant", emoji: "🏓" },
   { doel: 25, naam: "Veelspeler", emoji: "🎾" },
@@ -184,14 +191,6 @@ function isReuzendoder(
     if (theirs - mine >= REUZENDODER_DREMPEL) return true;
   }
   return false;
-}
-
-/** Tijdstip van een match als Date, of null bij een onbruikbare datum. */
-function matchDate(m: Match): Date | null {
-  const raw = m.played_at ?? m.created_at;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /**
@@ -334,18 +333,6 @@ interface MatchFeiten {
   eigenGamesTotaal: number;
   /** Meeste winsten met exact hetzelfde puntenverschil. */
   maxZelfdeVerschilWinst: number;
-}
-
-/**
- * Doorlopende weekindex (maandag als weekstart) om opeenvolgende
- * kalenderweken te kunnen tellen: opeenvolgende weken verschillen exact 1.
- */
-function weekIndex(d: Date): number {
-  const maandagOffset = (d.getDay() + 6) % 7; // ma = 0 … zo = 6
-  const epochDagen =
-    Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000) -
-    maandagOffset;
-  return Math.floor(epochDagen / 7);
 }
 
 function verzamelFeiten(
@@ -1319,7 +1306,24 @@ export function deriveBadges(
     },
   );
 
-  // 6) Rating-mijlpalen (oplopend; "Levende legende" sluit de rij — de zeldzaamste).
+  // 6) Perfecte weken: alle weekmissies (missions.ts) van één week gehaald.
+  //    Telt over de aangeleverde matches, zoals elke afgeleide badge.
+  const perfect = perfecteWeken(matches, teams, playerId);
+  for (const { doel, naam, emoji } of PERFECTE_WEKEN) {
+    badges.push({
+      id: `perfecte-weken-${doel}`,
+      naam,
+      emoji,
+      omschrijving:
+        doel === 1
+          ? "Haal in één week álle weekmissies — een perfecte week."
+          : `Haal ${doel} perfecte weken.`,
+      behaald: perfect >= doel,
+      voortgang: { nu: perfect, doel },
+    });
+  }
+
+  // 7) Rating-mijlpalen (oplopend; "Levende legende" sluit de rij — de zeldzaamste).
   for (const { drempel, naam, emoji } of RATINGTIERS) {
     badges.push({
       id: `rating-${drempel}`,
