@@ -65,7 +65,7 @@ import {
 } from "../../lib/push";
 import { errorMessage } from "../../lib/errors";
 import { TierBadge } from "../../components/TierBadge";
-import { tierProgress } from "../../lib/tiers";
+import { tierFor, tierProgress } from "../../lib/tiers";
 import { byRank } from "../../lib/standings";
 import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
@@ -624,7 +624,7 @@ export function Dashboard() {
         <StatsSkeleton />
       ) : (
         <div className="stats">
-          <Stat label="Punten" value={me?.points ?? 0} accent />
+          <Stat label="Divisie" value={tierFor(myRating)?.label ?? "—"} accent />
           <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
           <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
           <Stat label="Gespeeld" value={me?.played ?? 0} />
