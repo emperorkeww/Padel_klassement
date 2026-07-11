@@ -1,0 +1,113 @@
+/* Padel Wrapped (#115): swipebare kaarten in de sheet, lichte huisstijl. */
+
+.wrapped-sheet {
+  max-width: 560px;
+  width: 100%;
+}
+
+/* Carrousel: native scroll met snap — geen JS-bibliotheek nodig. */
+.wrapped-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 0;
+  margin: 0 calc(-1 * var(--sp-2));
+  /* Balkje verbergen: de dots en knoppen zijn de navigatie. */
+  scrollbar-width: none;
+}
+.wrapped-track::-webkit-scrollbar {
+  display: none;
+}
+
+.wrapped-card {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-2);
+  box-sizing: border-box;
+}
+
+/* De kaart zelf: 4:5 zoals de poster, in de lichte huisstijl. */
+.wrapped-card__body {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 52vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  text-align: center;
+  padding: var(--sp-5);
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--accent-soft), transparent 70%),
+    var(--surface);
+}
+
+.wrapped-card__kicker {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.wrapped-card__hero {
+  margin: 0;
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.wrapped-card__hero--klein {
+  font-size: 2rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wrapped-card__sub {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* Navigatie: vorige/volgende + dots. */
+.wrapped-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.wrapped-dots {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.wrapped-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.wrapped-dot.is-active {
+  background: var(--accent);
+}
