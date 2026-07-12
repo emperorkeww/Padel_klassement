@@ -24,7 +24,7 @@ import {
   type Highlight,
 } from "../../lib/feed";
 import { formatDate, formatRelativeDay, formatTime } from "../../lib/format";
-import { getGroupMatches, getRecentMatches, getTeamsMap, teamLabel } from "../matches/api";
+import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
 import { MatchCard } from "../matches/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships } from "../friends/api";
@@ -42,6 +42,7 @@ import type {
   Match,
   Profile,
   RoastIntensiteit,
+  Team,
 } from "../../lib/types";
 import "./Feed.css";
 
@@ -488,32 +489,7 @@ function FeedItem({
 }) {
   switch (event.kind) {
     case "match":
-      return (
-        <div className="feed-match">
-          <MatchCard
-            match={event.match}
-            teams={tmap}
-            profiles={pmap}
-            perspectiveId={myId}
-          />
-          {(event.highlights.length > 0 || event.myDelta != null) && (
-            <div className="feed-chips">
-              {event.myDelta != null && event.myDelta !== 0 && (
-                <span
-                  className={`badge ${event.myDelta > 0 ? "badge--win" : "badge--loss"}`}
-                >
-                  {event.myDelta > 0 ? "▲" : "▼"} {Math.abs(event.myDelta)} rating
-                </span>
-              )}
-              {event.highlights.map((h, i) => (
-                <span key={i} className="badge badge--accent">
-                  {highlightText(h, name, (tid) => teamLabel(tmap[tid], pmap))}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      );
+      return <FeedMatch event={event} tmap={tmap} pmap={pmap} name={name} />;
     case "friendship": {
       // Eigen vriendschap: "Jij en X"; die van groepsgenoten: "X en Y".
       const involvesMe = event.a === myId || event.b === myId;
@@ -877,6 +853,94 @@ function EveningCard({
       )}
       <CoachMonologue lines={coachLines} onInfo={onInfo} />
     </div>
+  );
+}
+
+/** Één teamkant in de match-kaart: avatars boven de teamnaam (#232). */
+function TeamCol({
+  team,
+  pmap,
+  won,
+  label,
+}: {
+  team: Team | undefined;
+  pmap: Record<string, Profile>;
+  won: boolean;
+  label: string;
+}) {
+  const ids = team ? [team.player1_id, team.player2_id] : [];
+  return (
+    <div className={`fmatch__team ${won ? "is-win" : ""}`}>
+      <span className="fmatch__avs">
+        {ids.map((id) => (
+          <Avatar key={id} profile={pmap[id]} size={24} short />
+        ))}
+      </span>
+      <span className="fmatch__nm">{label}</span>
+    </div>
+  );
+}
+
+/** Match-kaart in de feed (#232): chip-header, avatars boven de teamnaam, grote
+ *  centrale score met winnaar-accent en de set-uitslag als chips eronder. */
+function FeedMatch({
+  event,
+  tmap,
+  pmap,
+  name,
+}: {
+  event: Extract<FeedEvent, { kind: "match" }>;
+  tmap: Record<string, Team>;
+  pmap: Record<string, Profile>;
+  name: (pid: string) => string;
+}) {
+  const m = event.match;
+  const done = m.status === "completed";
+  const aWon = done && m.winner_team_id === m.team_a_id;
+  const bWon = done && m.winner_team_id === m.team_b_id;
+  const scored = m.score_a != null && m.score_b != null;
+  const sets = readSetScores(m) ?? [];
+  const teamLbl = (tid: string) => teamLabel(tmap[tid], pmap);
+  return (
+    <Link className="fmatch" to={`/matches/${m.id}`}>
+      <div className="fmatch__head">
+        {event.myDelta != null && event.myDelta !== 0 && (
+          <span className={`badge ${event.myDelta > 0 ? "badge--win" : "badge--loss"}`}>
+            {event.myDelta > 0 ? "▲" : "▼"} {Math.abs(event.myDelta)} rating
+          </span>
+        )}
+        {event.highlights.map((h, i) => (
+          <span key={i} className="fmatch__chip">
+            {highlightText(h, name, teamLbl)}
+          </span>
+        ))}
+        <span className="fmatch__time">{formatTime(event.at)}</span>
+      </div>
+      <div className="fmatch__board">
+        <TeamCol team={tmap[m.team_a_id]} pmap={pmap} won={aWon} label={teamLbl(m.team_a_id)} />
+        <div className="fmatch__score">
+          {scored ? (
+            <>
+              <span className={aWon ? "w" : ""}>{m.score_a}</span>
+              <span className="d">–</span>
+              <span className={bWon ? "w" : ""}>{m.score_b}</span>
+            </>
+          ) : (
+            <span className="fmatch__vs">{done ? "gespeeld" : "vs"}</span>
+          )}
+        </div>
+        <TeamCol team={tmap[m.team_b_id]} pmap={pmap} won={bWon} label={teamLbl(m.team_b_id)} />
+      </div>
+      {sets.length > 0 && (
+        <div className="fmatch__sets">
+          {sets.map((s, i) => (
+            <span key={i} className="fmatch__set">
+              {s[0]}–{s[1]}
+            </span>
+          ))}
+        </div>
+      )}
+    </Link>
   );
 }
 

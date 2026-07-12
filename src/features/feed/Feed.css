@@ -30,28 +30,33 @@
   padding: 0 var(--sp-1);
 }
 
-/* Eén lichte feedregel (vriendschap, gepland, groep, poll): routine-nieuws dat
-   terugtreedt — géén volle kaart, maar een compacte regel (#232 PR D). */
+/* Routine-regel (vriendschap, gepland, groep, poll): compacte, subtiele kaart
+   met een icoon-token — lichter dan een match, maar wél een kaart (#232 mockup-
+   layout). */
 .feed-line {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-2);
-  border: 1px solid transparent;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--surface);
   text-decoration: none;
   color: inherit;
-  transition: background 0.15s, border-color 0.15s;
+  transition: border-color 0.15s;
 }
 .feed-line:hover {
-  background: var(--surface-2);
-  border-color: var(--line);
+  border-color: var(--accent-line);
 }
 .feed-line__icon {
-  font-size: 1.05rem;
-  width: 1.5rem;
-  text-align: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1rem;
   flex-shrink: 0;
 }
 .feed-line__avatars {
@@ -404,4 +409,121 @@
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 1px var(--sp-2);
+}
+
+/* ===== #232: match-kaart in mockup-layout — avatars boven de naam, grote
+   centrale score met winnaar-accent, set-uitslag als chips eronder. ===== */
+.fmatch {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.fmatch:hover { border-color: var(--accent-line); }
+.fmatch__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+.fmatch__chip {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: 2px var(--sp-2);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+}
+.fmatch__time {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.fmatch__board {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+}
+.fmatch__team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  text-align: center;
+  min-width: 0;
+}
+.fmatch__avs { display: inline-flex; }
+.fmatch__avs > :not(:first-child) { margin-left: -8px; }
+.fmatch__nm {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fmatch__team.is-win .fmatch__nm { color: var(--ink); font-weight: 700; }
+.fmatch__score {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-weight: 800;
+  font-size: 1.9rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.fmatch__score .d { color: var(--ink-soft); font-weight: 600; }
+.fmatch__score .w { color: var(--accent); }
+.fmatch__vs { font-size: 1rem; color: var(--ink-soft); font-weight: 600; }
+.fmatch__sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  justify-content: center;
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+.fmatch__set {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px var(--sp-2);
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+/* Filterchips als losse pills (mockup-layout, #232). Kleuren/stippen behouden. */
+.feed__filters {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+.feed__filters .tab {
+  min-height: 38px;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+}
+.feed__filters .tab:hover:not(.is-active) {
+  border-color: var(--accent-line);
+}
+.feed__filters .tab.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
