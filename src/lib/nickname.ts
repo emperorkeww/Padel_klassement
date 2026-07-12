@@ -70,20 +70,20 @@ interface BijnaamDef {
 // Volgorde is niet belangrijk: alle passende kandidaten dingen mee, de seed
 // kiest. Voorwaarden zijn bewust afgeleid uit puur telbare matchdata.
 const KANDIDATEN: BijnaamDef[] = [
-  { naam: "De Netbeul", past: (s) => s.bagelsUitgedeeld >= 2 },
-  { naam: "De Bagelbakker", past: (s) => s.bagelsUitgedeeld >= 1 },
-  { naam: "De Sloopkogel", past: (s) => s.grootsteZege >= 6 },
-  { naam: "De Nachtuil", past: (s) => s.nachtmatches >= 3 },
-  { naam: "Het Muurtje", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.6 },
-  { naam: "Mr. Consistent", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.45 && s.winrate <= 0.55 },
-  { naam: "De Underdog", past: (s) => s.gespeeld >= 10 && s.winrate < 0.4 },
-  { naam: "De Veteraan", past: (s) => s.gespeeld >= 100 },
-  { naam: "De Marathonman", past: (s) => s.gespeeld >= 50 },
-  { naam: "De Rookie", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
+  { naam: "De Beul van Baan 1 🔪", past: (s) => s.bagelsUitgedeeld >= 2 },
+  { naam: "De Bagelbakker 🥯", past: (s) => s.bagelsUitgedeeld >= 1 },
+  { naam: "De Sloopkogel 💥", past: (s) => s.grootsteZege >= 6 },
+  { naam: "De Nachtbraker 🌙", past: (s) => s.nachtmatches >= 3 },
+  { naam: "De Glazen Wand 🛡️", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.6 },
+  { naam: "De Grijze Muis 🐭", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.45 && s.winrate <= 0.55 },
+  { naam: "Sponsor van de Tegenstander 💸", past: (s) => s.gespeeld >= 10 && s.winrate < 0.4 },
+  { naam: "Het Meubilair 🛋️", past: (s) => s.gespeeld >= 100 },
+  { naam: "De Baanplakker 🧗", past: (s) => s.gespeeld >= 50 },
+  { naam: "De Groene Banaan 🍌", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
 ];
 
 /** Neutrale terugval als geen enkele kandidaat past (bv. 0 matches). */
-const NEUTRAAL = ["De Racketzwaaier", "De Baanbewoner", "De Puntenpakker"];
+const NEUTRAAL = ["De Racketzwaaier 🏸", "De Baanbewoner 🏕️", "De Puntenzoeker 🔎"];
 
 /** Alleen een neutrale bijnaam (#183): voor spelers met een roast-schild aan,
  *  die geen plagende bijnaam willen. Deterministisch op het speler-id. */
