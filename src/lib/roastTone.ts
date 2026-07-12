@@ -23,7 +23,7 @@ export interface RoastCtx {
  *  kwetsen: altijd over padel/ego, nooit persoonlijk. */
 export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
   mild: [
-    "Iedereen heeft z'n dag niet. Jij vaak.",
+    "Iedereen heeft z'n day niet. Jij vaak.",
     "Volgende keer beter, hè. Of slechter, als dat fysiek nog mogelijk is.",
     "Kop op, kampioen. Er is altijd nog jeu de boules.",
     "'t Is maar padel. Al leek dit vandaag meer op ballet.",
@@ -39,6 +39,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Volgende keer pak je ze wel.",
     "Gebeurt de beste weleens.",
     "Schud het van je af.",
+    "Had je je gripje toevallig in de boter gelegd? 🧈",
+    "Ach ja, de bal is rond. En in jouw geval vaak out.",
+    "Mooie warming-up. Wanneer begint de echte wedstrijd?",
+    "Het glas was in ieder geval van prima kwaliteit vandaag.",
+    "Je hield je tactische meesterplan wel heel erg geheim.",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -59,6 +64,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Dat blijft nog even nagalmen.",
     "Niet je beste werk. Understatement.",
     "Daar praten we volgende week nog over.",
+    "Was dat een lob of een bewuste uitnodiging om te smashen?",
+    "Ik heb lantaarnpalen nog actiever zien meebewegen aan het net.",
+    "Die bandeja had meer weg van een slappe pannenkoek.",
+    "Als je het net niet raakt, telt het ook gewoon als een punt, wist je dat?",
+    "Gelukkig is de derde helft traditioneel jouw sterkste set.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -79,6 +89,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Je tegenstander verveelde zich kapot.",
     "Historisch slecht. Dat is óók een prestatie.",
     "Ik zou m'n racket inleveren. Definitief.",
+    "Een tennisracket heeft gaten, maar jouw verdediging had er nog veel meer.",
+    "Zelfs een blinde meeuw had die bal nog binnen de kooi gehouden.",
+    "Was je racket vandaag stiekem van spons gemaakt?",
+    "Sommige spelers hebben talent, anderen hebben gewoon een heel mooi padelshirt.",
+    "Ik zou je inschrijving voor het volgende toernooi maar stilletjes annuleren.",
   ],
 } as const;
 

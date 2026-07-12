@@ -36,6 +36,8 @@ const KAMPIOEN = [
   "Chapeau. Nu nog een keer, dan geloof ik het.",
   "De besten winnen. Vandaag was jij dat.",
   "Genieten van de top: mooi uitzicht, diepe val.",
+  "De beker glimt, maar je reputatie heeft nog heel wat werk nodig.",
+  "Eén zwaluw maakt de zomer niet, en één titel maakt je nog geen legende.",
 ] as const;
 
 const PROMOTIE = [
@@ -52,6 +54,8 @@ const PROMOTIE = [
   "Netjes geklommen. Niet naar beneden kijken.",
   "Een trede hoger op de ladder. Hij wiebelt wel.",
   "Opgeklommen. De lucht daarboven is dun.",
+  "Welkom in de nieuwe divisie. Geniet van je eerste match, want daarna ga je hard omlaag.",
+  "Omhooggevlogen! Hopelijk heb je je parachute bij je.",
 ] as const;
 
 const DEGRADATIE = [
@@ -68,6 +72,8 @@ const DEGRADATIE = [
   "Een trede lager. Het went vanzelf.",
   "Zakken gaat snel. Klimmen duurt eeuwen.",
   "Afgezakt. De onderbuurman heet nu 'jij'.",
+  "Glijbaan naar de kelderklasse. Daar is het bier tenminste koud.",
+  "Een divisie gezakt. Misschien kun je daar wel eens een bal raken?",
 ] as const;
 
 const REEKS = [
@@ -83,6 +89,8 @@ const REEKS = [
   "Onstuitbaar. Tot de statistiek terugslaat.",
   "De machine draait. Onderhoud niet vergeten.",
   "Reeks aan de gang. Geniet zolang het duurt.",
+  "Winst na winst. Begint het al saai te worden voor de toeschouwers?",
+  "Op een wolk! Pas op dat je er niet in één keer vanaf dondert.",
 ] as const;
 
 const UPSET = [
@@ -97,6 +105,8 @@ const UPSET = [
   "Zoveel voor de papieren vorm.",
   "David 1, Goliath 0. Klassieker.",
   "De favoriet struikelt over z'n eigen ego.",
+  "De favorieten liggen in de kooi te huilen. Wat een heerlijke avond.",
+  "Wie de toto op hen had gezet is nu rijk. Maar niemand deed dat natuurlijk.",
 ] as const;
 
 const BAGEL = [
@@ -111,6 +121,8 @@ const BAGEL = [
   "Blank gehouden. Wreed maar mooi.",
   "Niet één gametje. Dat vergeet de groep nooit.",
   "6–0. De genadeloze klassieker.",
+  "6–0. Zelfs de kantinejuffrouw vroeg of jullie eigenlijk wel meededen.",
+  "Nul games. Dat is statistisch gezien bijna moeilijker dan één game winnen.",
 ] as const;
 
 const MONSTER = [
@@ -125,6 +137,8 @@ const MONSTER = [
   "Deed pijn om te zien. Op de goede manier.",
   "Compleet ingemaakt. Zo hoort dat.",
   "De sloophamer erin. Effectief.",
+  "Dat was geen wedstrijd, dat was een openbare les in nederigheid.",
+  "Sloopwerkzaamheden op baan 1. Geen spaan heel gelaten van de tegenpartij.",
 ] as const;
 
 /**

@@ -28,6 +28,11 @@ const HELD_FLAVOR = [
   "liet zien wie de baas is",
   "domineerde de avond",
   "kende geen genade",
+  "heeft de hele boel vakkundig gesloopt vandaag",
+  "had vandaag vleugels op de baan",
+  "was met geen mogelijkheid te passeren aan het net",
+  "heeft een gratis lesje padel uitgedeeld",
+  "speelde alsof de tegenstanders er puur voor spek en bonen bij stonden",
 ] as const;
 
 /** Cijfer-flavors als er geen upset was om te melden. */
@@ -35,6 +40,10 @@ const CIJFER_FLAVOR = [
   "Netjes gevuld programma.",
   "Daar zat serieus wat padel bij.",
   "De baan heeft overuren gedraaid.",
+  "De baromzet zal na al die sets ook wel flink gestegen zijn.",
+  "Mijn kladblok staat helemaal volgeschreven met uitslagen.",
+  "De glazen wanden trillen nog na van al die smashgeweld.",
+  "Sommige ballen liggen waarschijnlijk nu nog ergens diep in de struiken.",
 ] as const;
 
 /**
