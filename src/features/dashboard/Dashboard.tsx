@@ -420,7 +420,7 @@ export function Dashboard() {
               done={hasGroup}
               to="/groepen"
               label="Maak of kies een groep"
-              hint="Een groep speelt samen rondes en houdt een stand bij."
+              hint="Je speelmaatjes op één plek, met eigen klassement."
             />
             <OnboardStep
               done={hasPlayed}
@@ -1382,7 +1382,7 @@ function PushPrompt({ userId }: { userId: string }) {
           🔔
         </span>
         <div>
-          <h2 className="card__title card__title--tight">Blijf op de hoogte</h2>
+          <h2 className="card__title card__title--tight">Mis niks</h2>
           <p className="card__subtitle push-prompt__sub">
             Krijg een seintje bij nieuwe rondes, uitslagen van jouw matches en
             vriendschapsverzoeken — ook als de app dicht is.

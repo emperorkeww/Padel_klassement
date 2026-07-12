@@ -131,7 +131,7 @@ export function Matches() {
           <div>
             <h1 className="page-title">Matches</h1>
             <p className="page-subtitle">
-              Plan een match, log een uitslag of bekijk recente wedstrijden.
+              Plan een match, log een uitslag of scroll door je matches.
             </p>
           </div>
           <div className="btn-row">

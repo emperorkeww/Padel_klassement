@@ -115,7 +115,7 @@ export function Friends() {
       <header className="page-head">
         <h1 className="page-title">Vrienden</h1>
         <p className="page-subtitle">
-          Zoek spelers, stuur verzoeken en beheer je vrienden.
+          Vind je maatjes en stuur ze een verzoek.
         </p>
       </header>
 
