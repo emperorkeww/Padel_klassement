@@ -7,7 +7,7 @@
 // Pure functie, getest in coachFeed.test.ts.
 
 import type { FeedEvent } from "../../lib/feed";
-import type { Profile, RoastIntensiteit } from "../../lib/types";
+import type { Profile, RoastIntensiteit, Team } from "../../lib/types";
 import type { CoachMood } from "../../lib/roastTone";
 import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
 
@@ -16,6 +16,8 @@ export interface CoachCtx {
   intensiteitVoor: (groupId: string) => RoastIntensiteit;
   /** Profielen (voor het roast-schild van het doelwit). */
   profiles: Record<string, Profile>;
+  /** Teams, nodig om bij match-roasts het verliezende team op shields te checken. */
+  teams?: Record<string, Team>;
   /** Al gebruikte quips binnen deze weergave; voorkomt dubbele lijnen in de
    *  zichtbare feed. Geef één gedeelde set mee aan alle items van één render. */
   gebruikt?: Set<string>;
@@ -156,6 +158,50 @@ const MONSTER = [
   "Geen spaan heel gelaten. Dit niveau van dominantie is bijna onbeschoft, ik hou er wel van.",
 ] as const;
 
+const KAMPIOEN_NEUTRAAL = [
+  "Kampioen. Sterke reeks, helder resultaat.",
+  "Titel binnen. Netjes afgewerkt.",
+  "Bovenaan geëindigd. Dat mag gezien worden.",
+  "Kampioen van de groep. Verdiend op basis van de cijfers.",
+] as const;
+
+const PROMOTIE_NEUTRAAL = [
+  "Een divisie hoger. Sterk geklommen.",
+  "Promotie genoteerd. De lijn gaat omhoog.",
+  "Opgeschoven naar een hoger niveau.",
+  "Netjes gestegen op de ladder.",
+] as const;
+
+const DEGRADATIE_NEUTRAAL = [
+  "Een divisie lager. Tijd om rustig opnieuw op te bouwen.",
+  "Gezakt in het klassement. De volgende match telt weer.",
+  "Een stap terug in de stand.",
+  "De lijn ging omlaag, maar het seizoen loopt door.",
+] as const;
+
+const BAGEL_NEUTRAAL = [
+  "6–0. Duidelijke uitslag, snel door naar de volgende.",
+  "Een eenzijdige set. De cijfers zijn helder.",
+  "Nul games op het bord. Volgende match nieuwe kans.",
+  "Broodje bal op papier, neutraal genoteerd.",
+] as const;
+
+function heeftSchild(profile: Profile | undefined): boolean {
+  return profile?.roast_schild ?? false;
+}
+
+function verliezersHebbenSchild(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx): boolean {
+  const teams = ctx.teams;
+  if (!teams || !event.match.winner_team_id) return false;
+  const loserTeamId =
+    event.match.winner_team_id === event.match.team_a_id
+      ? event.match.team_b_id
+      : event.match.team_a_id;
+  const loser = teams[loserTeamId];
+  if (!loser) return false;
+  return [loser.player1_id, loser.player2_id].some((id) => heeftSchild(ctx.profiles[id]));
+}
+
 /**
  * Coach Rudy's commentaar bij een feed-gebeurtenis, of null als hij zwijgt.
  * Pias-quips lopen via coachSneer (respecteert schild + intensiteit); de rest
@@ -192,19 +238,36 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         g,
       );
     case "season-champion":
-      return kiesUniek(KAMPIOEN, roastSeed(event.playerId, event.seasonLabel), g);
+      return kiesUniek(
+        heeftSchild(ctx.profiles[event.playerId]) ? KAMPIOEN_NEUTRAAL : KAMPIOEN,
+        roastSeed(event.playerId, event.seasonLabel),
+        g,
+      );
     case "rank": {
       const omhoog =
         event.shift === "nieuw" ||
         (typeof event.shift === "number" && event.shift > 0);
-      return kiesUniek(omhoog ? PROMOTIE : DEGRADATIE, roastSeed(event.playerId, event.at), g);
+      const beschermd = heeftSchild(ctx.profiles[event.playerId]);
+      return kiesUniek(
+        omhoog
+          ? beschermd
+            ? PROMOTIE_NEUTRAAL
+            : PROMOTIE
+          : beschermd
+            ? DEGRADATIE_NEUTRAAL
+            : DEGRADATIE,
+        roastSeed(event.playerId, event.at),
+        g,
+      );
     }
     case "match": {
       const seed = roastSeed(event.match.id);
       const h = event.highlights;
       if (h.some((x) => x.type === "streak" || x.type === "duo")) return kiesUniek(REEKS, seed, g);
       if (h.some((x) => x.type === "upset")) return kiesUniek(UPSET, seed, g);
-      if (h.some((x) => x.type === "score" && x.label === "bagel")) return kiesUniek(BAGEL, seed, g);
+      if (h.some((x) => x.type === "score" && x.label === "bagel")) {
+        return kiesUniek(verliezersHebbenSchild(event, ctx) ? BAGEL_NEUTRAAL : BAGEL, seed, g);
+      }
       if (h.some((x) => x.type === "score" && x.label === "monsterzege")) return kiesUniek(MONSTER, seed, g);
       return null; // gewone match: Coach Rudy zwijgt (anti-ruis)
     }

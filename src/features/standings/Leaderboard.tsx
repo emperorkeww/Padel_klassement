@@ -193,6 +193,7 @@ export function Leaderboard() {
     return {
       naam: displayName(profile),
       winChance: pias.winChance,
+      beschermd: profile?.roast_schild ?? false,
       sneer: sneerSuffix(ctx, roastSeed(pias.playerId, pias.weekStart)),
     };
   }, [groupId, piasWeeks.data, profilesMap.data, groups.data]);
@@ -636,16 +637,18 @@ function TierProgressBanner({ rating }: { rating: number | null }) {
 function PiasBanner({
   pias,
 }: {
-  pias: { naam: string; winChance: number; sneer: string };
+  pias: { naam: string; winChance: number; beschermd: boolean; sneer: string };
 }) {
   return (
     <p className="pias-banner" role="status">
       <span className="pias-banner__nose" aria-hidden="true">
-        🤡
+        {pias.beschermd ? "📊" : "🤡"}
       </span>
       <span>
-        Pias van de week: <strong>{pias.naam}</strong> — verloor als torenhoge
-        favoriet ({Math.round(pias.winChance * 100)}%).{pias.sneer}
+        {pias.beschermd ? "Opvallende week" : "Pias van de week"}:{" "}
+        <strong>{pias.naam}</strong> — verloor als{" "}
+        {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
+        {Math.round(pias.winChance * 100)}%).{pias.sneer}
       </span>
     </p>
   );

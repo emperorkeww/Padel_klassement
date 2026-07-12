@@ -99,13 +99,11 @@ describe("<GroupDetail />", () => {
     expect(
       screen.queryByRole("heading", { name: /wie speelt er\?/i }),
     ).not.toBeInTheDocument();
-    // Er loopt al een poll (fixtures) → de kaart verwijst daarnaar.
+    // Ook met een lopende poll (fixtures) blijven de suggesties staan (#267):
+    // je kunt in dezelfde week nog een speeldag plannen.
     expect(
-      await screen.findByText(/speeldag-poll actief/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /breng je stem uit/i }),
-    ).toBeInTheDocument();
+      screen.queryByText(/speeldag-poll actief/i),
+    ).not.toBeInTheDocument();
     // Eén teamgenerator: deelnemers uit de poll van vandaag, formaatkeuze.
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),

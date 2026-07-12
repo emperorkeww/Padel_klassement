@@ -8,7 +8,7 @@ const ctx: CoachCtx = {
   profiles: {},
 };
 
-const matchStub = { id: "m1" } as Match;
+const matchStub = { id: "m1", team_a_id: "ta", team_b_id: "tb", winner_team_id: "ta" } as Match;
 
 describe("coachOpmerking", () => {
   it("zwijgt bij mundane gebeurtenissen", () => {
@@ -50,6 +50,34 @@ describe("coachOpmerking", () => {
     expect(coachOpmerking(e, ctx)).toBeTruthy();
   });
 
+  it("houdt kampioen-jabs actief zolang het schild uit staat", () => {
+    const e: FeedEvent = {
+      kind: "season-champion",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p1",
+      seasonLabel: "Q2 2026",
+    };
+    expect(coachOpmerking(e, ctx)).toContain("—");
+  });
+
+  it("gebruikt neutrale kampioen-tekst bij een roast-schild", () => {
+    const e: FeedEvent = {
+      kind: "season-champion",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p1",
+      seasonLabel: "Q2 2026",
+    };
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "gemeen",
+      profiles: { p1: { roast_schild: true } as Profile },
+    };
+    expect(coachOpmerking(e, beschermd)).not.toContain("—");
+  });
+
   it("onderscheidt promotie en degradatie", () => {
     const omhoog: FeedEvent = { kind: "rank", at: "2026-07-01T12:00:00Z", playerId: "p1", shift: 3, rank: 2 };
     const omlaag: FeedEvent = { kind: "rank", at: "2026-07-01T12:00:00Z", playerId: "p1", shift: -3, rank: 9 };
@@ -58,6 +86,37 @@ describe("coachOpmerking", () => {
     expect(a).toBeTruthy();
     expect(b).toBeTruthy();
     expect(a).not.toBe(b);
+  });
+
+  it("neutraliseert ranking-commentaar alleen bij een roast-schild", () => {
+    const daler: FeedEvent = { kind: "rank", at: "2026-07-01T12:00:00Z", playerId: "p1", shift: -3, rank: 9 };
+    const zonderSchild = coachOpmerking(daler, ctx);
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "gemeen",
+      profiles: { p1: { roast_schild: true } as Profile },
+    };
+    const metSchild = coachOpmerking(daler, beschermd);
+    expect(zonderSchild).toMatch(/trainen|gezellig|zwaartekracht|kelderklasse|zakken|gezakt/i);
+    expect(metSchild).toMatch(/rustig|volgende match|stap terug|omlaag/i);
+  });
+
+  it("neutraliseert bagel-commentaar als een verliezer een roast-schild heeft", () => {
+    const e: FeedEvent = {
+      kind: "match",
+      at: "2026-07-01T12:00:00Z",
+      match: matchStub,
+      highlights: [{ type: "score", label: "bagel" }],
+      myDelta: null,
+    };
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "gemeen",
+      profiles: { p2: { roast_schild: true } as Profile },
+      teams: {
+        ta: { player1_id: "p3", player2_id: "p4" },
+        tb: { player1_id: "p1", player2_id: "p2" },
+      } as never,
+    };
+    expect(coachOpmerking(e, beschermd)).toMatch(/duidelijke uitslag|eenzijdige set|volgende match|neutraal/i);
   });
 
   it("roast de pias van de week, maar zwijgt bij een roast-schild", () => {
