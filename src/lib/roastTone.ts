@@ -192,6 +192,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Als dit een WK-match was, had Trump nu al met Infantino aan de lijn gehangen om te eisen dat jouw rode kaart voorwaardelijk wordt opgeschort.",
     "Een absolute schande voor de sport. Zelfs de meest corrupte FIFA-officials zouden weigeren om steekpenningen aan te nemen om dit spel goed te praten.",
     "Je claimt dat je geweldig speelde, maar dat is 'fake news' van het allerhoogste Trump-niveau. Zelfs Bosnië werd minder opgelicht dan jouw partner vandaag.",
+    "Een prestatie zo frauduleus dat we een onafhankelijk tribunaal moeten opzetten om je slagenreeks te onderzoeken.",
+    "Als de disciplinaire commissie van de FIFA jouw spel vandaag had beoordeeld, had je levenslang gekregen. Geen enkele voorwaardelijke opschorting mogelijk.",
+    "Dit was geen sportieve ontmoeting, dit was een geopolitieke en organisatorische ramp van epische, corrupte proporties.",
+    "Zelfs als Gianni Infantino persoonlijk de reglementen herschrijft om jouw forehand als 'geldig' te bestempelen, blijft het een misdaad tegen de sport.",
+    "Een totale afgang. Ik heb ter plekke mijn notitieboekje opgegeten om de herinnering aan deze wanprestatie te vernietigen.",
   ],
 } as const;
 
