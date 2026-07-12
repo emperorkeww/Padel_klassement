@@ -52,12 +52,19 @@
   color: var(--accent);
 }
 
+/* Naam + tier-pil op één regel: flexrij (net als .profile-hero__name) zodat de
+   pil netjes verticaal centreert t.o.v. de grote kop i.p.v. op de baseline te
+   zakken, met een vaste tussenruimte en nette afbreek naar een eigen regel. */
 .hero__name {
   margin: 0 0 var(--sp-1);
   font-size: var(--fs-2xl);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 
 .hero__sub {
