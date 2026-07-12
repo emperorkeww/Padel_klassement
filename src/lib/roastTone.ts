@@ -27,24 +27,75 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Volgende keer beter, hè.",
     "Kop op, kampioen.",
     "'t Is maar padel. Toch?",
+    "Iedereen heeft een offdag.",
+    "Morgen is er weer een kans.",
+    "Daar leer je van, zeggen ze.",
+    "Niet getreurd, blijven oefenen.",
+    "Het zat gewoon even tegen.",
+    "Volgende keer pak je ze wel.",
+    "Gebeurt de beste weleens.",
+    "Schud het van je af.",
   ],
   gemeen: [
     "Pijnlijk om te zien.",
     "Doe daar eens iets aan.",
     "De cijfers liegen niet.",
     "Zwak. Gewoon zwak.",
+    "Dat was geen hoogstandje.",
+    "Ik zag het al van ver aankomen.",
+    "Trainen is geen straf, hè.",
+    "Je maat verdient echt beter.",
+    "Even diep ademhalen en nadenken.",
+    "Dat blijft nog even nagalmen.",
+    "Niet je beste werk. Understatement.",
+    "Daar praten we volgende week nog over.",
   ],
   radioactief: [
     "Ronduit gênant.",
     "Overweeg serieus een andere sport.",
     "Schaam je — en de hele groep met je.",
     "Ik heb ballen tégen een muur beter zien terugkomen.",
+    "Dit zet ik in de groepschat. Voor de eeuwigheid.",
+    "Mijn oma slaat harder. En die padelt niet eens.",
+    "Was dat opzet? Zeg alsjeblieft ja.",
+    "Een standbeeld had meer ballen geraakt.",
+    "Ik heb geen woorden. Nou ja, deze dan.",
+    "Je tegenstander verveelde zich kapot.",
+    "Historisch slecht. Dat is óók een prestatie.",
+    "Ik zou m'n racket inleveren. Definitief.",
   ],
 } as const;
 
-/** Stabiele, positieve index in een pool op basis van de seed. */
-function kies<T>(pool: readonly T[], seed: number): T {
-  return pool[((seed % pool.length) + pool.length) % pool.length];
+/** Deterministische, positieve start-index in een pool op basis van de seed. */
+function seedIndex(len: number, seed: number): number {
+  return ((seed % len) + len) % len;
+}
+
+/**
+ * Kiest deterministisch uit de pool op basis van de seed, maar slaat lijnen in
+ * `gebruikt` over (probeert opeenvolgende indices) zodat één weergave geen
+ * dubbele quip toont; de gekozen lijn wordt aan `gebruikt` toegevoegd. Valt
+ * terug op de kále seed-keuze als alles al gebruikt is. Zonder `gebruikt`
+ * gedraagt hij zich exact als een gewone seed-keuze (voor single-item-
+ * oppervlakken zoals profiel/PiasCard, waar dedup niet nodig is).
+ */
+export function kiesUniek<T>(
+  pool: readonly T[],
+  seed: number,
+  gebruikt?: Set<T>,
+): T {
+  const len = pool.length;
+  const start = seedIndex(len, seed);
+  if (gebruikt) {
+    for (let k = 0; k < len; k++) {
+      const kandidaat = pool[(start + k) % len];
+      if (!gebruikt.has(kandidaat)) {
+        gebruikt.add(kandidaat);
+        return kandidaat;
+      }
+    }
+  }
+  return pool[start];
 }
 
 /**
@@ -54,18 +105,23 @@ function kies<T>(pool: readonly T[], seed: number): T {
  */
 export function sneerSuffix(ctx: RoastCtx, seed: number): string {
   if (ctx.schild) return "";
-  return ` — ${COMMENTATOR.emoji} ${kies(SNEER[ctx.intensiteit], seed)}`;
+  return ` — ${COMMENTATOR.emoji} ${kiesUniek(SNEER[ctx.intensiteit], seed)}`;
 }
 
 /**
  * De kále sneer-tekst (zonder streepje/emoji), of null wanneer het doelwit
  * zijn roast-schild aan heeft. Voor oppervlakken die Coach Rudy als aparte,
  * geattribueerde commentator tonen (bv. de feed-speech-bubble) i.p.v. een
- * inline staart.
+ * inline staart. Geef optioneel een `gebruikt`-set mee om binnen één weergave
+ * (bv. de feed-lijst) herhaling van dezelfde sneer te vermijden.
  */
-export function coachSneer(ctx: RoastCtx, seed: number): string | null {
+export function coachSneer(
+  ctx: RoastCtx,
+  seed: number,
+  gebruikt?: Set<string>,
+): string | null {
   if (ctx.schild) return null;
-  return kies(SNEER[ctx.intensiteit], seed);
+  return kiesUniek(SNEER[ctx.intensiteit], seed, gebruikt);
 }
 
 /**
