@@ -262,3 +262,18 @@
   line-height: 1.35;
 }
 .feed-hi__title strong { font-weight: 700; }
+
+/* Filter-categoriestip (#232 PR B): koppelt de gekleurde filters visueel aan de
+   highlight-kaarten. --cat-match sluit aan bij de app-accent. */
+:root { --cat-match: var(--accent); }
+.feed__filters .tab__dot {
+  display: inline-block;
+  vertical-align: middle;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+.feed__filters .tab__dot[data-cat="match"] { background: var(--cat-match); }
+.feed__filters .tab__dot[data-cat="rank"] { background: var(--cat-rank); }
+.feed__filters .tab__dot[data-cat="roast"] { background: var(--cat-roast); }
