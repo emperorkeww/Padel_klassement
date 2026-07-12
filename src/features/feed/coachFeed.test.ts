@@ -96,7 +96,7 @@ describe("coachOpmerking", () => {
       profiles: { p1: { roast_schild: true } as Profile },
     };
     const metSchild = coachOpmerking(daler, beschermd);
-    expect(zonderSchild).toMatch(/trainen|gezellig|zwaartekracht|kelderklasse|zakken|gezakt|degradatie|scheidsrechter|omlaag|Infantino/i);
+    expect(zonderSchild).toMatch(/trainen|gezellig|zwaartekracht|kelderklasse|zakken|gezakt|degradatie|scheidsrechter|omlaag|Infantino|complot|FIFA/i);
     expect(metSchild).toMatch(/rustig|volgende match|stap terug|omlaag/i);
   });
 

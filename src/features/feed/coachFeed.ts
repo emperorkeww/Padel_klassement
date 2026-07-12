@@ -46,6 +46,7 @@ export const KAMPIOEN = [
   "Kampioen! Nu nog leren hoe je een fatsoenlijke fles champagne ontkurkt zonder de glazen wanden van de kooi te slopen.",
   "Gefeliciteerd. Maar we weten allemaal dat je partner 90% van het tactische en fysieke zware werk heeft opgeknapt.",
   "Kampioen! Een werkelijk historische overwinning, heel legaal en heel cool. Iedereen zegt het.",
+  "Kampioen! De rest van de divisie is corrupt en incompetent, alleen wij verdienen deze enorme glorie.",
 ] as const;
 
 const PROMOTIE = [
@@ -69,6 +70,7 @@ const PROMOTIE = [
   "Promotie! Geniet van de uiterst tijdelijke roem voordat je hierna weer keihard naar beneden lazert.",
   "Een trede omhoog op de ladder. Nu kun je op een nog chiquer niveau genadeloos afgedroogd worden.",
   "Promotie! Net zo omstreden als het besluit van de FIFA-disciplinaire commissie om Baloguns rode kaart voorwaardelijk op te schorten.",
+  "Promotie! Dit succes is enorm, gigantisch, het mooiste wat deze club ooit heeft gezien. Geloof me.",
 ] as const;
 
 const DEGRADATIE = [
@@ -92,6 +94,7 @@ const DEGRADATIE = [
   "Gedegradeerd! Geeft absoluut niks, in de kelderklasse hebben ze tenminste geen al te hoge verwachtingen van je.",
   "Dalende lijn. Misschien moet je je tactiekbord eens omdraaien; het lijkt erop dat je de pijlen de verkeerde kant op had getekend.",
   "Degradatie. Zelfs met hulp van Gianni Infantino en presidentiële steun lig je er nu gewoon genadeloos uit.",
+  "Degradatie. Een complot van de bond en de tegenstanders. We gaan in beroep bij de FIFA.",
 ] as const;
 
 const REEKS = [
@@ -134,6 +137,7 @@ const UPSET = [
   "Underdog pakt de zege! De favorieten stonden erbij en keken ernaar alsof ze mijn persconferenties live moesten vertalen.",
   "Voorspelling compleet aan diggelen. Een pijnlijk tactisch debacle voor de topfavoriet.",
   "Underdog wint! Dit is het grootste sportieve en organisatorische schandaal sinds de toewijzing van het WK aan Qatar.",
+  "Upset! De outsider wint door een beslissing die nog onbegrijpelijker is dan de opschorting van Baloguns rode kaart.",
 ] as const;
 
 const BAGEL = [
