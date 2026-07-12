@@ -768,7 +768,7 @@ function CoachComment({
   if (!tekst) return null;
   return (
     <div className="coach-comment">
-      <CoachAvatar size={28} mood={mood} className="coach-comment__face" />
+      <CoachAvatar size={34} mood={mood} className="coach-comment__face" />
       <div className="coach-comment__bubble">
         <span className="coach-comment__head">
           <span className="coach-comment__name">{COMMENTATOR.naam}</span>
@@ -794,7 +794,7 @@ function CoachMonologue({
   if (lines.length === 0) return null;
   return (
     <div className="coach-comment">
-      <CoachAvatar size={28} mood={mood} className="coach-comment__face" />
+      <CoachAvatar size={34} mood={mood} className="coach-comment__face" />
       <div className="coach-comment__bubble">
         <span className="coach-comment__head">
           <span className="coach-comment__name">

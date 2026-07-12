@@ -394,7 +394,7 @@ export function Dashboard() {
             )}
             {coachBriefingTekst && !standings.loading && (
               <p className="hero__coach" role="note">
-                <CoachAvatar size={22} className="hero__coach-face" />
+                <CoachAvatar size={26} className="hero__coach-face" />
                 <span>
                   <span className="hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
                   {coachBriefingTekst}

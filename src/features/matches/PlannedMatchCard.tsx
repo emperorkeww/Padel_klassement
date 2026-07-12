@@ -389,7 +389,7 @@ export function PlannedMatchCard({
 
       {coachPre && (
         <p className="planned-card__coach" role="note">
-          <CoachAvatar size={20} className="planned-card__coach-face" />
+          <CoachAvatar size={24} className="planned-card__coach-face" />
           <span>{coachPre}</span>
         </p>
       )}

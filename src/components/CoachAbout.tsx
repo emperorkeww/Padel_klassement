@@ -17,7 +17,7 @@ export function CoachAbout({
   return (
     <div className="coach-about">
       <div className="coach-about__head">
-        <CoachAvatar size={44} mood="portret" fixed />
+        <CoachAvatar size={52} mood="portret" fixed />
         <p className="coach-about__lead">
           {COMMENTATOR.naam} is onze excentrieke bondscoach-in-ruste van de Rode Duivels.
           Zijn optreden tijdens het WK 2026 staat in ieders geheugen gegrift: hij zat 90 minuten lang

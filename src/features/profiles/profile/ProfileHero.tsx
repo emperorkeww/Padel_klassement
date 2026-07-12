@@ -31,7 +31,7 @@ export function ProfileHero({ d }: { d: ProfileData }) {
         <p className="profile-hero__nick">“{nick}”</p>
         {roast && (
           <div className="profile-hero__coach" role="note">
-            <CoachAvatar size={26} className="profile-hero__coach-face" />
+            <CoachAvatar size={31} className="profile-hero__coach-face" />
             <p className="profile-hero__coach-text">
               <span className="profile-hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
               {roast}
