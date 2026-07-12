@@ -17,11 +17,15 @@ export function CoachAbout({
   return (
     <div className="coach-about">
       <div className="coach-about__head">
-        <CoachAvatar size={44} />
+        <CoachAvatar size={44} mood="portret" fixed />
         <p className="coach-about__lead">
-          {COMMENTATOR.naam} is de vaste commentator van de app. Hij reageert op
-          jouw padel — pias van de week, promoties, monsterzeges — met een knipoog
-          en af en toe een prik.
+          {COMMENTATOR.naam} is onze excentrieke bondscoach-in-ruste van de Rode Duivels.
+          Zijn optreden tijdens het WK 2026 staat in ieders geheugen gegrift: hij zat 90 minuten lang
+          obsessief te schrijven in zijn tactische notitieboekje om vervolgens met volstrekt onbegrijpelijke
+          wissels in de 89e minuut de match om zeep te helpen. Zijn bizarre gedrag langs de lijn – zoals
+          hevig gesticuleren, een chique maatpak combineren met een goedkope supporters-pet en doodleuk
+          kletsnat geregend worden door een automatische watersproeier – was het gesprek van de dag. Nu
+          brengt hij diezelfde 'geniale' tactische inzichten en genadeloze sneren naar jouw padelveld.
         </p>
       </div>
       <ul className="coach-about__controls">

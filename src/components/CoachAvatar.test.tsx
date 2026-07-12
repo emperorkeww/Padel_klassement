@@ -3,12 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { CoachAvatar } from "./CoachAvatar";
 
 describe("<CoachAvatar />", () => {
-  it("rendert een toegankelijke coach-mascotte (inline SVG)", () => {
-    const { container } = render(<CoachAvatar />);
+  it("rendert een toegankelijke coach-illustratie", () => {
+    render(<CoachAvatar />);
     const img = screen.getByRole("img", { name: "Coach Rudy" });
-    expect(img.tagName.toLowerCase()).toBe("svg");
-    // Inline SVG, geen externe asset.
-    expect(container.querySelector("img")).toBeNull();
+    expect(img.tagName.toLowerCase()).toBe("img");
+    expect(img).toHaveAttribute("src");
   });
 
   it("schaalt mee met de size-prop", () => {
@@ -16,5 +15,14 @@ describe("<CoachAvatar />", () => {
     const img = screen.getByRole("img", { name: "Coach Rudy" });
     expect(img).toHaveAttribute("width", "48");
     expect(img).toHaveAttribute("height", "48");
+  });
+
+  it("toont met fixed altijd dezelfde illustratie", () => {
+    const { unmount } = render(<CoachAvatar mood="portret" fixed />);
+    const first = screen.getByRole("img", { name: "Coach Rudy" }).getAttribute("src");
+    unmount();
+    render(<CoachAvatar mood="portret" fixed />);
+    const second = screen.getByRole("img", { name: "Coach Rudy" }).getAttribute("src");
+    expect(second).toBe(first);
   });
 });
