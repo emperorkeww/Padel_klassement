@@ -33,6 +33,9 @@ const HELD_FLAVOR = [
   "was met geen mogelijkheid te passeren aan het net",
   "heeft een gratis lesje padel uitgedeeld",
   "speelde alsof de tegenstanders er puur voor spek en bonen bij stonden",
+  "liet de tegenpartij alle hoeken van de kooi zien",
+  "had vandaag de tactische genialiteit in zijn vingers die ik op het WK miste",
+  "speelde zo sterk dat zelfs ik er geen kritische noot over kan schrijven",
 ] as const;
 
 /** Cijfer-flavors als er geen upset was om te melden. */
@@ -44,6 +47,8 @@ const CIJFER_FLAVOR = [
   "Mijn kladblok staat helemaal volgeschreven met uitslagen.",
   "De glazen wanden trillen nog na van al die smashgeweld.",
   "Sommige ballen liggen waarschijnlijk nu nog ergens diep in de struiken.",
+  "Mijn pen heeft overuren gedraaid en is nu officieel leeggeschreven.",
+  "Een avond vol tactische experimenten langs de lijn.",
 ] as const;
 
 /**
