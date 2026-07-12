@@ -67,16 +67,16 @@ export const TIER_BANDEN: ReadonlyArray<{
   min: number;
   max: number | null;
 }> = [
-  { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "heeft nog nooit van een glaswand gehoord", min: 500, max: 600 },
-  { naam: "Toerist", key: "karton", emoji: "🌴", flavor: "komt puur voor de bezienswaardigheden en de derde helft", min: 600, max: 700 },
-  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "slaat vaker gaten in de lucht dan ballen over het net", min: 700, max: 800 },
-  { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat er strategisch bij als extra baljongen", min: 800, max: 900 },
-  { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "praat alsof-ie WPT speelt, raakt geen pepernoot", min: 900, max: 1000 },
-  { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "racket van €300, techniek van een houten plank", min: 1000, max: 1100 },
-  { naam: "Glazenwasser", key: "platina", emoji: "🪟", flavor: "heeft een abonnement op het poetsen van de achterwand", min: 1100, max: 1200 },
-  { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "wisselt elke maand van racket in de hoop dat dát het verschil maakt", min: 1200, max: 1300 },
-  { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "altijd de bruidsmeid, nooit de bruid", min: 1300, max: 1400 },
-  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft z'n eigen VIP-parkeerplek bij de club al geclaimd", min: 1400, max: null },
+  { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "wordt door de rest van de club gebruikt voor makkelijke gratis winst", min: 500, max: 600 },
+  { naam: "Toerist", key: "karton", emoji: "🌴", flavor: "draagt een zonnebril, doet alsof-ie op vakantie is en beweegt voor geen meter", min: 600, max: 700 },
+  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "heeft de hand-oogcoördinatie van een dronken pinguïn", min: 700, max: 800 },
+  { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "blijft bij voorkeur op de bank zitten om het spelniveau niet te verpesten", min: 800, max: 900 },
+  { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "geeft luidkeels tactisch advies dat-ie zelf nog nooit succesvol heeft uitgevoerd", min: 900, max: 1000 },
+  { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "koopt een racket van €350 om het chronische gebrek aan talent te compenseren", min: 1000, max: 1100 },
+  { naam: "Glazenwasser", key: "platina", emoji: "🪟", flavor: "heeft de glazen achterwand zo vaak geraakt dat hij er inmiddels woont", min: 1100, max: 1200 },
+  { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "gelooft oprecht dat zijn zevende racket dit jaar zijn vreselijke backhand gaat redden", min: 1200, max: 1300 },
+  { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant", min: 1300, max: 1400 },
+  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past", min: 1400, max: null },
 ];
 
 const ROMEINS = ["III", "II", "I"] as const;

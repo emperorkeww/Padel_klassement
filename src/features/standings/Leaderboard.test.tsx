@@ -87,7 +87,7 @@ describe("<Leaderboard />", () => {
     expect(screen.getByRole("heading", { name: /blaaskaak/i })).toBeInTheDocument();
     // Legenda met de ludieke bijnaam en de instapdrempel.
     expect(screen.getByText(/wat betekenen de divisies/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/racket van €300/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/racket van €350/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/vanaf 1100/i).length).toBeGreaterThan(0);
     // Persoonlijke promotie-hint: jouw divisie + rating tot de volgende.
     expect(screen.getByText(/^jij:/i)).toBeInTheDocument();
