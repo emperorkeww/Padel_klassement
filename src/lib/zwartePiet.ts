@@ -83,7 +83,7 @@ function afgangVoor(
   const kandidaten: Flop[] = [];
   if (mijnScore != null && hunScore != null) {
     if (mijnScore === 0 && hunScore > 0) {
-      kandidaten.push({ playerId, reden: "bagel", ernst: 110, detail: "slikte een bagel 🥯" });
+      kandidaten.push({ playerId, reden: "bagel", ernst: 110, detail: "kreeg een droog broodje bagel geserveerd 🥯" });
     }
     const marge = hunScore - mijnScore;
     if (marge >= AFDROGING_DREMPEL) {
@@ -91,7 +91,7 @@ function afgangVoor(
         playerId,
         reden: "afdroging",
         ernst: 50 + marge,
-        detail: `ging met ${marge} games verschil de boot in`,
+        detail: `werd met ${marge} games verschil vakkundig afgedroogd`,
       });
     }
   }
@@ -100,7 +100,7 @@ function afgangVoor(
       playerId,
       reden: "zwarte-reeks",
       ernst: 40 + streak,
-      detail: `verloor ${streak}× op rij`,
+      detail: `stapelde verlies op verlies (${streak}× op rij)`,
     });
   }
   if (kans != null && kans >= FAVORIET_DREMPEL) {
@@ -108,7 +108,7 @@ function afgangVoor(
       playerId,
       reden: "choke",
       ernst: 30 + Math.round(kans * 10),
-      detail: `was torenhoge favoriet en ging tóch onderuit (${Math.round(kans * 100)}% kans)`,
+      detail: `choke-te hard als favoriet (${Math.round(kans * 100)}% winkans vooraf)`,
     });
   }
   // Ergste reden wint; bij gelijke ernst maakt het niet uit (zelfde speler).

@@ -96,8 +96,8 @@ export function PiasCard({
 
       <p className="pias-card__meta">
         {isZelf
-          ? "Pas op — jij gaat hard achteruit deze week. Zet 'm recht."
-          : `Voorlopige schande van ${periodeLabel} — nog tijd om het recht te zetten.`}
+          ? "Code rood! Je bent momenteel de clown van de groep. Tijd om te trainen of je racket te verstoppen."
+          : `Voorlopige schande van ${periodeLabel}. Gelukkig is er nog tijd om iemand anders erin te luizen.`}
       </p>
     </section>
   );

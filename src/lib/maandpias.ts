@@ -116,7 +116,7 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "bagel",
-      detail: bagels === 1 ? "slikte een bagel 🥯" : `slikte ${bagels} bagels 🥯`,
+      detail: bagels === 1 ? "kreeg een droog broodje bagel geserveerd 🥯" : `is inmiddels eigenaar van een bagel-bakkerij (${bagels} stuks) 🥯`,
       // Een bagel is het sappigste verhaal: weegt zwaar zodat hij meestal wint.
       ernst: 100 + bagels * 10,
     });
@@ -125,7 +125,7 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "afdroging",
-      detail: `ging met ${afdroging} games verschil de boot in`,
+      detail: `werd met ${afdroging} games verschil vakkundig afgedroogd`,
       ernst: 50 + afdroging,
     });
   }
@@ -133,7 +133,7 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "zwarte-reeks",
-      detail: `verloor ${langsteReeks}× op rij`,
+      detail: `stapelde verlies op verlies (${langsteReeks}× op rij)`,
       ernst: 40 + langsteReeks,
     });
   }
@@ -141,7 +141,7 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "choke",
-      detail: `was torenhoog favoriet en ging tóch onderuit (${Math.round(choke * 100)}% kans)`,
+      detail: `dacht de buit al binnen te hebben, maar choke-te hard (${Math.round(choke * 100)}% winkans vooraf)`,
       ernst: 30 + Math.round(choke * 10),
     });
   }
