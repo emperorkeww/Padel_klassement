@@ -471,6 +471,7 @@ export function GroupDetail() {
                           profiles={pmap}
                           perspectiveId={myId}
                           history={matches.data ?? []}
+                          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
                           onSaved={onMatches}
                         />
                       ),
@@ -1030,7 +1031,7 @@ export function GroupDetail() {
                   >
                     <option value="mild">Mild — zachte por</option>
                     <option value="gemeen">Gemeen — standaard</option>
-                    <option value="radioactief">Radioactief — genadeloos</option>
+                    <option value="radioactief">Geen genade — meedogenloos</option>
                   </select>
                 </div>
                 <p className="field-hint">

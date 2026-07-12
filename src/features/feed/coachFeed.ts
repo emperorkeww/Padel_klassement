@@ -47,6 +47,7 @@ export const KAMPIOEN = [
   "Gefeliciteerd. Maar we weten allemaal dat je partner 90% van het tactische en fysieke zware werk heeft opgeknapt.",
   "Kampioen! Een werkelijk historische overwinning, heel legaal en heel cool. Iedereen zegt het.",
   "Kampioen! De rest van de divisie is corrupt en incompetent, alleen wij verdienen deze enorme glorie.",
+  "Kampioen! Geniet van je beker, al vermoed ik dat de glazenwasser er meer werk aan heeft gehad dan jij op de baan.",
 ] as const;
 
 const PROMOTIE = [
@@ -71,6 +72,7 @@ const PROMOTIE = [
   "Een trede omhoog op de ladder. Nu kun je op een nog chiquer niveau genadeloos afgedroogd worden.",
   "Promotie! Net zo omstreden als het besluit van de FIFA-disciplinaire commissie om Baloguns rode kaart voorwaardelijk op te schorten.",
   "Promotie! Dit succes is enorm, gigantisch, het mooiste wat deze club ooit heeft gezien. Geloof me.",
+  "Promotie! Een trede omhoog op de ladder, zodat je val strakjes nóg spectaculairder en pijnlijker zal zijn.",
 ] as const;
 
 const DEGRADATIE = [
@@ -95,6 +97,7 @@ const DEGRADATIE = [
   "Dalende lijn. Misschien moet je je tactiekbord eens omdraaien; het lijkt erop dat je de pijlen de verkeerde kant op had getekend.",
   "Degradatie. Zelfs met hulp van Gianni Infantino en presidentiële steun lig je er nu gewoon genadeloos uit.",
   "Degradatie. Een complot van de bond en de tegenstanders. We gaan in beroep bij de FIFA.",
+  "Degradatie. Gefeliciteerd met je terugkeer naar de kelderklasse. Daar hoef je tenminste niet te doen alsof je kunt spelen.",
 ] as const;
 
 const REEKS = [
@@ -138,6 +141,7 @@ const UPSET = [
   "Voorspelling compleet aan diggelen. Een pijnlijk tactisch debacle voor de topfavoriet.",
   "Underdog wint! Dit is het grootste sportieve en organisatorische schandaal sinds de toewijzing van het WK aan Qatar.",
   "Upset! De outsider wint door een beslissing die nog onbegrijpelijker is dan de opschorting van Baloguns rode kaart.",
+  "Upset! De topfavoriet ging volledig op z'n bek. Een tactisch debacle van historisch formaat.",
 ] as const;
 
 const BAGEL = [

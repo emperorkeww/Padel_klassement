@@ -252,10 +252,14 @@ export function Feed() {
   const name = (pid: string) =>
     pid === myId ? "Jij" : displayName(pmap[pid]);
 
-  // Roast-toon per groep (#183): de intensiteit die de pias-items kleurt.
-  const intensiteitVoor = (groupId: string): RoastIntensiteit =>
-    (groups.data ?? []).find((g) => g.id === groupId)?.roast_intensiteit ??
-    "gemeen";
+  // Roast-toon (#183): de feed is persoonlijk, dus Coach Rudy hanteert overal
+  // jóuw eigen profiel-intensiteit — niet de per-groep instelling van een
+  // eigenaar (die geldt alleen in de groep-gescoopte views). We houden de
+  // (groupId) => toon-vorm aan die coachFeed/coachStemming verwachten, maar
+  // negeren de groep bewust.
+  const mijnIntensiteit: RoastIntensiteit =
+    pmap[myId]?.roast_intensiteit ?? "gemeen";
+  const intensiteitVoor = (): RoastIntensiteit => mijnIntensiteit;
 
   // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli".
   let lastDay = "";
@@ -276,7 +280,7 @@ export function Feed() {
     );
     const summary = eveningSummary(dagMatches, tmap, ev.day, histories.data ?? undefined);
     const coachLines = coachAvond(summary, `${ev.groupId}|${ev.day}`, {
-      intensiteit: intensiteitVoor(ev.groupId),
+      intensiteit: mijnIntensiteit,
       profiles: pmap,
       naam: name,
       gebruikt: gebruiktCoach,
@@ -382,7 +386,7 @@ export function Feed() {
                       <EveningCard
                         event={event}
                         data={avondData(event)}
-                        mood={intensiteitVoor(event.groupId)}
+                        mood={mijnIntensiteit}
                         pmap={pmap}
                         tmap={tmap}
                         name={name}

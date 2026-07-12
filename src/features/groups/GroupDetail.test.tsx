@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
@@ -108,9 +108,14 @@ describe("<GroupDetail />", () => {
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /alice anders \(jij\)/i }),
-    ).toHaveAttribute("aria-pressed", "true");
+    // De standaard-selectie (alle deelnemers aangetikt) wordt één tick ná het
+    // verschijnen van de "Maak teams"-kop gezet; wacht dus tot aria-pressed
+    // settelt i.p.v. het synchroon te lezen (voorheen flaky, #292).
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /alice anders \(jij\)/i }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
     for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
       expect(screen.getByRole("button", { name: f })).toBeInTheDocument();
     }

@@ -31,6 +31,8 @@ const OCHTEND_DIP = [
   "Zelfs als ik Donald Trump inschakel om Infantino persoonlijk te bellen, is er geen reglementaire basis om deze dip te redden.",
   "Je verliesreeks is zo lang dat zelfs de FIFA-disciplinaire commissie hier geen voorwaardelijke opschorting voor kan verzinnen.",
   "Een dip? Fake news! Mijn tactische notitieboekje bevat alleen maar virtuele overwinningen. De statistieken zijn gemanipuleerd.",
+  "Ik heb net mijn tactische notitieboekje ritueel verbrand. Jouw verliesreeks is met geen enkele theorie meer te verklaren.",
+  "Wakker worden! Jouw vorm is momenteel zo diep gezonken dat we de marine moeten inschakelen om je niveau te bergen.",
 ] as const;
 const OCHTEND_HYPE = [
   "Je bent niet te stoppen. Doe the rest een lol en verlies eens.",
@@ -55,6 +57,7 @@ const OCHTEND_MATCH = [
   "Matchdag! Mijn tactische spiekbriefje ligt al in de prullenbak, want aan jouw spel valt werkelijk geen tactiek te koppelen.",
   "Matchdag! Mijn tactische plan is simpel: we kopen de scheidsrechter om en als dat faalt bellen we de president.",
   "Matchdag. We gaan de tegenstander zo hard inmaken dat Gianni Infantino achteraf excuses moet aanbieden aan Bosnië.",
+  "Er staat een match klaar. Ik heb de EHBO alvast stand-by gezet voor het geval je weer over je eigen voeten struikelt.",
 ] as const;
 const OCHTEND_TOP = [
   "Nummer één. Nu alleen nog zo blijven — de haaien ruiken bloed.",
@@ -74,6 +77,7 @@ const OCHTEND_ALGEMEEN = [
   "Grijs in de middenmoot. Precies de plek waar kleurloze spelers zonder tactisch vernuft thuishoren.",
   "Stabiel in het midden. Het doet me pijnlijk sterk denken aan mijn meest saaie gelijke spelen.",
   "Nog steeds in de middenmoot. Een uiterst corrupt systeem, we eisen een hertelling van alle Elo-punten!",
+  "Middenmoot. De ideale plek voor mensen die bang zijn om te winnen én te lui zijn om te verliezen.",
 ] as const;
 
 export interface BriefingFeiten {
@@ -137,6 +141,8 @@ const MATCH_VERLIES = [
   "Verloren. Gelukkig hebben we het tactische roodschrijvende notitieboekje om je falen tot in de eeuwigheid te vereeuwigen.",
   "Verloren. Pure oplichting! We gaan de uitslag per direct aanvechten bij Gianni Infantino.",
   "Verloren. De tegenstander maakte misbruik van een corrupt systeem. Dit was een volledig 'rigged' wedstrijd!",
+  "Verloren. Zelfs de watersproeiers op veld 2 toonden na de match meer bezieling en richtinggevoel dan jouw slagen.",
+  "Nederlaag. Ik stel voor dat we deze wedstrijd snel wissen uit het geheugen, en bij voorkeur ook uit de database.",
 ] as const;
 const MATCH_PAK_SLAAG = [
   "0-6. Ik heb 'm maar meteen in een gouden lijstje gedaan voor de hall of shame.",
@@ -148,6 +154,8 @@ const MATCH_PAK_SLAAG = [
   "0-6. Zelfs de kantinejuffrouw had na 3 games haar jas al aangetrokken en de lichten half uitgedaan.",
   "0-6 verlies. Dit was geen wedstrijd, dit was een corrupt complot van de tegenpartij. Stop the steal!",
   "0-6 verlies. We eisen dat dit resultaat direct ongeldig wordt verklaard. Een schande voor de sport!",
+  "0-6 verlies. Dit deed zo ontiegelijk veel pijn aan de ogen dat ik spontaan mijn licentie als coach wil inleveren.",
+  "Volledig weggespeeld. Het was net alsof je probeerde de bal te raken met een kookpan in plaats van een racket.",
 ] as const;
 const MATCH_GELIJK = [
   "Gelijkspel — niemand wint, iedereen twijfelt.",
@@ -191,6 +199,8 @@ const PRE_UNDERDOG = [
   "Kansloos vooraf. Onze enige hoop is dat de tegenstander een rode kaart krijgt die daarna NIET voorwaardelijk wordt opgeschort.",
   "Underdog op papier. Maar we gaan Infantino bellen om de regels te veranderen voordat de match begint.",
   "Kansloos volgens de cijfers. Maar we weigeren dit resultaat bij voorbaat te accepteren. Fake stats!",
+  "Op papier kansloos. Mijn advies? Begin vast met het verzinnen van een heel creatief excuus voor achteraf.",
+  "Analisten geven je nul procent kans. Zelfs de ballenjongens hebben al medelijden met je voetenwerk.",
 ] as const;
 const PRE_FAVORIET = [
   "Torenhoge favoriet. Nu alleen nog even niet verkloten.",
@@ -201,6 +211,7 @@ const PRE_FAVORIET = [
   "Als je deze verliest, schrijf ik eigenhandig een driepaginalange brief aan het clubbestuur om je per direct te schorsen.",
   "Torenhoge favoriet. Mocht het toch misgaan, dan claimen we gewoon dat de telling corrupt was en dat de winst gestolen is.",
   "Favoriet! Zelfs met een corrupte scheidsrechter en tegenwind gaan we deze overwinning sowieso opeisen.",
+  "Torenhoge favoriet. Verlies dit niet, anders mag je de rest van het seizoen eigenhandig de banen gaan vegen.",
 ] as const;
 const PRE_GELIJK = [
   "Fiftyfifty op papier. Wie het hardst wil, wint.",
@@ -209,6 +220,7 @@ const PRE_GELIJK = [
   "Twee gelijkwaardige teams. Mijn notitieblokje ligt klaar om elke blunder te noteren.",
   "Gelijkwaardig? Tactisch gezien voorzie ik vooral een hoop onnodig balverlies en misverstanden aan beide kanten.",
   "Fiftyfifty. Dit wordt een strijd tegen een rigged systeem. Houd je racket stevig vast.",
+  "Gelijkwaardige match vooraf. Dat betekent dat degene met de minste tactische flaters er met de winst vandoor gaat.",
 ] as const;
 
 /** Korte hype/waarschuwing bij een geplande match, op basis van de winkans

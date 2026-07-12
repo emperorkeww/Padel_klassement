@@ -24,7 +24,7 @@ import {
   getMatchPredictions,
   setPrediction,
 } from "./predictionsApi";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
 import {
   deleteMatch,
   emptySet,
@@ -61,6 +61,7 @@ export function PlannedMatchCard({
   profiles,
   perspectiveId,
   history,
+  intensiteit = "gemeen",
   onSaved,
   onDeleted,
 }: {
@@ -69,6 +70,9 @@ export function PlannedMatchCard({
   profiles: Record<string, Profile>;
   /** Speler vanuit wiens oogpunt gevierd wordt (confetti bij eigen winst). */
   perspectiveId?: string;
+  /** Roast-toon van de groep van deze match (#183), voor Coach Rudy's pre-match
+   *  hype. Buiten groepscontext valt hij op `gemeen`. */
+  intensiteit?: RoastIntensiteit;
   /** Eerdere matches waaruit de onderlinge rivaliteit wordt afgeleid; zonder
    *  deze prop toont de kaart geen head-to-head-balans. */
   history?: Match[];
@@ -144,7 +148,7 @@ export function PlannedMatchCard({
   const coachPre =
     mijnKans != null && myId
       ? coachPreMatch(mijnKans, `${m.id}-${myId}`, {
-          intensiteit: "gemeen",
+          intensiteit,
           schild: profiles[myId]?.roast_schild ?? false,
         })
       : null;
