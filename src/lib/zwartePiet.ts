@@ -83,7 +83,7 @@ function afgangVoor(
   const kandidaten: Flop[] = [];
   if (mijnScore != null && hunScore != null) {
     if (mijnScore === 0 && hunScore > 0) {
-      kandidaten.push({ playerId, reden: "bagel", ernst: 110, detail: "kreeg een droog broodje bagel geserveerd 🥯" });
+      kandidaten.push({ playerId, reden: "bagel", ernst: 110, detail: "kreeg een bagel om de oren 🥯" });
     }
     const marge = hunScore - mijnScore;
     if (marge >= AFDROGING_DREMPEL) {

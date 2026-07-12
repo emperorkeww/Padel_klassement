@@ -65,7 +65,7 @@ function kandidaten(s: Signalen): string[] {
   if (s.bagelsGeslikt >= 1) {
     uit.push(
       s.bagelsGeslikt === 1
-        ? "Slikte al eens een bagel 🥯 — hopelijk smaakte het broodje nul een beetje."
+        ? "Slikte al eens een bagel 🥯 — hopelijk smaakte die nul een beetje."
         : `Slikte al ${s.bagelsGeslikt} bagels 🥯. Spaart waarschijnlijk voor een eigen bakkerij.`,
     );
   }

@@ -748,7 +748,7 @@ function highlightText(
       return `🎯 ${team(h.winnerTeamId)} verrasten (${Math.round(h.chance * 100)}% kans)`;
     case "score":
       return h.label === "bagel"
-        ? "🥯 Broodje bal"
+        ? "🥯 Bagel"
         : h.label === "monsterzege"
           ? "🦖 Monsterzege"
           : "😬 Nagelbijter";

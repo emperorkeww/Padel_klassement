@@ -231,10 +231,10 @@ describe("deriveBadges — extra badges", () => {
     expect(badge(deriveBadges(Array.from({ length: 4 }, loss), teams, "p1"), "pechvogel").behaald).toBe(false);
   });
 
-  it("Nagelbijter, Broodje bal en Monsterzege: op puntenverschil", () => {
+  it("Nagelbijter, Bagel en Monsterzege: op puntenverschil", () => {
     const nipt = match({ winner_team_id: "tA", score_a: 6, score_b: 5 });
     const bagel = match({ winner_team_id: "tA", score_a: 6, score_b: 0 });
-    // 6-2 = verschil 4 → monsterzege, geen broodje, geen nagelbijter.
+    // 6-2 = verschil 4 → monsterzege, geen bagel, geen nagelbijter.
     const monster = match({ winner_team_id: "tA", score_a: 6, score_b: 2 });
     expect(badge(deriveBadges([nipt], teams, "p1"), "nagelbijter").behaald).toBe(true);
     expect(badge(deriveBadges([bagel], teams, "p1"), "broodje-bal").behaald).toBe(true);
