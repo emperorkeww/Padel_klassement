@@ -341,7 +341,7 @@ function NextFreeLine({
   if (!next) {
     return (
       <p className="avail-next">
-        {isToday ? "Vandaag niets meer vrij." : "Geen vrije sloten op deze dag."}
+        {isToday ? "Vandaag helaas alles bezet." : "Geen vrije banen beschikbaar op deze dag."}
       </p>
     );
   }

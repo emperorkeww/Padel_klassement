@@ -178,7 +178,7 @@ export function Groups() {
             <div className="card">
               <EmptyState
                 icon="👥"
-                title="Je zit nog in geen enkele groep."
+                title="Geen groep, geen glorie."
                 action={
                   <button
                     className="btn btn--primary"
@@ -188,8 +188,7 @@ export function Groups() {
                   </button>
                 }
               >
-                Maak hieronder je eerste groep aan en nodig daarna je vrienden
-                uit.
+                Start hieronder je eigen padelgroep, nodig je vrienden uit en hou jullie onderlinge klassementen en speelrondes live bij!
               </EmptyState>
             </div>
           ) : (

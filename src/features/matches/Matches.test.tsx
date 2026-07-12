@@ -47,7 +47,7 @@ describe("<Matches />", () => {
     await userEvent.click(screen.getByRole("button", { name: /^verloren$/i }));
     expect(screen.queryByText("6–3")).not.toBeInTheDocument();
     expect(
-      screen.getByText(/geen verloren matches voor dit filter/i),
+      screen.getByText(/geen enkele nederlaag te bekennen/i),
     ).toBeInTheDocument();
   });
 
