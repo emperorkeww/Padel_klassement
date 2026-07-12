@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { coachOpmerking, type CoachCtx } from "./coachFeed";
+import { coachOpmerking, coachStemming, type CoachCtx } from "./coachFeed";
 import type { FeedEvent } from "../../lib/feed";
 import type { Match, Profile } from "../../lib/types";
 
@@ -77,6 +77,48 @@ describe("coachOpmerking", () => {
       profiles: { p1: { roast_schild: true } as Profile },
     };
     expect(coachOpmerking(e, beschermd)).toBeNull();
+  });
+});
+
+describe("coachStemming", () => {
+  const radioactief = () => "radioactief" as const;
+
+  it("geeft een persoonlijke roast de groepsintensiteit", () => {
+    const e: FeedEvent = {
+      kind: "pias-week",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p1",
+      winChance: 0.8,
+      weekStart: "2026-06-29",
+    };
+    expect(coachStemming(e, radioactief)).toBe("radioactief");
+  });
+
+  it("is trots bij een kampioen en promotie", () => {
+    const champ: FeedEvent = {
+      kind: "season-champion",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p1",
+      seasonLabel: "Q2 2026",
+    };
+    const promotie: FeedEvent = {
+      kind: "rank",
+      at: "2026-07-01T12:00:00Z",
+      playerId: "p1",
+      shift: 3,
+      rank: 2,
+    };
+    expect(coachStemming(champ, () => "gemeen")).toBe("trots");
+    expect(coachStemming(promotie, () => "gemeen")).toBe("trots");
+  });
+
+  it("valt terug op portret bij een event zonder eigen reactie", () => {
+    const e: FeedEvent = { kind: "friendship", at: "2026-07-01T12:00:00Z", a: "p1", b: "p2" };
+    expect(coachStemming(e, () => "gemeen")).toBe("portret");
   });
 });
 

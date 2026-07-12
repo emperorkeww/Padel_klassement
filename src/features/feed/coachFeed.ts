@@ -8,6 +8,7 @@
 
 import type { FeedEvent } from "../../lib/feed";
 import type { Profile, RoastIntensiteit } from "../../lib/types";
+import type { CoachMood } from "../../lib/roastTone";
 import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
 
 export interface CoachCtx {
@@ -195,5 +196,42 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
     }
     default:
       return null;
+  }
+}
+
+/**
+ * De stemming/gezichtsuitdrukking die bij Coach Rudy's commentaar op dit event
+ * hoort — bepaalt welke illustratie de feed-bubble toont. Loopt bewust gelijk
+ * met de vertakkingen van coachOpmerking hierboven: persoonlijke sneren krijgen
+ * de groepsintensiteit (mild/gemeen/radioactief), zeges en promoties maken hem
+ * trots, en de rest valt terug op zijn neutrale portret.
+ */
+export function coachStemming(
+  event: FeedEvent,
+  intensiteitVoor: (groupId: string) => RoastIntensiteit,
+): CoachMood {
+  switch (event.kind) {
+    case "maand-pias":
+    case "pias-week":
+    case "zwarte-piet":
+      return intensiteitVoor(event.groupId);
+    case "season-champion":
+      return "trots";
+    case "rank": {
+      const omhoog =
+        event.shift === "nieuw" ||
+        (typeof event.shift === "number" && event.shift > 0);
+      return omhoog ? "trots" : "gemeen";
+    }
+    case "match": {
+      const h = event.highlights;
+      if (h.some((x) => x.type === "streak" || x.type === "duo")) return "trots";
+      if (h.some((x) => x.type === "upset")) return "trots";
+      if (h.some((x) => x.type === "score" && x.label === "monsterzege")) return "trots";
+      if (h.some((x) => x.type === "score" && x.label === "bagel")) return "gemeen";
+      return "portret";
+    }
+    default:
+      return "portret";
   }
 }

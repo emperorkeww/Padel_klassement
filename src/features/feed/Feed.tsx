@@ -7,7 +7,7 @@ import { useRealtime } from "../../lib/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
-import { CoachAvatar } from "../../components/CoachAvatar";
+import { CoachAvatar, type CoachMood } from "../../components/CoachAvatar";
 import { CoachAbout } from "../../components/CoachAbout";
 import { Sheet } from "../../components/Sheet";
 import { COMMENTATOR } from "../../lib/roastTone";
@@ -33,7 +33,7 @@ import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
 import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
-import { coachOpmerking } from "./coachFeed";
+import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
 import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
 import { getZwartePiet } from "../groups/zwartePietApi";
@@ -382,6 +382,7 @@ export function Feed() {
                       <EveningCard
                         event={event}
                         data={avondData(event)}
+                        mood={intensiteitVoor(event.groupId)}
                         pmap={pmap}
                         tmap={tmap}
                         name={name}
@@ -402,6 +403,7 @@ export function Feed() {
                             profiles: pmap,
                             gebruikt: gebruiktCoach,
                           })}
+                          mood={coachStemming(event, intensiteitVoor)}
                           onInfo={() => setCoachAboutOpen(true)}
                         />
                       </>
@@ -756,15 +758,17 @@ function CoachInfoButton({ onInfo }: { onInfo: () => void }) {
 
 function CoachComment({
   tekst,
+  mood,
   onInfo,
 }: {
   tekst: string | null;
+  mood: CoachMood;
   onInfo: () => void;
 }) {
   if (!tekst) return null;
   return (
     <div className="coach-comment">
-      <CoachAvatar size={28} className="coach-comment__face" />
+      <CoachAvatar size={28} mood={mood} className="coach-comment__face" />
       <div className="coach-comment__bubble">
         <span className="coach-comment__head">
           <span className="coach-comment__name">{COMMENTATOR.naam}</span>
@@ -780,15 +784,17 @@ function CoachComment({
  *  monoloog van meerdere zinnen. Rendert niets zonder verslag. */
 function CoachMonologue({
   lines,
+  mood,
   onInfo,
 }: {
   lines: string[];
+  mood: CoachMood;
   onInfo: () => void;
 }) {
   if (lines.length === 0) return null;
   return (
     <div className="coach-comment">
-      <CoachAvatar size={28} className="coach-comment__face" />
+      <CoachAvatar size={28} mood={mood} className="coach-comment__face" />
       <div className="coach-comment__bubble">
         <span className="coach-comment__head">
           <span className="coach-comment__name">
@@ -811,6 +817,7 @@ function CoachMonologue({
 function EveningCard({
   event,
   data,
+  mood,
   pmap,
   tmap,
   name,
@@ -818,6 +825,7 @@ function EveningCard({
 }: {
   event: Extract<FeedEvent, { kind: "evening" }>;
   data: { summary: EveningSummary; coachLines: string[] };
+  mood: CoachMood;
   pmap: Record<string, Profile>;
   tmap: Parameters<typeof MatchCard>[0]["teams"];
   name: (pid: string) => string;
@@ -853,7 +861,7 @@ function EveningCard({
           {summary.bestDuo.won} {summary.bestDuo.won === 1 ? "winst" : "winsten"} samen.
         </p>
       )}
-      <CoachMonologue lines={coachLines} onInfo={onInfo} />
+      <CoachMonologue lines={coachLines} mood={mood} onInfo={onInfo} />
     </div>
   );
 }
