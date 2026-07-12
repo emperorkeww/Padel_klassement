@@ -25,7 +25,7 @@ import {
   type PollOption,
   type PollVote,
 } from "./pollsApi";
-import { activePoll } from "./pollLogic";
+import { activePolls } from "./pollLogic";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
@@ -60,7 +60,13 @@ function journeyFor(
   options: PollOption[],
   today: string,
 ): Journey {
-  const active = activePoll(polls, options, today);
+  // Bij meerdere speeldagen (#267) toont de reis-badge de meest dringende:
+  // een poll die stemmen/boeken vraagt gaat vóór een al geboekt moment.
+  const running = activePolls(polls, options, today);
+  const active =
+    running.find((p) => p.status === "open" || p.status === "locked") ??
+    running[0] ??
+    null;
   const locked = active?.locked_option_id
     ? (options.find((o) => o.id === active.locked_option_id) ?? null)
     : null;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  activePoll,
+  activePolls,
   courtsNeeded,
   diffPollOptions,
   nonVoters,
@@ -94,13 +94,35 @@ describe("tallyOption", () => {
   });
 });
 
-describe("activePoll", () => {
-  it("kiest open/gelockte poll boven een geboekte", () => {
+describe("activePolls", () => {
+  it("toont open, gelockte én toekomstig-geboekte polls samen", () => {
     const polls = [
       poll({ id: "booked", status: "booked", locked_option_id: "opt-b" }),
       poll({ id: "open", status: "open" }),
     ];
-    expect(activePoll(polls, [], "2026-07-08")?.id).toBe("open");
+    const opts = [
+      option({ id: "opt-b", poll_id: "booked", date: "2026-07-12" }),
+      option({ id: "opt-o", poll_id: "open", date: "2026-07-10" }),
+    ];
+    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
+      "open",
+      "booked",
+    ]);
+  });
+
+  it("sorteert soonest-first op het eerstvolgende moment", () => {
+    const polls = [
+      poll({ id: "laat", status: "open" }),
+      poll({ id: "vroeg", status: "open" }),
+    ];
+    const opts = [
+      option({ id: "a", poll_id: "laat", date: "2026-07-14", start_time: "20:00" }),
+      option({ id: "b", poll_id: "vroeg", date: "2026-07-10", start_time: "19:00" }),
+    ];
+    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
+      "vroeg",
+      "laat",
+    ]);
   });
 
   it("toont een geboekte poll zolang het moment nog moet komen", () => {
@@ -108,14 +130,16 @@ describe("activePoll", () => {
       poll({ id: "booked", status: "booked", locked_option_id: "opt-b" }),
     ];
     const opts = [option({ id: "opt-b", poll_id: "booked", date: "2026-07-10" })];
-    expect(activePoll(polls, opts, "2026-07-08")?.id).toBe("booked");
-    expect(activePoll(polls, opts, "2026-07-11")).toBeNull();
+    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
+      "booked",
+    ]);
+    expect(activePolls(polls, opts, "2026-07-11")).toEqual([]);
   });
 
   it("negeert geannuleerde polls", () => {
     expect(
-      activePoll([poll({ status: "cancelled" })], [], "2026-07-08"),
-    ).toBeNull();
+      activePolls([poll({ status: "cancelled" })], [], "2026-07-08"),
+    ).toEqual([]);
   });
 });
 

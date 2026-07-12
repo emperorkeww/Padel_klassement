@@ -37,7 +37,7 @@ import {
   type NewPollOption,
 } from "./pollsApi";
 import {
-  activePoll,
+  activePolls,
   diffPollOptions,
   nonVoters,
   optionState,
@@ -141,7 +141,7 @@ export function PollSection({
   const week = useAsync<WeekDay[]>(() => getWeekAvailability(today), [today, club.id]);
 
   const active = useMemo(
-    () => activePoll(polls.data ?? [], options.data ?? [], today),
+    () => activePolls(polls.data ?? [], options.data ?? [], today),
     [polls.data, options.data, today],
   );
 
@@ -168,14 +168,17 @@ export function PollSection({
     </p>
   );
 
-  if (active) {
-    return (
-      <>
+  // Meerdere speeldagen tegelijk (#267): elke actieve poll krijgt een eigen
+  // kaart, en de "plannen"-kaart eronder is er altijd om er nog één te starten.
+  return (
+    <>
+      {active.map((poll) => (
         <PollCard
-          poll={active}
+          key={poll.id}
+          poll={poll}
           groupName={groupName}
           members={members}
-          options={pollOptions(active, options.data ?? [])}
+          options={pollOptions(poll, options.data ?? [])}
           votes={votes.data ?? []}
           week={week.data ?? []}
           weekLoading={week.loading}
@@ -185,52 +188,49 @@ export function PollSection({
           today={today}
           onChanged={reloadAll}
         />
-        {banenLink}
-      </>
-    );
-  }
+      ))}
 
-  return (
-    <section className="card">
-      <div className="card__head">
-        <h2 className="card__title">Speeldag plannen</h2>
-        {!wizardOpen && (
-          <button
-            className="btn btn--sm btn--primary"
-            onClick={() => setWizardOpen(true)}
-          >
-            + Plan een speeldag
-          </button>
-        )}
-      </div>
-      {!wizardOpen && (
-        <>
+      <section className="card">
+        <div className="card__head">
+          <h2 className="card__title">
+            {active.length > 0 ? "Nog een speeldag plannen" : "Speeldag plannen"}
+          </h2>
+          {!wizardOpen && (
+            <button
+              className="btn btn--sm btn--primary"
+              onClick={() => setWizardOpen(true)}
+            >
+              + Plan een speeldag
+            </button>
+          )}
+        </div>
+        {!wizardOpen && active.length === 0 && (
           <p className="empty">
             Geen lopende poll. Kies een paar momenten waarop banen vrij zijn en
             laat de groep stemmen.
           </p>
-          {banenLink}
-        </>
-      )}
-      {wizardOpen && (
-        <PollWizard
-          today={today}
-          week={week.data ?? []}
-          weekLoading={week.loading}
-          storageKey={wizardStorageKey}
-          submitLabel={(n) => `Start poll (${n})`}
-          onSubmit={async (options) => {
-            await createPoll({ groupId, createdBy: myId, options });
-            toast.success("Poll gestart — de groep kan stemmen.");
-          }}
-          onClose={closeWizard}
-          onDone={() => {
-            closeWizard();
-            reloadAll();
-          }}
-        />
-      )}
-    </section>
+        )}
+        {wizardOpen && (
+          <PollWizard
+            today={today}
+            week={week.data ?? []}
+            weekLoading={week.loading}
+            storageKey={wizardStorageKey}
+            submitLabel={(n) => `Start poll (${n})`}
+            onSubmit={async (options) => {
+              await createPoll({ groupId, createdBy: myId, options });
+              toast.success("Poll gestart — de groep kan stemmen.");
+            }}
+            onClose={closeWizard}
+            onDone={() => {
+              closeWizard();
+              reloadAll();
+            }}
+          />
+        )}
+        {!wizardOpen && banenLink}
+      </section>
+    </>
   );
 }
 

@@ -62,7 +62,14 @@ export function PiasCard({
       : "deze week";
   const isZelf = selfId != null && pias.playerId === selfId;
   const naam = isZelf ? "Jij" : displayName(profiles[pias.playerId]);
-  const titel = scope === "week" ? "🤡 Pias-alarm" : "🤡 Op weg naar de pias van de maand";
+  const beschermd = profiles[pias.playerId]?.roast_schild ?? false;
+  const titel = beschermd
+    ? scope === "week"
+      ? "📊 Opvallende week"
+      : "📊 Opvallende maand"
+    : scope === "week"
+      ? "🤡 Pias-alarm"
+      : "🤡 Op weg naar de pias van de maand";
   // Commentator-sneer (#183): schild van de pias respecteren, toon = groep.
   const sneer = sneerSuffix(
     roastCtx({ roast_intensiteit: intensiteit }, profiles[pias.playerId]),
@@ -83,7 +90,7 @@ export function PiasCard({
       </div>
 
       <Link className="pias-card__row" to={`/spelers/${pias.playerId}`}>
-        <span className="pias-card__emoji" aria-hidden="true">🤡</span>
+        <span className="pias-card__emoji" aria-hidden="true">{beschermd ? "📊" : "🤡"}</span>
         <Avatar profile={profiles[pias.playerId]} size={44} />
         <span className="pias-card__body">
           <span className="pias-card__name">{naam}</span>
@@ -95,7 +102,9 @@ export function PiasCard({
       </Link>
 
       <p className="pias-card__meta">
-        {isZelf
+        {beschermd
+          ? `${isZelf ? "Je" : "Deze speler"} had een opvallende periode. Geen roast: het roast-schild staat aan.`
+          : isZelf
           ? "Code rood! Je bent momenteel de clown van de groep. Tijd om te trainen of je racket te verstoppen."
           : `Voorlopige schande van ${periodeLabel}. Gelukkig is er nog tijd om iemand anders erin te luizen.`}
       </p>
