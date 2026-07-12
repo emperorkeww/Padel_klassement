@@ -94,7 +94,7 @@ const MATCH_WINST = [
 ] as const;
 const MATCH_BAGEL = [
   "6-0. Dat is geen wedstrijd, dat is een openbare vernedering. Prachtig.",
-  "Een bagel uitgedeeld — ontbijt van kampioenen.",
+  "Een droge 6-0 uitgedeeld — dat getuigt van absolute klasse.",
   "6-0! Een absolute masterclass. Zelfs mijn beste tactische plannen konden deze perfectie niet overtreffen.",
   "Geen enkel game weggegeven. Dat is pas efficiëntie, daar kan de bond nog wat van leren.",
 ] as const;
@@ -110,7 +110,7 @@ const MATCH_VERLIES = [
 ] as const;
 const MATCH_PAK_SLAAG = [
   "0-6. Ik heb 'm maar meteen in een gouden lijstje gedaan voor de hall of shame.",
-  "Gebageld. Heb je überhaupt een racket meegenomen?",
+  "Met 0-6 ingemaakt. Heb je überhaupt een racket meegenomen?",
   "0-6 verlies. Zelfs Egypte zou ons met deze tactiek uitlachen. Heb je überhaupt voorbesproken?",
   "0-6 verlies. Ik ben sprakeloos, en dat overkomt me werkelijk zelden na een wedstrijd.",
   "Een totale afstraffing. Was je te druk met ruzie maken langs de lijn in plaats van te tennissen?",

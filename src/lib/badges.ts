@@ -861,7 +861,7 @@ export function deriveBadges(
     },
     {
       id: "broodje-bal",
-      naam: "Broodje bal",
+      naam: "6-0 Droog",
       emoji: "🥯",
       omschrijving: "Win een match zonder de tegenstander één game te gunnen.",
       behaald: feiten.broodje,
@@ -1009,9 +1009,9 @@ export function deriveBadges(
     },
     {
       id: "bagelbakker",
-      naam: "Bagelbakker",
+      naam: "Drooglegger",
       emoji: "🥖",
-      omschrijving: `Deel ${BAGELBAKKER_DOEL} keer een "broodje bal" uit (6-0-winst).`,
+      omschrijving: `Win ${BAGELBAKKER_DOEL} keer een match met 6-0.`,
       behaald: feiten.broodjeAantal >= BAGELBAKKER_DOEL,
       voortgang: { nu: feiten.broodjeAantal, doel: BAGELBAKKER_DOEL },
     },

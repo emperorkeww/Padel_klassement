@@ -116,7 +116,7 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "bagel",
-      detail: bagels === 1 ? "kreeg een droog broodje bagel geserveerd 🥯" : `is inmiddels eigenaar van een bagel-bakkerij (${bagels} stuks) 🥯`,
+      detail: bagels === 1 ? "kreeg een bagel om de oren 🥯" : `is inmiddels eigenaar van een bagel-bakkerij (${bagels} stuks) 🥯`,
       // Een bagel is het sappigste verhaal: weegt zwaar zodat hij meestal wint.
       ernst: 100 + bagels * 10,
     });
