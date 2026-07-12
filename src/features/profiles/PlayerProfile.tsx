@@ -41,6 +41,7 @@ import { bijnaam, neutraleBijnaam } from "../../lib/nickname";
 import { roast } from "../../lib/roast";
 import { THIN_GAMES } from "../groups/groupRating";
 import { ProfileHero } from "./profile/ProfileHero";
+import { FriendButton } from "../friends/FriendButton";
 import { ProfileOverview } from "./profile/ProfileOverview";
 import { ProfileStats } from "./profile/ProfileStats";
 import { ProfileBadges } from "./profile/ProfileBadges";
@@ -415,7 +416,7 @@ export function PlayerProfile() {
         />
       )}
 
-      <ProfileHero d={d} />
+      <ProfileHero d={d} action={isMe ? undefined : <FriendButton targetId={id} />} />
 
       <nav className="tabs tabs--page" aria-label="Profielonderdelen">
         {TABS.map((t) => (

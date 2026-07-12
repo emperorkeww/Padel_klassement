@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Avatar } from "../../../components/Avatar";
 import { CoachAvatar } from "../../../components/CoachAvatar";
 import { COMMENTATOR } from "../../../lib/roastTone";
@@ -7,7 +8,9 @@ import type { ProfileData } from "./types";
 // Vaste kop boven de tabs: avatar, naam (+ "jij"/streak) en @handle. Altijd
 // zichtbaar, ongeacht welke tab open staat. De tier-pil hoort bij de
 // rating-tegel (in de tabs), zodat de naam nooit dubbel als kop verschijnt.
-export function ProfileHero({ d }: { d: ProfileData }) {
+// `action` is een optionele knop rechts van de identiteit (bv. een
+// vriendverzoek op andermans profiel, #282).
+export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode }) {
   const { p, isMe, streak, nick, roast, rank } = d;
   return (
     <section className="card profile-hero">
@@ -28,6 +31,7 @@ export function ProfileHero({ d }: { d: ProfileData }) {
           )}
         </h1>
         <p className="profile-hero__handle">@{p.username}</p>
+        {action && <div className="profile-hero__action">{action}</div>}
         <p className="profile-hero__nick">“{nick}”</p>
         {roast && (
           <div className="profile-hero__coach" role="note">

@@ -8,7 +8,7 @@ describe("<TierBadge />", () => {
     const badge = screen.getByText("Wannabe II");
     expect(badge).toHaveAttribute(
       "title",
-      "Wannabe II · racket van €300, techniek van een houten plank · rating 1034–1066",
+      "Wannabe II · koopt een racket van €350 om het chronische gebrek aan talent te compenseren · rating 1034–1066",
     );
     expect(badge).toHaveClass("tier-badge--goud");
   });
@@ -18,9 +18,9 @@ describe("<TierBadge />", () => {
     expect(screen.getByText("Wannabe III")).toHaveClass("is-dim");
   });
 
-  it("kent het kleine formaat en de sub-niveaus van De excuses verzamelaar", () => {
+  it("kent het kleine formaat en de sub-niveaus van Racketconsument", () => {
     render(<TierBadge rating={1250} size="sm" />);
-    const diamant = screen.getByText("De excuses verzamelaar II");
+    const diamant = screen.getByText("Racketconsument II");
     expect(diamant).toHaveClass("tier-badge--sm");
     expect(diamant).toHaveClass("tier-badge--diamant");
   });

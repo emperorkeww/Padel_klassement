@@ -659,8 +659,9 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Kern-gamification (rating/divisie) blijft zichtbaar; de rest zit
-          samengevouwen zodat het niet met de kern concurreert (#276). */}
+      {/* Gamification-kolom (rating, weekmissies, pias, badge, rivaal). Blijft
+          hier tot #276 die naar het profiel/paspoort verhuist; #273 haalt enkel
+          de schermduplicaten (feed, uitslagen, topspelers, banen) weg. */}
       <div className="grid">
           {/* Rating: groot getal + delta + verloop in één kaart (voorheen een
               stat-tegel én een losse grafiekkaart met dezelfde informatie). */}
