@@ -60,12 +60,14 @@ describe("<Dashboard />", () => {
     expect(tiers[0]).toHaveClass("is-dim");
   });
 
-  it("toont de eerstvolgende geplande match met score-invoer", async () => {
+  it("toont de eerstvolgende geplande match compact met doorlink naar invullen", async () => {
     renderPage();
     expect(await screen.findByText(/jouw volgende match/i)).toBeInTheDocument();
-    expect(
-      await screen.findByRole("link", { name: /naar groep/i }),
-    ).toBeInTheDocument();
+    // Compact (#273): geen score-invoer op het overzicht, wél een link naar de
+    // match-detail waar de uitslag ingevuld wordt.
+    const invullen = await screen.findByRole("link", { name: /invullen/i });
+    expect(invullen.getAttribute("href")).toMatch(/^\/matches\//);
+    expect(screen.queryByRole("button", { name: /^opslaan$/i })).toBeNull();
     // Actiestrook: één openstaande uitslag.
     expect(await screen.findByText(/uitslag wacht op jou/i)).toBeInTheDocument();
   });
@@ -100,22 +102,19 @@ describe("<Dashboard />", () => {
     }
   });
 
-  it("toont topspelers en recente uitslagen", async () => {
+  it("dupliceert geen andere schermen meer op het overzicht (#273)", async () => {
+    // Feed, matcharchief, klassement en het volledige banenrooster wonen op hun
+    // eigen tab; het overzicht spiegelt ze niet langer inline.
     renderPage();
-    expect(await screen.findByText(/topspelers/i)).toBeInTheDocument();
-    expect(await screen.findByText(/recente uitslagen/i)).toBeInTheDocument();
-    expect((await screen.findAllByText(/carol claes/i)).length).toBeGreaterThan(0);
-  });
-
-  it("toont een activiteitenfeed-preview met doorlink naar /feed", async () => {
-    const { container } = renderPage();
-    expect(await screen.findByText(/recente activiteit/i)).toBeInTheDocument();
-    // Doorlink naar de volledige feed.
-    const link = screen.getByRole("link", { name: /naar feed/i });
-    expect(link).toHaveAttribute("href", "/feed");
-    // Minstens één gebeurtenis uit de fixtures (uitslag/vriendschap).
-    const items = container.querySelectorAll(".feed-preview__item");
-    expect(items.length).toBeGreaterThan(0);
+    expect(await screen.findByText(/jouw volgende match/i)).toBeInTheDocument();
+    expect(screen.queryByText(/recente activiteit/i)).toBeNull();
+    expect(screen.queryByText(/recente uitslagen/i)).toBeNull();
+    expect(screen.queryByText(/topspelers/i)).toBeNull();
+    // Banen blijft als compacte teaser (geen volledig rooster).
+    expect(screen.getByText(/vrije banen vandaag/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /alle dagen/i }),
+    ).toHaveAttribute("href", "/banen");
   });
 
   it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
@@ -127,6 +126,15 @@ describe("<Dashboard />", () => {
     expect(
       screen.getByRole("link", { name: /bekijk de poll/i }),
     ).toBeInTheDocument();
+  });
+
+  it("bundelt de secundaire gamification achter één inklapper (#276)", async () => {
+    renderPage();
+    const titel = await screen.findByText(/jouw spel & stats/i);
+    const details = titel.closest("details");
+    expect(details).not.toBeNull();
+    // Weekmissies zit binnen die inklapper, niet los op het overzicht.
+    expect(details!.querySelector(".week-missions")).not.toBeNull();
   });
 
   it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {
