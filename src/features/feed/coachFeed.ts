@@ -39,6 +39,8 @@ const KAMPIOEN = [
   "Genieten van de top: mooi uitzicht, diepe val.",
   "De beker glimt, maar je reputatie heeft nog heel wat werk nodig.",
   "Eén zwaluw maakt de zomer niet, en één titel maakt je nog geen legende.",
+  "Een schitterende titel! Die mag je trots naast mijn tactische masterplans in de kast zetten.",
+  "Kampioen! De champagne staat koud, al had ik persoonlijk liever gezien dat je die pas na een zwaarbevochten 89e minuut had geopend.",
 ] as const;
 
 const PROMOTIE = [
@@ -57,6 +59,8 @@ const PROMOTIE = [
   "Opgeklommen. De lucht daarboven is dun.",
   "Welkom in de nieuwe divisie. Geniet van je eerste match, want daarna ga je hard omlaag.",
   "Omhooggevlogen! Hopelijk heb je je parachute bij je.",
+  "Gepromoveerd! Een uitstekende transitie, bijna net zo vloeiend als mijn omschakelingsmomenten op het WK.",
+  "Een niveau omhoog! Zorg er wel voor dat je daar boven ook fatsoenlijk kan serveren, anders lig je er zo weer uit.",
 ] as const;
 
 const DEGRADATIE = [
@@ -75,6 +79,8 @@ const DEGRADATIE = [
   "Afgezakt. De onderbuurman heet nu 'jij'.",
   "Glijbaan naar de kelderklasse. Daar is het bier tenminste koud.",
   "Een divisie gezakt. Misschien kun je daar wel eens een bal raken?",
+  "Degradatie! Net zo pijnlijk als een vroege uitschakeling in de groepsfase. Maar goed, we geven gewoon de scheidsrechter de schuld.",
+  "Omlaag gekelderd. Misschien moet je je tactiekbord eens een kwartslag draaien, wie weet helpt het.",
 ] as const;
 
 const REEKS = [
@@ -92,6 +98,8 @@ const REEKS = [
   "Reeks aan de gang. Geniet zolang het duurt.",
   "Winst na winst. Begint het al saai te worden voor de toeschouwers?",
   "Op een wolk! Pas op dat je er niet in één keer vanaf dondert.",
+  "Wat een overwinningsreeks! Heb je stiekem de tactiek van de Spanjaarden gekopieerd?",
+  "Nog steeds aan het winnen. Ik heb in mijn notitieboekje gezocht naar een tactische verklaring, maar kon niks vinden.",
 ] as const;
 
 const UPSET = [
@@ -108,6 +116,8 @@ const UPSET = [
   "De favoriet struikelt over z'n eigen ego.",
   "De favorieten liggen in de kooi te huilen. Wat een heerlijke avond.",
   "Wie de toto op hen had gezet is nu rijk. Maar niemand deed dat natuurlijk.",
+  "Een totale verrassing! De favorieten stonden erbij alsof ze tactisch volledig buitenspel gezet waren.",
+  "Wat een stunt! Dit had zelfs de meest optimistische voetbalanalist niet durven voorspellen.",
 ] as const;
 
 const BAGEL = [
@@ -124,6 +134,8 @@ const BAGEL = [
   "6–0. De genadeloze klassieker.",
   "6–0. Zelfs de kantinejuffrouw vroeg of jullie eigenlijk wel meededen.",
   "Nul games. Dat is statistisch gezien bijna moeilijker dan één game winnen.",
+  "Een bagel! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
+  "Helemaal van de kaart geveegd. Mijn aantekeningen over deze set passen gemakkelijk op een postzegel.",
 ] as const;
 
 const MONSTER = [
@@ -140,6 +152,8 @@ const MONSTER = [
   "De sloophamer erin. Effectief.",
   "Dat was geen wedstrijd, dat was een openbare les in nederigheid.",
   "Sloopwerkzaamheden op baan 1. Geen spaan heel gelaten van de tegenpartij.",
+  "Een slachting! Dat is het soort meedogenloze overgangsspel dat we op het WK hadden moeten laten zien.",
+  "Geen spaan heel gelaten. Dit niveau van dominantie is bijna onbeschoft, ik hou er wel van.",
 ] as const;
 
 /**
