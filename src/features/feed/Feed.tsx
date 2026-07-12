@@ -638,6 +638,7 @@ function FeedItem({
           icon={nieuw ? "✨" : omhoog ? "⬆️" : "⬇️"}
           label={`Klassement · ${nieuw ? "nieuw" : omhoog ? "stijger" : "daler"}`}
           to="/klassement"
+          at={event.at}
         >
           {nieuw ? (
             <>
@@ -659,6 +660,7 @@ function FeedItem({
           icon="🏆"
           label="Seizoenskampioen"
           to={`/groepen/${event.groupId}?tab=stand&seizoen=${event.seasonLabel}`}
+          at={event.at}
         >
           {name(event.playerId)} {event.playerId === myId ? "bent" : "is"} kampioen van{" "}
           <strong>{event.groupName}</strong> ({event.seasonLabel})!
@@ -666,7 +668,7 @@ function FeedItem({
       );
     case "maand-pias":
       return (
-        <FeedHighlight cat="roast" icon="🤡" label="Pias van de maand" to={`/groepen/${event.groupId}`}>
+        <FeedHighlight cat="roast" icon="🤡" label="Pias van de maand" to={`/groepen/${event.groupId}`} at={event.at}>
           {event.playerId === myId ? (
             <>
               Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}): je {event.detail}.
@@ -681,7 +683,7 @@ function FeedItem({
       );
     case "pias-week":
       return (
-        <FeedHighlight cat="roast" icon="🤡" label="Pias van de week" to={`/groepen/${event.groupId}`}>
+        <FeedHighlight cat="roast" icon="🤡" label="Pias van de week" to={`/groepen/${event.groupId}`} at={event.at}>
           {event.playerId === myId ? (
             <>
               Jij bent de <strong>pias van de week</strong> in {event.groupName}: verloor als
@@ -697,7 +699,7 @@ function FeedItem({
       );
     case "zwarte-piet":
       return (
-        <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`}>
+        <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`} at={event.at}>
           {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`} de{" "}
           <strong>Zwarte Piet</strong> in {event.groupName}
           {event.fromPlayerId ? ` af van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
@@ -952,12 +954,14 @@ function FeedHighlight({
   icon,
   label,
   to,
+  at,
   children,
 }: {
   cat: "rank" | "champ" | "roast";
   icon: string;
   label: string;
   to: string;
+  at?: string;
   children: ReactNode;
 }) {
   return (
@@ -969,6 +973,7 @@ function FeedHighlight({
         <span className="feed-hi__label">{label}</span>
         <span className="feed-hi__title">{children}</span>
       </span>
+      {at && <span className="feed-hi__time">{formatTime(at)}</span>}
     </Link>
   );
 }
