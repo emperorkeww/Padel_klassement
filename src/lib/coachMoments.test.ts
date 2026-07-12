@@ -13,7 +13,7 @@ describe("coachBriefing", () => {
 
   it("kiest een verliesreeks-toon bij losing >= 3", () => {
     const dip = coachBriefing({ rank: 20, streak: 0, losing: 4, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels/i);
+    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels|notitieboekje|wissels/i);
   });
 
   it("met roast-schild een neutrale, niet-spottende regel", () => {

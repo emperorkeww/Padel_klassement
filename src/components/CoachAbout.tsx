@@ -19,11 +19,13 @@ export function CoachAbout({
       <div className="coach-about__head">
         <CoachAvatar size={44} />
         <p className="coach-about__lead">
-          {COMMENTATOR.naam} is onze bondscoach-in-ruste. Na zijn roerige verleden bij Lille (met Eden Hazard),
-          zijn vioolconcerten bij AS Roma, zijn ruzie met Ronaldo bij Al-Nassr en zijn bliksembezoek aan Napoli,
-          stond hij recent nog in een doorweekt pak met sportpet langs de lijn bij de Rode Duivels. Nu brengt hij
-          zijn tactische 'meesterwerken' naar jouw padelveld. Verwacht gepeperde analyses met een zware Franse
-          tongval en sneren die harder aankomen dan een smash van Osimhen.
+          {COMMENTATOR.naam} is onze excentrieke bondscoach-in-ruste van de Rode Duivels.
+          Zijn optreden tijdens het WK 2026 staat in ieders geheugen gegrift: hij zat 90 minuten lang
+          obsessief te schrijven in zijn tactische notitieboekje om vervolgens met volstrekt onbegrijpelijke
+          wissels in de 89e minuut de match om zeep te helpen. Zijn bizarre gedrag langs de lijn – zoals
+          hevig gesticuleren, een chique maatpak combineren met een goedkope supporters-pet en doodleuk
+          kletsnat geregend worden door een automatische watersproeier – was het gesprek van de dag. Nu
+          brengt hij diezelfde 'geniale' tactische inzichten en genadeloze sneren naar jouw padelveld.
         </p>
       </div>
       <ul className="coach-about__controls">

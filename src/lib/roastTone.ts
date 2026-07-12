@@ -49,6 +49,9 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Met zo'n voorbereiding had je bij Lille in 2011 op de bank gezeten naast de ballenjongens.",
     "Zelfs de Romeinse pers was milder voor mij dan ik vandaag voor dit spel ben.",
     "Je slagen missen vandaag elke vorm van Franse elegantie.",
+    "Ik ben driftig in m'n notitieboekje aan het krabbelen hoe dit beter moet.",
+    "Deze match vraagt om een wissel in de 89e minuut.",
+    "Zat je tactiek soms verstopt onder je pet?",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -80,6 +83,9 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Ik pak m'n denkbeeldige viool er alvast bij om deze prestatie te bezingen.",
     "Was je vandaag geïnspireerd door Kvaratskhelia? Die zat namelijk ook 90 minuten op de bank.",
     "Zelfs met Cristiano Ronaldo in de spits had je deze match niet meer gered.",
+    "Nog vreemder dan mijn wissels tijdens het WK. En geloof me, die waren heel vreemd.",
+    "Ik heb drie pagina's volgeschreven over deze blunder. Allemaal met uitroeptekens.",
+    "Dit gedrag langs de lijn is bijna net zo bizar als mijn persconferenties bij de Rode Duivels.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -113,6 +119,9 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Zelfs Aurelio De Laurentiis zou weigeren om te betalen voor een ticket om jou te zien spelen.",
     "Dit was zo slecht dat we de FIFA moeten vragen om padel te verbieden in de Benelux.",
     "Ga je nu huilen? Zal ik een viool voor je pakken?",
+    "Je spel is zo onnavolgbaar dat ik spontaan vijf wissels tegelijk wil doorvoeren, gewoon om ervan af te zijn.",
+    "Ik schrijf zoveel fouten op dat m'n pen leeg is. Zelfs het WK-notitieboekje was minder vol.",
+    "Zelfs de Belgische pers had na de uitschakeling tegen Spanje minder kritiek op mij dan ik op jou vandaag.",
   ],
 } as const;
 

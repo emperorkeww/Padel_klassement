@@ -3,12 +3,12 @@ import { render, screen } from "@testing-library/react";
 import { CoachAvatar } from "./CoachAvatar";
 
 describe("<CoachAvatar />", () => {
-  it("rendert een toegankelijke coach-mascotte (inline SVG)", () => {
-    const { container } = render(<CoachAvatar />);
+  it("rendert een toegankelijke coach-illustratie", () => {
+    render(<CoachAvatar />);
     const img = screen.getByRole("img", { name: "Coach Rudy" });
-    expect(img.tagName.toLowerCase()).toBe("svg");
-    // Inline SVG, geen externe asset.
-    expect(container.querySelector("img")).toBeNull();
+    expect(img.tagName.toLowerCase()).toBe("img");
+    // Gebruikt een echte afbeelding uit rudi_avatars/.
+    expect(img).toHaveAttribute("src");
   });
 
   it("schaalt mee met de size-prop", () => {

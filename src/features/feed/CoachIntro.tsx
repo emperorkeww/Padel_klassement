@@ -19,10 +19,11 @@ export function CoachIntro({ onDismiss }: { onDismiss: () => void }) {
       <div className="coach-intro__body">
         <h2 className="coach-intro__title">Maak kennis met {COMMENTATOR.naam}</h2>
         <p className="coach-intro__text">
-          Vanaf nu becommentarieert {COMMENTATOR.naam} je feed. Bekend van AS Roma's violen,
-          clashes met Ronaldo en Napoli's achterdeur, en recent nog met de Rode Duivels op het WK.
-          Hij bejubelt je zeges en fileert je chokes met tactische 'analyses'. Te veel van het goede?
-          Je kunt hem per groep doseren of jezelf afschermen met een roast-schild.
+          Vanaf nu becommentarieert {COMMENTATOR.naam} je feed. Vers van de Rode Duivels op het WK 2026,
+          waar hij de natie verraste met zijn vreemde wissels, zijn obsessieve gekrabbel in een
+          notitieboekje en zijn bizarre gedrag langs de lijn. Hij bejubelt je zeges en fileert je chokes
+          met dezelfde "briljante" tactische visie. Te veel van het goede? Je kunt hem per groep doseren
+          of jezelf afschermen met een roast-schild.
         </p>
         <div className="coach-intro__actions">
           <Link className="btn btn--sm" to="/profiel">
