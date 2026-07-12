@@ -351,11 +351,6 @@ export function Dashboard() {
                 {me
                   ? `Je bezet momenteel plek #${rank || "?"} in het klassement met een rating van ${myRating || "1000"}.`
                   : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
-                {streak >= 2
-                  ? ` Lekker bezig: je bent onverslaanbaar met ${streak} overwinningen op rij! 🔥`
-                  : losing >= 3
-                    ? ` Oei, al ${losing} potjes op rij verloren... Tijd voor een nieuwe grip of betere smoesjes? 💪`
-                    : ""}
               </p>
             )}
             {coachBriefingTekst && !standings.loading && (
@@ -715,10 +710,9 @@ export function Dashboard() {
             </section>
           )}
 
-          {myMatches.data && teams.data && (
-            <WeekMissions matches={myMatches.data} teams={tmap} myId={myId} />
-          )}
-
+          {/* Pias-alarm blijft zichtbaar (#276): deze kaart verschijnt alléén
+              als jíj deze week de pias bent — een tijdgevoelige waarschuwing,
+              geen kaart om weg te vouwen. */}
           {myMatches.data && teams.data && (
             <PiasCard
               matches={myMatches.data}
@@ -730,81 +724,108 @@ export function Dashboard() {
             />
           )}
 
-          {nextBadge && nextBadge.voortgang && (
-            <section className="card next-badge">
-              <div className="card__head">
-                <h2 className="card__title">Volgende badge</h2>
-                <Link className="profile-link" to={`/spelers/${myId}`}>
-                  Alle badges →
-                </Link>
-              </div>
-              <p className="next-badge__tally">
-                {earnedBadges.length} van {allBadges.length} badges behaald
-              </p>
-              <div className="next-badge__row">
-                <span className="next-badge__emoji" aria-hidden="true">
-                  {nextBadge.emoji}
+          {/* Overige gamification samengevouwen (#276): weekmissies,
+              badge-voortgang en rivaal — bereikbaar, maar niet langer
+              concurrerend met de kern. De rating/divisie hierboven blijft
+              zichtbaar want dát is de kern-gamification. */}
+          {((!!myMatches.data && !!teams.data) ||
+            !!(nextBadge && nextBadge.voortgang) ||
+            !!rival) && (
+            <details className="dash-extras">
+              <summary className="dash-extras__summary">
+                <span className="dash-extras__title">Jouw spel &amp; stats</span>
+                <span className="dash-extras__hint">
+                  weekmissies · badges · rivaal
                 </span>
-                <span className="next-badge__body">
-                  <span className="next-badge__name">{nextBadge.naam}</span>
-                  <span className="next-badge__hint">{nextBadge.omschrijving}</span>
-                </span>
-                <span
-                  className="next-badge__count"
-                  title={`Voortgang voor deze badge: ${nextBadge.voortgang.nu} van ${nextBadge.voortgang.doel}`}
-                >
-                  {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
-                </span>
-              </div>
-              <div
-                className="next-badge__bar"
-                role="progressbar"
-                aria-valuenow={nextBadge.voortgang.nu}
-                aria-valuemin={0}
-                aria-valuemax={nextBadge.voortgang.doel}
-              >
-                <span
-                  className="next-badge__fill"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.round(
-                        (nextBadge.voortgang.nu / nextBadge.voortgang.doel) * 100,
-                      ),
-                    )}%`,
-                  }}
-                />
-              </div>
-            </section>
-          )}
+              </summary>
+              <div className="dash-extras__body">
+                {myMatches.data && teams.data && (
+                  <WeekMissions matches={myMatches.data} teams={tmap} myId={myId} />
+                )}
 
-          {rival && (
-            <section className="card rival-card">
-              <div className="card__head">
-                <h2 className="card__title">Aartsrivaal ⚔️</h2>
-                <Link className="profile-link" to={`/spelers/${rival.oppId}`}>
-                  Profiel →
-                </Link>
+                {nextBadge && nextBadge.voortgang && (
+                  <section className="card next-badge">
+                    <div className="card__head">
+                      <h2 className="card__title">Volgende badge</h2>
+                      <Link className="profile-link" to={`/spelers/${myId}`}>
+                        Alle badges →
+                      </Link>
+                    </div>
+                    <p className="next-badge__tally">
+                      {earnedBadges.length} van {allBadges.length} badges behaald
+                    </p>
+                    <div className="next-badge__row">
+                      <span className="next-badge__emoji" aria-hidden="true">
+                        {nextBadge.emoji}
+                      </span>
+                      <span className="next-badge__body">
+                        <span className="next-badge__name">{nextBadge.naam}</span>
+                        <span className="next-badge__hint">
+                          {nextBadge.omschrijving}
+                        </span>
+                      </span>
+                      <span
+                        className="next-badge__count"
+                        title={`Voortgang voor deze badge: ${nextBadge.voortgang.nu} van ${nextBadge.voortgang.doel}`}
+                      >
+                        {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
+                      </span>
+                    </div>
+                    <div
+                      className="next-badge__bar"
+                      role="progressbar"
+                      aria-valuenow={nextBadge.voortgang.nu}
+                      aria-valuemin={0}
+                      aria-valuemax={nextBadge.voortgang.doel}
+                    >
+                      <span
+                        className="next-badge__fill"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round(
+                              (nextBadge.voortgang.nu / nextBadge.voortgang.doel) *
+                                100,
+                            ),
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </section>
+                )}
+
+                {rival && (
+                  <section className="card rival-card">
+                    <div className="card__head">
+                      <h2 className="card__title">Aartsrivaal ⚔️</h2>
+                      <Link className="profile-link" to={`/spelers/${rival.oppId}`}>
+                        Profiel →
+                      </Link>
+                    </div>
+                    <div className="rival">
+                      <Avatar profile={pmap[rival.oppId]} size={40} />
+                      <span className="rival__body">
+                        <Link
+                          className="profile-link rival__name"
+                          to={`/spelers/${rival.oppId}`}
+                        >
+                          {displayName(pmap[rival.oppId])}
+                        </Link>
+                        <span className="rival__meta">
+                          {rival.rec.played} duels · {rival.rec.won}–{rival.rec.lost}
+                          {rival.rec.drawn > 0 && ` · ${rival.rec.drawn} gelijk`}
+                        </span>
+                      </span>
+                      <span
+                        className={`rival__verdict rival__verdict--${rivalVerdict(rival.rec)}`}
+                      >
+                        {rivalVerdictLabel(rival.rec)}
+                      </span>
+                    </div>
+                  </section>
+                )}
               </div>
-              <div className="rival">
-                <Avatar profile={pmap[rival.oppId]} size={40} />
-                <span className="rival__body">
-                  <Link
-                    className="profile-link rival__name"
-                    to={`/spelers/${rival.oppId}`}
-                  >
-                    {displayName(pmap[rival.oppId])}
-                  </Link>
-                  <span className="rival__meta">
-                    {rival.rec.played} duels · {rival.rec.won}–{rival.rec.lost}
-                    {rival.rec.drawn > 0 && ` · ${rival.rec.drawn} gelijk`}
-                  </span>
-                </span>
-                <span className={`rival__verdict rival__verdict--${rivalVerdict(rival.rec)}`}>
-                  {rivalVerdictLabel(rival.rec)}
-                </span>
-              </div>
-            </section>
+            </details>
           )}
 
       </div>
