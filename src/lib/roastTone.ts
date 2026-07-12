@@ -73,6 +73,10 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "De tegenstander hoefde niet eens te rennen, jouw ballen vlogen keurig hun kant op.",
     "Je hebt de kooi in ieder geval heel gelaten. Dat is ook een vorm van vooruitgang.",
     "Zelfs op de bank bij Lille was de sfeer sportiever dan jouw blik na die gemiste smash.",
+    "Je slagen waren vandaag net zo legitiem als de opschorting van Baloguns rode kaart. Iedereen zag het, niemand greep in.",
+    "Een uiterst twijfelachtig punt. Gianni Infantino zou dit waarschijnlijk bestempelen als 'volledig onafhankelijk beslist'.",
+    "Jouw spel had vandaag veel weg van een Trump-rally: veel lawaai, weinig inhoud en achteraf claimen dat je historisch gewonnen hebt.",
+    "De tegenstander kneep een oogje toe. Heb je stiekem met Infantino gebeld voor een voorwaardelijke opschorting van de regels?",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -125,6 +129,10 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Als je de ballen nog één keer zo hoog opslaat, moeten we de luchtverkeersleiding gaan waarschuwen.",
     "Je speelde alsof je racket een pan was waar de pannenkoeken steeds uitvielen.",
     "Zelfs de meest kritische Belgische journalist zou medelijden krijgen met jouw backhand.",
+    "Zelfs als Donald Trump persoonlijk naar de FIFA belt, valt deze wanprestatie met geen enkele voorwaardelijke opschorting recht te praten.",
+    "Jouw backhand is net zo corrupt en krom als de beslissingen van de FIFA-disciplinaire commissie tijdens het WK.",
+    "Je claimt de overwinning, maar net als bij Trump is de werkelijkheid toch echt dat je dik verloren hebt. Stop the steal!",
+    "Was die bal werkelijk in? Dit riekt naar een groter omkoopschandaal dan de toewijzing van het WK aan Qatar.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -180,6 +188,10 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Als de Belgische bondscoach mij na deze pot had opgesteld, had ik ter plekke mijn ontslag ingediend.",
     "Zelfs met Cristiano Ronaldo en Lionel Messi in je team had je deze afgang niet kunnen camoufleren.",
     "Een legendarische wanprestatie. Ik heb de bladzijde uit mijn notitieboekje gescheurd om hem ritueel te verbranden.",
+    "Dit spel was zo corrupt en vals dat zelfs Sepp Blatter en Gianni Infantino er rode koppen van zouden krijgen.",
+    "Als dit een WK-match was, had Trump nu al met Infantino aan de lijn gehangen om te eisen dat jouw rode kaart voorwaardelijk wordt opgeschort.",
+    "Een absolute schande voor de sport. Zelfs de meest corrupte FIFA-officials zouden weigeren om steekpenningen aan te nemen om dit spel goed te praten.",
+    "Je claimt dat je geweldig speelde, maar dat is 'fake news' van het allerhoogste Trump-niveau. Zelfs Bosnië werd minder opgelicht dan jouw partner vandaag.",
   ],
 } as const;
 
