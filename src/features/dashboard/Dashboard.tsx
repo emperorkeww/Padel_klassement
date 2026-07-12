@@ -17,6 +17,7 @@ import { deriveBadges, type Badge } from "../../lib/badges";
 import {
   deriveMissions,
   weekIndex,
+  weekRange,
   weekStartOf,
 } from "../../lib/missions";
 import { celebrate } from "../../lib/confetti";
@@ -36,6 +37,9 @@ import {
 import { eveningSummary } from "../../lib/eveningSummary";
 import { ShareEvening } from "../groups/ShareEvening";
 import { PiasCard } from "../groups/PiasCard";
+import { getZwartePiet } from "../groups/zwartePietApi";
+import { bepaalPias } from "../../lib/maandpias";
+import { BIG_DADDY_EMOJI } from "../../lib/bigDaddy";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
@@ -91,6 +95,8 @@ export function Dashboard() {
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
   const groups = useAsync(getMyGroups, []);
+  // Zwarte Piet-dragers per eigen groep (#287): voor de titel-hoek in de hero.
+  const zwartePiet = useAsync(getZwartePiet, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
@@ -117,9 +123,10 @@ export function Dashboard() {
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
+    zwartePiet.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload, zwartePiet.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -146,6 +153,21 @@ export function Dashboard() {
   const rank = rankIdx >= 0 ? rankIdx + 1 : null;
   const { incoming, accepted } = categorize(friendships.data ?? [], myId);
   const myProfile = pmap[myId];
+  // Titels voor de rechterbovenhoek van de hero (#287): de kroon als je #1 van
+  // het klassement bent (Big Daddy), de Zwarte Piet als je in een van je
+  // groepen het rondgaande schande-token draagt, en de Pias als je de choke
+  // van de week bent. Bij een roast-schild tonen we de neutrale 📊-variant,
+  // consistent met de kaarten.
+  const isBigDaddy = rank === 1;
+  const isZwartePiet = Object.values(zwartePiet.data ?? {}).some(
+    (h) => h.holderId === myId,
+  );
+  const weekPias =
+    myMatches.data && teams.data
+      ? bepaalPias(myMatches.data, tmap, weekRange(new Date()))
+      : null;
+  const isWeekPias = weekPias?.playerId === myId;
+  const roastSchild = myProfile?.roast_schild ?? false;
   // Naam direct tonen zonder e-mail-flits: zolang de profielen laden valt de
   // begroeting terug op de gecachete naam van een eerder bezoek.
   const myName = myProfile
@@ -332,6 +354,34 @@ export function Dashboard() {
   return (
     <div className="dashboard">
       <section className="hero">
+        {(isBigDaddy || isZwartePiet || isWeekPias) && (
+          <div className="hero__crests" aria-label="Jouw titels">
+            {isBigDaddy && (
+              <HeroCrest
+                variant="bigdaddy"
+                emoji={BIG_DADDY_EMOJI}
+                label="Big Daddy"
+                uitleg="#1 van het klassement — de baas van de baan."
+              />
+            )}
+            {isZwartePiet && (
+              <HeroCrest
+                variant="piet"
+                emoji={roastSchild ? "📊" : "🃏"}
+                label={roastSchild ? "Schande-token" : "Zwarte Piet"}
+                uitleg="Jij draagt het rondgaande schande-token van de groep — tot je wint en het doorschuift."
+              />
+            )}
+            {isWeekPias && (
+              <HeroCrest
+                variant="pias"
+                emoji={roastSchild ? "📊" : "🤡"}
+                label={roastSchild ? "Opvallende week" : "Pias van de week"}
+                uitleg="De grootste afgang van de week — de clown van de groep."
+              />
+            )}
+          </div>
+        )}
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
@@ -1163,6 +1213,38 @@ function deriveEvening(
  *  verankerd, zodat de `overflow: hidden` van de hero hem niet afknipt.
  *  De badges zelf navigeren bewust niet (op touch bestaat hover niet, dus
  *  een tik moet de uitleg tonen); de collectie zit achter de pijl-link. */
+/** Titel-crest in de hero-hoek (#287): een rond emoji-knopje met een tooltip die
+ *  de betekenis toont. De tooltip verschijnt op hover (desktop) én op focus, dus
+ *  een tik op mobiel onthult 'm ook. `aria-label` bevat de volledige uitleg voor
+ *  schermlezers. */
+function HeroCrest({
+  variant,
+  emoji,
+  label,
+  uitleg,
+}: {
+  variant: "bigdaddy" | "piet" | "pias";
+  emoji: string;
+  label: string;
+  uitleg: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`hero-crest hero-crest--${variant}`}
+      aria-label={`${label}: ${uitleg}`}
+    >
+      <span className="hero-crest__icon" aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="hero-crest__tip" role="tooltip" aria-hidden="true">
+        <span className="hero-crest__tip-label">{label}</span>
+        <span className="hero-crest__tip-text">{uitleg}</span>
+      </span>
+    </button>
+  );
+}
+
 function BadgeStrip({ badges, to }: { badges: Badge[]; to: string }) {
   const [active, setActive] = useState<Badge | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
