@@ -11,13 +11,13 @@
 
 export type TierNaam =
   | "Sletje van de baan"
-  | "No show"
+  | "Toerist"
   | "Prutser"
   | "Bankvuller"
   | "Blaaskaak"
   | "Wannabe"
-  | "Pletwals"
-  | "De excuses verzamelaar"
+  | "Glazenwasser"
+  | "Racketconsument"
   | "Forever second"
   | "GOAT";
 export type TierKey =
@@ -55,7 +55,7 @@ export interface Tier {
 }
 
 /** Hoofdtier-banden, van laag naar hoog. De onderste band (Sletje van de baan) is open
- *  naar beneden: zijn min van 500 is virtueel en dient alleen om de sub-niveaus
+ *  naar beneden: zijn min of 500 is virtueel en dient alleen om de sub-niveaus
  *  te snijden — alles daaronder klemt op Sletje van de baan III. De rating-drempels zijn
  *  ongewijzigd t.o.v. de eerste versie; alleen de namen zijn ludieker.
  *  De `key` blijft de kleur-/tokensleutel (brons = bronskleur enz.). */
@@ -68,13 +68,13 @@ export const TIER_BANDEN: ReadonlyArray<{
   max: number | null;
 }> = [
   { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "heeft nog nooit van een glaswand gehoord", min: 500, max: 600 },
-  { naam: "No show", key: "karton", emoji: "🫥", flavor: "lichamelijk aanwezig, maar komt puur voor de derde helft", min: 600, max: 700 },
+  { naam: "Toerist", key: "karton", emoji: "🌴", flavor: "komt puur voor de bezienswaardigheden en de derde helft", min: 600, max: 700 },
   { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "slaat vaker gaten in de lucht dan ballen over het net", min: 700, max: 800 },
   { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat er strategisch bij als extra baljongen", min: 800, max: 900 },
   { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "praat alsof-ie WPT speelt, raakt geen pepernoot", min: 900, max: 1000 },
   { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "racket van €300, techniek van een houten plank", min: 1000, max: 1100 },
-  { naam: "Pletwals", key: "platina", emoji: "🚜", flavor: "heeft geen genade en mept elke lob de kooi uit", min: 1100, max: 1200 },
-  { naam: "De excuses verzamelaar", key: "diamant", emoji: "😏", flavor: "gripje lag verkeerd, wind stond fout, glas te stroef", min: 1200, max: 1300 },
+  { naam: "Glazenwasser", key: "platina", emoji: "🪟", flavor: "heeft een abonnement op het poetsen van de achterwand", min: 1100, max: 1200 },
+  { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "wisselt elke maand van racket in de hoop dat dát het verschil maakt", min: 1200, max: 1300 },
   { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "altijd de bruidsmeid, nooit de bruid", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft z'n eigen VIP-parkeerplek bij de club al geclaimd", min: 1400, max: null },
 ];

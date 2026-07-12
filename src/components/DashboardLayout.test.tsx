@@ -149,7 +149,7 @@ describe("tier-aankondiging (#127)", () => {
     ]);
     renderShell();
     expect(
-      await screen.findByText(/gepromoveerd naar pletwals iii/i),
+      await screen.findByText(/gepromoveerd naar glazenwasser iii/i),
     ).toBeInTheDocument();
     expect(celebrate).toHaveBeenCalled();
     expect(window.localStorage.getItem("tier-announced:p1")).toBe("m-x");

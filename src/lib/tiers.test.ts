@@ -14,7 +14,7 @@ describe("tierFor", () => {
     [533, "Sletje van de baan III"],
     [534, "Sletje van de baan II"],
     [599, "Sletje van de baan I"],
-    [600, "No show III"],
+    [600, "Toerist III"],
     [700, "Prutser III"],
     [799, "Prutser I"],
     // Bestaande banden (vanaf 800) — ongewijzigd.
@@ -25,12 +25,11 @@ describe("tierFor", () => {
     [900, "Blaaskaak III"],
     [999, "Blaaskaak I"],
     [1000, "Wannabe III"],
-    [1099, "Wannabe I"],
-    [1100, "Pletwals III"],
-    [1199, "Pletwals I"],
+    [1100, "Glazenwasser III"],
+    [1199, "Glazenwasser I"],
     // Nieuwe hoge tiers.
-    [1200, "De excuses verzamelaar III"],
-    [1299, "De excuses verzamelaar I"],
+    [1200, "Racketconsument III"],
+    [1299, "Racketconsument I"],
     [1300, "Forever second III"],
     [1399, "Forever second I"],
     [1400, "GOAT"],
@@ -52,7 +51,7 @@ describe("tierFor", () => {
   it("alleen de hoogste tier (GOAT) heeft geen sub-niveaus", () => {
     expect(tierFor(1400)?.sub).toBeNull();
     expect(tierFor(1600)?.sub).toBeNull();
-    // De excuses verzamelaar is nu begrensd en heeft dus wél sub-niveaus.
+    // Racketconsument is nu begrensd en heeft dus wél sub-niveaus.
     expect(tierFor(1200)?.sub).toBe(3);
   });
 
@@ -98,7 +97,7 @@ describe("tierChange", () => {
     expect(w.richting).toBe("promotie");
     expect(w.hoofdtier).toBe(true);
     expect(w.van.label).toBe("Wannabe I");
-    expect(w.naar.label).toBe("Pletwals III");
+    expect(w.naar.label).toBe("Glazenwasser III");
   });
 
   it("promotie over de nieuwe onderste grens (Prutser → Bankvuller)", () => {
@@ -131,7 +130,7 @@ describe("tierProgress", () => {
   it("berekent de punten tot de volgende hoofd-divisie", () => {
     const p = tierProgress(1045)!;
     expect(p.huidig.naam).toBe("Wannabe");
-    expect(p.volgende?.naam).toBe("Pletwals");
+    expect(p.volgende?.naam).toBe("Glazenwasser");
     expect(p.volgende?.vanaf).toBe(1100);
     expect(p.puntenNodig).toBe(55);
   });
