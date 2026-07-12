@@ -115,7 +115,7 @@ export function Friends() {
       <header className="page-head">
         <h1 className="page-title">Vrienden</h1>
         <p className="page-subtitle">
-          Zoek spelers, stuur verzoeken en beheer je vrienden.
+          Vind je maatjes en stuur ze een verzoek.
         </p>
       </header>
 
@@ -263,9 +263,8 @@ export function Friends() {
           )}
         </h2>
         {!friendships.loading && !friendships.error && accepted.length === 0 && (
-          <EmptyState icon="👋" title="Nog geen vrienden.">
-            Zoek hierboven een speler op gebruikersnaam en stuur een verzoek —
-            samen matches loggen begint hier.
+          <EmptyState icon="👋" title="Alleen op de baan?">
+            Padel speel je niet alleen. Zoek hierboven je vaste partners of tegenstanders op en stuur ze een uitnodiging om samen matches te loggen!
           </EmptyState>
         )}
         <div className="person-grid">

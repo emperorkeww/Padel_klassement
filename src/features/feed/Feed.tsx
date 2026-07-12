@@ -28,6 +28,8 @@ import { getPlayerStandings } from "../standings/api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
 import { coachOpmerking } from "./coachFeed";
+import { coachAvond } from "./coachEvening";
+import { eveningSummary } from "../../lib/eveningSummary";
 import { getZwartePiet } from "../groups/zwartePietApi";
 import type {
   GroupMember,
@@ -239,6 +241,23 @@ export function Feed() {
   // feed-volgorde.
   const gebruiktCoach = new Set<string>();
 
+  // Coach Rudy's avondverslag (#204): 2-3 zinnen bij een speelavond-item,
+  // afgeleid uit de eveningSummary van díe groep + dag (uit de al geladen
+  // matches). Respecteert intensiteit + schild en deelt de anti-herhaling.
+  const avondVerslag = (ev: Extract<FeedEvent, { kind: "evening" }>): string[] => {
+    const dagVan = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+    const dagMatches = (matches.data ?? []).filter(
+      (m) => m.group_id === ev.groupId && dagVan(m) === ev.day,
+    );
+    const summary = eveningSummary(dagMatches, tmap, ev.day, histories.data ?? undefined);
+    return coachAvond(summary, `${ev.groupId}|${ev.day}`, {
+      intensiteit: intensiteitVoor(ev.groupId),
+      profiles: pmap,
+      naam: name,
+      gebruikt: gebruiktCoach,
+    });
+  };
+
   return (
     <div>
       <header className="page-head">
@@ -279,7 +298,7 @@ export function Feed() {
         <div className="card">
           <EmptyState
             icon="🔎"
-            title="Niets in deze categorie."
+            title="Stilte in deze categorie."
             action={
               <button
                 type="button"
@@ -290,7 +309,7 @@ export function Feed() {
               </button>
             }
           >
-            Recent geen nieuws van dit soort bij jou en je vrienden.
+            Niemand heeft hier onlangs iets uitgespookt. Probeer een andere filter of ga zelf een balletje slaan!
           </EmptyState>
         </div>
       )}
@@ -299,15 +318,14 @@ export function Feed() {
         <div className="card">
           <EmptyState
             icon="📣"
-            title="Nog niets te melden."
+            title="Muisstille feed."
             action={
               <Link className="btn btn--primary" to="/vrienden">
-                Vrienden toevoegen
+                Vrienden zoeken
               </Link>
             }
           >
-            Zodra jij of je vrienden matches spelen (of er nieuwe
-            vriendschappen bijkomen) zie je het hier verschijnen.
+            Nog geen sappige updates. Zodra jij of je vrienden de baan op gaan of connecties leggen, verschijnt de actie hier!
           </EmptyState>
         </div>
       )}
@@ -334,13 +352,17 @@ export function Feed() {
                       myId={myId}
                       name={name}
                     />
-                    <CoachComment
-                      tekst={coachOpmerking(event, {
-                        intensiteitVoor,
-                        profiles: pmap,
-                        gebruikt: gebruiktCoach,
-                      })}
-                    />
+                    {event.kind === "evening" ? (
+                      <CoachMonologue lines={avondVerslag(event)} />
+                    ) : (
+                      <CoachComment
+                        tekst={coachOpmerking(event, {
+                          intensiteitVoor,
+                          profiles: pmap,
+                          gebruikt: gebruiktCoach,
+                        })}
+                      />
+                    )}
                   </li>
                 </Fragment>
               );
@@ -711,6 +733,25 @@ function CoachComment({ tekst }: { tekst: string | null }) {
       <div className="coach-comment__bubble">
         <span className="coach-comment__name">Coach Rudy</span>
         <span className="coach-comment__text">{tekst}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Coach Rudy's avondverslag (#204): dezelfde speech-bubble, maar met een korte
+ *  monoloog van meerdere zinnen. Rendert niets zonder verslag. */
+function CoachMonologue({ lines }: { lines: string[] }) {
+  if (lines.length === 0) return null;
+  return (
+    <div className="coach-comment">
+      <span className="coach-comment__mic" aria-hidden="true">🎙️</span>
+      <div className="coach-comment__bubble">
+        <span className="coach-comment__name">Coach Rudy · avondverslag</span>
+        {lines.map((l, i) => (
+          <span key={i} className="coach-comment__text">
+            {l}
+          </span>
+        ))}
       </div>
     </div>
   );

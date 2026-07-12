@@ -543,14 +543,14 @@ export function Leaderboard() {
           ) : (
             <EmptyState
               icon="🏆"
-              title="Nog geen afgeronde matches."
+              title="De trofeeënkast staat nog leeg."
               action={
                 <Link className="btn btn--primary" to="/matches">
                   Naar matches
                 </Link>
               }
             >
-              Het klassement vult zich zodra de eerste uitslag gelogd is.
+              Zodra de eerste wedstrijdscore binnenrolt, barst de strijd om de topposities los!
             </EmptyState>
           )
         ) : tab === "divisies" ? (
@@ -754,8 +754,7 @@ function KlassementUitleg() {
             <dd>
               Elke gewonnen match levert <strong>3 punten</strong> op, een
               gelijkspel <strong>1</strong> en een verlies <strong>0</strong>.
-              Punten zijn vooral zinvol binnen een afgebakende periode of
-              competitie, zoals een seizoen.
+              Punten zeggen vooral iets binnen één periode, zoals een seizoen.
             </dd>
           </div>
           <div>

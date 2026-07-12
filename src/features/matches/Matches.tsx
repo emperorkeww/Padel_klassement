@@ -131,7 +131,7 @@ export function Matches() {
           <div>
             <h1 className="page-title">Matches</h1>
             <p className="page-subtitle">
-              Plan een match, log een uitslag of bekijk recente wedstrijden.
+              Plan een match, log een uitslag of scroll door je matches.
             </p>
           </div>
           <div className="btn-row">
@@ -205,7 +205,7 @@ export function Matches() {
           (filter === "all" ? (
             <EmptyState
               icon="🎾"
-              title="Nog geen matches."
+              title="Je racket is nog ongebruikt."
               action={
                 <button
                   className="btn btn--primary"
@@ -215,7 +215,7 @@ export function Matches() {
                 </button>
               }
             >
-              Log je eerste uitslag en zie meteen je punten en rating groeien.
+              Vul je eerste wedstrijdscore in en kickstart direct je ranking en statistieken!
             </EmptyState>
           ) : (
             <p className="empty">{EMPTY_BY_FILTER[filter]}</p>
@@ -263,10 +263,10 @@ export function Matches() {
 
 /** Lege staat per filter: zeg wát er leeg is in plaats van een generiek zinnetje. */
 const EMPTY_BY_FILTER: Record<Filter, string> = {
-  all: "Nog geen matches.",
-  mine: "Geen matches met jou erin — log er eentje via de knop hierboven.",
-  won: "Nog geen gewonnen matches voor dit filter. De volgende pak je!",
-  lost: "Geen verloren matches voor dit filter. Lekker bezig!",
+  all: "Nog geen geschiedenis geschreven op deze baan.",
+  mine: "Je hebt zelf nog geen wedstrijden gespeeld — tijd om je racket te pakken!",
+  won: "Nog geen overwinningen in de boeken. De volgende match pak je ze!",
+  lost: "Geen enkele nederlaag te bekennen. Jij bent onverslaanbaar vandaag!",
 };
 
 function applyFilter(

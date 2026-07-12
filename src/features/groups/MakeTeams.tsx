@@ -175,11 +175,11 @@ export function MakeTeams({
         </div>
         <p className="card__subtitle">
           {format === "eerlijk" &&
-            "Elo-gebalanceerde teams uit de deelnemers — bekijk het voorstel hieronder en zet het klaar."}
+            "Elo-gebalanceerde teams: wij berekenen de meest evenwichtige teams op basis van jullie Elo. Klaar voor een eerlijke strijd?"}
           {format === "americano" &&
-            "Americano: wisselt de teams elke ronde af, zodat je zo veel mogelijk met en tegen verschillende spelers speelt."}
+            "Americano: iedereen speelt met en tegen iedereen. De ultieme mix-and-match vorm!"}
           {format === "mexicano" &&
-            "Mexicano: paart op basis van de stand — sterk speelt met zwak, tegen een gelijkwaardig duo."}
+            "Mexicano: dynamische paringen op basis van de live tussenstand — hoe beter je speelt, hoe zwaarder de tegenstand."}
         </p>
 
         <SpelvormUitleg />
@@ -274,32 +274,19 @@ function SpelvormUitleg() {
           <div>
             <dt>Eerlijk</dt>
             <dd>
-              Teams worden <strong>Elo-gebalanceerd</strong> samengesteld:
-              sterk speelt met zwak, zodat elke baan een spannende, gelijke
-              wedstrijd krijgt. Je ziet eerst een voorstel (met winstkans) en
-              zet dat daarna klaar als geplande matches.
+              Onze algoritmes puzzelen de meest <strong>evenwichtige duo's</strong> in elkaar op basis van jullie Elo. Sterk speelt met minder sterk, zodat elke match tot het einde spannend blijft. Je krijgt eerst een winstkans-prognose te zien voordat je de baan op gaat.
             </dd>
           </div>
           <div>
             <dt>Americano</dt>
             <dd>
-              Elke ronde krijg je een <strong>andere partner</strong> en andere
-              tegenstanders: de indeling houdt rekening met eerdere rondes zodat
-              je zo veel mogelijk met en tegen verschillende spelers speelt,
-              ongeacht de stand. Gezellig en gelijk verdeeld — ideaal voor een
-              ontspannen avond.
+              Iedereen wisselt constant door. De ideale mix-en-match vorm waarbij je elke ronde een <strong>nieuwe partner</strong> en andere tegenstanders treft. Geen tactisch gedoe met Elo of ranking, gewoon een ontspannen avond waarin je met iedereen een balletje slaat.
             </dd>
           </div>
           <div>
             <dt>Mexicano</dt>
             <dd>
-              De volgende ronde wordt <strong>op basis van de stand</strong>{" "}
-              gemaakt: spelers worden gerangschikt op punten (en saldo), en per
-              baan speelt de <strong>1e met de 4e</strong> tegen de{" "}
-              <strong>2e met de 3e</strong>. Zo blijven de wedstrijden spannend
-              en in balans. Je kunt pas een nieuwe Mexicano-ronde genereren als{" "}
-              <strong>alle uitslagen</strong> van de vorige ronde zijn ingevuld —
-              anders zou er op een halve stand gepaird worden.
+              De stand bepaalt je lot. De ranglijst wordt na elke ronde opgemaakt, en per baan speelt de <strong>top met de subtop</strong> (1 met 4 tegen 2 met 3). Hoe beter je presteert, hoe sterker je tegenstanders. Zorg dat alle uitslagen binnen zijn voor je de volgende ronde start!
             </dd>
           </div>
         </dl>

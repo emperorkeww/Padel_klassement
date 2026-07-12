@@ -17,9 +17,9 @@ export interface PiasPoster {
 
 /** Kort, brutaal onderschrift per reden. */
 const ONDERSCHRIFT: Record<PiasReden, string> = {
-  afdroging: "Beter volgende keer, kampioen.",
+  afdroging: "Aanwezigheidsprijs voor jou.",
   bagel: "Nul. Nul games. Autsj.",
-  "zwarte-reeks": "De reeks die maar niet wilde stoppen.",
+  "zwarte-reeks": "Verliezen met abonnement.",
   choke: "Papieren favoriet.",
 };
 
