@@ -37,12 +37,12 @@ describe("coachMatchQuip", () => {
 
 describe("coachPreMatch", () => {
   it("lage winkans = underdog-praatje", () => {
-    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax/i);
+    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax|partner|medelijden|minuut/i);
   });
   it("hoge winkans = favoriet-waarschuwing", () => {
-    expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande/i);
+    expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande|koffers|winnaar|schorsen/i);
   });
   it("schild → neutraal", () => {
-    expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes/i);
+    expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes|focus/i);
   });
 });

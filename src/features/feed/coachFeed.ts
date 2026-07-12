@@ -25,7 +25,7 @@ export interface CoachCtx {
 
 // Niet-roast pools (hype/felicitatie/leedvermaak): niet door het schild
 // beperkt, want het is commentaar op een gebeurtenis, geen persoonlijke sneer.
-const KAMPIOEN = [
+export const KAMPIOEN = [
   "Kampioen. Geniet ervan — het duurt nooit lang.",
   "De beker is voor jou. Maar laten we eerlijk zijn: de loting zat ook wel héél erg mee.",
   "Gefeliciteerd! Zelfs een blinde kip vindt wel eens een graantje.",
@@ -43,6 +43,8 @@ const KAMPIOEN = [
   "Eén zwaluw maakt de zomer niet, en één titel maakt je nog geen legende.",
   "Een schitterende titel! Die mag je trots naast mijn tactische masterplans in de kast zetten.",
   "Kampioen! De champagne staat koud, al had ik persoonlijk liever gezien dat je die pas na een zwaarbevochten 89e minuut had geopend.",
+  "Kampioen! Nu nog leren hoe je een fatsoenlijke fles champagne ontkurkt zonder de glazen wanden van de kooi te slopen.",
+  "Gefeliciteerd. Maar we weten allemaal dat je partner 90% van het tactische en fysieke zware werk heeft opgeknapt.",
 ] as const;
 
 const PROMOTIE = [
@@ -63,6 +65,8 @@ const PROMOTIE = [
   "Omhooggevlogen! Hopelijk heb je je parachute bij je.",
   "Gepromoveerd! Een uitstekende transitie, bijna net zo vloeiend als mijn omschakelingsmomenten op het WK.",
   "Een niveau omhoog! Zorg er wel voor dat je daar boven ook fatsoenlijk kan serveren, anders lig je er zo weer uit.",
+  "Promotie! Geniet van de uiterst tijdelijke roem voordat je hierna weer keihard naar beneden lazert.",
+  "Een trede omhoog op de ladder. Nu kun je op een nog chiquer niveau genadeloos afgedroogd worden.",
 ] as const;
 
 const DEGRADATIE = [
@@ -83,6 +87,8 @@ const DEGRADATIE = [
   "Een divisie gezakt. Misschien kun je daar wel eens een bal raken?",
   "Degradatie! Net zo pijnlijk als een vroege uitschakeling in de groepsfase. Maar goed, we geven gewoon de scheidsrechter de schuld.",
   "Omlaag gekelderd. Misschien moet je je tactiekbord eens een kwartslag draaien, wie weet helpt het.",
+  "Gedegradeerd! Geeft absoluut niks, in de kelderklasse hebben ze tenminste geen al te hoge verwachtingen van je.",
+  "Dalende lijn. Misschien moet je je tactiekbord eens omdraaien; het lijkt erop dat je de pijlen de verkeerde kant op had getekend.",
 ] as const;
 
 const REEKS = [
@@ -102,6 +108,8 @@ const REEKS = [
   "Op een wolk! Pas op dat je er niet in één keer vanaf dondert.",
   "Wat een overwinningsreeks! Heb je stiekem de tactiek van de Spanjaarden gekopieerd?",
   "Nog steeds aan het winnen. Ik heb in mijn notitieboekje gezocht naar een tactische verklaring, maar kon niks vinden.",
+  "Een winreeks! Zelfs de meest incapabele bondscoach zou dit niet meer durven verkloten.",
+  "Winst op winst. Heb je stiekem de banen korter laten maken of de netten verlaagd?",
 ] as const;
 
 const UPSET = [
@@ -120,6 +128,8 @@ const UPSET = [
   "Wie de toto op hen had gezet is nu rijk. Maar niemand deed dat natuurlijk.",
   "Een totale verrassing! De favorieten stonden erbij alsof ze tactisch volledig buitenspel gezet waren.",
   "Wat een stunt! Dit had zelfs de meest optimistische voetbalanalist niet durven voorspellen.",
+  "Underdog pakt de zege! De favorieten stonden erbij en keken ernaar alsof ze mijn persconferenties live moesten vertalen.",
+  "Voorspelling compleet aan diggelen. Een pijnlijk tactisch debacle voor de topfavoriet.",
 ] as const;
 
 const BAGEL = [
@@ -138,6 +148,8 @@ const BAGEL = [
   "Nul games. Dat is statistisch gezien bijna moeilijker dan één game winnen.",
   "Een bagel! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
   "Helemaal van de kaart geveegd. Mijn aantekeningen over deze set passen gemakkelijk op een postzegel.",
+  "6-0! Een droge afschminking. Zelfs met een blinde wissel in de 89e minuut had ik dit niet slechter gekund.",
+  "Nul games gepakt. Dat is statistisch gezien bijna een indrukwekkende kunstvorm op zich.",
 ] as const;
 
 const MONSTER = [
@@ -156,9 +168,11 @@ const MONSTER = [
   "Sloopwerkzaamheden op baan 1. Geen spaan heel gelaten van de tegenpartij.",
   "Een slachting! Dat is het soort meedogenloze overgangsspel dat we op het WK hadden moeten laten zien.",
   "Geen spaan heel gelaten. Dit niveau van dominantie is bijna onbeschoft, ik hou er wel van.",
+  "Een walkover! Zelfs mijn meest beruchte tactische WK-moderampen vallen in het niet bij deze totale slachting.",
+  "Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met gepast sadistisch genoegen.",
 ] as const;
 
-const KAMPIOEN_NEUTRAAL = [
+export const KAMPIOEN_NEUTRAAL = [
   "Kampioen. Sterke reeks, helder resultaat.",
   "Titel binnen. Netjes afgewerkt.",
   "Bovenaan geëindigd. Dat mag gezien worden.",

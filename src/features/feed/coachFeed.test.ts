@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { coachOpmerking, coachStemming, type CoachCtx } from "./coachFeed";
+import { coachOpmerking, coachStemming, type CoachCtx, KAMPIOEN, KAMPIOEN_NEUTRAAL } from "./coachFeed";
 import type { FeedEvent } from "../../lib/feed";
 import type { Match, Profile } from "../../lib/types";
 
@@ -59,7 +59,7 @@ describe("coachOpmerking", () => {
       playerId: "p1",
       seasonLabel: "Q2 2026",
     };
-    expect(coachOpmerking(e, ctx)).toContain("—");
+    expect(KAMPIOEN).toContain(coachOpmerking(e, ctx));
   });
 
   it("gebruikt neutrale kampioen-tekst bij een roast-schild", () => {
@@ -75,7 +75,7 @@ describe("coachOpmerking", () => {
       intensiteitVoor: () => "gemeen",
       profiles: { p1: { roast_schild: true } as Profile },
     };
-    expect(coachOpmerking(e, beschermd)).not.toContain("—");
+    expect(KAMPIOEN_NEUTRAAL).toContain(coachOpmerking(e, beschermd));
   });
 
   it("onderscheidt promotie en degradatie", () => {
