@@ -1,0 +1,60 @@
+/* "Fork me on GitHub"-corner-ribbon (#252) — bewust ingetogen: een klein,
+   schuin bladwijzertje in de rechterbovenhoek met enkel het GitHub-logo.
+   De clip-laag vangt geen kliks (pointer-events: none) zodat alleen de band
+   klikbaar is en de rest van de hoek doorlaat. */
+.gh-ribbon {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 104px;
+  height: 104px;
+  overflow: hidden;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.gh-ribbon__band {
+  position: absolute;
+  top: 22px;
+  right: -36px;
+  width: 132px;
+  padding: 4px 0;
+  transform: rotate(45deg);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+
+  /* Ingetogen: iets teruggenomen dekking, zodat het niet schreeuwt. */
+  opacity: 0.82;
+  pointer-events: auto;
+  transition: opacity 0.15s ease;
+}
+
+.gh-ribbon__mark {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.gh-ribbon__band:hover,
+.gh-ribbon__band:focus-visible {
+  opacity: 1;
+}
+
+.gh-ribbon__band:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Mobiel (≤ 720px): daar staat de avatar rechtsboven in de topbalk — verberg
+   de ribbon om overlap te voorkomen. Boven 720px is de hoek vrij. */
+@media (max-width: 720px) {
+  .gh-ribbon {
+    display: none;
+  }
+}

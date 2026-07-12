@@ -6,6 +6,7 @@ import { getProfile, displayName } from "../features/profiles/api";
 import { useTierAnnouncement } from "../features/standings/useTierAnnouncement";
 import { Avatar } from "./Avatar";
 import { BallIcon } from "./BallIcon";
+import { GithubRibbon } from "./GithubRibbon";
 import "./ui.css";
 import "./DashboardLayout.css";
 
@@ -57,6 +58,9 @@ export function DashboardLayout() {
       <a href="#content" className="skip-link">
         Naar inhoud
       </a>
+      {/* Open source-signaal: schuine GitHub-ribbon in de rechterbovenhoek
+          (#252). Enkel op desktop; op mobiel staat daar de avatar. */}
+      <GithubRibbon />
       {/* Mobiele topbalk: merk links, eigen avatar (naar profiel) rechts. */}
       <header className="topbar">
         <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
