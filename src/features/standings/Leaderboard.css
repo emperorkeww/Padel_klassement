@@ -111,6 +111,12 @@
   white-space: nowrap;
 }
 
+/* "Jouw rij" krijgt dezelfde linker accentbalk als in de mobiele lijst.
+   inset box-shadow i.p.v. border: raakt de border-collapse-layout niet. */
+.leaderboard-table tr.is-me td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 /* W·G·V in één cel; winst krijgt het accent, de rest blijft gedempt. */
 .record-cell {
   color: var(--ink-soft);
@@ -237,27 +243,40 @@
 .ranklist__row:last-child {
   border-bottom: none;
 }
+/* "Jouw rij" springt eruit: accentvlak + linkerbalk. Wint bewust van een
+   top-3 tint — "waar sta ik" weegt zwaarder dan de medaille. */
 .ranklist__row.is-me .ranklist__link {
   background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);
 }
+/* Rij als 2-regelig grid: rang | avatar | naam+meta | hoofdgetal.
+   Rang, avatar en hoofdgetal overspannen beide regels; de naam staat boven,
+   de meta-regel (tier + vorm + record) eronder — zo hoeft niets meer op één
+   krappe regel te vechten. */
 .ranklist__link {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--sp-3);
+  column-gap: var(--sp-3);
+  row-gap: 0.15rem;
   padding: var(--sp-3) var(--sp-2);
+  min-height: 56px;
   text-decoration: none;
   color: inherit;
-  min-width: 0;
 }
 .ranklist__rank {
-  flex-shrink: 0;
+  grid-row: 1 / 3;
+}
+.ranklist__link > .avatar {
+  grid-row: 1 / 3;
 }
 .ranklist__main {
-  flex: 1;
+  grid-column: 3;
+  grid-row: 1 / 3;
   min-width: 0;
   display: grid;
-  gap: 0.2rem;
+  row-gap: 0.15rem;
 }
 .ranklist__name {
   display: inline-flex;
@@ -270,29 +289,50 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ranklist__sub {
-  display: inline-flex;
+/* Meta mag als laatste redmiddel wrappen i.p.v. afkappen. */
+.ranklist__meta {
+  display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  min-width: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
-  /* Eén regel: chips + record wrappen niet, het record kapt netjes af. */
-  min-width: 0;
+}
+.ranklist__meta .formchips,
+.ranklist__meta .tier-badge {
+  flex-shrink: 0;
+}
+.ranklist__record {
   white-space: nowrap;
 }
-.ranklist__sub > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ranklist__sub .formchips {
-  flex-shrink: 0;
-}
 .ranklist__end {
-  flex-shrink: 0;
+  grid-column: 4;
+  grid-row: 1 / 3;
   display: grid;
   justify-items: end;
   gap: 0.1rem;
+}
+/* Rang-badge in de lijst is een echte medaille (groter/rond dan in de tabel). */
+.ranklist .rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: var(--fs-md);
+}
+/* Top-3 krijgt een subtiele medaille-tint + gekleurde linkerbalk. */
+.ranklist__row--top1 .ranklist__link {
+  border-left: 3px solid var(--bigdaddy);
+  background: radial-gradient(120% 140% at 0 0, var(--bigdaddy-soft) 0%, transparent 60%);
+}
+.ranklist__row--top2 .ranklist__link {
+  border-left: 3px solid var(--silver);
+  background: radial-gradient(120% 140% at 0 0, var(--silver-soft) 0%, transparent 60%);
+}
+.ranklist__row--top3 .ranklist__link {
+  border-left: 3px solid var(--bronze);
+  background: radial-gradient(120% 140% at 0 0, var(--bronze-soft) 0%, transparent 60%);
 }
 /* Hoofdgetal rechts: rating bij spelers, punten bij teams (#139). */
 .ranklist__lead {
@@ -315,11 +355,14 @@
   right: var(--sp-4);
   bottom: var(--sp-6);
   z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--sp-2) var(--sp-4);
-  border: 1px solid var(--accent-line);
+  border: 1px solid var(--accent);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
   font-family: inherit;
   font-size: var(--fs-sm);
   font-weight: 700;
@@ -329,32 +372,186 @@
   transition: background 0.15s, transform 0.1s;
 }
 .me-chip:hover {
-  background: var(--accent-soft);
+  background: var(--accent-hover);
   transform: translateY(-1px);
 }
+@media (prefers-reduced-motion: reduce) {
+  .me-chip {
+    transition: none;
+  }
+  .me-chip:hover {
+    transform: none;
+  }
+}
 
-/* Op smallere schermen wint de rest van de tabel; het volledige verloop
-   staat toch op de profielpagina. */
-@media (max-width: 960px) {
+/* De desktoptabel past zich aan de BREEDTE VAN ZIJN EIGEN CONTAINER aan
+   (niet aan de viewport): met een brede zij-navigatie is de kaart smaller dan
+   het venster, en juist dan ontstond de horizontale scrollbalk. Naarmate de
+   ruimte krap wordt vallen achtereenvolgens de decoratieve sparkline, de
+   winrate-balk en tot slot de Saldo-kolom weg — de getallen zelf blijven.
+   Op brede schermen blijft alles staan. */
+.leaderboard-table {
+  container-type: inline-size;
+  container-name: lb-table;
+}
+@container lb-table (max-width: 1060px) {
   .rating-wrap .sparkline {
     display: none;
   }
 }
+@container lb-table (max-width: 1010px) {
+  .leaderboard-table .winrate__bar {
+    display: none;
+  }
+}
+@container lb-table (max-width: 980px) {
+  .leaderboard-table .col-saldo {
+    display: none;
+  }
+}
+@container lb-table (max-width: 940px) {
+  .leaderboard-table .col-played {
+    display: none;
+  }
+}
 
-/* ---------- Mobiel ---------- */
-@media (max-width: 640px) {
-  /* Tabel maakt plaats voor de ranglijst; niets wordt verstopt of afgekapt. */
+/* ---------- Tabel ⇄ ranglijst-omschakeling ----------
+   Gestuurd door de BESCHIKBARE BREEDTE van de kaart (container query), niet de
+   viewport: met een brede zij-nav is de kaart smaller dan het venster, en juist
+   dan liep de tabel over. Onder ~820px kaartbreedte tonen we de compacte
+   ranglijst i.p.v. de tabel — zo verschijnt er nooit een horizontale scrollbar. */
+.standings-switch {
+  container-type: inline-size;
+  container-name: standings;
+}
+@container standings (max-width: 820px) {
   .leaderboard-table {
     display: none;
   }
   .ranklist {
     display: block;
   }
-  /* Boven de vaste onderbalk blijven. */
+}
+
+/* Boven de vaste onderbalk blijven (die verschijnt bij de shell-switch ≤720px). */
+@media (max-width: 720px) {
   .me-chip {
     bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
+}
 
+/* Kop van het klassement: tabs links, en rechts één menuknop die zoeken én
+   alle filters in een uitklappaneel bundelt. Zo blijft de balk rustig en
+   krijgen de tabs alle aandacht. */
+.lb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.lb-toolbar .tabs {
+  flex: 0 0 auto;
+  /* De generieke .tabs heeft een ondermarge; in deze rij hoort hij niet. */
+  margin: 0;
+}
+/* Zoekbalk vult de ruimte tussen de tabs en de filterknop. */
+.lb-toolbar .lb-search {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* Menuknop (hamburger) + uitklappaneel. */
+.lb-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+.lb-menu__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.lb-menu__btn::-webkit-details-marker {
+  display: none;
+}
+.lb-menu__btn:hover {
+  background: var(--surface-2);
+}
+.lb-menu[open] .lb-menu__btn,
+.lb-menu__btn:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.lb-menu__icon {
+  flex-shrink: 0;
+}
+
+/* Paneel klapt open als dropdown onder de knop, rechts uitgelijnd. */
+.lb-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 20;
+  width: min(340px, 92vw);
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.lb-menu__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+/* Alle velden in het paneel vullen de volle breedte. */
+.lb-menu__panel .lb-search {
+  width: 100%;
+}
+.lb-menu__panel .select--filter,
+.lb-menu__panel .lb-date {
+  max-width: none;
+  width: 100%;
+}
+.lb-menu__preset {
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  /* Ook op mobiel alles op één lijn: tabs (mogen intern scrollen) + zoekbalk
+     die de rest vult + de filterknop als compact icoon. */
+  .lb-toolbar {
+    flex-wrap: nowrap;
+  }
+  .lb-toolbar .tabs {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .lb-toolbar .lb-search {
+    flex: 1 1 60px;
+  }
+  /* Filterknop wordt icoon-only zodat alles op de regel past. */
+  .lb-menu__btn {
+    padding: var(--sp-2);
+  }
+  .lb-menu__label {
+    display: none;
+  }
 }
 
 /* "Stand op datum"-controls in de toolbar. */
@@ -373,28 +570,7 @@
   font-size: var(--fs-sm);
 }
 
-/* Geavanceerde filters achter een uitklap (#71). */
-.lb-filters > summary {
-  cursor: pointer;
-  list-style: none;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-soft);
-  background: var(--surface);
-}
-.lb-filters > summary::-webkit-details-marker {
-  display: none;
-}
-.lb-filters[open] > summary {
-  border-color: var(--accent-line);
-  color: var(--accent);
-}
+/* Telbadge op de filterknop (#71). */
 .lb-filters__count {
   display: inline-grid;
   place-items: center;
@@ -405,13 +581,6 @@
   color: var(--accent-ink);
   font-size: var(--fs-xs);
   font-weight: 700;
-}
-.lb-filters__body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--sp-3);
-  padding-top: var(--sp-3);
 }
 .lb-filters__field {
   display: grid;
@@ -541,7 +710,7 @@
 
 /* Mobiel: de promotie-banner stapelt netjes en de secties staan dichter op
    elkaar zodat er meer divisies tegelijk in beeld passen. */
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .tier-progress {
     flex-direction: column;
     align-items: flex-start;
@@ -561,7 +730,6 @@
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: var(--sp-5);
 }
 .lb-search__icon {
   position: absolute;
@@ -618,13 +786,6 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-@media (min-width: 720px) {
-  /* Op desktop niet absurd breed: een comfortabele zoekbreedte, links uitgelijnd. */
-  .lb-search {
-    max-width: 460px;
-  }
-}
-
 /* "Ook gevonden": vindbare spelers buiten de ranglijst, met profiel-link. */
 .lb-extra {
   margin-top: var(--sp-4);
