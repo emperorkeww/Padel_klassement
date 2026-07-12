@@ -56,7 +56,7 @@ export function ProfileSettings() {
     <div>
       <header className="page-head">
         <h1 className="page-title">Profiel</h1>
-        <p className="page-subtitle">Beheer je gegevens en accountinstellingen.</p>
+        <p className="page-subtitle">Je foto, naam en de rest van je account.</p>
       </header>
 
       <AccountNav />
@@ -362,7 +362,7 @@ function PrivacyCard({ userId }: { userId: string }) {
     <section className="card">
       <h2 className="card__title card__title--tight">Privacy</h2>
       <p className="card__subtitle">
-        Bepaal wie je kan vinden en of anderen je verzoeken mogen sturen.
+        Kies wie je kan vinden en verzoeken mag sturen.
       </p>
       {privacy.loading || !p ? (
         <Skeleton rows={2} />

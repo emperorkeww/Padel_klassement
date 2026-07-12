@@ -13,7 +13,7 @@ const ROASTS = [
   "iedereen is z'n padelkindje",
   "buigt de baan naar z'n hand",
   "wie is je vaderfiguur?",
-  "de baas van de baan — letterlijk",
+  "de baas van de baan, punt",
   "de rest? kanonnenvoer",
   "papa is thuis",
 ] as const;

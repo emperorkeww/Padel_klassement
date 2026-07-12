@@ -812,7 +812,7 @@ export function deriveBadges(
       id: "diplomaat",
       naam: "Diplomaat",
       emoji: "🤝",
-      omschrijving: "Speel een match gelijk — soms is delen ook winnen.",
+      omschrijving: "Speel een match gelijk — niemand die durft te winnen.",
       behaald: feiten.gelijk >= 1,
     },
     {
@@ -1182,7 +1182,7 @@ export function deriveBadges(
       id: "valentijnsdate",
       naam: "Valentijnsdate",
       emoji: "💘",
-      omschrijving: "Speel een match op Valentijnsdag — liefde voor het spel.",
+      omschrijving: "Speel op Valentijn — je racket is toch je enige date.",
       behaald: feiten.valentijn,
     },
     {

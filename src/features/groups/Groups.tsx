@@ -161,7 +161,7 @@ export function Groups() {
       <header className="page-head">
         <h1 className="page-title">Spelen</h1>
         <p className="page-subtitle">
-          Van moment prikken tot uitslag — je groepen zijn het vertrekpunt.
+          Hier regel je met wie en wanneer je speelt.
         </p>
       </header>
 
