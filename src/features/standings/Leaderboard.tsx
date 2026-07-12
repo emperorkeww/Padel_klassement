@@ -28,7 +28,8 @@ import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "../../lib/pias";
-import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import { roastCtx, roastSeed, type RoastCtx } from "../../lib/roastTone";
+import { CoachSneer } from "../../components/CoachSneer";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
 import { TierBadge } from "../../components/TierBadge";
@@ -220,7 +221,10 @@ export function Leaderboard() {
       naam: displayName(profile),
       winChance: pias.winChance,
       beschermd: profile?.roast_schild ?? false,
-      sneer: sneerSuffix(ctx, roastSeed(pias.playerId, pias.weekStart)),
+      // Coach Rudy spreekt nu als geattribueerde spreker (#287): geef de
+      // context + seed door i.p.v. een kant-en-klare 🎙️-string.
+      ctx,
+      seed: roastSeed(pias.playerId, pias.weekStart),
     };
   }, [groupId, piasWeeks.data, profilesMap.data, groups.data]);
 
@@ -750,20 +754,23 @@ function TierProgressBanner({ rating }: { rating: number | null }) {
 function PiasBanner({
   pias,
 }: {
-  pias: { naam: string; winChance: number; beschermd: boolean; sneer: string };
+  pias: { naam: string; winChance: number; beschermd: boolean; ctx: RoastCtx; seed: number };
 }) {
   return (
-    <p className="pias-banner" role="status">
-      <span className="pias-banner__nose" aria-hidden="true">
-        {pias.beschermd ? "📊" : "🤡"}
-      </span>
-      <span>
-        {pias.beschermd ? "Opvallende week" : "Pias van de week"}:{" "}
-        <strong>{pias.naam}</strong> — verloor als{" "}
-        {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
-        {Math.round(pias.winChance * 100)}%).{pias.sneer}
-      </span>
-    </p>
+    <div className="pias-banner" role="status">
+      <p className="pias-banner__line">
+        <span className="pias-banner__nose" aria-hidden="true">
+          {pias.beschermd ? "📊" : "🤡"}
+        </span>
+        <span>
+          {pias.beschermd ? "Opvallende week" : "Pias van de week"}:{" "}
+          <strong>{pias.naam}</strong> — verloor als{" "}
+          {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
+          {Math.round(pias.winChance * 100)}%).
+        </span>
+      </p>
+      <CoachSneer ctx={pias.ctx} seed={pias.seed} size={26} />
+    </div>
   );
 }
 

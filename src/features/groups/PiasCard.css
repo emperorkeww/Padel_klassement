@@ -25,16 +25,55 @@
 }
 
 .pias-card__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
   font-weight: 700;
   font-size: var(--fs-md, 1rem);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 
 .pias-card__detail {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
+}
+
+/* Onderscheid tussen de twee schande-kaarten (#287): een accent-rand links plus
+   een rol-badge naast de naam, zodat de Pias (maandelijkse afgang, reset per
+   periode) en de Zwarte Piet (rondgaand token) niet meer identiek ogen. */
+.pias-card--pias {
+  border-left: 3px solid var(--warn-line);
+}
+.pias-card--piet {
+  border-left: 3px solid var(--danger-line);
+}
+
+.pias-card__lede {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.pias-card__role {
+  flex-shrink: 0;
+  padding: 1px var(--sp-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.pias-card__role--pias {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+}
+.pias-card__role--piet {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
 }
 
 .pias-card__meta {
