@@ -131,3 +131,67 @@
   font-style: italic;
   color: var(--ink-soft);
 }
+
+/* ── Coach Rudy: ⓘ op de bubble + kennismaking-kaart (#212) ─────────────── */
+.coach-comment__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.coach-comment__info {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+  opacity: 0.7;
+}
+.coach-comment__info:hover {
+  color: var(--coach);
+  opacity: 1;
+}
+
+.coach-intro {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border-color: var(--coach-line);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--coach-soft) 0%, transparent 60%),
+    var(--surface);
+}
+.coach-intro__close {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+.coach-intro__body {
+  min-width: 0;
+}
+.coach-intro__title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-lg);
+  color: var(--coach);
+}
+.coach-intro__text {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.coach-intro__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}

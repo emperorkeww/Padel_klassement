@@ -1,0 +1,27 @@
+.coach-about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.coach-about__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.coach-about__lead {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+.coach-about__controls {
+  margin: 0;
+  padding-left: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.coach-about__controls strong {
+  color: var(--coach);
+}
