@@ -1,8 +1,9 @@
 import { supabase } from "../../lib/supabase";
 import { invalidate } from "../../lib/queryCache";
+import type { RoastIntensiteit } from "../../lib/types";
 
 /** Privacy-instellingen van het profiel (kolommen uit migratie 20260707162000,
- *  roast_schild uit 20260711202439). */
+ *  roast_schild uit 20260711202439, roast_intensiteit uit 20260712223224). */
 export interface Privacy {
   /** Verschijn je in het zoeken naar spelers? */
   discoverable: boolean;
@@ -11,6 +12,10 @@ export interface Privacy {
   /** Roast-schild (#183): aan → het systeem roast je niet meer (neutrale
    *  variant overal). Default 'false' = schild neer. */
   roast_schild: boolean;
+  /** Persoonlijke roast-intensiteit (#183) voor je eigen feed en dashboard, los
+   *  van de per-groep instelling van een eigenaar. Default 'gemeen'. Het schild
+   *  overrulet dit: staat het aan, dan geen spot ongeacht de intensiteit. */
+  roast_intensiteit: RoastIntensiteit;
 }
 
 /** Haalt de privacy-instellingen van de gebruiker op (default = alles open). */
@@ -30,6 +35,8 @@ export async function getPrivacy(userId: string): Promise<Privacy> {
     allow_friend_requests:
       (row.allow_friend_requests as boolean | undefined) ?? true,
     roast_schild: (row.roast_schild as boolean | undefined) ?? false,
+    roast_intensiteit:
+      (row.roast_intensiteit as RoastIntensiteit | undefined) ?? "gemeen",
   };
 }
 

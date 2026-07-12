@@ -38,10 +38,16 @@ export function CoachAbout({
           .
         </li>
         <li>
-          <strong>🎙️ Roast-intensiteit</strong> — de eigenaar van een groep bepaalt
-          hoe hard Rudy die groep roast (mild · gemeen · radioactief), via de{" "}
+          <strong>🎙️ Roast-intensiteit</strong> — hoe hard Rudy roast (mild ·
+          gemeen · geen genade), op twee niveaus. De eigenaar van een groep
+          bepaalt de toon binnen díe groep via de{" "}
           <Link to="/spelen" onClick={onNavigate}>
             groep-instellingen
+          </Link>
+          . Voor je eigen feed en dashboard stel je je persoonlijke intensiteit
+          in bij je{" "}
+          <Link to="/profiel" onClick={onNavigate}>
+            profiel-instellingen
           </Link>
           .
         </li>

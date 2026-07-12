@@ -18,6 +18,7 @@ import {
 } from "./api";
 import { AccountNav } from "../../components/AccountNav";
 import { CoachAbout } from "../../components/CoachAbout";
+import type { RoastIntensiteit } from "../../lib/types";
 import { formatDate } from "../../lib/format";
 import { errorMessage } from "../../lib/errors";
 import {
@@ -421,6 +422,29 @@ function PrivacyCard({ userId }: { userId: string }) {
               disabled={busy}
               onChange={(e) => set({ roast_schild: e.target.checked })}
             />
+          </label>
+          <label className="toggle-row">
+            <span className="toggle-row__text">
+              <span className="toggle-row__label">Roast-intensiteit 🎙️</span>
+              <span className="toggle-row__hint">
+                Hoe hard Coach Rudy jóu in je eigen feed en dashboard toespreekt.
+                De toon binnen een groep bepaalt de eigenaar apart. Zet je het
+                roast-schild aan, dan word je hoe dan ook gespaard.
+              </span>
+            </span>
+            <select
+              className="select"
+              aria-label="Roast-intensiteit"
+              value={p.roast_intensiteit}
+              disabled={busy || p.roast_schild}
+              onChange={(e) =>
+                set({ roast_intensiteit: e.target.value as RoastIntensiteit })
+              }
+            >
+              <option value="mild">Mild</option>
+              <option value="gemeen">Gemeen</option>
+              <option value="radioactief">Geen genade</option>
+            </select>
           </label>
         </div>
       )}

@@ -22,8 +22,8 @@ export function CoachIntro({ onDismiss }: { onDismiss: () => void }) {
           Vanaf nu becommentarieert {COMMENTATOR.naam} je feed. Vers van de Rode Duivels op het WK 2026,
           waar hij de natie verraste met zijn vreemde wissels, zijn obsessieve gekrabbel in een
           notitieboekje en zijn bizarre gedrag langs de lijn. Hij bejubelt je zeges en fileert je chokes
-          met dezelfde "briljante" tactische visie. Te veel van het goede? Je kunt hem per groep doseren
-          of jezelf afschermen met een roast-schild.
+          met dezelfde "briljante" tactische visie. Te veel van het goede? Stel je eigen roast-intensiteit
+          in of scherm jezelf helemaal af met een roast-schild — allebei bij je profiel.
         </p>
         <div className="coach-intro__actions">
           <Link className="btn btn--sm" to="/profiel">

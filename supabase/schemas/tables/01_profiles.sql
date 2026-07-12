@@ -19,6 +19,11 @@ create table public.profiles (
   -- meer — pias/feed/profiel tonen dan een neutrale, feitelijke variant. Default
   -- 'false' = schild neer = bestaand gedrag.
   roast_schild boolean not null default false,
+  -- Persoonlijke roast-intensiteit (#183): hoe hard Coach Rudy de speler in zijn
+  -- eigen feed en dashboard toespreekt. Los van de per-groep intensiteit (die de
+  -- eigenaar zet); deze bepaalt enkel niet-groep-gescoopte, persoonlijke roasts.
+  -- Default 'gemeen' = bestaand gedrag. Het schild blijft de harde opt-out.
+  roast_intensiteit public.roast_intensiteit not null default 'gemeen',
   -- Gastspeler zonder account, en (voor een gast) de speler die hem aanmaakte.
   is_guest boolean not null default false,
   owner_id uuid references auth.users (id) on delete cascade,

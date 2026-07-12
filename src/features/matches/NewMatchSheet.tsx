@@ -18,7 +18,7 @@ import {
   type SetPair,
 } from "./api";
 import { SetScoresInput } from "./SetScoresInput";
-import type { Profile } from "../../lib/types";
+import type { Profile, RoastIntensiteit } from "../../lib/types";
 
 export type NewMatchMode = "score" | "plan";
 
@@ -31,6 +31,7 @@ export function NewMatchSheet({
   players,
   mode = "score",
   groupId,
+  intensiteit = "gemeen",
   onClose,
   onCreated,
   onGuestCreated,
@@ -41,6 +42,9 @@ export function NewMatchSheet({
   /** Als gezet: de match wordt aan deze groep gekoppeld (telt mee in de
    *  groepsstand en avondsamenvatting). */
   groupId?: string | null;
+  /** Roast-toon van de groep waarin gelogd wordt (#183), voor Coach Rudy's
+   *  reactie op je eigen uitslag. Buiten groepscontext valt hij op `gemeen`. */
+  intensiteit?: RoastIntensiteit;
   onClose: () => void;
   onCreated: () => void;
   /** Aangeroepen nadat een gastspeler is aangemaakt, zodat de ouder zijn
@@ -266,7 +270,7 @@ export function NewMatchSheet({
               bagel: sa !== sb && Math.min(sa!, sb!) === 0,
               seed: `${myId}-${sa}-${sb}`,
               ctx: {
-                intensiteit: "gemeen",
+                intensiteit,
                 schild: byId(myId)?.roast_schild ?? false,
               },
             })

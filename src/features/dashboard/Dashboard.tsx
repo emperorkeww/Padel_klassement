@@ -282,8 +282,9 @@ export function Dashboard() {
     ? ((groups.data ?? []).find((g) => g.id === nextMatch.group_id)?.name ?? null)
     : null;
   // Coach Rudy's ochtendpraatje (#213): één regel over vandaag, gevoed door je
-  // reeks/positie/volgende match. Respecteert je roast-schild; op het dashboard
-  // (niet groep-gescoopt) hanteren we de standaard-intensiteit.
+  // reeks/positie/volgende match. Het dashboard is persoonlijk (niet groep-
+  // gescoopt), dus het volgt jóuw eigen profiel-intensiteit (#183) — net als de
+  // feed — en respecteert je roast-schild.
   const coachBriefingTekst = me
     ? coachBriefing({
         rank,
@@ -292,7 +293,7 @@ export function Dashboard() {
         heeftMatch: !!nextMatch,
         seed: `${myId}-${new Date().toISOString().slice(0, 10)}`,
         ctx: {
-          intensiteit: "gemeen",
+          intensiteit: myProfile?.roast_intensiteit ?? "gemeen",
           schild: myProfile?.roast_schild ?? false,
         },
       })

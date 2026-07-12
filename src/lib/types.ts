@@ -21,6 +21,11 @@ export interface Profile {
    *  neutrale variant i.p.v. spot. Kolom bestaat in de DB, nog niet in
    *  database.types.ts — daarom optioneel; ontbreekt/false = schild neer. */
   roast_schild?: boolean;
+  /** Persoonlijke roast-intensiteit voor de feed en het dashboard (#183): de
+   *  speler kiest zelf hoe hard Coach Rudy hém in zijn eigen feed toespreekt,
+   *  los van de groep-instelling van een eigenaar. Kolom bestaat in de DB, nog
+   *  niet in database.types.ts — daarom optioneel; ontbreekt = 'gemeen'. */
+  roast_intensiteit?: RoastIntensiteit;
   created_at: string;
 }
 
