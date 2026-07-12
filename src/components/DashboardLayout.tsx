@@ -13,15 +13,15 @@ import "./DashboardLayout.css";
 type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
 
 // Taakgerichte navigatie (#106): vier taken i.p.v. zeven datatabellen.
-// Matches en Banen blijven als routes bestaan (bereikbaar bínnen de flow);
-// de zijbalk toont ze als secundaire items, de mobiele balk niet meer (#69:
-// Ik/Vrienden zijn nu wél direct bereikbaar).
+// Matches is het primaire schrijf-scherm (plannen + loggen + "Te spelen"), dus
+// het heet gewoon "Matches" — gelijk aan de pagina-H1 — en staat als vaste tab
+// op mobiel (#274). Banen blijft bereikbaar bínnen de flow (Spelen-hub/zijbalk).
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
 const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket /> };
 const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
-const MATCHES: NavItem = { to: "/matches", label: "Matcharchief", icon: <IconUsers /> };
+const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
 
@@ -33,10 +33,11 @@ const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
-// (2 links · bal · 2 rechts). Vrienden is één tik bereikbaar (#69); profiel
-// zit achter de avatar rechtsboven en Banen in de plan-flow/Spelen-hub —
-// de vijfde plek is voor de Feed (#120).
-const TABBAR: NavItem[] = [SPELEN, KLASSEMENT, OVERZICHT, VRIENDEN, FEED];
+// (2 links · bal · 2 rechts). Links de speel-acties (Spelen · Matches), rechts
+// competitie/sociaal (Klassement · Feed). Matches krijgt hier een vaste plek
+// als primair schrijf-scherm (#274); Vrienden schuift naar de zijbalk en is nog
+// één tik weg via de avatar/profiel en de "verzoeken"-chip op het overzicht.
+const TABBAR: NavItem[] = [SPELEN, MATCHES, OVERZICHT, KLASSEMENT, FEED];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
@@ -188,12 +189,15 @@ function IconCourt() {
     </svg>
   );
 }
-function IconUsers() {
+// Matches: twee gekruiste rackets — "een duel/wedstrijd", duidelijk anders dan
+// de enkele racket (Spelen) en de mens-iconen (Vrienden).
+function IconMatch() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3 20a6 6 0 0 1 12 0" />
-      <path d="M16 5.5a3 3 0 0 1 0 5.5M17 20a6 6 0 0 0-3-5.2" />
+      <ellipse cx="8" cy="8" rx="3.4" ry="4" transform="rotate(-30 8 8)" />
+      <path d="m9.7 11 4.3 8" />
+      <ellipse cx="16" cy="8" rx="3.4" ry="4" transform="rotate(30 16 8)" />
+      <path d="m14.3 11-4.3 8" />
     </svg>
   );
 }
