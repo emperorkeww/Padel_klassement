@@ -30,27 +30,29 @@
   padding: 0 var(--sp-1);
 }
 
-/* Eén compacte feedregel (vriendschap, gepland, groep, poll, klassement,
-   kampioen): zelfde kaartvorm als een matchkaart, maar één regel. */
+/* Eén lichte feedregel (vriendschap, gepland, groep, poll): routine-nieuws dat
+   terugtreedt — géén volle kaart, maar een compacte regel (#232 PR D). */
 .feed-line {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: transparent;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .feed-line:hover {
-  border-color: var(--accent-line);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  background: var(--surface-2);
+  border-color: var(--line);
 }
 .feed-line__icon {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
 }
 .feed-line__avatars {
   display: inline-flex;
@@ -59,8 +61,12 @@
   margin-left: -8px;
 }
 .feed-line__text {
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
   min-width: 0;
+}
+.feed-line__text strong {
+  color: var(--ink);
 }
 /* Klok-tijd rechts op een feedregel; het dag-kopje geeft de dag al. */
 .feed-line__time {
@@ -356,3 +362,46 @@
 .ev-duo strong { color: var(--ink); }
 
 .feed-evening .coach-comment { margin: 0 14px 12px; }
+
+/* ===== #232 PR D: verstrakte match-kaart + ingetoomde Coach Rudy ===== */
+/* Feed-scoped (alleen binnen .feed-match): de gedeelde match-kaart compacter,
+   zonder de kaart op andere schermen te raken. */
+.feed-match .match-card {
+  padding: var(--sp-2) var(--sp-3);
+}
+.feed-match .match-card__mid {
+  gap: 1px;
+}
+
+/* Coach Rudy intro-banner blijft, maar compacter en minder dominant. */
+.card.coach-intro {
+  padding: var(--sp-3) var(--sp-4);
+}
+.coach-intro__title {
+  font-size: var(--fs-md);
+}
+.coach-intro__text {
+  margin-bottom: var(--sp-2);
+}
+
+/* Coach-commentaar iets strakker onder een item. */
+.coach-comment__bubble {
+  padding: 6px var(--sp-2);
+}
+
+/* Match-kaart in de feed: winnaarskant subtiel getint + set-lijn als chip,
+   zodat winnaar en sets in één oogopslag leesbaar zijn (feed-scoped). */
+.feed-match .match-card__side {
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-sm);
+}
+.feed-match .match-card__side.is-win {
+  background: var(--success-soft);
+}
+.feed-match .match-card__sets {
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px var(--sp-2);
+}
