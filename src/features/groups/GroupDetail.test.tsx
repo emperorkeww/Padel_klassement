@@ -101,10 +101,10 @@ describe("<GroupDetail />", () => {
     ).not.toBeInTheDocument();
     // Er loopt al een poll (fixtures) → de kaart verwijst daarnaar.
     expect(
-      await screen.findByText(/er loopt een speeldag-poll/i),
+      await screen.findByText(/speeldag-poll actief/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /ga naar de poll/i }),
+      screen.getByRole("link", { name: /breng je stem uit/i }),
     ).toBeInTheDocument();
     // Eén teamgenerator: deelnemers uit de poll van vandaag, formaatkeuze.
     expect(

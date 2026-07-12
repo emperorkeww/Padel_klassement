@@ -831,7 +831,7 @@ export function Dashboard() {
           {rival && (
             <section className="card rival-card">
               <div className="card__head">
-                <h2 className="card__title">Jouw rivaal</h2>
+                <h2 className="card__title">Aartsrivaal ⚔️</h2>
                 <Link className="profile-link" to={`/spelers/${rival.oppId}`}>
                   Profiel →
                 </Link>
@@ -1187,7 +1187,7 @@ function rivalVerdict(rec: RivalRec): "lead" | "trail" | "even" {
 
 function rivalVerdictLabel(rec: RivalRec): string {
   const v = rivalVerdict(rec);
-  return v === "lead" ? "jij leidt" : v === "trail" ? "jij volgt" : "gelijk";
+  return v === "lead" ? "jij domineert" : v === "trail" ? "heeft jou liggen" : "onbeslist 🥊";
 }
 
 /** Uitslagen van de laatste speeldag als die vandaag of gisteren was. */
