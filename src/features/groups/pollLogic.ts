@@ -65,23 +65,49 @@ export function tallyOption(
 }
 
 /**
- * De poll die de groepspagina toont: een open of gelockte poll (nieuwste
- * eerst), anders een geboekte waarvan het gekozen moment nog moet komen.
+ * Sorteersleutel van een poll: het eerstvolgende moment dat er nog toe doet.
+ * Voor gelockte/geboekte polls het gekozen moment; anders het vroegste
+ * kandidaat-moment dat nog niet voorbij is (valt terug op het vroegste moment).
  */
-export function activePoll(
+function pollMoment(
+  poll: PlayPoll,
+  options: PollOption[],
+  today: string,
+): string {
+  const key = (o: PollOption) => `${o.date}|${o.start_time}`;
+  if (poll.locked_option_id) {
+    const locked = options.find((o) => o.id === poll.locked_option_id);
+    if (locked) return key(locked);
+  }
+  const own = options
+    .filter((o) => o.poll_id === poll.id)
+    .sort((a, b) => key(a).localeCompare(key(b)));
+  const upcoming = own.find((o) => o.date >= today);
+  return key(upcoming ?? own[own.length - 1] ?? { date: "9999-12-31", start_time: "23:59" } as PollOption);
+}
+
+/**
+ * De polls die de groepspagina toont: alle open of gelockte polls, plus
+ * geboekte polls waarvan het gekozen moment nog moet komen (#267 — meerdere
+ * speeldagen tegelijk). Gesorteerd op eerstvolgend moment (soonest-first).
+ */
+export function activePolls(
   polls: PlayPoll[],
   options: PollOption[],
   today: string,
-): PlayPoll | null {
-  const running = polls.find((p) => p.status === "open" || p.status === "locked");
-  if (running) return running;
-  return (
-    polls.find((p) => {
-      if (p.status !== "booked" || !p.locked_option_id) return false;
-      const opt = options.find((o) => o.id === p.locked_option_id);
-      return !!opt && opt.date >= today;
-    }) ?? null
-  );
+): PlayPoll[] {
+  return polls
+    .filter((p) => {
+      if (p.status === "open" || p.status === "locked") return true;
+      if (p.status === "booked" && p.locked_option_id) {
+        const opt = options.find((o) => o.id === p.locked_option_id);
+        return !!opt && opt.date >= today;
+      }
+      return false;
+    })
+    .sort((a, b) =>
+      pollMoment(a, options, today).localeCompare(pollMoment(b, options, today)),
+    );
 }
 
 /**

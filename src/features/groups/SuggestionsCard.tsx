@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useToast } from "../../components/ToastProvider";
@@ -61,9 +60,6 @@ export function SuggestionsCard({
   const livePolls = useMemo(
     () => (polls.data ?? []).filter((p) => p.status !== "cancelled"),
     [polls.data],
-  );
-  const hasRunningPoll = livePolls.some(
-    (p) => p.status === "open" || p.status === "locked",
   );
 
   const suggestions: Suggestion[] = useMemo(() => {
@@ -129,24 +125,9 @@ export function SuggestionsCard({
 
   const loading = week.loading || polls.loading;
 
-  // Loopt er al een poll? Dan zijn nieuwe suggesties niet te starten;
-  // verwijs er dan gewoon duidelijk naar in plaats van dode suggesties.
-  if (!loading && hasRunningPoll) {
-    return (
-      <section className="card">
-        <h2 className="card__title">Suggesties</h2>
-        <p className="proposals__hint">
-          Er is al een speeldag-poll actief voor deze groep. Breng snel je stem uit!
-        </p>
-        <Link
-          className="btn btn--sm btn--primary"
-          to={`/groepen/${groupId}?tab=plannen`}
-        >
-          Breng je stem uit →
-        </Link>
-      </section>
-    );
-  }
+  // Bij een lopende poll blijven de suggesties staan (#267): je kunt in
+  // dezelfde week nog een speeldag plannen. Momenten die al als poll-optie
+  // bestaan filtert suggestMoments er via `existing` zelf uit.
 
   return (
     <section className="card">

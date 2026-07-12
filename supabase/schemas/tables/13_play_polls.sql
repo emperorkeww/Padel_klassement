@@ -21,10 +21,10 @@ create table public.play_polls (
   created_at timestamptz not null default now()
 );
 
--- Eén open poll per groep: focus houden, stemmen niet versnipperen.
-create unique index play_polls_one_open
-  on public.play_polls (group_id)
-  where status = 'open';
+-- Meerdere open polls per groep mogen naast elkaar bestaan (#267): een groep
+-- kan in dezelfde week meerdere speeldagen tegelijk plannen. Wel een index op
+-- group_id voor de per-groep queries en de realtime-filter.
+create index play_polls_group on public.play_polls (group_id);
 
 alter table public.play_polls enable row level security;
 
