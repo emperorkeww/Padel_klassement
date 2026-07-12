@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 import { useAsync } from "../lib/useAsync";
 import { getProfile, displayName } from "../features/profiles/api";
@@ -10,14 +10,26 @@ import { GithubRibbon } from "./GithubRibbon";
 import "./ui.css";
 import "./DashboardLayout.css";
 
-type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode };
+// `matchPaths`: extra padprefixen die dezelfde sectie zijn maar buiten `to`
+// vallen. Nodig omdat groepdetail op /groepen/:id leeft terwijl de Spelen-hub
+// /spelen is — zonder dit verliest "Spelen" zijn markering in een groep (#287).
+type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode; matchPaths?: string[] };
+
+// Actief als NavLink het al vindt (exacte/prefix-match op `to`), óf als het
+// pad binnen een van de opgegeven sectiepaden valt.
+function isSectionActive(item: NavItem, isActive: boolean, pathname: string) {
+  return (
+    isActive ||
+    (item.matchPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ?? false)
+  );
+}
 
 // Taakgerichte navigatie (#106): vier taken i.p.v. zeven datatabellen.
 // Matches is het primaire schrijf-scherm (plannen + loggen + "Te spelen"), dus
 // het heet gewoon "Matches" — gelijk aan de pagina-H1 — en staat als vaste tab
 // op mobiel (#274). Banen blijft bereikbaar bínnen de flow (Spelen-hub/zijbalk).
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
-const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket /> };
+const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket />, matchPaths: ["/groepen"] };
 const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
@@ -41,6 +53,7 @@ const TABBAR: NavItem[] = [SPELEN, MATCHES, OVERZICHT, KLASSEMENT, FEED];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
+  const { pathname } = useLocation();
   const myId = user?.id ?? "";
   // Eigen profiel voor de avatar in topbalk en zijbalk-voet; de layout blijft
   // gemount tijdens navigatie, dus dit is één query per sessie.
@@ -91,7 +104,7 @@ export function DashboardLayout() {
                   end={item.end}
                   viewTransition
                   className={({ isActive }) =>
-                    `sidebar__link ${isActive ? "is-active" : ""}`
+                    `sidebar__link ${isSectionActive(item, isActive, pathname) ? "is-active" : ""}`
                   }
                 >
                   <span className="sidebar__icon">{item.icon}</span>
@@ -151,7 +164,7 @@ export function DashboardLayout() {
             viewTransition
             aria-label={item.label}
             className={({ isActive }) =>
-              `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isActive ? "is-active" : ""}`
+              `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isSectionActive(item, isActive, pathname) ? "is-active" : ""}`
             }
           >
             <span className="tabbar__icon">{item.icon}</span>
