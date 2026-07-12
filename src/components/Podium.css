@@ -174,7 +174,8 @@
   .podium__spot--1 .podium__name {
     font-size: var(--fs-md);
   }
+  /* Record blijft zichtbaar op smal — compacter en onder de sub-regel. */
   .podium__record {
-    display: none;
+    font-size: var(--fs-xs);
   }
 }
