@@ -632,99 +632,79 @@ function FeedItem({
           )}
         </div>
       );
-    case "rank":
+    case "rank": {
+      const nieuw = event.shift === "nieuw";
+      const omhoog = !nieuw && (event.shift as number) > 0;
       return (
-        <FeedLine
-          icon={event.shift === "nieuw" ? "✨" : (event.shift as number) > 0 ? "⬆️" : "⬇️"}
+        <FeedHighlight
+          cat="rank"
+          icon={nieuw ? "✨" : omhoog ? "⬆️" : "⬇️"}
+          label={`Klassement · ${nieuw ? "nieuw" : omhoog ? "stijger" : "daler"}`}
           to="/klassement"
-          avatars={[event.playerId]}
-          pmap={pmap}
         >
-          {event.shift === "nieuw" ? (
+          {nieuw ? (
             <>
-              {name(event.playerId)}{" "}
-              {event.playerId === myId ? "staat" : "staat"} nieuw op{" "}
-              <strong>#{event.rank}</strong> in het klassement.
+              {name(event.playerId)} staat nieuw op <strong>#{event.rank}</strong>.
             </>
           ) : (
             <>
-              {name(event.playerId)}{" "}
-              {(event.shift as number) > 0 ? "steeg" : "zakte"}{" "}
-              <strong>{Math.abs(event.shift as number)} plekken</strong> naar #
-              {event.rank}.
+              {name(event.playerId)} {omhoog ? "steeg" : "zakte"}{" "}
+              <strong>{Math.abs(event.shift as number)} plekken</strong> naar #{event.rank}.
             </>
           )}
-        </FeedLine>
+        </FeedHighlight>
       );
+    }
     case "season-champion":
       return (
-        <FeedLine
+        <FeedHighlight
+          cat="champ"
           icon="🏆"
+          label="Seizoenskampioen"
           to={`/groepen/${event.groupId}?tab=stand&seizoen=${event.seasonLabel}`}
-          avatars={[event.playerId]}
-          pmap={pmap}
         >
-          {name(event.playerId)} {event.playerId === myId ? "bent" : "is"}{" "}
-          kampioen van <strong>{event.groupName}</strong> ({event.seasonLabel}
-          )!
-        </FeedLine>
+          {name(event.playerId)} {event.playerId === myId ? "bent" : "is"} kampioen van{" "}
+          <strong>{event.groupName}</strong> ({event.seasonLabel})!
+        </FeedHighlight>
       );
     case "maand-pias":
       return (
-        <FeedLine
-          icon="🤡"
-          to={`/groepen/${event.groupId}`}
-          avatars={[event.playerId]}
-          pmap={pmap}
-        >
+        <FeedHighlight cat="roast" icon="🤡" label="Pias van de maand" to={`/groepen/${event.groupId}`}>
           {event.playerId === myId ? (
             <>
-              Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              je {event.detail}.
+              Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}): je {event.detail}.
             </>
           ) : (
             <>
-              {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):
-              {" "}{event.detail}.
+              {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):{" "}
+              {event.detail}.
             </>
           )}
-        </FeedLine>
+        </FeedHighlight>
       );
     case "pias-week":
       return (
-        <FeedLine
-          icon="🤡"
-          to={`/groepen/${event.groupId}`}
-          avatars={[event.playerId]}
-          pmap={pmap}
-        >
+        <FeedHighlight cat="roast" icon="🤡" label="Pias van de week" to={`/groepen/${event.groupId}`}>
           {event.playerId === myId ? (
             <>
-              Jij bent de <strong>pias van de week</strong> in{" "}
-              {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%).
+              Jij bent de <strong>pias van de week</strong> in {event.groupName}: verloor als
+              torenhoge favoriet ({Math.round(event.winChance * 100)}%).
             </>
           ) : (
             <>
-              {name(event.playerId)} is de <strong>pias van de week</strong> in{" "}
-              {event.groupName}: verloor als torenhoge favoriet (
-              {Math.round(event.winChance * 100)}%).
+              {name(event.playerId)} is de <strong>pias van de week</strong> in {event.groupName}:
+              verloor als torenhoge favoriet ({Math.round(event.winChance * 100)}%).
             </>
           )}
-        </FeedLine>
+        </FeedHighlight>
       );
     case "zwarte-piet":
       return (
-        <FeedLine
-          icon="🃏"
-          to={`/groepen/${event.groupId}`}
-          avatars={[event.toPlayerId]}
-          pmap={pmap}
-        >
-          {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`}{" "}
-          de <strong>Zwarte Piet</strong> in {event.groupName}
+        <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`}>
+          {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`} de{" "}
+          <strong>Zwarte Piet</strong> in {event.groupName}
           {event.fromPlayerId ? ` af van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
-        </FeedLine>
+        </FeedHighlight>
       );
   }
 }
@@ -824,6 +804,35 @@ function CoachMonologue({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Highlight-kaart (#232): een groot moment (klassement/roast/kampioen) als
+ *  geaccentueerde kaart in de kleur van zijn categorie — i.p.v. dezelfde
+ *  compacte regel als routine-items. */
+function FeedHighlight({
+  cat,
+  icon,
+  label,
+  to,
+  children,
+}: {
+  cat: "rank" | "champ" | "roast";
+  icon: string;
+  label: string;
+  to: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link className="feed-hi" data-cat={cat} to={to}>
+      <span className="feed-hi__tok" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="feed-hi__body">
+        <span className="feed-hi__label">{label}</span>
+        <span className="feed-hi__title">{children}</span>
+      </span>
+    </Link>
   );
 }
 
