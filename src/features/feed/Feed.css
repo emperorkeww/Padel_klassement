@@ -90,17 +90,8 @@
   margin: var(--sp-1) 0 0 var(--sp-4);
   padding-left: var(--sp-2);
 }
-.coach-comment__mic {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  font-size: 0.9rem;
-  line-height: 1;
+.coach-comment__face {
+  margin-top: 1px;
 }
 .coach-comment__bubble {
   position: relative;
@@ -133,7 +124,7 @@
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--accent);
+  color: var(--coach);
 }
 .coach-comment__text {
   font-size: var(--fs-sm);

@@ -1,4 +1,5 @@
 import { Avatar } from "../../../components/Avatar";
+import { CoachAvatar } from "../../../components/CoachAvatar";
 import { COMMENTATOR } from "../../../lib/roastTone";
 import { displayName } from "../api";
 import type { ProfileData } from "./types";
@@ -29,9 +30,13 @@ export function ProfileHero({ d }: { d: ProfileData }) {
         <p className="profile-hero__handle">@{p.username}</p>
         <p className="profile-hero__nick">“{nick}”</p>
         {roast && (
-          <p className="profile-hero__roast" role="note">
-            {COMMENTATOR.emoji} {COMMENTATOR.naam}: {roast}
-          </p>
+          <div className="profile-hero__coach" role="note">
+            <CoachAvatar size={26} className="profile-hero__coach-face" />
+            <p className="profile-hero__coach-text">
+              <span className="profile-hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
+              {roast}
+            </p>
+          </div>
         )}
       </div>
     </section>
