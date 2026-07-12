@@ -1,5 +1,17 @@
+/* Ronde display-font (#232): self-hosted Nunito (variabel gewicht), voor de
+   feed-koppen/scores/labels — de "ronde" uitstraling van het mockup-voorbeeld.
+   Open (SIL OFL), dus vrij te bundelen; SF Pro Rounded is dat niet. */
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url("../assets/fonts/nunito-latin-wght.woff2") format("woff2-variations");
+}
+
 :root {
   font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-rounded: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

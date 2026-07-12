@@ -260,6 +260,15 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1 1 auto;
+}
+.feed-hi__time {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding-top: 1px;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 .feed-hi__label {
   font-size: 0.66rem;
@@ -527,3 +536,49 @@
   color: #fff;
   border-color: var(--accent);
 }
+
+/* ===== #232: mockup-typografie (ronde display-font) + fijnslijp ===== */
+.feed__day,
+.feed__filters .tab,
+.fmatch__score,
+.fmatch__nm,
+.fmatch__chip,
+.fmatch__set,
+.feed-hi__label,
+.feed-hi__title,
+.feed-hi__time,
+.feed-evening__title,
+.ev-row__pt,
+.ev-row__pos,
+.coach-comment__name,
+.coach-intro__title {
+  font-family: var(--font-rounded);
+}
+
+/* Match-score groter en ronder (mockup-voorbeeld). */
+.fmatch__score { font-size: 2.4rem; }
+.fmatch__nm { white-space: normal; }
+
+/* Filterchips: één scrollrij i.p.v. wrappen; telling als badge. */
+.feed__filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.feed__filters::-webkit-scrollbar { display: none; }
+.feed__filters .tab { flex: 0 0 auto; }
+.feed__filters .tab__count {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.feed__filters .tab.is-active .tab__count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+/* Coach-intro nog iets compacter (blijft oranje). */
+.coach-intro__title { font-size: var(--fs-md); }
