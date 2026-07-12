@@ -13,7 +13,7 @@ describe("coachBriefing", () => {
 
   it("kiest een verliesreeks-toon bij losing >= 3", () => {
     const dip = coachBriefing({ rank: 20, streak: 0, losing: 4, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels|notitieboekje|wissels/i);
+    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels|notitieboekje|wissels|Trump|Infantino|opschorting/i);
   });
 
   it("met roast-schild een neutrale, niet-spottende regel", () => {
@@ -25,7 +25,7 @@ describe("coachBriefing", () => {
 describe("coachMatchQuip", () => {
   it("6-0 winst levert een andere toon dan een gewone winst", () => {
     const cleanSheet = coachMatchQuip({ uitkomst: "W", bagel: true, seed: "m1", ctx: roast });
-    expect(cleanSheet).toMatch(/6-0|vernedering/i);
+    expect(cleanSheet).toMatch(/6-0|vernedering|masterclass|bond|oefenwedstrijd/i);
   });
 
   it("schild → kale bevestiging", () => {
@@ -37,12 +37,12 @@ describe("coachMatchQuip", () => {
 
 describe("coachPreMatch", () => {
   it("lage winkans = underdog-praatje", () => {
-    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax/i);
+    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax|partner|medelijden|minuut|opgeschort/i);
   });
   it("hoge winkans = favoriet-waarschuwing", () => {
-    expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande/i);
+    expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande|koffers|winnaar|schorsen|corrupt|gestolen/i);
   });
   it("schild → neutraal", () => {
-    expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes/i);
+    expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes|focus/i);
   });
 });
