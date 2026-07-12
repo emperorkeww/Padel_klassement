@@ -15,7 +15,7 @@ export function CoachIntro({ onDismiss }: { onDismiss: () => void }) {
       >
         ✕
       </button>
-      <CoachAvatar size={56} className="coach-intro__face" />
+      <CoachAvatar size={56} mood="portret" fixed className="coach-intro__face" />
       <div className="coach-intro__body">
         <h2 className="coach-intro__title">Maak kennis met {COMMENTATOR.naam}</h2>
         <p className="coach-intro__text">
