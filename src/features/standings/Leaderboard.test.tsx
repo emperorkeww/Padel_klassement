@@ -87,7 +87,7 @@ describe("<Leaderboard />", () => {
     expect(screen.getByRole("heading", { name: /blaaskaak/i })).toBeInTheDocument();
     // Legenda met de ludieke bijnaam en de instapdrempel.
     expect(screen.getByText(/wat betekenen de divisies/i)).toBeInTheDocument();
-    expect(screen.getAllByText("denkt dat-ie goed is — schattig").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/racket van €300/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/vanaf 1100/i).length).toBeGreaterThan(0);
     // Persoonlijke promotie-hint: jouw divisie + rating tot de volgende.
     expect(screen.getByText(/^jij:/i)).toBeInTheDocument();
@@ -203,11 +203,11 @@ describe("<Leaderboard />", () => {
     const playerHeaders = screen.getAllByRole("columnheader");
     expect(playerHeaders[playerHeaders.length - 1]).toHaveTextContent(/rating/i);
     expect(
-      screen.getByText("Gesorteerd op rating — hoe vaak je speelt telt niet mee."),
+      screen.getByText("Wie is de koning en wie is het slofje? Puur gesorteerd op rating."),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Teams" }));
-    expect(await screen.findByText("Teams gesorteerd op punten.")).toBeInTheDocument();
+    expect(await screen.findByText("Vaste duo's gesorteerd op pure puntenheerschappij.")).toBeInTheDocument();
     const teamHeaders = await screen.findAllByRole("columnheader");
     expect(teamHeaders[teamHeaders.length - 1]).toHaveTextContent(/punten/i);
   });

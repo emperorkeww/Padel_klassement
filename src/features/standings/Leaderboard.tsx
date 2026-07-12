@@ -356,8 +356,8 @@ export function Leaderboard() {
         <h1 className="page-title">Klassement</h1>
         <p className="page-subtitle">
           {tab === "player"
-            ? "Gesorteerd op rating — hoe vaak je speelt telt niet mee."
-            : "Teams gesorteerd op punten."}
+            ? "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
+            : "Vaste duo's gesorteerd op pure puntenheerschappij."}
         </p>
       </header>
 

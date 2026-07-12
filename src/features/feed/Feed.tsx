@@ -263,7 +263,7 @@ export function Feed() {
       <header className="page-head">
         <h1 className="page-title">Feed</h1>
         <p className="page-subtitle">
-          Wat er speelt bij jou en je vrienden — nieuwste bovenaan.
+          Alle roddels, heroïsche zeges en beschamende chokes van je maten op één hoop.
         </p>
       </header>
 

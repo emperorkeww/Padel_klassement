@@ -115,7 +115,7 @@ export function Friends() {
       <header className="page-head">
         <h1 className="page-title">Vrienden</h1>
         <p className="page-subtitle">
-          Vind je maatjes en stuur ze een verzoek.
+          Je favoriete bondgenoten en slachtoffers op het veld.
         </p>
       </header>
 
