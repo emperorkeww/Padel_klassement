@@ -77,6 +77,27 @@ describe("<Leaderboard />", () => {
     expect((await screen.findAllByText("Blaaskaak I")).length).toBeGreaterThan(0);
   });
 
+  it("filtert de ranglijst op naam en toont een lege-staat bij geen match (#282)", async () => {
+    renderPage();
+    await screen.findAllByText(/carol claes/i);
+    const zoek = screen.getByLabelText("Zoek een speler");
+
+    fireEvent.change(zoek, { target: { value: "carol" } });
+    // Carol blijft; niet-matchende spelers verdwijnen (ook uit het podium).
+    expect(screen.getAllByText(/carol claes/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/alice anders/i)).toBeNull();
+
+    // Onzin-zoekterm → lege-staat i.p.v. een verminkte lijst.
+    fireEvent.change(zoek, { target: { value: "zzzzz" } });
+    expect(
+      screen.getByText(/geen speler in de ranglijst gevonden/i),
+    ).toBeInTheDocument();
+
+    // De wis-knop herstelt de volledige ranglijst.
+    fireEvent.click(screen.getByRole("button", { name: /zoekterm wissen/i }));
+    expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
+  });
+
   it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
     renderPage();
     await screen.findAllByText("Wannabe III");
