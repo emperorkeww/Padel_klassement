@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
 import { useRealtime } from "../../lib/useRealtime";
 import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { useToast } from "../../components/ToastProvider";
-import { MatchListSkeleton, Skeleton, StatsSkeleton } from "../../components/Skeleton";
+import { Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { CoachAvatar } from "../../components/CoachAvatar";
 import { COMMENTATOR } from "../../lib/roastTone";
@@ -27,10 +27,8 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "../standings/ratingsApi";
-import { upsetsByMatch } from "../../lib/upset";
 import {
   getRecentResults,
-  getRecentMatches,
   getPlayerMatches,
   getTeamsMap,
   teamLabel,
@@ -47,8 +45,6 @@ import {
   wrappedJaar,
 } from "../wrapped/wrapped";
 import { getMyGroups, type GroupSummary } from "../groups/api";
-import { buildFeed, feedPrivacyFilter, type FeedEvent } from "../../lib/feed";
-import { feedSummary } from "../feed/feedSummary";
 import {
   getGroupPolls,
   getGroupPollOptions,
@@ -57,15 +53,13 @@ import {
   type PollOption,
   type PollVote,
 } from "../groups/pollsApi";
-import { MatchList } from "../matches/MatchList";
-import { PlannedMatchCard } from "../matches/PlannedMatchCard";
+import { TeamSide } from "../matches/MatchList";
 import {
   getClubAvailability,
   nextFreeSlot,
   type NextFreeSlot,
 } from "../availability/api";
 import { useClub } from "../availability/club";
-import { Timetable } from "../availability/Timetable";
 import { dateInZone, minutesNowInZone } from "../../lib/time";
 import {
   pushSupported,
@@ -80,11 +74,6 @@ import { THIN_GAMES } from "../groups/groupRating";
 import type { Match, Team } from "../../lib/types";
 import "./Dashboard.css";
 
-/** Zoveel recente (all-status) matches voeden de activiteitenfeed-preview. */
-const FEED_PREVIEW_MATCHES = 120;
-/** Zoveel gebeurtenissen toont de compacte feed-preview op het dashboard. */
-const FEED_PREVIEW_LIMIT = 5;
-
 export function Dashboard() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -98,9 +87,6 @@ export function Dashboard() {
     () => (myId ? getPlayerMatches(myId, 100) : Promise.resolve([])),
     [myId],
   );
-  // Alle statussen (dus ook geplande matches) voor de activiteitenfeed-preview
-  // (#59); buildFeed scoped hierna zelf op je netwerk.
-  const feedMatches = useAsync(() => getRecentMatches(FEED_PREVIEW_MATCHES), []);
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getProfilesMap, []);
   const friendships = useAsync(getMyFriendships, []);
@@ -128,13 +114,12 @@ export function Dashboard() {
     standings.reload();
     results.reload();
     myMatches.reload();
-    feedMatches.reload();
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, feedMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -169,7 +154,6 @@ export function Dashboard() {
   useEffect(() => {
     if (myProfile) rememberName(myId, displayName(myProfile));
   }, [myProfile, myId]);
-  const top = rows.slice(0, 3);
 
   const myGames = myMatches.data ?? [];
   const form = recentForm(myGames, tmap, myId);
@@ -189,22 +173,6 @@ export function Dashboard() {
   // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
   // filteren houdt afgeleide weergaven robuust (o.a. in tests).
   const completed = (results.data ?? []).filter((m) => m.status === "completed");
-  const recentResults = completed.slice(0, 6);
-
-  // Activiteitenfeed-preview (#59): compacte kop van de volledige /feed,
-  // opgebouwd uit al geladen bronnen. buildFeed scoped op je netwerk; de
-  // privacyfilter verbergt vriendschapsitems van niet-vindbare spelers.
-  const feedPreview: FeedEvent[] = buildFeed({
-    matches: feedMatches.data ?? [],
-    teams: tmap,
-    friendships: friendships.data ?? [],
-    myId,
-    standings: rows,
-    groups: groups.data ?? [],
-    profiles: pmap,
-    limit: FEED_PREVIEW_LIMIT,
-    filter: feedPrivacyFilter(pmap),
-  });
 
   // Prestatiebadges (afgeleid, geen extra query): behaalde voor de hero, plus
   // de dichtstbijzijnde onbehaalde met voortgang als aanmoediging.
@@ -240,11 +208,6 @@ export function Dashboard() {
     ? eveningSummary(eveningMatches, tmap, evening.day, histories.data ?? undefined)
     : null;
   const eveningMedals = ["🥇", "🥈", "🥉"];
-  // Upsets bij de recente uitslagen (#85).
-  const recentUpsets = useMemo(
-    () => upsetsByMatch(recentResults, tmap, histories.data ?? {}),
-    [recentResults, tmap, histories.data],
-  );
 
   // Eerstvolgende vrije baan bij de club (vandaag).
   const nextFree = availability.data
@@ -293,6 +256,9 @@ export function Dashboard() {
         a.created_at.localeCompare(b.created_at),
     );
   const nextMatch = planned[0] ?? null;
+  const nextMatchGroupName = nextMatch?.group_id
+    ? ((groups.data ?? []).find((g) => g.id === nextMatch.group_id)?.name ?? null)
+    : null;
   // Coach Rudy's ochtendpraatje (#213): één regel over vandaag, gevoed door je
   // reeks/positie/volgende match. Respecteert je roast-schild; op het dashboard
   // (niet groep-gescoopt) hanteren we de standaard-intensiteit.
@@ -576,20 +542,33 @@ export function Dashboard() {
         <section className="card card--next">
           <div className="card__head">
             <h2 className="card__title">Jouw volgende match</h2>
-            {nextMatch.group_id && (
-              <Link className="profile-link" to={`/groepen/${nextMatch.group_id}`}>
-                Naar groep →
-              </Link>
-            )}
+            <Link className="profile-link" to={`/matches/${nextMatch.id}`}>
+              Invullen →
+            </Link>
           </div>
-          <PlannedMatchCard
-            match={nextMatch}
-            teams={tmap}
-            profiles={pmap}
-            perspectiveId={myId}
-            history={myMatches.data ?? []}
-            onSaved={onMatches}
-          />
+          {/* Bewust compact op het overzicht (#273): wie + wanneer, en één tik
+              naar de match zelf voor de uitslag — de score-invoer hoort daar,
+              niet op de startpagina (zeker niet op mobiel). */}
+          <Link
+            className="next-match"
+            to={`/matches/${nextMatch.id}`}
+            aria-label={`Volgende match — ${matchWhen(nextMatch, nextMatchGroupName)}`}
+          >
+            <div className="match-card">
+              <TeamSide team={tmap[nextMatch.team_a_id]} profiles={pmap} won={false} />
+              <span className="match-card__mid">
+                <span className="match-card__meta">
+                  {matchWhen(nextMatch, nextMatchGroupName)}
+                </span>
+              </span>
+              <TeamSide
+                team={tmap[nextMatch.team_b_id]}
+                profiles={pmap}
+                won={false}
+                right
+              />
+            </div>
+          </Link>
         </section>
       )}
 
@@ -685,67 +664,10 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Activiteitenfeed-preview (#59): recente gebeurtenissen uit je netwerk. */}
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title">Recente activiteit</h2>
-          <Link className="profile-link" to="/feed">
-            Naar feed →
-          </Link>
-        </div>
-        {feedMatches.loading || friendships.loading || profiles.loading ? (
-          <MatchListSkeleton count={3} />
-        ) : feedPreview.length === 0 ? (
-          <p className="empty">Nog geen activiteit in je netwerk.</p>
-        ) : (
-          <ul className="feed-preview">
-            {feedPreview.map((event, i) => {
-              const r = feedSummary(event, {
-                profiles: pmap,
-                teams: tmap,
-                myId,
-                intensiteitVoor: (gid) =>
-                  (groups.data ?? []).find((g) => g.id === gid)
-                    ?.roast_intensiteit ?? "gemeen",
-              });
-              return (
-                <li key={`${event.kind}-${event.at}-${i}`}>
-                  <Link className="feed-preview__item" to={r.to}>
-                    <span className="feed-preview__icon" aria-hidden="true">
-                      {r.icon}
-                    </span>
-                    <span className="feed-preview__text">{r.tekst}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <div className="grid grid--2">
-        <section className="card">
-          <div className="card__head">
-            <h2 className="card__title">Recente uitslagen</h2>
-            <Link className="profile-link" to="/matches">
-              Alles →
-            </Link>
-          </div>
-          {results.loading ? (
-            <MatchListSkeleton count={4} />
-          ) : (
-            <MatchList
-              matches={recentResults}
-              teams={tmap}
-              profiles={pmap}
-              perspectiveId={myId}
-              upsets={recentUpsets}
-              empty="Nog geen uitslagen — vul een geplande match in of log er een."
-            />
-          )}
-        </section>
-
-        <div className="dashboard__col">
+      {/* Gamification-kolom (rating, weekmissies, pias, badge, rivaal). Blijft
+          hier tot #276 die naar het profiel/paspoort verhuist; #273 haalt enkel
+          de schermduplicaten (feed, uitslagen, topspelers, banen) weg. */}
+      <div className="grid">
           {/* Rating: groot getal + delta + verloop in één kaart (voorheen een
               stat-tegel én een losse grafiekkaart met dezelfde informatie). */}
           {(ratings.loading || myRating != null || rhist.length >= 2) && (
@@ -885,75 +807,25 @@ export function Dashboard() {
             </section>
           )}
 
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title">Topspelers</h2>
-              <Link className="profile-link" to="/klassement">
-                Klassement →
-              </Link>
-            </div>
-            {top.length === 0 ? (
-              <p className="empty">Nog geen klassement.</p>
-            ) : (
-              <ul className="toplist">
-                {top.map((p, i) => (
-                  <li
-                    key={p.player_id}
-                    className={`toplist__item ${p.player_id === myId ? "is-me" : ""}`}
-                  >
-                    <span className={`toplist__rank toplist__rank--${i + 1}`}>
-                      {i + 1}
-                    </span>
-                    <Avatar profile={pmap[p.player_id] ?? p} size={28} />
-                    <Link
-                      className="profile-link toplist__name"
-                      to={`/spelers/${p.player_id}`}
-                    >
-                      {displayName(p)}
-                    </Link>
-                    <span className="toplist__pts">{p.points} ptn</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* Compacte sociale voetregel (voorheen een eigen kaart). */}
-            <div className="social-foot">
-              <span className="social-foot__item">
-                Vrienden <span className="badge">{accepted.length}</span>
-              </span>
-              <span className="social-foot__item">
-                Verzoeken{" "}
-                <span className={`badge ${incoming.length ? "badge--accent" : ""}`}>
-                  {incoming.length}
-                </span>
-              </span>
-              <Link className="profile-link" to="/vrienden">
-                Beheren →
-              </Link>
-            </div>
-          </section>
-        </div>
       </div>
 
       <PushPrompt userId={myId} />
 
+      {/* Baan-teaser (#273): enkel de eerstvolgende vrije baan als reminder —
+          het volledige rooster woont op de Banen-tab (één tik verder). */}
       <section className="card">
         <div className="card__head">
-          <h2 className="card__title">Baanbeschikbaarheid vandaag</h2>
+          <h2 className="card__title">Vrije banen vandaag</h2>
           <Link className="profile-link" to="/banen">
             Alle dagen →
           </Link>
         </div>
         {availability.loading ? (
-          <Skeleton rows={3} />
+          <Skeleton rows={1} />
         ) : availability.error ? (
           <p className="msg msg--error">{availability.error}</p>
         ) : availability.data ? (
-          <>
-            <NextFreeLine slot={nextFree} />
-            <Timetable data={availability.data} date={today} fromNow />
-          </>
+          <NextFreeLine slot={nextFree} />
         ) : null}
       </section>
     </div>
@@ -976,6 +848,31 @@ function rememberName(userId: string, name: string) {
   } catch {
     /* opslag niet beschikbaar (privémodus) — geen probleem */
   }
+}
+
+/** Korte "wanneer"-regel voor de compacte volgende-match op het overzicht:
+ *  datum + tijd als die gepland is, anders de ronde; met de groepsnaam erbij. */
+function matchWhen(m: Match, groupName?: string | null): string {
+  const parts: string[] = [];
+  if (m.played_at) {
+    const d = new Date(m.played_at);
+    const dag = new Intl.DateTimeFormat("nl-BE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(d);
+    const tijd = new Intl.DateTimeFormat("nl-BE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+    parts.push(`${dag} · ${tijd}`);
+  } else if (m.round_number != null) {
+    parts.push(`ronde ${m.round_number} · gepland`);
+  } else {
+    parts.push("gepland");
+  }
+  if (groupName) parts.push(groupName);
+  return parts.join(" · ");
 }
 
 /* ---------- Weekmissies (#118): kleine, verversende doelen per week ---------- */

@@ -286,24 +286,19 @@
   margin-bottom: var(--sp-4);
 }
 
-/* Sociale voetregel onder de topspelers (voorheen een eigen kaart). */
-.social-foot {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  margin-top: var(--sp-4);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-md);
-  color: var(--ink-soft);
+/* Compacte volgende-match (#273): teams + "wanneer" in het midden, de hele
+   kaart is een link naar de match-detail (waar de uitslag ingevuld wordt). */
+.next-match {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-sm);
 }
-.social-foot__item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
+.next-match .match-card {
+  transition: background 0.15s;
 }
-.social-foot .profile-link {
-  margin-left: auto;
+.next-match:hover .match-card {
+  background: var(--surface-2);
 }
 
 /* Actiestrook: dingen die op jou wachten (uitslagen, verzoeken). */
@@ -748,112 +743,6 @@
   display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
-}
-
-/* Rechterkolom naast de uitslagen: rating + topspelers onder elkaar,
-   bovenaan uitgelijnd zodat er geen kaart wordt uitgerekt. */
-.dashboard__col {
-  display: grid;
-  gap: var(--sp-5);
-  align-content: start;
-}
-
-/* Topspelers-lijstje met genummerde rang. */
-.toplist {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--sp-3);
-}
-
-/* Activiteitenfeed-preview op het dashboard (#59): compacte regels. */
-.feed-preview {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--sp-1);
-}
-.feed-preview__item {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-2);
-  margin: 0 calc(-1 * var(--sp-2));
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s;
-}
-.feed-preview__item:hover {
-  background: var(--surface-2);
-}
-.feed-preview__icon {
-  flex-shrink: 0;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.feed-preview__text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.toplist__item {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  /* Hover-vlak iets breder dan de inhoud, zonder de uitlijning te verstoren. */
-  padding: var(--sp-1) var(--sp-2);
-  margin: 0 calc(-1 * var(--sp-2));
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
-}
-.toplist__item:hover {
-  background: var(--surface-2);
-}
-/* Eigen rij in de top 3 licht groen: "hier sta jij". */
-.toplist__item.is-me,
-.toplist__item.is-me:hover {
-  background: var(--accent-soft);
-}
-.toplist__rank {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-}
-.toplist__rank--1 {
-  background: var(--gold-soft);
-  color: var(--gold);
-}
-.toplist__rank--2 {
-  background: var(--silver-soft);
-  color: var(--silver);
-}
-.toplist__rank--3 {
-  background: var(--bronze-soft);
-  color: var(--bronze);
-}
-.toplist__name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.toplist__pts {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  color: var(--ink-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
