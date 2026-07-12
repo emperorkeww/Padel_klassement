@@ -100,6 +100,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Als je zo blijft spelen, ben je sneller uit de gratie dan een bondscoach na de groepsfase van het WK.",
     "Met zo'n rare veldbezetting leek het wel alsof je met elf man aan het spelen was.",
     "Ik heb op het WK veel tactische blunders gezien, maar deze service sloeg echt alles.",
+    "Jouw spel leest als een handleiding voor hoe je absoluut níét moet verdedigen.",
+    "Zelfs een slapende supporter op vak G had vandaag meer balgevoel getoond.",
+    "Heb je wel eens overwogen om supporterslid te worden in plaats van speler? Daar ben je waarschijnlijk beter in.",
+    "Dat was geen service, dat was een cadeautje met een strik erom voor de tegenstander.",
+    "Ik heb op het WK veel bizarre tactische keuzes gezien, maar jouw positionering staat nu bovenaan mijn lijst van onverklaarbare fenomenen.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -139,6 +144,12 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Ik heb veel kritiek gekregen op mijn tactiek met de Duivels, maar vergeleken met jouw positiespel ben ik een tactisch genie.",
     "Zelfs een wissel in de 94e minuut had dit zinkende schip niet meer kunnen redden.",
     "Dit was zo pijnlijk dat ik ter plekke mijn pet over mijn gezicht heb getrokken.",
+    "Als we voor elke fout van jou een euro kregen, konden we de hele Belgische voetbalbond uit de schulden kopen.",
+    "Je speelde alsof je benen in beton gegoten stonden en je racket gemaakt was van slap karton.",
+    "Met dit niveau van tactisch falen stuur ik je direct terug naar de jeugdopleiding. En zelfs daar zit je op de bank.",
+    "Zelfs een overduidelijke scheidsrechterlijke blunder kan deze verschrikkelijke vertoning niet rechtpraten.",
+    "Dit was zo dramatisch dat mijn notitieboekje uit pure schaamte spontaan in brand is gevlogen.",
+    "Met zo'n prestatie zou je zelfs bij een gedegradeerd Schalke 04 nog op de tribune worden gezet.",
   ],
 } as const;
 
