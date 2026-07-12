@@ -8,9 +8,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
+import { CoachSneer } from "../../components/CoachSneer";
 import { bepaalPias, type MatchRatings } from "../../lib/maandpias";
 import { monthRange, weekRange } from "../../lib/missions";
-import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import { roastCtx, roastSeed } from "../../lib/roastTone";
 import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
 import { displayName } from "../profiles/api";
 import { SharePias } from "./SharePias";
@@ -70,14 +71,20 @@ export function PiasCard({
     : scope === "week"
       ? "🤡 Pias-alarm"
       : "🤡 Op weg naar de pias van de maand";
-  // Commentator-sneer (#183): schild van de pias respecteren, toon = groep.
-  const sneer = sneerSuffix(
-    roastCtx({ roast_intensiteit: intensiteit }, profiles[pias.playerId]),
-    roastSeed(pias.playerId, periodeLabel),
-  );
+  // Commentator-sneer (#183/#287): schild van de pias respecteren, toon = groep.
+  // Coach Rudy spreekt nu als geattribueerde spreker (CoachSneer) i.p.v. een
+  // losse 🎙️-emoji achter het detail.
+  const ctx = roastCtx({ roast_intensiteit: intensiteit }, profiles[pias.playerId]);
+  const seed = roastSeed(pias.playerId, periodeLabel);
+  // Korte definitie die de Pias (maandelijkse afgang, reset per periode)
+  // onderscheidt van de Zwarte Piet (rondgaand token). (#287)
+  const lede =
+    scope === "maand"
+      ? "De grootste afgang van de maand. Schone lei zodra de nieuwe maand begint."
+      : "De grootste afgang van deze week.";
 
   return (
-    <section className="card pias-card">
+    <section className="card pias-card pias-card--pias">
       <div className="card__head">
         <h2 className="card__title">{titel}</h2>
         <SharePias
@@ -88,18 +95,23 @@ export function PiasCard({
           scope={scope}
         />
       </div>
+      <p className="pias-card__lede">{lede}</p>
 
       <Link className="pias-card__row" to={`/spelers/${pias.playerId}`}>
         <span className="pias-card__emoji" aria-hidden="true">{beschermd ? "📊" : "🤡"}</span>
         <Avatar profile={profiles[pias.playerId]} size={44} />
         <span className="pias-card__body">
-          <span className="pias-card__name">{naam}</span>
-          <span className="pias-card__detail">
-            {pias.detail}
-            {sneer}
+          <span className="pias-card__name">
+            {naam}
+            {!beschermd && (
+              <span className="pias-card__role pias-card__role--pias">Pias</span>
+            )}
           </span>
+          <span className="pias-card__detail">{pias.detail}</span>
         </span>
       </Link>
+
+      <CoachSneer ctx={ctx} seed={seed} />
 
       <p className="pias-card__meta">
         {beschermd

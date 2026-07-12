@@ -1,16 +1,20 @@
+import { CoachSneer } from "./CoachSneer";
+import type { RoastCtx } from "../lib/roastTone";
 import { tierLegend } from "../lib/tiers";
 import "./TierLegend.css";
 
 /** Pias van de week voor de voetnoot: de naam, hoe hoog de favoriet stond en de
- *  commentator-sneer (#183; "" als de pias een roast-schild aan heeft). */
+ *  context waarmee Coach Rudy zijn sneer plaatst (#183/#287). */
 export interface TierLegendPias {
   naam: string;
   /** Pre-match winkans van de verloren favoriet (0..1). */
   winChance: number;
   /** Heeft de pias zijn roast-schild aan? Dan tonen we een neutrale voetnoot. */
   beschermd: boolean;
-  /** Kant-en-klare sneer-staart van de commentator, of "" bij schild. */
-  sneer: string;
+  /** Roast-context (toon + schild) van de pias. */
+  ctx: RoastCtx;
+  /** Deterministische seed → dezelfde burn voor de hele groep. */
+  seed: number;
 }
 
 /**
@@ -57,12 +61,12 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
             <strong>{pias.naam}</strong> — ging als{" "}
             {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
             {Math.round(pias.winChance * 100)}%) onderuit.
-            {pias.sneer}
           </>
         ) : (
           "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."
         )}
       </p>
+      {pias && <CoachSneer ctx={pias.ctx} seed={pias.seed} size={26} />}
     </details>
   );
 }

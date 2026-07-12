@@ -43,6 +43,97 @@
   min-width: 0;
 }
 
+/* Titel-crests in de rechterbovenhoek (#287): kroon (#1), Zwarte Piet en/of
+   Pias. Absoluut in de hoek; de knoppen eronder krijgen wat lucht via :has,
+   zodat ze de crests nooit overlappen. */
+.hero__crests {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 2;
+  display: flex;
+  gap: var(--sp-2);
+}
+.hero:has(.hero__crests) .hero__actions {
+  margin-top: var(--sp-6);
+}
+.hero-crest {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: help;
+}
+.hero-crest__icon {
+  line-height: 1;
+}
+.hero-crest--bigdaddy {
+  background: var(--bigdaddy-soft);
+  border-color: var(--bigdaddy);
+}
+.hero-crest--piet {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+}
+.hero-crest--pias {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+}
+
+/* Tooltip: verborgen tot hover/focus (tap = focus op mobiel). Verankerd
+   rechtsonder de crest en naar links uitklappend, zodat hij binnen de hero
+   (overflow: hidden) blijft. */
+.hero-crest__tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  max-width: 15rem;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s;
+  pointer-events: none;
+}
+.hero-crest:hover .hero-crest__tip,
+.hero-crest:focus-visible .hero-crest__tip,
+.hero-crest:focus .hero-crest__tip {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.hero-crest__tip-label {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--ink);
+}
+.hero-crest__tip-text {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  white-space: normal;
+}
+
 .hero__eyebrow {
   margin: 0 0 var(--sp-1);
   font-size: var(--fs-xs);
