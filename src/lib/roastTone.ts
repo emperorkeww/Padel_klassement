@@ -197,6 +197,12 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Dit was geen sportieve ontmoeting, dit was een geopolitieke en organisatorische ramp van epische, corrupte proporties.",
     "Zelfs als Gianni Infantino persoonlijk de reglementen herschrijft om jouw forehand als 'geldig' te bestempelen, blijft het een misdaad tegen de sport.",
     "Een totale afgang. Ik heb ter plekke mijn notitieboekje opgegeten om de herinnering aan deze wanprestatie te vernietigen.",
+    "Je voeten stonden zo vastgevroren op de baan dat de terreinknecht na de wedstrijd de ijskrabber moest halen.",
+    "Ik heb serieus getwijfeld of ik een trauma-helikopter moest bellen om je uit die kooi te laten evacueren.",
+    "Jouw spel doet pijn aan m'n ogen. Zelfs de lampen van de padelbaan begonnen spontaan te flikkeren om deze wanprestatie te dimmen.",
+    "Als tactisch genie kan ik veel verklaren, maar dat jij dit 'padel' durft te noemen is het grootste mysterie van de moderne wetenschap.",
+    "Je speelde met de felheid van een nat theezakje dat al drie keer is hergebruikt.",
+    "Een historische vertoning. Ik stel voor dat we deze beelden gebruiken als lesmateriaal voor de jeugd, onder de titel 'Hoe het absoluut nooit moet'.",
   ],
 } as const;
 
