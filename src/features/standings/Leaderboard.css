@@ -548,3 +548,58 @@
     gap: var(--sp-3);
   }
 }
+
+/* Speler zoeken in het klassement (#282). */
+.lb-search {
+  min-width: 0;
+}
+.lb-search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* "Ook gevonden": vindbare spelers buiten de ranglijst, met profiel-link. */
+.lb-extra {
+  margin-top: var(--sp-4);
+}
+.lb-extra__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.lb-extra__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-2));
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.lb-extra__item:hover {
+  background: var(--surface-2);
+}
+.lb-extra__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.lb-extra__go {
+  flex-shrink: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-extra__item {
+    transition: none;
+  }
+}

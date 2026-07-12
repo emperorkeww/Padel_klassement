@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "../../lib/useAsync";
@@ -47,6 +47,7 @@ import {
   teamLabel,
 } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
+import { searchDiscoverableProfiles } from "../friends/api";
 import { ShareChampion } from "./ShareChampion";
 import type { Match, Profile, RatingPoint } from "../../lib/types";
 import "./Leaderboard.css";
@@ -73,6 +74,31 @@ export function Leaderboard() {
   const myId = user?.id ?? "";
   const [tab, setTab] = useState<Tab>("player");
   const [groupId, setGroupId] = useState<string>("");
+
+  // Speler zoeken (#282): het zoekveld filtert de al geladen ranglijst live op
+  // naam. Daarnaast zoeken we vindbare spelers die (nog) niet in de ranglijst
+  // staan, zodat je ze via hun profiel toch vindt.
+  const [q, setQ] = useState("");
+  const [extraResults, setExtraResults] = useState<Profile[]>([]);
+  const searchSeq = useRef(0);
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) {
+      searchSeq.current++;
+      setExtraResults([]);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    const t = setTimeout(async () => {
+      try {
+        const found = await searchDiscoverableProfiles(term, myId);
+        if (seq === searchSeq.current) setExtraResults(found);
+      } catch {
+        if (seq === searchSeq.current) setExtraResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, myId]);
 
   // Het gekozen seizoen (kwartaal) leeft in de URL (?seizoen=2026-q3):
   // deelbaar en refresh-bestendig. Ongeldige waarde → "Alle tijden".
@@ -351,6 +377,23 @@ export function Leaderboard() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  // Naam-filter (#282): de echte rang blijft op elke rij staan, zodat filteren
+  // de nummers niet hernummert. Alleen op de speler-/teamlijst (niet divisies).
+  const nq = q.trim().toLowerCase();
+  const searchable = tab !== "divisies";
+  const rankedRows: Row[] = displayRows.map((r, i) => ({ ...r, rank: i + 1 }));
+  const matchesName = (r: Row) =>
+    r.name.toLowerCase().includes(nq) ||
+    (r.profile?.username?.toLowerCase().includes(nq) ?? false);
+  const visibleRows =
+    nq && searchable ? rankedRows.filter(matchesName) : rankedRows;
+  // Vindbare spelers die niet in de ranglijst staan (bv. nog geen matches).
+  const rankedKeys = new Set(rows.map((r) => r.key));
+  const extraProfiles =
+    nq && tab === "player"
+      ? extraResults.filter((p) => !rankedKeys.has(p.id))
+      : [];
+
   return (
     <div>
       <header className="page-head">
@@ -383,6 +426,17 @@ export function Leaderboard() {
             Divisies
           </button>
         </div>
+
+        {searchable && (
+          <input
+            className="input select--filter lb-search"
+            type="search"
+            placeholder="Zoek speler…"
+            aria-label="Zoek speler"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        )}
 
         <select
           className="select select--filter"
@@ -494,7 +548,7 @@ export function Leaderboard() {
         </p>
       )}
 
-      {showPodium && (
+      {showPodium && !nq && (
         <Podium
           entries={displayRows
             .filter((r) => r.rating != null)
@@ -556,15 +610,19 @@ export function Leaderboard() {
           )
         ) : tab === "divisies" ? (
           <TierDivisions rows={displayRows} />
+        ) : visibleRows.length === 0 ? (
+          <p className="empty">
+            Geen speler in de ranglijst gevonden voor “{q.trim()}”.
+          </p>
         ) : (
           <>
             <StandingsTable
-              rows={displayRows}
+              rows={visibleRows}
               showForm={tab === "player"}
               meRef={meRowRef}
             />
             <RankList
-              rows={displayRows}
+              rows={visibleRows}
               meRef={meItemRef}
               lead={tab === "player" ? "rating" : "points"}
             />
@@ -572,11 +630,34 @@ export function Leaderboard() {
         )}
       </div>
 
+      {/* Ook gevonden buiten de ranglijst (#282): vindbare spelers die (nog)
+          niet meespelen — met een link naar hun profiel. */}
+      {extraProfiles.length > 0 && (
+        <section className="card lb-extra">
+          <h2 className="card__title card__title--tight">
+            Ook gevonden (nog niet in het klassement)
+          </h2>
+          <ul className="lb-extra__list">
+            {extraProfiles.map((p) => (
+              <li key={p.id}>
+                <Link className="lb-extra__item" to={`/spelers/${p.id}`}>
+                  <Avatar profile={p} size={32} />
+                  <span className="lb-extra__name">{displayName(p)}</span>
+                  <span className="lb-extra__go" aria-hidden="true">
+                    Profiel →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Uitleg onderaan: wie hem nodig heeft vindt hem, wie de stand komt
           checken krijgt die meteen bovenaan te zien. */}
       <KlassementUitleg />
 
-      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && (
+      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && !nq && (
         <button className="me-chip" onClick={scrollToMe}>
           Jouw positie · #{myRankIdx + 1}
         </button>
@@ -604,6 +685,9 @@ type Row = {
   history: RatingPoint[];
   form: Outcome[];
   shift?: Shift;
+  /** Echte positie in het klassement, meegegeven zodat een naam-filter (#282)
+   *  de rangnummers niet hernummert. Valt terug op de index als hij ontbreekt. */
+  rank?: number;
 };
 
 /* ---------- Divisies: spelers gegroepeerd per tier (#127) ---------- */
@@ -956,7 +1040,9 @@ function StandingsTable({
               >
                 <td>
                   <span className="rank-wrap">
-                    <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+                    <span className={`rank rank--${r.rank ?? i + 1}`}>
+                      {r.rank ?? i + 1}
+                    </span>
                     <ShiftBadge shift={r.shift} />
                   </span>
                 </td>
@@ -1066,7 +1152,9 @@ function RankList({
         const body = (
           <>
             <span className="rank-wrap ranklist__rank">
-              <span className={`rank rank--${i + 1}`}>{i + 1}</span>
+              <span className={`rank rank--${r.rank ?? i + 1}`}>
+                {r.rank ?? i + 1}
+              </span>
               <ShiftBadge shift={r.shift} />
             </span>
             <Avatar profile={r.profile} name={r.name} size={36} />
