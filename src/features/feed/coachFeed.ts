@@ -125,6 +125,15 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         roastSeed(event.playerId, event.weekStart),
         g,
       );
+    case "zwarte-piet":
+      return coachSneer(
+        roastCtx(
+          { roast_intensiteit: ctx.intensiteitVoor(event.groupId) },
+          ctx.profiles[event.toPlayerId],
+        ),
+        roastSeed(event.toPlayerId, event.at),
+        g,
+      );
     case "season-champion":
       return kiesUniek(KAMPIOEN, roastSeed(event.playerId, event.seasonLabel), g);
     case "rank": {
