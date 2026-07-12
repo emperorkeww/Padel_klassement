@@ -27,6 +27,7 @@ export function ZwartePietCard({
   profiles: Record<string, Profile>;
 }) {
   const naam = displayName(profiles[piet.holderId]);
+  const beschermd = profiles[piet.holderId]?.roast_schild ?? false;
   const sneer = sneerSuffix(
     roastCtx(group, profiles[piet.holderId]),
     roastSeed(piet.holderId, piet.since),
@@ -38,12 +39,14 @@ export function ZwartePietCard({
   return (
     <section className="card pias-card">
       <div className="card__head">
-        <h2 className="card__title">🃏 De Zwarte Piet</h2>
+        <h2 className="card__title">
+          {beschermd ? "📊 Schande-token" : "🃏 De Zwarte Piet"}
+        </h2>
       </div>
 
       <Link className="pias-card__row" to={`/spelers/${piet.holderId}`}>
         <span className="pias-card__emoji" aria-hidden="true">
-          🃏
+          {beschermd ? "📊" : "🃏"}
         </span>
         <Avatar profile={profiles[piet.holderId]} size={44} />
         <span className="pias-card__body">
@@ -56,7 +59,9 @@ export function ZwartePietCard({
       </Link>
 
       <p className="pias-card__meta">
-        Draagt de schande van de groep {sinds}. Winnen is de enige manier om 'm door te schuiven!
+        {beschermd
+          ? `Draagt het schande-token van de groep ${sinds}. Geen roast: het roast-schild staat aan.`
+          : `Draagt de schande van de groep ${sinds}. Winnen is de enige manier om 'm door te schuiven!`}
       </p>
     </section>
   );

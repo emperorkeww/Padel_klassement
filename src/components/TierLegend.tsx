@@ -7,6 +7,8 @@ export interface TierLegendPias {
   naam: string;
   /** Pre-match winkans van de verloren favoriet (0..1). */
   winChance: number;
+  /** Heeft de pias zijn roast-schild aan? Dan tonen we een neutrale voetnoot. */
+  beschermd: boolean;
   /** Kant-en-klare sneer-staart van de commentator, of "" bij schild. */
   sneer: string;
 }
@@ -51,8 +53,10 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
       <p className="tier-legend__pias">
         {pias ? (
           <>
-            🤡 Pias van de week: <strong>{pias.naam}</strong> — ging als
-            torenhoge favoriet ({Math.round(pias.winChance * 100)}%) onderuit.
+            {pias.beschermd ? "📊 Opvallende week" : "🤡 Pias van de week"}:{" "}
+            <strong>{pias.naam}</strong> — ging als{" "}
+            {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
+            {Math.round(pias.winChance * 100)}%) onderuit.
             {pias.sneer}
           </>
         ) : (

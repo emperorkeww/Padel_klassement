@@ -401,6 +401,7 @@ export function Feed() {
                           tekst={coachOpmerking(event, {
                             intensiteitVoor,
                             profiles: pmap,
+                            teams: tmap,
                             gebruikt: gebruiktCoach,
                           })}
                           mood={coachStemming(event, intensiteitVoor)}
@@ -669,37 +670,63 @@ function FeedItem({
         </FeedHighlight>
       );
     case "maand-pias":
-      return (
-        <FeedHighlight cat="roast" icon="🤡" label="Pias van de maand" to={`/groepen/${event.groupId}`} at={event.at}>
-          {event.playerId === myId ? (
-            <>
-              Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}): je {event.detail}.
-            </>
-          ) : (
-            <>
-              {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):{" "}
-              {event.detail}.
-            </>
-          )}
-        </FeedHighlight>
-      );
+      {
+        const beschermd = pmap[event.playerId]?.roast_schild ?? false;
+        return (
+          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende maand" : "Pias van de maand"} to={`/groepen/${event.groupId}`} at={event.at}>
+            {beschermd ? (
+              <>
+                {name(event.playerId)} had een <strong>opvallende maand</strong> ({event.periodeLabel}): {event.detail}.
+              </>
+            ) : event.playerId === myId ? (
+              <>
+                Jij bent de <strong>pias van de maand</strong> ({event.periodeLabel}): je {event.detail}.
+              </>
+            ) : (
+              <>
+                {name(event.playerId)} is de <strong>pias van de maand</strong> ({event.periodeLabel}):{" "}
+                {event.detail}.
+              </>
+            )}
+          </FeedHighlight>
+        );
+      }
     case "pias-week":
-      return (
-        <FeedHighlight cat="roast" icon="🤡" label="Pias van de week" to={`/groepen/${event.groupId}`} at={event.at}>
-          {event.playerId === myId ? (
-            <>
-              Jij bent de <strong>pias van de week</strong> in {event.groupName}: verloor als
-              torenhoge favoriet ({Math.round(event.winChance * 100)}%).
-            </>
-          ) : (
-            <>
-              {name(event.playerId)} is de <strong>pias van de week</strong> in {event.groupName}:
-              verloor als torenhoge favoriet ({Math.round(event.winChance * 100)}%).
-            </>
-          )}
-        </FeedHighlight>
-      );
+      {
+        const beschermd = pmap[event.playerId]?.roast_schild ?? false;
+        return (
+          <FeedHighlight cat="roast" icon={beschermd ? "📊" : "🤡"} label={beschermd ? "Opvallende week" : "Pias van de week"} to={`/groepen/${event.groupId}`} at={event.at}>
+            {beschermd ? (
+              <>
+                {name(event.playerId)} had een <strong>opvallende week</strong> in {event.groupName}:
+                verloor als favoriet ({Math.round(event.winChance * 100)}% kans).
+              </>
+            ) : event.playerId === myId ? (
+              <>
+                Jij bent de <strong>pias van de week</strong> in {event.groupName}: verloor als
+                torenhoge favoriet ({Math.round(event.winChance * 100)}%).
+              </>
+            ) : (
+              <>
+                {name(event.playerId)} is de <strong>pias van de week</strong> in {event.groupName}:
+                verloor als torenhoge favoriet ({Math.round(event.winChance * 100)}%).
+              </>
+            )}
+          </FeedHighlight>
+        );
+      }
     case "zwarte-piet":
+      {
+        const beschermd = pmap[event.toPlayerId]?.roast_schild ?? false;
+        if (beschermd) {
+          return (
+            <FeedHighlight cat="roast" icon="📊" label="Schande-token" to={`/groepen/${event.groupId}`} at={event.at}>
+              {name(event.toPlayerId)} kreeg het <strong>schande-token</strong> in {event.groupName}
+              {event.fromPlayerId ? ` van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
+            </FeedHighlight>
+          );
+        }
+      }
       return (
         <FeedHighlight cat="roast" icon="🃏" label="Zwarte Piet" to={`/groepen/${event.groupId}`} at={event.at}>
           {event.toPlayerId === myId ? "Jij pakte" : `${name(event.toPlayerId)} pakte`} de{" "}
