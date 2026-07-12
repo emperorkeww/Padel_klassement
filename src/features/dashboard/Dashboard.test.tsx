@@ -128,6 +128,15 @@ describe("<Dashboard />", () => {
     ).toBeInTheDocument();
   });
 
+  it("bundelt de secundaire gamification achter één inklapper (#276)", async () => {
+    renderPage();
+    const titel = await screen.findByText(/jouw spel & stats/i);
+    const details = titel.closest("details");
+    expect(details).not.toBeNull();
+    // Weekmissies zit binnen die inklapper, niet los op het overzicht.
+    expect(details!.querySelector(".week-missions")).not.toBeNull();
+  });
+
   it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {
     const { container } = renderPage();
     expect(await screen.findByText("Weekmissies")).toBeInTheDocument();
