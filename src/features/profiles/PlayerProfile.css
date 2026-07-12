@@ -495,7 +495,8 @@
   }
 }
 
-/* Trends (#58): win% per maand als staafjes + weetjes-lijst. */
+/* Trends (#58): win% per maand als staafjes + weetjes als .highlight-tiles
+   (zelfde tegel-taal als de Overzicht-highlights). */
 .trend-months {
   display: flex;
   align-items: flex-end;
@@ -537,15 +538,6 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
-.trend-facts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--sp-2);
-  font-size: var(--fs-sm);
-}
-
 /* Eigen-profiel highlights: tegels in dezelfde taal als de Stat- en
    .h2h-highlight-tegels (icoon + kort label + waarde), i.p.v. losse zinnen. */
 .highlight-tiles {
