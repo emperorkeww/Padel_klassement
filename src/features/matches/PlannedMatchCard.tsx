@@ -7,6 +7,8 @@ import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { winChance } from "../../lib/elo";
 import { inTeam } from "../../lib/results";
+import { CoachAvatar } from "../../components/CoachAvatar";
+import { coachPreMatch } from "../../lib/coachMoments";
 import {
   groupRivalries,
   rivalryForMatch,
@@ -126,6 +128,26 @@ export function PlannedMatchCard({
   // guard-trigger dwingt dat ook serverside af.
   const { user } = useAuth();
   const myId = user?.id ?? null;
+  // Coach Rudy's pre-match hype (#213): kansinschatting vanuit jóuw team.
+  const mijnTeam =
+    myId && inTeam(teams[m.team_a_id], myId)
+      ? "a"
+      : myId && inTeam(teams[m.team_b_id], myId)
+        ? "b"
+        : null;
+  const mijnKans =
+    chance == null || mijnTeam == null
+      ? null
+      : mijnTeam === "a"
+        ? chance
+        : 1 - chance;
+  const coachPre =
+    mijnKans != null && myId
+      ? coachPreMatch(mijnKans, `${m.id}-${myId}`, {
+          intensiteit: "gemeen",
+          schild: profiles[myId]?.roast_schild ?? false,
+        })
+      : null;
   const isGroupMatch = m.group_id != null;
   const predictions = useAsync(
     () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
@@ -362,6 +384,13 @@ export function PlannedMatchCard({
       {pctA != null && (
         <p className="planned-card__winhint">
           Winkans op basis van de huidige ratings.
+        </p>
+      )}
+
+      {coachPre && (
+        <p className="planned-card__coach" role="note">
+          <CoachAvatar size={20} className="planned-card__coach-face" />
+          <span>{coachPre}</span>
         </p>
       )}
 

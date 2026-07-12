@@ -191,3 +191,17 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+
+/* Coach Rudy's pre-match hype (#213): gezicht + regel. */
+.planned-card__coach {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--coach);
+}
+.planned-card__coach-face {
+  flex-shrink: 0;
+}

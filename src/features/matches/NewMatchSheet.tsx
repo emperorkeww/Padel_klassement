@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "../../lib/errors";
+import { coachMatchQuip } from "../../lib/coachMoments";
 import { celebrate } from "../../lib/confetti";
 import { tap, winPulse } from "../../lib/haptics";
 import { displayName } from "../profiles/api";
@@ -242,14 +243,35 @@ export function NewMatchSheet({
         setScores: setScores.length > 0 ? setScores : null,
         groupId,
       });
+      const winnaar = sa === sb ? null : sa! > sb! ? "a" : "b";
+      const loggerTeam = teamA.includes(myId)
+        ? "a"
+        : teamB.includes(myId)
+          ? "b"
+          : null;
       // Vieren als de logger zelf in het winnende team zit.
-      if (sa !== sb && (sa! > sb! ? teamA : teamB).includes(myId)) {
+      if (winnaar && loggerTeam === winnaar) {
         celebrate();
         winPulse();
       } else {
         tap();
       }
-      toast.success("Match toegevoegd.");
+      // Coach Rudy reageert direct op je eigen uitslag (#213); logt de speler
+      // een match zónder zelf mee te spelen, dan houden we het neutraal.
+      toast.success(
+        loggerTeam
+          ? coachMatchQuip({
+              uitkomst:
+                winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
+              bagel: sa !== sb && Math.min(sa!, sb!) === 0,
+              seed: `${myId}-${sa}-${sb}`,
+              ctx: {
+                intensiteit: "gemeen",
+                schild: byId(myId)?.roast_schild ?? false,
+              },
+            })
+          : "Match toegevoegd.",
+      );
       onCreated();
       onClose();
     } catch (err) {

@@ -7,6 +7,9 @@ import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
 import { useToast } from "../../components/ToastProvider";
 import { MatchListSkeleton, Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
+import { CoachAvatar } from "../../components/CoachAvatar";
+import { COMMENTATOR } from "../../lib/roastTone";
+import { coachBriefing } from "../../lib/coachMoments";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
@@ -290,6 +293,22 @@ export function Dashboard() {
         a.created_at.localeCompare(b.created_at),
     );
   const nextMatch = planned[0] ?? null;
+  // Coach Rudy's ochtendpraatje (#213): één regel over vandaag, gevoed door je
+  // reeks/positie/volgende match. Respecteert je roast-schild; op het dashboard
+  // (niet groep-gescoopt) hanteren we de standaard-intensiteit.
+  const coachBriefingTekst = me
+    ? coachBriefing({
+        rank,
+        streak,
+        losing,
+        heeftMatch: !!nextMatch,
+        seed: `${myId}-${new Date().toISOString().slice(0, 10)}`,
+        ctx: {
+          intensiteit: "gemeen",
+          schild: myProfile?.roast_schild ?? false,
+        },
+      })
+    : null;
   // Komen alle openstaande uitslagen uit één groep, link dan direct naar de
   // rondes van die groep in plaats van naar de algemene matchespagina.
   const plannedGroupId =
@@ -371,6 +390,15 @@ export function Dashboard() {
                   : losing >= 3
                     ? ` Oei, al ${losing} potjes op rij verloren... Tijd voor een nieuwe grip of betere smoesjes? 💪`
                     : ""}
+              </p>
+            )}
+            {coachBriefingTekst && !standings.loading && (
+              <p className="hero__coach" role="note">
+                <CoachAvatar size={22} className="hero__coach-face" />
+                <span>
+                  <span className="hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
+                  {coachBriefingTekst}
+                </span>
               </p>
             )}
             {form.length > 0 && (

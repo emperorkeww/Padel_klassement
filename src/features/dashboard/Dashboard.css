@@ -67,6 +67,25 @@
   line-height: 1.55;
 }
 
+/* Coach Rudy's ochtendbriefing (#213): gezicht + regel onder de subtitel. */
+.hero__coach {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.hero__coach-face {
+  margin-top: 1px;
+}
+.hero__coach-name {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--coach);
+}
+
 /* Laadstatus van de subregel: één shimmerlijn op tekstbreedte. */
 .hero__sub-sk {
   width: min(320px, 60vw);
