@@ -4,7 +4,8 @@
 
 import { Link } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
-import { roastCtx, roastSeed, sneerSuffix } from "../../lib/roastTone";
+import { CoachSneer } from "../../components/CoachSneer";
+import { roastCtx, roastSeed } from "../../lib/roastTone";
 import type { Group, Profile } from "../../lib/types";
 import { displayName } from "../profiles/api";
 import type { ZwartePietHolder } from "./zwartePietApi";
@@ -28,21 +29,24 @@ export function ZwartePietCard({
 }) {
   const naam = displayName(profiles[piet.holderId]);
   const beschermd = profiles[piet.holderId]?.roast_schild ?? false;
-  const sneer = sneerSuffix(
-    roastCtx(group, profiles[piet.holderId]),
-    roastSeed(piet.holderId, piet.since),
-  );
+  // Coach Rudy als geattribueerde spreker (#287) i.p.v. de losse 🎙️-emoji.
+  const ctx = roastCtx(group, profiles[piet.holderId]);
+  const seed = roastSeed(piet.holderId, piet.since);
   const dagen = dagenSinds(piet.since);
   const sinds =
     dagen === 0 ? "sinds vandaag" : `al ${dagen} ${dagen === 1 ? "dag" : "dagen"}`;
 
   return (
-    <section className="card pias-card">
+    <section className="card pias-card pias-card--piet">
       <div className="card__head">
         <h2 className="card__title">
           {beschermd ? "📊 Schande-token" : "🃏 De Zwarte Piet"}
         </h2>
       </div>
+      <p className="pias-card__lede">
+        Het rondgaande schande-token. Blijft bij dezelfde speler tot die wint en
+        het doorschuift — los van de maandelijkse Pias.
+      </p>
 
       <Link className="pias-card__row" to={`/spelers/${piet.holderId}`}>
         <span className="pias-card__emoji" aria-hidden="true">
@@ -50,13 +54,15 @@ export function ZwartePietCard({
         </span>
         <Avatar profile={profiles[piet.holderId]} size={44} />
         <span className="pias-card__body">
-          <span className="pias-card__name">{naam}</span>
-          <span className="pias-card__detail">
-            {piet.detail}
-            {sneer}
+          <span className="pias-card__name">
+            {naam}
+            <span className="pias-card__role pias-card__role--piet">Zwarte Piet</span>
           </span>
+          <span className="pias-card__detail">{piet.detail}</span>
         </span>
       </Link>
+
+      <CoachSneer ctx={ctx} seed={seed} />
 
       <p className="pias-card__meta">
         {beschermd
