@@ -1,0 +1,47 @@
+/* Coach Rudy's jab-bubble (#287): compacte variant van de feed-speech-bubble,
+   herbruikbaar onder de pias-/zwarte-piet-kaarten en de pias-banner. */
+.coach-sneer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.coach-sneer__face {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.coach-sneer__bubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  min-width: 0;
+}
+/* Pijltje naar de avatar toe. */
+.coach-sneer__bubble::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  background: var(--surface-2);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.coach-sneer__name {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--coach);
+}
+.coach-sneer__text {
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink-soft);
+}
