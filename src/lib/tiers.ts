@@ -67,16 +67,16 @@ export const TIER_BANDEN: ReadonlyArray<{
   min: number;
   max: number | null;
 }> = [
-  { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "geeft elk punt zomaar weg", min: 500, max: 600 },
-  { naam: "No show", key: "karton", emoji: "🫥", flavor: "lichamelijk aanwezig, verder afwezig", min: 600, max: 700 },
-  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "raakt de bal puur per ongeluk", min: 700, max: 800 },
-  { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat erbij en kijkt ernaar", min: 800, max: 900 },
-  { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "grote bek, klein spelletje", min: 900, max: 1000 },
-  { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "denkt dat-ie goed is — schattig", min: 1000, max: 1100 },
-  { naam: "Pletwals", key: "platina", emoji: "🚜", flavor: "walst de tegenstander plat", min: 1100, max: 1200 },
-  { naam: "De excuses verzamelaar", key: "diamant", emoji: "😏", flavor: "verzamelt de smoesjes van z'n slachtoffers", min: 1200, max: 1300 },
-  { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "altijd tweede, nooit de GOAT", min: 1300, max: 1400 },
-  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "onaantastbaar — en dat weet iedereen", min: 1400, max: null },
+  { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "heeft nog nooit van een glaswand gehoord", min: 500, max: 600 },
+  { naam: "No show", key: "karton", emoji: "🫥", flavor: "lichamelijk aanwezig, maar komt puur voor de derde helft", min: 600, max: 700 },
+  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "slaat vaker gaten in de lucht dan ballen over het net", min: 700, max: 800 },
+  { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "staat er strategisch bij als extra baljongen", min: 800, max: 900 },
+  { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "praat alsof-ie WPT speelt, raakt geen pepernoot", min: 900, max: 1000 },
+  { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "racket van €300, techniek van een houten plank", min: 1000, max: 1100 },
+  { naam: "Pletwals", key: "platina", emoji: "🚜", flavor: "heeft geen genade en mept elke lob de kooi uit", min: 1100, max: 1200 },
+  { naam: "De excuses verzamelaar", key: "diamant", emoji: "😏", flavor: "gripje lag verkeerd, wind stond fout, glas te stroef", min: 1200, max: 1300 },
+  { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "altijd de bruidsmeid, nooit de bruid", min: 1300, max: 1400 },
+  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft z'n eigen VIP-parkeerplek bij de club al geclaimd", min: 1400, max: null },
 ];
 
 const ROMEINS = ["III", "II", "I"] as const;

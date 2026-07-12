@@ -58,7 +58,7 @@ describe("tierFor", () => {
 
   it("draagt emoji en ludieke bijnaam", () => {
     expect(tierFor(1000)?.emoji).toBe("😤");
-    expect(tierFor(1000)?.flavor).toBe("denkt dat-ie goed is — schattig");
+    expect(tierFor(1000)?.flavor).toBe("racket van €300, techniek van een houten plank");
     expect(tierFor(450)?.emoji).toBe("🥴");
   });
 
@@ -75,9 +75,9 @@ describe("tierFor", () => {
 
 describe("tierTitle", () => {
   it("bevat de bijnaam en het rating-bereik", () => {
-    expect(tierTitle(tierFor(450)!)).toBe("Sletje van de baan III · geeft elk punt zomaar weg · rating tot 533");
-    expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066");
-    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · onaantastbaar — en dat weet iedereen · rating 1400+");
+    expect(tierTitle(tierFor(450)!)).toBe("Sletje van de baan III · heeft nog nooit van een glaswand gehoord · rating tot 533");
+    expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · racket van €300, techniek van een houten plank · rating 1034–1066");
+    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · heeft z'n eigen VIP-parkeerplek bij de club al geclaimd · rating 1400+");
   });
 });
 

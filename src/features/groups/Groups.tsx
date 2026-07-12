@@ -161,7 +161,7 @@ export function Groups() {
       <header className="page-head">
         <h1 className="page-title">Spelen</h1>
         <p className="page-subtitle">
-          Hier regel je met wie en wanneer je speelt.
+          Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
         </p>
       </header>
 
