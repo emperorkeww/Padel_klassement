@@ -19,9 +19,10 @@ export function CoachIntro({ onDismiss }: { onDismiss: () => void }) {
       <div className="coach-intro__body">
         <h2 className="coach-intro__title">Maak kennis met {COMMENTATOR.naam}</h2>
         <p className="coach-intro__text">
-          Vanaf nu becommentarieert Coach Rudy je feed: hij bejubelt je zeges en
-          fileert je chokes. Te veel van het goede? Je kunt hem per groep doseren of
-          jezelf afschermen met een roast-schild.
+          Vanaf nu becommentarieert {COMMENTATOR.naam} je feed. Vers uit de Belgische dug-out,
+          neemt hij na zijn WK-kwartfinale en het beruchte watersproeier-incident geen blad
+          meer voor de mond. Hij bejubelt je zeges en fileert je chokes met tactische 'analyses'.
+          Te veel van het goede? Je kunt hem per groep doseren of jezelf afschermen met een roast-schild.
         </p>
         <div className="coach-intro__actions">
           <Link className="btn btn--sm" to="/profiel">

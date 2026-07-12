@@ -19,9 +19,10 @@ export function CoachAbout({
       <div className="coach-about__head">
         <CoachAvatar size={44} />
         <p className="coach-about__lead">
-          {COMMENTATOR.naam} is de vaste commentator van de app. Hij reageert op
-          jouw padel — pias van de week, promoties, monsterzeges — met een knipoog
-          en af en toe een prik.
+          {COMMENTATOR.naam} is onze bondscoach-in-ruste. Na zijn WK-avontuur met de
+          Rode Duivels (waar hij de tactiek verving door een sportpet en een nat pak van
+          de watersproeiers) becommentarieert hij nu jouw padel. Verwacht tactische analyses
+          met een zware Franse tongval en genadeloze sneren bij elke blunder.
         </p>
       </div>
       <ul className="coach-about__controls">

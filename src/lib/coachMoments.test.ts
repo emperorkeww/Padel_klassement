@@ -13,7 +13,7 @@ describe("coachBriefing", () => {
 
   it("kiest een verliesreeks-toon bij losing >= 3", () => {
     const dip = coachBriefing({ rank: 20, streak: 0, losing: 4, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(dip).toMatch(/karakter|omhoog|grip/i);
+    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels/i);
   });
 
   it("met roast-schild een neutrale, niet-spottende regel", () => {
@@ -37,7 +37,7 @@ describe("coachMatchQuip", () => {
 
 describe("coachPreMatch", () => {
   it("lage winkans = underdog-praatje", () => {
-    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog/i);
+    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax/i);
   });
   it("hoge winkans = favoriet-waarschuwing", () => {
     expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande/i);
