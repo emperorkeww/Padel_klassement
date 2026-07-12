@@ -273,7 +273,8 @@ select results_eq(
 -- Match verwijderen: tips cascaden weg, ook al zijn ze vergrendeld.
 delete from public.matches where id = 'c0000000-0000-0000-0000-000000000001';
 select is(
-  (select count(*)::int from public.match_predictions),
+  (select count(*)::int from public.match_predictions
+    where group_id = 'a0000000-0000-0000-0000-0000000000f0'),
   0, 'match verwijderd: tips zijn weg (cascade door de delete-guard heen)'
 );
 
@@ -295,7 +296,8 @@ update public.matches
 
 delete from public.groups where id = 'a0000000-0000-0000-0000-0000000000f0';
 select is(
-  (select count(*)::int from public.match_predictions),
+  (select count(*)::int from public.match_predictions
+    where group_id = 'a0000000-0000-0000-0000-0000000000f0'),
   0, 'groep verwijderd: tips zijn weg terwijl de match blijft bestaan'
 );
 
