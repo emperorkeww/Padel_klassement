@@ -398,6 +398,15 @@ export function Leaderboard() {
       ? extraResults.filter((p) => !rankedKeys.has(p.id))
       : [];
 
+  // Aantal actieve filterkeuzes — als badge op de menuknop, zodat je ook met
+  // een dichtgeklapt menu ziet dat er iets gefilterd wordt. (Zoeken staat los
+  // zichtbaar en telt hier niet mee.)
+  const activeFilters =
+    (season ? 1 : 0) +
+    (groupId ? 1 : 0) +
+    (asof ? 1 : 0) +
+    (minMatches > 0 ? 1 : 0);
+
   return (
     <div>
       <header className="page-head">
@@ -409,7 +418,7 @@ export function Leaderboard() {
         </p>
       </header>
 
-      <div className="toolbar">
+      <div className="lb-toolbar">
         <div className="tabs">
           <button
             className={`tab ${tab === "player" ? "is-active" : ""}`}
@@ -431,53 +440,112 @@ export function Leaderboard() {
           </button>
         </div>
 
-        <select
-          className="select select--filter"
-          aria-label="Seizoen"
-          value={season?.id ?? ""}
-          onChange={(e) => setSeasonId(e.target.value)}
-        >
-          <option value="">Alle tijden</option>
-          {/* Gedeeld seizoen uit de URL dat (nog) niet in de lijst zit. */}
-          {season && !seasons.some((s) => s.id === season.id) && (
-            <option value={season.id}>{season.label}</option>
-          )}
-          {seasons.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-
-        {tab !== "team" && (
-          <select
-            className="select select--filter"
-            aria-label="Groep"
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
-          >
-            <option value="">Alle groepen</option>
-            {(groups.data ?? []).map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+        {/* Zoekbalk staat direct zichtbaar tussen de tabs en de filterknop. */}
+        {searchable && (
+          <div className="lb-search" role="search">
+            <svg
+              className="lb-search__icon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              className="lb-search__input"
+              type="search"
+              placeholder="Zoek een speler op naam…"
+              aria-label="Zoek een speler"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {q && (
+              <button
+                type="button"
+                className="lb-search__clear"
+                aria-label="Zoekterm wissen"
+                onClick={() => setQ("")}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Geavanceerde filters achter een uitklap: de ranglijst blijft het
-            hoofdpodium, wie wil verdiepen vindt ze hier (#71). */}
-        <details className="lb-filters">
-          <summary>
-            Filters
-            {(asof ? 1 : 0) + (minMatches > 0 ? 1 : 0) > 0 && (
-              <span className="lb-filters__count">
-                {(asof ? 1 : 0) + (minMatches > 0 ? 1 : 0)}
-              </span>
+        {/* Alleen de filters (seizoen/groep/geavanceerd) zitten achter de
+            menuknop; een telbadge toont hoeveel er actief zijn. */}
+        <details className="lb-menu">
+          <summary className="lb-menu__btn" aria-label="Filteren">
+            <svg
+              className="lb-menu__icon"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M3 6h18M3 12h18M3 18h18" />
+            </svg>
+            <span className="lb-menu__label">Filter</span>
+            {activeFilters > 0 && (
+              <span className="lb-filters__count">{activeFilters}</span>
             )}
           </summary>
-          <div className="lb-filters__body">
-            {/* Stand op datum: de ranglijst zoals hij was t/m die dag. */}
+          <div className="lb-menu__panel">
+            <div className="lb-menu__row">
+              <label className="lb-filters__field">
+                <span>Seizoen</span>
+                <select
+                  className="select select--filter"
+                  aria-label="Seizoen"
+                  value={season?.id ?? ""}
+                  onChange={(e) => setSeasonId(e.target.value)}
+                >
+                  <option value="">Alle tijden</option>
+                  {/* Gedeeld seizoen uit de URL dat (nog) niet in de lijst zit. */}
+                  {season && !seasons.some((s) => s.id === season.id) && (
+                    <option value={season.id}>{season.label}</option>
+                  )}
+                  {seasons.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {tab !== "team" && (
+                <label className="lb-filters__field">
+                  <span>Groep</span>
+                  <select
+                    className="select select--filter"
+                    aria-label="Groep"
+                    value={groupId}
+                    onChange={(e) => setGroupId(e.target.value)}
+                  >
+                    <option value="">Alle groepen</option>
+                    {(groups.data ?? []).map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+
+            {/* Geavanceerd: stand-op-datum en minimaal aantal matches (#71). */}
             <label className="lb-filters__field">
               <span>Stand op datum</span>
               <input
@@ -493,7 +561,7 @@ export function Leaderboard() {
             {myLastMatchDay && (
               <button
                 type="button"
-                className={`tab ${asof === myLastMatchDay ? "is-active" : ""}`}
+                className={`tab lb-menu__preset ${asof === myLastMatchDay ? "is-active" : ""}`}
                 onClick={() =>
                   setAsof(asof === myLastMatchDay ? "" : myLastMatchDay)
                 }
@@ -501,7 +569,6 @@ export function Leaderboard() {
                 Mijn laatste match
               </button>
             )}
-            {/* Minimaal aantal matches om mee te tellen in de lijst. */}
             <label className="lb-filters__field">
               <span>Minimaal gespeeld</span>
               <select
@@ -521,45 +588,6 @@ export function Leaderboard() {
           </div>
         </details>
       </div>
-
-      {searchable && (
-        <div className="lb-search" role="search">
-          <svg
-            className="lb-search__icon"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-          <input
-            className="lb-search__input"
-            type="search"
-            placeholder="Zoek een speler op naam…"
-            aria-label="Zoek een speler"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          {q && (
-            <button
-              type="button"
-              className="lb-search__clear"
-              aria-label="Zoekterm wissen"
-              onClick={() => setQ("")}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
 
       {asof && (
         <p className="lb-asof-note" role="status">
@@ -647,7 +675,7 @@ export function Leaderboard() {
             Geen speler in de ranglijst gevonden voor “{q.trim()}”.
           </p>
         ) : (
-          <>
+          <div className="standings-switch">
             <StandingsTable
               rows={visibleRows}
               showForm={tab === "player"}
@@ -658,7 +686,7 @@ export function Leaderboard() {
               meRef={meItemRef}
               lead={tab === "player" ? "rating" : "points"}
             />
-          </>
+          </div>
         )}
       </div>
 
@@ -950,17 +978,19 @@ function SortableTh({
   sort,
   onSort,
   title,
+  className,
 }: {
   label: string;
   sortKey: SortKey;
   sort: SortState | null;
   onSort: (key: SortKey) => void;
   title?: string;
+  className?: string;
 }) {
   const active = sort?.key === sortKey;
   return (
     <th
-      className="num th-sort"
+      className={`num th-sort${className ? ` ${className}` : ""}`}
       aria-sort={
         active ? (sort!.dir === "asc" ? "ascending" : "descending") : "none"
       }
@@ -1031,21 +1061,23 @@ function StandingsTable({
             <th style={{ width: "2rem" }}>#</th>
             <th>Naam</th>
             {showForm && <th>Vorm</th>}
-            <th className="num">Gespeeld</th>
+            <th className="num col-played">Gespeeld</th>
             <th className="num" aria-label="Winst · gelijk · verlies">
               W·G·V
             </th>
             <SortableTh
-              label="Winrate"
+              label="Win%"
               sortKey="winrate"
               sort={sort}
               onSort={onSort}
+              title="Winstpercentage"
             />
             <SortableTh
               label="Saldo"
               sortKey="saldo"
               sort={sort}
               onSort={onSort}
+              className="col-saldo"
             />
             <SortableTh
               label="Punten"
@@ -1109,7 +1141,7 @@ function StandingsTable({
                     )}
                   </td>
                 )}
-                <td className="num">{r.played}</td>
+                <td className="num col-played">{r.played}</td>
                 <td
                   className="num record-cell"
                   aria-label={`${r.won} winst, ${r.drawn} gelijk, ${r.lost} verlies`}
@@ -1132,7 +1164,7 @@ function StandingsTable({
                     "—"
                   )}
                 </td>
-                <td className="num">
+                <td className="num col-saldo">
                   {r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}
                 </td>
                 <td className="num">
@@ -1185,21 +1217,24 @@ function RankList({
   return (
     <ol className="ranklist" ref={flipRef}>
       {rows.map((r, i) => {
+        const rank = r.rank ?? i + 1;
+        // Podium-tint alleen op het ratingklassement: bij teams zeggen
+        // goud/zilver/brons minder (die volgorde is puur op punten).
+        const topClass =
+          lead === "rating" && rank <= 3 ? ` ranklist__row--top${rank}` : "";
         const body = (
           <>
             <span className="rank-wrap ranklist__rank">
-              <span className={`rank rank--${r.rank ?? i + 1}`}>
-                {r.rank ?? i + 1}
-              </span>
+              <span className={`rank rank--${rank}`}>{rank}</span>
               <ShiftBadge shift={r.shift} />
             </span>
-            <Avatar profile={r.profile} name={r.name} size={36} />
+            <Avatar profile={r.profile} name={r.name} size={40} />
             <span className="ranklist__main">
               <span className="ranklist__name">
                 {r.name}
                 {r.isMe && <span className="badge badge--accent">jij</span>}
               </span>
-              <span className="ranklist__sub">
+              <span className="ranklist__meta">
                 <TierBadge
                   rating={r.rating}
                   dimmed={r.games > 0 && r.games < THIN_GAMES}
@@ -1207,6 +1242,7 @@ function RankList({
                 />
                 {r.form.length > 0 && <FormChips form={r.form} size="sm" />}
                 <span
+                  className="ranklist__record"
                   aria-label={`${r.won} winst, ${r.drawn} gelijk, ${r.lost} verlies`}
                 >
                   {r.won}·{r.drawn}·{r.lost}
@@ -1236,7 +1272,7 @@ function RankList({
             key={r.key}
             data-flip-key={r.key}
             ref={r.isMe ? meRef : undefined}
-            className={`ranklist__row ${r.isMe ? "is-me" : ""}`}
+            className={`ranklist__row ${r.isMe ? "is-me" : ""}${topClass}`}
           >
             {r.link ? (
               <Link
