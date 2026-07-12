@@ -106,11 +106,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--surface-2);
+}
+/* Meerdere zinnen (avondverslag) net iets meer lucht tussen de regels. */
+.coach-comment__text + .coach-comment__text {
+  margin-top: 2px;
 }
 /* Klein pijltje naar de micro-avatar toe. */
 .coach-comment__bubble::before {
