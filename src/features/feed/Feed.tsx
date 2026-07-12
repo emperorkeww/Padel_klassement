@@ -234,6 +234,10 @@ export function Feed() {
 
   // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli".
   let lastDay = "";
+  // Eén gedeelde set per render: zo herhaalt Coach Rudy geen enkele quip binnen
+  // de zichtbare feed (anti-herhaling, #201). Deterministisch dankzij de vaste
+  // feed-volgorde.
+  const gebruiktCoach = new Set<string>();
 
   return (
     <div>
@@ -331,7 +335,11 @@ export function Feed() {
                       name={name}
                     />
                     <CoachComment
-                      tekst={coachOpmerking(event, { intensiteitVoor, profiles: pmap })}
+                      tekst={coachOpmerking(event, {
+                        intensiteitVoor,
+                        profiles: pmap,
+                        gebruikt: gebruiktCoach,
+                      })}
                     />
                   </li>
                 </Fragment>

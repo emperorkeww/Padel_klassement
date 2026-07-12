@@ -79,3 +79,33 @@ describe("coachOpmerking", () => {
     expect(coachOpmerking(e, beschermd)).toBeNull();
   });
 });
+
+describe("coachOpmerking — anti-herhaling (#201)", () => {
+  const champion = (): FeedEvent => ({
+    kind: "season-champion",
+    at: "2026-07-01T12:00:00Z",
+    groupId: "g1",
+    groupName: "Vrijdag",
+    playerId: "p1",
+    seasonLabel: "Q2 2026",
+  });
+
+  it("herhaalt geen quip binnen één weergave, zelfs bij dezelfde seed", () => {
+    // Zelfde event (zelfde seed) → zonder dedup zou het identiek zijn. Met een
+    // gedeelde set moet elke quip verschillen — en dat bewijst meteen dat de
+    // eventpool minstens 8 varianten heeft.
+    const g = new Set<string>();
+    const c: CoachCtx = { intensiteitVoor: () => "gemeen", profiles: {}, gebruikt: g };
+    const acht = Array.from({ length: 8 }, () => coachOpmerking(champion(), c));
+    expect(new Set(acht).size).toBe(8);
+  });
+
+  it("is deterministisch: zelfde volgorde + verse set → zelfde resultaat", () => {
+    const run = () => {
+      const g = new Set<string>();
+      const c: CoachCtx = { intensiteitVoor: () => "gemeen", profiles: {}, gebruikt: g };
+      return [champion(), champion(), champion()].map((e) => coachOpmerking(e, c));
+    };
+    expect(run()).toEqual(run());
+  });
+});
