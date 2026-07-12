@@ -55,26 +55,32 @@ import "./Feed.css";
 /** Ruim venster aan recente uitslagen om de feed uit te filteren. */
 const MATCH_WINDOW = 250;
 
-/** Filterchips: soortgroep → event-kinds. `null` = alles. */
+/** Filterchips: soortgroep → event-kinds. `null` = alles. Categorieën spiegelen
+ *  de nieuwe kaart-hiërarchie (#232): de vroeger overladen "Groepen" is
+ *  opgesplitst in Klassement (+ kampioen), een eigen Roast en een slanke Groepen. */
 const FILTERS = {
   Alles: null,
   Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
+  Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion"]),
+  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet"]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
     "group-joined",
     "poll",
     "poll-locked",
     "poll-booked",
-    "season-champion",
-    "maand-pias",
-    "pias-week",
-    "zwarte-piet",
   ]),
-  Klassement: new Set<FeedEvent["kind"]>(["rank"]),
   Sociaal: new Set<FeedEvent["kind"]>(["friendship"]),
 } as const;
 type FilterLabel = keyof typeof FILTERS;
 const FILTER_LABELS = Object.keys(FILTERS) as FilterLabel[];
+
+/** Categoriekleur-stip per filter — spiegelt de highlight-kaarten (#232). */
+const FILTER_CAT: Partial<Record<FilterLabel, "match" | "rank" | "roast">> = {
+  Matches: "match",
+  Klassement: "rank",
+  Roast: "roast",
+};
 
 export function Feed() {
   const { user } = useAuth();
@@ -292,21 +298,27 @@ export function Feed() {
 
       {!loading && !error && (
         <div className="tabs feed__filters">
-          {FILTER_LABELS.map((label) => (
-            <button
-              key={label}
-              type="button"
-              className={`tab ${activeFilter === label ? "is-active" : ""}`}
-              onClick={() => selectFilter(label)}
-            >
-              {label}
-              {label !== "Alles" && (
-                <span className="tab__count" aria-hidden="true">
-                  {countFor(label)}
-                </span>
-              )}
-            </button>
-          ))}
+          {FILTER_LABELS.map((label) => {
+            const cat = FILTER_CAT[label];
+            return (
+              <button
+                key={label}
+                type="button"
+                className={`tab ${activeFilter === label ? "is-active" : ""}`}
+                onClick={() => selectFilter(label)}
+              >
+                {cat && (
+                  <span className="tab__dot" data-cat={cat} aria-hidden="true" />
+                )}
+                {label}
+                {label !== "Alles" && (
+                  <span className="tab__count" aria-hidden="true">
+                    {countFor(label)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
