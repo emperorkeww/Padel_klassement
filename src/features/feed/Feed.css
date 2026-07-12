@@ -208,19 +208,8 @@
 }
 
 /* ===== Highlight-kaarten (#232) =====
-   Categoriekleuren coderen de filtercategorie (informatie, geen sier). Licht op
-   :root, donker onder [data-theme="dark"] — zelfde patroon als de app-tokens. */
-:root {
-  --cat-rank: #3b6fe0;   /* klassement */
-  --cat-champ: #cf9414;  /* kampioen */
-  --cat-roast: #d84f95;  /* roast: pias / zwarte piet */
-}
-:root[data-theme="dark"] {
-  --cat-rank: #6f9bff;
-  --cat-champ: #e6b13f;
-  --cat-roast: #f072b0;
-}
-
+   De categoriekleuren (--cat-rank/-champ/-roast/-match) staan centraal in
+   index.css (licht + donker), onder dezelfde contrast-CI als de app-tokens. */
 .feed-hi {
   --cat: var(--cat-roast);
   display: flex;
@@ -284,8 +273,7 @@
 .feed-hi__title strong { font-weight: 700; }
 
 /* Filter-categoriestip (#232 PR B): koppelt de gekleurde filters visueel aan de
-   highlight-kaarten. --cat-match sluit aan bij de app-accent. */
-:root { --cat-match: var(--accent); }
+   highlight-kaarten. --cat-match (= app-accent) staat centraal in index.css. */
 .feed__filters .tab__dot {
   display: inline-block;
   vertical-align: middle;
