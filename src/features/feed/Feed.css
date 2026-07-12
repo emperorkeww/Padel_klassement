@@ -277,3 +277,82 @@
 .feed__filters .tab__dot[data-cat="match"] { background: var(--cat-match); }
 .feed__filters .tab__dot[data-cat="rank"] { background: var(--cat-rank); }
 .feed__filters .tab__dot[data-cat="roast"] { background: var(--cat-roast); }
+
+/* ===== Rijk speelavond-blok (#232 PR C) ===== */
+.feed-evening {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.feed-evening__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+.feed-evening__tok { font-size: 1.15rem; line-height: 1; }
+.feed-evening__title { font-weight: 700; }
+.feed-evening__group { margin-left: auto; color: var(--ink-soft); font-size: 0.78rem; }
+
+.ev-stand {
+  list-style: none;
+  margin: 0;
+  padding: 4px 14px 2px;
+  display: flex;
+  flex-direction: column;
+}
+.ev-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+}
+.ev-row:first-child { border-top: 0; }
+.ev-row__pos {
+  width: 16px;
+  flex: 0 0 auto;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.ev-row__nm {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ev-row__wl {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.ev-row__pt {
+  width: 52px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.ev-row:first-child .ev-row__pt { color: var(--cat-champ); }
+
+.ev-duo {
+  margin: 2px 14px 10px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cat-match) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cat-match) 26%, transparent);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.ev-duo strong { color: var(--ink); }
+
+.feed-evening .coach-comment { margin: 0 14px 12px; }
