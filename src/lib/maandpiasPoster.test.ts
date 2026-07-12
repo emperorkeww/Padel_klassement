@@ -3,10 +3,10 @@ import { piasPoster, piasOnderschrift } from "./maandpiasPoster";
 
 describe("piasPoster", () => {
   it("zet de maand-kop bij scope 'maand'", () => {
-    const p = piasPoster("Tom", "slikte een bagel 🥯", "januari 2026", "maand");
+    const p = piasPoster("Tom", "kreeg een 6-0 om de oren 💔", "januari 2026", "maand");
     expect(p.kop).toBe("PIAS VAN DE MAAND");
     expect(p.naam).toBe("Tom");
-    expect(p.detail).toContain("bagel");
+    expect(p.detail).toContain("6-0");
     expect(p.periodeLabel).toBe("januari 2026");
   });
 

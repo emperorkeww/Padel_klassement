@@ -23,9 +23,9 @@ describe("coachBriefing", () => {
 });
 
 describe("coachMatchQuip", () => {
-  it("bagel-winst levert een andere toon dan een gewone winst", () => {
-    const bagel = coachMatchQuip({ uitkomst: "W", bagel: true, seed: "m1", ctx: roast });
-    expect(bagel).toMatch(/6-0|bagel|vernedering/i);
+  it("6-0 winst levert een andere toon dan een gewone winst", () => {
+    const cleanSheet = coachMatchQuip({ uitkomst: "W", bagel: true, seed: "m1", ctx: roast });
+    expect(cleanSheet).toMatch(/6-0|vernedering/i);
   });
 
   it("schild → kale bevestiging", () => {

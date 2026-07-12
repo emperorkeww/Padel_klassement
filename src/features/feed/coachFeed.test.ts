@@ -27,7 +27,7 @@ describe("coachOpmerking", () => {
     expect(coachOpmerking(e, ctx)).toBeNull();
   });
 
-  it("reageert op een bagel-match", () => {
+  it("reageert op een 6-0 match", () => {
     const e: FeedEvent = {
       kind: "match",
       at: "2026-07-01T12:00:00Z",
@@ -100,7 +100,7 @@ describe("coachOpmerking", () => {
     expect(metSchild).toMatch(/rustig|volgende match|stap terug|omlaag/i);
   });
 
-  it("neutraliseert bagel-commentaar als een verliezer een roast-schild heeft", () => {
+  it("neutraliseert 6-0 commentaar als een verliezer een roast-schild heeft", () => {
     const e: FeedEvent = {
       kind: "match",
       at: "2026-07-01T12:00:00Z",
