@@ -17,6 +17,7 @@ import {
   type Privacy,
 } from "./api";
 import { AccountNav } from "../../components/AccountNav";
+import { CoachAbout } from "../../components/CoachAbout";
 import { formatDate } from "../../lib/format";
 import { errorMessage } from "../../lib/errors";
 import {
@@ -70,6 +71,14 @@ export function ProfileSettings() {
         <NotificationsCard userId={myId} />
         <PrivacyCard userId={myId} />
       </div>
+
+      <section className="card">
+        <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+        <p className="card__subtitle">
+          Wie hij is en hoe je hem afstelt.
+        </p>
+        <CoachAbout />
+      </section>
       <div className="grid grid--2">
         <EmailCard currentEmail={user?.email ?? ""} />
         <ThemeCard />

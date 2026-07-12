@@ -8,7 +8,11 @@ import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
 import { CoachAvatar } from "../../components/CoachAvatar";
+import { CoachAbout } from "../../components/CoachAbout";
+import { Sheet } from "../../components/Sheet";
 import { COMMENTATOR } from "../../lib/roastTone";
+import { readFlag, writeFlag } from "../../lib/localFlag";
+import { CoachIntro } from "./CoachIntro";
 import {
   buildFeed,
   feedDay,
@@ -155,6 +159,16 @@ export function Feed() {
   const error = matches.error ?? friendships.error;
 
   const [limit, setLimit] = useState(FEED_LIMIT);
+
+  // Coach Rudy (#212): eenmalige kennismaking (localStorage-vlag per gebruiker)
+  // en de "Over Coach Rudy"-popup vanaf de ⓘ op de bubble.
+  const coachIntroKey = `coach-intro-gezien:${myId}`;
+  const [coachIntroWeg, setCoachIntroWeg] = useState(() => !!readFlag(coachIntroKey));
+  const dismissCoachIntro = () => {
+    writeFlag(coachIntroKey);
+    setCoachIntroWeg(true);
+  };
+  const [coachAboutOpen, setCoachAboutOpen] = useState(false);
 
   // Het actieve filter leeft in de URL (?filter=matches): het overleeft zo
   // navigeren + terugknop en een gefilterde feed is deelbaar als link.
@@ -334,6 +348,7 @@ export function Feed() {
 
       {!loading && !error && feed.length > 0 && (
         <>
+          {!coachIntroWeg && <CoachIntro onDismiss={dismissCoachIntro} />}
           <ol className="feed" aria-label="Recente gebeurtenissen">
             {feed.map((event) => {
               const day = feedDay(event);
@@ -355,7 +370,10 @@ export function Feed() {
                       name={name}
                     />
                     {event.kind === "evening" ? (
-                      <CoachMonologue lines={avondVerslag(event)} />
+                      <CoachMonologue
+                        lines={avondVerslag(event)}
+                        onInfo={() => setCoachAboutOpen(true)}
+                      />
                     ) : (
                       <CoachComment
                         tekst={coachOpmerking(event, {
@@ -363,6 +381,7 @@ export function Feed() {
                           profiles: pmap,
                           gebruikt: gebruiktCoach,
                         })}
+                        onInfo={() => setCoachAboutOpen(true)}
                       />
                     )}
                   </li>
@@ -382,6 +401,20 @@ export function Feed() {
             </div>
           )}
         </>
+      )}
+
+      {coachAboutOpen && (
+        <Sheet
+          open
+          compact
+          onClose={() => setCoachAboutOpen(false)}
+          title={COMMENTATOR.naam}
+        >
+          <CoachAbout
+            showSettingsLink
+            onNavigate={() => setCoachAboutOpen(false)}
+          />
+        </Sheet>
       )}
     </div>
   );
@@ -727,13 +760,37 @@ function highlightText(
 /** Eén compacte feedregel: icoon + (optionele) avatars + tekst, als link. */
 /** Coach Rudy's commentaar onder een feed-item: een nette speech-bubble met
  *  zijn micro-avatar en naam. Rendert niets als hij bij dit item zwijgt. */
-function CoachComment({ tekst }: { tekst: string | null }) {
+function CoachInfoButton({ onInfo }: { onInfo: () => void }) {
+  return (
+    <button
+      type="button"
+      className="coach-comment__info"
+      onClick={onInfo}
+      aria-haspopup="dialog"
+      aria-label="Over Coach Rudy"
+      title="Over Coach Rudy"
+    >
+      ⓘ
+    </button>
+  );
+}
+
+function CoachComment({
+  tekst,
+  onInfo,
+}: {
+  tekst: string | null;
+  onInfo: () => void;
+}) {
   if (!tekst) return null;
   return (
     <div className="coach-comment">
       <CoachAvatar size={28} className="coach-comment__face" />
       <div className="coach-comment__bubble">
-        <span className="coach-comment__name">{COMMENTATOR.naam}</span>
+        <span className="coach-comment__head">
+          <span className="coach-comment__name">{COMMENTATOR.naam}</span>
+          <CoachInfoButton onInfo={onInfo} />
+        </span>
         <span className="coach-comment__text">{tekst}</span>
       </div>
     </div>
@@ -742,13 +799,24 @@ function CoachComment({ tekst }: { tekst: string | null }) {
 
 /** Coach Rudy's avondverslag (#204): dezelfde speech-bubble, maar met een korte
  *  monoloog van meerdere zinnen. Rendert niets zonder verslag. */
-function CoachMonologue({ lines }: { lines: string[] }) {
+function CoachMonologue({
+  lines,
+  onInfo,
+}: {
+  lines: string[];
+  onInfo: () => void;
+}) {
   if (lines.length === 0) return null;
   return (
     <div className="coach-comment">
       <CoachAvatar size={28} className="coach-comment__face" />
       <div className="coach-comment__bubble">
-        <span className="coach-comment__name">{COMMENTATOR.naam} · avondverslag</span>
+        <span className="coach-comment__head">
+          <span className="coach-comment__name">
+            {COMMENTATOR.naam} · avondverslag
+          </span>
+          <CoachInfoButton onInfo={onInfo} />
+        </span>
         {lines.map((l, i) => (
           <span key={i} className="coach-comment__text">
             {l}
