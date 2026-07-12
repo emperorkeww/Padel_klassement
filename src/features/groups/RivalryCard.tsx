@@ -40,10 +40,10 @@ export function RivalryCard({
   return (
     <section className="card rivalry-card">
       <div className="card__head">
-        <h2 className="card__title">🔥 Rivaliteit van de groep</h2>
+        <h2 className="card__title">🔥 Onderlinge strijd (Rivaliteit)</h2>
         {revanche && (
           <span className="badge badge--accent">
-            {revancheWhen ? `Revanche ${revancheWhen}!` : "Revanche gepland!"}
+            {revancheWhen ? `Revanche ${revancheWhen}! 🥊` : "Revanche gepland! 🥊"}
           </span>
         )}
       </div>
@@ -70,8 +70,8 @@ export function RivalryCard({
       <p className="rivalry__meta">
         {top.played} onderlinge duels · laatste {lastWhen}
         {lastWinner
-          ? ` — ${displayName(profiles[lastWinner])} won`
-          : " — gelijkspel"}
+          ? ` — ${displayName(profiles[lastWinner])} pakte de winst`
+          : " — gebroederlijk gelijk"}
       </p>
     </section>
   );

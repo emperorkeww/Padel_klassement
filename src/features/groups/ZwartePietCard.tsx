@@ -56,7 +56,7 @@ export function ZwartePietCard({
       </Link>
 
       <p className="pias-card__meta">
-        Draagt de Zwarte Piet {sinds}. Win een match om 'm door te geven.
+        Draagt de schande van de groep {sinds}. Winnen is de enige manier om 'm door te schuiven!
       </p>
     </section>
   );

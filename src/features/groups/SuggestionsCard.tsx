@@ -136,14 +136,13 @@ export function SuggestionsCard({
       <section className="card">
         <h2 className="card__title">Suggesties</h2>
         <p className="proposals__hint">
-          Er loopt een speeldag-poll voor deze groep — nieuwe suggesties
-          verschijnen zodra die is afgerond.
+          Er is al een speeldag-poll actief voor deze groep. Breng snel je stem uit!
         </p>
         <Link
           className="btn btn--sm btn--primary"
           to={`/groepen/${groupId}?tab=plannen`}
         >
-          Ga naar de poll →
+          Breng je stem uit →
         </Link>
       </section>
     );
@@ -153,16 +152,13 @@ export function SuggestionsCard({
     <section className="card">
       <h2 className="card__title">Suggesties</h2>
       <p className="proposals__hint">
-        De beste momenten om komende week te spelen — op basis van vrije banen
-        bij {club.name}, wie al aangaf te kunnen, en wanneer jullie meestal
-        spelen.
+        De ideale momenten voor jullie volgende match — berekend op basis van de vrije banen bij {club.name}, wie er kan en jullie vaste speelgewoontes.
       </p>
 
-      {loading && <p className="empty">Momenten zoeken…</p>}
+      {loading && <p className="empty">Opties berekenen…</p>}
       {!loading && suggestions.length === 0 && (
         <p className="empty">
-          Geen vrije momenten gevonden deze week. Start zelf een poll op de
-          Plannen-tab.
+          Alle banen zitten dicht of er zijn geen geschikte match-momenten gevonden. Start zelf een poll op de Plannen-tab!
         </p>
       )}
 
@@ -180,7 +176,7 @@ export function SuggestionsCard({
                 className="btn btn--sm btn--primary"
                 onClick={() => startPoll(s)}
               >
-                Start poll met dit moment
+                Poll starten
               </button>
             </div>
           </li>
