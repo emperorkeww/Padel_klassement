@@ -427,17 +427,6 @@ export function Leaderboard() {
           </button>
         </div>
 
-        {searchable && (
-          <input
-            className="input select--filter lb-search"
-            type="search"
-            placeholder="Zoek speler…"
-            aria-label="Zoek speler"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        )}
-
         <select
           className="select select--filter"
           aria-label="Seizoen"
@@ -528,6 +517,45 @@ export function Leaderboard() {
           </div>
         </details>
       </div>
+
+      {searchable && (
+        <div className="lb-search" role="search">
+          <svg
+            className="lb-search__icon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            className="lb-search__input"
+            type="search"
+            placeholder="Zoek een speler op naam…"
+            aria-label="Zoek een speler"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          {q && (
+            <button
+              type="button"
+              className="lb-search__clear"
+              aria-label="Zoekterm wissen"
+              onClick={() => setQ("")}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {asof && (
         <p className="lb-asof-note" role="status">
@@ -634,9 +662,10 @@ export function Leaderboard() {
           niet meespelen — met een link naar hun profiel. */}
       {extraProfiles.length > 0 && (
         <section className="card lb-extra">
-          <h2 className="card__title card__title--tight">
-            Ook gevonden (nog niet in het klassement)
-          </h2>
+          <h2 className="card__title card__title--tight">Ook gevonden</h2>
+          <p className="lb-extra__sub">
+            Deze spelers staan (nog) niet in het klassement.
+          </p>
           <ul className="lb-extra__list">
             {extraProfiles.map((p) => (
               <li key={p.id}>

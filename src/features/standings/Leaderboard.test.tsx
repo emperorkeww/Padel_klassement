@@ -80,7 +80,7 @@ describe("<Leaderboard />", () => {
   it("filtert de ranglijst op naam en toont een lege-staat bij geen match (#282)", async () => {
     renderPage();
     await screen.findAllByText(/carol claes/i);
-    const zoek = screen.getByLabelText("Zoek speler");
+    const zoek = screen.getByLabelText("Zoek een speler");
 
     fireEvent.change(zoek, { target: { value: "carol" } });
     // Carol blijft; niet-matchende spelers verdwijnen (ook uit het podium).
@@ -93,8 +93,8 @@ describe("<Leaderboard />", () => {
       screen.getByText(/geen speler in de ranglijst gevonden/i),
     ).toBeInTheDocument();
 
-    // Leeg zoekveld herstelt de volledige ranglijst.
-    fireEvent.change(zoek, { target: { value: "" } });
+    // De wis-knop herstelt de volledige ranglijst.
+    fireEvent.click(screen.getByRole("button", { name: /zoekterm wissen/i }));
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
   });
 

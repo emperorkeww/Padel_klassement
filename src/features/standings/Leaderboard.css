@@ -549,18 +549,84 @@
   }
 }
 
-/* Speler zoeken in het klassement (#282). */
+/* Speler zoeken in het klassement (#282): eigen, herkenbare zoekbalk met
+   vergrootglas en wis-knop — niet zomaar nóg een filterveldje. */
 .lb-search {
-  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--sp-5);
 }
-.lb-search::-webkit-search-cancel-button {
+.lb-search__icon {
+  position: absolute;
+  left: var(--sp-4);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.lb-search__input {
+  width: 100%;
+  padding: var(--sp-3) var(--sp-8) var(--sp-3) calc(var(--sp-7) + var(--sp-1));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lb-search__input::placeholder {
+  color: var(--placeholder);
+}
+.lb-search__input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+/* Eigen wis-knop; de native search-kruisjes weg. */
+.lb-search__input::-webkit-search-cancel-button,
+.lb-search__input::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
+}
+.lb-search__clear {
+  position: absolute;
+  right: var(--sp-2);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lb-search__clear:hover {
+  background: var(--line-strong);
+  color: var(--ink);
+}
+.lb-search__clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (min-width: 720px) {
+  /* Op desktop niet absurd breed: een comfortabele zoekbreedte, links uitgelijnd. */
+  .lb-search {
+    max-width: 460px;
+  }
 }
 
 /* "Ook gevonden": vindbare spelers buiten de ranglijst, met profiel-link. */
 .lb-extra {
   margin-top: var(--sp-4);
+}
+.lb-extra__sub {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
 }
 .lb-extra__list {
   list-style: none;
