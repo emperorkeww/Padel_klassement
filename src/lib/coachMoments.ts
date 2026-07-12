@@ -15,20 +15,24 @@ const OCHTEND_DIP = [
   "Een reeks nederlagen bouwt karakter. Heel véél karakter, in jouw geval.",
   "De enige weg is omhoog — lager dan dit kan bijna niet.",
   "Tijd om die grip te vervangen. Of je hele spel.",
+  "Ik heb na het WK 2026 ook diep in de spiegel moeten kijken. Mijn advies voor jouw dip? Ander racket, of andere nationaliteit.",
+  "Zelfs de Rode Duivels hadden minder tactische flaters dan jouw laatste reeks.",
 ] as const;
 const OCHTEND_HYPE = [
   "Je bent niet te stoppen. Doe de rest een lol en verlies eens.",
   "Op deze reeks durf ik geld op je te zetten. Bijna.",
   "De vorm van je leven — geniet ervan zolang het duurt.",
+  "Een winreeks! Zelfs de Belgische voetbalbond zou nu overwegen je contract te verlengen.",
 ] as const;
 const OCHTEND_MATCH = [
   "Er staat een match klaar. Warm die smoesjes vast op.",
   "Vandaag de baan op — probeer deze keer wél te winnen.",
   "Je volgende tegenstander slaapt nog. Verrassingsaanval?",
+  "Matchdag. Trek je beste pak aan en zet je sportpet op — we gaan voor een tactische moderamp.",
 ] as const;
 const OCHTEND_TOP = [
   "Nummer één. Nu alleen nog zo blijven — de haaien ruiken bloed.",
-  "Aan de top is het eenzaam. En glad. Kijk uit.",
+  "Aan de top is het eenzaam. En glad. Kijk uit voor de watersproeiers.",
 ] as const;
 const OCHTEND_ALGEMEEN = [
   "Netjes in de middenmoot. Grijs, maar veilig.",
@@ -65,6 +69,7 @@ const MATCH_WINST = [
   "Zege genoteerd. Geniet ervan, ze zijn zeldzaam.",
   "Gewonnen! De statistieken kloppen dus nog niet helemaal.",
   "Punten binnen. Toevallig, maar binnen.",
+  "Winst! Ik noteer 'm snel voordat de media er een kritische evaluatie over schrijven.",
 ] as const;
 const MATCH_BAGEL = [
   "6-0. Dat is geen wedstrijd, dat is een openbare vernedering. Prachtig.",
@@ -74,10 +79,12 @@ const MATCH_VERLIES = [
   "Verloren. Maar goed, iemand moet de tegenstander laten stralen.",
   "Nederlaag genoteerd. De grip? Weer niet de oorzaak.",
   "Kop op — er zijn nog genoeg potjes om te verliezen.",
+  "Verloren. Net zo kansloos als onze kwartfinale tegen Spanje. Tijd voor een tactische evaluatie.",
 ] as const;
 const MATCH_PAK_SLAAG = [
   "0-6. Ik heb 'm maar meteen ingelijst voor de schaamtemuur.",
   "Gebageld. Heb je überhaupt een racket meegenomen?",
+  "0-6 verlies. Zelfs Egypte zou ons met deze tactiek uitlachen. Heb je überhaupt voorbesproken?",
 ] as const;
 const MATCH_GELIJK = [
   "Gelijkspel — niemand wint, iedereen twijfelt.",
@@ -110,6 +117,7 @@ const PRE_UNDERDOG = [
   "De bookmaker gelooft niet in je. Bewijs 'm ongelijk (of niet).",
   "Op papier kansloos — maar papier speelt geen padel.",
   "Underdog van dienst. Perfecte dag voor een stunt.",
+  "Je winkans is zo laag dat de analisten van Winamax FC je al hebben afgeschreven.",
 ] as const;
 const PRE_FAVORIET = [
   "Torenhoge favoriet. Nu alleen nog even niet verkloten.",
