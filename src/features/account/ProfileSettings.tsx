@@ -56,7 +56,7 @@ export function ProfileSettings() {
     <div>
       <header className="page-head">
         <h1 className="page-title">Profiel</h1>
-        <p className="page-subtitle">Je foto, naam en de rest van je account.</p>
+        <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>
 
       <AccountNav />

@@ -133,7 +133,7 @@ export function Availability() {
         <header className="page-head">
           <h1 className="page-title">Baanbeschikbaarheid</h1>
           <p className="page-subtitle">
-            Vrije padelbanen — rechtstreeks van Playtomic.
+            Vind direct een vrije baan. Geen excuses meer om niet te spelen!
           </p>
           <ClubPicker />
         </header>

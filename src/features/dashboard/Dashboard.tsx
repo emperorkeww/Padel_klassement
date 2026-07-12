@@ -350,7 +350,7 @@ export function Dashboard() {
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
-            <p className="hero__eyebrow">Welkom terug</p>
+            <p className="hero__eyebrow">Racket in de aanslag?</p>
             <h1 className="hero__name">
               {myName ? `Hoi, ${myName}` : "Hoi!"}
               <TierBadge
@@ -364,12 +364,12 @@ export function Dashboard() {
             ) : (
               <p className="hero__sub">
                 {me
-                  ? `Je staat ${rank ? `op plek #${rank}` : "in het klassement"}${myRating != null ? ` met rating ${myRating}` : ""}.`
-                  : "Speel je eerste match om in het klassement te komen."}
+                  ? `Je bezet momenteel plek #${rank || "?"} in het klassement met een rating van ${myRating || "1000"}.`
+                  : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
                 {streak >= 2
-                  ? ` Je hebt er ${streak} op rij gewonnen — vamos! 🔥`
+                  ? ` Lekker bezig: je bent onverslaanbaar met ${streak} overwinningen op rij! 🔥`
                   : losing >= 3
-                    ? ` Even ${losing} op rij verloren — de volgende pak je terug. 💪`
+                    ? ` Oei, al ${losing} potjes op rij verloren... Tijd voor een nieuwe grip of betere smoesjes? 💪`
                     : ""}
               </p>
             )}
@@ -400,7 +400,7 @@ export function Dashboard() {
       {showOnboarding && (
         <section className="card onboard">
           <div className="card__head">
-            <h2 className="card__title">Zo kom je op gang</h2>
+            <h2 className="card__title">Jouw weg naar de top</h2>
             <button
               className="onboard__dismiss"
               onClick={dismissOnboarding}
@@ -413,20 +413,20 @@ export function Dashboard() {
             <OnboardStep
               done={hasFriend}
               to="/vrienden"
-              label="Voeg een vriend toe"
-              hint="Zoek een speler op gebruikersnaam en stuur een verzoek."
+              label="Speelmaten zoeken"
+              hint="Zoek je vrienden op gebruikersnaam en daag ze direct uit."
             />
             <OnboardStep
               done={hasGroup}
               to="/groepen"
-              label="Maak of kies een groep"
-              hint="Je speelmaatjes op één plek, met eigen klassement."
+              label="Richt je eigen clubje op"
+              hint="Verzamel al je speelmaatjes in een groep met een eigen, genadeloos klassement."
             />
             <OnboardStep
               done={hasPlayed}
               to="/matches"
-              label="Speel je eerste match"
-              hint="Log een uitslag of genereer een ronde in je groep."
+              label="De kooi in!"
+              hint="Log je eerste match of genereer direct evenwichtige teams om te knallen."
             />
           </ul>
         </section>
