@@ -35,7 +35,7 @@ import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
 import { coachOpmerking } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
-import { eveningSummary } from "../../lib/eveningSummary";
+import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
 import { getZwartePiet } from "../groups/zwartePietApi";
 import type {
   GroupMember,
@@ -266,18 +266,21 @@ export function Feed() {
   // Coach Rudy's avondverslag (#204): 2-3 zinnen bij een speelavond-item,
   // afgeleid uit de eveningSummary van díe groep + dag (uit de al geladen
   // matches). Respecteert intensiteit + schild en deelt de anti-herhaling.
-  const avondVerslag = (ev: Extract<FeedEvent, { kind: "evening" }>): string[] => {
+  const avondData = (
+    ev: Extract<FeedEvent, { kind: "evening" }>,
+  ): { summary: EveningSummary; coachLines: string[] } => {
     const dagVan = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
     const dagMatches = (matches.data ?? []).filter(
       (m) => m.group_id === ev.groupId && dagVan(m) === ev.day,
     );
     const summary = eveningSummary(dagMatches, tmap, ev.day, histories.data ?? undefined);
-    return coachAvond(summary, `${ev.groupId}|${ev.day}`, {
+    const coachLines = coachAvond(summary, `${ev.groupId}|${ev.day}`, {
       intensiteit: intensiteitVoor(ev.groupId),
       profiles: pmap,
       naam: name,
       gebruikt: gebruiktCoach,
     });
+    return { summary, coachLines };
   };
 
   return (
@@ -374,27 +377,33 @@ export function Feed() {
                     </li>
                   )}
                   <li className="feed__item">
-                    <FeedItem
-                      event={event}
-                      pmap={pmap}
-                      tmap={tmap}
-                      myId={myId}
-                      name={name}
-                    />
                     {event.kind === "evening" ? (
-                      <CoachMonologue
-                        lines={avondVerslag(event)}
+                      <EveningCard
+                        event={event}
+                        data={avondData(event)}
+                        pmap={pmap}
+                        tmap={tmap}
+                        name={name}
                         onInfo={() => setCoachAboutOpen(true)}
                       />
                     ) : (
-                      <CoachComment
-                        tekst={coachOpmerking(event, {
-                          intensiteitVoor,
-                          profiles: pmap,
-                          gebruikt: gebruiktCoach,
-                        })}
-                        onInfo={() => setCoachAboutOpen(true)}
-                      />
+                      <>
+                        <FeedItem
+                          event={event}
+                          pmap={pmap}
+                          tmap={tmap}
+                          myId={myId}
+                          name={name}
+                        />
+                        <CoachComment
+                          tekst={coachOpmerking(event, {
+                            intensiteitVoor,
+                            profiles: pmap,
+                            gebruikt: gebruiktCoach,
+                          })}
+                          onInfo={() => setCoachAboutOpen(true)}
+                        />
+                      </>
                     )}
                   </li>
                 </Fragment>
@@ -815,6 +824,58 @@ function CoachMonologue({
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Rijk speelavond-blok (#232 PR C): mini-eindstand van de avond + beste duo,
+ *  met Coach Rudy's avondverslag eronder — i.p.v. één compacte regel. */
+function EveningCard({
+  event,
+  data,
+  pmap,
+  tmap,
+  name,
+  onInfo,
+}: {
+  event: Extract<FeedEvent, { kind: "evening" }>;
+  data: { summary: EveningSummary; coachLines: string[] };
+  pmap: Record<string, Profile>;
+  tmap: Parameters<typeof MatchCard>[0]["teams"];
+  name: (pid: string) => string;
+  onInfo: () => void;
+}) {
+  const { summary, coachLines } = data;
+  const top = summary.rows.slice(0, 4);
+  return (
+    <div className="feed-evening">
+      <Link className="feed-evening__head" to={`/groepen/${event.groupId}`}>
+        <span className="feed-evening__tok" aria-hidden="true">🎾</span>
+        <span className="feed-evening__title">Speelavond · {event.count} matches</span>
+        <span className="feed-evening__group">{event.groupName}</span>
+      </Link>
+      {top.length > 0 && (
+        <ol className="ev-stand">
+          {top.map((r, i) => (
+            <li className="ev-row" key={r.playerId}>
+              <span className="ev-row__pos">{i + 1}</span>
+              <Avatar profile={pmap[r.playerId]} size={22} />
+              <span className="ev-row__nm">{name(r.playerId)}</span>
+              <span className="ev-row__wl">
+                {r.won}–{r.lost}
+              </span>
+              <span className="ev-row__pt">{r.points} ptn</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {summary.bestDuo && (
+        <p className="ev-duo">
+          👯 Beste duo: <strong>{teamLabel(tmap[summary.bestDuo.teamId], pmap)}</strong> —{" "}
+          {summary.bestDuo.won} {summary.bestDuo.won === 1 ? "winst" : "winsten"} samen.
+        </p>
+      )}
+      <CoachMonologue lines={coachLines} onInfo={onInfo} />
     </div>
   );
 }
