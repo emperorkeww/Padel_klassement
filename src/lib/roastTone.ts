@@ -68,6 +68,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "De wind was inderdaad erg aanwezig vandaag. De zwaartekracht helaas ook.",
     "Zelfs op de bank bij Lille in 2011 zat er meer dynamiek en levenslust in de selectie dan in jouw voetenwerk.",
     "Je slagen hebben de Franse elegantie en het verfijnde gevoel van een omvallende lantaarnpaal.",
+    "Ik heb bidons sneller zien leeglopen dan jouw energieniveau in de tweede set.",
+    "Je tactiek was vandaag als een persconferentie zonder geluid: niemand snapte er iets van.",
+    "De tegenstander hoefde niet eens te rennen, jouw ballen vlogen keurig hun kant op.",
+    "Je hebt de kooi in ieder geval heel gelaten. Dat is ook een vorm van vooruitgang.",
+    "Zelfs op de bank bij Lille was de sfeer sportiever dan jouw blik na die gemiste smash.",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -115,6 +120,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "De bookmakers huilen van het lachen en de tegenstander viert feest. Gratis punten voor iedereen.",
     "Je bandeja deed me sterk denken aan een slappe Belgische wafel die net iets te lang in de stromende regen heeft gelegen.",
     "Zelfs met vier opeenvolgende tactische wissels in de absolute slotminuten was hier geen redden meer aan.",
+    "Was dit een wedstrijd of een demonstratie van hoe je je partner het beste kunt negeren?",
+    "Zelfs mijn meest onbegrijpelijke opstellingen op het WK hadden meer structuur dan jouw veldpositie.",
+    "Als je de ballen nog één keer zo hoog opslaat, moeten we de luchtverkeersleiding gaan waarschuwen.",
+    "Je speelde alsof je racket een pan was waar de pannenkoeken steeds uitvielen.",
+    "Zelfs de meest kritische Belgische journalist zou medelijden krijgen met jouw backhand.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -165,6 +175,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Zelfs Aurelio De Laurentiis zou weigeren om de huur van je kluisje te betalen na deze vreselijke vertoning.",
     "Ik ben sneller ontslagen in Saudi-Arabië dan dat jij je voeten van de grond tilt voor een smash.",
     "Dit was zo ontiegelijk pijnlijk dat ik ter plekke mijn coach-pet diep over mijn ogen heb getrokken om het niet te hoeven aanzien.",
+    "Ik ben sneller weggestuurd bij Napoli dan dat jij omschakelt van verdediging naar aanval.",
+    "Dit was geen padel, dit was een regelrechte aanval op de goede smaak en de sportiviteit.",
+    "Als de Belgische bondscoach mij na deze pot had opgesteld, had ik ter plekke mijn ontslag ingediend.",
+    "Zelfs met Cristiano Ronaldo en Lionel Messi in je team had je deze afgang niet kunnen camoufleren.",
+    "Een legendarische wanprestatie. Ik heb de bladzijde uit mijn notitieboekje gescheurd om hem ritueel te verbranden.",
   ],
 } as const;
 
