@@ -161,15 +161,15 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       teams: TEAMS,
       friendships: [],
       myId: "p1",
-      histories: { p1: [point(m.id, 1095, 1105)] }, // Wannabe I → Pletwals III
+      histories: { p1: [point(m.id, 1095, 1105)] }, // Wannabe I → Glazenwasser III
     });
     const top = feed[0];
     if (top.kind !== "match") throw new Error("verwacht match-event");
     expect(top.highlights).toContainEqual({
       type: "tier",
       playerId: "p1",
-      label: "Pletwals III",
-      emoji: "🚜",
+      label: "Glazenwasser III",
+      emoji: "🪟",
       richting: "promotie",
     });
   });

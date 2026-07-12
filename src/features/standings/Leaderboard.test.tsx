@@ -91,7 +91,7 @@ describe("<Leaderboard />", () => {
     expect(screen.getAllByText(/vanaf 1100/i).length).toBeGreaterThan(0);
     // Persoonlijke promotie-hint: jouw divisie + rating tot de volgende.
     expect(screen.getByText(/^jij:/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/pletwals/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/glazenwasser/i).length).toBeGreaterThan(0);
   });
 
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {
