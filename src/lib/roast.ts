@@ -57,23 +57,23 @@ function signalenVoor(
 function kandidaten(s: Signalen): string[] {
   const uit: string[] = [];
   if (s.verliesreeks >= 3) {
-    uit.push(`Verloor ${s.verliesreeks}× op rij — het loopt echt niet lekker. 😬`);
+    uit.push(`Verloor nu al ${s.verliesreeks}× op rij. Misschien je racket toch maar huren in plaats van kopen? 😬`);
   }
   if (s.winrate != null && s.winrate < 35) {
-    uit.push(`${s.winrate}% winst. Statistiek liegt niet. 📉`);
+    uit.push(`Met een winrate van ${s.winrate}% speel je vooral voor de gezelligheid, toch? 📉`);
   }
   if (s.bagelsGeslikt >= 1) {
     uit.push(
       s.bagelsGeslikt === 1
-        ? "Slikte al eens een bagel 🥯 — nul games, autsj."
-        : `Slikte al ${s.bagelsGeslikt} bagels 🥯. Verzamelaar?`,
+        ? "Slikte al eens een bagel 🥯 — hopelijk smaakte het broodje nul een beetje."
+        : `Slikte al ${s.bagelsGeslikt} bagels 🥯. Spaart waarschijnlijk voor een eigen bakkerij.`,
     );
   }
   if (s.grootsteAframing >= 6) {
-    uit.push(`Ooit met ${s.grootsteAframing} games verschil de vernieling in gedraaid. 🚑`);
+    uit.push(`Ooit met ${s.grootsteAframing} games verschil afgedroogd. Zelfs de ramen van de kooi waren beslagen. 🚑`);
   }
   if (s.divisie) {
-    uit.push(`Zit nog altijd in divisie ${s.divisie}. Promotie? Ooit. 🐢`);
+    uit.push(`Hummelt nog steeds rond in divisie ${s.divisie}. Promotie is blijkbaar een vijfjarenplan. 🐢`);
   }
   return uit;
 }

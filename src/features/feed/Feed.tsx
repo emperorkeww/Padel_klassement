@@ -279,7 +279,7 @@ export function Feed() {
         <div className="card">
           <EmptyState
             icon="🔎"
-            title="Niets in deze categorie."
+            title="Stilte in deze categorie."
             action={
               <button
                 type="button"
@@ -290,7 +290,7 @@ export function Feed() {
               </button>
             }
           >
-            Recent geen nieuws van dit soort bij jou en je vrienden.
+            Niemand heeft hier onlangs iets uitgespookt. Probeer een andere filter of ga zelf een balletje slaan!
           </EmptyState>
         </div>
       )}
@@ -299,15 +299,14 @@ export function Feed() {
         <div className="card">
           <EmptyState
             icon="📣"
-            title="Nog niets te melden."
+            title="Muisstille feed."
             action={
               <Link className="btn btn--primary" to="/vrienden">
-                Vrienden toevoegen
+                Vrienden zoeken
               </Link>
             }
           >
-            Zodra jij of je vrienden matches spelen (of er nieuwe
-            vriendschappen bijkomen) zie je het hier verschijnen.
+            Nog geen sappige updates. Zodra jij of je vrienden de baan op gaan of connecties leggen, verschijnt de actie hier!
           </EmptyState>
         </div>
       )}

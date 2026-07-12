@@ -23,7 +23,7 @@ export interface RoastCtx {
  *  kwetsen: altijd over padel/ego, nooit persoonlijk. */
 export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
   mild: [
-    "Kan de beste overkomen. Maar jij bent niet de beste.",
+    "Iedereen heeft z'n dag niet. Jij vaak.",
     "Volgende keer beter, hè. Of slechter, als dat fysiek nog mogelijk is.",
     "Kop op, kampioen. Er is altijd nog jeu de boules.",
     "'t Is maar padel. Al leek dit vandaag meer op ballet.",
@@ -49,6 +49,8 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "De cijfers liegen niet, en ze vertellen geen sprookje.",
     "Zwak. Gewoon heel zwak. Heb je je racket wel eens andersom vastgehouden?",
     "Had je je zonnebril nog op? Of speelde je gewoon met je ogen dicht?",
+    "Trainen, gij. Dringend.",
+    "Zelfs je stats schamen zich.",
     "Dat was geen hoogstandje.",
     "Ik zag het al van ver aankomen.",
     "Trainen is geen straf, hè.",
@@ -59,6 +61,8 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Daar praten we volgende week nog over.",
   ],
   radioactief: [
+    "Ik keek liever weg, voor jou.",
+    "Heb je al eens aan curling gedacht?",
     "Ronduit gênant. Zelfs de bal leek te weigeren om met je mee te werken.",
     "Overweeg serieus een andere hobby. Schaken of postzegels verzamelen?",
     "Als falen een olympische discipline was, stond je nu bovenaan het podium.",

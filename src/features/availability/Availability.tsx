@@ -308,11 +308,9 @@ function DaySection({
       </div>
 
       <p className="avail-note">
-        Tik op een vrij (groen) slot om de duren en prijzen te zien; via de
-        knop in dat venster (of de knop hierboven) open je Playtomic voor de
-        gekozen dag (het uur kies je daar zelf). Playtomic verhuurt vanaf 60
-        minuten, dus een korter gat tussen twee boekingen kan als geboekt
-        verschijnen. Tijden kunnen wijzigen; deze weergave is niet-officieel.
+        Tik een groen slot voor duren en prijzen. Playtomic verhuurt vanaf 60
+        minuten, dus een korter gaatje kan als geboekt tonen. Tijden zijn onder
+        voorbehoud — niet officieel.
       </p>
     </>
   );
@@ -341,7 +339,7 @@ function NextFreeLine({
   if (!next) {
     return (
       <p className="avail-next">
-        {isToday ? "Vandaag niets meer vrij." : "Geen vrije sloten op deze dag."}
+        {isToday ? "Vandaag helaas alles bezet." : "Geen vrije banen beschikbaar op deze dag."}
       </p>
     );
   }
