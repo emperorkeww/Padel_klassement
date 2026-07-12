@@ -6,6 +6,7 @@ import { MatchList } from "../../matches/MatchList";
 import { MatchListSkeleton } from "../../../components/Skeleton";
 import { winRate } from "../../../lib/results";
 import { displayName } from "../api";
+import { HighlightTile } from "./HighlightTile";
 import type { ProfileData } from "./types";
 
 // Aantal recente matches in de peek op Overzicht (de volle lijst zit onder de
@@ -250,33 +251,6 @@ function ProfileHighlights({
       <h2 className="card__title">Highlights</h2>
       <div className="highlight-tiles">{tiles}</div>
     </section>
-  );
-}
-
-// Eén highlight als tegel: consistent icoon + kort label + waarde (+ optionele
-// meta), in dezelfde taal als de Stat- en .h2h-highlight-tegels.
-function HighlightTile({
-  icon,
-  label,
-  value,
-  meta,
-}: {
-  icon: string;
-  label: string;
-  value: React.ReactNode;
-  meta?: React.ReactNode;
-}) {
-  return (
-    <div className="highlight-tile">
-      <span className="highlight-tile__icon" aria-hidden="true">
-        {icon}
-      </span>
-      <div className="highlight-tile__body">
-        <span className="highlight-tile__label">{label}</span>
-        <span className="highlight-tile__value">{value}</span>
-        {meta != null && <span className="highlight-tile__meta">{meta}</span>}
-      </div>
-    </div>
   );
 }
 

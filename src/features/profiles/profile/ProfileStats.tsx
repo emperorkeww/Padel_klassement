@@ -9,6 +9,7 @@ import { winRate } from "../../../lib/results";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "../../../lib/trends";
 import { formatDate } from "../../../lib/format";
 import { displayName } from "../api";
+import { HighlightTile } from "./HighlightTile";
 import type { ProfileData, H2HRow } from "./types";
 
 // Statistieken-tab: het volledige cijferbeeld — 5-stat grid, het wisselbare
@@ -143,33 +144,58 @@ export function ProfileStats({ d }: { d: ProfileData }) {
                 </div>
               )}
               {(favorite || hardest || day) && (
-                <ul className="trend-facts">
+                <div className="highlight-tiles">
                   {favorite && (
-                    <li>
-                      <span aria-hidden="true">💪</span> Sterkst tegen{" "}
-                      <Link to={`/spelers/${favorite.oppId}`}>
-                        {displayName(pmap[favorite.oppId])}
-                      </Link>{" "}
-                      — {favorite.won}–{favorite.lost} in {favorite.played} duels
-                    </li>
+                    <HighlightTile
+                      icon="💪"
+                      label="Sterkst tegen"
+                      value={
+                        <Link
+                          className="highlight-tile__link"
+                          to={`/spelers/${favorite.oppId}`}
+                        >
+                          {displayName(pmap[favorite.oppId])}
+                        </Link>
+                      }
+                      meta={
+                        <>
+                          {favorite.won}–{favorite.lost} in {favorite.played} duels
+                        </>
+                      }
+                    />
                   )}
                   {hardest && (
-                    <li>
-                      <span aria-hidden="true">😅</span> Lastigst:{" "}
-                      <Link to={`/spelers/${hardest.oppId}`}>
-                        {displayName(pmap[hardest.oppId])}
-                      </Link>{" "}
-                      — {hardest.won}–{hardest.lost} in {hardest.played} duels
-                    </li>
+                    <HighlightTile
+                      icon="😅"
+                      label="Lastigst"
+                      value={
+                        <Link
+                          className="highlight-tile__link"
+                          to={`/spelers/${hardest.oppId}`}
+                        >
+                          {displayName(pmap[hardest.oppId])}
+                        </Link>
+                      }
+                      meta={
+                        <>
+                          {hardest.won}–{hardest.lost} in {hardest.played} duels
+                        </>
+                      }
+                    />
                   )}
                   {day && (
-                    <li>
-                      <span aria-hidden="true">📅</span> Beste dag:{" "}
-                      <strong>{day.label}</strong> — {day.rate}% winst over{" "}
-                      {day.played} matches
-                    </li>
+                    <HighlightTile
+                      icon="📅"
+                      label="Beste dag"
+                      value={<strong>{day.label}</strong>}
+                      meta={
+                        <>
+                          {day.rate}% winst over {day.played} matches
+                        </>
+                      }
+                    />
                   )}
-                </ul>
+                </div>
               )}
             </section>
           )}
