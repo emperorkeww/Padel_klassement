@@ -195,3 +195,70 @@
   gap: var(--sp-2);
   flex-wrap: wrap;
 }
+
+/* ===== Highlight-kaarten (#232) =====
+   Categoriekleuren coderen de filtercategorie (informatie, geen sier). Licht op
+   :root, donker onder [data-theme="dark"] — zelfde patroon als de app-tokens. */
+:root {
+  --cat-rank: #3b6fe0;   /* klassement */
+  --cat-champ: #cf9414;  /* kampioen */
+  --cat-roast: #d84f95;  /* roast: pias / zwarte piet */
+}
+:root[data-theme="dark"] {
+  --cat-rank: #6f9bff;
+  --cat-champ: #e6b13f;
+  --cat-roast: #f072b0;
+}
+
+.feed-hi {
+  --cat: var(--cat-roast);
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--cat) 38%, var(--line));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cat) 9%, var(--surface)),
+    var(--surface) 62%
+  );
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.feed-hi[data-cat="rank"] { --cat: var(--cat-rank); }
+.feed-hi[data-cat="champ"] { --cat: var(--cat-champ); }
+.feed-hi[data-cat="roast"] { --cat: var(--cat-roast); }
+.feed-hi:hover { border-color: color-mix(in srgb, var(--cat) 55%, var(--line)); }
+
+.feed-hi__tok {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  line-height: 1;
+  background: color-mix(in srgb, var(--cat) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--cat) 34%, transparent);
+}
+.feed-hi__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.feed-hi__label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--cat) 72%, var(--ink));
+}
+.feed-hi__title {
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+.feed-hi__title strong { font-weight: 700; }
