@@ -276,4 +276,41 @@ describe("<PlayerProfile />", () => {
       vi.useRealTimers();
     }
   });
+
+  it("toont 'Verzoek sturen' op het profiel van een niet-vriend (#282)", async () => {
+    // Erik (p5) heeft geen relatie met de ingelogde alice (p1).
+    setTables("p5");
+    state.tables.friendships = [];
+    renderProfile("p5");
+    expect(
+      await screen.findByRole("heading", { name: /erik evers/i, level: 1 }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /verzoek sturen/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("toont 'Vrienden ✓' bij een bestaande vriendschap (#282)", async () => {
+    setTables("p2");
+    state.tables.friendships = [
+      { id: "f2", requester_id: "p1", addressee_id: "p2", status: "accepted", created_at: "", updated_at: "" },
+    ];
+    renderProfile("p2");
+    expect(
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/vrienden ✓/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /verzoek sturen/i })).toBeNull();
+  });
+
+  it("toont geen vriendknop op je eigen profiel (#282)", async () => {
+    setTables("p1");
+    state.tables.friendships = [];
+    renderProfile("p1");
+    expect(
+      await screen.findByRole("heading", { name: /alice anders/i, level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /verzoek/i })).toBeNull();
+    expect(screen.queryByText(/vrienden ✓/i)).toBeNull();
+  });
 });

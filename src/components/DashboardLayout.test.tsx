@@ -89,10 +89,12 @@ describe("<DashboardLayout />", () => {
     expect(screen.getAllByRole("link", { name: /^spelen$/i }).length).toBe(2);
     // #69: "Ik" (profiel) zit nu in de mobiele balk; Vrienden in de zijbalk.
     expect(screen.getAllByRole("link", { name: /^ik$/i }).length).toBeGreaterThan(0);
-    // Vrienden: in de zijbalk én (symmetrie) in de mobiele onderbalk.
+    // #274: Matches is nu een vaste mobiele tab (zijbalk + onderbalk).
+    expect(screen.getAllByRole("link", { name: /^matches$/i }).length).toBe(2);
+    // #274: Vrienden schuift naar de zijbalk (niet meer in de onderbalk).
     expect(
       screen.getAllByRole("link", { name: /vrienden/i }).length,
-    ).toBe(2);
+    ).toBe(1);
     // Feed (#120): zijbalk + mobiele onderbalk; Banen alleen nog in de zijbalk.
     expect(screen.getAllByRole("link", { name: /^feed$/i }).length).toBe(2);
     expect(screen.getAllByRole("link", { name: /banen/i }).length).toBe(1);
@@ -149,7 +151,7 @@ describe("tier-aankondiging (#127)", () => {
     ]);
     renderShell();
     expect(
-      await screen.findByText(/gepromoveerd naar pletwals iii/i),
+      await screen.findByText(/gepromoveerd naar glazenwasser iii/i),
     ).toBeInTheDocument();
     expect(celebrate).toHaveBeenCalled();
     expect(window.localStorage.getItem("tier-announced:p1")).toBe("m-x");

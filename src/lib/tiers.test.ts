@@ -14,7 +14,7 @@ describe("tierFor", () => {
     [533, "Sletje van de baan III"],
     [534, "Sletje van de baan II"],
     [599, "Sletje van de baan I"],
-    [600, "No show III"],
+    [600, "Toerist III"],
     [700, "Prutser III"],
     [799, "Prutser I"],
     // Bestaande banden (vanaf 800) — ongewijzigd.
@@ -25,12 +25,11 @@ describe("tierFor", () => {
     [900, "Blaaskaak III"],
     [999, "Blaaskaak I"],
     [1000, "Wannabe III"],
-    [1099, "Wannabe I"],
-    [1100, "Pletwals III"],
-    [1199, "Pletwals I"],
+    [1100, "Glazenwasser III"],
+    [1199, "Glazenwasser I"],
     // Nieuwe hoge tiers.
-    [1200, "De excuses verzamelaar III"],
-    [1299, "De excuses verzamelaar I"],
+    [1200, "Racketconsument III"],
+    [1299, "Racketconsument I"],
     [1300, "Forever second III"],
     [1399, "Forever second I"],
     [1400, "GOAT"],
@@ -52,13 +51,13 @@ describe("tierFor", () => {
   it("alleen de hoogste tier (GOAT) heeft geen sub-niveaus", () => {
     expect(tierFor(1400)?.sub).toBeNull();
     expect(tierFor(1600)?.sub).toBeNull();
-    // De excuses verzamelaar is nu begrensd en heeft dus wél sub-niveaus.
+    // Racketconsument is nu begrensd en heeft dus wél sub-niveaus.
     expect(tierFor(1200)?.sub).toBe(3);
   });
 
   it("draagt emoji en ludieke bijnaam", () => {
     expect(tierFor(1000)?.emoji).toBe("😤");
-    expect(tierFor(1000)?.flavor).toBe("racket van €300, techniek van een houten plank");
+    expect(tierFor(1000)?.flavor).toBe("koopt een racket van €350 om het chronische gebrek aan talent te compenseren");
     expect(tierFor(450)?.emoji).toBe("🥴");
   });
 
@@ -75,9 +74,9 @@ describe("tierFor", () => {
 
 describe("tierTitle", () => {
   it("bevat de bijnaam en het rating-bereik", () => {
-    expect(tierTitle(tierFor(450)!)).toBe("Sletje van de baan III · heeft nog nooit van een glaswand gehoord · rating tot 533");
-    expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · racket van €300, techniek van een houten plank · rating 1034–1066");
-    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · heeft z'n eigen VIP-parkeerplek bij de club al geclaimd · rating 1400+");
+    expect(tierTitle(tierFor(450)!)).toBe("Sletje van de baan III · wordt door de rest van de club gebruikt voor makkelijke gratis winst · rating tot 533");
+    expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · koopt een racket van €350 om het chronische gebrek aan talent te compenseren · rating 1034–1066");
+    expect(tierTitle(tierFor(1500)!)).toBe("GOAT · heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past · rating 1400+");
   });
 });
 
@@ -98,7 +97,7 @@ describe("tierChange", () => {
     expect(w.richting).toBe("promotie");
     expect(w.hoofdtier).toBe(true);
     expect(w.van.label).toBe("Wannabe I");
-    expect(w.naar.label).toBe("Pletwals III");
+    expect(w.naar.label).toBe("Glazenwasser III");
   });
 
   it("promotie over de nieuwe onderste grens (Prutser → Bankvuller)", () => {
@@ -131,7 +130,7 @@ describe("tierProgress", () => {
   it("berekent de punten tot de volgende hoofd-divisie", () => {
     const p = tierProgress(1045)!;
     expect(p.huidig.naam).toBe("Wannabe");
-    expect(p.volgende?.naam).toBe("Pletwals");
+    expect(p.volgende?.naam).toBe("Glazenwasser");
     expect(p.volgende?.vanaf).toBe(1100);
     expect(p.puntenNodig).toBe(55);
   });

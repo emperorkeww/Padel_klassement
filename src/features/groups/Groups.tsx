@@ -279,7 +279,7 @@ export function Groups() {
             + Match loggen
           </Link>
           <Link className="btn btn--sm" to="/matches">
-            Matcharchief →
+            Alle matches →
           </Link>
         </div>
       </section>

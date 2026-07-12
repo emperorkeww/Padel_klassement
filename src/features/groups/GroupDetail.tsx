@@ -506,21 +506,8 @@ export function GroupDetail() {
 
       {view === "stand" && (
         <>
-        <RivalryCard
-          matches={matches.data ?? []}
-          teams={tmap}
-          profiles={pmap}
-        />
-        <PiasCard
-          matches={completedMatches}
-          teams={tmap}
-          profiles={pmap}
-          ratingsByMatch={piasRatings}
-          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
-        />
-        {zwartePiet && (
-          <ZwartePietCard piet={zwartePiet} group={group.data} profiles={pmap} />
-        )}
+        {/* Klassementtabel eerst; de roast/rivaliteit-kaarten staan eronder
+            zodat de eigenlijke stand niet wegzakt onder gamification (#276). */}
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Groepsklassement</h2>
@@ -823,6 +810,22 @@ export function GroupDetail() {
             </>
           )}
         </section>
+
+        <RivalryCard
+          matches={matches.data ?? []}
+          teams={tmap}
+          profiles={pmap}
+        />
+        <PiasCard
+          matches={completedMatches}
+          teams={tmap}
+          profiles={pmap}
+          ratingsByMatch={piasRatings}
+          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
+        />
+        {zwartePiet && (
+          <ZwartePietCard piet={zwartePiet} group={group.data} profiles={pmap} />
+        )}
         </>
       )}
 

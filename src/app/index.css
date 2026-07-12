@@ -95,6 +95,13 @@
   --bigdaddy-ink: #7d1f4d;
   --bigdaddy-text: #b23a74;
 
+  /* Feed-categoriekleuren (#232): coderen de filtercategorie (informatie, geen
+     sier). Wonen hier zodat het één palet is, onder dezelfde contrast-CI. */
+  --cat-rank: #3b6fe0; /* klassement */
+  --cat-champ: #cf9414; /* kampioen */
+  --cat-roast: #d84f95; /* roast: pias / zwarte piet */
+  --cat-match: var(--accent); /* volgt het app-accent (per thema) */
+
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
 
@@ -232,6 +239,12 @@
   --bigdaddy-soft: #40213a;
   --bigdaddy-ink: #37101f;
   --bigdaddy-text: #f6b3d2;
+
+  /* Feed-categoriekleuren op donker (zie licht-blok). --cat-match volgt
+     --accent en hoeft dus niet apart. */
+  --cat-rank: #6f9bff;
+  --cat-champ: #e6b13f;
+  --cat-roast: #f072b0;
 
   --placeholder: #8a9a90;
   --skeleton-hi: #26312a;

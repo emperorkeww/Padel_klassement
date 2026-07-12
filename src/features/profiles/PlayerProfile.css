@@ -42,6 +42,32 @@
   font-size: var(--fs-sm);
 }
 
+/* Vriendverzoek-actie op andermans profiel (#282): net onder de @handle. */
+.profile-hero__action {
+  margin: var(--sp-3) 0 var(--sp-1);
+}
+/* Statusvarianten (al vrienden / in afwachting) als rustige chip i.p.v. knop. */
+.friend-btn--done,
+.friend-btn--pending {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  border: 1px solid var(--line);
+}
+.friend-btn--done {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--success);
+}
+.friend-btn--pending {
+  background: var(--surface-2);
+  color: var(--ink-soft-strong);
+}
+
 .profile-hero__roast {
   margin: var(--sp-1) 0 0;
   color: var(--ink-soft);
