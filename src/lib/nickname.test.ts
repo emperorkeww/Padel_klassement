@@ -46,8 +46,8 @@ describe("bijnaam", () => {
       match({ winner_team_id: "tA", score_a: 6, score_b: 0 }),
     );
     const naam = bijnaam(ms, teams, "p1");
-    expect(["De Netbeul", "De Bagelbakker", "De Sloopkogel", "Het Muurtje"]).toContain(naam);
-    expect(naam).not.toBe("De Underdog");
-    expect(naam).not.toBe("De Rookie");
+    expect(["De Beul van Baan 1 🔪", "De Bagelbakker 🥯", "De Sloopkogel 💥", "De Glazen Wand 🛡️"]).toContain(naam);
+    expect(naam).not.toBe("Sponsor van de Tegenstander 💸");
+    expect(naam).not.toBe("De Groene Banaan 🍌");
   });
 });
