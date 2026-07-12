@@ -546,6 +546,79 @@
   font-size: var(--fs-sm);
 }
 
+/* Eigen-profiel highlights: tegels in dezelfde taal als de Stat- en
+   .h2h-highlight-tegels (icoon + kort label + waarde), i.p.v. losse zinnen. */
+.highlight-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-3);
+}
+.highlight-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.highlight-tile__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+.highlight-tile__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.highlight-tile__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.highlight-tile__value {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.highlight-tile__value strong {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.highlight-tile__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* Tikbare waarde (badge-uitleg / spelerlink) blijft in de tegel passen. */
+.highlight-tile__link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.highlight-tile__link:hover {
+  text-decoration: underline;
+}
+
 /* Verdieping in twee kolommen op desktop (via .grid--2). Blok-flow zodat het
    bestaande .card + .card-ritme de afstand regelt (geen dubbele gap). */
 .profile-grid__col {

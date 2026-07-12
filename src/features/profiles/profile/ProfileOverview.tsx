@@ -157,65 +157,126 @@ function ProfileHighlights({
   ProfileData,
   "tierVoortgang" | "streak" | "best" | "nextBadge" | "favoriet" | "pmap"
 > & { onOpenBadge: (id: string) => void }) {
-  const items: React.ReactNode[] = [];
+  const tiles: React.ReactNode[] = [];
 
   if (tierVoortgang?.volgende && tierVoortgang.puntenNodig != null) {
-    items.push(
-      <li key="tier">
-        <span aria-hidden="true">{tierVoortgang.volgende.emoji}</span> Nog{" "}
-        <strong>{tierVoortgang.puntenNodig}</strong> rating tot{" "}
-        {tierVoortgang.volgende.naam}
-      </li>,
+    tiles.push(
+      <HighlightTile
+        key="tier"
+        icon={tierVoortgang.volgende.emoji}
+        label="Volgende tier"
+        value={tierVoortgang.volgende.naam}
+        meta={
+          <>
+            nog <strong>{tierVoortgang.puntenNodig}</strong> rating
+          </>
+        }
+      />,
     );
   }
   if (streak >= 2) {
-    items.push(
-      <li key="streak">
-        <span aria-hidden="true">🔥</span> <strong>{streak}</strong> matches op rij
-        gewonnen
-      </li>,
+    tiles.push(
+      <HighlightTile
+        key="streak"
+        icon="🔥"
+        label="Winreeks"
+        value={
+          <>
+            <strong>{streak}</strong> op rij gewonnen
+          </>
+        }
+      />,
     );
   } else if (best > 0) {
-    items.push(
-      <li key="best">
-        <span aria-hidden="true">🔥</span> Langste winreeks: <strong>{best}</strong>
-      </li>,
+    tiles.push(
+      <HighlightTile
+        key="best"
+        icon="🔥"
+        label="Langste winreeks"
+        value={
+          <>
+            <strong>{best}</strong> matches
+          </>
+        }
+      />,
     );
   }
   if (nextBadge?.voortgang) {
-    items.push(
-      <li key="badge">
-        <span aria-hidden="true">{nextBadge.emoji}</span> Volgende badge:{" "}
-        <button
-          type="button"
-          className="link-btn"
-          aria-haspopup="dialog"
-          onClick={() => onOpenBadge(nextBadge.id)}
-        >
-          {nextBadge.naam}
-        </button>{" "}
-        — {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
-      </li>,
+    tiles.push(
+      <HighlightTile
+        key="badge"
+        icon={nextBadge.emoji}
+        label="Volgende badge"
+        value={
+          <button
+            type="button"
+            className="highlight-tile__link"
+            aria-haspopup="dialog"
+            onClick={() => onOpenBadge(nextBadge.id)}
+          >
+            {nextBadge.naam}
+          </button>
+        }
+        meta={
+          <>
+            {nextBadge.voortgang.nu}/{nextBadge.voortgang.doel}
+          </>
+        }
+      />,
     );
   }
   if (favoriet) {
-    items.push(
-      <li key="fav">
-        <span aria-hidden="true">😎</span> Sterkst tegen{" "}
-        <Link to={`/spelers/${favoriet.oppId}`}>
-          {displayName(pmap[favoriet.oppId])}
-        </Link>{" "}
-        — {favoriet.won}× gewonnen
-      </li>,
+    tiles.push(
+      <HighlightTile
+        key="fav"
+        icon="😎"
+        label="Sterkst tegen"
+        value={
+          <Link
+            className="highlight-tile__link"
+            to={`/spelers/${favoriet.oppId}`}
+          >
+            {displayName(pmap[favoriet.oppId])}
+          </Link>
+        }
+        meta={<>{favoriet.won}× gewonnen</>}
+      />,
     );
   }
 
-  if (items.length === 0) return null;
+  if (tiles.length === 0) return null;
   return (
     <section className="card">
       <h2 className="card__title">Highlights</h2>
-      <ul className="trend-facts">{items}</ul>
+      <div className="highlight-tiles">{tiles}</div>
     </section>
+  );
+}
+
+// Eén highlight als tegel: consistent icoon + kort label + waarde (+ optionele
+// meta), in dezelfde taal als de Stat- en .h2h-highlight-tegels.
+function HighlightTile({
+  icon,
+  label,
+  value,
+  meta,
+}: {
+  icon: string;
+  label: string;
+  value: React.ReactNode;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <div className="highlight-tile">
+      <span className="highlight-tile__icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="highlight-tile__body">
+        <span className="highlight-tile__label">{label}</span>
+        <span className="highlight-tile__value">{value}</span>
+        {meta != null && <span className="highlight-tile__meta">{meta}</span>}
+      </div>
+    </div>
   );
 }
 
