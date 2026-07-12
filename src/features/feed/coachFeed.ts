@@ -45,6 +45,7 @@ export const KAMPIOEN = [
   "Kampioen! De champagne staat koud, al had ik persoonlijk liever gezien dat je die pas na een zwaarbevochten 89e minuut had geopend.",
   "Kampioen! Nu nog leren hoe je een fatsoenlijke fles champagne ontkurkt zonder de glazen wanden van de kooi te slopen.",
   "Gefeliciteerd. Maar we weten allemaal dat je partner 90% van het tactische en fysieke zware werk heeft opgeknapt.",
+  "Kampioen! Een werkelijk historische overwinning, heel legaal en heel cool. Iedereen zegt het.",
 ] as const;
 
 const PROMOTIE = [
@@ -67,6 +68,7 @@ const PROMOTIE = [
   "Een niveau omhoog! Zorg er wel voor dat je daar boven ook fatsoenlijk kan serveren, anders lig je er zo weer uit.",
   "Promotie! Geniet van de uiterst tijdelijke roem voordat je hierna weer keihard naar beneden lazert.",
   "Een trede omhoog op de ladder. Nu kun je op een nog chiquer niveau genadeloos afgedroogd worden.",
+  "Promotie! Net zo omstreden als het besluit van de FIFA-disciplinaire commissie om Baloguns rode kaart voorwaardelijk op te schorten.",
 ] as const;
 
 const DEGRADATIE = [
@@ -89,6 +91,7 @@ const DEGRADATIE = [
   "Omlaag gekelderd. Misschien moet je je tactiekbord eens een kwartslag draaien, wie weet helpt het.",
   "Gedegradeerd! Geeft absoluut niks, in de kelderklasse hebben ze tenminste geen al te hoge verwachtingen van je.",
   "Dalende lijn. Misschien moet je je tactiekbord eens omdraaien; het lijkt erop dat je de pijlen de verkeerde kant op had getekend.",
+  "Degradatie. Zelfs met hulp van Gianni Infantino en presidentiële steun lig je er nu gewoon genadeloos uit.",
 ] as const;
 
 const REEKS = [
@@ -130,6 +133,7 @@ const UPSET = [
   "Wat een stunt! Dit had zelfs de meest optimistische voetbalanalist niet durven voorspellen.",
   "Underdog pakt de zege! De favorieten stonden erbij en keken ernaar alsof ze mijn persconferenties live moesten vertalen.",
   "Voorspelling compleet aan diggelen. Een pijnlijk tactisch debacle voor de topfavoriet.",
+  "Underdog wint! Dit is het grootste sportieve en organisatorische schandaal sinds de toewijzing van het WK aan Qatar.",
 ] as const;
 
 const BAGEL = [
