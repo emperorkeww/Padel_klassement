@@ -7,7 +7,6 @@ describe("<CoachAvatar />", () => {
     render(<CoachAvatar />);
     const img = screen.getByRole("img", { name: "Coach Rudy" });
     expect(img.tagName.toLowerCase()).toBe("img");
-    // Gebruikt een echte afbeelding uit rudi_avatars/.
     expect(img).toHaveAttribute("src");
   });
 
@@ -16,5 +15,14 @@ describe("<CoachAvatar />", () => {
     const img = screen.getByRole("img", { name: "Coach Rudy" });
     expect(img).toHaveAttribute("width", "48");
     expect(img).toHaveAttribute("height", "48");
+  });
+
+  it("toont met fixed altijd dezelfde illustratie", () => {
+    const { unmount } = render(<CoachAvatar mood="portret" fixed />);
+    const first = screen.getByRole("img", { name: "Coach Rudy" }).getAttribute("src");
+    unmount();
+    render(<CoachAvatar mood="portret" fixed />);
+    const second = screen.getByRole("img", { name: "Coach Rudy" }).getAttribute("src");
+    expect(second).toBe(first);
   });
 });

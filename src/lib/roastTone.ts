@@ -12,6 +12,15 @@ export type { RoastIntensiteit };
 /** De vaste commentator-stem die de roast tekent (naam aanpasbaar). */
 export const COMMENTATOR = { naam: "Coach Rudy", emoji: "🎙️" } as const;
 
+/**
+ * De gezichtsuitdrukking/reactie die Coach Rudy's illustratie toont, gekoppeld
+ * aan de aard van zijn commentaar. `portret` is de neutrale signatuur (default
+ * én fallback), `trots` is juichend bij een zege/promotie, en de drie
+ * intensiteiten tonen een burn op dat niveau. Zie CoachAvatar voor de
+ * bestandsconventie (rudi-<stemming>[-<n>].png).
+ */
+export type CoachMood = "portret" | "trots" | RoastIntensiteit;
+
 export interface RoastCtx {
   /** Toon van de groep; bepaalt hoe hard de sneer is. */
   intensiteit: RoastIntensiteit;
@@ -52,6 +61,8 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Ik ben driftig in m'n notitieboekje aan het krabbelen hoe dit beter moet.",
     "Deze match vraagt om een wissel in de 89e minuut.",
     "Zat je tactiek soms verstopt onder je pet?",
+    "Een tactiek zo geheimzinnig, dat zelfs je medespeler er niks van begreep.",
+    "Heb je tijdens het spel ook een notitieboekje nodig om te onthouden waar de bal heen moet?",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -86,6 +97,9 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Nog vreemder dan mijn wissels tijdens het WK. En geloof me, die waren heel vreemd.",
     "Ik heb drie pagina's volgeschreven over deze blunder. Allemaal met uitroeptekens.",
     "Dit gedrag langs de lijn is bijna net zo bizar als mijn persconferenties bij de Rode Duivels.",
+    "Als je zo blijft spelen, ben je sneller uit de gratie dan een bondscoach na de groepsfase van het WK.",
+    "Met zo'n rare veldbezetting leek het wel alsof je met elf man aan het spelen was.",
+    "Ik heb op het WK veel tactische blunders gezien, maar deze service sloeg echt alles.",
   ],
   radioactief: [
     "Ik keek liever weg, voor jou.",
@@ -111,7 +125,7 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Was je racket vandaag stiekem van spons gemaakt?",
     "Sommige spelers hebben talent, anderen hebben gewoon een heel mooi padelshirt.",
     "Ik zou je inschrijving voor het volgende toernooi maar stilletjes annuleren.",
-    "Ik stond tenminste nog in een pak met een sportpet langs de lijn, maar jouw spel was pas écht een fashion disaster.",
+    "Ik stond tenminste nog in een chic pak met een sportpet langs de lijn, maar jouw spel was pas écht een tactische ramp.",
     "Zelfs de Rode Duivels hadden tijdens het WK minder moeite om de weg kwijt te raken dan jij.",
     "Na deze vertoning zou zelfs de Belgische voetbalbond me direct ontslaan als ik jou nog eens opstelde.",
     "Jouw spel had vandaag de tactische diepgang van een natte spons op een snikhete WK-middag.",
@@ -119,9 +133,12 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Zelfs Aurelio De Laurentiis zou weigeren om te betalen voor een ticket om jou te zien spelen.",
     "Dit was zo slecht dat we de FIFA moeten vragen om padel te verbieden in de Benelux.",
     "Ga je nu huilen? Zal ik een viool voor je pakken?",
-    "Je spel is zo onnavolgbaar dat ik spontaan vijf wissels tegelijk wil doorvoeren, gewoon om ervan af te zijn.",
-    "Ik schrijf zoveel fouten op dat m'n pen leeg is. Zelfs het WK-notitieboekje was minder vol.",
-    "Zelfs de Belgische pers had na de uitschakeling tegen Spanje minder kritiek op mij dan ik op jou vandaag.",
+    "Je spel is zo onnavolgbaar dat ik spontaan een viervoudige wissel in de 89e minuut wil doorvoeren, gewoon om het niet meer te hoeven zien.",
+    "Ik schrijf zoveel tactische blunders op dat m'n pen leeg is. Zelfs het WK-notitieboekje was leger.",
+    "Zelfs de Belgische pers had na de uitschakeling op het WK minder kritiek op mij dan ik op jouw wanprestatie.",
+    "Ik heb veel kritiek gekregen op mijn tactiek met de Duivels, maar vergeleken met jouw positiespel ben ik een tactisch genie.",
+    "Zelfs een wissel in de 94e minuut had dit zinkende schip niet meer kunnen redden.",
+    "Dit was zo pijnlijk dat ik ter plekke mijn pet over mijn gezicht heb getrokken.",
   ],
 } as const;
 
