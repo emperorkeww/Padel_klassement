@@ -7,6 +7,8 @@ import { useRealtime } from "../../lib/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
+import { CoachAvatar } from "../../components/CoachAvatar";
+import { COMMENTATOR } from "../../lib/roastTone";
 import {
   buildFeed,
   feedDay,
@@ -729,9 +731,9 @@ function CoachComment({ tekst }: { tekst: string | null }) {
   if (!tekst) return null;
   return (
     <div className="coach-comment">
-      <span className="coach-comment__mic" aria-hidden="true">🎙️</span>
+      <CoachAvatar size={28} className="coach-comment__face" />
       <div className="coach-comment__bubble">
-        <span className="coach-comment__name">Coach Rudy</span>
+        <span className="coach-comment__name">{COMMENTATOR.naam}</span>
         <span className="coach-comment__text">{tekst}</span>
       </div>
     </div>
@@ -744,9 +746,9 @@ function CoachMonologue({ lines }: { lines: string[] }) {
   if (lines.length === 0) return null;
   return (
     <div className="coach-comment">
-      <span className="coach-comment__mic" aria-hidden="true">🎙️</span>
+      <CoachAvatar size={28} className="coach-comment__face" />
       <div className="coach-comment__bubble">
-        <span className="coach-comment__name">Coach Rudy · avondverslag</span>
+        <span className="coach-comment__name">{COMMENTATOR.naam} · avondverslag</span>
         {lines.map((l, i) => (
           <span key={i} className="coach-comment__text">
             {l}

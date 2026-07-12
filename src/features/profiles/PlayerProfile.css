@@ -48,6 +48,28 @@
   font-size: var(--fs-sm);
 }
 
+/* Coach Rudy's oordeel op het profiel (#211/#213): gezicht + bubbeltekst. */
+.profile-hero__coach {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+}
+.profile-hero__coach-face {
+  margin-top: 1px;
+}
+.profile-hero__coach-text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-style: italic;
+}
+.profile-hero__coach-name {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--coach);
+}
+
 .profile-hero__form {
   display: flex;
   align-items: center;

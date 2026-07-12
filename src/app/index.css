@@ -28,6 +28,12 @@
   --accent-line: #bce4d1;
   --accent-ink: #ffffff; /* tekst op smaragd */
 
+  /* Coach Rudy — eigen warm amber-accent, los van het groene --accent. */
+  --coach: #e0821c;
+  --coach-soft: #fdf0dc;
+  --coach-line: #f0d3a3;
+  --coach-ink: #5a3410; /* tekst/details op --coach */
+
   --lime: #c7e63a; /* padelbal */
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
   --lime-soft: #f4fadb;
@@ -161,6 +167,12 @@
   --accent-soft: #10231b;
   --accent-line: #27453a;
   --accent-ink: #0f1512;
+
+  /* Coach Rudy — warm amber, iets lichter op donker. */
+  --coach: #e6a34d;
+  --coach-soft: #2e2313;
+  --coach-line: #4a3a1f;
+  --coach-ink: #241606;
 
   /* Lime (padelbal) een tint stiller — accentje, geen schreeuw. */
   --lime: #a9bd55;
