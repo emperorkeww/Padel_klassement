@@ -329,6 +329,35 @@ describe("buildFeed — publiek: groepsgenoten (#138)", () => {
     // Maar p8/p9 worden er géén vrienden van p1 door (networkIds-guard).
     expect([...networkIds([tussenAnderen], "p1")]).toEqual(["p1"]);
   });
+
+  it("verbergt andermans netwerk-vriendschap als een partij niet vindbaar is (#326)", () => {
+    // De bredere zichtbaarheid (#326) laat andermans vriendschappen op de feed
+    // toe, maar de privacyfilter blijft: is één partij niet discoverable, dan
+    // verdwijnt het "zijn nu vrienden"-item alsnog.
+    const tussenAnderen = {
+      id: "f9",
+      requester_id: "p8",
+      addressee_id: "p9",
+      status: "accepted",
+      created_at: "2026-07-10T09:00:00Z",
+      updated_at: "2026-07-10T09:00:00Z",
+    } as Friendship;
+    const profiles: Record<string, Profile> = {
+      p8: { id: "p8", username: "p8", full_name: null, discoverable: true } as Profile,
+      p9: { id: "p9", username: "p9", full_name: null, discoverable: false } as Profile,
+    };
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [tussenAnderen],
+      myId: "p1",
+      groups,
+      membersByGroup: members,
+      profiles,
+      filter: feedPrivacyFilter(profiles),
+    });
+    expect(feed.some((e) => e.kind === "friendship")).toBe(false);
+  });
 });
 
 describe("buildFeed — klassementsprong", () => {

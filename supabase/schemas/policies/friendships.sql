@@ -29,21 +29,23 @@ create policy "Betrokkene kan vriendschap verwijderen"
   on public.friendships for delete
   to authenticated
   using ((select auth.uid()) in (requester_id, addressee_id));
--- Feed (#138): geaccepteerde vriendschappen ook leesbaar voor groepsgenoten —
--- alleen wanneer beide betrokkenen samen met de kijker in één groep zitten.
--- Verzoeken (pending/declined) blijven strikt privé.
-create policy "friendships_select_groupmates" on public.friendships
+-- Feed (#326, verruimt #138): een geaccepteerde vriendschap is leesbaar zodra
+-- minstens één van de twee partijen in het netwerk van de kijker zit — een
+-- groepsgenoot óf een geaccepteerde vriend. Zo verschijnen "X en Y zijn nu
+-- vrienden"-momenten ook als je maar met één van beiden een band hebt, i.p.v.
+-- de oude eis dat je met beide een groep deelt. Verzoeken (pending/declined)
+-- blijven strikt privé (enkel via "Eigen vriendschappen zijn leesbaar").
+-- De checks lopen via SECURITY DEFINER-helpers, zodat de policy geen recursie
+-- op friendships veroorzaakt.
+create policy "friendships_select_network" on public.friendships
   for select
   to authenticated
   using (
     status = 'accepted'
-    and exists (
-      select 1
-      from public.group_members me
-      join public.group_members a
-        on a.group_id = me.group_id and a.player_id = friendships.requester_id
-      join public.group_members b
-        on b.group_id = me.group_id and b.player_id = friendships.addressee_id
-      where me.player_id = (select auth.uid())
+    and (
+      public.shares_group((select auth.uid()), requester_id)
+      or public.shares_group((select auth.uid()), addressee_id)
+      or public.is_accepted_friend((select auth.uid()), requester_id)
+      or public.is_accepted_friend((select auth.uid()), addressee_id)
     )
   );
