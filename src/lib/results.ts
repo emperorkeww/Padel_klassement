@@ -138,6 +138,26 @@ export function biggestWin(
 }
 
 /**
+ * Grootste nederlaag: de verloren match met het hoogste puntenverschil.
+ * Spiegel van biggestWin; vereist twee ingevulde scores. Null zonder zulk
+ * verlies. Voor Coach Rudy's "persoonlijk dieptepunt"-quips (#200).
+ */
+export function biggestLoss(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): { match: Match; margin: number } | null {
+  let worst: { match: Match; margin: number } | null = null;
+  for (const m of matches) {
+    if (outcomeFor(m, teams, playerId) !== "L") continue;
+    if (m.score_a == null || m.score_b == null) continue;
+    const margin = Math.abs(m.score_a - m.score_b);
+    if (!worst || margin > worst.margin) worst = { match: m, margin };
+  }
+  return worst;
+}
+
+/**
  * Onderlinge stand tegen elke tegenstander: W/D/L vanuit de speler, geteld
  * over matches waarin beide meededen maar in verschillende teams. De sleutel
  * van de map is het speler-id van de tegenstander.

@@ -7,9 +7,15 @@
 // Pure functie, getest in coachFeed.test.ts.
 
 import type { FeedEvent } from "../../lib/feed";
-import type { Profile, RoastIntensiteit, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
 import type { CoachMood } from "../../lib/roastTone";
 import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
+import {
+  isWinreeksRecord,
+  piasNrDezeMaand,
+  verliesFeiten,
+  type VerliesFeiten,
+} from "../../lib/coachStats";
 
 export interface CoachCtx {
   /** Roast-toon per groep. */
@@ -21,6 +27,14 @@ export interface CoachCtx {
   /** Al gebruikte quips binnen deze weergave; voorkomt dubbele lijnen in de
    *  zichtbare feed. Geef één gedeelde set mee aan alle items van één render. */
   gebruikt?: Set<string>;
+  /** Volledige (recente) matchlijst → stats-bewuste match-quips (#200). Ontbreekt
+   *  hij, dan valt Coach Rudy terug op zijn generieke pools. */
+  matches?: Match[];
+  /** Weergavenaam van een speler, voor de rivaal-quip (#200). Zonder resolver
+   *  valt hij terug op het id. */
+  naamVoor?: (id: string) => string;
+  /** Aangeduide pias-van-de-week per groep → herhaling ("Nde pias deze maand"). */
+  piasWeeks?: { playerId: string; weekStart: string }[];
 }
 
 // Niet-roast pools (hype/felicitatie/leedvermaak): niet door het schild
@@ -145,10 +159,10 @@ const UPSET = [
 ] as const;
 
 const BAGEL = [
-  "Een bagel. Nul games. Iemand mag zich diep schamen.",
+  "Een droge 6-0. Nul games. Iemand mag zich diep schamen.",
   "6–0. Dat is geen wedstrijd, dat is een openbare terechtstelling.",
-  "Broodje bagel geserveerd. Koud opgediend.",
-  "Een bagel... Hebben jullie überhaupt wel je racket uit de tas gehaald?",
+  "Pandoering gekregen. Droge 6-0. Koud opgediend.",
+  "Een droge 6-0... Hebben jullie überhaupt wel je racket uit de tas gehaald?",
   "Nul komma nul. Zelfs het scorebord schaamde zich om dit te tonen.",
   "Fietsbandjes uitgedeeld. Tijd voor een flinke portie zelfreflectie.",
   "Nul. Helemaal niks. Autsj.",
@@ -158,7 +172,7 @@ const BAGEL = [
   "6–0. De genadeloze klassieker.",
   "6–0. Zelfs de kantinejuffrouw vroeg of jullie eigenlijk wel meededen.",
   "Nul games. Dat is statistisch gezien bijna moeilijker dan één game winnen.",
-  "Een bagel! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
+  "Een droge 6-0! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
   "Helemaal van de kaart geveegd. Mijn aantekeningen over deze set passen gemakkelijk op een postzegel.",
   "6-0! Een droge afschminking. Zelfs met een blinde wissel in de 89e minuut had ik dit niet slechter gekund.",
   "Nul games gepakt. Dat is statistisch gezien bijna een indrukwekkende kunstvorm op zich.",
@@ -228,10 +242,114 @@ function verliezersHebbenSchild(event: Extract<FeedEvent, { kind: "match" }>, ct
   return [loser.player1_id, loser.player2_id].some((id) => heeftSchild(ctx.profiles[id]));
 }
 
+/** NL-ordinaal ("3e"). */
+const ordinaal = (n: number): string => `${n}e`;
+
+/** Kiest deterministisch één feit-lijn (of null als er geen bruikbaar feit is,
+ *  waarna de aanroeper op de generieke pool terugvalt). Respecteert `gebruikt`
+ *  zodat de zichtbare feed geen dubbele lijn toont. */
+function kiesFeit(kandidaten: string[], seed: number, g?: Set<string>): string | null {
+  if (kandidaten.length === 0) return null;
+  return kiesUniek(kandidaten, seed, g);
+}
+
+/** Feit-lijnen bij een bagel-nederlaag (loser-perspectief). */
+function bagelFeiten(vf: VerliesFeiten | null): string[] {
+  if (!vf) return [];
+  const l: string[] = [];
+  if (vf.bagelNr && vf.bagelNr >= 2) {
+    l.push(`Een droge 6-0 — en al je ${ordinaal(vf.bagelNr)} nul-nummer deze maand. Zwak.`);
+    l.push(`Alweer een droge 6-0? Dat is al je ${ordinaal(vf.bagelNr)} deze maand. Misschien moet je een bakkerij beginnen.`);
+  }
+  if (vf.nederlaagNr && vf.nederlaagNr >= 3) {
+    l.push(`6–0, en dat is je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand. De maand is niet eens om.`);
+    l.push(`Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand en dan ook nog met een droge 6-0... Tactisch een totale moderamp.`);
+  }
+  if (vf.rivaal && vf.rivaal.count >= 3) {
+    l.push(`Een droge 6-0 tegen ${vf.rivaal.naam}: de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen dezelfde man.`);
+    l.push(`Alweer een droge 6-0 en al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Heeft hij soms een abonnement op jouw vernedering gekocht?`);
+  }
+  if (vf.record) {
+    l.push("Nul games. De grootste afgang ooit — knap, op je eigen manier.");
+    l.push("Een legendarische 6-0 afgang. Zelfs op het WK van 2026 heb ik zo'n totale instorting niet meegemaakt.");
+  }
+  return l;
+}
+
+/** Feit-lijnen bij een monsterzege (het puntenverschil + het leed van de verliezer). */
+function monsterFeiten(vf: VerliesFeiten | null): string[] {
+  if (!vf) return [];
+  const l: string[] = [];
+  const m = vf.marge;
+  if (vf.record && m != null) {
+    l.push(`${m} games verschil — een persoonlijk dieptepunt om in te lijsten.`);
+    l.push(`${m} games verschil. Een historisch dieptepunt. Ik stel voor dat we deze match direct uit de database wissen om verdere schaamte te voorkomen.`);
+  }
+  if (vf.rivaal && vf.rivaal.count >= 3) {
+    l.push(`Een pak slaag, en de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}.`);
+    l.push(`Alweer een pandoering, en dat is al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Wordt het niet eens tijd om een andere partner te zoeken?`);
+  }
+  if (vf.nederlaagNr && vf.nederlaagNr >= 3) {
+    l.push(`Meedogenloos afgemaakt: je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand.`);
+    l.push(`Compleet weggespeeld. Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand. Mijn notitieboekje raakt vol door jouw vormcrisis.`);
+  }
+  if (m != null) {
+    l.push(`${m} games verschil. Dat was geen partij, dat was een statement.`);
+    l.push(`${m} games verschil. Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met sadistisch genoegen.`);
+  }
+  return l;
+}
+
+/** Feit-lijnen bij een upset (winkans van de favoriet + een terugkerende rivaal). */
+function upsetFeiten(
+  event: Extract<FeedEvent, { kind: "match" }>,
+  vf: VerliesFeiten | null,
+  magRoasten: boolean,
+): string[] {
+  const l: string[] = [];
+  const up = event.highlights.find((x) => x.type === "upset");
+  if (up && up.type === "upset") {
+    const kans = Math.round(up.chance * 100);
+    l.push(`De favoriet onderuit, met ${kans}% winkans vooraf. Papieren vorm, de prullenbak in.`);
+    l.push(`Als favoriet verliezen met ${kans}% winkans vooraf... Zelfs de bookmakers liggen in een deuk door deze wanprestatie.`);
+  }
+  if (magRoasten && vf?.rivaal && vf.rivaal.count >= 3) {
+    l.push(`De ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam} — en die was nota bene de underdog.`);
+    l.push(`De ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen underdog ${vf.rivaal.naam}. Misschien moeten we Gianni Infantino bellen om deze uitslag voorwaardelijk te laten opschorten.`);
+  }
+  return l;
+}
+
+/** Feit-lijnen bij een win- of duo-reeks (mijlpaal 3/5/10 uit de highlight). */
+function reeksFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx): string[] {
+  const teams = ctx.teams ?? {};
+  const l: string[] = [];
+  const s = event.highlights.find((x) => x.type === "streak");
+  if (s && s.type === "streak") {
+    const record = ctx.matches ? isWinreeksRecord(ctx.matches, teams, s.playerId, s.count) : false;
+    if (record) {
+      l.push(`${s.count} zeges op rij — een persoonlijk record. Geniet, tot de klap komt.`);
+      l.push(`${s.count} zeges op rij — een nieuw persoonlijk record. Heel legaal en heel cool, al weet ik zeker dat de klap hierna gigantisch zal zijn.`);
+    } else {
+      l.push(`${s.count} op rij. De machine draait, onderhoud niet vergeten.`);
+      l.push(`${s.count} op rij gewonnen. Geniet van de uiterst tijdelijke roem voordat je weer keihard naar beneden lazert.`);
+    }
+  }
+  const d = event.highlights.find((x) => x.type === "duo");
+  if (d && d.type === "duo") {
+    l.push(`${d.count} keer op rij als vast duo. Voorlopig niet te stoppen.`);
+    l.push(`${d.count} keer op rij gewonnen als duo. Maar laten we eerlijk zijn: we weten allemaal dat je partner 90% van het werk opknapt.`);
+  }
+  return l;
+}
+
 /**
  * Coach Rudy's commentaar bij een feed-gebeurtenis, of null als hij zwijgt.
- * Pias-quips lopen via coachSneer (respecteert schild + intensiteit); de rest
- * kiest uit een vaste pool op de gebeurtenis-seed.
+ * Match-quips zijn stats-bewust (#200): met de meegegeven matchlijst vult hij
+ * concrete feiten in (marge, herhaling deze maand, rivaal-reeks, records) en
+ * valt terug op de generieke pool zodra die data ontbreekt. Pias-quips lopen via
+ * coachSneer (respecteert schild + intensiteit); de rest kiest uit een vaste
+ * pool op de gebeurtenis-seed.
  */
 export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
   const g = ctx.gebruikt;
@@ -245,8 +363,8 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         roastSeed(event.playerId, event.periodeLabel),
         g,
       );
-    case "pias-week":
-      return coachSneer(
+    case "pias-week": {
+      const sneer = coachSneer(
         roastCtx(
           { roast_intensiteit: ctx.intensiteitVoor(event.groupId) },
           ctx.profiles[event.playerId],
@@ -254,6 +372,13 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         roastSeed(event.playerId, event.weekStart),
         g,
       );
+      if (!sneer) return null; // schild aan → Coach Rudy zwijgt
+      // Herhaling (#200): "al je Nde pias deze maand" vóór de sneer.
+      const nr = ctx.piasWeeks
+        ? piasNrDezeMaand(ctx.piasWeeks, event.playerId, event.weekStart)
+        : 0;
+      return nr >= 2 ? `Al je ${ordinaal(nr)} pias deze maand. ${sneer}` : sneer;
+    }
     case "zwarte-piet":
       return coachSneer(
         roastCtx(
@@ -289,12 +414,32 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
     case "match": {
       const seed = roastSeed(event.match.id);
       const h = event.highlights;
-      if (h.some((x) => x.type === "streak" || x.type === "duo")) return kiesUniek(REEKS, seed, g);
-      if (h.some((x) => x.type === "upset")) return kiesUniek(UPSET, seed, g);
-      if (h.some((x) => x.type === "score" && x.label === "bagel")) {
-        return kiesUniek(verliezersHebbenSchild(event, ctx) ? BAGEL_NEUTRAAL : BAGEL, seed, g);
+      const teams = ctx.teams ?? {};
+      const magRoasten = !verliezersHebbenSchild(event, ctx);
+      // Nederlaag-feiten één keer afleiden (loser-perspectief), als de matchlijst
+      // is meegegeven; anders blijft alles op de generieke pools.
+      const vf = ctx.matches ? verliesFeiten(event.match, ctx.matches, teams, ctx.naamVoor) : null;
+
+      if (h.some((x) => x.type === "streak" || x.type === "duo")) {
+        return kiesFeit(reeksFeiten(event, ctx), seed, g) ?? kiesUniek(REEKS, seed, g);
       }
-      if (h.some((x) => x.type === "score" && x.label === "monsterzege")) return kiesUniek(MONSTER, seed, g);
+      if (h.some((x) => x.type === "upset")) {
+        return kiesFeit(upsetFeiten(event, vf, magRoasten), seed, g) ?? kiesUniek(UPSET, seed, g);
+      }
+      if (h.some((x) => x.type === "score" && x.label === "bagel")) {
+        if (magRoasten) {
+          const feit = kiesFeit(bagelFeiten(vf), seed, g);
+          if (feit) return feit;
+        }
+        return kiesUniek(magRoasten ? BAGEL : BAGEL_NEUTRAAL, seed, g);
+      }
+      if (h.some((x) => x.type === "score" && x.label === "monsterzege")) {
+        if (magRoasten) {
+          const feit = kiesFeit(monsterFeiten(vf), seed, g);
+          if (feit) return feit;
+        }
+        return kiesUniek(MONSTER, seed, g);
+      }
       return null; // gewone match: Coach Rudy zwijgt (anti-ruis)
     }
     default:

@@ -258,6 +258,10 @@ export function Feed() {
   // "Jij" voor jezelf, anders de weergavenaam — leest prettiger in zinnetjes.
   const name = (pid: string) =>
     pid === myId ? "Jij" : displayName(pmap[pid]);
+  // Voor Coach Rudy's rivaal-quips (#200) altijd de weergavenaam (nooit "Jij"),
+  // want de rivaal is een tegenstander in de derde persoon.
+  const naamVoor = (pid: string) => displayName(pmap[pid]);
+  const piasWeeksFlat = Object.values(piasWeeks.data ?? {}).flat();
 
   // Roast-toon (#183): de feed is persoonlijk, dus Coach Rudy hanteert overal
   // jóuw eigen profiel-intensiteit — niet de per-groep instelling van een
@@ -422,6 +426,9 @@ export function Feed() {
                             profiles: pmap,
                             teams: tmap,
                             gebruikt: gebruiktCoach,
+                            matches: matches.data ?? [],
+                            naamVoor,
+                            piasWeeks: piasWeeksFlat,
                           })}
                           mood={coachStemming(event, intensiteitVoor)}
                           onInfo={() => setCoachAboutOpen(true)}
