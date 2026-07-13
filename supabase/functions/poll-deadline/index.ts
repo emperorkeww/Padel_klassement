@@ -37,14 +37,16 @@ const AUTO_LOCK_HOURS = Number(Deno.env.get("POLL_AUTO_LOCK_HOURS") ?? "12");
 /** Uren vóór het vastgelegde moment voor de speeldag-herinnering. */
 const DAY_OF_HOURS = Number(Deno.env.get("POLL_DAY_OF_HOURS") ?? "5");
 
-const TIME_ZONE = "Europe/Brussels"; // clubtijd; zie availability/club.ts
+// Fallback-clubtijd voor polls van vóór #322 (die nog geen club_timezone hebben).
+const TIME_ZONE = "Europe/Brussels"; // zie availability/club.ts
 
-/** Epoch (ms) van "YYYY-MM-DD" + "HH:MM" in clubtijd, DST-proof. */
-function clubEpoch(date: string, time: string): number {
+/** Epoch (ms) van "YYYY-MM-DD" + "HH:MM" in clubtijd, DST-proof. De tijdzone
+ *  komt van de poll (#322), zodat clubs buiten Brussel juist gepland worden. */
+function clubEpoch(date: string, time: string, timeZone = TIME_ZONE): number {
   const naive = new Date(`${date}T${time}:00Z`).getTime();
   // Offset van de clubtijdzone op dat moment bepalen via Intl.
   const inZone = new Date(
-    new Date(naive).toLocaleString("en-US", { timeZone: TIME_ZONE }),
+    new Date(naive).toLocaleString("en-US", { timeZone }),
   ).getTime();
   const utc = new Date(
     new Date(naive).toLocaleString("en-US", { timeZone: "UTC" }),
@@ -85,6 +87,7 @@ type PollRow = {
   locked_option_id: string | null;
   deadline_notified_at: string | null;
   dayof_notified_at: string | null;
+  club_timezone: string | null;
 };
 type OptionRow = {
   id: string;
@@ -113,7 +116,7 @@ Deno.serve(async (req) => {
 
   const { data: polls } = await admin
     .from("play_polls")
-    .select("id, group_id, status, locked_option_id, deadline_notified_at, dayof_notified_at")
+    .select("id, group_id, status, locked_option_id, deadline_notified_at, dayof_notified_at, club_timezone")
     .in("status", ["open", "locked", "booked"]);
 
   for (const poll of (polls ?? []) as PollRow[]) {
@@ -132,8 +135,9 @@ Deno.serve(async (req) => {
     const yesOn = (optionId: string) =>
       allVotes.filter((v) => v.option_id === optionId && v.status === "yes");
 
+    const tz = poll.club_timezone ?? TIME_ZONE;
     if (poll.status === "open") {
-      const first = Math.min(...opts.map((o) => clubEpoch(o.date, o.start_time)));
+      const first = Math.min(...opts.map((o) => clubEpoch(o.date, o.start_time, tz)));
       if (first <= now) continue; // eerste moment al voorbij: laten rusten
 
       // 1) Laatste kans voor wie nog niet stemde.
@@ -190,7 +194,7 @@ Deno.serve(async (req) => {
     // 3) Speeldag-herinnering voor gelockte/geboekte polls.
     const locked = opts.find((o) => o.id === poll.locked_option_id);
     if (!locked || poll.dayof_notified_at) continue;
-    const start = clubEpoch(locked.date, locked.start_time);
+    const start = clubEpoch(locked.date, locked.start_time, tz);
     if (start > now && start - now <= DAY_OF_HOURS * 3600_000) {
       const players = [...new Set(yesOn(locked.id).map((v) => v.player_id))];
       result.dayOf += await pushTo(players, {

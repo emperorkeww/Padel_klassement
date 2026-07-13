@@ -18,6 +18,15 @@ create table public.play_polls (
   -- Momenten van vastleggen/boeken (feed v2, #143); reopen wist ze weer.
   locked_at timestamptz,
   booked_at timestamptz,
+  -- Locatie-snapshot (#322): de club/baan wordt bij aanmaak vastgelegd op de
+  -- poll zelf, niet afgeleid uit de globale clubkeuze (localStorage), zodat een
+  -- latere clubwissel bestaande polls niet meer "verhuist". Gedenormaliseerd:
+  -- clubs zijn Playtomic-tenants, geen eigen tabel. Wijzigbaar zolang de poll
+  -- niet geboekt is; club_timezone voedt ook de clubtijd-berekeningen.
+  club_id text not null,
+  club_name text not null,
+  club_city text,
+  club_timezone text not null,
   created_at timestamptz not null default now()
 );
 

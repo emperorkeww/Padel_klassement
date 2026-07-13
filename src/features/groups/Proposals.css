@@ -204,11 +204,34 @@
   background: var(--gold);
   color: var(--ink);
 }
+/* "Vroegere uren tonen"-knop: eigen regel bovenaan het slot-raster (#322). */
+.poll-wizard__earlier {
+  flex-basis: 100%;
+  justify-content: center;
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
 .poll-wizard__controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-4);
+}
+/* De locatiepicker staat in een knoppenbalk, niet los onder een titel: de
+   default margin-top (Banen-pagina) moet hier weg. */
+.proposal__links .club-picker {
+  margin-top: 0;
+}
+/* Vaste locatieweergave op een geboekte poll (geen picker meer, #322). */
+.poll-card__club {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
 }
 .poll-wizard__toggle {
   display: inline-flex;

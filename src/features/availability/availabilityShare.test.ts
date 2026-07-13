@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   freeStartTimes,
+  manualStarts,
   weekHeatmap,
   bestHeatMoment,
   freeBlocks,
@@ -164,5 +165,25 @@ describe("weekShareText", () => {
     expect(text).toContain("om 20:00 (2 banen)");
     expect(text).toContain("Tn = terrein n");
     expect(text).toContain("Bekijk: https://view/week");
+  });
+});
+
+describe("manualStarts (#322)", () => {
+  // Ruim in de toekomst → geen "vandaag"-afkap, dus het volledige raster.
+  const future = "2099-01-15";
+
+  it("levert alle halfuren van 08:00 tot 22:30, zonder banen", () => {
+    const starts = manualStarts(future, "Europe/Brussels");
+    expect(starts).toHaveLength(30); // 08:00–22:30 in stappen van 30 min
+    expect(starts[0].time).toBe("08:00");
+    expect(starts[starts.length - 1].time).toBe("22:30");
+    // Handmatige locatie: geen Playtomic-banen bij de slots.
+    expect(starts.every((s) => s.courts.length === 0)).toBe(true);
+  });
+
+  it("bevat zowel ochtend- als avonduren", () => {
+    const times = manualStarts(future, "Europe/Brussels").map((s) => s.time);
+    expect(times).toContain("09:00");
+    expect(times).toContain("20:30");
   });
 });

@@ -111,6 +111,8 @@ export function SuggestionsCard({
       await createPoll({
         groupId,
         createdBy: myId,
+        // De suggestie komt uit de beschikbaarheid van de gekozen club (#322).
+        club,
         options: [
           { date: s.date, startTime: s.time, duration: 90, courtsFree: s.freeCourts },
         ],
