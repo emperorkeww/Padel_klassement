@@ -1,7 +1,7 @@
 -- pgTAP-tests voor de RLS-hardening (audit 2026-07-01, migratie 20260701140000).
 begin;
 
-select plan(15);
+select plan(17);
 
 ------------------------------------------------------------------------
 -- matches: geen directe INSERT-policy meer; enkel SELECT + UPDATE.
@@ -25,9 +25,10 @@ select policies_are(
 );
 
 ------------------------------------------------------------------------
--- friendships: de vier hardening-policies bestaan nog, plus de
--- groupmates-select uit #138 (geaccepteerde vriendschappen leesbaar voor
--- groepsgenoten, t.b.v. de feed). Insert blijft INSERT.
+-- friendships: de vier hardening-policies bestaan nog, plus de netwerk-select
+-- uit #326 (geaccepteerde vriendschappen leesbaar zodra één partij in je
+-- netwerk zit, t.b.v. de feed; verruimt de groupmates-regel van #138). Insert
+-- blijft INSERT.
 ------------------------------------------------------------------------
 select policies_are(
   'public', 'friendships',
@@ -36,7 +37,7 @@ select policies_are(
     'Verzoek sturen als verzoeker',
     'Ontvanger kan verzoek beantwoorden',
     'Betrokkene kan vriendschap verwijderen',
-    'friendships_select_groupmates'
+    'friendships_select_network'
   ],
   'friendships heeft de verwachte policies'
 );
@@ -47,8 +48,18 @@ select policy_cmd_is(
 );
 
 select policy_cmd_is(
-  'public', 'friendships', 'friendships_select_groupmates', 'SELECT',
-  'groupmates-policy geldt alleen voor SELECT'
+  'public', 'friendships', 'friendships_select_network', 'SELECT',
+  'netwerk-select-policy geldt alleen voor SELECT'
+);
+
+-- #326: de SECURITY DEFINER-helpers waarop de netwerk-policy leunt.
+select has_function(
+  'public', 'shares_group', array['uuid', 'uuid'],
+  'functie public.shares_group(uuid, uuid) bestaat'
+);
+select has_function(
+  'public', 'is_accepted_friend', array['uuid', 'uuid'],
+  'functie public.is_accepted_friend(uuid, uuid) bestaat'
 );
 
 ------------------------------------------------------------------------
