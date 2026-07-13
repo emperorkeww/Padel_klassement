@@ -75,7 +75,7 @@ export type FeedEvent =
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
   | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
-  | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string };
+  | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
 export const FEED_LIMIT = 50;
@@ -483,6 +483,7 @@ export function buildFeed(input: {
   // ── Smoesjes (#296): een op een verloren groepsmatch geplaatste smoes van de
   //    verliezer, onder Coach Rudy's stem. RLS levert enkel smoezen uit jouw
   //    groepen, dus we hebben altijd een groepsnaam. ──
+  const matchById = new Map(matches.map((m) => [m.id, m]));
   for (const s of smoesjes) {
     const groupName = groupNamesById.get(s.group_id);
     if (!groupName) continue;
@@ -494,6 +495,9 @@ export function buildFeed(input: {
       groupName,
       playerId: s.player_id,
       smoes: s.smoes,
+      // De verloren match zelf (indien binnen het feed-venster), zodat de kaart
+      // toont bij wélke nederlaag de smoes hoort — tegenstander + score.
+      match: matchById.get(s.match_id) ?? null,
     });
   }
 
