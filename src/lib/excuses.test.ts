@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { SMOESJES, hashString, kiesSmoes } from "./excuses";
+import {
+  SMOESJES,
+  OORDEEL,
+  OORDEEL_NEUTRAAL,
+  hashString,
+  kiesSmoes,
+  kiesOordeel,
+} from "./excuses";
 
 describe("kiesSmoes", () => {
   it("geeft altijd een smoesje uit de pool", () => {
@@ -21,6 +28,35 @@ describe("kiesSmoes", () => {
     // Over drie worpen zit er ten minste één verschil in (geen vaste herhaling).
     const worpen = [kiesSmoes(seed), kiesSmoes(seed + 1), kiesSmoes(seed + 2)];
     expect(new Set(worpen).size).toBeGreaterThan(1);
+  });
+});
+
+describe("kiesOordeel", () => {
+  it("geeft altijd een oordeel uit de juiste pool", () => {
+    for (const smoes of SMOESJES) {
+      const { gradatie, tekst } = kiesOordeel(smoes);
+      expect(OORDEEL[gradatie]).toContain(tekst);
+    }
+  });
+
+  it("is deterministisch: zelfde smoesje → zelfde oordeel", () => {
+    for (const smoes of SMOESJES) {
+      expect(kiesOordeel(smoes)).toEqual(kiesOordeel(smoes));
+    }
+  });
+
+  it("gebruikt alle drie de gradaties over de pool", () => {
+    const gradaties = new Set(SMOESJES.map((s) => kiesOordeel(s).gradatie));
+    expect(gradaties).toEqual(new Set(["afgekeurd", "matig", "goedgekeurd"]));
+  });
+
+  it("valt bij schild terug op een neutrale, ongekleurde notering", () => {
+    for (const smoes of SMOESJES) {
+      const { tekst } = kiesOordeel(smoes, true);
+      expect(OORDEEL_NEUTRAAL).toContain(tekst);
+      // Geen jury-tekens in de neutrale variant.
+      for (const teken of ["❌", "⚠️", "✅"]) expect(tekst).not.toContain(teken);
+    }
   });
 });
 

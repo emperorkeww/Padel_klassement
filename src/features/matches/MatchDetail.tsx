@@ -27,6 +27,7 @@ import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { SmoesjesMachine } from "./SmoesjesMachine";
 import { outcomeFor } from "../../lib/results";
+import { roastCtx } from "../../lib/roastTone";
 import { errorMessage } from "../../lib/errors";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "../../lib/upset";
@@ -53,6 +54,12 @@ export function MatchDetail() {
   // Rating-historie (gecacht, app-breed gedeeld) om de pre-match winkans en dus
   // een eventuele upset te bepalen (#85).
   const histories = useAsync(getAllRatingHistories, []);
+  // Groepstoon (roast-intensiteit) voor Coach Rudy's stem in de smoesjesmachine.
+  const groupId = match.data?.group_id ?? null;
+  const group = useAsync(
+    () => (groupId ? getGroup(groupId) : Promise.resolve(null)),
+    [groupId],
+  );
   const [editing, setEditing] = useState(false);
 
   if (match.loading)
@@ -209,7 +216,12 @@ export function MatchDetail() {
         )}
       </section>
 
-      {iLost && <SmoesjesMachine matchId={m.id} />}
+      {iLost && (
+        <SmoesjesMachine
+          matchId={m.id}
+          ctx={roastCtx(group.data, user ? pmap[user.id] : null)}
+        />
+      )}
 
       {m.group_id != null && (
         <TotoSection match={m} teams={tmap} teamProfiles={pmap} />

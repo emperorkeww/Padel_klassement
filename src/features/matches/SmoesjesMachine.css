@@ -1,11 +1,25 @@
-/* Smoesjesmachine: een ludiek excuus na een verlies. */
+/* Smoesjesmachine: een ludiek excuus na een verlies, onder Coach Rudy's stem. */
 
+/* Het excuus als eerste regel in Rudy's bubbel (#296): erft italic/kleur van
+   .coach-sneer__text, maar iets steviger zodat het de hoofdregel blijft. */
 .smoesjes__quote {
-  margin: var(--sp-2) 0;
-  font-size: var(--fs-lg, 1.25rem);
-  font-style: italic;
-  text-align: center;
   font-weight: 600;
+}
+
+/* Rudy's jury-oordeel, kleurgecodeerd per gradatie. */
+.smoesjes__oordeel {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.smoesjes__oordeel--afgekeurd {
+  color: var(--danger);
+}
+.smoesjes__oordeel--matig {
+  color: var(--warn);
+}
+.smoesjes__oordeel--goedgekeurd {
+  color: var(--success);
 }
 
 .smoesjes__hint {
@@ -17,5 +31,5 @@
 
 .smoesjes__trek {
   display: block;
-  margin: 0 auto;
+  margin: var(--sp-3) auto 0;
 }

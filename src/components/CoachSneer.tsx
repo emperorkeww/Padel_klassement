@@ -3,9 +3,8 @@
 // de sneer werd geplakt (sneerSuffix). Zo krijgt élk roast-oppervlak — pias,
 // zwarte piet, pias-banner — hetzelfde herkenbare Coach Rudy-gezicht als de feed.
 
-import { CoachAvatar } from "./CoachAvatar";
-import { COMMENTATOR, coachSneer, type RoastCtx } from "../lib/roastTone";
-import "./CoachSneer.css";
+import { CoachBubble } from "./CoachBubble";
+import { coachSneer, type RoastCtx } from "../lib/roastTone";
 
 export function CoachSneer({
   ctx,
@@ -24,13 +23,9 @@ export function CoachSneer({
   if (!tekst) return null;
   // De illustratie-stemming volgt de hardheid van de sneer.
   return (
-    <div className="coach-sneer">
-      <CoachAvatar size={size} mood={ctx.intensiteit} className="coach-sneer__face" />
-      <div className="coach-sneer__bubble">
-        <span className="coach-sneer__name">{COMMENTATOR.naam}</span>
-        <span className="coach-sneer__text">{tekst}</span>
-      </div>
-    </div>
+    <CoachBubble mood={ctx.intensiteit} size={size}>
+      <span className="coach-sneer__text">{tekst}</span>
+    </CoachBubble>
   );
 }
 
