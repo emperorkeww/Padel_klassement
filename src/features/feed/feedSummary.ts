@@ -154,5 +154,16 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         ),
         to: `/groepen/${e.groupId}`,
       };
+    case "smoes": {
+      const tegen =
+        e.match && e.match.winner_team_id
+          ? ` tegen ${team(ctx, e.match.winner_team_id)}`
+          : "";
+      return {
+        icon: "🙈",
+        tekst: `${naam(ctx, e.playerId)} verzon een smoes na de nederlaag${tegen} in ${e.groupName}`,
+        to: `/matches/${e.matchId}`,
+      };
+    }
   }
 }

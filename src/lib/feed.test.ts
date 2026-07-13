@@ -587,3 +587,54 @@ describe("feedPrivacyFilter", () => {
     expect(kinds(feed)).toEqual([]);
   });
 });
+
+describe("buildFeed — smoesjes (#296)", () => {
+  const groups = [
+    { id: "g1", name: "Vrijdagavond", created_at: "2026-07-01T10:00:00Z", created_by: "p1" },
+  ];
+  const smoes = (playerId: string, groupId: string) => ({
+    match_id: "m-smoes",
+    player_id: playerId,
+    group_id: groupId,
+    smoes: "Mijn gripje was te glad.",
+    created_at: "2026-07-12T20:00:00Z",
+  });
+
+  it("emit een smoes-item met groepsnaam, speler, tekst en de verloren match", () => {
+    const verloren = match("2026-07-12T19:30:00Z", "t-ab", "t-cd", "completed", {
+      id: "m-smoes",
+      winner_team_id: "t-cd",
+      score_a: 3,
+      score_b: 6,
+    });
+    const feed = buildFeed({
+      matches: [verloren],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      smoesjes: [smoes("p2", "g1")],
+    });
+    const ev = feed.find((e) => e.kind === "smoes");
+    if (!ev || ev.kind !== "smoes") throw new Error("verwacht smoes-item");
+    expect(ev.matchId).toBe("m-smoes");
+    expect(ev.playerId).toBe("p2");
+    expect(ev.groupName).toBe("Vrijdagavond");
+    expect(ev.smoes).toContain("gripje");
+    // De verloren match is meegekoppeld zodat de kaart de tegenstander toont.
+    expect(ev.match?.id).toBe("m-smoes");
+    expect(ev.match?.winner_team_id).toBe("t-cd");
+  });
+
+  it("negeert een smoes van een onbekende groep (geen groepsnaam)", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      smoesjes: [smoes("p2", "g-onbekend")],
+    });
+    expect(kinds(feed).filter((k) => k === "smoes")).toEqual([]);
+  });
+});

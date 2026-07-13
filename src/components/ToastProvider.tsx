@@ -9,12 +9,19 @@ import {
 import "./Toast.css";
 
 type ToastType = "success" | "error" | "info";
-type Toast = { id: number; type: ToastType; text: string };
+/** Optie om een toast tikbaar te maken (bv. "tik voor een smoes"). */
+type ToastOpts = { onClick?: () => void };
+type Toast = {
+  id: number;
+  type: ToastType;
+  text: string;
+  onClick?: () => void;
+};
 
 type ToastApi = {
-  success: (text: string) => void;
-  error: (text: string) => void;
-  info: (text: string) => void;
+  success: (text: string, opts?: ToastOpts) => void;
+  error: (text: string, opts?: ToastOpts) => void;
+  info: (text: string, opts?: ToastOpts) => void;
 };
 
 const ToastContext = createContext<ToastApi | undefined>(undefined);
@@ -30,21 +37,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   const push = useCallback(
-    (type: ToastType, text: string) => {
+    (type: ToastType, text: string, onClick?: () => void) => {
       const id = ++counter;
-      setToasts((t) => [...t, { id, type, text }]);
+      setToasts((t) => [...t, { id, type, text, onClick }]);
       // Fouten blijven staan tot ze weggeklikt worden (assertief aangekondigd);
-      // succes/info verdwijnen vanzelf.
-      if (type !== "error") setTimeout(() => remove(id), 4000);
+      // succes/info verdwijnen vanzelf. Een tikbare toast blijft wat langer
+      // staan zodat de actie niet gemist wordt.
+      if (type !== "error") setTimeout(() => remove(id), onClick ? 8000 : 4000);
     },
     [remove],
   );
 
   const api = useMemo<ToastApi>(
     () => ({
-      success: (t) => push("success", t),
-      error: (t) => push("error", t),
-      info: (t) => push("info", t),
+      success: (t, opts) => push("success", t, opts?.onClick),
+      error: (t, opts) => push("error", t, opts?.onClick),
+      info: (t, opts) => push("info", t, opts?.onClick),
     }),
     [push],
   );
@@ -75,8 +83,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   return (
-    <div className={`toast toast--${toast.type}`}>
-      <span className="toast__text">{toast.text}</span>
+    <div className={`toast toast--${toast.type}${toast.onClick ? " toast--action" : ""}`}>
+      {toast.onClick ? (
+        <button
+          type="button"
+          className="toast__text toast__action"
+          onClick={() => {
+            toast.onClick?.();
+            onClose();
+          }}
+        >
+          {toast.text}
+        </button>
+      ) : (
+        <span className="toast__text">{toast.text}</span>
+      )}
       <button
         type="button"
         className="toast__close"
