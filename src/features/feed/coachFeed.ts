@@ -257,13 +257,22 @@ function kiesFeit(kandidaten: string[], seed: number, g?: Set<string>): string |
 function bagelFeiten(vf: VerliesFeiten | null): string[] {
   if (!vf) return [];
   const l: string[] = [];
-  if (vf.bagelNr && vf.bagelNr >= 2)
+  if (vf.bagelNr && vf.bagelNr >= 2) {
     l.push(`Een bagel — en al je ${ordinaal(vf.bagelNr)} nul-nummer deze maand. Zwak.`);
-  if (vf.nederlaagNr && vf.nederlaagNr >= 3)
+    l.push(`Alweer een bagel? Dat is al je ${ordinaal(vf.bagelNr)} deze maand. Misschien moet je een bakkerij beginnen.`);
+  }
+  if (vf.nederlaagNr && vf.nederlaagNr >= 3) {
     l.push(`6–0, en dat is je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand. De maand is niet eens om.`);
-  if (vf.rivaal && vf.rivaal.count >= 3)
+    l.push(`Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand en dan ook nog met een bagel... Tactisch een totale moderamp.`);
+  }
+  if (vf.rivaal && vf.rivaal.count >= 3) {
     l.push(`Een bagel tegen ${vf.rivaal.naam}: de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen dezelfde man.`);
-  if (vf.record) l.push("Nul games. De grootste afgang ooit — knap, op je eigen manier.");
+    l.push(`Alweer een bagel en al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Heeft hij soms een abonnement op jouw vernedering gekocht?`);
+  }
+  if (vf.record) {
+    l.push("Nul games. De grootste afgang ooit — knap, op je eigen manier.");
+    l.push("Een legendarische 6-0 afgang. Zelfs op het WK van 2026 heb ik zo'n totale instorting niet meegemaakt.");
+  }
   return l;
 }
 
@@ -272,13 +281,22 @@ function monsterFeiten(vf: VerliesFeiten | null): string[] {
   if (!vf) return [];
   const l: string[] = [];
   const m = vf.marge;
-  if (vf.record && m != null)
+  if (vf.record && m != null) {
     l.push(`${m} games verschil — een persoonlijk dieptepunt om in te lijsten.`);
-  if (vf.rivaal && vf.rivaal.count >= 3)
+    l.push(`${m} games verschil. Een historisch dieptepunt. Ik stel voor dat we deze match direct uit de database wissen om verdere schaamte te voorkomen.`);
+  }
+  if (vf.rivaal && vf.rivaal.count >= 3) {
     l.push(`Een pak slaag, en de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}.`);
-  if (vf.nederlaagNr && vf.nederlaagNr >= 3)
+    l.push(`Alweer een pandoering, en dat is al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Wordt het niet eens tijd om een andere partner te zoeken?`);
+  }
+  if (vf.nederlaagNr && vf.nederlaagNr >= 3) {
     l.push(`Meedogenloos afgemaakt: je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand.`);
-  if (m != null) l.push(`${m} games verschil. Dat was geen partij, dat was een statement.`);
+    l.push(`Compleet weggespeeld. Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand. Mijn notitieboekje raakt vol door jouw vormcrisis.`);
+  }
+  if (m != null) {
+    l.push(`${m} games verschil. Dat was geen partij, dat was een statement.`);
+    l.push(`${m} games verschil. Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met sadistisch genoegen.`);
+  }
   return l;
 }
 
@@ -293,9 +311,12 @@ function upsetFeiten(
   if (up && up.type === "upset") {
     const kans = Math.round(up.chance * 100);
     l.push(`De favoriet onderuit, met ${kans}% winkans vooraf. Papieren vorm, de prullenbak in.`);
+    l.push(`Als favoriet verliezen met ${kans}% winkans vooraf... Zelfs de bookmakers liggen in een deuk door deze wanprestatie.`);
   }
-  if (magRoasten && vf?.rivaal && vf.rivaal.count >= 3)
+  if (magRoasten && vf?.rivaal && vf.rivaal.count >= 3) {
     l.push(`De ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam} — en die was nota bene de underdog.`);
+    l.push(`De ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen underdog ${vf.rivaal.naam}. Misschien moeten we Gianni Infantino bellen om deze uitslag voorwaardelijk te laten opschorten.`);
+  }
   return l;
 }
 
@@ -306,14 +327,19 @@ function reeksFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx
   const s = event.highlights.find((x) => x.type === "streak");
   if (s && s.type === "streak") {
     const record = ctx.matches ? isWinreeksRecord(ctx.matches, teams, s.playerId, s.count) : false;
-    l.push(
-      record
-        ? `${s.count} zeges op rij — een persoonlijk record. Geniet, tot de klap komt.`
-        : `${s.count} op rij. De machine draait, onderhoud niet vergeten.`,
-    );
+    if (record) {
+      l.push(`${s.count} zeges op rij — een persoonlijk record. Geniet, tot de klap komt.`);
+      l.push(`${s.count} zeges op rij — een nieuw persoonlijk record. Heel legaal en heel cool, al weet ik zeker dat de klap hierna gigantisch zal zijn.`);
+    } else {
+      l.push(`${s.count} op rij. De machine draait, onderhoud niet vergeten.`);
+      l.push(`${s.count} op rij gewonnen. Geniet van de uiterst tijdelijke roem voordat je weer keihard naar beneden lazert.`);
+    }
   }
   const d = event.highlights.find((x) => x.type === "duo");
-  if (d && d.type === "duo") l.push(`${d.count} keer op rij als vast duo. Voorlopig niet te stoppen.`);
+  if (d && d.type === "duo") {
+    l.push(`${d.count} keer op rij als vast duo. Voorlopig niet te stoppen.`);
+    l.push(`${d.count} keer op rij gewonnen als duo. Maar laten we eerlijk zijn: we weten allemaal dat je partner 90% van het werk opknapt.`);
+  }
   return l;
 }
 
