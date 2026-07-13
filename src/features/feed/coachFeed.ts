@@ -159,10 +159,10 @@ const UPSET = [
 ] as const;
 
 const BAGEL = [
-  "Een bagel. Nul games. Iemand mag zich diep schamen.",
+  "Een droge 6-0. Nul games. Iemand mag zich diep schamen.",
   "6–0. Dat is geen wedstrijd, dat is een openbare terechtstelling.",
-  "Broodje bagel geserveerd. Koud opgediend.",
-  "Een bagel... Hebben jullie überhaupt wel je racket uit de tas gehaald?",
+  "Pandoering gekregen. Droge 6-0. Koud opgediend.",
+  "Een droge 6-0... Hebben jullie überhaupt wel je racket uit de tas gehaald?",
   "Nul komma nul. Zelfs het scorebord schaamde zich om dit te tonen.",
   "Fietsbandjes uitgedeeld. Tijd voor een flinke portie zelfreflectie.",
   "Nul. Helemaal niks. Autsj.",
@@ -172,7 +172,7 @@ const BAGEL = [
   "6–0. De genadeloze klassieker.",
   "6–0. Zelfs de kantinejuffrouw vroeg of jullie eigenlijk wel meededen.",
   "Nul games. Dat is statistisch gezien bijna moeilijker dan één game winnen.",
-  "Een bagel! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
+  "Een droge 6-0! Zelfs met een vijfvoudige tactische wissel was dit niet minder pijnlijk geweest.",
   "Helemaal van de kaart geveegd. Mijn aantekeningen over deze set passen gemakkelijk op een postzegel.",
   "6-0! Een droge afschminking. Zelfs met een blinde wissel in de 89e minuut had ik dit niet slechter gekund.",
   "Nul games gepakt. Dat is statistisch gezien bijna een indrukwekkende kunstvorm op zich.",
@@ -258,16 +258,16 @@ function bagelFeiten(vf: VerliesFeiten | null): string[] {
   if (!vf) return [];
   const l: string[] = [];
   if (vf.bagelNr && vf.bagelNr >= 2) {
-    l.push(`Een bagel — en al je ${ordinaal(vf.bagelNr)} nul-nummer deze maand. Zwak.`);
-    l.push(`Alweer een bagel? Dat is al je ${ordinaal(vf.bagelNr)} deze maand. Misschien moet je een bakkerij beginnen.`);
+    l.push(`Een droge 6-0 — en al je ${ordinaal(vf.bagelNr)} nul-nummer deze maand. Zwak.`);
+    l.push(`Alweer een droge 6-0? Dat is al je ${ordinaal(vf.bagelNr)} deze maand. Misschien moet je een bakkerij beginnen.`);
   }
   if (vf.nederlaagNr && vf.nederlaagNr >= 3) {
     l.push(`6–0, en dat is je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand. De maand is niet eens om.`);
-    l.push(`Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand en dan ook nog met een bagel... Tactisch een totale moderamp.`);
+    l.push(`Al je ${ordinaal(vf.nederlaagNr)} nederlaag deze maand en dan ook nog met een droge 6-0... Tactisch een totale moderamp.`);
   }
   if (vf.rivaal && vf.rivaal.count >= 3) {
-    l.push(`Een bagel tegen ${vf.rivaal.naam}: de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen dezelfde man.`);
-    l.push(`Alweer een bagel en al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Heeft hij soms een abonnement op jouw vernedering gekocht?`);
+    l.push(`Een droge 6-0 tegen ${vf.rivaal.naam}: de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen dezelfde man.`);
+    l.push(`Alweer een droge 6-0 en al de ${ordinaal(vf.rivaal.count)} nederlaag op rij tegen ${vf.rivaal.naam}. Heeft hij soms een abonnement op jouw vernedering gekocht?`);
   }
   if (vf.record) {
     l.push("Nul games. De grootste afgang ooit — knap, op je eigen manier.");
