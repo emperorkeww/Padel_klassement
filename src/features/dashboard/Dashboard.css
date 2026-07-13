@@ -20,10 +20,8 @@
 .hero {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-6);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--sp-5);
   margin-bottom: var(--sp-6);
   padding: var(--sp-6) var(--sp-7);
   border-radius: var(--radius-lg);
@@ -33,7 +31,6 @@
     var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 
 .hero__main {
@@ -43,30 +40,31 @@
   min-width: 0;
 }
 
-/* Titel-crests in de rechterbovenhoek (#287): kroon (#1), Zwarte Piet en/of
-   Pias. Absoluut in de hoek; de knoppen eronder krijgen wat lucht via :has,
-   zodat ze de crests nooit overlappen. */
-.hero__crests {
-  position: absolute;
-  top: var(--sp-4);
-  right: var(--sp-4);
-  z-index: 2;
+/* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
+   onder de samenvatting, niet meer zwevend in de rechterbovenhoek. */
+.hero__titles {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
 }
-.hero:has(.hero__crests) .hero__actions {
-  margin-top: var(--sp-6);
+/* De badge-rij deelt de titel-rij en heeft daar geen eigen bovenmarge nodig. */
+.hero__titles .hero__badges-wrap {
+  margin: 0;
 }
 .hero-crest {
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  font-size: 1.1rem;
+  gap: 6px;
+  height: 1.75rem;
+  padding: 0 var(--sp-3) 0 var(--sp-2);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
   line-height: 1;
+  color: var(--ink-soft-strong);
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -74,28 +72,34 @@
   cursor: help;
 }
 .hero-crest__icon {
+  font-size: 1rem;
   line-height: 1;
+}
+.hero-crest__label {
+  white-space: nowrap;
 }
 .hero-crest--bigdaddy {
   background: var(--bigdaddy-soft);
   border-color: var(--bigdaddy);
+  color: var(--bigdaddy-text);
 }
 .hero-crest--piet {
   background: var(--danger-soft);
   border-color: var(--danger-line);
+  color: var(--danger);
 }
 .hero-crest--pias {
   background: var(--warn-soft);
   border-color: var(--warn-line);
+  color: var(--warn);
 }
 
 /* Tooltip: verborgen tot hover/focus (tap = focus op mobiel). Verankerd
-   rechtsonder de crest en naar links uitklappend, zodat hij binnen de hero
-   (overflow: hidden) blijft. */
+   linksonder het chip en naar rechts uitklappend. */
 .hero-crest__tip {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -195,7 +199,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: var(--sp-2) 0 0;
+  margin: 0;
   text-decoration: none;
   color: inherit;
   border-radius: 999px;
@@ -347,6 +351,19 @@
   gap: var(--sp-2);
 }
 
+/* Dunne scheidslijn tussen het begroetingsblok en de voetregel (#317). */
+.hero__divide {
+  height: 1px;
+  background: var(--line);
+}
+/* Voetregel: vorm links, acties rechts. */
+.hero__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
 .hero__actions {
   display: flex;
   gap: var(--sp-2);
@@ -905,8 +922,6 @@
 /* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */
 @media (max-width: 640px) {
   .hero {
-    flex-direction: column;
-    align-items: stretch;
     gap: var(--sp-4);
     padding: var(--sp-5);
     margin-bottom: var(--sp-5);
@@ -916,6 +931,12 @@
   }
   .hero__sub {
     font-size: var(--fs-md);
+  }
+  /* Voetregel gestapeld: vorm boven de knoppen. */
+  .hero__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-4);
   }
   /* Primaire actie op volle breedte, de twee secundaire naast elkaar:
      scheelt een knophoogte boven de vouw. */

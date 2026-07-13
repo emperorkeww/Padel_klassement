@@ -355,34 +355,6 @@ export function Dashboard() {
   return (
     <div className="dashboard">
       <section className="hero">
-        {(isBigDaddy || isZwartePiet || isWeekPias) && (
-          <div className="hero__crests" aria-label="Jouw titels">
-            {isBigDaddy && (
-              <HeroCrest
-                variant="bigdaddy"
-                emoji={BIG_DADDY_EMOJI}
-                label="Big Daddy"
-                uitleg="#1 van het klassement — de baas van de baan."
-              />
-            )}
-            {isZwartePiet && (
-              <HeroCrest
-                variant="piet"
-                emoji={roastSchild ? "📊" : "🃏"}
-                label={roastSchild ? "Schande-token" : "Zwarte Piet"}
-                uitleg="Jij draagt het rondgaande schande-token van de groep — tot je wint en het doorschuift."
-              />
-            )}
-            {isWeekPias && (
-              <HeroCrest
-                variant="pias"
-                emoji={roastSchild ? "📊" : "🤡"}
-                label={roastSchild ? "Opvallende week" : "Pias van de week"}
-                uitleg="De grootste afgang van de week — de clown van de groep."
-              />
-            )}
-          </div>
-        )}
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
@@ -404,6 +376,40 @@ export function Dashboard() {
                   : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
               </p>
             )}
+            {(isBigDaddy ||
+              isZwartePiet ||
+              isWeekPias ||
+              earnedBadges.length > 0) && (
+              <div className="hero__titles" aria-label="Jouw titels en badges">
+                {isBigDaddy && (
+                  <HeroCrest
+                    variant="bigdaddy"
+                    emoji={BIG_DADDY_EMOJI}
+                    label="Big Daddy"
+                    uitleg="#1 van het klassement — de baas van de baan."
+                  />
+                )}
+                {isZwartePiet && (
+                  <HeroCrest
+                    variant="piet"
+                    emoji={roastSchild ? "📊" : "🃏"}
+                    label={roastSchild ? "Schande-token" : "Zwarte Piet"}
+                    uitleg="Jij draagt het rondgaande schande-token van de groep — tot je wint en het doorschuift."
+                  />
+                )}
+                {isWeekPias && (
+                  <HeroCrest
+                    variant="pias"
+                    emoji={roastSchild ? "📊" : "🤡"}
+                    label={roastSchild ? "Opvallende week" : "Pias van de week"}
+                    uitleg="De grootste afgang van de week — de clown van de groep."
+                  />
+                )}
+                {earnedBadges.length > 0 && (
+                  <BadgeStrip badges={earnedBadges} to={`/spelers/${myId}`} />
+                )}
+              </div>
+            )}
             {coachBriefingTekst && !standings.loading && (
               <p className="hero__coach" role="note">
                 <CoachAvatar size={26} className="hero__coach-face" />
@@ -413,27 +419,27 @@ export function Dashboard() {
                 </span>
               </p>
             )}
-            {form.length > 0 && (
-              <Link className="hero__form" to={`/spelers/${myId}`}>
-                <span className="hero__form-label">Vorm</span>
-                <FormChips form={form} />
-              </Link>
-            )}
-            {earnedBadges.length > 0 && (
-              <BadgeStrip badges={earnedBadges} to={`/spelers/${myId}`} />
-            )}
           </div>
         </div>
-        <div className="hero__actions">
-          <Link className="btn btn--primary" to="/matches">
-            + Match loggen
-          </Link>
-          <Link className="btn" to="/groepen">
-            Rondes genereren
-          </Link>
-          <Link className="btn" to="/banen">
-            Vrije banen
-          </Link>
+        <div className="hero__divide" aria-hidden="true" />
+        <div className="hero__foot">
+          {form.length > 0 && (
+            <Link className="hero__form" to={`/spelers/${myId}`}>
+              <span className="hero__form-label">Vorm</span>
+              <FormChips form={form} />
+            </Link>
+          )}
+          <div className="hero__actions">
+            <Link className="btn btn--primary" to="/matches">
+              + Match loggen
+            </Link>
+            <Link className="btn" to="/groepen">
+              Rondes genereren
+            </Link>
+            <Link className="btn" to="/banen">
+              Vrije banen
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1214,10 +1220,10 @@ function deriveEvening(
  *  verankerd, zodat de `overflow: hidden` van de hero hem niet afknipt.
  *  De badges zelf navigeren bewust niet (op touch bestaat hover niet, dus
  *  een tik moet de uitleg tonen); de collectie zit achter de pijl-link. */
-/** Titel-crest in de hero-hoek (#287): een rond emoji-knopje met een tooltip die
- *  de betekenis toont. De tooltip verschijnt op hover (desktop) én op focus, dus
- *  een tik op mobiel onthult 'm ook. `aria-label` bevat de volledige uitleg voor
- *  schermlezers. */
+/** Titel-crest in de hero (#287, herzien #317): een leesbaar chip met emoji +
+ *  label, plus een tooltip met de langere uitleg. De tooltip verschijnt op hover
+ *  (desktop) én op focus, dus een tik op mobiel onthult 'm ook. `aria-label` bevat
+ *  de volledige uitleg voor schermlezers. */
 function HeroCrest({
   variant,
   emoji,
@@ -1238,6 +1244,7 @@ function HeroCrest({
       <span className="hero-crest__icon" aria-hidden="true">
         {emoji}
       </span>
+      <span className="hero-crest__label">{label}</span>
       <span className="hero-crest__tip" role="tooltip" aria-hidden="true">
         <span className="hero-crest__tip-label">{label}</span>
         <span className="hero-crest__tip-text">{uitleg}</span>
