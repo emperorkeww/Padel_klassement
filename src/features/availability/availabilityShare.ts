@@ -69,6 +69,26 @@ export function dayStarts(day: WeekDay, duration: number | null): FreeStart[] {
   return freeStartTimes(day.data, duration, cutoff);
 }
 
+/** Openingsvenster voor het synthetische raster van een handmatige locatie. */
+const MANUAL_OPEN = 8 * 60; // 08:00
+const MANUAL_CLOSE = 23 * 60; // 23:00
+
+/**
+ * Halfuur-raster voor een handmatige locatie (#322): zonder Playtomic is er geen
+ * beschikbaarheid, dus bieden we simpelweg alle halfuren van 08:00 tot 23:00 als
+ * selecteerbare starttijden — dezelfde flow als bij een Playtomic-club, maar
+ * zonder baan-telling. Voor vandaag vervallen de al verstreken uren (clubtijd).
+ */
+export function manualStarts(date: string, timeZone: string): FreeStart[] {
+  const cutoff = date === dateInZone(timeZone) ? minutesNowInZone(timeZone) : -1;
+  const out: FreeStart[] = [];
+  for (let m = MANUAL_OPEN; m < MANUAL_CLOSE; m += 30) {
+    if (m <= cutoff) continue;
+    out.push({ time: fromMinutes(m), courts: [], durations: [60, 90, 120] });
+  }
+  return out;
+}
+
 /** Eén dag in de weekheatmap: per starttijd het aantal tegelijk vrije banen. */
 export interface HeatDay {
   date: string;

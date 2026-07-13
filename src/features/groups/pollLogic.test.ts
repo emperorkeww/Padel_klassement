@@ -25,6 +25,10 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     created_at: "2026-07-08T10:00:00Z",
     locked_at: null,
     booked_at: null,
+    club_id: "91d8d419-3736-498e-90be-362de786d588",
+    club_name: "LAGO CLUB Padel Beveren",
+    club_city: "Beveren",
+    club_timezone: "Europe/Brussels",
     ...overrides,
   };
 }

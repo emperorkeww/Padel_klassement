@@ -293,8 +293,10 @@ declare
   e uuid := '55555555-5555-5555-5555-555555555555';
   pid uuid; o1 uuid; o2 uuid;
 begin
-  insert into public.play_polls (group_id, created_by, status)
-  values (grp, a, 'open') returning id into pid;
+  insert into public.play_polls (group_id, created_by, status, club_id, club_name, club_city, club_timezone)
+  values (grp, a, 'open',
+          '91d8d419-3736-498e-90be-362de786d588', 'LAGO CLUB Padel Beveren', 'Beveren', 'Europe/Brussels')
+  returning id into pid;
   insert into public.play_poll_options (poll_id, group_id, date, start_time, duration, courts_free)
   values (pid, grp, (now() + interval '5 days')::date, '19:00', 90, 3) returning id into o1;
   insert into public.play_poll_options (poll_id, group_id, date, start_time, duration, courts_free)

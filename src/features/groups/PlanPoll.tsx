@@ -10,10 +10,11 @@ import { fairTeams } from "../../lib/fairTeams";
 import { addDays, dateInZone } from "../../lib/time";
 import { icsEvent, downloadIcs } from "../../lib/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";
-import { dayStarts } from "../availability/availabilityShare";
+import { dayStarts, manualStarts, type FreeStart } from "../availability/availabilityShare";
 import { getWeekWeather } from "../availability/weatherApi";
 import { summarizeDay } from "../availability/weatherLogic";
-import { useClub } from "../availability/club";
+import { isPlaytomicClub, useClub, type Club } from "../availability/club";
+import { ClubPicker } from "../availability/ClubPicker";
 import { shareOrCopyText } from "../../lib/shareText";
 import { displayName } from "../profiles/api";
 import {
@@ -26,10 +27,12 @@ import {
   setPollVote,
   clearPollVote,
   lockPoll,
+  setPollClub,
   markPollBooked,
   reopenPoll,
   cancelPoll,
   remindPoll,
+  pollClub,
   type PlayPoll,
   type PollOption,
   type PollVote,
@@ -105,9 +108,13 @@ export function PollSection({
   myId: string;
   isOwner: boolean;
 }) {
-  const club = useClub();
+  const globalClub = useClub();
   const toast = useToast();
-  const today = dateInZone(club.timezone);
+  // Locatie voor een nieuwe poll (#322): start op de globale clubkeuze, maar de
+  // maker kan hem per poll overschrijven. De keuze wordt op de poll opgeslagen,
+  // dus een latere globale clubwissel raakt bestaande polls niet meer.
+  const [newPollClub, setNewPollClub] = useState<Club>(globalClub);
+  const today = dateInZone(newPollClub.timezone);
   // De wizard-selectie overleeft een uitstap naar /banen (zelfde tabblad,
   // swipe-terug): picks staan in sessionStorage en de wizard heropent vanzelf.
   const wizardStorageKey = `poll-wizard:${groupId}`;
@@ -137,8 +144,12 @@ export function PollSection({
   useRealtime("play_poll_options", options.reload, `group_id=eq.${groupId}`);
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
-  // Vrije banen (7-daags venster): voedt de wizard én de live haalbaarheid.
-  const week = useAsync<WeekDay[]>(() => getWeekAvailability(today), [today, club.id]);
+  // Vrije banen (7-daags venster) van de gekozen nieuwe-poll-club: voedt de
+  // aanmaak-wizard. Bestaande polls halen hun eigen club-beschikbaarheid op.
+  const week = useAsync<WeekDay[]>(
+    () => getWeekAvailability(today, 7, newPollClub),
+    [today, newPollClub.id],
+  );
 
   const active = useMemo(
     () => activePolls(polls.data ?? [], options.data ?? [], today),
@@ -180,12 +191,9 @@ export function PollSection({
           members={members}
           options={pollOptions(poll, options.data ?? [])}
           votes={votes.data ?? []}
-          week={week.data ?? []}
-          weekLoading={week.loading}
           profiles={profiles}
           myId={myId}
           isOwner={isOwner}
-          today={today}
           onChanged={reloadAll}
         />
       ))}
@@ -195,7 +203,10 @@ export function PollSection({
           <h2 className="card__title">
             {active.length > 0 ? "Nog een speeldag plannen" : "Speeldag plannen"}
           </h2>
-          {!wizardOpen && (
+          {wizardOpen ? (
+            // Locatie voor deze nieuwe poll — los van de globale clubvoorkeur.
+            <ClubPicker value={newPollClub} onPick={setNewPollClub} allowManual align="right" />
+          ) : (
             <button
               className="btn btn--sm btn--primary"
               onClick={() => setWizardOpen(true)}
@@ -215,10 +226,11 @@ export function PollSection({
             today={today}
             week={week.data ?? []}
             weekLoading={week.loading}
+            club={newPollClub}
             storageKey={wizardStorageKey}
             submitLabel={(n) => `Start poll (${n})`}
             onSubmit={async (options) => {
-              await createPoll({ groupId, createdBy: myId, options });
+              await createPoll({ groupId, createdBy: myId, club: newPollClub, options });
               toast.success("Poll gestart — de groep kan stemmen.");
             }}
             onClose={closeWizard}
@@ -244,6 +256,7 @@ function PollWizard({
   today,
   week,
   weekLoading,
+  club,
   initialPicked,
   storageKey,
   submitLabel,
@@ -255,6 +268,8 @@ function PollWizard({
   today: string;
   week: WeekDay[];
   weekLoading: boolean;
+  /** Club waarvoor deze wizard beschikbaarheid/weer toont (#322). */
+  club: Club;
   /** Bestaande selectie voor de "Dagen aanpassen"-modus (#128). */
   initialPicked?: Map<string, NewPollOption>;
   /** sessionStorage-sleutel: selectie overleeft een uitstap naar /banen. */
@@ -267,7 +282,6 @@ function PollWizard({
   onDone: () => void;
 }) {
   const toast = useToast();
-  const wizardClub = useClub();
   const [duration, setDuration] = useState<number>(90);
   const [selectedDay, setSelectedDay] = useState(today);
   const [wholeDay, setWholeDay] = useState(false);
@@ -277,9 +291,8 @@ function PollWizard({
     (d.data?.courts ?? []).some((r) => r.court.type !== "roofed"),
   );
   const wizardWeather = useAsync(
-    () =>
-      wizardOutdoor ? getWeekWeather(wizardClub) : Promise.resolve(null),
-    [wizardOutdoor, wizardClub.id],
+    () => (wizardOutdoor ? getWeekWeather(club) : Promise.resolve(null)),
+    [wizardOutdoor, club.id],
   );
   const [picked, setPicked] = useState<Map<string, NewPollOption>>(() => {
     if (initialPicked) return new Map(initialPicked);
@@ -321,24 +334,37 @@ function PollWizard({
 
   const weekEnd = addDays(today, 6);
 
+  // Handmatige locatie (#322): geen Playtomic-data, maar wel dezelfde
+  // selectie-flow via een synthetisch halfuur-raster.
+  const manual = !isPlaytomicClub(club);
+
   // Vrije starttijden per dag, gefilterd op duur (en standaard op avond).
   const startsByDay = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof dayStarts> | null>();
+    const map = new Map<string, FreeStart[] | null>();
     for (const day of week) {
-      map.set(day.date, day.data ? dayStarts(day, duration) : null);
+      map.set(
+        day.date,
+        manual
+          ? manualStarts(day.date, club.timezone)
+          : day.data
+            ? dayStarts(day, duration)
+            : null,
+      );
     }
     return map;
-  }, [week, duration]);
+  }, [week, duration, manual, club.timezone]);
 
   const visibleStarts = (date: string) => {
     const starts = startsByDay.get(date);
     if (starts == null) return null;
+    // Standaard avond-focus (ook bij een handmatige locatie); de "vroeger"-knop
+    // klapt de eerdere uren uit.
     return wholeDay
       ? starts
       : starts.filter((s) => Number(s.time.slice(0, 2)) >= EVENING_FROM);
   };
 
-  function toggle(date: string, time: string, courtsFree: number) {
+  function toggle(date: string, time: string, courtsFree: number | null) {
     setArmed(false);
     setPicked((cur) => {
       const next = new Map(cur);
@@ -411,6 +437,11 @@ function PollWizard({
   }
 
   const dayStartsVisible = visibleStarts(selectedDay);
+  // Standaard avond-focus; zijn er vroegere uren (ook in het handmatige raster),
+  // dan biedt een "vroeger"-knop ze aan om uit/in te klappen.
+  const hasEarlier = (startsByDay.get(selectedDay) ?? []).some(
+    (s) => Number(s.time.slice(0, 2)) < EVENING_FROM,
+  );
 
   return (
     <div className="poll-wizard">
@@ -460,6 +491,17 @@ function PollWizard({
 
       {/* Uren van de gekozen dag. */}
       <div className="poll-wizard__slots">
+        {/* Standaard avond-focus; deze knop klapt de vroegere uren uit/in. */}
+        {(hasEarlier || (wholeDay && !manual)) && (
+          <button
+            type="button"
+            className="btn btn--sm poll-wizard__earlier"
+            onClick={() => setWholeDay((v) => !v)}
+            aria-expanded={wholeDay}
+          >
+            {wholeDay ? "↓ Alleen avonduren" : "↑ Vroegere uren tonen"}
+          </button>
+        )}
         {weekLoading && <p className="empty">Vrije banen laden…</p>}
         {!weekLoading && dayStartsVisible == null && (
           <p className="empty">Geen beschikbaarheidsgegevens voor deze dag.</p>
@@ -478,38 +520,38 @@ function PollWizard({
               type="button"
               className={`slot-chip${on ? " is-active" : ""}`}
               aria-pressed={on}
-              onClick={() => toggle(selectedDay, s.time, s.courts.length)}
+              onClick={() => toggle(selectedDay, s.time, manual ? null : s.courts.length)}
             >
               {s.time}
-              <span
-                className={`slot-chip__count slot-chip__count--c${Math.min(s.courts.length, 4)}`}
-                title={`${s.courts.length} ${s.courts.length === 1 ? "baan" : "banen"} vrij`}
-              >
-                {s.courts.length}
-              </span>
+              {/* Baan-telling alleen bij Playtomic; een handmatige locatie heeft
+                  geen beschikbaarheidsdata (#322). */}
+              {!manual && (
+                <span
+                  className={`slot-chip__count slot-chip__count--c${Math.min(s.courts.length, 4)}`}
+                  title={`${s.courts.length} ${s.courts.length === 1 ? "baan" : "banen"} vrij`}
+                >
+                  {s.courts.length}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
       <div className="poll-wizard__controls">
-        <label className="poll-wizard__toggle">
-          <input
-            type="checkbox"
-            checked={wholeDay}
-            onChange={(e) => setWholeDay(e.target.checked)}
-          />
-          Hele dag tonen
-        </label>
-        {/* Banen-verkenning in context (#106): opent de Banen-pagina in de
-            app zelf met de gekozen dag al ingesteld — swipe/ga terug en de
-            wizard staat er nog, mét je selectie (sessionStorage). */}
-        <Link
-          className="poll-wizard__toggle"
-          to={`/banen?datum=${selectedDay}`}
-        >
-          Verken alle vrije banen →
-        </Link>
+        {/* De avond/vroeger-toggle staat nu boven het raster (poll-wizard__earlier).
+            Banen-verkenning in context (#106): opent de Banen-pagina in de app
+            zelf met de gekozen dag al ingesteld — swipe/ga terug en de wizard
+            staat er nog, mét je selectie (sessionStorage). Niet bij een
+            handmatige locatie: daar is geen Playtomic-banenpagina (#322). */}
+        {!manual && (
+          <Link
+            className="poll-wizard__toggle"
+            to={`/banen?datum=${selectedDay}`}
+          >
+            Verken alle vrije banen →
+          </Link>
+        )}
         <label className="poll-wizard__toggle">
           Duur{" "}
           <select
@@ -628,12 +670,9 @@ function PollCard({
   members,
   options,
   votes,
-  week,
-  weekLoading,
   profiles,
   myId,
   isOwner,
-  today,
   onChanged,
 }: {
   poll: PlayPoll;
@@ -641,16 +680,22 @@ function PollCard({
   members: GroupMember[];
   options: PollOption[];
   votes: PollVote[];
-  week: WeekDay[];
-  weekLoading: boolean;
   profiles: Record<string, Profile>;
   myId: string;
   isOwner: boolean;
-  today: string;
   onChanged: () => void;
 }) {
   const toast = useToast();
-  const club = useClub();
+  // De op de poll opgeslagen locatie (#322), niet de globale clubvoorkeur. De
+  // clubtijd én de live vrije-banen-check volgen deze club.
+  const club = pollClub(poll);
+  const today = dateInZone(club.timezone);
+  const weekAsync = useAsync<WeekDay[]>(
+    () => getWeekAvailability(today, 7, club),
+    [today, club.id],
+  );
+  const week = weekAsync.data ?? [];
+  const weekLoading = weekAsync.loading;
   const [busy, setBusy] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [remindedDone, setRemindedDone] = useState(false);
@@ -856,12 +901,15 @@ function PollCard({
   const phase = poll.status === "open" ? 0 : poll.status === "locked" ? 1 : 2;
   const steps = ["Stemmen", "Gekozen", "Geboekt"];
 
-  // Bij locked/booked: winnaar groot, de rest ingeklapt.
+  // Bij locked/booked: winnaar groot, de rest ingeklapt. Bij booked blijven de
+  // niet-gekozen opties zelfs helemaal verborgen (#322): je kunt toch niet meer
+  // terug, dus tonen ze zou enkel verwarren.
   const winnerFirst =
     locked && poll.status !== "open"
       ? [locked, ...options.filter((o) => o.id !== locked.id)]
       : options;
-  const collapsed = poll.status !== "open" && !showLosers;
+  const collapsed =
+    poll.status === "booked" || (poll.status === "locked" && !showLosers);
 
   // "Dagen aanpassen": wizard voorgevuld met de huidige momenten; het
   // verschil wordt bij bewaren als losse add/removes doorgevoerd zodat
@@ -887,6 +935,7 @@ function PollCard({
           today={today}
           week={week}
           weekLoading={weekLoading}
+          club={club}
           initialPicked={initialPicked}
           submitLabel={(n) => `Bewaar dagen (${n})`}
           confirmHint={(picked) => {
@@ -924,6 +973,21 @@ function PollCard({
       <div className="card__head">
         <h2 className="card__title">Speeldag-poll</h2>
         <div className="proposal__links">
+          {/* Locatie (#322): wijzigbaar zolang de poll niet geboekt is; daarna
+              een vaste weergave, want de baan ligt dan vast. */}
+          {isManager && poll.status !== "booked" ? (
+            <ClubPicker
+              value={club}
+              onPick={(c) => run(() => setPollClub(poll.id, c), "Locatie gewijzigd.")}
+              allowManual
+              align="right"
+            />
+          ) : (
+            <span className="poll-card__club" title="Locatie">
+              📍 {club.name}
+              {club.city ? ` · ${club.city}` : ""}
+            </span>
+          )}
           {poll.status === "open" && isManager && (
             <button
               className="btn btn--sm"
@@ -1166,7 +1230,7 @@ function PollCard({
         })}
       </ul>
 
-      {collapsed && options.length > 1 && (
+      {collapsed && poll.status === "locked" && options.length > 1 && (
         <button
           className="btn btn--sm poll-card__showlosers"
           onClick={() => setShowLosers(true)}

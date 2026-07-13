@@ -2,19 +2,41 @@ import { useEffect, useState } from "react";
 import { searchClubs } from "./api";
 import {
   DEFAULT_CLUB,
+  manualClub,
   setClub,
   useClub,
   useRecentClubs,
   type Club,
 } from "./club";
+import "./ClubPicker.css";
 
 /**
  * Locatiekeuze: knop met de huidige club; opent een paneel met een zoekveld
- * dat Belgische Playtomic-clubs met padelbanen op naam zoekt. De keuze geldt
+ * dat Belgische Playtomic-clubs met padelbanen op naam zoekt.
+ *
+ * Ongecontroleerd (geen props): de keuze stuurt de globale clubvoorkeur en geldt
  * voor de hele app (raster, weekoverzicht, dashboard, reserveerlinks).
+ * Gecontroleerd (`value` + `onPick`): de knop toont `value` en geeft de keuze
+ * via `onPick` door zonder de globale voorkeur te wijzigen — zo kan een
+ * speeldag-poll z'n eigen locatie kiezen los van de rest van de app (#322).
  */
-export function ClubPicker() {
-  const club = useClub();
+export function ClubPicker({
+  value,
+  onPick,
+  allowManual = false,
+  align = "left",
+}: {
+  value?: Club;
+  onPick?: (club: Club) => void;
+  /** Sta een handmatige locatie toe (niet in Playtomic) — voor speeldag-polls
+   *  op een baan die de proxy niet kent (#322). */
+  allowManual?: boolean;
+  /** Aan welke kant van de knop het paneel opent. "right" wanneer de trigger
+   *  rechts in een balk staat (poll-kaart), zodat het niet buiten beeld valt. */
+  align?: "left" | "right";
+} = {}) {
+  const globalClub = useClub();
+  const club = value ?? globalClub;
   // Snelle keuzes: recent gekozen clubs, zonder de club die al actief is.
   const recent = useRecentClubs().filter((c) => c.id !== club.id);
   const [open, setOpen] = useState(false);
@@ -60,9 +82,14 @@ export function ClubPicker() {
   }
 
   function pick(next: Club) {
-    setClub(next);
+    if (onPick) onPick(next);
+    else setClub(next);
     close();
   }
+
+  // De getypte zoekterm dient meteen als naam voor een handmatige locatie.
+  const manualQuery = query.trim();
+  const canManual = allowManual && manualQuery.length >= 2;
 
   return (
     <div className="club-picker">
@@ -103,7 +130,9 @@ export function ClubPicker() {
             aria-hidden="true"
           />
           <div
-            className="club-picker__panel"
+            className={`club-picker__panel${
+              align === "right" ? " club-picker__panel--right" : ""
+            }`}
             role="dialog"
             aria-label="Kies een club"
           >
@@ -132,7 +161,11 @@ export function ClubPicker() {
             <input
               type="search"
               className="select club-picker__search"
-              placeholder="Zoek een club in België…"
+              placeholder={
+                allowManual
+                  ? "Zoek een club, of typ je eigen locatie…"
+                  : "Zoek een club in België…"
+              }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               // Het paneel opent alleen op verzoek; direct kunnen typen is
@@ -142,36 +175,66 @@ export function ClubPicker() {
 
             {busy && <p className="club-picker__hint">Zoeken…</p>}
             {error && <p className="msg msg--error">{error}</p>}
-            {!busy && !error && results && results.length === 0 && (
-              <p className="club-picker__hint">
-                Geen clubs gevonden voor “{query.trim()}”.
-              </p>
-            )}
             {!busy && !error && !results && (
               <p className="club-picker__hint">
-                Typ minstens 2 tekens om Playtomic-clubs in België te zoeken.
+                {allowManual
+                  ? "Typ minstens 2 tekens: we zoeken Playtomic-clubs én je kunt de tekst als eigen locatie gebruiken."
+                  : "Typ minstens 2 tekens om Playtomic-clubs in België te zoeken."}
               </p>
             )}
 
+            {/* Playtomic-treffers. */}
             {!busy && results && results.length > 0 && (
-              <ul className="club-picker__list">
-                {results.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      className={`club-picker__option ${
-                        c.id === club.id ? "is-active" : ""
-                      }`}
-                      onClick={() => pick(c)}
-                    >
-                      <span className="club-picker__name">{c.name}</span>
-                      {c.city && (
-                        <span className="club-picker__city">{c.city}</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {allowManual && (
+                  <p className="club-picker__recent-title">In Playtomic</p>
+                )}
+                <ul className="club-picker__list">
+                  {results.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        className={`club-picker__option ${
+                          c.id === club.id ? "is-active" : ""
+                        }`}
+                        onClick={() => pick(c)}
+                      >
+                        <span className="club-picker__name">{c.name}</span>
+                        {c.city && (
+                          <span className="club-picker__city">{c.city}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {!busy && !error && allowManual && results && results.length === 0 && (
+              <p className="club-picker__hint">
+                Geen Playtomic-club voor “{manualQuery}”.
+              </p>
+            )}
+            {!busy && !error && !allowManual && results && results.length === 0 && (
+              <p className="club-picker__hint">
+                Geen clubs gevonden voor “{manualQuery}”.
+              </p>
+            )}
+
+            {/* Zelfde zoekterm als eigen (niet-Playtomic) locatie. */}
+            {canManual && (
+              <div className="club-picker__manual">
+                <p className="club-picker__recent-title">Eigen locatie</p>
+                <button
+                  type="button"
+                  className="club-picker__option"
+                  onClick={() => pick(manualClub(manualQuery))}
+                >
+                  <span className="club-picker__name">📍 {manualQuery}</span>
+                  <span className="club-picker__city">
+                    Zonder Playtomic — je kiest zelf de tijden
+                  </span>
+                </button>
+              </div>
             )}
 
             {club.id !== DEFAULT_CLUB.id && (

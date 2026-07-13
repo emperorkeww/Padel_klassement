@@ -1,5 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_CLUB, getClub } from "./club";
+import { DEFAULT_CLUB, getClub, isPlaytomicClub, manualClub } from "./club";
+
+describe("manualClub / isPlaytomicClub (#322)", () => {
+  it("maakt een handmatige locatie met leeg id en de thuistijdzone", () => {
+    const c = manualClub("  Gemeentelijke sporthal  ", "  Beveren ");
+    expect(c).toEqual({
+      id: "",
+      name: "Gemeentelijke sporthal",
+      city: "Beveren",
+      timezone: DEFAULT_CLUB.timezone,
+    });
+  });
+
+  it("herkent een handmatige locatie als niet-Playtomic", () => {
+    expect(isPlaytomicClub(manualClub("Eigen baan"))).toBe(false);
+    expect(isPlaytomicClub(DEFAULT_CLUB)).toBe(true);
+  });
+});
 
 // localStorage is in deze testomgeving geen werkende Storage (Node webstorage
 // zonder --localstorage-file); de store vangt dat met try/catch af. Voor de

@@ -21,7 +21,7 @@ import {
   minutesNowInZone,
   toMinutes,
 } from "../../lib/time";
-import { DEFAULT_CLUB, getClub, type Club } from "./club";
+import { DEFAULT_CLUB, getClub, isPlaytomicClub, type Club } from "./club";
 
 const BASE = "/api/playtomic";
 
@@ -320,8 +320,8 @@ export function utcToClubTime(date: string, time: string, timeZone: string): str
  */
 export async function getClubAvailability(
   date: string,
+  club: Club = getClub(),
 ): Promise<DayAvailability> {
-  const club = getClub();
   const [tenant, byCourt] = await Promise.all([
     getTenant(club.id),
     getSlotsByCourt(date, club.id),
@@ -426,9 +426,19 @@ export type WeekDay = {
 export async function getWeekAvailability(
   fromDate: string,
   days = 7,
+  club: Club = getClub(),
 ): Promise<WeekDay[]> {
   const dates = Array.from({ length: days }, (_, i) => addDays(fromDate, i));
-  const results = await Promise.allSettled(dates.map(getClubAvailability));
+  // Handmatige locatie (#322): geen Playtomic-tenant, dus geen beschikbaarheid
+  // op te vragen. Lege dagen; de gebruiker voegt de momenten zelf toe.
+  if (!isPlaytomicClub(club)) {
+    return dates.map((date) => ({ date, data: null, error: null }));
+  }
+  // Expliciet per dag doorgeven: dates.map(getClubAvailability) zou de index als
+  // tweede argument (club) meesturen.
+  const results = await Promise.allSettled(
+    dates.map((d) => getClubAvailability(d, club)),
+  );
   return results.map((result, i) =>
     result.status === "fulfilled"
       ? { date: dates[i], data: result.value, error: null }
