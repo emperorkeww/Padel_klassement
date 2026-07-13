@@ -19,13 +19,12 @@ export function CoachAbout({
       <div className="coach-about__head">
         <CoachAvatar size={52} mood="portret" fixed />
         <p className="coach-about__lead">
-          {COMMENTATOR.naam} is onze excentrieke bondscoach-in-ruste van de Rode Duivels.
-          Zijn optreden tijdens het WK 2026 staat in ieders geheugen gegrift: hij zat 90 minuten lang
-          obsessief te schrijven in zijn tactische notitieboekje om vervolgens met volstrekt onbegrijpelijke
-          wissels in de 89e minuut de match om zeep te helpen. Zijn bizarre gedrag langs de lijn – zoals
-          hevig gesticuleren, een chique maatpak combineren met een goedkope supporters-pet en doodleuk
-          kletsnat geregend worden door een automatische watersproeier – was het gesprek van de dag. Nu
-          brengt hij diezelfde 'geniale' tactische inzichten en genadeloze sneren naar jouw padelveld.
+          {COMMENTATOR.naam} is onze kersverse bondscoach-in-ruste. Sinds hij de Rode Duivels op het WK 2026
+          naar een tactisch debacle leidde – compleet met onbegrijpelijke wissels in de 89e minuut, hevig
+          gebrul langs de lijn en die memorabele douche van een automatische watersproeier – had hij wat
+          vrije tijd over. Nu brengt hij zijn befaamde notitieboekje, zijn chique maatpak (mét supporters-pet)
+          en zijn vlijmscherpe analyses naar jouw padelveld. Want als er iemand weet hoe je een gewonnen
+          match uit handen geeft, is het Rudy wel.
         </p>
       </div>
       <ul className="coach-about__controls">
