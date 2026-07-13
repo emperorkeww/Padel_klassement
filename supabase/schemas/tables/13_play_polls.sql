@@ -23,10 +23,12 @@ create table public.play_polls (
   -- latere clubwissel bestaande polls niet meer "verhuist". Gedenormaliseerd:
   -- clubs zijn Playtomic-tenants, geen eigen tabel. Wijzigbaar zolang de poll
   -- niet geboekt is; club_timezone voedt ook de clubtijd-berekeningen.
-  club_id text not null,
-  club_name text not null,
-  club_city text,
-  club_timezone text not null,
+  -- Defaults = thuisclub, zodat een insert zónder locatie (oudere client vóór de
+  -- frontend-deploy) niet breekt op de NOT NULL; de nieuwe client zet 'm expliciet.
+  club_id text not null default '91d8d419-3736-498e-90be-362de786d588',
+  club_name text not null default 'LAGO CLUB Padel Beveren',
+  club_city text default 'Beveren',
+  club_timezone text not null default 'Europe/Brussels',
   created_at timestamptz not null default now()
 );
 
