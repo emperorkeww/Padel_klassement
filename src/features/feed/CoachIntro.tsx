@@ -19,11 +19,11 @@ export function CoachIntro({ onDismiss }: { onDismiss: () => void }) {
       <div className="coach-intro__body">
         <h2 className="coach-intro__title">Maak kennis met {COMMENTATOR.naam}</h2>
         <p className="coach-intro__text">
-          Vanaf nu becommentarieert {COMMENTATOR.naam} je feed. Vers van de Rode Duivels op het WK 2026,
-          waar hij de natie verraste met zijn vreemde wissels, zijn obsessieve gekrabbel in een
-          notitieboekje en zijn bizarre gedrag langs de lijn. Hij bejubelt je zeges en fileert je chokes
-          met dezelfde "briljante" tactische visie. Te veel van het goede? Stel je eigen roast-intensiteit
-          in of scherm jezelf helemaal af met een roast-schild — allebei bij je profiel.
+          Maak je borst maar nat. {COMMENTATOR.naam}, onze voormalige bondscoach van de Rode Duivels,
+          becommentarieert vanaf nu jouw prestaties. Na zijn roemruchte WK 2026 – bekend van het obsessieve
+          gekrabbel in zijn notitieboekje en die legendarische wissel in de 89e minuut – brengt hij zijn
+          "geniale" tactische inzichten naar deze club. Hij fileert je chokes en bejubelt (met gepaste jaloezie)
+          je zeges. Vind je hem te luidruchtig? Je kunt zijn volume temperen of een roast-schild activeren op je profiel.
         </p>
         <div className="coach-intro__actions">
           <Link className="btn btn--sm" to="/profiel">
