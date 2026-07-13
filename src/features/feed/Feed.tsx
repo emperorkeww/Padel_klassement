@@ -25,6 +25,8 @@ import {
 } from "../../lib/feed";
 import { formatDate, formatRelativeDay, formatTime } from "../../lib/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
+import { getMySmoesjes } from "../matches/smoesjesApi";
+import { kiesOordeel } from "../../lib/excuses";
 import { MatchCard } from "../matches/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships } from "../friends/api";
@@ -63,7 +65,7 @@ const FILTERS = {
   Alles: null,
   Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
   Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion"]),
-  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet"]),
+  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes"]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
     "group-joined",
@@ -102,6 +104,9 @@ export function Feed() {
   const piasWeeks = useAsync(getPiasWeeks, []);
   // De huidige Zwarte Piet-drager per groep (#185), voor de overdracht-items.
   const shame = useAsync(getZwartePiet, []);
+  // Geplaatste smoezen in je groepen (#296), voor de smoes-items op de feed.
+  const smoesjes = useAsync(getMySmoesjes, []);
+  useRealtime("match_smoesjes", smoesjes.reload);
   // Een nieuwe uitslag verandert ook ratings, klassement, de pias-aanduiding én
   // de Zwarte Piet: al die bronnen verversen, anders lopen ze achter.
   const reloadMatchSources = useCallback(() => {
@@ -214,6 +219,7 @@ export function Feed() {
             groupMatchesByGroup: groupMatches.data ?? undefined,
             piasWeeks: Object.values(piasWeeks.data ?? {}).flat(),
             shameTransfers: Object.values(shame.data ?? {}),
+            smoesjes: smoesjes.data ?? [],
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
             // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
@@ -232,6 +238,7 @@ export function Feed() {
       groupMatches.data,
       piasWeeks.data,
       shame.data,
+      smoesjes.data,
       profiles.data,
     ],
   );
@@ -392,6 +399,13 @@ export function Feed() {
                         name={name}
                         onInfo={() => setCoachAboutOpen(true)}
                       />
+                    ) : event.kind === "smoes" ? (
+                      <SmoesCard
+                        event={event}
+                        pmap={pmap}
+                        name={name}
+                        onInfo={() => setCoachAboutOpen(true)}
+                      />
                     ) : (
                       <>
                         <FeedItem
@@ -478,6 +492,8 @@ function eventKey(event: FeedEvent): string {
       return `pw-${event.groupId}-${event.weekStart}`;
     case "zwarte-piet":
       return `zp-${event.groupId}-${event.at}`;
+    case "smoes":
+      return `sm-${event.matchId}-${event.playerId}`;
   }
 }
 
@@ -495,6 +511,8 @@ function FeedItem({
   name: (pid: string) => string;
 }) {
   switch (event.kind) {
+    case "smoes":
+      return null; // smoezen renderen via SmoesCard, niet via FeedItem
     case "match":
       return <FeedMatch event={event} tmap={tmap} pmap={pmap} name={name} />;
     case "friendship": {
@@ -893,6 +911,69 @@ function EveningCard({
         </p>
       )}
       <CoachMonologue lines={coachLines} mood={mood} onInfo={onInfo} />
+    </div>
+  );
+}
+
+/** Smoes-kaart (#296): de verliezer plaatste een excuus onder Coach Rudy's stem.
+ *  Bewust twéé duidelijk verschillende bubbels — de speler zélf (eigen avatar +
+ *  naam in een neutrale bubbel met 🙈-chip) en Coach Rudy's jury-oordeel in zijn
+ *  eigen coach-bubbel eronder — zodat een smoes nooit te verwarren is met Rudy's
+ *  gewone commentaar. Het oordeel is deterministisch uit de smoes afgeleid en
+ *  respecteert het roast-schild van de speler. */
+function SmoesCard({
+  event,
+  pmap,
+  name,
+  onInfo,
+}: {
+  event: Extract<FeedEvent, { kind: "smoes" }>;
+  pmap: Record<string, Profile>;
+  name: (pid: string) => string;
+  onInfo: () => void;
+}) {
+  const beschermd = pmap[event.playerId]?.roast_schild ?? false;
+  const oordeel = kiesOordeel(event.smoes, beschermd);
+  // Rudy's mysterie volgt zijn oordeel: goedgekeurd → trots, afgekeurd → gemeen.
+  const mood: CoachMood =
+    beschermd || oordeel.gradatie === "matig"
+      ? "portret"
+      : oordeel.gradatie === "goedgekeurd"
+        ? "trots"
+        : "gemeen";
+  return (
+    <div className="feed-smoes">
+      <Link className="feed-smoes__head" to={`/matches/${event.matchId}`}>
+        <span className="feed-smoes__tok" aria-hidden="true">🙈</span>
+        <span className="feed-smoes__title">Smoes van de nederlaag</span>
+        <span className="feed-smoes__group">{event.groupName}</span>
+      </Link>
+      {/* De speler zelf verzint een excuus. */}
+      <div className="smoes-bubble">
+        <Avatar profile={pmap[event.playerId]} size={34} />
+        <div className="smoes-bubble__body">
+          <span className="smoes-bubble__name">
+            {name(event.playerId)}
+            <span className="smoes-bubble__tag">🙈 Smoes</span>
+          </span>
+          <span className="smoes-bubble__text">“{event.smoes}”</span>
+        </div>
+      </div>
+      {/* Coach Rudy's jury-oordeel — de bestaande coach-bubbel. */}
+      <div className="coach-comment">
+        <CoachAvatar size={34} mood={mood} className="coach-comment__face" />
+        <div className="coach-comment__bubble">
+          <span className="coach-comment__head">
+            <span className="coach-comment__name">{COMMENTATOR.naam} · jury</span>
+            <CoachInfoButton onInfo={onInfo} />
+          </span>
+          <span
+            className={`coach-comment__text smoes-oordeel smoes-oordeel--${oordeel.gradatie}`}
+          >
+            {oordeel.tekst}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

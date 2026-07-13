@@ -29,7 +29,35 @@
   font-size: var(--fs-sm);
 }
 
-.smoesjes__trek {
-  display: block;
-  margin: var(--sp-3) auto 0;
+/* Actie-rij onder de smoes: nog een smoesje + plaatsen/geplaatst-status. */
+.smoesjes__acties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.smoesjes__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--success);
+}
+.smoesjes__weg {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.smoesjes__weg:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

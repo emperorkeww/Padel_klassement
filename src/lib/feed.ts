@@ -74,7 +74,8 @@ export type FeedEvent =
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
-  | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string };
+  | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
+  | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
 export const FEED_LIMIT = 50;
@@ -95,6 +96,15 @@ export interface FeedPoll {
   /** Gekozen moment (datum + "HH:MM"), door de UI geresolved uit de optie. */
   locked_date?: string | null;
   locked_time?: string | null;
+}
+/** Een op een verloren groepsmatch geplaatste smoes (#296). Structurele invoer,
+ *  houdt lib los van de feature-API (match_smoesjes-rij). */
+export interface FeedSmoes {
+  match_id: string;
+  player_id: string;
+  group_id: string;
+  smoes: string;
+  created_at: string;
 }
 
 /** Speler-ids in je netwerk: jijzelf + geaccepteerde vrienden. */
@@ -189,6 +199,8 @@ export function buildFeed(input: {
   piasWeeks?: PiasWeek[];
   /** Huidige Zwarte Piet-drager per groep (#185) → overdracht-items. */
   shameTransfers?: Array<ZwartePiet & { groupId: string }>;
+  /** Geplaatste smoezen in je groepen (#296) → smoes-items op de feed. */
+  smoesjes?: FeedSmoes[];
   profiles?: Record<string, Profile>;
   now?: Date;
   /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
@@ -208,6 +220,7 @@ export function buildFeed(input: {
     groupMatchesByGroup = {},
     piasWeeks = [],
     shameTransfers = [],
+    smoesjes = [],
     profiles = {},
     now = new Date(),
     filter,
@@ -464,6 +477,23 @@ export function buildFeed(input: {
       fromPlayerId: t.fromId,
       reden: t.reden,
       detail: t.detail,
+    });
+  }
+
+  // ── Smoesjes (#296): een op een verloren groepsmatch geplaatste smoes van de
+  //    verliezer, onder Coach Rudy's stem. RLS levert enkel smoezen uit jouw
+  //    groepen, dus we hebben altijd een groepsnaam. ──
+  for (const s of smoesjes) {
+    const groupName = groupNamesById.get(s.group_id);
+    if (!groupName) continue;
+    events.push({
+      kind: "smoes",
+      at: s.created_at,
+      matchId: s.match_id,
+      groupId: s.group_id,
+      groupName,
+      playerId: s.player_id,
+      smoes: s.smoes,
     });
   }
 

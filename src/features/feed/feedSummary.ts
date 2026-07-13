@@ -154,5 +154,11 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         ),
         to: `/groepen/${e.groupId}`,
       };
+    case "smoes":
+      return {
+        icon: "🙈",
+        tekst: `${naam(ctx, e.playerId)} verzon een smoes na een nederlaag in ${e.groupName}`,
+        to: `/matches/${e.matchId}`,
+      };
   }
 }

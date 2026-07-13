@@ -18,6 +18,7 @@ import {
   type SetPair,
 } from "./api";
 import { SetScoresInput } from "./SetScoresInput";
+import { useSmoesPrompt } from "./SmoesPromptProvider";
 import type { Profile, RoastIntensiteit } from "../../lib/types";
 
 export type NewMatchMode = "score" | "plan";
@@ -70,6 +71,7 @@ export function NewMatchSheet({
   const [guestName, setGuestName] = useState("");
   const [addingGuest, setAddingGuest] = useState(false);
   const toast = useToast();
+  const promptSmoes = useSmoesPrompt();
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -236,7 +238,7 @@ export function NewMatchSheet({
     setBusy(true);
     try {
       const setScores = toSetScores(sets);
-      await createCompletedMatch({
+      const newMatchId = await createCompletedMatch({
         a1: teamA[0],
         a2: teamA[1],
         b1: teamB[0],
@@ -260,22 +262,27 @@ export function NewMatchSheet({
       } else {
         tap();
       }
-      // Coach Rudy reageert direct op je eigen uitslag (#213); logt de speler
-      // een match zónder zelf mee te spelen, dan houden we het neutraal.
-      toast.success(
-        loggerTeam
-          ? coachMatchQuip({
-              uitkomst:
-                winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
-              bagel: sa !== sb && Math.min(sa!, sb!) === 0,
-              seed: `${myId}-${sa}-${sb}`,
-              ctx: {
-                intensiteit,
-                schild: byId(myId)?.roast_schild ?? false,
-              },
-            })
-          : "Match toegevoegd.",
-      );
+      const ctx = { intensiteit, schild: byId(myId)?.roast_schild ?? false };
+      // Verloor je zelf een groepsmatch? Dan meteen een smoes kunnen plaatsen
+      // (#296): een tikbare toast opent de Smoesjesmachine voor deze match, i.p.v.
+      // de gewone quip. Anders reageert Coach Rudy zoals vanouds op je uitslag —
+      // of neutraal als de logger niet zelf meespeelde.
+      const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
+      if (verlies && groupId && myId) {
+        promptSmoes({ matchId: newMatchId, groupId, playerId: myId, ctx });
+      } else {
+        toast.success(
+          loggerTeam
+            ? coachMatchQuip({
+                uitkomst:
+                  winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
+                bagel: sa !== sb && Math.min(sa!, sb!) === 0,
+                seed: `${myId}-${sa}-${sb}`,
+                ctx,
+              })
+            : "Match toegevoegd.",
+        );
+      }
       onCreated();
       onClose();
     } catch (err) {
