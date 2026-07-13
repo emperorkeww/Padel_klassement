@@ -403,6 +403,7 @@ export function Feed() {
                       <SmoesCard
                         event={event}
                         pmap={pmap}
+                        tmap={tmap}
                         name={name}
                         onInfo={() => setCoachAboutOpen(true)}
                       />
@@ -924,11 +925,13 @@ function EveningCard({
 function SmoesCard({
   event,
   pmap,
+  tmap,
   name,
   onInfo,
 }: {
   event: Extract<FeedEvent, { kind: "smoes" }>;
   pmap: Record<string, Profile>;
+  tmap: Record<string, Team>;
   name: (pid: string) => string;
   onInfo: () => void;
 }) {
@@ -941,11 +944,34 @@ function SmoesCard({
       : oordeel.gradatie === "goedgekeurd"
         ? "trots"
         : "gemeen";
+  // Bij wélke nederlaag hoort de smoes: tegenstander + score vanuit het verloren
+  // team, zodat de kaart niet los in de feed hangt.
+  const m = event.match;
+  const nederlaag =
+    m && m.winner_team_id
+      ? (() => {
+          const verliezerTeam =
+            m.winner_team_id === m.team_a_id ? m.team_b_id : m.team_a_id;
+          const tegenstander = teamLabel(tmap[m.winner_team_id], pmap);
+          const heeftScore = m.score_a != null && m.score_b != null;
+          const eigen = verliezerTeam === m.team_a_id ? m.score_a : m.score_b;
+          const tegen = verliezerTeam === m.team_a_id ? m.score_b : m.score_a;
+          return { tegenstander, score: heeftScore ? `${eigen}–${tegen}` : null };
+        })()
+      : null;
   return (
     <div className="feed-smoes">
       <Link className="feed-smoes__head" to={`/matches/${event.matchId}`}>
         <span className="feed-smoes__tok" aria-hidden="true">🙈</span>
-        <span className="feed-smoes__title">Smoes van de nederlaag</span>
+        <span className="feed-smoes__headbody">
+          <span className="feed-smoes__title">Smoes van de nederlaag</span>
+          {nederlaag && (
+            <span className="feed-smoes__match">
+              verloor{nederlaag.score ? ` ${nederlaag.score}` : ""} van{" "}
+              <strong>{nederlaag.tegenstander}</strong>
+            </span>
+          )}
+        </span>
         <span className="feed-smoes__group">{event.groupName}</span>
       </Link>
       {/* De speler zelf verzint een excuus. */}

@@ -600,9 +600,15 @@ describe("buildFeed — smoesjes (#296)", () => {
     created_at: "2026-07-12T20:00:00Z",
   });
 
-  it("emit een smoes-item met groepsnaam, speler en tekst", () => {
+  it("emit een smoes-item met groepsnaam, speler, tekst en de verloren match", () => {
+    const verloren = match("2026-07-12T19:30:00Z", "t-ab", "t-cd", "completed", {
+      id: "m-smoes",
+      winner_team_id: "t-cd",
+      score_a: 3,
+      score_b: 6,
+    });
     const feed = buildFeed({
-      matches: [],
+      matches: [verloren],
       teams: TEAMS,
       friendships: [],
       myId: "p1",
@@ -615,6 +621,9 @@ describe("buildFeed — smoesjes (#296)", () => {
     expect(ev.playerId).toBe("p2");
     expect(ev.groupName).toBe("Vrijdagavond");
     expect(ev.smoes).toContain("gripje");
+    // De verloren match is meegekoppeld zodat de kaart de tegenstander toont.
+    expect(ev.match?.id).toBe("m-smoes");
+    expect(ev.match?.winner_team_id).toBe("t-cd");
   });
 
   it("negeert een smoes van een onbekende groep (geen groepsnaam)", () => {
