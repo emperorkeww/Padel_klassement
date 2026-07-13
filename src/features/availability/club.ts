@@ -22,6 +22,25 @@ export const DEFAULT_CLUB: Club = {
   timezone: "Europe/Brussels",
 };
 
+/**
+ * Een handmatig ingevoerde locatie (#322): geen Playtomic-tenant, dus een leeg
+ * id en geen opvraagbare baanbeschikbaarheid — de gebruiker beheert de baan
+ * zelf. Tijdzone valt terug op de thuisclub (Europe/Brussels).
+ */
+export function manualClub(name: string, city = ""): Club {
+  return {
+    id: "",
+    name: name.trim(),
+    city: city.trim(),
+    timezone: DEFAULT_CLUB.timezone,
+  };
+}
+
+/** Heeft deze club een Playtomic-tenant (en dus opvraagbare beschikbaarheid)? */
+export function isPlaytomicClub(club: Club): boolean {
+  return club.id !== "";
+}
+
 const STORAGE_KEY = "selected-club";
 const RECENT_STORAGE_KEY = "recent-clubs";
 const MAX_RECENT = 3;

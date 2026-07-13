@@ -1,0 +1,146 @@
+/* Locatiekeuze: knop met huidige club + zoekpaneel. Eigen bestand zodat de
+   stijlen overal laden waar ClubPicker gebruikt wordt (baanbeschikbaarheid én
+   de speeldag-poll, #322) — niet alleen op de Banen-pagina. */
+.club-picker {
+  position: relative;
+  margin-top: var(--sp-2);
+}
+
+.club-picker__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 100%;
+}
+
+.club-picker__pin {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.club-picker__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.club-picker__panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  /* Boven de backdrop (60), net als de slot-pop-up. */
+  z-index: 61;
+  width: min(340px, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pop);
+  /* Eén scroll op het hele paneel i.p.v. genest in de resultatenlijst — met
+     recent + zoek + Playtomic + eigen locatie + reset wordt het anders te lang.
+     scrollbar-gutter houdt de breedte stabiel zodat de zoekbalk niet verspringt
+     zodra er resultaten (en dus een scrollbalk) verschijnen. */
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+/* Rechts uitgelijnd wanneer de knop rechts in een balk staat (poll-kaart, #322)
+   — anders zou het 340px-paneel vanaf de linkerrand buiten beeld schuiven. */
+.club-picker__panel--right {
+  left: auto;
+  right: 0;
+}
+
+.club-picker__search {
+  width: 100%;
+  /* De zoekbalk blijft in beeld terwijl de resultaten eronder scrollen. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+.club-picker__search::placeholder {
+  color: var(--placeholder);
+}
+
+/* Snelle keuzes: recent gekozen clubs, boven het zoekveld. */
+.club-picker__recent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.club-picker__recent-title {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.club-picker__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.club-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.club-picker__option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: var(--sp-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.club-picker__option:hover {
+  background: var(--surface-2);
+}
+
+.club-picker__option.is-active {
+  background: var(--success-soft);
+}
+
+.club-picker__name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  line-height: 1.2;
+}
+
+.club-picker__city {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.club-picker__reset {
+  align-self: flex-start;
+}
+
+/* Handmatige locatie (niet in Playtomic, #322): zelfde zoekterm als naam. */
+.club-picker__manual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}

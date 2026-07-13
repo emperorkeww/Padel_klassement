@@ -1,5 +1,6 @@
 import { supabase } from "../../lib/supabase";
 import { cached, invalidate } from "../../lib/queryCache";
+import type { Club } from "../availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
 // dependency. Losse typering (tabel-shim) tot database.types.ts opnieuw
@@ -18,7 +19,23 @@ export type PlayPoll = {
   /** Momenten van vastleggen/boeken (feed v2, #143); null tot die stap. */
   locked_at: string | null;
   booked_at: string | null;
+  /** Locatie-snapshot (#322): de club waarvoor deze poll is aangemaakt. Los van
+   *  de globale clubkeuze, zodat een latere wissel bestaande polls niet raakt. */
+  club_id: string;
+  club_name: string;
+  club_city: string | null;
+  club_timezone: string;
 };
+
+/** De op een poll opgeslagen locatie als Club-object (voor de UI/availability). */
+export function pollClub(poll: PlayPoll): Club {
+  return {
+    id: poll.club_id,
+    name: poll.club_name,
+    city: poll.club_city ?? "",
+    timezone: poll.club_timezone,
+  };
+}
 
 export type PollOption = {
   id: string;
@@ -115,14 +132,22 @@ export type NewPollOption = {
   courtsFree: number | null;
 };
 
-/** Start een poll met 1-5 kandidaat-momenten. */
+/** Start een poll met 1-5 kandidaat-momenten op de gekozen club (#322). */
 export async function createPoll(input: {
   groupId: string;
   createdBy: string;
+  club: Club;
   options: NewPollOption[];
 }): Promise<void> {
   const { data, error } = await pollTable()
-    .insert({ group_id: input.groupId, created_by: input.createdBy })
+    .insert({
+      group_id: input.groupId,
+      created_by: input.createdBy,
+      club_id: input.club.id,
+      club_name: input.club.name,
+      club_city: input.club.city,
+      club_timezone: input.club.timezone,
+    })
     .select();
   if (error) throw error;
   const poll = data?.[0];
@@ -212,6 +237,24 @@ export async function clearPollVote(
     .eq("player_id", playerId);
   if (error) throw error;
   invalidate("play-poll-votes");
+}
+
+/**
+ * Wijzigt de locatie (club) van een poll — voor de "wijzig locatie"-actie bij
+ * open/locked polls (#322). De aanroeper gate't op status: een geboekte poll
+ * bevriest z'n locatie. RLS: maker of groepseigenaar.
+ */
+export async function setPollClub(pollId: string, club: Club): Promise<void> {
+  const { error } = await pollTable()
+    .update({
+      club_id: club.id,
+      club_name: club.name,
+      club_city: club.city,
+      club_timezone: club.timezone,
+    })
+    .eq("id", pollId);
+  if (error) throw error;
+  invalidate("play-poll");
 }
 
 /** Legt het winnende moment vast (RLS: maker of groepseigenaar). */

@@ -18,7 +18,20 @@ import {
   type SlotOption,
   type WeekDay,
 } from "./api";
-import { DEFAULT_CLUB } from "./club";
+import { DEFAULT_CLUB, manualClub } from "./club";
+
+describe("getWeekAvailability — handmatige locatie (#322)", () => {
+  it("levert lege dagen zonder Playtomic-verzoek", async () => {
+    const week = await getWeekAvailability("2099-01-10", 3, manualClub("Eigen baan"));
+    expect(week).toHaveLength(3);
+    expect(week.every((d) => d.data === null && d.error === null)).toBe(true);
+    expect(week.map((d) => d.date)).toEqual([
+      "2099-01-10",
+      "2099-01-11",
+      "2099-01-12",
+    ]);
+  });
+});
 
 // Playtomic geeft start_time in UTC terug; het raster moet clubtijd tonen.
 // De verschuiving is seizoensafhankelijk (CET/CEST), dus beide gevallen testen.
