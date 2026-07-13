@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { AuthProvider } from "../features/auth/AuthProvider";
 import { ToastProvider } from "../components/ToastProvider";
+import { SmoesPromptProvider } from "../features/matches/SmoesPromptProvider";
 import { watchSystemTheme } from "../lib/theme";
 import "./index.css";
 
@@ -16,7 +17,9 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <App />
+          <SmoesPromptProvider>
+            <App />
+          </SmoesPromptProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

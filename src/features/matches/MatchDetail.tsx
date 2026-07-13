@@ -220,6 +220,8 @@ export function MatchDetail() {
         <SmoesjesMachine
           matchId={m.id}
           ctx={roastCtx(group.data, user ? pmap[user.id] : null)}
+          groupId={m.group_id}
+          playerId={user?.id}
         />
       )}
 
