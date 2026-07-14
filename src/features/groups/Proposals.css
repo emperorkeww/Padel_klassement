@@ -1,5 +1,36 @@
 /* Speelvoorstellen: lijst van concrete momenten met reacties. */
 
+/* Suggestiekaart is inklapbaar (#342): standaard dicht zodra er een poll loopt. */
+.suggestions__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  list-style: none;
+}
+.suggestions__summary::-webkit-details-marker {
+  display: none;
+}
+/* Eigen chevron rechts, draait open bij het uitklappen. */
+.suggestions__summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.suggestions[open] .suggestions__summary::after {
+  transform: rotate(180deg);
+}
+.suggestions__summary .card__title {
+  margin: 0;
+}
+/* Lucht tussen de samenvatting en de inhoud wanneer uitgeklapt. */
+.suggestions[open] .suggestions__summary {
+  margin-bottom: var(--sp-3);
+}
+
 .proposals__hint {
   margin: 0 0 var(--sp-3);
   font-size: var(--fs-sm);
@@ -516,6 +547,25 @@
   .poll-wizard__manual .btn,
   .poll-wizard__manual .proposal-form__note {
     grid-column: 1 / -1;
+  }
+  /* Fasebalk mag horizontaal scrollen i.p.v. de kaart te verbreden. */
+  .poll-steps {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .poll-steps::-webkit-scrollbar {
+    display: none;
+  }
+  .poll-steps__step {
+    white-space: nowrap;
+  }
+  /* Footer-acties (Kies …, Heropen, Annuleer) op volle breedte: fijnere
+     tikdoelen en één actie per regel bij weinig ruimte. */
+  .poll-card__footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
   }
 }
 

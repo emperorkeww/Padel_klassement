@@ -1,0 +1,56 @@
+/* Dagoverzicht op de Vandaag-tab (#342). Mobile-first: één kolom highlights,
+   op bredere schermen krijgt de kaart wat meer lucht. */
+
+.day-stats__counts {
+  margin-bottom: var(--sp-3);
+}
+
+.day-stats__highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.day-stat-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.day-stat-line__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex: none;
+}
+
+.day-stat-line__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* De meta-waarde (score/delta) staat rechts en wijkt niet. */
+.day-stat-line__meta {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.day-stat-line__meta.is-up {
+  color: var(--success);
+}
+
+.day-stat-line__meta.is-down {
+  color: var(--danger);
+}

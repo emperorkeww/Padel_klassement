@@ -156,8 +156,9 @@ export function PollSection({
         </div>
         {!wizardOpen && active.length === 0 && (
           <p className="empty">
-            Geen lopende poll. Kies een paar momenten waarop banen vrij zijn en
-            laat de groep stemmen.
+            Nog geen lopende poll. Pak een suggestie hierboven, of plan zelf een
+            speeldag: kies een paar momenten waarop banen vrij zijn en laat de
+            groep stemmen.
           </p>
         )}
         {wizardOpen && (

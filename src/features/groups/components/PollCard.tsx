@@ -497,7 +497,7 @@ export function PollCard({
                       bevestigde spelers zijn (4 per baan). */}
                   <div className="winner-card__rounds">
                     <button
-                      className={`btn btn--sm${roundsMade === 0 && t.yes.length >= 4 ? " btn--primary" : ""}`}
+                      className={`btn btn--sm${poll.status === "booked" && roundsMade === 0 && t.yes.length >= 4 ? " btn--primary" : ""}`}
                       disabled={busy || t.yes.length < 4}
                       title={
                         t.yes.length < 4
@@ -599,17 +599,6 @@ export function PollCard({
                     <p className="proposal__names">
                       Kan: {t.yes.map(name).join(", ")}
                     </p>
-                  )}
-                  {poll.status === "open" && isManager && (
-                    <button
-                      className="btn btn--sm"
-                      disabled={busy || state === "onhaalbaar" || o.date < today}
-                      onClick={() =>
-                        run(() => lockPoll(poll.id, o.id), "Moment vastgelegd.")
-                      }
-                    >
-                      Kies dit moment
-                    </button>
                   )}
                 </div>
               )}
