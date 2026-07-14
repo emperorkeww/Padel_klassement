@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CoachAvatar } from "./CoachAvatar";
+import { CoachAvatar } from "@/features/coach/CoachAvatar";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import "./CoachAbout.css";
 

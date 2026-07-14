@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { TierBadge } from "./TierBadge";
+import { TierBadge } from "@/features/rating/TierBadge";
 
 describe("<TierBadge />", () => {
   it("toont het tier-label met bijnaam en rating-grenzen als tooltip", () => {

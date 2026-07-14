@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { CoachAvatar } from "./CoachAvatar";
+import { CoachAvatar } from "@/features/coach/CoachAvatar";
 
 describe("<CoachAvatar />", () => {
   it("rendert een toegankelijke coach-illustratie", () => {

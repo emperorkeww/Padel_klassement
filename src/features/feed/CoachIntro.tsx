@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CoachAvatar } from "../../components/CoachAvatar";
+import { CoachAvatar } from "@/features/coach/CoachAvatar";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 
 // Eenmalige kennismaking bovenaan de feed (#212): stelt Coach Rudy voor en wijst

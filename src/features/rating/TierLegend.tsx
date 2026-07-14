@@ -1,4 +1,4 @@
-import { CoachSneer } from "./CoachSneer";
+import { CoachSneer } from "@/features/coach/CoachSneer";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import { tierLegend } from "@/features/rating/tiers";
 import "./TierLegend.css";

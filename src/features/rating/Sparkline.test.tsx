@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { RATING_HISTORY } from "../test/fixtures";
-import { Sparkline } from "./Sparkline";
+import { RATING_HISTORY } from "@/test/fixtures";
+import { Sparkline } from "@/features/rating/Sparkline";
 import { downsample, toPolylinePoints } from "@/lib/utils/sparkline";
 
 describe("downsample", () => {

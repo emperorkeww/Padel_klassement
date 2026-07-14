@@ -4,7 +4,7 @@ import { fairTeams, type FairTeam } from "@/features/groups/fairTeamsLogic";
 import { tap } from "@/lib/utils/haptics";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { createFairRound, type FairCourt } from "./api";
 import type { Profile } from "@/types";

@@ -16,7 +16,7 @@ import {
   getTeamsMap,
   getCompletedMatchesBetween,
 } from "../matches/api";
-import { ProfileSkeleton, StatsSkeleton } from "../../components/Skeleton";
+import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import {
   recentForm,
   winRate,
@@ -33,9 +33,9 @@ import { matchesInSeason, rankProgression, byRank } from "@/features/rating/stan
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
 import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
-import { Sheet } from "../../components/Sheet";
+import { Sheet } from "@/ui/Sheet";
 import { tierFor, tierProgress } from "@/features/rating/tiers";
 import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
 import { roast } from "@/features/profiles/roast";

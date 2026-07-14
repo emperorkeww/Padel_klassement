@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { EmptyState } from "./EmptyState";
+import { EmptyState } from "@/ui/EmptyState";
 
 describe("<EmptyState />", () => {
   it("toont icoon, titel en uitleg", () => {

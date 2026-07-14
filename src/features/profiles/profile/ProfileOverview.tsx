@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { Stat } from "../../../components/Stat";
-import { FormChips } from "../../../components/FormChips";
-import { TierBadge } from "../../../components/TierBadge";
+import { Stat } from "@/ui/Stat";
+import { FormChips } from "@/features/rating/FormChips";
+import { TierBadge } from "@/features/rating/TierBadge";
 import { MatchList } from "../../matches/MatchList";
-import { MatchListSkeleton } from "../../../components/Skeleton";
+import { MatchListSkeleton } from "@/ui/Skeleton";
 import { winRate } from "@/features/rating/results";
 import { displayName } from "../api";
 import { HighlightTile } from "./HighlightTile";

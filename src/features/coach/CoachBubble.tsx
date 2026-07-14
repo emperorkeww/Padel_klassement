@@ -5,7 +5,7 @@
 // inhoud als children. Hergebruikt CoachSneer.css.
 
 import type { ReactNode } from "react";
-import { CoachAvatar } from "./CoachAvatar";
+import { CoachAvatar } from "@/features/coach/CoachAvatar";
 import { COMMENTATOR, type CoachMood } from "@/features/coach/roastTone";
 import "./CoachSneer.css";
 

@@ -1,4 +1,4 @@
-import { ScoreStepper } from "../../components/ScoreStepper";
+import { ScoreStepper } from "@/ui/ScoreStepper";
 import { emptySet } from "./api";
 import type { SetPair } from "./api";
 import "./SetScoresInput.css";

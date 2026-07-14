@@ -4,10 +4,10 @@ import { useAuth } from "../features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "../features/profiles/api";
 import { useTierAnnouncement } from "../features/standings/useTierAnnouncement";
-import { Avatar } from "./Avatar";
-import { BallIcon } from "./BallIcon";
-import { GithubRibbon } from "./GithubRibbon";
-import "./ui.css";
+import { Avatar } from "@/ui/Avatar";
+import { BallIcon } from "@/ui/BallIcon";
+import { GithubRibbon } from "@/app/GithubRibbon";
+import "@/ui/ui.css";
 import "./DashboardLayout.css";
 
 // `matchPaths`: extra padprefixen die dezelfde sectie zijn maar buiten `to`

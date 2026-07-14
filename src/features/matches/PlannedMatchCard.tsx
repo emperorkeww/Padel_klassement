@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScoreStepper } from "../../components/ScoreStepper";
-import { useToast } from "../../components/ToastProvider";
+import { ScoreStepper } from "@/ui/ScoreStepper";
+import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
 import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
 import { winChance } from "@/features/rating/elo";
 import { inTeam } from "@/features/rating/results";
-import { CoachAvatar } from "../../components/CoachAvatar";
+import { CoachAvatar } from "@/features/coach/CoachAvatar";
 import { coachPreMatch } from "@/features/coach/coachMoments";
 import {
   groupRivalries,

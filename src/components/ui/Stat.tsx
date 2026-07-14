@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { CountUp } from "./CountUp";
+import { CountUp } from "@/ui/CountUp";
 
 // Eén kerncijfer-tegel (rating, positie, winrate, …). Getallen tellen op met
 // een korte animatie; tekst (bv. "#3" of "—") verschijnt meteen.

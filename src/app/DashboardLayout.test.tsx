@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../features/auth/AuthProvider";
-import { ToastProvider } from "./ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 import type { RatingPoint } from "@/types";
 
 vi.mock("@/lib/supabase/client", async () => {
@@ -19,7 +19,7 @@ vi.mock("../features/standings/ratingsApi", () => ({
 }));
 vi.mock("@/lib/utils/confetti", () => ({ celebrate: vi.fn() }));
 
-import DashboardLayout from "./DashboardLayout";
+import DashboardLayout from "@/app/DashboardLayout";
 import { supabase } from "@/lib/supabase/client";
 import { getRatingHistory } from "../features/standings/ratingsApi";
 import { celebrate } from "@/lib/utils/confetti";

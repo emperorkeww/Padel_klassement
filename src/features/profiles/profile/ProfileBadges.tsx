@@ -1,4 +1,4 @@
-import { Skeleton } from "../../../components/Skeleton";
+import { Skeleton } from "@/ui/Skeleton";
 import type { ProfileData } from "./types";
 
 // Badges-tab: uitgelichte pillen + het volledige raster met ☆-toggle (alleen

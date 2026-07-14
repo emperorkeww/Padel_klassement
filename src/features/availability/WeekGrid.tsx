@@ -8,7 +8,7 @@ import {
   minutesNowInZone,
   toMinutes,
 } from "@/lib/utils/time";
-import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { CourtTypeIcon } from "@/features/availability/CourtTypeIcon";
 import { courtTypeLabel } from "@/lib/utils/format";
 import "./Availability.css";
 

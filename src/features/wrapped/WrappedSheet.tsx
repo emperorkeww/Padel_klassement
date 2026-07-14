@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { useToast } from "../../components/ToastProvider";
-import { Sheet } from "../../components/Sheet";
+import { useToast } from "@/ui/ToastProvider";
+import { Sheet } from "@/ui/Sheet";
 import { errorMessage } from "@/lib/utils/errors";
 import { sharePng } from "@/lib/utils/shareImage";
 import { prefersReducedMotion } from "@/lib/utils/motion";

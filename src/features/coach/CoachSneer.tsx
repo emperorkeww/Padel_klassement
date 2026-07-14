@@ -3,7 +3,7 @@
 // de sneer werd geplakt (sneerSuffix). Zo krijgt élk roast-oppervlak — pias,
 // zwarte piet, pias-banner — hetzelfde herkenbare Coach Rudy-gezicht als de feed.
 
-import { CoachBubble } from "./CoachBubble";
+import { CoachBubble } from "@/features/coach/CoachBubble";
 import { coachSneer, type RoastCtx } from "@/features/coach/roastTone";
 
 export function CoachSneer({

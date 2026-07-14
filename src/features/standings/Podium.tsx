@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Avatar, type AvatarSource } from "./Avatar";
-import { TierBadge } from "./TierBadge";
+import { Avatar, type AvatarSource } from "@/ui/Avatar";
+import { TierBadge } from "@/features/rating/TierBadge";
 import { BIG_DADDY_EMOJI, BIG_DADDY_TITEL, bigDaddyRoast } from "@/features/dashboard/bigDaddy";
 import "./Podium.css";
 

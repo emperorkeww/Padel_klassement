@@ -5,8 +5,8 @@ import type { Badge } from "@/features/profiles/badges";
 import type { TierProgress } from "@/features/rating/tiers";
 import type { Upset } from "@/features/matches/upset";
 import type { Season } from "@/features/rating/seasons";
-import type { RatingChart } from "../../../components/RatingChart";
-import type { RankChart } from "../../../components/RankChart";
+import type { RatingChart } from "@/features/rating/RatingChart";
+import type { RankChart } from "@/features/rating/RankChart";
 
 // Eén rij in de onderlinge stand (tegen één tegenstander).
 export interface H2HRow {

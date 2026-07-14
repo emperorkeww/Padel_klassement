@@ -10,8 +10,8 @@
 // schild een neutrale toon.
 
 import { useState } from "react";
-import { useToast } from "../../components/ToastProvider";
-import { CoachBubble } from "../../components/CoachBubble";
+import { useToast } from "@/ui/ToastProvider";
+import { CoachBubble } from "@/features/coach/CoachBubble";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
 import { tap } from "@/lib/utils/haptics";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
 import type { Outcome } from "@/features/rating/results";

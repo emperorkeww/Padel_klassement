@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
-import { useToast } from "../../components/ToastProvider";
-import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
+import { useToast } from "@/ui/ToastProvider";
+import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
 import {
   getGroup,
   getGroupMembers,
@@ -21,15 +21,15 @@ import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
-import { Sparkline } from "../../components/Sparkline";
-import { Podium } from "../../components/Podium";
-import { TierBadge } from "../../components/TierBadge";
+import { Sparkline } from "@/features/rating/Sparkline";
+import { Podium } from "@/features/standings/Podium";
+import { TierBadge } from "@/features/rating/TierBadge";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
 import { ZwartePietCard } from "./ZwartePietCard";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
-import { Avatar } from "../../components/Avatar";
+import { Avatar } from "@/ui/Avatar";
 import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { RivalryCard } from "./RivalryCard";

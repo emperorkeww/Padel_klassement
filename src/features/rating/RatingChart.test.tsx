@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { RATING_HISTORY } from "../test/fixtures";
-import { RatingChart } from "./RatingChart";
+import { RATING_HISTORY } from "@/test/fixtures";
+import { RatingChart } from "@/features/rating/RatingChart";
 
 // jsdom past de stylesheet niet toe: dat de lijn ook zonder (afgeronde)
 // animatie zichtbaar is, zit in de CSS-structuur van RatingChart.css — de

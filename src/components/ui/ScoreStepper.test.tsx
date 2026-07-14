@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { ScoreStepper } from "./ScoreStepper";
+import { ScoreStepper } from "@/ui/ScoreStepper";
 
 function Harness() {
   const [value, setValue] = useState("");

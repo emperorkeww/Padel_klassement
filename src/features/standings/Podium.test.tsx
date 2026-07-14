@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { Podium, type PodiumEntry } from "./Podium";
+import { Podium, type PodiumEntry } from "@/features/standings/Podium";
 
 function entry(key: string, name: string, rating: number): PodiumEntry {
   return { key, name, profile: null, rating };

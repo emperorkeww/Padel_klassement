@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
-import { Sheet } from "./Sheet";
+import { Sheet } from "@/ui/Sheet";
 
 // Kleine gastheer: een openknop + de Sheet, zodat we focus-terugzetten kunnen
 // controleren (focus hoort na sluiten terug naar de opener te gaan).

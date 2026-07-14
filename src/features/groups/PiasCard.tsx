@@ -7,8 +7,8 @@
 
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Avatar } from "../../components/Avatar";
-import { CoachSneer } from "../../components/CoachSneer";
+import { Avatar } from "@/ui/Avatar";
+import { CoachSneer } from "@/features/coach/CoachSneer";
 import { bepaalPias, type MatchRatings } from "@/features/groups/maandpias";
 import { monthRange, weekRange } from "@/features/dashboard/missions";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
