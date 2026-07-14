@@ -7,7 +7,7 @@ import { AuthProvider } from "../features/auth/AuthProvider";
 
 // Supabase-client mocken zodat de test geen echte client aanmaakt/netwerkcall doet.
 // Pad is relatief t.o.v. src/app/ -> ../lib/supabase.
-vi.mock("../lib/supabase", () => ({
+vi.mock("@/lib/supabase/client", () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),

@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
 import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
 import { AuthProvider } from "../auth/AuthProvider";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
 // Vast "nu" (3 juli 2026, Q3): zo is Q2 2026 een afgesloten seizoen met een
 // kampioen. Alleen Date wordt gefaket, zodat waitFor/findBy gewoon blijven werken.
@@ -15,7 +15,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-vi.mock("../../lib/supabase", () => {
+vi.mock("@/lib/supabase/client", () => {
   // Afgeronde match in Q2 2026, gewonnen door t-cd (Carol & Dave).
   const MATCH_Q2 = {
     ...MATCH_DONE,

@@ -2,8 +2,8 @@
 // Pure functies over reeds geladen matches + teams (net als lib/results.ts);
 // alleen afgewerkte matches tellen mee.
 
-import type { Match, Team } from "../../lib/types";
-import { inTeam, outcomeFor } from "../../lib/results";
+import type { Match, Team } from "@/types";
+import { inTeam, outcomeFor } from "@/features/rating/results";
 
 export interface OnderlingeBalans {
   /** Matches waarin beiden tegenover elkaar stonden, geteld vanuit meId.

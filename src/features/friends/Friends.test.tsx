@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
 import { AuthProvider } from "../auth/AuthProvider";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
-vi.mock("../../lib/supabase", () => ({
+vi.mock("@/lib/supabase/client", () => ({
   supabase: makeSupabaseMock({
     session: { user: { id: "p1", email: "alice@example.com" } },
     tables: {
@@ -30,9 +30,9 @@ vi.mock("../../lib/supabase", () => ({
 }));
 
 import Friends from "./Friends";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "../../test/supabaseMock";
-import { invalidateAll } from "../../lib/queryCache";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 function renderPage() {
   return render(

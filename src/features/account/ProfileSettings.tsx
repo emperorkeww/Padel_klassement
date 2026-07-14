@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useToast } from "../../components/ToastProvider";
-import { ProfileSkeleton, Skeleton } from "../../components/Skeleton";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useToast } from "@/ui/ToastProvider";
+import { ProfileSkeleton, Skeleton } from "@/ui/Skeleton";
 import {
   getProfile,
   updateProfile,
@@ -16,23 +16,23 @@ import {
   updatePrivacy,
   type Privacy,
 } from "./api";
-import { AccountNav } from "../../components/AccountNav";
-import { CoachAbout } from "../../components/CoachAbout";
-import type { RoastIntensiteit } from "../../lib/types";
-import { formatDate } from "../../lib/format";
-import { errorMessage } from "../../lib/errors";
+import { AccountNav } from "@/ui/AccountNav";
+import { CoachAbout } from "@/features/coach/components/CoachAbout";
+import type { RoastIntensiteit } from "@/types";
+import { formatDate } from "@/lib/utils/format";
+import { errorMessage } from "@/lib/utils/errors";
 import {
   disablePush,
   enablePush,
   getPushSubscription,
   pushSupported,
-} from "../../lib/push";
+} from "@/lib/supabase/push";
 import {
   getThemePreference,
   setThemePreference,
   type ThemePreference,
-} from "../../lib/theme";
-import type { Profile } from "../../lib/types";
+} from "@/lib/utils/theme";
+import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
 export function ProfileSettings() {

@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { Mock } from "vitest";
 import { AuthProvider } from "./AuthProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { SESSION } = await import("../../test/fixtures");
   // Een herstellink levert een (recovery-)sessie op; het formulier is dan zichtbaar.
@@ -13,7 +13,7 @@ vi.mock("../../lib/supabase", async () => {
 });
 
 import ResetPassword from "./ResetPassword";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 function renderPage() {
   return render(

@@ -3,16 +3,16 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES, rpc: "m-new" }) };
 });
 
 import Matches from "./Matches";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 function renderPage() {
   return render(

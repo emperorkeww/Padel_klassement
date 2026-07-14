@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { AuthProvider } from "../features/auth/AuthProvider";
-import { ToastProvider } from "../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 import { SmoesPromptProvider } from "../features/matches/SmoesPromptProvider";
-import { watchSystemTheme } from "../lib/theme";
+import { watchSystemTheme } from "@/lib/utils/theme";
 import "./index.css";
 
 // Het inline script in index.html zette het thema al vóór de eerste paint;

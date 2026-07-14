@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 import { Availability } from "./Availability";
 import { DEFAULT_CLUB, getClub, setClub } from "./club";
 

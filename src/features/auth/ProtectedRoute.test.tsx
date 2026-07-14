@@ -4,14 +4,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { Mock } from "vitest";
 import { AuthProvider } from "./AuthProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { SESSION } = await import("../../test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION }) };
 });
 
 import { ProtectedRoute } from "./ProtectedRoute";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 function renderRoutes() {
   return render(

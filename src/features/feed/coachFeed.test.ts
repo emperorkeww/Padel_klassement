@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { coachOpmerking, coachStemming, type CoachCtx, KAMPIOEN, KAMPIOEN_NEUTRAAL } from "./coachFeed";
-import type { FeedEvent } from "../../lib/feed";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { FeedEvent } from "@/features/feed/feedLogic";
+import type { Match, Profile, Team } from "@/types";
 
 const ctx: CoachCtx = {
   intensiteitVoor: () => "gemeen",

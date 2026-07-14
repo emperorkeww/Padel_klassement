@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
@@ -10,13 +10,13 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "../standings/ratingsApi";
-import { upsetsByMatch } from "../../lib/upset";
+import { upsetsByMatch } from "@/features/matches/upset";
 import {
   getPlayerMatches,
   getTeamsMap,
   getCompletedMatchesBetween,
 } from "../matches/api";
-import { ProfileSkeleton, StatsSkeleton } from "../../components/Skeleton";
+import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import {
   recentForm,
   winRate,
@@ -25,28 +25,28 @@ import {
   biggestWin,
   headToHead,
   outcomeFor,
-} from "../../lib/results";
+} from "@/features/rating/results";
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
-import { deriveBadges } from "../../lib/badges";
-import { listSeasons, seasonFromId } from "../../lib/seasons";
-import { matchesInSeason, rankProgression, byRank } from "../../lib/standings";
-import { ShareProfile, type ProfileShareData } from "./ShareProfile";
-import { WrappedSheet } from "../wrapped/WrappedSheet";
+import { deriveBadges } from "@/features/profiles/badges";
+import { listSeasons, seasonFromId } from "@/features/rating/seasons";
+import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
+import { ShareProfile, type ProfileShareData } from "@/features/profiles/components/ShareProfile";
+import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
-import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { Sheet } from "../../components/Sheet";
-import { tierFor, tierProgress } from "../../lib/tiers";
-import { bijnaam, neutraleBijnaam } from "../../lib/nickname";
-import { roast } from "../../lib/roast";
+import { useToast } from "@/ui/ToastProvider";
+import { errorMessage } from "@/lib/utils/errors";
+import { Sheet } from "@/ui/Sheet";
+import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
+import { roast } from "@/features/profiles/roast";
 import { THIN_GAMES } from "../groups/groupRating";
-import { ProfileHero } from "./profile/ProfileHero";
-import { FriendButton } from "../friends/FriendButton";
-import { ProfileOverview } from "./profile/ProfileOverview";
-import { ProfileStats } from "./profile/ProfileStats";
-import { ProfileBadges } from "./profile/ProfileBadges";
-import { ProfileMatches } from "./profile/ProfileMatches";
-import type { ProfileData, ProfileTab, H2HRow } from "./profile/types";
+import { ProfileHero } from "@/features/profiles/components/ProfileHero";
+import { FriendButton } from "@/features/friends/components/FriendButton";
+import { ProfileOverview } from "@/features/profiles/components/ProfileOverview";
+import { ProfileStats } from "@/features/profiles/components/ProfileStats";
+import { ProfileBadges } from "@/features/profiles/components/ProfileBadges";
+import { ProfileMatches } from "@/features/profiles/components/ProfileMatches";
+import type { ProfileData, ProfileTab, H2HRow } from "@/features/profiles/components/types";
 import "./PlayerProfile.css";
 
 // Zoveel badges mag een speler maximaal uitlichten bovenaan zijn profiel.

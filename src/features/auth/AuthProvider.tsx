@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
-import { invalidateAll } from "../../lib/queryCache";
+import { getSession, onAuthStateChange, signOut } from "./api";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 type AuthContextValue = {
   session: Session | null;
@@ -30,14 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Bestaande sessie ophalen bij het laden van de app.
-    supabase.auth.getSession().then(({ data }) => {
+    getSession().then(({ data }) => {
       prevUserId.current = data.session?.user?.id ?? null;
       setSession(data.session);
       setLoading(false);
     });
 
     // Meeluisteren op login/logout/token-refresh.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+    const { data: sub } = onAuthStateChange((event, next) => {
       const nextId = next?.user?.id ?? null;
       // Querycache alleen legen bij een echte sessiewissel (uitloggen of een
       // andere gebruiker die inlogt): RLS-gefilterde data van de vorige
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     loading,
     signOut: async () => {
-      await supabase.auth.signOut();
+      await signOut();
     },
   };
 

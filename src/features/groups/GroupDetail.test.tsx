@@ -3,16 +3,24 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
-  const { TABLES, SESSION } = await import("../../test/fixtures");
-  const { dateInZone } = await import("../../lib/time");
+  const { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } = await import(
+    "../../test/fixtures"
+  );
+  const { dateInZone } = await import("@/lib/utils/time");
   // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,
   // zodat de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen
   // hebben.
   const today = dateInZone("Europe/Brussels");
+  // De Vandaag-tab toont enkel matches van vandaag (#342); dateer de
+  // fixture-matches daarom op de clubdag zodat de rondekaart ze toont.
+  const todayMatches = [
+    { ...MATCH_DONE, played_at: `${today}T18:00:00.000Z`, created_at: `${today}T18:00:00.000Z` },
+    { ...MATCH_PLANNED, created_at: `${today}T18:00:00.000Z` },
+  ];
   const tonightOption = {
     id: "opt-today",
     poll_id: "poll-1",
@@ -35,6 +43,7 @@ vi.mock("../../lib/supabase", async () => {
       session: SESSION,
       tables: {
         ...TABLES,
+        matches: todayMatches,
         play_poll_options: [...TABLES.play_poll_options, tonightOption],
         play_poll_votes: [...TABLES.play_poll_votes, ...tonightVotes],
       },
@@ -44,7 +53,7 @@ vi.mock("../../lib/supabase", async () => {
 });
 
 import GroupDetail from "./GroupDetail";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 // De suggestiekaart haalt baanbeschikbaarheid via fetch (Playtomic-proxy);
 // een leeg antwoord volstaat.
@@ -91,20 +100,22 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
-  it("toont suggesties en 'Vanavond' in plaats van de aanwezigheids-RSVP", async () => {
+  it("toont de teamgenerator op Spelen en de suggesties op Plannen", async () => {
     renderPage();
+    // Op de standaard Vandaag-tab staan sinds #342 noch de suggesties noch de
+    // teamgenerator: die zijn naar Plannen resp. Spelen verhuisd.
     expect(
-      await screen.findByRole("heading", { name: /suggesties/i }),
+      await screen.findByRole("heading", { name: /^vandaag$/i }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: /wie speelt er\?/i }),
+      screen.queryByRole("heading", { name: /suggesties/i }),
     ).not.toBeInTheDocument();
-    // Ook met een lopende poll (fixtures) blijven de suggesties staan (#267):
-    // je kunt in dezelfde week nog een speeldag plannen.
     expect(
-      screen.queryByText(/speeldag-poll actief/i),
+      screen.queryByRole("heading", { name: /maak teams/i }),
     ).not.toBeInTheDocument();
-    // Eén teamgenerator: deelnemers uit de poll van vandaag, formaatkeuze.
+
+    // Teamgenerator staat op de Spelen-tab.
+    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
@@ -119,10 +130,19 @@ describe("<GroupDetail />", () => {
     for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
       expect(screen.getByRole("button", { name: f })).toBeInTheDocument();
     }
+
+    // Op de Plannen-tab staan de suggesties nu bovenaan, boven de poll.
+    await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+    expect(
+      await screen.findByRole("heading", { name: /suggesties/i }),
+    ).toBeInTheDocument();
   });
 
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^spelen$/i }),
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
     );
@@ -142,8 +162,12 @@ describe("<GroupDetail />", () => {
 
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderPage();
+    // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Spelen.
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^mexicano$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^mexicano$/i }),
+    );
     expect(
       screen.getByRole("button", { name: /genereer mexicano-ronde/i }),
     ).toBeDisabled();
@@ -155,6 +179,7 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
+    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
       await screen.findByRole("button", { name: /^americano$/i }),
@@ -277,5 +302,30 @@ describe("<GroupDetail />", () => {
     // Optimistisch: de kaart toont direct de uitslag.
     expect(await screen.findByText("7–5")).toBeInTheDocument();
     expect(await screen.findByText("opgeslagen ✓")).toBeInTheDocument();
+  });
+
+  it("toont het dagoverzicht met telling en MVP op Vandaag (#342)", async () => {
+    renderPage();
+    // De dag-stats-kaart heeft een eigen "Vandaag"-kop met tellers.
+    expect(
+      await screen.findByRole("heading", { name: /^vandaag$/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^gespeeld$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^gepland$/i)).toBeInTheDocument();
+    expect(screen.getByText(/MVP ·/i)).toBeInTheDocument();
+  });
+
+  it("toont de gespeelde matches op de Matches-tab met filters (#342)", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /^ronde 2$/i });
+    await userEvent.click(screen.getByRole("button", { name: /^matches/i }));
+    expect(
+      await screen.findByRole("heading", { name: /gespeelde matches/i }),
+    ).toBeInTheDocument();
+    // De afgeronde match staat in de lijst met de eindscore.
+    expect(await screen.findByText("6–3")).toBeInTheDocument();
+    // Filter op Verloren: de gewonnen match (voor Alice) verdwijnt.
+    await userEvent.click(screen.getByRole("button", { name: /^verloren/i }));
+    expect(screen.queryByText("6–3")).not.toBeInTheDocument();
   });
 });

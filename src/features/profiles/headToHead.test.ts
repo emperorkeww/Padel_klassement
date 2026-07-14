@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { headToHead, bestPartner } from "./headToHead";
-import type { Match, Team } from "../../lib/types";
+import type { Match, Team } from "@/types";
 
 // Vijf spelers in wisselende duo's, zodat p1 en p2 zowel partners als
 // tegenstanders kunnen zijn — of allebei afwezig.

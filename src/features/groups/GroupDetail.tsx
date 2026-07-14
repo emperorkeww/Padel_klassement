@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { useToast } from "../../components/ToastProvider";
-import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { useToast } from "@/ui/ToastProvider";
+import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
 import {
   getGroup,
   getGroupMembers,
@@ -17,33 +17,35 @@ import {
   createGroupInvite,
 } from "./api";
 import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
-import { dateInZone } from "../../lib/time";
+import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
-import { Sparkline } from "../../components/Sparkline";
-import { Podium } from "../../components/Podium";
-import { TierBadge } from "../../components/TierBadge";
+import { Sparkline } from "@/features/rating/components/Sparkline";
+import { Podium } from "@/features/standings/components/Podium";
+import { TierBadge } from "@/features/rating/components/TierBadge";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
-import { ZwartePietCard } from "./ZwartePietCard";
+import { ZwartePietCard } from "@/features/groups/components/ZwartePietCard";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
-import { Avatar } from "../../components/Avatar";
-import { DeletableMatchCard } from "../matches/MatchList";
-import { PlannedMatchCard } from "../matches/PlannedMatchCard";
-import { RivalryCard } from "./RivalryCard";
-import { PiasCard } from "./PiasCard";
-import { buildMatchRatings } from "../../lib/maandpias";
-import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
-import { PollSection } from "./PlanPoll";
-import { SuggestionsCard } from "./SuggestionsCard";
-import { MakeTeams } from "./MakeTeams";
-import { ShareEvening } from "./ShareEvening";
-import { ShareChampion } from "../standings/ShareChampion";
-import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
-import { upsetsByMatch } from "../../lib/upset";
-import { computePredictionStandings } from "../../lib/predictions";
+import { Avatar } from "@/ui/Avatar";
+import { DeletableMatchCard } from "@/features/matches/components/MatchList";
+import { MatchHistory } from "@/features/matches/components/MatchHistory";
+import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
+import { RivalryCard } from "@/features/groups/components/RivalryCard";
+import { PiasCard } from "@/features/groups/components/PiasCard";
+import { buildMatchRatings } from "@/features/groups/maandpias";
+import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
+import { PollSection } from "@/features/groups/components/PlanPoll";
+import { SuggestionsCard } from "@/features/groups/components/SuggestionsCard";
+import { DayStats } from "@/features/groups/components/DayStats";
+import { MakeTeams } from "@/features/groups/components/MakeTeams";
+import { ShareEvening } from "@/features/groups/components/ShareEvening";
+import { ShareChampion } from "@/features/standings/components/ShareChampion";
+import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
+import { upsetsByMatch } from "@/features/matches/upset";
+import { computePredictionStandings } from "@/features/matches/predictions";
 import {
   getGroupPredictions,
   getGroupPredictionStandings,
@@ -52,17 +54,17 @@ import {
   isSeasonClosed,
   listSeasons,
   seasonFromId,
-} from "../../lib/seasons";
-import { errorMessage } from "../../lib/errors";
+} from "@/features/rating/seasons";
+import { errorMessage } from "@/lib/utils/errors";
 import type {
   Match,
   PlayerStanding,
   Profile,
   RoastIntensiteit,
-} from "../../lib/types";
+} from "@/types";
 import "./GroupDetail.css";
 
-type View = "rondes" | "plannen" | "stand" | "leden";
+type View = "rondes" | "plannen" | "spelen" | "matches" | "stand" | "leden";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -121,7 +123,11 @@ export function GroupDetail() {
   const [params, setParams] = useSearchParams();
   const rawTab = params.get("tab");
   const view: View =
-    rawTab === "stand" || rawTab === "leden" || rawTab === "plannen"
+    rawTab === "stand" ||
+    rawTab === "leden" ||
+    rawTab === "plannen" ||
+    rawTab === "spelen" ||
+    rawTab === "matches"
       ? rawTab
       : "rondes";
   const setView = (v: View) => {
@@ -265,13 +271,6 @@ export function GroupDetail() {
     }
   }
 
-  // matches per ronde (aflopend)
-  const rounds = groupByRound(matches.data ?? []);
-  // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams).
-  const openRound = rounds.find(({ list }) =>
-    list.some((m) => m.status !== "completed"),
-  );
-
   // Reis-CTA: alles van vandaag gespeeld → door naar de stand (#106).
   const club = useClub();
   const today = dateInZone(club.timezone);
@@ -281,6 +280,14 @@ export function GroupDetail() {
   const dayDone =
     todaysMatches.length > 0 &&
     todaysMatches.every((m) => m.status === "completed");
+
+  // De Vandaag-tab toont enkel de rondes van vandaag; de volledige historie
+  // staat op de Matches-tab (#342).
+  const rounds = groupByRound(todaysMatches);
+  // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams).
+  const openRound = rounds.find(({ list }) =>
+    list.some((m) => m.status !== "completed"),
+  );
 
   if (group.loading)
     return (
@@ -328,6 +335,23 @@ export function GroupDetail() {
           )}
         </button>
         <button
+          className={`tab ${view === "spelen" ? "is-active" : ""}`}
+          onClick={() => setView("spelen")}
+        >
+          Spelen
+        </button>
+        <button
+          className={`tab ${view === "matches" ? "is-active" : ""}`}
+          onClick={() => setView("matches")}
+        >
+          Matches
+          {completedMatches.length > 0 && (
+            <span className="tab__count" aria-hidden="true">
+              {completedMatches.length}
+            </span>
+          )}
+        </button>
+        <button
           className={`tab ${view === "stand" ? "is-active" : ""}`}
           onClick={() => setView("stand")}
         >
@@ -348,6 +372,15 @@ export function GroupDetail() {
 
       {view === "rondes" && (
         <>
+          {/* Dagoverzicht: telling + highlights van vandaag (#342). */}
+          <DayStats
+            matches={matches.data ?? []}
+            teams={tmap}
+            profiles={pmap}
+            histories={histories.data ?? {}}
+            zwartePiet={zwartePiet}
+            today={today}
+          />
           {/* Reis-CTA: alle uitslagen van vandaag binnen → door naar de stand. */}
           {dayDone && (
             <div className="card flow-next" role="status">
@@ -362,26 +395,13 @@ export function GroupDetail() {
               </button>
             </div>
           )}
-          <SuggestionsCard groupId={id} myId={myId} matches={matches.data ?? []} />
-          {/* Eén teamgenerator: deelnemers uit de poll van vandaag +
-              formaatkeuze (eerlijk/americano/mexicano). */}
-          <MakeTeams
-            groupId={id}
-            members={memberList}
-            profiles={pmap}
-            myId={myId}
-            matches={matches.data ?? []}
-            teams={tmap}
-            openRound={openRound ?? null}
-            onGenerated={onMatches}
-          />
         </>
       )}
 
       {view === "rondes" && (
         <section className="card">
           <div className="card__head">
-            <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+            <h2 className="card__title card__title--tight">Wedstrijden</h2>
             {/* Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat. */}
             <ShareEvening
               groupName={group.data.name}
@@ -392,43 +412,21 @@ export function GroupDetail() {
             />
           </div>
           <p className="card__subtitle">
-            De gegenereerde rondes en gelogde partijen van de groep — vul de
-            uitslagen in en de stand rekent live mee.
+            De rondes en gelogde partijen van vandaag — vul de uitslagen in en
+            de stand rekent live mee.
           </p>
 
-          <div className="group-log">
-            <p className="group-log__hint">
-              Zelf een partij gespeeld? Log 'm hier — hij telt mee in de
-              groepsstand en de avondsamenvatting.
-            </p>
-            <div className="group-log__actions">
+          {rounds.length === 0 && (
+            <div className="empty">
+              <p>Nog niets gespeeld vandaag.</p>
               <button
-                className="btn btn--sm"
-                disabled={busy}
-                onClick={() => {
-                  setLogMode("score");
-                  setLogOpen(true);
-                }}
+                type="button"
+                className="btn btn--sm btn--primary"
+                onClick={() => setView("spelen")}
               >
-                + Log match
-              </button>
-              <button
-                className="btn btn--sm"
-                disabled={busy}
-                onClick={() => {
-                  setLogMode("plan");
-                  setLogOpen(true);
-                }}
-              >
-                Plan match
+                Genereer teams of log een partij →
               </button>
             </div>
-          </div>
-
-          {rounds.length === 0 && (
-            <p className="empty">
-              Nog geen rondes — maak teams via de kaart hierboven.
-            </p>
           )}
 
           <div className="rounds">
@@ -481,6 +479,57 @@ export function GroupDetail() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {view === "spelen" && (
+        <>
+          {/* Eén teamgenerator: deelnemers uit de poll van vandaag +
+              formaatkeuze (eerlijk/americano/mexicano). */}
+          <MakeTeams
+            groupId={id}
+            members={memberList}
+            profiles={pmap}
+            myId={myId}
+            matches={matches.data ?? []}
+            teams={tmap}
+            openRound={openRound ?? null}
+            onGenerated={onMatches}
+          />
+
+          <section className="card">
+            <div className="card__head">
+              <h2 className="card__title card__title--tight">Losse partij</h2>
+            </div>
+            <div className="group-log">
+              <p className="group-log__hint">
+                Zelf een partij gespeeld of er eentje inplannen? Log 'm hier — hij
+                telt mee in de groepsstand en de avondsamenvatting.
+              </p>
+              <div className="group-log__actions">
+                <button
+                  className="btn btn--sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setLogMode("score");
+                    setLogOpen(true);
+                  }}
+                >
+                  + Log match
+                </button>
+                <button
+                  className="btn btn--sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setLogMode("plan");
+                    setLogOpen(true);
+                  }}
+                >
+                  Plan match
+                </button>
+              </div>
+            </div>
+          </section>
 
           <NewMatchSheet
             open={logOpen}
@@ -491,17 +540,43 @@ export function GroupDetail() {
             onCreated={onMatches}
             onGuestCreated={profiles.reload}
           />
-        </section>
+        </>
       )}
 
       {view === "plannen" && (
-        <PollSection
-          groupId={id}
-          groupName={group.data.name}
-          members={memberList}
+        <>
+          {/* Suggesties leiden de plan-flow in: wie kan/moet er spelen? →
+              plan de speeldag via de poll eronder (#342). */}
+          <SuggestionsCard groupId={id} myId={myId} matches={matches.data ?? []} />
+          <PollSection
+            groupId={id}
+            groupName={group.data.name}
+            members={memberList}
+            profiles={pmap}
+            myId={myId}
+            isOwner={isOwner}
+          />
+        </>
+      )}
+
+      {view === "matches" && (
+        <MatchHistory
+          title="Gespeelde matches"
+          matches={completedMatches}
+          teams={tmap}
           profiles={pmap}
           myId={myId}
-          isOwner={isOwner}
+          upsets={upsets}
+          canManage={isOwner}
+          onChanged={onMatches}
+          loading={matches.loading}
+          error={matches.error}
+          emptyAll={
+            <p className="empty">
+              Nog geen gespeelde matches in deze groep — log er een op de
+              Vandaag-tab.
+            </p>
+          }
         />
       )}
 

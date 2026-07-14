@@ -9,7 +9,7 @@ import {
   weekShareText,
 } from "./availabilityShare";
 import type { CourtRow, DayAvailability, SlotOption, WeekDay } from "./api";
-import { toMinutes } from "../../lib/time";
+import { toMinutes } from "@/lib/utils/time";
 
 // Bouwt een baanrij: { "18:00": [60, 90] } = vrij om 18:00 voor 60 én 90 min.
 function court(name: string, free: Record<string, number[]>): CourtRow {

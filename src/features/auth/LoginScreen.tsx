@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import {
+  signInWithPassword,
+  signUp,
+  resetPasswordForEmail,
+  findProfileByUsername,
+} from "./api";
 import { useAuth } from "./AuthProvider";
-import { BallIcon } from "../../components/BallIcon";
+import { BallIcon } from "@/ui/BallIcon";
 import "./LoginScreen.css";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -57,11 +62,7 @@ export function LoginScreen() {
     const seq = ++nameSeq.current;
     setNameStatus("checking");
     const t = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id")
-        .ilike("username", u)
-        .limit(1);
+      const { data, error } = await findProfileByUsername(u);
       if (seq !== nameSeq.current) return;
       if (error) return setNameStatus("idle");
       setNameStatus(data && data.length > 0 ? "taken" : "available");
@@ -83,7 +84,7 @@ export function LoginScreen() {
     }
 
     if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await signInWithPassword({
         email: cleanEmail,
         password,
       });
@@ -92,7 +93,7 @@ export function LoginScreen() {
     }
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await signUp({
         email: cleanEmail,
         password,
         options: {
@@ -107,7 +108,7 @@ export function LoginScreen() {
     }
 
     // mode === "forgot"
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+    const { error } = await resetPasswordForEmail(cleanEmail, {
       redirectTo: `${window.location.origin}/reset-wachtwoord`,
     });
     if (error) return fail(error.message);

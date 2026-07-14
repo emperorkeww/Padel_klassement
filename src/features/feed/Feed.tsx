@@ -2,17 +2,17 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { MatchListSkeleton } from "../../components/Skeleton";
-import { EmptyState } from "../../components/EmptyState";
-import { Avatar } from "../../components/Avatar";
-import { CoachAvatar, type CoachMood } from "../../components/CoachAvatar";
-import { CoachAbout } from "../../components/CoachAbout";
-import { Sheet } from "../../components/Sheet";
-import { COMMENTATOR } from "../../lib/roastTone";
-import { readFlag, writeFlag } from "../../lib/localFlag";
-import { CoachIntro } from "./CoachIntro";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { MatchListSkeleton } from "@/ui/Skeleton";
+import { EmptyState } from "@/ui/EmptyState";
+import { Avatar } from "@/ui/Avatar";
+import { CoachAvatar, type CoachMood } from "@/features/coach/components/CoachAvatar";
+import { CoachAbout } from "@/features/coach/components/CoachAbout";
+import { Sheet } from "@/ui/Sheet";
+import { COMMENTATOR } from "@/features/coach/roastTone";
+import { readFlag, writeFlag } from "@/lib/utils/localFlag";
+import { CoachIntro } from "@/features/feed/components/CoachIntro";
 import {
   buildFeed,
   feedDay,
@@ -22,12 +22,12 @@ import {
   type FeedEvent,
   type FeedPoll,
   type Highlight,
-} from "../../lib/feed";
-import { formatDate, formatRelativeDay, formatTime } from "../../lib/format";
+} from "@/features/feed/feedLogic";
+import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
 import { getMySmoesjes } from "../matches/smoesjesApi";
-import { kiesOordeel } from "../../lib/excuses";
-import { MatchCard } from "../matches/MatchList";
+import { kiesOordeel } from "@/features/matches/excuses";
+import { MatchCard } from "@/features/matches/components/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships } from "../friends/api";
 import { getMyGroups, getGroupMembers } from "../groups/api";
@@ -37,7 +37,7 @@ import { getAllRatingHistories } from "../standings/ratingsApi";
 import { getPiasWeeks } from "../standings/piasApi";
 import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
-import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
+import { eveningSummary, type EveningSummary } from "@/features/feed/eveningSummary";
 import { getZwartePiet } from "../groups/zwartePietApi";
 import type {
   GroupMember,
@@ -45,7 +45,7 @@ import type {
   Profile,
   RoastIntensiteit,
   Team,
-} from "../../lib/types";
+} from "@/types";
 import "./Feed.css";
 
 // Feed (#120, uitgebreid in #138): wat gebeurde er bij jou en je vrienden —

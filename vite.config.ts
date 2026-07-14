@@ -1,10 +1,25 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
+const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
   plugins: [react()],
+  // Path-aliases — houd in sync met tsconfig.app.json "paths" (zie docs/architecture.md §5).
+  // Langste sleutels eerst zodat "@/lib" vóór "@/" matcht.
+  resolve: {
+    alias: [
+      { find: /^@\/lib\//, replacement: r("./src/lib/") },
+      { find: /^@\/ui\//, replacement: r("./src/components/ui/") },
+      { find: /^@\/features\//, replacement: r("./src/features/") },
+      { find: /^@\/types$/, replacement: r("./src/types/index.ts") },
+      { find: /^@\/types\//, replacement: r("./src/types/") },
+      { find: /^@\//, replacement: r("./src/") },
+    ],
+  },
   server: {
     proxy: {
       // Proxy naar Playtomic zodat de browser geen CORS-blokkade krijgt.
@@ -45,7 +60,7 @@ export default defineConfig({
         "src/**/*.{test,spec}.{ts,tsx}",
         // Bootstrap en gegenereerde databanktypes: geen testbare logica.
         "src/app/main.tsx",
-        "src/lib/database.types.ts",
+        "src/lib/supabase/database.types.ts",
         "src/test/**",
       ],
       // Ondergrens: `npm run coverage` faalt als de dekking hieronder zakt.

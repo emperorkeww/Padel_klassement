@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
+import { useToast } from "@/ui/ToastProvider";
+import { errorMessage } from "@/lib/utils/errors";
 import { redeemGroupInvite } from "./api";
 
 // Wisselt een gedeelde uitnodigingslink (/groepen/join/:token) in: voegt de

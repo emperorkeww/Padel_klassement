@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAsync } from "../../lib/useAsync";
-import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
-import { Skeleton } from "../../components/Skeleton";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
+import { Skeleton } from "@/ui/Skeleton";
 import {
   fetchClub,
   getClubAvailability,
@@ -14,19 +14,19 @@ import {
   type WeekDay,
 } from "./api";
 import { getClub, setClub, useClub } from "./club";
-import { ClubPicker } from "./ClubPicker";
-import { Timetable } from "./Timetable";
-import { WeekGrid } from "./WeekGrid";
-import { ShareAvailability } from "./ShareAvailability";
+import { ClubPicker } from "@/features/availability/components/ClubPicker";
+import { Timetable } from "@/features/availability/components/Timetable";
+import { WeekGrid } from "@/features/availability/components/WeekGrid";
+import { ShareAvailability } from "@/features/availability/components/ShareAvailability";
 import { getWeekWeather } from "./weatherApi";
 import {
   summarizeDay,
   summarizeParts,
   type WeatherSummary,
 } from "./weatherLogic";
-import { WeatherDays, WeatherParts } from "./WeatherStrip";
-import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
-import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { WeatherDays, WeatherParts } from "@/features/availability/components/WeatherStrip";
+import { addDays, dateInZone, minutesNowInZone } from "@/lib/utils/time";
+import { CourtTypeIcon } from "@/features/availability/components/CourtTypeIcon";
 import "./Availability.css";
 
 function formatDay(date: string): string {

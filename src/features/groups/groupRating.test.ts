@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { groupRatingStandings, playedInGroup } from "./groupRating";
-import type { Match, PlayerRating, Team } from "../../lib/types";
+import type { Match, PlayerRating, Team } from "@/types";
 
 const rating = (id: string, r: number, games = 5): PlayerRating => ({
   player_id: id,

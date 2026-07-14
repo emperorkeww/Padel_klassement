@@ -14,6 +14,16 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path-aliases (zie docs/architecture.md §5) */
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/ui/*": ["./src/components/ui/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/types": ["./src/types/index.ts"],
+      "@/types/*": ["./src/types/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

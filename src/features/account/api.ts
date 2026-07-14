@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { invalidate } from "../../lib/queryCache";
-import type { RoastIntensiteit } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { invalidate } from "@/lib/supabase/queryCache";
+import type { RoastIntensiteit } from "@/types";
 
 /** Privacy-instellingen van het profiel (kolommen uit migratie 20260707162000,
  *  roast_schild uit 20260711202439, roast_intensiteit uit 20260712223224). */

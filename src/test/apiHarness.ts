@@ -1,7 +1,7 @@
 // Kleine, zelfstandige supabase-mock voor de api-unittests.
 //
 // Gebruik in een testbestand:
-//   vi.mock("../../lib/supabase", async () => {
+//   vi.mock("@/lib/supabase/client", async () => {
 //     const h = await import("../../test/apiHarness");
 //     return { supabase: h.build() };
 //   });

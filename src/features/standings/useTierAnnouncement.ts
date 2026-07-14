@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { useToast } from "../../components/ToastProvider";
-import { celebrate } from "../../lib/confetti";
-import { winPulse } from "../../lib/haptics";
-import { tierChange } from "../../lib/tiers";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { useToast } from "@/ui/ToastProvider";
+import { celebrate } from "@/lib/utils/confetti";
+import { winPulse } from "@/lib/utils/haptics";
+import { tierChange } from "@/features/rating/tiers";
 import { getRatingHistory } from "./ratingsApi";
 
 // Promotie/degradatie-aankondiging (#127). Client-side gedetecteerd uit de

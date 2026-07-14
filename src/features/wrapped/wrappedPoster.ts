@@ -3,7 +3,7 @@
 // zelfde flow als ShareProfile/ShareChampion. posterLayout voedt óók de
 // DOM-kaarten in WrappedSheet, zodat poster en scherm dezelfde copy delen.
 
-import { canvasPalette, wrapCentered } from "../../lib/shareImage";
+import { canvasPalette, wrapCentered } from "@/lib/utils/shareImage";
 import type { WrappedCard } from "./wrapped";
 
 export interface PosterLayout {

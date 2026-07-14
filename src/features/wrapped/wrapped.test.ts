@@ -7,7 +7,7 @@ import {
   wrappedJaar,
 } from "./wrapped";
 import type { WrappedCard } from "./wrapped";
-import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
+import type { Match, Profile, RatingPoint, Team } from "@/types";
 
 const JAAR = 2025;
 

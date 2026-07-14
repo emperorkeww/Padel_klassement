@@ -1,4 +1,4 @@
-import type { Match, PlayerRating, Team } from "../../lib/types";
+import type { Match, PlayerRating, Team } from "@/types";
 
 // Pure logica voor het rating-groepsklassement (#52): groepsleden gesorteerd
 // op hun globale Elo, met het aantal groepsmatches ernaast. Getest in

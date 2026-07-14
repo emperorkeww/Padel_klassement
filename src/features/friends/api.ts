@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
-import type { Friendship, FriendshipStatus, Profile } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
+import type { Friendship, FriendshipStatus, Profile } from "@/types";
 
 /**
  * Zoekt spelers op gebruikersnaam, maar toont alleen wie zich vindbaar heeft

@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
-import type { Match, Profile, Team } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
+import type { Match, Profile, Team } from "@/types";
 import { displayName } from "../profiles/api";
 
 // Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe

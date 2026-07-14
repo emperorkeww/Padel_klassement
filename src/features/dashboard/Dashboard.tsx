@@ -1,27 +1,20 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
-import { useToast } from "../../components/ToastProvider";
-import { Skeleton, StatsSkeleton } from "../../components/Skeleton";
-import { Avatar } from "../../components/Avatar";
-import { CoachAvatar } from "../../components/CoachAvatar";
-import { COMMENTATOR } from "../../lib/roastTone";
-import { coachBriefing } from "../../lib/coachMoments";
-import { FormChips } from "../../components/FormChips";
-import { CountUp } from "../../components/CountUp";
-import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
-import { deriveBadges, type Badge } from "../../lib/badges";
-import {
-  deriveMissions,
-  weekIndex,
-  weekRange,
-  weekStartOf,
-} from "../../lib/missions";
-import { celebrate } from "../../lib/confetti";
-import { RatingChart } from "../../components/RatingChart";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
+import { Skeleton, StatsSkeleton } from "@/ui/Skeleton";
+import { Avatar } from "@/ui/Avatar";
+import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
+import { COMMENTATOR } from "@/features/coach/roastTone";
+import { coachBriefing } from "@/features/coach/coachMoments";
+import { FormChips } from "@/features/rating/components/FormChips";
+import { CountUp } from "@/ui/CountUp";
+import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
+import { deriveBadges } from "@/features/profiles/badges";
+import { weekRange } from "@/features/dashboard/missions";
+import { RatingChart } from "@/features/rating/components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import {
   getPlayerRatings,
@@ -34,48 +27,49 @@ import {
   getTeamsMap,
   teamLabel,
 } from "../matches/api";
-import { eveningSummary } from "../../lib/eveningSummary";
-import { ShareEvening } from "../groups/ShareEvening";
-import { PiasCard } from "../groups/PiasCard";
+import { eveningSummary } from "@/features/feed/eveningSummary";
+import { ShareEvening } from "@/features/groups/components/ShareEvening";
+import { PiasCard } from "@/features/groups/components/PiasCard";
 import { getZwartePiet } from "../groups/zwartePietApi";
-import { bepaalPias } from "../../lib/maandpias";
-import { BIG_DADDY_EMOJI } from "../../lib/bigDaddy";
+import { bepaalPias } from "@/features/groups/maandpias";
+import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import { WrappedSheet } from "../wrapped/WrappedSheet";
+import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import {
   matchesInYear,
   toonWrappedBanner,
   wrappedJaar,
 } from "../wrapped/wrapped";
-import { getMyGroups, type GroupSummary } from "../groups/api";
-import {
-  getGroupPolls,
-  getGroupPollOptions,
-  getGroupPollVotes,
-  type PlayPoll,
-  type PollOption,
-  type PollVote,
-} from "../groups/pollsApi";
-import { TeamSide } from "../matches/MatchList";
-import {
-  getClubAvailability,
-  nextFreeSlot,
-  type NextFreeSlot,
-} from "../availability/api";
+import { getMyGroups } from "../groups/api";
+import { TeamSide } from "@/features/matches/components/MatchList";
+import { getClubAvailability, nextFreeSlot } from "../availability/api";
 import { useClub } from "../availability/club";
-import { dateInZone, minutesNowInZone } from "../../lib/time";
-import {
-  pushSupported,
-  enablePush,
-  getPushSubscription,
-} from "../../lib/push";
-import { errorMessage } from "../../lib/errors";
-import { TierBadge } from "../../components/TierBadge";
-import { tierFor, tierProgress } from "../../lib/tiers";
-import { byRank } from "../../lib/standings";
+import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
+import { TierBadge } from "@/features/rating/components/TierBadge";
+import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { byRank } from "@/features/rating/standings";
 import { THIN_GAMES } from "../groups/groupRating";
-import type { Match, Team } from "../../lib/types";
+import { readFlag, writeFlag } from "./flags";
+import {
+  cachedName,
+  rememberName,
+  matchWhen,
+  loadOpenPolls,
+  pickPollBanner,
+  pollDay,
+  pickRival,
+  rivalVerdict,
+  rivalVerdictLabel,
+  deriveEvening,
+} from "./dashboardHelpers";
+import { WeekMissions } from "./components/WeekMissions";
+import { HeroCrest } from "./components/HeroCrest";
+import { BadgeStrip } from "./components/BadgeStrip";
+import { OnboardStep } from "./components/OnboardStep";
+import { NextFreeLine } from "./components/NextFreeLine";
+import { PushPrompt } from "./components/PushPrompt";
+import { Stat } from "./components/Stat";
 import "./Dashboard.css";
 
 export function Dashboard() {
@@ -906,559 +900,6 @@ export function Dashboard() {
           <NextFreeLine slot={nextFree} />
         ) : null}
       </section>
-    </div>
-  );
-}
-
-/* Laatst bekende weergavenaam per gebruiker, zodat de begroeting bij een
-   volgend bezoek meteen klopt (geen flits van het e-mailadres). */
-function cachedName(userId: string): string | null {
-  try {
-    return localStorage.getItem(`display-name:${userId}`);
-  } catch {
-    return null;
-  }
-}
-
-function rememberName(userId: string, name: string) {
-  try {
-    localStorage.setItem(`display-name:${userId}`, name);
-  } catch {
-    /* opslag niet beschikbaar (privémodus) — geen probleem */
-  }
-}
-
-/** Korte "wanneer"-regel voor de compacte volgende-match op het overzicht:
- *  datum + tijd als die gepland is, anders de ronde; met de groepsnaam erbij. */
-function matchWhen(m: Match, groupName?: string | null): string {
-  const parts: string[] = [];
-  if (m.played_at) {
-    const d = new Date(m.played_at);
-    const dag = new Intl.DateTimeFormat("nl-BE", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    }).format(d);
-    const tijd = new Intl.DateTimeFormat("nl-BE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-    parts.push(`${dag} · ${tijd}`);
-  } else if (m.round_number != null) {
-    parts.push(`ronde ${m.round_number} · gepland`);
-  } else {
-    parts.push("gepland");
-  }
-  if (groupName) parts.push(groupName);
-  return parts.join(" · ");
-}
-
-/* ---------- Weekmissies (#118): kleine, verversende doelen per week ---------- */
-function WeekMissions({
-  matches,
-  teams,
-  myId,
-}: {
-  matches: Match[];
-  teams: Record<string, Team>;
-  myId: string;
-}) {
-  const nu = new Date();
-  const weekIdx = weekIndex(nu);
-  const missies = deriveMissions(matches, teams, myId, nu);
-  const allesBehaald = missies.every((m) => m.behaald);
-
-  const start = weekStartOf(nu);
-  const eind = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 12);
-  const fmt = new Intl.DateTimeFormat("nl-BE", { day: "numeric", month: "short" });
-
-  // Vier elke missie hoogstens één keer: flag per week + missie, zodat de
-  // teller elke maandag vanzelf reset. Eén confettisalvo per pass, ook als
-  // meerdere missies tegelijk binnenkomen (bv. na een realtime refresh).
-  const seintje = missies.map((m) => `${m.id}:${m.behaald}`).join(",");
-  useEffect(() => {
-    let vier = false;
-    for (const m of missies) {
-      if (!m.behaald) continue;
-      const key = `missie-gevierd:${weekIdx}:${m.id}`;
-      if (!readFlag(key)) {
-        writeFlag(key);
-        vier = true;
-      }
-    }
-    if (allesBehaald) {
-      const key = `perfecte-week-gevierd:${weekIdx}`;
-      if (!readFlag(key)) {
-        writeFlag(key);
-        vier = true;
-      }
-    }
-    if (vier) celebrate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seintje]);
-
-  return (
-    <section className="card week-missions" aria-label="Weekmissies">
-      <div className="card__head">
-        <h2 className="card__title">Weekmissies</h2>
-        <span className="week-missions__range">
-          {fmt.format(start)} – {fmt.format(eind)}
-        </span>
-      </div>
-      <ul className="missions">
-        {missies.map((m) => (
-          <li
-            key={m.id}
-            className={`missions__item ${m.behaald ? "is-done" : ""}`}
-          >
-            <span className="missions__emoji" aria-hidden="true">
-              {m.emoji}
-            </span>
-            <span className="missions__body">
-              <span className="missions__name">{m.naam}</span>
-              <span className="missions__hint">{m.omschrijving}</span>
-            </span>
-            {m.behaald ? (
-              <span className="missions__check" aria-label="behaald">
-                ✓
-              </span>
-            ) : (
-              <span className="missions__count">
-                {m.voortgang.nu}/{m.voortgang.doel}
-              </span>
-            )}
-            <span
-              className="missions__bar"
-              role="progressbar"
-              aria-label={m.naam}
-              aria-valuenow={m.voortgang.nu}
-              aria-valuemin={0}
-              aria-valuemax={m.voortgang.doel}
-            >
-              <span
-                className="missions__fill"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.round((m.voortgang.nu / m.voortgang.doel) * 100),
-                  )}%`,
-                }}
-              />
-            </span>
-          </li>
-        ))}
-      </ul>
-      {allesBehaald && (
-        <p className="missions__perfect">
-          🎉 Perfecte week! Dit telt mee voor de Weekheld-badge.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function readFlag(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeFlag(key: string) {
-  try {
-    localStorage.setItem(key, "1");
-  } catch {
-    /* privémodus — dan geldt de keuze alleen voor deze sessie */
-  }
-}
-
-/** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
-async function loadOpenPolls(
-  groups: GroupSummary[],
-): Promise<
-  { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
-> {
-  if (groups.length === 0) return [];
-  return Promise.all(
-    groups.map(async (group) => {
-      const [polls, options, votes] = await Promise.all([
-        getGroupPolls(group.id),
-        getGroupPollOptions(group.id),
-        getGroupPollVotes(group.id),
-      ]);
-      return { group, polls, options, votes };
-    }),
-  );
-}
-
-type PollPick =
-  | {
-      kind: "open";
-      group: GroupSummary;
-      optionCount: number;
-      voterCount: number;
-      iVoted: boolean;
-    }
-  | {
-      kind: "fixed";
-      group: GroupSummary;
-      booked: boolean;
-      date: string;
-      startTime: string;
-    };
-
-/** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
-function pollDay(date: string): string {
-  return new Intl.DateTimeFormat("nl-BE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00`));
-}
-
-/**
- * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
- * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
- */
-function pickPollBanner(
-  rows: {
-    group: GroupSummary;
-    polls: PlayPoll[];
-    options: PollOption[];
-    votes: PollVote[];
-  }[],
-  myId: string,
-  today: string,
-): PollPick | null {
-  for (const { group, polls, options, votes } of rows) {
-    const open = polls.find((p) => p.status === "open");
-    if (open) {
-      const optionIds = new Set(
-        options.filter((o) => o.poll_id === open.id).map((o) => o.id),
-      );
-      const pollVotes = votes.filter((v) => optionIds.has(v.option_id));
-      return {
-        kind: "open",
-        group,
-        optionCount: optionIds.size,
-        voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
-        iVoted: pollVotes.some((v) => v.player_id === myId),
-      };
-    }
-    const fixed = polls.find(
-      (p) =>
-        (p.status === "locked" || p.status === "booked") && p.locked_option_id,
-    );
-    if (fixed) {
-      const opt = options.find((o) => o.id === fixed.locked_option_id);
-      if (opt && opt.date >= today) {
-        return {
-          kind: "fixed",
-          group,
-          booked: fixed.status === "booked",
-          date: opt.date,
-          startTime: opt.start_time,
-        };
-      }
-    }
-  }
-  return null;
-}
-
-type RivalRec = { won: number; drawn: number; lost: number; played: number };
-
-/** Tegenstander met de meeste onderlinge duels (min. 3), of null. */
-function pickRival(
-  matches: Match[],
-  teams: Record<string, Team>,
-  myId: string,
-): { oppId: string; rec: RivalRec } | null {
-  let best: { oppId: string; rec: RivalRec } | null = null;
-  for (const [oppId, rec] of headToHead(matches, teams, myId)) {
-    if (rec.played < 3) continue;
-    if (!best || rec.played > best.rec.played) best = { oppId, rec };
-  }
-  return best;
-}
-
-function rivalVerdict(rec: RivalRec): "lead" | "trail" | "even" {
-  if (rec.won > rec.lost) return "lead";
-  if (rec.won < rec.lost) return "trail";
-  return "even";
-}
-
-function rivalVerdictLabel(rec: RivalRec): string {
-  const v = rivalVerdict(rec);
-  return v === "lead" ? "jij domineert" : v === "trail" ? "heeft jou liggen" : "onbeslist 🥊";
-}
-
-/** Uitslagen van de laatste speeldag als die vandaag of gisteren was. */
-function deriveEvening(
-  completed: Match[],
-  timezone: string,
-): { groupId: string; count: number; isToday: boolean; day: string } | null {
-  const withGroup = completed.filter((m) => m.group_id);
-  if (withGroup.length === 0) return null;
-  const day = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
-  const latest = withGroup.map(day).sort().at(-1)!;
-  const todayStr = dateInZone(timezone);
-  const yesterdayStr = dateInZone(timezone, -1);
-  if (latest !== todayStr && latest !== yesterdayStr) return null;
-
-  const dayMatches = withGroup.filter((m) => day(m) === latest);
-  const perGroup = new Map<string, number>();
-  for (const m of dayMatches) {
-    perGroup.set(m.group_id!, (perGroup.get(m.group_id!) ?? 0) + 1);
-  }
-  const [groupId, count] = [...perGroup.entries()].sort((a, b) => b[1] - a[1])[0];
-  return { groupId, count, isToday: latest === todayStr, day: latest };
-}
-
-/** Behaalde badges als emoji-rij in de hero. Tikken (of hoveren/focussen)
- *  toont de naam + uitleg in één gedeelde tooltip die links van de rij is
- *  verankerd, zodat de `overflow: hidden` van de hero hem niet afknipt.
- *  De badges zelf navigeren bewust niet (op touch bestaat hover niet, dus
- *  een tik moet de uitleg tonen); de collectie zit achter de pijl-link. */
-/** Titel-crest in de hero (#287, herzien #317): een leesbaar chip met emoji +
- *  label, plus een tooltip met de langere uitleg. De tooltip verschijnt op hover
- *  (desktop) én op focus, dus een tik op mobiel onthult 'm ook. `aria-label` bevat
- *  de volledige uitleg voor schermlezers. */
-function HeroCrest({
-  variant,
-  emoji,
-  label,
-  uitleg,
-}: {
-  variant: "bigdaddy" | "piet" | "pias";
-  emoji: string;
-  label: string;
-  uitleg: string;
-}) {
-  return (
-    <button
-      type="button"
-      className={`hero-crest hero-crest--${variant}`}
-      aria-label={`${label}: ${uitleg}`}
-    >
-      <span className="hero-crest__icon" aria-hidden="true">
-        {emoji}
-      </span>
-      <span className="hero-crest__label">{label}</span>
-      <span className="hero-crest__tip" role="tooltip" aria-hidden="true">
-        <span className="hero-crest__tip-label">{label}</span>
-        <span className="hero-crest__tip-text">{uitleg}</span>
-      </span>
-    </button>
-  );
-}
-
-function BadgeStrip({ badges, to }: { badges: Badge[]; to: string }) {
-  const [active, setActive] = useState<Badge | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const shown = badges.slice(0, 6);
-  const rest = badges.length - shown.length;
-  const clear = (b: Badge) => setActive((cur) => (cur === b ? null : cur));
-
-  // Tik buiten de rij sluit de tooltip (touch kent geen mouseleave).
-  useEffect(() => {
-    if (!active) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setActive(null);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [active]);
-
-  return (
-    <div
-      ref={wrapRef}
-      className="hero__badges-wrap"
-      onMouseLeave={() => setActive(null)}
-    >
-      <div
-        className="hero__badges"
-        role="group"
-        aria-label={`Behaalde badges: ${badges.map((b) => b.naam).join(", ")}`}
-      >
-        {shown.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            className={`hero__badge ${active === b ? "is-active" : ""}`}
-            onClick={() => setActive((cur) => (cur === b ? null : b))}
-            onMouseEnter={() => setActive(b)}
-            onFocus={() => setActive(b)}
-            onBlur={() => clear(b)}
-            aria-label={`${b.naam}: ${b.omschrijving}`}
-            aria-expanded={active === b}
-          >
-            {b.emoji}
-          </button>
-        ))}
-        <Link
-          className="hero__badges-more"
-          to={to}
-          aria-label="Alle badges bekijken"
-        >
-          {rest > 0 ? `+${rest}` : "→"}
-        </Link>
-      </div>
-      {active && (
-        <span className="hero__badge-tip" role="tooltip">
-          <span className="hero__badge-tip-name">
-            {active.emoji} {active.naam}
-          </span>
-          <span className="hero__badge-tip-desc">{active.omschrijving}</span>
-        </span>
-      )}
-    </div>
-  );
-}
-
-function OnboardStep({
-  done,
-  to,
-  label,
-  hint,
-}: {
-  done: boolean;
-  to: string;
-  label: string;
-  hint: string;
-}) {
-  return (
-    <li className={`onboard__item ${done ? "is-done" : ""}`}>
-      <span className="onboard__check" aria-hidden="true">
-        {done ? "✓" : ""}
-      </span>
-      <span className="onboard__text">
-        <span className="onboard__label">{label}</span>
-        <span className="onboard__hint">{hint}</span>
-      </span>
-      {!done && (
-        <Link className="btn btn--sm" to={to}>
-          Start
-        </Link>
-      )}
-    </li>
-  );
-}
-
-function NextFreeLine({ slot }: { slot: NextFreeSlot | null }) {
-  if (!slot) return <p className="avail-next">Vandaag niets meer vrij.</p>;
-  const extra = slot.courts.length - 1;
-  return (
-    <p className="avail-next">
-      Eerstvolgend vrij:{" "}
-      <strong className="avail-next__time">{slot.time}</strong> ·{" "}
-      {slot.courts[0].name}
-      {extra > 0 &&
-        ` (+${extra} ${extra === 1 ? "andere baan" : "andere banen"})`}
-    </p>
-  );
-}
-
-/** Eenmalige, wegklikbare uitnodiging om pushmeldingen aan te zetten. Toont
- *  niets als push niet ondersteund wordt, al aan staat, of eerder geweigerd/
- *  weggeklikt is. */
-function PushPrompt({ userId }: { userId: string }) {
-  const toast = useToast();
-  const supported = pushSupported();
-  const [dismissed, setDismissed] = useState(() => readFlag("push-prompt-dismissed"));
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-  // null = nog aan het controleren; false = geen abonnement; true = al aan.
-  const [alreadyOn, setAlreadyOn] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!supported) return;
-    getPushSubscription()
-      .then((sub) => setAlreadyOn(!!sub))
-      .catch(() => setAlreadyOn(false));
-  }, [supported]);
-
-  const permission =
-    supported && typeof Notification !== "undefined"
-      ? Notification.permission
-      : "denied";
-
-  if (
-    !supported ||
-    dismissed ||
-    done ||
-    alreadyOn !== false ||
-    permission !== "default"
-  ) {
-    return null;
-  }
-
-  async function enable() {
-    setBusy(true);
-    try {
-      await enablePush(userId);
-      toast.success("Meldingen staan aan — vamos!");
-      setDone(true);
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function dismiss() {
-    setDismissed(true);
-    writeFlag("push-prompt-dismissed");
-  }
-
-  return (
-    <section className="card push-prompt">
-      <div className="push-prompt__body">
-        <span className="push-prompt__icon" aria-hidden="true">
-          🔔
-        </span>
-        <div>
-          <h2 className="card__title card__title--tight">Mis niks</h2>
-          <p className="card__subtitle push-prompt__sub">
-            Krijg een seintje bij nieuwe rondes, uitslagen van jouw matches en
-            vriendschapsverzoeken — ook als de app dicht is.
-          </p>
-        </div>
-      </div>
-      <div className="push-prompt__actions">
-        <button
-          className="btn btn--primary btn--sm"
-          onClick={enable}
-          disabled={busy}
-        >
-          {busy ? "Aanzetten…" : "Meldingen aanzetten"}
-        </button>
-        <button className="btn btn--sm" onClick={dismiss}>
-          Niet nu
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  accent,
-  delta,
-}: {
-  label: string;
-  value: number | string;
-  accent?: boolean;
-  delta?: ReactNode;
-}) {
-  return (
-    <div className={`stat ${accent ? "stat--accent" : ""}`}>
-      <span className="stat__value">
-        {typeof value === "number" ? <CountUp value={value} /> : value}
-        {delta}
-      </span>
-      <span className="stat__label">{label}</span>
     </div>
   );
 }
