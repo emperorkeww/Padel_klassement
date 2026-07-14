@@ -110,44 +110,44 @@ scripts/
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`profiles`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/01_profiles.sql) | Gebruikersprofiel, 1-op-1 gekoppeld aan `auth.users` via een trigger. |
-| [`teams`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/02_teams.sql) | Uniek paar van twee spelers (onafhankelijk van speler-volgorde). |
-| [`matches`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/05_matches.sql) | Wedstrijd tussen twee teams inclusief status en uiteindelijke winnaar. |
-| [`match_points`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/06_match_points.sql) | Punt-voor-punt scoreverloop van een wedstrijd (bron van waarheid voor de stand). |
+| [`profiles`](supabase/schemas/tables/01_profiles.sql) | Gebruikersprofiel, 1-op-1 gekoppeld aan `auth.users` via een trigger. |
+| [`teams`](supabase/schemas/tables/02_teams.sql) | Uniek paar van twee spelers (onafhankelijk van speler-volgorde). |
+| [`matches`](supabase/schemas/tables/05_matches.sql) | Wedstrijd tussen twee teams inclusief status en uiteindelijke winnaar. |
+| [`match_points`](supabase/schemas/tables/06_match_points.sql) | Punt-voor-punt scoreverloop van een wedstrijd (bron van waarheid voor de stand). |
 
 ### Groepen & Sociaal
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`groups`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/03_groups.sql) | Speelgroep met eigen instellingen (bijv. roast-intensiteit). |
-| [`group_members`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/04_group_members.sql) | Lidmaatschappen van een groep (rollen: eigenaar of lid). |
-| [`group_invites`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/11_group_invites.sql) | Uitnodigingstokens om lid te worden van een groep. |
-| [`friendships`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/07_friendships.sql) | Vriendschappen en openstaande vriendschapsverzoeken. |
+| [`groups`](supabase/schemas/tables/03_groups.sql) | Speelgroep met eigen instellingen (bijv. roast-intensiteit). |
+| [`group_members`](supabase/schemas/tables/04_group_members.sql) | Lidmaatschappen van een groep (rollen: eigenaar of lid). |
+| [`group_invites`](supabase/schemas/tables/11_group_invites.sql) | Uitnodigingstokens om lid te worden van een groep. |
+| [`friendships`](supabase/schemas/tables/07_friendships.sql) | Vriendschappen en openstaande vriendschapsverzoeken. |
 
 ### Elo & Ratings
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`player_ratings`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/08_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
+| [`player_ratings`](supabase/schemas/tables/08_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
 
 ### Plannen & Aanwezigheid
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`attendance`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/09_attendance.sql) | Aanwezigheid en beschikbaarheid van spelers voor specifieke speeldagen. |
-| [`slot_availability`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/12_slot_availability.sql) | Gecachte baanbeschikbaarheid en tarieven vanuit Playtomic. |
-| [`play_polls`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/13_play_polls.sql) / `_options` / `_votes` | Tabellen voor het aanmaken van, en stemmen op speeldag-polls. |
-| [`match_reminders`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/12_match_reminders.sql) | Registratie van verzonden herinneringen ter voorkoming van dubbele pushberichten. |
+| [`attendance`](supabase/schemas/tables/09_attendance.sql) | Aanwezigheid en beschikbaarheid van spelers voor specifieke speeldagen. |
+| [`slot_availability`](supabase/schemas/tables/12_slot_availability.sql) | Gecachte baanbeschikbaarheid en tarieven vanuit Playtomic. |
+| [`play_polls`](supabase/schemas/tables/13_play_polls.sql) / `_options` / `_votes` | Tabellen voor het aanmaken van, en stemmen op speeldag-polls. |
+| [`match_reminders`](supabase/schemas/tables/12_match_reminders.sql) | Registratie van verzonden herinneringen ter voorkoming van dubbele pushberichten. |
 
 ### Notificaties & Extra's
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`push_subscriptions`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/10_push_subscriptions.sql) | Web-push abonnementen per apparaat voor pushnotificaties. |
-| [`match_predictions`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/14_match_predictions.sql) | Toto-voorspellingen van gebruikers op geplande wedstrijden. |
-| [`pias_of_week`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/15_pias_of_week.sql) | De gekozen *"Pias van de week"* (minst presterende speler) per groep. |
-| [`zwarte_piet`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/16_zwarte_piet.sql) | Het actieve *"Zwarte Piet"* schande-token binnen een groep. |
-| [`match_smoesjes`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/17_match_smoesjes.sql) | Uitvluchten en excuses ingediend door spelers na verliespartijen. |
+| [`push_subscriptions`](supabase/schemas/tables/10_push_subscriptions.sql) | Web-push abonnementen per apparaat voor pushnotificaties. |
+| [`match_predictions`](supabase/schemas/tables/14_match_predictions.sql) | Toto-voorspellingen van gebruikers op geplande wedstrijden. |
+| [`pias_of_week`](supabase/schemas/tables/15_pias_of_week.sql) | De gekozen *"Pias van de week"* (minst presterende speler) per groep. |
+| [`zwarte_piet`](supabase/schemas/tables/16_zwarte_piet.sql) | Het actieve *"Zwarte Piet"* schande-token binnen een groep. |
+| [`match_smoesjes`](supabase/schemas/tables/17_match_smoesjes.sql) | Uitvluchten en excuses ingediend door spelers na verliespartijen. |
 
 > [!NOTE]
 > **Beveiliging:** Alle tabellen zijn beveiligd met Row Level Security (RLS). Gegevens zijn doorgaans publiek leesbaar, maar schrijfacties zijn strikt beperkt tot geautoriseerde spelers, groepsleden of de eigenaar van het object.
@@ -272,11 +272,11 @@ De applicatie wordt gehost als een **Cloudflare Worker** middels Wrangler. De Wo
 1.  Het serveren van de static React frontend assets met Single Page Application (SPA) routing fallback.
 2.  Het proxyen van `/api/playtomic/*` verzoeken naar de Playtomic API (ter voorkoming van CORS-problemen in de browser).
 
-De configuratie is vastgelegd in [`wrangler.jsonc`](file:///Users/remcomarien/Documents/Padel/wrangler.jsonc), inclusief een **rate limiter** op de Playtomic-proxy (maximaal 20 verzoeken per 10 seconden per IP-adres).
+De configuratie is vastgelegd in [`wrangler.jsonc`](wrangler.jsonc), inclusief een **rate limiter** op de Playtomic-proxy (maximaal 20 verzoeken per 10 seconden per IP-adres).
 
 ### CI/CD Pipeline
 
-De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](file:///Users/remcomarien/Documents/Padel/.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
+De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
 
 Hiervoor dienen de volgende secrets in de GitHub Repository geconfigureerd te zijn:
 *   `VITE_SUPABASE_URL`
@@ -296,7 +296,7 @@ npx wrangler deploy
 
 ## 🧪 Continuous Integration (CI)
 
-Bij elke Pull Request naar `develop` of `main` voert de CI pipeline ([`ci.yml`](file:///Users/remcomarien/Documents/Padel/.github/workflows/ci.yml)) automatisch de volgende validaties uit:
+Bij elke Pull Request naar `develop` of `main` voert de CI pipeline ([`ci.yml`](.github/workflows/ci.yml)) automatisch de volgende validaties uit:
 1.  **Linting:** ESLint controles.
 2.  **Type-checking:** Valideren van de TypeScript compiler.
 3.  **Frontend Unit & Integration Tests:** Vitest test suite.
@@ -315,4 +315,4 @@ Het project hanteert een gestructureerde branching-strategie:
 1.  Nieuwe features worden als PR aangeboden op `develop`.
 2.  Gebruik de issue-koppelingen correct:
     *   Vermeld `Refs #<issue-nummer>` in feature PR's naar `develop`.
-    *   Vermeld `Closes #<issue-nummer>` **uitsluitend** in de uiteindelijke Release-PR (`develop` ➔ `main`). Dit voorkomt dat issues vroegtijdig automatisch gesloten worden voordat de code daadwerkelijk live staat. Zie ook het [`PULL_REQUEST_TEMPLATE.md`](file:///Users/remcomarien/Documents/Padel/.github/PULL_REQUEST_TEMPLATE.md).
+    *   Vermeld `Closes #<issue-nummer>` **uitsluitend** in de uiteindelijke Release-PR (`develop` ➔ `main`). Dit voorkomt dat issues vroegtijdig automatisch gesloten worden voordat de code daadwerkelijk live staat. Zie ook het [`PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
