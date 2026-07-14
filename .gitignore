@@ -35,3 +35,7 @@ supabase/.temp/
 
 # Claude Code lokale sessie-bestanden en worktrees
 .claude/
+
+# Tijdelijke scratch-bestanden en artifacts
+scratch-artifacts/
+
