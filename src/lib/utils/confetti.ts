@@ -1,6 +1,6 @@
 // Korte confetti-burst bij een gewonnen match — canvas-overlay, geen
 // dependency. Kleuren uit de huisstijl; respecteert prefers-reduced-motion.
-import { prefersReducedMotion } from "./motion";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 
 // Vaste, felle huisstijlkleuren (het lichte palet). Bewust NIET de live
 // CSS-tokens: in dark mode zijn die gedempt en valt confetti weg tegen de

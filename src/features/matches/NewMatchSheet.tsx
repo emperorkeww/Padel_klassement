@@ -4,10 +4,10 @@ import { Sheet } from "../../components/Sheet";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
-import { errorMessage } from "../../lib/errors";
+import { errorMessage } from "@/lib/utils/errors";
 import { coachMatchQuip } from "../../lib/coachMoments";
-import { celebrate } from "../../lib/confetti";
-import { tap, winPulse } from "../../lib/haptics";
+import { celebrate } from "@/lib/utils/confetti";
+import { tap, winPulse } from "@/lib/utils/haptics";
 import { displayName } from "../profiles/api";
 import {
   createCompletedMatch,
@@ -19,7 +19,7 @@ import {
 } from "./api";
 import { SetScoresInput } from "./SetScoresInput";
 import { useSmoesPrompt } from "./SmoesPromptProvider";
-import type { Profile, RoastIntensiteit } from "../../lib/types";
+import type { Profile, RoastIntensiteit } from "@/types";
 
 export type NewMatchMode = "score" | "plan";
 

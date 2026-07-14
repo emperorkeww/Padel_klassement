@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useRefetchOnFocus } from "./useRefetchOnFocus";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 
 afterEach(() => {
   vi.useRealTimers();

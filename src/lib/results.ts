@@ -2,7 +2,7 @@
 // win/verlies/gelijk, recente vorm en winstreeks. Alles wordt client-side
 // berekend uit de al geladen matches + teams (geen extra views nodig).
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 export type Outcome = "W" | "D" | "L";
 

@@ -7,7 +7,7 @@ import {
   rankProgression,
 } from "./standings";
 import { seasonFromId } from "./seasons";
-import type { Match, Profile, Team } from "./types";
+import type { Match, Profile, Team } from "@/types";
 
 const NOW = "2026-05-10T10:00:00.000Z";
 

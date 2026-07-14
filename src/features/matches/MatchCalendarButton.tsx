@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { tap } from "../../lib/haptics";
+import { tap } from "@/lib/utils/haptics";
 import {
   downloadIcs,
   icsEvent,
@@ -7,9 +7,9 @@ import {
   localTime,
   MATCH_DURATIONS,
   type MatchDuration,
-} from "../../lib/ics";
+} from "@/lib/utils/ics";
 import { useClub } from "../availability/club";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, Team } from "@/types";
 import { teamLabel } from "./api";
 import "./MatchCalendarButton.css";
 

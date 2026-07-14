@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
-import { useFlip } from "../../lib/useFlip";
+import { useFlip } from "@/lib/hooks/useFlip";
 import { recentForm, winRate, type Outcome } from "../../lib/results";
 import { isSeasonClosed, listSeasons, seasonFromId } from "../../lib/seasons";
 import {
@@ -50,7 +50,7 @@ import {
 import { getProfilesMap, displayName } from "../profiles/api";
 import { searchDiscoverableProfiles } from "../friends/api";
 import { ShareChampion } from "./ShareChampion";
-import type { Match, Profile, RatingPoint } from "../../lib/types";
+import type { Match, Profile, RatingPoint } from "@/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies";

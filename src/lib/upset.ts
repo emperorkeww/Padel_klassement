@@ -3,7 +3,7 @@
 // een uitslag een verrassing is. Eén plek voor de drempel en de pure math,
 // gedeeld door de feed, de matchkaarten/-detail en de avondsamenvatting.
 
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 import { expected } from "./elo";
 
 /** Winkans-grens: won een team met minder kans dan dit, dan is het een upset. */

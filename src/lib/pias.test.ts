@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { currentPias, isoParts, pickPias, type PiasWeek } from "./pias";
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 const team = (id: string, p1: string, p2: string): Team =>
   ({ id, name: null, player1_id: p1, player2_id: p2, created_at: "" }) as Team;

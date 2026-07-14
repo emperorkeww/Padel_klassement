@@ -4,7 +4,7 @@
 // computePredictionStandings spiegelt de view group_prediction_standings,
 // voor de seizoensstand die uit een gefilterde lijst berekend wordt.
 
-import type { Profile } from "./types";
+import type { Profile } from "@/types";
 
 export interface MatchPrediction {
   match_id: string;

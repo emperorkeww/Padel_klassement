@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { dateInZone } from "../../lib/time";
+import { errorMessage } from "@/lib/utils/errors";
+import { dateInZone } from "@/lib/utils/time";
 import { getWeekAvailability, type WeekDay } from "../availability/api";
 import { weekHeatmap } from "../availability/availabilityShare";
 import { useClub } from "../availability/club";
@@ -20,7 +20,7 @@ import {
   type CanSignal,
   type Suggestion,
 } from "./suggestionLogic";
-import type { Match } from "../../lib/types";
+import type { Match } from "@/types";
 import "./Proposals.css";
 
 // Suggestiekaart: stelt de beste speelmomenten van de komende week voor op

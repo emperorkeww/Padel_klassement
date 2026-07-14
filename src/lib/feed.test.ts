@@ -17,7 +17,7 @@ import type {
   Profile,
   RatingPoint,
   Team,
-} from "./types";
+} from "@/types";
 
 const TEAMS: Record<string, Team> = {
   "t-ab": { id: "t-ab", player1_id: "p1", player2_id: "p2" } as Team,

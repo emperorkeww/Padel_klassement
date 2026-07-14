@@ -5,7 +5,7 @@
 // zijn roast-schild aan, dan komt het feit ongekleurd terug — plagen, geen
 // kwetsen, en wie niet mee wil hoeft niet. Puur en getest in roastTone.test.ts.
 
-import type { Group, Profile, RoastIntensiteit } from "./types";
+import type { Group, Profile, RoastIntensiteit } from "@/types";
 
 export type { RoastIntensiteit };
 

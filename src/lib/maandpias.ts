@@ -8,7 +8,7 @@
 // dashboard voedt. Geen echte afgang boven de drempel → null, net zoals
 // RivalryCard niets rendert zonder rivaliteit.
 
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 import { inTeam, outcomeFor } from "./results";
 import { expected } from "./elo";
 import { matchDate } from "./missions";

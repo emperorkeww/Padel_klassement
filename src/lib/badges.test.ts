@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { deriveBadges, REUZENDODER_DREMPEL } from "./badges";
 import type { Badge } from "./badges";
-import type { Match, PlayerRating, Team } from "./types";
+import type { Match, PlayerRating, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
 const teams: Record<string, Team> = {

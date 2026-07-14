@@ -11,7 +11,7 @@ import type {
   Profile,
   Team,
   TeamStanding,
-} from "./types";
+} from "@/types";
 
 type Line = {
   played: number;

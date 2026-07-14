@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { bijnaam } from "./nickname";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 const teams: Record<string, Team> = {
   tA: { id: "tA", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },

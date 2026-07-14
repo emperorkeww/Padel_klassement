@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sum, greeting } from "./utils";
+import { sum, greeting } from "@/lib/utils/utils";
 
 describe("sum", () => {
   it("telt getallen op", () => {

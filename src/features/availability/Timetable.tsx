@@ -10,17 +10,17 @@ import {
 } from "./api";
 import { getClub } from "./club";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { shareOrCopyText } from "../../lib/shareText";
+import { errorMessage } from "@/lib/utils/errors";
+import { shareOrCopyText } from "@/lib/utils/shareText";
 import {
   buildTimeAxis,
   dateInZone,
   fromMinutes,
   minutesNowInZone,
   toMinutes,
-} from "../../lib/time";
+} from "@/lib/utils/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
-import { courtTypeLabel } from "../../lib/format";
+import { courtTypeLabel } from "@/lib/utils/format";
 import "./Availability.css";
 
 type Tip = { x: number; y: number; text: string };

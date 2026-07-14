@@ -5,7 +5,7 @@
 // Bewust in features/wrapped/ i.p.v. lib/: we leunen op bestPartner uit
 // features/profiles/headToHead.ts en lib importeert nergens uit features.
 
-import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
+import type { Match, Profile, RatingPoint, Team } from "@/types";
 import { matchDate } from "../../lib/missions";
 import {
   biggestWin,

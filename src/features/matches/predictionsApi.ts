@@ -1,5 +1,5 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { MatchPrediction, PredictionStanding } from "../../lib/predictions";
 
 // Toto (#116): tips op geplande groepsmatches. Losse typering (tabel-shim)

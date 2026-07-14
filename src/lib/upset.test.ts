@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { matchUpset, preMatchPoints, upsetsByMatch } from "./upset";
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 const NOW = "2026-07-10T18:00:00.000Z";
 

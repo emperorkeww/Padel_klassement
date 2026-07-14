@@ -12,10 +12,10 @@
 import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { CoachBubble } from "../../components/CoachBubble";
-import { useAsync } from "../../lib/useAsync";
-import { errorMessage } from "../../lib/errors";
-import { tap } from "../../lib/haptics";
-import { shareOrCopyText } from "../../lib/shareText";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { errorMessage } from "@/lib/utils/errors";
+import { tap } from "@/lib/utils/haptics";
+import { shareOrCopyText } from "@/lib/utils/shareText";
 import { hashString, kiesSmoes, kiesOordeel } from "../../lib/excuses";
 import { COMMENTATOR, type RoastCtx } from "../../lib/roastTone";
 import {

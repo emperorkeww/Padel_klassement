@@ -6,7 +6,7 @@
 // die herhaling minimaliseert. Alles is puur en deterministisch te testen door
 // een eigen rng mee te geven.
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 export interface AmericanoCourt {
   teamA: [string, string];

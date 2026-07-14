@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "./trends";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 // p1 speelt met p2 (team t-a) tegen p3+p4 (team t-b).
 const TEAMS: Record<string, Team> = {

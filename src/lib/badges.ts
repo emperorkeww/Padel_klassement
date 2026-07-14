@@ -2,7 +2,7 @@
 // Geen extra tabellen of queries: alles wordt client-side berekend, net zoals
 // de helpers in results.ts.
 
-import type { Match, PlayerRating, Team } from "./types";
+import type { Match, PlayerRating, Team } from "@/types";
 import {
   inTeam,
   longestLossStreak,

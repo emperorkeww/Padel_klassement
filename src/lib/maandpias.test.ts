@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { bepaalPias, AFDROGING_DREMPEL, type MatchRatings } from "./maandpias";
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
 const teams: Record<string, Team> = {

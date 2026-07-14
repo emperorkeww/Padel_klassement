@@ -8,7 +8,7 @@ import {
   verliesFeiten,
   verliesreeksTegen,
 } from "./coachStats";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 // Teams: A = {p1,p2}, B = {p3,p4}, C = {p5,p6}.
 const teams: Record<string, Team> = {

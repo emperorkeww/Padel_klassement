@@ -3,7 +3,7 @@
 // Elo met basis 1000, teamrating = gemiddelde van beide spelers en de
 // klassieke 400-puntenschaal.
 
-import type { PlayerRating, Team } from "./types";
+import type { PlayerRating, Team } from "@/types";
 
 export const BASE_RATING = 1000;
 

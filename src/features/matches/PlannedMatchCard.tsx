@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
-import { useAsync } from "../../lib/useAsync";
-import { errorMessage } from "../../lib/errors";
-import { celebrate } from "../../lib/confetti";
-import { tap, winPulse } from "../../lib/haptics";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { errorMessage } from "@/lib/utils/errors";
+import { celebrate } from "@/lib/utils/confetti";
+import { tap, winPulse } from "@/lib/utils/haptics";
 import { winChance } from "../../lib/elo";
 import { inTeam } from "../../lib/results";
 import { CoachAvatar } from "../../components/CoachAvatar";
@@ -24,7 +24,7 @@ import {
   getMatchPredictions,
   setPrediction,
 } from "./predictionsApi";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import {
   deleteMatch,
   emptySet,

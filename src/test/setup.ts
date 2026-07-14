@@ -2,7 +2,7 @@
 // Geladen via `setupFiles` in vite.config.ts.
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
-import { invalidateAll } from "../lib/queryCache";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 // Node 22+ definieert een eigen globale localStorage die zonder
 // --localstorage-file geen werkende methodes heeft; die wint het van jsdom's

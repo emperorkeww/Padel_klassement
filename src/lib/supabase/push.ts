@@ -1,7 +1,7 @@
 // Web-push aan/uit vanuit de instellingen. De publieke VAPID-sleutel komt
 // uit de build-omgeving; de Edge Function send-push bezorgt de meldingen.
 
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabase/client";
 
 const PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 

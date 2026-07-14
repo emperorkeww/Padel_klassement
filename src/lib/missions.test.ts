@@ -8,7 +8,7 @@ import {
   weekStartOf,
 } from "./missions";
 import type { MissieDef } from "./missions";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 // Vast anker: woensdag 8 juli 2026 → doelweek ma 6 t/m zo 12 juli.
 const NOW = new Date("2026-07-08T12:00:00");

@@ -1,7 +1,7 @@
 /* ICS-export (RFC 5545): één VEVENT in een VCALENDAR, klaar om te downloaden.
    iOS/Android/desktop-agenda's openen zo'n .ics-bestand rechtstreeks. */
 
-import { addDays } from "./time";
+import { addDays } from "@/lib/utils/time";
 
 export type IcsEventInput = {
   title: string;

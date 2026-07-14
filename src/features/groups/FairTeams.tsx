@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useAsync } from "../../lib/useAsync";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { fairTeams, type FairTeam } from "../../lib/fairTeams";
-import { tap } from "../../lib/haptics";
+import { tap } from "@/lib/utils/haptics";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
+import { errorMessage } from "@/lib/utils/errors";
 import { createFairRound, type FairCourt } from "./api";
-import type { Profile } from "../../lib/types";
+import type { Profile } from "@/types";
 
 // "Eerlijke teams" — stelt uit de aanwezigen van de speeldag teams voor met
 // een zo klein mogelijk ratingverschil per baan, met de verwachte winstkans

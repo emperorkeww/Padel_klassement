@@ -7,7 +7,7 @@
 
 import { BASE_RATING, expected } from "./elo";
 import { UPSET_MAX_KANS } from "./feed";
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 /** Winkans-grens waarboven een verliezend favorietenteam een "choke" is —
  *  spiegelbeeld van de upset-grens (een upset onder 0.35 → een choke boven

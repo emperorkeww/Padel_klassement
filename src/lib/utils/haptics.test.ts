@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { tap, winPulse } from "./haptics";
+import { tap, winPulse } from "@/lib/utils/haptics";
 
 afterEach(() => {
   // @ts-expect-error — testopruiming van de gestubde API

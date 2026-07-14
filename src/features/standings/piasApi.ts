@@ -1,5 +1,5 @@
-import { supabase } from "../../lib/supabase";
-import { cached } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { cached } from "@/lib/supabase/queryCache";
 import type { PiasWeek } from "../../lib/pias";
 
 // Pias van de week (#127): de serverside aangeduide pias per groep, per

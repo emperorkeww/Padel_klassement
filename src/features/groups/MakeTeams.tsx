@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { dateInZone } from "../../lib/time";
+import { errorMessage } from "@/lib/utils/errors";
+import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";
 import { displayName } from "../profiles/api";
 import {
@@ -21,7 +21,7 @@ import {
 } from "./pollsApi";
 import { tallyOption } from "./pollLogic";
 import { FairTeamsCard } from "./FairTeams";
-import type { GroupMember, Match, Profile, Team } from "../../lib/types";
+import type { GroupMember, Match, Profile, Team } from "@/types";
 import "./Proposals.css";
 
 // "Maak teams": de ene teamgenerator van de groep (#106). Deelnemers komen

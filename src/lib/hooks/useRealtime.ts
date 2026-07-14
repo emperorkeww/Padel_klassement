@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { supabase } from "./supabase";
-import { invalidate } from "./queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { invalidate } from "@/lib/supabase/queryCache";
 
 // Welke cache-prefixen een wijziging op een tabel raakt: matches beïnvloeden
 // ook de standen (views), teams (nieuwe paren) en ratings (trigger).

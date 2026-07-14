@@ -1,7 +1,7 @@
 // Samenvatting van één speelavond in een groep: de stand over alleen de
 // afgeronde matches van die dag, plus het best presterende duo.
 
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 import { matchUpset, preMatchPoints } from "./upset";
 
 export type EveningRow = {

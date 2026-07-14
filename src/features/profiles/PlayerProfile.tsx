@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
 import { getPlayerStanding, getPlayerStandings } from "../standings/api";
@@ -34,7 +34,7 @@ import { ShareProfile, type ProfileShareData } from "./ShareProfile";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
 import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
+import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "../../components/Sheet";
 import { tierFor, tierProgress } from "../../lib/tiers";
 import { bijnaam, neutraleBijnaam } from "../../lib/nickname";

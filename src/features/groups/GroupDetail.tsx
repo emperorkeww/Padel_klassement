@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { MatchListSkeleton, Skeleton } from "../../components/Skeleton";
 import {
@@ -17,7 +17,7 @@ import {
   createGroupInvite,
 } from "./api";
 import { getGroupMatches, getTeamsMap, createGuestPlayer } from "../matches/api";
-import { dateInZone } from "../../lib/time";
+import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";
 import { getGroupPlayerStandings } from "../standings/api";
 import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
@@ -53,13 +53,13 @@ import {
   listSeasons,
   seasonFromId,
 } from "../../lib/seasons";
-import { errorMessage } from "../../lib/errors";
+import { errorMessage } from "@/lib/utils/errors";
 import type {
   Match,
   PlayerStanding,
   Profile,
   RoastIntensiteit,
-} from "../../lib/types";
+} from "@/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "plannen" | "stand" | "leden";

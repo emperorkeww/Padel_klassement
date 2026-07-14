@@ -5,7 +5,7 @@
 // kiest de seed er één. Zonder passende kandidaat valt hij terug op een
 // neutrale pool, zodat er altíjd een bijnaam is.
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 import { inTeam, outcomeFor } from "./results";
 import { matchDate } from "./missions";
 

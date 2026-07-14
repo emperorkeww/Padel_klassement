@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { Sheet } from "../../components/Sheet";
-import { errorMessage } from "../../lib/errors";
-import { sharePng } from "../../lib/shareImage";
-import { prefersReducedMotion } from "../../lib/motion";
-import { useAsync } from "../../lib/useAsync";
+import { errorMessage } from "@/lib/utils/errors";
+import { sharePng } from "@/lib/utils/shareImage";
+import { prefersReducedMotion } from "@/lib/utils/motion";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { getCompletedMatchesBetween } from "../matches/api";
-import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
+import type { Match, Profile, RatingPoint, Team } from "@/types";
 import { deriveWrapped } from "./wrapped";
 import type { WrappedCard } from "./wrapped";
 import { drawWrappedCard, posterLayout } from "./wrappedPoster";

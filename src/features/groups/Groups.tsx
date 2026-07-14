@@ -6,14 +6,14 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { EmptyState } from "../../components/EmptyState";
-import { errorMessage } from "../../lib/errors";
-import { formatDate } from "../../lib/format";
-import { dateInZone } from "../../lib/time";
+import { errorMessage } from "@/lib/utils/errors";
+import { formatDate } from "@/lib/utils/format";
+import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";
 import { getProfilesMap } from "../profiles/api";
 import { getMyGroups, createGroup, type GroupSummary } from "./api";

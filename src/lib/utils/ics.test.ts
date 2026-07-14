@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { downloadIcs, icsEvent, localDate, localTime } from "./ics";
+import { downloadIcs, icsEvent, localDate, localTime } from "@/lib/utils/ics";
 
 const NOW = new Date("2026-07-03T09:15:30.000Z");
 

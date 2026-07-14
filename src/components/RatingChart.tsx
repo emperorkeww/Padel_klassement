@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from "react";
-import type { RatingPoint } from "../lib/types";
-import { formatDate } from "../lib/format";
+import type { RatingPoint } from "@/types";
+import { formatDate } from "@/lib/utils/format";
 import "./RatingChart.css";
 
 // Hand-rolled SVG-lijngrafiek van de rating over tijd (geen chart-dependency).

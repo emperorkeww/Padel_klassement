@@ -1,4 +1,4 @@
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 import { headToHead, outcomeFor } from "./results";
 
 // Trends voor het spelersprofiel (#58): win% per maand, sterkste/lastigste

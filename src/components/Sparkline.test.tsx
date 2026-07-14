@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { RATING_HISTORY } from "../test/fixtures";
 import { Sparkline } from "./Sparkline";
-import { downsample, toPolylinePoints } from "../lib/sparkline";
+import { downsample, toPolylinePoints } from "@/lib/utils/sparkline";
 
 describe("downsample", () => {
   it("geeft een korte reeks ongewijzigd terug", () => {

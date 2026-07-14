@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pushSupported, urlBase64ToUint8Array, enablePush } from "./push";
+import { pushSupported, urlBase64ToUint8Array, enablePush } from "@/lib/supabase/push";
 
 describe("push", () => {
   it("decodeert een base64url-VAPID-sleutel naar bytes", () => {

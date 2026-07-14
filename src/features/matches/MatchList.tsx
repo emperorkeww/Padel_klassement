@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Match, PlayerRating, Profile, Team } from "../../lib/types";
+import type { Match, PlayerRating, Profile, Team } from "@/types";
 import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "./api";
-import { formatRelativeDay } from "../../lib/format";
+import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "../../lib/results";
 import type { Upset } from "../../lib/upset";
 import { Avatar } from "../../components/Avatar";
@@ -10,8 +10,8 @@ import { TierBadge } from "../../components/TierBadge";
 import { THIN_GAMES } from "../groups/groupRating";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { tap } from "../../lib/haptics";
+import { errorMessage } from "@/lib/utils/errors";
+import { tap } from "@/lib/utils/haptics";
 
 /** Grace-window waarin een verwijderde match nog teruggehaald kan worden. */
 const UNDO_MS = 5000;

@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import type { Profile, Team, Match } from "../../../lib/types";
+import type { Profile, Team, Match } from "@/types";
 import type { Outcome } from "../../../lib/results";
 import type { Badge } from "../../../lib/badges";
 import type { TierProgress } from "../../../lib/tiers";

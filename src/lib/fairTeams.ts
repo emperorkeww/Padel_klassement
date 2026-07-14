@@ -5,7 +5,7 @@
 // dezelfde basis als de rating-trigger in de databank — zie elo.ts.
 
 import { BASE_RATING, expected } from "./elo";
-import type { PlayerRating } from "./types";
+import type { PlayerRating } from "@/types";
 
 export interface FairTeam {
   playerIds: [string, string];

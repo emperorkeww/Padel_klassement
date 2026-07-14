@@ -6,7 +6,7 @@ import {
   historyFromMatches,
   type AmericanoCourt,
 } from "./americano";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 // Deterministische rng (mulberry32) zodat de tests reproduceerbaar zijn.
 function seeded(seed: number): () => number {

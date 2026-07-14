@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
-import type { Group, GroupMember, RoastIntensiteit } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
+import type { Group, GroupMember, RoastIntensiteit } from "@/types";
 
 // database.types.ts kent de nieuwe RPC's (create_group_invite,
 // redeem_group_invite, create_fair_round) nog niet — die wordt later opnieuw

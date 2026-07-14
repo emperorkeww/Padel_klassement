@@ -5,7 +5,7 @@ import {
   resolveTheme,
   setThemePreference,
   watchSystemTheme,
-} from "./theme";
+} from "@/lib/utils/theme";
 
 // jsdom heeft geen matchMedia: stub met instelbare OS-voorkeur + listeners.
 let systemDark = false;

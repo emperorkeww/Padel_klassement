@@ -7,7 +7,7 @@ import {
   rivalryHeadline,
   standAfter,
 } from "./rivalry";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 const TEAMS: Record<string, Team> = {
   "t-ab": { id: "t-ab", name: null, player1_id: "a", player2_id: "b", created_at: "x" },

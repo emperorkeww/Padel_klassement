@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { coachAvond, type AvondCtx } from "./coachEvening";
 import type { EveningSummary, EveningRow } from "../../lib/eveningSummary";
-import type { Profile } from "../../lib/types";
+import type { Profile } from "@/types";
 
 const row = (over: Partial<EveningRow> & { playerId: string }): EveningRow => ({
   played: 0,

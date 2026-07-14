@@ -6,7 +6,7 @@
 // coachStats.test.ts. coachFeed kiest hiermee tussen een feit-sjabloon en de
 // generieke pool (valt terug op generiek zodra de data ontbreekt).
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 import { inTeam, longestStreak, outcomeFor } from "./results";
 
 /** Datum waarop een match telt (gespeeld, anders aangemaakt). */

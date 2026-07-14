@@ -4,7 +4,7 @@
 // nooit mee. De spannendste paren — veel duels, klein verschil, recente
 // wissels in wie leidt — komen bovenaan.
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 /** Minimum aantal onderlinge duels vóór we van een rivaliteit spreken.
  *  Zelfde drempel als MIN_SAMEN in features/profiles/headToHead.ts —

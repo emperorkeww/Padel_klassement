@@ -7,7 +7,7 @@
 // Pure functie, getest in coachFeed.test.ts.
 
 import type { FeedEvent } from "../../lib/feed";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import type { CoachMood } from "../../lib/roastTone";
 import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
 import {

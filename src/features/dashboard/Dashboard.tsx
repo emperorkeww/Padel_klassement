@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
@@ -20,7 +20,7 @@ import {
   weekRange,
   weekStartOf,
 } from "../../lib/missions";
-import { celebrate } from "../../lib/confetti";
+import { celebrate } from "@/lib/utils/confetti";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import {
@@ -64,18 +64,18 @@ import {
   type NextFreeSlot,
 } from "../availability/api";
 import { useClub } from "../availability/club";
-import { dateInZone, minutesNowInZone } from "../../lib/time";
+import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import {
   pushSupported,
   enablePush,
   getPushSubscription,
-} from "../../lib/push";
-import { errorMessage } from "../../lib/errors";
+} from "@/lib/supabase/push";
+import { errorMessage } from "@/lib/utils/errors";
 import { TierBadge } from "../../components/TierBadge";
 import { tierFor, tierProgress } from "../../lib/tiers";
 import { byRank } from "../../lib/standings";
 import { THIN_GAMES } from "../groups/groupRating";
-import type { Match, Team } from "../../lib/types";
+import type { Match, Team } from "@/types";
 import "./Dashboard.css";
 
 export function Dashboard() {

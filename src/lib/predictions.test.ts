@@ -4,7 +4,7 @@ import {
   predictionPoints,
   type MatchPrediction,
 } from "./predictions";
-import type { Profile } from "./types";
+import type { Profile } from "@/types";
 
 const profile = (id: string, username: string): Profile => ({
   id,

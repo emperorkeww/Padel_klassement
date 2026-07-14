@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { eveningSummary } from "./eveningSummary";
-import type { Match, RatingPoint, Team } from "./types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 const pt = (matchId: string, before: number): RatingPoint => ({
   match_id: matchId,

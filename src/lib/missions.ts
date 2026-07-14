@@ -4,7 +4,7 @@
 // op de weekindex alléén, zodat iedereen dezelfde missies ziet; de
 // voortgang is uiteraard per speler.
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 import { inTeam, outcomeFor } from "./results";
 
 /** Tijdstip van een match als Date, of null bij een onbruikbare datum. */

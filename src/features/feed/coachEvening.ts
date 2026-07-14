@@ -6,7 +6,7 @@
 // Sjabloon-gebaseerd (geen AI). Getest in coachEvening.test.ts.
 
 import type { EveningSummary } from "../../lib/eveningSummary";
-import type { Profile, RoastIntensiteit } from "../../lib/types";
+import type { Profile, RoastIntensiteit } from "@/types";
 import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
 
 export interface AvondCtx {

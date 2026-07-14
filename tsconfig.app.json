@@ -20,6 +20,7 @@
       "@/lib/*": ["./src/lib/*"],
       "@/ui/*": ["./src/components/ui/*"],
       "@/features/*": ["./src/features/*"],
+      "@/types": ["./src/types/index.ts"],
       "@/types/*": ["./src/types/*"]
     },
 

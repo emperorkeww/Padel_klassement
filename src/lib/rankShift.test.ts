@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { rankShifts } from "./rankShift";
-import type { Match, PlayerStanding, Team } from "./types";
+import type { Match, PlayerStanding, Team } from "@/types";
 
 const row = (
   id: string,

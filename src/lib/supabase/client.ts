@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./database.types";
+import type { Database } from "@/lib/supabase/database.types";
 
 // Waarden komen uit .env (zie .env.example). Vite exposeert alleen VITE_-prefixed vars.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

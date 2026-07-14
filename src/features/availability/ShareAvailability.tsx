@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
-import { shareOrCopyText } from "../../lib/shareText";
-import { dateInZone, minutesNowInZone } from "../../lib/time";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
+import { shareOrCopyText } from "@/lib/utils/shareText";
+import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import { bookingUrl, slotShareUrl, type DayAvailability, type WeekDay } from "./api";
 import type { Club } from "./club";
 import {

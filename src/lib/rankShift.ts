@@ -3,7 +3,7 @@
 // de huidige stand afgetrokken, beide standen worden gerangschikt met
 // dezelfde tie-breakers als de views, en het verschil is de verschuiving.
 
-import type { Match, PlayerStanding, Team } from "./types";
+import type { Match, PlayerStanding, Team } from "@/types";
 
 /** Positief = gestegen, negatief = gezakt, 0 = gelijk, "nieuw" = stond er
  *  vóór de laatste speeldag nog niet in. */

@@ -12,7 +12,7 @@ import { CoachSneer } from "../../components/CoachSneer";
 import { bepaalPias, type MatchRatings } from "../../lib/maandpias";
 import { monthRange, weekRange } from "../../lib/missions";
 import { roastCtx, roastSeed } from "../../lib/roastTone";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import { displayName } from "../profiles/api";
 import { SharePias } from "./SharePias";
 import "./PiasCard.css";

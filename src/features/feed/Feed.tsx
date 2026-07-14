@@ -2,8 +2,8 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
@@ -11,7 +11,7 @@ import { CoachAvatar, type CoachMood } from "../../components/CoachAvatar";
 import { CoachAbout } from "../../components/CoachAbout";
 import { Sheet } from "../../components/Sheet";
 import { COMMENTATOR } from "../../lib/roastTone";
-import { readFlag, writeFlag } from "../../lib/localFlag";
+import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 import { CoachIntro } from "./CoachIntro";
 import {
   buildFeed,
@@ -23,7 +23,7 @@ import {
   type FeedPoll,
   type Highlight,
 } from "../../lib/feed";
-import { formatDate, formatRelativeDay, formatTime } from "../../lib/format";
+import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
 import { getMySmoesjes } from "../matches/smoesjesApi";
 import { kiesOordeel } from "../../lib/excuses";
@@ -45,7 +45,7 @@ import type {
   Profile,
   RoastIntensiteit,
   Team,
-} from "../../lib/types";
+} from "@/types";
 import "./Feed.css";
 
 // Feed (#120, uitgebreid in #138): wat gebeurde er bij jou en je vrienden —

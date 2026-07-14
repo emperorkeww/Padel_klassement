@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { fairTeams } from "./fairTeams";
-import type { PlayerRating } from "./types";
+import type { PlayerRating } from "@/types";
 
 const NOW = "2026-07-02T10:00:00.000Z";
 

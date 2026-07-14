@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { prefersReducedMotion } from "./motion";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 
 /**
  * FLIP-animatie voor lijsten die van volgorde wisselen (klassement bij een

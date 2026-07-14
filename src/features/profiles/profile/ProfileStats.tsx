@@ -7,7 +7,7 @@ import { RatingChart } from "../../../components/RatingChart";
 import { RankChart } from "../../../components/RankChart";
 import { winRate } from "../../../lib/results";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "../../../lib/trends";
-import { formatDate } from "../../../lib/format";
+import { formatDate } from "@/lib/utils/format";
 import { displayName } from "../api";
 import { HighlightTile } from "./HighlightTile";
 import type { ProfileData, H2HRow } from "./types";

@@ -4,7 +4,7 @@
 // roast ziet. Geen echte beledigingen — plagen, geen kwetsen. Null als er niets
 // te roasten valt (te weinig matches of gewoon goed bezig).
 
-import type { Match, PlayerRating, Team } from "./types";
+import type { Match, PlayerRating, Team } from "@/types";
 import { inTeam, lossStreak, outcomeFor, winRate } from "./results";
 import { tierFor } from "./tiers";
 

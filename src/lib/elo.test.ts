@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { teamRating, winChance } from "./elo";
-import type { PlayerRating, Team } from "./types";
+import type { PlayerRating, Team } from "@/types";
 
 const team = (id: string, p1: string, p2: string): Team => ({
   id,

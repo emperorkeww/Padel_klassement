@@ -5,7 +5,7 @@ import {
   headToHead,
   winStreak,
 } from "./results";
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
 const teams: Record<string, Team> = {

@@ -20,7 +20,7 @@ import {
   fromMinutes,
   minutesNowInZone,
   toMinutes,
-} from "../../lib/time";
+} from "@/lib/utils/time";
 import { DEFAULT_CLUB, getClub, isPlaytomicClub, type Club } from "./club";
 
 const BASE = "/api/playtomic";

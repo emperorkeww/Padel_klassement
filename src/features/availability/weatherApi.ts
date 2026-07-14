@@ -1,4 +1,4 @@
-import { cached } from "../../lib/queryCache";
+import { cached } from "@/lib/supabase/queryCache";
 import { getClubCoordinate } from "./api";
 import type { Club } from "./club";
 import type { HourWeather } from "./weatherLogic";

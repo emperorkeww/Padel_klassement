@@ -10,7 +10,7 @@
 // de spiegel van recompute_pias is. Kwalificerende afgangen en hun ernst-scores
 // zijn dezelfde als de pias van de maand (maandpias.ts).
 
-import type { Match, Team } from "./types";
+import type { Match, Team } from "@/types";
 import { inTeam } from "./results";
 import { expected } from "./elo";
 import {

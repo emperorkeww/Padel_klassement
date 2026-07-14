@@ -11,7 +11,7 @@ import {
   fromMinutes,
   minutesNowInZone,
   toMinutes,
-} from "../../lib/time";
+} from "@/lib/utils/time";
 import type { DayAvailability, WeekDay } from "./api";
 
 /** Eén boekbare starttijd met de banen die dan vrij zijn (rastervolgorde). */

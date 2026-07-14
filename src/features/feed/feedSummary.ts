@@ -1,6 +1,6 @@
 import type { FeedEvent } from "../../lib/feed";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
-import { formatDate } from "../../lib/format";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
+import { formatDate } from "@/lib/utils/format";
 import { kleurRoast, roastCtx, roastSeed } from "../../lib/roastTone";
 import { teamLabel } from "../matches/api";
 import { displayName } from "../profiles/api";

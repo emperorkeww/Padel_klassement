@@ -1,11 +1,11 @@
-import type { RatingPoint } from "../lib/types";
+import type { RatingPoint } from "@/types";
 import {
   SPARK_W,
   SPARK_H,
   SPARK_MAX_POINTS,
   downsample,
   toPolylinePoints,
-} from "../lib/sparkline";
+} from "@/lib/utils/sparkline";
 
 // Mini-lijngrafiekje (sparkline) van het ratingverloop, voor in een tabelrij.
 // Puur inline SVG zonder assen of tooltip; het volledige verhaal staat op de

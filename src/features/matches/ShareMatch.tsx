@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { formatDate } from "../../lib/format";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
-import type { Match, Profile, Team } from "../../lib/types";
+import { formatDate } from "@/lib/utils/format";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
+import type { Match, Profile, Team } from "@/types";
 import { teamLabel } from "./api";
 
 // Deelt de uitslag als afbeelding. We tekenen een scorebord op een <canvas>

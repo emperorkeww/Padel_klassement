@@ -5,16 +5,16 @@ import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 
 import { PlannedMatchCard } from "./PlannedMatchCard";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { MATCH_PLANNED, PROFILES, TEAMS } from "../../test/fixtures";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, Team } from "@/types";
 
 const tmap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
   string,

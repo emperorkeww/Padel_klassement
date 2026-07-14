@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
 import type { Outcome } from "../../lib/results";
 import type { Tier, TierKey } from "../../lib/tiers";
 

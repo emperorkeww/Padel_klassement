@@ -1,5 +1,5 @@
-import { supabase } from "../../lib/supabase";
-import { cached } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { cached } from "@/lib/supabase/queryCache";
 import type { ZwartePiet } from "../../lib/zwartePiet";
 
 // De Zwarte Piet (#185): de serverside aangeduide drager per groep (tabel

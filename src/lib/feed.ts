@@ -6,7 +6,7 @@ import type {
   Profile,
   RatingPoint,
   Team,
-} from "./types";
+} from "@/types";
 import { matchUpset } from "./upset";
 import { MONSTERZEGE_DREMPEL } from "./badges";
 import { outcomeFor } from "./results";

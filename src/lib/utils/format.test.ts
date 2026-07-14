@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { formatDate, formatRelativeDay } from "./format";
+import { formatDate, formatRelativeDay } from "@/lib/utils/format";
 
 describe("formatDate", () => {
   it("geeft een lege string bij ontbrekende datum", () => {
