@@ -14,19 +14,19 @@ import {
   type WeekDay,
 } from "./api";
 import { getClub, setClub, useClub } from "./club";
-import { ClubPicker } from "./ClubPicker";
-import { Timetable } from "./Timetable";
-import { WeekGrid } from "./WeekGrid";
-import { ShareAvailability } from "./ShareAvailability";
+import { ClubPicker } from "@/features/availability/components/ClubPicker";
+import { Timetable } from "@/features/availability/components/Timetable";
+import { WeekGrid } from "@/features/availability/components/WeekGrid";
+import { ShareAvailability } from "@/features/availability/components/ShareAvailability";
 import { getWeekWeather } from "./weatherApi";
 import {
   summarizeDay,
   summarizeParts,
   type WeatherSummary,
 } from "./weatherLogic";
-import { WeatherDays, WeatherParts } from "./WeatherStrip";
+import { WeatherDays, WeatherParts } from "@/features/availability/components/WeatherStrip";
 import { addDays, dateInZone, minutesNowInZone } from "@/lib/utils/time";
-import { CourtTypeIcon } from "@/features/availability/CourtTypeIcon";
+import { CourtTypeIcon } from "@/features/availability/components/CourtTypeIcon";
 import "./Availability.css";
 
 function formatDay(date: string): string {

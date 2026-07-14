@@ -7,10 +7,10 @@ import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { useToast } from "@/ui/ToastProvider";
 import { Skeleton, StatsSkeleton } from "@/ui/Skeleton";
 import { Avatar } from "@/ui/Avatar";
-import { CoachAvatar } from "@/features/coach/CoachAvatar";
+import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import { coachBriefing } from "@/features/coach/coachMoments";
-import { FormChips } from "@/features/rating/FormChips";
+import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
 import { recentForm, winRate, winStreak, lossStreak, headToHead } from "@/features/rating/results";
 import { deriveBadges, type Badge } from "@/features/profiles/badges";
@@ -21,7 +21,7 @@ import {
   weekStartOf,
 } from "@/features/dashboard/missions";
 import { celebrate } from "@/lib/utils/confetti";
-import { RatingChart } from "@/features/rating/RatingChart";
+import { RatingChart } from "@/features/rating/components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import {
   getPlayerRatings,
@@ -35,14 +35,14 @@ import {
   teamLabel,
 } from "../matches/api";
 import { eveningSummary } from "@/features/feed/eveningSummary";
-import { ShareEvening } from "../groups/ShareEvening";
-import { PiasCard } from "../groups/PiasCard";
+import { ShareEvening } from "@/features/groups/components/ShareEvening";
+import { PiasCard } from "@/features/groups/components/PiasCard";
 import { getZwartePiet } from "../groups/zwartePietApi";
 import { bepaalPias } from "@/features/groups/maandpias";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import { WrappedSheet } from "../wrapped/WrappedSheet";
+import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import {
   matchesInYear,
   toonWrappedBanner,
@@ -57,7 +57,7 @@ import {
   type PollOption,
   type PollVote,
 } from "../groups/pollsApi";
-import { TeamSide } from "../matches/MatchList";
+import { TeamSide } from "@/features/matches/components/MatchList";
 import {
   getClubAvailability,
   nextFreeSlot,
@@ -71,7 +71,7 @@ import {
   getPushSubscription,
 } from "@/lib/supabase/push";
 import { errorMessage } from "@/lib/utils/errors";
-import { TierBadge } from "@/features/rating/TierBadge";
+import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierFor, tierProgress } from "@/features/rating/tiers";
 import { byRank } from "@/features/rating/standings";
 import { THIN_GAMES } from "../groups/groupRating";

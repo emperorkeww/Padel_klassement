@@ -17,7 +17,7 @@ import {
   type Privacy,
 } from "./api";
 import { AccountNav } from "@/ui/AccountNav";
-import { CoachAbout } from "@/features/coach/CoachAbout";
+import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import type { RoastIntensiteit } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { errorMessage } from "@/lib/utils/errors";

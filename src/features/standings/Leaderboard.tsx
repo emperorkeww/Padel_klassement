@@ -6,7 +6,7 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { Avatar } from "@/ui/Avatar";
-import { FormChips } from "@/features/rating/FormChips";
+import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
 import { useFlip } from "@/lib/hooks/useFlip";
 import { recentForm, winRate, type Outcome } from "@/features/rating/results";
@@ -29,11 +29,11 @@ import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "@/features/standings/pias";
 import { roastCtx, roastSeed, type RoastCtx } from "@/features/coach/roastTone";
-import { CoachSneer } from "@/features/coach/CoachSneer";
-import { Sparkline } from "@/features/rating/Sparkline";
-import { Podium } from "@/features/standings/Podium";
-import { TierBadge } from "@/features/rating/TierBadge";
-import { TierLegend } from "@/features/rating/TierLegend";
+import { CoachSneer } from "@/features/coach/components/CoachSneer";
+import { Sparkline } from "@/features/rating/components/Sparkline";
+import { Podium } from "@/features/standings/components/Podium";
+import { TierBadge } from "@/features/rating/components/TierBadge";
+import { TierLegend } from "@/features/rating/components/TierLegend";
 import { THIN_GAMES } from "../groups/groupRating";
 import {
   tierFor,
@@ -49,7 +49,7 @@ import {
 } from "../matches/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { searchDiscoverableProfiles } from "../friends/api";
-import { ShareChampion } from "./ShareChampion";
+import { ShareChampion } from "@/features/standings/components/ShareChampion";
 import type { Match, Profile, RatingPoint } from "@/types";
 import "./Leaderboard.css";
 
