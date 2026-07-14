@@ -14,7 +14,7 @@ import {
 import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import type { RoastCtx } from "@/features/coach/roastTone";
-import { SmoesjesMachine } from "./SmoesjesMachine";
+import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 
 export interface SmoesPromptArgs {
   matchId: string;

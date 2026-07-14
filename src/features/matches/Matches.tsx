@@ -11,9 +11,9 @@ import { getAllRatingHistories } from "../standings/ratingsApi";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
-import { DeletableMatchCard } from "./MatchList";
-import { PlannedMatchCard } from "./PlannedMatchCard";
-import { NewMatchSheet, type NewMatchMode } from "./NewMatchSheet";
+import { DeletableMatchCard } from "@/features/matches/components/MatchList";
+import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
+import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
 import type { Match, Profile, Team } from "@/types";
 import "./Matches.css";
 

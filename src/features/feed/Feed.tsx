@@ -7,12 +7,12 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { MatchListSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { Avatar } from "@/ui/Avatar";
-import { CoachAvatar, type CoachMood } from "@/features/coach/CoachAvatar";
-import { CoachAbout } from "@/features/coach/CoachAbout";
+import { CoachAvatar, type CoachMood } from "@/features/coach/components/CoachAvatar";
+import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import { Sheet } from "@/ui/Sheet";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import { readFlag, writeFlag } from "@/lib/utils/localFlag";
-import { CoachIntro } from "./CoachIntro";
+import { CoachIntro } from "@/features/feed/components/CoachIntro";
 import {
   buildFeed,
   feedDay,
@@ -27,7 +27,7 @@ import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
 import { getMySmoesjes } from "../matches/smoesjesApi";
 import { kiesOordeel } from "@/features/matches/excuses";
-import { MatchCard } from "../matches/MatchList";
+import { MatchCard } from "@/features/matches/components/MatchList";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { getMyFriendships } from "../friends/api";
 import { getMyGroups, getGroupMembers } from "../groups/api";

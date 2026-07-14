@@ -14,8 +14,8 @@ import {
   updateMatchScore,
   type SetPair,
 } from "./api";
-import { SetScoresInput } from "./SetScoresInput";
-import { PlannedMatchCard } from "./PlannedMatchCard";
+import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
+import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { getMatchPredictions } from "./predictionsApi";
 import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
@@ -24,8 +24,8 @@ import { tap } from "@/lib/utils/haptics";
 import { Avatar } from "@/ui/Avatar";
 import { Skeleton } from "@/ui/Skeleton";
 import { ScoreStepper } from "@/ui/ScoreStepper";
-import { ShareMatch } from "./ShareMatch";
-import { SmoesjesMachine } from "./SmoesjesMachine";
+import { ShareMatch } from "@/features/matches/components/ShareMatch";
+import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 import { outcomeFor } from "@/features/rating/results";
 import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
