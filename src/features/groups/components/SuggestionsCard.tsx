@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -129,11 +129,26 @@ export function SuggestionsCard({
 
   // Bij een lopende poll blijven de suggesties staan (#267): je kunt in
   // dezelfde week nog een speeldag plannen. Momenten die al als poll-optie
-  // bestaan filtert suggestMoments er via `existing` zelf uit.
+  // bestaan filtert suggestMoments er via `existing` zelf uit. Maar zodra er
+  // een poll loopt, klapt de kaart standaard dicht — plannen is dan al bezig.
+  const hasLivePoll = livePolls.length > 0;
+  // null = volg de poll-status; een boolean = de gebruiker koos zelf.
+  const [manualOpen, setManualOpen] = useState<boolean | null>(null);
+  const open = manualOpen ?? !hasLivePoll;
 
   return (
-    <section className="card">
-      <h2 className="card__title">Suggesties</h2>
+    <details
+      className="card suggestions"
+      open={open}
+      onToggle={(e) => setManualOpen(e.currentTarget.open)}
+    >
+      <summary className="suggestions__summary">
+        <h2 className="card__title">Suggesties</h2>
+        {hasLivePoll && (
+          <span className="badge badge--accent">poll loopt</span>
+        )}
+      </summary>
+
       <p className="proposals__hint">
         De ideale momenten voor jullie volgende match — berekend op basis van de vrije banen bij {club.name}, wie er kan en jullie vaste speelgewoontes.
       </p>
@@ -165,7 +180,7 @@ export function SuggestionsCard({
           </li>
         ))}
       </ul>
-    </section>
+    </details>
   );
 }
 
