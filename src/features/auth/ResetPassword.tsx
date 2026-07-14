@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase/client";
+import { updateUser } from "./api";
 import { useAuth } from "./AuthProvider";
 import { BallIcon } from "@/ui/BallIcon";
 import "./LoginScreen.css";
@@ -29,7 +29,7 @@ export function ResetPassword() {
       return;
     }
     setStatus("loading");
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await updateUser({ password });
     if (error) {
       setStatus("error");
       setMessage(error.message);
