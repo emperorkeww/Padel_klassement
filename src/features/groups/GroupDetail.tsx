@@ -401,7 +401,7 @@ export function GroupDetail() {
       {view === "rondes" && (
         <section className="card">
           <div className="card__head">
-            <h2 className="card__title card__title--tight">Wedstrijdrondes</h2>
+            <h2 className="card__title card__title--tight">Wedstrijden</h2>
             {/* Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat. */}
             <ShareEvening
               groupName={group.data.name}
