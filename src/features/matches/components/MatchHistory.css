@@ -1,0 +1,37 @@
+/* Dag-kopjes boven de per-dag gegroepeerde matchlijst. Woont bij MatchHistory
+   zelf (#342) zodat de stijl óók laadt op de groep-Matches-tab, niet alleen op
+   de globale /matches-route. */
+.match-day + .match-day {
+  margin-top: var(--sp-4);
+}
+.match-day__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.match-day__title::first-letter {
+  text-transform: uppercase;
+}
+/* Aantal matches als een net pilletje achter het dagkopje (i.p.v. een losse
+   "1" die aan de dagnaam plakt). */
+.match-day__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  height: 1.4em;
+  margin-left: var(--sp-2);
+  padding: 0 0.45em;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}

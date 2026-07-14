@@ -276,8 +276,8 @@ export function PollCard({
       onChanged();
       toast.success(
         ids.length === 1
-          ? "Eerlijke match klaargezet — zie Wedstrijdrondes."
-          : `${ids.length} eerlijke matches klaargezet — zie Wedstrijdrondes.`,
+          ? "Eerlijke match klaargezet — zie Vandaag."
+          : `${ids.length} eerlijke matches klaargezet — zie Vandaag.`,
       );
     } catch (err) {
       toast.error(errorMessage(err));

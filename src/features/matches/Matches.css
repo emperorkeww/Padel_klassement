@@ -1,25 +1,5 @@
-/* Dag-kopjes boven gegroepeerde matches. */
-.match-day + .match-day {
-  margin-top: var(--sp-4);
-}
-.match-day__title {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-soft);
-}
-.match-day__title::first-letter {
-  text-transform: uppercase;
-}
-/* Aantal matches achter het dagkopje. */
-.match-day__count {
-  margin-left: var(--sp-2);
-  font-weight: 600;
-  opacity: 0.7;
-  font-variant-numeric: tabular-nums;
-}
+/* De dag-kopjes (.match-day*) wonen sinds #342 bij MatchHistory.css, zodat ze
+   ook laden op de groep-Matches-tab. */
 
 /* Per-set uitslag onder de score op een matchkaart, bv. "6-4 3-6 7-5". */
 .match-card__sets {

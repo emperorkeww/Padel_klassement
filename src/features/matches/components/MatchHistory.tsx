@@ -10,6 +10,7 @@ import {
 } from "@/features/matches/matchFilter";
 import type { Upset } from "@/features/matches/upset";
 import type { Match, Profile, Team } from "@/types";
+import "./MatchHistory.css";
 
 /** De "Recente matches"-kaart: filter-tabs met tellers en een per-dag
  *  gegroepeerde lijst. Gedeeld door de globale Matches-pagina (#106) en de
