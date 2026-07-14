@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { fairTeams, type FairTeam } from "../../lib/fairTeams";
+import { fairTeams, type FairTeam } from "@/features/groups/fairTeamsLogic";
 import { tap } from "@/lib/utils/haptics";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";

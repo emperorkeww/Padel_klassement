@@ -34,16 +34,16 @@ import { DeletableMatchCard } from "../matches/MatchList";
 import { PlannedMatchCard } from "../matches/PlannedMatchCard";
 import { RivalryCard } from "./RivalryCard";
 import { PiasCard } from "./PiasCard";
-import { buildMatchRatings } from "../../lib/maandpias";
+import { buildMatchRatings } from "@/features/groups/maandpias";
 import { NewMatchSheet, type NewMatchMode } from "../matches/NewMatchSheet";
 import { PollSection } from "./PlanPoll";
 import { SuggestionsCard } from "./SuggestionsCard";
 import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
 import { ShareChampion } from "../standings/ShareChampion";
-import { computePlayerStandings, matchesInSeason } from "../../lib/standings";
-import { upsetsByMatch } from "../../lib/upset";
-import { computePredictionStandings } from "../../lib/predictions";
+import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
+import { upsetsByMatch } from "@/features/matches/upset";
+import { computePredictionStandings } from "@/features/matches/predictions";
 import {
   getGroupPredictions,
   getGroupPredictionStandings,
@@ -52,7 +52,7 @@ import {
   isSeasonClosed,
   listSeasons,
   seasonFromId,
-} from "../../lib/seasons";
+} from "@/features/rating/seasons";
 import { errorMessage } from "@/lib/utils/errors";
 import type {
   Match,

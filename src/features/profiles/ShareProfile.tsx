@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
-import type { Outcome } from "../../lib/results";
-import type { Tier, TierKey } from "../../lib/tiers";
+import type { Outcome } from "@/features/rating/results";
+import type { Tier, TierKey } from "@/features/rating/tiers";
 
 // Persoonlijke deel-kaart (4:5): rating, klassementpositie, recente vorm en de
 // belangrijkste badge van een speler. Hergebruikt dezelfde canvas-deel-flow

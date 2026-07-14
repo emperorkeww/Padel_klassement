@@ -1,6 +1,6 @@
 import { CoachSneer } from "./CoachSneer";
-import type { RoastCtx } from "../lib/roastTone";
-import { tierLegend } from "../lib/tiers";
+import type { RoastCtx } from "@/features/coach/roastTone";
+import { tierLegend } from "@/features/rating/tiers";
 import "./TierLegend.css";
 
 /** Pias van de week voor de voetnoot: de naam, hoe hoog de favoriet stond en de

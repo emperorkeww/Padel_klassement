@@ -1,10 +1,10 @@
 import type { ComponentProps } from "react";
 import type { Profile, Team, Match } from "@/types";
-import type { Outcome } from "../../../lib/results";
-import type { Badge } from "../../../lib/badges";
-import type { TierProgress } from "../../../lib/tiers";
-import type { Upset } from "../../../lib/upset";
-import type { Season } from "../../../lib/seasons";
+import type { Outcome } from "@/features/rating/results";
+import type { Badge } from "@/features/profiles/badges";
+import type { TierProgress } from "@/features/rating/tiers";
+import type { Upset } from "@/features/matches/upset";
+import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "../../../components/RatingChart";
 import type { RankChart } from "../../../components/RankChart";
 

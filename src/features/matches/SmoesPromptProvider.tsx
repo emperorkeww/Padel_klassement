@@ -13,7 +13,7 @@ import {
 } from "react";
 import { Sheet } from "../../components/Sheet";
 import { useToast } from "../../components/ToastProvider";
-import type { RoastCtx } from "../../lib/roastTone";
+import type { RoastCtx } from "@/features/coach/roastTone";
 import { SmoesjesMachine } from "./SmoesjesMachine";
 
 export interface SmoesPromptArgs {

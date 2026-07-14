@@ -5,7 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
-import { coachMatchQuip } from "../../lib/coachMoments";
+import { coachMatchQuip } from "@/features/coach/coachMoments";
 import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
 import { displayName } from "../profiles/api";

@@ -4,7 +4,7 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { celebrate } from "@/lib/utils/confetti";
 import { winPulse } from "@/lib/utils/haptics";
-import { tierChange } from "../../lib/tiers";
+import { tierChange } from "@/features/rating/tiers";
 import { getRatingHistory } from "./ratingsApi";
 
 // Promotie/degradatie-aankondiging (#127). Client-side gedetecteerd uit de

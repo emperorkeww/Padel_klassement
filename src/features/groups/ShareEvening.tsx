@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
-import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
+import { eveningSummary, type EveningSummary } from "@/features/feed/eveningSummary";
 import { displayName } from "../profiles/api";
 import { teamLabel } from "../matches/api";
 import type { Match, Profile, RatingPoint, Team } from "@/types";

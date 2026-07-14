@@ -6,7 +6,7 @@ import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { Skeleton } from "../../components/Skeleton";
 import { errorMessage } from "@/lib/utils/errors";
-import { fairTeams } from "../../lib/fairTeams";
+import { fairTeams } from "@/features/groups/fairTeamsLogic";
 import { addDays, dateInZone } from "@/lib/utils/time";
 import { icsEvent, downloadIcs } from "@/lib/utils/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";

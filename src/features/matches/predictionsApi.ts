@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
-import type { MatchPrediction, PredictionStanding } from "../../lib/predictions";
+import type { MatchPrediction, PredictionStanding } from "@/features/matches/predictions";
 
 // Toto (#116): tips op geplande groepsmatches. Losse typering (tabel-shim)
 // tot database.types.ts opnieuw gegenereerd wordt; zelfde cache/RLS-patroon

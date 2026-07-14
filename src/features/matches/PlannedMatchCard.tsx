@@ -5,20 +5,20 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
 import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
-import { winChance } from "../../lib/elo";
-import { inTeam } from "../../lib/results";
+import { winChance } from "@/features/rating/elo";
+import { inTeam } from "@/features/rating/results";
 import { CoachAvatar } from "../../components/CoachAvatar";
-import { coachPreMatch } from "../../lib/coachMoments";
+import { coachPreMatch } from "@/features/coach/coachMoments";
 import {
   groupRivalries,
   rivalryForMatch,
   rivalryHeadline,
   standAfter,
-} from "../../lib/rivalry";
+} from "@/features/groups/rivalry";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";
 import { useAuth } from "../auth/AuthProvider";
-import { predictionPoints } from "../../lib/predictions";
+import { predictionPoints } from "@/features/matches/predictions";
 import {
   clearPrediction,
   getMatchPredictions,

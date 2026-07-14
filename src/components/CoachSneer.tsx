@@ -4,7 +4,7 @@
 // zwarte piet, pias-banner — hetzelfde herkenbare Coach Rudy-gezicht als de feed.
 
 import { CoachBubble } from "./CoachBubble";
-import { coachSneer, type RoastCtx } from "../lib/roastTone";
+import { coachSneer, type RoastCtx } from "@/features/coach/roastTone";
 
 export function CoachSneer({
   ctx,

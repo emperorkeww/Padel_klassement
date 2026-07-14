@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Avatar } from "../../../components/Avatar";
 import { CoachAvatar } from "../../../components/CoachAvatar";
-import { COMMENTATOR } from "../../../lib/roastTone";
+import { COMMENTATOR } from "@/features/coach/roastTone";
 import { displayName } from "../api";
 import type { ProfileData } from "./types";
 

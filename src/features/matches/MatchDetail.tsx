@@ -26,11 +26,11 @@ import { Skeleton } from "../../components/Skeleton";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { SmoesjesMachine } from "./SmoesjesMachine";
-import { outcomeFor } from "../../lib/results";
-import { roastCtx } from "../../lib/roastTone";
+import { outcomeFor } from "@/features/rating/results";
+import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
 import { getAllRatingHistories } from "../standings/ratingsApi";
-import { matchUpset, preMatchPoints } from "../../lib/upset";
+import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import type { Match, Profile, Team } from "@/types";
 import "./MatchDetail.css";
 

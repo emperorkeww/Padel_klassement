@@ -1,4 +1,4 @@
-import type { Outcome } from "../lib/results";
+import type { Outcome } from "@/features/rating/results";
 
 const LABEL: Record<Outcome, string> = { W: "winst", D: "gelijk", L: "verlies" };
 

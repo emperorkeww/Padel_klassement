@@ -9,16 +9,16 @@ import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
 import { useFlip } from "@/lib/hooks/useFlip";
-import { recentForm, winRate, type Outcome } from "../../lib/results";
-import { isSeasonClosed, listSeasons, seasonFromId } from "../../lib/seasons";
+import { recentForm, winRate, type Outcome } from "@/features/rating/results";
+import { isSeasonClosed, listSeasons, seasonFromId } from "@/features/rating/seasons";
 import {
   byRank,
   computePlayerStandings,
   computeTeamStandings,
   matchesInSeason,
   matchesUpTo,
-} from "../../lib/standings";
-import { rankShifts, type Shift } from "../../lib/rankShift";
+} from "@/features/rating/standings";
+import { rankShifts, type Shift } from "@/features/rating/rankShift";
 import {
   getPlayerStandings,
   getTeamStandings,
@@ -27,8 +27,8 @@ import {
 import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
-import { currentPias } from "../../lib/pias";
-import { roastCtx, roastSeed, type RoastCtx } from "../../lib/roastTone";
+import { currentPias } from "@/features/standings/pias";
+import { roastCtx, roastSeed, type RoastCtx } from "@/features/coach/roastTone";
 import { CoachSneer } from "../../components/CoachSneer";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
@@ -39,7 +39,7 @@ import {
   tierFor,
   tierProgress,
   TIER_BANDEN_HOOG_NAAR_LAAG,
-} from "../../lib/tiers";
+} from "@/features/rating/tiers";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,

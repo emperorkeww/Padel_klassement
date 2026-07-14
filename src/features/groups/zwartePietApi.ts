@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
-import type { ZwartePiet } from "../../lib/zwartePiet";
+import type { ZwartePiet } from "@/features/groups/zwartePiet";
 
 // De Zwarte Piet (#185): de serverside aangeduide drager per groep (tabel
 // public.zwarte_piet, gevuld door recompute_zwarte_piet). Losse typering

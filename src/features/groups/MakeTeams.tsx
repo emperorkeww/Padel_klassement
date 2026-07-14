@@ -10,7 +10,7 @@ import {
   americanoRound,
   applyRound,
   historyFromMatches,
-} from "../../lib/americano";
+} from "@/features/groups/americano";
 import { createFairRound, generateMexicanoRound } from "./api";
 import {
   getGroupPolls,

@@ -16,8 +16,8 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
 import { tap } from "@/lib/utils/haptics";
 import { shareOrCopyText } from "@/lib/utils/shareText";
-import { hashString, kiesSmoes, kiesOordeel } from "../../lib/excuses";
-import { COMMENTATOR, type RoastCtx } from "../../lib/roastTone";
+import { hashString, kiesSmoes, kiesOordeel } from "@/features/matches/excuses";
+import { COMMENTATOR, type RoastCtx } from "@/features/coach/roastTone";
 import {
   getMatchSmoesjes,
   placeSmoes,

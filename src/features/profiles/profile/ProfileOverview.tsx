@@ -4,7 +4,7 @@ import { FormChips } from "../../../components/FormChips";
 import { TierBadge } from "../../../components/TierBadge";
 import { MatchList } from "../../matches/MatchList";
 import { MatchListSkeleton } from "../../../components/Skeleton";
-import { winRate } from "../../../lib/results";
+import { winRate } from "@/features/rating/results";
 import { displayName } from "../api";
 import { HighlightTile } from "./HighlightTile";
 import type { ProfileData } from "./types";

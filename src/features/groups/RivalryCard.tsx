@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
 import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
-import { groupRivalries, nextEncounter } from "../../lib/rivalry";
+import { groupRivalries, nextEncounter } from "@/features/groups/rivalry";
 import type { Match, Profile, Team } from "@/types";
 import { displayName } from "../profiles/api";
 import "./RivalryCard.css";

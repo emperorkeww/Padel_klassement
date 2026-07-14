@@ -10,7 +10,7 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "../standings/ratingsApi";
-import { upsetsByMatch } from "../../lib/upset";
+import { upsetsByMatch } from "@/features/matches/upset";
 import {
   getPlayerMatches,
   getTeamsMap,
@@ -25,20 +25,20 @@ import {
   biggestWin,
   headToHead,
   outcomeFor,
-} from "../../lib/results";
+} from "@/features/rating/results";
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
-import { deriveBadges } from "../../lib/badges";
-import { listSeasons, seasonFromId } from "../../lib/seasons";
-import { matchesInSeason, rankProgression, byRank } from "../../lib/standings";
+import { deriveBadges } from "@/features/profiles/badges";
+import { listSeasons, seasonFromId } from "@/features/rating/seasons";
+import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
 import { ShareProfile, type ProfileShareData } from "./ShareProfile";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
 import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
 import { useToast } from "../../components/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "../../components/Sheet";
-import { tierFor, tierProgress } from "../../lib/tiers";
-import { bijnaam, neutraleBijnaam } from "../../lib/nickname";
-import { roast } from "../../lib/roast";
+import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
+import { roast } from "@/features/profiles/roast";
 import { THIN_GAMES } from "../groups/groupRating";
 import { ProfileHero } from "./profile/ProfileHero";
 import { FriendButton } from "../friends/FriendButton";
