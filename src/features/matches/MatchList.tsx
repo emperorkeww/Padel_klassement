@@ -5,11 +5,11 @@ import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "./api";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
-import { Avatar } from "../../components/Avatar";
-import { TierBadge } from "../../components/TierBadge";
+import { Avatar } from "@/ui/Avatar";
+import { TierBadge } from "@/features/rating/TierBadge";
 import { THIN_GAMES } from "../groups/groupRating";
 import { useAuth } from "../auth/AuthProvider";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { tap } from "@/lib/utils/haptics";
 

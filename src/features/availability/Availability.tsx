@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
-import { Skeleton } from "../../components/Skeleton";
+import { Skeleton } from "@/ui/Skeleton";
 import {
   fetchClub,
   getClubAvailability,
@@ -26,7 +26,7 @@ import {
 } from "./weatherLogic";
 import { WeatherDays, WeatherParts } from "./WeatherStrip";
 import { addDays, dateInZone, minutesNowInZone } from "@/lib/utils/time";
-import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { CourtTypeIcon } from "@/features/availability/CourtTypeIcon";
 import "./Availability.css";
 
 function formatDay(date: string): string {

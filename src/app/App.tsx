@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute";
-import { DashboardLayout } from "../components/DashboardLayout";
+import { DashboardLayout } from "@/app/DashboardLayout";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
 const LoginScreen = lazy(() => import("../features/auth/LoginScreen"));

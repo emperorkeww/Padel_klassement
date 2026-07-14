@@ -1,5 +1,5 @@
 import { MatchList } from "../../matches/MatchList";
-import { MatchListSkeleton } from "../../../components/Skeleton";
+import { MatchListSkeleton } from "@/ui/Skeleton";
 import type { ProfileData } from "./types";
 
 // Matches-tab: de volledige (seizoensgescoopte) matchlijst, niet afgekapt.

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Stat } from "../../../components/Stat";
-import { Avatar } from "../../../components/Avatar";
-import { TierBadge } from "../../../components/TierBadge";
-import { RatingChart } from "../../../components/RatingChart";
-import { RankChart } from "../../../components/RankChart";
+import { Stat } from "@/ui/Stat";
+import { Avatar } from "@/ui/Avatar";
+import { TierBadge } from "@/features/rating/TierBadge";
+import { RatingChart } from "@/features/rating/RatingChart";
+import { RankChart } from "@/features/rating/RankChart";
 import { winRate } from "@/features/rating/results";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "@/features/profiles/trends";
 import { formatDate } from "@/lib/utils/format";

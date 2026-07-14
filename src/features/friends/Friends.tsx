@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
-import { useToast } from "../../components/ToastProvider";
-import { Skeleton } from "../../components/Skeleton";
-import { Sheet } from "../../components/Sheet";
+import { useToast } from "@/ui/ToastProvider";
+import { Skeleton } from "@/ui/Skeleton";
+import { Sheet } from "@/ui/Sheet";
 import {
   getMyFriendships,
   getFriendSuggestions,
@@ -18,9 +18,9 @@ import {
   type FriendSuggestion,
 } from "./api";
 import { getProfilesMap, displayName } from "../profiles/api";
-import { Avatar } from "../../components/Avatar";
-import { AccountNav } from "../../components/AccountNav";
-import { EmptyState } from "../../components/EmptyState";
+import { Avatar } from "@/ui/Avatar";
+import { AccountNav } from "@/ui/AccountNav";
+import { EmptyState } from "@/ui/EmptyState";
 import type { Profile } from "@/types";
 
 export function Friends() {

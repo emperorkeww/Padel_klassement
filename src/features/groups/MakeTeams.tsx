@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "../availability/club";

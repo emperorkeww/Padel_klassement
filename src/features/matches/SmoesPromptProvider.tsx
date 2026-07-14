@@ -11,8 +11,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Sheet } from "../../components/Sheet";
-import { useToast } from "../../components/ToastProvider";
+import { Sheet } from "@/ui/Sheet";
+import { useToast } from "@/ui/ToastProvider";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import { SmoesjesMachine } from "./SmoesjesMachine";
 

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "../../test/supabaseMock";
 import { AuthProvider } from "../auth/AuthProvider";
-import { ToastProvider } from "../../components/ToastProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
 vi.mock("@/lib/supabase/client", () => ({
   supabase: makeSupabaseMock({

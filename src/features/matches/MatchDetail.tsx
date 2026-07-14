@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import {
   emptySet,
   formatSetScores,
@@ -21,9 +21,9 @@ import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
 import { formatDate } from "@/lib/utils/format";
 import { tap } from "@/lib/utils/haptics";
-import { Avatar } from "../../components/Avatar";
-import { Skeleton } from "../../components/Skeleton";
-import { ScoreStepper } from "../../components/ScoreStepper";
+import { Avatar } from "@/ui/Avatar";
+import { Skeleton } from "@/ui/Skeleton";
+import { ScoreStepper } from "@/ui/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { SmoesjesMachine } from "./SmoesjesMachine";
 import { outcomeFor } from "@/features/rating/results";

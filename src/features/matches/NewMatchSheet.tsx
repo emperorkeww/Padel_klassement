@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { ScoreStepper } from "../../components/ScoreStepper";
-import { Sheet } from "../../components/Sheet";
+import { ScoreStepper } from "@/ui/ScoreStepper";
+import { Sheet } from "@/ui/Sheet";
 import { useAuth } from "../auth/AuthProvider";
-import { useToast } from "../../components/ToastProvider";
-import { Avatar } from "../../components/Avatar";
+import { useToast } from "@/ui/ToastProvider";
+import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
 import { coachMatchQuip } from "@/features/coach/coachMoments";
 import { celebrate } from "@/lib/utils/confetti";

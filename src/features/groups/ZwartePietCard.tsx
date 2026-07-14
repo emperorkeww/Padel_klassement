@@ -3,8 +3,8 @@
 // commentator-sneer (#183) respecteert het roast-schild van de drager.
 
 import { Link } from "react-router-dom";
-import { Avatar } from "../../components/Avatar";
-import { CoachSneer } from "../../components/CoachSneer";
+import { Avatar } from "@/ui/Avatar";
+import { CoachSneer } from "@/features/coach/CoachSneer";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
 import type { Group, Profile } from "@/types";
 import { displayName } from "../profiles/api";

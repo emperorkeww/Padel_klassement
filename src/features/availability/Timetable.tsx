@@ -9,7 +9,7 @@ import {
   type SlotOption,
 } from "./api";
 import { getClub } from "./club";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { shareOrCopyText } from "@/lib/utils/shareText";
 import {
@@ -19,7 +19,7 @@ import {
   minutesNowInZone,
   toMinutes,
 } from "@/lib/utils/time";
-import { CourtTypeIcon } from "../../components/CourtTypeIcon";
+import { CourtTypeIcon } from "@/features/availability/CourtTypeIcon";
 import { courtTypeLabel } from "@/lib/utils/format";
 import "./Availability.css";
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useToast } from "../../components/ToastProvider";
+import { useToast } from "@/ui/ToastProvider";
 import { formatDate } from "@/lib/utils/format";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
