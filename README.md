@@ -20,12 +20,13 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
 
 ## 🌟 Features
 
-*   👥 **Groepen & Teamindelingen**
-    *   Maak groepen aan met een eigen klassement en voeg leden toe via een deelbare invite-link.
-    *   Genereer automatisch teams op basis van speelsterkte (**eerlijke teams**) of speel specifieke toernooivormen zoals **Americano** en **Mexicano**.
+*   👥 **Groepen & Spelen (Groepspagina)**
+    *   Maak groepen aan met een eigen klassement en voeg leden toe via een invite-link.
+    *   De vernieuwde **Spelen-pagina** binnen een groep toont een helder **dagoverzicht**, een **Matches-tab** (voor het inzien van geplande en gespeelde wedstrijden) en een **Spelen-tab** (voor de speelpolls en planning).
+    *   Genereer automatisch teams op basis van speelsterkte (**eerlijke teams** op basis van Elo) of organiseer specifieke toernooivormen zoals **Americano** en **Mexicano**.
     *   Ondersteuning voor gastspelers zonder geregistreerd account.
-*   📊 **Wedstrijdregistratie & Statistieken**
-    *   Plan toekomstige wedstrijden of log direct uitslagen.
+*   📊 **Wedstrijden & Statistieken**
+    *   Plan toekomstige wedstrijden of log direct uitslagen (termen zijn gestroomlijnd van 'Wedstrijdrondes' naar **Wedstrijden**).
     *   Punt-voor-punt invoer en gedetailleerde weergave van het scoreverloop per wedstrijd.
     *   Historische Elo-ratinggrafieken op spelersprofielen.
 *   🏆 **Klassementen & Tiers**
@@ -33,15 +34,15 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
     *   Indeling in divisies/tiers op basis van Elo-rating.
     *   De nummer 1 van het klassement krijgt de felbegeerde roze kroon en de titel *"Big Daddy"*.
 *   🎾 **Playtomic Integratie & Boekingen**
-    *   Live ophalen van vrije banen en actuele tarieven via Playtomic (geproxied via de Cloudflare Worker).
+    *   Live ophalen van vrije banen en tarieven via Playtomic (geproxied via de Cloudflare Worker).
     *   Genereer direct deelbare visuele posters van beschikbare banen voor in groepschats (WhatsApp/Signal).
 *   🗳️ **Speeldag-Polls**
     *   Organiseer polls om speelmomenten te prikken met de groep.
     *   Zelfsturende afhandeling (inclusief notificaties en automatische sluiting) via een cron-gestuurde edge function.
 *   🔥 **Gamification & Social Feed**
     *   Activiteitenfeed met dynamische highlight-kaarten en live commentaar van Coach Rudy.
-    *   **Toto:** Voorspel de uitslagen van geplande wedstrijden en stijd mee in het toto-klassement van je groep.
-    *   **Roast & Anti-Eer:** Wekelijke/maandelijkse *"Pias van de week"* verkiezingen en de rondgaande *"Zwarte Piet"* schande-token. De roast-intensiteit en het roast-schild zijn per groep configureerbaar.
+    *   **Toto:** Voorspel de uitslagen van geplande wedstrijden en strijd mee in het toto-klassement van je groep.
+    *   **Roast & Anti-Eer:** Wekelijkse/maandelijkse *"Pias van de week"* verkiezingen en de rondgaande *"Zwarte Piet"* schande-token. De roast-intensiteit en het roast-schild zijn per groep configureerbaar.
 *   🔔 **Notificaties & PWA**
     *   Web-Push notificaties voor nieuwe speelrondes, uitslagen, wedstrijdherinneringen en poll-deadlines.
     *   Installeerbaar als Progressive Web App (PWA) op mobiel en desktop.
@@ -62,20 +63,28 @@ src/
     main.tsx                # React entry (routing & providers)
     App.tsx                 # Routing (publieke en beschermde routes)
     index.css               # Globale styles & CSS-variabelen (design system tokens)
-  features/                 # Domeingestuurde mappen (code + tests dicht bij elkaar)
+  components/
+    ui/                     # Generieke, herbruikbare UI-componenten (Sheet, Skeleton, Toast, Avatar, enz.)
+  features/                 # Domeingestuurde mappen (code, componenten & tests bij elkaar)
+    account/                # Instellingen & profielbeheer
     auth/                   # AuthProvider, login, wachtwoord herstellen & routebeveiliging
+    availability/           # Playtomic baanbeschikbaarheid & posters
+    coach/                  # Coach Rudy's roast-algoritmes en visualisaties (Bubble, Sneer, Avatar)
     dashboard/              # Startpagina na inloggen
     feed/                   # Activiteitenfeed & Coach Rudy integratie
-    standings/              # Klassementen (Leaderboard) & tiers
-    matches/                # Match wizard, overzichten & MatchDetail
-    groups/                 # Groepsbeheer, teamindelingen & join flows
     friends/                # Vriendenbeheer, verzoeken & vriendsuggesties
+    groups/                 # Groepsbeheer, Americano/Mexicano & Spelen-pagina (dagoverzicht, matches- en spelen-tab)
+    matches/                # Wedstrijdregistratie (wizard, score-steppers, toto, excuses)
     profiles/               # Publieke spelersprofielen & statistieken
-    account/                # Instellingen & profielbeheer
-    availability/           # Playtomic baanbeschikbaarheid & posters
-    wrapped/                # Periodieke seizoens- en jaaroverzichten
-  components/               # Herbruikbare UI-componenten (Sheets, Badges, Charts, etc.)
-  lib/                      # Supabase client, Elo-berekeningen, helperfuncties & TypeScript types
+    rating/                 # Elo-berekeningen, tiers/divisies & ratinggrafieken (RatingChart, RankChart)
+    standings/              # Klassementen (Leaderboards)
+    wrapped/                # Periodieke seizoens- en seizoensoverzichten
+  lib/                      # Gedeelde technische functionaliteit
+    hooks/                  # Generieke React hooks (useAsync, useRealtime, useFlip, etc.)
+    supabase/               # Supabase client, query caching, push-notificaties & database types
+    utils/                  # Generieke helpers (formatting, haptics, sharing, theme, time)
+  types/
+    index.ts                # Handgeschreven TypeScript type-definities voor core DB-entiteiten
   test/setup.ts             # Jest-dom matchers configuratie voor Vitest
 supabase/
   config.toml               # Supabase CLI configuratie (laadvolgorde, functies, seed)
@@ -90,7 +99,7 @@ supabase/
   tests/                    # pgTAP database-integratietests
   seed.sql                  # Rijke testdata voor lokale ontwikkeling
 scripts/
-  contrast-check.mjs        # Toegankelijkheidstest uit op de design system kleurentokens
+  contrast-check.mjs        # Toegankelijkheidstest op de design system kleurentokens
 ```
 
 ---
@@ -101,44 +110,44 @@ scripts/
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`profiles`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/01_profiles.sql) | Gebruikersprofiel, 1-op-1 gekoppeld aan `auth.users` via een trigger. |
-| [`teams`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/02_teams.sql) | Uniek paar van twee spelers (onafhankelijk van speler-volgorde). |
-| [`matches`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/03_matches.sql) | Wedstrijd tussen twee teams inclusief status en uiteindelijke winnaar. |
-| [`match_points`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/04_match_points.sql) | Punt-voor-punt scoreverloop van een wedstrijd (bron van waarheid voor de stand). |
+| [`profiles`](supabase/schemas/tables/01_profiles.sql) | Gebruikersprofiel, 1-op-1 gekoppeld aan `auth.users` via een trigger. |
+| [`teams`](supabase/schemas/tables/02_teams.sql) | Uniek paar van twee spelers (onafhankelijk van speler-volgorde). |
+| [`matches`](supabase/schemas/tables/05_matches.sql) | Wedstrijd tussen twee teams inclusief status en uiteindelijke winnaar. |
+| [`match_points`](supabase/schemas/tables/06_match_points.sql) | Punt-voor-punt scoreverloop van een wedstrijd (bron van waarheid voor de stand). |
 
 ### Groepen & Sociaal
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`groups`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/05_groups.sql) | Speelgroep met eigen instellingen (bijv. roast-intensiteit). |
-| [`group_members`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/06_group_members.sql) | Lidmaatschappen van een groep (rollen: eigenaar of lid). |
-| [`group_invites`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/07_group_invites.sql) | Uitnodigingstokens om lid te worden van een groep. |
-| [`friendships`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/08_friendships.sql) | Vriendschappen en openstaande vriendschapsverzoeken. |
+| [`groups`](supabase/schemas/tables/03_groups.sql) | Speelgroep met eigen instellingen (bijv. roast-intensiteit). |
+| [`group_members`](supabase/schemas/tables/04_group_members.sql) | Lidmaatschappen van een groep (rollen: eigenaar of lid). |
+| [`group_invites`](supabase/schemas/tables/11_group_invites.sql) | Uitnodigingstokens om lid te worden van een groep. |
+| [`friendships`](supabase/schemas/tables/07_friendships.sql) | Vriendschappen en openstaande vriendschapsverzoeken. |
 
 ### Elo & Ratings
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`player_ratings`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/09_player_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
-| [`rating_history`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/10_rating_history.sql) | Historisch verloop van de Elo-rating per gespeelde wedstrijd. |
+| [`player_ratings`](supabase/schemas/tables/08_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
 
 ### Plannen & Aanwezigheid
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`attendance`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/11_attendance.sql) | Aanwezigheid en beschikbaarheid van spelers voor specifieke speeldagen. |
-| [`slot_availability`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/12_slot_availability.sql) | Gecachte baanbeschikbaarheid en tarieven vanuit Playtomic. |
-| [`play_polls`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/13_play_polls.sql) / `_options` / `_votes` | Tabellen voor het aanmaken van, en stemmen op speeldag-polls. |
-| [`match_reminders`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/14_match_reminders.sql) | Registratie van verzonden herinneringen ter voorkoming van dubbele pushberichten. |
+| [`attendance`](supabase/schemas/tables/09_attendance.sql) | Aanwezigheid en beschikbaarheid van spelers voor specifieke speeldagen. |
+| [`slot_availability`](supabase/schemas/tables/12_slot_availability.sql) | Gecachte baanbeschikbaarheid en tarieven vanuit Playtomic. |
+| [`play_polls`](supabase/schemas/tables/13_play_polls.sql) / `_options` / `_votes` | Tabellen voor het aanmaken van, en stemmen op speeldag-polls. |
+| [`match_reminders`](supabase/schemas/tables/12_match_reminders.sql) | Registratie van verzonden herinneringen ter voorkoming van dubbele pushberichten. |
 
 ### Notificaties & Extra's
 
 | Tabel | Omschrijving |
 | :--- | :--- |
-| [`push_subscriptions`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/15_push_subscriptions.sql) | Web-push abonnementen per apparaat voor pushnotificaties. |
-| [`match_predictions`](file:///Users/remcomarien/Documents/Padel/supabase/schemas/tables/16_match_predictions.sql) | Toto-voorspellingen van gebruikers op geplande wedstrijden. |
-| `pias_of_week` | De gekozen *"Pias van de week"* (minst presterende speler) per groep. |
-| `zwarte_piet` | Het actieve *"Zwarte Piet"* schande-token binnen een groep. |
+| [`push_subscriptions`](supabase/schemas/tables/10_push_subscriptions.sql) | Web-push abonnementen per apparaat voor pushnotificaties. |
+| [`match_predictions`](supabase/schemas/tables/14_match_predictions.sql) | Toto-voorspellingen van gebruikers op geplande wedstrijden. |
+| [`pias_of_week`](supabase/schemas/tables/15_pias_of_week.sql) | De gekozen *"Pias van de week"* (minst presterende speler) per groep. |
+| [`zwarte_piet`](supabase/schemas/tables/16_zwarte_piet.sql) | Het actieve *"Zwarte Piet"* schande-token binnen een groep. |
+| [`match_smoesjes`](supabase/schemas/tables/17_match_smoesjes.sql) | Uitvluchten en excuses ingediend door spelers na verliespartijen. |
 
 > [!NOTE]
 > **Beveiliging:** Alle tabellen zijn beveiligd met Row Level Security (RLS). Gegevens zijn doorgaans publiek leesbaar, maar schrijfacties zijn strikt beperkt tot geautoriseerde spelers, groepsleden of de eigenaar van het object.
@@ -263,11 +272,11 @@ De applicatie wordt gehost als een **Cloudflare Worker** middels Wrangler. De Wo
 1.  Het serveren van de static React frontend assets met Single Page Application (SPA) routing fallback.
 2.  Het proxyen van `/api/playtomic/*` verzoeken naar de Playtomic API (ter voorkoming van CORS-problemen in de browser).
 
-De configuratie is vastgelegd in [`wrangler.jsonc`](file:///Users/remcomarien/Documents/Padel/wrangler.jsonc), inclusief een **rate limiter** op de Playtomic-proxy (maximaal 20 verzoeken per 10 seconden per IP-adres).
+De configuratie is vastgelegd in [`wrangler.jsonc`](wrangler.jsonc), inclusief een **rate limiter** op de Playtomic-proxy (maximaal 20 verzoeken per 10 seconden per IP-adres).
 
 ### CI/CD Pipeline
 
-De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](file:///Users/remcomarien/Documents/Padel/.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
+De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
 
 Hiervoor dienen de volgende secrets in de GitHub Repository geconfigureerd te zijn:
 *   `VITE_SUPABASE_URL`
@@ -287,7 +296,7 @@ npx wrangler deploy
 
 ## 🧪 Continuous Integration (CI)
 
-Bij elke Pull Request naar `develop` of `main` voert de CI pipeline ([`ci.yml`](file:///Users/remcomarien/Documents/Padel/.github/workflows/ci.yml)) automatisch de volgende validaties uit:
+Bij elke Pull Request naar `develop` of `main` voert de CI pipeline ([`ci.yml`](.github/workflows/ci.yml)) automatisch de volgende validaties uit:
 1.  **Linting:** ESLint controles.
 2.  **Type-checking:** Valideren van de TypeScript compiler.
 3.  **Frontend Unit & Integration Tests:** Vitest test suite.
@@ -306,4 +315,4 @@ Het project hanteert een gestructureerde branching-strategie:
 1.  Nieuwe features worden als PR aangeboden op `develop`.
 2.  Gebruik de issue-koppelingen correct:
     *   Vermeld `Refs #<issue-nummer>` in feature PR's naar `develop`.
-    *   Vermeld `Closes #<issue-nummer>` **uitsluitend** in de uiteindelijke Release-PR (`develop` ➔ `main`). Dit voorkomt dat issues vroegtijdig automatisch gesloten worden voordat de code daadwerkelijk live staat. Zie ook het [`PULL_REQUEST_TEMPLATE.md`](file:///Users/remcomarien/Documents/Padel/.github/PULL_REQUEST_TEMPLATE.md).
+    *   Vermeld `Closes #<issue-nummer>` **uitsluitend** in de uiteindelijke Release-PR (`develop` ➔ `main`). Dit voorkomt dat issues vroegtijdig automatisch gesloten worden voordat de code daadwerkelijk live staat. Zie ook het [`PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).

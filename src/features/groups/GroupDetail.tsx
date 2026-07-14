@@ -412,7 +412,7 @@ export function GroupDetail() {
             />
           </div>
           <p className="card__subtitle">
-            De rondes en gelogde partijen van vandaag — vul de uitslagen in en
+            De wedstrijden en gelogde partijen van vandaag — vul de uitslagen in en
             de stand rekent live mee.
           </p>
 
@@ -1121,7 +1121,7 @@ export function GroupDetail() {
                   onClick={() => {
                     if (
                       !window.confirm(
-                        "Deze groep en al zijn rondes verwijderen? Dit kan niet ongedaan worden gemaakt.",
+                        "Deze groep en al zijn wedstrijden verwijderen? Dit kan niet ongedaan worden gemaakt.",
                       )
                     )
                       return;

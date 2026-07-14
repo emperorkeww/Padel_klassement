@@ -69,7 +69,7 @@ export function PushPrompt({ userId }: { userId: string }) {
         <div>
           <h2 className="card__title card__title--tight">Mis niks</h2>
           <p className="card__subtitle push-prompt__sub">
-            Krijg een seintje bij nieuwe rondes, uitslagen van jouw matches en
+            Krijg een seintje bij nieuwe wedstrijden, uitslagen van jouw matches en
             vriendschapsverzoeken — ook als de app dicht is.
           </p>
         </div>

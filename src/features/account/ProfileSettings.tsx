@@ -281,7 +281,7 @@ function NotificationsCard({ userId }: { userId: string }) {
     <section className="card">
       <h2 className="card__title card__title--tight">Meldingen</h2>
       <p className="card__subtitle">
-        Nieuwe rondes, uitslagen van jouw matches en vriendschapsverzoeken —
+        Nieuwe wedstrijden, uitslagen van jouw matches en vriendschapsverzoeken —
         ook als de app dicht is.
       </p>
       {!supported ? (

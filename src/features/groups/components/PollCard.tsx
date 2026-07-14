@@ -506,7 +506,7 @@ export function PollCard({
                       }
                       onClick={generateRounds}
                     >
-                      ⚡ {roundsMade === 0 ? "Genereer rondes" : "Nog een ronde"}
+                      ⚡ {roundsMade === 0 ? "Genereer wedstrijden" : "Nog een wedstrijd"}
                       {t.yes.length >= 4 &&
                         ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
                     </button>
@@ -516,7 +516,7 @@ export function PollCard({
                         className="btn btn--sm"
                         to={`/groepen/${poll.group_id}`}
                       >
-                        Bekijk de rondes →
+                        Bekijk de wedstrijden →
                       </Link>
                     )}
                     {t.yes.length < 4 && (
@@ -525,7 +525,7 @@ export function PollCard({
                         {4 - t.yes.length === 1
                           ? "bevestigde speler"
                           : "bevestigde spelers"}{" "}
-                        nodig voor rondes
+                        nodig voor wedstrijden
                       </span>
                     )}
                   </div>
