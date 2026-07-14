@@ -194,7 +194,7 @@ export function Groups() {
                   </button>
                 }
               >
-                Start hieronder je eigen padelgroep, nodig je vrienden uit en hou jullie onderlinge klassementen en speelrondes live bij!
+                Start hieronder je eigen padelgroep, nodig je vrienden uit en hou jullie onderlinge klassementen en wedstrijden live bij!
               </EmptyState>
             </div>
           ) : (
