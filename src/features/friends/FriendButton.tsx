@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
+import { errorMessage } from "@/lib/utils/errors";
 import {
   getMyFriendships,
   sendFriendRequest,

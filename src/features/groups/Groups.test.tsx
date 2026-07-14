@@ -5,14 +5,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 
 import Groups from "./Groups";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 function renderPage() {
   return render(

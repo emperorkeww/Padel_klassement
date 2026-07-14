@@ -1,7 +1,7 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
-import { downscaleImage } from "../../lib/image";
-import type { Profile } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { downscaleImage } from "@/lib/utils/image";
+import type { Profile } from "@/types";
 
 /** Alle profielen (publiek leesbaar); handig als lookup-map. */
 export function getAllProfiles(): Promise<Profile[]> {

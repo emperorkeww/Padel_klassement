@@ -1,30 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { useToast } from "../../components/ToastProvider";
-import { useAsync } from "../../lib/useAsync";
-import { errorMessage } from "../../lib/errors";
-import { celebrate } from "../../lib/confetti";
-import { tap, winPulse } from "../../lib/haptics";
-import { winChance } from "../../lib/elo";
-import { inTeam } from "../../lib/results";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { errorMessage } from "@/lib/utils/errors";
+import { celebrate } from "@/lib/utils/confetti";
+import { tap, winPulse } from "@/lib/utils/haptics";
+import { winChance } from "@/features/rating/elo";
+import { inTeam } from "@/features/rating/results";
 import { CoachAvatar } from "../../components/CoachAvatar";
-import { coachPreMatch } from "../../lib/coachMoments";
+import { coachPreMatch } from "@/features/coach/coachMoments";
 import {
   groupRivalries,
   rivalryForMatch,
   rivalryHeadline,
   standAfter,
-} from "../../lib/rivalry";
+} from "@/features/groups/rivalry";
 import { getPlayerRatings } from "../standings/ratingsApi";
 import { displayName } from "../profiles/api";
 import { useAuth } from "../auth/AuthProvider";
-import { predictionPoints } from "../../lib/predictions";
+import { predictionPoints } from "@/features/matches/predictions";
 import {
   clearPrediction,
   getMatchPredictions,
   setPrediction,
 } from "./predictionsApi";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import {
   deleteMatch,
   emptySet,

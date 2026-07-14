@@ -1,5 +1,5 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { Club } from "../availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde

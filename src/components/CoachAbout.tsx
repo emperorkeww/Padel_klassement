@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { CoachAvatar } from "./CoachAvatar";
-import { COMMENTATOR } from "../lib/roastTone";
+import { COMMENTATOR } from "@/features/coach/roastTone";
 import "./CoachAbout.css";
 
 // Herbruikbare "Wie is Coach Rudy?"-uitleg + vindbare bediening (#212).

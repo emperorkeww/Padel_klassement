@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { prefersReducedMotion } from "../lib/motion";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 
 /**
  * Telt zichtbaar op/af wanneer `value` verandert (bv. punten die binnenkomen

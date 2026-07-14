@@ -5,10 +5,10 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   const { TABLES, SESSION } = await import("../../test/fixtures");
-  const { dateInZone } = await import("../../lib/time");
+  const { dateInZone } = await import("@/lib/utils/time");
   // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,
   // zodat de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen
   // hebben.
@@ -44,7 +44,7 @@ vi.mock("../../lib/supabase", async () => {
 });
 
 import GroupDetail from "./GroupDetail";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 // De suggestiekaart haalt baanbeschikbaarheid via fetch (Playtomic-proxy);
 // een leeg antwoord volstaat.

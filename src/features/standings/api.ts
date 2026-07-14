@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached } from "../../lib/queryCache";
-import type { PlayerStanding, TeamStanding } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached } from "@/lib/supabase/queryCache";
+import type { PlayerStanding, TeamStanding } from "@/types";
 
 export function getPlayerStandings(): Promise<PlayerStanding[]> {
   return cached("standings:players", async () => {

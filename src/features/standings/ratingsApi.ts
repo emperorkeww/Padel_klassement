@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached } from "../../lib/queryCache";
-import type { PlayerRating, RatingPoint } from "../../lib/types";
+import { supabase } from "@/lib/supabase/client";
+import { cached } from "@/lib/supabase/queryCache";
+import type { PlayerRating, RatingPoint } from "@/types";
 
 /** Huidige rating per speler, als lookup-map op player_id. */
 export function getPlayerRatings(): Promise<Record<string, PlayerRating>> {

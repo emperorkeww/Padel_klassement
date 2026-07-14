@@ -5,9 +5,9 @@
 // groep hetzelfde verslag ziet. Roast-quips respecteren intensiteit + schild.
 // Sjabloon-gebaseerd (geen AI). Getest in coachEvening.test.ts.
 
-import type { EveningSummary } from "../../lib/eveningSummary";
-import type { Profile, RoastIntensiteit } from "../../lib/types";
-import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
+import type { EveningSummary } from "@/features/feed/eveningSummary";
+import type { Profile, RoastIntensiteit } from "@/types";
+import { coachSneer, kiesUniek, roastCtx, roastSeed } from "@/features/coach/roastTone";
 
 export interface AvondCtx {
   /** Roast-toon van de groep. */

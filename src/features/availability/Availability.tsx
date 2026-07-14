@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAsync } from "../../lib/useAsync";
-import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { Skeleton } from "../../components/Skeleton";
 import {
   fetchClub,
@@ -25,7 +25,7 @@ import {
   type WeatherSummary,
 } from "./weatherLogic";
 import { WeatherDays, WeatherParts } from "./WeatherStrip";
-import { addDays, dateInZone, minutesNowInZone } from "../../lib/time";
+import { addDays, dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
 import "./Availability.css";
 

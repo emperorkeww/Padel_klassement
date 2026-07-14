@@ -15,7 +15,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-vi.mock("../../lib/supabase", () => {
+vi.mock("@/lib/supabase/client", () => {
   // Afgeronde match in Q2 2026, gewonnen door t-cd (Carol & Dave).
   const MATCH_Q2 = {
     ...MATCH_DONE,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { feedSummary, type FeedSummaryCtx } from "./feedSummary";
-import type { Match, Profile } from "../../lib/types";
+import type { Match, Profile } from "@/types";
 
 const profiel = (id: string, naam: string): Profile =>
   ({ id, username: id, full_name: naam, avatar_url: null, created_at: "" } as Profile);

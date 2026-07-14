@@ -1,5 +1,5 @@
-import { supabase } from "../../lib/supabase";
-import { cached, invalidate } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { cached, invalidate } from "@/lib/supabase/queryCache";
 
 // Smoesjes (#296): de op verloren groepsmatches geplaatste excuses. Losse
 // typering (tabel-shim) tot database.types.ts opnieuw gegenereerd wordt; zelfde

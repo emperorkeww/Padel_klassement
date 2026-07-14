@@ -1,6 +1,6 @@
-import { supabase } from "../../lib/supabase";
-import { cached } from "../../lib/queryCache";
-import type { PiasWeek } from "../../lib/pias";
+import { supabase } from "@/lib/supabase/client";
+import { cached } from "@/lib/supabase/queryCache";
+import type { PiasWeek } from "@/features/standings/pias";
 
 // Pias van de week (#127): de serverside aangeduide pias per groep, per
 // ISO-week (tabel public.pias_of_week, gevuld door recompute_pias). Losse

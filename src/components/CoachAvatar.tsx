@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CoachMood } from "../lib/roastTone";
+import type { CoachMood } from "@/features/coach/roastTone";
 import "./CoachAvatar.css";
 
 export type { CoachMood };

@@ -5,8 +5,8 @@
 import { Link } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
 import { CoachSneer } from "../../components/CoachSneer";
-import { roastCtx, roastSeed } from "../../lib/roastTone";
-import type { Group, Profile } from "../../lib/types";
+import { roastCtx, roastSeed } from "@/features/coach/roastTone";
+import type { Group, Profile } from "@/types";
 import { displayName } from "../profiles/api";
 import type { ZwartePietHolder } from "./zwartePietApi";
 import "./PiasCard.css";

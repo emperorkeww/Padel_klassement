@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { Avatar } from "../../components/Avatar";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
-import { useFlip } from "../../lib/useFlip";
-import { recentForm, winRate, type Outcome } from "../../lib/results";
-import { isSeasonClosed, listSeasons, seasonFromId } from "../../lib/seasons";
+import { useFlip } from "@/lib/hooks/useFlip";
+import { recentForm, winRate, type Outcome } from "@/features/rating/results";
+import { isSeasonClosed, listSeasons, seasonFromId } from "@/features/rating/seasons";
 import {
   byRank,
   computePlayerStandings,
   computeTeamStandings,
   matchesInSeason,
   matchesUpTo,
-} from "../../lib/standings";
-import { rankShifts, type Shift } from "../../lib/rankShift";
+} from "@/features/rating/standings";
+import { rankShifts, type Shift } from "@/features/rating/rankShift";
 import {
   getPlayerStandings,
   getTeamStandings,
@@ -27,8 +27,8 @@ import {
 import { getMyGroups } from "../groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
-import { currentPias } from "../../lib/pias";
-import { roastCtx, roastSeed, type RoastCtx } from "../../lib/roastTone";
+import { currentPias } from "@/features/standings/pias";
+import { roastCtx, roastSeed, type RoastCtx } from "@/features/coach/roastTone";
 import { CoachSneer } from "../../components/CoachSneer";
 import { Sparkline } from "../../components/Sparkline";
 import { Podium } from "../../components/Podium";
@@ -39,7 +39,7 @@ import {
   tierFor,
   tierProgress,
   TIER_BANDEN_HOOG_NAAR_LAAG,
-} from "../../lib/tiers";
+} from "@/features/rating/tiers";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,
@@ -50,7 +50,7 @@ import {
 import { getProfilesMap, displayName } from "../profiles/api";
 import { searchDiscoverableProfiles } from "../friends/api";
 import { ShareChampion } from "./ShareChampion";
-import type { Match, Profile, RatingPoint } from "../../lib/types";
+import type { Match, Profile, RatingPoint } from "@/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies";

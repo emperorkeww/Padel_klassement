@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "../../components/ToastProvider";
 import { Avatar } from "../../components/Avatar";
 import { Skeleton } from "../../components/Skeleton";
-import { errorMessage } from "../../lib/errors";
-import { fairTeams } from "../../lib/fairTeams";
-import { addDays, dateInZone } from "../../lib/time";
-import { icsEvent, downloadIcs } from "../../lib/ics";
+import { errorMessage } from "@/lib/utils/errors";
+import { fairTeams } from "@/features/groups/fairTeamsLogic";
+import { addDays, dateInZone } from "@/lib/utils/time";
+import { icsEvent, downloadIcs } from "@/lib/utils/ics";
 import { bookingUrl, getWeekAvailability, type WeekDay } from "../availability/api";
 import { dayStarts, manualStarts, type FreeStart } from "../availability/availabilityShare";
 import { getWeekWeather } from "../availability/weatherApi";
 import { summarizeDay } from "../availability/weatherLogic";
 import { isPlaytomicClub, useClub, type Club } from "../availability/club";
 import { ClubPicker } from "../availability/ClubPicker";
-import { shareOrCopyText } from "../../lib/shareText";
+import { shareOrCopyText } from "@/lib/utils/shareText";
 import { displayName } from "../profiles/api";
 import {
   getGroupPolls,
@@ -50,7 +50,7 @@ import {
 } from "./pollLogic";
 import { createFairRound } from "./api";
 import { getPlayerRatings } from "../standings/ratingsApi";
-import type { GroupMember, Profile } from "../../lib/types";
+import type { GroupMember, Profile } from "@/types";
 import "./Proposals.css";
 
 // Speeldag-poll: de doodle van de Plannen-tab. Wizard met dag-navigator

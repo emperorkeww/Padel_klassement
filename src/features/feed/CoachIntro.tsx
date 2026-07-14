@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { CoachAvatar } from "../../components/CoachAvatar";
-import { COMMENTATOR } from "../../lib/roastTone";
+import { COMMENTATOR } from "@/features/coach/roastTone";
 
 // Eenmalige kennismaking bovenaan de feed (#212): stelt Coach Rudy voor en wijst
 // naar de bediening. Dismiss-state leeft in de parent (localStorage-vlag).

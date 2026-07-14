@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
 import {
   championPoster,
   type ChampionPoster,
   type PosterRow,
-} from "../../lib/championPoster";
+} from "@/features/standings/championPoster";
 
 // Deelbare kampioensposter (4:5) bij een afgesloten seizoen: seizoenslabel,
 // de kampioen in het goud en het podium. Zelfde deel-flow als ShareEvening.

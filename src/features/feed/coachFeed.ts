@@ -6,16 +6,16 @@
 // ziet; roast-quips respecteren de groepsintensiteit en het roast-schild.
 // Pure functie, getest in coachFeed.test.ts.
 
-import type { FeedEvent } from "../../lib/feed";
-import type { Match, Profile, RoastIntensiteit, Team } from "../../lib/types";
-import type { CoachMood } from "../../lib/roastTone";
-import { coachSneer, kiesUniek, roastCtx, roastSeed } from "../../lib/roastTone";
+import type { FeedEvent } from "@/features/feed/feedLogic";
+import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
+import type { CoachMood } from "@/features/coach/roastTone";
+import { coachSneer, kiesUniek, roastCtx, roastSeed } from "@/features/coach/roastTone";
 import {
   isWinreeksRecord,
   piasNrDezeMaand,
   verliesFeiten,
   type VerliesFeiten,
-} from "../../lib/coachStats";
+} from "@/features/coach/coachStats";
 
 export interface CoachCtx {
   /** Roast-toon per groep. */

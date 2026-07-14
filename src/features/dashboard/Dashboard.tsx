@@ -1,26 +1,26 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
-import { useRefetchOnFocus } from "../../lib/useRefetchOnFocus";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
+import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { useToast } from "../../components/ToastProvider";
 import { Skeleton, StatsSkeleton } from "../../components/Skeleton";
 import { Avatar } from "../../components/Avatar";
 import { CoachAvatar } from "../../components/CoachAvatar";
-import { COMMENTATOR } from "../../lib/roastTone";
-import { coachBriefing } from "../../lib/coachMoments";
+import { COMMENTATOR } from "@/features/coach/roastTone";
+import { coachBriefing } from "@/features/coach/coachMoments";
 import { FormChips } from "../../components/FormChips";
 import { CountUp } from "../../components/CountUp";
-import { recentForm, winRate, winStreak, lossStreak, headToHead } from "../../lib/results";
-import { deriveBadges, type Badge } from "../../lib/badges";
+import { recentForm, winRate, winStreak, lossStreak, headToHead } from "@/features/rating/results";
+import { deriveBadges, type Badge } from "@/features/profiles/badges";
 import {
   deriveMissions,
   weekIndex,
   weekRange,
   weekStartOf,
-} from "../../lib/missions";
-import { celebrate } from "../../lib/confetti";
+} from "@/features/dashboard/missions";
+import { celebrate } from "@/lib/utils/confetti";
 import { RatingChart } from "../../components/RatingChart";
 import { getPlayerStandings } from "../standings/api";
 import {
@@ -34,12 +34,12 @@ import {
   getTeamsMap,
   teamLabel,
 } from "../matches/api";
-import { eveningSummary } from "../../lib/eveningSummary";
+import { eveningSummary } from "@/features/feed/eveningSummary";
 import { ShareEvening } from "../groups/ShareEvening";
 import { PiasCard } from "../groups/PiasCard";
 import { getZwartePiet } from "../groups/zwartePietApi";
-import { bepaalPias } from "../../lib/maandpias";
-import { BIG_DADDY_EMOJI } from "../../lib/bigDaddy";
+import { bepaalPias } from "@/features/groups/maandpias";
+import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { getMyFriendships, categorize } from "../friends/api";
 import { getProfilesMap, displayName } from "../profiles/api";
 import { WrappedSheet } from "../wrapped/WrappedSheet";
@@ -64,18 +64,18 @@ import {
   type NextFreeSlot,
 } from "../availability/api";
 import { useClub } from "../availability/club";
-import { dateInZone, minutesNowInZone } from "../../lib/time";
+import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import {
   pushSupported,
   enablePush,
   getPushSubscription,
-} from "../../lib/push";
-import { errorMessage } from "../../lib/errors";
+} from "@/lib/supabase/push";
+import { errorMessage } from "@/lib/utils/errors";
 import { TierBadge } from "../../components/TierBadge";
-import { tierFor, tierProgress } from "../../lib/tiers";
-import { byRank } from "../../lib/standings";
+import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { byRank } from "@/features/rating/standings";
 import { THIN_GAMES } from "../groups/groupRating";
-import type { Match, Team } from "../../lib/types";
+import type { Match, Team } from "@/types";
 import "./Dashboard.css";
 
 export function Dashboard() {

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "./Avatar";
 import { TierBadge } from "./TierBadge";
-import { BIG_DADDY_EMOJI, BIG_DADDY_TITEL, bigDaddyRoast } from "../lib/bigDaddy";
+import { BIG_DADDY_EMOJI, BIG_DADDY_TITEL, bigDaddyRoast } from "@/features/dashboard/bigDaddy";
 import "./Podium.css";
 
 // Gedeeld podium voor de top 3 van een klassement (globaal én per groep):

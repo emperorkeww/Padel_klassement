@@ -5,18 +5,18 @@
 // Bewust in features/wrapped/ i.p.v. lib/: we leunen op bestPartner uit
 // features/profiles/headToHead.ts en lib importeert nergens uit features.
 
-import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
-import { matchDate } from "../../lib/missions";
+import type { Match, Profile, RatingPoint, Team } from "@/types";
+import { matchDate } from "@/features/dashboard/missions";
 import {
   biggestWin,
   longestLossStreak,
   longestStreak,
   outcomeFor,
   winRate,
-} from "../../lib/results";
-import { opponentExtremes } from "../../lib/trends";
+} from "@/features/rating/results";
+import { opponentExtremes } from "@/features/profiles/trends";
 import { bestPartner } from "../profiles/headToHead";
-import { deriveBadges } from "../../lib/badges";
+import { deriveBadges } from "@/features/profiles/badges";
 
 /**
  * Het jaar waarvan het Wrapped nu beschikbaar is: vanaf 15 december het

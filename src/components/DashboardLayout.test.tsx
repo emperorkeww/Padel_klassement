@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../features/auth/AuthProvider";
 import { ToastProvider } from "./ToastProvider";
-import type { RatingPoint } from "../lib/types";
+import type { RatingPoint } from "@/types";
 
-vi.mock("../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../test/supabaseMock");
   const { TABLES, SESSION } = await import("../test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
@@ -17,12 +17,12 @@ vi.mock("../lib/supabase", async () => {
 vi.mock("../features/standings/ratingsApi", () => ({
   getRatingHistory: vi.fn().mockResolvedValue([]),
 }));
-vi.mock("../lib/confetti", () => ({ celebrate: vi.fn() }));
+vi.mock("@/lib/utils/confetti", () => ({ celebrate: vi.fn() }));
 
 import DashboardLayout from "./DashboardLayout";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { getRatingHistory } from "../features/standings/ratingsApi";
-import { celebrate } from "../lib/confetti";
+import { celebrate } from "@/lib/utils/confetti";
 
 // Node's globale localStorage (zonder --localstorage-file) is een kreupele
 // stub die ook window.localStorage overschaduwt; vervang hem door een simpele

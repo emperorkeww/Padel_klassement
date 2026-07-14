@@ -1,4 +1,4 @@
-import { tierFor, tierTitle } from "../lib/tiers";
+import { tierFor, tierTitle } from "@/features/rating/tiers";
 import "./TierBadge.css";
 
 /**

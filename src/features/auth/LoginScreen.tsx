@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "./AuthProvider";
 import { BallIcon } from "../../components/BallIcon";
 import "./LoginScreen.css";

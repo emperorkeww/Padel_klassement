@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "../../components/ToastProvider";
 import {
   emptySet,
@@ -19,19 +19,19 @@ import { PlannedMatchCard } from "./PlannedMatchCard";
 import { getMatchPredictions } from "./predictionsApi";
 import { getGroup } from "../groups/api";
 import { getProfilesByIds, displayName } from "../profiles/api";
-import { formatDate } from "../../lib/format";
-import { tap } from "../../lib/haptics";
+import { formatDate } from "@/lib/utils/format";
+import { tap } from "@/lib/utils/haptics";
 import { Avatar } from "../../components/Avatar";
 import { Skeleton } from "../../components/Skeleton";
 import { ScoreStepper } from "../../components/ScoreStepper";
 import { ShareMatch } from "./ShareMatch";
 import { SmoesjesMachine } from "./SmoesjesMachine";
-import { outcomeFor } from "../../lib/results";
-import { roastCtx } from "../../lib/roastTone";
-import { errorMessage } from "../../lib/errors";
+import { outcomeFor } from "@/features/rating/results";
+import { roastCtx } from "@/features/coach/roastTone";
+import { errorMessage } from "@/lib/utils/errors";
 import { getAllRatingHistories } from "../standings/ratingsApi";
-import { matchUpset, preMatchPoints } from "../../lib/upset";
-import type { Match, Profile, Team } from "../../lib/types";
+import { matchUpset, preMatchPoints } from "@/features/matches/upset";
+import type { Match, Profile, Team } from "@/types";
 import "./MatchDetail.css";
 
 export function MatchDetail() {

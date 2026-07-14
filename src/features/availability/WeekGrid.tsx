@@ -7,9 +7,9 @@ import {
   fromMinutes,
   minutesNowInZone,
   toMinutes,
-} from "../../lib/time";
+} from "@/lib/utils/time";
 import { CourtTypeIcon } from "../../components/CourtTypeIcon";
-import { courtTypeLabel } from "../../lib/format";
+import { courtTypeLabel } from "@/lib/utils/format";
 import "./Availability.css";
 
 function dayLabel(date: string): string {

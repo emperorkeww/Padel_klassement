@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
-import { eveningSummary, type EveningSummary } from "../../lib/eveningSummary";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
+import { eveningSummary, type EveningSummary } from "@/features/feed/eveningSummary";
 import { displayName } from "../profiles/api";
 import { teamLabel } from "../matches/api";
-import type { Match, Profile, RatingPoint, Team } from "../../lib/types";
+import type { Match, Profile, RatingPoint, Team } from "@/types";
 
 // Deelbare poster (4:5) met de samenvatting van vanavond: avondstand-top-3,
 // alle uitslagen en het beste duo. Verschijnt zodra er vandaag minstens één

@@ -6,7 +6,7 @@
 
 import type { ReactNode } from "react";
 import { CoachAvatar } from "./CoachAvatar";
-import { COMMENTATOR, type CoachMood } from "../lib/roastTone";
+import { COMMENTATOR, type CoachMood } from "@/features/coach/roastTone";
 import "./CoachSneer.css";
 
 export function CoachBubble({

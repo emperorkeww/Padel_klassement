@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { formatDate } from "../lib/format";
+import { formatDate } from "@/lib/utils/format";
 import "./RatingChart.css";
 
 // Hand-rolled SVG-lijngrafiek van de klassementspositie over tijd. Zelfde stijl

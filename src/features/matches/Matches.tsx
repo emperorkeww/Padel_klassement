@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { useAsync } from "../../lib/useAsync";
-import { useRealtime } from "../../lib/useRealtime";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useRealtime } from "@/lib/hooks/useRealtime";
 import { MatchListSkeleton } from "../../components/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
-import { outcomeFor } from "../../lib/results";
+import { outcomeFor } from "@/features/rating/results";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllRatingHistories } from "../standings/ratingsApi";
-import { upsetsByMatch } from "../../lib/upset";
+import { upsetsByMatch } from "@/features/matches/upset";
 import { getAllProfiles } from "../profiles/api";
 import { getMyFriendships, categorize, otherId } from "../friends/api";
 import { DeletableMatchCard } from "./MatchList";
 import { PlannedMatchCard } from "./PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "./NewMatchSheet";
-import type { Match, Profile, Team } from "../../lib/types";
+import type { Match, Profile, Team } from "@/types";
 import "./Matches.css";
 
 type Filter = "all" | "mine" | "won" | "lost";

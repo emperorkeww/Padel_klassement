@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ToastProvider } from "../../components/ToastProvider";
-import { invalidateAll } from "../../lib/queryCache";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 import { PROFILES, TEAMS, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
 
 // De mock leest de tabellen pas bij elke query uit, dus per test kunnen we
@@ -13,7 +13,7 @@ const state = vi.hoisted(() => ({
   tables: {} as Record<string, unknown[]>,
 }));
 
-vi.mock("../../lib/supabase", async () => {
+vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("../../test/supabaseMock");
   return {
     supabase: makeSupabaseMock({

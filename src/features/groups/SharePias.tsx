@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useToast } from "../../components/ToastProvider";
-import { errorMessage } from "../../lib/errors";
-import { canvasPalette, sharePng, wrapCentered } from "../../lib/shareImage";
-import { piasPoster, piasOnderschrift, type PiasPoster } from "../../lib/maandpiasPoster";
-import type { PiasReden } from "../../lib/maandpias";
+import { errorMessage } from "@/lib/utils/errors";
+import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
+import { piasPoster, piasOnderschrift, type PiasPoster } from "@/features/groups/maandpiasPoster";
+import type { PiasReden } from "@/features/groups/maandpias";
 
 // Deelbare Pias-poster (4:5) — de gênante tegenhanger van ShareChampion.
 // Zelfde deel-flow (sharePng); opzettelijk plagerig van toon.

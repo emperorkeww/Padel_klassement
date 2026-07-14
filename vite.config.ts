@@ -15,6 +15,7 @@ export default defineConfig({
       { find: /^@\/lib\//, replacement: r("./src/lib/") },
       { find: /^@\/ui\//, replacement: r("./src/components/ui/") },
       { find: /^@\/features\//, replacement: r("./src/features/") },
+      { find: /^@\/types$/, replacement: r("./src/types/index.ts") },
       { find: /^@\/types\//, replacement: r("./src/types/") },
       { find: /^@\//, replacement: r("./src/") },
     ],
@@ -59,7 +60,7 @@ export default defineConfig({
         "src/**/*.{test,spec}.{ts,tsx}",
         // Bootstrap en gegenereerde databanktypes: geen testbare logica.
         "src/app/main.tsx",
-        "src/lib/database.types.ts",
+        "src/lib/supabase/database.types.ts",
         "src/test/**",
       ],
       // Ondergrens: `npm run coverage` faalt als de dekking hieronder zakt.

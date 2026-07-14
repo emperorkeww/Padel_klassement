@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
-import { invalidateAll } from "../../lib/queryCache";
+import { supabase } from "@/lib/supabase/client";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 type AuthContextValue = {
   session: Session | null;
