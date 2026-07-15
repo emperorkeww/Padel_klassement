@@ -5,7 +5,6 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import {
   emptySet,
-  formatSetScores,
   getMatch,
   getTeamsByIds,
   readSetScores,
@@ -69,19 +68,21 @@ export function MatchDetail() {
     return (
       // Speelt het scorebord na: twee teamvakken met de score in het midden.
       <div className="card md-board" aria-hidden="true">
-        <div className="md-status">
-          <span className="sk sk--pill" />
-          <span className="sk sk--pill" />
-        </div>
-        <div className="md-versus">
-          <div className="md-team">
-            <Skeleton rows={2} />
+        <div className="md-hero">
+          <div className="md-meta">
+            <span className="sk sk--pill" />
+            <span className="sk sk--pill" />
           </div>
-          <div className="md-score">
-            <span className="sk sk--line" style={{ width: 72, height: 36 }} />
-          </div>
-          <div className="md-team">
-            <Skeleton rows={2} />
+          <div className="md-versus">
+            <div className="md-team">
+              <Skeleton rows={2} />
+            </div>
+            <div className="md-score">
+              <span className="sk sk--line" style={{ width: 72, height: 36 }} />
+            </div>
+            <div className="md-team">
+              <Skeleton rows={2} />
+            </div>
           </div>
         </div>
       </div>
@@ -107,8 +108,8 @@ export function MatchDetail() {
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
-  // Per-set uitslag (optioneel), bv. "6-4 3-6 7-5".
-  const setLine = formatSetScores(readSetScores(m));
+  // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
+  const setPairs = readSetScores(m);
   // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
   // hem hebt aangemaakt (de server dwingt de rechten sowieso af).
   const amParticipant =
@@ -133,103 +134,122 @@ export function MatchDetail() {
       </header>
 
       <section className="card md-board">
-        <div className="md-status">
-          <span className={`badge ${done ? "" : "badge--accent"}`}>
-            {done ? "Afgerond" : "Gepland"}
-          </span>
-          {isDraw && <span className="badge badge--accent">Gelijkspel</span>}
-          {upset && (
-            <span
-              className="badge badge--accent"
-              title="De underdog won: winkans vooraf lager dan 35%."
-            >
-              🎯 Upset · {Math.round(upset.chance * 100)}% kans
+        <div className="md-hero">
+          {/* Kalme metaregel: status · datum · ronde · groep. */}
+          <div className="md-meta">
+            <span className={`md-meta__status ${done ? "" : "is-open"}`}>
+              {done ? "Afgerond" : "Gepland"}
             </span>
-          )}
-          {scoreHi && scoreHi.type === "score" && (
-            <span className="badge badge--accent">
-              {scoreHi.label === "bagel"
-                ? "🥯 6-0 Droog"
-                : scoreHi.label === "monsterzege"
-                  ? "🦖 Monsterzege"
-                  : "😬 Nagelbijter"}
+            <span className="md-meta__sep" aria-hidden="true">
+              ·
             </span>
-          )}
-          <span className="badge">
-            {formatDate(m.played_at ?? m.created_at) || "—"}
-          </span>
-          {m.round_number != null && (
-            <span className="badge">Ronde {m.round_number}</span>
-          )}
-          <GroupBadge groupId={m.group_id} />
-        </div>
-
-        <div className="md-versus">
-          <TeamBlock
-            team={teamA}
-            label={teamLabel(teamA, pmap)}
-            profiles={pmap}
-            won={done && aWon}
-            histories={histories.data ?? undefined}
-            matchId={m.id}
-          />
-          <div className="md-score">
-            {m.score_a != null && m.score_b != null ? (
-              <span className="md-score__num">
-                {/* Het winnende cijfer kleurt mee: wie won zie je in de score zelf. */}
-                <span className={done && aWon ? "is-winside" : ""}>{m.score_a}</span>
-                <span className="md-score__dash">–</span>
-                <span className={done && bWon ? "is-winside" : ""}>{m.score_b}</span>
-              </span>
-            ) : (
-              <span className="md-score__vs">vs</span>
+            <span>{formatDate(m.played_at ?? m.created_at) || "—"}</span>
+            {m.round_number != null && (
+              <>
+                <span className="md-meta__sep" aria-hidden="true">
+                  ·
+                </span>
+                <span>Ronde {m.round_number}</span>
+              </>
             )}
-            {done && !isDraw && m.score_a != null && m.score_b != null && (
-              <span className="md-score__note">eindstand</span>
-            )}
+            <GroupBadge groupId={m.group_id} />
           </div>
-          <TeamBlock
-            team={teamB}
-            label={teamLabel(teamB, pmap)}
-            profiles={pmap}
-            won={done && bWon}
-            histories={histories.data ?? undefined}
-            matchId={m.id}
-          />
-        </div>
 
-        {setLine && (
-          <div className="md-sets">
-            <span className="md-sets__label">Sets</span>
-            <span className="set-breakdown">
-              {setLine.split(" ").map((s, i) => (
-                <span key={i} className="set-breakdown__set">
-                  {s}
+          <div className="md-versus">
+            <TeamBlock
+              team={teamA}
+              side="a"
+              label={teamLabel(teamA, pmap)}
+              profiles={pmap}
+              won={done && aWon}
+              histories={histories.data ?? undefined}
+              matchId={m.id}
+            />
+            <div className="md-score">
+              {m.score_a != null && m.score_b != null ? (
+                <span className="md-score__num">
+                  {/* Het winnende cijfer kleurt mee: wie won zie je in de score zelf. */}
+                  <span className={done && aWon ? "is-winside" : ""}>{m.score_a}</span>
+                  <span className="md-score__dash">–</span>
+                  <span className={done && bWon ? "is-winside" : ""}>{m.score_b}</span>
+                </span>
+              ) : (
+                <span className="md-score__vs">vs</span>
+              )}
+              {done && !isDraw && m.score_a != null && m.score_b != null && (
+                <span className="md-score__note">eindstand</span>
+              )}
+            </div>
+            <TeamBlock
+              team={teamB}
+              side="b"
+              label={teamLabel(teamB, pmap)}
+              profiles={pmap}
+              won={done && bWon}
+              histories={histories.data ?? undefined}
+              matchId={m.id}
+            />
+          </div>
+
+          {/* Bijzondere momenten apart van de metaregel, zodat ze echt opvallen. */}
+          {(isDraw || upset || scoreHi) && (
+            <div className="md-moments">
+              {isDraw && <span className="md-moment md-moment--draw">Gelijkspel</span>}
+              {upset && (
+                <span
+                  className="md-moment"
+                  title="De underdog won: winkans vooraf lager dan 35%."
+                >
+                  🎯 Upset · {Math.round(upset.chance * 100)}% kans
+                </span>
+              )}
+              {scoreHi && scoreHi.type === "score" && (
+                <span className="md-moment">
+                  {scoreHi.label === "bagel"
+                    ? "🥯 6-0 Droog"
+                    : scoreHi.label === "monsterzege"
+                      ? "🦖 Monsterzege"
+                      : "😬 Nagelbijter"}
+                </span>
+              )}
+            </div>
+          )}
+
+          {setPairs && (
+            <div className="md-sets">
+              <span className="md-sets__label">Sets</span>
+              {setPairs.map(([a, b], i) => (
+                <span key={i} className="md-sets__chip">
+                  <span className={a > b ? "is-winside" : ""}>{a}</span>-
+                  <span className={b > a ? "is-winside" : ""}>{b}</span>
                 </span>
               ))}
-            </span>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        {canEdit && !editing && (
-          <div className="md-edit-actions">
-            <button className="btn btn--sm" onClick={() => setEditing(true)}>
-              {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
-            </button>
+        {canEdit && (
+          <div className="md-board__foot">
+            {!editing && (
+              <div className="md-edit-actions">
+                <button className="btn btn--sm" onClick={() => setEditing(true)}>
+                  {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
+                </button>
+              </div>
+            )}
+            {editing && (
+              <ScoreEditor
+                match={m}
+                labelA={teamLabel(teamA, pmap)}
+                labelB={teamLabel(teamB, pmap)}
+                onClose={() => setEditing(false)}
+                onSaved={() => {
+                  setEditing(false);
+                  match.reload();
+                }}
+              />
+            )}
           </div>
-        )}
-
-        {canEdit && editing && (
-          <ScoreEditor
-            match={m}
-            labelA={teamLabel(teamA, pmap)}
-            labelB={teamLabel(teamB, pmap)}
-            onClose={() => setEditing(false)}
-            onSaved={() => {
-              setEditing(false);
-              match.reload();
-            }}
-          />
         )}
       </section>
 
@@ -449,6 +469,7 @@ function ScoreEditor({
 
 function TeamBlock({
   team,
+  side,
   label,
   profiles,
   won,
@@ -456,6 +477,8 @@ function TeamBlock({
   matchId,
 }: {
   team: Team | undefined;
+  /** Kant van het bord: A kleurt smaragd, B lime (zoals bij teams kiezen). */
+  side: "a" | "b";
   label: string;
   profiles: Record<string, Profile>;
   won: boolean;
@@ -466,7 +489,7 @@ function TeamBlock({
     ? [profiles[team.player1_id], profiles[team.player2_id]]
     : [];
   return (
-    <div className={`md-team ${won ? "is-win" : ""}`}>
+    <div className={`md-team md-team--${side} ${won ? "is-win" : ""}`}>
       <div className="md-team__name">
         {label}
         {won && <span className="badge badge--win">Winnaar</span>}
