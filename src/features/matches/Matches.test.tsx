@@ -59,6 +59,13 @@ describe("<Matches />", () => {
     const sheet = within(await screen.findByRole("dialog"));
     expect(sheet.getByText(/wie speelden er/i)).toBeInTheDocument();
 
+    // Buiten groepscontext kun je de match optioneel aan een groep koppelen
+    // (#361); hier kiezen we de fixture-groep.
+    await userEvent.selectOptions(
+      await sheet.findByLabelText(/koppel aan groep/i),
+      "g1",
+    );
+
     // Vier spelers aantikken: eerst team A (Alice + Bob), dan team B.
     for (const naam of [/alice anders/i, /bob boers/i, /carol claes/i, /dave de vos/i]) {
       await userEvent.click(sheet.getByRole("button", { name: naam }));
@@ -73,7 +80,12 @@ describe("<Matches />", () => {
     await userEvent.click(sheet.getByRole("button", { name: /match opslaan/i }));
     expect(supabase.rpc).toHaveBeenCalledWith(
       "create_completed_match",
-      expect.objectContaining({ p_winner: "a", p_score_a: 6, p_score_b: 4 }),
+      expect.objectContaining({
+        p_winner: "a",
+        p_score_a: 6,
+        p_score_b: 4,
+        p_group_id: "g1",
+      }),
     );
     // Sheet sluit na opslaan.
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -94,14 +106,38 @@ describe("<Matches />", () => {
     expect(sheet.getByText(/wanneer spelen jullie/i)).toBeInTheDocument();
 
     // Zonder tijdstip plannen kan gewoon; de match komt bij "Te spelen".
+    // Zonder groep-keuze blijft het een losse match (default, #361).
     await userEvent.click(
       sheet.getByRole("button", { name: /^match plannen$/i }),
     );
     expect(supabase.rpc).toHaveBeenCalledWith(
       "create_planned_match",
-      expect.objectContaining({ p_played_at: undefined }),
+      expect.objectContaining({ p_played_at: undefined, p_group_id: undefined }),
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("plant een match gekoppeld aan een groep (#361)", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^match plannen$/i }),
+    );
+    const sheet = within(await screen.findByRole("dialog"));
+    await userEvent.selectOptions(
+      await sheet.findByLabelText(/koppel aan groep/i),
+      "g1",
+    );
+    for (const naam of [/alice anders/i, /bob boers/i, /carol claes/i, /dave de vos/i]) {
+      await userEvent.click(sheet.getByRole("button", { name: naam }));
+    }
+    await userEvent.click(sheet.getByRole("button", { name: /naar plannen/i }));
+    await userEvent.click(
+      sheet.getByRole("button", { name: /^match plannen$/i }),
+    );
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_planned_match",
+      expect.objectContaining({ p_group_id: "g1" }),
+    );
   });
 
   it("sluit de wizard met Escape", async () => {
