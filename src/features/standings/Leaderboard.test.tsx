@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { makeSupabaseMock } from "../../test/supabaseMock";
-import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
-import { AuthProvider } from "../auth/AuthProvider";
+import { makeSupabaseMock } from "@/test/supabaseMock";
+import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 // Vast "nu" (3 juli 2026, Q3): zo is Q2 2026 een afgesloten seizoen met een

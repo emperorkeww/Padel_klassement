@@ -1,9 +1,9 @@
 import { Suspense, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { getProfile, displayName } from "../features/profiles/api";
-import { useTierAnnouncement } from "../features/standings/useTierAnnouncement";
+import { getProfile, displayName } from "@/features/profiles/api";
+import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
 import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
 import { GithubRibbon } from "@/app/GithubRibbon";

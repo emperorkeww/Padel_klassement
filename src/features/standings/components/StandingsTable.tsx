@@ -8,7 +8,7 @@ import { TierBadge } from "@/features/rating/components/TierBadge";
 import { useFlip } from "@/lib/hooks/useFlip";
 import { winRate } from "@/features/rating/results";
 import { byRank } from "@/features/rating/standings";
-import { THIN_GAMES } from "../../groups/groupRating";
+import { THIN_GAMES } from "@/features/groups/groupRating";
 import { ShiftBadge } from "./ShiftBadge";
 import { SortableTh } from "./SortableTh";
 import {

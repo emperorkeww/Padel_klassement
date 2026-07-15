@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
-import type { Club } from "../availability/club";
+import type { Club } from "@/features/availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
 // dependency. Losse typering (tabel-shim) tot database.types.ts opnieuw

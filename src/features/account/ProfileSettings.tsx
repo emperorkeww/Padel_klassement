@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { ProfileSkeleton, Skeleton } from "@/ui/Skeleton";
@@ -8,7 +8,7 @@ import {
   updateProfile,
   uploadAvatar,
   displayName,
-} from "../profiles/api";
+} from "@/features/profiles/api";
 import {
   changeEmail,
   changePassword,

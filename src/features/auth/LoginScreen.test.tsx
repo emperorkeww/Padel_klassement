@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "./AuthProvider";
 
 vi.mock("@/lib/supabase/client", async () => {
-  const { makeSupabaseMock } = await import("../../test/supabaseMock");
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
   return { supabase: makeSupabaseMock({ session: null }) };
 });
 

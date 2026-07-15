@@ -1,7 +1,7 @@
 import { headToHead } from "@/features/rating/results";
 import { dateInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
-import { type GroupSummary } from "../groups/api";
+import { type GroupSummary } from "@/features/groups/api";
 import {
   getGroupPolls,
   getGroupPollOptions,
@@ -9,7 +9,7 @@ import {
   type PlayPoll,
   type PollOption,
   type PollVote,
-} from "../groups/pollsApi";
+} from "@/features/groups/pollsApi";
 
 /* Laatst bekende weergavenaam per gebruiker, zodat de begroeting bij een
    volgend bezoek meteen klopt (geen flits van het e-mailadres). */

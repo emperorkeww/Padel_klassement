@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
 import { getGroup, getGroupMembers } from "./api";
-import { getGroupMatches, getTeamsMap } from "../matches/api";
+import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
 import { dateInZone } from "@/lib/utils/time";
-import { useClub } from "../availability/club";
-import { getGroupPlayerStandings } from "../standings/api";
-import { getPlayerRatings, getAllRatingHistories } from "../standings/ratingsApi";
-import { getProfilesMap } from "../profiles/api";
+import { useClub } from "@/features/availability/club";
+import { getGroupPlayerStandings } from "@/features/standings/api";
+import { getPlayerRatings, getAllRatingHistories } from "@/features/standings/ratingsApi";
+import { getProfilesMap } from "@/features/profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
-import { getMyFriendships, categorize, otherId } from "../friends/api";
+import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
@@ -30,7 +30,7 @@ import { computePredictionStandings } from "@/features/matches/predictions";
 import {
   getGroupPredictions,
   getGroupPredictionStandings,
-} from "../matches/predictionsApi";
+} from "@/features/matches/predictionsApi";
 import {
   isSeasonClosed,
   listSeasons,

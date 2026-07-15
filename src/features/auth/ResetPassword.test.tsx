@@ -6,8 +6,8 @@ import type { Mock } from "vitest";
 import { AuthProvider } from "./AuthProvider";
 
 vi.mock("@/lib/supabase/client", async () => {
-  const { makeSupabaseMock } = await import("../../test/supabaseMock");
-  const { SESSION } = await import("../../test/fixtures");
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  const { SESSION } = await import("@/test/fixtures");
   // Een herstellink levert een (recovery-)sessie op; het formulier is dan zichtbaar.
   return { supabase: makeSupabaseMock({ session: SESSION }) };
 });
