@@ -19,8 +19,7 @@ import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
-import { PollSection } from "@/features/groups/components/PlanPoll";
-import { SuggestionsCard } from "@/features/groups/components/SuggestionsCard";
+import { PlanTab } from "@/features/groups/components/PlanTab";
 import { DayStats } from "@/features/groups/components/DayStats";
 import { MakeTeams } from "@/features/groups/components/MakeTeams";
 import { ShareEvening } from "@/features/groups/components/ShareEvening";
@@ -478,19 +477,17 @@ export function GroupDetail() {
       )}
 
       {view === "plannen" && (
-        <>
-          {/* Suggesties leiden de plan-flow in: wie kan/moet er spelen? →
-              plan de speeldag via de poll eronder (#342). */}
-          <SuggestionsCard groupId={id} myId={myId} matches={matches.data ?? []} />
-          <PollSection
-            groupId={id}
-            groupName={group.data.name}
-            members={memberList}
-            profiles={pmap}
-            myId={myId}
-            isOwner={isOwner}
-          />
-        </>
+        /* Eén fase-gedreven flow (#349): fasebalk + suggesties + focus-poll
+           + secundaire speeldagen, met de wizard als bottom-sheet. */
+        <PlanTab
+          groupId={id}
+          groupName={group.data.name}
+          members={memberList}
+          profiles={pmap}
+          myId={myId}
+          isOwner={isOwner}
+          matches={matches.data ?? []}
+        />
       )}
 
       {view === "matches" && (

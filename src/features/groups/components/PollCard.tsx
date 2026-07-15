@@ -51,6 +51,7 @@ export function PollCard({
   myId,
   isOwner,
   onChanged,
+  onRoundsMade,
 }: {
   poll: PlayPoll;
   groupName: string;
@@ -61,6 +62,8 @@ export function PollCard({
   myId: string;
   isOwner: boolean;
   onChanged: () => void;
+  /** Rondes klaargezet vanuit deze kaart — voedt de Klaar-fase (#349). */
+  onRoundsMade?: () => void;
 }) {
   const toast = useToast();
   // De op de poll opgeslagen locatie (#322), niet de globale clubvoorkeur. De
@@ -195,9 +198,6 @@ export function PollCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options, votes, week, today]);
 
-  const phase = poll.status === "open" ? 0 : poll.status === "locked" ? 1 : 2;
-  const steps = ["Stemmen", "Gekozen", "Geboekt"];
-
   // Bij locked/booked: winnaar groot, de rest ingeklapt. Bij booked blijven de
   // niet-gekozen opties zelfs helemaal verborgen (#322): je kunt toch niet meer
   // terug, dus tonen ze zou enkel verwarren.
@@ -301,22 +301,6 @@ export function PollCard({
         </div>
       </div>
 
-      <ol className="poll-steps" aria-label="Fase van de poll">
-        {steps.map((s, i) => (
-          <li
-            key={s}
-            className={`poll-steps__step${i === phase ? " is-active" : ""}${i < phase ? " is-done" : ""}`}
-          >
-            {i === phase && (
-              <span aria-hidden="true" className="poll-steps__ball">
-                🎾
-              </span>
-            )}
-            {s}
-          </li>
-        ))}
-      </ol>
-
       {waiting.length > 0 && (
         <p className="poll-waiting">
           Wacht op: {waiting.map(name).join(", ")}
@@ -347,6 +331,7 @@ export function PollCard({
                 isManager={isManager}
                 busy={busy}
                 run={run}
+                onRoundsMade={onRoundsMade}
               />
             );
           }

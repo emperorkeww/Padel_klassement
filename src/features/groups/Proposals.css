@@ -336,6 +336,140 @@
   margin-bottom: var(--sp-3);
 }
 
+/* ---------- Fasebalk over de hele tab (#349) ---------- */
+/* Stemmen → Gekozen → Geboekt → Klaar, met de next-action-regel eronder
+   en de altijd bereikbare plan-CTA rechts. */
+.plan-phases__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.plan-phases__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.plan-phases__steps.is-idle {
+  opacity: 0.55;
+}
+.plan-phases__step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.plan-phases__step:not(:last-child)::after {
+  content: "→";
+  color: var(--line-strong);
+}
+.plan-phases__step.is-active {
+  color: var(--accent);
+}
+.plan-phases__step.is-done {
+  color: var(--success);
+}
+.plan-phases__ball {
+  font-size: 0.85em;
+}
+.plan-phases__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Secundaire speeldagen, compact ingeklapt (#349) ---------- */
+.plan-other__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  list-style: none;
+}
+.plan-other__summary::-webkit-details-marker {
+  display: none;
+}
+.plan-other__summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.plan-other[open] .plan-other__summary::after {
+  transform: rotate(180deg);
+}
+.plan-other__summary .card__title {
+  margin: 0;
+}
+.plan-other[open] .plan-other__summary {
+  margin-bottom: var(--sp-3);
+}
+.plan-other__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.plan-other__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plan-other__when {
+  min-width: 0;
+  font-weight: 700;
+}
+.plan-other__when::first-letter {
+  text-transform: uppercase;
+}
+.plan-other__badge {
+  padding: 2px var(--sp-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+}
+.plan-other__badge.is-open {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.plan-other__badge.is-booked {
+  color: var(--success);
+}
+.plan-other__chevron {
+  color: var(--ink-soft);
+}
+/* De uitgeklapte poll-kaart in de accordeon: lucht boven de kaart. */
+.plan-other__rows > li > .card {
+  margin-top: var(--sp-2);
+}
+
 /* Fase-verloop: Stemmen → Gekozen → Geboekt. */
 .poll-steps {
   display: flex;

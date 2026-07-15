@@ -36,6 +36,7 @@ export function WinnerCard({
   isManager,
   busy,
   run,
+  onRoundsMade,
 }: {
   poll: PlayPoll;
   option: PollOption;
@@ -47,6 +48,8 @@ export function WinnerCard({
   isManager: boolean;
   busy: boolean;
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
+  /** Rondes klaargezet — laat de tab-fasebalk meteen naar Klaar springen. */
+  onRoundsMade?: () => void;
 }) {
   const toast = useToast();
   const name = (id: string) => displayName(profiles[id]);
@@ -110,6 +113,7 @@ export function WinnerCard({
       if (courts.length === 0) throw new Error("Geen volledige banen te vullen.");
       const ids = await createFairRound(poll.group_id, courts);
       setRoundsMade((n) => n + 1);
+      onRoundsMade?.();
       toast.success(
         ids.length === 1
           ? "Eerlijke match klaargezet — zie Vandaag."
