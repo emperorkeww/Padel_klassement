@@ -226,8 +226,7 @@ export function Feed() {
     if (
       firstEvent.kind === "tier" &&
       firstEvent.playerId === myId &&
-      firstEvent.richting === "promotie" &&
-      firstEvent.hoofdtier
+      firstEvent.richting === "promotie"
     ) {
       const sessionKey = `feed-celebrated:${firstEvent.matchId}`;
       if (!sessionStorage.getItem(sessionKey)) {
