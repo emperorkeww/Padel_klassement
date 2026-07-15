@@ -1,0 +1,63 @@
+import type { Match } from "@/types";
+import type { PlayPoll, PollOption } from "./pollsApi";
+
+// Pure logica voor de fase-gedreven Plannen-tab (#349): welke fase de tab
+// toont, of er al wedstrijdrondes voor een geboekte poll bestaan en welke
+// poll de focus krijgt. Getest in planFlowLogic.test.ts.
+
+/** De reis van een speeldag over de hele tab: Stemmen → Gekozen → Geboekt → Klaar. */
+export type PlanPhase = "stemmen" | "gekozen" | "geboekt" | "klaar";
+
+/** Volgorde + labels van de fasebalk (labels zijn geen exacte kopie van de
+ *  statusnamen: "Stemmen" staat als stap-label alleen in de fasebalk). */
+export const PLAN_PHASES: PlanPhase[] = ["stemmen", "gekozen", "geboekt", "klaar"];
+
+/** Het gekozen moment van een gelockte/geboekte poll; null zolang de poll open is. */
+export function lockedOptionOf(
+  poll: PlayPoll,
+  options: PollOption[],
+): PollOption | null {
+  if (!poll.locked_option_id) return null;
+  return options.find((o) => o.id === poll.locked_option_id) ?? null;
+}
+
+/**
+ * Zijn er al wedstrijdrondes klaargezet voor deze geboekte speeldag?
+ * Zonder datamodel-wijziging afgeleid uit de matches van de groep: rondes
+ * (round_number > 0) die ná het boeken zijn aangemaakt horen bij de speeldag.
+ * Bekende imprecisie: een losse ronde tussen boeken en spelen telt ook mee —
+ * onschuldig, want de boodschap ("wedstrijden staan klaar") blijft waar.
+ */
+export function roundsExistFor(poll: PlayPoll, matches: Match[]): boolean {
+  if (poll.status !== "booked" || !poll.booked_at) return false;
+  const bookedAt = poll.booked_at;
+  return matches.some(
+    (m) => (m.round_number ?? 0) > 0 && m.created_at >= bookedAt,
+  );
+}
+
+/** Fase van één poll; `roundsExist` komt uit roundsExistFor (of lokale staat). */
+export function pollPhase(poll: PlayPoll, roundsExist: boolean): PlanPhase {
+  if (poll.status === "open") return "stemmen";
+  if (poll.status === "locked") return "gekozen";
+  return roundsExist ? "klaar" : "geboekt";
+}
+
+/**
+ * Welke actieve poll krijgt de focus (groot in beeld)? `active` is de
+ * soonest-first uitvoer van activePolls.
+ * 1. De speeldag van vandaag zelf wint altijd (rondes zetten/laatste check).
+ * 2. Anders de eerste poll waar nog actie nodig is (stemmen, kiezen of boeken).
+ * 3. Anders de eerstvolgende volledig geboekte speeldag.
+ */
+export function focusPoll(
+  active: PlayPoll[],
+  options: PollOption[],
+  today: string,
+): PlayPoll | null {
+  const todaysPoll = active.find(
+    (p) => lockedOptionOf(p, options)?.date === today,
+  );
+  if (todaysPoll) return todaysPoll;
+  return active.find((p) => p.status !== "booked") ?? active[0] ?? null;
+}

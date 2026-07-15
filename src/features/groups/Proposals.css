@@ -321,33 +321,153 @@
   cursor: pointer;
 }
 
-/* Fase-verloop: Stemmen → Gekozen → Geboekt. */
-.poll-steps {
+/* Wizard in een sheet (#349): de sheet houdt onderaan geen eigen padding,
+   anders schemert scrollende content onder de sticky wizard-footer door.
+   De footer neemt de safe-area zelf voor zijn rekening. */
+.sheet--wizard {
+  padding-bottom: 0;
+}
+.sheet--wizard .wizard-footer {
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+}
+/* Locatiekeuze voor een nieuwe poll, als rij onder de sheet-kop. */
+.wizard-sheet__club {
   display: flex;
+  margin-bottom: var(--sp-3);
+}
+
+/* ---------- Fasebalk over de hele tab (#349) ---------- */
+/* Stemmen → Gekozen → Geboekt → Klaar, met de next-action-regel eronder
+   en de altijd bereikbare plan-CTA rechts. */
+.plan-phases__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--sp-2);
-  margin: 0 0 var(--sp-3);
+  flex-wrap: wrap;
+}
+.plan-phases__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
   padding: 0;
+  min-width: 0;
   list-style: none;
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--ink-soft);
 }
-.poll-steps__step {
+.plan-phases__steps.is-idle {
+  opacity: 0.55;
+}
+.plan-phases__step {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.poll-steps__step:not(:last-child)::after {
+.plan-phases__step:not(:last-child)::after {
   content: "→";
   color: var(--line-strong);
 }
-.poll-steps__step.is-active {
+.plan-phases__step.is-active {
   color: var(--accent);
 }
-.poll-steps__step.is-done {
+.plan-phases__step.is-done {
   color: var(--success);
+}
+.plan-phases__ball {
+  font-size: 0.85em;
+}
+.plan-phases__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Secundaire speeldagen, compact ingeklapt (#349) ---------- */
+.plan-other__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  list-style: none;
+}
+.plan-other__summary::-webkit-details-marker {
+  display: none;
+}
+.plan-other__summary::after {
+  content: "⌄";
+  margin-left: auto;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.plan-other[open] .plan-other__summary::after {
+  transform: rotate(180deg);
+}
+.plan-other__summary .card__title {
+  margin: 0;
+}
+.plan-other[open] .plan-other__summary {
+  margin-bottom: var(--sp-3);
+}
+.plan-other__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.plan-other__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plan-other__when {
+  min-width: 0;
+  font-weight: 700;
+}
+.plan-other__when::first-letter {
+  text-transform: uppercase;
+}
+.plan-other__badge {
+  padding: 2px var(--sp-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+}
+.plan-other__badge.is-open {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.plan-other__badge.is-booked {
+  color: var(--success);
+}
+.plan-other__chevron {
+  color: var(--ink-soft);
+}
+/* De uitgeklapte poll-kaart in de accordeon: lucht boven de kaart. */
+.plan-other__rows > li > .card {
+  margin-top: var(--sp-2);
 }
 
 /* Compacte stemrijen. */
@@ -548,17 +668,24 @@
   .poll-wizard__manual .proposal-form__note {
     grid-column: 1 / -1;
   }
-  /* Fasebalk mag horizontaal scrollen i.p.v. de kaart te verbreden. */
-  .poll-steps {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  /* Fasebalk over de tab (#349): CTA onder de stappen, stappen wrappen. */
+  .plan-phases__cta {
+    width: 100%;
   }
-  .poll-steps::-webkit-scrollbar {
-    display: none;
-  }
-  .poll-steps__step {
+  .plan-phases__step {
     white-space: nowrap;
+  }
+  /* Secundaire speeldag-rijen: badge mag onder het moment schuiven. */
+  .plan-other__row {
+    grid-template-columns: 1fr auto;
+  }
+  .plan-other__chevron {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .plan-other__badge {
+    grid-column: 1;
+    justify-self: start;
   }
   /* Footer-acties (Kies …, Heropen, Annuleer) op volle breedte: fijnere
      tikdoelen en één actie per regel bij weinig ruimte. */
@@ -631,14 +758,38 @@
   gap: var(--sp-2);
 }
 
-/* Rondes-blok: eigen voet, gescheiden met een stippellijn. */
+/* Fase-secties in de winner-card (#349): kiezen → boeken → klaarzetten.
+   De actuele stap krijgt een accentrand, de rest blijft een compact blok. */
+.winner-card__section {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.winner-card__section.is-current {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+.winner-card__section-title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.winner-card__section-done {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* Rondes-blok in de Klaarzetten-sectie. */
 .winner-card__rounds {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--line-strong);
 }
 .winner-card__rounds-hint {
   font-size: var(--fs-sm);
@@ -648,10 +799,6 @@
   color: var(--ink);
 }
 
-/* Fase-bal. */
-.poll-steps__ball {
-  font-size: 0.85em;
-}
 .poll-card__showlosers {
   margin-top: var(--sp-2);
 }
@@ -683,3 +830,14 @@
   margin-bottom: var(--sp-3);
 }
 
+
+/* Heel smalle schermen (320px): de vier fase-stappen passen zonder
+   letter-spacing nét op één regel. */
+@media (max-width: 360px) {
+  .plan-phases__step {
+    letter-spacing: 0;
+  }
+  .plan-phases__steps {
+    gap: var(--sp-1);
+  }
+}
