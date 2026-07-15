@@ -780,14 +780,38 @@
   gap: var(--sp-2);
 }
 
-/* Rondes-blok: eigen voet, gescheiden met een stippellijn. */
+/* Fase-secties in de winner-card (#349): kiezen → boeken → klaarzetten.
+   De actuele stap krijgt een accentrand, de rest blijft een compact blok. */
+.winner-card__section {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.winner-card__section.is-current {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+.winner-card__section-title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.winner-card__section-done {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* Rondes-blok in de Klaarzetten-sectie. */
 .winner-card__rounds {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--line-strong);
 }
 .winner-card__rounds-hint {
   font-size: var(--fs-sm);

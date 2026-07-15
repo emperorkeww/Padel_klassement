@@ -36,6 +36,7 @@ export function WinnerCard({
   isManager,
   busy,
   run,
+  roundsExist = false,
   onRoundsMade,
 }: {
   poll: PlayPoll;
@@ -48,14 +49,18 @@ export function WinnerCard({
   isManager: boolean;
   busy: boolean;
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
+  /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
+  roundsExist?: boolean;
   /** Rondes klaargezet — laat de tab-fasebalk meteen naar Klaar springen. */
   onRoundsMade?: () => void;
 }) {
   const toast = useToast();
   const name = (id: string) => displayName(profiles[id]);
 
-  // Eén of meer rondes al gegenereerd vanuit deze kaart (sessie-lokaal).
+  // Eén of meer rondes al gegenereerd vanuit deze kaart (sessie-lokaal);
+  // roundsExist dekt rondes die elders (of eerder) zijn klaargezet.
   const [roundsMade, setRoundsMade] = useState(0);
+  const roundsDone = roundsExist || roundsMade > 0;
 
   function exportIcs() {
     downloadIcs(
@@ -151,9 +156,14 @@ export function WinnerCard({
           </span>
         </div>
 
-        <div className="winner-card__actions">
-          {poll.status === "locked" && (
-            <>
+        {/* Fase-secties (#349): kiezen → boeken → klaarzetten; alleen de
+            actuele stap springt eruit, de rest blijft compact. */}
+        <section
+          className={`winner-card__section${poll.status === "locked" ? " is-current" : ""}`}
+        >
+          <h3 className="winner-card__section-title">Boeken</h3>
+          {poll.status === "locked" ? (
+            <div className="winner-card__actions">
               <a
                 className="btn btn--sm btn--primary"
                 href={bookingUrl(o.date)}
@@ -173,51 +183,69 @@ export function WinnerCard({
                   Baan geboekt ✓
                 </button>
               )}
-            </>
+              <button className="btn btn--sm" onClick={shareWinner}>
+                ↗ Deel
+              </button>
+            </div>
+          ) : (
+            <p className="winner-card__section-done">Geboekt ✓ · {club.name}</p>
           )}
-          {poll.status === "booked" && (
-            <button className="btn btn--sm" onClick={exportIcs}>
-              📅 Zet in agenda
-            </button>
-          )}
-          <button className="btn btn--sm" onClick={shareWinner}>
-            ↗ Deel
-          </button>
-        </div>
+        </section>
+
+        {poll.status === "booked" && (
+          <section
+            className={`winner-card__section${t.yes.length < 4 || roundsDone ? " is-current" : ""}`}
+          >
+            <h3 className="winner-card__section-title">Agenda & delen</h3>
+            <div className="winner-card__actions">
+              <button className="btn btn--sm" onClick={exportIcs}>
+                📅 Zet in agenda
+              </button>
+              <button className="btn btn--sm" onClick={shareWinner}>
+                ↗ Deel
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Rondes genereren: expliciete actie zodra er genoeg
             bevestigde spelers zijn (4 per baan). */}
-        <div className="winner-card__rounds">
-          <button
-            className={`btn btn--sm${poll.status === "booked" && roundsMade === 0 && t.yes.length >= 4 ? " btn--primary" : ""}`}
-            disabled={busy || t.yes.length < 4}
-            title={
-              t.yes.length < 4
-                ? "Minstens 4 bevestigde spelers nodig"
-                : "Elo-gebalanceerde teams per baan, als geplande matches"
-            }
-            onClick={generateRounds}
-          >
-            ⚡ {roundsMade === 0 ? "Genereer wedstrijden" : "Nog een wedstrijd"}
-            {t.yes.length >= 4 &&
-              ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
-          </button>
-          {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. */}
-          {roundsMade > 0 && (
-            <Link className="btn btn--sm" to={`/groepen/${poll.group_id}`}>
-              Bekijk de wedstrijden →
-            </Link>
-          )}
-          {t.yes.length < 4 && (
-            <span className="winner-card__rounds-hint">
-              Nog <strong>{4 - t.yes.length}</strong>{" "}
-              {4 - t.yes.length === 1
-                ? "bevestigde speler"
-                : "bevestigde spelers"}{" "}
-              nodig voor wedstrijden
-            </span>
-          )}
-        </div>
+        <section
+          className={`winner-card__section${poll.status === "booked" && t.yes.length >= 4 && !roundsDone ? " is-current" : ""}`}
+        >
+          <h3 className="winner-card__section-title">Klaarzetten</h3>
+          <div className="winner-card__rounds">
+            <button
+              className={`btn btn--sm${poll.status === "booked" && !roundsDone && t.yes.length >= 4 ? " btn--primary" : ""}`}
+              disabled={busy || t.yes.length < 4}
+              title={
+                t.yes.length < 4
+                  ? "Minstens 4 bevestigde spelers nodig"
+                  : "Elo-gebalanceerde teams per baan, als geplande matches"
+              }
+              onClick={generateRounds}
+            >
+              ⚡ {roundsMade === 0 ? "Genereer wedstrijden" : "Nog een wedstrijd"}
+              {t.yes.length >= 4 &&
+                ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
+            </button>
+            {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. */}
+            {roundsDone && (
+              <Link className="btn btn--sm" to={`/groepen/${poll.group_id}`}>
+                Bekijk de wedstrijden →
+              </Link>
+            )}
+            {t.yes.length < 4 && (
+              <span className="winner-card__rounds-hint">
+                Nog <strong>{4 - t.yes.length}</strong>{" "}
+                {4 - t.yes.length === 1
+                  ? "bevestigde speler"
+                  : "bevestigde spelers"}{" "}
+                nodig voor wedstrijden
+              </span>
+            )}
+          </div>
+        </section>
       </div>
     </li>
   );

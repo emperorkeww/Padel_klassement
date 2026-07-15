@@ -228,6 +228,7 @@ export function PlanTab({
           myId={myId}
           isOwner={isOwner}
           onChanged={reloadAll}
+          roundsExist={roundsExist}
           onRoundsMade={() =>
             setLocallyRounded((cur) => new Set(cur).add(focus.id))
           }
