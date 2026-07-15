@@ -66,6 +66,19 @@ const point = (matchId: string, before: number, after: number): RatingPoint =>
     played_at: "",
   }) as RatingPoint;
 
+const standing = (pid: string, points: number, gd: number): PlayerStanding =>
+  ({
+    player_id: pid,
+    username: pid,
+    full_name: pid,
+    played: 5,
+    won: Math.floor(points / 3),
+    drawn: 0,
+    lost: 5 - Math.floor(points / 3),
+    points,
+    goal_diff: gd,
+  }) as PlayerStanding;
+
 const kinds = (feed: FeedEvent[]) => feed.map((e) => e.kind);
 
 describe("buildFeed — basis (bestaand gedrag)", () => {
@@ -144,14 +157,14 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       myId: "p1",
       histories: { p1: [point(m.id, 1095, 1104)] },
     });
-    const top = feed[0];
-    if (top.kind !== "match") throw new Error("verwacht match-event");
-    expect(top.highlights).toContainEqual({
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights).toContainEqual({
       type: "rating",
       playerId: "p1",
       threshold: 1100,
     });
-    expect(top.myDelta).toBe(9);
+    expect(matchEvent.myDelta).toBe(9);
   });
 
   it("ranking-wissel: promotie naar een nieuwe divisie komt in de feed", () => {
@@ -163,14 +176,28 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       myId: "p1",
       histories: { p1: [point(m.id, 1095, 1105)] }, // Wannabe I → Glazenwasser III
     });
-    const top = feed[0];
-    if (top.kind !== "match") throw new Error("verwacht match-event");
-    expect(top.highlights).toContainEqual({
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights).toContainEqual({
       type: "tier",
       playerId: "p1",
       label: "Glazenwasser III",
       emoji: "🪟",
       richting: "promotie",
+    });
+    const tierEvent = feed.find((e) => e.kind === "tier");
+    if (!tierEvent) throw new Error("verwacht tier-event");
+    expect(tierEvent).toEqual({
+      kind: "tier",
+      at: "2026-07-10T18:00:00Z",
+      playerId: "p1",
+      vanLabel: "Wannabe I",
+      naarLabel: "Glazenwasser III",
+      vanEmoji: "😤",
+      naarEmoji: "🪟",
+      richting: "promotie",
+      hoofdtier: true,
+      matchId: m.id,
     });
   });
 
@@ -183,14 +210,28 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       myId: "p1",
       histories: { p1: [point(m.id, 1005, 1040)] }, // Wannabe III → Wannabe II
     });
-    const top = feed[0];
-    if (top.kind !== "match") throw new Error("verwacht match-event");
-    expect(top.highlights).toContainEqual({
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights).toContainEqual({
       type: "tier",
       playerId: "p1",
       label: "Wannabe II",
       emoji: "😤",
       richting: "promotie",
+    });
+    const tierEvent = feed.find((e) => e.kind === "tier");
+    if (!tierEvent) throw new Error("verwacht tier-event");
+    expect(tierEvent).toEqual({
+      kind: "tier",
+      at: "2026-07-10T18:00:00Z",
+      playerId: "p1",
+      vanLabel: "Wannabe III",
+      naarLabel: "Wannabe II",
+      vanEmoji: "😤",
+      naarEmoji: "😤",
+      richting: "promotie",
+      hoofdtier: false,
+      matchId: m.id,
     });
   });
 
@@ -361,19 +402,6 @@ describe("buildFeed — publiek: groepsgenoten (#138)", () => {
 });
 
 describe("buildFeed — klassementsprong", () => {
-  const standing = (pid: string, points: number, gd: number): PlayerStanding =>
-    ({
-      player_id: pid,
-      username: pid,
-      full_name: pid,
-      played: 5,
-      won: Math.floor(points / 3),
-      drawn: 0,
-      lost: 5 - Math.floor(points / 3),
-      points,
-      goal_diff: gd,
-    }) as PlayerStanding;
-
   it("meldt alleen grote sprongen van netwerk-spelers", () => {
     // rankShifts reconstrueert de stand van vóór de laatste speeldag door de
     // winst van vandaag terug te draaien: p1 zakt dan naar 9 punten met de
@@ -665,5 +693,76 @@ describe("buildFeed — smoesjes (#296)", () => {
       smoesjes: [smoes("p2", "g-onbekend")],
     });
     expect(kinds(feed).filter((k) => k === "smoes")).toEqual([]);
+  });
+});
+
+describe("buildFeed — statuswijzigingen (#344)", () => {
+  const groups = [
+    { id: "g1", name: "Vrijdagavond", created_at: "2026-07-01T10:00:00Z", created_by: "p1" },
+  ];
+
+  it("rank shifts: meldt sprongen van >= 2, plus podium-wissels", () => {
+    const today = match("2026-07-10T18:00:00Z"); // p1+p2 winnen
+    const standings = [
+      standing("p1", 12, 0), // Plek 1 nu (vóór 12-3 = 9)
+      standing("p2", 9, 3),  // Plek 2 nu (vóór 9-3 = 6)
+      standing("p3", 8, 2),  // Plek 3 nu
+      standing("p4", 7, 1),  // Plek 4 nu
+    ];
+    // p1 steeg 3 -> 1 (sprong 2, podium in)
+    // p2 steeg 4 -> 2 (sprong 2, podium in)
+    const feed = buildFeed({
+      matches: [today],
+      teams: TEAMS,
+      friendships: [friend("f12", "p2", "2026-07-01T12:00:00Z")],
+      myId: "p1",
+      standings,
+    });
+    const rankEvents = feed.filter((e) => e.kind === "rank");
+    expect(rankEvents.some((e) => e.kind === "rank" && e.playerId === "p2")).toBe(true);
+    expect(rankEvents.some((e) => e.kind === "rank" && e.playerId === "p1")).toBe(false);
+  });
+
+  it("pias-week en zwarte-piet: dateert correct op de matchtijd in plaats van startdatum", () => {
+    const m = match("2026-07-12T19:30:00Z", "t-ab", "t-cd");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups,
+      piasWeeks: [
+        {
+          groupId: "g1",
+          isoYear: 2026,
+          isoWeek: 28,
+          weekStart: "2026-07-06",
+          playerId: "p1",
+          matchId: m.id,
+          winChance: 0.8,
+        },
+      ],
+      shameTransfers: [
+        {
+          groupId: "g1",
+          holderId: "p2",
+          fromId: "p1",
+          reden: "choke",
+          ernst: 10,
+          detail: "choked hard",
+          matchId: m.id,
+          since: "2026-07-12",
+        },
+      ],
+    });
+
+    const pias = feed.find((e) => e.kind === "pias-week");
+    const piet = feed.find((e) => e.kind === "zwarte-piet");
+
+    expect(pias).toBeDefined();
+    expect(pias?.at).toBe("2026-07-12T19:30:00Z"); // Niet "2026-07-06"
+
+    expect(piet).toBeDefined();
+    expect(piet?.at).toBe("2026-07-12T19:30:00Z"); // Niet "2026-07-12" (middernacht)
   });
 });

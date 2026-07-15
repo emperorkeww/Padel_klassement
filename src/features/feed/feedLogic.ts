@@ -38,7 +38,7 @@ export const REEKS_STAPPEN = [3, 5, 10] as const;
 /** Rating-grenzen die een highlight verdienen (zelfde tiers als de badges). */
 export const RATING_DREMPELS = [1100, 1200, 1300] as const;
 /** Minste plaatsen stijging/daling voor een klassement-item. */
-export const RANK_SPRONG = 3;
+export const RANK_SPRONG = 2;
 /** Zo lang na het sluiten van een kwartaal melden we de kampioen nog. */
 export const KAMPIOEN_VENSTER_DAGEN = 21;
 /** Zo lang na het sluiten van een maand melden we de pias van de maand nog (#167). */
@@ -71,6 +71,7 @@ export type FeedEvent =
   | { kind: "poll-locked" | "poll-booked"; at: string; groupId: string; groupName: string; date: string | null; time: string | null }
   | { kind: "evening"; at: string; groupId: string; groupName: string; day: string; count: number; topPlayerId: string | null; bestDuoTeamId: string | null; highlights: Highlight[] }
   | { kind: "rank"; at: string; playerId: string; shift: Shift; rank: number }
+  | { kind: "tier"; at: string; playerId: string; vanLabel: string; naarLabel: string; vanEmoji: string; naarEmoji: string; richting: "promotie" | "degradatie"; hoofdtier: boolean; matchId: string }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
@@ -306,6 +307,18 @@ export function buildFeed(input: {
               emoji: wissel.naar.emoji,
               richting: wissel.richting,
             });
+            events.push({
+              kind: "tier",
+              at: m.played_at ?? m.created_at,
+              playerId: pid,
+              vanLabel: wissel.van.label,
+              naarLabel: wissel.naar.label,
+              vanEmoji: wissel.van.emoji,
+              naarEmoji: wissel.naar.emoji,
+              richting: wissel.richting,
+              hoofdtier: wissel.hoofdtier,
+              matchId: m.id,
+            });
           }
         }
       }
@@ -445,16 +458,20 @@ export function buildFeed(input: {
     }
   }
 
+  const matchById = new Map(matches.map((m) => [m.id, m]));
+  const groupNamesById = new Map(groups.map((g) => [g.id, g.name]));
+
   // ── Pias van de week (#127): serverside aangeduid per groep, de grootste
   //    choke. We tonen enkel piassen van groepen die de feed kent (jouw
   //    groepen) zodat we een groepsnaam hebben. ──
-  const groupNamesById = new Map(groups.map((g) => [g.id, g.name]));
   for (const p of piasWeeks) {
     const groupName = groupNamesById.get(p.groupId);
     if (!groupName) continue;
+    const m = matchById.get(p.matchId);
+    const fallbackAt = addDays(p.weekStart, 6) + "T23:59:59Z";
     events.push({
       kind: "pias-week",
-      at: p.weekStart,
+      at: m ? (m.played_at ?? m.created_at) : fallbackAt,
       groupId: p.groupId,
       groupName,
       playerId: p.playerId,
@@ -468,9 +485,11 @@ export function buildFeed(input: {
   for (const t of shameTransfers) {
     const groupName = groupNamesById.get(t.groupId);
     if (!groupName) continue;
+    const m = matchById.get(t.matchId);
+    const at = m ? (m.played_at ?? m.created_at) : `${t.since}T00:00:00Z`;
     events.push({
       kind: "zwarte-piet",
-      at: t.since,
+      at,
       groupId: t.groupId,
       groupName,
       toPlayerId: t.holderId,
@@ -483,7 +502,6 @@ export function buildFeed(input: {
   // ── Smoesjes (#296): een op een verloren groepsmatch geplaatste smoes van de
   //    verliezer, onder Coach Rudy's stem. RLS levert enkel smoezen uit jouw
   //    groepen, dus we hebben altijd een groepsnaam. ──
-  const matchById = new Map(matches.map((m) => [m.id, m]));
   for (const s of smoesjes) {
     const groupName = groupNamesById.get(s.group_id);
     if (!groupName) continue;
@@ -515,12 +533,14 @@ export function buildFeed(input: {
       for (const [pid, shift] of shifts) {
         if (!network.has(pid)) continue;
         const rank = rankOf.get(pid) ?? 0;
-        const big =
-          typeof shift === "number"
-            ? Math.abs(shift) >= RANK_SPRONG
-            : rank > 0 && rank <= 3; // "nieuw" is alleen nieuws in de top 3
-        if (!big) continue;
-        events.push({ kind: "rank", at: lastPlayed, playerId: pid, shift, rank });
+        const was = shift === "nieuw" ? null : rank + shift;
+        const enteredTop3 = rank > 0 && rank <= 3 && (was === null || was > 3);
+        const leftTop3 = rank > 3 && was !== null && was <= 3;
+        const bigShift = typeof shift === "number" && Math.abs(shift) >= RANK_SPRONG;
+
+        if (enteredTop3 || leftTop3 || bigShift) {
+          events.push({ kind: "rank", at: lastPlayed, playerId: pid, shift, rank });
+        }
       }
     }
   }
@@ -614,4 +634,11 @@ export function recentlyClosedSeason(now: Date): Season | null {
 /** Kalenderdag (YYYY-MM-DD) van een gebeurtenis, voor de dag-kopjes. */
 export function feedDay(event: FeedEvent): string {
   return event.at.slice(0, 10);
+}
+
+/** Telt N dagen op bij een YYYY-MM-DD datumstring en geeft YYYY-MM-DD terug. */
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
