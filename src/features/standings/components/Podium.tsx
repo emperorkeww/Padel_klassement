@@ -16,7 +16,7 @@ export interface PodiumEntry {
   isMe?: boolean;
   /** Hoofdgetal: de rating (null = nog geen matches → "—"). */
   rating: number | null;
-  /** Ratingverandering van de laatste match (▲/▼). */
+  /** Ratingverandering als ▲/▼-badge (0/null = geen badge). */
   delta?: number | null;
   /** Bijschrift, bv. "9 ptn". */
   sub?: string | null;

@@ -10,6 +10,8 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "@/features/standings/ratingsApi";
+import { deltaToday } from "@/features/standings/ratingDelta";
+import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import {
   getPlayerMatches,
@@ -68,6 +70,7 @@ export function PlayerProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMe = user?.id === id;
+  const club = useClub();
 
   const profile = useAsync(() => getProfile(id), [id]);
   const standing = useAsync(() => getPlayerStanding(id), [id]);
@@ -177,7 +180,8 @@ export function PlayerProfile() {
   const myGames = ratings.data?.[id]?.games ?? 0;
   const thinRating = myGames > 0 && myGames < THIN_GAMES;
   const rhist = ratingHistory.data ?? [];
-  const ratingDelta = rhist.length > 0 ? rhist[rhist.length - 1].delta : null;
+  // Dag-cumulatieve ELO-beweging voor de ▲/▼-badge (#352), niet de laatste match.
+  const ratingDelta = deltaToday(rhist, club.timezone);
   const hasRating = rhist.length >= 2;
   const hasRank = rankPoints.length >= 2;
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);

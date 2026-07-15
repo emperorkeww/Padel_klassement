@@ -49,6 +49,7 @@ import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierFor, tierProgress } from "@/features/rating/tiers";
 import { byRank } from "@/features/rating/standings";
+import { deltaToday } from "@/features/standings/ratingDelta";
 import { THIN_GAMES } from "@/features/groups/groupRating";
 import { readFlag, writeFlag } from "./flags";
 import {
@@ -185,6 +186,8 @@ export function Dashboard() {
   const myTierNext =
     myProgress && myProgress.volgende ? myProgress : null;
   const rhist = ratingHistory.data ?? [];
+  // Dag-cumulatieve ELO-beweging voor de ▲/▼-badge (#352), niet de laatste match.
+  const dayDelta = deltaToday(rhist, club.timezone);
 
   // Alleen echt gespeelde matches: de RPC-filter dekt dit al, maar client-side
   // filteren houdt afgeleide weergaven robuust (o.a. in tests).
@@ -729,12 +732,12 @@ export function Dashboard() {
               ) : (
                 <p className="rating-card__value">
                   {myRating != null ? <CountUp value={myRating} /> : "—"}
-                  {rhist.length > 0 && rhist[rhist.length - 1].delta !== 0 && (
+                  {dayDelta !== 0 && (
                     <span
-                      className={`stat__delta ${rhist[rhist.length - 1].delta > 0 ? "is-up" : "is-down"}`}
+                      className={`stat__delta ${dayDelta > 0 ? "is-up" : "is-down"}`}
                     >
-                      {rhist[rhist.length - 1].delta > 0 ? "▲" : "▼"}
-                      {Math.abs(rhist[rhist.length - 1].delta)}
+                      {dayDelta > 0 ? "▲" : "▼"}
+                      {Math.abs(dayDelta)}
                     </span>
                   )}
                   <TierBadge
