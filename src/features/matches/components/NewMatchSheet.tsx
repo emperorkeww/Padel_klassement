@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScoreStepper } from "@/ui/ScoreStepper";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { getMyGroups } from "@/features/groups/api";
 import { Sheet } from "@/ui/Sheet";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
@@ -40,8 +42,9 @@ export function NewMatchSheet({
   open: boolean;
   players: Profile[];
   mode?: NewMatchMode;
-  /** Als gezet: de match wordt aan deze groep gekoppeld (telt mee in de
-   *  groepsstand en avondsamenvatting). */
+  /** Als gezet: de match wordt vast aan deze groep gekoppeld (telt mee in de
+   *  groepsstand en avondsamenvatting) en de groep-keuze verschijnt niet.
+   *  Zonder waarde kan de gebruiker zelf optioneel een groep kiezen (#361). */
   groupId?: string | null;
   /** Roast-toon van de groep waarin gelogd wordt (#183), voor Coach Rudy's
    *  reactie op je eigen uitslag. Buiten groepscontext valt hij op `gemeen`. */
@@ -66,6 +69,8 @@ export function NewMatchSheet({
   const [repeat, setRepeat] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
+  // Buiten groepscontext: zelf gekozen groep ("" = losse match, #361).
+  const [pickedGroupId, setPickedGroupId] = useState("");
   // Gasten die tijdens deze sessie zijn aangemaakt (meteen kiesbaar).
   const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
   const [guestName, setGuestName] = useState("");
@@ -74,6 +79,15 @@ export function NewMatchSheet({
   const promptSmoes = useSmoesPrompt();
   const { user } = useAuth();
   const myId = user?.id ?? "";
+
+  // Zonder vaste groep van de aanroeper: eigen groepen laden voor de keuze
+  // (RLS geeft alleen groepen waar de gebruiker lid van is).
+  const myGroups = useAsync(
+    () => (open && groupId == null ? getMyGroups() : Promise.resolve([])),
+    [open, groupId],
+  );
+  // De groep die daadwerkelijk meegaat in de submit: vast (prop) of gekozen.
+  const effectiveGroupId = groupId ?? (pickedGroupId || null);
 
   // Vers beginnen bij elk openen.
   useEffect(() => {
@@ -89,6 +103,7 @@ export function NewMatchSheet({
       setWhen("");
       setRepeat(false);
       setRepeatWeeks(4);
+      setPickedGroupId("");
       setExtraGuests([]);
       setGuestName("");
       setAddingGuest(false);
@@ -215,7 +230,7 @@ export function NewMatchSheet({
           b1: teamB[0],
           b2: teamB[1],
           playedAt,
-          groupId,
+          groupId: effectiveGroupId,
         });
       }
       tap();
@@ -247,7 +262,7 @@ export function NewMatchSheet({
         scoreA: sa,
         scoreB: sb,
         setScores: setScores.length > 0 ? setScores : null,
-        groupId,
+        groupId: effectiveGroupId,
       });
       const winnaar = sa === sb ? null : sa! > sb! ? "a" : "b";
       const loggerTeam = teamA.includes(myId)
@@ -268,8 +283,8 @@ export function NewMatchSheet({
       // de gewone quip. Anders reageert Coach Rudy zoals vanouds op je uitslag —
       // of neutraal als de logger niet zelf meespeelde.
       const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
-      if (verlies && groupId && myId) {
-        promptSmoes({ matchId: newMatchId, groupId, playerId: myId, ctx });
+      if (verlies && effectiveGroupId && myId) {
+        promptSmoes({ matchId: newMatchId, groupId: effectiveGroupId, playerId: myId, ctx });
       } else {
         toast.success(
           loggerTeam
@@ -335,6 +350,25 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
+            {/* Buiten groepscontext: optioneel aan een eigen groep koppelen,
+             *  zodat de match meetelt voor groepsstand en toto (#361). */}
+            {groupId == null && (myGroups.data?.length ?? 0) > 0 && (
+              <label className="label">
+                Koppel aan groep (optioneel)
+                <select
+                  className="select"
+                  value={pickedGroupId}
+                  onChange={(e) => setPickedGroupId(e.target.value)}
+                >
+                  <option value="">Losse match — geen groep</option>
+                  {(myGroups.data ?? []).map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {searchable && (
               <input
                 className="input pick-search"
