@@ -5,7 +5,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { Skeleton } from "@/ui/Skeleton";
@@ -14,8 +14,8 @@ import { EmptyState } from "@/ui/EmptyState";
 import { errorMessage } from "@/lib/utils/errors";
 import { formatDate } from "@/lib/utils/format";
 import { dateInZone } from "@/lib/utils/time";
-import { useClub } from "../availability/club";
-import { getProfilesMap } from "../profiles/api";
+import { useClub } from "@/features/availability/club";
+import { getProfilesMap } from "@/features/profiles/api";
 import { getMyGroups, createGroup, type GroupSummary } from "./api";
 import {
   getGroupPolls,

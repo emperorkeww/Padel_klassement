@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
@@ -15,41 +15,41 @@ import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/re
 import { deriveBadges } from "@/features/profiles/badges";
 import { weekRange } from "@/features/dashboard/missions";
 import { RatingChart } from "@/features/rating/components/RatingChart";
-import { getPlayerStandings } from "../standings/api";
+import { getPlayerStandings } from "@/features/standings/api";
 import {
   getPlayerRatings,
   getRatingHistory,
   getAllRatingHistories,
-} from "../standings/ratingsApi";
+} from "@/features/standings/ratingsApi";
 import {
   getRecentResults,
   getPlayerMatches,
   getTeamsMap,
   teamLabel,
-} from "../matches/api";
+} from "@/features/matches/api";
 import { eveningSummary } from "@/features/feed/eveningSummary";
 import { ShareEvening } from "@/features/groups/components/ShareEvening";
 import { PiasCard } from "@/features/groups/components/PiasCard";
-import { getZwartePiet } from "../groups/zwartePietApi";
+import { getZwartePiet } from "@/features/groups/zwartePietApi";
 import { bepaalPias } from "@/features/groups/maandpias";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
-import { getMyFriendships, categorize } from "../friends/api";
-import { getProfilesMap, displayName } from "../profiles/api";
+import { getMyFriendships, categorize } from "@/features/friends/api";
+import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import {
   matchesInYear,
   toonWrappedBanner,
   wrappedJaar,
-} from "../wrapped/wrapped";
-import { getMyGroups } from "../groups/api";
+} from "@/features/wrapped/wrapped";
+import { getMyGroups } from "@/features/groups/api";
 import { TeamSide } from "@/features/matches/components/MatchList";
-import { getClubAvailability, nextFreeSlot } from "../availability/api";
-import { useClub } from "../availability/club";
+import { getClubAvailability, nextFreeSlot } from "@/features/availability/api";
+import { useClub } from "@/features/availability/club";
 import { dateInZone, minutesNowInZone } from "@/lib/utils/time";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierFor, tierProgress } from "@/features/rating/tiers";
 import { byRank } from "@/features/rating/standings";
-import { THIN_GAMES } from "../groups/groupRating";
+import { THIN_GAMES } from "@/features/groups/groupRating";
 import { readFlag, writeFlag } from "./flags";
 import {
   cachedName,

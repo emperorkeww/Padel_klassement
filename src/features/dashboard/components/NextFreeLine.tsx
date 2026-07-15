@@ -1,4 +1,4 @@
-import { type NextFreeSlot } from "../../availability/api";
+import { type NextFreeSlot } from "@/features/availability/api";
 
 export function NextFreeLine({ slot }: { slot: NextFreeSlot | null }) {
   if (!slot) return <p className="avail-next">Vandaag niets meer vrij.</p>;

@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { makeSupabaseMock } from "../../test/supabaseMock";
-import { AuthProvider } from "../auth/AuthProvider";
+import { makeSupabaseMock } from "@/test/supabaseMock";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -31,7 +31,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 import Friends from "./Friends";
 import { supabase } from "@/lib/supabase/client";
-import { makeQuery } from "../../test/supabaseMock";
+import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
 
 function renderPage() {

@@ -15,7 +15,7 @@ import {
   winRate,
 } from "@/features/rating/results";
 import { opponentExtremes } from "@/features/profiles/trends";
-import { bestPartner } from "../profiles/headToHead";
+import { bestPartner } from "@/features/profiles/headToHead";
 import { deriveBadges } from "@/features/profiles/badges";
 
 /**

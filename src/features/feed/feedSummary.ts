@@ -2,8 +2,8 @@ import type { FeedEvent } from "@/features/feed/feedLogic";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { kleurRoast, roastCtx, roastSeed } from "@/features/coach/roastTone";
-import { teamLabel } from "../matches/api";
-import { displayName } from "../profiles/api";
+import { teamLabel } from "@/features/matches/api";
+import { displayName } from "@/features/profiles/api";
 
 // Compacte één-regel-samenvatting per feed-gebeurtenis, voor de
 // "Recente activiteit"-preview op het dashboard (#59). De volledige /feed-

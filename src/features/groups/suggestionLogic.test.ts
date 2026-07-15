@@ -6,7 +6,7 @@ import {
   type CanSignal,
   type SuggestionSources,
 } from "./suggestionLogic";
-import type { WeekHeatmap } from "../availability/availabilityShare";
+import type { WeekHeatmap } from "@/features/availability/availabilityShare";
 
 // 2026-07-10 is een vrijdag, 2026-07-11 een zaterdag.
 const HEAT: WeekHeatmap = {

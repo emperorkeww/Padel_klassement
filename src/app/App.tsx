@@ -1,23 +1,23 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { ProtectedRoute } from "../features/auth/ProtectedRoute";
+import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardLayout } from "@/app/DashboardLayout";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
-const LoginScreen = lazy(() => import("../features/auth/LoginScreen"));
-const ResetPassword = lazy(() => import("../features/auth/ResetPassword"));
-const Dashboard = lazy(() => import("../features/dashboard/Dashboard"));
-const Feed = lazy(() => import("../features/feed/Feed"));
-const Leaderboard = lazy(() => import("../features/standings/Leaderboard"));
-const Matches = lazy(() => import("../features/matches/Matches"));
-const Groups = lazy(() => import("../features/groups/Groups"));
-const GroupDetail = lazy(() => import("../features/groups/GroupDetail"));
-const JoinGroup = lazy(() => import("../features/groups/JoinGroup"));
-const Friends = lazy(() => import("../features/friends/Friends"));
-const PlayerProfile = lazy(() => import("../features/profiles/PlayerProfile"));
-const MatchDetail = lazy(() => import("../features/matches/MatchDetail"));
-const ProfileSettings = lazy(() => import("../features/account/ProfileSettings"));
-const Availability = lazy(() => import("../features/availability/Availability"));
+const LoginScreen = lazy(() => import("@/features/auth/LoginScreen"));
+const ResetPassword = lazy(() => import("@/features/auth/ResetPassword"));
+const Dashboard = lazy(() => import("@/features/dashboard/Dashboard"));
+const Feed = lazy(() => import("@/features/feed/Feed"));
+const Leaderboard = lazy(() => import("@/features/standings/Leaderboard"));
+const Matches = lazy(() => import("@/features/matches/Matches"));
+const Groups = lazy(() => import("@/features/groups/Groups"));
+const GroupDetail = lazy(() => import("@/features/groups/GroupDetail"));
+const JoinGroup = lazy(() => import("@/features/groups/JoinGroup"));
+const Friends = lazy(() => import("@/features/friends/Friends"));
+const PlayerProfile = lazy(() => import("@/features/profiles/PlayerProfile"));
+const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
+const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
+const Availability = lazy(() => import("@/features/availability/Availability"));
 
 function App() {
   return (

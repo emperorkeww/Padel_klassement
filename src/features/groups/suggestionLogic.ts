@@ -1,4 +1,4 @@
-import type { WeekHeatmap } from "../availability/availabilityShare";
+import type { WeekHeatmap } from "@/features/availability/availabilityShare";
 
 // Pure scoring voor de suggestiekaart: combineert vrije banen, "kan dan"-
 // signalen uit poll-stemmen, de speelhistoriek van de groep en eerder

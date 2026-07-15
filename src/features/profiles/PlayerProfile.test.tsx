@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "../auth/AuthProvider";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { invalidateAll } from "@/lib/supabase/queryCache";
-import { PROFILES, TEAMS, MATCH_DONE, MATCH_PLANNED } from "../../test/fixtures";
+import { PROFILES, TEAMS, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
 
 // De mock leest de tabellen pas bij elke query uit, dus per test kunnen we
 // `state.tables` hermuteren (o.a. de bekeken speler vooraan zetten, want
@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase/client", async () => {
-  const { makeSupabaseMock } = await import("../../test/supabaseMock");
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
   return {
     supabase: makeSupabaseMock({
       session: { user: { id: "p1", email: "alice@example.com" } },
