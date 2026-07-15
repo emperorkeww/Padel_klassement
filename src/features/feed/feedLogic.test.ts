@@ -196,12 +196,11 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
       vanEmoji: "😤",
       naarEmoji: "🪟",
       richting: "promotie",
-      hoofdtier: true,
       matchId: m.id,
     });
   });
 
-  it("ranking-wissel: ook een sub-niveau (III→II) komt in de feed", () => {
+  it("ranking-wissel: een sub-niveau (III→II) blijft weg — geen item én geen chip", () => {
     const m = match("2026-07-10T18:00:00Z");
     const feed = buildFeed({
       matches: [m],
@@ -212,27 +211,10 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     });
     const matchEvent = feed.find((e) => e.kind === "match");
     if (!matchEvent) throw new Error("verwacht match-event");
-    expect(matchEvent.highlights).toContainEqual({
-      type: "tier",
-      playerId: "p1",
-      label: "Wannabe II",
-      emoji: "😤",
-      richting: "promotie",
-    });
-    const tierEvent = feed.find((e) => e.kind === "tier");
-    if (!tierEvent) throw new Error("verwacht tier-event");
-    expect(tierEvent).toEqual({
-      kind: "tier",
-      at: "2026-07-10T18:00:00Z",
-      playerId: "p1",
-      vanLabel: "Wannabe III",
-      naarLabel: "Wannabe II",
-      vanEmoji: "😤",
-      naarEmoji: "😤",
-      richting: "promotie",
-      hoofdtier: false,
-      matchId: m.id,
-    });
+    // Sub-niveau binnen dezelfde hoofddivisie: geen tier-chip op de match…
+    expect(matchEvent.highlights.some((h) => h.type === "tier")).toBe(false);
+    // …en geen standalone klassement-item (#354).
+    expect(feed.find((e) => e.kind === "tier")).toBeUndefined();
   });
 
   it("geen chips zonder aanleiding; myDelta null zonder history", () => {
