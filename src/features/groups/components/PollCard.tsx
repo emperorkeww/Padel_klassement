@@ -33,6 +33,7 @@ import {
 import type { GroupMember, Profile } from "@/types";
 import { floorHalfHour, shortDay } from "../planPollHelpers";
 import { PollWizard } from "./PollWizard";
+import { PollWizardSheet } from "./PollWizardSheet";
 import { WinnerCard } from "./WinnerCard";
 import { PollOptionRow } from "./PollOptionRow";
 
@@ -207,62 +208,61 @@ export function PollCard({
   const collapsed =
     poll.status === "booked" || (poll.status === "locked" && !showLosers);
 
-  // "Dagen aanpassen": wizard voorgevuld met de huidige momenten; het
-  // verschil wordt bij bewaren als losse add/removes doorgevoerd zodat
-  // stemmen op ongewijzigde momenten blijven staan.
-  if (editing) {
-    const initialPicked = new Map<string, NewPollOption>(
-      options.map((o) => [
-        `${o.date}|${o.start_time}`,
-        {
-          date: o.date,
-          startTime: o.start_time,
-          duration: o.duration,
-          courtsFree: o.courts_free,
-        },
-      ]),
-    );
-    return (
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title">Dagen aanpassen</h2>
-        </div>
-        <PollWizard
-          today={today}
-          week={week}
-          weekLoading={weekLoading}
-          club={club}
-          initialPicked={initialPicked}
-          submitLabel={(n) => `Bewaar dagen (${n})`}
-          confirmHint={(picked) => {
-            const removed = options.filter(
-              (o) => !picked.has(`${o.date}|${o.start_time}`),
-            );
-            if (removed.length === 0) return null;
-            const votesLost = removed.some((o) =>
-              votes.some((v) => v.option_id === o.id),
-            );
-            return `${removed.length} ${removed.length === 1 ? "moment vervalt" : "momenten vervallen"}${votesLost ? ", inclusief de stemmen daarop" : ""}.`;
-          }}
-          onSubmit={async (_options, picked) => {
-            const { toAdd, toRemoveIds } = diffPollOptions(options, picked);
-            for (const optionId of toRemoveIds) {
-              await removePollOption(optionId);
-            }
-            for (const o of toAdd) {
-              await addPollOption(poll.id, poll.group_id, o);
-            }
-            toast.success("Dagen bijgewerkt — de stemmen op behouden momenten staan er nog.");
-          }}
-          onClose={() => setEditing(false)}
-          onDone={() => {
-            setEditing(false);
-            onChanged();
-          }}
-        />
-      </section>
-    );
-  }
+  // "Dagen aanpassen": wizard in een sheet (#349), voorgevuld met de huidige
+  // momenten; het verschil wordt bij bewaren als losse add/removes doorgevoerd
+  // zodat stemmen op ongewijzigde momenten blijven staan.
+  const initialPicked = new Map<string, NewPollOption>(
+    options.map((o) => [
+      `${o.date}|${o.start_time}`,
+      {
+        date: o.date,
+        startTime: o.start_time,
+        duration: o.duration,
+        courtsFree: o.courts_free,
+      },
+    ]),
+  );
+  const editSheet = (
+    <PollWizardSheet
+      open={editing}
+      onClose={() => setEditing(false)}
+      title="Dagen aanpassen"
+    >
+      <PollWizard
+        today={today}
+        week={week}
+        weekLoading={weekLoading}
+        club={club}
+        initialPicked={initialPicked}
+        submitLabel={(n) => `Bewaar dagen (${n})`}
+        confirmHint={(picked) => {
+          const removed = options.filter(
+            (o) => !picked.has(`${o.date}|${o.start_time}`),
+          );
+          if (removed.length === 0) return null;
+          const votesLost = removed.some((o) =>
+            votes.some((v) => v.option_id === o.id),
+          );
+          return `${removed.length} ${removed.length === 1 ? "moment vervalt" : "momenten vervallen"}${votesLost ? ", inclusief de stemmen daarop" : ""}.`;
+        }}
+        onSubmit={async (_options, picked) => {
+          const { toAdd, toRemoveIds } = diffPollOptions(options, picked);
+          for (const optionId of toRemoveIds) {
+            await removePollOption(optionId);
+          }
+          for (const o of toAdd) {
+            await addPollOption(poll.id, poll.group_id, o);
+          }
+          toast.success("Dagen bijgewerkt — de stemmen op behouden momenten staan er nog.");
+        }}
+        onClose={() => setEditing(false)}
+        onDone={() => {
+          setEditing(false);
+          onChanged();
+        }}
+      />
+    </PollWizardSheet>
+  );
 
   return (
     <section className="card">
@@ -425,6 +425,8 @@ export function PollCard({
           </button>
         )}
       </div>
+
+      {editSheet}
     </section>
   );
 }

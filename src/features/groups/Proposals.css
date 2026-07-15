@@ -321,6 +321,21 @@
   cursor: pointer;
 }
 
+/* Wizard in een sheet (#349): de sheet houdt onderaan geen eigen padding,
+   anders schemert scrollende content onder de sticky wizard-footer door.
+   De footer neemt de safe-area zelf voor zijn rekening. */
+.sheet--wizard {
+  padding-bottom: 0;
+}
+.sheet--wizard .wizard-footer {
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+}
+/* Locatiekeuze voor een nieuwe poll, als rij onder de sheet-kop. */
+.wizard-sheet__club {
+  display: flex;
+  margin-bottom: var(--sp-3);
+}
+
 /* Fase-verloop: Stemmen → Gekozen → Geboekt. */
 .poll-steps {
   display: flex;

@@ -21,6 +21,7 @@ import { activePolls, pollOptions } from "@/features/groups/pollLogic";
 import type { GroupMember, Profile } from "@/types";
 import { PollCard } from "./PollCard";
 import { PollWizard } from "./PollWizard";
+import { PollWizardSheet } from "./PollWizardSheet";
 import "@/features/groups/Proposals.css";
 
 // Speeldag-poll: de doodle van de Plannen-tab. Wizard met dag-navigator
@@ -142,46 +143,51 @@ export function PollSection({
           <h2 className="card__title">
             {active.length > 0 ? "Nog een speeldag plannen" : "Speeldag plannen"}
           </h2>
-          {wizardOpen ? (
-            // Locatie voor deze nieuwe poll — los van de globale clubvoorkeur.
-            <ClubPicker value={newPollClub} onPick={setNewPollClub} allowManual align="right" />
-          ) : (
-            <button
-              className="btn btn--sm btn--primary"
-              onClick={() => setWizardOpen(true)}
-            >
-              + Plan een speeldag
-            </button>
-          )}
+          <button
+            className="btn btn--sm btn--primary"
+            onClick={() => setWizardOpen(true)}
+          >
+            + Plan een speeldag
+          </button>
         </div>
-        {!wizardOpen && active.length === 0 && (
+        {active.length === 0 && (
           <p className="empty">
             Nog geen lopende poll. Pak een suggestie hierboven, of plan zelf een
             speeldag: kies een paar momenten waarop banen vrij zijn en laat de
             groep stemmen.
           </p>
         )}
-        {wizardOpen && (
-          <PollWizard
-            today={today}
-            week={week.data ?? []}
-            weekLoading={week.loading}
-            club={newPollClub}
-            storageKey={wizardStorageKey}
-            submitLabel={(n) => `Start poll (${n})`}
-            onSubmit={async (options) => {
-              await createPoll({ groupId, createdBy: myId, club: newPollClub, options });
-              toast.success("Poll gestart — de groep kan stemmen.");
-            }}
-            onClose={closeWizard}
-            onDone={() => {
-              closeWizard();
-              reloadAll();
-            }}
-          />
-        )}
-        {!wizardOpen && banenLink}
+        {banenLink}
       </section>
+
+      {/* Wizard als bottom-sheet (#349): geen layout-shift op de tab. */}
+      <PollWizardSheet
+        open={wizardOpen}
+        onClose={closeWizard}
+        title="Nieuwe speeldag"
+        headerExtra={
+          // Locatie voor deze nieuwe poll — los van de globale clubvoorkeur.
+          <ClubPicker value={newPollClub} onPick={setNewPollClub} allowManual />
+        }
+      >
+        <PollWizard
+          today={today}
+          week={week.data ?? []}
+          weekLoading={week.loading}
+          club={newPollClub}
+          storageKey={wizardStorageKey}
+          submitLabel={(n) => `Start poll (${n})`}
+          onSubmit={async (options) => {
+            await createPoll({ groupId, createdBy: myId, club: newPollClub, options });
+            toast.success("Poll gestart — de groep kan stemmen.");
+          }}
+          onClose={closeWizard}
+          onDone={() => {
+            closeWizard();
+            reloadAll();
+          }}
+        />
+      </PollWizardSheet>
     </>
   );
 }
