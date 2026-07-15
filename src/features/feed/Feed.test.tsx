@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { AuthProvider } from "../auth/AuthProvider";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 vi.mock("@/lib/supabase/client", async () => {
-  const { makeSupabaseMock } = await import("../../test/supabaseMock");
-  const { TABLES, SESSION } = await import("../../test/fixtures");
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  const { TABLES, SESSION } = await import("@/test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 

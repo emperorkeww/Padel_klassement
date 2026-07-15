@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { MatchListSkeleton } from "@/ui/Skeleton";
@@ -34,19 +34,19 @@ import {
 } from "@/features/feed/feedHelpers";
 import { celebrate } from "@/lib/utils/confetti";
 import { formatRelativeDay } from "@/lib/utils/format";
-import { getGroupMatches, getRecentMatches, getTeamsMap } from "../matches/api";
-import { getMySmoesjes } from "../matches/smoesjesApi";
-import { getProfilesMap, displayName } from "../profiles/api";
-import { getMyFriendships } from "../friends/api";
-import { getMyGroups, getGroupMembers } from "../groups/api";
-import { getGroupPollOptions, getGroupPolls } from "../groups/pollsApi";
-import { getPlayerStandings } from "../standings/api";
-import { getAllRatingHistories } from "../standings/ratingsApi";
-import { getPiasWeeks } from "../standings/piasApi";
+import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
+import { getMySmoesjes } from "@/features/matches/smoesjesApi";
+import { getProfilesMap, displayName } from "@/features/profiles/api";
+import { getMyFriendships } from "@/features/friends/api";
+import { getMyGroups, getGroupMembers } from "@/features/groups/api";
+import { getGroupPollOptions, getGroupPolls } from "@/features/groups/pollsApi";
+import { getPlayerStandings } from "@/features/standings/api";
+import { getAllRatingHistories } from "@/features/standings/ratingsApi";
+import { getPiasWeeks } from "@/features/standings/piasApi";
 import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
 import { eveningSummary, type EveningSummary } from "@/features/feed/eveningSummary";
-import { getZwartePiet } from "../groups/zwartePietApi";
+import { getZwartePiet } from "@/features/groups/zwartePietApi";
 import type {
   GroupMember,
   Match,

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
 import { getRecentMatches, getTeamsMap } from "./api";
-import { getAllRatingHistories } from "../standings/ratingsApi";
+import { getAllRatingHistories } from "@/features/standings/ratingsApi";
 import { upsetsByMatch } from "@/features/matches/upset";
-import { getAllProfiles } from "../profiles/api";
-import { getMyFriendships, categorize, otherId } from "../friends/api";
+import { getAllProfiles } from "@/features/profiles/api";
+import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";

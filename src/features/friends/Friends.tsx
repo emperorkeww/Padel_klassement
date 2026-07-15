@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -17,7 +17,7 @@ import {
   otherId,
   type FriendSuggestion,
 } from "./api";
-import { getProfilesMap, displayName } from "../profiles/api";
+import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { Avatar } from "@/ui/Avatar";
 import { AccountNav } from "@/ui/AccountNav";
 import { EmptyState } from "@/ui/EmptyState";

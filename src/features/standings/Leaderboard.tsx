@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "@/ui/Skeleton";
@@ -21,23 +21,23 @@ import {
   getTeamStandings,
   getGroupPlayerStandings,
 } from "./api";
-import { getMyGroups } from "../groups/api";
+import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "@/features/standings/pias";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
 import { Podium } from "@/features/standings/components/Podium";
 import { TierLegend } from "@/features/rating/components/TierLegend";
-import { THIN_GAMES } from "../groups/groupRating";
+import { THIN_GAMES } from "@/features/groups/groupRating";
 import {
   getCompletedMatchesBetween,
   getFirstMatchDate,
   getRecentMatches,
   getTeamsMap,
   teamLabel,
-} from "../matches/api";
-import { getProfilesMap, displayName } from "../profiles/api";
-import { searchDiscoverableProfiles } from "../friends/api";
+} from "@/features/matches/api";
+import { getProfilesMap, displayName } from "@/features/profiles/api";
+import { searchDiscoverableProfiles } from "@/features/friends/api";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
 import { ratingAsOf, type Row } from "./leaderboardHelpers";
 import { TierProgressBanner } from "./components/TierProgressBanner";

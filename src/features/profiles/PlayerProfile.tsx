@@ -1,21 +1,21 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
 import { getProfilesMap } from "./api";
-import { getPlayerStanding, getPlayerStandings } from "../standings/api";
+import { getPlayerStanding, getPlayerStandings } from "@/features/standings/api";
 import {
   getPlayerRatings,
   getRatingHistory,
   getAllRatingHistories,
-} from "../standings/ratingsApi";
+} from "@/features/standings/ratingsApi";
 import { upsetsByMatch } from "@/features/matches/upset";
 import {
   getPlayerMatches,
   getTeamsMap,
   getCompletedMatchesBetween,
-} from "../matches/api";
+} from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import {
   recentForm,
@@ -32,14 +32,14 @@ import { listSeasons, seasonFromId } from "@/features/rating/seasons";
 import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
 import { ShareProfile, type ProfileShareData } from "@/features/profiles/components/ShareProfile";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
-import { matchesInYear, wrappedJaar } from "../wrapped/wrapped";
+import { matchesInYear, wrappedJaar } from "@/features/wrapped/wrapped";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "@/ui/Sheet";
 import { tierFor, tierProgress } from "@/features/rating/tiers";
 import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
 import { roast } from "@/features/profiles/roast";
-import { THIN_GAMES } from "../groups/groupRating";
+import { THIN_GAMES } from "@/features/groups/groupRating";
 import { ProfileHero } from "@/features/profiles/components/ProfileHero";
 import { FriendButton } from "@/features/friends/components/FriendButton";
 import { ProfileOverview } from "@/features/profiles/components/ProfileOverview";

@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "../auth/AuthProvider";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 vi.mock("@/lib/supabase/client", async () => {
-  const { makeSupabaseMock } = await import("../../test/supabaseMock");
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
   const { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } = await import(
-    "../../test/fixtures"
+    "@/test/fixtures"
   );
   const { dateInZone } = await import("@/lib/utils/time");
   // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,

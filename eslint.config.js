@@ -11,7 +11,7 @@ export default tseslint.config(
       "coverage",
       "node_modules",
       "supabase",
-      "src/lib/database.types.ts",
+      "src/lib/supabase/database.types.ts",
     ],
   },
   {
@@ -30,6 +30,20 @@ export default tseslint.config(
       // nieuwe, erg strenge regels die hier vooral ruis geven).
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
+      // Diepe relatieve imports (../../..) verbieden: gebruik de @/-aliases.
+      // Binnen een feature blijft één niveau (`./x`, `../x`) prima.
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^(\\.\\./){2,}",
+              message:
+                "Gebruik een @/-alias (@/features, @/lib, @/ui, @/types) in plaats van een diepe relatieve import.",
+            },
+          ],
+        },
+      ],
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

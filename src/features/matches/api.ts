@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { Match, Profile, Team } from "@/types";
-import { displayName } from "../profiles/api";
+import { displayName } from "@/features/profiles/api";
 
 // Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe
 // paren bij het loggen), ratings (trigger herrekent ze) en tips (de
