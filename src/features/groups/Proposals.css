@@ -470,35 +470,6 @@
   margin-top: var(--sp-2);
 }
 
-/* Fase-verloop: Stemmen → Gekozen → Geboekt. */
-.poll-steps {
-  display: flex;
-  gap: var(--sp-2);
-  margin: 0 0 var(--sp-3);
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.poll-steps__step {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.poll-steps__step:not(:last-child)::after {
-  content: "→";
-  color: var(--line-strong);
-}
-.poll-steps__step.is-active {
-  color: var(--accent);
-}
-.poll-steps__step.is-done {
-  color: var(--success);
-}
-
 /* Compacte stemrijen. */
 .poll-rows {
   list-style: none;
@@ -697,17 +668,24 @@
   .poll-wizard__manual .proposal-form__note {
     grid-column: 1 / -1;
   }
-  /* Fasebalk mag horizontaal scrollen i.p.v. de kaart te verbreden. */
-  .poll-steps {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  /* Fasebalk over de tab (#349): CTA onder de stappen, stappen wrappen. */
+  .plan-phases__cta {
+    width: 100%;
   }
-  .poll-steps::-webkit-scrollbar {
-    display: none;
-  }
-  .poll-steps__step {
+  .plan-phases__step {
     white-space: nowrap;
+  }
+  /* Secundaire speeldag-rijen: badge mag onder het moment schuiven. */
+  .plan-other__row {
+    grid-template-columns: 1fr auto;
+  }
+  .plan-other__chevron {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .plan-other__badge {
+    grid-column: 1;
+    justify-self: start;
   }
   /* Footer-acties (Kies …, Heropen, Annuleer) op volle breedte: fijnere
      tikdoelen en één actie per regel bij weinig ruimte. */
@@ -821,10 +799,6 @@
   color: var(--ink);
 }
 
-/* Fase-bal. */
-.poll-steps__ball {
-  font-size: 0.85em;
-}
 .poll-card__showlosers {
   margin-top: var(--sp-2);
 }
@@ -856,3 +830,14 @@
   margin-bottom: var(--sp-3);
 }
 
+
+/* Heel smalle schermen (320px): de vier fase-stappen passen zonder
+   letter-spacing nét op één regel. */
+@media (max-width: 360px) {
+  .plan-phases__step {
+    letter-spacing: 0;
+  }
+  .plan-phases__steps {
+    gap: var(--sp-1);
+  }
+}
