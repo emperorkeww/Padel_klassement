@@ -210,6 +210,14 @@ describe("<GroupDetail />", () => {
     ).toBeInTheDocument();
     // Fase-verloop en de optie-rij uit de fixtures.
     expect(screen.getByText(/^stemmen$/i)).toBeInTheDocument();
+    // De fasebalk + next-action-regel staan op tab-niveau (#349); in de
+    // fixtures stemde iedereen al, dus de maker mag het moment kiezen.
+    expect(
+      screen.getByRole("list", { name: /fase van de speeldag/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/alle stemmen zijn binnen — kies het moment/i),
+    ).toBeInTheDocument();
     // De optie-rij én de "Kies …"-knop van de maker noemen het moment.
     expect((await screen.findAllByText(/za 5 jan/i)).length).toBeGreaterThan(0);
     // Stemmen via het ✓ ? ✗-segment.
