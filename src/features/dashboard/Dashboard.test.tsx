@@ -48,16 +48,23 @@ describe("<Dashboard />", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("begroet de speler met stand en statistieken", async () => {
-    renderPage();
-    expect(await screen.findByText(/hoi, alice anders/i)).toBeInTheDocument();
-    // Statblokken: rating met stijgende delta van de laatste match.
-    expect((await screen.findAllByText("1012")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText(/▲/)).length).toBeGreaterThan(0);
-    expect(screen.getByText("Rating")).toBeInTheDocument();
-    // Tier-badge (#127) bij de rating: 1012 = Wannabe III, gedimd (1 match).
-    const tiers = await screen.findAllByText("Wannabe III");
-    expect(tiers.length).toBeGreaterThan(0);
-    expect(tiers[0]).toHaveClass("is-dim");
+    // Vast "nu" op de fixture-speeldag: de ▲/▼-badge toont de dag-cumulatieve
+    // delta (#352), dus de klok moet op de dag van de laatste match staan.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-07-02T10:00:00.000Z") });
+    try {
+      renderPage();
+      expect(await screen.findByText(/hoi, alice anders/i)).toBeInTheDocument();
+      // Statblokken: rating met de opgetelde delta van vandaag (alleen m-done, +7).
+      expect((await screen.findAllByText("1012")).length).toBeGreaterThan(0);
+      expect((await screen.findAllByText(/▲7/)).length).toBeGreaterThan(0);
+      expect(screen.getByText("Rating")).toBeInTheDocument();
+      // Tier-badge (#127) bij de rating: 1012 = Wannabe III, gedimd (1 match).
+      const tiers = await screen.findAllByText("Wannabe III");
+      expect(tiers.length).toBeGreaterThan(0);
+      expect(tiers[0]).toHaveClass("is-dim");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("toont de eerstvolgende geplande match compact met doorlink naar invullen", async () => {

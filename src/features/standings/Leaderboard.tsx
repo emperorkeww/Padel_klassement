@@ -23,6 +23,8 @@ import {
 } from "./api";
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { deltaToday } from "./ratingDelta";
+import { useClub } from "@/features/availability/club";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "@/features/standings/pias";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
@@ -54,6 +56,7 @@ type Tab = "player" | "team" | "divisies";
 export function Leaderboard() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
+  const club = useClub();
   const [tab, setTab] = useState<Tab>("player");
   const [groupId, setGroupId] = useState<string>("");
 
@@ -601,7 +604,8 @@ export function Leaderboard() {
               link: r.link,
               isMe: r.isMe,
               rating: r.rating,
-              delta: r.history[r.history.length - 1]?.delta ?? null,
+              // Dag-cumulatieve ELO-beweging (#352), niet de laatste match.
+              delta: deltaToday(r.history, club.timezone),
               dimmed: r.games > 0 && r.games < THIN_GAMES,
               tier: true,
               sub: `${r.points} ptn`,
