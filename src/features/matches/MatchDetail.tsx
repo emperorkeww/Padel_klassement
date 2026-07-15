@@ -146,7 +146,7 @@ export function MatchDetail() {
               🎯 Upset · {Math.round(upset.chance * 100)}% kans
             </span>
           )}
-          {scoreHi && (
+          {scoreHi && scoreHi.type === "score" && (
             <span className="badge badge--accent">
               {scoreHi.label === "bagel"
                 ? "🥯 6-0 Droog"
@@ -170,7 +170,7 @@ export function MatchDetail() {
             label={teamLabel(teamA, pmap)}
             profiles={pmap}
             won={done && aWon}
-            histories={histories.data}
+            histories={histories.data ?? undefined}
             matchId={m.id}
           />
           <div className="md-score">
@@ -193,7 +193,7 @@ export function MatchDetail() {
             label={teamLabel(teamB, pmap)}
             profiles={pmap}
             won={done && bWon}
-            histories={histories.data}
+            histories={histories.data ?? undefined}
             matchId={m.id}
           />
         </div>
@@ -497,7 +497,7 @@ function TeamBlock({
                       {delta > 0 ? "▲" : "▼"}{Math.abs(delta)}
                     </span>
                   )}
-                  <TierBadge rating={ratingAfter} size="sm" />
+                  <TierBadge rating={ratingAfter ?? null} size="sm" />
                   {wissel && (
                     <span className={`badge ${wissel.richting === "promotie" ? "badge--win" : "badge--danger"}`}>
                       {wissel.richting === "promotie" ? "⬆️ Promotie" : "⬇️ Degradatie"}
