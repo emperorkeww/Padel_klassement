@@ -200,17 +200,10 @@ export function FeedItem({
           at={event.at}
         >
           {event.richting === "promotie" ? (
-            event.hoofdtier ? (
-              <>
-                🔥 <strong>{name(event.playerId)}</strong> stijgt naar een gloednieuwe divisie:{" "}
-                <strong>{event.naarLabel}</strong>!
-              </>
-            ) : (
-              <>
-                📈 <strong>{name(event.playerId)}</strong> promoveert naar{" "}
-                <strong>{event.naarLabel}</strong> (was {event.vanLabel})
-              </>
-            )
+            <>
+              🔥 <strong>{name(event.playerId)}</strong> stijgt naar een gloednieuwe divisie:{" "}
+              <strong>{event.naarLabel}</strong>!
+            </>
           ) : (
             <>
               📉 <strong>{name(event.playerId)}</strong> degradeert naar{" "}

@@ -71,7 +71,7 @@ export type FeedEvent =
   | { kind: "poll-locked" | "poll-booked"; at: string; groupId: string; groupName: string; date: string | null; time: string | null }
   | { kind: "evening"; at: string; groupId: string; groupName: string; day: string; count: number; topPlayerId: string | null; bestDuoTeamId: string | null; highlights: Highlight[] }
   | { kind: "rank"; at: string; playerId: string; shift: Shift; rank: number }
-  | { kind: "tier"; at: string; playerId: string; vanLabel: string; naarLabel: string; vanEmoji: string; naarEmoji: string; richting: "promotie" | "degradatie"; hoofdtier: boolean; matchId: string }
+  | { kind: "tier"; at: string; playerId: string; vanLabel: string; naarLabel: string; vanEmoji: string; naarEmoji: string; richting: "promotie" | "degradatie"; matchId: string }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
@@ -296,10 +296,12 @@ export function buildFeed(input: {
               highlights.push({ type: "rating", playerId: pid, threshold: t });
             }
           }
-          // Ranking-nieuws: elke divisiewissel (ook een sub-niveau als
-          // Wannabe III → II) komt op de feed.
+          // Ranking-nieuws: alleen een wissel van hoofddivisie (Wannabe →
+          // Glazenwasser) is nieuwswaardig. Sub-niveaus (Wannabe III → II)
+          // blijven volledig weg — geen chip én geen standalone tier-item
+          // (#354), zodat een divisie-melding weer echt iets betekent.
           const wissel = tierChange(p.rating_before, p.rating_after);
-          if (wissel) {
+          if (wissel?.hoofdtier) {
             highlights.push({
               type: "tier",
               playerId: pid,
@@ -316,7 +318,6 @@ export function buildFeed(input: {
               vanEmoji: wissel.van.emoji,
               naarEmoji: wissel.naar.emoji,
               richting: wissel.richting,
-              hoofdtier: wissel.hoofdtier,
               matchId: m.id,
             });
           }
