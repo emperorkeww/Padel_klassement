@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScoreStepper } from "@/ui/ScoreStepper";
+import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { errorMessage } from "@/lib/utils/errors";
@@ -49,8 +50,11 @@ function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-/** Geplande match als kaart met inline score-invoer — dezelfde opbouw als een
- *  MatchCard (teams links/rechts), maar met invoervelden in het midden.
+/** Geplande match als kaart met inline score-invoer. Opbouw (#362): de
+ *  team-rijen met steppers zijn de primaire actie, daaronder de sets-toggle,
+ *  dan een rustige contextgroep (coach + rivaliteit), een inklapbare
+ *  toto-samenvatting en een slanke voettekst (meta · agenda · ⋯ · Opslaan);
+ *  beheeracties (tijd wijzigen, verwijderen) zitten achter de ⋯-sheet.
  *  De winnaar volgt automatisch uit de score; gelijke score = gelijkspel.
  *
  *  Opslaan is optimistisch: de kaart klapt direct om naar de uitslag en wordt
@@ -95,6 +99,11 @@ export function PlannedMatchCard({
   // Optionele per-set invoer (uitklapbaar).
   const [showSets, setShowSets] = useState(false);
   const [sets, setSets] = useState<SetPair[]>([emptySet()]);
+
+  // Toto ingeklapt tot een samenvattingsregel (#362) — zelfde patroon als de
+  // sets-toggle. Beheeracties (tijd/verwijderen) zitten achter de ⋯-sheet.
+  const [totoOpen, setTotoOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   // Tijd wijzigen (uitklapbaar).
   const [editingTime, setEditingTime] = useState(false);
@@ -167,6 +176,21 @@ export function PlannedMatchCard({
     (!m.played_at || new Date(m.played_at).getTime() > Date.now());
   const showTips = isGroupMatch && !!myId && (tippingOpen || preds.length > 0);
   const [busyTip, setBusyTip] = useState(false);
+
+  // Samenvatting voor de ingeklapte toto-regel: eigen tip > uitnodiging >
+  // gesloten (met teller zodra de tips geladen zijn — geen "0 tips"-flits).
+  const mijnTipLabel = myPrediction
+    ? teamLabel(teams[myPrediction.predicted_team_id], profiles)
+    : null;
+  const totoSummary = tippingOpen
+    ? mijnTipLabel
+      ? `jouw tip: ${mijnTipLabel}`
+      : "Tip de winnaar"
+    : mijnTipLabel
+      ? `tippen gesloten · jouw tip: ${mijnTipLabel}`
+      : predictions.data == null
+        ? "tippen gesloten"
+        : `tippen gesloten · ${preds.length} ${preds.length === 1 ? "tip" : "tips"}`;
 
   async function tip(teamId: string) {
     if (!myId || !m.group_id || busyTip || !tippingOpen) return;
@@ -385,64 +409,7 @@ export function PlannedMatchCard({
         />
       </div>
 
-      {pctA != null && (
-        <p className="planned-card__winhint">
-          Winkans op basis van de huidige ratings.
-        </p>
-      )}
-
-      {coachPre && (
-        <p className="planned-card__coach" role="note">
-          <CoachAvatar size={24} className="planned-card__coach-face" />
-          <span>{coachPre}</span>
-        </p>
-      )}
-
-      {showTips && (
-        <div className="toto">
-          <div className="toto__head">
-            <span className="toto__title">🎯 Toto</span>
-            <span className="toto__state">
-              {tippingOpen ? "Tip de winnaar" : "Tippen gesloten"}
-            </span>
-          </div>
-          <div className="toto__options">
-            <TipOption
-              {...tipChipFor(m.team_a_id, chance)}
-              teamName={teamLabel(teams[m.team_a_id], profiles)}
-              pct={pctA}
-              disabled={!tippingOpen || busyTip}
-              onClick={() => tip(m.team_a_id)}
-            />
-            <TipOption
-              {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
-              teamName={teamLabel(teams[m.team_b_id], profiles)}
-              pct={pctA != null ? 100 - pctA : null}
-              disabled={!tippingOpen || busyTip}
-              onClick={() => tip(m.team_b_id)}
-            />
-          </div>
-          {tippingOpen && (
-            <p className="toto__legend">
-              {myPrediction
-                ? "Je kunt je tip nog wijzigen tot de starttijd."
-                : "Kies wie er wint. Hoe kleiner de winkans van je team, hoe meer punten een juiste tip oplevert (+1 tot +4). Tippen kan tot de starttijd."}
-            </p>
-          )}
-        </div>
-      )}
-
-      {rivalry && (
-        <p className="planned-card__rivalry">
-          🔥 Onderling: {nameOf(rivalry.a)}{" "}
-          <strong>
-            {rivalry.winsA}–{rivalry.winsB}
-          </strong>{" "}
-          {nameOf(rivalry.b)}
-          {rivalry.draws > 0 ? ` (${rivalry.draws} gelijk)` : ""}
-        </p>
-      )}
-
+      {/* Sets horen bij de score-invoer: direct onder de team-rijen. */}
       <div className="planned-card__sets">
         <button
           type="button"
@@ -463,6 +430,73 @@ export function PlannedMatchCard({
           </div>
         )}
       </div>
+
+      {/* Coach en rivaliteit gegroepeerd als rustig tussenblok. */}
+      {(coachPre || rivalry) && (
+        <div className="planned-card__context">
+          {coachPre && (
+            <p className="planned-card__coach" role="note">
+              <CoachAvatar size={24} className="planned-card__coach-face" />
+              <span>{coachPre}</span>
+            </p>
+          )}
+          {rivalry && (
+            <p className="planned-card__rivalry">
+              🔥 Onderling: {nameOf(rivalry.a)}{" "}
+              <strong>
+                {rivalry.winsA}–{rivalry.winsB}
+              </strong>{" "}
+              {nameOf(rivalry.b)}
+              {rivalry.draws > 0 ? ` (${rivalry.draws} gelijk)` : ""}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Toto ingeklapt tot één regel; klapt uit naar de tip-opties. */}
+      {showTips && (
+        <div className="toto">
+          <button
+            type="button"
+            className="toto__summary"
+            aria-expanded={totoOpen}
+            onClick={() => setTotoOpen((o) => !o)}
+          >
+            <span className="toto__title">🎯 Toto</span>
+            <span className="toto__state">{totoSummary}</span>
+            <span className="toto__chevron" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          {totoOpen && (
+            <div className="toto__body">
+              <div className="toto__options">
+                <TipOption
+                  {...tipChipFor(m.team_a_id, chance)}
+                  teamName={teamLabel(teams[m.team_a_id], profiles)}
+                  pct={pctA}
+                  disabled={!tippingOpen || busyTip}
+                  onClick={() => tip(m.team_a_id)}
+                />
+                <TipOption
+                  {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
+                  teamName={teamLabel(teams[m.team_b_id], profiles)}
+                  pct={pctA != null ? 100 - pctA : null}
+                  disabled={!tippingOpen || busyTip}
+                  onClick={() => tip(m.team_b_id)}
+                />
+              </div>
+              {tippingOpen && (
+                <p className="toto__legend">
+                  {myPrediction
+                    ? "Je kunt je tip nog wijzigen tot de starttijd."
+                    : "Kies wie er wint. Hoe kleiner de winkans van je team, hoe meer punten een juiste tip oplevert (+1 tot +4). Tippen kan tot de starttijd."}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {canManage && editingTime && (
         <div className="planned-card__time">
@@ -497,15 +531,13 @@ export function PlannedMatchCard({
         <MatchCalendarButton match={m} teams={teams} profiles={profiles} />
         {canManage && (
           <button
-            className="btn btn--sm"
-            onClick={() => setEditingTime((t) => !t)}
+            type="button"
+            className="btn btn--sm planned-card__more"
+            aria-label="Meer acties"
+            aria-haspopup="dialog"
+            onClick={() => setManageOpen(true)}
           >
-            Tijd wijzigen
-          </button>
-        )}
-        {canManage && (
-          <button className="btn btn--sm btn--danger" onClick={startDelete}>
-            Verwijderen
+            ⋯
           </button>
         )}
         <button
@@ -516,6 +548,37 @@ export function PlannedMatchCard({
           Opslaan
         </button>
       </div>
+
+      {/* Beheeracties (alleen de aanmaker) in een compacte sheet achter ⋯. */}
+      {canManage && (
+        <Sheet
+          open={manageOpen}
+          onClose={() => setManageOpen(false)}
+          title="Matchbeheer"
+          compact
+        >
+          <div className="planned-card__manage">
+            <button
+              className="btn"
+              onClick={() => {
+                setManageOpen(false);
+                setEditingTime(true);
+              }}
+            >
+              Tijd wijzigen
+            </button>
+            <button
+              className="btn btn--danger"
+              onClick={() => {
+                setManageOpen(false);
+                startDelete();
+              }}
+            >
+              Verwijderen
+            </button>
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }

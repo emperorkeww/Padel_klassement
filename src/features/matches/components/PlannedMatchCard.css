@@ -1,4 +1,4 @@
-/* Extra's op de geplande-match-kaart (sets, tijd wijzigen, verwijderen/undo).
+/* Extra's op de geplande-match-kaart (sets, context, toto, beheer/undo).
    De basis-.planned-card-stijlen staan in components/ui.css. */
 
 /* Compacte actiebalk onder de kaart. */
@@ -11,34 +11,59 @@
 .planned-card__actions .planned-card__save {
   margin-left: auto;
 }
+/* ⋯-knop naar de beheer-sheet: comfortabel tapdoel. */
+.planned-card__more {
+  min-width: 44px;
+  min-height: 44px;
+}
 
-/* Toto (#116): een eigen, duidelijk gelabeld blok — losgetrokken van de
-   score-invoer, want tippen gebeurt vóór de match en score-invoer erna. */
+/* Toto (#116, #362): ingeklapt tot één samenvattingsregel onderaan de kaart;
+   klapt uit naar de tip-opties. Tippen is secundair aan de score-invoer. */
 .toto {
-  display: grid;
-  gap: var(--sp-2);
   margin-top: var(--sp-1);
-  padding: var(--sp-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
 }
-.toto__head {
+.toto__summary {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .toto__title {
   font-size: var(--fs-sm);
   font-weight: 700;
 }
 .toto__state {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fs-xs);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--ink-soft);
+}
+.toto__chevron {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.toto__summary[aria-expanded="true"] .toto__chevron {
+  transform: rotate(180deg);
+}
+.toto__body {
+  display: grid;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
 }
 .toto__options {
   display: grid;
@@ -129,9 +154,21 @@
   }
 }
 
+/* Coach + rivaliteit gegroepeerd als rustig tussenblok (#362). */
+.planned-card__context {
+  display: grid;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.planned-card__context > p {
+  margin: 0;
+}
+
 /* Onderlinge rivaliteitsbalans tussen twee spelers uit tegengestelde teams. */
 .planned-card__rivalry {
-  margin: var(--sp-2) 0 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
@@ -140,11 +177,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Uitklapbare optionele set-invoer. */
+/* Uitklapbare optionele set-invoer, direct onder de score-rijen. */
 .planned-card__sets {
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--line);
+  margin-top: var(--sp-1);
 }
 .planned-card__sets-toggle {
   background: none;
@@ -170,6 +205,15 @@
   min-width: 180px;
 }
 
+/* Beheeracties in de ⋯-sheet. */
+.planned-card__manage {
+  display: grid;
+  gap: var(--sp-2);
+}
+.planned-card__manage .btn {
+  min-height: 44px;
+}
+
 /* Undo-strook na verwijderen. */
 .planned-card__undo {
   display: flex;
@@ -185,19 +229,11 @@
   font-weight: 600;
 }
 
-/* Korte uitleg onder de winkans-pillen (#85). */
-.planned-card__winhint {
-  margin: var(--sp-1) 0 0;
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-}
-
 /* Coach Rudy's pre-match hype (#213): gezicht + regel. */
 .planned-card__coach {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: var(--sp-2) 0 0;
   font-size: var(--fs-sm);
   font-style: italic;
   color: var(--coach);
