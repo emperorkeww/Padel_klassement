@@ -31,7 +31,10 @@ import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
 import { getAllRatingHistories } from "../standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
-import type { Match, Profile, Team } from "@/types";
+import { TierBadge } from "@/features/rating/components/TierBadge";
+import { tierChange } from "@/features/rating/tiers";
+import { scoreHighlight } from "@/features/feed/feedLogic";
+import type { Match, Profile, Team, RatingPoint } from "@/types";
 import "./MatchDetail.css";
 
 export function MatchDetail() {
@@ -99,6 +102,7 @@ export function MatchDetail() {
     done && !isDraw
       ? matchUpset(m, tmap, preMatchPoints(histories.data ?? {}, m.id))
       : null;
+  const scoreHi = done ? scoreHighlight(m) : null;
   // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
@@ -142,6 +146,15 @@ export function MatchDetail() {
               🎯 Upset · {Math.round(upset.chance * 100)}% kans
             </span>
           )}
+          {scoreHi && scoreHi.type === "score" && (
+            <span className="badge badge--accent">
+              {scoreHi.label === "bagel"
+                ? "🥯 6-0 Droog"
+                : scoreHi.label === "monsterzege"
+                  ? "🦖 Monsterzege"
+                  : "😬 Nagelbijter"}
+            </span>
+          )}
           <span className="badge">
             {formatDate(m.played_at ?? m.created_at) || "—"}
           </span>
@@ -157,6 +170,8 @@ export function MatchDetail() {
             label={teamLabel(teamA, pmap)}
             profiles={pmap}
             won={done && aWon}
+            histories={histories.data ?? undefined}
+            matchId={m.id}
           />
           <div className="md-score">
             {m.score_a != null && m.score_b != null ? (
@@ -178,6 +193,8 @@ export function MatchDetail() {
             label={teamLabel(teamB, pmap)}
             profiles={pmap}
             won={done && bWon}
+            histories={histories.data ?? undefined}
+            matchId={m.id}
           />
         </div>
 
@@ -435,11 +452,15 @@ function TeamBlock({
   label,
   profiles,
   won,
+  histories,
+  matchId,
 }: {
   team: Team | undefined;
   label: string;
   profiles: Record<string, Profile>;
   won: boolean;
+  histories: Record<string, RatingPoint[]> | undefined;
+  matchId: string;
 }) {
   const players = team
     ? [profiles[team.player1_id], profiles[team.player2_id]]
@@ -451,18 +472,42 @@ function TeamBlock({
         {won && <span className="badge badge--win">Winnaar</span>}
       </div>
       <ul className="md-team__players">
-        {players.map((p, i) => (
-          <li key={p?.id ?? i}>
-            <Avatar profile={p} size={24} />
-            {p?.id ? (
-              <Link className="profile-link" to={`/spelers/${p.id}`}>
-                {displayName(p)}
-              </Link>
-            ) : (
-              <span>{displayName(p)}</span>
-            )}
-          </li>
-        ))}
+        {players.map((p, i) => {
+          if (!p) return <li key={i}>Onbekend</li>;
+          const playerHistory = histories?.[p.id];
+          const point = playerHistory?.find((h) => h.match_id === matchId);
+          const delta = point?.delta;
+          const ratingAfter = point?.rating_after;
+          const ratingBefore = point?.rating_before;
+          const wissel = tierChange(ratingBefore ?? null, ratingAfter ?? null);
+
+          return (
+            <li key={p.id} className="md-player">
+              <div className="md-player__identity">
+                <Avatar profile={p} size={24} />
+                <Link className="profile-link" to={`/spelers/${p.id}`}>
+                  {displayName(p)}
+                </Link>
+              </div>
+              {point && (
+                <div className="md-player__stats">
+                  <span className="md-player__rating">{ratingAfter} ELO</span>
+                  {delta != null && delta !== 0 && (
+                    <span className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}>
+                      {delta > 0 ? "▲" : "▼"}{Math.abs(delta)}
+                    </span>
+                  )}
+                  <TierBadge rating={ratingAfter ?? null} size="sm" />
+                  {wissel && (
+                    <span className={`badge ${wissel.richting === "promotie" ? "badge--win" : "badge--danger"}`}>
+                      {wissel.richting === "promotie" ? "⬆️ Promotie" : "⬇️ Degradatie"}
+                    </span>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

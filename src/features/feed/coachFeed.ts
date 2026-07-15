@@ -411,6 +411,21 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         g,
       );
     }
+    case "tier": {
+      const omhoog = event.richting === "promotie";
+      const beschermd = heeftSchild(ctx.profiles[event.playerId]);
+      return kiesUniek(
+        omhoog
+          ? beschermd
+            ? PROMOTIE_NEUTRAAL
+            : PROMOTIE
+          : beschermd
+            ? DEGRADATIE_NEUTRAAL
+            : DEGRADATIE,
+        roastSeed(event.playerId, event.at),
+        g,
+      );
+    }
     case "match": {
       const seed = roastSeed(event.match.id);
       const h = event.highlights;

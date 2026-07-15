@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -17,12 +17,14 @@ import {
   buildFeed,
   feedDay,
   feedPrivacyFilter,
+  recentlyClosedMonth,
   recentlyClosedSeason,
   FEED_LIMIT,
   type FeedEvent,
   type FeedPoll,
   type Highlight,
 } from "@/features/feed/feedLogic";
+import { celebrate } from "@/lib/utils/confetti";
 import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap, readSetScores, teamLabel } from "../matches/api";
 import { getMySmoesjes } from "../matches/smoesjesApi";
@@ -64,7 +66,7 @@ const MATCH_WINDOW = 250;
 const FILTERS = {
   Alles: null,
   Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
-  Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion"]),
+  Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion", "tier"]),
   Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes"]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
@@ -153,18 +155,18 @@ export function Feed() {
   }, [groupKey]);
   useRealtime("play_polls", groupExtras.reload);
 
-  // Seizoenskampioenen: alleen kort na een kwartaalwissel de groepsmatches
-  // erbij halen (duurdere query's; kampioenen zijn kwartaalnieuws).
+  // Seizoenskampioenen & Maand-pias: alleen kort na een kwartaalwissel of maandwissel
+  // de groepsmatches erbij halen (duurdere query's).
   const championSeason = useMemo(() => recentlyClosedSeason(new Date()), []);
+  const closedMonth = useMemo(() => recentlyClosedMonth(new Date()), []);
   const groupMatches = useAsync(async () => {
-    if (!championSeason) return {};
+    if (!championSeason && !closedMonth) return {};
     const list = groups.data ?? [];
     const perGroup = await Promise.all(
       list.map(async (g) => [g.id, await getGroupMatches(g.id)] as const),
     );
     return Object.fromEntries(perGroup) as Record<string, Match[]>;
-     
-  }, [groupKey, championSeason?.id]);
+  }, [groupKey, championSeason?.id, closedMonth?.label]);
 
   const loading =
     matches.loading || teams.loading || profiles.loading || friendships.loading;
@@ -242,6 +244,25 @@ export function Feed() {
       profiles.data,
     ],
   );
+
+  // Confetti op de feed voor eigen hoofdtier-promoties
+  useEffect(() => {
+    if (loading || !allEvents.length || !myId) return;
+    const firstEvent = allEvents[0];
+    if (
+      firstEvent.kind === "tier" &&
+      firstEvent.playerId === myId &&
+      firstEvent.richting === "promotie" &&
+      firstEvent.hoofdtier
+    ) {
+      const sessionKey = `feed-celebrated:${firstEvent.matchId}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "1");
+        celebrate();
+      }
+    }
+  }, [allEvents, loading, myId]);
+
   const countFor = (label: FilterLabel) => {
     const kinds = FILTERS[label];
     return kinds
@@ -492,6 +513,8 @@ function eventKey(event: FeedEvent): string {
       return `e-${event.groupId}-${event.day}`;
     case "rank":
       return `r-${event.playerId}-${event.at}`;
+    case "tier":
+      return `t-${event.playerId}-${event.matchId}`;
     case "season-champion":
       return `sc-${event.groupId}-${event.seasonLabel}`;
     case "maand-pias":
@@ -686,6 +709,35 @@ function FeedItem({
         </FeedHighlight>
       );
     }
+    case "tier":
+      return (
+        <FeedHighlight
+          cat="rank"
+          icon={event.naarEmoji}
+          label={event.richting === "promotie" ? "Promotie" : "Degradatie"}
+          to={`/matches/${event.matchId}`}
+          at={event.at}
+        >
+          {event.richting === "promotie" ? (
+            event.hoofdtier ? (
+              <>
+                🔥 <strong>{name(event.playerId)}</strong> stijgt naar een gloednieuwe divisie:{" "}
+                <strong>{event.naarLabel}</strong>!
+              </>
+            ) : (
+              <>
+                📈 <strong>{name(event.playerId)}</strong> promoveert naar{" "}
+                <strong>{event.naarLabel}</strong> (was {event.vanLabel})
+              </>
+            )
+          ) : (
+            <>
+              📉 <strong>{name(event.playerId)}</strong> degradeert naar{" "}
+              <strong>{event.naarLabel}</strong> (was {event.vanLabel})
+            </>
+          )}
+        </FeedHighlight>
+      );
     case "season-champion":
       return (
         <FeedHighlight

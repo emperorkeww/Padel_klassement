@@ -154,6 +154,17 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         ),
         to: `/groepen/${e.groupId}`,
       };
+    case "tier":
+      return {
+        icon: e.naarEmoji,
+        tekst:
+          e.richting === "promotie"
+            ? e.hoofdtier
+              ? `${naam(ctx, e.playerId)} stijgt naar een gloednieuwe divisie: ${e.naarLabel}!`
+              : `${naam(ctx, e.playerId)} promoveerde naar ${e.naarLabel}`
+            : `${naam(ctx, e.playerId)} degradeerde naar ${e.naarLabel}`,
+        to: `/matches/${e.matchId}`,
+      };
     case "smoes": {
       const tegen =
         e.match && e.match.winner_team_id

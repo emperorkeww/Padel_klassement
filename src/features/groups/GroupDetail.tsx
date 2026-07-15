@@ -156,8 +156,8 @@ export function GroupDetail() {
     if (group.data) setRenameValue(group.data.name);
   }, [group.data]);
 
-  const pmap = profiles.data ?? {};
-  const tmap = teams.data ?? {};
+  const pmap = useMemo(() => profiles.data ?? {}, [profiles.data]);
+  const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
   // Upsets per match-id (#85) uit de al geladen rating-historie.
   const upsets = useMemo(
     () => upsetsByMatch(matches.data ?? [], tmap, histories.data ?? {}),

@@ -239,3 +239,32 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+
+.md-player {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-1) !important;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  width: 100%;
+}
+.md-player__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+}
+.md-player__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-size: var(--fs-sm);
+}
+.md-player__rating {
+  font-weight: 700;
+  color: var(--ink);
+}

@@ -55,4 +55,13 @@ describe("<MatchDetail />", () => {
     await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
     expect(await screen.findByText(/score bijgewerkt/i)).toBeInTheDocument();
   });
+
+  it("toont Elo delta's, divisies en eventuele divisiewissels per speler", async () => {
+    renderPage();
+    // Check that p1's ELO and delta are shown
+    expect(await screen.findByText(/1012 ELO/i)).toBeInTheDocument();
+    expect(await screen.findByText(/▲7/i)).toBeInTheDocument();
+    // Check that the TierBadge is rendered
+    expect(await screen.findByText(/Wannabe III/i)).toBeInTheDocument();
+  });
 });
