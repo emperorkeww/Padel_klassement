@@ -2,8 +2,10 @@
 // uit de build-omgeving; de Edge Function send-push bezorgt de meldingen.
 
 import { supabase } from "@/lib/supabase/client";
+import { isIos, isStandalone } from "@/lib/utils/pwa";
 
-const PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+// Lazy gelezen zodat tests de env-variabele nog kunnen stubben.
+const publicKey = () => import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 /** Kan dit apparaat push ontvangen (en is de app ervoor geconfigureerd)? */
 export function pushSupported(): boolean {
@@ -12,8 +14,28 @@ export function pushSupported(): boolean {
     "serviceWorker" in navigator &&
     typeof window !== "undefined" &&
     "PushManager" in window &&
-    !!PUBLIC_KEY
+    !!publicKey()
   );
+}
+
+export type PushAvailability = "ready" | "needs-install" | "denied" | "unsupported";
+
+/** Waarom kan push hier wel of niet? Stuurt de meldingen-kaart en -prompt aan:
+ *  - "ready": schakelaar tonen;
+ *  - "needs-install": iOS-browsertab — push werkt daar pas als de app op het
+ *    beginscherm staat (installatie-instructie tonen);
+ *  - "denied": permissie eerder geweigerd — alleen via systeeminstellingen
+ *    terug te draaien;
+ *  - "unsupported": deze browser kan het simpelweg niet. */
+export function pushAvailability(): PushAvailability {
+  if (pushSupported()) {
+    if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+      return "denied";
+    }
+    return "ready";
+  }
+  if (isIos() && !isStandalone()) return "needs-install";
+  return "unsupported";
 }
 
 /** VAPID-sleutel (base64url) → bytes voor pushManager.subscribe. */
@@ -24,25 +46,50 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
+const SW_READY_TIMEOUT_MS = 3000;
+
+/** Wacht op de actieve service worker, maar nooit langer dan de timeout —
+ *  `.ready` resolvet nooit als er geen SW geregistreerd is (zoals in dev),
+ *  en dan bleef de UI eeuwig op "Controleren…" hangen (#412). */
+async function readyRegistration(
+  timeoutMs = SW_READY_TIMEOUT_MS,
+): Promise<ServiceWorkerRegistration | null> {
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing?.active) return existing;
+  // Geen actieve SW (nog): main.tsx registreert pas ná het load-event, dus
+  // geef `.ready` even de kans voordat we opgeven.
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+  ]);
+}
+
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   if (!pushSupported()) return null;
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await readyRegistration();
+  if (!registration) return null;
   return registration.pushManager.getSubscription();
 }
 
 /** Vraagt toestemming, abonneert dit apparaat en registreert het endpoint. */
 export async function enablePush(userId: string): Promise<void> {
-  if (!pushSupported() || !PUBLIC_KEY) {
+  const key = publicKey();
+  if (!pushSupported() || !key) {
     throw new Error("Meldingen worden hier niet ondersteund.");
   }
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    throw new Error("Meldingen zijn geweigerd — zet ze aan in je browserinstellingen.");
+    throw new Error(
+      "Meldingen zijn geweigerd — zet ze aan via Instellingen → Meldingen (iPhone) of je browserinstellingen.",
+    );
   }
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await readyRegistration();
+  if (!registration) {
+    throw new Error("Kon de meldingsdienst niet bereiken — herlaad de app en probeer opnieuw.");
+  }
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(PUBLIC_KEY).buffer as ArrayBuffer,
+    applicationServerKey: urlBase64ToUint8Array(key).buffer as ArrayBuffer,
   });
   const json = subscription.toJSON();
   const { error } = await supabase.from("push_subscriptions").upsert(

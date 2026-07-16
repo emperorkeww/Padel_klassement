@@ -905,7 +905,7 @@
   flex-shrink: 0;
 }
 
-/* Push-opt-in: uitleg links, knoppen rechts. */
+/* Prompt-kaarten (push-opt-in en installatiehint): uitleg links, knoppen rechts. */
 .push-prompt {
   display: flex;
   align-items: center;

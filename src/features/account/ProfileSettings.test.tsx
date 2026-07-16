@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -11,8 +11,24 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 
+// De push-module is de natuurlijke seam: browser-API's (service worker,
+// PushManager) bestaan niet in jsdom, dus we mocken op moduleniveau.
+vi.mock("@/lib/supabase/push", () => ({
+  pushAvailability: vi.fn(() => "unsupported"),
+  getPushSubscription: vi.fn(() => Promise.resolve(null)),
+  enablePush: vi.fn(() => Promise.resolve()),
+  disablePush: vi.fn(() => Promise.resolve()),
+}));
+
 import ProfileSettings from "./ProfileSettings";
 import { supabase } from "@/lib/supabase/client";
+import {
+  disablePush,
+  enablePush,
+  getPushSubscription,
+  pushAvailability,
+} from "@/lib/supabase/push";
+import { SESSION } from "@/test/fixtures";
 
 function renderPage() {
   return render(
@@ -114,5 +130,92 @@ describe("<ProfileSettings />", () => {
     expect(supabase.auth.updateUser).toHaveBeenCalledWith({
       password: "geheim2",
     });
+  });
+});
+
+describe("<ProfileSettings /> — meldingen (#412)", () => {
+  afterEach(() => {
+    // Terug naar de defaults uit de mock-factory, zodat de overige tests
+    // (die dezelfde pagina renderen) niets van deze scenario's merken.
+    vi.mocked(pushAvailability).mockReturnValue("unsupported");
+    vi.mocked(getPushSubscription).mockResolvedValue(null);
+    vi.mocked(enablePush).mockReset();
+    vi.mocked(enablePush).mockResolvedValue(undefined);
+    vi.mocked(disablePush).mockReset();
+    vi.mocked(disablePush).mockResolvedValue(undefined);
+  });
+
+  it("toont op iOS zonder installatie een gerichte beginscherm-instructie", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("needs-install");
+    renderPage();
+    expect(
+      await screen.findByText(/zet op beginscherm/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /meldingen aanzetten/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("legt bij geweigerde permissie uit waar je die weer aanzet", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("denied");
+    renderPage();
+    expect(await screen.findByText(/geweigerd/i)).toBeInTheDocument();
+    expect(screen.getByText(/instellingen → meldingen/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /meldingen aanzetten/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("meldt kort dat het niet kan in een niet-ondersteunde browser", async () => {
+    renderPage();
+    expect(
+      await screen.findByText(/in deze browser niet ondersteund/i),
+    ).toBeInTheDocument();
+  });
+
+  it("komt uit 'Controleren…' zodra bekend is dat er geen abonnement is", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("ready");
+    renderPage();
+    const knop = await screen.findByRole("button", {
+      name: /meldingen aanzetten/i,
+    });
+    expect(knop).toBeEnabled();
+  });
+
+  it("zet meldingen aan en toont een bevestiging", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("ready");
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /meldingen aanzetten/i }),
+    );
+    expect(enablePush).toHaveBeenCalledWith(SESSION.user.id);
+    expect(await screen.findByText(/vamos/i)).toBeInTheDocument();
+  });
+
+  it("zet meldingen uit bij een bestaand abonnement", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("ready");
+    vi.mocked(getPushSubscription).mockResolvedValue({
+      endpoint: "https://push.example/abc",
+    } as PushSubscription);
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /meldingen uitzetten/i }),
+    );
+    expect(disablePush).toHaveBeenCalled();
+    expect(await screen.findByText(/uitgeschakeld/i)).toBeInTheDocument();
+  });
+
+  it("toont de foutmelding wanneer aanzetten mislukt", async () => {
+    vi.mocked(pushAvailability).mockReturnValue("ready");
+    vi.mocked(enablePush).mockRejectedValue(
+      new Error("Meldingen zijn geweigerd — zet ze aan via Instellingen."),
+    );
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /meldingen aanzetten/i }),
+    );
+    expect(
+      await screen.findByText(/meldingen zijn geweigerd/i),
+    ).toBeInTheDocument();
   });
 });
