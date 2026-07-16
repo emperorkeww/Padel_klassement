@@ -94,6 +94,27 @@ export type Database = {
           },
         ]
       }
+      court_availability_snapshots: {
+        Row: {
+          date: string
+          fetched_at: string
+          payload: Json
+          tenant_id: string
+        }
+        Insert: {
+          date: string
+          fetched_at?: string
+          payload: Json
+          tenant_id: string
+        }
+        Update: {
+          date?: string
+          fetched_at?: string
+          payload?: Json
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           addressee_id: string

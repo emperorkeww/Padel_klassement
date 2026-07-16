@@ -6,6 +6,11 @@
 // browser niet toe, dus alle calls lopen via een kleine proxy op
 // /api/playtomic (Vite-proxy in dev, Cloudflare Worker in productie).
 //
+// Voor de thuisclub leest de client primair uit de cron-snapshots in Postgres
+// (#405, zie snapshotApi.ts): dat koppelt het upstream-verkeer los van het
+// aantal bezoekers en houdt /banen bruikbaar bij korte Playtomic-uitval. Het
+// live pad hierboven blijft de route voor andere clubs en als fallback.
+//
 // Let op de tijdzones: de start_time in de respons is UTC. Slottijden worden
 // hieronder naar de kloktijd van de club (club.timezone) omgezet.
 //
@@ -25,6 +30,11 @@ import {
 } from "@/lib/utils/time";
 import { DEFAULT_CLUB, getClub, isPlaytomicClub, type Club } from "./club";
 import { KNOWN_COURTS } from "./knownCourts";
+import {
+  getSnapshot,
+  getSnapshots,
+  type AvailabilitySnapshot,
+} from "./snapshotApi";
 
 const BASE = "/api/playtomic";
 
@@ -110,18 +120,42 @@ export type SlotOption = {
 };
 /** Per baan: vrije starttijd ("HH:MM", clubtijd) → opties, oplopend op duur. */
 export type CourtRow = { court: Court; free: Map<string, SlotOption[]> };
+export type AvailabilitySource = "live" | "snapshot";
 export type DayAvailability = {
   open: string; // "HH:MM"
   close: string; // "HH:MM"
   timeZone: string; // clubtijdzone, voor "vandaag"/"voorbij" in de weergave
   courts: CourtRow[];
+  /** Waar de data vandaan komt: rechtstreeks van Playtomic of de cron-snapshot. */
+  source: AvailabilitySource;
+  /** ISO-tijdstip van de snapshot; null bij een live respons ("nu"). */
+  fetchedAt: string | null;
 };
 
-type RawSlot = { start_time: string; duration: number; price: string };
-type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
+export type RawSlot = { start_time: string; duration: number; price: string };
+export type RawAvailability = {
+  resource_id: string;
+  start_date: string;
+  slots?: RawSlot[];
+};
 
 // Een slot als UTC-moment: de datum uit de respons-entry + start_time + duur.
 type SlotMoment = { date: string; time: string; duration: number; price: string };
+
+/**
+ * Playtomic is onbereikbaar of weigert ons (WAF, storing, offline). De UI
+ * degradeert hierop naar de reserveerlink (#405) en het leespad mag een
+ * verouderde snapshot als vangnet serveren.
+ */
+export class PlaytomicUnavailableError extends Error {
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "PlaytomicUnavailableError";
+    this.status = status;
+  }
+}
 
 async function getJson<T>(path: string, foutmelding: string): Promise<T> {
   let res: Response;
@@ -129,51 +163,53 @@ async function getJson<T>(path: string, foutmelding: string): Promise<T> {
     res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json" } });
   } catch {
     // Netwerkfout / offline: fetch verwerpt zonder respons.
-    throw new Error("Geen verbinding met Playtomic — controleer je internet.");
+    throw new PlaytomicUnavailableError(
+      "Geen verbinding met Playtomic — controleer je internet.",
+    );
   }
   if (res.ok) return res.json() as Promise<T>;
   // Statusbewuste, begrijpelijke melding i.p.v. een kale statuscode.
   if (res.status === 429) {
-    throw new Error("Even te veel verzoeken naar Playtomic — probeer zo opnieuw.");
+    throw new PlaytomicUnavailableError(
+      "Even te veel verzoeken naar Playtomic — probeer zo opnieuw.",
+      res.status,
+    );
   }
   if (res.status === 403) {
-    throw new Error(`${foutmelding}: Playtomic blokkeert onze aanvraag momenteel — probeer het later opnieuw.`);
+    throw new PlaytomicUnavailableError(
+      `${foutmelding}: Playtomic blokkeert onze aanvraag momenteel — probeer het later opnieuw.`,
+      res.status,
+    );
   }
   if (res.status === 404) {
-    throw new Error(`${foutmelding}: niet (meer) gevonden op Playtomic.`);
+    throw new PlaytomicUnavailableError(
+      `${foutmelding}: niet (meer) gevonden op Playtomic.`,
+      res.status,
+    );
   }
   if (res.status >= 500) {
-    throw new Error(`${foutmelding}: Playtomic heeft een storing — probeer het later opnieuw.`);
+    throw new PlaytomicUnavailableError(
+      `${foutmelding}: Playtomic heeft een storing — probeer het later opnieuw.`,
+      res.status,
+    );
   }
-  throw new Error(`${foutmelding}: onverwachte fout van Playtomic.`);
+  throw new PlaytomicUnavailableError(
+    `${foutmelding}: onverwachte fout van Playtomic.`,
+    res.status,
+  );
 }
 
-async function getSlotsByCourt(
-  date: string,
-  tenantId: string,
-): Promise<Record<string, SlotMoment[]>> {
+/** Rauwe beschikbaarheid van één dag, live bij Playtomic opgehaald. */
+function fetchDayRaw(date: string, tenantId: string): Promise<RawAvailability[]> {
   const params = new URLSearchParams({
     tenant_id: tenantId,
     date,
     sport_id: "PADEL",
   });
-  const data = await getJson<RawAvailability[]>(
+  return getJson<RawAvailability[]>(
     `/api/clubs/availability?${params.toString()}`,
     "Kon de beschikbaarheid niet laden",
   );
-  const byCourt: Record<string, SlotMoment[]> = {};
-  for (const entry of data) {
-    const list = (byCourt[entry.resource_id] ??= []);
-    for (const slot of entry.slots ?? []) {
-      list.push({
-        date: entry.start_date,
-        time: slot.start_time,
-        duration: slot.duration,
-        price: slot.price,
-      });
-    }
-  }
-  return byCourt;
 }
 
 /**
@@ -295,17 +331,33 @@ function courtInfo(club: Club, resourceId: string, index: number): Court {
   return { id: resourceId, name: `Terrein ${index + 1}`, type: "" };
 }
 
+/** Herkomst van een DayAvailability: bron + snapshot-tijdstip (null = live). */
+type AvailabilityOrigin = { source: AvailabilitySource; fetchedAt: string | null };
+
 /**
- * Haalt voor een dag (YYYY-MM-DD) per baan de vrije starttijden (met duren en
- * prijzen) op. Baannamen/-types komen uit de lokale snapshot (het
- * availability-endpoint geeft alleen resource_id's); de tijd-as wordt uit de
- * slots afgeleid, met 08:00–23:00 als ondergrens.
+ * Bouwt uit een rauwe availability-respons (live óf uit de snapshot-tabel)
+ * het dagoverzicht per baan: vrije starttijden met duren en prijzen.
+ * Baannamen/-types komen uit de lokale snapshot (het availability-endpoint
+ * geeft alleen resource_id's); de tijd-as wordt uit de slots afgeleid, met
+ * 08:00–23:00 als ondergrens.
  */
-export async function getClubAvailability(
-  date: string,
-  club: Club = getClub(),
-): Promise<DayAvailability> {
-  const byCourt = await getSlotsByCourt(date, club.id);
+export function buildDayAvailability(
+  data: RawAvailability[],
+  club: Club,
+  origin: AvailabilityOrigin,
+): DayAvailability {
+  const byCourt: Record<string, SlotMoment[]> = {};
+  for (const entry of data) {
+    const list = (byCourt[entry.resource_id] ??= []);
+    for (const slot of entry.slots ?? []) {
+      list.push({
+        date: entry.start_date,
+        time: slot.start_time,
+        duration: slot.duration,
+        price: slot.price,
+      });
+    }
+  }
 
   // Clubtijdzone, niet die van het apparaat: wie vanuit het buitenland kijkt
   // moet dezelfde tijden zien als op de Playtomic-clubpagina.
@@ -352,7 +404,88 @@ export async function getClubAvailability(
     }
   }
 
-  return { open: fromMinutes(openM), close: fromMinutes(closeM), timeZone, courts };
+  return {
+    open: fromMinutes(openM),
+    close: fromMinutes(closeM),
+    timeZone,
+    courts,
+    source: origin.source,
+    fetchedAt: origin.fetchedAt,
+  };
+}
+
+// Hoe oud een snapshot mag zijn om als "vers" te gelden. Gekoppeld aan de
+// cron-cadans (volledige weeksweep elk uur, zie
+// supabase/snippets/availability_snapshot_cron.sql): 90 min overleeft één
+// gemiste tik zonder dat dag 3-7 structureel naar het live pad terugvalt.
+const SNAPSHOT_FRESH_MS = 90 * 60_000;
+
+function isSnapshotFresh(snapshot: AvailabilitySnapshot): boolean {
+  return Date.now() - Date.parse(snapshot.fetchedAt) < SNAPSHOT_FRESH_MS;
+}
+
+/**
+ * Is dit een verouderde snapshot, geserveerd als vangnet omdat het live pad
+ * faalde? De weergave meldt dan eerlijk van wanneer de stand is.
+ */
+export function isStaleAvailability(data: DayAvailability): boolean {
+  return (
+    data.fetchedAt != null &&
+    Date.now() - Date.parse(data.fetchedAt) >= SNAPSHOT_FRESH_MS
+  );
+}
+
+/** De jsonb-payload hoort een RawAvailability[] te zijn; anders negeren. */
+function snapshotData(
+  snapshot: AvailabilitySnapshot | null,
+): RawAvailability[] | null {
+  if (!snapshot || !Array.isArray(snapshot.payload)) return null;
+  return snapshot.payload as RawAvailability[];
+}
+
+/**
+ * Dagoverzicht met de snapshot als eerste keus: een verse snapshot spaart de
+ * upstream-call uit; zonder (verse) snapshot volgt het live pad, en faalt dat
+ * terwijl er nog een verouderde snapshot ligt, dan is die nuttiger dan een
+ * foutmelding (de weergave meldt het tijdstip, zie Availability.tsx).
+ */
+async function resolveDay(
+  date: string,
+  club: Club,
+  snapshot: AvailabilitySnapshot | null,
+): Promise<DayAvailability> {
+  const cachedData = snapshotData(snapshot);
+  const fromSnapshot =
+    snapshot && cachedData
+      ? () =>
+          buildDayAvailability(cachedData, club, {
+            source: "snapshot",
+            fetchedAt: snapshot.fetchedAt,
+          })
+      : null;
+  if (fromSnapshot && snapshot && isSnapshotFresh(snapshot)) return fromSnapshot();
+  try {
+    const data = await fetchDayRaw(date, club.id);
+    return buildDayAvailability(data, club, { source: "live", fetchedAt: null });
+  } catch (err) {
+    if (fromSnapshot && err instanceof PlaytomicUnavailableError) {
+      return fromSnapshot();
+    }
+    throw err;
+  }
+}
+
+/**
+ * Beschikbaarheid van één dag. Voor de thuisclub eerst de cron-snapshot uit
+ * Postgres (#405) — geen upstream-call naar Playtomic.
+ */
+export async function getClubAvailability(
+  date: string,
+  club: Club = getClub(),
+): Promise<DayAvailability> {
+  const snapshot =
+    club.id === DEFAULT_CLUB.id ? await getSnapshot(club.id, date) : null;
+  return resolveDay(date, club, snapshot);
 }
 
 /** "lago-club-padel-beveren" → "Lago Club Padel Beveren". */
@@ -389,9 +522,11 @@ export type WeekDay = {
 };
 
 /**
- * Beschikbaarheid voor een reeks dagen. De API staat maximaal 25 uur per
- * aanvraag toe, dus dit zijn parallelle dag-aanvragen (de Worker-cache deelt
- * ze tussen gebruikers). Eén mislukte dag blokkeert de rest niet.
+ * Beschikbaarheid voor een reeks dagen. Snapshots komen in één range-query
+ * uit Postgres (thuisclub, #405); alleen dagen zonder verse snapshot gaan
+ * nog live — de Playtomic-API staat maximaal 25 uur per aanvraag toe, dus
+ * dat zijn parallelle dag-aanvragen (de Worker-cache deelt ze tussen
+ * gebruikers). Eén mislukte dag blokkeert de rest niet.
  */
 export async function getWeekAvailability(
   fromDate: string,
@@ -404,22 +539,23 @@ export async function getWeekAvailability(
   if (!isPlaytomicClub(club)) {
     return dates.map((date) => ({ date, data: null, error: null }));
   }
-  // Expliciet per dag doorgeven: dates.map(getClubAvailability) zou de index als
-  // tweede argument (club) meesturen.
-  const results = await Promise.allSettled(
-    dates.map((d) => getClubAvailability(d, club)),
-  );
-  return results.map((result, i) =>
-    result.status === "fulfilled"
-      ? { date: dates[i], data: result.value, error: null }
-      : {
-          date: dates[i],
+  const snapshots =
+    club.id === DEFAULT_CLUB.id
+      ? await getSnapshots(club.id, fromDate, days)
+      : new Map<string, AvailabilitySnapshot>();
+  return Promise.all(
+    dates.map(async (date): Promise<WeekDay> => {
+      try {
+        const data = await resolveDay(date, club, snapshots.get(date) ?? null);
+        return { date, data, error: null };
+      } catch (err) {
+        return {
+          date,
           data: null,
-          error:
-            result.reason instanceof Error
-              ? result.reason.message
-              : String(result.reason),
-        },
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    }),
   );
 }
 

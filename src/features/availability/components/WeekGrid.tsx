@@ -82,7 +82,24 @@ export function WeekGrid({
             className="avail-week-error week-cell--dayend"
             style={{ gridColumn: `2 / ${2 + times.length}` }}
           >
-            {day.error ?? "Kon deze dag niet laden."}
+            {/* Sticky: de rij spant het hele (scrollende) raster, maar de
+                melding en link moeten zonder scrollen leesbaar blijven. */}
+            <div className="avail-week-error__inner">
+              <span className="avail-week-error__msg">
+                {day.error ?? "Kon deze dag niet laden."}
+              </span>
+              {/* Synchrone terugval-link (#405): playtomic.io stuurt door naar
+                  de clubpagina en gaat niet door de WAF — werkt dus ook nu. */}
+              {day.error && (
+                <a
+                  href={`https://playtomic.io/clubs/${club.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Bekijk op Playtomic →
+                </a>
+              )}
+            </div>
           </div>
         </Fragment>,
       );
