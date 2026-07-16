@@ -70,6 +70,7 @@ import { HeroCrest } from "./components/HeroCrest";
 import { BadgeStrip } from "./components/BadgeStrip";
 import { OnboardStep } from "./components/OnboardStep";
 import { NextFreeLine } from "./components/NextFreeLine";
+import { InstallPrompt } from "./components/InstallPrompt";
 import { PushPrompt } from "./components/PushPrompt";
 import { Stat } from "./components/Stat";
 import "./Dashboard.css";
@@ -919,6 +920,8 @@ export function Dashboard() {
           )}
 
       </div>
+
+      <InstallPrompt />
 
       <PushPrompt userId={myId} />
 
