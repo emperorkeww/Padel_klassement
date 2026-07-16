@@ -1,8 +1,9 @@
 -- ELO-rating per speler + historie.
 --
--- De rating wordt volledig herberekend uit de afgeronde matches (zie
--- functions/09_ratings.sql). Deze tabellen zijn dus afgeleide data: publiek
--- leesbaar, maar enkel de recompute-functie (SECURITY DEFINER) schrijft erin.
+-- De rating wordt berekend uit de afgeronde matches (zie
+-- functions/09_ratings.sql: incrementeel voor nieuwe matches, volledige
+-- recompute als fallback). Deze tabellen zijn dus afgeleide data: publiek
+-- leesbaar, maar enkel de ratingfuncties (SECURITY DEFINER) schrijven erin.
 
 -- Huidige rating per speler (start op 1000).
 create table public.player_ratings (
@@ -24,3 +25,8 @@ create table public.rating_history (
 );
 
 create index rating_history_player_idx on public.rating_history (player_id, played_at);
+-- Voor de dubbel-apply-guard in de ELO-trigger en de FK-cascade bij het
+-- verwijderen van een match. Bewust géén unique (player_id, match_id):
+-- één speler in beide teams is schema-technisch mogelijk en levert dan
+-- legitiem twee history-rijen per match op.
+create index rating_history_match_idx on public.rating_history (match_id);
