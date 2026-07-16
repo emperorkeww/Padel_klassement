@@ -69,6 +69,50 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Versheidsregel (#405): stil regeltje wanneer het raster uit de
+   cron-snapshot komt; de stale-variant (live faalde, verouderde stand)
+   mag opvallen. */
+.avail-fresh {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  margin: 0 0 var(--sp-3);
+}
+
+.avail-fresh--stale {
+  color: var(--warn);
+  font-size: var(--fs-md);
+}
+
+/* Degradatiekaart (#405): Playtomic onbereikbaar en geen snapshot als
+   vangnet — eerlijke lege staat met de werkende reserveerlink, in plaats
+   van een kaal foutbericht. */
+.avail-unavailable {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius-sm);
+  margin: 0 0 var(--sp-4);
+}
+
+.avail-unavailable__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.avail-unavailable__msg {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--ink-soft);
+}
+
+.avail-unavailable a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ---- Tijdraster (Excel-achtig) ---- */
 
 .avail-scroll {
@@ -354,7 +398,10 @@
   border-bottom-color: var(--line-strong);
 }
 
-/* Dag die niet kon laden: één melding over de volledige rij. */
+/* Dag die niet kon laden: één melding over de volledige rij, met de
+   Playtomic-terugval-link (#405) ernaast. De rij spant het hele scrollende
+   raster; de inhoud blijft sticky in beeld en de melding kapt af zodat de
+   link niet uit het zicht geduwd wordt. */
 .avail-week-error {
   display: flex;
   align-items: center;
@@ -363,6 +410,28 @@
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
   border-left: 1px solid var(--line);
+}
+
+.avail-week-error__inner {
+  position: sticky;
+  left: calc(var(--court-col) + var(--sp-3));
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.avail-week-error__msg {
+  /* Krap genoeg dat de link ernaast óók op mobiel in beeld blijft. */
+  max-width: min(35vw, 360px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.avail-week-error a {
+  color: var(--accent);
+  white-space: nowrap;
 }
 
 /* Navigatie boven het weekoverzicht. */
@@ -489,6 +558,11 @@
   .avail-table {
     --court-col: 96px;
     --slot-col: 36px;
+  }
+  /* Foutmelding krapper, zodat de Playtomic-link naast de smalle
+     baankolom volledig in beeld blijft. */
+  .avail-week-error__msg {
+    max-width: 116px;
   }
   .avail-rowhead {
     padding: 0.4rem 0.5rem;

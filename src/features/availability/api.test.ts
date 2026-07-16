@@ -1,4 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Snapshot-leespad (#405) gemockt: standaard geen snapshot, zodat de
+// bestaande tests het live pad blijven testen; per test overschrijfbaar.
+vi.mock("./snapshotApi", () => ({
+  getSnapshot: vi.fn(),
+  getSnapshots: vi.fn(),
+}));
+
+import { getSnapshot, getSnapshots } from "./snapshotApi";
 import {
   bestWeekMoment,
   bookingUrl,
@@ -9,6 +18,7 @@ import {
   getWeekAvailability,
   nextFreeSlot,
   perPersonPrice,
+  PlaytomicUnavailableError,
   slotShareText,
   slotShareUrl,
   utcToClubTime,
@@ -27,6 +37,11 @@ const TEST_CLUB: Club = {
   city: "",
   timezone: "Europe/Brussels",
 };
+
+beforeEach(() => {
+  vi.mocked(getSnapshot).mockReset().mockResolvedValue(null);
+  vi.mocked(getSnapshots).mockReset().mockResolvedValue(new Map());
+});
 
 describe("getWeekAvailability — handmatige locatie (#322)", () => {
   it("levert lege dagen zonder Playtomic-verzoek", async () => {
@@ -103,6 +118,8 @@ const day = (...courts: CourtRow[]): DayAvailability => ({
   close: "22:00",
   timeZone: "Europe/Brussels",
   courts,
+  source: "live",
+  fetchedAt: null,
 });
 
 // Samenvatting boven het raster: vroegste boekbare start, met dezelfde
@@ -554,5 +571,134 @@ describe("getClubAvailability", () => {
     const buiten = day.courts.find((c) => c.court.type === "outdoor");
     expect(buiten?.court.name).toBe("Terrein 3");
     expect(buiten?.free.has("16:00")).toBe(true);
+  });
+});
+
+// Snapshot-leespad (#405): de thuisclub leest eerst de cron-snapshot uit
+// Postgres; live is de fallback, en een verouderde snapshot is het vangnet
+// wanneer Playtomic zelf onbereikbaar is.
+describe("getClubAvailability — cron-snapshots (#405)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const RAW = [
+    {
+      // Terrein 1 van de thuisclub (knownCourts.ts): zo staat het slot op de
+      // eerste baanrij en test de assertie de volledige transformatie.
+      resource_id: "81ba479c-66f6-4568-a450-db6df2f5c589",
+      start_date: "2026-07-02",
+      slots: [{ start_time: "14:00:00", duration: 60, price: "20 EUR" }],
+    },
+  ];
+  const verse = () => ({ payload: RAW, fetchedAt: new Date().toISOString() });
+  const verouderd = () => ({
+    payload: RAW,
+    // Ruim voorbij de versheidsdrempel van 90 minuten.
+    fetchedAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+  });
+
+  const stubFetch = (body: unknown, ok = true, status = 200) => {
+    const fetchMock = vi.fn(
+      async () => ({ ok, status, json: async () => body }) as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  };
+
+  it("verse snapshot: geen upstream-call, zelfde transformatie als live", async () => {
+    const snapshot = verse();
+    vi.mocked(getSnapshot).mockResolvedValue(snapshot);
+    const fetchMock = stubFetch([]);
+
+    const day = await getClubAvailability("2026-07-02", DEFAULT_CLUB);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(day.source).toBe("snapshot");
+    expect(day.fetchedAt).toBe(snapshot.fetchedAt);
+    // 14:00 UTC = 16:00 clubtijd (zomertijd): de live transformatie geldt ook hier.
+    expect(day.courts[0].free.has("16:00")).toBe(true);
+  });
+
+  it("verouderde snapshot + live succes: live wint", async () => {
+    vi.mocked(getSnapshot).mockResolvedValue(verouderd());
+    const fetchMock = stubFetch(RAW);
+
+    const day = await getClubAvailability("2026-07-02", DEFAULT_CLUB);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(day.source).toBe("live");
+    expect(day.fetchedAt).toBeNull();
+  });
+
+  it("verouderde snapshot + live 403: snapshot als vangnet, geen fout", async () => {
+    const snapshot = verouderd();
+    vi.mocked(getSnapshot).mockResolvedValue(snapshot);
+    stubFetch({}, false, 403);
+
+    const day = await getClubAvailability("2026-07-02", DEFAULT_CLUB);
+
+    expect(day.source).toBe("snapshot");
+    expect(day.fetchedAt).toBe(snapshot.fetchedAt);
+    expect(day.courts[0].free.has("16:00")).toBe(true);
+  });
+
+  it("geen snapshot + live 403: PlaytomicUnavailableError met status", async () => {
+    stubFetch({}, false, 403);
+
+    const err = await getClubAvailability("2026-07-02", DEFAULT_CLUB).catch(
+      (e: unknown) => e,
+    );
+
+    expect(err).toBeInstanceOf(PlaytomicUnavailableError);
+    expect((err as PlaytomicUnavailableError).status).toBe(403);
+  });
+
+  it("onbruikbare payload (geen array): gewoon het live pad", async () => {
+    vi.mocked(getSnapshot).mockResolvedValue({
+      payload: { kapot: true },
+      fetchedAt: new Date().toISOString(),
+    });
+    const fetchMock = stubFetch(RAW);
+
+    const day = await getClubAvailability("2026-07-02", DEFAULT_CLUB);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(day.source).toBe("live");
+  });
+
+  it("andere club dan de thuisclub: snapshot-tabel wordt niet geraadpleegd", async () => {
+    stubFetch([]);
+
+    await getClubAvailability("2026-07-02", TEST_CLUB);
+    await getWeekAvailability("2026-07-02", 2, TEST_CLUB);
+
+    expect(vi.mocked(getSnapshot)).not.toHaveBeenCalled();
+    expect(vi.mocked(getSnapshots)).not.toHaveBeenCalled();
+  });
+
+  it("weekoverzicht: mix van verse, verouderde en ontbrekende snapshots", async () => {
+    // 02: verse snapshot; 03: verouderde snapshot; 04: niets. Live = 403.
+    vi.mocked(getSnapshots).mockResolvedValue(
+      new Map([
+        ["2026-07-02", verse()],
+        ["2026-07-03", verouderd()],
+      ]),
+    );
+    const fetchMock = stubFetch({}, false, 403);
+
+    const week = await getWeekAvailability("2026-07-02", 3, DEFAULT_CLUB);
+
+    expect(vi.mocked(getSnapshots)).toHaveBeenCalledWith(DEFAULT_CLUB.id, "2026-07-02", 3);
+    // Alleen 03 en 04 proberen live; 02 was vers.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(week[0].data?.source).toBe("snapshot");
+    expect(week[0].error).toBeNull();
+    // Verouderd vangnet voor 03: data i.p.v. fout.
+    expect(week[1].data?.source).toBe("snapshot");
+    expect(week[1].error).toBeNull();
+    // Zonder vangnet blijft de dag een nette fout (blokkeert de rest niet).
+    expect(week[2].data).toBeNull();
+    expect(week[2].error).toMatch(/blokkeert/i);
   });
 });

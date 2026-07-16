@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
+
+// api.ts importeert het snapshot-leespad (#405) en dus de supabase-client;
+// in de testomgeving bestaat die env niet, dus mocken.
+vi.mock("@/lib/supabase/client", async () => {
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  return { supabase: makeSupabaseMock() };
+});
 import { ToastProvider } from "@/ui/ToastProvider";
 import { Timetable } from "@/features/availability/components/Timetable";
 import type { DayAvailability } from "@/features/availability/api";
@@ -19,6 +26,8 @@ function fixture(): DayAvailability {
     open: "16:00",
     close: "19:00",
     timeZone: "Europe/Brussels",
+    source: "live",
+    fetchedAt: null,
     courts: [
       {
         court: { id: "c1", name: "Terrein 1", type: "roofed" },

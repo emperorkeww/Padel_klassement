@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   COMMENTATOR,
+  coachLof,
   coachSneer,
   kiesUniek,
   kleurRoast,
+  LOF,
   roastCtx,
   roastSeed,
   SNEER,
@@ -90,6 +92,46 @@ describe("kiesUniek — anti-herhaling (#201)", () => {
   it("valt terug op de seed-keuze als de pool op is", () => {
     const g = new Set<string>(pool);
     expect(pool).toContain(kiesUniek(pool, 2, g));
+  });
+});
+
+describe("LOF + coachLof — hype-modus (#199)", () => {
+  it("heeft minstens 12 unieke varianten per intensiteit", () => {
+    for (const i of ["mild", "gemeen", "radioactief"] as const) {
+      expect(LOF[i].length).toBeGreaterThanOrEqual(12);
+      expect(new Set(LOF[i]).size).toBe(LOF[i].length);
+    }
+  });
+
+  it("kiest de lof uit de pool van de gekozen intensiteit", () => {
+    for (const intensiteit of ["mild", "gemeen", "radioactief"] as const) {
+      expect(LOF[intensiteit]).toContain(coachLof(ctx({ intensiteit }), 4));
+    }
+  });
+
+  it("is deterministisch op de seed", () => {
+    expect(coachLof(ctx(), 7)).toBe(coachLof(ctx(), 7));
+  });
+
+  it("tempert bij een schild tot oprechte lof, maar zwijgt nooit", () => {
+    // Hét onderscheid met coachSneer: het schild blokkeert de lof niet, het
+    // schaalt hem terug naar mild — ook op radioactief.
+    const uit = coachLof({ intensiteit: "radioactief", schild: true }, 3);
+    expect(LOF.mild).toContain(uit);
+    expect(LOF.radioactief).not.toContain(uit);
+  });
+
+  it("herhaalt geen lof met een gedeelde set (zelfde seed)", () => {
+    const g = new Set<string>();
+    const lijnen = [0, 0, 0].map(() => coachLof(ctx({ intensiteit: "gemeen" }), 0, g));
+    expect(new Set(lijnen).size).toBe(3);
+  });
+
+  it("deelt geen enkele lijn met de sneer-pools", () => {
+    for (const i of ["mild", "gemeen", "radioactief"] as const) {
+      const overlap = LOF[i].filter((l) => (SNEER[i] as readonly string[]).includes(l));
+      expect(overlap).toEqual([]);
+    }
   });
 });
 

@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+
+// api.ts importeert het snapshot-leespad (#405) en dus de supabase-client;
+// in de testomgeving bestaat die env niet, dus mocken.
+vi.mock("@/lib/supabase/client", async () => {
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  return { supabase: makeSupabaseMock() };
+});
 import { WeekGrid } from "@/features/availability/components/WeekGrid";
 import type { DayAvailability, WeekDay } from "@/features/availability/api";
 
@@ -11,6 +18,8 @@ function day(
     open: "16:00",
     close: "18:00",
     timeZone: "Europe/Brussels",
+    source: "live",
+    fetchedAt: null,
     courts: courts.map((c, i) => ({
       court: { id: `c${i}`, name: c.name, type: "roofed" },
       free: new Map(
@@ -82,5 +91,16 @@ describe("WeekGrid", () => {
     // Twee geladen dagen × drie banen.
     expect(screen.getAllByText("T1")).toHaveLength(2);
     expect(screen.getAllByText("T3")).toHaveLength(2);
+  });
+
+  it("foutdag toont de Playtomic-terugval-link (#405)", () => {
+    render(<WeekGrid week={week} duration={null} onPickDay={() => {}} />);
+
+    const link = screen.getByRole("link", { name: /bekijk op playtomic/i });
+    // De synchrone playtomic.io-URL gaat niet door de WAF en werkt dus ook
+    // tijdens een blokkade; het club-id komt uit useClub (DEFAULT_CLUB).
+    expect(link.getAttribute("href")).toMatch(
+      /^https:\/\/playtomic\.io\/clubs\//,
+    );
   });
 });
