@@ -253,6 +253,17 @@ const EMPTY_WELKOM = [
   "Je account is klaar. Nu nog de rest van de wereld verslaan.",
 ] as const;
 
+// Licht plagend welkom voor wie zijn intensiteit hoger dan "mild" heeft staan
+// (en geen schild draagt): Rudy mag knipogen, maar een nieuwe gebruiker krijgt
+// nooit een echte burn — er valt immers nog niets te roasten.
+const EMPTY_WELKOM_PLAAG = [
+  "Welkom! Nul matches, nul nederlagen — statistisch gezien is dit je beste moment ooit.",
+  "Zo, een nieuwe uitdager. Ik heb mijn tactische notitieboekje alvast opengeslagen op een lege pagina.",
+  "Welkom bij de club. Rating 1000 — geniet ervan, zo netjes rond wordt het nooit meer.",
+  "Nieuw hier? Onderaan beginnen heeft één voordeel: je kunt alleen maar stijgen. In theorie.",
+  "Welkom! Je krijgt van mij één gratis compliment: je bent er. De rest verdien je op de baan.",
+] as const;
+
 const EMPTY_GROUP = [
   "Deze groep is nog leeg als een net geopend blik. Nodig vrienden uit!",
   "Een groep zonder leden is als een padelbaan zonder net. Tijd om dat te fixen.",
@@ -269,15 +280,14 @@ export interface EmptyStateFeiten {
 }
 
 /** Coach-quip voor lege staten (onboarding, nieuwe groep, geen matches).
- *  Gebruikt altijd een milde, verwelkomende toon voor onboarding-scenario's.
- *  Respecteert het roast-schild: bij schild aan worden neutrale teksten getoond. */
+ *  Bewust mild (#301): groep- en matchespools zijn altijd verwelkomend; op het
+ *  dashboard mag Rudy licht plagen bij intensiteit boven "mild", maar schild
+ *  aan of intensiteit "mild" geeft het warme welkom. */
 export function coachEmptyState(f: EmptyStateFeiten): string {
   const seed = roastSeed("empty", f.seed);
-  if (f.ctx.schild) {
-    if (f.type === "group") return kiesUniek(EMPTY_GROUP, seed);
-    return kiesUniek(EMPTY_NEUTRAAL, seed);
-  }
   if (f.type === "group") return kiesUniek(EMPTY_GROUP, seed);
   if (f.type === "matches") return kiesUniek(EMPTY_NEUTRAAL, seed);
-  return kiesUniek(EMPTY_WELKOM, seed);
+  if (f.ctx.schild || f.ctx.intensiteit === "mild")
+    return kiesUniek(EMPTY_WELKOM, seed);
+  return kiesUniek(EMPTY_WELKOM_PLAAG, seed);
 }
