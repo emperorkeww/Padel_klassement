@@ -1531,6 +1531,7 @@ export type Database = {
       }
     }
     Functions: {
+      _apply_match_rating: { Args: { p_match: string }; Returns: undefined }
       _apply_rating: {
         Args: {
           p_delta: number
