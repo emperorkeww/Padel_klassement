@@ -2,6 +2,7 @@
 // opbouw los van het tekenen testbaar is — zelfde patroon als championPoster.ts.
 // De poster is opzettelijk gênant maar plagerig van toon.
 
+import { coachSneer, COMMENTATOR, type RoastCtx } from "@/features/coach/roastTone";
 import type { PiasReden } from "@/features/groups/maandpias";
 
 export interface PiasPoster {
@@ -26,6 +27,17 @@ const ONDERSCHRIFT: Record<PiasReden, string> = {
 /** Onderschrift voor een reden (voor onder de poster). */
 export function piasOnderschrift(reden: PiasReden): string {
   return ONDERSCHRIFT[reden];
+}
+
+/**
+ * Coach Rudy's burn als geattribueerde quote voor op de poster (#202), of null
+ * bij roast-schild. Zelfde seed als de kaart → poster en app tonen dezelfde
+ * sneer.
+ */
+export function piasCoachQuote(ctx: RoastCtx, seed: number): string | null {
+  const sneer = coachSneer(ctx, seed);
+  if (!sneer) return null;
+  return `${COMMENTATOR.emoji} ${COMMENTATOR.naam}: “${sneer}”`;
 }
 
 /** Posterinhoud voor de pias. */

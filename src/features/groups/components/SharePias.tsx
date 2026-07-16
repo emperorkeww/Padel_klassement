@@ -2,8 +2,14 @@ import { useMemo, useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, sharePng, wrapCentered } from "@/lib/utils/shareImage";
-import { piasPoster, piasOnderschrift, type PiasPoster } from "@/features/groups/maandpiasPoster";
+import {
+  piasPoster,
+  piasOnderschrift,
+  piasCoachQuote,
+  type PiasPoster,
+} from "@/features/groups/maandpiasPoster";
 import type { PiasReden } from "@/features/groups/maandpias";
+import type { RoastCtx } from "@/features/coach/roastTone";
 
 // Deelbare Pias-poster (4:5) — de gênante tegenhanger van ShareChampion.
 // Zelfde deel-flow (sharePng); opzettelijk plagerig van toon.
@@ -46,10 +52,12 @@ function draw(ctx: CanvasRenderingContext2D, poster: PiasPoster, onderschrift: s
   ctx.font = "500 44px Outfit, system-ui, sans-serif";
   wrapCentered(ctx, poster.detail, W / 2, 900, W - 160, 58);
 
-  // Plagerig onderschrift.
+  // Coach Rudy's quote (#202), of het generieke onderschrift bij schild.
+  // wrapCentered centreert het blok rond y, zodat lange radioactieve sneers
+  // niet tegen het periodelabel botsen.
   ctx.fillStyle = c.inkSoft;
   ctx.font = "italic 500 34px Outfit, system-ui, sans-serif";
-  ctx.fillText(onderschrift, W / 2, 1120);
+  wrapCentered(ctx, onderschrift, W / 2, 1090, W - 160, 44);
 
   // Periode + accentstreep.
   ctx.fillStyle = c.inkSoft;
@@ -65,12 +73,18 @@ export function SharePias({
   periodeLabel,
   reden,
   scope,
+  roast,
+  seed,
 }: {
   naam: string;
   detail: string;
   periodeLabel: string;
   reden: PiasReden;
   scope: "week" | "maand";
+  /** Roast-context van de pias (toon + schild); schild aan → geen quote. */
+  roast: RoastCtx;
+  /** Seed van de kaart, zodat de poster dezelfde burn toont als de app. */
+  seed: number;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -83,7 +97,8 @@ export function SharePias({
   async function share() {
     setBusy(true);
     try {
-      const outcome = await sharePng((ctx) => draw(ctx, poster, piasOnderschrift(reden)), {
+      const onderschrift = piasCoachQuote(roast, seed) ?? piasOnderschrift(reden);
+      const outcome = await sharePng((ctx) => draw(ctx, poster, onderschrift), {
         width: W,
         height: H,
         filename: "pias.png",

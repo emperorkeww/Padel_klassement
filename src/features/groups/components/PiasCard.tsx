@@ -93,6 +93,8 @@ export function PiasCard({
           periodeLabel={periodeLabel}
           reden={pias.reden}
           scope={scope}
+          roast={ctx}
+          seed={seed}
         />
       </div>
       <p className="pias-card__lede">{lede}</p>
