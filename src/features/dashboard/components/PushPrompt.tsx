@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import {
-  pushSupported,
+  pushAvailability,
   enablePush,
   getPushSubscription,
 } from "@/lib/supabase/push";
@@ -13,7 +13,9 @@ import { readFlag, writeFlag } from "../flags";
  *  weggeklikt is. */
 export function PushPrompt({ userId }: { userId: string }) {
   const toast = useToast();
-  const supported = pushSupported();
+  // Alleen "ready" telt: bij "needs-install" (iOS-browsertab) neemt de
+  // InstallPrompt het over, en "denied"/"unsupported" zijn hier niet te fixen.
+  const supported = pushAvailability() === "ready";
   const [dismissed, setDismissed] = useState(() => readFlag("push-prompt-dismissed"));
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);

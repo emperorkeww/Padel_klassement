@@ -6,11 +6,16 @@ import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { SmoesPromptProvider } from "@/features/matches/SmoesPromptProvider";
 import { watchSystemTheme } from "@/lib/utils/theme";
+import { initInstallPromptCapture } from "@/lib/utils/pwa";
 import "./index.css";
 
 // Het inline script in index.html zette het thema al vóór de eerste paint;
 // hier alleen nog OS-wissels blijven volgen zolang de voorkeur "systeem" is.
 watchSystemTheme();
+
+// beforeinstallprompt vuurt vlak na page-load — vóór de lazy dashboard-chunk
+// geladen is — dus hier eager afvangen; InstallPrompt leest het later uit.
+initInstallPromptCapture();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

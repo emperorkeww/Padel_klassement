@@ -25,7 +25,7 @@ import {
   disablePush,
   enablePush,
   getPushSubscription,
-  pushSupported,
+  pushAvailability,
 } from "@/lib/supabase/push";
 import {
   getThemePreference,
@@ -247,16 +247,18 @@ function NameCard({
 /* ---------- Meldingen (web push) ---------- */
 function NotificationsCard({ userId }: { userId: string }) {
   const toast = useToast();
-  const supported = pushSupported();
-  const [enabled, setEnabled] = useState<boolean | null>(supported ? null : false);
+  const availability = pushAvailability();
+  const [enabled, setEnabled] = useState<boolean | null>(
+    availability === "ready" ? null : false,
+  );
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!supported) return;
+    if (availability !== "ready") return;
     getPushSubscription()
       .then((sub) => setEnabled(!!sub))
       .catch(() => setEnabled(false));
-  }, [supported]);
+  }, [availability]);
 
   async function toggle() {
     setBusy(true);
@@ -284,12 +286,21 @@ function NotificationsCard({ userId }: { userId: string }) {
         Nieuwe wedstrijden, uitslagen van jouw matches en vriendschapsverzoeken —
         ook als de app dicht is.
       </p>
-      {!supported ? (
+      {availability === "needs-install" ? (
         <p className="empty">
-          Meldingen worden hier niet ondersteund. Op iPhone/iPad: installeer de
-          app eerst op je beginscherm (Deel → Zet op beginscherm) en probeer
-          het daarna opnieuw.
+          Op iPhone en iPad werken meldingen alleen als de app op je beginscherm
+          staat. Tik in Safari op Deel (het vierkantje met pijl) en kies "Zet op
+          beginscherm". Open de app daarna vanaf je beginscherm en zet meldingen
+          hier aan.
         </p>
+      ) : availability === "denied" ? (
+        <p className="empty">
+          Je hebt meldingen voor deze app geweigerd. Zet ze weer aan via
+          Instellingen → Meldingen op je iPhone, of via de site-instellingen van
+          je browser, en herlaad daarna de app.
+        </p>
+      ) : availability === "unsupported" ? (
+        <p className="empty">Meldingen worden in deze browser niet ondersteund.</p>
       ) : (
         <button
           className={`btn ${enabled ? "" : "btn--primary"}`}
