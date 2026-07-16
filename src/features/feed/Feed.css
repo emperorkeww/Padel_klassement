@@ -17,18 +17,6 @@
 .feed__day:first-child {
   margin-top: 0;
 }
-.feed__day::first-letter {
-  text-transform: uppercase;
-}
-
-/* Highlight-chips onder een matchkaart (upset, score, reeks, rating, ▲/▼). */
-.feed-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1);
-  margin-top: var(--sp-1);
-  padding: 0 var(--sp-1);
-}
 
 /* Routine-regel (vriendschap, gepland, groep, poll): compacte, subtiele kaart
    met een icoon-token — lichter dan een match, maar wél een kaart (#232 mockup-
@@ -90,8 +78,6 @@
   justify-content: center;
   margin-top: var(--sp-4);
 }
-.feed__filters { margin-bottom: var(--sp-3); }
-
 /* Coach Rudy: commentaar-speech-bubble onder een feed-item (#183). Ingesprongen
    onder de kaart, met zijn micro-avatar links en een naam-label. */
 .coach-comment {
@@ -109,7 +95,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--sp-2) var(--sp-3);
+  padding: 6px var(--sp-2);
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -206,11 +192,11 @@
 }
 .coach-intro__title {
   margin: 0 0 var(--sp-1);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   color: var(--coach);
 }
 .coach-intro__text {
-  margin: 0 0 var(--sp-3);
+  margin: 0 0 var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
@@ -480,47 +466,9 @@
 
 .feed-evening .coach-comment { margin: 0 14px 12px; }
 
-/* ===== #232 PR D: verstrakte match-kaart + ingetoomde Coach Rudy ===== */
-/* Feed-scoped (alleen binnen .feed-match): de gedeelde match-kaart compacter,
-   zonder de kaart op andere schermen te raken. */
-.feed-match .match-card {
-  padding: var(--sp-2) var(--sp-3);
-}
-.feed-match .match-card__mid {
-  gap: 1px;
-}
-
 /* Coach Rudy intro-banner blijft, maar compacter en minder dominant. */
 .card.coach-intro {
   padding: var(--sp-3) var(--sp-4);
-}
-.coach-intro__title {
-  font-size: var(--fs-md);
-}
-.coach-intro__text {
-  margin-bottom: var(--sp-2);
-}
-
-/* Coach-commentaar iets strakker onder een item. */
-.coach-comment__bubble {
-  padding: 6px var(--sp-2);
-}
-
-/* Match-kaart in de feed: winnaarskant subtiel getint + set-lijn als chip,
-   zodat winnaar en sets in één oogopslag leesbaar zijn (feed-scoped). */
-.feed-match .match-card__side {
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius-sm);
-}
-.feed-match .match-card__side.is-win {
-  background: var(--success-soft);
-}
-.feed-match .match-card__sets {
-  font-variant-numeric: tabular-nums;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 1px var(--sp-2);
 }
 
 /* ===== #232: match-kaart in mockup-layout — avatars boven de naam, grote
@@ -582,8 +530,7 @@
   color: var(--ink-soft);
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 .fmatch__team.is-win .fmatch__nm { color: var(--ink); font-weight: 700; }
 .fmatch__score {
@@ -591,7 +538,7 @@
   align-items: center;
   gap: var(--sp-1);
   font-weight: 800;
-  font-size: 1.9rem;
+  font-size: 2.4rem;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -617,14 +564,20 @@
   color: var(--ink-soft);
 }
 
-/* Filterchips als losse pills (mockup-layout, #232). Kleuren/stippen behouden. */
+/* Filterchips als losse pills (mockup-layout, #232): één scrollrij. */
 .feed__filters {
+  margin-bottom: var(--sp-3);
   background: transparent;
   border: 0;
   padding: 0;
-  flex-wrap: wrap;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.feed__filters::-webkit-scrollbar { display: none; }
 .feed__filters .tab {
+  flex: 0 0 auto;
   min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--line);
@@ -658,18 +611,7 @@
   font-family: var(--font-rounded);
 }
 
-/* Match-score groter en ronder (mockup-voorbeeld). */
-.fmatch__score { font-size: 2.4rem; }
-.fmatch__nm { white-space: normal; }
-
-/* Filterchips: één scrollrij i.p.v. wrappen; telling als badge. */
-.feed__filters {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.feed__filters::-webkit-scrollbar { display: none; }
-.feed__filters .tab { flex: 0 0 auto; }
+/* Telling op een filterchip. */
 .feed__filters .tab__count {
   margin-left: 6px;
   padding: 1px 7px;
@@ -682,6 +624,3 @@
   background: rgba(255, 255, 255, 0.24);
   color: #fff;
 }
-
-/* Coach-intro nog iets compacter (blijft oranje). */
-.coach-intro__title { font-size: var(--fs-md); }
