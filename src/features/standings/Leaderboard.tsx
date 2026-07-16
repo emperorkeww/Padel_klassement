@@ -608,6 +608,7 @@ export function Leaderboard() {
               delta: deltaToday(r.history, club.timezone),
               dimmed: r.games > 0 && r.games < THIN_GAMES,
               tier: true,
+              roastSchild: pmap[r.key]?.roast_schild ?? false,
               sub: `${r.points} ptn`,
               record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
             }))}
