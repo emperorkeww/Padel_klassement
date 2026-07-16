@@ -14,23 +14,14 @@ export async function searchDiscoverableProfiles(
 ): Promise<Profile[]> {
   const q = query.trim();
   if (!q) return [];
-  const base = supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .ilike("username", `%${q}%`)
     .neq("id", excludeId)
+    .eq("discoverable", true)
     .order("username", { ascending: true })
     .limit(10);
-  // 'discoverable' bestaat in de databank maar nog niet in database.types.ts:
-  // lokaal casten zodat we die kolom kunnen filteren.
-  const { data, error } = await (
-    base as unknown as {
-      eq: (
-        column: string,
-        value: boolean,
-      ) => PromiseLike<{ data: Profile[] | null; error: { message: string } | null }>;
-    }
-  ).eq("discoverable", true);
   if (error) throw error;
   return data ?? [];
 }
