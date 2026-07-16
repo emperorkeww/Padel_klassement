@@ -30,6 +30,7 @@ const match = (over: Partial<Match>): Match => ({
   created_by: null,
   group_id: "g1",
   round_number: null,
+  format: "2v2",
   ...over,
 });
 

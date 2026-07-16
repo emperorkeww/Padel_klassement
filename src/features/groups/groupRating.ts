@@ -1,4 +1,5 @@
 import type { Match, PlayerRating, Team } from "@/types";
+import { playersOf } from "@/features/rating/results";
 
 // Pure logica voor het rating-groepsklassement (#52): groepsleden gesorteerd
 // op hun globale Elo, met het aantal groepsmatches ernaast. Getest in
@@ -31,7 +32,7 @@ export function playedInGroup(
     for (const teamId of [m.team_a_id, m.team_b_id]) {
       const team = teams[teamId];
       if (!team) continue;
-      for (const pid of [team.player1_id, team.player2_id]) {
+      for (const pid of playersOf(team)) {
         counts[pid] = (counts[pid] ?? 0) + 1;
       }
     }

@@ -30,6 +30,7 @@ function match(over: Partial<Match> & Pick<Match, "id" | "team_a_id" | "team_b_i
     round_number: null,
     score_a: null,
     score_b: null,
+    format: "2v2",
     ...over,
   };
 }

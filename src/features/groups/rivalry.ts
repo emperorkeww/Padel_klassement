@@ -5,6 +5,7 @@
 // wissels in wie leidt — komen bovenaan.
 
 import type { Match, Team } from "@/types";
+import { playersOf } from "@/features/rating/results";
 
 /** Minimum aantal onderlinge duels vóór we van een rivaliteit spreken.
  *  Zelfde drempel als MIN_SAMEN in features/profiles/headToHead.ts —
@@ -82,8 +83,9 @@ export function groupRivalries(
     const ta = teams[m.team_a_id];
     const tb = teams[m.team_b_id];
     if (!ta || !tb) continue;
-    for (const pa of [ta.player1_id, ta.player2_id]) {
-      for (const pb of [tb.player1_id, tb.player2_id]) {
+    // Singles-teams leveren gewoon één speler; een 1v1-duel is óók een rivaliteit.
+    for (const pa of playersOf(ta)) {
+      for (const pb of playersOf(tb)) {
         if (pa === pb) continue; // defensief: kapotte data
         const key = pairKey(pa, pb);
         const acc =
@@ -164,8 +166,8 @@ export function rivalryForMatch(
   if (!ta || !tb) return null;
   const byKey = new Map(rivalries.map((r) => [pairKey(r.a, r.b), r]));
   let best: Rivalry | null = null;
-  for (const pa of [ta.player1_id, ta.player2_id]) {
-    for (const pb of [tb.player1_id, tb.player2_id]) {
+  for (const pa of playersOf(ta)) {
+    for (const pb of playersOf(tb)) {
       if (pa === pb) continue;
       const r = byKey.get(pairKey(pa, pb));
       if (r && (!best || r.score > best.score)) best = r;

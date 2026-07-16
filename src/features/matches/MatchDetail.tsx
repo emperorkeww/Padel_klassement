@@ -30,6 +30,7 @@ import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
 import { getAllRatingHistories } from "@/features/standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
+import { playersOf } from "@/features/rating/results";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierChange } from "@/features/rating/tiers";
 import { scoreHighlight } from "@/features/feed/feedLogic";
@@ -47,10 +48,7 @@ export function MatchDetail() {
   const teamIds = match.data ? [match.data.team_a_id, match.data.team_b_id] : [];
   const teamKey = teamIds.join(",");
   const teams = useAsync(() => getTeamsByIds(teamIds), [teamKey]);
-  const playerIds = teamIds.flatMap((tid) => {
-    const t = teams.data?.[tid];
-    return t ? [t.player1_id, t.player2_id] : [];
-  });
+  const playerIds = teamIds.flatMap((tid) => playersOf(teams.data?.[tid]));
   const playerKey = playerIds.join(",");
   const profiles = useAsync(() => getProfilesByIds(playerIds), [playerKey]);
   // Rating-historie (gecacht, app-breed gedeeld) om de pre-match winkans en dus
@@ -485,9 +483,9 @@ function TeamBlock({
   histories: Record<string, RatingPoint[]> | undefined;
   matchId: string;
 }) {
-  const players = team
-    ? [profiles[team.player1_id], profiles[team.player2_id]]
-    : [];
+  // Singles (1v1) toont één speler; "Onbekend" blijft enkel voor spelers
+  // van wie het profiel (nog) niet geladen is.
+  const players = playersOf(team).map((pid) => profiles[pid]);
   return (
     <div className={`md-team md-team--${side} ${won ? "is-win" : ""}`}>
       <div className="md-team__name">

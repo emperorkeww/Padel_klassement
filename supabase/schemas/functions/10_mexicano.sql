@@ -66,7 +66,8 @@ begin
     join (
       select id as team_id, player1_id as player_id from public.teams
       union all
-      select id, player2_id from public.teams
+      -- singles-teams hebben geen tweede speler
+      select id, player2_id from public.teams where player2_id is not null
     ) pt on pt.team_id = tr.team_id
     group by pt.player_id
   ) s on s.player_id = gm.player_id

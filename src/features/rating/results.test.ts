@@ -29,6 +29,7 @@ function match(part: Partial<Match>): Match {
     round_number: null,
     score_a: null,
     score_b: null,
+    format: "2v2",
     ...part,
   };
 }

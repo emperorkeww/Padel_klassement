@@ -9,7 +9,7 @@
 // RivalryCard niets rendert zonder rivaliteit.
 
 import type { Match, RatingPoint, Team } from "@/types";
-import { inTeam, outcomeFor } from "@/features/rating/results";
+import { inTeam, outcomeFor, playersOf } from "@/features/rating/results";
 import { expected } from "@/features/rating/elo";
 import { matchDate } from "@/features/dashboard/missions";
 
@@ -167,8 +167,11 @@ function favorietKans(
   if (!mijnTeam || !tegenTeam) return null;
   const avg = (t: Team): number | null => {
     const p1 = ratings.get(t.player1_id)?.rating_before;
+    if (p1 == null) return null;
+    // Singles (1v1): de teamrating is de rating van de ene speler zelf.
+    if (!t.player2_id) return p1;
     const p2 = ratings.get(t.player2_id)?.rating_before;
-    return p1 == null || p2 == null ? null : (p1 + p2) / 2;
+    return p2 == null ? null : (p1 + p2) / 2;
   };
   const mij = avg(mijnTeam);
   const hen = avg(tegenTeam);
@@ -195,10 +198,7 @@ export function bepaalPias(
     const d = matchDate(m);
     if (d == null || d < period.start || d >= period.end) continue;
     for (const t of [teams[m.team_a_id], teams[m.team_b_id]]) {
-      if (t) {
-        spelers.add(t.player1_id);
-        spelers.add(t.player2_id);
-      }
+      for (const pid of playersOf(t)) spelers.add(pid);
     }
   }
 

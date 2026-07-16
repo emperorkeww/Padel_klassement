@@ -30,9 +30,13 @@ export interface Team {
   id: string;
   name: string | null;
   player1_id: string;
-  player2_id: string;
+  /** null bij een singles-"team" (1v1). */
+  player2_id: string | null;
   created_at: string;
 }
+
+/** Speelvorm van een match: dubbel (standaard) of singles. */
+export type MatchFormat = "1v1" | "2v2";
 
 export interface Match {
   id: string;
@@ -47,6 +51,7 @@ export interface Match {
   round_number: number | null;
   score_a: number | null;
   score_b: number | null;
+  format: MatchFormat;
   /** Optionele per-set uitslag (jsonb); ruwe waarde — valideer via
    *  readSetScores in features/matches/api.ts. */
   set_scores?: unknown;

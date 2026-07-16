@@ -13,6 +13,9 @@ export const PROFILES = [
 export const TEAMS = [
   { id: "t-ab", name: null, player1_id: "p1", player2_id: "p2", created_at: NOW },
   { id: "t-cd", name: null, player1_id: "p3", player2_id: "p4", created_at: NOW },
+  // Singles-"teams" (1v1, #279): player2_id is null.
+  { id: "t-a", name: null, player1_id: "p1", player2_id: null, created_at: NOW },
+  { id: "t-c", name: null, player1_id: "p3", player2_id: null, created_at: NOW },
 ];
 
 export const MATCH_DONE = {
@@ -28,6 +31,25 @@ export const MATCH_DONE = {
   created_by: "p1",
   group_id: "g1",
   round_number: 1,
+  format: "2v2",
+};
+
+// Afgeronde 1v1 (#279): Alice versloeg Carol. Bewust niet in TABLES.matches
+// opgenomen zodat bestaande tests ongemoeid blijven; tests voegen hem zelf toe.
+export const MATCH_SINGLES = {
+  id: "m-single",
+  team_a_id: "t-a",
+  team_b_id: "t-c",
+  status: "completed",
+  winner_team_id: "t-a",
+  score_a: 6,
+  score_b: 2,
+  played_at: NOW,
+  created_at: NOW,
+  created_by: "p1",
+  group_id: "g1",
+  round_number: null,
+  format: "1v1",
 };
 
 export const MATCH_PLANNED = {
@@ -43,6 +65,7 @@ export const MATCH_PLANNED = {
   created_by: "p1",
   group_id: "g1",
   round_number: 2,
+  format: "2v2",
 };
 
 export const FRIENDSHIPS = [

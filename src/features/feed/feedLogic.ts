@@ -9,7 +9,7 @@ import type {
 } from "@/types";
 import { matchUpset } from "@/features/matches/upset";
 import { MONSTERZEGE_DREMPEL } from "@/features/profiles/badges";
-import { outcomeFor } from "@/features/rating/results";
+import { outcomeFor, playersOf as teamSpelers } from "@/features/rating/results";
 import { rankShifts, type Shift } from "@/features/rating/rankShift";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { isSeasonClosed, seasonFor, type Season } from "@/features/rating/seasons";
@@ -126,9 +126,7 @@ export function networkIds(friendships: Friendship[], myId: string): Set<string>
 
 /** Spelers van een match (beide teams), lege lijst als teams onbekend zijn. */
 function playersOf(m: Match, teams: Record<string, Team>): string[] {
-  return [teams[m.team_a_id], teams[m.team_b_id]]
-    .filter(Boolean)
-    .flatMap((t) => [t!.player1_id, t!.player2_id]);
+  return [teams[m.team_a_id], teams[m.team_b_id]].flatMap((t) => teamSpelers(t));
 }
 
 /** rating_history omgeklapt naar match → speler → punt (voor delta's/upsets). */

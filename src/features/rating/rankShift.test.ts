@@ -38,6 +38,7 @@ const match = (over: Partial<Match>): Match => ({
   created_by: null,
   group_id: null,
   round_number: null,
+  format: "2v2",
   ...over,
 });
 

@@ -46,6 +46,8 @@ export function matchUpset(
   if (!winner || !loser) return null;
   const avg = (t: Team): number | null => {
     const p1 = points.get(t.player1_id)?.rating_before;
+    // Singles (1v1): de teamrating is de rating van die ene speler.
+    if (!t.player2_id) return p1 ?? null;
     const p2 = points.get(t.player2_id)?.rating_before;
     return p1 == null || p2 == null ? null : (p1 + p2) / 2;
   };

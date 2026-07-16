@@ -30,6 +30,7 @@ const match = (id: string, winner: string | null): Match => ({
   round_number: null,
   score_a: winner === "t-ab" ? 6 : 3,
   score_b: winner === "t-ab" ? 3 : 6,
+  format: "2v2",
 });
 
 const pt = (matchId: string, before: number): RatingPoint => ({
