@@ -9,6 +9,12 @@
 // Gebruik: node scripts/gen-known-courts.mjs   (of: npm run gen:courts)
 // Faalt hard (exit 1) als de pagina niet te halen of te parsen is; het
 // bestaande bestand blijft dan onaangeroerd.
+//
+// Vanaf datacenter-IP's (GitHub-runners, Cloudflare) blokkeert Playtomic's
+// CloudFront-WAF de pagina met een 403 (#385). Zet dan CLUB_PAGE_PROXY (de
+// club-page edgefunctie-URL) en CLUB_PAGE_SECRET (het cron-geheim): het
+// script haalt de pagina dan via de Supabase-egress op, die wél doorgelaten
+// wordt. Zonder die env-vars fetcht het rechtstreeks (residentieel IP werkt).
 
 import { writeFileSync } from "node:fs";
 
@@ -189,16 +195,33 @@ ${entries}
 `;
 }
 
+/** Clubpagina-HTML: via de club-page-egressfunctie als die geconfigureerd
+ *  is (CI), anders rechtstreeks bij Playtomic (lokaal). */
+async function fetchClubPage(club) {
+  const proxy = process.env.CLUB_PAGE_PROXY;
+  if (proxy) {
+    const url = `${proxy}?tenant_id=${club.tenantId}`;
+    const res = await fetch(url, {
+      headers: { "x-cron-secret": process.env.CLUB_PAGE_SECRET ?? "" },
+    });
+    if (!res.ok) {
+      throw new Error(`club-page-egress → HTTP ${res.status}`);
+    }
+    return res.text();
+  }
+  const slug = (await resolveSlug(club.tenantId)) ?? club.fallbackSlug;
+  const url = `https://playtomic.com/clubs/${slug}`;
+  const res = await fetch(url, { headers: PAGE_HEADERS });
+  if (!res.ok) {
+    throw new Error(`${url} → HTTP ${res.status}`);
+  }
+  return res.text();
+}
+
 async function main() {
   const clubs = [];
   for (const club of CLUBS) {
-    const slug = (await resolveSlug(club.tenantId)) ?? club.fallbackSlug;
-    const url = `https://playtomic.com/clubs/${slug}`;
-    const res = await fetch(url, { headers: PAGE_HEADERS });
-    if (!res.ok) {
-      throw new Error(`${url} → HTTP ${res.status}`);
-    }
-    const courts = parseResources(await res.text());
+    const courts = parseResources(await fetchClubPage(club));
     console.log(
       `${club.name}: ${courts.length} banen (${courts.map((c) => `${c.name}=${c.type || "?"}`).join(", ")})`,
     );

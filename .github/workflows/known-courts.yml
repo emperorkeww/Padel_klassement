@@ -1,8 +1,13 @@
 # Wekelijkse driftcheck voor knownCourts.ts (#392): regenereert het bestand
 # vanaf de live Playtomic-clubpagina (npm run gen:courts) en opent bij een
 # verschil automatisch een PR naar develop. Faalt het ophalen/parsen (bv.
-# paginavorm gewijzigd of Playtomic blokkeert de runner), dan faalt de job
-# zichtbaar — geen stille skip; handmatig draaien blijft de terugvaloptie.
+# paginavorm gewijzigd), dan faalt de job zichtbaar — geen stille skip;
+# handmatig draaien blijft de terugvaloptie.
+#
+# GitHub-runners krijgen van Playtomic's CloudFront-WAF een 403 (datacenter-
+# blokkade, #385); de fetch loopt daarom via de club-page-edgefunctie
+# (Supabase-egress). Vereist de repo-secret PLAYTOMIC_CRON_SECRET
+# (= de CRON_SECRET van de Supabase-functies).
 name: Known courts
 
 on:
@@ -31,6 +36,9 @@ jobs:
         run: npm ci
 
       - name: Regenereer knownCourts.ts vanaf de live clubpagina
+        env:
+          CLUB_PAGE_PROXY: https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/club-page
+          CLUB_PAGE_SECRET: ${{ secrets.PLAYTOMIC_CRON_SECRET }}
         run: npm run gen:courts
 
       - name: Detecteer drift
