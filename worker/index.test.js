@@ -61,6 +61,47 @@ describe("Worker Playtomic-proxy", () => {
     expect(headers["User-Agent"]).toBeUndefined();
   });
 
+  it("availability: fetcht via de egress-hop wanneer PLAYTOMIC_EGRESS is gezet", async () => {
+    const upstream = vi.fn(async () => new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", upstream);
+    const env = {
+      ...makeEnv(),
+      PLAYTOMIC_EGRESS: "https://x.supabase.co/functions/v1/playtomic-availability",
+    };
+    const res = await worker.fetch(
+      req("https://app.test/api/playtomic/api/clubs/availability?tenant_id=x&date=2026-07-02&sport_id=PADEL"),
+      env,
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    // De fetch gaat naar de Edge Function, met dezelfde query.
+    expect(String(upstream.mock.calls[0][0])).toBe(
+      "https://x.supabase.co/functions/v1/playtomic-availability?tenant_id=x&date=2026-07-02&sport_id=PADEL",
+    );
+  });
+
+  it("availability: cache-sleutel blijft canoniek — tweede verzoek is een edge-hit", async () => {
+    const upstream = vi.fn(async () => new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", upstream);
+    const env = {
+      ...makeEnv(),
+      PLAYTOMIC_EGRESS: "https://x.supabase.co/functions/v1/playtomic-availability",
+    };
+    const url =
+      "https://app.test/api/playtomic/api/clubs/availability?tenant_id=x&date=2026-07-02&sport_id=PADEL";
+    // ctx die waitUntil-promises daadwerkelijk afwacht, zodat cache.put landt.
+    const puts = [];
+    const waitCtx = { waitUntil: (p) => puts.push(p) };
+    await worker.fetch(req(url), env, waitCtx);
+    await Promise.all(puts);
+    const res2 = await worker.fetch(req(url), env, waitCtx);
+    expect(res2.status).toBe(200);
+    // Eén upstream-call: de tweede kwam uit de edge-cache (gekeyd op de
+    // canonieke playtomic.com-URL, niet op de egress-URL).
+    expect(upstream).toHaveBeenCalledTimes(1);
+    expect(store.has("https://playtomic.com/api/clubs/availability?tenant_id=x&date=2026-07-02&sport_id=PADEL")).toBe(true);
+  });
+
   it("club-slug: volgt de 308 en geeft de slug terug", async () => {
     const upstream = vi.fn(async () =>
       new Response(null, { status: 308, headers: { location: "https://playtomic.com/clubs/lago-club-padel-beveren" } }),

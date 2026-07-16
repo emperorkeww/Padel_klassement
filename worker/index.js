@@ -4,9 +4,12 @@
 //
 // Historie: tot medio 2026 liep dit via api.playtomic.io met een gespoofte
 // browser-User-Agent om de WAF te omzeilen. Die host weigert nu élk verzoek
-// (403, ongeacht UA). De consumenten-web-app van Playtomic gebruikt sindsdien
-// playtomic.com/api/*, dat wél vanaf datacenter-IP's bereikbaar is — daarheen
-// proxyen we nu. Zie #385.
+// (403, ongeacht UA). playtomic.com/api/* werkt wél — maar niet vanaf
+// Cloudflare-egress: de CloudFront-WAF blokkeert Worker-IP's (403), terwijl
+// Supabase-egress wél doorgelaten wordt (live geverifieerd). De availability-
+// fetch loopt daarom via een Supabase Edge Function (env.PLAYTOMIC_EGRESS,
+// zie supabase/functions/playtomic-availability). De Worker blijft de
+// publieke voorkant: edge-cache, per-IP rate-limit en allowlist. Zie #385.
 //
 // Alle overige paden gaan naar de static assets (met SPA-fallback uit
 // wrangler.jsonc: not_found_handling = "single-page-application").
@@ -169,15 +172,23 @@ export default {
         return new Response("Not Found", { status: 404 });
       }
 
-      const target = new URL(rest + url.search, UPSTREAM);
-      if (target.origin !== UPSTREAM) {
+      const canonical = new URL(rest + url.search, UPSTREAM);
+      if (canonical.origin !== UPSTREAM) {
         return new Response("Bad Request", { status: 400 });
       }
+
+      // Egress-hop (#385): playtomic.com/api geeft 403 aan Cloudflare-IP's,
+      // dus de echte fetch loopt via de Supabase Edge Function. De canonieke
+      // URL blijft de cache-sleutel, zodat de cache egress-onafhankelijk is.
+      // Zonder configuratie (tests, lokaal) valt hij terug op direct fetchen.
+      const target = env.PLAYTOMIC_EGRESS
+        ? new URL(env.PLAYTOMIC_EGRESS + url.search)
+        : canonical;
 
       // Edge-cache eerst: gelijktijdige gebruikers delen zo één upstream-call
       // en een edge-hit kost geen rate-limit-budget en geen Playtomic-verkeer.
       const cache = caches.default;
-      const cacheKey = new Request(target.toString());
+      const cacheKey = new Request(canonical.toString());
       const hit = await cache.match(cacheKey);
       if (hit) {
         const fetchedAt = Number(hit.headers.get("x-fetched-at") ?? 0);
