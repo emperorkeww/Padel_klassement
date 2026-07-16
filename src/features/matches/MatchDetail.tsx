@@ -150,6 +150,14 @@ export function MatchDetail() {
                 <span>Ronde {m.round_number}</span>
               </>
             )}
+            {m.format === "1v1" && (
+              <>
+                <span className="md-meta__sep" aria-hidden="true">
+                  ·
+                </span>
+                <span title="Singles">1v1</span>
+              </>
+            )}
             <GroupBadge groupId={m.group_id} />
           </div>
 
