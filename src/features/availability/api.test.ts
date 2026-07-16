@@ -9,7 +9,6 @@ import {
   getWeekAvailability,
   nextFreeSlot,
   perPersonPrice,
-  searchClubs,
   slotShareText,
   slotShareUrl,
   utcToClubTime,
@@ -18,7 +17,16 @@ import {
   type SlotOption,
   type WeekDay,
 } from "./api";
-import { DEFAULT_CLUB, manualClub } from "./club";
+import { DEFAULT_CLUB, manualClub, type Club } from "./club";
+
+// Generieke testclub zonder KNOWN_COURTS-entry: zo komen de banen puur uit de
+// availability-respons (genummerde labels), los van de thuisclub-snapshot.
+const TEST_CLUB: Club = {
+  id: "t-generic",
+  name: "Testclub",
+  city: "",
+  timezone: "Europe/Brussels",
+};
 
 describe("getWeekAvailability — handmatige locatie (#322)", () => {
   it("levert lege dagen zonder Playtomic-verzoek", async () => {
@@ -286,12 +294,34 @@ describe("perPersonPrice", () => {
   });
 });
 
-// De boekingslink gebruikt het tenant-id als slug; Playtomic stuurt door naar
-// de canonieke clubpagina en behoudt daarbij de query.
+// De boekingslink resolvet de club-slug via de proxy en bouwt daarmee de
+// canonieke clubpagina-URL, voorgevuld op de dag.
 describe("bookingUrl", () => {
-  it("linkt naar de gekozen club, voorgevuld op de dag", () => {
-    expect(bookingUrl("2026-07-04")).toBe(
-      `https://playtomic.com/clubs/${DEFAULT_CLUB.id}?sport=PADEL&date=2026-07-04`,
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("bouwt de slug-URL met sport en dag", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
+      async () =>
+        ({ ok: true, status: 200, json: async () => ({ slug: "lago-club-padel-beveren" }) }) as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(bookingUrl({ ...TEST_CLUB, id: "t-book-1" }, "2026-07-04")).resolves.toBe(
+      "https://playtomic.com/clubs/lago-club-padel-beveren?sport=PADEL&date=2026-07-04",
+    );
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/api/playtomic/club-slug/t-book-1");
+  });
+
+  it("valt terug op playtomic.io/clubs/{id} als de slug niet resolvt", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }) as Response),
+    );
+
+    await expect(bookingUrl({ ...TEST_CLUB, id: "t-book-2" }, "2026-07-04")).resolves.toBe(
+      "https://playtomic.io/clubs/t-book-2",
     );
   });
 });
@@ -319,153 +349,76 @@ describe("slotShareUrl", () => {
   });
 });
 
-// Ontvangende kant van een gedeelde link: club-id → Club via het
-// tenant-detail-endpoint.
+// Ontvangende kant van een gedeelde link: club-id → Club via de slug-route.
+// Er is geen clubdetail-endpoint meer (#385); de naam volgt uit de slug.
 describe("fetchClub", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("mapt het tenant-detail naar een club", async () => {
+  it("leidt de clubnaam af uit de slug", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
         async () =>
-          ({
-            ok: true,
-            status: 200,
-            json: async () => ({
-              tenant_name: "Padel Aalst",
-              address: { city: "Aalst", timezone: "Europe/Brussels" },
-            }),
-          }) as Response,
+          ({ ok: true, status: 200, json: async () => ({ slug: "padel-aalst-centrum" }) }) as Response,
       ),
     );
 
     await expect(fetchClub("t-aalst")).resolves.toEqual({
       id: "t-aalst",
-      name: "Padel Aalst",
-      city: "Aalst",
-      timezone: "Europe/Brussels",
-    });
-  });
-
-  it("valt terug op de standaardtijdzone en een lege stad", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          ({
-            ok: true,
-            status: 200,
-            json: async () => ({ tenant_name: "Padel Zonder Adres" }),
-          }) as Response,
-      ),
-    );
-
-    await expect(fetchClub("t-kaal")).resolves.toEqual({
-      id: "t-kaal",
-      name: "Padel Zonder Adres",
+      name: "Padel Aalst Centrum",
       city: "",
       timezone: DEFAULT_CLUB.timezone,
     });
   });
 
-  it("faalt op een onbekend id", async () => {
+  it("faalt op een onbekend id (geen slug)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) }) as Response),
     );
 
-    await expect(fetchClub("t-onbekend")).rejects.toThrow("404");
-  });
-
-  it("faalt als het detail geen clubnaam bevat", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }) as Response),
-    );
-
-    await expect(fetchClub("t-leeg")).rejects.toThrow("Onbekende club");
+    await expect(fetchClub("t-onbekend")).rejects.toThrow("Onbekende club");
   });
 });
 
-describe("searchClubs", () => {
+// getJson (via getClubAvailability) vertaalt upstream-status naar een
+// begrijpelijke melding i.p.v. een kale statuscode.
+describe("getJson foutmeldingen", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("mapt de tenant-respons naar clubs, met fallback voor stad en tijdzone", async () => {
-    const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
-      async () =>
-        ({
-          ok: true,
-          status: 200,
-          json: async () => [
-            {
-              tenant_id: "t-1",
-              tenant_name: "Padel Gent",
-              address: { city: "Gent", timezone: "Europe/Brussels", country_code: "BE" },
-            },
-            {
-              tenant_id: "t-2",
-              tenant_name: "Padel Zonder Stad",
-              address: { country_code: "BE" },
-            },
-          ],
-        }) as Response,
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const clubs = await searchClubs("padel");
-
-    expect(clubs).toEqual([
-      { id: "t-1", name: "Padel Gent", city: "Gent", timezone: "Europe/Brussels" },
-      {
-        id: "t-2",
-        name: "Padel Zonder Stad",
-        city: "",
-        timezone: DEFAULT_CLUB.timezone,
-      },
-    ]);
-    const url = String(fetchMock.mock.calls[0][0]);
-    expect(url).toContain("/v1/tenants?");
-    expect(url).toContain("tenant_name=padel");
-    expect(url).toContain("sport_id=PADEL");
-    // Server-side landfilter: anders verdringen buitenlandse naamgenoten de
-    // Belgische clubs uit de kleine top-10 ("padel" → nul BE-resultaten).
-    expect(url).toContain("country_code=BE");
-  });
-
-  // Vangnet bovenop de serverfilter, mocht de ongedocumenteerde parameter wegvallen.
-  it("houdt alleen Belgische clubs over; zonder country_code ook weggefilterd (liever te streng dan buitenlandse ruis)", async () => {
+  const stubStatus = (status: number) =>
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async () =>
-          ({
-            ok: true,
-            status: 200,
-            json: async () => [
-              {
-                tenant_id: "t-be",
-                tenant_name: "Padel Gent",
-                address: { city: "Gent", country_code: "BE" },
-              },
-              {
-                tenant_id: "t-it",
-                tenant_name: "Padel Genta",
-                address: { city: "Genova", country_code: "IT" },
-              },
-              { tenant_id: "t-x", tenant_name: "Padel Zonder Land" },
-            ],
-          }) as Response,
-      ),
+      vi.fn(async () => ({ ok: false, status, json: async () => ({}) }) as Response),
     );
 
-    const clubs = await searchClubs("gent");
+  it("403 → blokkade-melding", async () => {
+    stubStatus(403);
+    await expect(getClubAvailability("2026-07-02", TEST_CLUB)).rejects.toThrow(/blokkeert/i);
+  });
 
-    expect(clubs.map((c) => c.id)).toEqual(["t-be"]);
+  it("404 → niet-gevonden-melding", async () => {
+    stubStatus(404);
+    await expect(getClubAvailability("2026-07-02", TEST_CLUB)).rejects.toThrow(/niet \(meer\) gevonden/i);
+  });
+
+  it("429 → te-veel-verzoeken-melding", async () => {
+    stubStatus(429);
+    await expect(getClubAvailability("2026-07-02", TEST_CLUB)).rejects.toThrow(/te veel verzoeken/i);
+  });
+
+  it("500 → storing-melding", async () => {
+    stubStatus(500);
+    await expect(getClubAvailability("2026-07-02", TEST_CLUB)).rejects.toThrow(/storing/i);
+  });
+
+  it("netwerkfout → offline-melding", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
+    await expect(getClubAvailability("2026-07-02", TEST_CLUB)).rejects.toThrow(/geen verbinding/i);
   });
 });
 
@@ -474,32 +427,29 @@ describe("getClubAvailability", () => {
     vi.unstubAllGlobals();
   });
 
-  const tenant = {
-    address: { timezone: "Europe/Brussels" },
-    // 2026-07-02 is een donderdag; afwijkende uren zodat de weekdag-lookup
-    // aantoonbaar gebruikt wordt (de fallback is 08:00–23:00).
-    opening_hours: { THURSDAY: { opening_time: "09:00", closing_time: "22:00" } },
-    resources: [
-      {
-        resource_id: "court-1",
-        name: "Terrein 1",
-        properties: { resource_type: "roofed" },
-      },
-    ],
-  };
-
   const mockFetch = (availability: unknown) => {
-    const mockRes = (body: unknown) =>
-      ({ ok: true, status: 200, json: async () => body }) as Response;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) =>
-        String(input).includes("/v1/tenants/")
-          ? mockRes(tenant)
-          : mockRes(availability),
-      ),
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => availability }) as Response),
     );
   };
+
+  it("stuurt tenant_id/date/sport_id, zonder user_id of local_start_min", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL) => Promise<Response>>(
+      async () => ({ ok: true, status: 200, json: async () => [] }) as Response,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getClubAvailability("2026-07-02", TEST_CLUB);
+
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("/api/clubs/availability?");
+    expect(url).toContain("tenant_id=t-generic");
+    expect(url).toContain("date=2026-07-02");
+    expect(url).toContain("sport_id=PADEL");
+    expect(url).not.toContain("user_id");
+    expect(url).not.toContain("local_start_min");
+  });
 
   it("zet UTC-slottijden om naar clubtijd, met duren en prijzen per start", async () => {
     mockFetch([
@@ -516,12 +466,16 @@ describe("getClubAvailability", () => {
       },
     ]);
 
-    const day = await getClubAvailability("2026-07-02");
+    const day = await getClubAvailability("2026-07-02", TEST_CLUB);
 
-    expect(day.open).toBe("09:00");
-    expect(day.close).toBe("22:00");
+    // Geen openingsuren-bron meer: basis-as 08:00–23:00 (slots vallen erbinnen).
+    expect(day.open).toBe("08:00");
+    expect(day.close).toBe("23:00");
     expect(day.timeZone).toBe("Europe/Brussels");
     expect(day.courts).toHaveLength(1);
+    // Onbekende club → genummerd label, geen type.
+    expect(day.courts[0].court.name).toBe("Terrein 1");
+    expect(day.courts[0].court.type).toBe("");
     const free = day.courts[0].free;
     expect([...free.keys()].sort()).toEqual(["16:00", "20:30"]);
     expect(free.get("16:00")?.map((o) => o.duration)).toEqual([60, 90]);
@@ -537,7 +491,6 @@ describe("getClubAvailability", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
-        if (url.includes("/v1/tenants/")) return mockRes(tenant);
         if (url.includes("2026-07-02")) {
           return mockRes([
             {
@@ -551,33 +504,55 @@ describe("getClubAvailability", () => {
       }),
     );
 
-    const week = await getWeekAvailability("2026-07-02", 2);
+    const week = await getWeekAvailability("2026-07-02", 2, TEST_CLUB);
 
     expect(week).toHaveLength(2);
     expect(week[0].date).toBe("2026-07-02");
     expect([...(week[0].data?.courts[0].free.keys() ?? [])]).toEqual(["16:00"]);
     expect(week[1].date).toBe("2026-07-03");
     expect(week[1].data).toBeNull();
-    expect(week[1].error).toContain("500");
+    expect(week[1].error).toContain("storing");
   });
 
-  it("rekt de tijd-as op als slots buiten de openingsuren vallen", async () => {
+  it("rekt de tijd-as op als slots buiten 08:00–23:00 vallen", async () => {
     mockFetch([
       {
         resource_id: "court-1",
         start_date: "2026-07-02",
         slots: [
-          // 06:30 UTC = 08:30 lokaal (vóór open 09:00);
-          // 19:30 UTC = 21:30 lokaal + 120 min = 23:30 (na sluit 22:00).
-          { start_time: "06:30:00", duration: 60, price: "15 EUR" },
+          // 05:30 UTC = 07:30 lokaal (vóór basis-open 08:00);
+          // 19:30 UTC = 21:30 lokaal + 120 min = 23:30 (na basis-sluit 23:00).
+          { start_time: "05:30:00", duration: 60, price: "15 EUR" },
           { start_time: "19:30:00", duration: 120, price: "40 EUR" },
         ],
       },
     ]);
 
-    const day = await getClubAvailability("2026-07-02");
+    const day = await getClubAvailability("2026-07-02", TEST_CLUB);
 
-    expect(day.open).toBe("08:30");
+    expect(day.open).toBe("07:30");
     expect(day.close).toBe("23:30");
+  });
+
+  it("gebruikt de snapshot-baannamen en -types voor de thuisclub", async () => {
+    mockFetch([
+      {
+        resource_id: "cc9dbe76-6192-4035-a24c-f3db0d556b97",
+        start_date: "2026-07-02",
+        slots: [{ start_time: "14:00:00", duration: 60, price: "20 EUR" }],
+      },
+    ]);
+
+    const day = await getClubAvailability("2026-07-02", DEFAULT_CLUB);
+
+    // Alle drie de bekende banen als rij (ook de lege), in snapshot-volgorde.
+    expect(day.courts.map((c) => c.court.name)).toEqual([
+      "Terrein 1",
+      "Terrein 2",
+      "Terrein 3",
+    ]);
+    const buiten = day.courts.find((c) => c.court.type === "outdoor");
+    expect(buiten?.court.name).toBe("Terrein 3");
+    expect(buiten?.free.has("16:00")).toBe(true);
   });
 });

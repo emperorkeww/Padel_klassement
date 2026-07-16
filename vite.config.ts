@@ -1,13 +1,47 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
+// Dev-tegenhanger van de club-slug-route in de Cloudflare Worker
+// (worker/index.js): volgt de 308 van playtomic.io/clubs/{uuid} en geeft de
+// canonieke slug terug. Als middleware geregistreerd vóór Vite's eigen proxy,
+// zodat /api/playtomic/club-slug/* niet naar playtomic.com wordt doorgestuurd.
+function playtomicClubSlug(): Plugin {
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return {
+    name: "playtomic-club-slug",
+    configureServer(server) {
+      server.middlewares.use("/api/playtomic/club-slug", async (req, res) => {
+        const json = (status: number, body: unknown) => {
+          res.statusCode = status;
+          res.setHeader("content-type", "application/json; charset=utf-8");
+          res.end(JSON.stringify(body));
+        };
+        const uuid = (req.url ?? "").replace(/^\//, "").split(/[?#]/)[0].toLowerCase();
+        if (!UUID_RE.test(uuid)) return json(404, { error: "bad uuid" });
+        try {
+          const upstream = await fetch(`https://playtomic.io/clubs/${uuid}`, {
+            redirect: "manual",
+          });
+          const location = upstream.headers.get("location") ?? "";
+          const slug = /\/clubs\/([^/?#]+)/.exec(location)?.[1];
+          if (!slug || slug === uuid) return json(404, { error: "no slug" });
+          return json(200, { slug });
+        } catch {
+          return json(404, { error: "unreachable" });
+        }
+      });
+    },
+  };
+}
+
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
-  plugins: [react()],
+  plugins: [playtomicClubSlug(), react()],
   // Path-aliases — houd in sync met tsconfig.app.json "paths" (zie docs/architecture.md §5).
   // Langste sleutels eerst zodat "@/lib" vóór "@/" matcht.
   resolve: {
@@ -24,8 +58,9 @@ export default defineConfig({
     proxy: {
       // Proxy naar Playtomic zodat de browser geen CORS-blokkade krijgt.
       // In productie doet de Cloudflare Worker (worker/index.js) hetzelfde.
+      // (De /club-slug/-route wordt hierboven al door de middleware afgevangen.)
       "/api/playtomic": {
-        target: "https://api.playtomic.io",
+        target: "https://playtomic.com",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/playtomic/, ""),
       },
@@ -52,7 +87,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "worker/**/*.{test,spec}.js"],
     coverage: {
       reporter: ["text", "html"],
       include: ["src/**/*.{ts,tsx}"],

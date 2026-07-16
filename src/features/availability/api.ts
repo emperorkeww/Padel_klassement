@@ -1,18 +1,20 @@
 // Baanbeschikbaarheid van de gekozen club (zie club.ts) via Playtomic.
 //
-// Playtomic biedt geen publieke, officiële API voor spelers. We gebruiken de
-// (ongedocumenteerde) endpoints die de Playtomic-site zelf ook aanroept. Die
-// staan CORS vanuit de browser niet toe, dus alle calls lopen via een kleine
-// proxy op /api/playtomic (Vite-proxy in dev, Cloudflare Worker in productie).
+// Playtomic biedt geen publieke, officiële API voor spelers. We gebruiken het
+// (ongedocumenteerde) beschikbaarheidsendpoint dat de Playtomic-web-app zelf
+// aanroept: playtomic.com/api/clubs/availability. Dat staat CORS vanuit de
+// browser niet toe, dus alle calls lopen via een kleine proxy op
+// /api/playtomic (Vite-proxy in dev, Cloudflare Worker in productie).
 //
-// Let op de tijdzones: de local_start_min/max-filters zijn lokale clubtijd,
-// maar de start_time in de respons is UTC. De openingsuren uit de
-// tenant-endpoint zijn dan weer lokaal. Slottijden worden daarom hieronder
-// naar de kloktijd van de club (tenant.address.timezone) omgezet.
+// Let op de tijdzones: de start_time in de respons is UTC. Slottijden worden
+// hieronder naar de kloktijd van de club (club.timezone) omgezet.
 //
-// Beperking van de bron: de API toont boekbare producten (start + duur +
-// prijs), geen werkelijke bezetting. Een vrij gat korter dan het kleinste
-// product (60 min) is dus niet te onderscheiden van een boeking.
+// Beperking van de bron: het endpoint geeft alleen boekbare producten (start
+// + duur + prijs) per baan (resource_id), géén baannamen, openingsuren of
+// clubgegevens — die endpoints zijn verdwenen (#385). Namen komen uit een
+// lokale snapshot (knownCourts.ts) of vallen terug op "Terrein N"; de
+// openingsuren-as wordt uit de slots afgeleid. Een vrij gat korter dan het
+// kleinste product (60 min) is niet te onderscheiden van een boeking.
 
 import {
   addDays,
@@ -22,18 +24,48 @@ import {
   toMinutes,
 } from "@/lib/utils/time";
 import { DEFAULT_CLUB, getClub, isPlaytomicClub, type Club } from "./club";
+import { KNOWN_COURTS } from "./knownCourts";
 
 const BASE = "/api/playtomic";
 
 /**
  * Deep-link naar de Playtomic-clubpagina, voorgevuld op de gekozen dag.
- * Het tenant-id werkt als slug: Playtomic stuurt door (308) naar de canonieke
- * clubpagina, met behoud van de query. De clubpagina leest alleen ?sport= en
- * ?date= uit de URL; een specifiek uur kan niet vooraf geselecteerd worden.
+ * De canonieke clubpagina gebruikt een slug (bv. "lago-club-padel-beveren");
+ * het tenant-id als pad landt op een interne, kapotte redirect. We resolven
+ * daarom de slug via de proxy (zie getClubSlug) en bouwen daarmee de link.
+ * De clubpagina leest ?sport= en ?date= uit de URL; een specifiek uur kan
+ * niet vooraf geselecteerd worden.
+ *
+ * Zonder bekende slug valt de link terug op playtomic.io/clubs/{id}: dat
+ * stuurt netjes door naar de juiste clubpagina (maar zonder dag-voorvulling).
  */
-export function bookingUrl(date: string): string {
+export async function bookingUrl(club: Club, date: string): Promise<string> {
+  const slug = await getClubSlug(club.id);
+  if (!slug) return `https://playtomic.io/clubs/${club.id}`;
   const params = new URLSearchParams({ sport: "PADEL", date });
-  return `https://playtomic.com/clubs/${getClub().id}?${params.toString()}`;
+  return `https://playtomic.com/clubs/${slug}?${params.toString()}`;
+}
+
+// Club-slug (voor bookingUrl): de facto onveranderlijk, dus één keer per
+// sessie per club ophalen. De proxy volgt de playtomic.io-redirect en cachet
+// de slug ook aan de edge. null = niet te resolven (dan de uuid-fallback).
+const slugPromises = new Map<string, Promise<string | null>>();
+function getClubSlug(tenantId: string): Promise<string | null> {
+  let promise = slugPromises.get(tenantId);
+  if (!promise) {
+    promise = fetch(`${BASE}/club-slug/${tenantId}`, {
+      headers: { Accept: "application/json" },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { slug?: string } | null) => body?.slug ?? null)
+      .catch(() => {
+        // Fout niet vasthouden; een volgende poging mag opnieuw proberen.
+        slugPromises.delete(tenantId);
+        return null;
+      });
+    slugPromises.set(tenantId, promise);
+  }
+  return promise;
 }
 
 /**
@@ -68,17 +100,6 @@ export function slotShareUrl(
   return `${window.location.origin}/banen?${params.toString()}`;
 }
 
-// Playtomic gebruikt Engelse weekdagnamen als sleutel in opening_hours.
-const WEEKDAY_KEYS = [
-  "SUNDAY",
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-];
-
 export type Court = { id: string; name: string; type: string };
 /** Boekbare optie op een starttijd: speelduur (minuten) + weergaveprijzen. */
 export type SlotOption = {
@@ -96,22 +117,6 @@ export type DayAvailability = {
   courts: CourtRow[];
 };
 
-type RawResource = {
-  resource_id: string;
-  name: string;
-  properties?: { resource_type?: string };
-};
-type RawTenant = {
-  tenant_name?: string;
-  resources?: RawResource[];
-  opening_hours?: Record<string, { opening_time?: string; closing_time?: string }>;
-  address?: {
-    city?: string;
-    timezone?: string;
-    // Playtomic levert de clublocatie onder wisselende veldnamen.
-    coordinate?: { lat?: number; lon?: number; latitude?: number; longitude?: number };
-  };
-};
 type RawSlot = { start_time: string; duration: number; price: string };
 type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlot[] };
 
@@ -119,58 +124,28 @@ type RawAvailability = { resource_id: string; start_date: string; slots?: RawSlo
 type SlotMoment = { date: string; time: string; duration: number; price: string };
 
 async function getJson<T>(path: string, foutmelding: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { Accept: "application/json" },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json" } });
+  } catch {
+    // Netwerkfout / offline: fetch verwerpt zonder respons.
+    throw new Error("Geen verbinding met Playtomic — controleer je internet.");
+  }
+  if (res.ok) return res.json() as Promise<T>;
+  // Statusbewuste, begrijpelijke melding i.p.v. een kale statuscode.
   if (res.status === 429) {
     throw new Error("Even te veel verzoeken naar Playtomic — probeer zo opnieuw.");
   }
-  if (!res.ok) throw new Error(`${foutmelding} (status ${res.status}).`);
-  return res.json() as Promise<T>;
-}
-
-// Clubgegevens (banen, openingsuren) zijn de facto statisch: één keer per
-// sessie per club ophalen i.p.v. bij elke datumwissel en elk dashboardbezoek.
-const tenantPromises = new Map<string, Promise<RawTenant>>();
-function getTenant(tenantId: string): Promise<RawTenant> {
-  let promise = tenantPromises.get(tenantId);
-  if (!promise) {
-    promise = getJson<RawTenant>(
-      `/v1/tenants/${tenantId}`,
-      "Kon de clubgegevens niet laden",
-    ).catch((err: unknown) => {
-      // Fout niet vasthouden; volgende poging mag opnieuw proberen.
-      tenantPromises.delete(tenantId);
-      throw err;
-    });
-    tenantPromises.set(tenantId, promise);
+  if (res.status === 403) {
+    throw new Error(`${foutmelding}: Playtomic blokkeert onze aanvraag momenteel — probeer het later opnieuw.`);
   }
-  return promise;
-}
-
-/**
- * Clubgegevens op tenant-id, voor gedeelde links met ?club=… — zelfde
- * tenant-detail (en dus cache) als het beschikbaarheidsraster.
- */
-export async function fetchClub(id: string): Promise<Club> {
-  const tenant = await getTenant(id);
-  if (!tenant.tenant_name) throw new Error("Onbekende club.");
-  return {
-    id,
-    name: tenant.tenant_name,
-    city: tenant.address?.city ?? "",
-    timezone: tenant.address?.timezone ?? DEFAULT_CLUB.timezone,
-  };
-}
-
-/** Clublocatie voor de weerstrip (#83); null als Playtomic er geen meegeeft. */
-export async function getClubCoordinate(
-  tenantId: string,
-): Promise<{ lat: number; lon: number } | null> {
-  const c = (await getTenant(tenantId)).address?.coordinate;
-  const lat = c?.lat ?? c?.latitude;
-  const lon = c?.lon ?? c?.longitude;
-  return typeof lat === "number" && typeof lon === "number" ? { lat, lon } : null;
+  if (res.status === 404) {
+    throw new Error(`${foutmelding}: niet (meer) gevonden op Playtomic.`);
+  }
+  if (res.status >= 500) {
+    throw new Error(`${foutmelding}: Playtomic heeft een storing — probeer het later opnieuw.`);
+  }
+  throw new Error(`${foutmelding}: onverwachte fout van Playtomic.`);
 }
 
 async function getSlotsByCourt(
@@ -178,14 +153,12 @@ async function getSlotsByCourt(
   tenantId: string,
 ): Promise<Record<string, SlotMoment[]>> {
   const params = new URLSearchParams({
-    user_id: "me",
     tenant_id: tenantId,
+    date,
     sport_id: "PADEL",
-    local_start_min: `${date}T00:00:00`,
-    local_start_max: `${date}T23:59:59`,
   });
   const data = await getJson<RawAvailability[]>(
-    `/v1/availability?${params.toString()}`,
+    `/api/clubs/availability?${params.toString()}`,
     "Kon de beschikbaarheid niet laden",
   );
   const byCourt: Record<string, SlotMoment[]> = {};
@@ -314,29 +287,43 @@ export function utcToClubTime(date: string, time: string, timeZone: string): str
   return clubTimeFormatter(timeZone).format(new Date(`${date}T${time}Z`));
 }
 
+/** Baannaam + type voor één resource. Namen komen uit de lokale snapshot
+ *  (knownCourts.ts); onbekende banen krijgen een genummerd label. */
+function courtInfo(club: Club, resourceId: string, index: number): Court {
+  const known = KNOWN_COURTS[club.id]?.find((c) => c.id === resourceId);
+  if (known) return { id: resourceId, name: known.name, type: known.type };
+  return { id: resourceId, name: `Terrein ${index + 1}`, type: "" };
+}
+
 /**
- * Haalt voor een dag (YYYY-MM-DD) de openingsuren en per baan de vrije
- * starttijden (met duren en prijzen) op.
+ * Haalt voor een dag (YYYY-MM-DD) per baan de vrije starttijden (met duren en
+ * prijzen) op. Baannamen/-types komen uit de lokale snapshot (het
+ * availability-endpoint geeft alleen resource_id's); de tijd-as wordt uit de
+ * slots afgeleid, met 08:00–23:00 als ondergrens.
  */
 export async function getClubAvailability(
   date: string,
   club: Club = getClub(),
 ): Promise<DayAvailability> {
-  const [tenant, byCourt] = await Promise.all([
-    getTenant(club.id),
-    getSlotsByCourt(date, club.id),
-  ]);
-
-  const weekday = WEEKDAY_KEYS[new Date(`${date}T00:00:00`).getDay()];
-  const hours = tenant.opening_hours?.[weekday];
+  const byCourt = await getSlotsByCourt(date, club.id);
 
   // Clubtijdzone, niet die van het apparaat: wie vanuit het buitenland kijkt
   // moet dezelfde tijden zien als op de Playtomic-clubpagina.
-  const timeZone = tenant.address?.timezone ?? club.timezone;
+  const timeZone = club.timezone;
 
-  const courts: CourtRow[] = (tenant.resources ?? []).map((r) => {
+  // Bekende banen (snapshot) vormen de basisvolgorde, zodat een volgeboekte
+  // baan als lege rij zichtbaar blijft; onbekende banen uit de respons volgen
+  // erachter, gesorteerd op resource_id voor een stabiele volgorde per dag.
+  const known = KNOWN_COURTS[club.id] ?? [];
+  const knownIds = known.map((c) => c.id);
+  const extraIds = Object.keys(byCourt)
+    .filter((id) => !knownIds.includes(id))
+    .sort();
+  const resourceIds = [...knownIds, ...extraIds];
+
+  const courts: CourtRow[] = resourceIds.map((resourceId, index) => {
     const free = new Map<string, SlotOption[]>();
-    for (const slot of byCourt[r.resource_id] ?? []) {
+    for (const slot of byCourt[resourceId] ?? []) {
       const t = utcToClubTime(slot.date, slot.time, timeZone);
       const options = free.get(t) ?? [];
       if (!options.some((o) => o.duration === slot.duration)) {
@@ -349,21 +336,14 @@ export async function getClubAvailability(
       }
       free.set(t, options);
     }
-    return {
-      court: {
-        id: r.resource_id,
-        name: r.name,
-        type: r.properties?.resource_type ?? "",
-      },
-      free,
-    };
+    return { court: courtInfo(club, resourceId, index), free };
   });
 
-  // Tijd-as: openingsuren, maar opgerekt als er slots buiten vallen (bv.
-  // afwijkende feestdaguren die de tenant-data niet per datum meegeeft).
-  // Zo verdwijnen slots nooit stilletjes buiten het raster.
-  let openM = toMinutes(hours?.opening_time ?? "08:00");
-  let closeM = toMinutes(hours?.closing_time ?? "23:00");
+  // Tijd-as: vaste basis 08:00–23:00, opgerekt als er slots buiten vallen. Zo
+  // verdwijnen slots nooit stilletjes buiten het raster (het endpoint geeft
+  // geen openingsuren meer, dus de slots zijn de enige bron).
+  let openM = toMinutes("08:00");
+  let closeM = toMinutes("23:00");
   for (const row of courts) {
     for (const [t, options] of row.free) {
       const from = toMinutes(t);
@@ -375,40 +355,30 @@ export async function getClubAvailability(
   return { open: fromMinutes(openM), close: fromMinutes(closeM), timeZone, courts };
 }
 
-// Wat we van een club uit het zoekendpoint nodig hebben; de respons bevat
-// veel meer (banen, foto's, boekingsinstellingen), maar dat halen we pas op
-// via het tenant-detail zodra de club echt gekozen is.
-type RawTenantSummary = {
-  tenant_id: string;
-  tenant_name: string;
-  address?: { city?: string; timezone?: string; country_code?: string };
-};
+/** "lago-club-padel-beveren" → "Lago Club Padel Beveren". */
+function humanizeSlug(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
-/** Zoekt actieve Belgische Playtomic-clubs met padelbanen op (deel van de) naam. */
-export async function searchClubs(query: string): Promise<Club[]> {
-  const params = new URLSearchParams({
-    playtomic_status: "ACTIVE",
-    sport_id: "PADEL",
-    tenant_name: query,
-    // Server-side op België filteren. Zonder deze parameter zeeft een
-    // client-side filter de (wereldwijde) top-10 leeg: op "padel" matchen
-    // duizenden buitenlandse clubs en blijft er geen Belgische over.
-    country_code: "BE",
-    size: "10",
-  });
-  const data = await getJson<RawTenantSummary[]>(
-    `/v1/tenants?${params.toString()}`,
-    "Kon geen clubs zoeken",
-  );
-  // Vangnet voor als de (ongedocumenteerde) landparameter ooit wegvalt.
-  return data
-    .filter((t) => t.address?.country_code === "BE")
-    .map((t) => ({
-      id: t.tenant_id,
-      name: t.tenant_name,
-      city: t.address?.city ?? "",
-      timezone: t.address?.timezone ?? DEFAULT_CLUB.timezone,
-    }));
+/**
+ * Clubgegevens op tenant-id, voor gedeelde links met ?club=… Er is geen
+ * clubdetail-endpoint meer (#385); we resolven daarom de slug en leiden de
+ * naam daaruit af. De app is BE-only, dus Europe/Brussels is een veilige
+ * tijdzone-aanname.
+ */
+export async function fetchClub(id: string): Promise<Club> {
+  const slug = await getClubSlug(id);
+  if (!slug) throw new Error("Onbekende club.");
+  return {
+    id,
+    name: humanizeSlug(slug),
+    city: "",
+    timezone: DEFAULT_CLUB.timezone,
+  };
 }
 
 /** Eén dag in het weekoverzicht; data of een foutmelding, nooit allebei. */
