@@ -277,3 +277,12 @@
   display: flex;
   gap: var(--sp-2);
 }
+
+/* Groep-Stand: op heel smalle telefoons vervalt de decoratieve sparkline in
+   de rating-tabel — de badge en het getal zelf blijven; de tabel scrollt
+   sowieso al binnen zijn eigen container (#374). */
+@media (max-width: 480px) {
+  .stand-tabel--rating .rating-wrap .sparkline {
+    display: none;
+  }
+}

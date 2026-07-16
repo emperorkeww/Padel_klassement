@@ -637,8 +637,15 @@ textarea {
 }
 /* Klikbare badge (bv. groepsnaam op de matchpagina). */
 .badge--link {
+  position: relative;
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s;
+}
+/* Onzichtbaar groter tapvlak rond de badge-link (richtlijn ~44px, #374). */
+.badge--link::after {
+  content: "";
+  position: absolute;
+  inset: -10px 0;
 }
 .badge--link:hover {
   border-color: var(--accent);
@@ -812,9 +819,16 @@ textarea {
   gap: var(--sp-2);
 }
 .profile-link {
+  position: relative;
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+}
+/* Onzichtbaar groter tapvlak rond de tekstlink (richtlijn ~44px, #374). */
+.profile-link::after {
+  content: "";
+  position: absolute;
+  inset: -10px 0;
 }
 .profile-link:hover {
   text-decoration: underline;

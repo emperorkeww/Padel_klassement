@@ -814,6 +814,11 @@
   font-weight: 600;
 }
 .plan-banen a {
+  /* Volwaardig tapdoel (richtlijn ~44px, #374): losse regel, dus de link mag
+     gewoon hoger worden. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--accent);
   text-decoration: none;
 }
