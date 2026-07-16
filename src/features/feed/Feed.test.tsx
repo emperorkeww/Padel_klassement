@@ -65,6 +65,22 @@ describe("<Feed />", () => {
     ).toHaveTextContent(/alice/i);
   });
 
+  it("houdt dag-kopjes decoratief en chip-labels als exacte knopnaam", async () => {
+    renderPage();
+    const list = await screen.findByRole("list", {
+      name: /recente gebeurtenissen/i,
+    });
+    // Dag-scheiders zijn visueel (aria-hidden): de dag staat al op elk item.
+    const dagen = list.querySelectorAll(".feed__day");
+    expect(dagen.length).toBeGreaterThan(0);
+    dagen.forEach((d) => expect(d).toHaveAttribute("aria-hidden", "true"));
+
+    // Stip en telling op een chip zijn decoratie: de accessible name blijft
+    // exact het filterlabel (regressiewacht voor de aria-hidden-decoratie).
+    expect(screen.getByRole("button", { name: "Roast" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Matches" })).toBeInTheDocument();
+  });
+
   it("linkt een vriendschap door naar het spelersprofiel", async () => {
     renderPage();
     const items = await screen.findAllByRole("link", {

@@ -1,10 +1,7 @@
 import { formatDate } from "@/lib/utils/format";
-import { teamLabel } from "@/features/matches/api";
-import { MatchCard } from "@/features/matches/components/MatchList";
 import { displayName } from "@/features/profiles/api";
-import type { Profile } from "@/types";
+import type { Profile, Team } from "@/types";
 import type { FeedEvent } from "../feedLogic";
-import { highlightText } from "../feedHelpers";
 import { FeedHighlight } from "./FeedHighlight";
 import { FeedLine } from "./FeedLine";
 import { FeedMatch } from "./FeedMatch";
@@ -18,13 +15,15 @@ export function FeedItem({
 }: {
   event: FeedEvent;
   pmap: Record<string, Profile>;
-  tmap: Parameters<typeof MatchCard>[0]["teams"];
+  tmap: Record<string, Team>;
   myId: string;
   name: (pid: string) => string;
 }) {
   switch (event.kind) {
     case "smoes":
       return null; // smoezen renderen via SmoesCard, niet via FeedItem
+    case "evening":
+      return null; // speelavonden renderen via EveningCard, niet via FeedItem
     case "match":
       return <FeedMatch event={event} tmap={tmap} pmap={pmap} name={name} />;
     case "friendship": {
@@ -129,42 +128,6 @@ export function FeedItem({
           )}{" "}
           — <strong>{event.groupName}</strong>
         </FeedLine>
-      );
-    case "evening":
-      return (
-        <div className="feed-match">
-          <FeedLine
-            icon="🎾"
-            to={`/groepen/${event.groupId}`}
-            avatars={event.topPlayerId ? [event.topPlayerId] : []}
-            pmap={pmap}
-          >
-            Speelavond in <strong>{event.groupName}</strong>: {event.count}{" "}
-            matches
-            {event.topPlayerId && (
-              <>
-                {" "}
-                — {name(event.topPlayerId)}{" "}
-                {event.topPlayerId === myId ? "was" : "was"} avondkoning
-              </>
-            )}
-            {event.bestDuoTeamId && (
-              <>
-                , beste duo <strong>{teamLabel(tmap[event.bestDuoTeamId], pmap)}</strong>
-              </>
-            )}
-            .
-          </FeedLine>
-          {event.highlights.length > 0 && (
-            <div className="feed-chips">
-              {event.highlights.map((h, i) => (
-                <span key={i} className="badge badge--accent">
-                  {highlightText(h, name, (tid) => teamLabel(tmap[tid], pmap))}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
       );
     case "rank": {
       const nieuw = event.shift === "nieuw";

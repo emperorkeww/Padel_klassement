@@ -59,6 +59,26 @@ export function MatchListSkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
+/** Feed-tijdlijn: dag-lijntje met daaronder een matchkaart en lichte regels. */
+export function FeedSkeleton() {
+  return (
+    <div className="skeleton sk-feed" aria-hidden="true">
+      <Line w={90} h={11} />
+      <MatchCardSkeleton />
+      <span className="sk-feed__line">
+        <Circle size={28} />
+        <Line w="70%" h={12} />
+      </span>
+      <span className="sk-feed__line">
+        <Circle size={28} />
+        <Line w="55%" h={12} />
+      </span>
+      <Line w={90} h={11} />
+      <MatchCardSkeleton />
+    </div>
+  );
+}
+
 /** Klassementsrijen: rang, avatar, naam en punten rechts. */
 export function StandingsSkeleton({ rows = 6 }: { rows?: number }) {
   return (

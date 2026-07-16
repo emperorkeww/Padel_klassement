@@ -2,9 +2,8 @@ import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { type CoachMood } from "@/features/coach/components/CoachAvatar";
 import { teamLabel } from "@/features/matches/api";
-import { MatchCard } from "@/features/matches/components/MatchList";
 import type { EveningSummary } from "@/features/feed/eveningSummary";
-import type { Profile } from "@/types";
+import type { Profile, Team } from "@/types";
 import type { FeedEvent } from "../feedLogic";
 import { CoachMonologue } from "./CoachMonologue";
 
@@ -23,7 +22,7 @@ export function EveningCard({
   data: { summary: EveningSummary; coachLines: string[] };
   mood: CoachMood;
   pmap: Record<string, Profile>;
-  tmap: Parameters<typeof MatchCard>[0]["teams"];
+  tmap: Record<string, Team>;
   name: (pid: string) => string;
   onInfo: () => void;
 }) {

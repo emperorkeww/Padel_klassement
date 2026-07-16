@@ -6,51 +6,47 @@
   display: grid;
   gap: var(--sp-2);
 }
+/* Dag-kopje als kicker met uitlopende hairline: maakt dagblokken als eenheden
+   leesbaar (items binnen een dag blijven dicht op elkaar via de grid-gap). */
 .feed__day {
-  margin-top: var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
   font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--ink-soft);
+}
+.feed__day::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 .feed__day:first-child {
   margin-top: 0;
 }
-.feed__day::first-letter {
-  text-transform: uppercase;
-}
 
-/* Highlight-chips onder een matchkaart (upset, score, reeks, rating, ▲/▼). */
-.feed-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1);
-  margin-top: var(--sp-1);
-  padding: 0 var(--sp-1);
-}
-
-/* Routine-regel (vriendschap, gepland, groep, poll): compacte, subtiele kaart
-   met een icoon-token — lichter dan een match, maar wél een kaart (#232 mockup-
-   layout). */
+/* Routine-regel (vriendschap, gepland, groep, poll): randloze regel — het
+   lichtste gewichtsniveau, wijkt visueel terug achter de kaarten (#380). */
 .feed-line {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s;
+  transition: background-color 0.15s;
 }
 .feed-line:hover {
-  border-color: var(--accent-line);
+  background: var(--surface-2);
 }
 .feed-line__icon {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 1.8rem;
+  height: 1.8rem;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -90,46 +86,27 @@
   justify-content: center;
   margin-top: var(--sp-4);
 }
-.feed__filters { margin-bottom: var(--sp-3); }
-
-/* Coach Rudy: commentaar-speech-bubble onder een feed-item (#183). Ingesprongen
-   onder de kaart, met zijn micro-avatar links en een naam-label. */
+/* Coach Rudy: quote-regel onder een feed-item (#183, herzien in #380). Geen
+   bubbel-kader meer — micro-avatar + oranje naam zijn het anker, de italic
+   tekst leest als bijschrift i.p.v. als tweede kaart. */
 .coach-comment {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  margin: var(--sp-1) 0 0 var(--sp-4);
-  padding-left: var(--sp-2);
+  margin: var(--sp-1) var(--sp-2) 0 var(--sp-5);
 }
 .coach-comment__face {
   margin-top: 1px;
 }
 .coach-comment__bubble {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  background: var(--surface-2);
+  min-width: 0;
 }
 /* Meerdere zinnen (avondverslag) net iets meer lucht tussen de regels. */
 .coach-comment__text + .coach-comment__text {
   margin-top: 2px;
-}
-/* Klein pijltje naar de micro-avatar toe. */
-.coach-comment__bubble::before {
-  content: "";
-  position: absolute;
-  top: 0.6rem;
-  left: -5px;
-  width: 8px;
-  height: 8px;
-  background: var(--surface-2);
-  border-left: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  transform: rotate(45deg);
 }
 .coach-comment__name {
   font-size: var(--fs-xs);
@@ -147,7 +124,7 @@
 .coach-comment__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--sp-2);
 }
 .coach-comment__info {
@@ -206,11 +183,11 @@
 }
 .coach-intro__title {
   margin: 0 0 var(--sp-1);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   color: var(--coach);
 }
 .coach-intro__text {
-  margin: 0 0 var(--sp-3);
+  margin: 0 0 var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
@@ -227,10 +204,10 @@
   --cat: var(--cat-roast);
   display: flex;
   align-items: flex-start;
-  gap: 11px;
-  padding: 12px 14px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
   border-radius: var(--radius);
-  border: 1px solid color-mix(in srgb, var(--cat) 38%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--cat) 28%, var(--line));
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--cat) 9%, var(--surface)),
@@ -290,18 +267,22 @@
 .feed__filters .tab__dot {
   display: inline-block;
   vertical-align: middle;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   margin-right: 6px;
+  opacity: 0.8;
 }
 .feed__filters .tab__dot[data-cat="match"] { background: var(--cat-match); }
 .feed__filters .tab__dot[data-cat="rank"] { background: var(--cat-rank); }
 .feed__filters .tab__dot[data-cat="roast"] { background: var(--cat-roast); }
+.feed__filters .tab.is-active .tab__dot { background: rgba(255, 255, 255, 0.9); }
 
-/* ===== Rijk speelavond-blok (#232 PR C) ===== */
+/* ===== Rijk speelavond-blok (#232 PR C) =====
+   Zwaar gewichtsniveau: deelt de --cat-taal met de highlight-kaarten (#380). */
 .feed-evening {
-  border: 1px solid var(--line);
+  --cat: var(--cat-match);
+  border: 1px solid color-mix(in srgb, var(--cat) 28%, var(--line));
   border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
@@ -309,8 +290,9 @@
 .feed-evening__head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: color-mix(in srgb, var(--cat) 8%, var(--surface));
   border-bottom: 1px solid var(--line);
   text-decoration: none;
   color: inherit;
@@ -319,9 +301,11 @@
 .feed-evening__title { font-weight: 700; }
 .feed-evening__group { margin-left: auto; color: var(--ink-soft); font-size: 0.78rem; }
 
-/* ── Smoes-kaart (#296): spelersbubbel + Coach Rudy's jury-oordeel ────────── */
+/* ── Smoes-kaart (#296): spelersbubbel + Coach Rudy's jury-oordeel ──────────
+   Zwaar gewichtsniveau: deelt de --cat-taal met de highlight-kaarten (#380). */
 .feed-smoes {
-  border: 1px solid var(--line);
+  --cat: var(--cat-roast);
+  border: 1px solid color-mix(in srgb, var(--cat) 28%, var(--line));
   border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
@@ -329,8 +313,9 @@
 .feed-smoes__head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: color-mix(in srgb, var(--cat) 8%, var(--surface));
   border-bottom: 1px solid var(--line);
   text-decoration: none;
   color: inherit;
@@ -354,7 +339,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  margin: 12px 14px 4px;
+  margin: var(--sp-3) var(--sp-3) var(--sp-1);
 }
 .smoes-bubble__body {
   position: relative;
@@ -405,7 +390,7 @@
 
 /* Coach Rudy's jury-oordeel binnen de smoes-kaart. */
 .feed-smoes .coach-comment {
-  margin: 0 14px 12px;
+  margin: 0 var(--sp-3) var(--sp-3);
 }
 .smoes-oordeel {
   font-style: normal;
@@ -424,14 +409,14 @@
 .ev-stand {
   list-style: none;
   margin: 0;
-  padding: 4px 14px 2px;
+  padding: var(--sp-1) var(--sp-3) 2px;
   display: flex;
   flex-direction: column;
 }
 .ev-row {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--sp-2);
   padding: 5px 0;
   border-top: 1px solid var(--line);
 }
@@ -468,9 +453,9 @@
 .ev-row:first-child .ev-row__pt { color: var(--cat-champ); }
 
 .ev-duo {
-  margin: 2px 14px 10px;
-  padding: 8px 11px;
-  border-radius: 10px;
+  margin: 2px var(--sp-3) var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--cat-match) 10%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--cat-match) 26%, transparent);
   font-size: 0.8rem;
@@ -478,49 +463,11 @@
 }
 .ev-duo strong { color: var(--ink); }
 
-.feed-evening .coach-comment { margin: 0 14px 12px; }
-
-/* ===== #232 PR D: verstrakte match-kaart + ingetoomde Coach Rudy ===== */
-/* Feed-scoped (alleen binnen .feed-match): de gedeelde match-kaart compacter,
-   zonder de kaart op andere schermen te raken. */
-.feed-match .match-card {
-  padding: var(--sp-2) var(--sp-3);
-}
-.feed-match .match-card__mid {
-  gap: 1px;
-}
+.feed-evening .coach-comment { margin: 0 var(--sp-3) var(--sp-3); }
 
 /* Coach Rudy intro-banner blijft, maar compacter en minder dominant. */
 .card.coach-intro {
   padding: var(--sp-3) var(--sp-4);
-}
-.coach-intro__title {
-  font-size: var(--fs-md);
-}
-.coach-intro__text {
-  margin-bottom: var(--sp-2);
-}
-
-/* Coach-commentaar iets strakker onder een item. */
-.coach-comment__bubble {
-  padding: 6px var(--sp-2);
-}
-
-/* Match-kaart in de feed: winnaarskant subtiel getint + set-lijn als chip,
-   zodat winnaar en sets in één oogopslag leesbaar zijn (feed-scoped). */
-.feed-match .match-card__side {
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius-sm);
-}
-.feed-match .match-card__side.is-win {
-  background: var(--success-soft);
-}
-.feed-match .match-card__sets {
-  font-variant-numeric: tabular-nums;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 1px var(--sp-2);
 }
 
 /* ===== #232: match-kaart in mockup-layout — avatars boven de naam, grote
@@ -544,14 +491,15 @@
   padding: var(--sp-2) var(--sp-3);
   border-bottom: 1px solid var(--line);
 }
+/* Gedempte highlight-chip: het rating-badge ernaast is het ene accent (#380). */
 .fmatch__chip {
   font-size: var(--fs-xs);
   font-weight: 700;
   padding: 2px var(--sp-2);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
-  color: var(--accent);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
 }
 .fmatch__time {
   margin-left: auto;
@@ -582,8 +530,7 @@
   color: var(--ink-soft);
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 .fmatch__team.is-win .fmatch__nm { color: var(--ink); font-weight: 700; }
 .fmatch__score {
@@ -591,7 +538,7 @@
   align-items: center;
   gap: var(--sp-1);
   font-weight: 800;
-  font-size: 1.9rem;
+  font-size: 2rem;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -617,18 +564,24 @@
   color: var(--ink-soft);
 }
 
-/* Filterchips als losse pills (mockup-layout, #232). Kleuren/stippen behouden. */
+/* Filterchips als losse pills (mockup-layout, #232): één scrollrij. */
 .feed__filters {
+  margin-bottom: var(--sp-3);
   background: transparent;
   border: 0;
   padding: 0;
-  flex-wrap: wrap;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.feed__filters::-webkit-scrollbar { display: none; }
 .feed__filters .tab {
+  flex: 0 0 auto;
   min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--line);
-  background: var(--surface-2);
+  background: var(--surface);
   font-size: var(--fs-sm);
 }
 .feed__filters .tab:hover:not(.is-active) {
@@ -658,30 +611,11 @@
   font-family: var(--font-rounded);
 }
 
-/* Match-score groter en ronder (mockup-voorbeeld). */
-.fmatch__score { font-size: 2.4rem; }
-.fmatch__nm { white-space: normal; }
-
-/* Filterchips: één scrollrij i.p.v. wrappen; telling als badge. */
-.feed__filters {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.feed__filters::-webkit-scrollbar { display: none; }
-.feed__filters .tab { flex: 0 0 auto; }
+/* Telling als gedempte meta-tekst i.p.v. badge — houdt de chip-rij rustig. */
 .feed__filters .tab__count {
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  margin-left: 5px;
   font-size: var(--fs-xs);
+  color: currentColor;
+  opacity: 0.65;
   font-variant-numeric: tabular-nums;
 }
-.feed__filters .tab.is-active .tab__count {
-  background: rgba(255, 255, 255, 0.24);
-  color: #fff;
-}
-
-/* Coach-intro nog iets compacter (blijft oranje). */
-.coach-intro__title { font-size: var(--fs-md); }

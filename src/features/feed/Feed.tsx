@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
-import { MatchListSkeleton } from "@/ui/Skeleton";
+import { FeedSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import { Sheet } from "@/ui/Sheet";
@@ -302,11 +302,7 @@ export function Feed() {
         </p>
       </header>
 
-      {loading && (
-        <div className="card">
-          <MatchListSkeleton count={4} />
-        </div>
-      )}
+      {loading && <FeedSkeleton />}
       {!loading && error && <p className="msg msg--error">{error}</p>}
 
       {!loading && !error && (
