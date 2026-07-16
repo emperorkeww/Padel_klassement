@@ -135,10 +135,14 @@ export function GroupDetail() {
   const completedMatches = (matches.data ?? []).filter(
     (m) => m.status === "completed",
   );
-  // Lege groep detectie voor Coach Rudy
-  const hasMembers = memberList.length > 0;
-  const hasMatches = completedMatches.length > 0;
-  const isNewGroup = !hasMembers && !hasMatches && group.data;
+  // Lege groep voor Coach Rudy (#301): de maker wordt door de DB automatisch
+  // owner-lid, dus "leeg" is hooguit één lid. Pas oordelen als members én
+  // matches geladen zijn, anders flitst de kaart tijdens het laden.
+  const isNewGroup =
+    !members.loading &&
+    !matches.loading &&
+    memberList.length <= 1 &&
+    completedMatches.length === 0;
   const season = seasonFromId(params.get("seizoen") ?? "");
   const setSeasonId = (sid: string) => {
     const next = new URLSearchParams(params);
@@ -259,12 +263,17 @@ export function GroupDetail() {
             </span>
           </CoachBubble>
           <p className="empty-group__hint">
-            Nodig vrienden uit via de invite-link om deze groep tot leven te brengen.
+            Nodig vrienden uit via de Leden-tab om deze groep tot leven te
+            brengen.
           </p>
           {isOwner && (
-            <Link className="btn btn--primary" to={`/groepen/${group.data.id}/uitnodigen`}>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => setView("leden")}
+            >
               Leden uitnodigen
-            </Link>
+            </button>
           )}
         </section>
       )}
