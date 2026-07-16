@@ -2,14 +2,22 @@
 // gebeurtenissen — pias van de week/maand, kampioenen, promoties/degradaties en
 // matches met een upset, bagel, monsterzege of winreeks. Mundane items (polls,
 // vriendschappen, groepsnieuws) laat hij bewust links liggen, anders wordt de
-// feed ruis. Alles deterministisch geseed zodat de hele groep dezelfde quip
+// feed ruis. Bij de prestaties (kampioen, promotie, winreeks, upset-winst) wisselt
+// hij af tussen een jab en oprechte hype (#199) — de seed beslist, zodat het per
+// event vastligt. Alles deterministisch geseed zodat de hele groep dezelfde quip
 // ziet; roast-quips respecteren de groepsintensiteit en het roast-schild.
 // Pure functie, getest in coachFeed.test.ts.
 
 import type { FeedEvent } from "@/features/feed/feedLogic";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
-import type { CoachMood } from "@/features/coach/roastTone";
-import { coachSneer, kiesUniek, roastCtx, roastSeed } from "@/features/coach/roastTone";
+import type { CoachMood, RoastCtx } from "@/features/coach/roastTone";
+import {
+  coachLof,
+  coachSneer,
+  kiesUniek,
+  roastCtx,
+  roastSeed,
+} from "@/features/coach/roastTone";
 import {
   isWinreeksRecord,
   piasNrDezeMaand,
@@ -199,20 +207,6 @@ const MONSTER = [
   "Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met gepast sadistisch genoegen.",
 ] as const;
 
-export const KAMPIOEN_NEUTRAAL = [
-  "Kampioen. Sterke reeks, helder resultaat.",
-  "Titel binnen. Netjes afgewerkt.",
-  "Bovenaan geëindigd. Dat mag gezien worden.",
-  "Kampioen van de groep. Verdiend op basis van de cijfers.",
-] as const;
-
-const PROMOTIE_NEUTRAAL = [
-  "Een divisie hoger. Sterk geklommen.",
-  "Promotie genoteerd. De lijn gaat omhoog.",
-  "Opgeschoven naar een hoger niveau.",
-  "Netjes gestegen op de ladder.",
-] as const;
-
 const DEGRADATIE_NEUTRAAL = [
   "Een divisie lager. Tijd om rustig opnieuw op te bouwen.",
   "Gezakt in het klassement. De volgende match telt weer.",
@@ -241,6 +235,77 @@ function verliezersHebbenSchild(event: Extract<FeedEvent, { kind: "match" }>, ct
   const loser = teams[loserTeamId];
   if (!loser) return false;
   return playersOf(loser).some((id) => heeftSchild(ctx.profiles[id]));
+}
+
+/**
+ * Het schild van de gevierde speler(s) bij een positief match-event (#199): bij
+ * een winreeks de speler zelf, bij een duo-reeks of een upset het hele winnende
+ * team. Bepaalt of Coach Rudy's hype op mild getemperd wordt — anders dan
+ * verliezersHebbenSchild, dat over de verliezende kant gaat en bepaalt of hij
+ * überhaupt mag spotten.
+ */
+function hypeDoelwitHeeftSchild(
+  event: Extract<FeedEvent, { kind: "match" }>,
+  ctx: CoachCtx,
+): boolean {
+  const teams = ctx.teams ?? {};
+  const teamHeeftSchild = (teamId: string): boolean => {
+    const team = teams[teamId];
+    return team ? playersOf(team).some((id) => heeftSchild(ctx.profiles[id])) : false;
+  };
+  for (const h of event.highlights) {
+    if (h.type === "streak" && heeftSchild(ctx.profiles[h.playerId])) return true;
+    if (h.type === "duo" && teamHeeftSchild(h.teamId)) return true;
+    if (h.type === "upset" && teamHeeftSchild(h.winnerTeamId)) return true;
+  }
+  return false;
+}
+
+/**
+ * Kiest Coach Rudy deze keer voor hype i.p.v. een jab? Het schild geeft altijd
+ * lof (geen ongevraagde spot), en verder wisselt de seed deterministisch af, zodat
+ * hij bij positieve gebeurtenissen soms juicht en soms prikt — maar per event
+ * altijd hetzelfde, voor de hele groep.
+ *
+ * De keuze-bit wordt bewust uit een gemengde kopie van de seed gehaald i.p.v. uit
+ * `seed % 2`: kiesUniek pakt zijn index met `seed % pool.length`, dus zou de
+ * laagste bit hier beslissen, dan pinde die meteen de pariteit van die index vast
+ * en bleef bij een pool van even lengte de helft van de regels onbereikbaar.
+ */
+function hypeBeurt(lofCtx: RoastCtx, seed: number): boolean {
+  return lofCtx.schild || ((Math.imul(seed, 0x9e3779b1) >>> 16) & 1) === 0;
+}
+
+/** De hype-context van een positief match-event: de toon van de groep waarin de
+ *  match viel, getemperd door het schild van de gevierde speler(s). */
+function matchLofCtx(
+  event: Extract<FeedEvent, { kind: "match" }>,
+  ctx: CoachCtx,
+): RoastCtx {
+  return {
+    intensiteit: ctx.intensiteitVoor(event.match.group_id ?? ""),
+    schild: hypeDoelwitHeeftSchild(event, ctx),
+  };
+}
+
+/**
+ * Commentaar bij een klim of val op de ladder — deelt de logica van de rank- en
+ * tier-events. Omhoog is een prestatie, dus daar juicht of prikt Coach Rudy
+ * (#199); omlaag blijft een afgang, met de neutrale variant bij een schild.
+ * Beide events dragen geen groupId, vandaar de lege sleutel: de feed hanteert
+ * toch jouw eigen profiel-intensiteit (zie Feed.tsx).
+ */
+function klimOfVal(omhoog: boolean, playerId: string, seed: number, ctx: CoachCtx): string {
+  const lofCtx = roastCtx(
+    { roast_intensiteit: ctx.intensiteitVoor("") },
+    ctx.profiles[playerId],
+  );
+  if (omhoog) {
+    return hypeBeurt(lofCtx, seed)
+      ? coachLof(lofCtx, seed, ctx.gebruikt)
+      : kiesUniek(PROMOTIE, seed, ctx.gebruikt);
+  }
+  return kiesUniek(lofCtx.schild ? DEGRADATIE_NEUTRAAL : DEGRADATIE, seed, ctx.gebruikt);
 }
 
 /** NL-ordinaal ("3e"). */
@@ -389,44 +454,29 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         roastSeed(event.toPlayerId, event.at),
         g,
       );
-    case "season-champion":
-      return kiesUniek(
-        heeftSchild(ctx.profiles[event.playerId]) ? KAMPIOEN_NEUTRAAL : KAMPIOEN,
-        roastSeed(event.playerId, event.seasonLabel),
-        g,
+    case "season-champion": {
+      const seed = roastSeed(event.playerId, event.seasonLabel);
+      const lofCtx = roastCtx(
+        { roast_intensiteit: ctx.intensiteitVoor(event.groupId) },
+        ctx.profiles[event.playerId],
       );
+      return hypeBeurt(lofCtx, seed)
+        ? coachLof(lofCtx, seed, g)
+        : kiesUniek(KAMPIOEN, seed, g);
+    }
     case "rank": {
       const omhoog =
         event.shift === "nieuw" ||
         (typeof event.shift === "number" && event.shift > 0);
-      const beschermd = heeftSchild(ctx.profiles[event.playerId]);
-      return kiesUniek(
-        omhoog
-          ? beschermd
-            ? PROMOTIE_NEUTRAAL
-            : PROMOTIE
-          : beschermd
-            ? DEGRADATIE_NEUTRAAL
-            : DEGRADATIE,
-        roastSeed(event.playerId, event.at),
-        g,
-      );
+      return klimOfVal(omhoog, event.playerId, roastSeed(event.playerId, event.at), ctx);
     }
-    case "tier": {
-      const omhoog = event.richting === "promotie";
-      const beschermd = heeftSchild(ctx.profiles[event.playerId]);
-      return kiesUniek(
-        omhoog
-          ? beschermd
-            ? PROMOTIE_NEUTRAAL
-            : PROMOTIE
-          : beschermd
-            ? DEGRADATIE_NEUTRAAL
-            : DEGRADATIE,
+    case "tier":
+      return klimOfVal(
+        event.richting === "promotie",
+        event.playerId,
         roastSeed(event.playerId, event.at),
-        g,
+        ctx,
       );
-    }
     case "match": {
       const seed = roastSeed(event.match.id);
       const h = event.highlights;
@@ -436,10 +486,17 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
       // is meegegeven; anders blijft alles op de generieke pools.
       const vf = ctx.matches ? verliesFeiten(event.match, ctx.matches, teams, ctx.naamVoor) : null;
 
+      // Winreeks en upset zijn prestaties: Coach Rudy juicht of prikt (#199). Het
+      // schild van de gevierde speler tempert de hype tot mild; dat van de
+      // verliezer sluit de jab helemaal uit, want die spot met hém.
       if (h.some((x) => x.type === "streak" || x.type === "duo")) {
+        const lofCtx = matchLofCtx(event, ctx);
+        if (hypeBeurt(lofCtx, seed)) return coachLof(lofCtx, seed, g);
         return kiesFeit(reeksFeiten(event, ctx), seed, g) ?? kiesUniek(REEKS, seed, g);
       }
       if (h.some((x) => x.type === "upset")) {
+        const lofCtx = matchLofCtx(event, ctx);
+        if (!magRoasten || hypeBeurt(lofCtx, seed)) return coachLof(lofCtx, seed, g);
         return kiesFeit(upsetFeiten(event, vf, magRoasten), seed, g) ?? kiesUniek(UPSET, seed, g);
       }
       if (h.some((x) => x.type === "score" && x.label === "bagel")) {

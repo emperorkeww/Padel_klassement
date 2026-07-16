@@ -3,7 +3,9 @@
 // observatie ("feit") aan en laat kleurRoast die kleuren met de stem van de
 // commentator, gedoseerd op de roast-intensiteit van de groep. Zet een speler
 // zijn roast-schild aan, dan komt het feit ongekleurd terug — plagen, geen
-// kwetsen, en wie niet mee wil hoeft niet. Puur en getest in roastTone.test.ts.
+// kwetsen, en wie niet mee wil hoeft niet. Naast de sneer staat de hype-modus
+// (#199): LOF + coachLof juichen bij een prestatie, in dezelfde stem en op
+// dezelfde schaal. Puur en getest in roastTone.test.ts.
 
 import type { Group, Profile, RoastIntensiteit } from "@/types";
 
@@ -206,6 +208,67 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
   ],
 } as const;
 
+/** Coach Rudy's lof bij een prestatie, per niveau (#199). De tegenhanger van
+ *  SNEER: van oprecht en ingetogen (mild) via overdreven (gemeen) naar
+ *  gênant-overdreven (radioactief). Generiek gehouden, want één pool bedient
+ *  kampioen, promotie, winreeks én upset-winst. */
+export const LOF: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Sterk gespeeld. Geen speld tussen te krijgen.",
+    "Netjes. Dat noteer ik bij de goede dingen in m'n notitieboekje.",
+    "Chapeau. Zo hoort het.",
+    "Verdiend. Punt.",
+    "Daar valt weinig op af te dingen. Mooi werk.",
+    "Dat was gewoon goed. Ik zeg het niet vaak, dus onthoud het.",
+    "Prima uitvoering. De voorbereiding zag je terug op de baan.",
+    "Knap gedaan. Geniet er even van.",
+    "Solide van begin tot eind. Daar houd ik van.",
+    "Dat is het niveau waar je naartoe werkte. Vasthouden nu.",
+    "Goed gezien, goed uitgevoerd. Meer heb ik er niet over te zeggen.",
+    "Petje af. En dat is bij mij een échte pet.",
+    "Zuiver werk. Ik heb er niets op aan te merken.",
+    "Dat verdient een compliment, en die krijg je bij dezen.",
+    "Rustig gebleven op de juiste momenten. Dat is de kunst.",
+    "Mooi. Ik gun het je.",
+  ],
+  gemeen: [
+    "Fenomenaal! Ik heb er twee pagina's over volgeschreven, allemaal met uitroeptekens.",
+    "Dit was van WK-niveau. En dan bedoel ik de kant die wél kon spelen.",
+    "Bravo. Hier had ik in 2011 bij Lille van gedroomd.",
+    "Schitterend! Ik sta hier langs de lijn te klappen in m'n chic pak.",
+    "Meesterlijk. Dit zet ik naast m'n eigen tactische masterplans in de kast.",
+    "Pure klasse. Zelfs bij Napoli heb ik zoiets niet gezien, en daar zat talent.",
+    "Subliem! M'n notitieboekje kan de lof amper bijhouden.",
+    "Wat een vertoning! Ik heb m'n pet afgenomen en ben vergeten hem terug te zetten.",
+    "Formidabel. Dit is het soort spel waar ik een persconferentie voor bijeenroep.",
+    "Briljant! Ik heb de bladzijde uit m'n notitieboekje gescheurd om hem in te lijsten.",
+    "Dit was geen padel, dit was kunst. En ik ben geen man van kunst.",
+    "Magistraal. Ik bel vanavond de bond dat ze je moeten scouten.",
+    "Wereldklasse! De tegenstander mag blij zijn dat hij erbij mocht zijn.",
+    "Verbluffend. Ik heb m'n viool erbij gepakt, en nu eens niet uit sarcasme.",
+    "Grandioos! Dit ga ik in elke kleedkamer als lesmateriaal vertonen.",
+    "Formidabel gedaan. Heel legaal, heel cool, en iedereen zegt het.",
+  ],
+  radioactief: [
+    "Ik laat je naam op m'n onderarm zetten. Definitief.",
+    "Ik bel Infantino: dit moet werelderfgoed worden.",
+    "Ik heb m'n notitieboekje opgegeten van pure euforie. Het was het waard.",
+    "Zet een standbeeld neer. Nee, twee. Naast elkaar.",
+    "Ik huil in m'n chic pak en ik schaam me nergens voor.",
+    "Dit was zo mooi dat de glazen wanden spontaan begonnen te applaudisseren.",
+    "Ik heb ter plekke m'n ontslag ingediend. Na dit kan ik niets meer toevoegen.",
+    "Historisch! De FIFA moet een nieuwe categorie aanmaken, want deze past nergens in.",
+    "Ik draag m'n complete WK-carrière op aan deze ene wedstrijd.",
+    "Ik heb de beelden ingelijst en boven m'n bed gehangen. Naast die van m'n moeder.",
+    "Zo groots dat ik overweeg om de hele sport voortaan naar jou te vernoemen.",
+    "Ik heb de terreinknecht verboden deze baan nog te vegen. Dit is heilige grond.",
+    "Ronduit goddelijk. Ik ga vanavond een kaarsje branden voor je forehand.",
+    "Ik belde de Belgische bond om je meteen op te stellen. Ze hingen op, maar toch.",
+    "Legendarisch! Ik stel voor dat we de jeugd verplicht deze beelden laten bekijken.",
+    "Dit overtreft alles. Ik heb m'n pet, m'n viool én m'n notitieboekje weggegeven uit dankbaarheid.",
+  ],
+} as const;
+
 /** Deterministische, positieve start-index in een pool op basis van de seed. */
 function seedIndex(len: number, seed: number): number {
   return ((seed % len) + len) % len;
@@ -262,6 +325,22 @@ export function coachSneer(
 ): string | null {
   if (ctx.schild) return null;
   return kiesUniek(SNEER[ctx.intensiteit], seed, gebruikt);
+}
+
+/**
+ * Coach Rudy's hype bij een prestatie (#199) — het spiegelbeeld van coachSneer,
+ * met één verschil: lof is geen spot, dus het roast-schild blokkeert hem niet.
+ * Het tempert hem alleen tot het oprechte mild-niveau, want gênant-overdreven
+ * hype over iemand die er niet om vroeg voelt zelf ook als spot. Geeft daarom
+ * nooit null. Geef optioneel een `gebruikt`-set mee om binnen één weergave
+ * herhaling te vermijden.
+ */
+export function coachLof(
+  ctx: RoastCtx,
+  seed: number,
+  gebruikt?: Set<string>,
+): string {
+  return kiesUniek(LOF[ctx.schild ? "mild" : ctx.intensiteit], seed, gebruikt);
 }
 
 /**
