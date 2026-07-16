@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
+import type { TablesUpdate } from "@/lib/supabase/database.types";
 import type { Match, Profile, Team } from "@/types";
 import { displayName } from "@/features/profiles/api";
 
@@ -17,14 +18,13 @@ function invalidateMatchData() {
   );
 }
 
-// Per-set uitslag: paar [games team A, games team B]. Lokaal gedefinieerd omdat
-// lib/types.ts (nog) geen set_scores kent — die kolom is additief toegevoegd.
+// Per-set uitslag: paar [games team A, games team B].
 export type SetScore = [number, number];
 
-/** Leest de optionele per-set uitslag van een match veilig uit (jsonb-kolom die
- *  nog niet in het Match-type staat). Ongeldige/halfvolle data wordt genegeerd. */
+/** Leest de optionele per-set uitslag van een match veilig uit (jsonb-kolom).
+ *  Ongeldige/halfvolle data wordt genegeerd. */
 export function readSetScores(match: Match): SetScore[] | null {
-  const raw = (match as unknown as { set_scores?: unknown }).set_scores;
+  const raw = match.set_scores;
   if (!Array.isArray(raw)) return null;
   const sets = raw.filter(
     (s): s is SetScore =>
@@ -194,15 +194,9 @@ export function getRecentResults(limit = 6): Promise<Match[]> {
 /** Maakt een gastspeler aan (naam-only, geen account) en geeft zijn id terug.
  *  De gast is eigendom van de ingelogde gebruiker en kan meteen in een match. */
 export async function createGuestPlayer(name: string): Promise<string> {
-  // create_guest_player staat nog niet in de gegenereerde types: lokaal casten.
-  // Inline aanroepen (haakjes om supabase.rpc) zodat de this-binding naar de
-  // client behouden blijft — een losse variabele zou 'this' verliezen.
-  const { data, error } = await (
-    supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: string | null; error: { message: string } | null }>
-  )("create_guest_player", { p_name: name });
+  const { data, error } = await supabase.rpc("create_guest_player", {
+    p_name: name,
+  });
   if (error) throw error;
   // De gecachte profielenlijst is nu verouderd: wissen zodat de gast overal
   // (spelerskiezer, groep-leden) meteen met zijn naam verschijnt i.p.v. "Onbekend".
@@ -231,9 +225,8 @@ export async function createCompletedMatch(params: {
     p_score_a: params.scoreA ?? undefined,
     p_score_b: params.scoreB ?? undefined,
     p_group_id: params.groupId ?? undefined,
-    // p_set_scores staat (nog) niet in de gegenereerde types; cast lokaal.
     p_set_scores: params.setScores ?? undefined,
-  } as never);
+  });
   if (error) throw error;
   invalidateMatchData();
   return data as string;
@@ -258,9 +251,8 @@ export async function createPlannedMatch(params: {
     p_b2: params.b2,
     p_played_at: params.playedAt ?? undefined,
     p_group_id: params.groupId ?? undefined,
-    // p_set_scores staat (nog) niet in de gegenereerde types; cast lokaal.
     p_set_scores: params.setScores ?? undefined,
-  } as never);
+  });
   if (error) throw error;
   invalidateMatchData();
   return data as string;
@@ -278,7 +270,6 @@ export async function setMatchResult(params: {
 }): Promise<void> {
   const { data, error } = await supabase
     .from("matches")
-    // set_scores staat (nog) niet in de gegenereerde Update-types; cast lokaal.
     .update({
       status: "completed",
       winner_team_id: params.winnerTeamId,
@@ -286,7 +277,7 @@ export async function setMatchResult(params: {
       score_b: params.scoreB ?? null,
       set_scores: params.setScores ?? null,
       played_at: new Date().toISOString(),
-    } as never)
+    })
     .eq("id", params.matchId)
     .neq("status", "completed")
     .select("id");
@@ -309,7 +300,7 @@ export async function updateMatchScore(params: {
   /** Optioneel: laat weg om de bestaande set-stand te behouden; null wist hem. */
   setScores?: SetScore[] | null;
 }): Promise<void> {
-  const patch: Record<string, unknown> = {
+  const patch: TablesUpdate<"matches"> = {
     winner_team_id: params.winnerTeamId,
     score_a: params.scoreA,
     score_b: params.scoreB,
@@ -319,8 +310,7 @@ export async function updateMatchScore(params: {
   if (params.setScores !== undefined) patch.set_scores = params.setScores;
   const { error } = await supabase
     .from("matches")
-    // set_scores staat (nog) niet in de gegenereerde Update-types; cast lokaal.
-    .update(patch as never)
+    .update(patch)
     .eq("id", params.matchId);
   if (error) throw error;
   invalidateMatchData();
@@ -344,10 +334,9 @@ export async function updatePlannedMatchTime(params: {
 /** Verwijdert een niet-afgeronde match via de SECURITY DEFINER RPC (alleen de
  *  aanmaker; een afgeronde match kan niet weg — dat zou stand/ratings raken). */
 export async function deleteMatch(matchId: string): Promise<void> {
-  const { error } = await supabase.rpc(
-    "delete_match" as never,
-    { p_match_id: matchId } as never,
-  );
+  const { error } = await supabase.rpc("delete_match", {
+    p_match_id: matchId,
+  });
   if (error) throw error;
   invalidateMatchData();
 }

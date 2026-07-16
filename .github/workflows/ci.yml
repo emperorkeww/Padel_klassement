@@ -56,3 +56,11 @@ jobs:
 
       - name: Databasetests (pgTAP)
         run: supabase test db
+
+      # Faalt als src/lib/supabase/database.types.ts achterloopt op het schema
+      # (#60). Regenereren kan lokaal met `npm run gen:types` (zelfde gepinde
+      # CLI-versie, dus byte-gelijke output).
+      - name: Check gegenereerde types actueel
+        run: |
+          supabase gen types typescript --local > src/lib/supabase/database.types.ts
+          git diff --exit-code -- src/lib/supabase/database.types.ts

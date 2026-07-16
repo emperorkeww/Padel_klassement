@@ -3,8 +3,8 @@ import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { Club } from "@/features/availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
-// dependency. Losse typering (tabel-shim) tot database.types.ts opnieuw
-// gegenereerd wordt; zelfde cache/RLS-patroon als attendanceApi.
+// dependency. Zelfde cache/RLS-patroon als attendanceApi. De status-kolommen
+// zijn in de DB text met een CHECK; hier smaller getypt als union.
 
 export type PollStatus = "open" | "locked" | "booked" | "cancelled";
 export type PollVoteStatus = "yes" | "no" | "maybe";
@@ -57,53 +57,24 @@ export type PollVote = {
   updated_at: string;
 };
 
-type Err = { message: string } | null;
-type SelectQuery<Row> = {
-  eq: (c: string, v: string) => SelectQuery<Row>;
-  order: (c: string, opts?: { ascending?: boolean }) => SelectQuery<Row>;
-} & Promise<{ data: Row[] | null; error: Err }>;
-type DeleteQuery = {
-  eq: (c: string, v: string) => DeleteQuery;
-} & Promise<{ error: Err }>;
-type UpdateQuery = {
-  eq: (c: string, v: string) => UpdateQuery;
-} & Promise<{ error: Err }>;
-type InsertQuery<Row> = {
-  select: (cols?: string) => Promise<{ data: Row[] | null; error: Err }>;
-};
-type Table<Row> = {
-  select: (cols: string) => SelectQuery<Row>;
-  insert: (values: Record<string, unknown> | Record<string, unknown>[]) => InsertQuery<Row>;
-  update: (values: Record<string, unknown>) => UpdateQuery;
-  delete: () => DeleteQuery;
-  upsert: (
-    values: Record<string, unknown>,
-    opts: { onConflict: string },
-  ) => Promise<{ error: Err }>;
-};
-const pollTable = () =>
-  supabase.from("play_polls" as never) as unknown as Table<PlayPoll>;
-const optionTable = () =>
-  supabase.from("play_poll_options" as never) as unknown as Table<PollOption>;
-const voteTable = () =>
-  supabase.from("play_poll_votes" as never) as unknown as Table<PollVote>;
-
 /** Alle polls van een groep, nieuwste eerst (RLS: alleen eigen groepen). */
 export function getGroupPolls(groupId: string): Promise<PlayPoll[]> {
   return cached(`play-polls:${groupId}`, async () => {
-    const { data, error } = await pollTable()
+    const { data, error } = await supabase
+      .from("play_polls")
       .select("*")
       .eq("group_id", groupId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as PlayPoll[];
   });
 }
 
 /** Alle opties van de polls van een groep. */
 export function getGroupPollOptions(groupId: string): Promise<PollOption[]> {
   return cached(`play-poll-options:${groupId}`, async () => {
-    const { data, error } = await optionTable()
+    const { data, error } = await supabase
+      .from("play_poll_options")
       .select("*")
       .eq("group_id", groupId)
       .order("date")
@@ -116,11 +87,12 @@ export function getGroupPollOptions(groupId: string): Promise<PollOption[]> {
 /** Alle stemmen op de polls van een groep. */
 export function getGroupPollVotes(groupId: string): Promise<PollVote[]> {
   return cached(`play-poll-votes:${groupId}`, async () => {
-    const { data, error } = await voteTable()
+    const { data, error } = await supabase
+      .from("play_poll_votes")
       .select("*")
       .eq("group_id", groupId);
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as PollVote[];
   });
 }
 
@@ -139,7 +111,8 @@ export async function createPoll(input: {
   club: Club;
   options: NewPollOption[];
 }): Promise<void> {
-  const { data, error } = await pollTable()
+  const { data, error } = await supabase
+    .from("play_polls")
     .insert({
       group_id: input.groupId,
       created_by: input.createdBy,
@@ -152,7 +125,8 @@ export async function createPoll(input: {
   if (error) throw error;
   const poll = data?.[0];
   if (!poll) throw new Error("Poll aanmaken mislukte.");
-  const { error: e2 } = await optionTable()
+  const { error: e2 } = await supabase
+    .from("play_poll_options")
     .insert(
       input.options.map((o) => ({
         poll_id: poll.id,
@@ -166,7 +140,7 @@ export async function createPoll(input: {
     .select();
   if (e2) {
     // Opties weigeren → geen halve poll laten rondslingeren.
-    await pollTable().delete().eq("id", poll.id);
+    await supabase.from("play_polls").delete().eq("id", poll.id);
     throw e2;
   }
   invalidate("play-poll");
@@ -181,7 +155,8 @@ export async function addPollOption(
   groupId: string,
   option: NewPollOption,
 ): Promise<void> {
-  const { error } = await optionTable()
+  const { error } = await supabase
+    .from("play_poll_options")
     .insert({
       poll_id: pollId,
       group_id: groupId,
@@ -200,7 +175,10 @@ export async function addPollOption(
  * vervallen mee (cascade). RLS: maker/eigenaar, alleen bij status open.
  */
 export async function removePollOption(optionId: string): Promise<void> {
-  const { error } = await optionTable().delete().eq("id", optionId);
+  const { error } = await supabase
+    .from("play_poll_options")
+    .delete()
+    .eq("id", optionId);
   if (error) throw error;
   invalidate("play-poll");
 }
@@ -212,7 +190,7 @@ export async function setPollVote(
   playerId: string,
   status: PollVoteStatus,
 ): Promise<void> {
-  const { error } = await voteTable().upsert(
+  const { error } = await supabase.from("play_poll_votes").upsert(
     {
       option_id: optionId,
       group_id: groupId,
@@ -231,7 +209,8 @@ export async function clearPollVote(
   optionId: string,
   playerId: string,
 ): Promise<void> {
-  const { error } = await voteTable()
+  const { error } = await supabase
+    .from("play_poll_votes")
     .delete()
     .eq("option_id", optionId)
     .eq("player_id", playerId);
@@ -245,7 +224,8 @@ export async function clearPollVote(
  * bevriest z'n locatie. RLS: maker of groepseigenaar.
  */
 export async function setPollClub(pollId: string, club: Club): Promise<void> {
-  const { error } = await pollTable()
+  const { error } = await supabase
+    .from("play_polls")
     .update({
       club_id: club.id,
       club_name: club.name,
@@ -259,7 +239,8 @@ export async function setPollClub(pollId: string, club: Club): Promise<void> {
 
 /** Legt het winnende moment vast (RLS: maker of groepseigenaar). */
 export async function lockPoll(pollId: string, optionId: string): Promise<void> {
-  const { error } = await pollTable()
+  const { error } = await supabase
+    .from("play_polls")
     .update({
       status: "locked",
       locked_option_id: optionId,
@@ -272,7 +253,8 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
 
 /** Markeert de gelockte poll als geboekt op Playtomic. */
 export async function markPollBooked(pollId: string): Promise<void> {
-  const { error } = await pollTable()
+  const { error } = await supabase
+    .from("play_polls")
     .update({ status: "booked", booked_at: new Date().toISOString() })
     .eq("id", pollId);
   if (error) throw error;
@@ -281,7 +263,8 @@ export async function markPollBooked(pollId: string): Promise<void> {
 
 /** Heropent een gelockte poll: terug naar stemmen (maker of eigenaar). */
 export async function reopenPoll(pollId: string): Promise<void> {
-  const { error } = await pollTable()
+  const { error } = await supabase
+    .from("play_polls")
     .update({
       status: "open",
       locked_option_id: null,
@@ -295,7 +278,8 @@ export async function reopenPoll(pollId: string): Promise<void> {
 
 /** Annuleert een poll (maker of eigenaar); stemmen blijven bewaard. */
 export async function cancelPoll(pollId: string): Promise<void> {
-  const { error } = await pollTable()
+  const { error } = await supabase
+    .from("play_polls")
     .update({ status: "cancelled", locked_option_id: null })
     .eq("id", pollId);
   if (error) throw error;

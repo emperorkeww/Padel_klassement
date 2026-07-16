@@ -226,6 +226,11 @@ Volg deze workflow voor schema-wijzigingen:
     ```bash
     supabase db reset
     ```
+4.  Regenereer de TypeScript-types (CI faalt als `database.types.ts` achterloopt op het schema):
+    ```bash
+    npm run gen:types
+    ```
+    *Dit script pint de CLI-versie op die van CI, zodat de output byte-gelijk is. Commit het resultaat ongewijzigd (niet formatteren).*
 
 > [!WARNING]
 > De tool `supabase db diff` herkent soms specifieke eigenschappen niet correct, zoals toegekende kolom-grants of de `security_invoker` optie op views. Controleer de gegenereerde migratiebestanden altijd zorgvuldig voor je ze commit.
