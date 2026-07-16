@@ -26,7 +26,14 @@ function court(name: string, free: Record<string, number[]>): CourtRow {
 }
 
 function day(courts: CourtRow[]): DayAvailability {
-  return { open: "08:00", close: "23:00", timeZone: "Europe/Brussels", courts };
+  return {
+    open: "08:00",
+    close: "23:00",
+    timeZone: "Europe/Brussels",
+    courts,
+    source: "live",
+    fetchedAt: null,
+  };
 }
 
 // Verre datum zodat "vandaag" nooit meespeelt (deterministisch).

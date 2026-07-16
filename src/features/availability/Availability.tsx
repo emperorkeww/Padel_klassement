@@ -8,12 +8,14 @@ import {
   getClubAvailability,
   getWeekAvailability,
   bestWeekMoment,
+  isStaleAvailability,
   nextFreeSlot,
   type DayAvailability,
   type WeekDay,
 } from "./api";
 import { useBookingUrl } from "./useBookingUrl";
 import { getClub, setClub, useClub } from "./club";
+import { AvailabilityUnavailable } from "@/features/availability/components/AvailabilityUnavailable";
 import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import { Timetable } from "@/features/availability/components/Timetable";
 import { WeekGrid } from "@/features/availability/components/WeekGrid";
@@ -52,6 +54,48 @@ function formatBestDay(date: string): string {
     day: "numeric",
     month: "long",
   });
+}
+
+// "22:54" vandaag (clubtijd), anders "wo 22:54" — het tijdstip waarop de
+// cron de getoonde snapshot ophaalde (#405).
+function formatFetchedAt(iso: string, timeZone: string): string {
+  const fetched = new Date(iso);
+  const sameDay =
+    new Intl.DateTimeFormat("en-CA", { timeZone }).format(fetched) ===
+    dateInZone(timeZone);
+  return new Intl.DateTimeFormat("nl-BE", {
+    timeZone,
+    ...(sameDay ? {} : { weekday: "short" }),
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(fetched);
+}
+
+/**
+ * Versheid van de getoonde stand (#405). Stil regeltje wanneer de data uit
+ * de cron-snapshot komt; waarschuwend wanneer een verouderde snapshot het
+ * vangnet was omdat Playtomic zelf niet bereikbaar is. Live data → niets.
+ * Bij de week telt de oudste snapshot-dag.
+ */
+function FreshnessLine({ days }: { days: DayAvailability[] }) {
+  const snapshots = days.filter(
+    (d) => d.source === "snapshot" && d.fetchedAt != null,
+  );
+  if (snapshots.length === 0) return null;
+  // ISO-tijdstippen sorteren lexicografisch; de oudste is de eerlijke claim.
+  const oldest = snapshots.reduce((a, b) =>
+    a.fetchedAt! <= b.fetchedAt! ? a : b,
+  );
+  const time = formatFetchedAt(oldest.fetchedAt!, oldest.timeZone);
+  if (snapshots.some(isStaleAvailability)) {
+    return (
+      <p className="avail-fresh avail-fresh--stale">
+        Live gegevens tijdelijk niet bereikbaar — stand van {time}.
+      </p>
+    );
+  }
+  return <p className="avail-fresh">Laatst bijgewerkt {time}</p>;
 }
 
 // Speelduren die Playtomic aanbiedt; null = geen filter (alle duren tonen).
@@ -268,10 +312,11 @@ function DaySection({
       {availability.loading ? (
         <Skeleton rows={3} />
       ) : availability.error ? (
-        <p className="msg msg--error">{availability.error}</p>
+        <AvailabilityUnavailable club={club} date={date} message={availability.error} />
       ) : availability.data ? (
         <>
           {hasOutdoor && <WeatherParts parts={parts} />}
+          <FreshnessLine days={[availability.data]} />
           <NextFreeLine data={availability.data} date={date} duration={duration} />
           <Timetable data={availability.data} date={date} duration={duration} />
           <ShareAvailability
@@ -437,10 +482,15 @@ function WeekSection({
       {week.loading ? (
         <Skeleton rows={7} />
       ) : week.error ? (
-        <p className="msg msg--error">{week.error}</p>
+        <AvailabilityUnavailable club={club} date={start} message={week.error} />
       ) : week.data ? (
         <>
           {hasOutdoor && <WeatherDays days={weatherDays} />}
+          <FreshnessLine
+            days={week.data
+              .map((d) => d.data)
+              .filter((d): d is DayAvailability => d !== null)}
+          />
           <BestWeekLine week={week.data} duration={duration} />
           <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
           <ShareAvailability

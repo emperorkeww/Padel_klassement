@@ -25,6 +25,9 @@ const CACHE_PREFIXES: Record<string, string[]> = {
   attendance: ["attendance"],
   match_predictions: ["match-predictions", "prediction-standings"],
   slot_availability: ["slot-availability"],
+  // Baanbeschikbaarheids-snapshots van de cron (#405); geen subscriber nu,
+  // maar de mapping staat klaar (focus-refetch + korte TTL doen het werk).
+  court_availability_snapshots: ["court-snapshots"],
   play_proposals: ["play-proposal"],
   play_proposal_votes: ["play-proposal"],
 };
