@@ -134,6 +134,10 @@
   --bp-mobile: 720px; /* shell wisselt naar topbalk + onderbalk, content wordt mobiel */
   --bp-narrow: 480px; /* extra-smalle telefoon-tweaks */
 
+  /* Hoogte van de mobiele onderbalk (excl. safe-area-inset). Eén bron voor
+     alles wat erboven moet blijven: toasts en de onderrand van de content. */
+  --tabbar-h: 4.25rem; /* 68px, gemeten incl. labels */
+
   /* ---- Spacing: 4px-grid ---- */
   --sp-1: 0.25rem; /* 4px */
   --sp-2: 0.5rem; /* 8px */
@@ -276,9 +280,19 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  /* Vangnet tegen horizontaal scrollen van de hele pagina, ook op schermen
+     buiten de dashboard-shell (login, wachtwoord-reset). `clip` i.p.v.
+     `hidden`: maakt geen scrollcontainer, dus position:sticky blijft werken. */
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  /* dvh: échte zichtbare hoogte op mobiel (url-balk schuift mee). */
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--ink);
 }
@@ -310,6 +324,7 @@ body {
 /* Globale laadstaat (Suspense-fallback + ProtectedRoute). */
 .route-loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   color: var(--ink-soft);

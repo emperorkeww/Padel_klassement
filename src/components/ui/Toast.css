@@ -58,6 +58,7 @@
   border-radius: 2px;
 }
 .toast__close {
+  position: relative;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -71,6 +72,12 @@
   color: inherit;
   cursor: pointer;
   transition: background 0.15s;
+}
+/* Onzichtbaar groter tapvlak rond het 28px-kruisje (richtlijn ~44px). */
+.toast__close::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
 }
 .toast__close:hover {
   background: var(--toast-close-bg-hover);
@@ -109,7 +116,8 @@
 
 @media (max-width: 720px) {
   .toasts {
-    bottom: 4.75rem; /* boven de mobiele onderbalk */
+    /* Boven de mobiele onderbalk, óók op toestellen met home-indicator. */
+    bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-area-inset-bottom, 0px));
     left: var(--sp-4);
     right: var(--sp-4);
     max-width: none;
