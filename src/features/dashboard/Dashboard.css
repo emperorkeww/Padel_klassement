@@ -39,6 +39,11 @@
   gap: var(--sp-4);
   min-width: 0;
 }
+/* Ook het tekstblok naast de avatar mag krimpen, anders steekt een lange
+   begroeting op 320px net buiten de hero. */
+.hero__text {
+  min-width: 0;
+}
 
 /* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
    onder de samenvatting, niet meer zwevend in de rechterbovenhoek. */
@@ -59,6 +64,7 @@
   align-items: center;
   gap: 6px;
   height: 1.75rem;
+  /* Onzichtbaar groter tapvlak (richtlijn ~44px, #374) — zie ::after. */
   padding: 0 var(--sp-3) 0 var(--sp-2);
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -70,6 +76,11 @@
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   cursor: help;
+}
+.hero-crest::after {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
 }
 .hero-crest__icon {
   font-size: 1rem;
@@ -196,6 +207,7 @@
 }
 
 .hero__form {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
@@ -204,6 +216,12 @@
   color: inherit;
   border-radius: 999px;
   transition: opacity 0.15s;
+}
+/* Onzichtbaar groter tapvlak rond de vormregel (richtlijn ~44px, #374). */
+.hero__form::after {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
 }
 .hero__form:hover {
   opacity: 0.75;
@@ -226,6 +244,9 @@
 .hero__badges {
   display: inline-flex;
   align-items: center;
+  /* Op heel smalle telefoons lopen de badges door op een tweede regel
+     i.p.v. uit de hero te steken. */
+  flex-wrap: wrap;
   gap: var(--sp-1);
   text-decoration: none;
 }
@@ -947,6 +968,55 @@
   }
   .hero__actions .btn--primary {
     grid-column: 1 / -1;
+  }
+  /* Badge-emoji op touch-formaat: iets groter en verder uit elkaar, met een
+     klein onzichtbaar extra tapvlak (#374). */
+  .hero__badges {
+    gap: var(--sp-2);
+  }
+  .hero__badge,
+  .hero__badges-more {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .hero__badges-more {
+    width: auto;
+    min-width: 32px;
+  }
+  .hero__badge::after,
+  .hero__badges-more::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+/* Divisie-tegel: badge-pill i.p.v. fs-2xl-tekst (#374). */
+.stat__value--tier {
+  display: flex;
+  align-items: center;
+  min-height: 1.4em;
+}
+/* In een smalle tegel wikkelt het divisielabel binnen de pill i.p.v. eruit
+   te steken; zo blijft ook het nummer (bv. "III") zichtbaar. */
+.stat__value--tier .tier-badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+/* Op extra-smal is een 1-van-4-tegel (~46px) te krap voor een divisienaam:
+   dan 2×2, zodat de pill op één à twee regels past. */
+@media (max-width: 480px) {
+  .dashboard .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .stat__value--tier {
+    justify-content: center;
   }
 }
 

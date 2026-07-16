@@ -182,6 +182,9 @@
   margin-top: var(--sp-1);
 }
 .planned-card__sets-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   background: none;
   border: none;
   padding: 0;

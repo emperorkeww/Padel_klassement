@@ -1,5 +1,7 @@
 .shell {
   min-height: 100vh;
+  /* dvh: échte zichtbare hoogte op mobiel (url-balk schuift mee). */
+  min-height: 100dvh;
   display: flex;
   background: var(--bg);
 }
@@ -234,6 +236,7 @@
     border-bottom: 1px solid var(--line);
   }
   .topbar__brand {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: var(--sp-2);
@@ -243,9 +246,22 @@
     letter-spacing: -0.02em;
     text-decoration: none;
   }
+  /* Onzichtbaar groter tapvlak rond het merk (richtlijn ~44px, #374). */
+  .topbar__brand::after {
+    content: "";
+    position: absolute;
+    inset: -9px 0;
+  }
   .topbar__profile {
+    position: relative;
     display: inline-flex;
     border-radius: 50%;
+  }
+  /* Onzichtbaar groter tapvlak rond de 32px-avatar (richtlijn ~44px). */
+  .topbar__profile::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
   }
 
   .tabbar {
@@ -293,7 +309,9 @@
     height: 24px;
   }
   .tabbar__label {
-    font-size: 0.625rem;
+    /* 11px i.p.v. 10px voor leesbaarheid (#374). Op ≤359px terug naar 10px:
+       daar kapt "Klassement" anders af; ellipsis blijft het vangnet. */
+    font-size: 0.6875rem;
     font-weight: 600;
     max-width: 100%;
     overflow: hidden;
@@ -305,6 +323,11 @@
   }
   .tabbar__link.is-active .tabbar__label {
     font-weight: 700;
+  }
+  @media (max-width: 359px) {
+    .tabbar__label {
+      font-size: 0.625rem;
+    }
   }
 
   /* ---- Uitstekende ronde padelbal-knop in het midden ----
@@ -350,7 +373,9 @@
   }
 
   .content__inner {
-    padding: var(--sp-5) var(--sp-4) 5.5rem;
+    /* Onderrand vrijhouden van de vaste onderbalk (+ home-indicator). */
+    padding: var(--sp-5) var(--sp-4)
+      calc(var(--tabbar-h) + var(--sp-6) + env(safe-area-inset-bottom, 0px));
   }
 }
 

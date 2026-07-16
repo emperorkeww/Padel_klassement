@@ -618,8 +618,8 @@
   .poll-row__state {
     grid-area: state;
     justify-self: end;
-    width: 36px;
-    height: 36px;
+    width: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
+    height: 44px;
   }
   .poll-row__people {
     grid-area: people;
@@ -814,6 +814,11 @@
   font-weight: 600;
 }
 .plan-banen a {
+  /* Volwaardig tapdoel (richtlijn ~44px, #374): losse regel, dus de link mag
+     gewoon hoger worden. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--accent);
   text-decoration: none;
 }

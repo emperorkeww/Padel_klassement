@@ -52,7 +52,15 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
+  /* De hele rij is het tapdoel (label om de checkbox), dus ≥44px (#374). */
+  min-height: 44px;
   cursor: pointer;
+}
+.toggle-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
 }
 .toggle-row__text {
   display: flex;

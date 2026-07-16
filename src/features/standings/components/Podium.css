@@ -2,7 +2,10 @@
    het globale klassement en de groeps-Stand-tab. */
 .podium {
   display: grid;
-  grid-template-columns: 1fr 1.15fr 1fr;
+  /* minmax(0, …): kolommen mogen smaller worden dan hun breedste inhoud,
+     anders duwt een lange divisie-badge plek 3 het scherm af op smalle
+     telefoons (de pagina clipt, dus die plek is dan onbereikbaar). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--sp-3);
   margin-bottom: var(--sp-5);
@@ -10,6 +13,7 @@
 
 .podium__spot {
   display: grid;
+  min-width: 0;
   justify-items: center;
   gap: var(--sp-1);
   padding: var(--sp-4) var(--sp-3);
@@ -113,6 +117,16 @@
 }
 .podium__spot--3 .podium__medal {
   background: var(--bronze);
+}
+
+/* De divisie-badge is nowrap; binnen een smalle podiumkolom kapt hij af met
+   een ellips in plaats van uit de kaart te steken (volledige naam in title). */
+.podium__spot .tier-badge {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .podium__name {

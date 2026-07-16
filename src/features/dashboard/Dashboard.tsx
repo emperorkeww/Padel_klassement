@@ -706,7 +706,14 @@ export function Dashboard() {
         <StatsSkeleton />
       ) : (
         <div className="stats">
-          <Stat label="Divisie" value={tierFor(myRating)?.label ?? "—"} accent />
+          {/* Divisie als badge-pill i.p.v. grote tekst: lange divisienamen
+              ("Racketconsument III") passen zo netjes in de tegel (#374). */}
+          <div className="stat stat--accent">
+            <span className="stat__value stat__value--tier">
+              {tierFor(myRating) ? <TierBadge rating={myRating} /> : "—"}
+            </span>
+            <span className="stat__label">Divisie</span>
+          </div>
           <Stat label="Positie" value={rank ? `#${rank}` : "—"} />
           <Stat label="Winrate" value={rate != null ? `${rate}%` : "—"} />
           <Stat label="Gespeeld" value={me?.played ?? 0} />

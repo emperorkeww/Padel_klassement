@@ -101,6 +101,8 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  /* Geen 300ms dubbeltik-zoom-vertraging op touch. */
+  touch-action: manipulation;
   transition: background 0.15s, border-color 0.15s, transform 0.05s, opacity 0.15s, box-shadow 0.15s;
 }
 .btn:hover:not(:disabled) {
@@ -395,6 +397,9 @@ textarea {
   width: 100%;
   max-width: 520px;
   max-height: calc(100vh - 3rem);
+  /* dvh: meet de échte zichtbare hoogte op mobiel (url-balk schuift mee),
+     zodat de onderkant van de sheet niet achter de browser-chrome valt. */
+  max-height: calc(100dvh - 3rem);
   overflow-y: auto;
   background: var(--surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -632,8 +637,15 @@ textarea {
 }
 /* Klikbare badge (bv. groepsnaam op de matchpagina). */
 .badge--link {
+  position: relative;
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s;
+}
+/* Onzichtbaar groter tapvlak rond de badge-link (richtlijn ~44px, #374). */
+.badge--link::after {
+  content: "";
+  position: absolute;
+  inset: -10px 0;
 }
 .badge--link:hover {
   border-color: var(--accent);
@@ -807,9 +819,16 @@ textarea {
   gap: var(--sp-2);
 }
 .profile-link {
+  position: relative;
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+}
+/* Onzichtbaar groter tapvlak rond de tekstlink (richtlijn ~44px, #374). */
+.profile-link::after {
+  content: "";
+  position: absolute;
+  inset: -10px 0;
 }
 .profile-link:hover {
   text-decoration: underline;
@@ -817,6 +836,8 @@ textarea {
 /* "Zet in agenda": onopvallende tekstknop die de ICS-download start
    (geplande matches en de aanwezigheidskaart). */
 .agenda-btn {
+  display: inline-flex;
+  align-items: center;
   border: 0;
   padding: 0;
   background: none;
@@ -881,13 +902,15 @@ textarea {
 /* ---------- Stat-kaarten ---------- */
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, …): een tegel met brede inhoud (lange divisienaam, vormchips)
+     mag de andere tegels niet het scherm afduwen. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-4);
   margin-bottom: var(--sp-5);
 }
 @media (min-width: 640px) {
   .stats {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 .stat {
@@ -900,11 +923,15 @@ textarea {
   box-shadow: var(--shadow-sm);
 }
 .stat__value {
+  min-width: 0;
   font-size: var(--fs-2xl);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  /* Lange tekstwaarden (bv. divisienaam "Racketconsument III") breken binnen
+     de tegel af i.p.v. eruit te steken. */
+  overflow-wrap: anywhere;
 }
 .stat__label {
   font-size: var(--fs-xs);
@@ -1264,6 +1291,21 @@ textarea {
    Omslagpunt --bp-mobile (720px): gelijk aan de shell-nav in DashboardLayout.css,
    zodat er geen dode zone 640–720px overblijft (mobiele nav + desktop-content). */
 @media (max-width: 720px) {
+  /* Tap-targets ≥44px (WCAG 2.5.5) op touch-formaat; op desktop blijft de
+     compactere hoogte staan. Secundaire .btn--sm mag iets kleiner (40px). */
+  .btn,
+  .input,
+  .select,
+  textarea {
+    min-height: 44px;
+  }
+  .btn--sm {
+    min-height: 40px;
+  }
+  .agenda-btn {
+    min-height: 44px;
+  }
+
   .page-title {
     font-size: var(--fs-xl);
   }
@@ -1303,7 +1345,7 @@ textarea {
   }
 
   .stats {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--sp-2);
   }
   .stat {
