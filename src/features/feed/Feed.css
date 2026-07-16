@@ -267,14 +267,16 @@
 .feed__filters .tab__dot {
   display: inline-block;
   vertical-align: middle;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   margin-right: 6px;
+  opacity: 0.8;
 }
 .feed__filters .tab__dot[data-cat="match"] { background: var(--cat-match); }
 .feed__filters .tab__dot[data-cat="rank"] { background: var(--cat-rank); }
 .feed__filters .tab__dot[data-cat="roast"] { background: var(--cat-roast); }
+.feed__filters .tab.is-active .tab__dot { background: rgba(255, 255, 255, 0.9); }
 
 /* ===== Rijk speelavond-blok (#232 PR C) =====
    Zwaar gewichtsniveau: deelt de --cat-taal met de highlight-kaarten (#380). */
@@ -579,7 +581,7 @@
   min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--line);
-  background: var(--surface-2);
+  background: var(--surface);
   font-size: var(--fs-sm);
 }
 .feed__filters .tab:hover:not(.is-active) {
@@ -609,16 +611,11 @@
   font-family: var(--font-rounded);
 }
 
-/* Telling op een filterchip. */
+/* Telling als gedempte meta-tekst i.p.v. badge — houdt de chip-rij rustig. */
 .feed__filters .tab__count {
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  margin-left: 5px;
   font-size: var(--fs-xs);
+  color: currentColor;
+  opacity: 0.65;
   font-variant-numeric: tabular-nums;
-}
-.feed__filters .tab.is-active .tab__count {
-  background: rgba(255, 255, 255, 0.24);
-  color: #fff;
 }

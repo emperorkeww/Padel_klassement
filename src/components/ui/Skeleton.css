@@ -81,6 +81,23 @@
   min-width: 0;
 }
 
+/* Feed-tijdlijn-vorm: dag-lijntje boven een dagblok, lichte regels ertussen. */
+.sk-feed {
+  gap: var(--sp-2);
+}
+.sk-feed > .sk--line {
+  margin-top: var(--sp-2);
+}
+.sk-feed > .sk--line:first-child {
+  margin-top: 0;
+}
+.sk-feed__line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--sp-2);
+}
+
 /* Klassementsrij-vorm. */
 .sk-standing {
   display: flex;
