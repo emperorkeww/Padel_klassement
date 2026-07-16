@@ -23,17 +23,10 @@ function renderBanen(search: string) {
   );
 }
 
-// Tenant-details per id; DEFAULT_CLUB hoort erbij omdat het raster de
-// gegevens van de huidige club ook altijd ophaalt.
-const TENANTS: Record<string, unknown> = {
-  [DEFAULT_CLUB.id]: {
-    tenant_name: DEFAULT_CLUB.name,
-    address: { city: DEFAULT_CLUB.city, timezone: DEFAULT_CLUB.timezone },
-  },
-  "t-gent": {
-    tenant_name: "Padel Gent",
-    address: { city: "Gent", timezone: "Europe/Brussels" },
-  },
+// Slug per tenant-id (voor fetchClub bij een gedeelde ?club=-link). Er is geen
+// clubdetail-endpoint meer (#385); de naam volgt uit de slug.
+const SLUGS: Record<string, string> = {
+  "t-gent": "padel-gent",
 };
 
 function mockFetch() {
@@ -43,10 +36,10 @@ function mockFetch() {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("/v1/tenants/")) {
-        const id = url.split("/v1/tenants/")[1];
-        const tenant = TENANTS[id];
-        return tenant ? mockRes(tenant) : mockRes({}, false, 404);
+      if (url.includes("/club-slug/")) {
+        const id = url.split("/club-slug/")[1];
+        const slug = SLUGS[id];
+        return slug ? mockRes({ slug }) : mockRes({}, false, 404);
       }
       return mockRes([]); // beschikbaarheid: leeg raster volstaat hier
     }),

@@ -7,12 +7,12 @@ import {
   fetchClub,
   getClubAvailability,
   getWeekAvailability,
-  bookingUrl,
   bestWeekMoment,
   nextFreeSlot,
   type DayAvailability,
   type WeekDay,
 } from "./api";
+import { useBookingUrl } from "./useBookingUrl";
 import { getClub, setClub, useClub } from "./club";
 import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import { Timetable } from "@/features/availability/components/Timetable";
@@ -118,6 +118,7 @@ export function Availability() {
     }
     setParams(next, { replace: true });
   }
+  const bookHref = useBookingUrl(club, date);
   const setDate = (d: string) => update({ datum: d === today ? null : d });
   const setDuration = (d: number | null) =>
     update({ duur: d == null ? null : String(d) });
@@ -139,7 +140,7 @@ export function Availability() {
         </header>
         <a
           className="btn avail-book"
-          href={bookingUrl(date)}
+          href={bookHref}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -252,7 +253,7 @@ function DaySection({
   // Weer alleen relevant bij buitenbanen (#83); laadt async ná de banen en
   // faalt stil (null) zodat de bestaande flow er nooit op wacht.
   const hasOutdoor = (availability.data?.courts ?? []).some(
-    (r) => r.court.type !== "roofed",
+    (r) => r.court.type === "outdoor",
   );
   const weather = useAsync(
     () => (hasOutdoor ? getWeekWeather(club) : Promise.resolve(null)),
@@ -395,7 +396,7 @@ function WeekSection({
 
   // Weer per dagkolom, alleen bij buitenbanen (#83); stil bij falen.
   const hasOutdoor = (week.data ?? []).some((d) =>
-    (d.data?.courts ?? []).some((r) => r.court.type !== "roofed"),
+    (d.data?.courts ?? []).some((r) => r.court.type === "outdoor"),
   );
   const weather = useAsync(
     () => (hasOutdoor ? getWeekWeather(club) : Promise.resolve(null)),
