@@ -21,7 +21,7 @@ import {
 } from "@/features/matches/api";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
-import type { Profile, RoastIntensiteit } from "@/types";
+import type { MatchFormat, Profile, RoastIntensiteit } from "@/types";
 
 export type NewMatchMode = "score" | "plan";
 
@@ -59,6 +59,8 @@ export function NewMatchSheet({
   // Aantikken vult team A, dan team B; in de teamzones kun je spelers wisselen.
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
+  // Speelvorm (#279): dubbel (standaard) of singles; bepaalt de teamgrootte.
+  const [format, setFormat] = useState<MatchFormat>("2v2");
   const [step, setStep] = useState<1 | 2>(1);
   const [query, setQuery] = useState("");
   const [scoreA, setScoreA] = useState("");
@@ -94,6 +96,7 @@ export function NewMatchSheet({
     if (open) {
       setTeamA([]);
       setTeamB([]);
+      setFormat("2v2");
       setStep(1);
       setQuery("");
       setScoreA("");
@@ -122,7 +125,9 @@ export function NewMatchSheet({
     !!(p as { is_guest?: boolean } | undefined)?.is_guest;
 
   const picked = teamA.length + teamB.length;
-  const full = teamA.length === 2 && teamB.length === 2;
+  // Teamgrootte volgt de speelvorm: 1 bij singles, 2 bij dubbel.
+  const teamSize = format === "1v1" ? 1 : 2;
+  const full = teamA.length === teamSize && teamB.length === teamSize;
   const byId = (id: string) => allPlayers.find((p) => p.id === id);
   const nameOf = (id: string) => displayName(byId(id));
   const teamOf = (id: string): "a" | "b" | null =>
@@ -157,8 +162,8 @@ export function NewMatchSheet({
       } as unknown as Profile;
       setExtraGuests((g) => [...g, guest]);
       // Meteen selecteren: eerst team A, dan B.
-      if (teamA.length < 2) setTeamA((a) => [...a, id]);
-      else if (teamB.length < 2) setTeamB((b) => [...b, id]);
+      if (teamA.length < teamSize) setTeamA((a) => [...a, id]);
+      else if (teamB.length < teamSize) setTeamB((b) => [...b, id]);
       setGuestName("");
       tap();
       onGuestCreated?.();
@@ -184,20 +189,33 @@ export function NewMatchSheet({
     const t = teamOf(id);
     if (t === "a") setTeamA((a) => a.filter((x) => x !== id));
     else if (t === "b") setTeamB((b) => b.filter((x) => x !== id));
-    else if (teamA.length < 2) setTeamA((a) => [...a, id]);
-    else if (teamB.length < 2) setTeamB((b) => [...b, id]);
+    else if (teamA.length < teamSize) setTeamA((a) => [...a, id]);
+    else if (teamB.length < teamSize) setTeamB((b) => [...b, id]);
   }
 
   /** Verplaats een gekozen speler naar het andere team (als daar plek is). */
   function switchTeam(id: string) {
     const t = teamOf(id);
-    if (t === "a" && teamB.length < 2) {
+    if (t === "a" && teamB.length < teamSize) {
       setTeamA((a) => a.filter((x) => x !== id));
       setTeamB((b) => [...b, id]);
-    } else if (t === "b" && teamA.length < 2) {
+    } else if (t === "b" && teamA.length < teamSize) {
       setTeamB((b) => b.filter((x) => x !== id));
       setTeamA((a) => [...a, id]);
     }
+  }
+
+  /** Wissel van speelvorm. Van 2v2 naar 1v1: houd per team de eerst gekozen
+   *  speler aan (sluit aan op "vult eerst A, dan B"); andersom komen er
+   *  gewoon slots vrij. */
+  function switchFormat(f: MatchFormat) {
+    if (f === format) return;
+    setFormat(f);
+    if (f === "1v1") {
+      setTeamA((a) => a.slice(0, 1));
+      setTeamB((b) => b.slice(0, 1));
+    }
+    tap();
   }
 
   function swapTeams() {
@@ -226,9 +244,9 @@ export function NewMatchSheet({
         }
         await createPlannedMatch({
           a1: teamA[0],
-          a2: teamA[1],
+          a2: teamA[1] ?? null,
           b1: teamB[0],
-          b2: teamB[1],
+          b2: teamB[1] ?? null,
           playedAt,
           groupId: effectiveGroupId,
         });
@@ -255,9 +273,9 @@ export function NewMatchSheet({
       const setScores = toSetScores(sets);
       const newMatchId = await createCompletedMatch({
         a1: teamA[0],
-        a2: teamA[1],
+        a2: teamA[1] ?? null,
         b1: teamB[0],
-        b2: teamB[1],
+        b2: teamB[1] ?? null,
         winner: sa === sb ? "draw" : sa! > sb! ? "a" : "b",
         scoreA: sa,
         scoreB: sb,
@@ -350,6 +368,26 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
+            {/* Speelvorm kiezen (#279): dubbel of singles. */}
+            <div className="tabs" role="radiogroup" aria-label="Speelvorm">
+              {(
+                [
+                  { value: "2v2", label: "2 tegen 2" },
+                  { value: "1v1", label: "1 tegen 1" },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={format === o.value}
+                  className={`tab ${format === o.value ? "is-active" : ""}`}
+                  onClick={() => switchFormat(o.value)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
             {/* Buiten groepscontext: optioneel aan een eigen groep koppelen,
              *  zodat de match meetelt voor groepsstand en toto (#361). */}
             {groupId == null && (myGroups.data?.length ?? 0) > 0 && (
@@ -446,7 +484,7 @@ export function NewMatchSheet({
             <p className="sheet__hint">
               {full
                 ? "Tik op een speler om die weer los te laten, of wissel iemand van team met de pijl."
-                : `Tik de spelers aan: ze vullen eerst team A, dan team B (${picked}/4).`}
+                : `Tik de spelers aan: ze vullen eerst team A, dan team B (${picked}/${teamSize * 2}).`}
             </p>
 
             {picked > 0 && (
@@ -457,7 +495,7 @@ export function NewMatchSheet({
                   ids={teamA}
                   byId={byId}
                   nameOf={nameOf}
-                  canSwitch={teamB.length < 2}
+                  canSwitch={teamB.length < teamSize}
                   onSwitch={switchTeam}
                 />
                 <button
@@ -476,7 +514,7 @@ export function NewMatchSheet({
                   ids={teamB}
                   byId={byId}
                   nameOf={nameOf}
-                  canSwitch={teamA.length < 2}
+                  canSwitch={teamA.length < teamSize}
                   onSwitch={switchTeam}
                 />
               </div>

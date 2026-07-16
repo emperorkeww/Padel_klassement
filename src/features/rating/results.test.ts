@@ -3,6 +3,7 @@ import {
   longestStreak,
   biggestWin,
   headToHead,
+  playersOf,
   winStreak,
 } from "@/features/rating/results";
 import type { Match, Team } from "@/types";
@@ -38,6 +39,34 @@ function match(part: Partial<Match>): Match {
 const aWin1 = match({ winner_team_id: "tA", score_a: 6, score_b: 2 });
 const aWin2 = match({ winner_team_id: "tA", score_a: 6, score_b: 5 });
 const bWin1 = match({ winner_team_id: "tB", score_a: 3, score_b: 6 });
+
+describe("playersOf (#279)", () => {
+  it("geeft beide spelers van een dubbel, één bij singles en niets zonder team", () => {
+    expect(playersOf(teams.tA)).toEqual(["p1", "p2"]);
+    expect(playersOf({ ...teams.tA, player2_id: null })).toEqual(["p1"]);
+    expect(playersOf(undefined)).toEqual([]);
+  });
+});
+
+describe("headToHead met singles (#279)", () => {
+  it("telt een 1v1 als onderling duel tussen precies twee spelers", () => {
+    const singles: Record<string, Team> = {
+      sA: { id: "sA", name: null, player1_id: "p1", player2_id: null, created_at: "" },
+      sB: { id: "sB", name: null, player1_id: "p3", player2_id: null, created_at: "" },
+    };
+    const m = match({
+      team_a_id: "sA",
+      team_b_id: "sB",
+      winner_team_id: "sA",
+      score_a: 6,
+      score_b: 3,
+      format: "1v1",
+    });
+    const h2h = headToHead([m], singles, "p1");
+    expect(h2h.get("p3")).toEqual({ won: 1, drawn: 0, lost: 0, played: 1 });
+    expect(h2h.size).toBe(1);
+  });
+});
 
 describe("longestStreak", () => {
   it("vindt de langste rij winsten, ook al is de huidige reeks korter", () => {

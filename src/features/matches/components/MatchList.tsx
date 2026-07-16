@@ -65,6 +65,11 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {m.format === "1v1" && (
+          <span className="match-card__meta match-card__format" title="Singles">
+            1v1
+          </span>
+        )}
         {done && upset && (
           <span
             className="match-card__meta match-card__upset"
