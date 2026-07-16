@@ -26,6 +26,11 @@
   flex-shrink: 0;
 }
 
+/* ---------- Coach Rudy over jouw positie (#411) ---------- */
+.klassement-coach {
+  margin: 0 0 var(--sp-4);
+}
+
 /* ---------- Pias van de week: grootste choke van de groep (#127) ---------- */
 .pias-banner {
   display: flex;

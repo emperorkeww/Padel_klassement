@@ -1,9 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { coachBriefing, coachMatchQuip, coachPreMatch } from "@/features/coach/coachMoments";
+import {
+  coachBriefing,
+  coachMatchQuip,
+  coachPreMatch,
+  OCHTEND_JAGER,
+  OCHTEND_KELDER,
+  OCHTEND_NIEUW,
+} from "@/features/coach/coachMoments";
 import type { RoastCtx } from "@/features/coach/roastTone";
+import type { KlassementFeiten, PositieTier } from "@/features/coach/klassementFeiten";
 
 const roast: RoastCtx = { intensiteit: "gemeen", schild: false };
 const schild: RoastCtx = { intensiteit: "gemeen", schild: true };
+
+const klassement = (tier: PositieTier): KlassementFeiten => ({
+  rank: 5,
+  totaal: 10,
+  tier,
+  deltaNaarBoven: null,
+  deltaNaarOnder: null,
+  buurmanBoven: null,
+  deltaNaarTop3: null,
+  shift: null,
+  scope: "globaal",
+});
 
 describe("coachBriefing", () => {
   it("is deterministisch per seed", () => {
@@ -19,6 +39,43 @@ describe("coachBriefing", () => {
   it("met roast-schild een neutrale, niet-spottende regel", () => {
     const line = coachBriefing({ rank: 20, streak: 0, losing: 5, heeftMatch: false, seed: "p1", ctx: schild });
     expect(line).toMatch(/kans|balletje|succes/i);
+  });
+
+  it("kiest per klassement-tier de bijbehorende pool (#411)", () => {
+    const basis = { rank: 5, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast };
+    const troon = coachBriefing({ ...basis, klassement: klassement("troon") });
+    expect(troon).toMatch(/één|Bovenaan/i);
+    expect(coachBriefing({ ...basis, klassement: klassement("jager") })).toSatisfy((r: string) =>
+      (OCHTEND_JAGER as readonly string[]).includes(r),
+    );
+    expect(coachBriefing({ ...basis, klassement: klassement("kelder") })).toSatisfy((r: string) =>
+      (OCHTEND_KELDER as readonly string[]).includes(r),
+    );
+    expect(coachBriefing({ ...basis, klassement: klassement("nieuw") })).toSatisfy((r: string) =>
+      (OCHTEND_NIEUW as readonly string[]).includes(r),
+    );
+  });
+
+  it("heeft minstens 12 unieke regels per nieuwe tier-pool", () => {
+    for (const pool of [OCHTEND_JAGER, OCHTEND_KELDER, OCHTEND_NIEUW]) {
+      expect(pool.length).toBeGreaterThanOrEqual(12);
+      expect(new Set(pool).size).toBe(pool.length);
+    }
+  });
+
+  it("laat dip, hype, match en schild boven de tier gaan", () => {
+    const kelder = klassement("kelder");
+    const dip = coachBriefing({ rank: 9, streak: 0, losing: 4, heeftMatch: false, klassement: kelder, seed: "p1", ctx: roast });
+    expect((OCHTEND_KELDER as readonly string[]).includes(dip)).toBe(false);
+    const beschermd = coachBriefing({ rank: 9, streak: 0, losing: 0, heeftMatch: false, klassement: kelder, seed: "p1", ctx: schild });
+    expect(beschermd).toMatch(/kans|balletje|succes/i);
+  });
+
+  it("gedraagt zich zonder klassement-veld zoals vroeger (rank 1 → top-regel)", () => {
+    const top = coachBriefing({ rank: 1, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast });
+    expect(top).toMatch(/één|Bovenaan/i);
+    const rest = coachBriefing({ rank: 7, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast });
+    expect(rest).toMatch(/middenmoot|midden|klassement|voetstuk|stabiel/i);
   });
 });
 

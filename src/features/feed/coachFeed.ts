@@ -410,6 +410,52 @@ function reeksFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx
 }
 
 /**
+ * Feit-lijnen bij een rank-event (#411): de plek en de sprong-grootte in plaats
+ * van enkel het binaire omhoog/omlaag. `event.rank` kan 0 zijn als de speler
+ * niet (meer) in de standings zit — dan geen feit en valt de aanroeper terug op
+ * de generieke pool. Rank-events zijn globaal (feedLogic), dus de teksten
+ * spreken neutraal over "het klassement".
+ */
+function rankFeiten(
+  event: Extract<FeedEvent, { kind: "rank" }>,
+  omhoog: boolean,
+): string[] {
+  if (event.rank <= 0) return [];
+  const rank = event.rank;
+  if (event.shift === "nieuw") {
+    return [
+      `Nieuw in het klassement, meteen op #${rank}. De lijst is gewaarschuwd.`,
+      `Net binnengekomen op #${rank}. Ik heb een verse bladzijde aangebroken in m'n notitieboekje.`,
+    ];
+  }
+  if (typeof event.shift !== "number") return [];
+  const n = Math.abs(event.shift);
+  const was = rank + event.shift;
+  if (omhoog) {
+    if (rank <= 3 && was > 3) {
+      return [
+        `De top-3 binnengestormd, op #${rank}. De gevestigde orde mag zich zorgen maken.`,
+        `Van #${was} naar #${rank}: welkom in de top-3. Ik roep bijna een persconferentie bijeen.`,
+      ];
+    }
+    return [
+      `${n} plekken gestegen, nu #${rank}. De lift werkt dus wél.`,
+      `${n} plekken omhoog, naar #${rank}. Zo klim je een klassement in, mensen.`,
+    ];
+  }
+  if (rank > 3 && was <= 3) {
+    return [
+      `Uit de top-3 gekukeld, naar #${rank}. Het podium is onverbiddelijk.`,
+      `Van #${was} naar #${rank}: de top-3 uitgevallen. M'n notitieboekje kraakte toen ik het opschreef.`,
+    ];
+  }
+  return [
+    `${n} plekken gezakt, naar #${rank}. De zwaartekracht heeft je gevonden.`,
+    `${n} plekken omlaag, naar #${rank}. De statistieken vertellen geen sprookje.`,
+  ];
+}
+
+/**
  * Coach Rudy's commentaar bij een feed-gebeurtenis, of null als hij zwijgt.
  * Match-quips zijn stats-bewust (#200): met de meegegeven matchlijst vult hij
  * concrete feiten in (marge, herhaling deze maand, rivaal-reeks, records) en
@@ -465,10 +511,23 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         : kiesUniek(KAMPIOEN, seed, g);
     }
     case "rank": {
+      // Spiegelt klimOfVal, maar met de rank-feiten (#411) vóór de generieke
+      // pool: de plek en sprong-grootte zitten in het event en verdienen de
+      // tekst. klimOfVal zelf blijft voor tier-events, die geen rank hebben.
       const omhoog =
         event.shift === "nieuw" ||
         (typeof event.shift === "number" && event.shift > 0);
-      return klimOfVal(omhoog, event.playerId, roastSeed(event.playerId, event.at), ctx);
+      const seed = roastSeed(event.playerId, event.at);
+      const lofCtx = roastCtx(
+        { roast_intensiteit: ctx.intensiteitVoor("") },
+        ctx.profiles[event.playerId],
+      );
+      if (omhoog) {
+        if (hypeBeurt(lofCtx, seed)) return coachLof(lofCtx, seed, g);
+        return kiesFeit(rankFeiten(event, true), seed, g) ?? kiesUniek(PROMOTIE, seed, g);
+      }
+      if (lofCtx.schild) return kiesUniek(DEGRADATIE_NEUTRAAL, seed, g);
+      return kiesFeit(rankFeiten(event, false), seed, g) ?? kiesUniek(DEGRADATIE, seed, g);
     }
     case "tier":
       return klimOfVal(
