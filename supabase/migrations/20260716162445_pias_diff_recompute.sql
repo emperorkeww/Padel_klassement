@@ -1,23 +1,11 @@
--- Pias van de week: berekent per groep, per ISO-week de "pias" — de grootste
--- choke, d.w.z. de speler die als duidelijkste favoriet toch verloor.
---
--- Diff-gebaseerd (#203): bij elke wijziging aan matches wordt de stand opnieuw
--- berekend, maar alleen échte verschillen raken de tabel — nieuwe weken worden
--- geïnsert, gewijzigde weken geüpdatet en vervallen weken verwijderd. Rijen
--- die niet veranderen ondergaan géén DML, zodat triggers op pias_of_week
--- (push-webhook, realtime) enkel bij een echte pias-wissel vuren en
--- created_at het moment van de eerste aanwijzing blijft.
---
--- De winkans wordt bepaald uit de PRE-match ratings (rating_history.rating_before),
--- gemiddeld per team op de 400-schaal, identiek aan expected() in src/lib/elo.ts,
--- recompute_ratings en prediction_win_chance. Een choke = het verliezende team
--- was favoriet met winkans > 0.65 (= 1 - UPSET_MAX_KANS uit src/lib/feed.ts).
-create or replace function public.recompute_pias()
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
+set check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION public.recompute_pias()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 begin
   with chokes as (
     -- Alle afgeronde groepsmatches met een winnaar, met hun ISO-week.
@@ -126,26 +114,5 @@ begin
         = (p.group_id, p.iso_year, p.iso_week)
   );
 end;
-$$;
-
-revoke execute on function public.recompute_pias() from public;
-
--- Trigger-wrapper: herberekent na elke wijziging aan matches. Draait ná de
--- matches_ratings_*-triggers (alfabetische triggervolgorde: "ratings" <
--- "refresh"), zodat rating_history al vernieuwd is als we de choke bepalen.
-create or replace function public.trigger_recompute_pias()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  perform public.recompute_pias();
-  return null;
-end;
-$$;
-
-create trigger matches_refresh_pias
-  after insert or update or delete on public.matches
-  for each statement
-  execute function public.trigger_recompute_pias();
+$function$
+;

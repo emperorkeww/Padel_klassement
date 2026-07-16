@@ -14,6 +14,12 @@
     // oneindige lus wordt afgekeurd.
     "not_found_handling": "single-page-application"
   },
+  // Egress-hop voor de availability-fetch (#385): playtomic.com/api blokkeert
+  // Cloudflare-egress (CloudFront-WAF, 403); de Supabase Edge Function mag er
+  // wél doorheen. De URL is publiek (zelfde project als de frontend-API).
+  "vars": {
+    "PLAYTOMIC_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/playtomic-availability"
+  },
   // Per-IP rate limiting voor de publieke Playtomic-proxy: max 20 verzoeken
   // per 10 seconden per IP. period mag alleen 10 of 60 zijn.
   "unsafe": {

@@ -256,6 +256,7 @@ Asynchrone processen en integraties buiten de client om worden afgehandeld via *
 | `match-reminders` | `pg_cron` schedule. Verstuurt automatisch een pushnotificatie X uur voor aanvang van een geplande wedstrijd. |
 | `poll-deadline` | `pg_cron` / webhook. Beheert de speeldag-polls: stuurt herinneringen naar niet-stemmers en sluit de poll automatisch op de deadline. |
 | `remind-group` | Client-aanroep. Handmatige actie om groepsleden via een pushnotificatie te porren om te stemmen. |
+| `playtomic-availability` | Aangeroepen door de Cloudflare Worker (`env.PLAYTOMIC_EGRESS`). Egress-hop voor de baanbeschikbaarheid: Playtomic's WAF blokkeert Cloudflare-IP's maar laat Supabase-egress door (#385). Deployen met `--no-verify-jwt`. |
 
 *De definities voor database webhooks en de cron-schedules (`pg_cron`) zijn als SQL-snippets terug te vinden in `supabase/snippets/`.*
 
