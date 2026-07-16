@@ -34,7 +34,9 @@ begin
   -- Het verliezende team en de vraag of de speler daarin zat.
   v_loser := case when m.winner_team_id = m.team_a_id then m.team_b_id else m.team_a_id end;
   select player1_id, player2_id into l from public.teams where id = v_loser;
-  if new.player_id not in (l.player1_id, l.player2_id) then
+  -- "not in (..., null)" evalueert naar null en zou de guard stil passeren
+  -- bij een singles-team; daarom expliciet "is distinct from".
+  if new.player_id <> l.player1_id and new.player_id is distinct from l.player2_id then
     raise exception 'alleen wie de match verloor mag een smoes plaatsen';
   end if;
 

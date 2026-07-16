@@ -15,8 +15,9 @@ as $$
 $$;
 
 -- Winkans van p_team in match p_match, identiek aan de Elo-verwachting in
--- recompute_ratings (09_ratings.sql) en winChance in src/lib/elo.ts:
--- teamrating = gemiddelde van beide spelers (basis 1000), 400-schaal.
+-- recompute_ratings (09_ratings.sql) en winChance in src/features/rating/elo.ts:
+-- teamrating = gemiddelde van de aanwezige spelers (basis 1000), 400-schaal;
+-- bij singles telt alleen de ene speler.
 create or replace function public.prediction_win_chance(p_match uuid, p_team uuid)
 returns numeric
 language plpgsql
@@ -40,14 +41,20 @@ begin
   select t.player1_id, t.player2_id into p1, p2 from public.teams t where t.id = p_team;
   select t.player1_id, t.player2_id into o1, o2 from public.teams t where t.id = v_other;
 
-  r_team := (
-    coalesce((select rating from public.player_ratings where player_id = p1), base)
-    + coalesce((select rating from public.player_ratings where player_id = p2), base)
-  ) / 2.0;
-  r_other := (
-    coalesce((select rating from public.player_ratings where player_id = o1), base)
-    + coalesce((select rating from public.player_ratings where player_id = o2), base)
-  ) / 2.0;
+  r_team := case when p2 is null
+    then coalesce((select rating from public.player_ratings where player_id = p1), base)
+    else (
+      coalesce((select rating from public.player_ratings where player_id = p1), base)
+      + coalesce((select rating from public.player_ratings where player_id = p2), base)
+    ) / 2.0
+  end;
+  r_other := case when o2 is null
+    then coalesce((select rating from public.player_ratings where player_id = o1), base)
+    else (
+      coalesce((select rating from public.player_ratings where player_id = o1), base)
+      + coalesce((select rating from public.player_ratings where player_id = o2), base)
+    ) / 2.0
+  end;
 
   return round(1.0 / (1.0 + power(10.0, (r_other - r_team) / 400.0)), 4);
 end;

@@ -15,7 +15,9 @@ with team_results as (
 player_team as (
   select id as team_id, player1_id as player_id from public.teams
   union all
+  -- singles-teams hebben geen tweede speler
   select id as team_id, player2_id as player_id from public.teams
+  where player2_id is not null
 )
 select
   p.id                                                        as player_id,

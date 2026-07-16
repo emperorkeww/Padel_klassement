@@ -105,13 +105,15 @@ export function pickPias(
     const winner = teams[m.winner_team_id];
     if (!loser || !winner) continue;
 
+    // Singles (1v1): de teamrating is de rating van die ene speler, geen
+    // gemiddelde — zelfde regel als _apply_match_rating/recompute_pias.
     const rl1 = ratingBefore(loser.player1_id, m.id);
-    const rl2 = ratingBefore(loser.player2_id, m.id);
-    const loserRating = (rl1 + rl2) / 2;
-    const winnerRating =
-      (ratingBefore(winner.player1_id, m.id) +
-        ratingBefore(winner.player2_id, m.id)) /
-      2;
+    const rl2 = loser.player2_id ? ratingBefore(loser.player2_id, m.id) : null;
+    const loserRating = rl2 == null ? rl1 : (rl1 + rl2) / 2;
+    const rw1 = ratingBefore(winner.player1_id, m.id);
+    const winnerRating = winner.player2_id
+      ? (rw1 + ratingBefore(winner.player2_id, m.id)) / 2
+      : rw1;
     // Winkans van het verliezende team vóór de match; geklemd < 1 net als de SQL.
     const chance = Math.min(0.9999, round4(expected(loserRating, winnerRating)));
     if (chance <= CHOKE_MIN_KANS) continue;
@@ -132,7 +134,10 @@ export function pickPias(
       isoYear,
       isoWeek,
       weekStart,
-      playerId: rl1 >= rl2 ? loser.player1_id : loser.player2_id,
+      playerId:
+        loser.player2_id == null || rl2 == null || rl1 >= rl2
+          ? loser.player1_id
+          : loser.player2_id,
       matchId: m.id,
       winChance: chance,
     });

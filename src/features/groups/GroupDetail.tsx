@@ -5,6 +5,8 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
+import { CoachBubble } from "@/features/coach/components/CoachBubble";
+import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getGroup, getGroupMembers } from "./api";
 import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
 import { dateInZone } from "@/lib/utils/time";
@@ -111,6 +113,7 @@ export function GroupDetail() {
   };
   const pmap = useMemo(() => profiles.data ?? {}, [profiles.data]);
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
+  const myProfile = pmap[myId];
   // Upsets per match-id (#85) uit de al geladen rating-historie.
   const upsets = useMemo(
     () => upsetsByMatch(matches.data ?? [], tmap, histories.data ?? {}),
@@ -129,6 +132,13 @@ export function GroupDetail() {
 
   // Groepsseizoenen (kwartalen) voor de stand — dezelfde logica als het globale
   // klassement, maar client-side berekend uit de matches van deze groep.
+  const completedMatches = (matches.data ?? []).filter(
+    (m) => m.status === "completed",
+  );
+  // Lege groep detectie voor Coach Rudy
+  const hasMembers = memberList.length > 0;
+  const hasMatches = completedMatches.length > 0;
+  const isNewGroup = !hasMembers && !hasMatches && group.data;
   const season = seasonFromId(params.get("seizoen") ?? "");
   const setSeasonId = (sid: string) => {
     const next = new URLSearchParams(params);
@@ -136,9 +146,6 @@ export function GroupDetail() {
     else next.delete("seizoen");
     setParams(next, { replace: true });
   };
-  const completedMatches = (matches.data ?? []).filter(
-    (m) => m.status === "completed",
-  );
   // Pre-match ratings voor de choke-detectie van de pias van de maand.
   const piasRatings = useMemo(
     () => buildMatchRatings(histories.data ?? {}),
@@ -235,6 +242,32 @@ export function GroupDetail() {
           {memberList.length} leden{isOwner ? " · jij bent eigenaar" : ""}
         </p>
       </header>
+
+      {/* Lege groep: Rudy verwelkomt en zet de toon (#301) */}
+      {isNewGroup && myProfile && (
+        <section className="card empty-group">
+          <CoachBubble mood="portret" size={32}>
+            <span className="coach-sneer__text">
+              {coachEmptyState({
+                type: "group",
+                seed: `${group.data.id}-empty`,
+                ctx: {
+                  intensiteit: group.data.roast_intensiteit ?? "gemeen",
+                  schild: myProfile.roast_schild ?? false,
+                },
+              })}
+            </span>
+          </CoachBubble>
+          <p className="empty-group__hint">
+            Nodig vrienden uit via de invite-link om deze groep tot leven te brengen.
+          </p>
+          {isOwner && (
+            <Link className="btn btn--primary" to={`/groepen/${group.data.id}/uitnodigen`}>
+              Leden uitnodigen
+            </Link>
+          )}
+        </section>
+      )}
 
       {/* Tabs in reis-volgorde (#106): plannen → spelen → stand. */}
       <div className="tabs">

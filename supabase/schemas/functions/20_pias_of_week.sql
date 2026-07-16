@@ -40,15 +40,16 @@ begin
       and m.winner_team_id is not null
   ),
   rated as (
-    -- Pre-match ratings van de vier spelers uit rating_history (basis 1000
-    -- als er nog geen historie is, bv. verwijderde speler).
+    -- Pre-match ratings van de spelers uit rating_history (basis 1000 als er
+    -- nog geen historie is, bv. verwijderde speler). Bij singles is player2
+    -- null en blijft rl2/rw2 null, zodat er geen fantoom-1000 meegemiddeld wordt.
     select
       c.*,
       lt.player1_id as l1, lt.player2_id as l2,
       coalesce(rl1.rating_before, 1000) as rl1,
-      coalesce(rl2.rating_before, 1000) as rl2,
+      case when lt.player2_id is not null then coalesce(rl2.rating_before, 1000) end as rl2,
       coalesce(rw1.rating_before, 1000) as rw1,
-      coalesce(rw2.rating_before, 1000) as rw2
+      case when wt.player2_id is not null then coalesce(rw2.rating_before, 1000) end as rw2
     from chokes c
     join public.teams lt on lt.id = c.loser_team_id
     join public.teams wt on wt.id = c.winner_team_id
@@ -66,11 +67,14 @@ begin
       r.*,
       -- Winkans van het verliezende team vóór de match. Geklemd op < 1 zodat
       -- de check-constraint nooit sneuvelt bij extreme rating-verschillen.
+      -- coalesce(x2, x1) laat een singles-team op de rating van de ene speler
+      -- uitkomen in plaats van op een gemiddelde met een fantoom-partner.
       least(
         0.9999,
         round(
           1.0 / (1.0 + power(10.0,
-            ((r.rw1 + r.rw2) / 2.0 - (r.rl1 + r.rl2) / 2.0) / 400.0)),
+            ((r.rw1 + coalesce(r.rw2, r.rw1)) / 2.0
+             - (r.rl1 + coalesce(r.rl2, r.rl1)) / 2.0) / 400.0)),
           4)
       ) as loser_chance
     from rated r
@@ -87,8 +91,11 @@ begin
   select
     b.group_id, b.iso_year, b.iso_week,
     -- De pias: de verliezer met de hoogste pre-match rating (de grootste naam
-    -- die flopte); bij gelijke rating de eerste speler van het team.
-    case when b.rl1 >= b.rl2 then b.l1 else b.l2 end as player_id,
+    -- die flopte); bij gelijke rating de eerste speler van het team. Bij
+    -- singles (l2 null) is er maar één kandidaat.
+    case when b.l2 is null then b.l1
+         when b.rl1 >= b.rl2 then b.l1
+         else b.l2 end as player_id,
     b.match_id, b.loser_chance, b.week_start
   from best b;
 end;

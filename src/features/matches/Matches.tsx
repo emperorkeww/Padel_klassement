@@ -4,6 +4,8 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
+import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
+import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
 import { getAllRatingHistories } from "@/features/standings/ratingsApi";
 import { upsetsByMatch } from "@/features/matches/upset";
@@ -154,8 +156,19 @@ export function Matches() {
         error={matches.error}
         emptyAll={
           <EmptyState
-            icon="🎾"
-            title="Je racket is nog ongebruikt."
+            icon={<CoachAvatar size={40} mood="portret" />}
+            title={
+              pmap[myId]
+                ? coachEmptyState({
+                    type: "matches",
+                    seed: `${myId}-matches-empty`,
+                    ctx: {
+                      intensiteit: pmap[myId]?.roast_intensiteit ?? "gemeen",
+                      schild: pmap[myId]?.roast_schild ?? false,
+                    },
+                  })
+                : "Je racket is nog ongebruikt."
+            }
             action={
               <button
                 className="btn btn--primary"
@@ -165,7 +178,9 @@ export function Matches() {
               </button>
             }
           >
-            Vul je eerste wedstrijdscore in en kickstart direct je ranking en statistieken!
+            {pmap[myId]
+              ? "Speel je eerste wedstrijd en kickstart je ranking en statistieken!"
+              : "Vul je eerste wedstrijdscore in en kickstart direct je ranking en statistieken!"}
           </EmptyState>
         }
       />

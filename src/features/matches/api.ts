@@ -204,12 +204,13 @@ export async function createGuestPlayer(name: string): Promise<string> {
   return data as string;
 }
 
-/** Logt een afgeronde match via de SECURITY DEFINER RPC. */
+/** Logt een afgeronde match via de SECURITY DEFINER RPC.
+ *  1v1 (singles): a2 en b2 beide null. */
 export async function createCompletedMatch(params: {
   a1: string;
-  a2: string;
+  a2: string | null;
   b1: string;
-  b2: string;
+  b2: string | null;
   winner: "a" | "b" | "draw";
   scoreA?: number | null;
   scoreB?: number | null;
@@ -218,9 +219,11 @@ export async function createCompletedMatch(params: {
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_completed_match", {
     p_a1: params.a1,
-    p_a2: params.a2,
+    // De gegenereerde RPC-Args kennen geen nullable parameters; de RPC zelf
+    // accepteert null (1v1) en valideert de combinatie.
+    p_a2: params.a2 as string,
     p_b1: params.b1,
-    p_b2: params.b2,
+    p_b2: params.b2 as string,
     p_winner: params.winner,
     p_score_a: params.scoreA ?? undefined,
     p_score_b: params.scoreB ?? undefined,
@@ -237,18 +240,19 @@ export async function createCompletedMatch(params: {
  *  setMatchResult (inline op de kaart "Te spelen"). */
 export async function createPlannedMatch(params: {
   a1: string;
-  a2: string;
+  a2: string | null;
   b1: string;
-  b2: string;
+  b2: string | null;
   playedAt?: string | null;
   groupId?: string | null;
   setScores?: SetScore[] | null;
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_planned_match", {
     p_a1: params.a1,
-    p_a2: params.a2,
+    // Zie createCompletedMatch: null = 1v1, de RPC valideert.
+    p_a2: params.a2 as string,
     p_b1: params.b1,
-    p_b2: params.b2,
+    p_b2: params.b2 as string,
     p_played_at: params.playedAt ?? undefined,
     p_group_id: params.groupId ?? undefined,
     p_set_scores: params.setScores ?? undefined,
@@ -341,12 +345,14 @@ export async function deleteMatch(matchId: string): Promise<void> {
   invalidateMatchData();
 }
 
-/** "Alice & Bob" op basis van een team en de profielen-map. */
+/** "Alice & Bob" op basis van een team en de profielen-map; bij een
+ *  singles-team (1v1) alleen "Alice". */
 export function teamLabel(
   team: Team | undefined,
   profiles: Record<string, Profile>,
 ): string {
   if (!team) return "Onbekend team";
   if (team.name) return team.name;
+  if (!team.player2_id) return displayName(profiles[team.player1_id]);
   return `${displayName(profiles[team.player1_id])} & ${displayName(profiles[team.player2_id])}`;
 }

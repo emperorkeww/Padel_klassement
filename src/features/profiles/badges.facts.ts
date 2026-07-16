@@ -195,12 +195,13 @@ export function verzamelFeiten(
     }
 
     // Partner = de medespeler in het eigen team; tegenstander = het andere team.
+    // Bij singles (1v1) is er geen partner, dus telt de match hier niet mee.
     const inA = inTeam(teams[m.team_a_id], playerId);
     const myTeam = inA ? teams[m.team_a_id] : teams[m.team_b_id];
     if (myTeam) {
       const partnerId =
         myTeam.player1_id === playerId ? myTeam.player2_id : myTeam.player1_id;
-      perPartner.set(partnerId, (perPartner.get(partnerId) ?? 0) + 1);
+      if (partnerId) perPartner.set(partnerId, (perPartner.get(partnerId) ?? 0) + 1);
     }
     const oppId = inA ? m.team_b_id : m.team_a_id;
     perTegenstander.set(oppId, (perTegenstander.get(oppId) ?? 0) + 1);

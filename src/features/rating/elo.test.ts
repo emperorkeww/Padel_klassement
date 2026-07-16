@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { teamRating, winChance } from "@/features/rating/elo";
 import type { PlayerRating, Team } from "@/types";
 
-const team = (id: string, p1: string, p2: string): Team => ({
+const team = (id: string, p1: string, p2: string | null): Team => ({
   id,
   name: null,
   player1_id: p1,
@@ -26,6 +26,12 @@ describe("teamRating", () => {
   it("valt terug op 1000 voor ongerate spelers en onbekende teams", () => {
     expect(teamRating(team("t", "a", "b"), {})).toBe(1000);
     expect(teamRating(undefined, {})).toBe(1000);
+  });
+
+  it("gebruikt bij singles (1v1) de rating van die ene speler, geen gemiddelde", () => {
+    const ratings = { a: rating(1100) };
+    // Met een fantoom-1000-partner zou dit 1050 zijn.
+    expect(teamRating(team("t", "a", null), ratings)).toBe(1100);
   });
 });
 

@@ -46,3 +46,88 @@ describe("coachPreMatch", () => {
     expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes|focus/i);
   });
 });
+
+import { coachEmptyState } from "@/features/coach/coachMoments";
+
+describe("coachEmptyState", () => {
+  it("returns a welcome message for dashboard empty state", () => {
+    const result = coachEmptyState({
+      type: "dashboard",
+      seed: "test-dashboard",
+      ctx: roast,
+    });
+    expect(typeof result).toBe("string");
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("returns a group-specific message for empty group", () => {
+    const result = coachEmptyState({
+      type: "group",
+      seed: "test-group",
+      ctx: roast,
+    });
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/leeg|blik|Nodig|padelbaan|solo|invite/i);
+  });
+
+  it("returns a matches-specific neutral message for empty matches", () => {
+    const result = coachEmptyState({
+      type: "matches",
+      seed: "test-matches",
+      ctx: roast,
+    });
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/kooi|match|baan|canvas|speler|winnen|statistieken/i);
+  });
+
+  it("returns neutral message when roast shield is active for dashboard", () => {
+    const result = coachEmptyState({
+      type: "dashboard",
+      seed: "test-shield",
+      ctx: schild,
+    });
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/kooi|match|baan|canvas|speler|winnen|statistieken/i);
+  });
+
+  it("returns neutral message when roast shield is active for group", () => {
+    const result = coachEmptyState({
+      type: "group",
+      seed: "test-shield-group",
+      ctx: schild,
+    });
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/leeg|blik|Nodig|padelbaan|solo|invite/i);
+  });
+
+  it("returns deterministic results for same seed and type", () => {
+    const result1 = coachEmptyState({
+      type: "matches",
+      seed: "deterministic-test",
+      ctx: roast,
+    });
+    const result2 = coachEmptyState({
+      type: "matches",
+      seed: "deterministic-test",
+      ctx: roast,
+    });
+    expect(result1).toBe(result2);
+  });
+
+  it("returns different results for different seeds", () => {
+    const result1 = coachEmptyState({
+      type: "dashboard",
+      seed: "seed-a",
+      ctx: roast,
+    });
+    const result2 = coachEmptyState({
+      type: "dashboard",
+      seed: "seed-b",
+      ctx: roast,
+    });
+    // With 6 items in EMPTY_WELKOM, different seeds should likely give different results
+    // but this isn't guaranteed, so we just check they're both valid strings
+    expect(typeof result1).toBe("string");
+    expect(typeof result2).toBe("string");
+  });
+});

@@ -141,6 +141,7 @@ describe("historyFromMatches", () => {
     round_number: 1,
     score_a: null,
     score_b: null,
+    format: "2v2",
     ...part,
   });
 

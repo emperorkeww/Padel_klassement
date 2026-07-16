@@ -3,6 +3,7 @@
 
 import type { Match, RatingPoint, Team } from "@/types";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
+import { playersOf } from "@/features/rating/results";
 
 export type EveningRow = {
   playerId: string;
@@ -56,7 +57,7 @@ export function eveningSummary(
     if (result === "won") d.won += 1;
     duo.set(teamId, d);
     if (!team) return;
-    for (const pid of [team.player1_id, team.player2_id]) {
+    for (const pid of playersOf(team)) {
       const row =
         rows.get(pid) ??
         ({

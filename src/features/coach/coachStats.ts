@@ -7,7 +7,7 @@
 // generieke pool (valt terug op generiek zodra de data ontbreekt).
 
 import type { Match, Team } from "@/types";
-import { inTeam, longestStreak, outcomeFor } from "@/features/rating/results";
+import { inTeam, longestStreak, outcomeFor, playersOf } from "@/features/rating/results";
 
 /** Datum waarop een match telt (gespeeld, anders aangemaakt). */
 const datumVan = (m: Match): string => m.played_at ?? m.created_at;
@@ -18,8 +18,7 @@ const maandVan = (m: Match): string => datumVan(m).slice(0, 7);
 
 /** Spelers van een team (leeg als het team onbekend is). */
 function teamSpelers(teams: Record<string, Team>, teamId: string): string[] {
-  const t = teams[teamId];
-  return t ? [t.player1_id, t.player2_id] : [];
+  return playersOf(teams[teamId]);
 }
 
 /** De verliezende spelers van een afgeronde match (leeg zonder winnaar). */

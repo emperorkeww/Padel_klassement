@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import type { Match, PlayerRating, Profile, Team } from "@/types";
 import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "@/features/matches/api";
 import { formatRelativeDay } from "@/lib/utils/format";
-import { outcomeFor } from "@/features/rating/results";
+import { outcomeFor, playersOf } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
 import { Avatar } from "@/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
@@ -65,6 +65,11 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {m.format === "1v1" && (
+          <span className="match-card__meta match-card__format" title="Singles">
+            1v1
+          </span>
+        )}
         {done && upset && (
           <span
             className="match-card__meta match-card__upset"
@@ -193,10 +198,10 @@ export function TeamSide({
    *  de ratings toch al laden (PlannedMatchCard) geven dit mee. */
   ratings?: Record<string, PlayerRating>;
 }) {
-  const players = team
-    ? [profiles[team.player1_id], profiles[team.player2_id]]
-    : [];
-  const playerIds = team ? [team.player1_id, team.player2_id] : [];
+  // Singles (1v1) toont één avatar/naam; "Onbekend" blijft enkel voor
+  // spelers van wie het profiel (nog) niet geladen is.
+  const playerIds = playersOf(team);
+  const players = playerIds.map((pid) => profiles[pid]);
   return (
     <span
       className={`match-card__side ${right ? "match-card__side--right" : ""} ${won ? "is-win" : ""}`}
