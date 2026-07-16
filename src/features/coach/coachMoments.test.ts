@@ -50,84 +50,51 @@ describe("coachPreMatch", () => {
 import { coachEmptyState } from "@/features/coach/coachMoments";
 
 describe("coachEmptyState", () => {
-  it("returns a welcome message for dashboard empty state", () => {
-    const result = coachEmptyState({
-      type: "dashboard",
-      seed: "test-dashboard",
-      ctx: roast,
-    });
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
+  const mild: RoastCtx = { intensiteit: "mild", schild: false };
+  const radioactief: RoastCtx = { intensiteit: "radioactief", schild: false };
+  const seeds = ["seed-a", "seed-b", "seed-c", "seed-d", "seed-e"];
+  // Elke regel in de plaagpool bevat precies één van deze markers; de warme
+  // welkomstpool geen enkele — zo onderscheiden we de pools zonder ze te exporteren.
+  const plaag = /statistisch|notitieboekje|Rating 1000|In theorie|gratis compliment/;
+
+  it("groep → uitnodigende tekst, ongeacht schild", () => {
+    for (const ctx of [roast, schild]) {
+      expect(coachEmptyState({ type: "group", seed: "g1", ctx })).toMatch(
+        /leeg|blik|Nodig|padelbaan|solo|invite|troon/i,
+      );
+    }
   });
 
-  it("returns a group-specific message for empty group", () => {
-    const result = coachEmptyState({
-      type: "group",
-      seed: "test-group",
-      ctx: roast,
-    });
-    expect(typeof result).toBe("string");
-    expect(result).toMatch(/leeg|blik|Nodig|padelbaan|solo|invite/i);
+  it("matches → neutrale aanmoediging", () => {
+    expect(
+      coachEmptyState({ type: "matches", seed: "m1", ctx: roast }),
+    ).toMatch(/kooi|match|baan|canvas|speler|winnen|statistieken|profiel/i);
   });
 
-  it("returns a matches-specific neutral message for empty matches", () => {
-    const result = coachEmptyState({
-      type: "matches",
-      seed: "test-matches",
-      ctx: roast,
-    });
-    expect(typeof result).toBe("string");
-    expect(result).toMatch(/kooi|match|baan|canvas|speler|winnen|statistieken/i);
+  it("dashboard boven mild zonder schild → licht plagend welkom", () => {
+    for (const seed of seeds) {
+      expect(coachEmptyState({ type: "dashboard", seed, ctx: roast })).toMatch(plaag);
+      expect(
+        coachEmptyState({ type: "dashboard", seed, ctx: radioactief }),
+      ).toMatch(plaag);
+    }
   });
 
-  it("returns neutral message when roast shield is active for dashboard", () => {
-    const result = coachEmptyState({
-      type: "dashboard",
-      seed: "test-shield",
-      ctx: schild,
-    });
-    expect(typeof result).toBe("string");
-    expect(result).toMatch(/kooi|match|baan|canvas|speler|winnen|statistieken/i);
+  it("dashboard met schild of intensiteit mild → warm welkom", () => {
+    for (const seed of seeds) {
+      expect(
+        coachEmptyState({ type: "dashboard", seed, ctx: schild }),
+      ).not.toMatch(plaag);
+      expect(
+        coachEmptyState({ type: "dashboard", seed, ctx: mild }),
+      ).not.toMatch(plaag);
+    }
   });
 
-  it("returns neutral message when roast shield is active for group", () => {
-    const result = coachEmptyState({
-      type: "group",
-      seed: "test-shield-group",
-      ctx: schild,
-    });
-    expect(typeof result).toBe("string");
-    expect(result).toMatch(/leeg|blik|Nodig|padelbaan|solo|invite/i);
-  });
-
-  it("returns deterministic results for same seed and type", () => {
-    const result1 = coachEmptyState({
-      type: "matches",
-      seed: "deterministic-test",
-      ctx: roast,
-    });
-    const result2 = coachEmptyState({
-      type: "matches",
-      seed: "deterministic-test",
-      ctx: roast,
-    });
-    expect(result1).toBe(result2);
-  });
-
-  it("returns different results for different seeds", () => {
-    const result1 = coachEmptyState({
-      type: "dashboard",
-      seed: "seed-a",
-      ctx: roast,
-    });
-    const result2 = coachEmptyState({
-      type: "dashboard",
-      seed: "seed-b",
-      ctx: roast,
-    });
-    // With 6 items in EMPTY_WELKOM, different seeds should likely give different results
-    // but this isn't guaranteed, so we just check they're both valid strings
-    expect(typeof result1).toBe("string");
-    expect(typeof result2).toBe("string");
+  it("is deterministisch per seed en type", () => {
+    for (const type of ["dashboard", "group", "matches"] as const) {
+      const f = { type, seed: "vast", ctx: roast };
+      expect(coachEmptyState(f)).toBe(coachEmptyState(f));
+    }
   });
 });

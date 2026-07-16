@@ -462,20 +462,25 @@ export function Dashboard() {
               ✕
             </button>
           </div>
-          <div className="onboard__coach">
-            <CoachBubble mood="mild" size={24}>
-              <span className="coach-sneer__text">
-                {coachEmptyState({
-                  type: "dashboard",
-                  seed: `${myId}-onboard`,
-                  ctx: {
-                    intensiteit: myProfile.roast_intensiteit ?? "gemeen",
-                    schild: myProfile.roast_schild ?? false,
-                  },
-                })}
-              </span>
-            </CoachBubble>
-          </div>
+          {/* Rudy's welkom hoort alleen bij echte nieuwkomers: wie al matches
+              speelde maar bv. nog een groep mist, krijgt geen "speel je
+              eerste match"-praatje (#301). */}
+          {!hasPlayed && (
+            <div className="onboard__coach">
+              <CoachBubble mood="mild" size={24}>
+                <span className="coach-sneer__text">
+                  {coachEmptyState({
+                    type: "dashboard",
+                    seed: `${myId}-onboard`,
+                    ctx: {
+                      intensiteit: myProfile.roast_intensiteit ?? "gemeen",
+                      schild: myProfile.roast_schild ?? false,
+                    },
+                  })}
+                </span>
+              </CoachBubble>
+            </div>
+          )}
           <ul className="onboard__list">
             <OnboardStep
               done={hasFriend}
