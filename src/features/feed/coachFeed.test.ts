@@ -378,6 +378,61 @@ describe("coachOpmerking — stats-bewust (#200)", () => {
   });
 });
 
+describe("coachOpmerking — rank-feiten (#411)", () => {
+  // "p2" pint op deze timestamp de jab-beurt (zie de hype-modus-fixtures), dus
+  // een stijger krijgt hier het feit i.p.v. lof; dalers hebben geen hype-tak.
+  const rank = (over: Partial<Extract<FeedEvent, { kind: "rank" }>>): FeedEvent => ({
+    kind: "rank",
+    at: "2026-07-01T12:00:00Z",
+    playerId: "p2",
+    shift: -3,
+    rank: 9,
+    ...over,
+  });
+
+  it("noemt de sprong-grootte en nieuwe plek bij een daler", () => {
+    const r = coachOpmerking(rank({}), ctx);
+    expect(r).toMatch(/3 plekken/);
+    expect(r).toMatch(/#9/);
+  });
+
+  it("noemt de sprong-grootte en nieuwe plek bij een stijger op de jab-beurt", () => {
+    const r = coachOpmerking(rank({ shift: 4, rank: 5 }), ctx);
+    expect(r).toMatch(/4 plekken/);
+    expect(r).toMatch(/#5/);
+  });
+
+  it("herkent het binnenstormen van de top-3", () => {
+    expect(coachOpmerking(rank({ shift: 3, rank: 2 }), ctx)).toMatch(/top-3/);
+  });
+
+  it("herkent het uitvallen van de top-3", () => {
+    expect(coachOpmerking(rank({ shift: -2, rank: 4 }), ctx)).toMatch(/top-3|podium/);
+  });
+
+  it("begroet een nieuwkomer met zijn plek", () => {
+    const r = coachOpmerking(rank({ shift: "nieuw", rank: 4 }), ctx);
+    expect(r).toMatch(/#4/);
+    expect(r).toMatch(/nieuw|binnengekomen/i);
+  });
+
+  it("valt bij een onbekende plek (rank 0) terug op de generieke pool", () => {
+    expect(coachOpmerking(rank({ rank: 0 }), ctx)).not.toMatch(/plekken|#/);
+  });
+
+  it("houdt de neutrale variant voor een daler met schild", () => {
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "gemeen",
+      profiles: { p2: { roast_schild: true } as Profile },
+    };
+    expect(coachOpmerking(rank({}), beschermd)).toMatch(/rustig|volgende match|stap terug|omlaag/i);
+  });
+
+  it("is deterministisch", () => {
+    expect(coachOpmerking(rank({}), ctx)).toBe(coachOpmerking(rank({}), ctx));
+  });
+});
+
 describe("coachStemming", () => {
   const radioactief = () => "radioactief" as const;
 
