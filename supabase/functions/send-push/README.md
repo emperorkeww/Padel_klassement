@@ -1,7 +1,9 @@
 # send-push — web-push-meldingen
 
-Verstuurt push-meldingen bij drie events: nieuwe ronde in je groep, uitslag
-van jouw match, en een inkomend vriendschapsverzoek.
+Verstuurt push-meldingen bij deze events: nieuwe ronde in je groep, uitslag
+van jouw match, een inkomend vriendschapsverzoek, speeldag-polls (nieuw,
+gelockt, geboekt) en een nieuwe pias-van-de-week (Coach Rudy plaagt de pias
+zelf; roast-schild aan = geen push).
 
 ## Eenmalige setup (productie)
 
@@ -28,7 +30,9 @@ van jouw match, en een inkomend vriendschapsverzoek.
 
 4. **Webhooks aanmaken**: voer `supabase/snippets/push_webhooks.sql` uit in de
    SQL-editor van het gehoste project (vervang de placeholders), of maak
-   dezelfde drie webhooks via Dashboard → Database → Webhooks.
+   dezelfde webhooks via Dashboard → Database → Webhooks. Voor de
+   pias-triggers geldt: eerst de migratie (diff-recompute) en de functie
+   deployen, dán pas de triggers aanmaken — anders vuurt elke uitslag ze af.
 
 5. **Frontend**: zet `VITE_VAPID_PUBLIC_KEY` (de publieke sleutel) als
    GitHub-secret zodat de deploy-workflow hem in de build meebakt.
