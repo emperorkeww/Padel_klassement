@@ -1,0 +1,68 @@
+# Wekelijkse driftcheck voor knownCourts.ts (#392): regenereert het bestand
+# vanaf de live Playtomic-clubpagina (npm run gen:courts) en opent bij een
+# verschil automatisch een PR naar develop. Faalt het ophalen/parsen (bv.
+# paginavorm gewijzigd of Playtomic blokkeert de runner), dan faalt de job
+# zichtbaar — geen stille skip; handmatig draaien blijft de terugvaloptie.
+name: Known courts
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # maandagochtend
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: develop
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenereer knownCourts.ts vanaf de live clubpagina
+        run: npm run gen:courts
+
+      - name: Detecteer drift
+        id: drift
+        run: |
+          if git diff --quiet src/features/availability/knownCourts.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Geen drift: knownCourts.ts klopt met de live clubpagina."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff src/features/availability/knownCourts.ts
+          fi
+
+      - name: Open of ververs de drift-PR
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BRANCH=chore/known-courts-drift
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add src/features/availability/knownCourts.ts
+          git commit -m "chore: knownCourts.ts bijgewerkt vanaf de live clubpagina (Refs #392)"
+          # Force-push: bij herhaalde drift vervangt de nieuwste stand de vorige.
+          git push --force origin "$BRANCH"
+          # Eén open PR volstaat; bestaat hij al, dan is de push genoeg.
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr create \
+              --base develop \
+              --head "$BRANCH" \
+              --title "chore: knownCourts.ts bijgewerkt vanaf de live clubpagina (Refs #392)" \
+              --body "De wekelijkse driftcheck vond een verschil tussen \`knownCourts.ts\` en de live Playtomic-clubpagina. Deze PR bevat de geregenereerde mapping (\`npm run gen:courts\`). Controleer of de baannamen/-types kloppen — een gewijzigd \`resource_id\` kan ook tests raken (api.test.ts, Availability.test.tsx)."
+          fi
