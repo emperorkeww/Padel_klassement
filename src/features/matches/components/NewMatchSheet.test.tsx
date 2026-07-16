@@ -28,6 +28,39 @@ function renderSheet(groupId?: string) {
   );
 }
 
+describe("<NewMatchSheet /> plannen — mobiel toetsenbord (#358)", () => {
+  it("geeft het weken-veld een numeriek toetsenbord (inputmode)", async () => {
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+    // Stap 1: vier spelers aantikken (2 per team), dan door naar plannen.
+    const { fireEvent } = await import("@testing-library/react");
+    for (const p of PROFILES) {
+      fireEvent.click(await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }));
+    }
+    fireEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+    fireEvent.change(screen.getByLabelText(/wanneer/i), {
+      target: { value: "2026-07-17T20:00" },
+    });
+    fireEvent.click(screen.getByLabelText(/herhaal wekelijks/i));
+    expect(screen.getByLabelText(/aantal weken/i)).toHaveAttribute(
+      "inputmode",
+      "numeric",
+    );
+  });
+});
+
 describe("<NewMatchSheet /> groep-keuze (#361)", () => {
   it("toont buiten groepscontext de optionele groep-keuze met losse match als default", async () => {
     renderSheet();

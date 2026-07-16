@@ -543,6 +543,7 @@ export function NewMatchSheet({
                   <input
                     className="input"
                     type="number"
+                    inputMode="numeric"
                     min={2}
                     max={12}
                     value={repeatWeeks}
