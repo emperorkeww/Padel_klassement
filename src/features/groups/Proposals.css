@@ -618,8 +618,8 @@
   .poll-row__state {
     grid-area: state;
     justify-self: end;
-    width: 36px;
-    height: 36px;
+    width: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
+    height: 44px;
   }
   .poll-row__people {
     grid-area: people;

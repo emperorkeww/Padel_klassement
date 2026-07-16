@@ -682,11 +682,19 @@
   margin: 0;
 }
 
-/* Vorm-tegel op Overzicht: chips i.p.v. één groot getal. */
+/* Vorm-tegel op Overzicht: chips i.p.v. één groot getal. Chips mogen op een
+   smalle tegel doorschuiven naar een tweede regel i.p.v. eruit te steken. */
 .stat__value--form {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
+  gap: 2px;
   min-height: 1.4em;
+}
+.stat__value--form .formchips {
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* Inline "link-knop" in de highlight-lijst (opent de badge-popup). */

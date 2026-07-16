@@ -1,5 +1,7 @@
 .shell {
   min-height: 100vh;
+  /* dvh: échte zichtbare hoogte op mobiel (url-balk schuift mee). */
+  min-height: 100dvh;
   display: flex;
   background: var(--bg);
 }
@@ -244,8 +246,15 @@
     text-decoration: none;
   }
   .topbar__profile {
+    position: relative;
     display: inline-flex;
     border-radius: 50%;
+  }
+  /* Onzichtbaar groter tapvlak rond de 32px-avatar (richtlijn ~44px). */
+  .topbar__profile::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
   }
 
   .tabbar {
@@ -350,7 +359,9 @@
   }
 
   .content__inner {
-    padding: var(--sp-5) var(--sp-4) 5.5rem;
+    /* Onderrand vrijhouden van de vaste onderbalk (+ home-indicator). */
+    padding: var(--sp-5) var(--sp-4)
+      calc(var(--tabbar-h) + var(--sp-6) + env(safe-area-inset-bottom, 0px));
   }
 }
 

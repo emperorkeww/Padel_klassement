@@ -39,6 +39,11 @@
   gap: var(--sp-4);
   min-width: 0;
 }
+/* Ook het tekstblok naast de avatar mag krimpen, anders steekt een lange
+   begroeting op 320px net buiten de hero. */
+.hero__text {
+  min-width: 0;
+}
 
 /* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
    onder de samenvatting, niet meer zwevend in de rechterbovenhoek. */
@@ -226,6 +231,9 @@
 .hero__badges {
   display: inline-flex;
   align-items: center;
+  /* Op heel smalle telefoons lopen de badges door op een tweede regel
+     i.p.v. uit de hero te steken. */
+  flex-wrap: wrap;
   gap: var(--sp-1);
   text-decoration: none;
 }

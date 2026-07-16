@@ -123,6 +123,7 @@
 }
 
 .login-tab {
+  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   padding: var(--sp-2);
   border: none;
   border-radius: 999px;
@@ -185,7 +186,9 @@
   background: var(--bg);
   color: var(--ink);
   font-family: inherit;
-  font-size: var(--fs-base);
+  /* Minstens 16px: iOS Safari zoomt automatisch in bij het focussen van een
+     kleiner invoerveld (en zoomt niet terug). 16px voorkomt dat. */
+  font-size: 1rem;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
@@ -209,6 +212,7 @@
   top: 50%;
   right: var(--sp-2);
   transform: translateY(-50%);
+  min-height: 40px; /* ruim tapvlak binnen de veldhoogte */
   padding: var(--sp-1) var(--sp-2);
   border: none;
   border-radius: 6px;
@@ -240,6 +244,7 @@
 
 /* ---------- Links & meldingen ---------- */
 .login-link {
+  position: relative;
   padding: 0;
   border: none;
   background: none;
@@ -247,6 +252,12 @@
   font-size: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+/* Onzichtbaar groter tapvlak rond de tekstlink (richtlijn ~44px). */
+.login-link::after {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
 }
 
 .login-link:hover {
@@ -286,6 +297,7 @@
 
 /* ---------- Primaire knop ---------- */
 .login-submit {
+  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   margin-top: var(--sp-1);
   padding: var(--sp-3) var(--sp-4);
   border: none;
