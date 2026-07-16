@@ -240,3 +240,19 @@
     display: none;
   }
 }
+
+/* Lege groep: Coach Rudy verwelkomt (#301) */
+.empty-group {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.empty-group .coach-sneer {
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.empty-group__hint {
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+}

@@ -7,8 +7,9 @@ import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { Skeleton, StatsSkeleton } from "@/ui/Skeleton";
 import { Avatar } from "@/ui/Avatar";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
+import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { COMMENTATOR } from "@/features/coach/roastTone";
-import { coachBriefing } from "@/features/coach/coachMoments";
+import { coachBriefing, coachEmptyState } from "@/features/coach/coachMoments";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
 import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
@@ -370,7 +371,16 @@ export function Dashboard() {
               <p className="hero__sub">
                 {me
                   ? `Je bezet momenteel plek #${rank || "?"} in het klassement met een rating van ${myRating || "1000"}.`
-                  : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
+                  : myProfile
+                    ? coachEmptyState({
+                        type: "dashboard",
+                        seed: `${myId}-empty-dashboard`,
+                        ctx: {
+                          intensiteit: myProfile.roast_intensiteit ?? "gemeen",
+                          schild: myProfile.roast_schild ?? false,
+                        },
+                      })
+                    : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
               </p>
             )}
             {(isBigDaddy ||
@@ -440,7 +450,7 @@ export function Dashboard() {
         </div>
       </section>
 
-      {showOnboarding && (
+      {showOnboarding && myProfile && (
         <section className="card onboard">
           <div className="card__head">
             <h2 className="card__title">Jouw weg naar de top</h2>
@@ -451,6 +461,20 @@ export function Dashboard() {
             >
               ✕
             </button>
+          </div>
+          <div className="onboard__coach">
+            <CoachBubble mood="mild" size={24}>
+              <span className="coach-sneer__text">
+                {coachEmptyState({
+                  type: "dashboard",
+                  seed: `${myId}-onboard`,
+                  ctx: {
+                    intensiteit: myProfile.roast_intensiteit ?? "gemeen",
+                    schild: myProfile.roast_schild ?? false,
+                  },
+                })}
+              </span>
+            </CoachBubble>
           </div>
           <ul className="onboard__list">
             <OnboardStep

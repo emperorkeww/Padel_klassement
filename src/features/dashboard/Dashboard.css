@@ -1030,3 +1030,13 @@
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
+
+/* Onboarding: Coach Rudy verwelkomt (#301) */
+.onboard__coach {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.onboard__coach .coach-sneer {
+  justify-content: center;
+}

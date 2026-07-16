@@ -232,3 +232,52 @@ export function coachPreMatch(winkans: number, seed: string, ctx: RoastCtx): str
   if (winkans > 0.65) return kiesUniek(PRE_FAVORIET, s);
   return kiesUniek(PRE_GELIJK, s);
 }
+
+// ── Lege staten & onboarding ──────────────────────────────────────────────
+const EMPTY_NEUTRAAL = [
+  "Tijd om de kooi in te duiken! De banen wachten op jouw eerste bal.",
+  "Nog geen match gespeeld? De perfecte dag om dat te veranderen.",
+  "Leeg canvas, volle mogelijkheden. Waar wacht je op?",
+  "Elke grote speler begon ooit met één enkele match. Jij bent aan de beurt.",
+  "De baan ligt er klaar voor. Jij ook?",
+  "Geen persoonlijke statistieken? Dat lossen we zo op.",
+  "Je profiel is klaar. Nu nog even die eerste wedstrijd winnen.",
+] as const;
+
+const EMPTY_WELKOM = [
+  "Welkom in de wereld van Padel Klassement! Speel je eerste match en ontdek je niveau.",
+  "Leuk dat je er bent! Tijd om te laten zien wat je in huis hebt.",
+  "Nieuw hier? Geen zorgen — iedereen begon ooit met nul matches en oneindig potentieel.",
+  "Welkom! De eerste stap is altijd de zwaarste. De tweede is: match loggen.",
+  "Fijn dat je meedoet. Nu nog even een tegenstander regelen...",
+  "Je account is klaar. Nu nog de rest van de wereld verslaan.",
+] as const;
+
+const EMPTY_GROUP = [
+  "Deze groep is nog leeg als een net geopend blik. Nodig vrienden uit!",
+  "Een groep zonder leden is als een padelbaan zonder net. Tijd om dat te fixen.",
+  "Jij bent de eerste! Nodig je speelmaatjes uit om de competitie te starten.",
+  "Een groep met één lid is technisch gezien een solo-act. Laten we dat veranderen.",
+  "Deze groep wacht op jouw vrienden. Deel die invite-link!",
+  "Eenzaam aan de top? Nodig anderen uit om je van je troon te stoten.",
+] as const;
+
+export interface EmptyStateFeiten {
+  type: "dashboard" | "group" | "matches";
+  seed: string;
+  ctx: RoastCtx;
+}
+
+/** Coach-quip voor lege staten (onboarding, nieuwe groep, geen matches).
+ *  Gebruikt altijd een milde, verwelkomende toon voor onboarding-scenario's.
+ *  Respecteert het roast-schild: bij schild aan worden neutrale teksten getoond. */
+export function coachEmptyState(f: EmptyStateFeiten): string {
+  const seed = roastSeed("empty", f.seed);
+  if (f.ctx.schild) {
+    if (f.type === "group") return kiesUniek(EMPTY_GROUP, seed);
+    return kiesUniek(EMPTY_NEUTRAAL, seed);
+  }
+  if (f.type === "group") return kiesUniek(EMPTY_GROUP, seed);
+  if (f.type === "matches") return kiesUniek(EMPTY_NEUTRAAL, seed);
+  return kiesUniek(EMPTY_WELKOM, seed);
+}
