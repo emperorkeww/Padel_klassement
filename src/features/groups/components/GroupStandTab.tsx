@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Sparkline } from "@/features/rating/components/Sparkline";
 import { Podium } from "@/features/standings/components/Podium";
+import { deltaToday } from "@/features/standings/ratingDelta";
+import { useClub } from "@/features/availability/club";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { Avatar } from "@/ui/Avatar";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
@@ -69,6 +71,7 @@ export function GroupStandTab({
   const [standMode, setStandMode] = useState<"rating" | "punten" | "toto">(
     "rating",
   );
+  const club = useClub();
 
   return (
     <>
@@ -113,10 +116,9 @@ export function GroupStandTab({
                 played,
                 (pid) => displayName(profiles[pid]),
               );
-              const lastDelta = (pid: string) => {
-                const hist = histories[pid] ?? [];
-                return hist[hist.length - 1]?.delta ?? null;
-              };
+              // Dag-cumulatieve ELO-beweging (#352), niet de laatste match.
+              const dayDelta = (pid: string) =>
+                deltaToday(histories[pid] ?? [], club.timezone);
               // Top 3 met rating op het podium; de tabel begint vanaf #4.
               const podium = rows.filter((r) => r.rating != null).slice(0, 3);
               const rest = rows.slice(podium.length);
@@ -130,7 +132,7 @@ export function GroupStandTab({
                       link: `/spelers/${r.playerId}`,
                       isMe: r.playerId === myId,
                       rating: r.rating,
-                      delta: lastDelta(r.playerId),
+                      delta: dayDelta(r.playerId),
                       dimmed: r.thin,
                       tier: true,
                       sub: `${r.playedInGroup}× in deze groep`,
@@ -150,7 +152,7 @@ export function GroupStandTab({
                         {rest.map((r, i) => {
                           const rank = i + 1 + podium.length;
                           const hist = histories[r.playerId] ?? [];
-                          const last = hist[hist.length - 1];
+                          const delta = dayDelta(r.playerId);
                           return (
                             <tr
                               key={r.playerId}
@@ -190,12 +192,12 @@ export function GroupStandTab({
                                 )}
                               </td>
                               <td className="num">
-                                {last && last.delta !== 0 && (
+                                {delta !== 0 && (
                                   <span
-                                    className={`stat__delta ${last.delta > 0 ? "is-up" : "is-down"}`}
+                                    className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}
                                   >
-                                    {last.delta > 0 ? "▲" : "▼"}
-                                    {Math.abs(last.delta)}
+                                    {delta > 0 ? "▲" : "▼"}
+                                    {Math.abs(delta)}
                                   </span>
                                 )}
                               </td>
