@@ -50,7 +50,9 @@ begin
       join (
         select id as team_id, player1_id as player_id from public.teams
         union all
+        -- singles-teams hebben geen tweede speler
         select id as team_id, player2_id as player_id from public.teams
+        where player2_id is not null
       ) pt on pt.team_id in (c.team_a_id, c.team_b_id)
     ),
     -- Lopende verliesreeks per (groep, speler): rij-index minus de laatste
@@ -75,11 +77,17 @@ begin
     -- Winkans van het verliezende team vóór de match (favoriet als ≥0.5), voor
     -- de choke — identiek aan recompute_pias.
     match_choke as (
+      -- Bij singles telt alleen de rating van de ene speler mee (geen
+      -- fantoom-1000-partner in het gemiddelde).
       select c.match_id,
              least(0.9999, round(
                1.0 / (1.0 + power(10.0,
-                 ((coalesce(rw1.rating_before, 1000) + coalesce(rw2.rating_before, 1000)) / 2.0
-                  - (coalesce(rl1.rating_before, 1000) + coalesce(rl2.rating_before, 1000)) / 2.0)
+                 ((coalesce(rw1.rating_before, 1000)
+                   + case when wt.player2_id is null then coalesce(rw1.rating_before, 1000)
+                          else coalesce(rw2.rating_before, 1000) end) / 2.0
+                  - (coalesce(rl1.rating_before, 1000)
+                     + case when lt.player2_id is null then coalesce(rl1.rating_before, 1000)
+                            else coalesce(rl2.rating_before, 1000) end) / 2.0)
                  / 400.0)), 4)) as loser_chance
       from completed c
       join public.teams lt
@@ -170,8 +178,10 @@ begin
         v_match := r.match_id;
         v_since := r.ts::date;
       end if;
-    elsif v_holder is not null and v_holder in (r.win_p1, r.win_p2) then
-      -- Geen flop en de drager won: verlost → Piet vrij.
+    elsif v_holder is not null
+      and (v_holder = r.win_p1 or v_holder is not distinct from r.win_p2) then
+      -- Geen flop en de drager won: verlost → Piet vrij. Expliciet null-safe:
+      -- "in (..., null)" zou bij een singles-winnaar naar null evalueren.
       v_holder := null;
     end if;
   end loop;

@@ -57,7 +57,7 @@ declare
   base constant int := 1000;
   m record;
   a1 uuid; a2 uuid; b1 uuid; b2 uuid;
-  ra numeric; rb numeric;        -- teamratings (gemiddelde van twee spelers)
+  ra numeric; rb numeric;        -- teamratings (gemiddelde van de aanwezige spelers)
   ea numeric;                    -- verwachte score team A
   sa numeric;                    -- werkelijke score team A (1/0.5/0)
   da int; db int;                -- rating-delta per team
@@ -82,14 +82,22 @@ begin
     return;
   end if;
 
-  ra := (
-    coalesce((select rating from public.player_ratings where player_id = a1), base)
-    + coalesce((select rating from public.player_ratings where player_id = a2), base)
-  ) / 2.0;
-  rb := (
-    coalesce((select rating from public.player_ratings where player_id = b1), base)
-    + coalesce((select rating from public.player_ratings where player_id = b2), base)
-  ) / 2.0;
+  -- Bij singles (a2/b2 null) telt alleen de rating van de ene speler; anders
+  -- zou een fantoom-partner van 1000 meegemiddeld worden.
+  ra := case when a2 is null
+    then coalesce((select rating from public.player_ratings where player_id = a1), base)
+    else (
+      coalesce((select rating from public.player_ratings where player_id = a1), base)
+      + coalesce((select rating from public.player_ratings where player_id = a2), base)
+    ) / 2.0
+  end;
+  rb := case when b2 is null
+    then coalesce((select rating from public.player_ratings where player_id = b1), base)
+    else (
+      coalesce((select rating from public.player_ratings where player_id = b1), base)
+      + coalesce((select rating from public.player_ratings where player_id = b2), base)
+    ) / 2.0
+  end;
 
   ea := 1.0 / (1.0 + power(10.0, (rb - ra) / 400.0));
   sa := case
@@ -102,9 +110,13 @@ begin
   db := round(k * ((1.0 - sa) - (1.0 - ea)));
 
   perform public._apply_rating(a1, m.id, da, m.ts);
-  perform public._apply_rating(a2, m.id, da, m.ts);
+  if a2 is not null then
+    perform public._apply_rating(a2, m.id, da, m.ts);
+  end if;
   perform public._apply_rating(b1, m.id, db, m.ts);
-  perform public._apply_rating(b2, m.id, db, m.ts);
+  if b2 is not null then
+    perform public._apply_rating(b2, m.id, db, m.ts);
+  end if;
 end;
 $$;
 
