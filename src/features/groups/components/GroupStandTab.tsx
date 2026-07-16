@@ -139,7 +139,7 @@ export function GroupStandTab({
                     }))}
                   />
                   {rest.length > 0 && (
-                    <div className="table-scroll">
+                    <div className="table-scroll stand-tabel--rating">
                       <table className="table">
                         <thead>
                           <tr>
