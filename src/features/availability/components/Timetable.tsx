@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  bookingUrl,
   coveredTimes,
   slotShareText,
   slotShareUrl,
@@ -8,7 +7,8 @@ import {
   type DayAvailability,
   type SlotOption,
 } from "@/features/availability/api";
-import { getClub } from "@/features/availability/club";
+import { useBookingUrl } from "@/features/availability/useBookingUrl";
+import { getClub, useClub } from "@/features/availability/club";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { shareOrCopyText } from "@/lib/utils/shareText";
@@ -60,6 +60,8 @@ export function Timetable({
   const [tip, setTip] = useState<Tip | null>(null);
   const [sel, setSel] = useState<Selection | null>(null);
   const toast = useToast();
+  const club = useClub();
+  const bookHref = useBookingUrl(club, date);
 
   // Deelt het aangeklikte slot met de vriendengroep: het native deelvenster
   // waar dat kan, anders tekst + link naar het klembord.
@@ -181,7 +183,7 @@ export function Timetable({
             </p>
             <a
               className="btn btn--primary btn--sm"
-              href={bookingUrl(date)}
+              href={bookHref}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setSel(null)}

@@ -307,7 +307,7 @@ export function ShareAvailability(props: Props) {
         const nowMinutes = isToday ? minutesNowInZone(props.data.timeZone) : null;
         text = dayShareText(props.data, date, duration, nowMinutes, {
           clubName: club.name,
-          bookingUrl: bookingUrl(date),
+          bookingUrl: await bookingUrl(club, date),
           viewUrl: slotShareUrl(date, club.id),
         });
         title = `Baanbeschikbaarheid — ${club.name}`;

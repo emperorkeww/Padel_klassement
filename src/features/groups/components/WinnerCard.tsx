@@ -6,6 +6,7 @@ import { errorMessage } from "@/lib/utils/errors";
 import { fairTeams } from "@/features/groups/fairTeamsLogic";
 import { icsEvent, downloadIcs } from "@/lib/utils/ics";
 import { bookingUrl } from "@/features/availability/api";
+import { useBookingUrl } from "@/features/availability/useBookingUrl";
 import { shareOrCopyText } from "@/lib/utils/shareText";
 import { displayName } from "@/features/profiles/api";
 import {
@@ -16,7 +17,7 @@ import {
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { createFairRound } from "@/features/groups/api";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
-import type { Club } from "@/features/availability/club";
+import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import type { Profile } from "@/types";
 import { longDay, shortDay } from "../planPollHelpers";
 
@@ -56,6 +57,8 @@ export function WinnerCard({
 }) {
   const toast = useToast();
   const name = (id: string) => displayName(profiles[id]);
+  const canBook = isPlaytomicClub(club);
+  const bookHref = useBookingUrl(club, o.date);
 
   // Eén of meer rondes al gegenereerd vanuit deze kaart (sessie-lokaal);
   // roundsExist dekt rondes die elders (of eerder) zijn klaargezet.
@@ -88,7 +91,9 @@ export function WinnerCard({
         : "👥 Nog geen bevestigde deelnemers — stem mee in de app!",
       poll.status === "booked"
         ? "✅ Baan geboekt — tot dan!"
-        : `⏳ Baan nog boeken: ${bookingUrl(o.date)}`,
+        : canBook
+          ? `⏳ Baan nog boeken: ${await bookingUrl(club, o.date)}`
+          : "⏳ Baan nog boeken.",
     ];
     try {
       const outcome = await shareOrCopyText({
@@ -164,14 +169,16 @@ export function WinnerCard({
           <h3 className="winner-card__section-title">Boeken</h3>
           {poll.status === "locked" ? (
             <div className="winner-card__actions">
-              <a
-                className="btn btn--sm btn--primary"
-                href={bookingUrl(o.date)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Boek op Playtomic ↗
-              </a>
+              {canBook && (
+                <a
+                  className="btn btn--sm btn--primary"
+                  href={bookHref}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Boek op Playtomic ↗
+                </a>
+              )}
               {isManager && (
                 <button
                   className="btn btn--sm"

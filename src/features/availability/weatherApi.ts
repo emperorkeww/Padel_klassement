@@ -1,5 +1,4 @@
 import { cached } from "@/lib/supabase/queryCache";
-import { getClubCoordinate } from "./api";
 import type { Club } from "./club";
 import type { HourWeather } from "./weatherLogic";
 
@@ -11,9 +10,9 @@ import type { HourWeather } from "./weatherLogic";
 export type WeekWeather = Record<string, HourWeather[]>;
 
 /**
- * Locatie via de stadnaam als Playtomic geen coördinaat meegeeft (vangnet;
- * in de praktijk hebben alle tenants er een). Belgische treffer wint —
- * stadsnamen als "Beveren" bestaan in meerdere landen.
+ * Locatie via de stadnaam. Sinds #385 is er geen clubcoördinaat meer van
+ * Playtomic, dus dit is de enige bron. Belgische treffer wint — stadsnamen
+ * als "Beveren" bestaan in meerdere landen.
  */
 async function geocodeCity(
   city: string,
@@ -39,9 +38,7 @@ export function getWeekWeather(club: Club): Promise<WeekWeather | null> {
   const hourKey = new Date().toISOString().slice(0, 13);
   return cached(`weather:${club.id}:${hourKey}`, async () => {
     try {
-      const coord =
-        (await getClubCoordinate(club.id).catch(() => null)) ??
-        (await geocodeCity(club.city).catch(() => null));
+      const coord = await geocodeCity(club.city).catch(() => null);
       if (!coord) return null;
 
       const params = new URLSearchParams({
