@@ -187,6 +187,7 @@ scripts/
 | `npm run coverage` | Draait de frontend tests en genereert een coverage-rapport. |
 | `npm run lint` | Controleert de codekwaliteit met ESLint. |
 | `npm run contrast` | Voert een toegankelijkheidstest uit op de design system kleurentokens. |
+| `npm run gen:courts` | Regenereert `knownCourts.ts` (baannamen/-types thuisclub) vanaf de live Playtomic-clubpagina (#392). |
 
 ---
 
@@ -283,6 +284,8 @@ De configuratie is vastgelegd in [`wrangler.jsonc`](wrangler.jsonc), inclusief e
 ### CI/CD Pipeline
 
 De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
+
+Daarnaast draait wekelijks [`known-courts.yml`](.github/workflows/known-courts.yml): die regenereert `knownCourts.ts` vanaf de live Playtomic-clubpagina en opent bij drift automatisch een PR naar `develop` (Refs #392). Handmatig bijwerken kan altijd met `npm run gen:courts`.
 
 Hiervoor dienen de volgende secrets in de GitHub Repository geconfigureerd te zijn:
 *   `VITE_SUPABASE_URL`
