@@ -14,14 +14,11 @@ import { getPlayerRatings, getAllRatingHistories } from "@/features/standings/ra
 import { getProfilesMap } from "@/features/profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
-import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
-import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { PlanTab } from "@/features/groups/components/PlanTab";
-import { DayStats } from "@/features/groups/components/DayStats";
 import { SpelenTab } from "@/features/groups/components/SpelenTab";
-import { ShareEvening } from "@/features/groups/components/ShareEvening";
+import { VandaagTab } from "@/features/groups/components/VandaagTab";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { computePredictionStandings } from "@/features/matches/predictions";
@@ -295,115 +292,26 @@ export function GroupDetail() {
       </div>
 
       {view === "rondes" && (
-        <>
-          {/* Dagoverzicht: telling + highlights van vandaag (#342). */}
-          <DayStats
-            matches={matches.data ?? []}
-            teams={tmap}
-            profiles={pmap}
-            histories={histories.data ?? {}}
-            zwartePiet={zwartePiet}
-            today={today}
-          />
-          {/* Reis-CTA: alle uitslagen van vandaag binnen → door naar de stand. */}
-          {dayDone && (
-            <div className="card flow-next" role="status">
-              <span>
-                🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!
-              </span>
-              <button
-                className="btn btn--sm btn--primary"
-                onClick={() => setView("stand")}
-              >
-                Bekijk de stand →
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {view === "rondes" && (
-        <section className="card">
-          <div className="card__head">
-            <h2 className="card__title card__title--tight">Wedstrijden</h2>
-            {/* Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat. */}
-            <ShareEvening
-              groupName={group.data.name}
-              matches={matches.data ?? []}
-              teams={tmap}
-              profiles={pmap}
-              histories={histories.data ?? undefined}
-            />
-          </div>
-          <p className="card__subtitle">
-            De wedstrijden en gelogde partijen van vandaag — vul de uitslagen in en
-            de stand rekent live mee.
-          </p>
-
-          {rounds.length === 0 && (
-            <div className="empty">
-              <p>Nog niets gespeeld vandaag.</p>
-              <button
-                type="button"
-                className="btn btn--sm btn--primary"
-                onClick={() => setView("spelen")}
-              >
-                Genereer teams of log een partij →
-              </button>
-            </div>
-          )}
-
-          <div className="rounds">
-            {rounds.map(({ round, list }) => {
-              const done = list.filter((m) => m.status === "completed").length;
-              return (
-                <div key={round} className="round">
-                  <div className="round-head">
-                    <h3 className="card__title card__title--compact">
-                      {round === 0 ? "Losse matches" : `Ronde ${round}`}
-                    </h3>
-                    <span
-                      className={`badge ${
-                        done === list.length ? "badge--win" : "badge--accent"
-                      }`}
-                    >
-                      {done === list.length
-                        ? "Afgerond"
-                        : `${done}/${list.length} uitslagen`}
-                    </span>
-                  </div>
-                  <div className="stack">
-                    {list.map((m) =>
-                      m.status === "completed" ? (
-                        <DeletableMatchCard
-                          key={m.id}
-                          match={m}
-                          teams={tmap}
-                          profiles={pmap}
-                          perspectiveId={myId}
-                          upset={upsets.get(m.id) ?? null}
-                          canManage={isOwner}
-                          onDeleted={onMatches}
-                        />
-                      ) : (
-                        <PlannedMatchCard
-                          key={m.id}
-                          match={m}
-                          teams={tmap}
-                          profiles={pmap}
-                          perspectiveId={myId}
-                          history={matches.data ?? []}
-                          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
-                          onSaved={onMatches}
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        /* Wedstrijden en uitslagen invullen primair, dagoverzicht
+           ondersteunend; afsluitkaart zodra alles binnen is (#377). */
+        <VandaagTab
+          groupName={group.data.name}
+          myId={myId}
+          isOwner={isOwner}
+          matches={matches.data ?? []}
+          rounds={rounds}
+          dayDone={dayDone}
+          today={today}
+          teams={tmap}
+          profiles={pmap}
+          histories={histories.data ?? {}}
+          upsets={upsets}
+          zwartePiet={zwartePiet}
+          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
+          onMatches={onMatches}
+          onShowSpelen={() => setView("spelen")}
+          onShowStand={() => setView("stand")}
+        />
       )}
 
       {view === "spelen" && (

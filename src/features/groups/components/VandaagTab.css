@@ -1,0 +1,55 @@
+/* Vandaag-tab (#377). De afsluitkaart bovenaan hergebruikt .flow-next uit
+   GroupDetail.css (de parent laadt die altijd). */
+
+/* Rondeblokken: inzetlijn links + ruimere tussenafstand, zodat rondes bij
+   het scrollen als eenheden lezen. De open ronde krijgt de accentkleur en
+   trekt zo het oog; afgeronde rondes vallen terug in gedempt succes. */
+.rounds {
+  display: grid;
+  gap: var(--sp-5);
+}
+.round {
+  border-left: 3px solid var(--line);
+  padding-left: var(--sp-3);
+}
+.round.is-open {
+  border-left-color: var(--accent);
+}
+.round.is-done {
+  border-left-color: var(--success-line);
+}
+
+/* Rondekop: titel links, voortgang rechts als gedempte tekst i.p.v. badge —
+   één accent per ronde (de inzetlijn) houdt de lijst rustig. */
+.round-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.round-head .card__title--compact {
+  margin-bottom: 0;
+}
+.round-head__progress {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.round-head__progress--done {
+  color: var(--success);
+}
+.round-head__progress--done::before {
+  content: "✓ ";
+}
+
+/* Afsluitkaart: stand-CTA + deel-poster naast elkaar, wrappend op smal. */
+.vandaag-done__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
