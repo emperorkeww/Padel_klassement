@@ -96,8 +96,8 @@ $$;
 
 revoke execute on function public.recompute_pias() from public;
 
--- Trigger-wrapper: herberekent na elke wijziging aan matches. Draait ná
--- matches_recompute_ratings (alfabetische triggervolgorde: "recompute" <
+-- Trigger-wrapper: herberekent na elke wijziging aan matches. Draait ná de
+-- matches_ratings_*-triggers (alfabetische triggervolgorde: "ratings" <
 -- "refresh"), zodat rating_history al vernieuwd is als we de choke bepalen.
 create or replace function public.trigger_recompute_pias()
 returns trigger

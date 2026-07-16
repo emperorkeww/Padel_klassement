@@ -1,7 +1,3 @@
--- Roast-intensiteit (#183): hoe hard het systeem de leden van deze groep roast.
--- Alleen de owner stelt dit in (bestaande update-policy dekt het).
-create type public.roast_intensiteit as enum ('mild', 'gemeen', 'radioactief');
-
 -- Groepen: een verzameling spelers die samen matches spelen (bv. Americano)
 create table public.groups (
   id uuid primary key default gen_random_uuid(),
