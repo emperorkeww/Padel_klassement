@@ -18,10 +18,9 @@ import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { buildMatchRatings } from "@/features/groups/maandpias";
-import { NewMatchSheet, type NewMatchMode } from "@/features/matches/components/NewMatchSheet";
 import { PlanTab } from "@/features/groups/components/PlanTab";
 import { DayStats } from "@/features/groups/components/DayStats";
-import { MakeTeams } from "@/features/groups/components/MakeTeams";
+import { SpelenTab } from "@/features/groups/components/SpelenTab";
 import { ShareEvening } from "@/features/groups/components/ShareEvening";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { upsetsByMatch } from "@/features/matches/upset";
@@ -39,7 +38,7 @@ import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound } from "./groupDetailHelpers";
 import { GroupStandTab } from "./components/GroupStandTab";
 import { GroupLedenTab } from "./components/GroupLedenTab";
-import type { PlayerStanding, Profile } from "@/types";
+import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "plannen" | "spelen" | "matches" | "stand" | "leden";
@@ -113,10 +112,6 @@ export function GroupDetail() {
     else next.set("tab", v);
     setParams(next, { replace: true });
   };
-  // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
-  const [logOpen, setLogOpen] = useState(false);
-  const [logMode, setLogMode] = useState<NewMatchMode>("score");
-
   const pmap = useMemo(() => profiles.data ?? {}, [profiles.data]);
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
   // Upsets per match-id (#85) uit de al geladen rating-historie.
@@ -128,10 +123,6 @@ export function GroupDetail() {
   // De huidige Zwarte Piet-drager van déze groep (#185), of null als de Piet vrij is.
   const zwartePiet = piet.data?.[id] ?? null;
   const isOwner = group.data?.created_by === myId;
-  // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
-  const groupPlayers = memberList
-    .map((m) => pmap[m.player_id])
-    .filter(Boolean) as Profile[];
 
   const memberIds = new Set(memberList.map((m) => m.player_id));
   const { accepted } = categorize(friendships.data ?? [], myId);
@@ -416,64 +407,23 @@ export function GroupDetail() {
       )}
 
       {view === "spelen" && (
-        <>
-          {/* Eén teamgenerator: deelnemers uit de poll van vandaag +
-              formaatkeuze (eerlijk/americano/mexicano). */}
-          <MakeTeams
-            groupId={id}
-            members={memberList}
-            profiles={pmap}
-            myId={myId}
-            matches={matches.data ?? []}
-            teams={tmap}
-            openRound={openRound ?? null}
-            onGenerated={onMatches}
-          />
-
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title card__title--tight">Losse partij</h2>
-            </div>
-            <div className="group-log">
-              <p className="group-log__hint">
-                Zelf een partij gespeeld of er eentje inplannen? Log 'm hier — hij
-                telt mee in de groepsstand en de avondsamenvatting.
-              </p>
-              <div className="group-log__actions">
-                <button
-                  className="btn btn--sm"
-                  disabled={busy}
-                  onClick={() => {
-                    setLogMode("score");
-                    setLogOpen(true);
-                  }}
-                >
-                  + Log match
-                </button>
-                <button
-                  className="btn btn--sm"
-                  disabled={busy}
-                  onClick={() => {
-                    setLogMode("plan");
-                    setLogOpen(true);
-                  }}
-                >
-                  Plan match
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <NewMatchSheet
-            open={logOpen}
-            players={groupPlayers}
-            mode={logMode}
-            groupId={id}
-            onClose={() => setLogOpen(false)}
-            onCreated={onMatches}
-            onGuestCreated={profiles.reload}
-          />
-        </>
+        /* Teams maken primair, losse partij secundair; reis-CTA naar
+           Vandaag zodra er wedstrijden klaarstaan (#364). */
+        <SpelenTab
+          groupId={id}
+          myId={myId}
+          members={memberList}
+          profiles={pmap}
+          matches={matches.data ?? []}
+          todaysMatches={todaysMatches}
+          teams={tmap}
+          openRound={openRound ?? null}
+          busy={busy}
+          intensiteit={group.data.roast_intensiteit ?? "gemeen"}
+          onMatches={onMatches}
+          onGuestCreated={profiles.reload}
+          onShowRondes={() => setView("rondes")}
+        />
       )}
 
       {view === "plannen" && (
