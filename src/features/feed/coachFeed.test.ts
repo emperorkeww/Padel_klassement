@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { coachOpmerking, coachStemming, type CoachCtx, KAMPIOEN, KAMPIOEN_NEUTRAAL } from "./coachFeed";
-import type { FeedEvent } from "@/features/feed/feedLogic";
+import { coachOpmerking, coachStemming, type CoachCtx, KAMPIOEN } from "./coachFeed";
+import { LOF } from "@/features/coach/roastTone";
+import type { FeedEvent, Highlight } from "@/features/feed/feedLogic";
 import type { Match, Profile, Team } from "@/types";
 
 const ctx: CoachCtx = {
@@ -62,7 +63,9 @@ describe("coachOpmerking", () => {
     expect(KAMPIOEN).toContain(coachOpmerking(e, ctx));
   });
 
-  it("gebruikt neutrale kampioen-tekst bij een roast-schild", () => {
+  it("geeft een kampioen met een roast-schild oprechte hype (#199)", () => {
+    // Het schild weert spot, geen lof: geen jab en geen zwijgen, maar de
+    // ingetogen mild-variant — ook al staat de groep op radioactief.
     const e: FeedEvent = {
       kind: "season-champion",
       at: "2026-07-01T12:00:00Z",
@@ -72,10 +75,10 @@ describe("coachOpmerking", () => {
       seasonLabel: "Q2 2026",
     };
     const beschermd: CoachCtx = {
-      intensiteitVoor: () => "gemeen",
+      intensiteitVoor: () => "radioactief",
       profiles: { p1: { roast_schild: true } as Profile },
     };
-    expect(KAMPIOEN_NEUTRAAL).toContain(coachOpmerking(e, beschermd));
+    expect(LOF.mild).toContain(coachOpmerking(e, beschermd));
   });
 
   it("onderscheidt promotie en degradatie", () => {
@@ -136,6 +139,116 @@ describe("coachOpmerking", () => {
       profiles: { p1: { roast_schild: true } as Profile },
     };
     expect(coachOpmerking(e, beschermd)).toBeNull();
+  });
+});
+
+describe("coachOpmerking — hype-modus (#199)", () => {
+  // De seed (djb2 over de event-sleutel) bepaalt of Coach Rudy juicht of prikt.
+  // De fixtures hieronder zijn zo gekozen dat ze de hype-tak pinnen: "p2" bij een
+  // kampioen, "p3" bij een promotie, "w4"/"u2" bij een match. Dat ligt per event
+  // vast, dus deterministisch — zie de determinisme-test onderaan.
+  const teams: Record<string, Team> = {
+    ta: { id: "ta", name: null, player1_id: "p3", player2_id: "p4", created_at: "" },
+    tb: { id: "tb", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },
+  };
+  const matchMet = (id: string, highlights: Highlight[]): FeedEvent => ({
+    kind: "match",
+    at: "2026-07-01T12:00:00Z",
+    match: { ...matchStub, id },
+    highlights,
+    myDelta: null,
+  });
+
+  it("juicht bij een kampioen", () => {
+    const e: FeedEvent = {
+      kind: "season-champion",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p2",
+      seasonLabel: "Q2 2026",
+    };
+    expect(LOF.gemeen).toContain(coachOpmerking(e, ctx));
+  });
+
+  it("juicht bij een promotie, maar nooit bij een degradatie", () => {
+    const omhoog: FeedEvent = { kind: "rank", at: "2026-07-01T12:00:00Z", playerId: "p3", shift: 3, rank: 2 };
+    const omlaag: FeedEvent = { kind: "rank", at: "2026-07-01T12:00:00Z", playerId: "p3", shift: -3, rank: 9 };
+    expect(LOF.gemeen).toContain(coachOpmerking(omhoog, ctx));
+    expect(LOF.gemeen).not.toContain(coachOpmerking(omlaag, ctx));
+  });
+
+  it("juicht bij een winreeks", () => {
+    const e = matchMet("w4", [{ type: "streak", playerId: "p3", count: 3 }]);
+    expect(LOF.gemeen).toContain(coachOpmerking(e, ctx));
+  });
+
+  it("juicht bij een upset-winst", () => {
+    const e = matchMet("u2", [{ type: "upset", chance: 0.12, winnerTeamId: "ta" }]);
+    expect(LOF.gemeen).toContain(coachOpmerking(e, ctx));
+  });
+
+  it("schaalt de hype mee met de intensiteit", () => {
+    const e: FeedEvent = {
+      kind: "season-champion",
+      at: "2026-07-01T12:00:00Z",
+      groupId: "g1",
+      groupName: "Vrijdag",
+      playerId: "p2",
+      seasonLabel: "Q2 2026",
+    };
+    for (const i of ["mild", "gemeen", "radioactief"] as const) {
+      expect(LOF[i]).toContain(coachOpmerking(e, { intensiteitVoor: () => i, profiles: {} }));
+    }
+  });
+
+  it("tempert de hype tot mild als de gevierde speler een schild heeft", () => {
+    const e = matchMet("w4", [{ type: "streak", playerId: "p3", count: 3 }]);
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "radioactief",
+      profiles: { p3: { roast_schild: true } as Profile },
+      teams,
+    };
+    expect(LOF.mild).toContain(coachOpmerking(e, beschermd));
+  });
+
+  it("spot niet met een verliezer die een schild heeft, ook niet op de jab-beurt", () => {
+    // "u3" pint normaal de jab-tak, maar de verliezende favoriet (p1 in tb)
+    // heeft zijn schild aan → hype over de winnaar i.p.v. een UPSET-jab.
+    const e = matchMet("u3", [{ type: "upset", chance: 0.12, winnerTeamId: "ta" }]);
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "gemeen",
+      profiles: { p1: { roast_schild: true } as Profile },
+      teams,
+    };
+    expect(LOF.gemeen).toContain(coachOpmerking(e, beschermd));
+  });
+
+  it("bereikt de hele LOF-pool, niet enkel de helft", () => {
+    // Regressie: liet de jab/hype-keuze op `seed % 2` draaien, dan pinde die
+    // meteen de pariteit van kiesUniek's index (`seed % pool.length`) vast en
+    // bleef bij een pool van even lengte de helft van de regels onbereikbaar.
+    const gezien = new Set<string>();
+    for (let i = 0; i < 500; i++) {
+      const e: FeedEvent = {
+        kind: "season-champion",
+        at: "2026-07-01T12:00:00Z",
+        groupId: "g1",
+        groupName: "Vrijdag",
+        playerId: `speler-${i}`,
+        seasonLabel: "Q2 2026",
+      };
+      const uit = coachOpmerking(e, ctx);
+      if (uit && (LOF.gemeen as readonly string[]).includes(uit)) gezien.add(uit);
+    }
+    expect(gezien.size).toBe(LOF.gemeen.length);
+  });
+
+  it("is deterministisch: hetzelfde event levert dezelfde tak", () => {
+    const e = () => matchMet("w4", [{ type: "streak", playerId: "p3", count: 3 }]);
+    const run = () =>
+      coachOpmerking(e(), { intensiteitVoor: () => "gemeen", profiles: {}, teams, gebruikt: new Set() });
+    expect(run()).toBe(run());
   });
 });
 
