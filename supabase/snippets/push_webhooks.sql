@@ -52,3 +52,22 @@ create trigger push_on_poll_insert
 create trigger push_on_poll_update
   after update on public.play_polls
   for each row execute function public.notify_send_push();
+
+-- Pias van de week (#203): Coach Rudy plaagt de pias — maar alleen bij een
+-- échte aanwijzing of wissel in de HUIDIGE ISO-week; herberekende historische
+-- weken zwijgen. Vereist de diff-gebaseerde recompute_pias (migratie
+-- pias_diff_recompute): pas deze triggers dus pas toe NADAT die migratie en
+-- de bijgewerkte send-push-functie live staan. Twee aparte triggers, want een
+-- WHEN-clausule met OLD mag niet op een gecombineerde insert-or-update-trigger.
+create trigger push_on_pias_insert
+  after insert on public.pias_of_week
+  for each row
+  when (new.week_start = date_trunc('week', now())::date)
+  execute function public.notify_send_push();
+
+create trigger push_on_pias_update
+  after update on public.pias_of_week
+  for each row
+  when (new.week_start = date_trunc('week', now())::date
+        and new.player_id is distinct from old.player_id)
+  execute function public.notify_send_push();
