@@ -1,39 +1,23 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
+import type { Tables } from "@/lib/supabase/database.types";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 
 // De Zwarte Piet (#185): de serverside aangeduide drager per groep (tabel
-// public.zwarte_piet, gevuld door recompute_zwarte_piet). Losse typering
-// (tabel-shim) tot database.types.ts opnieuw gegenereerd wordt; zelfde cache/
+// public.zwarte_piet, gevuld door recompute_zwarte_piet). Zelfde cache/
 // RLS-patroon als piasApi. Read-only voor de client — enkel de trigger schrijft.
-
-type Err = { message: string } | null;
-type Table<Row> = { select: (cols: string) => Promise<{ data: Row[] | null; error: Err }> };
-
-interface PietRow {
-  group_id: string;
-  holder_id: string;
-  from_id: string | null;
-  reden: ZwartePiet["reden"];
-  ernst: number;
-  detail: string;
-  match_id: string;
-  since: string;
-}
 
 /** De drager van één groep, inclusief zijn groep-id (voor de feed). */
 export interface ZwartePietHolder extends ZwartePiet {
   groupId: string;
 }
 
-const pietTable = () =>
-  supabase.from("zwarte_piet" as never) as unknown as Table<PietRow>;
-
-const toHolder = (r: PietRow): ZwartePietHolder => ({
+const toHolder = (r: Tables<"zwarte_piet">): ZwartePietHolder => ({
   groupId: r.group_id,
   holderId: r.holder_id,
   fromId: r.from_id,
-  reden: r.reden,
+  // reden is in de DB text met een CHECK; hier smaller getypt als union.
+  reden: r.reden as ZwartePiet["reden"],
   ernst: r.ernst,
   detail: r.detail,
   matchId: r.match_id,
@@ -43,7 +27,7 @@ const toHolder = (r: PietRow): ZwartePietHolder => ({
 /** De huidige Zwarte Piet-drager per groep (RLS: alleen eigen groepen). */
 export function getZwartePiet(): Promise<Record<string, ZwartePietHolder>> {
   return cached("shame:all", async () => {
-    const { data, error } = await pietTable().select("*");
+    const { data, error } = await supabase.from("zwarte_piet").select("*");
     if (error) throw error;
     const byGroup: Record<string, ZwartePietHolder> = {};
     for (const row of data ?? []) byGroup[row.group_id] = toHolder(row);

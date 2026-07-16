@@ -85,8 +85,7 @@ export async function updateFeaturedBadges(
 ): Promise<void> {
   const { error } = await supabase
     .from("profiles")
-    // Cast: de kolom bestaat in de databank, maar nog niet in database.types.ts.
-    .update({ featured_badges: badgeIds } as never)
+    .update({ featured_badges: badgeIds })
     .eq("id", userId);
   if (error) throw error;
   invalidate("profiles");

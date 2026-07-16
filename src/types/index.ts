@@ -11,20 +11,17 @@ export interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   /** Door de speler uitgelichte badges (geordende lijst van badge-id's).
-   *  Optioneel: de kolom zit nog niet in de gegenereerde database.types.ts. */
+   *  Optioneel: synthetische profielen (bv. gasten in de UI) vullen dit niet. */
   featured_badges?: string[] | null;
   /** Verschijn je in het zoeken naar spelers? Bepaalt ook of 'nieuwe vriendschap'-
-   *  items in de feed getoond worden (#59). Kolom bestaat in de DB, nog niet in
-   *  database.types.ts — daarom optioneel; ontbreekt/true = zichtbaar. */
+   *  items in de feed getoond worden (#59). Ontbreekt/true = zichtbaar. */
   discoverable?: boolean;
   /** Roast-schild (#183): zet de speler dit aan, dan toont het systeem overal een
-   *  neutrale variant i.p.v. spot. Kolom bestaat in de DB, nog niet in
-   *  database.types.ts — daarom optioneel; ontbreekt/false = schild neer. */
+   *  neutrale variant i.p.v. spot. Ontbreekt/false = schild neer. */
   roast_schild?: boolean;
   /** Persoonlijke roast-intensiteit voor de feed en het dashboard (#183): de
    *  speler kiest zelf hoe hard Coach Rudy hém in zijn eigen feed toespreekt,
-   *  los van de groep-instelling van een eigenaar. Kolom bestaat in de DB, nog
-   *  niet in database.types.ts — daarom optioneel; ontbreekt = 'gemeen'. */
+   *  los van de groep-instelling van een eigenaar. Ontbreekt = 'gemeen'. */
   roast_intensiteit?: RoastIntensiteit;
   created_at: string;
 }
@@ -50,6 +47,9 @@ export interface Match {
   round_number: number | null;
   score_a: number | null;
   score_b: number | null;
+  /** Optionele per-set uitslag (jsonb); ruwe waarde — valideer via
+   *  readSetScores in features/matches/api.ts. */
+  set_scores?: unknown;
 }
 
 export interface MatchPoint {
@@ -67,8 +67,7 @@ export interface Group {
   id: string;
   name: string;
   created_by: string | null;
-  /** Roast-toon van de groep (#183). Kolom bestaat in de DB, nog niet in
-   *  database.types.ts — optioneel; ontbreekt = 'gemeen' (de DB-default). */
+  /** Roast-toon van de groep (#183); ontbreekt = 'gemeen' (de DB-default). */
   roast_intensiteit?: RoastIntensiteit;
   created_at: string;
 }

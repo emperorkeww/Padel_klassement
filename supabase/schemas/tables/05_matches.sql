@@ -54,3 +54,8 @@ create table public.matches (
 create index matches_team_a_idx on public.matches (team_a_id);
 create index matches_team_b_idx on public.matches (team_b_id);
 create index matches_group_idx on public.matches (group_id);
+-- Ondersteunt de einde-van-de-keten-check van de ELO-trigger
+-- (functions/09_ratings.sql): zelfde volgorde als recompute_ratings.
+create index matches_completed_order_idx
+  on public.matches ((coalesce(played_at, created_at)), created_at, id)
+  where status = 'completed';

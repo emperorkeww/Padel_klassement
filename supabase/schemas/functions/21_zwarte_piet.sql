@@ -188,8 +188,8 @@ $$;
 revoke execute on function public.recompute_zwarte_piet() from public;
 
 -- Trigger-wrapper: herberekent na elke wijziging aan matches. Naam sorteert ná
--- matches_recompute_ratings ("r" < "z"), zodat rating_history al vernieuwd is als
--- we de choke bepalen.
+-- de matches_ratings_*-triggers ("r" < "z"), zodat rating_history al vernieuwd is
+-- als we de choke bepalen.
 create or replace function public.trigger_recompute_zwarte_piet()
 returns trigger
 language plpgsql

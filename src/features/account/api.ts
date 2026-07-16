@@ -20,23 +20,17 @@ export interface Privacy {
 
 /** Haalt de privacy-instellingen van de gebruiker op (default = alles open). */
 export async function getPrivacy(userId: string): Promise<Privacy> {
-  // select("*") i.p.v. de kolomnamen: database.types.ts kent 'discoverable',
-  // 'allow_friend_requests' en 'roast_schild' nog niet, dus lezen we ze via een
-  // cast van de rij.
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("discoverable, allow_friend_requests, roast_schild, roast_intensiteit")
     .eq("id", userId)
     .maybeSingle();
   if (error) throw error;
-  const row = (data ?? {}) as Record<string, unknown>;
   return {
-    discoverable: (row.discoverable as boolean | undefined) ?? true,
-    allow_friend_requests:
-      (row.allow_friend_requests as boolean | undefined) ?? true,
-    roast_schild: (row.roast_schild as boolean | undefined) ?? false,
-    roast_intensiteit:
-      (row.roast_intensiteit as RoastIntensiteit | undefined) ?? "gemeen",
+    discoverable: data?.discoverable ?? true,
+    allow_friend_requests: data?.allow_friend_requests ?? true,
+    roast_schild: data?.roast_schild ?? false,
+    roast_intensiteit: data?.roast_intensiteit ?? "gemeen",
   };
 }
 
@@ -47,8 +41,7 @@ export async function updatePrivacy(
 ): Promise<void> {
   const { error } = await supabase
     .from("profiles")
-    // Cast: kolommen bestaan wel in de databank, nog niet in database.types.ts.
-    .update(patch as never)
+    .update(patch)
     .eq("id", userId);
   if (error) throw error;
   // De zoekresultaten in Vrienden hangen van 'discoverable' af.

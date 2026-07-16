@@ -1,3 +1,8 @@
+-- Roast-intensiteit (#183): hoe hard het systeem iemand roast. Gebruikt door
+-- profielen (persoonlijk) én groepen (per groep, alleen de owner stelt het in).
+-- Definitie staat hier omdat dit bestand als eerste laadt.
+create type public.roast_intensiteit as enum ('mild', 'gemeen', 'radioactief');
+
 -- Profielen: echte spelers zijn 1-op-1 met auth.users; gasten (is_guest) zijn
 -- naamloze deelnemers zonder account, aangemaakt door een speler (owner_id).
 -- Daarom géén FK van id naar auth.users: die zou gasten onmogelijk maken. De

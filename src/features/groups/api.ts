@@ -2,19 +2,6 @@ import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { Group, GroupMember, RoastIntensiteit } from "@/types";
 
-// database.types.ts kent de nieuwe RPC's (create_group_invite,
-// redeem_group_invite, create_fair_round) nog niet — die wordt later opnieuw
-// gegenereerd. Tot dan losjes typen zodat we database.types.ts niet aanraken.
-type RpcResult<T> = { data: T | null; error: { message: string } | null };
-function rpc<T>(fn: string, args: Record<string, unknown>): Promise<RpcResult<T>> {
-  return (
-    supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<RpcResult<T>>
-  )(fn, args);
-}
-
 /** Groep + leden-ids, zodat het overzicht kan tonen wie erin zit. */
 export interface GroupSummary extends Group {
   member_ids: string[];
@@ -117,8 +104,7 @@ export async function setRoastIntensiteit(
 ): Promise<void> {
   const { error } = await supabase
     .from("groups")
-    // Cast: kolom bestaat in de databank, nog niet in database.types.ts.
-    .update({ roast_intensiteit: intensiteit } as never)
+    .update({ roast_intensiteit: intensiteit })
     .eq("id", groupId);
   if (error) throw error;
   invalidate(`groups:one:${groupId}`, "groups");
@@ -147,21 +133,21 @@ export async function leaveGroup(
 
 /** Maakt (of hergebruikt) een deelbare uitnodigingslink en geeft het token terug. */
 export async function createGroupInvite(groupId: string): Promise<string> {
-  const { data, error } = await rpc<string>("create_group_invite", {
+  const { data, error } = await supabase.rpc("create_group_invite", {
     p_group_id: groupId,
   });
   if (error) throw error;
-  return data as string;
+  return data;
 }
 
 /** Wisselt een uitnodigingstoken in (auto-join); geeft het groep-id terug. */
 export async function redeemGroupInvite(token: string): Promise<string> {
-  const { data, error } = await rpc<string>("redeem_group_invite", {
+  const { data, error } = await supabase.rpc("redeem_group_invite", {
     p_token: token,
   });
   if (error) throw error;
   invalidate("groups");
-  return data as string;
+  return data;
 }
 
 /** Eén baan uit een "Eerlijke teams"-voorstel: twee spelers per team. */
@@ -179,7 +165,7 @@ export async function createFairRound(
   courts: FairCourt[],
 ): Promise<string[]> {
   const players = courts.flatMap((c) => [...c.teamA, ...c.teamB]);
-  const { data, error } = await rpc<string[]>("create_fair_round", {
+  const { data, error } = await supabase.rpc("create_fair_round", {
     p_group_id: groupId,
     p_players: players,
   });

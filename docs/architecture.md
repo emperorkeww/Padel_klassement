@@ -80,7 +80,7 @@ src/
 
 **Infrastructuur → `lib/supabase/`**
 
-`supabase.ts` (client) · `queryCache.ts` · `push.ts` · `database.types.ts` (gegenereerd)
+`supabase.ts` (client) · `queryCache.ts` · `push.ts` · `database.types.ts` (gegenereerd via `npm run gen:types`; CI bewaakt dat het bestand met het schema meeloopt)
 
 **Gedeelde types → `types/`**
 
