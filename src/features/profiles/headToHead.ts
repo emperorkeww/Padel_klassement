@@ -65,6 +65,7 @@ export function bestPartner(
     if (!myTeam) continue;
     const partnerId =
       myTeam.player1_id === playerId ? myTeam.player2_id : myTeam.player1_id;
+    if (!partnerId) continue; // singles (1v1): geen partner om te tellen
     const s = perPartner.get(partnerId) ?? { samen: 0, gewonnen: 0 };
     s.samen++;
     if (o === "W") s.gewonnen++;

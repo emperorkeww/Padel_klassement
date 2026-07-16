@@ -16,6 +16,7 @@ import {
   verliesFeiten,
   type VerliesFeiten,
 } from "@/features/coach/coachStats";
+import { playersOf } from "@/features/rating/results";
 
 export interface CoachCtx {
   /** Roast-toon per groep. */
@@ -239,7 +240,7 @@ function verliezersHebbenSchild(event: Extract<FeedEvent, { kind: "match" }>, ct
       : event.match.team_a_id;
   const loser = teams[loserTeamId];
   if (!loser) return false;
-  return [loser.player1_id, loser.player2_id].some((id) => heeftSchild(ctx.profiles[id]));
+  return playersOf(loser).some((id) => heeftSchild(ctx.profiles[id]));
 }
 
 /** NL-ordinaal ("3e"). */

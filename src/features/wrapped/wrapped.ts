@@ -12,6 +12,7 @@ import {
   longestLossStreak,
   longestStreak,
   outcomeFor,
+  playersOf,
   winRate,
 } from "@/features/rating/results";
 import { opponentExtremes } from "@/features/profiles/trends";
@@ -172,11 +173,7 @@ function zeldzaamsteBadge(
   const spelers = new Set<string>();
   for (const m of clubJaar) {
     for (const teamId of [m.team_a_id, m.team_b_id]) {
-      const t = teams[teamId];
-      if (t) {
-        spelers.add(t.player1_id);
-        spelers.add(t.player2_id);
-      }
+      for (const pid of playersOf(teams[teamId])) spelers.add(pid);
     }
   }
   if (!spelers.has(playerId)) return null;

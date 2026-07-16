@@ -156,6 +156,7 @@ describe("coachOpmerking — stats-bewust (#200)", () => {
     round_number: null,
     score_a: 6,
     score_b: 0,
+    format: "2v2",
     ...part,
   });
   const bagelEvent = (match: Match): FeedEvent => ({

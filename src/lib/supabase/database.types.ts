@@ -590,6 +590,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          format: Database["public"]["Enums"]["match_format"]
           group_id: string | null
           id: string
           played_at: string | null
@@ -605,6 +606,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          format?: Database["public"]["Enums"]["match_format"]
           group_id?: string | null
           id?: string
           played_at?: string | null
@@ -620,6 +622,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          format?: Database["public"]["Enums"]["match_format"]
           group_id?: string | null
           id?: string
           played_at?: string | null
@@ -1283,21 +1286,21 @@ export type Database = {
           id: string
           name: string | null
           player1_id: string
-          player2_id: string
+          player2_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name?: string | null
           player1_id: string
-          player2_id: string
+          player2_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string | null
           player1_id?: string
-          player2_id?: string
+          player2_id?: string | null
         }
         Relationships: [
           {
@@ -1627,6 +1630,7 @@ export type Database = {
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }
     Enums: {
+      match_format: "1v1" | "2v2"
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       roast_intensiteit: "mild" | "gemeen" | "radioactief"
     }
@@ -1759,6 +1763,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      match_format: ["1v1", "2v2"],
       match_status: ["scheduled", "in_progress", "completed", "cancelled"],
       roast_intensiteit: ["mild", "gemeen", "radioactief"],
     },

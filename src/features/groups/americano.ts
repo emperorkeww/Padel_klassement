@@ -73,6 +73,8 @@ export function historyFromMatches(
     const ta = teams[m.team_a_id];
     const tb = teams[m.team_b_id];
     if (!ta || !tb) continue;
+    // Americano is inherent dubbelspel: singles (1v1) matches tellen niet mee.
+    if (m.format === "1v1" || !ta.player2_id || !tb.player2_id) continue;
     const a: [string, string] = [ta.player1_id, ta.player2_id];
     const b: [string, string] = [tb.player1_id, tb.player2_id];
     bump(history.partner, pairKey(a[0], a[1]));

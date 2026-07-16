@@ -1,19 +1,24 @@
 // Reeks-, comeback- en rating-gebaseerde badge-helpers (chronologische doorlopen).
 import { ANGSTGEGNER_DREMPEL, COMEBACK_DREMPEL, REUZENDODER_DREMPEL, ROESTVRIJ_DAGEN } from "./badges.constants";
 import { matchDate } from "@/features/dashboard/missions";
-import { inTeam, outcomeFor } from "@/features/rating/results";
+import { inTeam, outcomeFor, playersOf } from "@/features/rating/results";
 import type { Match, PlayerRating, Team } from "@/types";
 
-/** Gemiddelde huidige rating van een team, of null zodra één rating ontbreekt. */
+/** Gemiddelde huidige rating van een team (bij singles: die ene rating), of
+ *  null zodra één rating ontbreekt. */
 function teamRating(
   team: Team | undefined,
   ratings: Record<string, PlayerRating>,
 ): number | null {
-  if (!team) return null;
-  const r1 = ratings[team.player1_id]?.rating;
-  const r2 = ratings[team.player2_id]?.rating;
-  if (r1 == null || r2 == null) return null;
-  return (r1 + r2) / 2;
+  const spelers = playersOf(team);
+  if (spelers.length === 0) return null;
+  let som = 0;
+  for (const id of spelers) {
+    const r = ratings[id]?.rating;
+    if (r == null) return null;
+    som += r;
+  }
+  return som / spelers.length;
 }
 
 /**
@@ -228,7 +233,10 @@ export function tweelingReeks(
         ? myTeam.player2_id
         : myTeam.player1_id
       : null;
-    if (o !== "W" || !partner) {
+    // Singles (1v1) heeft geen partner: de match telt niet mee voor de reeks,
+    // maar breekt hem ook niet.
+    if (!partner) continue;
+    if (o !== "W") {
       vorigePartner = null;
       run = 0;
       continue;

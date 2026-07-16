@@ -1,4 +1,5 @@
 import { Avatar } from "@/ui/Avatar";
+import { playersOf } from "@/features/rating/results";
 import type { Profile, Team } from "@/types";
 
 /** Één teamkant in de match-kaart: avatars boven de teamnaam (#232). */
@@ -13,7 +14,7 @@ export function TeamCol({
   won: boolean;
   label: string;
 }) {
-  const ids = team ? [team.player1_id, team.player2_id] : [];
+  const ids = playersOf(team);
   return (
     <div className={`fmatch__team ${won ? "is-win" : ""}`}>
       <span className="fmatch__avs">

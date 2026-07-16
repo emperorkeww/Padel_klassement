@@ -4,6 +4,7 @@
 // winst ↓, en bij spelers de naam ↑). Wordt gebruikt voor de kwartaalstand,
 // die uit een gefilterde matchlijst berekend wordt in plaats van server-side.
 
+import { playersOf } from "@/features/rating/results";
 import type { Season } from "@/features/rating/seasons";
 import type {
   Match,
@@ -78,7 +79,7 @@ export function computePlayerStandings(
   forEachTeamResult(matches, (teamId, m, scoredFor, scoredAgainst) => {
     const team = teams[teamId];
     if (!team) return;
-    for (const playerId of [team.player1_id, team.player2_id]) {
+    for (const playerId of playersOf(team)) {
       const line = lines.get(playerId) ?? newLine();
       addResult(line, m, teamId, scoredFor, scoredAgainst);
       lines.set(playerId, line);

@@ -11,7 +11,7 @@
 // zijn dezelfde als de pias van de maand (maandpias.ts).
 
 import type { Match, Team } from "@/types";
-import { inTeam } from "@/features/rating/results";
+import { inTeam, playersOf } from "@/features/rating/results";
 import { expected } from "@/features/rating/elo";
 import {
   AFDROGING_DREMPEL,
@@ -61,8 +61,12 @@ function favorietKans(
   if (!mijn || !tegen) return null;
   const avg = (t: Team): number | null => {
     const p1 = ratings.get(t.player1_id)?.rating_before;
+    if (p1 == null) return null;
+    // Singles (1v1): de teamrating is de rating van de ene speler zelf
+    // (spiegelt recompute_zwarte_piet in SQL).
+    if (!t.player2_id) return p1;
     const p2 = ratings.get(t.player2_id)?.rating_before;
-    return p1 == null || p2 == null ? null : (p1 + p2) / 2;
+    return p2 == null ? null : (p1 + p2) / 2;
   };
   const mij = avg(mijn);
   const hen = avg(tegen);
@@ -138,7 +142,7 @@ export function zwartePiet(
 
     // Gelijkspel: geen winnaar, geen flop; breekt ieders verliesreeks.
     if (m.winner_team_id == null) {
-      for (const p of [teamA.player1_id, teamA.player2_id, teamB.player1_id, teamB.player2_id]) {
+      for (const p of [...playersOf(teamA), ...playersOf(teamB)]) {
         streak.set(p, 0);
       }
       continue;
@@ -146,8 +150,8 @@ export function zwartePiet(
 
     const winnaar = m.winner_team_id === m.team_a_id ? teamA : teamB;
     const verliezer = m.winner_team_id === m.team_a_id ? teamB : teamA;
-    const winners = [winnaar.player1_id, winnaar.player2_id];
-    const losers = [verliezer.player1_id, verliezer.player2_id];
+    const winners = playersOf(winnaar);
+    const losers = playersOf(verliezer);
     for (const p of winners) streak.set(p, 0);
 
     const verliezerScore = m.winner_team_id === m.team_a_id ? m.score_b : m.score_a;

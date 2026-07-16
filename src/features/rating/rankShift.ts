@@ -3,6 +3,7 @@
 // de huidige stand afgetrokken, beide standen worden gerangschikt met
 // dezelfde tie-breakers als de views, en het verschil is de verschuiving.
 
+import { playersOf } from "@/features/rating/results";
 import type { Match, PlayerStanding, Team } from "@/types";
 
 /** Positief = gestegen, negatief = gezakt, 0 = gelijk, "nieuw" = stond er
@@ -37,7 +38,7 @@ export function rankShifts(
   ) => {
     const team = teams[teamId];
     if (!team) return;
-    for (const pid of [team.player1_id, team.player2_id]) {
+    for (const pid of playersOf(team)) {
       const row = prev.get(pid);
       if (!row) continue;
       row.played -= 1;

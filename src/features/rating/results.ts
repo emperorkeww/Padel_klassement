@@ -11,6 +11,12 @@ export function inTeam(team: Team | undefined, playerId: string): boolean {
   return !!team && (team.player1_id === playerId || team.player2_id === playerId);
 }
 
+/** De spelers van een team: twee bij een dubbel, één bij singles (1v1). */
+export function playersOf(team: Team | undefined | null): string[] {
+  if (!team) return [];
+  return team.player2_id ? [team.player1_id, team.player2_id] : [team.player1_id];
+}
+
 /**
  * Uitslag van een match vanuit de speler: 'W' | 'D' | 'L',
  * of null als de speler niet meedeed of de match niet is afgerond.
@@ -179,7 +185,7 @@ export function headToHead(
       ? teams[m.team_b_id]
       : teams[m.team_a_id];
     if (!oppTeam) continue;
-    for (const oppId of [oppTeam.player1_id, oppTeam.player2_id]) {
+    for (const oppId of playersOf(oppTeam)) {
       const s = out.get(oppId) ?? { won: 0, drawn: 0, lost: 0, played: 0 };
       s.played++;
       if (o === "W") s.won++;
