@@ -8,6 +8,7 @@ import {
   type KlikkerCategorie,
   type KlikkerQuote,
 } from "./klikkerData";
+import { WisselGenerator } from "./components/WisselGenerator";
 import "./Klikker.css";
 
 // Rudi's Tactische Klikker (#259/#260): een op zichzelf staand speeltje in het
@@ -103,6 +104,8 @@ export function Klikker() {
           </div>
         </section>
       ))}
+
+      <WisselGenerator />
     </div>
   );
 }

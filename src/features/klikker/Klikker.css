@@ -212,3 +212,48 @@
     transform: none;
   }
 }
+
+/* ---- Wissel-Generator (#261): de grote rode knop ---- */
+.wissel-generator__uitleg {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+}
+.wissel-generator__knop {
+  display: block;
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-8);
+  border: 3px solid #7f1d1d;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 25%, #f87171, #dc2626 55%, #991b1b);
+  color: #fff;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.8rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow:
+    0 6px 0 #7f1d1d,
+    var(--shadow-md);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.wissel-generator__knop:hover {
+  transform: translateY(-1px);
+}
+.wissel-generator__knop:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 #7f1d1d,
+    var(--shadow-sm);
+}
+.wissel-generator__uitslag {
+  margin-top: var(--sp-4);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wissel-generator__knop,
+  .wissel-generator__knop:hover,
+  .wissel-generator__knop:active {
+    transition: none;
+    transform: none;
+  }
+}
