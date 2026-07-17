@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -61,7 +61,12 @@ describe("<MatchDetail />", () => {
     expect(await screen.findByText(/^opstelling$/i)).toBeInTheDocument();
     // Standaard-fixtures: elk duo heeft maar één gezamenlijke match (m-done),
     // dus beide helften melden "te weinig samen" in plaats van een oordeel.
-    expect(await screen.findAllByText(/nog te weinig samen/i)).toHaveLength(2);
+    // (Op de badge-prefix "Chemie:" matchen — de uitleg noemt de zin ook.)
+    await waitFor(() =>
+      expect(
+        screen.getAllByText(/chemie: nog te weinig samen/i),
+      ).toHaveLength(2),
+    );
   });
 
   it("toont Elo delta's, divisies en eventuele divisiewissels per speler", async () => {

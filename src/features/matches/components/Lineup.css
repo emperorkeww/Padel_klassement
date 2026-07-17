@@ -1,13 +1,13 @@
 /* Opstelling (#427): padelveld in bovenaanzicht met FUT-schildkaarten en een
    chemielijn tussen de partners. Alles token-gestuurd (licht + donker); de
-   veldkleuren zelf zijn de --court-tokens uit index.css. */
+   veld- en lijnkleuren zijn de --court-/--chem-tokens uit index.css. */
 
 .lineup__veld {
   position: relative;
   max-width: 380px;
   margin: 0 auto;
   aspect-ratio: 300 / 420;
-  /* Kaarten en tussenruimte schalen in cqw mee met de veldbreedte. */
+  /* Kaarten, lijn en tussenruimte schalen in cqw mee met de veldbreedte. */
   container-type: inline-size;
   display: grid;
   grid-template-rows: 1fr 1fr;
@@ -16,7 +16,7 @@
   background: linear-gradient(180deg, var(--court) 0%, var(--court-deep) 100%);
 }
 
-/* Kooi, net en servicelijnen (decoratieve SVG-overlay). */
+/* Kooi, net, service- en middenlijnen (decoratieve SVG-overlay). */
 .lineup__veldlijnen {
   position: absolute;
   inset: 0;
@@ -35,46 +35,61 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: clamp(28px, 14cqw, 56px);
+}
+.lineup__plek {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 /* Chemielijn tussen de partners: elk niveau verschilt in kleur én dikte én
-   streepjespatroon (nooit alleen kleur); de casing houdt de lijn leesbaar op
-   het verzadigde veld. De badge ernaast draagt de betekenis als tekst. */
+   streepjespatroon (nooit alleen kleur); de brede lichte casing houdt hem
+   leesbaar op het verzadigde veld. De badge draagt de betekenis als tekst. */
 .lineup__lijn {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 110px;
+  width: clamp(24px, 14cqw, 72px);
   height: 24px;
+  flex: none;
   pointer-events: none;
 }
 .lineup__lijn-casing {
   stroke: var(--court-line);
-  stroke-width: 6;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.lineup__lijn-kern {
   stroke-linecap: round;
 }
 .lineup__lijn--hoog .lineup__lijn-kern {
-  stroke: var(--success);
-  stroke-width: 3;
+  stroke: var(--chem-hoog);
+  stroke-width: 4.5;
 }
 .lineup__lijn--midden .lineup__lijn-kern {
-  stroke: var(--warn);
-  stroke-width: 2;
+  stroke: var(--chem-midden);
+  stroke-width: 3;
   stroke-dasharray: 6 4;
 }
 .lineup__lijn--laag .lineup__lijn-kern {
-  stroke: var(--danger);
-  stroke-width: 1.5;
+  stroke: var(--chem-laag);
+  stroke-width: 2;
 }
 .lineup__lijn--onbekend .lineup__lijn-kern {
-  stroke: var(--ink-soft);
-  stroke-width: 1.5;
+  stroke: var(--chem-onbekend);
+  stroke-width: 2;
   stroke-dasharray: 2 4;
 }
 
-/* De chemie als tekst, op een chip bij de achterlijn van de helft. */
+/* Legenda-variant van de lijn (in de uitleg, dus op --surface): de casing
+   krijgt daar een rustig vlak zodat het patroon toch afsteekt. */
+.lineup__lijn--voorbeeld {
+  width: 56px;
+  height: 14px;
+}
+.lineup__lijn--voorbeeld .lineup__lijn-casing {
+  stroke: var(--surface-2);
+}
+
+/* De chemie als tekst, op een chip bij de achterlijn; het randje kleurt mee
+   met het niveau van de lijn. */
 .lineup__chemie {
   position: absolute;
   left: 50%;
@@ -85,7 +100,7 @@
   white-space: nowrap;
   color: var(--ink-soft);
   background: var(--surface);
-  border: 1px solid var(--line-strong);
+  border: 2px solid var(--line-strong);
   border-radius: 999px;
   padding: 2px 10px;
   box-shadow: var(--shadow-md);
@@ -96,6 +111,15 @@
 .lineup__helft--b .lineup__chemie {
   bottom: var(--sp-2);
 }
+.lineup__chemie--hoog {
+  border-color: var(--chem-hoog);
+}
+.lineup__chemie--midden {
+  border-color: var(--chem-midden);
+}
+.lineup__chemie--laag {
+  border-color: var(--chem-laag);
+}
 .lineup__chemie-delta.is-up {
   color: var(--success);
 }
@@ -104,11 +128,18 @@
 }
 
 /* FUT-schildkaart: buitenlaag = divisiekleurig frame, binnenlaag = kaartvlak;
-   beide dragen dezelfde clip-path (een rand kan een clip-path niet volgen). */
+   beide dragen dezelfde clip-path (een rand kan een clip-path niet volgen).
+   De kaart is een knop (opent de spelersamenvatting). */
 .lineup-kaart {
   /* Zonder rating: neutraal frame. */
   --tier: var(--ink-soft);
   --tier-soft: var(--surface-2);
+  appearance: none;
+  border: 0;
+  font: inherit;
+  text-align: inherit;
+  color: inherit;
+  cursor: pointer;
   width: clamp(96px, 36cqw, 124px);
   padding: 2.5px;
   clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
@@ -119,6 +150,12 @@
     var(--tier) 100%
   );
   filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.25));
+}
+.lineup-kaart:focus-visible {
+  /* clip-path knipt een outline weg; een binnenring via box-shadow blijft
+     zichtbaar. */
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--court-line);
 }
 .lineup-kaart__vlak {
   clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
@@ -147,7 +184,6 @@
 .lineup-kaart__tier {
   font-size: 0.95rem;
   line-height: 1;
-  cursor: help;
 }
 .lineup-kaart__avatar {
   grid-column: 2;
@@ -160,16 +196,12 @@
   font-size: var(--fs-sm);
   font-weight: 800;
   color: var(--ink);
-  text-decoration: none;
   border-top: 1px solid var(--line);
   padding-top: var(--sp-1);
   margin-top: var(--sp-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-a.lineup-kaart__naam:hover {
-  text-decoration: underline;
 }
 
 /* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
@@ -212,6 +244,24 @@ a.lineup-kaart__naam:hover {
 .lineup-kaart--legende {
   --tier: var(--legende);
   --tier-soft: var(--legende-soft);
+}
+
+/* Uitleg onder het veld (zelfde explainer-recept als het klassement). */
+.lineup__uitleg {
+  max-width: 380px;
+  margin: var(--sp-3) auto 0;
+}
+.lineup__legende {
+  display: grid;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+.lineup__legende-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
 }
 
 @media (max-width: 560px) {

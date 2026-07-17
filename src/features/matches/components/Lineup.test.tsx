@@ -1,13 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Match, PlayerRating, RatingPoint, Team } from "@/types";
 
 // Lineup zelf praat niet met supabase, maar displayName leeft in profiles/api
-// dat de client bij import aanmaakt — dus toch mocken.
+// dat de client bij import aanmaakt, en de spelerpopup laadt zijn eigen
+// (gecachte) matches — dus mocken, met de standaard-fixturetabellen.
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
-  return { supabase: makeSupabaseMock() };
+  const { TABLES } = await import("@/test/fixtures");
+  return { supabase: makeSupabaseMock({ tables: TABLES }) };
 });
 
 import { Lineup } from "./Lineup";
@@ -56,12 +59,17 @@ function renderLineup(overrides: Partial<Parameters<typeof Lineup>[0]> = {}) {
   );
 }
 
+// De legenda in de uitleg gebruikt dezelfde lijnklassen; alleen lijnen op het
+// veld zelf staan binnen een .lineup__helft.
+const veldLijn = (container: HTMLElement, extra = "") =>
+  container.querySelectorAll(`.lineup__helft .lineup__lijn${extra}`);
+
 describe("<Lineup />", () => {
   it("toont hoge chemie voor team A en lage voor team B, met de waarde als tekst", () => {
     const { container } = renderLineup();
     // p1+p2 halen gemiddeld +4 over 5 matches, p3+p4 −4 (zie fixtures).
-    expect(container.querySelector(".lineup__lijn--hoog")).not.toBeNull();
-    expect(container.querySelector(".lineup__lijn--laag")).not.toBeNull();
+    expect(veldLijn(container, "--hoog")).toHaveLength(1);
+    expect(veldLijn(container, "--laag")).toHaveLength(1);
     expect(screen.getByText("+4 Elo")).toBeInTheDocument();
     expect(screen.getByText("−4 Elo")).toBeInTheDocument();
     expect(screen.getAllByText(/\(5 samen\)/)).toHaveLength(2);
@@ -72,9 +80,7 @@ describe("<Lineup />", () => {
       matchesA: [MATCH_DONE] as Match[],
       matchesB: [MATCH_DONE] as Match[],
     });
-    expect(
-      container.querySelectorAll(".lineup__lijn--onbekend"),
-    ).toHaveLength(2);
+    expect(veldLijn(container, "--onbekend")).toHaveLength(2);
     expect(screen.getAllByText(/nog te weinig samen \(1\)/i)).toHaveLength(2);
   });
 
@@ -85,7 +91,7 @@ describe("<Lineup />", () => {
       matchesB: [MATCH_SINGLES] as Match[],
     });
     expect(container.querySelectorAll(".lineup-kaart")).toHaveLength(2);
-    expect(container.querySelector(".lineup__lijn")).toBeNull();
+    expect(veldLijn(container)).toHaveLength(0);
     expect(container.querySelector(".lineup__chemie")).toBeNull();
     expect(screen.getByText("Alice Anders")).toBeInTheDocument();
     expect(screen.getByText("Carol Claes")).toBeInTheDocument();
@@ -109,5 +115,34 @@ describe("<Lineup />", () => {
     renderLineup({ profiles: zonderBob });
     expect(screen.getByText("Onbekend")).toBeInTheDocument();
     expect(screen.getByText("Alice Anders")).toBeInTheDocument();
+  });
+
+  it("opent bij een tik op de kaart een popup met de spelersamenvatting", async () => {
+    renderLineup();
+    await userEvent.click(
+      screen.getByRole("button", { name: /samenvatting van alice anders/i }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: /alice anders/i,
+    });
+    expect(dialog).toBeInTheDocument();
+    // Vorm en balans komen uit de gemockte tabellen (m-done: winst voor p1).
+    expect(await screen.findByText(/1 winst/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /volledig profiel/i }),
+    ).toHaveAttribute("href", "/spelers/p1");
+    // Sluiten via de sluitknop.
+    await userEvent.click(screen.getByRole("button", { name: /sluiten/i }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("legt het veld uit in een uitklapbare uitleg met lijn-legenda", () => {
+    const { container } = renderLineup();
+    expect(screen.getByText(/wat zie ik hier\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/nog te weinig samen"/i)).toBeInTheDocument();
+    // De legenda toont alle vier de niveaus als voorbeeldlijn.
+    expect(
+      container.querySelectorAll(".lineup__lijn--voorbeeld"),
+    ).toHaveLength(4);
   });
 });
