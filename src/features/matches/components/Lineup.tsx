@@ -126,18 +126,19 @@ function Helft({
     : null;
   return (
     <div className={`lineup__helft lineup__helft--${side}`}>
-      {spelers.map((pid, i) => (
-        <span key={pid} className="lineup__plek">
-          {i === 1 && c && <ChemieLijn niveau={c.niveau} />}
+      <div className="lineup__rij">
+        {c && <ChemieLijn niveau={c.niveau} />}
+        {spelers.map((pid) => (
           <SpelerKaart
+            key={pid}
             pid={pid}
             profiel={profiles[pid]}
             histories={histories}
             ratings={ratings}
             matchId={matchId}
           />
-        </span>
-      ))}
+        ))}
+      </div>
       {c && <ChemieBadge chemie={c} />}
     </div>
   );
