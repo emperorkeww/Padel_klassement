@@ -7,7 +7,9 @@
   max-width: 380px;
   margin: 0 auto;
   aspect-ratio: 300 / 420;
-  /* Kaarten, lijn en tussenruimte schalen in cqw mee met de veldbreedte. */
+  /* Kaarten, lijn en tussenruimte schalen in cqw mee met de veldbreedte;
+     de lijn rekent met de kaartbreedte om op de schildpunten te ankeren. */
+  --kaart-breedte: clamp(96px, 36cqw, 124px);
   container-type: inline-size;
   display: grid;
   grid-template-rows: 1fr 1fr;
@@ -36,10 +38,12 @@
   justify-content: center;
   align-items: center;
 }
-.lineup__plek {
+/* De kaartenrij van één team; de chemielijn hangt hier absoluut onder. */
+.lineup__rij {
+  position: relative;
   display: flex;
   align-items: center;
-  min-width: 0;
+  gap: clamp(24px, 16cqw, 72px);
 }
 
 /* Chemielijn tussen de partners: een gloeiende lijn in de niveaukleur die de
@@ -51,41 +55,41 @@
   --lijnkleur: var(--chem-onbekend);
   --lijndikte: 2px;
   --lijnstijl: dotted;
-  position: relative;
-  width: clamp(32px, 20cqw, 96px);
-  height: 14px;
-  flex: none;
-  display: flex;
-  align-items: center;
+  /* Van schildpunt tot schildpunt (zoals de FUT-chemielijnen): de lijn loopt
+     van kaartmidden naar kaartmidden, nét onder de punten van de schilden. */
+  position: absolute;
+  left: calc(var(--kaart-breedte) / 2);
+  right: calc(var(--kaart-breedte) / 2);
+  bottom: -6px;
+  display: block;
   pointer-events: none;
 }
 .lineup__lijn-kern {
-  flex: 1;
+  display: block;
   border-top: var(--lijndikte) var(--lijnstijl) var(--lijnkleur);
   filter: drop-shadow(0 0 5px var(--lijnkleur))
     drop-shadow(0 0 1px var(--court-line));
 }
-/* Eindpunten: dots in de niveaukleur, hálf over de kaartranden zodat de lijn
-   er zichtbaar in "plugt". */
+/* Eindbollen: gecentreerd onder de punt van elke kaart (het FIFA-anker). */
 .lineup__lijn::before,
 .lineup__lijn::after {
   content: "";
   position: absolute;
-  top: 50%;
-  width: 10px;
-  height: 10px;
+  top: calc(var(--lijndikte) / 2);
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--lijnkleur);
   box-shadow:
     0 0 0 2px var(--court-line),
     0 0 6px 1px var(--lijnkleur);
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 .lineup__lijn::before {
-  left: -5px;
+  left: 0;
 }
 .lineup__lijn::after {
-  right: -5px;
+  left: 100%;
 }
 .lineup__lijn--hoog {
   --lijnkleur: var(--chem-hoog);
@@ -109,26 +113,36 @@
 }
 
 /* Legenda-variant (in de uitleg, dus op --surface): zachter, zonder gloed,
-   met dot-ringen in de chipkleur. */
+   gewoon in de tekstregel, met dot-ringen in de chipkleur. */
 .lineup__lijn--voorbeeld {
+  position: relative;
+  inset: auto;
   width: 52px;
   height: 12px;
-  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  flex: none;
 }
 .lineup__lijn--voorbeeld .lineup__lijn-kern {
+  flex: 1;
   filter: none;
 }
 .lineup__lijn--voorbeeld::before,
 .lineup__lijn--voorbeeld::after {
   width: 7px;
   height: 7px;
+  top: 50%;
   box-shadow: 0 0 0 2px var(--surface-2);
 }
 .lineup__lijn--voorbeeld::before {
-  left: 0;
+  left: 6px;
+  transform: translate(-50%, -50%);
 }
 .lineup__lijn--voorbeeld::after {
-  right: 0;
+  left: auto;
+  right: 6px;
+  transform: translate(50%, -50%);
 }
 
 /* De chemie als tekst, op een chip bij de achterlijn; het randje kleurt mee
@@ -177,7 +191,7 @@
   /* Zonder rating: neutraal frame. */
   --tier: var(--ink-soft);
   --tier-soft: var(--surface-2);
-  width: clamp(96px, 36cqw, 124px);
+  width: var(--kaart-breedte);
   perspective: 600px;
 }
 .lineup-kaart__flipper {
