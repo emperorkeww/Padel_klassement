@@ -257,3 +257,50 @@
     transform: none;
   }
 }
+
+/* ---- Sproeier-Modus (#262) ---- */
+.sproeier__uitleg {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+}
+.sproeier__acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.sproeier__hint {
+  margin: var(--sp-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+.sproeier__toneel {
+  min-height: 4rem;
+  margin-top: var(--sp-3);
+}
+.sproeier__toneel .klikker-notitie__inhoud {
+  align-items: center;
+}
+.sproeier__quote {
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+/* Kletsnatte Rudy: blauwzweem + druppels óp de avatar. Geen extra PNG (elke
+   avatar is ~2 MB); een filter + overlay volstaat voor een flits van 4 s. */
+.klikker-rudy--nat {
+  position: relative;
+  filter: saturate(0.75) brightness(0.92) hue-rotate(12deg);
+}
+.klikker-rudy--nat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%; /* de ronding zit op de img, niet op de span */
+  pointer-events: none;
+  background:
+    radial-gradient(circle 3px at 25% 20%, rgba(96, 165, 250, 0.85) 40%, transparent 45%),
+    radial-gradient(circle 2px at 65% 35%, rgba(56, 189, 248, 0.85) 40%, transparent 45%),
+    radial-gradient(circle 3px at 45% 65%, rgba(96, 165, 250, 0.8) 40%, transparent 45%),
+    radial-gradient(circle 2px at 80% 70%, rgba(147, 197, 253, 0.85) 40%, transparent 45%),
+    radial-gradient(circle 2px at 15% 55%, rgba(56, 189, 248, 0.8) 40%, transparent 45%);
+}
