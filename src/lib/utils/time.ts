@@ -38,6 +38,21 @@ export function dateInZone(timeZone: string, offsetDays = 0): string {
   }).format(d);
 }
 
+/** Epoch (ms) van "YYYY-MM-DD" + "HH:MM" in de opgegeven tijdzone, DST-proof.
+ *  Gespiegeld in supabase/functions/poll-deadline/index.ts (Deno en src/
+ *  kunnen niet uit elkaars bomen importeren). */
+export function clubEpoch(date: string, time: string, timeZone: string): number {
+  const naive = new Date(`${date}T${time}:00Z`).getTime();
+  // Offset van de clubtijdzone op dat moment bepalen via Intl.
+  const inZone = new Date(
+    new Date(naive).toLocaleString("en-US", { timeZone }),
+  ).getTime();
+  const utc = new Date(
+    new Date(naive).toLocaleString("en-US", { timeZone: "UTC" }),
+  ).getTime();
+  return naive - (inZone - utc);
+}
+
 /** Minuten sinds middernacht van "nu" in de opgegeven tijdzone. */
 export function minutesNowInZone(timeZone: string): number {
   return toMinutes(
