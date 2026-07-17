@@ -112,9 +112,9 @@ export function PlanTab({
   const allVotes = votes.data ?? [];
 
   const active = useMemo(
-    () => activePolls(polls.data ?? [], allOptions, today),
+    () => activePolls(polls.data ?? [], allOptions, Date.now()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [polls.data, options.data, today],
+    [polls.data, options.data],
   );
 
   // Rondes die in deze sessie zijn klaargezet (per poll): laat de fasebalk

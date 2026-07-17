@@ -41,7 +41,8 @@ const DAY_OF_HOURS = Number(Deno.env.get("POLL_DAY_OF_HOURS") ?? "5");
 const TIME_ZONE = "Europe/Brussels"; // zie availability/club.ts
 
 /** Epoch (ms) van "YYYY-MM-DD" + "HH:MM" in clubtijd, DST-proof. De tijdzone
- *  komt van de poll (#322), zodat clubs buiten Brussel juist gepland worden. */
+ *  komt van de poll (#322), zodat clubs buiten Brussel juist gepland worden.
+ *  Gespiegeld in src/lib/utils/time.ts (#440). */
 function clubEpoch(date: string, time: string, timeZone = TIME_ZONE): number {
   const naive = new Date(`${date}T${time}:00Z`).getTime();
   // Offset van de clubtijdzone op dat moment bepalen via Intl.
