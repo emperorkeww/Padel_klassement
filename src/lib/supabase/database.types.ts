@@ -1639,6 +1639,10 @@ export type Database = {
         Args: { p_owner: string; p_player: string }
         Returns: boolean
       }
+      is_team_member: {
+        Args: { p_team_id: string; p_uid: string }
+        Returns: boolean
+      }
       prediction_points: { Args: { p_chance: number }; Returns: number }
       prediction_win_chance: {
         Args: { p_match: string; p_team: string }
