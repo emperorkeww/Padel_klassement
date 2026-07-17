@@ -1394,6 +1394,103 @@ export type Database = {
           },
         ]
       }
+      vendettas: {
+        Row: {
+          challenger_id: string
+          ended_at: string | null
+          group_id: string
+          id: string
+          rival_id: string
+          started_at: string
+          status: string
+          target_wins: number
+        }
+        Insert: {
+          challenger_id: string
+          ended_at?: string | null
+          group_id: string
+          id?: string
+          rival_id: string
+          started_at?: string
+          status?: string
+          target_wins?: number
+        }
+        Update: {
+          challenger_id?: string
+          ended_at?: string | null
+          group_id?: string
+          id?: string
+          rival_id?: string
+          started_at?: string
+          status?: string
+          target_wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendettas_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendettas_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendettas_rival_id_fkey"
+            columns: ["rival_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_rival_id_fkey"
+            columns: ["rival_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_rival_id_fkey"
+            columns: ["rival_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "vendettas_rival_id_fkey"
+            columns: ["rival_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zwarte_piet: {
         Row: {
           created_at: string

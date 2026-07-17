@@ -1,0 +1,151 @@
+/* Vendetta's (#169): verklaarde rivaliteiten als race naar het seizoensdoel. */
+
+.vendetta {
+  padding-top: var(--sp-3);
+}
+
+.vendetta + .vendetta {
+  margin-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.vendetta__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.vendetta__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.vendetta__name {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vendetta__score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.vendetta__race {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+}
+
+.vendetta__baan {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.35fr) 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.vendetta__baan-naam {
+  font-size: var(--fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vendetta__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.vendetta__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.vendetta__bar-fill.is-winnaar {
+  background: var(--gold);
+}
+
+.vendetta__baan-score {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--ink-soft);
+}
+
+.vendetta__kop,
+.vendetta__beslist {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-weight: 600;
+}
+
+.vendetta__taunt {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.vendetta__revanche {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+}
+
+.vendetta__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.vendetta__meta {
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--ink-soft);
+}
+
+/* Startflow */
+
+.vendetta-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.vendetta-start__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+}
+
+.vendetta-start__doel {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+.vendetta-start__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}

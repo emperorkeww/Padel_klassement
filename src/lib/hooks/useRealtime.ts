@@ -20,6 +20,7 @@ const CACHE_PREFIXES: Record<string, string[]> = {
   ],
   pias_of_week: ["pias"],
   zwarte_piet: ["shame"],
+  vendettas: ["vendettas"],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   attendance: ["attendance"],

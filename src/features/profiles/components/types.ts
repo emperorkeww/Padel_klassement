@@ -87,6 +87,8 @@ export interface ProfileData {
   h2h: H2HRow[];
   nemesis: H2HRow | null;
   favoriet: H2HRow | null;
+  /** Tegenstanders met een actieve vendetta tegen deze speler (#169). */
+  vendettaMet: Set<string>;
 
   // Onderling (ingelogde gebruiker vs. deze speler)
   balans: Balans | null;
