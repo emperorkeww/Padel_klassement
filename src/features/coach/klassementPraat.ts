@@ -35,11 +35,17 @@ export const TROON = [
   "Helemaal bovenaan. Zelfs Infantino zou dit klassement volkomen legitiem noemen.",
   "De koppositie. Geniet ervan zolang de watersproeiers uitstaan.",
   "Nummer één van de lijst. Ik overweeg er een persconferentie voor bijeen te roepen.",
-  "De top van het klassement. Vanaf hier kun je alleen nog vallen — maar wát een uitzicht.",
+  "De top of het klassement. Vanaf hier kun je alleen nog vallen — maar wát een uitzicht.",
   "Jij bent de maatstaf. De rest speelt om de tweede plek, of ze het toegeven of niet.",
   "Eerste plaats in het klassement. Heel legaal, heel cool. Iedereen zegt het.",
   "De leider van het peloton. Niet omkijken, daar word je alleen maar zenuwachtig van.",
   "Bovenaan de lijst. Ik heb er een gouden sticker bij geplakt in m'n notitieboekje.",
+  "Op de troon. M'n notitieboekje glinstert als ik je stats opschrijf.",
+  "De heerser van de ranglijst. De concurrentie kijkt omhoog met knikkende knieën.",
+  "Bovenaan. Dat is de natuurlijke orde der dingen, althans voor jou op dit moment.",
+  "Koning van de baan. Nu nog een scepter regelen om de rest in het gareel te houden.",
+  "Nummer één. Zelfs de bondscoach kan hier geen kritische noot over kraken.",
+  "Bovenaan de lijst. Een prestatie van historische omvang. The greatest, absolute class.",
 ] as const;
 
 export const JAGER = [
@@ -55,6 +61,12 @@ export const JAGER = [
   "Top-3! Nu niet tevreden achteroverleunen — dat is iets voor de middenmoot.",
   "Zo hoog geklommen dat de nummer één je hoort hijgen. Muziek in mijn oren.",
   "De sprong naar de top is nog maar één sprintje. Ik heb de bidons al klaargezet.",
+  "Op jacht naar de troon. De koploper voelt de hete adem al in z'n nek blazen.",
+  "Achtervolger van dienst. Houd je racket scherp, de top is dichtbij.",
+  "De tweede plek is leuk, maar de eerste is waar de geschiedenis geschreven wordt.",
+  "Je staat op scherp om de troon te bestormen. M'n notitieboekje ligt al open.",
+  "Vlak achter de koploper. Eén misstap van de nummer één en jij pakt de kroon.",
+  "In de slipstream van de leider. Tijd om de turbo aan te zetten.",
 ] as const;
 
 export const MIDDENMOOT = [
@@ -70,6 +82,12 @@ export const MIDDENMOOT = [
   "Middenin de lijst. Tijd om iemand boven je van z'n voetstuk te meppen.",
   "Het maakt niet uit hoe ik het klassement draai: jij blijft in het midden staan.",
   "Middenmoot. In m'n notitieboekje staat bij jouw naam: 'kan meer, doet minder'.",
+  "Grijs en anoniem in het midden. Precies de plek waar je geen vijanden maakt, maar ook geen indruk.",
+  "Middenmoot. Zelfs de supporters zijn vergeten in welke divisie je eigenlijk speelt.",
+  "Veilig tussen de top en de kelder. Een beetje extra pit kan geen kwaad.",
+  "De comfortzone van de ranglijst. Maar comfort brengt je niet op het podium.",
+  "Stabiel op de gemiddelde ranking. Niet goed, niet rampzalig, gewoon... aanwezig.",
+  "In het midden van het pak. De ideale positie om geruisloos naar boven te sluipen.",
 ] as const;
 
 export const MIDDENMOOT_NEUTRAAL = [
@@ -92,6 +110,12 @@ export const NIEUW = [
   "Ik heb nog geen mening over je. Koester dit moment, het is eenmalig.",
   "Net gestart. Zelfs Infantino kan hier nog niks van vinden.",
   "De teller loopt nog. Kom terug na een paar matches, dan praten we klassement.",
+  "Net binnengestroomd. De gevestigde orde kijkt argwanend naar je rating.",
+  "Een onbeschreven blad. M'n pen staat klaar om je eerste successen (of drama's) te noteren.",
+  "Vers bloed in het klassement. Laat maar zien wat je in huis hebt.",
+  "Elo-rating in de opwarmfase. We zijn benieuwd waar het schip strandt.",
+  "De nieuwe uitdager. Speel snel meer matches, m'n notitieboekje raakt ongeduldig.",
+  "Nieuweling op de ranglijst. De banen wachten op je eerste echte statement.",
 ] as const;
 
 /** De kelder is de enige echte roast op deze pagina, dus de enige pool die per
@@ -110,12 +134,18 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De achterhoede. Zelfs daar hou ik een oogje in het zeil, dat beloof ik.",
     "Onderin de tabel. De sproeiers staan daar zachter afgesteld, dat scheelt.",
     "De laatste linie van het klassement. Verdedig die plek niet te fanatiek.",
+    "Onderaan de ladder. Gelukkig is de weg omhoog de enige optie.",
+    "Hekkensluiter voor nu. Geen paniek, blijf trainen en de punten komen vanzelf.",
+    "In de kelder. Een prima plek om in alle rust aan je forehand te schaven.",
+    "Laag geklasseerd. Maar herinner je: elke legende begon ooit onderaan.",
+    "Het klassement sluiten is ook een verantwoordelijkheid. Maar geef die snel door.",
+    "Onderin de tabel. Ideaal om de concurrentie van onderaf te verrassen.",
   ],
   gemeen: [
     "De kelder van het klassement. Ik heb er een aparte pagina voor in m'n notitieboekje: 'zorgenkindjes'.",
     "Onderaan. Het klassement is genadeloos eerlijk, en vandaag wijst het naar jou.",
-    "De rode lantaarn brandt fel. Zelfs vanuit m'n chic pak langs de lijn is het pijnlijk om te zien.",
-    "Onderin de lijst. De statistieken vertellen geen sprookje, en dit is geen sprookje.",
+    "De rode lantaarn brandt fel. Zelfs vanuit m'n chique pak langs de lijn is het pijnlijk om te zien.",
+    "Onderin the lijst. De statistieken vertellen geen sprookje, en dit is geen sprookje.",
     "Hekkensluiter. Op het WK noemden we dat 'de groepsfase niet overleven'.",
     "De kelder. Zelfs de zwaartekracht vindt dat je nu wel diep genoeg zit.",
     "Onderaan het klassement. De bookmakers hebben je afgeschreven, ik nog nét niet.",
@@ -124,6 +154,12 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De achterhoede van het klassement. M'n denkbeeldige viool staat al klaar.",
     "Zo laag in de tabel dat de degradatiestreep boven je hangt als een onweerswolk.",
     "De kelder. Trainen, gij. Dringend en veel.",
+    "In de diepe kelder. Ik heb een aparte rode stift gekocht voor je klassementspositie.",
+    "Onderaan de lijst. Zelfs de Romeinse pers had hier geen goed woord voor over.",
+    "Degradatiezone. M'n denkbeeldige viool speelt een heel melancholisch lied voor je.",
+    "Hekkensluiter. Zelfs met een viervoudige wissel in de 89e minuut is hier geen eer aan te behalen.",
+    "Onderin het klassement. De bookmakers geven geen cent meer voor je titelkansen.",
+    "De rode lantaarn is stevig in jouw handen. Hopelijk is de batterij snel leeg.",
   ],
   radioactief: [
     "De allerlaatste regionen van het klassement. Ik heb m'n pet diep over m'n ogen getrokken.",
@@ -138,6 +174,12 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De kelder van de kelder. Ik heb de trauma-helikopter alvast stand-by gezet.",
     "Laatste. Zelfs een standbeeld had inmiddels meer punten gesprokkeld.",
     "Zo laag dat het klassement er een tweede pagina bij nodig had. Speciaal voor jou.",
+    "De kruipruimte van de kelder. Zelfs de zwaartekracht schaamt zich voor dit dieptepunt.",
+    "Allerlaatste. Ik heb Infantino gevraagd of we deze positie kunnen opschorten. Hij zei nee.",
+    "Helemaal onderaan. Ik heb m'n coach-pet zojuist verbrand om dit drama te vergeten.",
+    "De bodem van de lijst. Zelfs een standbeeld van Aurelio De Laurentiis had meer Elo-punten gesprokkeld.",
+    "Een verontrustende wanprestatie in het klassement. We gaan de uitslagen per direct aanvechten.",
+    "Onderaan, met gigantische achterstand. Ik heb de trauma-helikopter alvast stand-by gezet.",
   ],
 } as const;
 
