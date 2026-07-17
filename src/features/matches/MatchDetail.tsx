@@ -36,6 +36,7 @@ import {
   getPlayerRatings,
 } from "@/features/standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
+import { matchDerby } from "@/features/matches/derby";
 import { playersOf } from "@/features/rating/results";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierChange } from "@/features/rating/tiers";
@@ -119,11 +120,16 @@ export function MatchDetail() {
   const bWon = m.winner_team_id === m.team_b_id;
   const isDraw = done && m.winner_team_id === null;
   // Upset: won de underdog? (winkans vooraf < 35%, uit de echte pre-match ratings)
-  const upset =
-    done && !isDraw
-      ? matchUpset(m, tmap, preMatchPoints(histories.data ?? {}, m.id))
-      : null;
+  const prePoints = done ? preMatchPoints(histories.data ?? {}, m.id) : null;
+  const upset = done && !isDraw ? matchUpset(m, tmap, prePoints ?? undefined) : null;
   const scoreHi = done ? scoreHighlight(m) : null;
+  // Derby (#169): alle spelers in dezelfde hoofddivisie. Afgerond meet aan de
+  // pre-match ratings; gepland aan de huidige.
+  const derby = matchDerby(m, tmap, (pid) =>
+    done
+      ? (prePoints?.get(pid)?.rating_before ?? null)
+      : (ratings.data?.[pid]?.rating ?? null),
+  );
   // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
@@ -220,9 +226,17 @@ export function MatchDetail() {
           </div>
 
           {/* Bijzondere momenten apart van de metaregel, zodat ze echt opvallen. */}
-          {(isDraw || upset || scoreHi) && (
+          {(isDraw || upset || scoreHi || derby) && (
             <div className="md-moments">
               {isDraw && <span className="md-moment md-moment--draw">Gelijkspel</span>}
+              {derby && (
+                <span
+                  className="md-moment"
+                  title={`Alle spelers zitten in dezelfde divisie (${derby.naam}) — hier staat divisie-eer op het spel.`}
+                >
+                  🏟️ Derby · {derby.emoji} {derby.naam}
+                </span>
+              )}
               {upset && (
                 <span
                   className="md-moment"
