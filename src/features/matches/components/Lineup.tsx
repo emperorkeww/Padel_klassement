@@ -1,27 +1,29 @@
 // Opstelling (#427): FUT-achtige weergave van de match op een padelveld in
 // bovenaanzicht — team A boven het net, team B eronder — met per speler een
 // schildkaart in de kleur van zijn divisie en tussen de partners een
-// chemielijn (zie chemistry.ts). Tik op een kaart voor een korte
-// spelersamenvatting (SpelerPopup). Puur presentationeel: alle data komt via
-// props; de veld- en lijngraphics zijn inline SVG met een vaste viewBox
-// (zelfde conventie als RatingChart — geen DOM-meting, jsdom-testbaar).
+// chemielijn (zie chemistry.ts). Tik op een kaart en hij draait om (zoals in
+// FUT) met vorm en balans op de achterkant. Puur presentationeel: alle data
+// komt via props (de achterkant laadt zijn eigen gecachte matches); de veld-
+// en lijngraphics zijn inline SVG met een vaste viewBox (zelfde conventie als
+// RatingChart — geen DOM-meting, jsdom-testbaar).
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { displayName } from "@/features/profiles/api";
-import { playersOf } from "@/features/rating/results";
+import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
+import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
 import { tierFor, tierTitle } from "@/features/rating/tiers";
+import { FormChips } from "@/features/rating/components/FormChips";
 import {
   chemie,
+  CHEMIE_MATCH_LIMIT,
   MIN_SAMEN_CHEMIE,
   type Chemie,
 } from "@/features/matches/chemistry";
-import { SpelerPopup } from "@/features/matches/components/SpelerPopup";
 import type { Match, PlayerRating, Profile, RatingPoint, Team } from "@/types";
 import "./Lineup.css";
-
-/** De speler van wie de popup openstaat, met de kaart-Elo als context. */
-type PopupSpeler = { pid: string; profiel: Profile | undefined; elo: number | null };
 
 export function Lineup({
   match,
@@ -41,7 +43,6 @@ export function Lineup({
   matchesA: Match[];
   matchesB: Match[];
 }) {
-  const [popup, setPopup] = useState<PopupSpeler | null>(null);
   return (
     <section className="card lineup">
       <div className="card__head">
@@ -58,7 +59,6 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
-          onSpeler={setPopup}
         />
         <Helft
           side="b"
@@ -69,18 +69,9 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
-          onSpeler={setPopup}
         />
       </div>
       <LineupUitleg />
-      {popup && (
-        <SpelerPopup
-          pid={popup.pid}
-          profiel={popup.profiel}
-          elo={popup.elo}
-          onClose={() => setPopup(null)}
-        />
-      )}
     </section>
   );
 }
@@ -118,7 +109,6 @@ function Helft({
   histories,
   ratings,
   matchId,
-  onSpeler,
 }: {
   side: "a" | "b";
   team: Team | undefined;
@@ -128,7 +118,6 @@ function Helft({
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
-  onSpeler: (s: PopupSpeler) => void;
 }) {
   const spelers = playersOf(team);
   const duo = spelers.length === 2;
@@ -146,7 +135,6 @@ function Helft({
             histories={histories}
             ratings={ratings}
             matchId={matchId}
-            onOpen={onSpeler}
           />
         </span>
       ))}
@@ -155,19 +143,24 @@ function Helft({
   );
 }
 
-/** De verbindingslijn tussen de partners. Decoratief (de badge draagt de
- *  betekenis als tekst); een lichte casing houdt hem leesbaar op het veld. */
-function ChemieLijn({ niveau }: { niveau: Chemie["niveau"] }) {
+/** De verbindingslijn tussen de partners: een lichte capsule met de
+ *  niveau-lijn erin, een zachte gloed in de niveaukleur en eindpunten die in
+ *  de kaarten "pluggen". Decoratief — de badge draagt de betekenis als tekst. */
+function ChemieLijn({
+  niveau,
+  voorbeeld = false,
+}: {
+  niveau: Chemie["niveau"];
+  /** Compacte variant voor de legenda in de uitleg (op --surface). */
+  voorbeeld?: boolean;
+}) {
   return (
-    <svg
-      className={`lineup__lijn lineup__lijn--${niveau}`}
-      viewBox="0 0 120 24"
-      preserveAspectRatio="none"
+    <span
+      className={`lineup__lijn lineup__lijn--${niveau}${voorbeeld ? " lineup__lijn--voorbeeld" : ""}`}
       aria-hidden="true"
     >
-      <line className="lineup__lijn-casing" x1="4" y1="12" x2="116" y2="12" />
-      <line className="lineup__lijn-kern" x1="4" y1="12" x2="116" y2="12" />
-    </svg>
+      <span className="lineup__lijn-kern" />
+    </span>
   );
 }
 
@@ -197,22 +190,26 @@ function ChemieBadge({ chemie: c }: { chemie: Chemie }) {
 
 /** FUT-schildkaart: Elo groot, divisie-emoji, avatar en naam; het frame kleurt
  *  mee met de divisie van de speler (zelfde token-mapping als TierBadge.css).
- *  De kaart is een knop: tikken opent de spelersamenvatting. */
+ *  Tikken draait de kaart om (3D-flip, zoals in FUT) naar een achterkant met
+ *  vorm en balans. De flip-knop is een onzichtbare overlay zodat de link op
+ *  de achterkant een echte <Link> kan blijven (geen geneste interactie). */
 function SpelerKaart({
   pid,
   profiel,
   histories,
   ratings,
   matchId,
-  onOpen,
 }: {
   pid: string;
   profiel: Profile | undefined;
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
-  onOpen: (s: PopupSpeler) => void;
 }) {
+  const [omgedraaid, setOmgedraaid] = useState(false);
+  // Eenmaal omgedraaid blijft de achterkant gemount, zodat hij tijdens het
+  // terugdraaien niet leeg valt (en zijn gecachte data behoudt).
+  const [ooitOmgedraaid, setOoitOmgedraaid] = useState(false);
   // Elo ná deze match; bij een geplande match (geen history-rij) de huidige
   // rating, en zonder beide een kale kaart.
   const elo =
@@ -221,28 +218,110 @@ function SpelerKaart({
     null;
   const tier = tierFor(elo);
   const naam = profiel ? displayName(profiel) : "Onbekend";
+  const draai = () => {
+    setOmgedraaid((v) => !v);
+    setOoitOmgedraaid(true);
+  };
   return (
-    <button
-      type="button"
-      className={`lineup-kaart${tier ? ` lineup-kaart--${tier.key}` : ""}`}
-      onClick={() => onOpen({ pid, profiel, elo })}
-      aria-haspopup="dialog"
-      aria-label={`Samenvatting van ${naam}`}
+    <div
+      className={`lineup-kaart${tier ? ` lineup-kaart--${tier.key}` : ""}${omgedraaid ? " is-omgedraaid" : ""}`}
     >
-      <span className="lineup-kaart__vlak">
-        <span className="lineup-kaart__elo">{elo ?? "—"}</span>
-        <span className="lineup-kaart__elo-label">Elo</span>
-        {tier && (
-          <span className="lineup-kaart__tier" title={tierTitle(tier)}>
-            {tier.emoji}
+      <div className="lineup-kaart__flipper">
+        <div className="lineup-kaart__zijde lineup-kaart__zijde--voor">
+          <button
+            type="button"
+            className="lineup-kaart__flip"
+            onClick={draai}
+            aria-expanded={omgedraaid}
+            aria-label={`Statistieken van ${naam}`}
+          />
+          <span className="lineup-kaart__vlak">
+            <span className="lineup-kaart__elo">{elo ?? "—"}</span>
+            <span className="lineup-kaart__elo-label">Elo</span>
+            {tier && (
+              <span className="lineup-kaart__tier" title={tierTitle(tier)}>
+                {tier.emoji}
+              </span>
+            )}
+            <span className="lineup-kaart__avatar">
+              <Avatar profile={profiel} size={44} />
+            </span>
+            <span className="lineup-kaart__naam">{naam}</span>
           </span>
-        )}
-        <span className="lineup-kaart__avatar">
-          <Avatar profile={profiel} size={44} />
-        </span>
-        <span className="lineup-kaart__naam">{naam}</span>
+        </div>
+        <div
+          className="lineup-kaart__zijde lineup-kaart__zijde--achter"
+          aria-hidden={!omgedraaid}
+        >
+          <button
+            type="button"
+            className="lineup-kaart__flip"
+            onClick={draai}
+            tabIndex={omgedraaid ? 0 : -1}
+            aria-label="Draai de kaart terug"
+          />
+          <span className="lineup-kaart__vlak lineup-kaart__vlak--stats">
+            {ooitOmgedraaid && (
+              <KaartStats pid={pid} profiel={profiel} actief={omgedraaid} />
+            )}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Achterkant van de kaart: vorm en balans over de recente matches van de
+ *  speler, met een doorklik naar het profiel. Laadt zijn eigen (gecachte)
+ *  data — de opstelling-matches dekken alleen dit duo, de vorm gaat over
+ *  álle recente matches van de speler. */
+function KaartStats({
+  pid,
+  profiel,
+  actief,
+}: {
+  pid: string;
+  profiel: Profile | undefined;
+  actief: boolean;
+}) {
+  const matches = useAsync(
+    () => getPlayerMatches(pid, CHEMIE_MATCH_LIMIT),
+    [pid],
+  );
+  const teams = useAsync(getTeamsMap, []);
+  const ms = matches.data ?? [];
+  const tmap = teams.data ?? {};
+  const vorm = recentForm(ms, tmap, pid);
+  const balans = { W: 0, D: 0, L: 0 };
+  for (const m of ms) {
+    const o = outcomeFor(m, tmap, pid);
+    if (o) balans[o]++;
+  }
+  const gespeeld = balans.W + balans.D + balans.L;
+  return (
+    <>
+      <span className="lineup-kaart__stats-rij">
+        <span className="lineup-kaart__stats-label">Vorm</span>
+        {vorm.length > 0 ? <FormChips form={vorm} size="sm" /> : "—"}
       </span>
-    </button>
+      <span className="lineup-kaart__stats-rij">
+        <span className="lineup-kaart__stats-label">Balans</span>
+        <span
+          aria-label={`${balans.W} winst, ${balans.D} gelijk, ${balans.L} verlies`}
+        >
+          {gespeeld > 0 ? `${balans.W}W · ${balans.D}G · ${balans.L}V` : "—"}
+        </span>
+      </span>
+      {profiel && (
+        <Link
+          className="lineup-kaart__stats-link"
+          to={`/spelers/${pid}`}
+          tabIndex={actief ? 0 : -1}
+        >
+          Profiel →
+        </Link>
+      )}
+    </>
   );
 }
 
@@ -255,21 +334,37 @@ function LineupUitleg() {
       <div className="explainer__body">
         <dl>
           <div>
-            <dt>Het veld</dt>
+            <dt>
+              <span className="lineup__uitleg-icoon" aria-hidden="true">
+                🎾
+              </span>
+              Het veld
+            </dt>
             <dd>
               Team A verdedigt de bovenste helft, team B de onderste. Tik op
-              een kaart voor een korte samenvatting van die speler.
+              een kaart om hem om te draaien: op de achterkant staan de vorm
+              en balans van die speler.
             </dd>
           </div>
           <div>
-            <dt>De kaarten</dt>
+            <dt>
+              <span className="lineup__uitleg-icoon" aria-hidden="true">
+                🃏
+              </span>
+              De kaarten
+            </dt>
             <dd>
               Elo van de speler ná deze match (bij een geplande match: de
               huidige rating). Het kader kleurt mee met zijn divisie.
             </dd>
           </div>
           <div>
-            <dt>De lijn tussen partners</dt>
+            <dt>
+              <span className="lineup__uitleg-icoon" aria-hidden="true">
+                ⚡
+              </span>
+              De lijn tussen partners
+            </dt>
             <dd>
               De chemie van het duo — presteert het sámen beter dan hun rating
               voorspelt?
@@ -285,7 +380,12 @@ function LineupUitleg() {
             </dd>
           </div>
           <div>
-            <dt>De badge boven/onder het veld</dt>
+            <dt>
+              <span className="lineup__uitleg-icoon" aria-hidden="true">
+                🏷️
+              </span>
+              De badge boven/onder het veld
+            </dt>
             <dd>
               Diezelfde chemie als getal: hoeveel Elo-punten het duo per
               gezamenlijke match boven (+) of onder (−) de verwachting scoort.
@@ -309,15 +409,7 @@ function LegendeLijn({
 }) {
   return (
     <span className="lineup__legende-item">
-      <svg
-        className={`lineup__lijn lineup__lijn--${niveau} lineup__lijn--voorbeeld`}
-        viewBox="0 0 56 14"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <line className="lineup__lijn-casing" x1="2" y1="7" x2="54" y2="7" />
-        <line className="lineup__lijn-kern" x1="2" y1="7" x2="54" y2="7" />
-      </svg>
+      <ChemieLijn niveau={niveau} voorbeeld />
       {label}
     </span>
   );
