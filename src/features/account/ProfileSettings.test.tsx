@@ -219,3 +219,33 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
+  // De fixture-profielen hebben de notify_*-kolommen niet; de ?? true-defaults
+  // in getNotificationPrefs moeten dan "alles aan" opleveren.
+  it("toont vier per-type toggles, standaard aangevinkt — ook zonder push-support", async () => {
+    // pushAvailability is standaard "unsupported": bewijst dat de voorkeuren
+    // zichtbaar blijven als push op dít apparaat niet kan.
+    renderPage();
+    expect(
+      await screen.findByRole("heading", { name: /welke meldingen wil je/i }),
+    ).toBeInTheDocument();
+    const toggles = [
+      await screen.findByRole("checkbox", { name: /nieuwe ronde/i }),
+      screen.getByRole("checkbox", { name: /uitslagen/i }),
+      // Niet op /vriendschapsverzoeken/ matchen: de privacykaart heeft ook
+      // een toggle "Vriendschapsverzoeken toestaan" — de hint is uniek.
+      screen.getByRole("checkbox", { name: /verzoek stuurt/i }),
+      screen.getByRole("checkbox", { name: /match-herinneringen/i }),
+    ];
+    for (const t of toggles) expect(t).toBeChecked();
+  });
+
+  it("slaat een uitgezette voorkeur op en bevestigt met een toast", async () => {
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("checkbox", { name: /nieuwe ronde/i }),
+    );
+    expect(await screen.findByText(/meldingen bijgewerkt/i)).toBeInTheDocument();
+  });
+});

@@ -6,6 +6,9 @@
 //  - INSERT op friendships (pending)            → "Vriendschapsverzoek" naar de ontvanger
 //  - INSERT/UPDATE op pias_of_week (#203)       → Coach Rudy-sneer naar de pias zelf
 //
+// Notificatie-voorkeuren (#57): de notify_*-kolommen op profiles bepalen per
+// type wie een push krijgt (nieuwe ronde, uitslag, vriendschapsverzoek).
+//
 // Vereiste secrets (supabase secrets set):
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…)
 // SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY worden automatisch meegegeven.
@@ -53,11 +56,18 @@ type WebhookPayload = {
   old_record: Record<string, unknown> | null;
 };
 
+// Notificatie-types waarvoor de gebruiker een voorkeur kan zetten (#57);
+// de namen mappen op de notify_*-kolommen van profiles.
+type MessageKind = "new_round" | "result" | "friend_request";
+
 type Message = {
   recipients: string[];
   title: string;
   body: string;
   url: string;
+  // null = altijd sturen: polls hebben (nog) geen voorkeur, en pias filtert
+  // zichzelf al via roast_schild in messageFor.
+  kind: MessageKind | null;
 };
 
 async function playersOf(match: MatchRecord): Promise<string[]> {
@@ -144,6 +154,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
       title: "Nieuw vriendschapsverzoek 🎾",
       body: `${await nameOf(rec.requester_id)} wil met je padellen.`,
       url: "/vrienden",
+      kind: "friend_request",
     };
   }
 
@@ -156,6 +167,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
       title: "Nieuwe ronde gegenereerd 🎾",
       body: "Jouw match staat klaar — bekijk tegen wie je speelt.",
       url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
+      kind: "new_round",
     };
   }
 
@@ -172,6 +184,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
       title: "Uitslag ingevoerd",
       body: `Jouw match is afgerond:${score}. Bekijk het nieuwe klassement.`,
       url: `/matches/${rec.id}`,
+      kind: "result",
     };
   }
 
@@ -198,6 +211,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
         title: "Nieuwe speeldag-poll 🎾",
         body: `${await nameOf(rec.created_by)} stelt momenten voor — stem wanneer je kunt.`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
+        kind: null,
       };
     }
 
@@ -214,6 +228,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
         title: "Speelmoment gekozen 🎾",
         body: `De groep speelt ${moment}. Kijk of je erbij bent.`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
+        kind: null,
       };
     }
 
@@ -230,6 +245,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
         title: "Baan geboekt ✓",
         body: `Jullie spelen ${moment}. Zet het in je agenda!`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
+        kind: null,
       };
     }
   }
@@ -263,6 +279,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
       title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
       body: `Jij bent de pias van de week. ${kiesUit(PIAS_SNEER[intensiteit], seed)}`,
       url: `/groepen/${rec.group_id}?tab=stand`,
+      kind: null,
     };
   }
 
@@ -310,6 +327,33 @@ async function optionYesVoters(optionId: string): Promise<string[]> {
   return [...new Set((data ?? []).map((v) => v.player_id))];
 }
 
+const PREF_COLUMN: Record<MessageKind, string> = {
+  new_round: "notify_new_round",
+  result: "notify_result",
+  friend_request: "notify_friend_request",
+};
+
+/** Notificatie-voorkeuren (#57): laat alleen recipients over die dit
+ *  push-type niet hebben uitgezet. Fail-open: bij een queryfout of een
+ *  ontbrekend profiel sturen we gewoon, zoals vóór #57. */
+async function filterByPreference(
+  recipients: string[],
+  kind: MessageKind | null,
+): Promise<string[]> {
+  if (!kind || recipients.length === 0) return recipients;
+  const col = PREF_COLUMN[kind];
+  const { data } = await supabase
+    .from("profiles")
+    .select(`id, ${col}`)
+    .in("id", recipients);
+  const uit = new Set(
+    (data ?? [])
+      .filter((p) => (p as Record<string, unknown>)[col] === false)
+      .map((p) => (p as { id: string }).id),
+  );
+  return recipients.filter((id) => !uit.has(id));
+}
+
 Deno.serve(async (req) => {
   let payload: WebhookPayload;
   try {
@@ -322,7 +366,10 @@ Deno.serve(async (req) => {
   }
 
   const message = await messageFor(payload);
-  if (!message || message.recipients.length === 0) {
+  const recipients = message
+    ? await filterByPreference(message.recipients, message.kind)
+    : [];
+  if (!message || recipients.length === 0) {
     return new Response(JSON.stringify({ skipped: true }), {
       headers: { "content-type": "application/json" },
     });
@@ -331,7 +378,7 @@ Deno.serve(async (req) => {
   const { data: subs } = await supabase
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth")
-    .in("user_id", message.recipients);
+    .in("user_id", recipients);
 
   let sent = 0;
   await Promise.all(
@@ -359,7 +406,7 @@ Deno.serve(async (req) => {
     }),
   );
 
-  return new Response(JSON.stringify({ sent, recipients: message.recipients.length }), {
+  return new Response(JSON.stringify({ sent, recipients: recipients.length }), {
     headers: { "content-type": "application/json" },
   });
 });

@@ -337,6 +337,7 @@ export function GroupDetail() {
         /* Wedstrijden en uitslagen invullen primair, dagoverzicht
            ondersteunend; afsluitkaart zodra alles binnen is (#377). */
         <VandaagTab
+          groupId={id}
           groupName={group.data.name}
           myId={myId}
           isOwner={isOwner}

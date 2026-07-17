@@ -48,6 +48,52 @@ export async function updatePrivacy(
   invalidate("profiles");
 }
 
+/** Notificatie-voorkeuren (#57): per push-type aan/uit (kolommen uit migratie
+ *  20260717120000). Server-side gerespecteerd door de edge functions send-push
+ *  en match-reminders; gelden dus voor ál je apparaten. */
+export interface NotificationPrefs {
+  /** Nieuwe ronde gegenereerd — jouw match staat klaar. */
+  notify_new_round: boolean;
+  /** Uitslag van jouw match ingevoerd. */
+  notify_result: boolean;
+  /** Nieuw vriendschapsverzoek. */
+  notify_friend_request: boolean;
+  /** Herinnering enkele uren vóór een geplande match. */
+  notify_match_reminder: boolean;
+}
+
+/** Haalt de notificatie-voorkeuren op (default = alles aan). */
+export async function getNotificationPrefs(
+  userId: string,
+): Promise<NotificationPrefs> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "notify_new_round, notify_result, notify_friend_request, notify_match_reminder",
+    )
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    notify_new_round: data?.notify_new_round ?? true,
+    notify_result: data?.notify_result ?? true,
+    notify_friend_request: data?.notify_friend_request ?? true,
+    notify_match_reminder: data?.notify_match_reminder ?? true,
+  };
+}
+
+/** Schrijft de notificatie-voorkeuren weg. */
+export async function updateNotificationPrefs(
+  userId: string,
+  patch: Partial<NotificationPrefs>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update(patch)
+    .eq("id", userId);
+  if (error) throw error;
+}
+
 /** Wijzigt het e-mailadres. Supabase stuurt een bevestigingsmail. */
 export async function changeEmail(newEmail: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
