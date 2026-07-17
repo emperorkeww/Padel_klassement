@@ -263,8 +263,9 @@ export async function createPlannedMatch(params: {
 }
 
 /** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel.
- *  Werkt alleen op een nog niet afgeronde match: als iemand anders net eerder
- *  opsloeg, faalt dit met een duidelijke melding i.p.v. stil te overschrijven. */
+ *  Mag door de aanmaker en de deelnemers (RLS), en alleen op een nog niet
+ *  afgeronde match: als iemand anders net eerder opsloeg, faalt dit met een
+ *  duidelijke melding i.p.v. stil te overschrijven. */
 export async function setMatchResult(params: {
   matchId: string;
   winnerTeamId: string | null;
@@ -287,8 +288,22 @@ export async function setMatchResult(params: {
     .select("id");
   if (error) throw error;
   invalidateMatchData();
-  if (!data || data.length === 0)
-    throw new Error("Deze uitslag is al door iemand anders ingevuld.");
+  if (!data || data.length === 0) {
+    // RLS blokkeert een UPDATE zonder fout maar met 0 rijen — dat kan hier
+    // zowel "al afgerond" als "geen rechten" betekenen. Haal de match op
+    // (publiek leesbaar) om de juiste melding te kiezen.
+    const { data: current } = await supabase
+      .from("matches")
+      .select("status")
+      .eq("id", params.matchId)
+      .maybeSingle();
+    if (!current) throw new Error("Deze match bestaat niet meer.");
+    if (current.status === "completed")
+      throw new Error("Deze uitslag is al door iemand anders ingevuld.");
+    throw new Error(
+      "Je kunt deze uitslag niet invullen — alleen de spelers van deze match of de aanmaker mogen dat."
+    );
+  }
 }
 
 /**
