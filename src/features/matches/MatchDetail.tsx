@@ -109,7 +109,7 @@ export function MatchDetail() {
   // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
   const setPairs = readSetScores(m);
   // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
-  // hem hebt aangemaakt (de server dwingt de rechten sowieso af).
+  // hem hebt aangemaakt — precies de kring die de RLS-policy toestaat (#413).
   const amParticipant =
     !!user &&
     [teamA, teamB].some(

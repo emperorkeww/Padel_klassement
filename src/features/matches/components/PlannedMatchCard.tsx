@@ -236,6 +236,16 @@ export function PlannedMatchCard({
   // Alleen de aanmaker mag verplaatsen/verwijderen (de server dwingt dit ook af);
   // toon die knoppen dus niet aan anderen om een voorspelbare fout te vermijden.
   const canManage = !!perspectiveId && m.created_by === perspectiveId;
+  // De uitslag invullen mag door de aanmaker én de spelers zelf (RLS #413);
+  // verberg de score-invoer voor anderen, die zouden op de server stuklopen.
+  // Op basis van de ingelogde gebruiker (myId), niet perspectiveId: op een
+  // profielpagina is dat de profieleigenaar, niet de kijker.
+  const canScore =
+    !!myId &&
+    (m.created_by === myId ||
+      [teams[m.team_a_id], teams[m.team_b_id]].some(
+        (t) => t && (t.player1_id === myId || t.player2_id === myId),
+      ));
 
   async function save() {
     if (!valid || saved) return;
@@ -381,11 +391,13 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_a_id], profiles)}
           />
         )}
-        <ScoreStepper
-          value={sa}
-          onChange={setSa}
-          label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
-        />
+        {canScore && (
+          <ScoreStepper
+            value={sa}
+            onChange={setSa}
+            label={`Score ${teamLabel(teams[m.team_a_id], profiles)}`}
+          />
+        )}
       </div>
 
       <div className="planned-card__row">
@@ -402,34 +414,40 @@ export function PlannedMatchCard({
             teamName={teamLabel(teams[m.team_b_id], profiles)}
           />
         )}
-        <ScoreStepper
-          value={sb}
-          onChange={setSb}
-          label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
-        />
+        {canScore && (
+          <ScoreStepper
+            value={sb}
+            onChange={setSb}
+            label={`Score ${teamLabel(teams[m.team_b_id], profiles)}`}
+          />
+        )}
       </div>
 
       {/* Sets horen bij de score-invoer: direct onder de team-rijen. */}
-      <div className="planned-card__sets">
-        <button
-          type="button"
-          className="planned-card__sets-toggle"
-          aria-expanded={showSets}
-          onClick={() => setShowSets((s) => !s)}
-        >
-          {showSets ? "− Sets verbergen" : "+ Sets per set invoeren (optioneel)"}
-        </button>
-        {showSets && (
-          <div className="mt-4">
-            <SetScoresInput
-              sets={sets}
-              onChange={setSets}
-              labelA={teamLabel(teams[m.team_a_id], profiles)}
-              labelB={teamLabel(teams[m.team_b_id], profiles)}
-            />
-          </div>
-        )}
-      </div>
+      {canScore && (
+        <div className="planned-card__sets">
+          <button
+            type="button"
+            className="planned-card__sets-toggle"
+            aria-expanded={showSets}
+            onClick={() => setShowSets((s) => !s)}
+          >
+            {showSets
+              ? "− Sets verbergen"
+              : "+ Sets per set invoeren (optioneel)"}
+          </button>
+          {showSets && (
+            <div className="mt-4">
+              <SetScoresInput
+                sets={sets}
+                onChange={setSets}
+                labelA={teamLabel(teams[m.team_a_id], profiles)}
+                labelB={teamLabel(teams[m.team_b_id], profiles)}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Coach en rivaliteit gegroepeerd als rustig tussenblok. */}
       {(coachPre || rivalry) && (
@@ -540,13 +558,15 @@ export function PlannedMatchCard({
             ⋯
           </button>
         )}
-        <button
-          className="btn btn--primary btn--sm planned-card__save"
-          disabled={!valid}
-          onClick={save}
-        >
-          Opslaan
-        </button>
+        {canScore && (
+          <button
+            className="btn btn--primary btn--sm planned-card__save"
+            disabled={!valid}
+            onClick={save}
+          >
+            Opslaan
+          </button>
+        )}
       </div>
 
       {/* Beheeracties (alleen de aanmaker) in een compacte sheet achter ⋯. */}

@@ -44,6 +44,24 @@ as $$
   );
 $$;
 
+-- Speelt p_uid in dit team? Voor de matches-update-policy (#413), zodat
+-- deelnemers hun eigen uitslag kunnen invullen. SECURITY DEFINER conform de
+-- overige helpers (teams is publiek leesbaar, maar zo blijft de policy
+-- onafhankelijk van de RLS op teams).
+create or replace function public.is_team_member(p_team_id uuid, p_uid uuid)
+returns boolean
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select exists (
+    select 1 from public.teams t
+    where t.id = p_team_id
+      and p_uid in (t.player1_id, t.player2_id)
+  );
+$$;
+
 -- Bestaat er een geaccepteerde vriendschap tussen twee spelers? SECURITY
 -- DEFINER (bypasst RLS) is hier essentieel: de friendships-select-policy (#326)
 -- roept dit aan, en een policy die ongefilterd public.friendships bevraagt zou
