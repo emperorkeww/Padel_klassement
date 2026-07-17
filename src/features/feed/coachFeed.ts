@@ -71,6 +71,11 @@ export const KAMPIOEN = [
   "Kampioen! Een werkelijk historische overwinning, heel legaal en heel cool. Iedereen zegt het.",
   "Kampioen! De rest van de divisie is corrupt en incompetent, alleen wij verdienen deze enorme glorie.",
   "Kampioen! Geniet van je beker, al vermoed ik dat de glazenwasser er meer werk aan heeft gehad dan jij op de baan.",
+  "Kampioen! De champagne mag vloeien, al had ik er liever zelf gestaan.",
+  "De beker is binnen. De legende begint nu pas echt.",
+  "Kampioen! Een tactische triomf die nog jaren besproken zal worden.",
+  "Bovenaan de troon. M'n notitieboekje heeft er een gouden randje bij gekregen.",
+  "De absolute nummer één. Heel de club buigt voor je.",
 ] as const;
 
 const PROMOTIE = [
@@ -96,6 +101,11 @@ const PROMOTIE = [
   "Promotie! Net zo omstreden als het besluit van de FIFA-disciplinaire commissie om Baloguns rode kaart voorwaardelijk op te schorten.",
   "Promotie! Dit succes is enorm, gigantisch, het mooiste wat deze club ooit heeft gezien. Geloof me.",
   "Promotie! Een trede omhoog op de ladder, zodat je val strakjes nóg spectaculairder en pijnlijker zal zijn.",
+  "Promotie! Een trede omhoog op de ladder van roem en zweet.",
+  "Omhooggevlogen. Zorg dat je daarboven ook je mannetje kunt staan.",
+  "Promotie! De tegenstanders op het nieuwe niveau zijn al zenuwachtig.",
+  "Een niveau gestegen. Tijd om het tactische bord opnieuw in te richten.",
+  "Stijgen is prachtig. Nu bewijzen dat je daar thuishoort.",
 ] as const;
 
 const DEGRADATIE = [
@@ -121,12 +131,17 @@ const DEGRADATIE = [
   "Degradatie. Zelfs met hulp van Gianni Infantino en presidentiële steun lig je er nu gewoon genadeloos uit.",
   "Degradatie. Een complot van de bond en de tegenstanders. We gaan in beroep bij de FIFA.",
   "Degradatie. Gefeliciteerd met je terugkeer naar de kelderklasse. Daar hoef je tenminste niet te doen alsof je kunt spelen.",
+  "Degradatie. Een tactische heroriëntatie is dringend noodzakelijk.",
+  "Een divisie gezakt. M'n notitieboekje huilt zachtjes met je mee.",
+  "Omlaag. Hopelijk vind je daar de motivatie om weer te gaan trainen.",
+  "Degradatie. Maar wie onderop ligt, kan alleen nog maar omhoog kijken.",
+  "Teruggezakt. Laat deze afgang de brandstof zijn voor je comeback.",
 ] as const;
 
 const REEKS = [
   "Niet meer te stoppen, die. Voorlopig.",
   "Op dreef! Iemand moet er een stok tussen steken.",
-  "Reeks na reeks. Geniet, tot de harde klap komt.",
+  "Reeks na reeks. Geniet, till de harde klap komt.",
   "Een winstreak? Dat is puur statistisch toeval, geniet er maar van.",
   "Onverslaanbaar? Laat me niet lachen, je hebt gewoon geluk met je partners.",
   "De winning streak groeit. De arrogantie helaas ook.",
@@ -142,6 +157,11 @@ const REEKS = [
   "Nog steeds aan het winnen. Ik heb in mijn notitieboekje gezocht naar een tactische verklaring, maar kon niks vinden.",
   "Een winreeks! Zelfs de meest incapabele bondscoach zou dit niet meer durven verkloten.",
   "Winst op winst. Heb je stiekem de banen korter laten maken of de netten verlaagd?",
+  "Een ongekende reeks. Zelfs de analisten staan met de mond vol tanden.",
+  "Winst na winst. Je bent momenteel de schrik van de hele groepsapp.",
+  "De overwinningsreeks groeit. Heel de club praat erover.",
+  "Onstuitbare vorm. Blijf gefocust, de top kijkt met angst toe.",
+  "Reeks na reeks. Een demonstratie van tactische discipline en pure wilskracht.",
 ] as const;
 
 const UPSET = [
@@ -165,13 +185,18 @@ const UPSET = [
   "Underdog wint! Dit is het grootste sportieve en organisatorische schandaal sinds de toewijzing van het WK aan Qatar.",
   "Upset! De outsider wint door een beslissing die nog onbegrijpelijker is dan de opschorting van Baloguns rode kaart.",
   "Upset! De topfavoriet ging volledig op z'n bek. Een tactisch debacle van historisch formaat.",
+  "De underdog wint! Een tactisch meesterwerk dat alle voorspellingen tart.",
+  "Upset! De favorieten dachten dat het een makkelijke middag zou worden. Fout.",
+  "Een stunt van formaat. De ranglijst staat volledig op z'n kop.",
+  "De favoriet ging eraf met een tactische blunder die z'n weerga niet kent.",
+  "Upset! Heel de toto in duigen, behalve voor wie in dit wonder geloofde.",
 ] as const;
 
 const BAGEL = [
   "Een droge 6-0. Nul games. Iemand mag zich diep schamen.",
   "6–0. Dat is geen wedstrijd, dat is een openbare terechtstelling.",
   "Pandoering gekregen. Droge 6-0. Koud opgediend.",
-  "Een droge 6-0... Hebben jullie überhaupt wel je racket uit de tas gehaald?",
+  "Een droge 6-0... Hebben jullie überhaupt wel je rackets uit de tas gehaald?",
   "Nul komma nul. Zelfs het scorebord schaamde zich om dit te tonen.",
   "Fietsbandjes uitgedeeld. Tijd voor een flinke portie zelfreflectie.",
   "Nul. Helemaal niks. Autsj.",
@@ -185,6 +210,11 @@ const BAGEL = [
   "Helemaal van de kaart geveegd. Mijn aantekeningen over deze set passen gemakkelijk op een postzegel.",
   "6-0! Een droge afschminking. Zelfs met een blinde wissel in de 89e minuut had ik dit niet slechter gekund.",
   "Nul games gepakt. Dat is statistisch gezien bijna een indrukwekkende kunstvorm op zich.",
+  "6-0! Een droge afstraffing die de tegenstander nog lang zal heugen.",
+  "Bagel uitgedeeld! De tegenpartij mocht alleen maar toekijken.",
+  "6-0 winst. Een masterclass in absolute dominantie aan het net.",
+  "Nul games weggegeven. Efficiënter dan dit wordt het niet.",
+  "6-0! De glazen wanden trillen nog na van deze vernedering.",
 ] as const;
 
 const MONSTER = [
@@ -205,6 +235,11 @@ const MONSTER = [
   "Geen spaan heel gelaten. Dit niveau van dominantie is bijna onbeschoft, ik hou er wel van.",
   "Een walkover! Zelfs mijn meest beruchte tactische WK-moderampen vallen in het niet bij deze totale slachting.",
   "Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met gepast sadistisch genoegen.",
+  "Een monsterzege! De tegenstander werd volledig overlopen.",
+  "Dominantie met hoofdletters. Geen spaan heel gelaten.",
+  "Een pak slaag van jewelste. Tactisch en fysiek volledig overklast.",
+  "Monsterzege! De cijfers spreken voor zich: absolute klasse.",
+  "Weggevaagd. Dit niveau van overmacht is bijna angstaanjagend.",
 ] as const;
 
 const DEGRADATIE_NEUTRAAL = [
