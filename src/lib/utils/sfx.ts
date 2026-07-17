@@ -165,3 +165,51 @@ export function playSfx(naam: SfxNaam): void {
     // audio mag nooit de UI breken
   }
 }
+
+/** Continu pen-geluid voor het tekenen (#263); intensiteit stuurt live het
+ *  volume én de toonhoogte. Altijd stoppen bij pointer-up/unmount. */
+export interface PenHandle {
+  /** 0 (stil) … 1 (woest gekrabbel). */
+  setIntensiteit(i: number): void;
+  stop(): void;
+}
+
+const PEN_NOOP: PenHandle = { setIntensiteit: () => {}, stop: () => {} };
+const PEN_MAX_VOL = 0.3;
+
+export function startPen(): PenHandle {
+  if (!sfxAan()) return PEN_NOOP;
+  try {
+    const ac = audioContext();
+    if (!ac) return PEN_NOOP;
+    // Loopende ruis → bandpass (schuift mee omhoog bij wilder tekenen) → gain.
+    const bron = ac.createBufferSource();
+    bron.buffer = ruis(ac);
+    bron.loop = true;
+    const band = ac.createBiquadFilter();
+    band.type = "bandpass";
+    band.frequency.value = 2000;
+    band.Q.value = 1;
+    const vol = ac.createGain();
+    vol.gain.value = 0;
+    bron.connect(band).connect(vol).connect(ac.destination);
+    bron.start();
+    let gestopt = false;
+    return {
+      setIntensiteit(i: number) {
+        if (gestopt) return;
+        const k = Math.min(1, Math.max(0, i));
+        vol.gain.setTargetAtTime(k * PEN_MAX_VOL, ac.currentTime, 0.05);
+        band.frequency.setTargetAtTime(2000 + k * 3000, ac.currentTime, 0.05);
+      },
+      stop() {
+        if (gestopt) return;
+        gestopt = true;
+        vol.gain.setTargetAtTime(0, ac.currentTime, 0.03);
+        bron.stop(ac.currentTime + 0.15);
+      },
+    };
+  } catch {
+    return PEN_NOOP;
+  }
+}
