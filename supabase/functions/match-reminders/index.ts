@@ -46,6 +46,21 @@ async function playersOf(match: MatchRow): Promise<string[]> {
   return (data ?? []).flatMap((t) => [t.player1_id, t.player2_id]);
 }
 
+/** Notificatie-voorkeuren (#57): laat alleen spelers over die
+ *  match-herinneringen niet hebben uitgezet. Fail-open: bij een queryfout of
+ *  een ontbrekend profiel sturen we gewoon, zoals vóór #57. */
+async function withReminderPref(recipients: string[]): Promise<string[]> {
+  if (recipients.length === 0) return recipients;
+  const { data } = await admin
+    .from("profiles")
+    .select("id, notify_match_reminder")
+    .in("id", recipients);
+  const uit = new Set(
+    (data ?? []).filter((p) => p.notify_match_reminder === false).map((p) => p.id),
+  );
+  return recipients.filter((id) => !uit.has(id));
+}
+
 async function pushTo(recipients: string[], payload: unknown): Promise<number> {
   if (recipients.length === 0) return 0;
   const { data: subs } = await admin
@@ -103,7 +118,7 @@ Deno.serve(async (req) => {
   let sent = 0;
   for (const m of (matches ?? []) as MatchRow[]) {
     if (done.has(m.id)) continue;
-    const players = await playersOf(m);
+    const players = await withReminderPref(await playersOf(m));
     const when = new Date(m.played_at);
     const time = when.toLocaleTimeString("nl-NL", {
       hour: "2-digit",

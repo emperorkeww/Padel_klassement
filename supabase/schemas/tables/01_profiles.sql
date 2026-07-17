@@ -29,6 +29,12 @@ create table public.profiles (
   -- eigenaar zet); deze bepaalt enkel niet-groep-gescoopte, persoonlijke roasts.
   -- Default 'gemeen' = bestaand gedrag. Het schild blijft de harde opt-out.
   roast_intensiteit public.roast_intensiteit not null default 'gemeen',
+  -- Notificatie-voorkeuren (#57): per push-type aan/uit, server-side
+  -- gerespecteerd door send-push en match-reminders. Standaard alles aan.
+  notify_new_round boolean not null default true,
+  notify_result boolean not null default true,
+  notify_friend_request boolean not null default true,
+  notify_match_reminder boolean not null default true,
   -- Gastspeler zonder account, en (voor een gast) de speler die hem aanmaakte.
   is_guest boolean not null default false,
   owner_id uuid references auth.users (id) on delete cascade,
