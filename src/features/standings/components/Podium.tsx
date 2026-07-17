@@ -4,10 +4,8 @@ import { TierBadge } from "@/features/rating/components/TierBadge";
 import {
   BIG_DADDY_EMOJI,
   BIG_DADDY_TITEL,
-  bigDaddyCoachQuote,
   bigDaddyRoast,
 } from "@/features/dashboard/bigDaddy";
-import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import "./Podium.css";
 
 // Gedeeld podium voor de top 3 van een klassement (globaal én per groep):
@@ -33,9 +31,6 @@ export interface PodiumEntry {
   /** Toon de divisie-badge (#127), afgeleid van `rating`. Opt-in zodat
    *  punten-podia schoon blijven. */
   tier?: boolean;
-  /** Roast-schild van deze speler; dempt Coach Rudy's bubbel bij de #1 tot
-   *  neutrale lof (#297). */
-  roastSchild?: boolean;
 }
 
 export function Podium({ entries }: { entries: PodiumEntry[] }) {
@@ -47,10 +42,6 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
     { entry: first, place: 1 as const },
     { entry: third, place: 3 as const },
   ].filter((s): s is { entry: PodiumEntry; place: 1 | 2 | 3 } => !!s.entry);
-  // De #1 van een rating-podium krijgt naast de kroon ook Coach Rudy's
-  // commentaar (#297): lof voor de leider, sneer richting de rest. De bubbel
-  // staat onder het grid — de goud-kolom is te smal en zit in een <Link>.
-  const bigDaddy = first.tier ? first : null;
 
   return (
     <div className="podium-block">
@@ -112,13 +103,6 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
           );
         })}
       </div>
-      {bigDaddy && (
-        <CoachBubble mood="trots" size={30}>
-          <span className="coach-sneer__text">
-            {bigDaddyCoachQuote(bigDaddy.key, bigDaddy.roastSchild ?? false)}
-          </span>
-        </CoachBubble>
-      )}
     </div>
   );
 }
