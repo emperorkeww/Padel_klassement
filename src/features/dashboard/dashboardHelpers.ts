@@ -10,6 +10,7 @@ import {
   type PollOption,
   type PollVote,
 } from "@/features/groups/pollsApi";
+import { pollExpired } from "@/features/groups/pollLogic";
 
 /* Laatst bekende weergavenaam per gebruiker, zodat de begroeting bij een
    volgend bezoek meteen klopt (geen flits van het e-mailadres). */
@@ -110,10 +111,12 @@ export function pickPollBanner(
     votes: PollVote[];
   }[],
   myId: string,
-  today: string,
+  nowMs: number,
 ): PollPick | null {
   for (const { group, polls, options, votes } of rows) {
-    const open = polls.find((p) => p.status === "open");
+    const open = polls.find(
+      (p) => p.status === "open" && !pollExpired(p, options, nowMs),
+    );
     if (open) {
       const optionIds = new Set(
         options.filter((o) => o.poll_id === open.id).map((o) => o.id),
@@ -133,7 +136,7 @@ export function pickPollBanner(
     );
     if (fixed) {
       const opt = options.find((o) => o.id === fixed.locked_option_id);
-      if (opt && opt.date >= today) {
+      if (opt && !pollExpired(fixed, options, nowMs)) {
         return {
           kind: "fixed",
           group,

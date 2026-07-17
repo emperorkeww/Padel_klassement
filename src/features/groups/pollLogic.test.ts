@@ -5,6 +5,7 @@ import {
   diffPollOptions,
   nonVoters,
   optionState,
+  pollExpired,
   pollOptions,
   tallyOption,
 } from "./pollLogic";
@@ -46,6 +47,11 @@ function option(overrides: Partial<PollOption> = {}): PollOption {
     ...overrides,
   };
 }
+
+/** Epoch (ms) van een ISO-tijdstip; de fixtures spelen in Europe/Brussels
+ *  (juli = UTC+2): optie 2026-07-10 20:00, duur 90 → verlopen om 22:00
+ *  clubtijd = 2026-07-10T20:00:00Z. */
+const at = (iso: string) => new Date(iso).getTime();
 
 function vote(
   playerId: string,
@@ -108,10 +114,9 @@ describe("activePolls", () => {
       option({ id: "opt-b", poll_id: "booked", date: "2026-07-12" }),
       option({ id: "opt-o", poll_id: "open", date: "2026-07-10" }),
     ];
-    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
-      "open",
-      "booked",
-    ]);
+    expect(
+      activePolls(polls, opts, at("2026-07-08T12:00:00Z")).map((p) => p.id),
+    ).toEqual(["open", "booked"]);
   });
 
   it("sorteert soonest-first op het eerstvolgende moment", () => {
@@ -123,27 +128,76 @@ describe("activePolls", () => {
       option({ id: "a", poll_id: "laat", date: "2026-07-14", start_time: "20:00" }),
       option({ id: "b", poll_id: "vroeg", date: "2026-07-10", start_time: "19:00" }),
     ];
-    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
-      "vroeg",
-      "laat",
-    ]);
+    expect(
+      activePolls(polls, opts, at("2026-07-08T12:00:00Z")).map((p) => p.id),
+    ).toEqual(["vroeg", "laat"]);
   });
 
-  it("toont een geboekte poll zolang het moment nog moet komen", () => {
+  it("laat een geboekte poll staan tot slot-einde + marge, ook tijdens het spelen", () => {
     const polls = [
       poll({ id: "booked", status: "booked", locked_option_id: "opt-b" }),
     ];
+    // 20:00 + 90 min + 30 min marge → verlopen om 22:00 clubtijd (20:00Z).
     const opts = [option({ id: "opt-b", poll_id: "booked", date: "2026-07-10" })];
-    expect(activePolls(polls, opts, "2026-07-08").map((p) => p.id)).toEqual([
-      "booked",
-    ]);
-    expect(activePolls(polls, opts, "2026-07-11")).toEqual([]);
+    const ids = (nowMs: number) =>
+      activePolls(polls, opts, nowMs).map((p) => p.id);
+    expect(ids(at("2026-07-10T18:30:00Z"))).toEqual(["booked"]); // tijdens het slot
+    expect(ids(at("2026-07-10T19:59:00Z"))).toEqual(["booked"]); // net vóór einde + marge
+    expect(ids(at("2026-07-10T20:01:00Z"))).toEqual([]); // ná einde + marge
+  });
+
+  it("laat een open poll vervallen zodra álle momenten voorbij zijn", () => {
+    const polls = [poll({ id: "open", status: "open" })];
+    const opts = [
+      option({ id: "a", poll_id: "open", date: "2026-07-10" }),
+      option({ id: "b", poll_id: "open", date: "2026-07-12" }),
+    ];
+    // Eerste moment voorbij, laatste nog niet: poll blijft zinvol.
+    expect(
+      activePolls(polls, opts, at("2026-07-11T12:00:00Z")).map((p) => p.id),
+    ).toEqual(["open"]);
+    // Alle momenten voorbij: weg.
+    expect(activePolls(polls, opts, at("2026-07-12T20:01:00Z"))).toEqual([]);
+  });
+
+  it("laat een gelockte poll vervallen op het gekozen moment, niet op andere opties", () => {
+    const polls = [
+      poll({ id: "locked", status: "locked", locked_option_id: "gekozen" }),
+    ];
+    const opts = [
+      option({ id: "gekozen", poll_id: "locked", date: "2026-07-10" }),
+      option({ id: "later", poll_id: "locked", date: "2026-07-14" }),
+    ];
+    expect(activePolls(polls, opts, at("2026-07-10T20:01:00Z"))).toEqual([]);
+  });
+
+  it("laat een open poll zonder opties staan", () => {
+    const polls = [poll({ id: "leeg", status: "open" })];
+    expect(
+      activePolls(polls, [], at("2026-07-10T20:01:00Z")).map((p) => p.id),
+    ).toEqual(["leeg"]);
   });
 
   it("negeert geannuleerde polls", () => {
     expect(
-      activePolls([poll({ status: "cancelled" })], [], "2026-07-08"),
+      activePolls([poll({ status: "cancelled" })], [], at("2026-07-08T12:00:00Z")),
     ).toEqual([]);
+  });
+});
+
+describe("pollExpired", () => {
+  it("vergelijkt in clubtijd: zelfde klokmoment, andere tijdzone", () => {
+    const opts = [option()];
+    // 20:01Z: in Brussel (22:01) is het slot + marge voorbij…
+    expect(pollExpired(poll(), opts, at("2026-07-10T20:01:00Z"))).toBe(true);
+    // …maar in New York (16:01) moet 20:00 lokaal nog beginnen.
+    const ny = poll({ club_timezone: "America/New_York" });
+    expect(pollExpired(ny, opts, at("2026-07-10T20:01:00Z"))).toBe(false);
+  });
+
+  it("houdt een geboekte poll met onvindbare gekozen optie defensief vast", () => {
+    const booked = poll({ status: "booked", locked_option_id: "weg" });
+    expect(pollExpired(booked, [], at("2026-07-10T20:01:00Z"))).toBe(false);
   });
 });
 

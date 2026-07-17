@@ -5,6 +5,7 @@ import type {
   PollVote,
   PollVoteStatus,
 } from "./pollsApi";
+import { clubEpoch } from "@/lib/utils/time";
 
 // Pure logica rond speeldag-polls: banen-behoefte, haalbaarheid per optie en
 // welke poll de groepspagina toont. Getest in pollLogic.test.ts.
@@ -64,50 +65,85 @@ export function tallyOption(
   };
 }
 
+/** Marge na afloop van het slot voordat een moment als verlopen telt (#440):
+ *  uitloop op de baan en de laatste uitslagen invullen. */
+export const SLOT_EXPIRY_MARGIN_MIN = 30;
+
+/** Epoch (ms, clubtijd) waarop een optie verlopen is: slot-einde plus marge. */
+function optionEndMs(o: PollOption, timeZone: string): number {
+  return (
+    clubEpoch(o.date, o.start_time, timeZone) +
+    (o.duration + SLOT_EXPIRY_MARGIN_MIN) * 60_000
+  );
+}
+
+/**
+ * Of een poll verlopen is (#440). Voor gelockte/geboekte polls telt het
+ * gekozen moment; voor open polls het láátste kandidaat-moment (zolang er
+ * nog één te spelen valt, is de poll zinvol). Een open poll zonder opties
+ * verloopt niet: er valt niets te "missen" en de maker kan nog momenten
+ * toevoegen. Vergelijking in clubtijd via poll.club_timezone.
+ */
+export function pollExpired(
+  poll: PlayPoll,
+  options: PollOption[],
+  nowMs: number,
+): boolean {
+  if (poll.locked_option_id) {
+    const locked = options.find((o) => o.id === poll.locked_option_id);
+    return !!locked && optionEndMs(locked, poll.club_timezone) <= nowMs;
+  }
+  const own = options.filter((o) => o.poll_id === poll.id);
+  if (own.length === 0) return false;
+  return own.every((o) => optionEndMs(o, poll.club_timezone) <= nowMs);
+}
+
 /**
  * Sorteersleutel van een poll: het eerstvolgende moment dat er nog toe doet.
  * Voor gelockte/geboekte polls het gekozen moment; anders het vroegste
- * kandidaat-moment dat nog niet voorbij is (valt terug op het vroegste moment).
+ * kandidaat-moment dat nog niet verlopen is (valt terug op het laatste moment).
  */
 function pollMoment(
   poll: PlayPoll,
   options: PollOption[],
-  today: string,
-): string {
-  const key = (o: PollOption) => `${o.date}|${o.start_time}`;
+  nowMs: number,
+): number {
+  const startMs = (o: PollOption) =>
+    clubEpoch(o.date, o.start_time, poll.club_timezone);
   if (poll.locked_option_id) {
     const locked = options.find((o) => o.id === poll.locked_option_id);
-    if (locked) return key(locked);
+    if (locked) return startMs(locked);
   }
   const own = options
     .filter((o) => o.poll_id === poll.id)
-    .sort((a, b) => key(a).localeCompare(key(b)));
-  const upcoming = own.find((o) => o.date >= today);
-  return key(upcoming ?? own[own.length - 1] ?? { date: "9999-12-31", start_time: "23:59" } as PollOption);
+    .sort((a, b) => startMs(a) - startMs(b));
+  const upcoming = own.find((o) => optionEndMs(o, poll.club_timezone) > nowMs);
+  const pick = upcoming ?? own[own.length - 1];
+  return pick ? startMs(pick) : Number.MAX_SAFE_INTEGER;
 }
 
 /**
- * De polls die de groepspagina toont: alle open of gelockte polls, plus
- * geboekte polls waarvan het gekozen moment nog moet komen (#267 — meerdere
- * speeldagen tegelijk). Gesorteerd op eerstvolgend moment (soonest-first).
+ * De polls die de groepspagina toont: open, gelockte en geboekte polls
+ * waarvan het slot (start + duur + marge) nog niet voorbij is (#440), in
+ * clubtijd. Gesorteerd op eerstvolgend moment (soonest-first).
  */
 export function activePolls(
   polls: PlayPoll[],
   options: PollOption[],
-  today: string,
+  nowMs: number,
 ): PlayPoll[] {
   return polls
     .filter((p) => {
-      if (p.status === "open" || p.status === "locked") return true;
+      if (p.status === "open" || p.status === "locked") {
+        return !pollExpired(p, options, nowMs);
+      }
       if (p.status === "booked" && p.locked_option_id) {
         const opt = options.find((o) => o.id === p.locked_option_id);
-        return !!opt && opt.date >= today;
+        return !!opt && !pollExpired(p, options, nowMs);
       }
       return false;
     })
-    .sort((a, b) =>
-      pollMoment(a, options, today).localeCompare(pollMoment(b, options, today)),
-    );
+    .sort((a, b) => pollMoment(a, options, nowMs) - pollMoment(b, options, nowMs));
 }
 
 /**

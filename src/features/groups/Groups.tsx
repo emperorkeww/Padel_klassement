@@ -59,10 +59,11 @@ function journeyFor(
   polls: PlayPoll[],
   options: PollOption[],
   today: string,
+  nowMs: number,
 ): Journey {
   // Bij meerdere speeldagen (#267) toont de reis-badge de meest dringende:
   // een poll die stemmen/boeken vraagt gaat vóór een al geboekt moment.
-  const running = activePolls(polls, options, today);
+  const running = activePolls(polls, options, nowMs);
   const active =
     running.find((p) => p.status === "open" || p.status === "locked") ??
     running[0] ??
@@ -202,7 +203,7 @@ export function Groups() {
               {list.map((g) => {
                 const j = journeys.data?.[g.id];
                 const journey = j
-                  ? journeyFor(j.polls, j.options, today)
+                  ? journeyFor(j.polls, j.options, today, Date.now())
                   : null;
                 return (
                   <Link

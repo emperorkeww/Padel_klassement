@@ -215,7 +215,7 @@ export function Dashboard() {
   const rival = pickRival(myGames, tmap, myId);
 
   // Aanwezigheid vandaag: de groep met de meeste ja-stemmen.
-  const pollPick = pickPollBanner(openPolls.data ?? [], myId, today);
+  const pollPick = pickPollBanner(openPolls.data ?? [], myId, Date.now());
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
