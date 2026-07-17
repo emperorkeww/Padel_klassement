@@ -1081,6 +1081,10 @@ export type Database = {
           full_name: string | null
           id: string
           is_guest: boolean
+          notify_friend_request: boolean
+          notify_match_reminder: boolean
+          notify_new_round: boolean
+          notify_result: boolean
           owner_id: string | null
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild: boolean
@@ -1095,6 +1099,10 @@ export type Database = {
           full_name?: string | null
           id: string
           is_guest?: boolean
+          notify_friend_request?: boolean
+          notify_match_reminder?: boolean
+          notify_new_round?: boolean
+          notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
@@ -1109,6 +1117,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_guest?: boolean
+          notify_friend_request?: boolean
+          notify_match_reminder?: boolean
+          notify_new_round?: boolean
+          notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean

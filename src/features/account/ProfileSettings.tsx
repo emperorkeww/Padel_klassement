@@ -12,8 +12,11 @@ import {
 import {
   changeEmail,
   changePassword,
+  getNotificationPrefs,
   getPrivacy,
+  updateNotificationPrefs,
   updatePrivacy,
+  type NotificationPrefs,
   type Privacy,
 } from "./api";
 import { AccountNav } from "@/ui/AccountNav";
@@ -245,6 +248,33 @@ function NameCard({
 }
 
 /* ---------- Meldingen (web push) ---------- */
+const NOTIFY_OPTIES: {
+  key: keyof NotificationPrefs;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    key: "notify_new_round",
+    label: "Nieuwe ronde",
+    hint: "Als er een nieuwe wedstrijd voor jou gegenereerd is.",
+  },
+  {
+    key: "notify_result",
+    label: "Uitslagen",
+    hint: "Als de uitslag van jouw match is ingevoerd.",
+  },
+  {
+    key: "notify_friend_request",
+    label: "Vriendschapsverzoeken",
+    hint: "Als iemand je een verzoek stuurt.",
+  },
+  {
+    key: "notify_match_reminder",
+    label: "Match-herinneringen",
+    hint: "Een paar uur vóór een geplande match.",
+  },
+];
+
 function NotificationsCard({ userId }: { userId: string }) {
   const toast = useToast();
   const availability = pushAvailability();
@@ -252,6 +282,21 @@ function NotificationsCard({ userId }: { userId: string }) {
     availability === "ready" ? null : false,
   );
   const [busy, setBusy] = useState(false);
+  const prefs = useAsync(() => getNotificationPrefs(userId), [userId]);
+  const [prefsBusy, setPrefsBusy] = useState(false);
+
+  async function setPref(patch: Partial<NotificationPrefs>) {
+    setPrefsBusy(true);
+    try {
+      await updateNotificationPrefs(userId, patch);
+      toast.success("Meldingen bijgewerkt.");
+      prefs.reload();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setPrefsBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (availability !== "ready") return;
@@ -313,6 +358,34 @@ function NotificationsCard({ userId }: { userId: string }) {
               ? "Meldingen uitzetten"
               : "Meldingen aanzetten"}
         </button>
+      )}
+      {/* Per-type voorkeuren (#57): server-side, gelden voor ál je apparaten —
+          daarom ook zichtbaar als push op dít apparaat niet kan of uit staat. */}
+      <h3 className="card__title card__title--section">Welke meldingen wil je?</h3>
+      <p className="card__subtitle">
+        {availability === "ready"
+          ? "De knop hierboven regelt dít apparaat; deze keuzes gelden voor al je apparaten."
+          : "Deze keuzes gelden voor al je apparaten."}
+      </p>
+      {prefs.loading || !prefs.data ? (
+        <Skeleton rows={4} />
+      ) : (
+        <div className="stack">
+          {NOTIFY_OPTIES.map((o) => (
+            <label key={o.key} className="toggle-row">
+              <span className="toggle-row__text">
+                <span className="toggle-row__label">{o.label}</span>
+                <span className="toggle-row__hint">{o.hint}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={prefs.data[o.key]}
+                disabled={prefsBusy}
+                onChange={(e) => setPref({ [o.key]: e.target.checked })}
+              />
+            </label>
+          ))}
+        </div>
       )}
     </section>
   );
