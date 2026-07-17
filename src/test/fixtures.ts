@@ -172,6 +172,45 @@ export const RATING_HISTORY = [
   { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: NOW },
 ];
 
+// Chemie-fixtures voor de opstelling (#427): vijf extra afgewerkte duo-matches
+// (drempel MIN_SAMEN_CHEMIE = 5) waarin p1+p2 gemiddeld +4 Elo/match halen
+// (chemie hoog) en p3+p4 −4 (laag). Bewust niet in TABLES (zie MATCH_SINGLES):
+// de mock filtert niet, dus dit zou bestaande pagina-tests raken; tests geven
+// deze exports zelf als props of tabel mee.
+const LINEUP_DELTAS = [6, 5, 7, 4, -2]; // som +20 → gemiddeld +4 voor team A
+export const LINEUP_MATCHES = LINEUP_DELTAS.map((delta, i) => ({
+  id: `m-c${i + 1}`,
+  team_a_id: "t-ab",
+  team_b_id: "t-cd",
+  status: "completed",
+  winner_team_id: delta > 0 ? "t-ab" : "t-cd",
+  score_a: delta > 0 ? 6 : 3,
+  score_b: delta > 0 ? 3 : 6,
+  played_at: `2026-06-${10 + i}T10:00:00.000Z`,
+  created_at: `2026-06-${10 + i}T10:00:00.000Z`,
+  created_by: "p1",
+  group_id: "g1",
+  round_number: null,
+  format: "2v2",
+}));
+
+export const LINEUP_HISTORY = ["p1", "p2", "p3", "p4"].flatMap((pid) => {
+  let rating = 1000;
+  return LINEUP_DELTAS.map((d, i) => {
+    const delta = pid === "p1" || pid === "p2" ? d : -d;
+    const rij = {
+      player_id: pid,
+      match_id: `m-c${i + 1}`,
+      rating_before: rating,
+      rating_after: rating + delta,
+      delta,
+      played_at: `2026-06-${10 + i}T10:00:00.000Z`,
+    };
+    rating += delta;
+    return rij;
+  });
+});
+
 /** Alle tabellen samen — handig als vertrekpunt per test. */
 export const TABLES = {
   profiles: PROFILES,

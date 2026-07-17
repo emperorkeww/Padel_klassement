@@ -1,0 +1,56 @@
+/* Spelersamenvatting (#427): compacte inhoud voor de gedeelde Sheet-popup. */
+
+.speler-popup {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+.speler-popup__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.speler-popup__rating {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.speler-popup__elo {
+  font-family: var(--font-rounded);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.speler-popup__elo-label {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.speler-popup__feiten {
+  margin: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.speler-popup__feiten > div {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.speler-popup__feiten dt {
+  min-width: 3.5rem;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.speler-popup__feiten dd {
+  margin: 0;
+}
+.speler-popup__venster {
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+}
