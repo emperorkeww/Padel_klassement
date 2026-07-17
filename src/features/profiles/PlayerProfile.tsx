@@ -10,6 +10,7 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "@/features/standings/ratingsApi";
+import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
@@ -84,6 +85,8 @@ export function PlayerProfile() {
   const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
   // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
   const allHistories = useAsync(getAllRatingHistories, []);
+  // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
+  const vendettas = useAsync(() => getPlayerVendettas(id), [id]);
   // Alle afgeronde matches, nodig om de klassementspositie op elke speeldag te
   // herrekenen (rang-verloop). Vast bereik → gedeelde cache met het klassement.
   const allMatches = useAsync(
@@ -359,6 +362,11 @@ export function PlayerProfile() {
     h2h,
     nemesis,
     favoriet,
+    vendettaMet: new Set(
+      (vendettas.data ?? []).map((v) =>
+        v.challenger_id === id ? v.rival_id : v.challenger_id,
+      ),
+    ),
     balans,
     vsGespeeld,
     samenGespeeld,

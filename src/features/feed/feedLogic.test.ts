@@ -748,3 +748,151 @@ describe("buildFeed — statuswijzigingen (#344)", () => {
     expect(piet?.at).toBe("2026-07-12T19:30:00Z"); // Niet "2026-07-12" (middernacht)
   });
 });
+
+describe("buildFeed — vendetta's (#169)", () => {
+  const GROUPS = [{ id: "g1", name: "Kelderklasse", created_at: "2026-06-01T10:00:00Z" }];
+  const vendetta = (over: Partial<import("@/features/feed/feedLogic").FeedVendetta> = {}) => ({
+    id: "v1",
+    group_id: "g1",
+    challenger_id: "p1",
+    rival_id: "p3",
+    target_wins: 3,
+    status: "active",
+    started_at: "2026-07-01T00:00:00Z",
+    ...over,
+  });
+
+  it("emit 'gestart' en een stand-chip op elk meegeteld duel", () => {
+    // p1 (t-ab) wint het enige duel sinds de start.
+    const m = match("2026-07-02T19:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups: GROUPS,
+      vendettas: [vendetta()],
+    });
+    const gestart = feed.find((e) => e.kind === "vendetta" && e.sub === "gestart");
+    expect(gestart).toBeTruthy();
+    if (gestart?.kind !== "vendetta") throw new Error("unreachable");
+    expect(gestart.groupName).toBe("Kelderklasse");
+    expect(gestart.doel).toBe(3);
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (matchEvent?.kind !== "match") throw new Error("geen match-item");
+    expect(matchEvent.highlights).toContainEqual({
+      type: "vendetta",
+      challengerId: "p1",
+      rivalId: "p3",
+      winsChallenger: 1,
+      winsRival: 0,
+    });
+  });
+
+  it("toont de laatste omslag zolang er niets beslist is", () => {
+    // p1 leidt 1-0, dan pakt p3 over naar 1-2 → laatste omslag als item.
+    const duels = [
+      match("2026-07-02T19:00:00Z", "t-ab", "t-cd"),
+      match("2026-07-03T19:00:00Z", "t-cd", "t-ab"),
+      match("2026-07-04T19:00:00Z", "t-cd", "t-ab"),
+    ];
+    const feed = buildFeed({
+      matches: duels,
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups: GROUPS,
+      vendettas: [vendetta({ target_wins: 5 })],
+    });
+    const omslag = feed.find((e) => e.kind === "vendetta" && e.sub === "omgeslagen");
+    if (omslag?.kind !== "vendetta") throw new Error("geen omslag-item");
+    expect(omslag.winsChallenger).toBe(1);
+    expect(omslag.winsRival).toBe(2);
+    expect(omslag.matchId).toBe(duels[2].id);
+    expect(feed.some((e) => e.kind === "vendetta" && e.sub === "beslist")).toBe(false);
+  });
+
+  it("anti-ruis: bij een beslissing vervalt het omslag-item", () => {
+    // p3 kantelt én haalt het doel (3): alleen gestart + beslist.
+    const duels = [
+      match("2026-07-02T19:00:00Z", "t-ab", "t-cd"),
+      match("2026-07-03T19:00:00Z", "t-cd", "t-ab"),
+      match("2026-07-04T19:00:00Z", "t-cd", "t-ab"),
+      match("2026-07-05T19:00:00Z", "t-cd", "t-ab"),
+    ];
+    const feed = buildFeed({
+      matches: duels,
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups: GROUPS,
+      vendettas: [vendetta()],
+    });
+    const soorten = feed
+      .filter((e) => e.kind === "vendetta")
+      .map((e) => (e.kind === "vendetta" ? e.sub : ""));
+    expect(soorten.sort()).toEqual(["beslist", "gestart"]);
+    const beslist = feed.find((e) => e.kind === "vendetta" && e.sub === "beslist");
+    if (beslist?.kind !== "vendetta") throw new Error("unreachable");
+    expect(beslist.winsRival).toBe(3);
+    expect(beslist.matchId).toBe(duels[3].id);
+  });
+
+  it("zonder groepsnaam (vreemde groep) blijft de vendetta weg", () => {
+    const feed = buildFeed({
+      matches: [match("2026-07-02T19:00:00Z")],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      groups: GROUPS,
+      vendettas: [vendetta({ group_id: "g-onbekend" })],
+    });
+    expect(feed.some((e) => e.kind === "vendetta")).toBe(false);
+  });
+});
+
+describe("buildFeed — derby-chip (#169)", () => {
+  it("chipt een match waarin alle vier de spelers in dezelfde divisie zitten", () => {
+    const m = match("2026-07-02T19:00:00Z");
+    const histories = {
+      p1: [point(m.id, 1005, 1015)],
+      p2: [point(m.id, 1040, 1050)],
+      p3: [point(m.id, 1060, 1050)],
+      p4: [point(m.id, 1090, 1080)],
+    };
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories,
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (matchEvent?.kind !== "match") throw new Error("geen match-item");
+    expect(matchEvent.highlights).toContainEqual({
+      type: "derby",
+      tierNaam: "Wannabe",
+      emoji: "😤",
+    });
+  });
+
+  it("geen chip zodra één speler in een andere divisie zit", () => {
+    const m = match("2026-07-02T19:00:00Z");
+    const histories = {
+      p1: [point(m.id, 1005, 1015)],
+      p2: [point(m.id, 1040, 1050)],
+      p3: [point(m.id, 1060, 1050)],
+      p4: [point(m.id, 1120, 1110)],
+    };
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories,
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (matchEvent?.kind !== "match") throw new Error("geen match-item");
+    expect(matchEvent.highlights.some((h) => h.type === "derby")).toBe(false);
+  });
+});

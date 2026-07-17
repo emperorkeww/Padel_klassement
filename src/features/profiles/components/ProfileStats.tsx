@@ -39,6 +39,7 @@ export function ProfileStats({ d }: { d: ProfileData }) {
     h2h,
     nemesis,
     favoriet,
+    vendettaMet,
   } = d;
 
   const [chartTab, setChartTab] = useState<"rating" | "positie">("rating");
@@ -306,6 +307,14 @@ export function ProfileStats({ d }: { d: ProfileData }) {
                     <Link className="h2h__player" to={`/spelers/${row.oppId}`}>
                       <Avatar profile={pmap[row.oppId]} size={28} />
                       <span className="h2h__name">{displayName(pmap[row.oppId])}</span>
+                      {vendettaMet.has(row.oppId) && (
+                        <span
+                          className="badge badge--accent"
+                          title="Actieve vendetta — de onderlinge stand is een lopend seizoen"
+                        >
+                          ⚔️
+                        </span>
+                      )}
                     </Link>
                     <span className="h2h__record">
                       <span className="h2h__w">{row.won}</span>

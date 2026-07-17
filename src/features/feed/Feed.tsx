@@ -36,6 +36,7 @@ import { celebrate } from "@/lib/utils/confetti";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
 import { getMySmoesjes } from "@/features/matches/smoesjesApi";
+import { getMyVendettas } from "@/features/groups/vendettaApi";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { getMyFriendships } from "@/features/friends/api";
 import { getMyGroups, getGroupMembers } from "@/features/groups/api";
@@ -83,6 +84,9 @@ export function Feed() {
   // Geplaatste smoezen in je groepen (#296), voor de smoes-items op de feed.
   const smoesjes = useAsync(getMySmoesjes, []);
   useRealtime("match_smoesjes", smoesjes.reload);
+  // Vendetta-contracten in je groepen (#169), voor de verhaallijn-items.
+  const vendettas = useAsync(getMyVendettas, []);
+  useRealtime("vendettas", vendettas.reload);
   // Een nieuwe uitslag verandert ook ratings, klassement, de pias-aanduiding én
   // de Zwarte Piet: al die bronnen verversen, anders lopen ze achter.
   const reloadMatchSources = useCallback(() => {
@@ -130,17 +134,26 @@ export function Feed() {
   useRealtime("play_polls", groupExtras.reload);
 
   // Seizoenskampioenen & Maand-pias: alleen kort na een kwartaalwissel of maandwissel
-  // de groepsmatches erbij halen (duurdere query's).
+  // de groepsmatches erbij halen (duurdere query's). Groepen met een vendetta
+  // (#169) halen we altijd op: de vendetta-stand telt over de volledige
+  // historie sinds de start, niet enkel het feed-venster.
   const championSeason = useMemo(() => recentlyClosedSeason(new Date()), []);
   const closedMonth = useMemo(() => recentlyClosedMonth(new Date()), []);
+  const vendettaGroupKey = [
+    ...new Set((vendettas.data ?? []).map((v) => v.group_id)),
+  ]
+    .sort()
+    .join(",");
   const groupMatches = useAsync(async () => {
-    if (!championSeason && !closedMonth) return {};
-    const list = groups.data ?? [];
+    const vendettaGroups = new Set(vendettaGroupKey.split(",").filter(Boolean));
+    const list = (groups.data ?? []).filter(
+      (g) => championSeason || closedMonth || vendettaGroups.has(g.id),
+    );
     const perGroup = await Promise.all(
       list.map(async (g) => [g.id, await getGroupMatches(g.id)] as const),
     );
     return Object.fromEntries(perGroup) as Record<string, Match[]>;
-  }, [groupKey, championSeason?.id, closedMonth?.label]);
+  }, [groupKey, championSeason?.id, closedMonth?.label, vendettaGroupKey]);
 
   const loading =
     matches.loading || teams.loading || profiles.loading || friendships.loading;
@@ -196,6 +209,7 @@ export function Feed() {
             piasWeeks: Object.values(piasWeeks.data ?? {}).flat(),
             shameTransfers: Object.values(shame.data ?? {}),
             smoesjes: smoesjes.data ?? [],
+            vendettas: vendettas.data ?? [],
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
             // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
@@ -215,6 +229,7 @@ export function Feed() {
       piasWeeks.data,
       shame.data,
       smoesjes.data,
+      vendettas.data,
       profiles.data,
     ],
   );

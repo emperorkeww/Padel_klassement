@@ -11,6 +11,7 @@ import { groupRatingStandings, playedInGroup } from "../groupRating";
 import type { MatchRatings } from "../maandpias";
 import type { ZwartePietHolder } from "../zwartePietApi";
 import { RivalryCard } from "./RivalryCard";
+import { VendettaCard } from "./VendettaCard";
 import { PiasCard } from "./PiasCard";
 import { ZwartePietCard } from "./ZwartePietCard";
 import type { PredictionStanding } from "@/features/matches/predictions";
@@ -385,6 +386,14 @@ export function GroupStandTab({
         )}
       </section>
 
+      <VendettaCard
+        group={group}
+        matches={matches}
+        teams={teams}
+        profiles={profiles}
+        memberList={memberList}
+        myId={myId}
+      />
       <RivalryCard
         matches={matches}
         teams={teams}

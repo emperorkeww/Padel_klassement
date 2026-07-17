@@ -5,6 +5,7 @@ import {
   tierTitle,
   tierProgress,
   tierLegend,
+  zelfdeDivisie,
 } from "@/features/rating/tiers";
 
 describe("tierFor", () => {
@@ -147,6 +148,29 @@ describe("tierProgress", () => {
 
   it("null zonder rating", () => {
     expect(tierProgress(null)).toBeNull();
+  });
+});
+
+describe("zelfdeDivisie", () => {
+  it("geeft de gedeelde band als iedereen in dezelfde hoofddivisie zit", () => {
+    // Verschillende sub-niveaus (Wannabe III t/m I) blijven één divisie.
+    const band = zelfdeDivisie([1000, 1040, 1099, 1010])!;
+    expect(band.naam).toBe("Wannabe");
+    expect(band.emoji).toBe("😤");
+  });
+
+  it("null zodra één speler in een andere divisie zit", () => {
+    expect(zelfdeDivisie([1000, 1040, 1099, 1100])).toBeNull();
+  });
+
+  it("null zodra één rating ontbreekt", () => {
+    expect(zelfdeDivisie([1000, null, 1040, 1010])).toBeNull();
+    expect(zelfdeDivisie([])).toBeNull();
+  });
+
+  it("werkt in de open banden (GOAT en de bodem)", () => {
+    expect(zelfdeDivisie([1400, 1650])?.naam).toBe("GOAT");
+    expect(zelfdeDivisie([400, 599])?.naam).toBe("Sletje van de baan");
   });
 });
 

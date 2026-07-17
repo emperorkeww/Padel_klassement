@@ -1,6 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+
+// De VendettaCard (#169) haalt zelf zijn contracten op en abonneert realtime;
+// zonder mock zou de test een echte websocket openen.
+vi.mock("@/lib/supabase/client", async () => {
+  const { makeSupabaseMock } = await import("@/test/supabaseMock");
+  return { supabase: makeSupabaseMock() };
+});
+
 import { GroupStandTab } from "./GroupStandTab";
 import type {
   Group,
@@ -135,5 +143,17 @@ describe("<GroupStandTab /> tabellen in .table-scroll (#358)", () => {
     renderTab();
     fireEvent.click(screen.getByRole("button", { name: "Toto" }));
     expectTablesWrapped();
+  });
+});
+
+// #169: de vendetta-kaart staat op de stand-tab; zonder actieve vendetta's
+// toont hij de lege staat met de startknop voor groepsleden.
+describe("<GroupStandTab /> vendetta-kaart (#169)", () => {
+  it("toont de lege staat met een startknop", async () => {
+    renderTab();
+    expect(
+      await screen.findByRole("button", { name: /Verklaar vendetta/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nog geen actieve vendetta/)).toBeInTheDocument();
   });
 });

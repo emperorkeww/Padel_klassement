@@ -10,7 +10,7 @@ export const FILTERS = {
   Alles: null,
   Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
   Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion", "tier"]),
-  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes"]),
+  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes", "vendetta"]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
     "group-joined",
@@ -63,6 +63,8 @@ export function eventKey(event: FeedEvent): string {
       return `zp-${event.groupId}-${event.at}`;
     case "smoes":
       return `sm-${event.matchId}-${event.playerId}`;
+    case "vendetta":
+      return `v-${event.groupId}-${event.challengerId}-${event.rivalId}-${event.sub}-${event.at}`;
   }
 }
 
@@ -91,5 +93,9 @@ export function highlightText(
       return h.richting === "promotie"
         ? `${h.emoji} ${name(h.playerId)} promoveert naar ${h.label}`
         : `${h.emoji} ${name(h.playerId)} zakt naar ${h.label}`;
+    case "vendetta":
+      return `⚔️ Vendetta ${name(h.challengerId)} ${h.winsChallenger}–${h.winsRival} ${name(h.rivalId)}`;
+    case "derby":
+      return `🏟️ Derby · ${h.emoji} ${h.tierNaam}`;
   }
 }
