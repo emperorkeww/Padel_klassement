@@ -733,11 +733,13 @@ export function Dashboard() {
           {evening.isToday && (
             <div className="evening__actions">
               <ShareEvening
+                groupId={eveningGroup.id}
                 groupName={eveningGroup.name}
                 matches={eveningMatches}
                 teams={tmap}
                 profiles={pmap}
                 histories={histories.data ?? undefined}
+                intensiteit={myProfile?.roast_intensiteit ?? "gemeen"}
               />
             </div>
           )}

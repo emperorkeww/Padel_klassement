@@ -16,6 +16,7 @@ import "./VandaagTab.css";
 // komen uit GroupDetail.
 
 interface VandaagTabProps {
+  groupId: string;
   groupName: string;
   myId: string;
   /** Eigenaar mag ook andermans uitslagen beheren (canManage). */
@@ -43,6 +44,7 @@ interface VandaagTabProps {
 }
 
 export function VandaagTab({
+  groupId,
   groupName,
   myId,
   isOwner,
@@ -63,11 +65,13 @@ export function VandaagTab({
   // Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat.
   const share = (
     <ShareEvening
+      groupId={groupId}
       groupName={groupName}
       matches={matches}
       teams={teams}
       profiles={profiles}
       histories={histories}
+      intensiteit={intensiteit}
     />
   );
 

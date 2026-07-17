@@ -57,6 +57,7 @@ function renderTab(
       <AuthProvider>
         <ToastProvider>
           <VandaagTab
+            groupId="g1"
             groupName="Vrijdagavond Padel"
             myId="p1"
             isOwner
