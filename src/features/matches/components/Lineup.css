@@ -51,27 +51,31 @@
   --lijnkleur: var(--chem-onbekend);
   --lijndikte: 2px;
   --lijnstijl: dotted;
+  /* Voet: de hoogte van de onderhoeken van het schild (de rechte zijkanten
+     eindigen op 86% van de kaart) — daar staat de lijn, als grondlijn. */
+  --voet: 17px;
   position: relative;
   width: clamp(32px, 20cqw, 96px);
-  height: 14px;
+  align-self: stretch;
   flex: none;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   pointer-events: none;
 }
 .lineup__lijn-kern {
   flex: 1;
+  margin-bottom: var(--voet);
   border-top: var(--lijndikte) var(--lijnstijl) var(--lijnkleur);
   filter: drop-shadow(0 0 5px var(--lijnkleur))
     drop-shadow(0 0 1px var(--court-line));
 }
-/* Eindpunten: dots in de niveaukleur, hálf over de kaartranden zodat de lijn
-   er zichtbaar in "plugt". */
+/* Eindpunten: dots in de niveaukleur aan de voet van de kaarten, hálf over de
+   onderhoeken zodat de lijn er zichtbaar in "plugt". */
 .lineup__lijn::before,
 .lineup__lijn::after {
   content: "";
   position: absolute;
-  top: 50%;
+  bottom: calc(var(--voet) - 4px);
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -79,7 +83,6 @@
   box-shadow:
     0 0 0 2px var(--court-line),
     0 0 6px 1px var(--lijnkleur);
-  transform: translateY(-50%);
 }
 .lineup__lijn::before {
   left: -5px;
@@ -109,19 +112,25 @@
 }
 
 /* Legenda-variant (in de uitleg, dus op --surface): zachter, zonder gloed,
-   met dot-ringen in de chipkleur. */
+   gewoon gecentreerd, met dot-ringen in de chipkleur. */
 .lineup__lijn--voorbeeld {
   width: 52px;
   height: 12px;
+  align-self: auto;
+  align-items: center;
   padding: 0 4px;
 }
 .lineup__lijn--voorbeeld .lineup__lijn-kern {
+  margin-bottom: 0;
   filter: none;
 }
 .lineup__lijn--voorbeeld::before,
 .lineup__lijn--voorbeeld::after {
   width: 7px;
   height: 7px;
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
   box-shadow: 0 0 0 2px var(--surface-2);
 }
 .lineup__lijn--voorbeeld::before {
