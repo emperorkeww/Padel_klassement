@@ -36,6 +36,11 @@ const HELD_FLAVOR = [
   "liet de tegenpartij alle hoeken van de kooi zien",
   "had vandaag de tactische genialiteit in zijn vingers die ik op het WK miste",
   "speelde zo sterk dat zelfs ik er geen kritische noot over kan schrijven",
+  "heeft een ware demonstratie van tactisch padel gegeven",
+  "was niet te stoppen en regeerde als een koning in de kooi",
+  "liet de bal dansen op de baan en gaf iedereen het nakijken",
+  "speelde met de precisie van een Zwitsers uurwerk",
+  "had de regie stevig in handen en dicteerde elke rally",
 ] as const;
 
 /** Cijfer-flavors als er geen upset was om te melden. */
@@ -45,10 +50,15 @@ const CIJFER_FLAVOR = [
   "De baan heeft overuren gedraaid.",
   "De baromzet zal na al die sets ook wel flink gestegen zijn.",
   "Mijn kladblok staat helemaal volgeschreven met uitslagen.",
-  "De glazen wanden trillen nog na van al die smashgeweld.",
+  "De glazen wanden trillen nog na van al dat smashgeweld.",
   "Sommige ballen liggen waarschijnlijk nu nog ergens diep in de struiken.",
   "Mijn pen heeft overuren gedraaid en is nu officieel leeggeschreven.",
   "Een avond vol tactische experimenten langs de lijn.",
+  "M'n notitieboekje heeft rode bladzijden van alle genoteerde uitslagen.",
+  "De lichten van de padelclub stonden op het punt te knappen.",
+  "We hebben weer een hele stapel statistieken om te verwerken.",
+  "Een programma zo vol dat m'n sportpet er bijna van afvloog.",
+  "Zoveel padel dat we er een extra persconferentie voor moeten inplannen.",
 ] as const;
 
 /**

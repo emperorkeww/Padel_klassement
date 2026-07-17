@@ -15,6 +15,11 @@ const OCHTEND_NEUTRAAL = [
   "Geen opmerkingen vandaag. Ga er gewoon hard tegenaan.",
   "Nieuwe dag, nieuwe kansen om het tactische bord volledig om te gooien.",
   "Klaar voor weer een dag vol onnavolgbare tactische experimenten?",
+  "Een nieuwe dag om te laten zien dat tactiek belangrijker is dan puur geluk.",
+  "De zon schijnt op de padelbanen. Tijd om wat meters te maken.",
+  "Een schone lei vandaag. M'n notitieboekje ligt al opengeslagen.",
+  "Ga de kooi in en speel je eigen spel vandaag.",
+  "Geen tactische preken vandaag, gewoon gaan met die banaan.",
 ] as const;
 const OCHTEND_DIP = [
   "Een reeks nederlagen bouwt karakter. Heel véél karakter, in jouw geval.",
@@ -34,6 +39,11 @@ const OCHTEND_DIP = [
   "Een dip? Fake news! Mijn tactische notitieboekje bevat alleen maar virtuele overwinningen. De statistieken zijn gemanipuleerd.",
   "Ik heb net mijn tactische notitieboekje ritueel verbrand. Jouw verliesreeks is met geen enkele theorie meer te verklaren.",
   "Wakker worden! Jouw vorm is momenteel zo diep gezonken dat we de marine moeten inschakelen om je niveau te bergen.",
+  "Vier nederlagen op rij... M'n pen weigert bijna nog te schrijven.",
+  "De vormcrisis is compleet. Tijd om Infantino te bellen voor dispensatie.",
+  "Zelfs een getrainde eend had momenteel een actievere forehand.",
+  "Tijd voor een crisisberaad in m'n chique pak. Dit kan echt niet meer zo.",
+  "Met deze verliesreeks ben je populairder bij de tegenstander dan bij je eigen partner.",
 ] as const;
 const OCHTEND_HYPE = [
   "Je bent niet te stoppen. Doe the rest een lol en verlies eens.",
@@ -45,6 +55,11 @@ const OCHTEND_HYPE = [
   "Een winreeks! Laat het alsjeblieft niet naar je hoofd stijgen, je bent nog steeds geen GOAT.",
   "Je wint momenteel alles. Heb je stiekem de tegenstander omgekocht met een doos Belgische pralines?",
   "Een winreeks! Je claimt dat je de beste speler bent in de geschiedenis van de club. Zeer Trumpiaanse trekjes.",
+  "Je bent onstuitbaar. Zelfs de bondscoach is onder de indruk van je prestaties.",
+  "Winst na winst. Mijn notitieboekje raakt vol met louter complimenten.",
+  "Een ongekende vorm. Pas op dat je ego de kooi niet doet barsten.",
+  "Op deze winreeks mag je best een extra flesje koud zetten.",
+  "Je rijgt de zeges aaneen. Heel legaal en heel indrukwekkend.",
 ] as const;
 const OCHTEND_MATCH = [
   "Er staat een match klaar. Warm die smoesjes vast op.",
@@ -59,6 +74,11 @@ const OCHTEND_MATCH = [
   "Matchdag! Mijn tactische plan is simpel: we kopen de scheidsrechter om en als dat faalt bellen we de president.",
   "Matchdag. We gaan de tegenstander zo hard inmaken dat Gianni Infantino achteraf excuses moet aanbieden aan Bosnië.",
   "Er staat een match klaar. Ik heb de EHBO alvast stand-by gezet voor het geval je weer over je eigen voeten struikelt.",
+  "Matchday. Ik heb de reserveballen alvast klaargelegd (voor als je ze weer over de wand jast).",
+  "Vandaag moet het gebeuren. Laat die tactische plannen maar spreken.",
+  "Matchdag. Probeer de tegenstander vanaf de eerste service bij de keel te grijpen.",
+  "Er staat een wedstrijd gepland. Tijd om te bewijzen dat je geen eendagsvlieg bent.",
+  "Matchday. Mijn opstelling is gemaakt. Nu de uitvoering nog.",
 ] as const;
 const OCHTEND_TOP = [
   "Nummer één. Nu alleen nog zo blijven — de haaien ruiken bloed.",
@@ -68,17 +88,26 @@ const OCHTEND_TOP = [
   "Nummer één. Geniet ervan, maar onthoud dat één tactische blunder van mij genoeg is om je te banken.",
   "Bovenaan! Zelfs ik begin nu bijna te geloven dat je daadwerkelijk kunt padellen.",
   "Bovenaan het klassement! Heel legaal en heel cool, zoals Trump zou zeggen.",
+  "Bovenaan de lijst. De jagers zijn al onderweg, dus hou je racket scherp.",
+  "De nummer één positie. Een meesterwerk van tactisch vernuft en doorzettingsvermogen.",
+  "Koning van het klassement. Iedereen wil je van de troon stoten vandaag.",
+  "Bovenaan. Geniet ervan, maar blijf alert.",
+  "De troon is heet vandaag. Verdedig hem met hand en tand.",
 ] as const;
 const OCHTEND_ALGEMEEN = [
   "Netjes in de middenmoot. Grijs, maar veilig.",
   "Genoeg gekeken naar het klassement — ga het veranderen.",
   "Vandaag een goeie dag om iemand van hun voetstuk te meppen.",
-  "Een stabiele positie. Maar we willen geen stabiliteit, we willen spektakel (en gedurfde wissels)!",
-  "De middenmoot is veilig, maar een deugdelijke bondscoach streeft natuurlijk altijd naar meer.",
+  "Een deugdelijke bondscoach streeft natuurlijk altijd naar meer.",
   "Grijs in de middenmoot. Precies de plek waar kleurloze spelers zonder tactisch vernuft thuishoren.",
   "Stabiel in het midden. Het doet me pijnlijk sterk denken aan mijn meest saaie gelijke spelen.",
   "Nog steeds in de middenmoot. Een uiterst corrupt systeem, we eisen een hertelling van alle Elo-punten!",
   "Middenmoot. De ideale plek voor mensen die bang zijn om te winnen én te lui zijn om te verliezen.",
+  "De middenmoot is veilig, maar we zijn hier niet voor comfort.",
+  "Stabiel op je positie. Maar stabiliteit is voor ambtenaren, niet voor padellers.",
+  "Tijd om wat plekken te stijgen vandaag. De top is nog ver.",
+  "Vandaag een ideale dag om de ranglijst flink op te schudden.",
+  "In het midden van het pak. Sluip geruisloos dichter bij de top.",
 ] as const;
 // Tier-pools van de briefing (#411). Geëxporteerd voor de tak-tests, net als
 // KAMPIOEN in coachFeed.
@@ -95,6 +124,11 @@ export const OCHTEND_JAGER = [
   "De achtervolging loopt. Ik heb m'n pet schuin gezet, dat doe ik alleen bij titelkansen.",
   "Zo hoog in de lijst, en toch nog niet bovenaan. Dat jeukt, hè? Mooi. Gebruik het.",
   "De top-3 is je uitvalsbasis. Vandaag verkennen we het gebied daarboven.",
+  "De koploper voelt de druk. Vandaag is de dag om toe te slaan.",
+  "Vlak achter de top. Eén goede match en je pakt de koppositie.",
+  "Je staat op scherp om de troon te bestormen. Geen genade vandaag.",
+  "Als jager moet je geduldig zijn, en op het juiste moment toeslaan. Vandaag?",
+  "De top-3 is leuk, maar de nummer één positie glanst toch echt harder.",
 ] as const;
 export const OCHTEND_KELDER = [
   "Goedemorgen vanuit de kelder van het klassement. Het ontbijt smaakt daar hetzelfde, de ambitie hopelijk niet.",
@@ -109,6 +143,11 @@ export const OCHTEND_KELDER = [
   "Je positie is een tactische ramp, maar elke comeback begint met één zege. Vandaag?",
   "De kelder van het klassement. Ik zet alvast koffie voor de klim naar boven.",
   "Onderaan. M'n viool speelt zachtjes, maar m'n fluitje staat klaar voor de training.",
+  "Onderaan het klassement. De weg omhoog is de enige optie.",
+  "Hekkensluiter voor nu. Maar met de juiste tactiek klim je er zo weer uit.",
+  "De kelderklasse. Laat zien dat je er niet thuishoort vandaag.",
+  "Tijd om die rode lantaarn door te geven aan een ander.",
+  "Onderin de tabel. Blijf trainen, de ommekeer begint vandaag.",
 ] as const;
 export const OCHTEND_NIEUW = [
   "Nieuw in het klassement. Vandaag is een mooie dag om je Elo een verhaal te geven.",
@@ -123,6 +162,11 @@ export const OCHTEND_NIEUW = [
   "Net gestart in het klassement. Onthoud: elke nummer één is ooit onderaan begonnen.",
   "De teller staat nog bijna op nul. Perfecte dag om 'm te laten lopen.",
   "Nieuwkomer. Ik kijk vandaag extra goed mee, met m'n pen in de aanslag.",
+  "Net binnengekomen op de lijst. Tijd om je rating serieus te gaan bouwen.",
+  "De statistieken zijn nog blanco. Maak er een mooi verhaal van.",
+  "Welkom in het klassement. Laat je eerste match direct een statement zijn.",
+  "Nog geen historie hier. Die ga je vanaf vandaag zelf schrijven.",
+  "De eerste Elo-schattingen zijn binnen. Tijd voor de echte cijfers.",
 ] as const;
 
 export interface BriefingFeiten {
@@ -177,6 +221,11 @@ const MATCH_WINST = [
   "Winst. Geniet ervan, maar je service was nog steeds om te janken.",
   "Winst! Een overwinning van historische, Trumpiaanse proporties. The greatest ever, geloof me.",
   "Winst! Een gigantische zege, de grootste in de geschiedenis van deze padelbaan. Absoluut enorm.",
+  "Een glansrijke zege. M'n notitieboekje trilt nog van opwinding.",
+  "Winst! De persconferentie van vanavond zal louter positief zijn.",
+  "Punten in de pocket. Het was een tactisch schaakspel met jou als grootmeester.",
+  "Winst. Heel verdiend, al mag je partner ook wel wat credits krijgen.",
+  "Gewonnen. Snel inschrijven voor het volgende niveau voor een echte test.",
 ] as const;
 const MATCH_BAGEL = [
   "6-0. Dat is geen wedstrijd, dat is een openbare vernedering. Prachtig.",
@@ -184,6 +233,11 @@ const MATCH_BAGEL = [
   "6-0! Een absolute masterclass. Zelfs mijn beste tactische plannen konden deze perfectie niet overtreffen.",
   "Geen enkel game weggegeven. Dat is pas efficiëntie, daar kan de bond nog wat van leren.",
   "6-0 winst! Dit was bijna net zo makkelijk als een persconferentie na een gewonnen oefenwedstrijd tegen een amateurteam.",
+  "6-0! Een absolute afdroging. De tegenstander wist niet eens waar de kooi was.",
+  "Een droge 6-0. De definitie van efficiëntie en tactische dominantie.",
+  "Bagel uitgedeeld! Zelfs de tegenstanders klapten stilletjes mee.",
+  "6-0 winst! Dit was bijna te makkelijk om serieus in m'n boekje te noteren.",
+  "Geen game weggegeven. A masterclass in omschakelingspadel.",
 ] as const;
 const MATCH_VERLIES = [
   "Verloren. Maar goed, iemand moet de tegenstander laten stralen.",
@@ -200,6 +254,11 @@ const MATCH_VERLIES = [
   "Verloren. De tegenstander maakte misbruik van een corrupt systeem. Dit was een volledig 'rigged' wedstrijd!",
   "Verloren. Zelfs de watersproeiers op veld 2 toonden na de match meer bezieling en richtinggevoel dan jouw slagen.",
   "Nederlaag. Ik stel voor dat we deze wedstrijd snel wissen uit het geheugen, en bij voorkeur ook uit de database.",
+  "Verloren. Mijn tactische bord ligt momenteel in scherven op de kleedkamervloer.",
+  "Een nederlaag. Dit vraagt om een diepgaande analyse en een heleboel strafrondjes.",
+  "Verloren. Zelfs een blinde scheidsrechter had gezien dat de tactiek niet werkte.",
+  "Nederlaag. De tegenstander profiteerde optimaal van jullie positionele chaos.",
+  "Verloren. Zorg dat je racket de volgende match wél goed gestemd is.",
 ] as const;
 const MATCH_PAK_SLAAG = [
   "0-6. Ik heb 'm maar meteen in een gouden lijstje gedaan voor de hall of shame.",
@@ -213,6 +272,11 @@ const MATCH_PAK_SLAAG = [
   "0-6 verlies. We eisen dat dit resultaat direct ongeldig wordt verklaard. Een schande voor de sport!",
   "0-6 verlies. Dit deed zo ontiegelijk veel pijn aan de ogen dat ik spontaan mijn licentie als coach wil inleveren.",
   "Volledig weggespeeld. Het was net alsof je probeerde de bal te raken met een kookpan in plaats van een racket.",
+  "0-6 afdroging. Ik heb m'n pet diep over m'n ogen getrokken toen ik dit zag.",
+  "Met 0-6 weggespeeld. Zelfs de watersproeiers toonden meer bezieling.",
+  "Een totale instorting. Dit was geen padel, dit was een ramp van WK-proporties.",
+  "0-6 verlies. We eisen per direct een hertelling van de geslagen ballen.",
+  "Nul games gepakt. Zelfs met Infantino aan de lijn valt dit niet goed te praten.",
 ] as const;
 const MATCH_GELIJK = [
   "Gelijkspel — niemand wint, iedereen twijfelt.",
@@ -220,6 +284,11 @@ const MATCH_GELIJK = [
   "Gelijkspel. Geen winnaar, geen verliezer, gewoon een tactisch schaakspel met nul entertainmentwaarde.",
   "Een puntje erbij. Het houdt de moed erin, maar we gaan hiermee de geschiedenisboeken niet halen.",
   "Gelijkspel. De ultieme demonstratie van angst om te verliezen en tactisch lafbekken-gedrag.",
+  "Gelijkspel. De gulden middenweg, maar we willen bloed zien.",
+  "Remise. Een tactische patstelling waar niemand echt vrolijk van wordt.",
+  "Gelijkspel. Twee ploegen die vooral bang waren om te verliezen.",
+  "Een punt gedeeld. Het houdt de moed erin, maar de ambitie niet.",
+  "Gelijk. Tijd om de videobeelden te bestuderen om te zien waar het stilviel.",
 ] as const;
 
 export interface MatchFeiten {
@@ -258,6 +327,11 @@ const PRE_UNDERDOG = [
   "Kansloos volgens de cijfers. Maar we weigeren dit resultaat bij voorbaat te accepteren. Fake stats!",
   "Op papier kansloos. Mijn advies? Begin vast met het verzinnen van een heel creatief excuus voor achteraf.",
   "Analisten geven je nul procent kans. Zelfs de ballenjongens hebben al medelijden met je voetenwerk.",
+  "De kansberekening is genadeloos: je bent de underdog. Tijd voor een tactisch wonder.",
+  "Underdog op papier. Maar papier wint geen rally's, jij hopelijk wel.",
+  "De winkans is klein, maar de motivatie moet des te groter zijn.",
+  "Als underdog speel je zonder druk. Gebruik dat in je voordeel.",
+  "Analisten geven je weinig kans. Laat ze de tanden maar zien vandaag.",
 ] as const;
 const PRE_FAVORIET = [
   "Torenhoge favoriet. Nu alleen nog even niet verkloten.",
@@ -269,6 +343,11 @@ const PRE_FAVORIET = [
   "Torenhoge favoriet. Mocht het toch misgaan, dan claimen we gewoon dat de telling corrupt was en dat de winst gestolen is.",
   "Favoriet! Zelfs met een corrupte scheidsrechter en tegenwind gaan we deze overwinning sowieso opeisen.",
   "Torenhoge favoriet. Verlies dit niet, anders mag je de rest van het seizoen eigenhandig de banen gaan vegen.",
+  "Torenhoge favoriet vandaag. Laat zien waarom je bovenaan de lijst staat.",
+  "Iedereen rekent op winst. Zorg dat je de concentratie vasthoudt.",
+  "Favoriet van dienst. Verlies dit niet, anders raakt m'n notitieboekje oververhit.",
+  "Op papier ben je de betere. Nu de baan op en dat waarmaken.",
+  "Als favoriet moet je dominant spelen. Geen excuses vandaag.",
 ] as const;
 const PRE_GELIJK = [
   "Fiftyfifty op papier. Wie het hardst wil, wint.",
@@ -278,6 +357,11 @@ const PRE_GELIJK = [
   "Gelijkwaardig? Tactisch gezien voorzie ik vooral een hoop onnodig balverlies en misverstanden aan beide kanten.",
   "Fiftyfifty. Dit wordt een strijd tegen een rigged systeem. Houd je racket stevig vast.",
   "Gelijkwaardige match vooraf. Dat betekent dat degene met de minste tactische flaters er met de winst vandoor gaat.",
+  "Fiftyfifty vooraf. Dit wordt beslist op details en tactische discipline.",
+  "Een uiterst evenwichtige match. Wie het minst fouten maakt, wint.",
+  "Spanning gegarandeerd. Twee teams die elkaar geen duimbreed toegeven.",
+  "Een kraker. Het type wedstrijd waar je voor leeft als padeller.",
+  "Gelijkwaardig op papier. Laat zien dat je tactisch slimmer bent.",
 ] as const;
 
 /** Korte hype/waarschuwing bij een geplande match, op basis van de winkans
