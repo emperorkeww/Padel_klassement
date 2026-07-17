@@ -1,0 +1,427 @@
+/* Opstelling (#427): padelveld in bovenaanzicht met FUT-schildkaarten en een
+   chemielijn tussen de partners. Alles token-gestuurd (licht + donker); de
+   veld- en lijnkleuren zijn de --court-/--chem-tokens uit index.css. */
+
+.lineup__veld {
+  position: relative;
+  max-width: 380px;
+  margin: 0 auto;
+  aspect-ratio: 300 / 420;
+  /* Kaarten, lijn en tussenruimte schalen in cqw mee met de veldbreedte. */
+  container-type: inline-size;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--court) 0%, var(--court-deep) 100%);
+}
+
+/* Kooi, net, service- en middenlijnen (decoratieve SVG-overlay). */
+.lineup__veldlijnen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.lineup__veldlijnen rect,
+.lineup__veldlijnen line {
+  stroke: var(--court-line);
+  fill: none;
+}
+
+.lineup__helft {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.lineup__plek {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Chemielijn tussen de partners: een gloeiende lijn in de niveaukleur die de
+   volle ruimte tussen de kaarten overspant, met eindpunten die in de
+   kaartranden "pluggen" — een verbinding, geen los object. Elk niveau
+   verschilt in kleur én dikte én streepjespatroon (nooit alleen kleur);
+   de badge draagt de betekenis als tekst. */
+.lineup__lijn {
+  --lijnkleur: var(--chem-onbekend);
+  --lijndikte: 2px;
+  --lijnstijl: dotted;
+  position: relative;
+  width: clamp(32px, 20cqw, 96px);
+  height: 14px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.lineup__lijn-kern {
+  flex: 1;
+  border-top: var(--lijndikte) var(--lijnstijl) var(--lijnkleur);
+  filter: drop-shadow(0 0 5px var(--lijnkleur))
+    drop-shadow(0 0 1px var(--court-line));
+}
+/* Eindpunten: dots in de niveaukleur, hálf over de kaartranden zodat de lijn
+   er zichtbaar in "plugt". */
+.lineup__lijn::before,
+.lineup__lijn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lijnkleur);
+  box-shadow:
+    0 0 0 2px var(--court-line),
+    0 0 6px 1px var(--lijnkleur);
+  transform: translateY(-50%);
+}
+.lineup__lijn::before {
+  left: -5px;
+}
+.lineup__lijn::after {
+  right: -5px;
+}
+.lineup__lijn--hoog {
+  --lijnkleur: var(--chem-hoog);
+  --lijndikte: 5px;
+  --lijnstijl: solid;
+}
+.lineup__lijn--midden {
+  --lijnkleur: var(--chem-midden);
+  --lijndikte: 3px;
+  --lijnstijl: dashed;
+}
+.lineup__lijn--laag {
+  --lijnkleur: var(--chem-laag);
+  --lijndikte: 2px;
+  --lijnstijl: solid;
+}
+.lineup__lijn--onbekend {
+  --lijnkleur: var(--chem-onbekend);
+  --lijndikte: 2px;
+  --lijnstijl: dotted;
+}
+
+/* Legenda-variant (in de uitleg, dus op --surface): zachter, zonder gloed,
+   met dot-ringen in de chipkleur. */
+.lineup__lijn--voorbeeld {
+  width: 52px;
+  height: 12px;
+  padding: 0 4px;
+}
+.lineup__lijn--voorbeeld .lineup__lijn-kern {
+  filter: none;
+}
+.lineup__lijn--voorbeeld::before,
+.lineup__lijn--voorbeeld::after {
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 2px var(--surface-2);
+}
+.lineup__lijn--voorbeeld::before {
+  left: 0;
+}
+.lineup__lijn--voorbeeld::after {
+  right: 0;
+}
+
+/* De chemie als tekst, op een chip bij de achterlijn; het randje kleurt mee
+   met het niveau van de lijn. */
+.lineup__chemie {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 2px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 10px;
+  box-shadow: var(--shadow-md);
+}
+.lineup__helft--a .lineup__chemie {
+  top: var(--sp-2);
+}
+.lineup__helft--b .lineup__chemie {
+  bottom: var(--sp-2);
+}
+.lineup__chemie--hoog {
+  border-color: var(--chem-hoog);
+}
+.lineup__chemie--midden {
+  border-color: var(--chem-midden);
+}
+.lineup__chemie--laag {
+  border-color: var(--chem-laag);
+}
+.lineup__chemie-delta.is-up {
+  color: var(--success);
+}
+.lineup__chemie-delta.is-down {
+  color: var(--danger);
+}
+
+/* FUT-schildkaart: buitenlaag = divisiekleurig frame, binnenlaag = kaartvlak;
+   beide dragen dezelfde clip-path (een rand kan een clip-path niet volgen).
+   Tikken draait de kaart om (3D-flip) naar de statistieken-achterkant. */
+.lineup-kaart {
+  /* Zonder rating: neutraal frame. */
+  --tier: var(--ink-soft);
+  --tier-soft: var(--surface-2);
+  width: clamp(96px, 36cqw, 124px);
+  perspective: 600px;
+}
+.lineup-kaart__flipper {
+  position: relative;
+  transform-style: preserve-3d;
+}
+.lineup-kaart.is-omgedraaid .lineup-kaart__flipper {
+  transform: rotateY(180deg);
+}
+.lineup-kaart__zijde {
+  padding: 2.5px;
+  clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
+  background: linear-gradient(
+    160deg,
+    var(--tier) 0%,
+    var(--tier-soft) 55%,
+    var(--tier) 100%
+  );
+  filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.25));
+  backface-visibility: hidden;
+}
+.lineup-kaart__zijde--achter {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+/* Onzichtbare flip-knop over het hele vlak; de profiel-link op de achterkant
+   ligt erbóven en blijft zo een echte link. */
+.lineup-kaart__flip {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.lineup-kaart__flip:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--court-line);
+}
+/* Hover/focus: de kaart licht op en komt van het veld — maakt meteen duidelijk
+   dat hij klikbaar is; de flip zelf draait vloeiend. Alleen mét
+   bewegingsvoorkeur; anders wisselt de kaart direct. */
+@media (prefers-reduced-motion: no-preference) {
+  .lineup-kaart {
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease;
+  }
+  .lineup-kaart__flipper {
+    transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.1);
+  }
+  .lineup-kaart:has(.lineup-kaart__flip:hover),
+  .lineup-kaart:has(.lineup-kaart__flip:focus-visible) {
+    transform: translateY(-4px) scale(1.05);
+    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4));
+  }
+  .lineup-kaart:has(.lineup-kaart__flip:active) {
+    transform: translateY(-1px) scale(1.01);
+  }
+}
+.lineup-kaart__vlak {
+  clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
+  background: linear-gradient(180deg, var(--tier-soft) 0%, var(--surface) 78%);
+  padding: var(--sp-3) var(--sp-2) var(--sp-4);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--sp-2);
+}
+.lineup-kaart__elo {
+  font-family: var(--font-rounded);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.lineup-kaart__elo-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.lineup-kaart__tier {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.lineup-kaart__avatar {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  justify-self: center;
+}
+.lineup-kaart__naam {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-1);
+  margin-top: var(--sp-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Achterkant: vorm, balans en profiel-link, gecentreerd in het schild.
+   Label bóven waarde — naast elkaar past niet in de smalle kaart. */
+.lineup-kaart__vlak--stats {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+}
+.lineup-kaart__stats-rij {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: var(--fs-xs);
+  color: var(--ink);
+  white-space: nowrap;
+  max-width: 100%;
+}
+.lineup-kaart__stats-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.58rem;
+  color: var(--ink-soft);
+}
+.lineup-kaart__stats-link {
+  position: relative;
+  z-index: 2;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.lineup-kaart__stats-link:hover {
+  text-decoration: underline;
+}
+
+/* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
+.lineup-kaart--slof {
+  --tier: var(--slof);
+  --tier-soft: var(--slof-soft);
+}
+.lineup-kaart--karton {
+  --tier: var(--karton);
+  --tier-soft: var(--karton-soft);
+}
+.lineup-kaart--hout {
+  --tier: var(--hout);
+  --tier-soft: var(--hout-soft);
+}
+.lineup-kaart--brons {
+  --tier: var(--bronze);
+  --tier-soft: var(--bronze-soft);
+}
+.lineup-kaart--zilver {
+  --tier: var(--silver);
+  --tier-soft: var(--silver-soft);
+}
+.lineup-kaart--goud {
+  --tier: var(--gold);
+  --tier-soft: var(--gold-soft);
+}
+.lineup-kaart--platina {
+  --tier: var(--platina);
+  --tier-soft: var(--platina-soft);
+}
+.lineup-kaart--diamant {
+  --tier: var(--diamant);
+  --tier-soft: var(--diamant-soft);
+}
+.lineup-kaart--meester {
+  --tier: var(--meester);
+  --tier-soft: var(--meester-soft);
+}
+.lineup-kaart--legende {
+  --tier: var(--legende);
+  --tier-soft: var(--legende-soft);
+}
+
+/* Uitleg onder het veld (zelfde explainer-recept als het klassement), met een
+   icoon per onderwerp en de tekst netjes onder het label uitgelijnd. */
+.lineup__uitleg {
+  max-width: 380px;
+  margin: var(--sp-3) auto 0;
+}
+.lineup__uitleg .explainer__body dt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.lineup__uitleg .explainer__body dd {
+  margin-left: calc(1.5rem + var(--sp-2));
+  font-size: var(--fs-sm);
+}
+.lineup__uitleg-icoon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+/* Legenda: chips in een responsieve grid. */
+.lineup__legende {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.lineup__legende-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft-strong);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .lineup__veld {
+    max-width: 100%;
+  }
+}

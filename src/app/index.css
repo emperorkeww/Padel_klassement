@@ -50,6 +50,19 @@
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
   --lime-soft: #f4fadb;
 
+  /* Padelveld van de opstelling (#427). Puur decoratieve achtergrond (er staat
+     geen lopende tekst direct op het veld), dus buiten de contrast-CI. */
+  --court: #0d7a55;
+  --court-deep: #0a6547;
+  --court-line: rgba(255, 255, 255, 0.55);
+  /* Chemielijnen op het veld: bewust feller dan --success/--warn/--danger,
+     want die tekst-tokens vallen weg tegen het verzadigde groen. Decoratieve
+     strokes (aria-hidden); de badge draagt de betekenis als tekst. */
+  --chem-hoog: #4ade80;
+  --chem-midden: #fbbf24;
+  --chem-laag: #fb8a8a;
+  --chem-onbekend: #d7e2da;
+
   /* Lichte zijbalk / mobiele onderbalk */
   --sidebar-bg: #ffffff;
   --sidebar-ink: #64756c;
@@ -201,6 +214,15 @@
   --lime: #a9bd55;
   --lime-deep: #93a848;
   --lime-soft: #252e14;
+
+  /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
+  --court: #1b4636;
+  --court-deep: #163b2d;
+  --court-line: rgba(255, 255, 255, 0.35);
+  --chem-hoog: #46c07f;
+  --chem-midden: #dba743;
+  --chem-laag: #e08585;
+  --chem-onbekend: #93a89b;
 
   /* Donkere zijbalk / mobiele onderbalk, net los van de achtergrond. */
   --sidebar-bg: #121814;
