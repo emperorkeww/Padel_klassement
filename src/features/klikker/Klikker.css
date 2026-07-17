@@ -285,6 +285,38 @@
   font-size: 1.5rem;
   color: var(--ink);
 }
+/* ---- Teken je eigen Tactiek (#263) ---- */
+.tactiek__uitleg {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+}
+.tactiek__canvas {
+  display: block;
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--papier) 0 27px,
+      var(--papier-lijn) 27px 28px
+    );
+  cursor: crosshair;
+  /* Essentieel op mobiel: tekenen mag de pagina niet laten scrollen. */
+  touch-action: none;
+}
+.tactiek__voet {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sp-2);
+}
+.tactiek__oordeel {
+  min-height: 3rem;
+}
+
 /* Kletsnatte Rudy: blauwzweem + druppels óp de avatar. Geen extra PNG (elke
    avatar is ~2 MB); een filter + overlay volstaat voor een flits van 4 s. */
 .klikker-rudy--nat {

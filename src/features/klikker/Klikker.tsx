@@ -10,6 +10,7 @@ import {
 } from "./klikkerData";
 import { WisselGenerator } from "./components/WisselGenerator";
 import { SproeierModus } from "./components/SproeierModus";
+import { TactiekCanvas } from "./components/TactiekCanvas";
 import "./Klikker.css";
 
 // Rudi's Tactische Klikker (#259/#260): een op zichzelf staand speeltje in het
@@ -108,6 +109,7 @@ export function Klikker() {
 
       <WisselGenerator />
       <SproeierModus />
+      <TactiekCanvas />
     </div>
   );
 }
