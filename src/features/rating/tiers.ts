@@ -132,6 +132,27 @@ export function tierFor(rating: number | null): Tier | null {
   };
 }
 
+/** Eén hoofdtier-band uit TIER_BANDEN (divisie zonder sub-niveau). */
+export type TierBand = (typeof TIER_BANDEN)[number];
+
+/** De gedeelde hoofddivisie van een groep spelers: de band waarin ze állemaal
+ *  zitten, of null zodra één rating ontbreekt of een divisie afwijkt.
+ *  Sub-niveaus (III/II/I) tellen niet mee — "divisie" is voor spelers de
+ *  hoofdtier. Voedt de derby-detectie (#169). */
+export function zelfdeDivisie(
+  ratings: ReadonlyArray<number | null>,
+): TierBand | null {
+  if (ratings.length === 0) return null;
+  let band: TierBand | null = null;
+  for (const rating of ratings) {
+    const tier = tierFor(rating);
+    if (!tier) return null;
+    if (band && band.naam !== tier.naam) return null;
+    band ??= TIER_BANDEN.find((b) => b.naam === tier.naam) ?? null;
+  }
+  return band;
+}
+
 /** De hoofdtiers van hoog (GOAT) naar laag (Sletje van de baan) — voor het divisie-
  *  overzicht en de legenda. */
 export const TIER_BANDEN_HOOG_NAAR_LAAG = [...TIER_BANDEN].reverse();
