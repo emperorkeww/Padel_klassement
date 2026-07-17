@@ -35,6 +35,7 @@ import {
   updatePlannedMatchTime,
   type SetPair,
 } from "@/features/matches/api";
+import { serveerTeam } from "@/features/matches/serve";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { TeamSide } from "@/features/matches/components/MatchList";
@@ -161,6 +162,10 @@ export function PlannedMatchCard({
           schild: profiles[myId]?.roast_schild ?? false,
         })
       : null;
+  // Eerste opslag (#435): alleen relevant zolang de match nog gespeeld moet
+  // worden; na afronding verdwijnt de chip.
+  const serveKant = m.status === "scheduled" ? serveerTeam(m) : null;
+
   const isGroupMatch = m.group_id != null;
   const predictions = useAsync(
     () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
@@ -384,6 +389,9 @@ export function PlannedMatchCard({
           won={false}
           ratings={ratings.data ?? undefined}
         />
+        {serveKant === "a" && (
+          <ServeChip teamName={teamLabel(teams[m.team_a_id], profiles)} />
+        )}
         {pctA != null && (
           <WinChip
             pct={pctA}
@@ -407,6 +415,9 @@ export function PlannedMatchCard({
           won={false}
           ratings={ratings.data ?? undefined}
         />
+        {serveKant === "b" && (
+          <ServeChip teamName={teamLabel(teams[m.team_b_id], profiles)} />
+        )}
         {pctA != null && (
           <WinChip
             pct={100 - pctA}
@@ -665,6 +676,22 @@ function TipOption({
         {count > 0 ? `${count}× getipt` : "nog niemand"}
       </span>
     </button>
+  );
+}
+
+/** Pil die markeert welk team de eerste opslag heeft (#435). Op team-niveau:
+ *  het team kiest op de baan zelf wie van de twee serveert. */
+function ServeChip({ teamName }: { teamName: string }) {
+  return (
+    <span
+      className="servechip"
+      role="img"
+      title={`${teamName} begint met opslaan`}
+      aria-label={`${teamName} begint met opslaan`}
+    >
+      <span aria-hidden="true">🎾</span>
+      <span className="servechip__label">begint</span>
+    </span>
   );
 }
 

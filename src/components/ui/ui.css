@@ -1201,6 +1201,28 @@ textarea {
     display: none;
   }
 }
+/* Eerste opslag als pil in de teamrij (#435) — lime als knipoog naar de
+   padelbal, zelfde combinatie als de speelavond-chip op het dashboard. */
+.servechip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--lime-deep);
+  border-radius: 999px;
+  background: var(--lime-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--lime-deep);
+}
+/* Smal scherm: alleen de bal, het woord verdwijnt — zelfde afweging als bij
+   .winchip__label; de betekenis blijft via title/aria-label beschikbaar. */
+@media (max-width: 480px) {
+  .servechip__label {
+    display: none;
+  }
+}
 /* Smalle schermen: avatars wijken zodat namen niet afkappen; de voettekst
    van het scorebord mag wrappen. */
 @media (max-width: 480px) {
