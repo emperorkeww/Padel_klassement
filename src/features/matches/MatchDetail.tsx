@@ -6,6 +6,7 @@ import { useToast } from "@/ui/ToastProvider";
 import {
   emptySet,
   getMatch,
+  getPlayerMatches,
   getTeamsByIds,
   readSetScores,
   teamLabel,
@@ -25,10 +26,15 @@ import { Skeleton } from "@/ui/Skeleton";
 import { ScoreStepper } from "@/ui/ScoreStepper";
 import { ShareMatch } from "@/features/matches/components/ShareMatch";
 import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
+import { Lineup } from "@/features/matches/components/Lineup";
+import { CHEMIE_MATCH_LIMIT } from "@/features/matches/chemistry";
 import { outcomeFor } from "@/features/rating/results";
 import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
-import { getAllRatingHistories } from "@/features/standings/ratingsApi";
+import {
+  getAllRatingHistories,
+  getPlayerRatings,
+} from "@/features/standings/ratingsApi";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { playersOf } from "@/features/rating/results";
 import { TierBadge } from "@/features/rating/components/TierBadge";
@@ -54,6 +60,22 @@ export function MatchDetail() {
   // Rating-historie (gecacht, app-breed gedeeld) om de pre-match winkans en dus
   // een eventuele upset te bepalen (#85).
   const histories = useAsync(getAllRatingHistories, []);
+  // Chemie van de duo's (#427): recente matches van één speler per team — de
+  // gezamenlijke duo-matches zijn daar een subset van — plus de huidige
+  // ratings als terugval voor de kaart-Elo bij een geplande match.
+  const ratings = useAsync(getPlayerRatings, []);
+  const spelerA = teams.data?.[match.data?.team_a_id ?? ""]?.player1_id;
+  const spelerB = teams.data?.[match.data?.team_b_id ?? ""]?.player1_id;
+  const matchesA = useAsync(
+    () =>
+      spelerA ? getPlayerMatches(spelerA, CHEMIE_MATCH_LIMIT) : Promise.resolve([]),
+    [spelerA],
+  );
+  const matchesB = useAsync(
+    () =>
+      spelerB ? getPlayerMatches(spelerB, CHEMIE_MATCH_LIMIT) : Promise.resolve([]),
+    [spelerB],
+  );
   // Groepstoon (roast-intensiteit) voor Coach Rudy's stem in de smoesjesmachine.
   const groupId = match.data?.group_id ?? null;
   const group = useAsync(
@@ -258,6 +280,16 @@ export function MatchDetail() {
           </div>
         )}
       </section>
+
+      <Lineup
+        match={m}
+        teams={tmap}
+        profiles={pmap}
+        histories={histories.data ?? {}}
+        ratings={ratings.data ?? {}}
+        matchesA={matchesA.data ?? []}
+        matchesB={matchesB.data ?? []}
+      />
 
       {iLost && (
         <SmoesjesMachine

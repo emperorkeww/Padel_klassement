@@ -56,6 +56,14 @@ describe("<MatchDetail />", () => {
     expect(await screen.findByText(/score bijgewerkt/i)).toBeInTheDocument();
   });
 
+  it("toont de opstelling met chemie-badges", async () => {
+    renderPage();
+    expect(await screen.findByText(/^opstelling$/i)).toBeInTheDocument();
+    // Standaard-fixtures: elk duo heeft maar één gezamenlijke match (m-done),
+    // dus beide helften melden "te weinig samen" in plaats van een oordeel.
+    expect(await screen.findAllByText(/nog te weinig samen/i)).toHaveLength(2);
+  });
+
   it("toont Elo delta's, divisies en eventuele divisiewissels per speler", async () => {
     renderPage();
     // Check that p1's ELO and delta are shown
