@@ -26,6 +26,12 @@ export function canvasPalette() {
     kartonSoft: "#f6efe3",
     hout: "#6f4a26",
     houtSoft: "#efe6da",
+    successSoft: "#eaf8ef",
+    zebra: "#f5f8f5",
+    coach: "#e0821c",
+    coachSoft: "#fdf0dc",
+    coachLine: "#f0d3a3",
+    coachInk: "#5a3410",
     gold: "#d4a017",
     goldSoft: "#faf3dd",
     silver: "#8c98a4",
@@ -41,6 +47,81 @@ export function canvasPalette() {
     legende: "#c2185b",
     legendeSoft: "#fce7ef",
   };
+}
+
+/** Afgerond-rechthoek-pad (met terugval als ctx.roundRect ontbreekt). */
+export function rrect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  const anyCtx = ctx as CanvasRenderingContext2D & {
+    roundRect?: (x: number, y: number, w: number, h: number, r: number) => void;
+  };
+  if (typeof anyCtx.roundRect === "function") {
+    anyCtx.roundRect(x, y, w, h, rr);
+    return;
+  }
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/**
+ * Kapt tekst af op maxWidth met een echte ellipsis. Gebruik dit i.p.v. de
+ * `maxWidth`-parameter van ctx.fillText: die perst de letters horizontaal samen
+ * in plaats van af te kappen, wat lange namen onleesbaar maakt (#421).
+ */
+export function ellipsize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let kort = text;
+  while (kort.length > 0 && ctx.measureText(`${kort}…`).width > maxWidth) {
+    kort = kort.slice(0, -1);
+  }
+  return kort ? `${kort}…` : "…";
+}
+
+/**
+ * Breekt tekst af binnen maxWidth tot maximaal maxLines regels; wat niet past
+ * krijgt een ellipsis op de laatste regel. Tegenhanger van wrapCentered voor
+ * links uitgelijnde blokken.
+ */
+export function wrapLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (let i = 0; i < words.length; i++) {
+    const test = line ? `${line} ${words[i]}` : words[i];
+    if (ctx.measureText(test).width > maxWidth && line) {
+      if (lines.length === maxLines - 1) {
+        // Laatste toegestane regel: alles wat nog rest erop, en afkappen.
+        return [...lines, ellipsize(ctx, [line, ...words.slice(i)].join(" "), maxWidth)];
+      }
+      lines.push(line);
+      line = words[i];
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(ellipsize(ctx, line, maxWidth));
+  return lines;
 }
 
 /** Gecentreerde tekst met regelafbreking binnen maxWidth. */
@@ -69,6 +150,35 @@ export function wrapCentered(
   lines.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
 }
 
+/** De font-specs die de posters tekenen (Outfit is variabel, 400..800). */
+const POSTER_FONTS = [
+  "500 40px Outfit",
+  "600 40px Outfit",
+  "700 40px Outfit",
+  "800 40px Outfit",
+  "italic 500 40px Outfit",
+];
+
+/**
+ * Wacht tot Outfit klaarstaat vóór we tekenen (#421). Canvas triggert zélf geen
+ * font-load en Outfit komt met `display=swap` van Google Fonts, dus zonder deze
+ * stap valt een vroege deel-klik terug op system-ui: andere metrics, en dus
+ * kloppen alle gemeten afkappingen niet meer. `fonts.load` forceert de laadbeurt,
+ * `fonts.ready` wacht ook op wat de app zelf al aan het laden was. Faalt er iets
+ * (of ontbreekt de FontFaceSet, zoals in jsdom), dan tekenen we gewoon door —
+ * een poster in de terugvalletter is beter dan geen poster.
+ */
+async function waitForFonts(): Promise<void> {
+  const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+  if (!fonts) return;
+  try {
+    await Promise.all(POSTER_FONTS.map((f) => fonts.load(f)));
+    await fonts.ready;
+  } catch {
+    /* terugval op system-ui */
+  }
+}
+
 /** Tekent via `draw` op een canvas en deelt het resultaat als PNG. */
 export async function sharePng(
   draw: (ctx: CanvasRenderingContext2D) => void,
@@ -79,6 +189,7 @@ export async function sharePng(
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas niet beschikbaar.");
+  await waitForFonts();
   draw(ctx);
 
   const blob = await new Promise<Blob | null>((resolve) =>
