@@ -4,6 +4,7 @@
 // roast-schild + de intensiteit gerespecteerd worden. Geen IO — getest.
 
 import { kiesUniek, roastSeed, type RoastCtx } from "@/features/coach/roastTone";
+import type { KlassementFeiten } from "@/features/coach/klassementFeiten";
 
 // ── Dashboard: ochtendbriefing ──────────────────────────────────────────────
 const OCHTEND_NEUTRAAL = [
@@ -79,6 +80,50 @@ const OCHTEND_ALGEMEEN = [
   "Nog steeds in de middenmoot. Een uiterst corrupt systeem, we eisen een hertelling van alle Elo-punten!",
   "Middenmoot. De ideale plek voor mensen die bang zijn om te winnen én te lui zijn om te verliezen.",
 ] as const;
+// Tier-pools van de briefing (#411). Geëxporteerd voor de tak-tests, net als
+// KAMPIOEN in coachFeed.
+export const OCHTEND_JAGER = [
+  "Goedemorgen, jager. De nummer één ontbijt vandaag met een onrustig gevoel.",
+  "Je staat vlak achter de koploper. Vandaag lijkt me een prima dag voor een machtsgreep.",
+  "Zo dicht bij de top. Ik heb de aanvalsplannen al klaarliggen in m'n notitieboekje.",
+  "De troon is bijna binnen handbereik. Nog even doorbijten, dan mag je zwaaien naar beneden.",
+  "Tweede viool? Vandaag stemmen we 'm om naar eerste.",
+  "De kop is in zicht. Wie boven je staat, voelt vandaag iemand hijgen in z'n nek.",
+  "Jagen doe je 's ochtends vroeg. De koploper hoort je al aankomen.",
+  "Bijna bovenaan het klassement. Eén tactische zet — van mij uiteraard — en het kantelt.",
+  "Vandaag geen genade: de nummer één is oud nieuws zodra jij de baan op stapt.",
+  "De achtervolging loopt. Ik heb m'n pet schuin gezet, dat doe ik alleen bij titelkansen.",
+  "Zo hoog in de lijst, en toch nog niet bovenaan. Dat jeukt, hè? Mooi. Gebruik het.",
+  "De top-3 is je uitvalsbasis. Vandaag verkennen we het gebied daarboven.",
+] as const;
+export const OCHTEND_KELDER = [
+  "Goedemorgen vanuit de kelder van het klassement. Het ontbijt smaakt daar hetzelfde, de ambitie hopelijk niet.",
+  "Onderin de lijst. Vandaag lijkt me een uitstekende dag om daar iets aan te doen.",
+  "De rode lantaarn hangt aan jouw naam. Draag 'm vandaag over aan iemand anders.",
+  "Onderaan het klassement. De enige weg is omhoog, en die begint bij de eerstvolgende match.",
+  "De kelder. Ik heb er een motiverende krabbel over gemaakt in m'n notitieboekje: 'omhoog, nu'.",
+  "Laag in de stand. Niks dat een paar gewonnen potten niet kunnen oplossen.",
+  "Hekkensluiter. Iemand moet het zijn, maar het staat je niet.",
+  "Onderin. Zelfs de watersproeiers sproeien daar met een vleugje medelijden.",
+  "De onderste regionen van de lijst. Tijd voor een gedurfde wissel: verliezen inruilen voor winnen.",
+  "Je positie is een tactische ramp, maar elke comeback begint met één zege. Vandaag?",
+  "De kelder van het klassement. Ik zet alvast koffie voor de klim naar boven.",
+  "Onderaan. M'n viool speelt zachtjes, maar m'n fluitje staat klaar voor de training.",
+] as const;
+export const OCHTEND_NIEUW = [
+  "Nieuw in het klassement. Vandaag is een mooie dag om je Elo een verhaal te geven.",
+  "Te weinig matches voor een oordeel. Dat lost zichzelf op: de baan wacht.",
+  "Je rating is nog aan het indraaien. Een paar potten en we weten wie je bent.",
+  "Verse naam op de lijst. Ik heb een nieuwe bladzijde aangebroken — hou 'm schoon of maak 'm legendarisch.",
+  "Nog geen echte positie. Mooi zo: alles wat je vandaag wint is pure winst.",
+  "De statistieken kennen je amper. Verras ze.",
+  "Nieuw op de ranglijst. Zelfs ik heb nog geen mening, en dat is zeldzaam.",
+  "Blanco reputatie. Sommigen noemen dat eng, ik noem het een kans.",
+  "Je Elo is nog een schatting. Vandaag kun je 'm een richting geven.",
+  "Net gestart in het klassement. Onthoud: elke nummer één is ooit onderaan begonnen.",
+  "De teller staat nog bijna op nul. Perfecte dag om 'm te laten lopen.",
+  "Nieuwkomer. Ik kijk vandaag extra goed mee, met m'n pen in de aanslag.",
+] as const;
 
 export interface BriefingFeiten {
   rank: number | null;
@@ -88,6 +133,8 @@ export interface BriefingFeiten {
   losing: number;
   /** Staat er een geplande match klaar? */
   heeftMatch: boolean;
+  /** Klassement-feiten (#411); zonder dit veld geldt het oude rank===1-gedrag. */
+  klassement?: KlassementFeiten | null;
   seed: string;
   ctx: RoastCtx;
 }
@@ -99,6 +146,16 @@ export function coachBriefing(f: BriefingFeiten): string {
   if (f.losing >= 3) return kiesUniek(OCHTEND_DIP, seed);
   if (f.streak >= 3) return kiesUniek(OCHTEND_HYPE, seed);
   if (f.heeftMatch) return kiesUniek(OCHTEND_MATCH, seed);
+  switch (f.klassement?.tier) {
+    case "troon":
+      return kiesUniek(OCHTEND_TOP, seed);
+    case "jager":
+      return kiesUniek(OCHTEND_JAGER, seed);
+    case "kelder":
+      return kiesUniek(OCHTEND_KELDER, seed);
+    case "nieuw":
+      return kiesUniek(OCHTEND_NIEUW, seed);
+  }
   if (f.rank === 1) return kiesUniek(OCHTEND_TOP, seed);
   return kiesUniek(OCHTEND_ALGEMEEN, seed);
 }

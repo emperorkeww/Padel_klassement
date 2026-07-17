@@ -5,6 +5,7 @@ import { makeSupabaseMock } from "@/test/supabaseMock";
 import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
+import { NIEUW } from "@/features/coach/klassementPraat";
 
 // Vast "nu" (3 juli 2026, Q3): zo is Q2 2026 een afgesloten seizoen met een
 // kampioen. Alleen Date wordt gefaket, zodat waitFor/findBy gewoon blijven werken.
@@ -216,6 +217,47 @@ describe("<Leaderboard />", () => {
     const label = container.querySelector(".ranklist__lead-label");
     expect(lead).toHaveTextContent("1012");
     expect(label).toHaveTextContent("3 ptn");
+  });
+
+  it("becommentarieert jouw positie bij 'Alle groepen' (#411)", async () => {
+    // p1 (ingelogd) heeft 1 match < THIN_GAMES → tier "nieuw"; de regel komt
+    // dan deterministisch uit de NIEUW-pool.
+    const { container } = renderPage();
+    await screen.findAllByText("Wannabe III");
+    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+
+    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
+    expect(tekst).not.toBeNull();
+    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
+  });
+
+  it("blijft spreken wanneer een groep gekozen is (#411)", async () => {
+    const { container } = renderPage();
+    await screen.findAllByText("Wannabe III");
+    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    fireEvent.change(screen.getByLabelText("Groep"), { target: { value: "g1" } });
+
+    await screen.findAllByText(/alice anders/i);
+    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
+    expect(tekst).not.toBeNull();
+    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
+  });
+
+  it("spreekt op de spelers-tab alleen de kijker aan — geen tweede bubbel over de #1 (#411)", async () => {
+    // Eén Rudy op de pagina: de positie-bubbel over jou. De vroegere
+    // Podium-bubbel over de nummer 1 (#297) bestaat niet meer.
+    const { container } = renderPage();
+    await screen.findAllByText(/alice anders/i);
+    expect(container.querySelectorAll(".coach-sneer")).toHaveLength(1);
+    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
+    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
+  });
+
+  it("zwijgt over je positie in een seizoensarchief (#411)", async () => {
+    const { container } = renderPage("/?seizoen=2026-q2");
+    await screen.findAllByText(/carol claes/i);
+    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    expect(container.querySelector(".klassement-coach")).toBeNull();
   });
 
   it("zet Rating als laatste kolom bij spelers, Punten bij teams", async () => {

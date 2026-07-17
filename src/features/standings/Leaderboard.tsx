@@ -27,7 +27,10 @@ import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getPiasWeeks } from "./piasApi";
 import { currentPias } from "@/features/standings/pias";
-import { roastCtx, roastSeed } from "@/features/coach/roastTone";
+import { roastCtx, roastSeed, type CoachMood } from "@/features/coach/roastTone";
+import { klassementFeiten } from "@/features/coach/klassementFeiten";
+import { coachKlassement, coachKlassementMood } from "@/features/coach/klassementPraat";
+import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
 import { TierLegend } from "@/features/rating/components/TierLegend";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -365,6 +368,66 @@ export function Leaderboard() {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  // Coach Rudy over jóuw positie in het klassement (#411), naast de PiasBanner.
+  // Alleen op de live stand (geen archief/tijdmachine) en zonder zoekterm; ook
+  // bij "Alle groepen", dan over het globale klassement. Intensiteit — bewuste
+  // keuze: een groepsklassement spreekt met de toon van die groep (zoals
+  // groupPias hierboven); "Alle groepen" is een persoonlijk/globaal oppervlak
+  // en volgt jóuw profiel-intensiteit, net als de feed en het dashboard. Het
+  // schild is altijd dat van de kijker, want die is hier het doelwit.
+  let klassementCoach: { tekst: string; mood: CoachMood } | null = null;
+  const mijnIdx =
+    tab !== "team" ? displayRows.findIndex((r) => r.isMe) : -1;
+  if (mijnIdx >= 0 && !usingScope && !q.trim() && !loading && !error) {
+    const feiten = klassementFeiten(
+      displayRows.map((r) => ({
+        playerId: r.key,
+        naam: r.name,
+        rating: r.rating,
+        games: r.games,
+      })),
+      myId,
+      groupId ? "groep" : "globaal",
+      shifts.get(myId) ?? null,
+    );
+    if (feiten) {
+      // Voor het groep-vs-globaal-contrast: de globale stand uit de al geladen
+      // ratings, zonder extra fetch. Benadering zonder punten-tie-break — voor
+      // een quip ruim voldoende.
+      const globaal = groupId
+        ? klassementFeiten(
+            Object.values(rmap)
+              .map((r) => ({
+                playerId: r.player_id,
+                naam: displayName(pmap[r.player_id]),
+                rating: r.rating,
+                games: r.games,
+              }))
+              .sort((a, b) => (b.rating ?? -Infinity) - (a.rating ?? -Infinity)),
+            myId,
+            "globaal",
+          )
+        : null;
+      const groep = (groups.data ?? []).find((g) => g.id === groupId);
+      const invoer = {
+        feiten,
+        globaal,
+        groepsNaam: groep?.name ?? null,
+        seed: `${myId}|${groupId || "globaal"}|${new Date().toISOString().slice(0, 10)}`,
+        ctx: {
+          intensiteit: groupId
+            ? (groep?.roast_intensiteit ?? "gemeen")
+            : (pmap[myId]?.roast_intensiteit ?? "gemeen"),
+          schild: pmap[myId]?.roast_schild ?? false,
+        },
+      };
+      klassementCoach = {
+        tekst: coachKlassement(invoer),
+        mood: coachKlassementMood(invoer),
+      };
+    }
+  }
+
   // Naam-filter (#282): de echte rang blijft op elke rij staan, zodat filteren
   // de nummers niet hernummert. Alleen op de speler-/teamlijst (niet divisies).
   const nq = q.trim().toLowerCase();
@@ -608,10 +671,16 @@ export function Leaderboard() {
               delta: deltaToday(r.history, club.timezone),
               dimmed: r.games > 0 && r.games < THIN_GAMES,
               tier: true,
-              roastSchild: pmap[r.key]?.roast_schild ?? false,
               sub: `${r.points} ptn`,
               record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
             }))}
+        />
+      )}
+
+      {klassementCoach && (
+        <KlassementCommentaar
+          tekst={klassementCoach.tekst}
+          mood={klassementCoach.mood}
         />
       )}
 

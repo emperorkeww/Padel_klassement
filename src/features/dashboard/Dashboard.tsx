@@ -10,6 +10,7 @@ import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import { coachBriefing, coachEmptyState } from "@/features/coach/coachMoments";
+import { klassementFeiten } from "@/features/coach/klassementFeiten";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
 import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
@@ -283,13 +284,24 @@ export function Dashboard() {
   // Coach Rudy's ochtendpraatje (#213): één regel over vandaag, gevoed door je
   // reeks/positie/volgende match. Het dashboard is persoonlijk (niet groep-
   // gescoopt), dus het volgt jóuw eigen profiel-intensiteit (#183) — net als de
-  // feed — en respecteert je roast-schild.
+  // feed — en respecteert je roast-schild. De klassement-feiten (#411) geven de
+  // briefing zijn positie-tier: troon, jager, middenmoot, kelder of nieuw.
   const coachBriefingTekst = me
     ? coachBriefing({
         rank,
         streak,
         losing,
         heeftMatch: !!nextMatch,
+        klassement: klassementFeiten(
+          eloRanked.map((p) => ({
+            playerId: p.player_id,
+            naam: displayName(pmap[p.player_id] ?? p),
+            rating: rmap[p.player_id]?.rating ?? null,
+            games: rmap[p.player_id]?.games ?? 0,
+          })),
+          myId,
+          "globaal",
+        ),
         seed: `${myId}-${new Date().toISOString().slice(0, 10)}`,
         ctx: {
           intensiteit: myProfile?.roast_intensiteit ?? "gemeen",
