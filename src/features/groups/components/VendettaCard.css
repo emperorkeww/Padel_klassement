@@ -121,6 +121,31 @@
   color: var(--ink-soft);
 }
 
+/* Wraak-alert (#169): revanche-uitdaging boven de vendetta's. */
+
+.vendetta-wraak {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-2);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+}
+
+.vendetta-wraak__tekst {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.vendetta-wraak__acties {
+  display: flex;
+  gap: var(--sp-2);
+}
+
 /* Startflow */
 
 .vendetta-start {

@@ -19,6 +19,7 @@ import {
   vendettaKop,
   vendettaStand,
   vendettaTaunt,
+  wraakAlerts,
 } from "../vendetta";
 import {
   endVendetta,
@@ -63,7 +64,27 @@ export function VendettaCard({
       ),
   );
 
-  const [starten, setStarten] = useState(false);
+  // Startflow, optioneel met een voorgeselecteerde rivaal (wraak-alert-CTA).
+  const [starten, setStarten] = useState<false | { rivalId: string }>(false);
+
+  // Wraak-alert (#169): loopt mijn verliesreeks tegen iemand op, dan mag de
+  // kaart een revanche-uitdaging tonen — maar niet als er al een vendetta
+  // tegen die tegenstander loopt (dan ís de verhaallijn er al).
+  const alerts = useMemo(
+    () =>
+      isMember
+        ? wraakAlerts(matches, teams, myId).filter(
+            (a) =>
+              memberList.some((m) => m.player_id === a.oppId) &&
+              !actief.some(
+                (v) =>
+                  (v.challenger_id === myId && v.rival_id === a.oppId) ||
+                  (v.rival_id === myId && v.challenger_id === a.oppId),
+              ),
+          )
+        : [],
+    [isMember, matches, teams, myId, memberList, actief],
+  );
 
   if (actief.length === 0 && !isMember) return null;
 
@@ -72,11 +93,39 @@ export function VendettaCard({
       <div className="card__head">
         <h2 className="card__title">⚔️ Vendetta's</h2>
         {isMember && !starten && beschikbaar.length > 0 && (
-          <button className="btn btn--sm" onClick={() => setStarten(true)}>
+          <button
+            className="btn btn--sm"
+            onClick={() => setStarten({ rivalId: "" })}
+          >
             ⚔️ Verklaar vendetta
           </button>
         )}
       </div>
+
+      {!starten &&
+        alerts.map((a) => (
+          <div className="vendetta-wraak" key={a.oppId} role="status">
+            <p className="vendetta-wraak__tekst">
+              🩸 Je verloor <strong>{a.count}× op rij</strong> van{" "}
+              <strong>{displayName(profiles[a.oppId])}</strong>. Tijd voor
+              revanche?
+            </p>
+            <div className="vendetta-wraak__acties">
+              <Link
+                className="btn btn--sm"
+                to={`/groepen/${group.id}?tab=plannen`}
+              >
+                Plan revanche
+              </Link>
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={() => setStarten({ rivalId: a.oppId })}
+              >
+                ⚔️ Verklaar vendetta
+              </button>
+            </div>
+          </div>
+        ))}
 
       {actief.length === 0 && !starten && (
         <p className="empty">
@@ -91,6 +140,7 @@ export function VendettaCard({
           myId={myId}
           kandidaten={beschikbaar}
           profiles={profiles}
+          initialRivalId={starten.rivalId}
           onDone={() => {
             setStarten(false);
             vendettas.reload();
@@ -121,6 +171,7 @@ function StartVendetta({
   myId,
   kandidaten,
   profiles,
+  initialRivalId = "",
   onDone,
   onCancel,
 }: {
@@ -128,11 +179,13 @@ function StartVendetta({
   myId: string;
   kandidaten: GroupMember[];
   profiles: Record<string, Profile>;
+  /** Voorgeselecteerde rivaal, bv. vanuit de wraak-alert-CTA. */
+  initialRivalId?: string;
   onDone: () => void;
   onCancel: () => void;
 }) {
   const toast = useToast();
-  const [rivalId, setRivalId] = useState("");
+  const [rivalId, setRivalId] = useState(initialRivalId);
   const [doel, setDoel] = useState<(typeof DOELEN)[number]>(5);
   const [busy, setBusy] = useState(false);
 

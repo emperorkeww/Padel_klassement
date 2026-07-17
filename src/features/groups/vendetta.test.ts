@@ -3,6 +3,7 @@ import {
   vendettaKop,
   vendettaStand,
   vendettaTaunt,
+  wraakAlerts,
   type VendettaContract,
 } from "@/features/groups/vendetta";
 import type { Match, Team } from "@/types";
@@ -175,5 +176,65 @@ describe("vendettaTaunt", () => {
       expect(t.length).toBeGreaterThan(10);
       expect(t).not.toContain("{");
     }
+  });
+});
+
+describe("wraakAlerts", () => {
+  it("alerteert vanaf 3 onderlinge nederlagen op rij", () => {
+    // "a" verliest drie keer op rij van "c" (t-cd wint steeds).
+    const alerts = wraakAlerts(duels(["t-cd", "t-cd", "t-cd"]), TEAMS, "a");
+    // Beide tegenstanders (c en d) zaten in het winnende team.
+    expect(alerts.map((x) => x.oppId).sort()).toEqual(["c", "d"]);
+    expect(alerts[0].count).toBe(3);
+    expect(alerts[0].laatsteMatch.id).toBeTruthy();
+  });
+
+  it("een tussentijdse winst breekt de reeks", () => {
+    const alerts = wraakAlerts(
+      duels(["t-cd", "t-cd", "t-ab", "t-cd", "t-cd"]),
+      TEAMS,
+      "a",
+    );
+    // De lopende reeks is 2 — onder de drempel.
+    expect(alerts).toEqual([]);
+  });
+
+  it("de drempel is instelbaar", () => {
+    const alerts = wraakAlerts(duels(["t-cd", "t-cd"]), TEAMS, "a", 2);
+    expect(alerts.length).toBeGreaterThan(0);
+    expect(alerts[0].count).toBe(2);
+  });
+
+  it("telt per tegenstander, niet per team-samenstelling", () => {
+    // "a" verliest 2× van c+d (als t-ab) en daarna 1× van c (met b als maat
+    // van c in t-bc tegen t-ad): tegen c is de reeks 3, tegen d blijft 2.
+    const teams: Record<string, Team> = {
+      ...TEAMS,
+      "t-ad": { id: "t-ad", name: null, player1_id: "a", player2_id: "d", created_at: "x" },
+      "t-bc": { id: "t-bc", name: null, player1_id: "b", player2_id: "c", created_at: "x" },
+    };
+    const extra = match({
+      team_a_id: "t-ad",
+      team_b_id: "t-bc",
+      winner_team_id: "t-bc",
+      played_at: "2026-07-09T19:00:00.000Z",
+    });
+    const alerts = wraakAlerts(
+      [...duels(["t-cd", "t-cd"]), extra],
+      teams,
+      "a",
+    );
+    expect(alerts.map((x) => x.oppId)).toEqual(["c"]);
+    expect(alerts[0].count).toBe(3);
+    expect(alerts[0].laatsteMatch.id).toBe(extra.id);
+  });
+
+  it("geen alert als de laatste onderlinge match gewonnen werd", () => {
+    const alerts = wraakAlerts(
+      duels(["t-cd", "t-cd", "t-cd", "t-ab"]),
+      TEAMS,
+      "a",
+    );
+    expect(alerts).toEqual([]);
   });
 });
