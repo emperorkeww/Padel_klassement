@@ -255,8 +255,11 @@ export function FeedItem({
         </FeedHighlight>
       );
     case "vendetta": {
+      // `name` geeft "Jij" voor jezelf: prima als onderwerp, maar in
+      // lijdend/meewerkend voorwerp leest alleen "jou" goed ("tegen jou").
+      const jou = (pid: string) => (pid === myId ? "jou" : name(pid));
       if (event.sub === "beslist") {
-        return <VendettaFeedCard event={event} name={name} />;
+        return <VendettaFeedCard event={event} name={name} jou={jou} />;
       }
       if (event.sub === "gestart") {
         return (
@@ -268,9 +271,8 @@ export function FeedItem({
             at={event.at}
           >
             {name(event.challengerId)} verklaarde een{" "}
-            <strong>vendetta</strong> tegen{" "}
-            <strong>{name(event.rivalId)}</strong> in {event.groupName} —
-            eerste tot {event.doel} zeges.
+            <strong>vendetta</strong> tegen <strong>{jou(event.rivalId)}</strong>{" "}
+            in {event.groupName} — eerste tot {event.doel} zeges.
           </FeedLine>
         );
       }
@@ -290,7 +292,7 @@ export function FeedItem({
           at={event.at}
         >
           De vendetta kantelt: <strong>{name(leiderId)}</strong> leidt nu{" "}
-          <strong>{stand}</strong> tegen {name(anderId)} in {event.groupName}.
+          <strong>{stand}</strong> tegen {jou(anderId)} in {event.groupName}.
         </FeedLine>
       );
     }

@@ -8,9 +8,13 @@ import type { FeedEvent } from "../feedLogic";
 export function VendettaFeedCard({
   event,
   name,
+  jou,
 }: {
   event: Extract<FeedEvent, { kind: "vendetta" }>;
+  /** Onderwerpsvorm ("Jij" voor jezelf). */
   name: (pid: string) => string;
+  /** Voorwerpsvorm ("jou" voor jezelf) — leest goed na "tegen". */
+  jou: (pid: string) => string;
 }) {
   const chWon = event.winsChallenger > event.winsRival;
   const winnaarId = chWon ? event.challengerId : event.rivalId;
@@ -29,8 +33,8 @@ export function VendettaFeedCard({
         <span className="feed-hi__title">
           <Link to={`/groepen/${event.groupId}`}>
             {name(winnaarId)} beslist de vendetta tegen{" "}
-            <strong>{name(verliezerId)}</strong>:{" "}
-            <strong>{stand}</strong> in {event.groupName}!
+            <strong>{jou(verliezerId)}</strong>: <strong>{stand}</strong> in{" "}
+            {event.groupName}!
           </Link>
         </span>
         <span className="feed-hi__actions">
