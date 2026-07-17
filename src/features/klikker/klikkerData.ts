@@ -26,6 +26,10 @@ export interface KlikkerCategorie {
   quotes: readonly KlikkerQuote[];
 }
 
+/** Rudy's kreet wanneer de sproeiers hem — alweer — te pakken hebben (#262).
+ *  Losse export: hoort bij de Sproeier-Modus, niet bij het 4×4-grid. */
+export const SPROEIER_QUOTE = "Niet mijn pak! Dit was maatwerk!";
+
 export const KLIKKER_CATEGORIEEN: readonly KlikkerCategorie[] = [
   {
     id: "notitieboekje",
