@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { Match, PlayerRating, RatingPoint, Team } from "@/types";
 
 // Lineup zelf praat niet met supabase, maar displayName leeft in profiles/api
-// dat de client bij import aanmaakt, en de spelerpopup laadt zijn eigen
+// dat de client bij import aanmaakt, en de kaart-achterkant laadt zijn eigen
 // (gecachte) matches — dus mocken, met de standaard-fixturetabellen.
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
@@ -117,23 +117,26 @@ describe("<Lineup />", () => {
     expect(screen.getByText("Alice Anders")).toBeInTheDocument();
   });
 
-  it("opent bij een tik op de kaart een popup met de spelersamenvatting", async () => {
-    renderLineup();
+  it("draait de kaart om naar de statistieken en weer terug", async () => {
+    const { container } = renderLineup();
+    const kaart = container.querySelector(".lineup-kaart");
+    expect(kaart).not.toHaveClass("is-omgedraaid");
+
     await userEvent.click(
-      screen.getByRole("button", { name: /samenvatting van alice anders/i }),
+      screen.getByRole("button", { name: /statistieken van alice anders/i }),
     );
-    const dialog = await screen.findByRole("dialog", {
-      name: /alice anders/i,
-    });
-    expect(dialog).toBeInTheDocument();
+    expect(kaart).toHaveClass("is-omgedraaid");
     // Vorm en balans komen uit de gemockte tabellen (m-done: winst voor p1).
-    expect(await screen.findByText(/1 winst/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /volledig profiel/i }),
-    ).toHaveAttribute("href", "/spelers/p1");
-    // Sluiten via de sluitknop.
-    await userEvent.click(screen.getByRole("button", { name: /sluiten/i }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(await screen.findByText("1W · 0G · 0V")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /profiel/i })).toHaveAttribute(
+      "href",
+      "/spelers/p1",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /draai de kaart terug/i }),
+    );
+    expect(kaart).not.toHaveClass("is-omgedraaid");
   });
 
   it("legt het veld uit in een uitklapbare uitleg met lijn-legenda", () => {

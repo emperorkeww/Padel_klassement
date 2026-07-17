@@ -42,50 +42,93 @@
   min-width: 0;
 }
 
-/* Chemielijn tussen de partners: elk niveau verschilt in kleur én dikte én
-   streepjespatroon (nooit alleen kleur); de brede lichte casing houdt hem
-   leesbaar op het verzadigde veld. De badge draagt de betekenis als tekst. */
+/* Chemielijn tussen de partners: een gloeiende lijn in de niveaukleur die de
+   volle ruimte tussen de kaarten overspant, met eindpunten die in de
+   kaartranden "pluggen" — een verbinding, geen los object. Elk niveau
+   verschilt in kleur én dikte én streepjespatroon (nooit alleen kleur);
+   de badge draagt de betekenis als tekst. */
 .lineup__lijn {
-  width: clamp(24px, 14cqw, 72px);
-  height: 24px;
+  --lijnkleur: var(--chem-onbekend);
+  --lijndikte: 2px;
+  --lijnstijl: dotted;
+  position: relative;
+  width: clamp(32px, 20cqw, 96px);
+  height: 14px;
   flex: none;
+  display: flex;
+  align-items: center;
   pointer-events: none;
 }
-.lineup__lijn-casing {
-  stroke: var(--court-line);
-  stroke-width: 9;
-  stroke-linecap: round;
-}
 .lineup__lijn-kern {
-  stroke-linecap: round;
+  flex: 1;
+  border-top: var(--lijndikte) var(--lijnstijl) var(--lijnkleur);
+  filter: drop-shadow(0 0 5px var(--lijnkleur))
+    drop-shadow(0 0 1px var(--court-line));
 }
-.lineup__lijn--hoog .lineup__lijn-kern {
-  stroke: var(--chem-hoog);
-  stroke-width: 4.5;
+/* Eindpunten: dots in de niveaukleur, hálf over de kaartranden zodat de lijn
+   er zichtbaar in "plugt". */
+.lineup__lijn::before,
+.lineup__lijn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lijnkleur);
+  box-shadow:
+    0 0 0 2px var(--court-line),
+    0 0 6px 1px var(--lijnkleur);
+  transform: translateY(-50%);
 }
-.lineup__lijn--midden .lineup__lijn-kern {
-  stroke: var(--chem-midden);
-  stroke-width: 3;
-  stroke-dasharray: 6 4;
+.lineup__lijn::before {
+  left: -5px;
 }
-.lineup__lijn--laag .lineup__lijn-kern {
-  stroke: var(--chem-laag);
-  stroke-width: 2;
+.lineup__lijn::after {
+  right: -5px;
 }
-.lineup__lijn--onbekend .lineup__lijn-kern {
-  stroke: var(--chem-onbekend);
-  stroke-width: 2;
-  stroke-dasharray: 2 4;
+.lineup__lijn--hoog {
+  --lijnkleur: var(--chem-hoog);
+  --lijndikte: 5px;
+  --lijnstijl: solid;
+}
+.lineup__lijn--midden {
+  --lijnkleur: var(--chem-midden);
+  --lijndikte: 3px;
+  --lijnstijl: dashed;
+}
+.lineup__lijn--laag {
+  --lijnkleur: var(--chem-laag);
+  --lijndikte: 2px;
+  --lijnstijl: solid;
+}
+.lineup__lijn--onbekend {
+  --lijnkleur: var(--chem-onbekend);
+  --lijndikte: 2px;
+  --lijnstijl: dotted;
 }
 
-/* Legenda-variant van de lijn (in de uitleg, dus op --surface): de casing
-   krijgt daar een rustig vlak zodat het patroon toch afsteekt. */
+/* Legenda-variant (in de uitleg, dus op --surface): zachter, zonder gloed,
+   met dot-ringen in de chipkleur. */
 .lineup__lijn--voorbeeld {
-  width: 56px;
-  height: 14px;
+  width: 52px;
+  height: 12px;
+  padding: 0 4px;
 }
-.lineup__lijn--voorbeeld .lineup__lijn-casing {
-  stroke: var(--surface-2);
+.lineup__lijn--voorbeeld .lineup__lijn-kern {
+  filter: none;
+}
+.lineup__lijn--voorbeeld::before,
+.lineup__lijn--voorbeeld::after {
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 2px var(--surface-2);
+}
+.lineup__lijn--voorbeeld::before {
+  left: 0;
+}
+.lineup__lijn--voorbeeld::after {
+  right: 0;
 }
 
 /* De chemie als tekst, op een chip bij de achterlijn; het randje kleurt mee
@@ -129,18 +172,22 @@
 
 /* FUT-schildkaart: buitenlaag = divisiekleurig frame, binnenlaag = kaartvlak;
    beide dragen dezelfde clip-path (een rand kan een clip-path niet volgen).
-   De kaart is een knop (opent de spelersamenvatting). */
+   Tikken draait de kaart om (3D-flip) naar de statistieken-achterkant. */
 .lineup-kaart {
   /* Zonder rating: neutraal frame. */
   --tier: var(--ink-soft);
   --tier-soft: var(--surface-2);
-  appearance: none;
-  border: 0;
-  font: inherit;
-  text-align: inherit;
-  color: inherit;
-  cursor: pointer;
   width: clamp(96px, 36cqw, 124px);
+  perspective: 600px;
+}
+.lineup-kaart__flipper {
+  position: relative;
+  transform-style: preserve-3d;
+}
+.lineup-kaart.is-omgedraaid .lineup-kaart__flipper {
+  transform: rotateY(180deg);
+}
+.lineup-kaart__zijde {
   padding: 2.5px;
   clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
   background: linear-gradient(
@@ -150,12 +197,48 @@
     var(--tier) 100%
   );
   filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.25));
+  backface-visibility: hidden;
 }
-.lineup-kaart:focus-visible {
-  /* clip-path knipt een outline weg; een binnenring via box-shadow blijft
-     zichtbaar. */
+.lineup-kaart__zijde--achter {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+/* Onzichtbare flip-knop over het hele vlak; de profiel-link op de achterkant
+   ligt erbóven en blijft zo een echte link. */
+.lineup-kaart__flip {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.lineup-kaart__flip:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 3px var(--court-line);
+}
+/* Hover/focus: de kaart licht op en komt van het veld — maakt meteen duidelijk
+   dat hij klikbaar is; de flip zelf draait vloeiend. Alleen mét
+   bewegingsvoorkeur; anders wisselt de kaart direct. */
+@media (prefers-reduced-motion: no-preference) {
+  .lineup-kaart {
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease;
+  }
+  .lineup-kaart__flipper {
+    transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.1);
+  }
+  .lineup-kaart:has(.lineup-kaart__flip:hover),
+  .lineup-kaart:has(.lineup-kaart__flip:focus-visible) {
+    transform: translateY(-4px) scale(1.05);
+    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4));
+  }
+  .lineup-kaart:has(.lineup-kaart__flip:active) {
+    transform: translateY(-1px) scale(1.01);
+  }
 }
 .lineup-kaart__vlak {
   clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
@@ -204,6 +287,50 @@
   white-space: nowrap;
 }
 
+/* Achterkant: vorm, balans en profiel-link, gecentreerd in het schild.
+   Label bóven waarde — naast elkaar past niet in de smalle kaart. */
+.lineup-kaart__vlak--stats {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+}
+.lineup-kaart__stats-rij {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: var(--fs-xs);
+  color: var(--ink);
+  white-space: nowrap;
+  max-width: 100%;
+}
+.lineup-kaart__stats-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.58rem;
+  color: var(--ink-soft);
+}
+.lineup-kaart__stats-link {
+  position: relative;
+  z-index: 2;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.lineup-kaart__stats-link:hover {
+  text-decoration: underline;
+}
+
 /* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
 .lineup-kaart--slof {
   --tier: var(--slof);
@@ -246,22 +373,51 @@
   --tier-soft: var(--legende-soft);
 }
 
-/* Uitleg onder het veld (zelfde explainer-recept als het klassement). */
+/* Uitleg onder het veld (zelfde explainer-recept als het klassement), met een
+   icoon per onderwerp en de tekst netjes onder het label uitgelijnd. */
 .lineup__uitleg {
   max-width: 380px;
   margin: var(--sp-3) auto 0;
 }
+.lineup__uitleg .explainer__body dt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.lineup__uitleg .explainer__body dd {
+  margin-left: calc(1.5rem + var(--sp-2));
+  font-size: var(--fs-sm);
+}
+.lineup__uitleg-icoon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+/* Legenda: chips in een responsieve grid. */
 .lineup__legende {
   display: grid;
-  gap: var(--sp-1);
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: var(--sp-2);
   margin-top: var(--sp-2);
 }
 .lineup__legende-item {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   font-size: var(--fs-xs);
-  color: var(--ink-soft);
+  color: var(--ink-soft-strong);
+  white-space: nowrap;
 }
 
 @media (max-width: 560px) {
