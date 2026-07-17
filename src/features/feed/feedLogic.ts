@@ -16,6 +16,9 @@ import { isSeasonClosed, seasonFor, type Season } from "@/features/rating/season
 import { eveningSummary } from "@/features/feed/eveningSummary";
 import { tierChange } from "@/features/rating/tiers";
 import { bepaalPias, type PiasReden } from "@/features/groups/maandpias";
+import { vendettaStand } from "@/features/groups/vendetta";
+import { matchDerby } from "@/features/matches/derby";
+import type { TierNaam } from "@/features/rating/tiers";
 import type { PiasWeek } from "@/features/standings/pias";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 
@@ -59,6 +62,20 @@ export type Highlight =
       label: string;
       emoji: string;
       richting: "promotie" | "degradatie";
+    }
+  | {
+      /** Vendetta-duel (#169): stand ná dit duel, vanuit de uitdager. */
+      type: "vendetta";
+      challengerId: string;
+      rivalId: string;
+      winsChallenger: number;
+      winsRival: number;
+    }
+  | {
+      /** Derby (#169): alle spelers in dezelfde hoofddivisie. */
+      type: "derby";
+      tierNaam: TierNaam;
+      emoji: string;
     };
 
 export type FeedEvent =
@@ -76,7 +93,8 @@ export type FeedEvent =
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
   | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
-  | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null };
+  | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null }
+  | { kind: "vendetta"; at: string; sub: "gestart" | "omgeslagen" | "beslist"; groupId: string; groupName: string; challengerId: string; rivalId: string; winsChallenger: number; winsRival: number; doel: number; matchId: string | null };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
 export const FEED_LIMIT = 50;
@@ -106,6 +124,17 @@ export interface FeedSmoes {
   group_id: string;
   smoes: string;
   created_at: string;
+}
+/** Een vendetta-contract (#169). Structurele invoer (vendettas-rij); de stand
+ *  wordt hier client-side afgeleid via features/groups/vendetta.ts. */
+export interface FeedVendetta {
+  id: string;
+  group_id: string;
+  challenger_id: string;
+  rival_id: string;
+  target_wins: number;
+  status: string;
+  started_at: string;
 }
 
 /** Speler-ids in je netwerk: jijzelf + geaccepteerde vrienden. */
@@ -200,6 +229,8 @@ export function buildFeed(input: {
   shameTransfers?: Array<ZwartePiet & { groupId: string }>;
   /** Geplaatste smoezen in je groepen (#296) → smoes-items op de feed. */
   smoesjes?: FeedSmoes[];
+  /** Vendetta-contracten in je groepen (#169) → verhaallijn-items + chips. */
+  vendettas?: FeedVendetta[];
   profiles?: Record<string, Profile>;
   now?: Date;
   /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
@@ -220,6 +251,7 @@ export function buildFeed(input: {
     piasWeeks = [],
     shameTransfers = [],
     smoesjes = [],
+    vendettas = [],
     profiles = {},
     now = new Date(),
     filter,
@@ -275,6 +307,74 @@ export function buildFeed(input: {
     }
   }
 
+  // ── Vendetta's (#169): het contract komt uit de DB, de verhaallijn is
+  //    client-side. Anti-ruis: per vendetta hooguit twee losse items —
+  //    "gestart" plus de laatste omslag óf de beslissing (beslist wint);
+  //    elk meegeteld duel wordt een chip op zijn eigen match-item. De stand
+  //    telt over de vólledige groepshistorie als die geladen is; anders het
+  //    feed-venster (progressief, zoals de andere bronnen). ──
+  const vendettaChipAt = new Map<string, Highlight[]>();
+  {
+    const nameById = new Map(groups.map((g) => [g.id, g.name]));
+    for (const v of vendettas) {
+      const groupName = nameById.get(v.group_id);
+      if (!groupName) continue;
+      const bron = groupMatchesByGroup[v.group_id] ?? matches;
+      const stand = vendettaStand(v, bron, teams);
+      const basis = {
+        groupId: v.group_id,
+        groupName,
+        challengerId: v.challenger_id,
+        rivalId: v.rival_id,
+        doel: v.target_wins,
+      };
+      events.push({
+        kind: "vendetta",
+        sub: "gestart",
+        at: v.started_at,
+        ...basis,
+        winsChallenger: 0,
+        winsRival: 0,
+        matchId: null,
+      });
+      if (stand.beslist) {
+        const m = stand.beslist.match;
+        events.push({
+          kind: "vendetta",
+          sub: "beslist",
+          at: m.played_at ?? m.created_at,
+          ...basis,
+          winsChallenger: stand.winsChallenger,
+          winsRival: stand.winsRival,
+          matchId: m.id,
+        });
+      } else if (stand.omslagen.length > 0) {
+        const omslag = stand.omslagen[stand.omslagen.length - 1];
+        const snap = stand.duels.find((d) => d.match.id === omslag.match.id);
+        events.push({
+          kind: "vendetta",
+          sub: "omgeslagen",
+          at: omslag.match.played_at ?? omslag.match.created_at,
+          ...basis,
+          winsChallenger: snap?.winsChallenger ?? stand.winsChallenger,
+          winsRival: snap?.winsRival ?? stand.winsRival,
+          matchId: omslag.match.id,
+        });
+      }
+      for (const d of stand.duels) {
+        const list = vendettaChipAt.get(d.match.id) ?? [];
+        list.push({
+          type: "vendetta",
+          challengerId: v.challenger_id,
+          rivalId: v.rival_id,
+          winsChallenger: d.winsChallenger,
+          winsRival: d.winsRival,
+        });
+        vendettaChipAt.set(d.match.id, list);
+      }
+    }
+  }
+
   for (const m of networkMatches) {
     if (m.status === "completed") {
       const points = byMatch.get(m.id);
@@ -285,6 +385,17 @@ export function buildFeed(input: {
       const score = scoreHighlight(m);
       if (score) highlights.push(score);
       highlights.push(...(streakAt.get(m.id) ?? []));
+      highlights.push(...(vendettaChipAt.get(m.id) ?? []));
+      // Derby (#169): alle spelers in dezelfde hoofddivisie, gemeten aan de
+      // échte pre-match ratings.
+      const derby = matchDerby(
+        m,
+        teams,
+        (pid) => points?.get(pid)?.rating_before ?? null,
+      );
+      if (derby) {
+        highlights.push({ type: "derby", tierNaam: derby.naam, emoji: derby.emoji });
+      }
       // Rating-mijlpaal: een netwerk-speler kruiste bij deze match een grens.
       if (points) {
         for (const [pid, p] of points) {

@@ -5,6 +5,7 @@ import type { FeedEvent } from "../feedLogic";
 import { FeedHighlight } from "./FeedHighlight";
 import { FeedLine } from "./FeedLine";
 import { FeedMatch } from "./FeedMatch";
+import { VendettaFeedCard } from "./VendettaFeedCard";
 
 export function FeedItem({
   event,
@@ -253,5 +254,45 @@ export function FeedItem({
           {event.fromPlayerId ? ` af van ${name(event.fromPlayerId)}` : ""}: {event.detail}.
         </FeedHighlight>
       );
+    case "vendetta": {
+      if (event.sub === "beslist") {
+        return <VendettaFeedCard event={event} name={name} />;
+      }
+      if (event.sub === "gestart") {
+        return (
+          <FeedLine
+            icon="⚔️"
+            to={`/groepen/${event.groupId}?tab=stand`}
+            avatars={[event.challengerId, event.rivalId]}
+            pmap={pmap}
+            at={event.at}
+          >
+            {name(event.challengerId)} verklaarde een{" "}
+            <strong>vendetta</strong> tegen{" "}
+            <strong>{name(event.rivalId)}</strong> in {event.groupName} —
+            eerste tot {event.doel} zeges.
+          </FeedLine>
+        );
+      }
+      // "omgeslagen": de leiding in het onderlinge seizoen kantelde.
+      const chLeidt = event.winsChallenger > event.winsRival;
+      const leiderId = chLeidt ? event.challengerId : event.rivalId;
+      const anderId = chLeidt ? event.rivalId : event.challengerId;
+      const stand = chLeidt
+        ? `${event.winsChallenger}–${event.winsRival}`
+        : `${event.winsRival}–${event.winsChallenger}`;
+      return (
+        <FeedLine
+          icon="🔄"
+          to={event.matchId ? `/matches/${event.matchId}` : `/groepen/${event.groupId}?tab=stand`}
+          avatars={[event.challengerId, event.rivalId]}
+          pmap={pmap}
+          at={event.at}
+        >
+          De vendetta kantelt: <strong>{name(leiderId)}</strong> leidt nu{" "}
+          <strong>{stand}</strong> tegen {name(anderId)} in {event.groupName}.
+        </FeedLine>
+      );
+    }
   }
 }

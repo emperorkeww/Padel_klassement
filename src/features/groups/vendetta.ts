@@ -38,6 +38,9 @@ export interface VendettaStand {
   /** Het duel waarmee iemand het doel haalde; duels erna tellen niet mee. */
   beslist: { winnaarId: string; match: Match } | null;
   laatste: VendettaDuel | null;
+  /** Alle meegetelde duels, chronologisch, met de stand ná dat duel —
+   *  voedt de vendetta-chips op de feed (#169). */
+  duels: Array<VendettaDuel & { winsChallenger: number; winsRival: number }>;
 }
 
 /**
@@ -70,6 +73,7 @@ export function vendettaStand(
     omslagen: [],
     beslist: null,
     laatste: null,
+    duels: [],
   };
   // Laatste niet-nul teken van winsChallenger - winsRival; een omslag gaat
   // altijd via een gelijke stand, dus het tekenverschil alleen volstaat niet
@@ -98,6 +102,12 @@ export function vendettaStand(
     else if (winnerId === v.challenger_id) stand.winsChallenger++;
     else stand.winsRival++;
     stand.laatste = { match: m, winnerId };
+    stand.duels.push({
+      match: m,
+      winnerId,
+      winsChallenger: stand.winsChallenger,
+      winsRival: stand.winsRival,
+    });
 
     const leadAfter = Math.sign(stand.winsChallenger - stand.winsRival);
     if (leadAfter !== 0) {
