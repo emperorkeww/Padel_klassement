@@ -1,7 +1,7 @@
 -- pgTAP-tests voor de RLS-hardening (audit 2026-07-01, migratie 20260701140000).
 begin;
 
-select plan(17);
+select plan(18);
 
 ------------------------------------------------------------------------
 -- matches: geen directe INSERT-policy meer; enkel SELECT + UPDATE.
@@ -10,7 +10,8 @@ select policies_are(
   'public', 'matches',
   array[
     'Matches zijn publiek leesbaar',
-    'Aanmaker kan match bijwerken'
+    'Aanmaker kan match bijwerken',
+    'Deelnemer kan uitslag invullen'
   ],
   'matches heeft geen directe INSERT-policy meer (creatie loopt via RPC)'
 );
@@ -60,6 +61,12 @@ select has_function(
 select has_function(
   'public', 'is_accepted_friend', array['uuid', 'uuid'],
   'functie public.is_accepted_friend(uuid, uuid) bestaat'
+);
+
+-- #413: de helper waarop de deelnemer-uitslag-policy leunt.
+select has_function(
+  'public', 'is_team_member', array['uuid', 'uuid'],
+  'functie public.is_team_member(uuid, uuid) bestaat'
 );
 
 ------------------------------------------------------------------------

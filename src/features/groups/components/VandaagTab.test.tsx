@@ -196,8 +196,10 @@ describe("<VandaagTab />", () => {
       rounds: [{ round: 2, list: [PLANNED_TODAY] }],
     });
 
+    // findBy: de score-invoer verschijnt pas zodra de sessie geladen is en de
+    // kijker aanmaker/deelnemer blijkt (#413).
     await userEvent.type(
-      screen.getByLabelText(/^score alice anders & bob boers$/i),
+      await screen.findByLabelText(/^score alice anders & bob boers$/i),
       "7",
     );
     await userEvent.type(
