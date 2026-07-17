@@ -102,6 +102,11 @@
   font-style: italic;
 }
 
+.vendetta__share {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+}
+
 .vendetta__revanche {
   margin: var(--sp-2) 0 0;
   text-align: center;

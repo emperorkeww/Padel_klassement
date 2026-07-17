@@ -26,6 +26,7 @@ import {
   startVendetta,
   type Vendetta,
 } from "../vendettaApi";
+import { ShareVendetta } from "./ShareVendetta";
 import type { Group, GroupMember, Match, Profile, Team } from "@/types";
 import "./VendettaCard.css";
 
@@ -327,10 +328,30 @@ function VendettaItem({
       </div>
 
       {stand.beslist ? (
-        <p className="vendetta__beslist" role="status">
-          🏆 <strong>{naam(stand.beslist.winnaarId)}</strong> wint het
-          vendetta-seizoen! Eindstand {stand.winsChallenger}–{stand.winsRival}.
-        </p>
+        <>
+          <p className="vendetta__beslist" role="status">
+            🏆 <strong>{naam(stand.beslist.winnaarId)}</strong> wint het
+            vendetta-seizoen! Eindstand {stand.winsChallenger}–{stand.winsRival}.
+          </p>
+          <p className="vendetta__share">
+            <ShareVendetta
+              vendettaId={v.id}
+              winnaar={naam(stand.beslist.winnaarId)}
+              verliezer={naam(
+                stand.beslist.winnaarId === v.challenger_id
+                  ? v.rival_id
+                  : v.challenger_id,
+              )}
+              stand={
+                stand.beslist.winnaarId === v.challenger_id
+                  ? `${stand.winsChallenger}–${stand.winsRival}`
+                  : `${stand.winsRival}–${stand.winsChallenger}`
+              }
+              groupName={group.name}
+              doel={v.target_wins}
+            />
+          </p>
+        </>
       ) : (
         <p className="vendetta__kop">{vendettaKop(stand, v, naam)}</p>
       )}

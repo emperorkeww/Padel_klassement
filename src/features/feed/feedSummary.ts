@@ -174,5 +174,19 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         to: `/matches/${e.matchId}`,
       };
     }
+    case "vendetta": {
+      const stand = `${e.winsChallenger}–${e.winsRival}`;
+      const tekst =
+        e.sub === "gestart"
+          ? `${naam(ctx, e.challengerId)} verklaarde een vendetta tegen ${naam(ctx, e.rivalId)} in ${e.groupName}`
+          : e.sub === "omgeslagen"
+            ? `De vendetta ${naam(ctx, e.challengerId)}–${naam(ctx, e.rivalId)} kantelde naar ${stand} in ${e.groupName}`
+            : `De vendetta ${naam(ctx, e.challengerId)}–${naam(ctx, e.rivalId)} is beslist: ${stand} in ${e.groupName}`;
+      return {
+        icon: e.sub === "beslist" ? "🏆" : "⚔️",
+        tekst,
+        to: `/groepen/${e.groupId}?tab=stand`,
+      };
+    }
   }
 }

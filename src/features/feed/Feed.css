@@ -261,6 +261,16 @@
   line-height: 1.35;
 }
 .feed-hi__title strong { font-weight: 700; }
+/* De "vendetta beslist"-kaart (#169) is een div met een losse link erin (de
+   deelknop mag niet in een <a> zitten); de link erft de kaartstijl. */
+.feed-hi__title a {
+  color: inherit;
+  text-decoration: none;
+}
+.feed-hi__actions {
+  margin-top: var(--sp-1);
+  align-self: flex-start;
+}
 
 /* Filter-categoriestip (#232 PR B): koppelt de gekleurde filters visueel aan de
    highlight-kaarten. --cat-match (= app-accent) staat centraal in index.css. */
