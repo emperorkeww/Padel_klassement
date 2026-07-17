@@ -42,53 +42,54 @@
   min-width: 0;
 }
 
-/* Chemielijn tussen de partners: een lichte capsule met de niveau-lijn erin,
-   een zachte gloed in de niveaukleur en eindpunten die in de kaarten
-   "pluggen". Elk niveau verschilt in kleur én dikte én streepjespatroon
-   (nooit alleen kleur); de badge draagt de betekenis als tekst. */
+/* Chemielijn tussen de partners: een gloeiende lijn in de niveaukleur die de
+   volle ruimte tussen de kaarten overspant, met eindpunten die in de
+   kaartranden "pluggen" — een verbinding, geen los object. Elk niveau
+   verschilt in kleur én dikte én streepjespatroon (nooit alleen kleur);
+   de badge draagt de betekenis als tekst. */
 .lineup__lijn {
   --lijnkleur: var(--chem-onbekend);
   --lijndikte: 2px;
   --lijnstijl: dotted;
   position: relative;
-  width: clamp(28px, 16cqw, 84px);
+  width: clamp(32px, 20cqw, 96px);
   height: 14px;
   flex: none;
   display: flex;
   align-items: center;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--court-line);
-  box-shadow: 0 0 14px 3px
-    color-mix(in srgb, var(--lijnkleur) 55%, transparent);
   pointer-events: none;
 }
 .lineup__lijn-kern {
   flex: 1;
   border-top: var(--lijndikte) var(--lijnstijl) var(--lijnkleur);
+  filter: drop-shadow(0 0 5px var(--lijnkleur))
+    drop-shadow(0 0 1px var(--court-line));
 }
-/* Eindpunten: dots in de niveaukleur die tegen de kaarten aan liggen. */
+/* Eindpunten: dots in de niveaukleur, hálf over de kaartranden zodat de lijn
+   er zichtbaar in "plugt". */
 .lineup__lijn::before,
 .lineup__lijn::after {
   content: "";
   position: absolute;
   top: 50%;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--lijnkleur);
-  box-shadow: 0 0 0 2px var(--court-line);
+  box-shadow:
+    0 0 0 2px var(--court-line),
+    0 0 6px 1px var(--lijnkleur);
   transform: translateY(-50%);
 }
 .lineup__lijn::before {
-  left: -3px;
+  left: -5px;
 }
 .lineup__lijn::after {
-  right: -3px;
+  right: -5px;
 }
 .lineup__lijn--hoog {
   --lijnkleur: var(--chem-hoog);
-  --lijndikte: 4px;
+  --lijndikte: 5px;
   --lijnstijl: solid;
 }
 .lineup__lijn--midden {
@@ -107,20 +108,27 @@
   --lijnstijl: dotted;
 }
 
-/* Legenda-variant (in de uitleg, dus op --surface): rustig vlak, zachtere
-   gloed en dot-ringen in de kaartkleur. */
+/* Legenda-variant (in de uitleg, dus op --surface): zachter, zonder gloed,
+   met dot-ringen in de chipkleur. */
 .lineup__lijn--voorbeeld {
   width: 52px;
   height: 12px;
-  background: var(--surface-2);
-  box-shadow: 0 0 6px 1px
-    color-mix(in srgb, var(--lijnkleur) 35%, transparent);
+  padding: 0 4px;
+}
+.lineup__lijn--voorbeeld .lineup__lijn-kern {
+  filter: none;
 }
 .lineup__lijn--voorbeeld::before,
 .lineup__lijn--voorbeeld::after {
   width: 7px;
   height: 7px;
   box-shadow: 0 0 0 2px var(--surface-2);
+}
+.lineup__lijn--voorbeeld::before {
+  left: 0;
+}
+.lineup__lijn--voorbeeld::after {
+  right: 0;
 }
 
 /* De chemie als tekst, op een chip bij de achterlijn; het randje kleurt mee
