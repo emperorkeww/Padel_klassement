@@ -324,6 +324,8 @@ function NotificationsCard({ userId }: { userId: string }) {
     }
   }
 
+  const np = prefs.data;
+
   return (
     <section className="card">
       <h2 className="card__title card__title--tight">Meldingen</h2>
@@ -367,7 +369,7 @@ function NotificationsCard({ userId }: { userId: string }) {
           ? "De knop hierboven regelt dít apparaat; deze keuzes gelden voor al je apparaten."
           : "Deze keuzes gelden voor al je apparaten."}
       </p>
-      {prefs.loading || !prefs.data ? (
+      {prefs.loading || !np ? (
         <Skeleton rows={4} />
       ) : (
         <div className="stack">
@@ -379,7 +381,7 @@ function NotificationsCard({ userId }: { userId: string }) {
               </span>
               <input
                 type="checkbox"
-                checked={prefs.data[o.key]}
+                checked={np[o.key]}
                 disabled={prefsBusy}
                 onChange={(e) => setPref({ [o.key]: e.target.checked })}
               />
