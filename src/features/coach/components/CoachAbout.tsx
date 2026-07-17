@@ -51,6 +51,13 @@ export function CoachAbout({
           .
         </li>
       </ul>
+      <p className="coach-about__klikker">
+        Meer Rudy nodig? Probeer{" "}
+        <Link to="/klikker" onClick={onNavigate}>
+          Rudi's Tactische Klikker
+        </Link>{" "}
+        — zijn notitieboekje vol quotes, om zelf op te tikken. 📓
+      </p>
       {showSettingsLink && (
         <Link className="btn btn--sm" to="/profiel" onClick={onNavigate}>
           Coach afstellen

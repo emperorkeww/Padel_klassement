@@ -9,9 +9,20 @@
   src: url("../assets/fonts/nunito-latin-wght.woff2") format("woff2-variations");
 }
 
+/* Handschrift-font voor Rudi's notitieboekje (#260): self-hosted Caveat
+   (variabel gewicht, SIL OFL), beschikbaar als --font-hand. */
+@font-face {
+  font-family: "Caveat";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url("../assets/fonts/caveat-latin-wght.woff2") format("woff2-variations");
+}
+
 :root {
   font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-rounded: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-hand: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

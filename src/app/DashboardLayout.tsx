@@ -36,11 +36,16 @@ const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
+const KLIKKER: NavItem = { to: "/klikker", label: "Klikker", icon: <IconNotebook /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
+// De Klikker (#260) is een speeltje, geen taak — eigen "Coach"-groepje onder de
+// competitie. Bewust niet in de mobiele TABBAR (vaste 5-tabs-symmetrie, #274);
+// mobiel is hij vindbaar via de Coach Rudy-uitleg (CoachAbout).
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, MATCHES, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
+  { title: "Coach", items: [KLIKKER] },
   { title: "Ik", items: [VRIENDEN, IK] },
 ];
 
@@ -227,6 +232,17 @@ function IconFeed() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 12h4l3-8 4 16 3-8h4" />
+    </svg>
+  );
+}
+
+// Klikker: notitieboekje met pen — Rudi's tactische kladblok.
+function IconNotebook() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M5 7h2M5 12h2M5 17h2" />
+      <path d="m11 14 5.5-5.5 2 2L13 16l-2.6.6L11 14Z" />
     </svg>
   );
 }

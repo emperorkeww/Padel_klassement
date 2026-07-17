@@ -25,3 +25,8 @@
 .coach-about__controls strong {
   color: var(--coach);
 }
+.coach-about__klikker {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

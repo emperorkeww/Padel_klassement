@@ -18,6 +18,7 @@ const PlayerProfile = lazy(() => import("@/features/profiles/PlayerProfile"));
 const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
+const Klikker = lazy(() => import("@/features/klikker/Klikker"));
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
             <Route path="/vrienden" element={<Friends />} />
             <Route path="/spelers/:id" element={<PlayerProfile />} />
             <Route path="/profiel" element={<ProfileSettings />} />
+            <Route path="/klikker" element={<Klikker />} />
           </Route>
         </Route>
 
