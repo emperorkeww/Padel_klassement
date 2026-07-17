@@ -6,7 +6,8 @@
 // overwinningen pakt sinds de start, beslist de vendetta.
 
 import type { Match, RoastIntensiteit, Team } from "@/types";
-import { inTeam } from "@/features/rating/results";
+import { inTeam, playersOf } from "@/features/rating/results";
+import { verliesreeksTegen } from "@/features/coach/coachStats";
 import { kiesUniek } from "@/features/coach/roastTone";
 
 /** De velden van het vendetta-contract die de stand nodig heeft — structureel
@@ -184,6 +185,54 @@ const TAUNTS: Record<RoastIntensiteit, readonly string[]> = {
     "{stand} voor {winnaar}. {verliezer}, je racket overweegt een transfer.",
   ],
 };
+
+/** Vanaf zoveel onderlinge nederlagen op rij verschijnt de wraak-alert. */
+export const WRAAK_DREMPEL = 3;
+
+export interface WraakAlert {
+  oppId: string;
+  /** Lengte van de lopende verliesreeks tegen deze tegenstander. */
+  count: number;
+  /** De recentste onderlinge match (het einde van de reeks). */
+  laatsteMatch: Match;
+}
+
+/**
+ * Wraak-alerts (#169): tegenstanders van wie de speler zijn laatste
+ * `minReeks` of meer onderlinge duels op rij verloor — de reeks moet lopen,
+ * dus eindigen op de recentste onderlinge match. Hergebruikt
+ * `verliesreeksTegen` (coachStats), langste reeks eerst.
+ */
+export function wraakAlerts(
+  matches: Match[],
+  teams: Record<string, Team>,
+  myId: string,
+  minReeks = WRAAK_DREMPEL,
+): WraakAlert[] {
+  // Recentste onderlinge match per tegenstander.
+  const laatsteTegen = new Map<string, Match>();
+  const tijd = (m: Match) => m.played_at ?? m.created_at;
+  for (const m of matches) {
+    if (m.status !== "completed") continue;
+    const ta = teams[m.team_a_id];
+    const tb = teams[m.team_b_id];
+    if (!ta || !tb) continue;
+    const mijnTeam = inTeam(ta, myId) ? ta : inTeam(tb, myId) ? tb : null;
+    if (!mijnTeam) continue;
+    const tegenstanders = playersOf(mijnTeam === ta ? tb : ta);
+    for (const opp of tegenstanders) {
+      const huidig = laatsteTegen.get(opp);
+      if (!huidig || tijd(m) > tijd(huidig)) laatsteTegen.set(opp, m);
+    }
+  }
+
+  const alerts: WraakAlert[] = [];
+  for (const [oppId, laatsteMatch] of laatsteTegen) {
+    const count = verliesreeksTegen(matches, teams, myId, oppId, laatsteMatch);
+    if (count >= minReeks) alerts.push({ oppId, count, laatsteMatch });
+  }
+  return alerts.sort((a, b) => b.count - a.count);
+}
 
 /**
  * Taunt bij het laatste gewonnen duel, deterministisch per seed (bv.
