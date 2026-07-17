@@ -221,8 +221,7 @@ describe("<Leaderboard />", () => {
 
   it("becommentarieert jouw positie bij 'Alle groepen' (#411)", async () => {
     // p1 (ingelogd) heeft 1 match < THIN_GAMES → tier "nieuw"; de regel komt
-    // dan deterministisch uit de NIEUW-pool. Op de Divisies-tab, want op de
-    // spelers-tab spreekt het podium al over de nummer 1 (= p1 in de fixtures).
+    // dan deterministisch uit de NIEUW-pool.
     const { container } = renderPage();
     await screen.findAllByText("Wannabe III");
     fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
@@ -244,11 +243,14 @@ describe("<Leaderboard />", () => {
     expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
   });
 
-  it("zwijgt over je positie op de spelers-tab als jij al op het podium besproken wordt (#411)", async () => {
-    // p1 is de nummer 1 → de Podium-bubbel (#297) dekt hem al; geen dubbele Rudy.
+  it("spreekt op de spelers-tab alleen de kijker aan — geen tweede bubbel over de #1 (#411)", async () => {
+    // Eén Rudy op de pagina: de positie-bubbel over jou. De vroegere
+    // Podium-bubbel over de nummer 1 (#297) bestaat niet meer.
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
-    expect(container.querySelector(".klassement-coach")).toBeNull();
+    expect(container.querySelectorAll(".coach-sneer")).toHaveLength(1);
+    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
+    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
   });
 
   it("zwijgt over je positie in een seizoensarchief (#411)", async () => {

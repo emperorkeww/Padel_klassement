@@ -135,7 +135,6 @@ export function GroupStandTab({
                       delta: dayDelta(r.playerId),
                       dimmed: r.thin,
                       tier: true,
-                      roastSchild: profiles[r.playerId]?.roast_schild ?? false,
                       sub: `${r.playedInGroup}× in deze groep`,
                     }))}
                   />

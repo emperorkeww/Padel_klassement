@@ -378,16 +378,7 @@ export function Leaderboard() {
   let klassementCoach: { tekst: string; mood: CoachMood } | null = null;
   const mijnIdx =
     tab !== "team" ? displayRows.findIndex((r) => r.isMe) : -1;
-  if (
-    mijnIdx >= 0 &&
-    !usingScope &&
-    !q.trim() &&
-    !loading &&
-    !error &&
-    // Sta je als #1 op het zichtbare podium, dan spreekt Coach Rudy daar al
-    // over je (bigDaddyCoachQuote, #297) — geen tweede bubbel eronder.
-    !(tab === "player" && showPodium && mijnIdx === 0)
-  ) {
+  if (mijnIdx >= 0 && !usingScope && !q.trim() && !loading && !error) {
     const feiten = klassementFeiten(
       displayRows.map((r) => ({
         playerId: r.key,
@@ -680,7 +671,6 @@ export function Leaderboard() {
               delta: deltaToday(r.history, club.timezone),
               dimmed: r.games > 0 && r.games < THIN_GAMES,
               tier: true,
-              roastSchild: pmap[r.key]?.roast_schild ?? false,
               sub: `${r.points} ptn`,
               record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
             }))}
