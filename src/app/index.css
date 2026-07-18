@@ -1,3 +1,14 @@
+/* Huisstijl-font (Outfit, variabel gewicht): self-hosted (SIL OFL) i.p.v. de
+   Google Fonts CDN, zodat de service worker het meecachet en de app ook offline
+   in de juiste letter rendert (#462). Latin-subset — dekt het Nederlands. */
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../assets/fonts/outfit-latin-wght.woff2") format("woff2-variations");
+}
+
 /* Ronde display-font (#232): self-hosted Nunito (variabel gewicht), voor de
    feed-koppen/scores/labels — de "ronde" uitstraling van het mockup-voorbeeld.
    Open (SIL OFL), dus vrij te bundelen; SF Pro Rounded is dat niet. */
