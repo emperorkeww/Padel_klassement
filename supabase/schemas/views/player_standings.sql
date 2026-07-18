@@ -1,8 +1,14 @@
 -- Spelerklassement: globaal, live berekend uit afgeronde matches.
 -- Puntensysteem: winst = 3, gelijkspel = 1, verlies = 0.
 -- goal_diff (scoresaldo) dient als tie-breaker bij gelijke punten.
+-- security_invoker = false (DEFINER): dit is een GLOBAAL aggregaat en moet dat
+-- blijven, óók voor niet-leden van een groep. Sinds #461 is public.matches
+-- niet meer publiek leesbaar; een security_invoker-view zou de stand daardoor
+-- per-kijker maken (groepsmatches vallen weg). Draaien als view-owner bypasst
+-- de matches-RLS en geeft enkel het aggregaat terug — niet de ruwe rijen.
+-- NIET terugzetten naar security_invoker zonder #461 opnieuw te openen.
 create view public.player_standings
-with (security_invoker = true) as
+with (security_invoker = false) as
 with team_results as (
   select team_a_id as team_id, winner_team_id,
          score_a as scored_for, score_b as scored_against
