@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
-import type { Match, Profile, Team } from "@/types";
+import type { CourtType, Match, Profile, Team } from "@/types";
 import { displayName } from "@/features/profiles/api";
 
 // Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe
@@ -216,6 +216,7 @@ export async function createCompletedMatch(params: {
   scoreB?: number | null;
   groupId?: string | null;
   setScores?: SetScore[] | null;
+  courtType?: CourtType | null;
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_completed_match", {
     p_a1: params.a1,
@@ -229,6 +230,7 @@ export async function createCompletedMatch(params: {
     p_score_b: params.scoreB ?? undefined,
     p_group_id: params.groupId ?? undefined,
     p_set_scores: params.setScores ?? undefined,
+    p_court_type: params.courtType ?? undefined,
   });
   if (error) throw error;
   invalidateMatchData();
@@ -246,6 +248,7 @@ export async function createPlannedMatch(params: {
   playedAt?: string | null;
   groupId?: string | null;
   setScores?: SetScore[] | null;
+  courtType?: CourtType | null;
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_planned_match", {
     p_a1: params.a1,
@@ -256,6 +259,7 @@ export async function createPlannedMatch(params: {
     p_played_at: params.playedAt ?? undefined,
     p_group_id: params.groupId ?? undefined,
     p_set_scores: params.setScores ?? undefined,
+    p_court_type: params.courtType ?? undefined,
   });
   if (error) throw error;
   invalidateMatchData();
@@ -272,17 +276,22 @@ export async function setMatchResult(params: {
   scoreA?: number | null;
   scoreB?: number | null;
   setScores?: SetScore[] | null;
+  courtType?: CourtType | null;
 }): Promise<void> {
+  const patch: TablesUpdate<"matches"> = {
+    status: "completed",
+    winner_team_id: params.winnerTeamId,
+    score_a: params.scoreA ?? null,
+    score_b: params.scoreB ?? null,
+    set_scores: params.setScores ?? null,
+    played_at: new Date().toISOString(),
+  };
+  // Alleen aanraken als expliciet meegegeven, zodat een bij het plannen gekozen
+  // baantype niet gewist wordt wanneer de uitslag zonder baan-keuze binnenkomt.
+  if (params.courtType !== undefined) patch.court_type = params.courtType;
   const { data, error } = await supabase
     .from("matches")
-    .update({
-      status: "completed",
-      winner_team_id: params.winnerTeamId,
-      score_a: params.scoreA ?? null,
-      score_b: params.scoreB ?? null,
-      set_scores: params.setScores ?? null,
-      played_at: new Date().toISOString(),
-    })
+    .update(patch)
     .eq("id", params.matchId)
     .neq("status", "completed")
     .select("id");

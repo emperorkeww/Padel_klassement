@@ -718,3 +718,175 @@
 .link-btn:hover {
   opacity: 0.8;
 }
+
+/* ---------- Partner-synergie (#471) ----------
+   Rij per maatje: naam, win%-balk, percentage en W–L-record. */
+.synergy {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.synergy__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.synergy__row + .synergy__row {
+  border-top: 1px solid var(--line);
+}
+.synergy__player {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+.synergy__player:hover .synergy__name {
+  color: var(--accent);
+}
+.synergy__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.synergy__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.synergy__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.synergy__rate {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  text-align: right;
+}
+.synergy__record {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.synergy__samen {
+  color: var(--line-strong);
+  font-weight: 600;
+}
+
+/* ---------- Baan- & tijdvoorkeuren (#471) ----------
+   Groepje ("Tijdstip"/"Baantype") met per segment een win%-balk. Het sterkste
+   segment krijgt een accentrand. */
+.pref-group + .pref-group {
+  margin-top: var(--sp-4);
+}
+.pref-group__title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.pref {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.pref__row {
+  display: grid;
+  grid-template-columns: minmax(84px, auto) minmax(60px, 1fr) auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border-radius: 10px;
+}
+.pref__row.is-best {
+  background: var(--accent-soft);
+}
+.pref__label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pref__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.pref__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.pref__rate {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  text-align: right;
+}
+.pref__meta {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+/* ---------- Milestone-tijdlijn (#471) ----------
+   Verticale lijn met per mijlpaal een icoon, label en datum. */
+.timeline {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  position: relative;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 15px;
+  width: 2px;
+  background: var(--line);
+}
+.timeline__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.timeline__icon {
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1rem;
+}
+.timeline__label {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timeline__date {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

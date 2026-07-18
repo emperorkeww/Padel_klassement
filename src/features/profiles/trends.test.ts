@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { bestWeekday, monthlyWinRate, opponentExtremes } from "@/features/profiles/trends";
-import type { Match, Team } from "@/types";
+import {
+  bestWeekday,
+  courtPreference,
+  monthlyWinRate,
+  opponentExtremes,
+  timeOfDayPreference,
+} from "@/features/profiles/trends";
+import type { CourtType, Match, Team } from "@/types";
 
 // p1 speelt met p2 (team t-a) tegen p3+p4 (team t-b).
 const TEAMS: Record<string, Team> = {
@@ -103,5 +109,104 @@ describe("bestWeekday", () => {
       match("2026-07-17T18:00:00Z", true),
     ];
     expect(bestWeekday(list, TEAMS, "p1")).toBeNull();
+  });
+});
+
+// Lokale-tijd-strings (geen "Z") zodat getHours() los van de CI-tijdzone het
+// bedoelde uur oplevert.
+function matchAt(hourStr: string, won: boolean): Match {
+  return {
+    id: `mh-${seq++}`,
+    team_a_id: "t-a",
+    team_b_id: "t-b",
+    status: "completed",
+    winner_team_id: won ? "t-a" : "t-b",
+    played_at: `2026-06-01T${hourStr}:00`,
+    created_at: `2026-06-01T${hourStr}:00`,
+  } as Match;
+}
+
+describe("timeOfDayPreference", () => {
+  it("bucketeert per dagdeel in vaste volgorde met win%", () => {
+    const { parts } = timeOfDayPreference(
+      [
+        matchAt("08:00", true), // ochtend
+        matchAt("14:00", false), // middag
+        matchAt("14:30", true), // middag
+        matchAt("20:00", true), // avond
+      ],
+      TEAMS,
+      "p1",
+    );
+    expect(parts.map((p) => `${p.part}:${p.rate}`)).toEqual([
+      "ochtend:100",
+      "middag:50",
+      "avond:100",
+    ]);
+  });
+
+  it("kiest het beste dagdeel met genoeg matches", () => {
+    const { best } = timeOfDayPreference(
+      [
+        // avond: 3 matches, 3 winst
+        matchAt("19:00", true),
+        matchAt("20:00", true),
+        matchAt("21:00", true),
+        // ochtend: 1 match, onder de drempel ondanks 100%
+        matchAt("07:00", true),
+        matchAt("08:00", false),
+        matchAt("09:00", false),
+      ],
+      TEAMS,
+      "p1",
+    );
+    expect(best?.part).toBe("avond");
+    expect(best?.label).toBe("Avond");
+  });
+});
+
+function matchCourt(court: CourtType | null, won: boolean): Match {
+  return {
+    id: `mc-${seq++}`,
+    team_a_id: "t-a",
+    team_b_id: "t-b",
+    status: "completed",
+    winner_team_id: won ? "t-a" : "t-b",
+    court_type: court,
+    played_at: "2026-06-01T18:00:00Z",
+    created_at: "2026-06-01T18:00:00Z",
+  } as Match;
+}
+
+describe("courtPreference", () => {
+  it("telt enkel matches mét baantype, in COURT_TYPES-volgorde", () => {
+    const { courts } = courtPreference(
+      [
+        matchCourt("buiten", true),
+        matchCourt("binnen", true),
+        matchCourt("binnen", false),
+        matchCourt(null, true), // zonder type: telt niet mee
+      ],
+      TEAMS,
+      "p1",
+    );
+    expect(courts.map((c) => `${c.type}:${c.rate}`)).toEqual([
+      "binnen:50",
+      "buiten:100",
+    ]);
+  });
+
+  it("kiest het beste baantype met genoeg matches", () => {
+    const { best } = courtPreference(
+      [
+        matchCourt("panorama", true),
+        matchCourt("panorama", true),
+        matchCourt("panorama", true),
+        matchCourt("buiten", false), // 1 match, onder de drempel
+      ],
+      TEAMS,
+      "p1",
+    );
+    expect(best?.type).toBe("panorama");
   });
 });

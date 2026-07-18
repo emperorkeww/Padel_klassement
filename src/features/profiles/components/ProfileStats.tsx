@@ -10,6 +10,9 @@ import { bestWeekday, monthlyWinRate, opponentExtremes } from "@/features/profil
 import { formatDate } from "@/lib/utils/format";
 import { displayName } from "@/features/profiles/api";
 import { HighlightTile } from "@/features/profiles/components/HighlightTile";
+import { PartnerSynergyMatrix } from "@/features/profiles/components/PartnerSynergyMatrix";
+import { PreferenceStats } from "@/features/profiles/components/PreferenceStats";
+import { MilestoneTimeline } from "@/features/profiles/components/MilestoneTimeline";
 import type { ProfileData, H2HRow } from "@/features/profiles/components/types";
 
 // Statistieken-tab: het volledige cijferbeeld — 5-stat grid, het wisselbare
@@ -343,6 +346,20 @@ export function ProfileStats({ d }: { d: ProfileData }) {
           )}
         </div>
       </div>
+
+      {/* Geavanceerde trends (#471): partner-synergie, baan-/tijdvoorkeuren en
+          een mijlpalen-tijdlijn. Elk blok verbergt zichzelf zonder data. */}
+      <div className="grid grid--2">
+        <PartnerSynergyMatrix
+          matches={scoped}
+          teams={tmap}
+          profiles={pmap}
+          playerId={id}
+        />
+        <PreferenceStats matches={scoped} teams={tmap} playerId={id} />
+      </div>
+
+      <MilestoneTimeline history={rhist} />
     </>
   );
 }
