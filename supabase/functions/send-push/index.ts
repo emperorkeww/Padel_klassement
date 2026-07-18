@@ -11,10 +11,18 @@
 //
 // Vereiste secrets (supabase secrets set):
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…)
+//   CRON_SECRET — gedeeld geheim dat de webhook meestuurt als 'x-cron-secret'
+//     (#459). De functie draait --no-verify-jwt, dus dit is de énige gate:
+//     zonder correct geheim weigert ze. Zelfde secret als de cron-functies.
 // SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY worden automatisch meegegeven.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+
+// Gedeeld geheim voor de database-webhook (#459). Bewust fail-closed: is het
+// niet gezet, dan weigert de handler álles (i.p.v. de fail-open cron-guards
+// die de check overslaan als de secret ontbreekt).
+const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -355,6 +363,16 @@ async function filterByPreference(
 }
 
 Deno.serve(async (req) => {
+  // Fail-closed authenticatie (#459): geen geconfigureerd geheim of een
+  // verkeerde/ontbrekende header → weigeren. Voorkomt push-spoofing via de
+  // ongeauthenticeerde publieke function-URL.
+  if (!CRON_SECRET || req.headers.get("x-cron-secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "Niet toegestaan" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
   let payload: WebhookPayload;
   try {
     payload = await req.json();
