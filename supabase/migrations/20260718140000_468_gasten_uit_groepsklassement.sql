@@ -1,7 +1,9 @@
--- Spelerklassement per groep, live berekend uit afgeronde groepsmatches.
--- Puntensysteem: winst = 3, gelijkspel = 1, verlies = 0.
--- goal_diff (scoresaldo) dient als tie-breaker bij gelijke punten.
-create view public.group_player_standings
+-- #468: gasten (is_guest) tellen nergens in de klassementen mee. De globale
+-- player_standings-view filterde al `not is_guest`, maar group_player_standings
+-- niet — waardoor gasten wél in het groepsklassement (en de client-mirror)
+-- verschenen en niet in het globale tabblad. Voeg hetzelfde filter toe zodat
+-- alle standen dezelfde populatie hanteren.
+create or replace view public.group_player_standings
 with (security_invoker = true) as
 with team_results as (
   select group_id, team_a_id as team_id, winner_team_id,

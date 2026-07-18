@@ -73,6 +73,24 @@ describe("computePlayerStandings", () => {
     expect(carol).toMatchObject({ played: 3, won: 1, drawn: 1, lost: 1, points: 4, goal_diff: -3 });
   });
 
+  it("sluit gasten uit, gelijk aan `where not is_guest` in de views (#468)", () => {
+    // p5 is een gast; p6 een echt profiel. Ze vormen samen t-g en spelen tegen
+    // t-cd. De gast mag niet in de stand verschijnen, de echte speler wél.
+    const profiles = {
+      ...PROFILES,
+      p5: { ...profile("p5", "gast", "Gastspeler"), is_guest: true },
+      p6: profile("p6", "yves", "Yves IJzer"),
+    };
+    const teams = { ...TEAMS, "t-g": team("t-g", "p5", "p6") };
+    const rows = computePlayerStandings(
+      [match({ id: "g", team_a_id: "t-g", team_b_id: "t-cd", winner_team_id: "t-g" })],
+      teams,
+      profiles,
+    );
+    expect(rows.some((r) => r.player_id === "p5")).toBe(false);
+    expect(rows.find((r) => r.player_id === "p6")).toMatchObject({ played: 1, won: 1 });
+  });
+
   it("negeert niet-afgeronde matches", () => {
     const rows = computePlayerStandings(
       [match({ id: "m", team_a_id: "t-ab", team_b_id: "t-cd", status: "scheduled", played_at: null })],

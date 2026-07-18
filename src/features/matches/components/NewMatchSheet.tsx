@@ -222,8 +222,7 @@ export function NewMatchSheet({
     ...players,
     ...extraGuests.filter((g) => !players.some((p) => p.id === g.id)),
   ];
-  const isGuest = (p: Profile | undefined) =>
-    !!(p as { is_guest?: boolean } | undefined)?.is_guest;
+  const isGuest = (p: Profile | undefined) => !!p?.is_guest;
 
   const picked = teamA.length + teamB.length;
   // Teamgrootte volgt de speelvorm: 1 bij singles, 2 bij dubbel.
