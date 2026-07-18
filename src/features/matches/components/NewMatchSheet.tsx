@@ -33,6 +33,12 @@ import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types"
 
 export type NewMatchMode = "score" | "plan";
 
+// Zonder verbinding kan de RPC niet slagen; het concept blijft wél lokaal
+// bewaard (matchDraft), dus de boodschap is geruststellend i.p.v. een kale
+// netwerkfout (#462). De echte wachtrij-afhandeling volgt in een latere stap.
+const OFFLINE_SUBMIT_MESSAGE =
+  "Geen verbinding — je invoer blijft bewaard. Probeer het opnieuw zodra je weer online bent.";
+
 /** Match loggen of plannen in twee stappen: spelers aantikken, dan de
  *  eindscore ("score") of het tijdstip ("plan"). Een geplande match komt in
  *  "Te spelen" te staan, met inline score-invoer voor na afloop.
@@ -323,6 +329,10 @@ export function NewMatchSheet({
    *  Optioneel wekelijks herhalen (genereert meerdere geplande matches). */
   async function plan() {
     if (!full) return;
+    if (!navigator.onLine) {
+      toast.error(OFFLINE_SUBMIT_MESSAGE);
+      return;
+    }
     setBusy(true);
     try {
       const weeks =
@@ -355,7 +365,7 @@ export function NewMatchSheet({
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err));
+      toast.error(navigator.onLine ? errorMessage(err) : OFFLINE_SUBMIT_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -363,6 +373,10 @@ export function NewMatchSheet({
 
   async function save() {
     if (!full || !scored) return;
+    if (!navigator.onLine) {
+      toast.error(OFFLINE_SUBMIT_MESSAGE);
+      return;
+    }
     setBusy(true);
     try {
       const setScores = toSetScores(sets);
@@ -416,7 +430,7 @@ export function NewMatchSheet({
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err));
+      toast.error(navigator.onLine ? errorMessage(err) : OFFLINE_SUBMIT_MESSAGE);
     } finally {
       setBusy(false);
     }
