@@ -58,8 +58,7 @@ export function Matches() {
   // gastspelers (naamloze deelnemers zonder account, door jou aangemaakt).
   const { accepted } = categorize(friendships.data ?? [], myId);
   const myGuests = (profiles.data ?? []).filter(
-    (p) => (p as { is_guest?: boolean }).is_guest &&
-      (p as { owner_id?: string }).owner_id === myId,
+    (p) => p.is_guest && p.owner_id === myId,
   );
   const selectablePlayers: Profile[] = [
     pmap[myId],
