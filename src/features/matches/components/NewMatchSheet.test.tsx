@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
@@ -11,6 +11,11 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { NewMatchSheet } from "./NewMatchSheet";
 import { PROFILES } from "@/test/fixtures";
+import {
+  readDraft,
+  writeDraft,
+  type MatchDraft,
+} from "@/features/matches/matchDraft";
 
 function renderSheet(groupId?: string) {
   return render(
@@ -136,5 +141,99 @@ describe("<NewMatchSheet /> groep-keuze (#361)", () => {
     expect(
       screen.queryByLabelText(/koppel aan groep/i),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("<NewMatchSheet /> concept bewaren (#462)", () => {
+  // Een compleet concept met team A = Alice, team B = Carol en een score.
+  const draftGiven = (): MatchDraft => ({
+    teamA: ["p1"],
+    teamB: ["p3"],
+    format: "1v1",
+    step: 1,
+    scoreA: "6",
+    scoreB: "4",
+    showSets: false,
+    sets: [{ a: "", b: "" }],
+    when: "",
+    courtType: null,
+    repeat: false,
+    repeatWeeks: 4,
+    pickedGroupId: "",
+    savedAt: 1,
+  });
+
+  // De chip (niet de gelijknamige wisselpijl) van een speler in het rooster.
+  const chip = (naam: RegExp) =>
+    screen
+      .getAllByRole("button", { name: naam })
+      .find((b) => b.classList.contains("pick-chip"))!;
+
+  it("hervat bij het openen een eerder bewaard concept i.p.v. leeg te starten", async () => {
+    writeDraft("score", "g1", draftGiven());
+    renderSheet("g1");
+
+    // De hervat-strook verschijnt en de bewaarde spelers staan geselecteerd.
+    expect(
+      await screen.findByText(/onafgemaakte match hervat/i),
+    ).toBeInTheDocument();
+    expect(chip(/alice anders/i)).toHaveAttribute("aria-pressed", "true");
+    expect(chip(/carol claes/i)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("wist het concept met 'Opnieuw beginnen' en start schoon", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    writeDraft("score", "g1", draftGiven());
+    renderSheet("g1");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /opnieuw beginnen/i }),
+    );
+
+    expect(readDraft("score", "g1")).toBeNull();
+    expect(
+      screen.queryByText(/onafgemaakte match hervat/i),
+    ).not.toBeInTheDocument();
+    expect(chip(/alice anders/i)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("persisteert de invoer terwijl je bezig bent (overleeft een refresh)", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /alice anders/i }));
+
+    // Debounced schrijven: het concept verschijnt vanzelf in de opslag.
+    await waitFor(() => {
+      const d = readDraft("score", "g1");
+      expect(d?.teamA).toContain("p1");
+    });
+  });
+
+  it("wist het concept na een geslaagde opslag", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    for (const naam of [
+      /alice anders/i,
+      /bob boers/i,
+      /carol claes/i,
+      /dave de vos/i,
+    ]) {
+      await userEvent.click(screen.getByRole("button", { name: naam }));
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
+    await userEvent.type(screen.getByLabelText("Score team A"), "6");
+    await userEvent.type(screen.getByLabelText("Score team B"), "4");
+
+    // Zorg dat er iets bewaard staat vóór het opslaan…
+    await waitFor(() => expect(readDraft("score", "g1")).not.toBeNull());
+
+    await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
+
+    // …en dat de geslaagde opslag het concept opruimt.
+    await waitFor(() => expect(readDraft("score", "g1")).toBeNull());
   });
 });
