@@ -151,17 +151,14 @@ export function getCompletedMatchesBetween(
   });
 }
 
-/** Datum van de allereerste match (bepaalt de seizoenslijst); null zonder matches. */
+/** Datum van de allereerste match (bepaalt de seizoenslijst); null zonder matches.
+ *  Via een SECURITY DEFINER RPC (#461): de seizoenspicker-grens moet globaal
+ *  blijven, ook al is de ruwe matches-tabel sinds #461 niet meer publiek. */
 export function getFirstMatchDate(): Promise<string | null> {
   return cached("matches:first", async () => {
-    const { data, error } = await supabase
-      .from("matches")
-      .select("played_at, created_at")
-      .order("created_at", { ascending: true })
-      .limit(1);
+    const { data, error } = await supabase.rpc("first_match_date");
     if (error) throw error;
-    const first = data?.[0];
-    return first ? (first.played_at ?? first.created_at) : null;
+    return data ?? null;
   });
 }
 

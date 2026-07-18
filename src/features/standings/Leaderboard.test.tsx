@@ -2,10 +2,15 @@ import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "@/test/supabaseMock";
-import { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
+import { TABLES, SESSION, TEAMS, PROFILES, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
+import {
+  computePlayerStandings,
+  computeTeamStandings,
+} from "@/features/rating/standings";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { NIEUW } from "@/features/coach/klassementPraat";
+import type { Match, Profile, Team } from "@/types";
 
 // Vast "nu" (3 juli 2026, Q3): zo is Q2 2026 een afgesloten seizoen met een
 // kampioen. Alleen Date wordt gefaket, zodat waitFor/findBy gewoon blijven werken.
@@ -27,14 +32,39 @@ vi.mock("@/lib/supabase/client", () => {
     played_at: "2026-05-10T10:00:00.000Z",
     created_at: "2026-05-10T10:00:00.000Z",
   };
+  // De globale seizoensstand komt sinds #461 van een SECURITY DEFINER RPC met
+  // een datumvenster. De mock filtert zelf niet, dus we bootsen de RPC na: de
+  // afgeronde fixtures binnen [p_start, p_end) samenvatten met dezelfde helpers
+  // als de server (computePlayer/TeamStandings). MATCH_Q2 valt in Q2 (Carol &
+  // Dave), MATCH_DONE in Q3 (Alice & Bob).
+  const teamsRec = Object.fromEntries(
+    TEAMS.map((t) => [t.id, t]),
+  ) as Record<string, Team>;
+  const profilesRec = Object.fromEntries(
+    PROFILES.map((p) => [p.id, p]),
+  ) as Record<string, Profile>;
+  const completed = [MATCH_Q2, MATCH_DONE] as unknown as Match[];
+  const inWindow = (args: unknown) => {
+    const { p_start, p_end } = args as { p_start: string; p_end: string };
+    return completed.filter((m) => {
+      const d = m.played_at ?? m.created_at;
+      return d >= p_start && d < p_end;
+    });
+  };
   return {
     supabase: makeSupabaseMock({
       session: SESSION,
       tables: {
         ...TABLES,
-        // De Q2-match eerst: de mock negeert order(), dus rij 0 bepaalt de
-        // "eerste match" en daarmee de kwartalen in de seizoenskiezer.
         matches: [MATCH_Q2, MATCH_DONE, MATCH_PLANNED],
+      },
+      rpc: {
+        // Bepaalt de kwartalen in de seizoenskiezer (Q2 → Q3 2026).
+        first_match_date: "2026-05-10T10:00:00.000Z",
+        season_player_standings: (args: unknown) =>
+          computePlayerStandings(inWindow(args), teamsRec, profilesRec),
+        season_team_standings: (args: unknown) =>
+          computeTeamStandings(inWindow(args), teamsRec),
       },
     }),
   };

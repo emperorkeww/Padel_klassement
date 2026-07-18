@@ -20,6 +20,8 @@ import {
   getPlayerStandings,
   getTeamStandings,
   getGroupPlayerStandings,
+  getSeasonPlayerStandings,
+  getSeasonTeamStandings,
 } from "./api";
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
@@ -51,7 +53,7 @@ import { TierDivisions } from "./components/TierDivisions";
 import { KlassementUitleg } from "./components/KlassementUitleg";
 import { StandingsTable } from "./components/StandingsTable";
 import { RankList } from "./components/RankList";
-import type { Match, Profile, RatingPoint } from "@/types";
+import type { Match, PlayerStanding, Profile, RatingPoint, TeamStanding } from "@/types";
 import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies";
@@ -144,17 +146,43 @@ export function Leaderboard() {
   // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
   // tonen de pias van de geselecteerde groep.
   const piasWeeks = useAsync(getPiasWeeks, []);
-  // Kwartaalstand: één matches-query per seizoenswissel (gecachet); de stand
-  // zelf wordt client-side berekend met dezelfde logica als de views.
+  // Globale kwartaalstand komt sinds #461 van een SECURITY DEFINER RPC: de ruwe
+  // matches-tabel is niet meer publiek, dus een client-side berekening zou de
+  // globale seizoensstand per-kijker maken (groepsmatches vallen weg). Een
+  // GROEP-seizoensstand blijft wél client-side: de kijker is altijd lid van de
+  // gekozen groep (getMyGroups) en mag die matchrijen dus zien via RLS. Bij de
+  // teams-tab is er geen groepsfilter, dus die is altijd globaal.
+  const globalSeason = !!season && (!groupId || tab === "team");
+  const seasonPlayers = useAsync<PlayerStanding[] | null>(
+    () =>
+      globalSeason && season
+        ? getSeasonPlayerStandings(
+            season.start.toISOString(),
+            season.end.toISOString(),
+          )
+        : Promise.resolve(null),
+    [globalSeason && season ? season.id : "off"],
+  );
+  const seasonTeams = useAsync<TeamStanding[] | null>(
+    () =>
+      globalSeason && season
+        ? getSeasonTeamStandings(
+            season.start.toISOString(),
+            season.end.toISOString(),
+          )
+        : Promise.resolve(null),
+    [globalSeason && season ? season.id : "off"],
+  );
+  // Groep-seizoensstand: matches van de (eigen) groep, client-side berekend.
   const seasonMatches = useAsync<Match[] | null>(
     () =>
-      season
+      season && !globalSeason
         ? getCompletedMatchesBetween(
             season.start.toISOString(),
             season.end.toISOString(),
           )
         : Promise.resolve(null),
-    [season?.id],
+    [season && !globalSeason ? `${season.id}:${groupId}` : "off"],
   );
   // Alle afgeronde matches, voor de tijdmachine. Vast bereik → de cache blijft
   // staan terwijl je de datum verschuift (alleen de eerste keer een query).
@@ -177,11 +205,13 @@ export function Leaderboard() {
     recent.reload();
     ratings.reload();
     histories.reload();
+    seasonPlayers.reload();
+    seasonTeams.reload();
     seasonMatches.reload();
     allCompleted.reload();
     piasWeeks.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonMatches.reload, allCompleted.reload, piasWeeks.reload]);
+  }, [players.reload, teams.reload, teamsMap.reload, recent.reload, ratings.reload, histories.reload, seasonPlayers.reload, seasonTeams.reload, seasonMatches.reload, allCompleted.reload, piasWeeks.reload]);
   useRealtime("matches", refresh);
 
   const pmap = profilesMap.data ?? {};
@@ -218,28 +248,35 @@ export function Leaderboard() {
   // Gescopete matches (seizoen óf "stand op datum"), met groepsfilter. Beide
   // rekenen client-side met dezelfde logica als de server-views.
   const usingScope = !!(season || asof);
-  const scopedSource = season
-    ? seasonMatches.data
-      ? matchesInSeason(seasonMatches.data, season)
+  // Client-side scope: de tijdmachine (asof) en de GROEP-seizoensstand. De
+  // globale seizoensstand komt uit de RPC (seasonPlayers/seasonTeams) en loopt
+  // niet via deze matchlijst.
+  const scopedSource = asof
+    ? allCompleted.data
+      ? matchesUpTo(allCompleted.data, asof)
       : null
-    : asof
-      ? allCompleted.data
-        ? matchesUpTo(allCompleted.data, asof)
+    : season && !globalSeason
+      ? seasonMatches.data
+        ? matchesInSeason(seasonMatches.data, season)
         : null
       : null;
   const scoped = scopedSource
     ? scopedSource.filter((m) => !groupId || m.group_id === groupId)
     : null;
-  const playerStandings = usingScope
-    ? scoped
-      ? computePlayerStandings(scoped, tmap, pmap)
-      : []
-    : (players.data ?? []);
-  const teamStandings = usingScope
-    ? scoped
-      ? computeTeamStandings(scoped, tmap)
-      : []
-    : (teams.data ?? []);
+  const playerStandings = globalSeason
+    ? (seasonPlayers.data ?? [])
+    : usingScope
+      ? scoped
+        ? computePlayerStandings(scoped, tmap, pmap)
+        : []
+      : (players.data ?? []);
+  const teamStandings = globalSeason
+    ? (seasonTeams.data ?? [])
+    : usingScope
+      ? scoped
+        ? computeTeamStandings(scoped, tmap)
+        : []
+      : (teams.data ?? []);
 
   // Vorm: binnen een scope alleen de matches van die scope tonen.
   const formSource = usingScope ? (scoped ?? []) : (recent.data ?? []);
@@ -336,18 +373,27 @@ export function Leaderboard() {
               { points: b.points, goal_diff: b.goalDiff, won: b.won },
             ),
         );
-  // In seizoens-/datumweergave rekenen we zelf, dus wachten we op matches + lookups.
+  // Globale seizoensstand → RPC; groep-seizoen/tijdmachine → client-side matches;
+  // anders de live views.
   const scopeAsync = season ? seasonMatches : allCompleted;
-  const loading = usingScope
-    ? scopeAsync.loading || teamsMap.loading || profilesMap.loading
-    : tab === "team"
-      ? teams.loading
-      : players.loading;
-  const error = usingScope
-    ? scopeAsync.error
-    : tab === "team"
-      ? teams.error
-      : players.error;
+  const loading = globalSeason
+    ? tab === "team"
+      ? seasonTeams.loading
+      : seasonPlayers.loading
+    : usingScope
+      ? scopeAsync.loading || teamsMap.loading || profilesMap.loading
+      : tab === "team"
+        ? teams.loading
+        : players.loading;
+  const error = globalSeason
+    ? tab === "team"
+      ? seasonTeams.error
+      : seasonPlayers.error
+    : usingScope
+      ? scopeAsync.error
+      : tab === "team"
+        ? teams.error
+        : players.error;
   const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.

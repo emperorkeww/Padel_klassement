@@ -1,10 +1,25 @@
 -- Row Level Security voor public.matches
 alter table public.matches enable row level security;
 
-create policy "Matches zijn publiek leesbaar"
+-- Leesbaarheid van ruwe matchrijen (#461). De ruwe rij verraadt wie tegen wie
+-- speelde (= de facto de roster) en de uitslag; die horen even privé te zijn als
+-- group_members/attendance zelf. Daarom:
+--   * niet-groepsmatches (group_id is null) blijven publiek;
+--   * groepsmatches enkel voor leden van die groep;
+--   * daarnaast altijd voor de deelnemers zelf en de aanmaker.
+-- Het GLOBALE klassement lekt hierdoor niet: dat wordt als aggregaat geserveerd
+-- door de SECURITY DEFINER views (player_standings/standings) en de
+-- season_*_standings RPC's, die de matches-RLS bewust bypassen. Zie #461.
+create policy "Matches: deelnemers, groepsleden en publiek (niet-groep)"
   on public.matches
   for select
-  using (true);
+  using (
+    group_id is null
+    or public.is_group_member(group_id, (select auth.uid()))
+    or public.is_team_member(team_a_id, (select auth.uid()))
+    or public.is_team_member(team_b_id, (select auth.uid()))
+    or created_by = (select auth.uid())
+  );
 
 -- Bewust GEEN directe INSERT-policy: matches worden uitsluitend aangemaakt via
 -- de SECURITY DEFINER RPC's (create_completed_match, generate_americano_round),

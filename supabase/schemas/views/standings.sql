@@ -2,9 +2,11 @@
 -- Puntensysteem: winst = 3, gelijkspel = 1, verlies = 0.
 -- Een gelijkspel is een afgeronde match zonder winner_team_id.
 -- goal_diff (scoresaldo) dient als tie-breaker bij gelijke punten.
--- security_invoker = true → de RLS-policies van de onderliggende tabellen gelden.
+-- security_invoker = false (DEFINER): globaal team-aggregaat, moet globaal
+-- blijven na de matches-RLS-afscherming (#461). Zie player_standings voor de
+-- volledige uitleg. NIET terugzetten naar security_invoker.
 create view public.standings
-with (security_invoker = true) as
+with (security_invoker = false) as
 with results as (
   select team_a_id as team_id, winner_team_id,
          score_a as scored_for, score_b as scored_against
