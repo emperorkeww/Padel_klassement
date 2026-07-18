@@ -73,7 +73,10 @@ export function makeSupabaseMock(opts: MockOptions = {}) {
       signOut: vi.fn().mockResolvedValue({ error: null }),
       updateUser: vi.fn().mockResolvedValue({ error: null }),
       signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
-      signUp: vi.fn().mockResolvedValue({ error: null }),
+      // Default: e-mailbevestiging aan → wel een user, nog geen sessie.
+      signUp: vi
+        .fn()
+        .mockResolvedValue({ data: { user: {}, session: null }, error: null }),
       resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
     },
     from: vi.fn((table: string) =>

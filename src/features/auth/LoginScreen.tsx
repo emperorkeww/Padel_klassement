@@ -93,7 +93,7 @@ export function LoginScreen() {
     }
 
     if (mode === "signup") {
-      const { error } = await signUp({
+      const { data, error } = await signUp({
         email: cleanEmail,
         password,
         options: {
@@ -104,7 +104,17 @@ export function LoginScreen() {
         },
       });
       if (error) return fail(error.message);
-      return done("Account aangemaakt — je wordt ingelogd.");
+      // Met e-mailbevestiging aan levert signUp géén sessie op: de speler moet
+      // eerst de link in de bevestigingsmail openen. Alleen bij een directe
+      // sessie klopt "je wordt ingelogd" (de redirect-useEffect vuurt dan).
+      if (data.session) {
+        return done("Account aangemaakt — je wordt ingelogd.");
+      }
+      return done(
+        `Bijna klaar! We hebben je een bevestigingsmail gestuurd op ${cleanEmail}. ` +
+          "Open de link in die mail om je account te activeren en in te loggen " +
+          "(lokaal: Mailpit).",
+      );
     }
 
     // mode === "forgot"

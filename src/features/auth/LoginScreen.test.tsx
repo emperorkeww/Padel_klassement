@@ -86,7 +86,50 @@ describe("<LoginScreen />", () => {
         data: { full_name: "Erik Elzinga", username: "erik" },
       },
     });
-    expect(await screen.findByText(/account aangemaakt/i)).toBeInTheDocument();
+  });
+
+  it("stuurt naar de mailbox als signUp geen sessie oplevert (bevestiging aan)", async () => {
+    // Default mock: { data: { user: {}, session: null } }.
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("tab", { name: /registreren/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/jij@voorbeeld/i),
+      "check@example.com",
+    );
+    const velden = screen.getAllByPlaceholderText("••••••••");
+    await userEvent.type(velden[0], "geheim123");
+    await userEvent.type(velden[1], "geheim123");
+    await userEvent.click(
+      screen.getByRole("button", { name: /account aanmaken/i }),
+    );
+    expect(
+      await screen.findByText(/bevestigingsmail gestuurd op check@example.com/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/je wordt ingelogd/i)).not.toBeInTheDocument();
+  });
+
+  it("logt direct in als signUp meteen een sessie geeft (bevestiging uit)", async () => {
+    vi.mocked(supabase.auth.signUp).mockResolvedValueOnce({
+      data: { user: {}, session: {} },
+      error: null,
+    } as Awaited<ReturnType<typeof supabase.auth.signUp>>);
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("tab", { name: /registreren/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/jij@voorbeeld/i),
+      "direct@example.com",
+    );
+    const velden = screen.getAllByPlaceholderText("••••••••");
+    await userEvent.type(velden[0], "geheim123");
+    await userEvent.type(velden[1], "geheim123");
+    await userEvent.click(
+      screen.getByRole("button", { name: /account aanmaken/i }),
+    );
+    expect(await screen.findByText(/je wordt ingelogd/i)).toBeInTheDocument();
   });
 
   it("stuurt een herstellink bij wachtwoord vergeten", async () => {
