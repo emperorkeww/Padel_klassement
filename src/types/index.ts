@@ -23,6 +23,14 @@ export interface Profile {
    *  speler kiest zelf hoe hard Coach Rudy hém in zijn eigen feed toespreekt,
    *  los van de groep-instelling van een eigenaar. Ontbreekt = 'gemeen'. */
   roast_intensiteit?: RoastIntensiteit;
+  /** Gastspeler: naamloze deelnemer zonder account, aangemaakt door een lid
+   *  (owner_id). Gasten tellen nergens mee in de klassementen — de globale en
+   *  groepsviews filteren `not is_guest`, en de client-mirror doet hetzelfde
+   *  (#468). Ontbreekt/false = echt profiel. */
+  is_guest?: boolean;
+  /** Eigenaar van een gastprofiel: het lid dat de gast aanmaakte (#468).
+   *  null bij een echt profiel. */
+  owner_id?: string | null;
   created_at: string;
 }
 

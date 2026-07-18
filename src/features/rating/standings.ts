@@ -80,6 +80,9 @@ export function computePlayerStandings(
     const team = teams[teamId];
     if (!team) return;
     for (const playerId of playersOf(team)) {
+      // Gasten tellen nergens mee, net als `where not p.is_guest` in de
+      // player_standings- en group_player_standings-views (#468).
+      if (profiles[playerId]?.is_guest) continue;
       const line = lines.get(playerId) ?? newLine();
       addResult(line, m, teamId, scoredFor, scoredAgainst);
       lines.set(playerId, line);
