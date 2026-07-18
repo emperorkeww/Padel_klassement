@@ -41,9 +41,6 @@ function renderPage() {
 }
 
 describe("<Dashboard />", () => {
-  // Vierings-flags van de weekmissies hoeven hier niet opgeruimd: localStorage
-  // heeft in deze testomgeving geen werkende methodes (zie test/setup.ts) en
-  // readFlag/writeFlag vangen dat met try/catch af.
   beforeEach(stubPlaytomic);
   afterEach(() => vi.unstubAllGlobals());
 

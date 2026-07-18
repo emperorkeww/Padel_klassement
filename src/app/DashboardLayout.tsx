@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
+import { useMissionCelebration } from "@/features/dashboard/useMissionCelebration";
 import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
 import { GithubRibbon } from "@/app/GithubRibbon";
@@ -65,6 +66,9 @@ export function DashboardLayout() {
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt.
   useTierAnnouncement(myId);
+  // Weekmissie-confetti (#414): één app-brede viering op het moment dat een
+  // missie behaald raakt — niet bij een latere, aanleidingsloze dashboardview.
+  useMissionCelebration(myId);
 
   return (
     <div className="shell">
