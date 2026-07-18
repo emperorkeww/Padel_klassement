@@ -26,4 +26,19 @@ describe("<OfflineBanner />", () => {
     });
     expect(screen.queryByText(/geen verbinding/i)).not.toBeInTheDocument();
   });
+
+  it("toont de wachtrij-teller ook mét verbinding", async () => {
+    const { enqueue } = await import("@/features/matches/outbox");
+    setOnline(true);
+    enqueue("completedMatch", {
+      a1: "p1",
+      a2: null,
+      b1: "p3",
+      b2: null,
+      winner: "a",
+      clientToken: "x",
+    });
+    render(<OfflineBanner />);
+    expect(screen.getByText(/1 wijziging wacht op verzending/i)).toBeInTheDocument();
+  });
 });

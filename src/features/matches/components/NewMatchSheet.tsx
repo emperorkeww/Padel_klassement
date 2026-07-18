@@ -12,13 +12,15 @@ import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
 import { displayName } from "@/features/profiles/api";
 import {
-  createCompletedMatch,
   createGuestPlayer,
-  createPlannedMatch,
   emptySet,
   toSetScores,
   type SetPair,
 } from "@/features/matches/api";
+import {
+  saveCompletedMatch,
+  savePlannedMatch,
+} from "@/features/matches/outbox";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { COURT_TYPES } from "@/features/matches/courtType";
 import {
@@ -329,15 +331,12 @@ export function NewMatchSheet({
    *  Optioneel wekelijks herhalen (genereert meerdere geplande matches). */
   async function plan() {
     if (!full) return;
-    if (!navigator.onLine) {
-      toast.error(OFFLINE_SUBMIT_MESSAGE);
-      return;
-    }
     setBusy(true);
     try {
       const weeks =
         repeat && when ? Math.max(2, Math.min(12, repeatWeeks)) : 1;
       const base = when ? new Date(when) : null;
+      let queued = 0;
       for (let i = 0; i < weeks; i++) {
         let playedAt: string | null = null;
         if (base) {
@@ -345,7 +344,8 @@ export function NewMatchSheet({
           d.setDate(base.getDate() + i * 7);
           playedAt = d.toISOString();
         }
-        await createPlannedMatch({
+        // Online direct, offline in de wachtrij (#462).
+        const result = await savePlannedMatch({
           a1: teamA[0],
           a2: teamA[1] ?? null,
           b1: teamB[0],
@@ -354,13 +354,20 @@ export function NewMatchSheet({
           groupId: effectiveGroupId,
           courtType,
         });
+        if (result.status === "queued") queued++;
       }
       tap();
-      toast.success(
-        weeks > 1
-          ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
-          : "Match gepland — je vindt hem bij Te spelen.",
-      );
+      if (queued > 0) {
+        toast.success(
+          "Opgeslagen — wordt gepland zodra je weer online bent.",
+        );
+      } else {
+        toast.success(
+          weeks > 1
+            ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
+            : "Match gepland — je vindt hem bij Te spelen.",
+        );
+      }
       clearDraft(mode, groupId ?? null);
       onCreated();
       onClose();
@@ -373,14 +380,11 @@ export function NewMatchSheet({
 
   async function save() {
     if (!full || !scored) return;
-    if (!navigator.onLine) {
-      toast.error(OFFLINE_SUBMIT_MESSAGE);
-      return;
-    }
     setBusy(true);
     try {
       const setScores = toSetScores(sets);
-      const newMatchId = await createCompletedMatch({
+      // Online direct, offline in de wachtrij (#462).
+      const result = await saveCompletedMatch({
         a1: teamA[0],
         a2: teamA[1] ?? null,
         b1: teamB[0],
@@ -398,33 +402,41 @@ export function NewMatchSheet({
         : teamB.includes(myId)
           ? "b"
           : null;
-      // Vieren als de logger zelf in het winnende team zit.
+      // Lokale emotie viert de dáád van loggen (niet het versturen), dus ook
+      // offline: confetti als de logger zelf in het winnende team zit.
       if (winnaar && loggerTeam === winnaar) {
         celebrate();
         winPulse();
       } else {
         tap();
       }
-      const ctx = { intensiteit, schild: byId(myId)?.roast_schild ?? false };
-      // Verloor je zelf een groepsmatch? Dan meteen een smoes kunnen plaatsen
-      // (#296): een tikbare toast opent de Smoesjesmachine voor deze match, i.p.v.
-      // de gewone quip. Anders reageert Coach Rudy zoals vanouds op je uitslag —
-      // of neutraal als de logger niet zelf meespeelde.
-      const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
-      if (verlies && effectiveGroupId && myId) {
-        promptSmoes({ matchId: newMatchId, groupId: effectiveGroupId, playerId: myId, ctx });
+      if (result.status === "queued") {
+        // Offline: geen smoes/quip — die horen bij een bevestigde opslag en de
+        // Smoesjesmachine heeft een echte matchId nodig. Eerlijke melding, en de
+        // outbox verstuurt de match zodra de verbinding terug is.
+        toast.success("Opgeslagen — wordt verstuurd zodra je weer online bent.");
       } else {
-        toast.success(
-          loggerTeam
-            ? coachMatchQuip({
-                uitkomst:
-                  winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
-                bagel: sa !== sb && Math.min(sa!, sb!) === 0,
-                seed: `${myId}-${sa}-${sb}`,
-                ctx,
-              })
-            : "Match toegevoegd.",
-        );
+        const ctx = { intensiteit, schild: byId(myId)?.roast_schild ?? false };
+        // Verloor je zelf een groepsmatch? Dan meteen een smoes kunnen plaatsen
+        // (#296): een tikbare toast opent de Smoesjesmachine voor deze match,
+        // i.p.v. de gewone quip. Anders reageert Coach Rudy zoals vanouds op je
+        // uitslag — of neutraal als de logger niet zelf meespeelde.
+        const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
+        if (verlies && effectiveGroupId && myId) {
+          promptSmoes({ matchId: result.matchId, groupId: effectiveGroupId, playerId: myId, ctx });
+        } else {
+          toast.success(
+            loggerTeam
+              ? coachMatchQuip({
+                  uitkomst:
+                    winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
+                  bagel: sa !== sb && Math.min(sa!, sb!) === 0,
+                  seed: `${myId}-${sa}-${sb}`,
+                  ctx,
+                })
+              : "Match toegevoegd.",
+          );
+        }
       }
       clearDraft(mode, groupId ?? null);
       onCreated();
