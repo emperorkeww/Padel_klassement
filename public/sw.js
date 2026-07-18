@@ -6,8 +6,10 @@
 //  - NOOIT cachen: Supabase (ander origin), de Playtomic-proxy (/api/*),
 //    de service worker zelf, en alle niet-GET-verzoeken.
 //
-// Bump VERSION bij een breaking change om oude caches te verversen.
-const VERSION = "v2";
+// VERSION wordt bij de build ingevuld: vite.config.ts vervangt de placeholder
+// hieronder door een hash van het build-manifest, zodat de cacheversie
+// automatisch bumpt precies wanneer assets wijzigen — geen handmatige bump meer.
+const VERSION = "__SW_VERSION__";
 const SHELL_CACHE = `vamos-shell-${VERSION}`;
 const ASSET_CACHE = `vamos-assets-${VERSION}`;
 const OFFLINE_URL = "/index.html";
@@ -51,7 +53,14 @@ self.addEventListener("install", (event) => {
       }
     })(),
   );
-  self.skipWaiting();
+  // Bewust GÉÉN skipWaiting hier: een nieuwe versie blijft "waiting" tot de
+  // gebruiker via de update-toast bewust herlaadt (#463). Zo blijft de open
+  // tab op de oude SW draaien en blijven de oude asset-chunks bereikbaar.
+});
+
+// De client vraagt om te activeren zodra de gebruiker "herladen" tikt (#463).
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
