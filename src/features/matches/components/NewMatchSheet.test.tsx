@@ -243,9 +243,10 @@ describe("<NewMatchSheet /> offline opslaan (#462)", () => {
     Object.defineProperty(navigator, "onLine", { value, configurable: true });
   afterEach(() => setOnline(true));
 
-  it("blokkeert opslaan zonder verbinding met een geruststellende melding en bewaart het concept", async () => {
+  it("zet een opslag zonder verbinding in de wachtrij i.p.v. te falen", async () => {
     const userEvent = (await import("@testing-library/user-event")).default;
     const { supabase } = await import("@/lib/supabase/client");
+    const { getCount } = await import("@/features/matches/outbox");
     vi.mocked(supabase.rpc).mockClear();
     setOnline(false);
     renderSheet("g1");
@@ -264,13 +265,14 @@ describe("<NewMatchSheet /> offline opslaan (#462)", () => {
     await userEvent.type(screen.getByLabelText("Score team B"), "4");
     await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
 
-    // Geruststellende melding i.p.v. een kale netwerkfout, en geen RPC-poging.
-    expect(await screen.findByText(/geen verbinding/i)).toBeInTheDocument();
+    // Geruststellende melding en geen RPC-poging: de match staat in de wachtrij.
+    expect(
+      await screen.findByText(/wordt verstuurd zodra je weer online bent/i),
+    ).toBeInTheDocument();
     expect(supabase.rpc).not.toHaveBeenCalledWith(
       "create_completed_match",
       expect.anything(),
     );
-    // Het concept blijft als vangnet bewaard.
-    await waitFor(() => expect(readDraft("score", "g1")).not.toBeNull());
+    expect(getCount()).toBe(1);
   });
 });
