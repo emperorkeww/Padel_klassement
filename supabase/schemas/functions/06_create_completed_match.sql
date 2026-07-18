@@ -11,7 +11,10 @@ create or replace function public.create_completed_match(
   -- optionele per-set uitslag (jsonb-array), bv. [[6,4],[3,6],[7,5]]
   p_set_scores jsonb default null,
   -- optioneel baantype (#471); null = niet opgegeven
-  p_court_type public.court_type default null
+  p_court_type public.court_type default null,
+  -- optionele idempotentie-sleutel (#462): een client-gegenereerde token maakt
+  -- het opnieuw afspelen van een offline gequeuede match veilig
+  p_client_token uuid default null
 )
 returns uuid
 language plpgsql
@@ -74,17 +77,30 @@ begin
   insert into public.matches (
     team_a_id, team_b_id, status, winner_team_id,
     score_a, score_b, set_scores, played_at, created_by, group_id, format,
-    court_type
+    court_type, client_token
   )
   values (
     v_team_a, v_team_b, 'completed', v_winner,
     p_score_a, p_score_b, p_set_scores, now(), v_uid, p_group_id, v_format,
-    p_court_type
+    p_court_type, p_client_token
   )
+  -- Idempotente replay (#462): een tweede insert met dezelfde token botst op de
+  -- partiële unieke index en voegt niets in (RETURNING geeft dan geen rij).
+  on conflict (client_token) where client_token is not null do nothing
   returning id into v_match;
+
+  -- Was het een botsing (token al eerder verwerkt)? Geef de bestaande match
+  -- terug i.p.v. NULL. Gescoped op created_by: binnen SECURITY DEFINER staat RLS
+  -- uit, en de aanmaker kan alleen zijn eigen token opvragen.
+  if v_match is null and p_client_token is not null then
+    select id into v_match
+      from public.matches
+     where client_token = p_client_token
+       and created_by = v_uid;
+  end if;
 
   return v_match;
 end;
 $$;
 
-grant execute on function public.create_completed_match(uuid, uuid, uuid, uuid, text, smallint, smallint, uuid, jsonb, public.court_type) to authenticated;
+grant execute on function public.create_completed_match(uuid, uuid, uuid, uuid, text, smallint, smallint, uuid, jsonb, public.court_type, uuid) to authenticated;

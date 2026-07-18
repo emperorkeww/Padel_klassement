@@ -44,6 +44,42 @@ export function getTeamStandings(): Promise<TeamStanding[]> {
   });
 }
 
+/** Seizoensstand per speler binnen [start, einde). Via een SECURITY DEFINER RPC
+ *  (#461) zodat de kwartaalstand globaal blijft: de ruwe matches-tabel is sinds
+ *  #461 niet meer publiek, dus de vroegere client-side berekening zou hem
+ *  per-kijker maken. De RPC geeft enkel het aggregaat terug. */
+export function getSeasonPlayerStandings(
+  startIso: string,
+  endIso: string,
+): Promise<PlayerStanding[]> {
+  return cached(`standings:season:players:${startIso}:${endIso}`, async () => {
+    const { data, error } = await supabase
+      .rpc("season_player_standings", { p_start: startIso, p_end: endIso })
+      .order("points", { ascending: false })
+      .order("goal_diff", { ascending: false })
+      .order("won", { ascending: false })
+      .order("username", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as PlayerStanding[];
+  });
+}
+
+/** Seizoensstand per team binnen [start, einde). Zie getSeasonPlayerStandings. */
+export function getSeasonTeamStandings(
+  startIso: string,
+  endIso: string,
+): Promise<TeamStanding[]> {
+  return cached(`standings:season:teams:${startIso}:${endIso}`, async () => {
+    const { data, error } = await supabase
+      .rpc("season_team_standings", { p_start: startIso, p_end: endIso })
+      .order("points", { ascending: false })
+      .order("goal_diff", { ascending: false })
+      .order("won", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as TeamStanding[];
+  });
+}
+
 export function getGroupPlayerStandings(
   groupId: string,
 ): Promise<PlayerStanding[]> {

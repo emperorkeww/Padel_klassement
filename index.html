@@ -49,13 +49,10 @@
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
     <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
 
-    <!-- Huisstijl-lettertype (Outfit): sportief-geometrisch, variabel gewicht. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..800&display=swap"
-    />
+    <!-- Huisstijl-lettertype (Outfit): sportief-geometrisch, variabel gewicht.
+         Self-hosted via @font-face in src/app/index.css (#462) i.p.v. de Google
+         Fonts CDN, zodat de service worker het meecachet en de app offline
+         consistent rendert. -->
 
     <title>Vamos!</title>
   </head>

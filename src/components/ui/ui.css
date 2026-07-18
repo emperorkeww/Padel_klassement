@@ -565,6 +565,54 @@ textarea {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+/* Concept hervat (#462): onopdringerige strook bovenin de sheet wanneer een
+   eerder afgebroken match-invoer is teruggehaald uit localStorage. */
+.draft-resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.draft-resume__reset {
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* App-brede offline-strook (#462): rustige statusbalk onder de topbalk met een
+   rode stip. Geruststellend van toon — het lopende concept blijft bewaard. */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.offline-banner__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
 .sheet__foot {
   display: flex;
   justify-content: space-between;

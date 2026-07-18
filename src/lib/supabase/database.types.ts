@@ -609,6 +609,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          client_token: string | null
           court_type: Database["public"]["Enums"]["court_type"] | null
           created_at: string
           created_by: string | null
@@ -626,6 +627,7 @@ export type Database = {
           winner_team_id: string | null
         }
         Insert: {
+          client_token?: string | null
           court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
@@ -643,6 +645,7 @@ export type Database = {
           winner_team_id?: string | null
         }
         Update: {
+          client_token?: string | null
           court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
@@ -1689,6 +1692,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_client_token?: string
           p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_score_a?: number
@@ -1713,6 +1717,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_client_token?: string
           p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_played_at?: string
@@ -1721,6 +1726,7 @@ export type Database = {
         Returns: string
       }
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
+      first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
         Args: { p_group_id: string }
         Returns: string[]
@@ -1766,6 +1772,33 @@ export type Database = {
       recompute_ratings: { Args: never; Returns: undefined }
       recompute_zwarte_piet: { Args: never; Returns: undefined }
       redeem_group_invite: { Args: { p_token: string }; Returns: string }
+      season_player_standings: {
+        Args: { p_end: string; p_start: string }
+        Returns: {
+          drawn: number
+          full_name: string
+          goal_diff: number
+          lost: number
+          played: number
+          player_id: string
+          points: number
+          username: string
+          won: number
+        }[]
+      }
+      season_team_standings: {
+        Args: { p_end: string; p_start: string }
+        Returns: {
+          drawn: number
+          goal_diff: number
+          lost: number
+          played: number
+          points: number
+          team_id: string
+          team_name: string
+          won: number
+        }[]
+      }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }
     Enums: {

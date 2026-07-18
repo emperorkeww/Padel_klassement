@@ -14,11 +14,7 @@ import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
-import {
-  getPlayerMatches,
-  getTeamsMap,
-  getCompletedMatchesBetween,
-} from "@/features/matches/api";
+import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import {
   recentForm,
@@ -50,6 +46,7 @@ import { ProfileStats } from "@/features/profiles/components/ProfileStats";
 import { ProfileBadges } from "@/features/profiles/components/ProfileBadges";
 import { ProfileMatches } from "@/features/profiles/components/ProfileMatches";
 import type { ProfileData, ProfileTab, H2HRow } from "@/features/profiles/components/types";
+import type { Match } from "@/types";
 import "./PlayerProfile.css";
 
 // Zoveel badges mag een speler maximaal uitlichten bovenaan zijn profiel.
@@ -87,16 +84,11 @@ export function PlayerProfile() {
   const allHistories = useAsync(getAllRatingHistories, []);
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
   const vendettas = useAsync(() => getPlayerVendettas(id), [id]);
-  // Alle afgeronde matches, nodig om de klassementspositie op elke speeldag te
-  // herrekenen (rang-verloop). Vast bereik → gedeelde cache met het klassement.
-  const allMatches = useAsync(
-    () =>
-      getCompletedMatchesBetween(
-        "2000-01-01T00:00:00Z",
-        "2100-01-01T00:00:00Z",
-      ),
-    [],
-  );
+  // Rang-verloop (all-time sparkline) staat sinds #461 tijdelijk uit: het werd
+  // client-side uit álle ruwe matchrijen berekend, maar die zijn niet meer
+  // publiek leesbaar, dus de rang zou per-kijker en dus misleidend worden. Wordt
+  // in fase 2 hersteld via een SECURITY DEFINER RPC (player_rank_progression).
+  const allMatches = useAsync<Match[]>(() => Promise.resolve([]), []);
   // Rang-verloop: positie in het klassement ná elke eigen speeldag (all-time).
   const rankPoints = useMemo(
     () =>

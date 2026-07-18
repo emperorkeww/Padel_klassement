@@ -5,9 +5,11 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
 import { useMissionCelebration } from "@/features/dashboard/useMissionCelebration";
+import { useOutboxFlush } from "@/features/matches/useOutbox";
 import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
 import { GithubRibbon } from "@/app/GithubRibbon";
+import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
 import "./DashboardLayout.css";
 
@@ -69,6 +71,9 @@ export function DashboardLayout() {
   // Weekmissie-confetti (#414): één app-brede viering op het moment dat een
   // missie behaald raakt — niet bij een latere, aanleidingsloze dashboardview.
   useMissionCelebration(myId);
+  // Offline-wachtrij legen (#462): één keer bij opstarten en bij elke
+  // herverbinding worden gequeuede matches alsnog verstuurd.
+  useOutboxFlush();
 
   return (
     <div className="shell">
@@ -89,6 +94,9 @@ export function DashboardLayout() {
           <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
         </Link>
       </header>
+
+      {/* Zichtbare offline-status op elke beschermde route (#462). */}
+      <OfflineBanner />
 
       {/* Desktop-zijbalk met gegroepeerde navigatie. */}
       <aside className="sidebar">

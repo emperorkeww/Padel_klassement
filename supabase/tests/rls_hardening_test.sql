@@ -9,7 +9,7 @@ select plan(18);
 select policies_are(
   'public', 'matches',
   array[
-    'Matches zijn publiek leesbaar',
+    'Matches: deelnemers, groepsleden en publiek (niet-groep)',
     'Aanmaker kan match bijwerken',
     'Deelnemer kan uitslag invullen'
   ],

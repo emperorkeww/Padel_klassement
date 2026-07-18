@@ -180,10 +180,12 @@ describe("<PlayerProfile />", () => {
     expect(await screen.findByText("Beste maatje")).toBeInTheDocument();
   });
 
-  it("wisselt tussen rating- en positie-grafiek via tabs", async () => {
+  it("toont het rating-verloop; de positie-grafiek staat sinds #461 uit", async () => {
     setTables("p1");
-    // Beide grafieken bruikbaar: twee ratingpunten én twee speeldagen
-    // (rankProgression telt unieke dagen) → de kaart toont tabs.
+    // Twee ratingpunten → de rating-verloopkaart verschijnt. Het rang-verloop
+    // (positie-grafiek) is in fase 1 van #461 uitgezet: het werd client-side uit
+    // álle ruwe matchrijen berekend, die niet meer publiek leesbaar zijn. Dus
+    // geen "Positie"-toggle en geen positie-grafiek (herstel in fase 2 via RPC).
     state.tables.rating_history = [
       { player_id: "p1", match_id: "m-dag1", rating_before: 1000, rating_after: 1005, delta: 5, played_at: "2026-07-01T10:00:00.000Z" },
       { player_id: "p1", match_id: "m-done", rating_before: 1005, rating_after: 1012, delta: 7, played_at: "2026-07-02T10:00:00.000Z" },
@@ -201,13 +203,12 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByRole("heading", { name: "Rating-verloop" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Positie" }));
+    // Geen positie-toggle en geen positie-grafiek in fase 1.
+    expect(screen.queryByRole("button", { name: "Positie" })).toBeNull();
+    expect(screen.queryByText(/Klassementspositie na elke speeldag/)).toBeNull();
     expect(
-      await screen.findByText(/Klassementspositie na elke speeldag/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Positie-verloop" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Positie-verloop" }),
+    ).toBeNull();
   });
 
   it("meldt sober dat er nog geen gezamenlijke matches zijn", async () => {

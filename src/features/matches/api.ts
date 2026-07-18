@@ -151,17 +151,14 @@ export function getCompletedMatchesBetween(
   });
 }
 
-/** Datum van de allereerste match (bepaalt de seizoenslijst); null zonder matches. */
+/** Datum van de allereerste match (bepaalt de seizoenslijst); null zonder matches.
+ *  Via een SECURITY DEFINER RPC (#461): de seizoenspicker-grens moet globaal
+ *  blijven, ook al is de ruwe matches-tabel sinds #461 niet meer publiek. */
 export function getFirstMatchDate(): Promise<string | null> {
   return cached("matches:first", async () => {
-    const { data, error } = await supabase
-      .from("matches")
-      .select("played_at, created_at")
-      .order("created_at", { ascending: true })
-      .limit(1);
+    const { data, error } = await supabase.rpc("first_match_date");
     if (error) throw error;
-    const first = data?.[0];
-    return first ? (first.played_at ?? first.created_at) : null;
+    return data ?? null;
   });
 }
 
@@ -204,9 +201,11 @@ export async function createGuestPlayer(name: string): Promise<string> {
   return data as string;
 }
 
-/** Logt een afgeronde match via de SECURITY DEFINER RPC.
- *  1v1 (singles): a2 en b2 beide null. */
-export async function createCompletedMatch(params: {
+/** Parameters voor createCompletedMatch. `clientToken` is de optionele
+ *  idempotentie-sleutel (#462): met dezelfde token maakt een tweede poging (na
+ *  een verloren antwoord of een offline replay) geen duplicaat — de RPC geeft de
+ *  bestaande match terug. */
+export type CreateCompletedMatchParams = {
   a1: string;
   a2: string | null;
   b1: string;
@@ -217,7 +216,14 @@ export async function createCompletedMatch(params: {
   groupId?: string | null;
   setScores?: SetScore[] | null;
   courtType?: CourtType | null;
-}): Promise<string> {
+  clientToken?: string;
+};
+
+/** Logt een afgeronde match via de SECURITY DEFINER RPC.
+ *  1v1 (singles): a2 en b2 beide null. */
+export async function createCompletedMatch(
+  params: CreateCompletedMatchParams,
+): Promise<string> {
   const { data, error } = await supabase.rpc("create_completed_match", {
     p_a1: params.a1,
     // De gegenereerde RPC-Args kennen geen nullable parameters; de RPC zelf
@@ -231,16 +237,16 @@ export async function createCompletedMatch(params: {
     p_group_id: params.groupId ?? undefined,
     p_set_scores: params.setScores ?? undefined,
     p_court_type: params.courtType ?? undefined,
+    p_client_token: params.clientToken ?? undefined,
   });
   if (error) throw error;
   invalidateMatchData();
   return data as string;
 }
 
-/** Plant een match vooraf (status 'scheduled') via de SECURITY DEFINER RPC.
- *  playedAt is het optionele geplande tijdstip; de uitslag volgt later via
- *  setMatchResult (inline op de kaart "Te spelen"). */
-export async function createPlannedMatch(params: {
+/** Parameters voor createPlannedMatch. Zie CreateCompletedMatchParams voor
+ *  `clientToken` (#462). */
+export type CreatePlannedMatchParams = {
   a1: string;
   a2: string | null;
   b1: string;
@@ -249,7 +255,15 @@ export async function createPlannedMatch(params: {
   groupId?: string | null;
   setScores?: SetScore[] | null;
   courtType?: CourtType | null;
-}): Promise<string> {
+  clientToken?: string;
+};
+
+/** Plant een match vooraf (status 'scheduled') via de SECURITY DEFINER RPC.
+ *  playedAt is het optionele geplande tijdstip; de uitslag volgt later via
+ *  setMatchResult (inline op de kaart "Te spelen"). */
+export async function createPlannedMatch(
+  params: CreatePlannedMatchParams,
+): Promise<string> {
   const { data, error } = await supabase.rpc("create_planned_match", {
     p_a1: params.a1,
     // Zie createCompletedMatch: null = 1v1, de RPC valideert.
@@ -260,6 +274,7 @@ export async function createPlannedMatch(params: {
     p_group_id: params.groupId ?? undefined,
     p_set_scores: params.setScores ?? undefined,
     p_court_type: params.courtType ?? undefined,
+    p_client_token: params.clientToken ?? undefined,
   });
   if (error) throw error;
   invalidateMatchData();

@@ -12,19 +12,34 @@ import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
 import { displayName } from "@/features/profiles/api";
 import {
-  createCompletedMatch,
   createGuestPlayer,
-  createPlannedMatch,
   emptySet,
   toSetScores,
   type SetPair,
 } from "@/features/matches/api";
+import {
+  saveCompletedMatch,
+  savePlannedMatch,
+} from "@/features/matches/outbox";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { COURT_TYPES } from "@/features/matches/courtType";
+import {
+  readDraft,
+  writeDraft,
+  clearDraft,
+  isDraftMeaningful,
+  type MatchDraft,
+} from "@/features/matches/matchDraft";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
 import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types";
 
 export type NewMatchMode = "score" | "plan";
+
+// Zonder verbinding kan de RPC niet slagen; het concept blijft wél lokaal
+// bewaard (matchDraft), dus de boodschap is geruststellend i.p.v. een kale
+// netwerkfout (#462). De echte wachtrij-afhandeling volgt in een latere stap.
+const OFFLINE_SUBMIT_MESSAGE =
+  "Geen verbinding — je invoer blijft bewaard. Probeer het opnieuw zodra je weer online bent.";
 
 /** Match loggen of plannen in twee stappen: spelers aantikken, dan de
  *  eindscore ("score") of het tijdstip ("plan"). Een geplande match komt in
@@ -80,6 +95,9 @@ export function NewMatchSheet({
   const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
   const [guestName, setGuestName] = useState("");
   const [addingGuest, setAddingGuest] = useState(false);
+  // Toont de "concept hervat"-strook als er bij het openen een bewaarde,
+  // onafgemaakte invoer uit localStorage is teruggehaald (#462).
+  const [resumed, setResumed] = useState(false);
   const toast = useToast();
   const promptSmoes = useSmoesPrompt();
   const { user } = useAuth();
@@ -94,28 +112,107 @@ export function NewMatchSheet({
   // De groep die daadwerkelijk meegaat in de submit: vast (prop) of gekozen.
   const effectiveGroupId = groupId ?? (pickedGroupId || null);
 
-  // Vers beginnen bij elk openen.
+  /** Zet alle invoervelden terug op hun beginwaarden (verse start). Gasten en
+   *  zoekterm horen bij de sessie, niet bij het concept — die altijd leeg. */
+  function resetFields() {
+    setTeamA([]);
+    setTeamB([]);
+    setFormat("2v2");
+    setStep(1);
+    setScoreA("");
+    setScoreB("");
+    setShowSets(false);
+    setSets([emptySet()]);
+    setWhen("");
+    setCourtType(null);
+    setRepeat(false);
+    setRepeatWeeks(4);
+    setPickedGroupId("");
+  }
+
+  /** "Opnieuw beginnen": wis het bewaarde concept en start met een schone lei. */
+  function startFresh() {
+    clearDraft(mode, groupId ?? null);
+    resetFields();
+    setResumed(false);
+    tap();
+  }
+
+  // Bij openen: een eerder afgebroken concept hervatten (#462), of anders vers
+  // beginnen. Gasten/zoekterm zijn sessie-state en starten altijd leeg.
   useEffect(() => {
-    if (open) {
-      setTeamA([]);
-      setTeamB([]);
-      setFormat("2v2");
-      setStep(1);
-      setQuery("");
-      setScoreA("");
-      setScoreB("");
-      setShowSets(false);
-      setSets([emptySet()]);
-      setWhen("");
-      setCourtType(null);
-      setRepeat(false);
-      setRepeatWeeks(4);
-      setPickedGroupId("");
-      setExtraGuests([]);
-      setGuestName("");
-      setAddingGuest(false);
+    if (!open) return;
+    const draft = readDraft(mode, groupId ?? null);
+    if (draft) {
+      setTeamA(draft.teamA);
+      setTeamB(draft.teamB);
+      setFormat(draft.format);
+      setStep(draft.step);
+      setScoreA(draft.scoreA);
+      setScoreB(draft.scoreB);
+      setShowSets(draft.showSets);
+      setSets(draft.sets);
+      setWhen(draft.when);
+      setCourtType(draft.courtType);
+      setRepeat(draft.repeat);
+      setRepeatWeeks(draft.repeatWeeks);
+      setPickedGroupId(draft.pickedGroupId);
+      setResumed(true);
+    } else {
+      resetFields();
+      setResumed(false);
     }
-  }, [open]);
+    setQuery("");
+    setExtraGuests([]);
+    setGuestName("");
+    setAddingGuest(false);
+  }, [open, mode, groupId]);
+
+  // Concept debounced bewaren zolang de sheet open is en er iets is ingevuld;
+  // een leeg concept juist wissen. Zo overleeft de invoer een refresh of een
+  // per ongeluk gesloten sheet (#462).
+  useEffect(() => {
+    if (!open) return;
+    const draft: MatchDraft = {
+      teamA,
+      teamB,
+      format,
+      step,
+      scoreA,
+      scoreB,
+      showSets,
+      sets,
+      when,
+      courtType,
+      repeat,
+      repeatWeeks,
+      pickedGroupId,
+      savedAt: Date.now(),
+    };
+    if (!isDraftMeaningful(draft)) {
+      clearDraft(mode, groupId ?? null);
+      return;
+    }
+    const t = setTimeout(() => writeDraft(mode, groupId ?? null, draft), 400);
+    return () => clearTimeout(t);
+  }, [
+    open,
+    mode,
+    groupId,
+    teamA,
+    teamB,
+    format,
+    step,
+    scoreA,
+    scoreB,
+    showSets,
+    sets,
+    when,
+    courtType,
+    repeat,
+    repeatWeeks,
+    pickedGroupId,
+  ]);
 
   if (!open) return null;
 
@@ -239,6 +336,7 @@ export function NewMatchSheet({
       const weeks =
         repeat && when ? Math.max(2, Math.min(12, repeatWeeks)) : 1;
       const base = when ? new Date(when) : null;
+      let queued = 0;
       for (let i = 0; i < weeks; i++) {
         let playedAt: string | null = null;
         if (base) {
@@ -246,7 +344,8 @@ export function NewMatchSheet({
           d.setDate(base.getDate() + i * 7);
           playedAt = d.toISOString();
         }
-        await createPlannedMatch({
+        // Online direct, offline in de wachtrij (#462).
+        const result = await savePlannedMatch({
           a1: teamA[0],
           a2: teamA[1] ?? null,
           b1: teamB[0],
@@ -255,17 +354,25 @@ export function NewMatchSheet({
           groupId: effectiveGroupId,
           courtType,
         });
+        if (result.status === "queued") queued++;
       }
       tap();
-      toast.success(
-        weeks > 1
-          ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
-          : "Match gepland — je vindt hem bij Te spelen.",
-      );
+      if (queued > 0) {
+        toast.success(
+          "Opgeslagen — wordt gepland zodra je weer online bent.",
+        );
+      } else {
+        toast.success(
+          weeks > 1
+            ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
+            : "Match gepland — je vindt hem bij Te spelen.",
+        );
+      }
+      clearDraft(mode, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err));
+      toast.error(navigator.onLine ? errorMessage(err) : OFFLINE_SUBMIT_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -276,7 +383,8 @@ export function NewMatchSheet({
     setBusy(true);
     try {
       const setScores = toSetScores(sets);
-      const newMatchId = await createCompletedMatch({
+      // Online direct, offline in de wachtrij (#462).
+      const result = await saveCompletedMatch({
         a1: teamA[0],
         a2: teamA[1] ?? null,
         b1: teamB[0],
@@ -294,38 +402,47 @@ export function NewMatchSheet({
         : teamB.includes(myId)
           ? "b"
           : null;
-      // Vieren als de logger zelf in het winnende team zit.
+      // Lokale emotie viert de dáád van loggen (niet het versturen), dus ook
+      // offline: confetti als de logger zelf in het winnende team zit.
       if (winnaar && loggerTeam === winnaar) {
         celebrate();
         winPulse();
       } else {
         tap();
       }
-      const ctx = { intensiteit, schild: byId(myId)?.roast_schild ?? false };
-      // Verloor je zelf een groepsmatch? Dan meteen een smoes kunnen plaatsen
-      // (#296): een tikbare toast opent de Smoesjesmachine voor deze match, i.p.v.
-      // de gewone quip. Anders reageert Coach Rudy zoals vanouds op je uitslag —
-      // of neutraal als de logger niet zelf meespeelde.
-      const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
-      if (verlies && effectiveGroupId && myId) {
-        promptSmoes({ matchId: newMatchId, groupId: effectiveGroupId, playerId: myId, ctx });
+      if (result.status === "queued") {
+        // Offline: geen smoes/quip — die horen bij een bevestigde opslag en de
+        // Smoesjesmachine heeft een echte matchId nodig. Eerlijke melding, en de
+        // outbox verstuurt de match zodra de verbinding terug is.
+        toast.success("Opgeslagen — wordt verstuurd zodra je weer online bent.");
       } else {
-        toast.success(
-          loggerTeam
-            ? coachMatchQuip({
-                uitkomst:
-                  winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
-                bagel: sa !== sb && Math.min(sa!, sb!) === 0,
-                seed: `${myId}-${sa}-${sb}`,
-                ctx,
-              })
-            : "Match toegevoegd.",
-        );
+        const ctx = { intensiteit, schild: byId(myId)?.roast_schild ?? false };
+        // Verloor je zelf een groepsmatch? Dan meteen een smoes kunnen plaatsen
+        // (#296): een tikbare toast opent de Smoesjesmachine voor deze match,
+        // i.p.v. de gewone quip. Anders reageert Coach Rudy zoals vanouds op je
+        // uitslag — of neutraal als de logger niet zelf meespeelde.
+        const verlies = !!winnaar && !!loggerTeam && winnaar !== loggerTeam;
+        if (verlies && effectiveGroupId && myId) {
+          promptSmoes({ matchId: result.matchId, groupId: effectiveGroupId, playerId: myId, ctx });
+        } else {
+          toast.success(
+            loggerTeam
+              ? coachMatchQuip({
+                  uitkomst:
+                    winnaar === null ? "D" : winnaar === loggerTeam ? "W" : "L",
+                  bagel: sa !== sb && Math.min(sa!, sb!) === 0,
+                  seed: `${myId}-${sa}-${sb}`,
+                  ctx,
+                })
+              : "Match toegevoegd.",
+          );
+        }
       }
+      clearDraft(mode, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
-      toast.error(errorMessage(err));
+      toast.error(navigator.onLine ? errorMessage(err) : OFFLINE_SUBMIT_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -371,6 +488,19 @@ export function NewMatchSheet({
             {mode === "plan" ? "Plannen" : "Score"}
           </li>
         </ol>
+
+        {resumed && (
+          <div className="draft-resume" role="status">
+            <span>Onafgemaakte match hervat.</span>
+            <button
+              type="button"
+              className="draft-resume__reset"
+              onClick={startFresh}
+            >
+              Opnieuw beginnen
+            </button>
+          </div>
+        )}
 
         {step === 1 && (
           <>
