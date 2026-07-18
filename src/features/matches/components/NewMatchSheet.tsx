@@ -21,6 +21,13 @@ import {
 } from "@/features/matches/api";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { COURT_TYPES } from "@/features/matches/courtType";
+import {
+  readDraft,
+  writeDraft,
+  clearDraft,
+  isDraftMeaningful,
+  type MatchDraft,
+} from "@/features/matches/matchDraft";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
 import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types";
 
@@ -80,6 +87,9 @@ export function NewMatchSheet({
   const [extraGuests, setExtraGuests] = useState<Profile[]>([]);
   const [guestName, setGuestName] = useState("");
   const [addingGuest, setAddingGuest] = useState(false);
+  // Toont de "concept hervat"-strook als er bij het openen een bewaarde,
+  // onafgemaakte invoer uit localStorage is teruggehaald (#462).
+  const [resumed, setResumed] = useState(false);
   const toast = useToast();
   const promptSmoes = useSmoesPrompt();
   const { user } = useAuth();
@@ -94,28 +104,107 @@ export function NewMatchSheet({
   // De groep die daadwerkelijk meegaat in de submit: vast (prop) of gekozen.
   const effectiveGroupId = groupId ?? (pickedGroupId || null);
 
-  // Vers beginnen bij elk openen.
+  /** Zet alle invoervelden terug op hun beginwaarden (verse start). Gasten en
+   *  zoekterm horen bij de sessie, niet bij het concept — die altijd leeg. */
+  function resetFields() {
+    setTeamA([]);
+    setTeamB([]);
+    setFormat("2v2");
+    setStep(1);
+    setScoreA("");
+    setScoreB("");
+    setShowSets(false);
+    setSets([emptySet()]);
+    setWhen("");
+    setCourtType(null);
+    setRepeat(false);
+    setRepeatWeeks(4);
+    setPickedGroupId("");
+  }
+
+  /** "Opnieuw beginnen": wis het bewaarde concept en start met een schone lei. */
+  function startFresh() {
+    clearDraft(mode, groupId ?? null);
+    resetFields();
+    setResumed(false);
+    tap();
+  }
+
+  // Bij openen: een eerder afgebroken concept hervatten (#462), of anders vers
+  // beginnen. Gasten/zoekterm zijn sessie-state en starten altijd leeg.
   useEffect(() => {
-    if (open) {
-      setTeamA([]);
-      setTeamB([]);
-      setFormat("2v2");
-      setStep(1);
-      setQuery("");
-      setScoreA("");
-      setScoreB("");
-      setShowSets(false);
-      setSets([emptySet()]);
-      setWhen("");
-      setCourtType(null);
-      setRepeat(false);
-      setRepeatWeeks(4);
-      setPickedGroupId("");
-      setExtraGuests([]);
-      setGuestName("");
-      setAddingGuest(false);
+    if (!open) return;
+    const draft = readDraft(mode, groupId ?? null);
+    if (draft) {
+      setTeamA(draft.teamA);
+      setTeamB(draft.teamB);
+      setFormat(draft.format);
+      setStep(draft.step);
+      setScoreA(draft.scoreA);
+      setScoreB(draft.scoreB);
+      setShowSets(draft.showSets);
+      setSets(draft.sets);
+      setWhen(draft.when);
+      setCourtType(draft.courtType);
+      setRepeat(draft.repeat);
+      setRepeatWeeks(draft.repeatWeeks);
+      setPickedGroupId(draft.pickedGroupId);
+      setResumed(true);
+    } else {
+      resetFields();
+      setResumed(false);
     }
-  }, [open]);
+    setQuery("");
+    setExtraGuests([]);
+    setGuestName("");
+    setAddingGuest(false);
+  }, [open, mode, groupId]);
+
+  // Concept debounced bewaren zolang de sheet open is en er iets is ingevuld;
+  // een leeg concept juist wissen. Zo overleeft de invoer een refresh of een
+  // per ongeluk gesloten sheet (#462).
+  useEffect(() => {
+    if (!open) return;
+    const draft: MatchDraft = {
+      teamA,
+      teamB,
+      format,
+      step,
+      scoreA,
+      scoreB,
+      showSets,
+      sets,
+      when,
+      courtType,
+      repeat,
+      repeatWeeks,
+      pickedGroupId,
+      savedAt: Date.now(),
+    };
+    if (!isDraftMeaningful(draft)) {
+      clearDraft(mode, groupId ?? null);
+      return;
+    }
+    const t = setTimeout(() => writeDraft(mode, groupId ?? null, draft), 400);
+    return () => clearTimeout(t);
+  }, [
+    open,
+    mode,
+    groupId,
+    teamA,
+    teamB,
+    format,
+    step,
+    scoreA,
+    scoreB,
+    showSets,
+    sets,
+    when,
+    courtType,
+    repeat,
+    repeatWeeks,
+    pickedGroupId,
+  ]);
 
   if (!open) return null;
 
@@ -262,6 +351,7 @@ export function NewMatchSheet({
           ? `${weeks} matches gepland — je vindt ze bij Te spelen.`
           : "Match gepland — je vindt hem bij Te spelen.",
       );
+      clearDraft(mode, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
@@ -322,6 +412,7 @@ export function NewMatchSheet({
             : "Match toegevoegd.",
         );
       }
+      clearDraft(mode, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
@@ -371,6 +462,19 @@ export function NewMatchSheet({
             {mode === "plan" ? "Plannen" : "Score"}
           </li>
         </ol>
+
+        {resumed && (
+          <div className="draft-resume" role="status">
+            <span>Onafgemaakte match hervat.</span>
+            <button
+              type="button"
+              className="draft-resume__reset"
+              onClick={startFresh}
+            >
+              Opnieuw beginnen
+            </button>
+          </div>
+        )}
 
         {step === 1 && (
           <>

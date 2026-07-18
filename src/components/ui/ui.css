@@ -565,6 +565,31 @@ textarea {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+/* Concept hervat (#462): onopdringerige strook bovenin de sheet wanneer een
+   eerder afgebroken match-invoer is teruggehaald uit localStorage. */
+.draft-resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.draft-resume__reset {
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .sheet__foot {
   display: flex;
   justify-content: space-between;
