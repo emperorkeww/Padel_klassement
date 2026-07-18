@@ -1,5 +1,5 @@
 -- Triggers voor push-meldingen. Eén keer uitvoeren in de SQL-editor van je
--- GEHOSTE project (vervang <PROJECT-REF>). Bewust rechtstreeks op pg_net
+-- GEHOSTE project (vervang <PROJECT-REF> én <CRON-SECRET>). Bewust rechtstreeks op pg_net
 -- gebouwd in plaats van op supabase_functions.http_request: dat schema
 -- bestaat alleen nadat je webhooks ooit via het dashboard hebt geactiveerd,
 -- en die pagina is per dashboardversie verhuisd. Dit werkt altijd.
@@ -9,6 +9,12 @@ create extension if not exists pg_net;
 -- Stuurt het webhook-payload (zelfde vorm als Supabase's eigen webhooks)
 -- naar de send-push Edge Function. net.http_post is asynchroon: de
 -- oorspronkelijke insert/update wacht er niet op.
+--
+-- De 'x-cron-secret'-header (#459) is het gedeelde geheim waarmee send-push
+-- de aanroeper verifieert; vul <CRON-SECRET> in met dezelfde waarde als
+-- `supabase secrets set CRON_SECRET=…`. Zonder (juiste) header weigert de
+-- functie (fail-closed), dus de function moet mét CRON_SECRET gedeployd zijn
+-- vóór je deze triggers (her)aanmaakt.
 create or replace function public.notify_send_push()
 returns trigger
 language plpgsql
@@ -24,7 +30,10 @@ begin
       'record', to_jsonb(new),
       'old_record', case when tg_op = 'UPDATE' then to_jsonb(old) else null end
     ),
-    headers := '{"Content-Type": "application/json"}'::jsonb,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', '<CRON-SECRET>'
+    ),
     timeout_milliseconds := 5000
   );
   return null;

@@ -9,7 +9,9 @@ create or replace function public.create_completed_match(
   p_score_b smallint default null,
   p_group_id uuid default null,
   -- optionele per-set uitslag (jsonb-array), bv. [[6,4],[3,6],[7,5]]
-  p_set_scores jsonb default null
+  p_set_scores jsonb default null,
+  -- optioneel baantype (#471); null = niet opgegeven
+  p_court_type public.court_type default null
 )
 returns uuid
 language plpgsql
@@ -71,11 +73,13 @@ begin
 
   insert into public.matches (
     team_a_id, team_b_id, status, winner_team_id,
-    score_a, score_b, set_scores, played_at, created_by, group_id, format
+    score_a, score_b, set_scores, played_at, created_by, group_id, format,
+    court_type
   )
   values (
     v_team_a, v_team_b, 'completed', v_winner,
-    p_score_a, p_score_b, p_set_scores, now(), v_uid, p_group_id, v_format
+    p_score_a, p_score_b, p_set_scores, now(), v_uid, p_group_id, v_format,
+    p_court_type
   )
   returning id into v_match;
 
@@ -83,4 +87,4 @@ begin
 end;
 $$;
 
-grant execute on function public.create_completed_match(uuid, uuid, uuid, uuid, text, smallint, smallint, uuid, jsonb) to authenticated;
+grant execute on function public.create_completed_match(uuid, uuid, uuid, uuid, text, smallint, smallint, uuid, jsonb, public.court_type) to authenticated;

@@ -575,6 +575,21 @@ textarea {
   flex: 1;
 }
 
+/* Baantype-keuze (#471) in stap 2 van het loggen/plannen: een label boven een
+   rij chips (.tabs) die mag omvallen als de knoppen niet op één regel passen. */
+.court-picker {
+  margin-top: var(--sp-4);
+}
+.court-picker__label {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.court-picker__opts {
+  flex-wrap: wrap;
+}
+
 /* ---------- Persoonsrijen (vrienden, leden, zoekresultaten) ----------
    Haarlijn-scheiding en een hover-vlak dat iets breder is dan de inhoud. */
 .person-list {

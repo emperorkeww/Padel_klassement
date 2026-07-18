@@ -38,6 +38,10 @@ export interface Team {
 /** Speelvorm van een match: dubbel (standaard) of singles. */
 export type MatchFormat = "1v1" | "2v2";
 
+/** Baantype waarop gespeeld is (#471). Optioneel bij het loggen; voedt de
+ *  baanvoorkeuren-statistiek op het spelersprofiel. */
+export type CourtType = "binnen" | "buiten" | "panorama" | "muur";
+
 export interface Match {
   id: string;
   team_a_id: string;
@@ -55,6 +59,8 @@ export interface Match {
   /** Optionele per-set uitslag (jsonb); ruwe waarde — valideer via
    *  readSetScores in features/matches/api.ts. */
   set_scores?: unknown;
+  /** Baantype (#471); null/afwezig = niet opgegeven. */
+  court_type?: CourtType | null;
 }
 
 export interface MatchPoint {

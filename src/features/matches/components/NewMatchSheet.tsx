@@ -20,8 +20,9 @@ import {
   type SetPair,
 } from "@/features/matches/api";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
+import { COURT_TYPES } from "@/features/matches/courtType";
 import { useSmoesPrompt } from "@/features/matches/SmoesPromptProvider";
-import type { MatchFormat, Profile, RoastIntensiteit } from "@/types";
+import type { CourtType, MatchFormat, Profile, RoastIntensiteit } from "@/types";
 
 export type NewMatchMode = "score" | "plan";
 
@@ -68,6 +69,8 @@ export function NewMatchSheet({
   const [showSets, setShowSets] = useState(false);
   const [sets, setSets] = useState<SetPair[]>([emptySet()]);
   const [when, setWhen] = useState(""); // datetime-local; "" = zonder tijdstip
+  // Optioneel baantype (#471); null = niet opgegeven.
+  const [courtType, setCourtType] = useState<CourtType | null>(null);
   const [repeat, setRepeat] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
@@ -104,6 +107,7 @@ export function NewMatchSheet({
       setShowSets(false);
       setSets([emptySet()]);
       setWhen("");
+      setCourtType(null);
       setRepeat(false);
       setRepeatWeeks(4);
       setPickedGroupId("");
@@ -249,6 +253,7 @@ export function NewMatchSheet({
           b2: teamB[1] ?? null,
           playedAt,
           groupId: effectiveGroupId,
+          courtType,
         });
       }
       tap();
@@ -281,6 +286,7 @@ export function NewMatchSheet({
         scoreB: sb,
         setScores: setScores.length > 0 ? setScores : null,
         groupId: effectiveGroupId,
+        courtType,
       });
       const winnaar = sa === sb ? null : sa! > sb! ? "a" : "b";
       const loggerTeam = teamA.includes(myId)
@@ -596,6 +602,8 @@ export function NewMatchSheet({
               </p>
             )}
 
+            <CourtPicker value={courtType} onChange={setCourtType} />
+
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
@@ -699,6 +707,8 @@ export function NewMatchSheet({
               )}
             </div>
 
+            <CourtPicker value={courtType} onChange={setCourtType} />
+
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>
                 ← Spelers
@@ -714,6 +724,44 @@ export function NewMatchSheet({
           </>
         )}
     </Sheet>
+  );
+}
+
+/** Optionele baantype-keuze (#471) in stap 2: een rij chips die je aan- en weer
+ *  uitzet. Voedt de baanvoorkeuren-statistiek op het profiel; leeg laten mag. */
+function CourtPicker({
+  value,
+  onChange,
+}: {
+  value: CourtType | null;
+  onChange: (v: CourtType | null) => void;
+}) {
+  return (
+    <div className="court-picker">
+      <span className="court-picker__label">Baantype (optioneel)</span>
+      <div
+        className="tabs court-picker__opts"
+        role="radiogroup"
+        aria-label="Baantype"
+      >
+        {COURT_TYPES.map((c) => {
+          const active = value === c.type;
+          return (
+            <button
+              key={c.type}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              className={`tab ${active ? "is-active" : ""}`}
+              // Nogmaals tikken op de actieve knop wist de keuze weer.
+              onClick={() => onChange(active ? null : c.type)}
+            >
+              <span aria-hidden="true">{c.icon}</span> {c.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
