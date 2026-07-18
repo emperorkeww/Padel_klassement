@@ -590,6 +590,29 @@ textarea {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* App-brede offline-strook (#462): rustige statusbalk onder de topbalk met een
+   rode stip. Geruststellend van toon — het lopende concept blijft bewaard. */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.offline-banner__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
 .sheet__foot {
   display: flex;
   justify-content: space-between;

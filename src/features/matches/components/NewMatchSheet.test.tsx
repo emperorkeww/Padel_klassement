@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -235,5 +235,42 @@ describe("<NewMatchSheet /> concept bewaren (#462)", () => {
 
     // …en dat de geslaagde opslag het concept opruimt.
     await waitFor(() => expect(readDraft("score", "g1")).toBeNull());
+  });
+});
+
+describe("<NewMatchSheet /> offline opslaan (#462)", () => {
+  const setOnline = (value: boolean) =>
+    Object.defineProperty(navigator, "onLine", { value, configurable: true });
+  afterEach(() => setOnline(true));
+
+  it("blokkeert opslaan zonder verbinding met een geruststellende melding en bewaart het concept", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const { supabase } = await import("@/lib/supabase/client");
+    vi.mocked(supabase.rpc).mockClear();
+    setOnline(false);
+    renderSheet("g1");
+    await screen.findByText(/wie speelden er/i);
+
+    for (const naam of [
+      /alice anders/i,
+      /bob boers/i,
+      /carol claes/i,
+      /dave de vos/i,
+    ]) {
+      await userEvent.click(screen.getByRole("button", { name: naam }));
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
+    await userEvent.type(screen.getByLabelText("Score team A"), "6");
+    await userEvent.type(screen.getByLabelText("Score team B"), "4");
+    await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
+
+    // Geruststellende melding i.p.v. een kale netwerkfout, en geen RPC-poging.
+    expect(await screen.findByText(/geen verbinding/i)).toBeInTheDocument();
+    expect(supabase.rpc).not.toHaveBeenCalledWith(
+      "create_completed_match",
+      expect.anything(),
+    );
+    // Het concept blijft als vangnet bewaard.
+    await waitFor(() => expect(readDraft("score", "g1")).not.toBeNull());
   });
 });
