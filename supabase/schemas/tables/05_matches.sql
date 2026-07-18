@@ -33,6 +33,12 @@ create table public.matches (
   format public.match_format not null default '2v2',
   -- optioneel baantype (#471), enkel voor de baanvoorkeuren-statistiek
   court_type public.court_type,
+  -- idempotentie-sleutel voor de aanmaak-RPC's (#462): een client-gegenereerde
+  -- token maakt het opnieuw afspelen van een offline gequeuede match veilig — een
+  -- tweede insert met dezelfde token botst (unieke index) i.p.v. een duplicaat te
+  -- maken, en de RPC geeft dan de bestaande match terug. NULL voor legacy/normale
+  -- writes; NULLs blijven onderling distinct, dus die coëxisteren gewoon.
+  client_token uuid,
   -- een match is tussen twee verschillende teams
   constraint matches_distinct_teams check (team_a_id <> team_b_id),
   -- set_scores moet, indien gevuld, een JSON-array zijn
@@ -67,6 +73,12 @@ create table public.matches (
 create index matches_team_a_idx on public.matches (team_a_id);
 create index matches_team_b_idx on public.matches (team_b_id);
 create index matches_group_idx on public.matches (group_id);
+-- Idempotentie-sleutel (#462): partieel, zodat alleen de (weinige) getokende
+-- matches geïndexeerd worden en legacy-NULL-rijen buiten de unieke beperking
+-- vallen. Dient tegelijk als arbiter-index voor de ON CONFLICT in de RPC's.
+create unique index matches_client_token_key
+  on public.matches (client_token)
+  where client_token is not null;
 -- Ondersteunt de einde-van-de-keten-check van de ELO-trigger
 -- (functions/09_ratings.sql): zelfde volgorde als recompute_ratings.
 create index matches_completed_order_idx
