@@ -1,11 +1,4 @@
-import { useEffect } from "react";
-import {
-  deriveMissions,
-  weekIndex,
-  weekStartOf,
-} from "../missions";
-import { celebrate } from "@/lib/utils/confetti";
-import { readFlag, writeFlag } from "../flags";
+import { deriveMissions, weekStartOf } from "../missions";
 import type { Match, Team } from "@/types";
 
 /* ---------- Weekmissies (#118): kleine, verversende doelen per week ---------- */
@@ -19,7 +12,6 @@ export function WeekMissions({
   myId: string;
 }) {
   const nu = new Date();
-  const weekIdx = weekIndex(nu);
   const missies = deriveMissions(matches, teams, myId, nu);
   const allesBehaald = missies.every((m) => m.behaald);
 
@@ -27,31 +19,8 @@ export function WeekMissions({
   const eind = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 12);
   const fmt = new Intl.DateTimeFormat("nl-BE", { day: "numeric", month: "short" });
 
-  // Vier elke missie hoogstens één keer: flag per week + missie, zodat de
-  // teller elke maandag vanzelf reset. Eén confettisalvo per pass, ook als
-  // meerdere missies tegelijk binnenkomen (bv. na een realtime refresh).
-  const seintje = missies.map((m) => `${m.id}:${m.behaald}`).join(",");
-  useEffect(() => {
-    let vier = false;
-    for (const m of missies) {
-      if (!m.behaald) continue;
-      const key = `missie-gevierd:${weekIdx}:${m.id}`;
-      if (!readFlag(key)) {
-        writeFlag(key);
-        vier = true;
-      }
-    }
-    if (allesBehaald) {
-      const key = `perfecte-week-gevierd:${weekIdx}`;
-      if (!readFlag(key)) {
-        writeFlag(key);
-        vier = true;
-      }
-    }
-    if (vier) celebrate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seintje]);
-
+  // Confetti bij het behalen van een missie leeft in useMissionCelebration
+  // (app-breed, op het moment van de daad) — niet hier bij het renderen (#414).
   return (
     <section className="card week-missions" aria-label="Weekmissies">
       <div className="card__head">
