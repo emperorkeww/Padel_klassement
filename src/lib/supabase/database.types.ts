@@ -609,6 +609,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          client_token: string | null
           court_type: Database["public"]["Enums"]["court_type"] | null
           created_at: string
           created_by: string | null
@@ -626,6 +627,7 @@ export type Database = {
           winner_team_id: string | null
         }
         Insert: {
+          client_token?: string | null
           court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
@@ -643,6 +645,7 @@ export type Database = {
           winner_team_id?: string | null
         }
         Update: {
+          client_token?: string | null
           court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
@@ -1689,6 +1692,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_client_token?: string
           p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_score_a?: number
@@ -1713,6 +1717,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_client_token?: string
           p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_played_at?: string

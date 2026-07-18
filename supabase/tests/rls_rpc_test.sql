@@ -2,7 +2,7 @@
 -- Simuleert gebruikers via request.jwt.claims (auth.uid()) en role-switches.
 begin;
 
-select plan(20);
+select plan(22);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -94,6 +94,31 @@ select throws_ok(
        'a0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000005',
        'a', 6::smallint, 3::smallint, null) $$,
   'P0001'
+);
+
+------------------------------------------------------------------------
+-- Idempotentie: p_client_token maakt replay van een offline write veilig (#462)
+------------------------------------------------------------------------
+-- Twee identieke calls met dezelfde token geven dezelfde match-id terug…
+select is(
+  public.create_completed_match(
+    'a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000004',
+    'a', 6::smallint, 3::smallint, null, null, null,
+    'cccccccc-0000-0000-0000-000000000462'),
+  public.create_completed_match(
+    'a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000004',
+    'a', 6::smallint, 3::smallint, null, null, null,
+    'cccccccc-0000-0000-0000-000000000462'),
+  'create_completed_match: replay met dezelfde token geeft dezelfde id'
+);
+-- …en er staat precies één match-rij met die token (geen duplicaat → geen
+-- dubbele punten/ratings).
+select is(
+  (select count(*)::int from public.matches
+     where client_token = 'cccccccc-0000-0000-0000-000000000462'),
+  1, 'create_completed_match: token levert precies één match-rij'
 );
 
 ------------------------------------------------------------------------
