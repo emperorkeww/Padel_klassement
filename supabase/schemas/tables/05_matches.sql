@@ -5,6 +5,11 @@ create type public.match_status as enum ('scheduled', 'in_progress', 'completed'
 -- gegenereerde types de union '1v1' | '2v2' opleveren (zie match_status).
 create type public.match_format as enum ('1v1', '2v2');
 
+-- Baantype waarop gespeeld is (#471): voedt de baanvoorkeuren op het profiel.
+-- Optioneel — oudere matches en snelle invoer laten dit leeg. Als enum zodat
+-- de gegenereerde types een nette union opleveren (zie match_format).
+create type public.court_type as enum ('binnen', 'buiten', 'panorama', 'muur');
+
 -- Matches: wedstrijden tussen twee teams, optioneel binnen een groep/ronde
 create table public.matches (
   id uuid primary key default gen_random_uuid(),
@@ -26,6 +31,8 @@ create table public.matches (
   set_scores jsonb,
   -- speelvorm; wordt door de RPC's afgeleid uit de aanwezige spelers
   format public.match_format not null default '2v2',
+  -- optioneel baantype (#471), enkel voor de baanvoorkeuren-statistiek
+  court_type public.court_type,
   -- een match is tussen twee verschillende teams
   constraint matches_distinct_teams check (team_a_id <> team_b_id),
   -- set_scores moet, indien gevuld, een JSON-array zijn

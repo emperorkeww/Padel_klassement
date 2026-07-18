@@ -609,6 +609,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          court_type: Database["public"]["Enums"]["court_type"] | null
           created_at: string
           created_by: string | null
           format: Database["public"]["Enums"]["match_format"]
@@ -625,6 +626,7 @@ export type Database = {
           winner_team_id: string | null
         }
         Insert: {
+          court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
           format?: Database["public"]["Enums"]["match_format"]
@@ -641,6 +643,7 @@ export type Database = {
           winner_team_id?: string | null
         }
         Update: {
+          court_type?: Database["public"]["Enums"]["court_type"] | null
           created_at?: string
           created_by?: string | null
           format?: Database["public"]["Enums"]["match_format"]
@@ -1686,6 +1689,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_score_a?: number
           p_score_b?: number
@@ -1709,6 +1713,7 @@ export type Database = {
           p_a2: string
           p_b1: string
           p_b2: string
+          p_court_type?: Database["public"]["Enums"]["court_type"]
           p_group_id?: string
           p_played_at?: string
           p_set_scores?: Json
@@ -1764,6 +1769,7 @@ export type Database = {
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }
     Enums: {
+      court_type: "binnen" | "buiten" | "panorama" | "muur"
       match_format: "1v1" | "2v2"
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       roast_intensiteit: "mild" | "gemeen" | "radioactief"
@@ -1897,6 +1903,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      court_type: ["binnen", "buiten", "panorama", "muur"],
       match_format: ["1v1", "2v2"],
       match_status: ["scheduled", "in_progress", "completed", "cancelled"],
       roast_intensiteit: ["mild", "gemeen", "radioactief"],
