@@ -37,3 +37,22 @@ create policy "Deelnemer kan uitslag invullen"
     and (public.is_team_member(team_a_id, (select auth.uid()))
          or public.is_team_member(team_b_id, (select auth.uid())))
   );
+
+-- #432: de policies hierboven werken op rij-niveau, maar de UPDATE-grant op
+-- matches is table-wide (Supabase-default). Daardoor mag een deelnemer bij de
+-- ene toegestane UPDATE (uitslag invullen) élke kolom meeschrijven — o.a.
+-- created_by naar zichzelf zetten en zo onder de aanmaker-policy vallen, of
+-- group_id/team_*/played_at manipuleren. RLS controleert alleen de rij, niet
+-- welke kolommen worden geraakt.
+--
+-- Beperk de UPDATE-grant tot de unie van wat aanmaker én deelnemer nodig
+-- hebben (kolom-grants gelden per rol, niet per policy — beide zijn
+-- 'authenticated'):
+--   setMatchResult        status, winner_team_id, score_a, score_b, set_scores, played_at
+--   updateMatchScore      winner_team_id, score_a, score_b, set_scores
+--   updatePlannedMatchTime played_at
+-- Zo blijven created_by, group_id, team_a_id/team_b_id, round_number, format
+-- en id buiten bereik. anon (geen UPDATE-policy) en service_role: ongemoeid.
+revoke update on table public.matches from authenticated;
+grant update (status, winner_team_id, score_a, score_b, set_scores, played_at)
+  on table public.matches to authenticated;

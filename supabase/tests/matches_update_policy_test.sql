@@ -3,7 +3,7 @@
 -- achteraf en het tijdstip wijzigen blijven bij de aanmaker.
 begin;
 
-select plan(10);
+select plan(13);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -113,6 +113,25 @@ select throws_ok(
   '42501', null, 'deelnemer kan het tijdstip niet wijzigen'
 );
 
+-- #432: de kolom-grant beperkt de UPDATE tot de uitslag-kolommen. Een deelnemer
+-- die bij het invullen van de uitslag ook created_by of group_id probeert mee te
+-- schrijven, wordt door de grant geweigerd (42501) — nog vóór RLS. Zonder deze
+-- grant zou de rij-policy de write toestaan (status wordt 'completed').
+select throws_ok(
+  $$ update public.matches
+        set status = 'completed', winner_team_id = team_a_id, score_a = 6, score_b = 1,
+            created_by = 'b0000000-0000-0000-0000-000000000003'
+      where played_at = '2026-01-01 11:00:00+00' $$,
+  '42501', null, 'deelnemer kan created_by niet meeschrijven (#432)'
+);
+select throws_ok(
+  $$ update public.matches
+        set status = 'completed', winner_team_id = team_a_id, score_a = 6, score_b = 1,
+            group_id = null
+      where played_at = '2026-01-01 11:00:00+00' $$,
+  '42501', null, 'deelnemer kan group_id niet meeschrijven (#432)'
+);
+
 -- De aanmaker (t1) corrigeert de afgeronde uitslag wél.
 set local request.jwt.claims = '{"sub":"b0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 update public.matches
@@ -121,6 +140,16 @@ update public.matches
 select is(
   (select score_b::int from public.matches where played_at = '2026-01-01 10:00:00+00'),
   2, 'aanmaker kan de afgeronde uitslag corrigeren'
+);
+
+-- Regressie #432: played_at valt binnen de kolom-grant, dus de aanmaker kan het
+-- tijdstip van een geplande match nog steeds verplaatsen (updatePlannedMatchTime).
+update public.matches
+   set played_at = '2026-01-03 09:00:00+00'
+ where played_at = '2026-01-01 11:00:00+00';
+select is(
+  (select count(*)::int from public.matches where played_at = '2026-01-03 09:00:00+00'),
+  1, 'aanmaker kan het tijdstip van een geplande match verplaatsen (#432)'
 );
 
 reset role;
