@@ -60,6 +60,8 @@ import {
 } from "./leaderboardHelpers";
 import { TierProgressBanner } from "./components/TierProgressBanner";
 import { useDictatorAnthem } from "./useDictatorAnthem";
+import kmAnthem from "@/features/dictator/components/km_dictator_anthem.mp3";
+import imperialMarch from "@/features/dictator/components/dictator_imperial-march.mp3";
 import { PiasBanner } from "./components/PiasBanner";
 import { TierDivisions } from "./components/TierDivisions";
 import { KlassementUitleg } from "./components/KlassementUitleg";
@@ -533,7 +535,17 @@ export function Leaderboard() {
   const mbappeRegeert =
     toonTroon &&
     (throneRow == null || throneRow.name === DEFAULT_DICTATOR.name);
-  const anthem = useDictatorAnthem(mbappeRegeert);
+  // Een écht clublid (niet Mbappé) op de troon: dan speelt de imperial march
+  // i.p.v. het Mbappé-anthem. Beide gevallen sluiten elkaar uit, dus één van de
+  // twee tracks is actief (of null → stil als er geen troon is).
+  const echteDictatorRegeert =
+    toonTroon && throneRow != null && throneRow.name !== DEFAULT_DICTATOR.name;
+  const dictatorMuziek = mbappeRegeert
+    ? kmAnthem
+    : echteDictatorRegeert
+      ? imperialMarch
+      : null;
+  const anthem = useDictatorAnthem(dictatorMuziek);
   // Portret van de waarnemend dictator lui laden — alleen wanneer getoond, zodat
   // de asset niet gefetcht wordt (en bij uitgeschakelde flag niet eens bundelt).
   const [waarnemendPortret, setWaarnemendPortret] = useState<string | null>(
