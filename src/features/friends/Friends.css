@@ -1,0 +1,15 @@
+/* Coach Rudy op /vrienden (#294). Een vriend-cel stapelt de persoonsrij en
+   Rudy's head-to-head-sneer verticaal binnen één grid-vak. */
+.friend-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.friend-cell .coach-sneer {
+  margin: 0 var(--sp-2) var(--sp-2);
+}
+
+/* Rudy's welkom bij een lege vriendenlijst, onder de lege-status. */
+.friends-coach {
+  margin-top: var(--sp-3);
+}
