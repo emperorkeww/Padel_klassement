@@ -39,7 +39,8 @@ end;
 $$;
 
 -- Alleen bij een NIEUWE termijn (iemand pakt de troon). Verlengen/afsluiten van
--- termijnen raakt de foto niet.
-create trigger dictator_portret_on_termijn_insert
+-- termijnen raakt de foto niet. `create or replace` zodat opnieuw uitvoeren geen
+-- "trigger already exists" geeft (PG14+).
+create or replace trigger dictator_portret_on_termijn_insert
   after insert on public.dictator_termijnen
   for each row execute function public.notify_dictator_portret();
