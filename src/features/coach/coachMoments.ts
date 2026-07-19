@@ -395,6 +395,103 @@ export function coachTierQuip(f: TierFeiten): string {
   return zin.replace("%tier%", f.tierLabel);
 }
 
+// ── Winst-/verliesreeks-mijlpaal: 3/5/10 toast (#300) ───────────────────────
+// %n% wordt door coachStreakQuip vervangen door het reekscijfer (3, 5 of 10).
+// De toon loopt op mét de mijlpaal (3 < 5 < 10), niet met de groep-intensiteit:
+// een reeks is globaal (over alle groepen), dus er is geen groepstoon — net als
+// bij de tier-toast (#299). Winst = lof: schild blokkeert niet. Verlies = sneer:
+// schild → de neutrale variant.
+export const STREAK_MIJLPALEN = [3, 5, 10] as const;
+export type StreakMijlpaal = (typeof STREAK_MIJLPALEN)[number];
+
+const STREAK_WINST: Record<StreakMijlpaal, readonly string[]> = {
+  3: [
+    "Drie op een rij. Netjes — dat noteer ik met een tevreden krabbel.",
+    "%n% zeges achter elkaar. De vorm zit erin, hou 'm vast.",
+    "Drie keer raak op rij. Geen toeval meer, dit heet een reeks.",
+    "%n% op een rij gewonnen. Rustig doorbouwen, ik hou het bij.",
+    "Een winreeks van %n%. Chapeau — en dat zeg ik niet snel.",
+  ],
+  5: [
+    "VIJF op een rij! Ik heb er al een halve pagina bejubelend over volgeschreven.",
+    "%n% zeges aan één stuk! Zo won ik bij Lille in 2011 óók nooit.",
+    "Vijf op rij! De ballenjongens beginnen jouw naam te scanderen.",
+    "Een reeks van %n%! Ik roep hier bijna een persconferentie voor bijeen.",
+    "%n% keer op rij gewonnen! Dit ruikt naar een historische, Trumpiaanse opmars.",
+  ],
+  10: [
+    "TIEN OP EEN RIJ! De grootste reeks in de geschiedenis van deze padelclub. Gigantisch.",
+    "%n% zeges aan één stuk! Ik bel Infantino, dit moet op de Werelderfgoedlijst.",
+    "Tien op rij! Ik laat je naam op m'n onderarm zetten. Definitief.",
+    "Een reeks van %n%?! Champagne op de perstribune, dit vieren we tot in de eeuwigheid.",
+    "%n% keer raak op rij! Een prestatie van kosmische, radioactieve proporties.",
+  ],
+};
+const STREAK_VERLIES: Record<StreakMijlpaal, readonly string[]> = {
+  3: [
+    "Drie nederlagen op rij. Gebeurt de besten — al gebeurt het jou opvallend vaak.",
+    "%n% keer verloren aan één stuk. Misschien die forehand eens meenemen?",
+    "Drie op rij de boot in. Niet getreurd, blijven oefenen. Veel oefenen.",
+    "Een verliesreeks van %n%. Op papier vast een tactisch meesterwerk.",
+    "%n% keer op rij onderuit. Morgen is er weer een dag, en hopelijk een andere tactiek.",
+  ],
+  5: [
+    "Vijf nederlagen op rij. Zelfs het publiek keek collectief weg.",
+    "%n% keer verloren aan één stuk. Trainen, gij. Dringend.",
+    "Vijf op rij de deksel op de neus. Je partner verdient na vandaag een standbeeld.",
+    "Een verliesreeks van %n%. Net zo kansloos als België tegen Spanje op het WK.",
+    "%n% keer op rij onderuit. Ik heb er drie pagina's over volgeschreven, allemaal met uitroeptekens.",
+  ],
+  10: [
+    "TIEN nederlagen op rij. Als falen een olympische discipline was, stond je nu op het podium.",
+    "%n% keer verloren aan één stuk. Heb je na vandaag al eens serieus aan curling gedacht?",
+    "Tien op rij onderuit. Ik zou dat racket per direct bij het grofvuil zetten. Definitief.",
+    "Een verliesreeks van %n%?! Ik trek m'n coach-pet diep over m'n ogen van pure gêne.",
+    "%n% keer op rij de boot in. Ik overweeg serieus m'n licentie in te leveren en schaapherder te worden.",
+  ],
+};
+// Schild aan → geen sneer, maar een zachte, motiverende variant.
+const STREAK_VERLIES_NEUTRAAL: Record<StreakMijlpaal, readonly string[]> = {
+  3: [
+    "Drie nederlagen op rij. De volgende match keert het tij.",
+    "%n% keer verloren. Kop op, van hieruit kan het weer omhoog.",
+    "Een reeks van %n% verliezen. Blijven spelen — vorm komt en gaat.",
+  ],
+  5: [
+    "Vijf op rij verloren. Een reeks om te doorbreken; de volgende is de jouwe.",
+    "%n% nederlagen op een rij. Kop op, elke reeks eindigt een keer.",
+    "Een verliesreeks van %n%. Op naar een frisse start volgende match.",
+  ],
+  10: [
+    "Tien op rij verloren. Zwaar, maar zelfs de langste reeks eindigt een keer.",
+    "%n% nederlagen aan één stuk. Op naar een frisse start; het tij keert.",
+    "Een reeks van %n%. Diep punt — van hieruit kan het alleen maar omhoog.",
+  ],
+};
+
+export interface StreakFeiten {
+  richting: "winst" | "verlies";
+  /** De geraakte mijlpaal (3, 5 of 10), vult %n%. */
+  mijlpaal: StreakMijlpaal;
+  seed: string;
+  ctx: RoastCtx;
+}
+
+/** Coach-quip voor de toast op een winst-/verliesreeks-mijlpaal (3/5/10) (#300).
+ *  Winst = lof: het schild blokkeert niet. Verlies = sneer: schild → neutraal. */
+export function coachStreakQuip(f: StreakFeiten): string {
+  const seed = roastSeed("streak-toast", f.seed, f.richting, String(f.mijlpaal));
+  let zin: string;
+  if (f.richting === "winst") {
+    zin = kiesUniek(STREAK_WINST[f.mijlpaal], seed);
+  } else if (f.ctx.schild) {
+    zin = kiesUniek(STREAK_VERLIES_NEUTRAAL[f.mijlpaal], seed);
+  } else {
+    zin = kiesUniek(STREAK_VERLIES[f.mijlpaal], seed);
+  }
+  return zin.replace("%n%", String(f.mijlpaal));
+}
+
 // ── Vóór een geplande (toto-)match: hype/waarschuwing ───────────────────────
 const PRE_NEUTRAAL = [
   "Veel plezier op de baan.",

@@ -80,3 +80,17 @@ create trigger push_on_pias_update
   when (new.week_start = date_trunc('week', now())::date
         and new.player_id is distinct from old.player_id)
   execute function public.notify_send_push();
+
+-- Promotie/degradatie (#302): Coach Rudy meldt een tier-overgang in het
+-- groepsklassement. Enkel bij een échte tier-wissel én zonder de 'nieuw'-tier
+-- (in- of uitstappen op de ladder is geen promotie/degradatie). Vereist de
+-- migratie rank_change_state (public.player_rank_state + recompute_rank_state):
+-- pas deze trigger dus pas toe NADAT die migratie en de bijgewerkte send-push-
+-- functie live staan. De richting (promotie/degradatie) leidt send-push zelf af
+-- uit old.tier vs new.tier.
+create trigger push_on_rank_change
+  after update on public.player_rank_state
+  for each row
+  when (new.tier is distinct from old.tier
+        and new.tier <> 'nieuw' and old.tier <> 'nieuw')
+  execute function public.notify_send_push();

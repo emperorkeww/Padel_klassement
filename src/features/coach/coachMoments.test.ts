@@ -3,6 +3,8 @@ import {
   coachBriefing,
   coachMatchQuip,
   coachTierQuip,
+  coachStreakQuip,
+  STREAK_MIJLPALEN,
   coachPreMatch,
   OCHTEND_JAGER,
   OCHTEND_KELDER,
@@ -123,6 +125,48 @@ describe("coachTierQuip", () => {
     expect(zin).toContain("Prof II");
     // Promotie is lof: geen kale/degradatie-toon, gewoon een promotie-regel.
     expect(zin.toLowerCase()).not.toContain("zakt");
+  });
+});
+
+describe("coachStreakQuip", () => {
+  const streak = (over: Partial<Parameters<typeof coachStreakQuip>[0]>) =>
+    coachStreakQuip({ richting: "winst", mijlpaal: 5, seed: "m1", ctx: roast, ...over });
+
+  it("laat nooit een %n%-placeholder achter", () => {
+    for (const mijlpaal of STREAK_MIJLPALEN) {
+      for (const richting of ["winst", "verlies"] as const) {
+        for (const ctx of [roast, schild]) {
+          expect(streak({ mijlpaal, richting, ctx })).not.toContain("%n%");
+        }
+      }
+    }
+  });
+
+  it("is deterministisch per seed", () => {
+    expect(streak({ seed: "x" })).toBe(streak({ seed: "x" }));
+  });
+
+  it("winst en verlies geven een andere toon", () => {
+    const win = streak({ richting: "winst", seed: "s" });
+    const los = streak({ richting: "verlies", seed: "s" });
+    expect(win).not.toBe(los);
+  });
+
+  it("elke mijlpaal put uit een andere pool", () => {
+    const zinnen = STREAK_MIJLPALEN.map((mijlpaal) => streak({ mijlpaal, seed: "s" }));
+    expect(new Set(zinnen).size).toBe(STREAK_MIJLPALEN.length);
+  });
+
+  it("schild dempt de verliesreeks tot de neutrale variant", () => {
+    const zin = streak({ richting: "verlies", ctx: schild });
+    expect(zin).toMatch(/tij|omhoog|doorbreken|eindigt|frisse start|vorm komt/i);
+  });
+
+  it("winst negeert schild (lof blijft lof)", () => {
+    // Lof: het schild verandert niets aan de winst-quip.
+    expect(streak({ richting: "winst", ctx: schild, seed: "s" })).toBe(
+      streak({ richting: "winst", ctx: roast, seed: "s" }),
+    );
   });
 });
 

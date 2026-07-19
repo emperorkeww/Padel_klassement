@@ -1027,6 +1027,66 @@ export type Database = {
           },
         ]
       }
+      player_rank_state: {
+        Row: {
+          group_id: string
+          player_id: string
+          rank: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          group_id: string
+          player_id: string
+          rank: number
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          group_id?: string
+          player_id?: string
+          rank?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rank_state_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rank_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_rank_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_rank_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "player_rank_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_ratings: {
         Row: {
           games: number
@@ -1090,6 +1150,7 @@ export type Database = {
           notify_friend_request: boolean
           notify_match_reminder: boolean
           notify_new_round: boolean
+          notify_rank_change: boolean
           notify_result: boolean
           owner_id: string | null
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
@@ -1108,6 +1169,7 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
@@ -1126,6 +1188,7 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
@@ -1769,6 +1832,7 @@ export type Database = {
         Returns: number
       }
       recompute_pias: { Args: never; Returns: undefined }
+      recompute_rank_state: { Args: never; Returns: undefined }
       recompute_ratings: { Args: never; Returns: undefined }
       recompute_zwarte_piet: { Args: never; Returns: undefined }
       redeem_group_invite: { Args: { p_token: string }; Returns: string }
