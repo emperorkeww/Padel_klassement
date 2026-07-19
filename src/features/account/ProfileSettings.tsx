@@ -88,6 +88,7 @@ export function ProfileSettings() {
         <ThemeCard
           userId={myId}
           toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+          dictatorPortret={profile.data?.dictator_portret ?? true}
           onUpdated={profile.reload}
         />
       </div>
@@ -412,11 +413,14 @@ const THEMA_OPTIES: { value: ThemePreference; label: string }[] = [
 function ThemeCard({
   userId,
   toonWaarnemend,
+  dictatorPortret,
   onUpdated,
 }: {
   userId: string;
   /** Huidige waarde uit het profiel (#542); default zichtbaar. */
   toonWaarnemend: boolean;
+  /** AI dictator-portret opt-out (#554); default aan. */
+  dictatorPortret: boolean;
   onUpdated: () => void;
 }) {
   const [pref, setPref] = useState<ThemePreference>(getThemePreference);
@@ -435,6 +439,21 @@ function ThemeCard({
     setBusy(true);
     try {
       await updateProfile(userId, { toon_waarnemend_dictator: zichtbaar });
+      onUpdated();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // AI dictator-portret opt-out (#554): staat dit uit, dan gaat je profielfoto
+  // nooit naar OpenAI en toont De Troon je gewone avatar. Cross-device via de
+  // profiles-kolom.
+  async function toggleDictatorPortret(aan: boolean) {
+    setBusy(true);
+    try {
+      await updateProfile(userId, { dictator_portret: aan });
       onUpdated();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -477,6 +496,23 @@ function ThemeCard({
           checked={toonWaarnemend}
           disabled={busy}
           onChange={(e) => toggleMbappe(e.target.checked)}
+        />
+      </label>
+      <label className="toggle-row">
+        <span className="toggle-row__text">
+          <span className="toggle-row__label">Dictator-portret 🎨</span>
+          <span className="toggle-row__hint">
+            Kom je in de buurt van de troon, dan maakt een AI van je foto een
+            militair dictator-portret (via OpenAI) voor op De Troon. Zet uit als
+            je je foto liever niet laat versturen — dan blijft je gewone avatar
+            staan.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          checked={dictatorPortret}
+          disabled={busy}
+          onChange={(e) => toggleDictatorPortret(e.target.checked)}
         />
       </label>
     </section>
