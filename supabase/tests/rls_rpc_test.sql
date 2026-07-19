@@ -2,7 +2,7 @@
 -- Simuleert gebruikers via request.jwt.claims (auth.uid()) en role-switches.
 begin;
 
-select plan(22);
+select plan(23);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -133,28 +133,28 @@ select is(
 ------------------------------------------------------------------------
 set local role authenticated;
 
--- t1 is partij in alle 4 z'n vriendschappen (t2,t3,t4,t6).
+-- t1 is partij in alle 5 z'n vriendschappen (t2,t3,t4,t6,t7).
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  4, 't1 ziet de eigen 4 vriendschappen'
+  5, 't1 ziet de eigen 5 vriendschappen'
 );
 
--- t2 zit met t1 in de groep. Netwerk-regel: t2 ziet ook t1-t6 (deelt een groep
--- met t1, één partij), terwijl de oude beide-partijen-regel dat verborg.
+-- t2 zit met t1 in de groep. Netwerk-regel: t2 ziet ook t1-t6/t1-t7 (deelt een
+-- groep met t1, één partij), terwijl de oude beide-partijen-regel dat verborg.
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  4, 't2 ziet alle 4 vriendschappen (netwerk via gedeelde groep met t1)'
+  5, 't2 ziet alle 5 vriendschappen (netwerk via gedeelde groep met t1)'
 );
 
 -- t6 zit in geen enkele groep, maar is bevriend met t1. Via de is_accepted_friend-
--- tak ziet t6 alle vriendschappen waarin t1 partij is (t1-t2/t3/t4) plus de eigen
--- t1-t6. Oude regel zou enkel t1-t6 tonen.
+-- tak ziet t6 alle vriendschappen waarin t1 partij is (t1-t2/t3/t4/t7) plus de
+-- eigen t1-t6. Oude regel zou enkel t1-t6 tonen.
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000006","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  4, 't6 ziet t1s vriendschappen via de vriend-tak (#326)'
+  5, 't6 ziet t1s vriendschappen via de vriend-tak (#326)'
 );
 
 -- t5 heeft geen netwerkband: geen groep, geen vrienden → ziet niets.
