@@ -14,6 +14,7 @@
     "coverage": "vitest run --coverage",
     "contrast": "node scripts/contrast-check.mjs",
     "gen:courts": "node scripts/gen-known-courts.mjs",
+    "seed:dictator-ref": "node scripts/upload-dictator-referentie.mjs",
     "gen:types": "npx -y supabase@2.75.0 gen types typescript --local > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
