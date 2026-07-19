@@ -407,9 +407,9 @@ export function coachLof(
 export const BUIGING: readonly string[] = [
   "Ik? Roasten? Niet vandaag. Voor de dictator buig ik — en jij ook. 🙇🫡",
   "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en schrap de kebabs van de menukaart. 🙇",
-  "Geen sneer vandaag. Als de sportief directeur eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
+  "Geen sneer vandaag. Als de Madrid-Dictator eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
   "Ik zwijg. Ik wil geen brief van de advocaten van de dictator op m'n mat krijgen. Volk, op de knieën! 🙇",
-  "Puntensponsoring en transfer-veto's... tegen de Generaal zeg ik geen woord. Buigen, jij daar! 🫡🙇",
+  "Transfer-veto's en absolute macht... tegen de Generaal zeg ik geen woord. Buigen, jij daar! 🫡🙇",
 ] as const;
 
 /** Kruiperige buig-regel voor de troon; deterministisch per seed (speler-key /
