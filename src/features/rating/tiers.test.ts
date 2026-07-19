@@ -15,9 +15,9 @@ describe("tierFor", () => {
     [533, "Sletje van de baan III"],
     [534, "Sletje van de baan II"],
     [599, "Sletje van de baan I"],
-    [600, "Toerist III"],
-    [700, "Prutser III"],
-    [799, "Prutser I"],
+    [600, "Stofzuiger III"],
+    [700, "Ballenraper III"],
+    [799, "Ballenraper I"],
     // Bestaande banden (vanaf 800) — ongewijzigd.
     [800, "Bankvuller III"],
     [833, "Bankvuller III"],
@@ -29,8 +29,8 @@ describe("tierFor", () => {
     [1100, "Glazenwasser III"],
     [1199, "Glazenwasser I"],
     // Nieuwe hoge tiers.
-    [1200, "Racketconsument III"],
-    [1299, "Racketconsument I"],
+    [1200, "Eeuwige belofte III"],
+    [1299, "Eeuwige belofte I"],
     [1300, "Forever second III"],
     [1399, "Forever second I"],
     // GOAT is nu begrensd (1400–1599) en heeft dus sub-niveaus.
@@ -110,11 +110,11 @@ describe("tierChange", () => {
     expect(w.naar.label).toBe("Glazenwasser III");
   });
 
-  it("promotie over de nieuwe onderste grens (Prutser → Bankvuller)", () => {
+  it("promotie over de nieuwe onderste grens (Ballenraper → Bankvuller)", () => {
     const w = tierChange(790, 810)!;
     expect(w.richting).toBe("promotie");
     expect(w.hoofdtier).toBe(true);
-    expect(w.van.naam).toBe("Prutser");
+    expect(w.van.naam).toBe("Ballenraper");
     expect(w.naar.label).toBe("Bankvuller III");
   });
 
