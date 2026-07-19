@@ -126,6 +126,34 @@
   color: var(--ink-soft);
 }
 
+/* Uitleg-toggle (#524): ⓘ naast de titel klapt een korte uitleg open. */
+
+.vendetta-info-btn {
+  margin-left: var(--sp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.85em;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.vendetta-info-btn:hover,
+.vendetta-info-btn[aria-expanded="true"] {
+  color: var(--accent);
+}
+
+.vendetta-uitleg {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
 /* Wraak-alert (#169): revanche-uitdaging boven de vendetta's. */
 
 .vendetta-wraak {
