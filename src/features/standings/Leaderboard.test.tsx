@@ -122,6 +122,21 @@ describe("<Leaderboard />", () => {
     expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
   });
 
+  it("verbergt de waarnemend Mbappé-troon wanneer de flag uit staat (#536)", async () => {
+    vi.stubEnv("VITE_DEFAULT_DICTATOR", "false");
+    try {
+      const { container } = renderPage();
+      await screen.findAllByText(/alice anders/i);
+      // Geen troon bij verstek en geen Mbappé; val terug op het #528-podium.
+      expect(container.querySelector(".dictator-throne")).toBeNull();
+      expect(screen.queryByText("Kylian Mbappé")).toBeNull();
+      // Het Big Daddy-podium blijft gewoon staan.
+      expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("filtert de ranglijst op naam en toont een lege-staat bij geen match (#282)", async () => {
     renderPage();
     await screen.findAllByText(/carol claes/i);

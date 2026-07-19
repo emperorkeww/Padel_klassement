@@ -35,7 +35,11 @@ import { coachKlassement, coachKlassementMood } from "@/features/coach/klassemen
 import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
 import { DictatorThrone } from "@/features/standings/components/DictatorThrone";
-import { DEFAULT_DICTATOR } from "@/features/dashboard/dictator";
+import {
+  DEFAULT_DICTATOR,
+  defaultDictatorEnabled,
+  laadWaarnemendPortret,
+} from "@/features/dashboard/dictator";
 import { coachBuiging } from "@/features/coach/roastTone";
 import { TierLegend } from "@/features/rating/components/TierLegend";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -516,10 +520,34 @@ export function Leaderboard() {
   // verstek (throneRow == null, #530) of een echt clublid dat zo heet — speelt
   // op de zichtbare spelers-tab z'n dictator-anthem, tot je het klassement
   // verlaat of het tabblad verbergt.
+  // De troon (#536): een échte dictator (throneRow != null) staat er altijd; de
+  // waarnemend Mbappé (throneRow == null) alleen als de flag aan is. Uit → geen
+  // troon bij verstek, dus het Big Daddy-podium (#528) blijft gewoon staan.
+  const toonTroon =
+    canThrone && (throneRow != null || defaultDictatorEnabled());
+  const toonWaarnemend = toonTroon && throneRow == null;
   const mbappeRegeert =
-    canThrone &&
+    toonTroon &&
     (throneRow == null || throneRow.name === DEFAULT_DICTATOR.name);
   const anthem = useDictatorAnthem(mbappeRegeert);
+  // Portret van de waarnemend dictator lui laden — alleen wanneer getoond, zodat
+  // de asset niet gefetcht wordt (en bij uitgeschakelde flag niet eens bundelt).
+  const [waarnemendPortret, setWaarnemendPortret] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    let alive = true;
+    if (toonWaarnemend) {
+      laadWaarnemendPortret().then((src) => {
+        if (alive) setWaarnemendPortret(src);
+      });
+    } else {
+      setWaarnemendPortret(null);
+    }
+    return () => {
+      alive = false;
+    };
+  }, [toonWaarnemend]);
   const matchesName = (r: Row) =>
     r.name.toLowerCase().includes(nq) ||
     (r.profile?.username?.toLowerCase().includes(nq) ?? false);
@@ -742,7 +770,7 @@ export function Leaderboard() {
         </p>
       )}
 
-      {canThrone && (
+      {toonTroon && (
         <>
           <DictatorThrone
             variant={throneRow ? "echt" : "waarnemend"}
@@ -755,7 +783,7 @@ export function Leaderboard() {
             delta={
               throneRow ? deltaToday(throneRow.history, club.timezone) : null
             }
-            image={throneRow ? undefined : DEFAULT_DICTATOR.image}
+            image={throneRow ? undefined : (waarnemendPortret ?? undefined)}
             anthem={
               mbappeRegeert
                 ? {
