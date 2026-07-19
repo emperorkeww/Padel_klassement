@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import anthem from "@/features/dictator/components/km_dictator_anthem.mp3";
 
-// Volkslied van El Padelissimo (#535): zolang Kylian Mbappé op de troon zit
-// (#528/#530) en het spelerklassement zichtbaar is, loopt z'n dictator-anthem.
-// Hij stopt zodra je het klassement verlaat — andere route/tab, tabblad
-// verbergen (visibilitychange), of de app sluiten (unmount/pagehide). Eén
-// gedeeld Audio-element, netjes opgeruimd zodat er geen "ghost audio" doorspeelt.
+// Volkslied van El Padelissimo (#535): zolang er een dictator op de troon zit
+// (#528/#530) en het spelerklassement zichtbaar is, loopt zijn dictator-muziek.
+// Wélke track speelt bepaalt de aanroeper via `src`: de waarnemend Kylian Mbappé
+// (#530) krijgt zijn eigen anthem, een écht clublid op de troon de imperial
+// march. Geef `null` door en het is stil. Wisselt `src`, dan schakelt de hook
+// naadloos naar de nieuwe track. De muziek stopt zodra je het klassement verlaat
+// — andere route/tab, tabblad verbergen (visibilitychange), of de app sluiten
+// (unmount/pagehide). Eén gedeeld Audio-element, netjes opgeruimd zodat er geen
+// "ghost audio" doorspeelt.
 //
 // Browsers blokkeren autoplay mét geluid tot een user-gesture: lukt play() niet,
 // dan zetten we `blocked` en biedt de UI een tap-to-play aan. De demp-voorkeur
@@ -42,27 +45,44 @@ export interface DictatorAnthem {
   start: () => void;
 }
 
-/** Speelt het dictator-volkslied zolang `active` waar is én het tabblad zichtbaar
- *  is; pauzeert en ruimt op zodra dat niet meer geldt. */
-export function useDictatorAnthem(active: boolean): DictatorAnthem {
+/** Speelt de dictator-muziek `src` zolang die niet null is én het tabblad
+ *  zichtbaar is; pauzeert en ruimt op zodra dat niet meer geldt. Een wisseling
+ *  van `src` (andere heerser) schakelt de track om. */
+export function useDictatorAnthem(src: string | null): DictatorAnthem {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Welke bron nu daadwerkelijk in het Audio-element geladen is; zodat we bij
+  // een heerser-wissel de src maar één keer omzetten.
+  const currentSrcRef = useRef<string | null>(null);
   const [muted, setMuted] = useState(readMuted);
   const [playing, setPlaying] = useState(false);
   const [blocked, setBlocked] = useState(false);
 
-  // Alleen spelen als het lied gewenst is én niet gedempt.
+  const active = src != null;
+  // Alleen spelen als er muziek gewenst is (src) én niet gedempt.
   const shouldPlay = active && !muted;
 
-  // Lui één Audio-element aanmaken (preload none: geen netwerk tot play).
+  // Lui één Audio-element aanmaken (preload none: geen netwerk tot play). De bron
+  // zetten we pas bij het spelen, zodat een wisselende `src` één element deelt.
   const ensureAudio = useCallback((): HTMLAudioElement | null => {
     if (audioRef.current) return audioRef.current;
     if (typeof Audio === "undefined") return null;
-    const a = new Audio(anthem);
+    const a = new Audio();
     a.loop = true;
     a.preload = "none";
     audioRef.current = a;
     return a;
   }, []);
+
+  // De gewenste bron in het element laden zodra die wijzigt (heerser-wissel).
+  const applySrc = useCallback(
+    (audio: HTMLAudioElement) => {
+      if (src != null && currentSrcRef.current !== src) {
+        audio.src = src;
+        currentSrcRef.current = src;
+      }
+    },
+    [src],
+  );
 
   const play = useCallback((audio: HTMLAudioElement) => {
     let p: Promise<void> | undefined;
@@ -101,8 +121,9 @@ export function useDictatorAnthem(active: boolean): DictatorAnthem {
       setPlaying(false);
     };
     const tryPlay = () => {
-      if (!shouldPlay) return;
+      if (!shouldPlay || src == null) return;
       if (typeof document !== "undefined" && document.hidden) return;
+      applySrc(audio);
       play(audio);
     };
     const onVisibility = () => {
@@ -118,9 +139,9 @@ export function useDictatorAnthem(active: boolean): DictatorAnthem {
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", stop);
-      stop(); // route-wissel / unmount: nooit doorspelen
+      stop(); // route-wissel / heerser-wissel / unmount: nooit doorspelen
     };
-  }, [shouldPlay, ensureAudio, play]);
+  }, [shouldPlay, src, ensureAudio, applySrc, play]);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
@@ -131,10 +152,12 @@ export function useDictatorAnthem(active: boolean): DictatorAnthem {
   }, []);
 
   const start = useCallback(() => {
-    if (muted) return;
+    if (muted || src == null) return;
     const audio = ensureAudio();
-    if (audio) play(audio);
-  }, [muted, ensureAudio, play]);
+    if (!audio) return;
+    applySrc(audio);
+    play(audio);
+  }, [muted, src, ensureAudio, applySrc, play]);
 
   return { playing, blocked, muted, toggleMute, start };
 }

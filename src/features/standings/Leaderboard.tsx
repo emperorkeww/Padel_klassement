@@ -25,6 +25,7 @@ import {
 } from "./api";
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { getHuidigeDictator } from "./dictatorApi";
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getPiasWeeks } from "./piasApi";
@@ -60,6 +61,8 @@ import {
 } from "./leaderboardHelpers";
 import { TierProgressBanner } from "./components/TierProgressBanner";
 import { useDictatorAnthem } from "./useDictatorAnthem";
+import kmAnthem from "@/features/dictator/components/km_dictator_anthem.mp3";
+import imperialMarch from "@/features/dictator/components/dictator_imperial-march.mp3";
 import { PiasBanner } from "./components/PiasBanner";
 import { TierDivisions } from "./components/TierDivisions";
 import { KlassementUitleg } from "./components/KlassementUitleg";
@@ -163,6 +166,9 @@ export function Leaderboard() {
   const ratings = useAsync(getPlayerRatings, []);
   // Voor de sparkline-kolom: historie van alle spelers in één batch.
   const histories = useAsync(getAllRatingHistories, []);
+  // De zittende dictator (#545): server-side bepaald via de troon-replay, niet
+  // meer de toevallige 1600+-#1. Bepaalt wie op De Troon komt.
+  const dictator = useAsync(getHuidigeDictator, []);
   // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
   // tonen de pias van de geselecteerde groep.
   const piasWeeks = useAsync(getPiasWeeks, []);
@@ -506,9 +512,14 @@ export function Leaderboard() {
   // bij verstek (#530). Hij zit er "in absentia" boven, dus de echte #1 blijft
   // gewoon op het podium staan — mét z'n Big Daddy-kroon.
   const canThrone =
-    tab === "player" && !nq && !loading && !error && displayRows.length > 0;
+    tab === "player" &&
+    !nq &&
+    !loading &&
+    !error &&
+    !dictator.loading &&
+    displayRows.length > 0;
   const { throne: throneRow, rest: volkRows } = canThrone
-    ? splitDictatorThrone(displayRows)
+    ? splitDictatorThrone(displayRows, dictator.data?.profileId ?? null)
     : { throne: null, rest: displayRows };
   const rankedRows: Row[] = displayRows.map((r, i) => ({ ...r, rank: i + 1 }));
   // De dictator verdwijnt uit de ranglijst; zijn plek 1 verdwijnt mee zodat het
@@ -533,7 +544,17 @@ export function Leaderboard() {
   const mbappeRegeert =
     toonTroon &&
     (throneRow == null || throneRow.name === DEFAULT_DICTATOR.name);
-  const anthem = useDictatorAnthem(mbappeRegeert);
+  // Een écht clublid (niet Mbappé) op de troon: dan speelt de imperial march
+  // i.p.v. het Mbappé-anthem. Beide gevallen sluiten elkaar uit, dus één van de
+  // twee tracks is actief (of null → stil als er geen troon is).
+  const echteDictatorRegeert =
+    toonTroon && throneRow != null && throneRow.name !== DEFAULT_DICTATOR.name;
+  const dictatorMuziek = mbappeRegeert
+    ? kmAnthem
+    : echteDictatorRegeert
+      ? imperialMarch
+      : null;
+  const anthem = useDictatorAnthem(dictatorMuziek);
   // Portret van de waarnemend dictator lui laden — alleen wanneer getoond, zodat
   // de asset niet gefetcht wordt (en bij uitgeschakelde flag niet eens bundelt).
   const [waarnemendPortret, setWaarnemendPortret] = useState<string | null>(
@@ -799,6 +820,7 @@ export function Leaderboard() {
                   }
                 : undefined
             }
+            sinds={throneRow ? (dictator.data?.begonOp ?? null) : null}
           />
           {/* Coach Rudy buigt voor de dictator (#531): kijker-gerichte knieval
               in de buiging-mood i.p.v. z'n gebruikelijke roast — voor een echte

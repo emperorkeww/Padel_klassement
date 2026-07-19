@@ -253,6 +253,16 @@
   letter-spacing: 0.02em;
 }
 
+/* "regeert sinds …" — ambtstermijn van de echte dictator (#545), fluistertoon
+   onder de tier-badge zodat de kaart een propaganda-poster blijft. */
+.dictator-throne__sinds {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--dictator-gold) 72%, #fff);
+  opacity: 0.85;
+}
+
 /* De ▲/▼-delta erft de podium-kleuren (stat__delta), maar op de donkere troon
    moet groen/rood iets lichter om leesbaar te blijven. */
 .dictator-throne .stat__delta {

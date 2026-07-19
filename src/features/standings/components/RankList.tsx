@@ -45,6 +45,7 @@ export function RankList({
                   rating={r.rating}
                   dimmed={r.games > 0 && r.games < THIN_GAMES}
                   size="sm"
+                  capDictator
                 />
                 {r.form.length > 0 && <FormChips form={r.form} size="sm" />}
                 <span

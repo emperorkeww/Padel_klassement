@@ -136,6 +136,23 @@ export function tierFor(rating: number | null): Tier | null {
   };
 }
 
+/** Weergave-tier (#545): identiek aan `tierFor`, maar buiten De Troon draagt
+ *  niemand El Padelissimo. Alleen de zittende dictator (op zijn eigen troon)
+ *  toont de dictator-tier; overige 1600+-spelers zakken visueel naar GOAT. De
+ *  tier-drempels zelf blijven ongemoeid — dit is puur weergave, geen tweede bron
+ *  van waarheid (#127). */
+export function tierForWeergave(
+  rating: number | null,
+  isDictator: boolean,
+): Tier | null {
+  const tier = tierFor(rating);
+  if (tier && !isDictator && tier.key === "dictator") {
+    // Klem naar de top van GOAT: net onder de El-Padelissimo-drempel (1599 = GOAT I).
+    return tierFor(TIER_BANDEN[TIER_BANDEN.length - 1].min - 1);
+  }
+  return tier;
+}
+
 /** Eén hoofdtier-band uit TIER_BANDEN (divisie zonder sub-niveau). */
 export type TierBand = (typeof TIER_BANDEN)[number];
 
