@@ -46,6 +46,8 @@ export const TROON = [
   "Koning van de baan. Nu nog een scepter regelen om de rest in het gareel te houden.",
   "Nummer één. Zelfs de bondscoach kan hier geen kritische noot over kraken.",
   "Bovenaan de lijst. Een prestatie van historische omvang. The greatest, absolute class.",
+  "Koning van het klassement. De jagers liggen op de loer, maar jij zit comfortabel.",
+  "Eerste plek. M'n spiekbriefjes waren blijkbaar goud waard voor jouw positionering.",
 ] as const;
 
 export const JAGER = [
@@ -54,7 +56,7 @@ export const JAGER = [
   "De eerste achtervolger. Eén goede week en dat klassement kantelt.",
   "Jager in het klassement. De nummer één slaapt al onrustig, hoor ik.",
   "Bijna bovenaan. Tijd voor een gedurfde wissel: meer matches, minder excuses.",
-  "De top-3. Netjes. Maar zilver en brons zijn voor de geschiedenisboeken van anderen.",
+  "De top-3. Netjes. Maar zilver en brons zijn voor de geschiedenisboeken van others.",
   "Je staat te loeren op de koppositie. Ik heb de hinderlaag al uitgetekend in m'n notitieboekje.",
   "De achtervolging is ingezet. Dit is het soort spanning waar ik persconferenties voor uitvond.",
   "Vlak achter de leider. Eén tactisch meesterplan van mij en die troon is van jou.",
@@ -67,6 +69,8 @@ export const JAGER = [
   "Je staat op scherp om de troon te bestormen. M'n notitieboekje ligt al open.",
   "Vlak achter de koploper. Eén misstap van de nummer één en jij pakt de kroon.",
   "In de slipstream van de leider. Tijd om de turbo aan te zetten.",
+  "Zilveren positie. Eén tactische eindsprint en de troon is voor jou.",
+  "De koploper hoort je stappen al weerklinken op de baan. Blijf jagen!",
 ] as const;
 
 export const MIDDENMOOT = [
@@ -88,6 +92,8 @@ export const MIDDENMOOT = [
   "De comfortzone van de ranglijst. Maar comfort brengt je niet op het podium.",
   "Stabiel op de gemiddelde ranking. Niet goed, niet rampzalig, gewoon... aanwezig.",
   "In het midden van het pak. De ideale positie om geruisloos naar boven te sluipen.",
+  "Vastgeroest in het midden. Tijd om die spieren te smeren en omhoog te klauteren.",
+  "In het veilige hart van de tabel. Maar de koplopers liggen nog binnen bereik.",
 ] as const;
 
 export const MIDDENMOOT_NEUTRAAL = [
@@ -95,6 +101,8 @@ export const MIDDENMOOT_NEUTRAAL = [
   "Een stabiele plek in het midden van de lijst.",
   "Middenmoot. Alles boven je is haalbaar met een paar goede weken.",
   "Netjes in het midden. Het klassement ligt nog helemaal open.",
+  "Stabiel in het midden. Elke match is een kans om te klimmen.",
+  "In de middenmoot. De ranglijst is nog volop in beweging.",
 ] as const;
 
 export const NIEUW = [
@@ -116,6 +124,8 @@ export const NIEUW = [
   "Elo-rating in de opwarmfase. We zijn benieuwd waar het schip strandt.",
   "De nieuwe uitdager. Speel snel meer matches, m'n notitieboekje raakt ongeduldig.",
   "Nieuweling op de ranglijst. De banen wachten op je eerste echte statement.",
+  "Nieuwe speler, nieuwe rating. De kooi wacht op je definitieve stempel.",
+  "Net op de lijst gezet. Laten we die rating eens snel een richting op sturen.",
 ] as const;
 
 /** De kelder is de enige echte roast op deze pagina, dus de enige pool die per
