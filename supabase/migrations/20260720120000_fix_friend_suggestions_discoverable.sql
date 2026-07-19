@@ -1,7 +1,10 @@
--- RPC: stel vrienden voor aan de ingelogde gebruiker.
--- Prioriteit op gemeenschappelijke vrienden (mutual_count desc), daarna willekeurig aangevuld.
--- SECURITY DEFINER omdat vrienden-van-vrienden buiten de eigen RLS-zichtbaarheid vallen.
--- mutual_ids bevat de id's van de gemeenschappelijke vrienden (de client toont hun namen).
+-- Fix voor issue #564: Vrienden-suggesties moeten discoverable=false profielen negeren
+-- De RPC get_friend_suggestions filterde niet op de discoverable kolom,
+-- waardoor profielen die zich niet vindbaar willen stellen toch in de
+-- "Misschien ken je" suggesties verschenen.
+--
+-- Deze migratie vervangt de RPC met een versie die wel filtert op discoverable.
+
 create or replace function public.get_friend_suggestions(p_limit int default 12)
 returns table (id uuid, mutual_count int, mutual_ids uuid[])
 language sql
@@ -38,7 +41,7 @@ as $$
   left join fof on fof.cand = p.id
   where p.id <> (select uid from me)
     and not p.is_guest
-    and p.discoverable
+    and p.discoverable               -- FIX: filter op discoverable (issue #564)
     and p.id not in (select rid from related)
   order by mutual_count desc, random()
   limit p_limit;
