@@ -17,11 +17,13 @@ export const COMMENTATOR = { naam: "Coach Rudy", emoji: "🎙️" } as const;
 /**
  * De gezichtsuitdrukking/reactie die Coach Rudy's illustratie toont, gekoppeld
  * aan de aard van zijn commentaar. `portret` is de neutrale signatuur (default
- * én fallback), `trots` is juichend bij een zege/promotie, en de drie
- * intensiteiten tonen een burn op dat niveau. Zie CoachAvatar voor de
- * bestandsconventie (rudi-<stemming>[-<n>].png).
+ * én fallback), `trots` is juichend bij een zege/promotie, `buiging` is de
+ * onderdanige knieval voor de dictator (#531), en de drie intensiteiten tonen
+ * een burn op dat niveau. Zie CoachAvatar voor de bestandsconventie
+ * (rudi-<stemming>[-<n>].png); ontbreekt de illustratie, dan valt hij netjes op
+ * `portret` terug.
  */
-export type CoachMood = "portret" | "trots" | RoastIntensiteit;
+export type CoachMood = "portret" | "trots" | "buiging" | RoastIntensiteit;
 
 export interface RoastCtx {
   /** Toon van de groep; bepaalt hoe hard de sneer is. */
@@ -396,6 +398,24 @@ export function coachLof(
   gebruikt?: Set<string>,
 ): string {
   return kiesUniek(LOF[ctx.schild ? "mild" : ctx.intensiteit], seed, gebruikt);
+}
+
+/** Buiging (#531): tegenover een dictator (El Padelissimo of Mbappé bij verstek)
+ *  kent zelfs de grofste muil van de club z'n plek. Geen roast maar een
+ *  kruiperige knieval — kijker-gericht ("jij ook"), nooit een roast op de
+ *  dictator zelf. Los van de roast-intensiteiten; geldt enkel bij de troon. */
+export const BUIGING: readonly string[] = [
+  "Ik? Roasten? Ik ben wel gek, maar niet suïcidaal. Voor de Generalissimo buig ik — en jij ook. 🙇🫡",
+  "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en schrap de kebabs van de menukaart. 🙇",
+  "Geen sneer vandaag. Als de Madrid-Dictator eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
+  "Ik zwijg. Ik wil geen brief van de advocaten van de dictator op m'n mat krijgen. Volk, op de knieën! 🙇",
+  "Transfer-veto's en absolute macht... tegen de Generaal zeg ik geen woord. Buigen, jij daar! 🫡🙇",
+] as const;
+
+/** Kruiperige buig-regel voor de troon; deterministisch per seed (speler-key /
+ *  de vaste Mbappé-seed), zodat hij vast staat per dictator maar varieert. */
+export function coachBuiging(seed: string): string {
+  return kiesUniek(BUIGING, roastSeed("buiging", seed));
 }
 
 /**

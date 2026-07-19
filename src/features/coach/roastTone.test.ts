@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  BUIGING,
+  coachBuiging,
   COMMENTATOR,
   coachLof,
   coachSneer,
@@ -147,5 +149,18 @@ describe("coachSneer — dedup + schild (#201)", () => {
     const g = new Set<string>();
     expect(coachSneer({ intensiteit: "gemeen", schild: true }, 0, g)).toBeNull();
     expect(g.size).toBe(0);
+  });
+});
+
+describe("coachBuiging — knieval voor de dictator (#531)", () => {
+  it("heeft een niet-lege copypool", () => {
+    expect(BUIGING.length).toBeGreaterThan(0);
+    expect(BUIGING.every((r) => r.trim().length > 0)).toBe(true);
+  });
+
+  it("kiest deterministisch uit de pool per seed", () => {
+    expect(coachBuiging("speler-1")).toBe(coachBuiging("speler-1"));
+    expect(BUIGING as readonly string[]).toContain(coachBuiging("speler-1"));
+    expect(BUIGING as readonly string[]).toContain(coachBuiging("kylian-mbappe"));
   });
 });

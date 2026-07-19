@@ -32,7 +32,7 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
       <summary>Wat betekenen de divisies?</summary>
       <p className="tier-legend__intro">
         Je divisie volgt je rating — onderaan het Sletje van de baan, bovenaan
-        de onaantastbare GOAT. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
+        de onaantastbare El Padelissimo. Elke tier heeft drie niveaus (III → II → I); win je genoeg, dan
         klim je omhoog (en verlies je te veel, dan zak je genadeloos weg).
       </p>
       <ul className="tier-legend__list">
@@ -63,7 +63,7 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
             {Math.round(pias.winChance * 100)}%) onderuit.
           </>
         ) : (
-          "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."
+          "🤡 Elke pias waant zich de sportief directeur van de club — de rating liegt niet."
         )}
       </p>
       {pias && <CoachSneer ctx={pias.ctx} seed={pias.seed} size={26} />}

@@ -3,8 +3,9 @@
 // met drempels; alle UI (badges, toasts, posters) leest hieruit.
 //
 // Banden van 100 rating-punten met sub-niveaus III/II/I van ~33 (III laagst).
-// De onderste tier (Sletje van de baan) is open naar beneden, de hoogste (GOAT) open naar
-// boven en zonder sub-niveaus. Iedereen start op 1000 = Wannabe III.
+// De onderste tier (Sletje van de baan) is open naar beneden, de hoogste
+// (El Padelissimo) open naar boven en zonder sub-niveaus. Iedereen start op
+// 1000 = Wannabe III.
 //
 // De namen zijn bewust ludiek/beledigend — dit draait onder vrienden: onderaan
 // genadeloze roast, bovenaan absurde grootspraak.
@@ -19,7 +20,8 @@ export type TierNaam =
   | "Glazenwasser"
   | "Racketconsument"
   | "Forever second"
-  | "GOAT";
+  | "GOAT"
+  | "El Padelissimo";
 export type TierKey =
   | "slof"
   | "karton"
@@ -30,7 +32,8 @@ export type TierKey =
   | "platina"
   | "diamant"
   | "meester"
-  | "legende";
+  | "legende"
+  | "dictator";
 
 export interface Tier {
   naam: TierNaam;
@@ -76,7 +79,8 @@ export const TIER_BANDEN: ReadonlyArray<{
   { naam: "Glazenwasser", key: "platina", emoji: "🪟", flavor: "heeft de glazen achterwand zo vaak geraakt dat hij er inmiddels woont", min: 1100, max: 1200 },
   { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "gelooft oprecht dat zijn zevende racket dit jaar zijn vreselijke backhand gaat redden", min: 1200, max: 1300 },
   { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant", min: 1300, max: 1400 },
-  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past", min: 1400, max: null },
+  { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past", min: 1400, max: 1600 },
+  { naam: "El Padelissimo", key: "dictator", emoji: "🫡", flavor: "regeert de club als sportief directeur, weert tegenstanders uit de groepsapp en verbiedt kebabs met zijn beeltenis in de kantine", min: 1600, max: null },
 ];
 
 const ROMEINS = ["III", "II", "I"] as const;
@@ -94,7 +98,7 @@ export function tierFor(rating: number | null): Tier | null {
         );
   const band = TIER_BANDEN[bandIdx];
   if (band.max == null) {
-    // Hoogste tier (GOAT): open naar boven, geen sub-niveaus.
+    // Hoogste tier (El Padelissimo): open naar boven, geen sub-niveaus.
     return {
       naam: band.naam,
       key: band.key,
@@ -153,12 +157,13 @@ export function zelfdeDivisie(
   return band;
 }
 
-/** De hoofdtiers van hoog (GOAT) naar laag (Sletje van de baan) — voor het divisie-
- *  overzicht en de legenda. */
+/** De hoofdtiers van hoog (El Padelissimo) naar laag (Sletje van de baan) — voor
+ *  het divisie-overzicht en de legenda. */
 export const TIER_BANDEN_HOOG_NAAR_LAAG = [...TIER_BANDEN].reverse();
 
 /** Rating-bereik van een hoofdtier als leesbare tekst voor de legenda,
- *  bv. "tot 599" (Sletje van de baan, open omlaag), "1000–1099" of "1400+" (GOAT). */
+ *  bv. "tot 599" (Sletje van de baan, open omlaag), "1000–1099" of "1600+"
+ *  (El Padelissimo). */
 export function bandRangeLabel(band: (typeof TIER_BANDEN)[number]): string {
   if (band.max == null) return `${band.min}+`;
   // De laagste band (Sletje van de baan) is open naar beneden; de 500-vloer is virtueel.
@@ -193,8 +198,9 @@ export function tierLegend(): TierLegendItem[] {
 }
 
 /** Tooltip-tekst met bijnaam en rating-grenzen, bv.
- *  "Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066", "GOAT · onaantastbaar — en dat weet iedereen ·
- *  rating 1400+". De bovengrens is exclusief en wordt als max − 1 getoond. */
+ *  "Wannabe II · denkt dat-ie goed is — schattig · rating 1034–1066",
+ *  "El Padelissimo · onaantastbaar — en dat weet iedereen · rating 1600+".
+ *  De bovengrens is exclusief en wordt als max − 1 getoond. */
 export function tierTitle(t: Tier): string {
   const bereik =
     t.max == null

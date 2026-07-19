@@ -46,6 +46,8 @@ export function canvasPalette() {
     meesterSoft: "#f0ebfe",
     legende: "#c2185b",
     legendeSoft: "#fce7ef",
+    dictator: "#8a1c3b",
+    dictatorSoft: "#f7ecd0",
   };
 }
 

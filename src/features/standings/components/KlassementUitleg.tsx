@@ -8,7 +8,7 @@ export function KlassementUitleg() {
             <dt>Rating</dt>
             <dd>
               Het echte bewijs van je kunnen. Iedereen start op{" "}
-              <strong>1000</strong>. Winnen van betere spelers geeft je rating een flinke boost; verliezen van prutsers kost je klauwen met punten. Je rating laat zien hoe goed je écht bent, ongeacht hoe vaak je op de baan staat.
+              <strong>1000</strong>. Winnen van betere spelers geeft je rating een flinke boost; verliezen van windhappers kost je klauwen met punten. Je rating laat zien hoe goed je écht bent, ongeacht hoe vaak je op de baan staat.
             </dd>
           </div>
           <div>

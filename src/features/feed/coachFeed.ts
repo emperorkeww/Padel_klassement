@@ -656,6 +656,12 @@ export function coachStemming(
         (typeof event.shift === "number" && event.shift > 0);
       return omhoog ? "trots" : "gemeen";
     }
+    case "tier":
+      // Rudy buigt voor de nieuwe dictator (#531): promotie naar El Padelissimo
+      // krijgt de knieval-mood; overige tier-events blijven neutraal (portret).
+      return event.richting === "promotie" && event.naarLabel === "El Padelissimo"
+        ? "buiging"
+        : "portret";
     case "match": {
       const h = event.highlights;
       if (h.some((x) => x.type === "streak" || x.type === "duo")) return "trots";

@@ -115,6 +115,10 @@
   --tier: var(--legende);
   --tier-soft: var(--legende-soft);
 }
+.tier-legend--dictator {
+  --tier: var(--dictator);
+  --tier-soft: var(--dictator-soft);
+}
 
 /* Interne grap voor de vriendengroep: de pias-voetnoot. */
 .tier-legend__pias {
