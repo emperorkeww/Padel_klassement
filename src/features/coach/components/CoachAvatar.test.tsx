@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
+import type { CoachMood } from "@/features/coach/roastTone";
 
 describe("<CoachAvatar />", () => {
   it("rendert een toegankelijke coach-illustratie", () => {
@@ -17,19 +18,20 @@ describe("<CoachAvatar />", () => {
     expect(img).toHaveAttribute("height", "48");
   });
 
-  it("valt terug op de portret-illustratie voor een stemming zonder eigen tekening (buiging, #531)", () => {
-    // rudi-buiging.png bestaat nog niet: de glob-conventie degradeert dan netjes
-    // naar de portret-basis i.p.v. een lege avatar.
+  it("valt terug op de portret-illustratie voor een stemming zonder eigen tekening", () => {
+    // rudi-neutraal.png bestaat niet: de glob-conventie degradeert dan netjes
+    // naar de portret-basis i.p.v. een lege avatar. (Alle échte CoachMoods
+    // hebben inmiddels een eigen tekening, dus we forceren een onbekende.)
     const { unmount } = render(<CoachAvatar mood="portret" fixed />);
     const portret = screen
       .getByRole("img", { name: "Coach Rudy" })
       .getAttribute("src");
     unmount();
-    render(<CoachAvatar mood="buiging" fixed />);
-    const buiging = screen
+    render(<CoachAvatar mood={"neutraal" as CoachMood} fixed />);
+    const neutraal = screen
       .getByRole("img", { name: "Coach Rudy" })
       .getAttribute("src");
-    expect(buiging).toBe(portret);
+    expect(neutraal).toBe(portret);
   });
 
   it("toont met fixed altijd dezelfde illustratie", () => {

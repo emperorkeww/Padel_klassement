@@ -35,7 +35,11 @@ import { coachKlassement, coachKlassementMood } from "@/features/coach/klassemen
 import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
 import { DictatorThrone } from "@/features/standings/components/DictatorThrone";
-import { DEFAULT_DICTATOR } from "@/features/dashboard/dictator";
+import {
+  DEFAULT_DICTATOR,
+  defaultDictatorEnabled,
+  laadWaarnemendPortret,
+} from "@/features/dashboard/dictator";
 import { coachBuiging } from "@/features/coach/roastTone";
 import { TierLegend } from "@/features/rating/components/TierLegend";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -55,6 +59,7 @@ import {
   type Row,
 } from "./leaderboardHelpers";
 import { TierProgressBanner } from "./components/TierProgressBanner";
+import { useDictatorAnthem } from "./useDictatorAnthem";
 import { PiasBanner } from "./components/PiasBanner";
 import { TierDivisions } from "./components/TierDivisions";
 import { KlassementUitleg } from "./components/KlassementUitleg";
@@ -64,6 +69,12 @@ import type { Match, PlayerStanding, Profile, RatingPoint, TeamStanding } from "
 import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies";
+
+// Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
+// mount van het klassement pakt de volgende buig-regel, zodat opeenvolgende
+// bezoeken cyclen i.p.v. altijd dezelfde te tonen. Zelfde patroon als de
+// avatar-cyclus in CoachAvatar.
+let buigingBeurt = 0;
 
 export function Leaderboard() {
   const { user } = useAuth();
@@ -77,6 +88,8 @@ export function Leaderboard() {
   // staan, zodat je ze via hun profiel toch vindt.
   const [q, setQ] = useState("");
   const [extraResults, setExtraResults] = useState<Profile[]>([]);
+  // Eén buig-regel-rotatie per bezoek (mount); stabiel over re-renders.
+  const [buigingRotatie] = useState(() => buigingBeurt++);
   const searchSeq = useRef(0);
   useEffect(() => {
     const term = q.trim();
@@ -503,6 +516,38 @@ export function Leaderboard() {
   const ladderRows = throneRow
     ? rankedRows.filter((r) => r.key !== throneRow.key)
     : rankedRows;
+  // Volkslied (#535): zolang Kylian Mbappé op de troon zit — waarnemend bij
+  // verstek (throneRow == null, #530) of een echt clublid dat zo heet — speelt
+  // op de zichtbare spelers-tab z'n dictator-anthem, tot je het klassement
+  // verlaat of het tabblad verbergt.
+  // De troon (#536): een échte dictator (throneRow != null) staat er altijd; de
+  // waarnemend Mbappé (throneRow == null) alleen als de flag aan is. Uit → geen
+  // troon bij verstek, dus het Big Daddy-podium (#528) blijft gewoon staan.
+  const toonTroon =
+    canThrone && (throneRow != null || defaultDictatorEnabled());
+  const toonWaarnemend = toonTroon && throneRow == null;
+  const mbappeRegeert =
+    toonTroon &&
+    (throneRow == null || throneRow.name === DEFAULT_DICTATOR.name);
+  const anthem = useDictatorAnthem(mbappeRegeert);
+  // Portret van de waarnemend dictator lui laden — alleen wanneer getoond, zodat
+  // de asset niet gefetcht wordt (en bij uitgeschakelde flag niet eens bundelt).
+  const [waarnemendPortret, setWaarnemendPortret] = useState<string | null>(
+    null,
+  );
+  useEffect(() => {
+    let alive = true;
+    if (toonWaarnemend) {
+      laadWaarnemendPortret().then((src) => {
+        if (alive) setWaarnemendPortret(src);
+      });
+    } else {
+      setWaarnemendPortret(null);
+    }
+    return () => {
+      alive = false;
+    };
+  }, [toonWaarnemend]);
   const matchesName = (r: Row) =>
     r.name.toLowerCase().includes(nq) ||
     (r.profile?.username?.toLowerCase().includes(nq) ?? false);
@@ -725,7 +770,7 @@ export function Leaderboard() {
         </p>
       )}
 
-      {canThrone && (
+      {toonTroon && (
         <>
           <DictatorThrone
             variant={throneRow ? "echt" : "waarnemend"}
@@ -738,13 +783,24 @@ export function Leaderboard() {
             delta={
               throneRow ? deltaToday(throneRow.history, club.timezone) : null
             }
-            image={throneRow ? undefined : DEFAULT_DICTATOR.image}
+            image={throneRow ? undefined : (waarnemendPortret ?? undefined)}
+            anthem={
+              mbappeRegeert
+                ? {
+                    playing: anthem.playing,
+                    blocked: anthem.blocked,
+                    muted: anthem.muted,
+                    onToggleMute: anthem.toggleMute,
+                    onStart: anthem.start,
+                  }
+                : undefined
+            }
           />
           {/* Coach Rudy buigt voor de dictator (#531): kijker-gerichte knieval
               in de buiging-mood i.p.v. z'n gebruikelijke roast — voor een echte
               El Padelissimo én voor Mbappé bij verstek. */}
           <KlassementCommentaar
-            tekst={coachBuiging(throneRow?.key ?? "kylian-mbappe")}
+            tekst={coachBuiging(throneRow?.key ?? "kylian-mbappe", buigingRotatie)}
             mood="buiging"
           />
         </>

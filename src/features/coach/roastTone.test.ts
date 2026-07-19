@@ -163,4 +163,19 @@ describe("coachBuiging — knieval voor de dictator (#531)", () => {
     expect(BUIGING as readonly string[]).toContain(coachBuiging("speler-1"));
     expect(BUIGING as readonly string[]).toContain(coachBuiging("kylian-mbappe"));
   });
+
+  it("cyclet met de rotatie: opeenvolgende bezoeken schuiven één plek op (#535)", () => {
+    // Eén volle ronde over de pool levert elke regel precies één keer op —
+    // dus geen "altijd dezelfde" en geen dubbelen binnen de cyclus.
+    const ronde = BUIGING.map((_, i) => coachBuiging("kylian-mbappe", i));
+    expect(new Set(ronde).size).toBe(BUIGING.length);
+    // Na een volle ronde is de keuze weer gelijk (stabiel modulo pool-lengte).
+    expect(coachBuiging("kylian-mbappe", BUIGING.length)).toBe(
+      coachBuiging("kylian-mbappe", 0),
+    );
+  });
+
+  it("blijft stabiel bij gelijke seed én rotatie — geen geflikker", () => {
+    expect(coachBuiging("speler-1", 2)).toBe(coachBuiging("speler-1", 2));
+  });
 });

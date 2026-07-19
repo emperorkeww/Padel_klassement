@@ -406,16 +406,19 @@ export function coachLof(
  *  dictator zelf. Los van de roast-intensiteiten; geldt enkel bij de troon. */
 export const BUIGING: readonly string[] = [
   "Ik? Roasten? Ik ben wel gek, maar niet suïcidaal. Voor de Generalissimo buig ik — en jij ook. 🙇🫡",
-  "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en schrap de kebabs van de menukaart. 🙇",
+  "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en annexeer de bar alvast voor u. 🙇",
   "Geen sneer vandaag. Als de Madrid-Dictator eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
   "Ik zwijg. Ik wil geen brief van de advocaten van de dictator op m'n mat krijgen. Volk, op de knieën! 🙇",
   "Transfer-veto's en absolute macht... tegen de Generaal zeg ik geen woord. Buigen, jij daar! 🫡🙇",
 ] as const;
 
-/** Kruiperige buig-regel voor de troon; deterministisch per seed (speler-key /
- *  de vaste Mbappé-seed), zodat hij vast staat per dictator maar varieert. */
-export function coachBuiging(seed: string): string {
-  return kiesUniek(BUIGING, roastSeed("buiging", seed));
+/** Kruiperige buig-regel voor de troon; deterministisch per (seed, rotatie).
+ *  De `seed` (speler-key / de vaste Mbappé-seed) verankert de keuze per dictator;
+ *  `rotatie` schuift 'm één plek op in de pool, zodat opeenvolgende klassement-
+ *  bezoeken door de knievallen cyclen i.p.v. altijd dezelfde te tonen (#535).
+ *  Bij gelijke (seed, rotatie) blijft de uitkomst stabiel — geen geflikker. */
+export function coachBuiging(seed: string, rotatie = 0): string {
+  return kiesUniek(BUIGING, roastSeed("buiging", seed) + rotatie);
 }
 
 /**
