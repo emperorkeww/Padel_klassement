@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { MakeTeams } from "./MakeTeams";
+import { VendettaCard } from "./VendettaCard";
 import {
   NewMatchSheet,
   type NewMatchMode,
 } from "@/features/matches/components/NewMatchSheet";
 import type {
+  Group,
   GroupMember,
   Match,
   Profile,
@@ -22,6 +24,8 @@ import "./SpelenTab.css";
 
 interface SpelenTabProps {
   groupId: string;
+  /** Volledige groep — nodig voor de vendetta-kaart (id, naam, roast-intensiteit). */
+  group: Group;
   myId: string;
   members: GroupMember[];
   profiles: Record<string, Profile>;
@@ -42,6 +46,7 @@ interface SpelenTabProps {
 
 export function SpelenTab({
   groupId,
+  group,
   myId,
   members,
   profiles,
@@ -99,6 +104,17 @@ export function SpelenTab({
         teams={teams}
         openRound={openRound}
         onGenerated={onMatches}
+      />
+
+      {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
+          de Stand — daar drukten ze de eigenlijke ranglijst weg. */}
+      <VendettaCard
+        group={group}
+        matches={matches}
+        teams={teams}
+        profiles={profiles}
+        memberList={members}
+        myId={myId}
       />
 
       <section className="group-log" aria-label="Losse partij">

@@ -67,6 +67,9 @@ export function VendettaCard({
 
   // Startflow, optioneel met een voorgeselecteerde rivaal (wraak-alert-CTA).
   const [starten, setStarten] = useState<false | { rivalId: string }>(false);
+  // Uitleg-toggle achter het ⓘ-icoon (#524): tap-vriendelijk, blijft ook
+  // zichtbaar als er al een actieve vendetta loopt (dan is er geen lege staat).
+  const [uitleg, setUitleg] = useState(false);
 
   // Wraak-alert (#169): loopt mijn verliesreeks tegen iemand op, dan mag de
   // kaart een revanche-uitdaging tonen — maar niet als er al een vendetta
@@ -92,7 +95,19 @@ export function VendettaCard({
   return (
     <section className="card vendetta-card">
       <div className="card__head">
-        <h2 className="card__title">⚔️ Vendetta's</h2>
+        <h2 className="card__title">
+          ⚔️ Vendetta's
+          <button
+            type="button"
+            className="vendetta-info-btn"
+            aria-expanded={uitleg}
+            aria-label="Wat is een vendetta?"
+            title="Wat is een vendetta?"
+            onClick={() => setUitleg((v) => !v)}
+          >
+            ⓘ
+          </button>
+        </h2>
         {isMember && !starten && beschikbaar.length > 0 && (
           <button
             className="btn btn--sm"
@@ -102,6 +117,15 @@ export function VendettaCard({
           </button>
         )}
       </div>
+
+      {uitleg && (
+        <p className="vendetta-uitleg" role="note">
+          Een <strong>vendetta</strong> is een verklaarde aartsrivaliteit:
+          jullie onderlinge duels worden een seizoen. Wie als eerste 3, 5 of 7
+          zeges pakt sinds de start, wint — alleen duels waarin jullie
+          tegenover elkaar staan tellen mee.
+        </p>
+      )}
 
       {!starten &&
         alerts.map((a) => (

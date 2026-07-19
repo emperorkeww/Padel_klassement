@@ -265,7 +265,7 @@ export function FeedItem({
         return (
           <FeedLine
             icon="⚔️"
-            to={`/groepen/${event.groupId}?tab=stand`}
+            to={`/groepen/${event.groupId}?tab=spelen`}
             avatars={[event.challengerId, event.rivalId]}
             pmap={pmap}
             at={event.at}
@@ -286,7 +286,7 @@ export function FeedItem({
       return (
         <FeedLine
           icon="🔄"
-          to={event.matchId ? `/matches/${event.matchId}` : `/groepen/${event.groupId}?tab=stand`}
+          to={event.matchId ? `/matches/${event.matchId}` : `/groepen/${event.groupId}?tab=spelen`}
           avatars={[event.challengerId, event.rivalId]}
           pmap={pmap}
           at={event.at}

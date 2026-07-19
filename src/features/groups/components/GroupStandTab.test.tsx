@@ -2,8 +2,9 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-// De VendettaCard (#169) haalt zelf zijn contracten op en abonneert realtime;
-// zonder mock zou de test een echte websocket openen.
+// De roast/rivaliteit-kaarten onder de tabel (Rivalry/Pias/ZwartePiet) halen
+// zelf contracten op en abonneren realtime; zonder mock zou de test een echte
+// websocket openen. (Vendetta staat sinds #524 op de Spelen-tab.)
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
   return { supabase: makeSupabaseMock() };
@@ -216,17 +217,5 @@ describe("<GroupStandTab /> schande-tokens naast de naam (#523)", () => {
     const mark = screen.getByTitle("Pias van de maand");
     expect(mark).toHaveTextContent("🤡");
     expect(mark.closest(".cell-player")).toHaveTextContent("Speler 4");
-  });
-});
-
-// #169: de vendetta-kaart staat op de stand-tab; zonder actieve vendetta's
-// toont hij de lege staat met de startknop voor groepsleden.
-describe("<GroupStandTab /> vendetta-kaart (#169)", () => {
-  it("toont de lege staat met een startknop", async () => {
-    renderTab();
-    expect(
-      await screen.findByRole("button", { name: /Verklaar vendetta/ }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Nog geen actieve vendetta/)).toBeInTheDocument();
   });
 });
