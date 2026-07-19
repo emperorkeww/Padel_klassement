@@ -23,6 +23,10 @@ export interface Profile {
    *  speler kiest zelf hoe hard Coach Rudy hém in zijn eigen feed toespreekt,
    *  los van de groep-instelling van een eigenaar. Ontbreekt = 'gemeen'. */
   roast_intensiteit?: RoastIntensiteit;
+  /** Cosmetische weergavevoorkeur (#542): toont het klassement de waarnemend
+   *  dictator (Kylian Mbappé, #530) bovenaan zolang niemand de El Padelissimo-
+   *  tier haalt? Ontbreekt/true = zichtbaar (bestaand gedrag). */
+  toon_waarnemend_dictator?: boolean;
   /** Gastspeler: naamloze deelnemer zonder account, aangemaakt door een lid
    *  (owner_id). Gasten tellen nergens mee in de klassementen — de globale en
    *  groepsviews filteren `not is_guest`, en de client-mirror doet hetzelfde

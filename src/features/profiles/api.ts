@@ -69,7 +69,13 @@ export async function searchProfiles(
 // Accepteert elke rij met username/full_name (Profile, PlayerStanding, ...).
 export async function updateProfile(
   id: string,
-  patch: { username?: string; full_name?: string | null; avatar_url?: string | null },
+  patch: {
+    username?: string;
+    full_name?: string | null;
+    avatar_url?: string | null;
+    /** Cosmetische weergavevoorkeur (#542). */
+    toon_waarnemend_dictator?: boolean;
+  },
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
   if (error) throw error;

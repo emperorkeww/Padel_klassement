@@ -64,6 +64,12 @@ export function defaultDictatorEnabled(): boolean {
   return import.meta.env.VITE_DEFAULT_DICTATOR !== "false";
 }
 
+// Per-gebruiker toggle (#542): de waarnemend Mbappé is puur cosmetisch (de
+// dictator-divisie #527 blijft altijd bestaan), dus elke gebruiker mag 'm zelf
+// wegklikken — cross-device via de profiles-kolom `toon_waarnemend_dictator`
+// (default true = zichtbaar). Gelezen uit het profiel (Leaderboard/instellingen),
+// niet hier: deze module blijft IO-vrij.
+
 /** Laadt het portret van de waarnemend dictator lui, achter de #536-vlag. Staat
  *  de flag uit, dan is de `import()` een dode tak (build-time constante) die
  *  Rollup wegsnoeit — de ~2 MB-asset belandt dan niet in de build. Geeft null

@@ -29,6 +29,7 @@ import {
   pushAvailability,
 } from "@/lib/supabase/push";
 import { SESSION } from "@/test/fixtures";
+import * as profilesApi from "@/features/profiles/api";
 
 function renderPage() {
   return render(
@@ -84,6 +85,26 @@ describe("<ProfileSettings />", () => {
     } finally {
       vi.unstubAllGlobals();
       delete document.documentElement.dataset.theme;
+    }
+  });
+
+  it("zet de waarnemend dictator (Mbappé) uit via de weergavekaart (#542)", async () => {
+    // Cross-device voorkeur: de toggle schrijft naar de profiles-kolom via
+    // updateProfile. Het profiel heeft standaard geen waarde → aangevinkt.
+    const spy = vi.spyOn(profilesApi, "updateProfile").mockResolvedValue();
+    try {
+      renderPage();
+      const toggle = await screen.findByRole("checkbox", {
+        name: /waarnemend dictator/i,
+      });
+      expect(toggle).toBeChecked();
+
+      await userEvent.click(toggle);
+      expect(spy).toHaveBeenCalledWith("p1", {
+        toon_waarnemend_dictator: false,
+      });
+    } finally {
+      spy.mockRestore();
     }
   });
 
