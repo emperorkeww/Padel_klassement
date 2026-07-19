@@ -4,7 +4,7 @@ import { invalidate } from "@/lib/supabase/queryCache";
 
 // Welke cache-prefixen een wijziging op een tabel raakt: matches beïnvloeden
 // ook de standen (views), teams (nieuwe paren) en ratings (trigger).
-const CACHE_PREFIXES: Record<string, string[]> = {
+export const CACHE_PREFIXES: Record<string, string[]> = {
   matches: [
     "matches",
     "standings",
@@ -23,14 +23,17 @@ const CACHE_PREFIXES: Record<string, string[]> = {
   vendettas: ["vendettas"],
   friendships: ["friendships"],
   group_members: ["members", "groups"],
-  attendance: ["attendance"],
   match_predictions: ["match-predictions", "prediction-standings"],
   slot_availability: ["slot-availability"],
   // Baanbeschikbaarheids-snapshots van de cron (#405); geen subscriber nu,
   // maar de mapping staat klaar (focus-refetch + korte TTL doen het werk).
   court_availability_snapshots: ["court-snapshots"],
-  play_proposals: ["play-proposal"],
-  play_proposal_votes: ["play-proposal"],
+  // Play-polls (voorheen "proposals"): de "play-poll"-prefix dekt alle drie de
+  // cache-sleutels (play-polls: / play-poll-options: / play-poll-votes:).
+  play_polls: ["play-poll"],
+  play_poll_options: ["play-poll-options"],
+  play_poll_votes: ["play-poll-votes"],
+  match_smoesjes: ["smoesjes"],
 };
 
 // Kanaalnamen moeten uniek zijn per abonnee: twee hooks met dezelfde tabel en

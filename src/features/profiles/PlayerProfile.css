@@ -35,13 +35,6 @@
   font-size: var(--fs-base);
 }
 
-.profile-hero__nick {
-  margin: var(--sp-1) 0 0;
-  font-weight: 600;
-  font-style: italic;
-  font-size: var(--fs-sm);
-}
-
 /* Vriendverzoek-actie op andermans profiel (#282): net onder de @handle. */
 .profile-hero__action {
   margin: var(--sp-3) 0 var(--sp-1);
@@ -74,25 +67,13 @@
   font-size: var(--fs-sm);
 }
 
-/* Coach Rudy's oordeel op het profiel (#211/#213): gezicht + bubbeltekst. */
-.profile-hero__coach {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  margin: var(--sp-2) 0 0;
-}
-.profile-hero__coach-face {
-  margin-top: 1px;
-}
-.profile-hero__coach-text {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-  font-style: italic;
-}
-.profile-hero__coach-name {
+/* Coach Rudy deelt de bijnaam uit + geeft z'n oordeel (#298): één bubbel
+   (CoachBubble) i.p.v. een kale bijnaam-regel + losse coach-regel. De
+   bovenmarge komt van .coach-sneer zelf, dus de wrapper voegt niets toe. */
+
+/* De doopnaam als accent binnen Rudy's eerste regel. */
+.profile-hero__dub-name {
   font-weight: 700;
-  font-style: normal;
   color: var(--coach);
 }
 
