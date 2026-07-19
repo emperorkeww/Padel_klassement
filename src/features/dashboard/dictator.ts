@@ -64,6 +64,34 @@ export function defaultDictatorEnabled(): boolean {
   return import.meta.env.VITE_DEFAULT_DICTATOR !== "false";
 }
 
+// Per-gebruiker toggle (#542): de waarnemend Mbappé is puur cosmetisch (de
+// dictator-divisie #527 blijft altijd bestaan), dus elke gebruiker mag 'm zelf
+// wegklikken — zonder rebuild. Client-only in localStorage, zelfde patroon als
+// het thema (lib/utils/theme.ts). We bewaren alleen de afwijking van de default:
+// een gezette vlag = verborgen, zodat afwezig/leeg = zichtbaar (huidig gedrag).
+const WAARNEMEND_VERBORGEN_KEY = "dictator-waarnemend-verborgen";
+
+/** Wil deze gebruiker de waarnemend dictator (Mbappé bij verstek) zien? Default
+ *  ja. Staat los van de globale build-vlag; een echte dictator (#528) blijft
+ *  altijd zichtbaar. */
+export function waarnemendDictatorZichtbaar(): boolean {
+  try {
+    return window.localStorage.getItem(WAARNEMEND_VERBORGEN_KEY) !== "1";
+  } catch {
+    return true; // geen storage (private mode): val terug op zichtbaar
+  }
+}
+
+/** Zet de zichtbaarheid van de waarnemend dictator voor deze gebruiker. */
+export function setWaarnemendDictatorZichtbaar(zichtbaar: boolean): void {
+  try {
+    if (zichtbaar) window.localStorage.removeItem(WAARNEMEND_VERBORGEN_KEY);
+    else window.localStorage.setItem(WAARNEMEND_VERBORGEN_KEY, "1");
+  } catch {
+    // storage onbeschikbaar: dan hooguit deze sessie niet onthouden.
+  }
+}
+
 /** Laadt het portret van de waarnemend dictator lui, achter de #536-vlag. Staat
  *  de flag uit, dan is de `import()` een dode tak (build-time constante) die
  *  Rollup wegsnoeit — de ~2 MB-asset belandt dan niet in de build. Geeft null

@@ -35,6 +35,10 @@ import {
   setThemePreference,
   type ThemePreference,
 } from "@/lib/utils/theme";
+import {
+  waarnemendDictatorZichtbaar,
+  setWaarnemendDictatorZichtbaar,
+} from "@/features/dashboard/dictator";
 import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
@@ -407,11 +411,19 @@ const THEMA_OPTIES: { value: ThemePreference; label: string }[] = [
 
 function ThemeCard() {
   const [pref, setPref] = useState<ThemePreference>(getThemePreference);
+  // Cosmetische, client-only voorkeur (#542) — zelfde localStorage-aanpak als
+  // het thema hierboven.
+  const [mbappeAan, setMbappeAan] = useState(waarnemendDictatorZichtbaar);
 
   function choose(next: ThemePreference) {
     setPref(next);
     // Past direct toe én bewaart in localStorage (src/lib/theme.ts).
     setThemePreference(next);
+  }
+
+  function toggleMbappe(zichtbaar: boolean) {
+    setMbappeAan(zichtbaar);
+    setWaarnemendDictatorZichtbaar(zichtbaar);
   }
 
   return (
@@ -434,6 +446,21 @@ function ThemeCard() {
           </button>
         ))}
       </div>
+      <label className="toggle-row">
+        <span className="toggle-row__text">
+          <span className="toggle-row__label">Waarnemend dictator 🫡</span>
+          <span className="toggle-row__hint">
+            Toont Kylian Mbappé bovenaan het klassement zolang niemand de
+            El Padelissimo-tier haalt. Puur cosmetisch — zet uit als je hem
+            liever niet ziet; de dictator-divisie zelf blijft gewoon bestaan.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          checked={mbappeAan}
+          onChange={(e) => toggleMbappe(e.target.checked)}
+        />
+      </label>
     </section>
   );
 }

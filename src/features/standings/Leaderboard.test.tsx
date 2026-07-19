@@ -137,6 +137,21 @@ describe("<Leaderboard />", () => {
     }
   });
 
+  it("verbergt de waarnemend Mbappé wanneer de gebruiker 'm uitzet (#542)", async () => {
+    // Persoonlijke voorkeur uit → geen troon bij verstek, ook al staat de
+    // globale flag aan. Het Big Daddy-podium (#528) blijft.
+    window.localStorage.setItem("dictator-waarnemend-verborgen", "1");
+    try {
+      const { container } = renderPage();
+      await screen.findAllByText(/alice anders/i);
+      expect(container.querySelector(".dictator-throne")).toBeNull();
+      expect(screen.queryByText("Kylian Mbappé")).toBeNull();
+      expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
+    } finally {
+      window.localStorage.removeItem("dictator-waarnemend-verborgen");
+    }
+  });
+
   it("filtert de ranglijst op naam en toont een lege-staat bij geen match (#282)", async () => {
     renderPage();
     await screen.findAllByText(/carol claes/i);
