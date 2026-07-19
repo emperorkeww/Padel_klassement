@@ -111,6 +111,10 @@
   --meester-soft: #f0ebfe;
   --legende: #c2185b;
   --legende-soft: #fce7ef;
+  /* El Padelissimo (#527): keizerlijk militair goud op diepbordeaux — steekt
+     bóven GOAT's dieproze uit. */
+  --dictator: #8a1c3b;
+  --dictator-soft: #f7ecd0;
   /* Big Daddy (#1 van het klassement): zacht pastelroze. --bigdaddy is de vlak-
      kleur (medaille/kroon), -ink de tekst dáárop, -text de leesbare roze tekst
      op de paginakleur (naam/badge). */
@@ -271,6 +275,9 @@
   --meester-soft: #241d3a;
   --legende: #f7869f;
   --legende-soft: #3a1a24;
+  /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
+  --dictator: #e6b34d;
+  --dictator-soft: #3a1421;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #f288bc;
   --bigdaddy-soft: #40213a;

@@ -10,6 +10,7 @@ import {
   type RoastIntensiteit,
 } from "@/features/coach/roastTone";
 import type { KlassementFeiten } from "@/features/coach/klassementFeiten";
+import type { TierKey } from "@/features/rating/tiers";
 
 // ── Dashboard: ochtendbriefing ──────────────────────────────────────────────
 const OCHTEND_NEUTRAAL = [
@@ -63,7 +64,7 @@ const OCHTEND_HYPE = [
   "Een winreeks! Zelfs de Belgische voetbalbond zou nu overwegen je contract te verlengen.",
   "Winst na winst! Zelfs de Belgische pers begint me nu aardig te vinden door jouw prestaties.",
   "Met zo'n vorm hoeven we in de slotminuten niet eens meer tactisch te wisselen.",
-  "Een winreeks! Laat het alsjeblieft niet naar je hoofd stijgen, je bent nog steeds geen GOAT.",
+  "Een winreeks! Laat het alsjeblieft niet naar je hoofd stijgen, je bent nog steeds geen El Padelissimo.",
   "Je wint momenteel alles. Heb je stiekem de tegenstander omgekocht met een doos Belgische pralines?",
   "Een winreeks! Je claimt dat je de beste speler bent in de geschiedenis van de club. Zeer Trumpiaanse trekjes.",
   "Je bent onstuitbaar. Zelfs de bondscoach is onder de indruk van je prestaties.",
@@ -374,6 +375,16 @@ const TIER_PROMOTIE: Record<RoastIntensiteit, readonly string[]> = {
     "Opgestegen naar %tier%! Een prestatie van kosmische, radioactieve proporties.",
   ],
 };
+// Aparte, over-the-top propaganda-toon bij het bereiken van de nieuwe top
+// El Padelissimo (#527) — geen %tier%, want dit is een absolute alleenheerser
+// zonder sub-niveau. Vervangt de generieke promotieregel voor deze ene tier.
+const TIER_PROMOTIE_DICTATOR = [
+  "El Padelissimo! Buig voor de Generaal — hij bepaalt vanaf nu de opstellingen, ontslaat de kantinebeheerder en bant alle kebabs van de club. 🫡",
+  "EL PADELISSIMO! De baan heeft een dictator. Tegenstanders worden per direct uit de groepsapp verwijderd en begroeten je voortaan met een saluut. 🫡",
+  "Machtsovername voltooid: El Padelissimo. Je bent geen speler meer maar de sportief directeur — de kooi is nu een dictatuur en jij regeert. 🫡",
+  "El Padelissimo bereikt! Ik roep het uit tot staatsfeestdag. De vlaggen gaan uit, de kebabs met jouw beeltenis gaan eruit. 🫡",
+  "De troon is bezet: El Padelissimo. Van GOAT naar Generaal — wie tegen je speelt, pakt beter meteen de koffers. 🫡",
+] as const;
 const TIER_DEGRADATIE: Record<RoastIntensiteit, readonly string[]> = {
   mild: [
     "Je zakt naar %tier%. Gebeurt de besten — al gebeurt het jou opvallend vaak.",
@@ -409,6 +420,9 @@ export interface TierFeiten {
   richting: "promotie" | "degradatie";
   /** Label van de nieuwe divisie (wissel.naar.label), vult %tier%. */
   tierLabel: string;
+  /** Kleur-/tokensleutel van de nieuwe divisie (wissel.naar.key). Voedt de
+   *  dictator-special-case bij promotie naar El Padelissimo (#527). */
+  naarKey?: TierKey;
   seed: string;
   ctx: RoastCtx;
 }
@@ -417,7 +431,11 @@ export interface TierFeiten {
 export function coachTierQuip(f: TierFeiten): string {
   const seed = roastSeed("tier-toast", f.seed, f.richting);
   let zin: string;
-  if (f.richting === "promotie") {
+  if (f.richting === "promotie" && f.naarKey === "dictator") {
+    // Eigen propaganda-regel bij het bereiken van de nieuwe top (#527); het
+    // roast-schild tempert de toon niet — een staatsgreep viert iedereen mee.
+    zin = kiesUniek(TIER_PROMOTIE_DICTATOR, seed);
+  } else if (f.richting === "promotie") {
     // Lof: schild blokkeert niet, tempert alleen tot mild.
     zin = kiesUniek(TIER_PROMOTIE[f.ctx.schild ? "mild" : f.ctx.intensiteit], seed);
   } else if (f.ctx.schild) {
