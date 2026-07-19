@@ -10,6 +10,8 @@
 // intensiteit, zie personalMessages); vriendschap/polls zijn niet-kwetsend en
 // gebruiken één schild-neutrale pool.
 //  - INSERT/UPDATE op pias_of_week (#203)       → Coach Rudy-sneer naar de pias zelf
+//  - UPDATE op player_rank_state (#302)         → promotie/degradatie in het
+//    groepsklassement: felicitatie of sneer, richting uit old.tier vs new.tier
 //  - UPDATE op matches met een afdroging (#409) → Rudy-sneer voor de verliezers,
 //    een schouderklopje voor de winnaars, i.p.v. de neutrale "Uitslag ingevoerd"
 //
@@ -37,6 +39,10 @@ import {
   POLL_GEBOEKT,
   POLL_MOMENT,
   POLL_NIEUW,
+  RANK_DEGRADATIE,
+  RANK_DEGRADATIE_NEUTRAAL,
+  RANK_PROMOTIE,
+  rangOvergang,
   type RoastIntensiteit,
   roastSeed,
   VRIENDSCHAP,
@@ -88,7 +94,7 @@ type WebhookPayload = {
 
 // Notificatie-types waarvoor de gebruiker een voorkeur kan zetten (#57);
 // de namen mappen op de notify_*-kolommen van profiles.
-type MessageKind = "new_round" | "result" | "friend_request";
+type MessageKind = "new_round" | "result" | "friend_request" | "rank_change";
 
 type Message = {
   recipients: string[];
@@ -288,6 +294,56 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     }];
   }
 
+  // Promotie/degradatie (#302): een tier-overgang in het groepsklassement. De
+  // webhook-trigger vuurt al enkel bij een echte tier-wissel (zonder 'nieuw');
+  // rangOvergang bepaalt richting + gebeurtenis, en het profiel de toon.
+  if (payload.table === "player_rank_state" && payload.type === "UPDATE") {
+    const rec = payload.record as {
+      group_id: string;
+      player_id: string;
+      tier: string;
+    };
+    const old = payload.old_record as { tier: string } | null;
+    if (!old) return [];
+    const overgang = rangOvergang(old.tier, rec.tier);
+    if (!overgang) return [];
+
+    const { data: profiel } = await supabase
+      .from("profiles")
+      .select("roast_schild, roast_intensiteit")
+      .eq("id", rec.player_id)
+      .maybeSingle();
+    if (!profiel) return [];
+
+    const seed = roastSeed(rec.player_id, rec.group_id, rec.tier);
+    const url = `/groepen/${rec.group_id}?tab=stand`;
+
+    if (overgang.richting === "promotie") {
+      // Felicitatie: positief, niet door het schild gedempt.
+      return [{
+        recipients: [rec.player_id],
+        title: "🎙️ Coach Rudy feliciteert je",
+        body: kiesUit(RANK_PROMOTIE[overgang.event], seed),
+        url,
+        kind: "rank_change",
+      }];
+    }
+
+    // Degradatie: schild aan → neutraal-feitelijk, anders een intensiteit-sneer.
+    const intensiteit =
+      (profiel.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
+    const body = profiel.roast_schild
+      ? kiesUit(RANK_DEGRADATIE_NEUTRAAL[overgang.event], seed)
+      : kiesUit(RANK_DEGRADATIE[overgang.event][intensiteit], seed);
+    return [{
+      recipients: [rec.player_id],
+      title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
+      body,
+      url,
+      kind: "rank_change",
+    }];
+  }
+
   return [];
 }
 
@@ -447,6 +503,7 @@ const PREF_COLUMN: Record<MessageKind, string> = {
   new_round: "notify_new_round",
   result: "notify_result",
   friend_request: "notify_friend_request",
+  rank_change: "notify_rank_change",
 };
 
 /** Notificatie-voorkeuren (#57): laat alleen recipients over die dit

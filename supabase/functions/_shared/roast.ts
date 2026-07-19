@@ -215,3 +215,130 @@ export const POLL_GEBOEKT: readonly string[] = [
   "Het is officieel. Poets die rackets op.",
   "Geregeld. Ik verwacht een waardig schouwspel.",
 ];
+
+// ── Promotie / degradatie in het groepsklassement (#302) ────────────────────
+// Een tier-overgang (troon / top-3 / kelder) is promotie of degradatie. De
+// tiers zijn geordend kelder < middenmoot < jager < troon; 'nieuw' doet niet
+// mee (in-/uitstappen op de ladder is geen promotie). rangOvergang() vertaalt
+// een (oud → nieuw)-tierpaar naar een gebeurtenis + richting.
+
+export type RangRichting = "promotie" | "degradatie";
+export type PromotieEvent = "troon" | "top3" | "uit_kelder";
+export type DegradatieEvent = "troon_kwijt" | "kelder" | "uit_top3";
+export type RangOvergang =
+  | { richting: "promotie"; event: PromotieEvent }
+  | { richting: "degradatie"; event: DegradatieEvent };
+
+/** Classificeert een tier-overgang. null als één van beide 'nieuw' is of de
+ *  tier niet wijzigt (dan is er niets te melden). Volgorde van de checks bepaalt
+ *  de "sterkste" duiding: troon vóór top-3, kelder vóór de rest. */
+export function rangOvergang(
+  oud: string,
+  nieuw: string,
+): RangOvergang | null {
+  if (oud === nieuw || oud === "nieuw" || nieuw === "nieuw") return null;
+  if (nieuw === "troon") return { richting: "promotie", event: "troon" };
+  if (oud === "troon") return { richting: "degradatie", event: "troon_kwijt" };
+  if (nieuw === "kelder") return { richting: "degradatie", event: "kelder" };
+  if (nieuw === "jager") return { richting: "promotie", event: "top3" };
+  if (oud === "jager") return { richting: "degradatie", event: "uit_top3" };
+  if (oud === "kelder") return { richting: "promotie", event: "uit_kelder" };
+  return null;
+}
+
+// Promotie is positief, geen straf: één schild-neutrale pool per gebeurtenis,
+// niet intensiteit-geschaald (zoals AFDROGING_LOF). Het roast-schild dempt de
+// felicitatie niet — wie geen meldingen wil, zet notify_rank_change uit.
+export const RANK_PROMOTIE: Record<PromotieEvent, readonly string[]> = {
+  troon: [
+    "Je bent de nieuwe nummer één. De troon is van jou — voorlopig.",
+    "Bovenaan het klassement! Zelfs ik begin te geloven dat je kunt padellen.",
+    "De koppositie is binnen. Geniet ervan, de haaien ruiken al bloed.",
+    "Nummer één. M'n notitieboekje krijgt vandaag een gouden randje.",
+  ],
+  top3: [
+    "Welkom in de top-3. De troon staat nu binnen handbereik.",
+    "Je bent de top-3 binnengedrongen. De koploper voelt je hijgen in z'n nek.",
+    "Top-3! Nog een paar zeges en we bestormen de eerste plek.",
+    "De subtop is van jou. Ik heb de aanvalsplannen al klaarliggen.",
+  ],
+  uit_kelder: [
+    "Uit de kelder geklommen. De rode lantaarn geef je met plezier door.",
+    "Je bent de kelder ontsnapt. Zie je wel dat je er niet thuishoorde.",
+    "Weg uit de onderste regionen. De weg omhoog is ingezet.",
+    "De kelderklasse achter je gelaten. Netjes — nu doorpakken.",
+  ],
+};
+
+// Degradatie is een sneer: intensiteit-geschaald, schild aan → een neutrale,
+// feitelijke regel (net als de afdroging-verliezers, #409).
+export const RANK_DEGRADATIE_NEUTRAAL: Record<DegradatieEvent, readonly string[]> = {
+  troon_kwijt: [
+    "Je bent de koppositie kwijt. Het gebeurt de besten.",
+    "De troon is overgenomen. Tijd om terug te klimmen.",
+  ],
+  uit_top3: [
+    "Je bent uit de top-3 gezakt. Werk aan de winkel.",
+    "Net buiten de top-3 nu. De weg terug ligt open.",
+  ],
+  kelder: [
+    "Je bent in de kelder van het klassement beland. Kop op.",
+    "Onderin de stand nu. De enige weg is omhoog.",
+  ],
+};
+export const RANK_DEGRADATIE: Record<
+  DegradatieEvent,
+  Record<RoastIntensiteit, readonly string[]>
+> = {
+  troon_kwijt: {
+    mild: [
+      "De troon ben je kwijt. Aan de top is het glad, zei ik toch.",
+      "Niet langer nummer één. Genoten van het uitzicht?",
+      "Je koppositie is ingenomen. Even bijkomen, dan terugvechten.",
+    ],
+    gemeen: [
+      "De troon is bezet — en niet meer door jou. Pijnlijk, hè?",
+      "Van nummer één naar de achtervolgers. De haaien hadden gelijk.",
+      "Je bent onttroond. M'n notitieboekje noteert het met een zucht.",
+    ],
+    radioactief: [
+      "Onttroond. Ik zet 'm in de groepschat, voor de eeuwigheid.",
+      "De koning is dood. Lang leve wie je net voorbijstak.",
+      "Van de troon gekieperd. Zo hoog geklommen om zó te vallen.",
+    ],
+  },
+  uit_top3: {
+    mild: [
+      "Uit de top-3 gegleden. Gebeurt de besten, ook jou.",
+      "Net buiten de subtop nu. Terugknokken maar.",
+      "De top-3 liet je los. Tijd voor een tactische ommekeer.",
+    ],
+    gemeen: [
+      "Uit de top-3 gevallen. De jagers werden zelf opgejaagd.",
+      "Weg uit de subtop. Ik had m'n pet al schuin gezet, voor niets.",
+      "De top-3 spuugt je uit. Dat vraagt om zelfreflectie.",
+    ],
+    radioactief: [
+      "Uit de top-3 geknikkerd. Van jager naar prooi in één match.",
+      "De subtop is je ontglipt. Ik heb er een boos krabbeltje over gemaakt.",
+      "Weg uit de top-3. Zo snel gezakt dat de statistieken duizelig werden.",
+    ],
+  },
+  kelder: {
+    mild: [
+      "Afgezakt naar de kelder. De enige weg is nu omhoog.",
+      "In de onderste regionen beland. Kop op, comebacks bestaan.",
+      "De kelder in. Niks dat een paar zeges niet oplossen.",
+    ],
+    gemeen: [
+      "Welkom in de kelder. De rode lantaarn staat je verrassend goed.",
+      "Afgezakt naar de onderkant. Zelfs de watersproeiers kijken meewarig.",
+      "De kelder in gezakt. Ik zet alvast koffie voor de lange klim terug.",
+    ],
+    radioactief: [
+      "De kelder in gedonderd. Dit hoort in een museum — vitrine, spotje erop.",
+      "Hekkensluiter nu. Ik heb m'n viool gestemd, hij speelt zachtjes voor je.",
+      "Vrije val naar de bodem. Ik noteer 'm met sadistisch genoegen.",
+    ],
+  },
+};

@@ -60,6 +60,8 @@ export interface NotificationPrefs {
   notify_friend_request: boolean;
   /** Herinnering enkele uren vóór een geplande match. */
   notify_match_reminder: boolean;
+  /** Promotie/degradatie in het groepsklassement (#302). */
+  notify_rank_change: boolean;
 }
 
 /** Haalt de notificatie-voorkeuren op (default = alles aan). */
@@ -69,7 +71,7 @@ export async function getNotificationPrefs(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "notify_new_round, notify_result, notify_friend_request, notify_match_reminder",
+      "notify_new_round, notify_result, notify_friend_request, notify_match_reminder, notify_rank_change",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -79,6 +81,7 @@ export async function getNotificationPrefs(
     notify_result: data?.notify_result ?? true,
     notify_friend_request: data?.notify_friend_request ?? true,
     notify_match_reminder: data?.notify_match_reminder ?? true,
+    notify_rank_change: data?.notify_rank_change ?? true,
   };
 }
 
