@@ -3,6 +3,7 @@ import type { Profile, Team, Match } from "@/types";
 import type { Outcome } from "@/features/rating/results";
 import type { Badge } from "@/features/profiles/badges";
 import type { TierProgress } from "@/features/rating/tiers";
+import type { Regeerduur } from "@/features/standings/dictatorApi";
 import type { Upset } from "@/features/matches/upset";
 import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "@/features/rating/components/RatingChart";
@@ -61,6 +62,11 @@ export interface ProfileData {
   partner: PartnerInfo | null;
   tierVoortgang: TierProgress | null;
   nextBadge: Badge | null;
+  /** Zit deze speler nú op De Troon (El Padelissimo, #545)? Alleen dan toont de
+   *  tier-badge de dictator-tier; anders wordt 1600+ naar GOAT geklemd. */
+  isDictator: boolean;
+  /** Regeerduur-samenvatting (#545); null als de speler nooit dictator was. */
+  regeerduur: Regeerduur | null;
 
   // Grafieken
   hasRating: boolean;

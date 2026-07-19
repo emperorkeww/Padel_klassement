@@ -88,3 +88,35 @@ export const DEFAULT_DICTATOR_LABEL = "Madrid-Dictator";
 /** Korte slogan op de troon voor de waarnemend dictator (los van de echte roast). */
 export const DEFAULT_DICTATOR_PROPAGANDA =
   "regeert vanuit Madrid en veto't elke opstelling";
+
+// Regeerduur op het profiel (#545): wie ooit dictator was draagt dat als een
+// blijvend erepalmpje/schandpaal — hoelang hij in totaal heerste en over hoeveel
+// ambtstermijnen. Een afgezette dictator keert in het klassement terug als GOAT,
+// maar deze troon-tijd blijft op zijn profiel staan.
+
+/** Leesbare regeerduur, bv. "3 dagen", "5 uur" of "< 1 uur". */
+export function regeerduurLabel(totaalMs: number): string {
+  const uren = totaalMs / 3_600_000;
+  if (uren < 1) return "< 1 uur";
+  if (uren < 24) {
+    const h = Math.floor(uren);
+    return `${h} uur`;
+  }
+  const dagen = Math.floor(uren / 24);
+  return `${dagen} ${dagen === 1 ? "dag" : "dagen"}`;
+}
+
+/** Volledige erepalmpje-zin voor het profiel, bv. "Regeert al 3 dagen als
+ *  El Padelissimo" (zittend) of "Heerste in totaal 12 dagen · 2 ambtstermijnen"
+ *  (afgezet). */
+export function regeerduurZin(
+  totaalMs: number,
+  termijnen: number,
+  zittend: boolean,
+): string {
+  const duur = regeerduurLabel(totaalMs);
+  const kop = zittend
+    ? `Regeert al ${duur} als El Padelissimo`
+    : `Heerste in totaal ${duur}`;
+  return termijnen > 1 ? `${kop} · ${termijnen} ambtstermijnen` : kop;
+}

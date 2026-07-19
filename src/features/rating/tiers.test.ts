@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   tierChange,
   tierFor,
+  tierForWeergave,
   tierTitle,
   tierProgress,
   tierLegend,
@@ -222,5 +223,23 @@ describe("tierLegend", () => {
     expect(laagste.vanaf).toBeNull();
     // Elke tier draagt emoji + bijnaam.
     expect(legend.every((l) => l.emoji && l.flavor)).toBe(true);
+  });
+});
+
+describe("tierForWeergave (#545: dictator-cap)", () => {
+  it("toont El Padelissimo alleen voor de zittende dictator", () => {
+    expect(tierForWeergave(1687, true)?.key).toBe("dictator");
+  });
+
+  it("klemt een niet-troonhouder met 1600+ naar GOAT (legende)", () => {
+    const t = tierForWeergave(1687, false);
+    expect(t?.key).toBe("legende");
+    expect(t?.naam).toBe("GOAT");
+  });
+
+  it("laat lagere tiers ongemoeid, ongeacht de dictator-vlag", () => {
+    expect(tierForWeergave(1450, false)?.key).toBe("legende");
+    expect(tierForWeergave(1050, false)?.key).toBe("goud");
+    expect(tierForWeergave(null, false)).toBeNull();
   });
 });

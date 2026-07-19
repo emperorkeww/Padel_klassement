@@ -185,6 +185,7 @@ export function StandingsTable({
                         rating={r.rating}
                         dimmed={r.games > 0 && r.games < THIN_GAMES}
                         size="sm"
+                        capDictator
                       />
                       {r.rating != null ? (
                         <span className="rating-cell rating-cell--lead">

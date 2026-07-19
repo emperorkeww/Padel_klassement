@@ -46,6 +46,17 @@ describe("<DictatorThrone /> (#528)", () => {
     renderThrone({ isMe: true });
     expect(screen.getByText("jij")).toBeInTheDocument();
   });
+
+  it("toont 'regeert sinds <datum>' wanneer een ambtstermijn is meegegeven (#545)", () => {
+    renderThrone({ sinds: "2026-07-01T10:00:00Z" });
+    expect(screen.getByText(/regeert sinds/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 jul/i)).toBeInTheDocument();
+  });
+
+  it("laat het ambtstermijn-label weg als er geen sinds is", () => {
+    const { container } = renderThrone();
+    expect(container.querySelector(".dictator-throne__sinds")).toBeNull();
+  });
 });
 
 describe("<DictatorThrone /> — waarnemend (#530)", () => {

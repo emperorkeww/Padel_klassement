@@ -25,6 +25,7 @@ import {
 } from "./api";
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import { getHuidigeDictator } from "./dictatorApi";
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getPiasWeeks } from "./piasApi";
@@ -165,6 +166,9 @@ export function Leaderboard() {
   const ratings = useAsync(getPlayerRatings, []);
   // Voor de sparkline-kolom: historie van alle spelers in één batch.
   const histories = useAsync(getAllRatingHistories, []);
+  // De zittende dictator (#545): server-side bepaald via de troon-replay, niet
+  // meer de toevallige 1600+-#1. Bepaalt wie op De Troon komt.
+  const dictator = useAsync(getHuidigeDictator, []);
   // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
   // tonen de pias van de geselecteerde groep.
   const piasWeeks = useAsync(getPiasWeeks, []);
@@ -508,9 +512,14 @@ export function Leaderboard() {
   // bij verstek (#530). Hij zit er "in absentia" boven, dus de echte #1 blijft
   // gewoon op het podium staan — mét z'n Big Daddy-kroon.
   const canThrone =
-    tab === "player" && !nq && !loading && !error && displayRows.length > 0;
+    tab === "player" &&
+    !nq &&
+    !loading &&
+    !error &&
+    !dictator.loading &&
+    displayRows.length > 0;
   const { throne: throneRow, rest: volkRows } = canThrone
-    ? splitDictatorThrone(displayRows)
+    ? splitDictatorThrone(displayRows, dictator.data?.profileId ?? null)
     : { throne: null, rest: displayRows };
   const rankedRows: Row[] = displayRows.map((r, i) => ({ ...r, rank: i + 1 }));
   // De dictator verdwijnt uit de ranglijst; zijn plek 1 verdwijnt mee zodat het
@@ -811,6 +820,7 @@ export function Leaderboard() {
                   }
                 : undefined
             }
+            sinds={throneRow ? (dictator.data?.begonOp ?? null) : null}
           />
           {/* Coach Rudy buigt voor de dictator (#531): kijker-gerichte knieval
               in de buiging-mood i.p.v. z'n gebruikelijke roast — voor een echte
