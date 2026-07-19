@@ -86,7 +86,7 @@ describe("tierTitle", () => {
     expect(tierTitle(tierFor(450)!)).toBe("Sletje van de baan III · wordt door de rest van de club gebruikt voor makkelijke gratis winst · rating tot 533");
     expect(tierTitle(tierFor(1040)!)).toBe("Wannabe II · koopt een racket van €350 om het chronische gebrek aan talent te compenseren · rating 1034–1066");
     expect(tierTitle(tierFor(1500)!)).toBe("GOAT II · heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past · rating 1467–1533");
-    expect(tierTitle(tierFor(1650)!)).toBe("El Padelissimo · regeert de club als sportief directeur, weert tegenstanders uit de groepsapp en verbiedt kebabs met zijn beeltenis in de kantine · rating 1600+");
+    expect(tierTitle(tierFor(1650)!)).toBe("El Padelissimo · regeert de club als absolute dictator, weert tegenstanders per direct uit de groepsapp en eist 90% van de baromzet · rating 1600+");
   });
 });
 

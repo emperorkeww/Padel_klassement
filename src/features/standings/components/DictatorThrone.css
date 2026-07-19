@@ -22,6 +22,37 @@
     color-mix(in srgb, var(--dictator-deep) 55%, transparent);
 }
 
+/* Volkslied-bediening (#535): demp-toggle of tap-to-play, rechtsboven op de
+   troon. Boven de stralenkrans (z-index) zodat hij klikbaar blijft. */
+.dictator-throne__anthem {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.3em 0.6em;
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--dictator-deep) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dictator-gold) 55%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+.dictator-throne__anthem:hover {
+  background: color-mix(in srgb, var(--dictator-deep) 78%, transparent);
+}
+.dictator-throne__anthem:active {
+  transform: scale(0.96);
+}
+
 /* Draaiende stralenkrans achter de troon — puur decoratief. */
 .dictator-throne__beam {
   position: absolute;

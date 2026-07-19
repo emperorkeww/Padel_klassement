@@ -31,6 +31,15 @@ export interface DictatorThroneProps {
   delta?: number | null;
   /** Vast portret i.p.v. de speler-avatar — voor de waarnemend dictator (#530). */
   image?: string;
+  /** Volkslied-bediening (#535): alleen aanwezig zolang Mbappé regeert. Toont een
+   *  demp-toggle, of een tap-to-play als de browser autoplay blokkeerde. */
+  anthem?: {
+    playing: boolean;
+    blocked: boolean;
+    muted: boolean;
+    onToggleMute: () => void;
+    onStart: () => void;
+  };
 }
 
 export function DictatorThrone({
@@ -43,6 +52,7 @@ export function DictatorThrone({
   isMe,
   delta,
   image,
+  anthem,
 }: DictatorThroneProps) {
   // Waarnemend (#530): Mbappé is geen clublid — geen rating-hoofdgetal, geen
   // ambtstermijn en géén link naar een spelerprofiel; wel een eigen label.
@@ -88,6 +98,27 @@ export function DictatorThrone({
       }
     >
       <span className="dictator-throne__beam" aria-hidden="true" />
+      {anthem &&
+        (anthem.blocked ? (
+          <button
+            type="button"
+            className="dictator-throne__anthem"
+            onClick={anthem.onStart}
+            title="Speel het volkslied"
+          >
+            🔊 Volkslied
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="dictator-throne__anthem"
+            onClick={anthem.onToggleMute}
+            aria-pressed={anthem.muted}
+            title={anthem.muted ? "Volkslied dempen staat aan" : "Volkslied dempen"}
+          >
+            {anthem.muted ? "🔇" : "🔊"}
+          </button>
+        ))}
       {link && !waarnemend ? (
         <Link className="dictator-throne__body" to={link}>
           {frame}
