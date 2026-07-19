@@ -67,6 +67,7 @@ export function useTierAnnouncement(myId: string, schild = false) {
     const zin = coachTierQuip({
       richting: wissel.richting,
       tierLabel: wissel.naar.label,
+      naarKey: wissel.naar.key,
       seed: `${myId}-${latest.match_id}`,
       ctx: { intensiteit: "gemeen", schild },
     });

@@ -25,9 +25,14 @@ describe("<TierBadge />", () => {
     expect(diamant).toHaveClass("tier-badge--diamant");
   });
 
-  it("toont de hoogste tier zonder sub-niveau", () => {
+  it("toont GOAT nu begrensd, mét sub-niveau", () => {
     render(<TierBadge rating={1500} />);
-    expect(screen.getByText("GOAT")).toHaveClass("tier-badge--legende");
+    expect(screen.getByText("GOAT II")).toHaveClass("tier-badge--legende");
+  });
+
+  it("toont de hoogste tier (El Padelissimo) zonder sub-niveau", () => {
+    render(<TierBadge rating={1650} />);
+    expect(screen.getByText("El Padelissimo")).toHaveClass("tier-badge--dictator");
   });
 
   it("rendert niets zonder rating", () => {

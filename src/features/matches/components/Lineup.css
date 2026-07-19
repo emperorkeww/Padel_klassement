@@ -386,6 +386,10 @@
   --tier: var(--legende);
   --tier-soft: var(--legende-soft);
 }
+.lineup-kaart--dictator {
+  --tier: var(--dictator);
+  --tier-soft: var(--dictator-soft);
+}
 
 /* Uitleg onder het veld (zelfde explainer-recept als het klassement), met een
    icoon per onderwerp en de tekst netjes onder het label uitgelijnd. */

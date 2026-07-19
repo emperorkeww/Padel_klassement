@@ -82,6 +82,7 @@ function draw(ctx: CanvasRenderingContext2D, d: ProfileShareData) {
       diamant: { fg: c.diamant, soft: c.diamantSoft },
       meester: { fg: c.meester, soft: c.meesterSoft },
       legende: { fg: c.legende, soft: c.legendeSoft },
+      dictator: { fg: c.dictator, soft: c.dictatorSoft },
     };
     const { fg, soft } = tint[d.tier.key];
     ctx.font = "800 44px Outfit, system-ui, sans-serif";
