@@ -27,6 +27,17 @@ export interface Profile {
    *  dictator (Kylian Mbappé, #530) bovenaan zolang niemand de El Padelissimo-
    *  tier haalt? Ontbreekt/true = zichtbaar (bestaand gedrag). */
   toon_waarnemend_dictator?: boolean;
+  /** AI dictator-portret opt-out (#554): staat dit uit, dan gaat de profielfoto
+   *  nooit naar OpenAI en toont De Troon de gewone avatar. Ontbreekt/true = aan. */
+  dictator_portret?: boolean;
+  /** Publieke URL van het gegenereerde dictator-portret (#554), of null/ontbrekend
+   *  als er nog geen is of het vervallen is (na een fotowissel). Alleen de edge
+   *  function schrijft dit; de troon toont het voor de echte dictator. */
+  dictator_avatar_url?: string | null;
+  /** De avatar_url waarop het portret is gebaseerd (#554), of de sentinel
+   *  '__geen_avatar__'. Wijkt dit af van de huidige avatar_url, dan is het portret
+   *  vervallen en moet het opnieuw gegenereerd worden. */
+  dictator_avatar_bron?: string | null;
   /** Gastspeler: naamloze deelnemer zonder account, aangemaakt door een lid
    *  (owner_id). Gasten tellen nergens mee in de klassementen — de globale en
    *  groepsviews filteren `not is_guest`, en de client-mirror doet hetzelfde
