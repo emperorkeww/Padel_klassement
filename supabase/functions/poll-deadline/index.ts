@@ -95,8 +95,21 @@ type OptionRow = {
   poll_id: string;
   date: string;
   start_time: string;
+  duration: number;
   courts_free: number | null;
 };
+
+/** Marge na afloop van het slot voordat een moment als verlopen telt (#440).
+ *  Gespiegeld in src/features/groups/pollLogic.ts. */
+const SLOT_EXPIRY_MARGIN_MIN = 30;
+
+/** Epoch (ms, clubtijd) waarop een optie verlopen is: slot-einde plus marge. */
+function optionEndMs(o: OptionRow, timeZone: string): number {
+  return (
+    clubEpoch(o.date, o.start_time, timeZone) +
+    (o.duration + SLOT_EXPIRY_MARGIN_MIN) * 60_000
+  );
+}
 
 function fmtMoment(o: OptionRow): string {
   const day = new Intl.DateTimeFormat("nl-BE", {
@@ -123,7 +136,7 @@ Deno.serve(async (req) => {
   for (const poll of (polls ?? []) as PollRow[]) {
     const { data: options } = await admin
       .from("play_poll_options")
-      .select("id, poll_id, date, start_time, courts_free")
+      .select("id, poll_id, date, start_time, duration, courts_free")
       .eq("poll_id", poll.id);
     const opts = (options ?? []) as OptionRow[];
     if (opts.length === 0) continue;
@@ -138,6 +151,18 @@ Deno.serve(async (req) => {
 
     const tz = poll.club_timezone ?? TIME_ZONE;
     if (poll.status === "open") {
+      // Verlopen (#440/#445): álle momenten voorbij → stil annuleren zodat de
+      // rij niet eeuwig als 'open' blijft staan. Geen push (send-push heeft
+      // geen cancelled-tak); de hoofdquery filtert cancelled er nadien uit.
+      if (opts.every((o) => optionEndMs(o, tz) <= now)) {
+        await admin
+          .from("play_polls")
+          .update({ status: "cancelled" })
+          .eq("id", poll.id);
+        result.cancelled += 1;
+        continue;
+      }
+
       const first = Math.min(...opts.map((o) => clubEpoch(o.date, o.start_time, tz)));
       if (first <= now) continue; // eerste moment al voorbij: laten rusten
 
@@ -194,7 +219,21 @@ Deno.serve(async (req) => {
 
     // 3) Speeldag-herinnering voor gelockte/geboekte polls.
     const locked = opts.find((o) => o.id === poll.locked_option_id);
-    if (!locked || poll.dayof_notified_at) continue;
+    if (!locked) continue;
+
+    // Verlopen (#445): een gelockte-maar-nooit-geboekte poll waarvan het
+    // gekozen moment voorbij is → stil annuleren. 'booked' laten we staan:
+    // dat is een echt geboekte avond, geen data-ruis.
+    if (poll.status === "locked" && optionEndMs(locked, tz) <= now) {
+      await admin
+        .from("play_polls")
+        .update({ status: "cancelled" })
+        .eq("id", poll.id);
+      result.cancelled += 1;
+      continue;
+    }
+
+    if (poll.dayof_notified_at) continue;
     const start = clubEpoch(locked.date, locked.start_time, tz);
     if (start > now && start - now <= DAY_OF_HOURS * 3600_000) {
       const players = [...new Set(yesOn(locked.id).map((v) => v.player_id))];
