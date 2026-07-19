@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "@/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
@@ -31,6 +32,8 @@ export interface PodiumEntry {
   /** Toon de divisie-badge (#127), afgeleid van `rating`. Opt-in zodat
    *  punten-podia schoon blijven. */
   tier?: boolean;
+  /** Emoji-tekentjes naast de naam, bv. 🃏 Zwarte Piet / 🤡 Pias (#523). */
+  markers?: ReactNode;
 }
 
 export function Podium({ entries }: { entries: PodiumEntry[] }) {
@@ -66,7 +69,10 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
                 name={entry.name}
                 size={place === 1 ? 56 : 44}
               />
-              <span className="podium__name">{entry.name}</span>
+              <span className="podium__name">
+                {entry.name}
+                {entry.markers}
+              </span>
               <span className={`podium__value${entry.dimmed ? " is-dim" : ""}`}>
                 {entry.rating ?? "—"}
                 {entry.delta != null && entry.delta !== 0 && (
