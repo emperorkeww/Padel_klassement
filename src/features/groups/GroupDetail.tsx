@@ -362,6 +362,7 @@ export function GroupDetail() {
            Vandaag zodra er wedstrijden klaarstaan (#364). */
         <SpelenTab
           groupId={id}
+          group={group.data!}
           myId={myId}
           members={memberList}
           profiles={pmap}

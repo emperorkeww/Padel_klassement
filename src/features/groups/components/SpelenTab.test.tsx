@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
-import type { GroupMember, Match, Profile, Team } from "@/types";
+import type { Group, GroupMember, Match, Profile, Team } from "@/types";
 
 const NOW = "2026-07-08T10:00:00.000Z";
 
@@ -23,7 +23,13 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { SpelenTab } from "./SpelenTab";
 import { supabase } from "@/lib/supabase/client";
-import { GROUP_MEMBERS, PROFILES, TEAMS, MATCH_PLANNED } from "@/test/fixtures";
+import {
+  GROUPS,
+  GROUP_MEMBERS,
+  PROFILES,
+  TEAMS,
+  MATCH_PLANNED,
+} from "@/test/fixtures";
 import { dateInZone } from "@/lib/utils/time";
 
 // MakeTeams filtert de poll op de clubdag; dateer fixtures dus op vandaag
@@ -56,6 +62,7 @@ function renderTab(
         <ToastProvider>
           <SpelenTab
             groupId="g1"
+            group={GROUPS[0] as unknown as Group}
             myId="p1"
             members={GROUP_MEMBERS as GroupMember[]}
             profiles={profileMap}
@@ -220,6 +227,28 @@ describe("<SpelenTab />", () => {
     expect(
       screen.queryByRole("button", { name: /naar vandaag/i }),
     ).not.toBeInTheDocument();
+  });
+
+  // #524: de vendetta-kaart verhuisde van de Stand- naar de Spelen-tab.
+  it("toont de vendetta-kaart met een uitklapbare uitleg (#524)", async () => {
+    renderTab();
+
+    // Kaart aanwezig: lege staat + startknop voor het lid.
+    expect(
+      await screen.findByRole("button", { name: /Verklaar vendetta/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nog geen actieve vendetta/)).toBeInTheDocument();
+
+    // De uitleg zit achter het ⓘ-icoon en verschijnt pas na een tik.
+    expect(
+      screen.queryByText(/verklaarde aartsrivaliteit/i),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: /wat is een vendetta/i }),
+    );
+    expect(
+      await screen.findByText(/verklaarde aartsrivaliteit/i),
+    ).toBeInTheDocument();
   });
 
   it("opent de sheet om een losse partij te loggen of te plannen", async () => {

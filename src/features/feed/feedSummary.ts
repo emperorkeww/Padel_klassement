@@ -185,7 +185,7 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
       return {
         icon: e.sub === "beslist" ? "🏆" : "⚔️",
         tekst,
-        to: `/groepen/${e.groupId}?tab=stand`,
+        to: `/groepen/${e.groupId}?tab=spelen`,
       };
     }
   }

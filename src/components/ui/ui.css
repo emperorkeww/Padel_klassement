@@ -265,6 +265,14 @@ textarea {
   gap: var(--sp-2);
   min-width: 0;
 }
+/* Schande-token-emoji naast een naam (🃏 Zwarte Piet / 🤡 Pias, #523): enkel
+   het tekentje, iets kleiner en niet meegeknipt door een ellipsis-naam. */
+.stand-mark {
+  flex: none;
+  margin-inline-start: 0.15em;
+  font-size: 0.9em;
+  line-height: 1;
+}
 .person-sub {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
