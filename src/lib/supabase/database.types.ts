@@ -1195,6 +1195,9 @@ export type Database = {
           allow_friend_requests: boolean
           avatar_url: string | null
           created_at: string
+          dictator_avatar_bron: string | null
+          dictator_avatar_url: string | null
+          dictator_portret: boolean
           discoverable: boolean
           featured_badges: string[]
           full_name: string | null
@@ -1215,6 +1218,9 @@ export type Database = {
           allow_friend_requests?: boolean
           avatar_url?: string | null
           created_at?: string
+          dictator_avatar_bron?: string | null
+          dictator_avatar_url?: string | null
+          dictator_portret?: boolean
           discoverable?: boolean
           featured_badges?: string[]
           full_name?: string | null
@@ -1235,6 +1241,9 @@ export type Database = {
           allow_friend_requests?: boolean
           avatar_url?: string | null
           created_at?: string
+          dictator_avatar_bron?: string | null
+          dictator_avatar_url?: string | null
+          dictator_portret?: boolean
           discoverable?: boolean
           featured_badges?: string[]
           full_name?: string | null
