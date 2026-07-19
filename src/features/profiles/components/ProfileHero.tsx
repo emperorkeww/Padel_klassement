@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Avatar } from "@/ui/Avatar";
-import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
-import { COMMENTATOR } from "@/features/coach/roastTone";
+import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { displayName } from "@/features/profiles/api";
 import type { ProfileData } from "@/features/profiles/components/types";
 
@@ -12,6 +11,13 @@ import type { ProfileData } from "@/features/profiles/components/types";
 // vriendverzoek op andermans profiel, #282).
 export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode }) {
   const { p, isMe, streak, nick, roast, rank } = d;
+  // Bijnaam als door Coach Rudy uitgedeeld (#298): i.p.v. een kale regel deelt
+  // hij de doopnaam zélf uit, in dezelfde bubbel als zijn eventuele oordeel.
+  // Zo hoort de bijnaam bij zijn personage i.p.v. "uit de lucht te vallen".
+  // Op je eigen profiel spreekt hij je aan met "je", elders noemt hij de naam.
+  // Bij een roast-schild is `roast` null en `nick` neutraal (#183): dan blijft
+  // enkel de rustige doopregel over, zonder plaag.
+  const aanhef = isMe ? "je" : displayName(p);
   return (
     <section className="card profile-hero">
       {/* Zelfde view-transition-naam als de aangetikte klassement-avatar:
@@ -32,16 +38,15 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
         </h1>
         <p className="profile-hero__handle">@{p.username}</p>
         {action && <div className="profile-hero__action">{action}</div>}
-        <p className="profile-hero__nick">“{nick}”</p>
-        {roast && (
-          <div className="profile-hero__coach" role="note">
-            <CoachAvatar size={31} className="profile-hero__coach-face" />
-            <p className="profile-hero__coach-text">
-              <span className="profile-hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
-              {roast}
-            </p>
-          </div>
-        )}
+        <div className="profile-hero__coach" role="note">
+          <CoachBubble mood="portret" size={31}>
+            <span className="coach-sneer__text">
+              Ik doop {aanhef}:{" "}
+              <strong className="profile-hero__dub-name">{nick}</strong>
+            </span>
+            {roast && <span className="coach-sneer__text">{roast}</span>}
+          </CoachBubble>
+        </div>
       </div>
     </section>
   );
