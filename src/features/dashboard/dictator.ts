@@ -10,8 +10,6 @@
 // kijker-gerichte reactie op de troon is z'n knieval (#531) en woont in
 // roastTone.ts (`coachBuiging`), niet hier.
 
-import mbappePortret from "@/features/dictator/components/dictator-portret-groen-uniform.png";
-
 export const DICTATOR_EMOJI = "🫡";
 /** Insigne op de troon i.p.v. een rangnummer — hij staat buiten de lijst. */
 export const DICTATOR_INSIGNE = "№1 · Dictator";
@@ -52,9 +50,31 @@ export function dictatorPropaganda(seed: string): string {
 export const DEFAULT_DICTATOR = {
   name: "Kylian Mbappé",
   emoji: "🐐",
-  /** Portret van de waarnemend dictator (militair uniform, past bij --dictator). */
-  image: mbappePortret,
 } as const;
+
+// Uitschakelbaar (#536): niet iedereen wil een externe meme-figuur permanent
+// bovenaan het klassement, en z'n portret-asset (~2 MB) hoeft dan ook de bundle
+// niet in. De dictator-divisie zelf (#527) blijft altijd bestaan; alleen de
+// waarnemend-default is optioneel. Default AAN — huidig gedrag ongewijzigd; zet
+// `VITE_DEFAULT_DICTATOR=false` om 'm uit te zetten.
+
+/** Staat de waarnemend dictator (Mbappé bij verstek) aan? Op runtime gelezen,
+ *  zodat het in tests te stubben is; in de build vouwt Vite de env-waarde in. */
+export function defaultDictatorEnabled(): boolean {
+  return import.meta.env.VITE_DEFAULT_DICTATOR !== "false";
+}
+
+/** Laadt het portret van de waarnemend dictator lui, achter de #536-vlag. Staat
+ *  de flag uit, dan is de `import()` een dode tak (build-time constante) die
+ *  Rollup wegsnoeit — de ~2 MB-asset belandt dan niet in de build. Geeft null
+ *  wanneer de waarnemend dictator uit staat. */
+export function laadWaarnemendPortret(): Promise<string | null> {
+  if (import.meta.env.VITE_DEFAULT_DICTATOR === "false")
+    return Promise.resolve(null);
+  return import(
+    "@/features/dictator/components/dictator-portret-groen-uniform.png"
+  ).then((m) => m.default as string);
+}
 
 /** Waarnemend-label i.p.v. een ambtstermijn — het is geen echt clublid. */
 export const DEFAULT_DICTATOR_LABEL = "Madrid-Dictator";
