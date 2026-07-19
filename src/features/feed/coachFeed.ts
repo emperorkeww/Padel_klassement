@@ -76,6 +76,8 @@ export const KAMPIOEN = [
   "Kampioen! Een tactische triomf die nog jaren besproken zal worden.",
   "Bovenaan de troon. M'n notitieboekje heeft er een gouden randje bij gekregen.",
   "De absolute nummer één. Heel de club buigt voor je.",
+  "Kampioen! Ik zet m'n sportpet er drie keer voor schuin.",
+  "De beker glinstert, maar jouw servicetechniek is nog steeds van bedenkelijk niveau.",
 ] as const;
 
 const PROMOTIE = [
@@ -106,6 +108,8 @@ const PROMOTIE = [
   "Promotie! De tegenstanders op het nieuwe niveau zijn al zenuwachtig.",
   "Een niveau gestegen. Tijd om het tactische bord opnieuw in te richten.",
   "Stijgen is prachtig. Nu bewijzen dat je daar thuishoort.",
+  "Promotie! Geniet van het uitzicht daarboven voordat je er met een rotgang vanaf dondert.",
+  "Naar het hogere niveau! Tijd voor m'n chique pak en een extra spiekbriefje.",
 ] as const;
 
 const DEGRADATIE = [
@@ -136,6 +140,8 @@ const DEGRADATIE = [
   "Omlaag. Hopelijk vind je daar de motivatie om weer te gaan trainen.",
   "Degradatie. Maar wie onderop ligt, kan alleen nog maar omhoog kijken.",
   "Teruggezakt. Laat deze afgang de brandstof zijn voor je comeback.",
+  "Degradatie. Zelfs m'n viool speelt er een droevig deuntje bij.",
+  "Een stap omlaag. De terreinknecht staat al klaar om de kelder voor je te vegen.",
 ] as const;
 
 const REEKS = [
@@ -162,6 +168,8 @@ const REEKS = [
   "De overwinningsreeks groeit. Heel de club praat erover.",
   "Onstuitbare vorm. Blijf gefocust, de top kijkt met angst toe.",
   "Reeks na reeks. Een demonstratie van tactische discipline en pure wilskracht.",
+  "Onverslaanbaar! De tegenstanders overwegen al om niet meer op te komen.",
+  "Een winstreeks van jewelste. M'n notitieboekje glinstert van de positieve stats.",
 ] as const;
 
 const UPSET = [
@@ -190,6 +198,8 @@ const UPSET = [
   "Een stunt van formaat. De ranglijst staat volledig op z'n kop.",
   "De favoriet ging eraf met een tactische blunder die z'n weerga niet kent.",
   "Upset! Heel de toto in duigen, behalve voor wie in dit wonder geloofde.",
+  "Wat een stunt! De favorieten stonden erbij alsof ze ter plekke aan de grond genageld waren.",
+  "Underdog wint! Dit schudt de ranglijst weer eens lekker op.",
 ] as const;
 
 const BAGEL = [
@@ -215,6 +225,8 @@ const BAGEL = [
   "6-0 winst. Een masterclass in absolute dominantie aan het net.",
   "Nul games weggegeven. Efficiënter dan dit wordt het niet.",
   "6-0! De glazen wanden trillen nog na van deze vernedering.",
+  "6-0 winst! Een perfecte set waarbij de tegenstander alleen als toeschouwer fungeerde.",
+  "Droge bagel uitgedeeld. Zelfs de scheidsrechter hoefde nauwelijks op te letten.",
 ] as const;
 
 const MONSTER = [
@@ -240,6 +252,8 @@ const MONSTER = [
   "Een pak slaag van jewelste. Tactisch en fysiek volledig overklast.",
   "Monsterzege! De cijfers spreken voor zich: absolute klasse.",
   "Weggevaagd. Dit niveau van overmacht is bijna angstaanjagend.",
+  "Een ware slachting in de kooi. Geen genade getoond.",
+  "Monsterzege! Tactisch en fysiek een volkomen overklassing.",
 ] as const;
 
 const DEGRADATIE_NEUTRAAL = [
@@ -247,6 +261,8 @@ const DEGRADATIE_NEUTRAAL = [
   "Gezakt in het klassement. De volgende match telt weer.",
   "Een stap terug in de stand.",
   "De lijn ging omlaag, maar het seizoen loopt door.",
+  "Stap omlaag. De volgende match is een nieuwe kans om te klimmen.",
+  "Een divisie omlaag gezakt, maar de competitie is nog lang niet gestreden.",
 ] as const;
 
 const BAGEL_NEUTRAAL = [
@@ -254,6 +270,8 @@ const BAGEL_NEUTRAAL = [
   "Een eenzijdige set. De cijfers zijn helder.",
   "Nul games op het bord. Volgende match nieuwe kans.",
   "Broodje bal op papier, neutraal genoteerd.",
+  "Nul games gepakt. Snel vergeten en focussen op de volgende set.",
+  "Eenzijdig resultaat op papier. Tijd voor een tactische heroriëntatie.",
 ] as const;
 
 function heeftSchild(profile: Profile | undefined): boolean {
