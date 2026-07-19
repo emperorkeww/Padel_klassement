@@ -30,6 +30,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import Friends from "./Friends";
+import { coachVrienden } from "@/features/coach/coachMoments";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
@@ -82,7 +83,14 @@ describe("<Friends />", () => {
       screen.getAllByRole("button", { name: /al gekoppeld/i }).length,
     ).toBeGreaterThan(0);
     await userEvent.click(sturen[0]);
-    expect(await screen.findByText(/verzoek verstuurd/i)).toBeInTheDocument();
+    // De bevestiging spreekt nu met Coach Rudy's stem (#294): deterministisch
+    // geseed op het doelwit-id (dave = p4), mijn eigen intensiteit/schild.
+    const rivaalQuip = coachVrienden({
+      situatie: "nieuw",
+      seed: "p4",
+      ctx: { intensiteit: "gemeen", schild: false },
+    });
+    expect(await screen.findByText(rivaalQuip)).toBeInTheDocument();
   });
 
   it("opent de gemeenschappelijke vrienden in een popup", async () => {

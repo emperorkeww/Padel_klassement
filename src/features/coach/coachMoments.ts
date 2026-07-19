@@ -432,3 +432,88 @@ export function coachEmptyState(f: EmptyStateFeiten): string {
     return kiesUniek(EMPTY_WELKOM, seed);
   return kiesUniek(EMPTY_WELKOM_PLAAG, seed);
 }
+
+// ── Vrienden: rivalen, verzoeken & head-to-head (#294) ──────────────────────
+// Schild aan → een warme, niet-spottende regel: wie geen roast wil, krijgt er
+// geen. Voor de rest schakelt coachVrienden op de situatie, en bij head-to-head
+// op het teken van de onderlinge balans (winst − verlies vanuit de kijker).
+export const VRIENDEN_NEUTRAAL = [
+  "Vrienden maken de baan leuker. Zoek je maatjes gerust op.",
+  "Samen padellen is dubbel plezier. Voeg wat spelers toe.",
+  "Een goede rivaal is goud waard. Nodig er een paar uit.",
+  "Bouw rustig je eigen padel-kringetje op.",
+  "Meer vrienden, meer matches om te loggen. Zo simpel is het.",
+] as const;
+
+export const VRIENDEN_LEEG = [
+  "Nul vrienden. Net als op mijn afscheidsreceptie.",
+  "Een lege vriendenlijst. Zelfs mijn selectie bij de Rode Duivels was voller, en dat zegt wat.",
+  "Je vriendenlijst is leger dan mijn notitieboekje na een gewonnen match. Nodig eens iemand uit.",
+  "Zo stil hier. Zelfs de watersproeiers op veld 2 hebben meer sociale contacten dan jij nu.",
+  "Nul bondgenoten, nul rivalen. Tactisch gezien een onmogelijke uitgangspositie.",
+  "Een vriendenlijst zo kaal als de tribune bij een training op maandagochtend. Voeg wat volk toe.",
+  "Helemaal alleen op de baan? Zelfs bij Napoli gaf men mij nog een hand.",
+  "Geen enkele vriend. Tijd om net zo fanatiek te ronselen als ik ooit naar tactische excuses zocht.",
+  "Onderaan de sociale ranglijst. De enige weg is omhoog: nodig je eerste speler uit.",
+] as const;
+
+export const VRIENDEN_NIEUW = [
+  "Een nieuwe naam op de vijandenlijst. Ik noteer 'm alvast in m'n notitieboekje.",
+  "Verzoek de deur uit. Nu maar hopen dat je nieuwe rivaal net zo slecht speelt als jij.",
+  "Vers bloed in je kringetje. Tijd om die vriendschap op de baan grondig te testen.",
+  "Een nieuwe rivaal in de maak. Ik verheug me nu al op het onderlinge bloedbad.",
+  "Zo, een uitnodiging verstuurd. Straks staat er iemand nieuws om van te verliezen.",
+  "Nieuwe vriend, nieuwe tegenstander. In de padel is dat exact hetzelfde.",
+  "Verzoek verstuurd. Ik zet de tactische scherpstelling alvast klaar voor jullie eerste duel.",
+  "Een frisse naam op de lijst. Onthoud: vandaag vrienden, straks concurrenten om de eerste plek.",
+] as const;
+
+export const H2H_LEIDT = [
+  "Tegen deze vriend ben jij de baas. Blijf dat vooral inwrijven.",
+  "In de onderlinge stand leid jij. Zorg dat het zo blijft, anders krijg ik commentaar van de pers.",
+  "Deze rivaal heb je in je zak — op papier tenminste. Nu nog op de baan bevestigen.",
+  "Jij wint dit duel meestal. Een tactisch genie als ik ziet daar graag een patroon in.",
+  "Voorsprong in de onderlinge balans. Geniet ervan, voorsprongen zijn broos in de padel.",
+  "Deze vriend verslaat je zelden. Hou die reputatie hoog, ik noteer elk duel.",
+] as const;
+
+export const H2H_ACHTER = [
+  "Tegen deze vriend sta je achter. Tijd voor een tactische ommekeer, zeg ik als expert.",
+  "Deze rivaal heeft de overhand. Pijnlijk, maar de cijfers liegen niet.",
+  "In jullie onderlinge duels trek jij aan het kortste eind. Werk aan de winkel.",
+  "Deze vriend zit in je hoofd. Volgende keer eens wél winnen, als tactisch experiment?",
+  "De balans slaat door naar de verkeerde kant. Ik heb er een boos krabbeltje over gemaakt.",
+  "Deze rivaal is jouw angstgegner. Tijd om die vloek eindelijk te doorbreken.",
+] as const;
+
+export const H2H_GELIJK = [
+  "Kop aan kop met deze rivaal. Dit soort duels beslist de tactiek — de mijne dus.",
+  "Perfect in evenwicht, deze onderlinge stand. De volgende match breekt de gelijkstand.",
+  "Jullie ontlopen elkaar geen meter. Precies het soort kraker waar ik voor leef.",
+  "Gelijk op tegen deze vriend. Wie het minst blundert, pakt straks de overhand.",
+  "Een nek-aan-nekrace in de onderlinge balans. Spannend, maar ik wil bloed zien.",
+  "Volledig in balans, jullie twee. Eén goede match en de weegschaal slaat door.",
+] as const;
+
+export interface VriendenFeiten {
+  /** Welke situatie op /vrienden vraagt om Coach Rudy's stem. */
+  situatie: "leeg" | "nieuw" | "h2h";
+  /** Alleen bij "h2h": onderlinge balans als tegenstanders, vanuit de kijker. */
+  balans?: { gewonnen: number; verloren: number; gespeeld: number };
+  seed: string;
+  ctx: RoastCtx;
+}
+
+/** Coach Rudy op de vriendenpagina (#294): lege lijst, een nieuw verzoek of een
+ *  head-to-head-vooruitblik o.b.v. de onderlinge balans. Schild aan → een warme,
+ *  neutrale regel (plagen, geen kwetsen). Deterministisch geseed. */
+export function coachVrienden(f: VriendenFeiten): string {
+  const seed = roastSeed("vrienden", f.seed);
+  if (f.ctx.schild) return kiesUniek(VRIENDEN_NEUTRAAL, seed);
+  if (f.situatie === "leeg") return kiesUniek(VRIENDEN_LEEG, seed);
+  if (f.situatie === "nieuw") return kiesUniek(VRIENDEN_NIEUW, seed);
+  const saldo = f.balans ? f.balans.gewonnen - f.balans.verloren : 0;
+  if (saldo > 0) return kiesUniek(H2H_LEIDT, seed);
+  if (saldo < 0) return kiesUniek(H2H_ACHTER, seed);
+  return kiesUniek(H2H_GELIJK, seed);
+}
