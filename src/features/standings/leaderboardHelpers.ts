@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import type { Profile, RatingPoint } from "@/types";
 import { winRate, type Outcome } from "@/features/rating/results";
 import type { Shift } from "@/features/rating/rankShift";
+import { tierFor } from "@/features/rating/tiers";
 
 /** Rating van een speler zoals die was op (of vóór) een datum, uit de historie
  *  (rating_after van de laatste match ≤ die dag). Null als er niets is. */
@@ -40,6 +41,22 @@ export type Row = {
    *  de rangnummers niet hernummert. Valt terug op de index als hij ontbreekt. */
   rank?: number;
 };
+
+/** De Troon (#528): splitst een gekwalificeerde dictator-#1 af van de ranglijst.
+ *  Een dictator is de bovenste speler wiens rating in de tier `dictator` valt
+ *  (1600+, #527); die krijgt een eigen troon en verdwijnt uit podium en tabel,
+ *  zodat het volk (`rest`) bij #2 begint. Een gewone #1 zonder dictator-tier
+ *  blijft staan (throne = null) en dus gewoon Big Daddy op het podium.
+ *  Verwacht `rows` al op rating gesorteerd (hoog → laag). */
+export function splitDictatorThrone<T extends { rating: number | null }>(
+  rows: T[],
+): { throne: T | null; rest: T[] } {
+  const top = rows[0];
+  if (top && tierFor(top.rating)?.key === "dictator") {
+    return { throne: top, rest: rows.slice(1) };
+  }
+  return { throne: null, rest: rows };
+}
 
 /** Zet de view-transition-naam op de avatar van de aangeklikte rij, zodat die
  *  bij het navigeren naar het profiel doorgroeit naar de grote profielfoto. */

@@ -34,6 +34,9 @@ import { klassementFeiten } from "@/features/coach/klassementFeiten";
 import { coachKlassement, coachKlassementMood } from "@/features/coach/klassementPraat";
 import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
+import { DictatorThrone } from "@/features/standings/components/DictatorThrone";
+import { DEFAULT_DICTATOR } from "@/features/dashboard/dictator";
+import { coachBuiging } from "@/features/coach/roastTone";
 import { TierLegend } from "@/features/rating/components/TierLegend";
 import { THIN_GAMES } from "@/features/groups/groupRating";
 import {
@@ -46,7 +49,11 @@ import {
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { searchDiscoverableProfiles } from "@/features/friends/api";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
-import { ratingAsOf, type Row } from "./leaderboardHelpers";
+import {
+  ratingAsOf,
+  splitDictatorThrone,
+  type Row,
+} from "./leaderboardHelpers";
 import { TierProgressBanner } from "./components/TierProgressBanner";
 import { PiasBanner } from "./components/PiasBanner";
 import { TierDivisions } from "./components/TierDivisions";
@@ -478,12 +485,29 @@ export function Leaderboard() {
   // de nummers niet hernummert. Alleen op de speler-/teamlijst (niet divisies).
   const nq = q.trim().toLowerCase();
   const searchable = tab !== "divisies";
+  // De Troon (#528 + #530): op het spelerklassement (buiten zoeken/laden) staat
+  // altijd een troon bovenaan. Kwalificeert de #1 als dictator (rating 1600+,
+  // #527), dan wordt hij losgekoppeld — van podium én ranglijst — en op de troon
+  // gezet; het volk begint bij #2 en het podium draagt geen Big Daddy-kroon.
+  // Kwalificeert niemand, dan blijft de troon tóch bezet: Kylian Mbappé regeert
+  // bij verstek (#530). Hij zit er "in absentia" boven, dus de echte #1 blijft
+  // gewoon op het podium staan — mét z'n Big Daddy-kroon.
+  const canThrone =
+    tab === "player" && !nq && !loading && !error && displayRows.length > 0;
+  const { throne: throneRow, rest: volkRows } = canThrone
+    ? splitDictatorThrone(displayRows)
+    : { throne: null, rest: displayRows };
   const rankedRows: Row[] = displayRows.map((r, i) => ({ ...r, rank: i + 1 }));
+  // De dictator verdwijnt uit de ranglijst; zijn plek 1 verdwijnt mee zodat het
+  // volk zichtbaar bij #2 begint (de rangnummers zelf blijven staan).
+  const ladderRows = throneRow
+    ? rankedRows.filter((r) => r.key !== throneRow.key)
+    : rankedRows;
   const matchesName = (r: Row) =>
     r.name.toLowerCase().includes(nq) ||
     (r.profile?.username?.toLowerCase().includes(nq) ?? false);
   const visibleRows =
-    nq && searchable ? rankedRows.filter(matchesName) : rankedRows;
+    nq && searchable ? ladderRows.filter(matchesName) : ladderRows;
   // Vindbare spelers die niet in de ranglijst staan (bv. nog geen matches).
   const rankedKeys = new Set(rows.map((r) => r.key));
   const extraProfiles =
@@ -701,12 +725,40 @@ export function Leaderboard() {
         </p>
       )}
 
+      {canThrone && (
+        <>
+          <DictatorThrone
+            variant={throneRow ? "echt" : "waarnemend"}
+            seed={throneRow?.key ?? "kylian-mbappe"}
+            name={throneRow?.name ?? DEFAULT_DICTATOR.name}
+            profile={throneRow?.profile ?? null}
+            rating={throneRow?.rating ?? null}
+            link={throneRow?.link}
+            isMe={throneRow?.isMe}
+            delta={
+              throneRow ? deltaToday(throneRow.history, club.timezone) : null
+            }
+            image={throneRow ? undefined : DEFAULT_DICTATOR.image}
+          />
+          {/* Coach Rudy buigt voor de dictator (#531): kijker-gerichte knieval
+              in de buiging-mood i.p.v. z'n gebruikelijke roast — voor een echte
+              El Padelissimo én voor Mbappé bij verstek. */}
+          <KlassementCommentaar
+            tekst={coachBuiging(throneRow?.key ?? "kylian-mbappe")}
+            mood="buiging"
+          />
+        </>
+      )}
+
       {showPodium && !nq && (
         <Podium
-          entries={displayRows
+          bigDaddy={!throneRow}
+          entries={volkRows
             .filter((r) => r.rating != null)
+            // Met De Troon actief is de dictator al uit `volkRows` gehaald, dus
+            // dit zijn de eerstvolgende drie — het volk begint bij #2.
             .slice(0, 3)
-            .map((r) => ({
+            .map((r, i) => ({
               key: r.key,
               name: r.name,
               profile: r.profile,
@@ -717,6 +769,8 @@ export function Leaderboard() {
               delta: deltaToday(r.history, club.timezone),
               dimmed: r.games > 0 && r.games < THIN_GAMES,
               tier: true,
+              // Echte rang op de medaille zodat het volk zichtbaar bij #2 start.
+              medal: throneRow ? i + 2 : undefined,
               sub: `${r.points} ptn`,
               record: `${r.won}W · ${r.drawn}G · ${r.lost}V`,
             }))}
@@ -819,7 +873,8 @@ export function Leaderboard() {
           checken krijgt die meteen bovenaan te zien. */}
       <KlassementUitleg />
 
-      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && !nq && (
+      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && !nq &&
+        !throneRow?.isMe && (
         <button className="me-chip" onClick={scrollToMe}>
           Jouw positie · #{myRankIdx + 1}
         </button>

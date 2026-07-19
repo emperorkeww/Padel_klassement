@@ -473,6 +473,31 @@ describe("coachStemming", () => {
     const e: FeedEvent = { kind: "friendship", at: "2026-07-01T12:00:00Z", a: "p1", b: "p2" };
     expect(coachStemming(e, () => "gemeen")).toBe("portret");
   });
+
+  it("buigt bij promotie naar El Padelissimo, neutraal bij andere tier-wissels (#531)", () => {
+    const base = {
+      kind: "tier" as const,
+      at: "2026-07-01T12:00:00Z",
+      playerId: "p1",
+      vanLabel: "GOAT",
+      vanEmoji: "🐐",
+      matchId: "m1",
+    };
+    const dictator: FeedEvent = {
+      ...base,
+      naarLabel: "El Padelissimo",
+      naarEmoji: "🫡",
+      richting: "promotie",
+    };
+    const gewoon: FeedEvent = {
+      ...base,
+      naarLabel: "Prof II",
+      naarEmoji: "🎾",
+      richting: "promotie",
+    };
+    expect(coachStemming(dictator, () => "gemeen")).toBe("buiging");
+    expect(coachStemming(gewoon, () => "gemeen")).toBe("portret");
+  });
 });
 
 describe("coachOpmerking — anti-herhaling (#201)", () => {

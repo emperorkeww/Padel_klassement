@@ -108,6 +108,20 @@ describe("<Leaderboard />", () => {
     expect((await screen.findAllByText("Blaaskaak I")).length).toBeGreaterThan(0);
   });
 
+  it("zet Kylian Mbappé als waarnemend dictator op de troon zonder echte dictator (#530)", async () => {
+    const { container } = renderPage();
+    // Fixtures zitten rond 1000 rating — niemand haalt de dictator-tier (1600+),
+    // dus de troon blijft niet leeg maar wordt bij verstek bezet door Mbappé.
+    await screen.findAllByText(/alice anders/i);
+    const troon = container.querySelector(".dictator-throne");
+    expect(troon).not.toBeNull();
+    expect(troon).toHaveClass("dictator-throne--waarnemend");
+    expect(screen.getByText("Kylian Mbappé")).toBeInTheDocument();
+    expect(screen.getByText("Regeert bij verstek")).toBeInTheDocument();
+    // Mbappé regeert in absentia: de echte #1 houdt gewoon z'n Big Daddy-kroon.
+    expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
+  });
+
   it("filtert de ranglijst op naam en toont een lege-staat bij geen match (#282)", async () => {
     renderPage();
     await screen.findAllByText(/carol claes/i);
@@ -273,14 +287,20 @@ describe("<Leaderboard />", () => {
     expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
   });
 
-  it("spreekt op de spelers-tab alleen de kijker aan — geen tweede bubbel over de #1 (#411)", async () => {
-    // Eén Rudy op de pagina: de positie-bubbel over jou. De vroegere
-    // Podium-bubbel over de nummer 1 (#297) bestaat niet meer.
+  it("toont op de spelers-tab de troon-propaganda én Rudy's positie-bubbel (#411 + #530)", async () => {
+    // Met De Troon (#530) staan er twee kijker-gerichte Rudy-regels: de
+    // propaganda op de troon en de generieke positie-bubbel over jou. Beide
+    // spreken de kijker aan — geen derde-persoons "over de #1"-bubbel (#411).
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
-    expect(container.querySelectorAll(".coach-sneer")).toHaveLength(1);
-    const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
-    expect(NIEUW as readonly string[]).toContain(tekst?.textContent);
+    const teksten = Array.from(
+      container.querySelectorAll(".klassement-coach .coach-sneer__text"),
+    ).map((e) => e.textContent);
+    expect(teksten).toHaveLength(2);
+    // Eén ervan is jouw positie-commentaar uit de NIEUW-pool.
+    expect(
+      teksten.some((t) => (NIEUW as readonly string[]).includes(t ?? "")),
+    ).toBe(true);
   });
 
   it("zwijgt over je positie in een seizoensarchief (#411)", async () => {
