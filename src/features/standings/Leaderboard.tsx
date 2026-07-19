@@ -26,6 +26,11 @@ import {
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
+import {
+  magDictatorPortretGenereren,
+  portretVervallen,
+  prewarmDictatorPortret,
+} from "./dictatorPortret";
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getPiasWeeks } from "./piasApi";
@@ -245,6 +250,42 @@ export function Leaderboard() {
   const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
   const rmap = ratings.data ?? {};
   const hmap = histories.data ?? {};
+
+  // AI dictator-portret (#554): pre-warm het eigen portret zodra ik in range kom
+  // om dictator te worden (of het al ben), zodat De Troon meteen een vers portret
+  // toont i.p.v. de gewone avatar. Fire-and-forget en alleen voor mezelf — de
+  // function leidt de userId uit de JWT af en respecteert opt-out/idempotentie.
+  // Een ref houdt het op hooguit één aanroep per bron-foto per sessie. Het
+  // server-side vangnet (pg_net-trigger op dictator_termijnen) dekt de dictator
+  // die de app niet opent.
+  const prewarmedRef = useRef<string | null>(null);
+  useEffect(() => {
+    // Stabiele refs (niet pmap/rmap: die zijn elke render een vers {} zolang de
+    // data laadt).
+    const pm = profilesMap.data;
+    const rm = ratings.data;
+    if (!pm || !rm) return;
+    const me = pm[myId];
+    if (!me || me.dictator_portret === false) return;
+    // De zittende ECHTE dictator komt uit dictator_termijnen (nooit de waarnemend
+    // Mbappé); ben ik het zelf, dan is het verschil 0 en pre-warmt dit m'n eigen
+    // portret als vangnet.
+    const echteDictatorRating = dictator.data
+      ? (rm[dictator.data.profileId]?.rating ?? dictator.data.claimRating)
+      : null;
+    if (
+      !magDictatorPortretGenereren({
+        rating: rm[myId]?.rating ?? null,
+        echteDictatorRating,
+      })
+    )
+      return;
+    if (!portretVervallen(me)) return;
+    const bron = me.avatar_url ?? "__geen_avatar__";
+    if (prewarmedRef.current === bron) return;
+    prewarmedRef.current = bron;
+    void prewarmDictatorPortret();
+  }, [profilesMap.data, ratings.data, dictator.data, myId]);
 
   // Pias van de week voor de gekozen groep (niets bij "Alle groepen"). De
   // commentator-sneer (#183) volgt de roast-intensiteit van die groep en het
@@ -808,7 +849,15 @@ export function Leaderboard() {
             delta={
               throneRow ? deltaToday(throneRow.history, club.timezone) : null
             }
-            image={throneRow ? undefined : (waarnemendPortret ?? undefined)}
+            image={
+              throneRow
+                ? // Echte dictator: z'n AI-portret (#554) als het klaar is en de
+                  // opt-out aan staat; anders undefined → gewone avatar.
+                  pmap[throneRow.key]?.dictator_portret !== false
+                  ? (pmap[throneRow.key]?.dictator_avatar_url ?? undefined)
+                  : undefined
+                : (waarnemendPortret ?? undefined)
+            }
             anthem={
               mbappeRegeert
                 ? {
