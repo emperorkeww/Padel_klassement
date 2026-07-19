@@ -34,6 +34,15 @@ create table public.profiles (
   -- El Padelissimo-tier haalt? De dictator-divisie zelf (#527) blijft altijd
   -- bestaan; dit verbergt enkel de meme-figuur. Default 'true' = bestaand gedrag.
   toon_waarnemend_dictator boolean not null default true,
+  -- AI dictator-portret (#554): opt-out + opslag van het uit de profielfoto
+  -- gegenereerde portret (OpenAI gpt-image-1), getoond op De Troon voor de echte
+  -- dictator. dictator_portret 'false' = nooit naar OpenAI, troon toont de gewone
+  -- avatar. dictator_avatar_url = publieke URL (null = nog niet / vervallen);
+  -- dictator_avatar_bron = de avatar_url waarop het portret is gebaseerd (of de
+  -- sentinel '__geen_avatar__'), voor invalidatie bij een fotowissel.
+  dictator_portret boolean not null default true,
+  dictator_avatar_url text,
+  dictator_avatar_bron text,
   -- Notificatie-voorkeuren (#57): per push-type aan/uit, server-side
   -- gerespecteerd door send-push en match-reminders. Standaard alles aan.
   notify_new_round boolean not null default true,
@@ -112,3 +121,29 @@ $$;
 create trigger on_auth_user_deleted
   after delete on auth.users
   for each row execute function public.handle_deleted_user();
+
+-- Guard op de gegenereerde dictator-portret-kolommen (#554). Nult het portret bij
+-- een fotowissel (invalidatie) en laat enkel de service-role (edge function
+-- generate-dictator-avatar) dictator_avatar_url/-bron schrijven; een gewone
+-- client kan z'n troon-portret zo niet spoofen of de opt-out omzeilen. SECURITY
+-- INVOKER, zodat current_role de echte aanroeper weerspiegelt.
+create function public.profiles_dictator_portret_guard()
+  returns trigger
+  language plpgsql
+  set search_path = ''
+as $$
+begin
+  if new.avatar_url is distinct from old.avatar_url then
+    new.dictator_avatar_url := null;
+    new.dictator_avatar_bron := null;
+  elsif current_role <> 'service_role' then
+    new.dictator_avatar_url := old.dictator_avatar_url;
+    new.dictator_avatar_bron := old.dictator_avatar_bron;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger profiles_dictator_portret_guard
+  before update on public.profiles
+  for each row execute function public.profiles_dictator_portret_guard();

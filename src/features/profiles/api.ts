@@ -75,6 +75,9 @@ export async function updateProfile(
     avatar_url?: string | null;
     /** Cosmetische weergavevoorkeur (#542). */
     toon_waarnemend_dictator?: boolean;
+    /** AI dictator-portret opt-out (#554). De gegenereerde URL/bron-kolommen
+     *  zijn niet client-schrijfbaar (guard-trigger); alleen deze vlag. */
+    dictator_portret?: boolean;
   },
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
