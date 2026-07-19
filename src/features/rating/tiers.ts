@@ -12,13 +12,13 @@
 
 export type TierNaam =
   | "Sletje van de baan"
-  | "Toerist"
-  | "Prutser"
+  | "Stofzuiger"
+  | "Ballenraper"
   | "Bankvuller"
   | "Blaaskaak"
   | "Wannabe"
   | "Glazenwasser"
-  | "Racketconsument"
+  | "Eeuwige belofte"
   | "Forever second"
   | "GOAT"
   | "El Padelissimo";
@@ -71,13 +71,13 @@ export const TIER_BANDEN: ReadonlyArray<{
   max: number | null;
 }> = [
   { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "wordt door de rest van de club gebruikt voor makkelijke gratis winst", min: 500, max: 600 },
-  { naam: "Toerist", key: "karton", emoji: "🌴", flavor: "draagt een zonnebril, doet alsof-ie op vakantie is en beweegt voor geen meter", min: 600, max: 700 },
-  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "heeft de hand-oogcoördinatie van een dronken pinguïn", min: 700, max: 800 },
+  { naam: "Stofzuiger", key: "karton", emoji: "🧹", flavor: "rent blindelings op elke bal af, inclusief de ballen die overduidelijk voor zijn partner bedoeld waren", min: 600, max: 700 },
+  { naam: "Ballenraper", key: "hout", emoji: "🎾", flavor: "besteedt 90% van de tijd aan het bukken en rapen van ballen; slaat ze zelden over het net", min: 700, max: 800 },
   { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "blijft bij voorkeur op de bank zitten om het spelniveau niet te verpesten", min: 800, max: 900 },
   { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "geeft luidkeels tactisch advies dat-ie zelf nog nooit succesvol heeft uitgevoerd", min: 900, max: 1000 },
   { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "koopt een racket van €350 om het chronische gebrek aan talent te compenseren", min: 1000, max: 1100 },
   { naam: "Glazenwasser", key: "platina", emoji: "🪟", flavor: "heeft de glazen achterwand zo vaak geraakt dat hij er inmiddels woont", min: 1100, max: 1200 },
-  { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "gelooft oprecht dat zijn zevende racket dit jaar zijn vreselijke backhand gaat redden", min: 1200, max: 1300 },
+  { naam: "Eeuwige belofte", key: "diamant", emoji: "⏳", flavor: "staat in theorie altijd 5-1 voor in de beslissende set, maar choket gegarandeerd zodra er druk op de ketel staat", min: 1200, max: 1300 },
   { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past", min: 1400, max: 1600 },
   { naam: "El Padelissimo", key: "dictator", emoji: "🫡", flavor: "regeert de club als absolute dictator, weert tegenstanders per direct uit de groepsapp en eist 90% van de baromzet", min: 1600, max: null },
