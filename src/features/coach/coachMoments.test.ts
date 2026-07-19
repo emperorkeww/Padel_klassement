@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   coachBriefing,
   coachMatchQuip,
+  coachTierQuip,
   coachPreMatch,
   OCHTEND_JAGER,
   OCHTEND_KELDER,
@@ -89,6 +90,39 @@ describe("coachMatchQuip", () => {
     expect(coachMatchQuip({ uitkomst: "L", bagel: true, seed: "m1", ctx: schild })).toBe(
       "Match toegevoegd.",
     );
+  });
+});
+
+describe("coachTierQuip", () => {
+  const tier = (over: Partial<Parameters<typeof coachTierQuip>[0]>) =>
+    coachTierQuip({ richting: "promotie", tierLabel: "Prof II", seed: "m1", ctx: roast, ...over });
+
+  it("vervangt %tier% door het divisielabel", () => {
+    const zin = tier({ tierLabel: "Prof II" });
+    expect(zin).toContain("Prof II");
+    expect(zin).not.toContain("%tier%");
+  });
+
+  it("is deterministisch per seed", () => {
+    expect(tier({ seed: "x" })).toBe(tier({ seed: "x" }));
+  });
+
+  it("promotie en degradatie geven een andere toon", () => {
+    const promo = tier({ richting: "promotie", seed: "s" });
+    const degr = tier({ richting: "degradatie", seed: "s" });
+    expect(promo).not.toBe(degr);
+  });
+
+  it("schild dempt degradatie tot de neutrale variant", () => {
+    const zin = tier({ richting: "degradatie", ctx: schild });
+    expect(zin).toMatch(/terug|volgende|weg omhoog|stand van nu/i);
+  });
+
+  it("promotie negeert schild (lof blijft lof)", () => {
+    const zin = tier({ richting: "promotie", ctx: schild });
+    expect(zin).toContain("Prof II");
+    // Promotie is lof: geen kale/degradatie-toon, gewoon een promotie-regel.
+    expect(zin.toLowerCase()).not.toContain("zakt");
   });
 });
 

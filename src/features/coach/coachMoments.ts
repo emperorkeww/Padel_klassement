@@ -3,7 +3,12 @@
 // coachFeed/coachEvening injecteren we de context (RoastCtx) zodat overal het
 // roast-schild + de intensiteit gerespecteerd worden. Geen IO — getest.
 
-import { kiesUniek, roastSeed, type RoastCtx } from "@/features/coach/roastTone";
+import {
+  kiesUniek,
+  roastSeed,
+  type RoastCtx,
+  type RoastIntensiteit,
+} from "@/features/coach/roastTone";
 import type { KlassementFeiten } from "@/features/coach/klassementFeiten";
 
 // ── Dashboard: ochtendbriefing ──────────────────────────────────────────────
@@ -306,6 +311,88 @@ export function coachMatchQuip(f: MatchFeiten): string {
   if (f.uitkomst === "D") return kiesUniek(MATCH_GELIJK, seed);
   if (f.uitkomst === "W") return kiesUniek(f.bagel ? MATCH_BAGEL : MATCH_WINST, seed);
   return kiesUniek(f.bagel ? MATCH_PAK_SLAAG : MATCH_VERLIES, seed);
+}
+
+// ── Divisie-wissel: promotie/degradatie toast (#299) ────────────────────────
+// %tier% wordt door coachTierQuip vervangen door de nieuwe divisie (bv. "Prof II").
+// Promotie = lof: schild blokkeert niet, tempert alleen naar mild (zie coachLof).
+// Degradatie = sneer: schild → de neutrale variant.
+const TIER_PROMOTIE: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Promotie naar %tier%. Netjes geklommen — dat mag genoteerd.",
+    "Welkom in %tier%. Rustig aan verdiend, hou dit niveau vast.",
+    "Je stijgt naar %tier%. Een schouderklopje waard, echt.",
+    "Opgeklommen naar %tier%. Kleine stap voor de bond, mooie stap voor jou.",
+    "%tier% bereikt. Ik zet 'm met een tevreden krabbel in het boekje.",
+  ],
+  gemeen: [
+    "PROMOTIE! %tier% is van jou. Ik roep meteen een persconferentie bijeen.",
+    "Je knalt door naar %tier%! Zie je wel dat mijn tactiek werkte.",
+    "%tier%! Dit ruikt naar een historische, Trumpiaanse opmars. Enorm.",
+    "Gepromoveerd naar %tier%. De ballenjongens juichen, ik juich mee.",
+    "Naar %tier% geklommen! Ik krijg spontaan zin in een ererondje.",
+    "%tier% bereikt! Snel vastleggen voordat de media er lyrisch over worden.",
+  ],
+  radioactief: [
+    "%tier%!!! De grootste promotie in de geschiedenis van deze padelclub. Absoluut gigantisch.",
+    "PROMOTIE naar %tier%! Ik bel Infantino, dit moet in de annalen.",
+    "Je katapulteert naar %tier%! M'n tactische bord trilt van pure trots.",
+    "%tier% GEHAALD! Champagne op de perstribune, dit vieren we tot in de eeuwigheid.",
+    "Opgestegen naar %tier%! Een prestatie van kosmische, radioactieve proporties.",
+  ],
+};
+const TIER_DEGRADATIE: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Je zakt naar %tier%. Gebeurt de besten — al gebeurt het jou opvallend vaak.",
+    "Degradatie naar %tier%. Kop op, van hieruit kan het weer omhoog.",
+    "Terug naar %tier%. Niet getreurd, blijven oefenen. Veel oefenen.",
+    "%tier%, daar zit je weer. Morgen is er weer een klassement.",
+    "Een stapje terug naar %tier%. Zie het als een aanloopje.",
+  ],
+  gemeen: [
+    "Gedegradeerd naar %tier%. Ik noteer 'm, met een diepe zucht.",
+    "Je glijdt af naar %tier%. Lag het aan de wind, de bal of de tactiek? Weer niet.",
+    "Terug naar %tier%. Zelfs de watersproeiers keken beschaamd de andere kant op.",
+    "%tier%, welkom terug. Ik had dit hoofdstuk liever niet geschreven.",
+    "Weggezakt naar %tier%. Tijd voor een strafronde en een tactische heroverweging.",
+    "Afgezakt naar %tier%. Mijn spiekbriefje ligt in scherven op de kleedkamervloer.",
+  ],
+  radioactief: [
+    "Gekelderd naar %tier%! Een vrije val van WK-proporties. Ongezien.",
+    "%tier%?! We vechten dit aan bij Infantino. Dit klassement is corrupt, rigged!",
+    "Afgestort naar %tier%. Ik trek m'n pet diep over m'n ogen van pure gêne.",
+    "Verbannen naar %tier%! Ik overweeg per direct m'n coachlicentie in te leveren.",
+    "%tier%. Een degradatie zo pijnlijk dat ik 'm het liefst uit de database wis.",
+  ],
+};
+const TIER_DEGRADATIE_NEUTRAAL = [
+  "Je zakt naar %tier%. Volgende keer pak je hem terug.",
+  "Degradatie naar %tier% genoteerd. Op naar de weg omhoog.",
+  "Terug naar %tier%. Een nieuwe klim om aan te beginnen.",
+  "%tier% — de stand van nu. De volgende matches bepalen de rest.",
+] as const;
+
+export interface TierFeiten {
+  richting: "promotie" | "degradatie";
+  /** Label van de nieuwe divisie (wissel.naar.label), vult %tier%. */
+  tierLabel: string;
+  seed: string;
+  ctx: RoastCtx;
+}
+
+/** Coach-quip voor de toast bij een divisie-promotie/-degradatie (#299). */
+export function coachTierQuip(f: TierFeiten): string {
+  const seed = roastSeed("tier-toast", f.seed, f.richting);
+  let zin: string;
+  if (f.richting === "promotie") {
+    // Lof: schild blokkeert niet, tempert alleen tot mild.
+    zin = kiesUniek(TIER_PROMOTIE[f.ctx.schild ? "mild" : f.ctx.intensiteit], seed);
+  } else if (f.ctx.schild) {
+    zin = kiesUniek(TIER_DEGRADATIE_NEUTRAAL, seed);
+  } else {
+    zin = kiesUniek(TIER_DEGRADATIE[f.ctx.intensiteit], seed);
+  }
+  return zin.replace("%tier%", f.tierLabel);
 }
 
 // ── Vóór een geplande (toto-)match: hype/waarschuwing ───────────────────────

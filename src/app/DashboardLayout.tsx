@@ -67,7 +67,7 @@ export function DashboardLayout() {
   const me = profile.data ?? null;
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt.
-  useTierAnnouncement(myId);
+  useTierAnnouncement(myId, me?.roast_schild ?? false);
   // Weekmissie-confetti (#414): één app-brede viering op het moment dat een
   // missie behaald raakt — niet bij een latere, aanleidingsloze dashboardview.
   useMissionCelebration(myId);

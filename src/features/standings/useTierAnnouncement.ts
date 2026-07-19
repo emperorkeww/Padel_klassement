@@ -5,6 +5,7 @@ import { useToast } from "@/ui/ToastProvider";
 import { celebrate } from "@/lib/utils/confetti";
 import { winPulse } from "@/lib/utils/haptics";
 import { tierChange } from "@/features/rating/tiers";
+import { coachTierQuip } from "@/features/coach/coachMoments";
 import { getRatingHistory } from "./ratingsApi";
 
 // Promotie/degradatie-aankondiging (#127). Client-side gedetecteerd uit de
@@ -32,8 +33,9 @@ function writeFlag(userId: string, matchId: string) {
 }
 
 /** Meldt de eigen tier-wissel (toast; confetti bij hoofdtier-promotie) zodra
- *  een nieuwe uitslag de rating over een drempel tilt. Eén mount app-breed. */
-export function useTierAnnouncement(myId: string) {
+ *  een nieuwe uitslag de rating over een drempel tilt. Eén mount app-breed.
+ *  `schild` is het eigen roast-schild: aan → een zachtere/neutrale Rudy-toast. */
+export function useTierAnnouncement(myId: string, schild = false) {
   const history = useAsync(
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
     [myId],
@@ -58,16 +60,22 @@ export function useTierAnnouncement(myId: string) {
       prevIdx >= 0 ? points[prevIdx].rating_after : latest.rating_before;
     const wissel = tierChange(before, latest.rating_after);
     if (!wissel) return;
+    // Alleen echte divisiewissels (#299): een sub-niveau-stapje (III→II) blijft
+    // stil. Tiers zijn globaal (geen groep), dus intensiteit valt op de default;
+    // het eigen roast-schild wordt wél gerespecteerd.
+    if (!wissel.hoofdtier) return;
+    const zin = coachTierQuip({
+      richting: wissel.richting,
+      tierLabel: wissel.naar.label,
+      seed: `${myId}-${latest.match_id}`,
+      ctx: { intensiteit: "gemeen", schild },
+    });
     if (wissel.richting === "promotie") {
-      toast.success(`🎉 Gepromoveerd naar ${wissel.naar.label}!`);
-      if (wissel.hoofdtier) {
-        celebrate();
-        winPulse();
-      }
+      toast.success(zin);
+      celebrate();
+      winPulse();
     } else {
-      toast.info(
-        `Je zakt naar ${wissel.naar.label} — volgende match pak je hem terug.`,
-      );
+      toast.info(zin);
     }
-  }, [history.data, myId, toast]);
+  }, [history.data, myId, schild, toast]);
 }
