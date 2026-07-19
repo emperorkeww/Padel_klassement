@@ -7,15 +7,14 @@
 -- is veilig.
 --
 -- Eén keer uitvoeren in de SQL-editor van je GEHOSTE project (vervang
--- <PROJECT-REF>, <CRON-SECRET> én <ANON-KEY>). Zelfde pg_net-aanpak als
--- push_webhooks.sql. Vereist dat de function al gedeployd is MÉT CRON_SECRET.
+-- <PROJECT-REF> én <CRON-SECRET>). Zelfde pg_net-aanpak als push_webhooks.sql.
+-- Vereist dat de function al gedeployd is (`--no-verify-jwt`) MÉT CRON_SECRET.
 --
--- Twee headers, allebei nodig:
---   * Authorization: Bearer <ANON-KEY> — de function draait mét jwt-verificatie
---     (het client-pad heeft de user nodig), dus het platform eist een geldige
---     JWT vóór onze code draait. De publieke anon-key volstaat.
+-- De function draait zonder platform-JWT-verificatie en doet z'n eigen auth, dus
+-- er is geen Authorization-header nodig — enkel het gedeelde geheim:
 --   * x-cron-secret: <CRON-SECRET> — hiermee herkent de function de trusted
 --     server-trigger en genereert hij voor de meegegeven userId (#459-patroon).
+--     Vul dezelfde waarde in als `supabase secrets set CRON_SECRET=…`.
 
 create extension if not exists pg_net;
 
@@ -31,7 +30,6 @@ begin
     body := jsonb_build_object('userId', new.profile_id),
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer <ANON-KEY>',
       'x-cron-secret', '<CRON-SECRET>'
     ),
     timeout_milliseconds := 5000

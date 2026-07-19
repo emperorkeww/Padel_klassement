@@ -7,15 +7,19 @@
 // getoond i.p.v. de gewone avatar.
 //
 // Twee aanroeppaden:
-//   1. Client (De eigenaar pre-warmt z'n eigen portret): supabase.functions
+//   1. Client (de eigenaar pre-warmt z'n eigen portret): supabase.functions
 //      .invoke("generate-dictator-avatar") met de user-JWT. targetUserId = de
 //      ingelogde gebruiker; body.userId wordt genegeerd.
 //   2. Trusted server-trigger (vangnet zodra iemand zittend dictator wordt): de
 //      dictator_termijnen-trigger roept via pg_net aan met de header
 //      x-cron-secret + body.userId. Dan mag voor een willekeurige userId.
 //
-// Deploy MET JWT-verificatie (de standaard) — pad 1 heeft de user nodig, en de
-// service-role-aanroep van pad 2 passeert de JWT-check sowieso.
+// Deploy ZONDER JWT-verificatie (`--no-verify-jwt`), net als send-push/club-page:
+// de function doet z'n eigen auth. Pad 1 verifieert de meegestuurde user-JWT zelf
+// via auth.getUser(); pad 2 gaat op het gedeelde x-cron-secret. Fail-closed —
+// zonder geldige user of (juist) cron-secret volgt 401. Dit vermijdt ook de
+// platform-JWT-gate, die met de nieuwe sb_publishable_/sb_secret_-keys (geen JWT)
+// geen bruikbare Authorization-header voor pg_net oplevert.
 //
 // Vereiste secrets: OPENAI_API_KEY (zonder key doet de function niets), CRON_SECRET
 // (voor pad 2). SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY worden

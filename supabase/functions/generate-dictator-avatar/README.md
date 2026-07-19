@@ -46,14 +46,22 @@ Verkeerd `x-cron-secret` → `401` (geen stille terugval naar pad 1).
    graceful, de troon toont zolang de gewone avatar. `CRON_SECRET` is dezelfde
    secret als de andere trusted-trigger-functies (#459).
 
-3. **Deployen** (MET jwt-verificatie, de standaard — pad 1 heeft de user nodig):
+3. **Deployen** (ZONDER jwt-verificatie — de function doet z'n eigen auth, net als
+   send-push/club-page):
 
    ```sh
-   supabase functions deploy generate-dictator-avatar
+   supabase functions deploy generate-dictator-avatar --no-verify-jwt
    ```
 
-4. **Server-trigger** op `dictator_termijnen` (PR3) — die stuurt via `pg_net` het
-   `x-cron-secret` + de nieuwe dictator-`userId` mee.
+   Het client-pad verifieert de meegestuurde user-JWT zelf via `auth.getUser()`;
+   het server-pad gaat op `x-cron-secret`. Fail-closed. `--no-verify-jwt` vermijdt
+   bovendien de platform-JWT-gate, die met de nieuwe `sb_publishable_`-keys (geen
+   JWT) geen bruikbare `Authorization`-header voor `pg_net` oplevert.
+
+4. **Server-trigger** op `dictator_termijnen` — voer
+   `supabase/snippets/dictator_portret_webhook.sql` uit in de SQL-editor (vul
+   `<PROJECT-REF>` + `<CRON-SECRET>` in). Die stuurt via `pg_net` het
+   `x-cron-secret` + de nieuwe dictator-`userId` mee. Draai dit ná stap 3.
 
 ## Lokaal draaien
 
