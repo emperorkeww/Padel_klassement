@@ -15,6 +15,13 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import {
+  JOUW_BEURT,
+  JOUW_BEURT_NEUTRAAL,
+  kiesUit,
+  type RoastIntensiteit,
+  roastSeed,
+} from "../_shared/roast.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -124,11 +131,30 @@ Deno.serve(async (req) => {
       hour: "2-digit",
       minute: "2-digit",
     });
-    sent += await pushTo(players, {
-      title: "Je match begint bijna 🎾",
-      body: `Om ${time} sta je op de baan. Succes!`,
-      url: m.group_id ? `/groepen/${m.group_id}` : `/matches/${m.id}`,
-    });
+    const url = m.group_id ? `/groepen/${m.group_id}` : `/matches/${m.id}`;
+    // "Jouw beurt" in Rudy's stem (#302): per speler een eigen tekst, zodat het
+    // schild + de intensiteit gerespecteerd worden. Schild aan (of profiel weg)
+    // → een neutrale aanmoediging. Deterministisch geseed op (match, speler).
+    const { data: profielen } = await admin
+      .from("profiles")
+      .select("id, roast_schild, roast_intensiteit")
+      .in("id", players);
+    const profielVan = new Map((profielen ?? []).map((p) => [p.id, p]));
+    for (const pid of players) {
+      const p = profielVan.get(pid);
+      const seed = roastSeed(m.id, pid);
+      const quip = !p || p.roast_schild
+        ? kiesUit(JOUW_BEURT_NEUTRAAL, seed)
+        : kiesUit(
+          JOUW_BEURT[(p.roast_intensiteit ?? "gemeen") as RoastIntensiteit],
+          seed,
+        );
+      sent += await pushTo([pid], {
+        title: "🎙️ Coach Rudy: je bent zo aan de beurt",
+        body: `Om ${time} sta je op de baan. ${quip}`,
+        url,
+      });
+    }
     await admin.from("match_reminders").insert({ match_id: m.id });
     reminded += 1;
   }
