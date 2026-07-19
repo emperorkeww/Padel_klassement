@@ -47,7 +47,18 @@ describe("bijnaam", () => {
       match({ winner_team_id: "tA", score_a: 6, score_b: 0 }),
     );
     const naam = bijnaam(ms, teams, "p1");
-    expect(["De Beul van Baan 1 🔪", "De Bagelbakker 🥯", "De Sloopkogel 💥", "De Glazen Wand 🛡️"]).toContain(naam);
+    expect([
+      "De Beul van Baan 1 🔪",
+      "De Bagelbakker 🥯",
+      "De Sloopkogel 💥",
+      "De Glazen Wand 🛡️",
+      "De Ballenjongen-Schrik 💥",
+      "De Spiekschrift-Fraudeur 📝",
+      "De Onverslaanbare 🏆",
+      "De Tactische Stoomwals 🚂",
+      "Het Stabiele Genie 🧠",
+      "De Big League Smasher 🚀",
+    ]).toContain(naam);
     expect(naam).not.toBe("Sponsor van de Tegenstander 💸");
     expect(naam).not.toBe("De Groene Banaan 🍌");
   });
