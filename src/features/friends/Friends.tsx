@@ -18,10 +18,20 @@ import {
   type FriendSuggestion,
 } from "./api";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
+import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
+import { headToHead } from "@/features/profiles/headToHead";
+import { coachVrienden } from "@/features/coach/coachMoments";
+import { CoachBubble } from "@/features/coach/components/CoachBubble";
+import type { RoastCtx, CoachMood } from "@/features/coach/roastTone";
 import { Avatar } from "@/ui/Avatar";
 import { AccountNav } from "@/ui/AccountNav";
 import { EmptyState } from "@/ui/EmptyState";
 import type { Profile } from "@/types";
+import "./Friends.css";
+
+// Onder dit aantal onderlinge duels is de balans nog toeval — dezelfde drempel
+// als MIN_DUELS in groups/rivalry.ts en MIN_SAMEN in profiles/headToHead.ts.
+const MIN_DUELS = 3;
 
 export function Friends() {
   const { user } = useAuth();
@@ -30,6 +40,13 @@ export function Friends() {
   const friendships = useAsync(getMyFriendships, []);
   const profiles = useAsync(getProfilesMap, []);
   const suggestions = useAsync(getFriendSuggestions, []);
+  // Voor Coach Rudy's head-to-head-sneer (#294): mijn matches + teams zodat we
+  // de onderlinge balans tegen elke vriend kunnen afleiden (pure headToHead).
+  const myMatches = useAsync(
+    () => (myId ? getPlayerMatches(myId, 200) : Promise.resolve([])),
+    [myId],
+  );
+  const teams = useAsync(getTeamsMap, []);
   useRealtime("friendships", () => {
     friendships.reload();
     suggestions.reload();
@@ -46,6 +63,17 @@ export function Friends() {
 
   const pmap = profiles.data ?? {};
   const { accepted, incoming, outgoing } = categorize(friendships.data ?? [], myId);
+
+  // /vrienden is een persoonlijk oppervlak (niet groep-gescoped), dus Coach Rudy
+  // volgt — net als het dashboard — mijn eigen roast-intensiteit en -schild.
+  const myIntensiteit = pmap[myId]?.roast_intensiteit ?? "gemeen";
+  const mySchild = pmap[myId]?.roast_schild ?? false;
+  const myCtx: RoastCtx = { intensiteit: myIntensiteit, schild: mySchild };
+
+  // Rudy verwelkomt de nieuwe rivaal in de bevestigings-toast (per doelwit
+  // geseed, zodat elke naam een eigen regel krijgt).
+  const nieuweRivaalQuip = (addresseeId: string) =>
+    coachVrienden({ situatie: "nieuw", seed: addresseeId, ctx: myCtx });
 
   // ids die al een relatie hebben (om dubbele verzoeken te voorkomen in de zoekresultaten)
   const relatedIds = new Set(
@@ -173,7 +201,7 @@ export function Friends() {
                     onClick={() =>
                       act(
                         () => sendFriendRequest(myId, p.id),
-                        "Verzoek verstuurd.",
+                        nieuweRivaalQuip(p.id),
                       )
                     }
                   >
@@ -263,26 +291,58 @@ export function Friends() {
           )}
         </h2>
         {!friendships.loading && !friendships.error && accepted.length === 0 && (
-          <EmptyState icon="👋" title="Alleen op de baan?">
-            Padel speel je niet alleen. Zoek hierboven je vaste partners of tegenstanders op en stuur ze een uitnodiging om samen matches te loggen!
-          </EmptyState>
+          <>
+            <EmptyState icon="👋" title="Alleen op de baan?">
+              Padel speel je niet alleen. Zoek hierboven je vaste partners of tegenstanders op en stuur ze een uitnodiging om samen matches te loggen!
+            </EmptyState>
+            <div className="friends-coach">
+              <CoachBubble mood={mySchild ? "portret" : myIntensiteit} size={26}>
+                <span className="coach-sneer__text">
+                  {coachVrienden({ situatie: "leeg", seed: myId, ctx: myCtx })}
+                </span>
+              </CoachBubble>
+            </div>
+          </>
         )}
         <div className="person-grid">
           {friendships.loading && <Skeleton rows={3} />}
-          {accepted.map((f) => (
-            <div key={f.id} className="person-row">
-              <PersonCell
-                profile={pmap[otherId(f, myId)]}
-                to={`/spelers/${otherId(f, myId)}`}
-              />
-              <button
-                className="btn btn--danger btn--sm"
-                onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
-              >
-                Verwijderen
-              </button>
-            </div>
-          ))}
+          {accepted.map((f) => {
+            const fid = otherId(f, myId);
+            // Onderlinge balans tegen deze vriend (alleen tonen bij genoeg duels).
+            const balans =
+              myMatches.data && teams.data
+                ? headToHead(myMatches.data, teams.data, myId, fid).alsTegenstanders
+                : null;
+            const toonH2H = !!balans && balans.gespeeld >= MIN_DUELS;
+            // Bij de rivaal telt diéns schild; de toon blijft mijn intensiteit.
+            const fSchild = pmap[fid]?.roast_schild ?? false;
+            const h2hMood: CoachMood = fSchild ? "portret" : myIntensiteit;
+            return (
+              <div key={f.id} className="friend-cell">
+                <div className="person-row">
+                  <PersonCell profile={pmap[fid]} to={`/spelers/${fid}`} />
+                  <button
+                    className="btn btn--danger btn--sm"
+                    onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
+                  >
+                    Verwijderen
+                  </button>
+                </div>
+                {toonH2H && (
+                  <CoachBubble mood={h2hMood} size={24}>
+                    <span className="coach-sneer__text">
+                      {coachVrienden({
+                        situatie: "h2h",
+                        balans: balans!,
+                        seed: `${myId}:${fid}`,
+                        ctx: { intensiteit: myIntensiteit, schild: fSchild },
+                      })}
+                    </span>
+                  </CoachBubble>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -334,7 +394,7 @@ export function Friends() {
                 <button
                   className="btn btn--sm btn--primary suggest-card__cta"
                   onClick={() =>
-                    act(() => sendFriendRequest(myId, s.id), "Verzoek verstuurd.")
+                    act(() => sendFriendRequest(myId, s.id), nieuweRivaalQuip(s.id))
                   }
                 >
                   Verzoek sturen

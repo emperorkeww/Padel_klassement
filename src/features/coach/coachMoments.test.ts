@@ -155,3 +155,67 @@ describe("coachEmptyState", () => {
     }
   });
 });
+
+import {
+  coachVrienden,
+  VRIENDEN_LEEG,
+  VRIENDEN_NIEUW,
+  VRIENDEN_NEUTRAAL,
+  H2H_LEIDT,
+  H2H_ACHTER,
+  H2H_GELIJK,
+} from "@/features/coach/coachMoments";
+
+describe("coachVrienden", () => {
+  const seeds = ["a", "b", "c", "d", "e"];
+  const inPool = (pool: readonly string[], s: string) => pool.includes(s);
+
+  it("is deterministisch per seed en situatie", () => {
+    for (const seed of seeds) {
+      const f = { situatie: "leeg" as const, seed, ctx: roast };
+      expect(coachVrienden(f)).toBe(coachVrienden(f));
+    }
+  });
+
+  it("lege lijst → een regel uit de leeg-pool (incl. de afscheidsreceptie-quip)", () => {
+    for (const seed of seeds) {
+      expect(inPool(VRIENDEN_LEEG, coachVrienden({ situatie: "leeg", seed, ctx: roast }))).toBe(true);
+    }
+    expect(VRIENDEN_LEEG).toContain("Nul vrienden. Net als op mijn afscheidsreceptie.");
+  });
+
+  it("nieuw verzoek → een regel uit de nieuw-pool", () => {
+    for (const seed of seeds) {
+      expect(inPool(VRIENDEN_NIEUW, coachVrienden({ situatie: "nieuw", seed, ctx: roast }))).toBe(true);
+    }
+  });
+
+  it("head-to-head kiest op teken van winst − verlies", () => {
+    const h2h = (gewonnen: number, verloren: number) =>
+      coachVrienden({
+        situatie: "h2h",
+        balans: { gewonnen, verloren, gespeeld: gewonnen + verloren },
+        seed: "x",
+        ctx: roast,
+      });
+    expect(inPool(H2H_LEIDT, h2h(5, 2))).toBe(true);
+    expect(inPool(H2H_ACHTER, h2h(2, 5))).toBe(true);
+    expect(inPool(H2H_GELIJK, h2h(3, 3))).toBe(true);
+    // Ontbrekende balans telt als gelijkstand.
+    expect(inPool(H2H_GELIJK, coachVrienden({ situatie: "h2h", seed: "x", ctx: roast }))).toBe(true);
+  });
+
+  it("met roast-schild altijd een neutrale, niet-spottende regel", () => {
+    for (const seed of seeds) {
+      for (const situatie of ["leeg", "nieuw", "h2h"] as const) {
+        const line = coachVrienden({
+          situatie,
+          balans: { gewonnen: 1, verloren: 4, gespeeld: 5 },
+          seed,
+          ctx: schild,
+        });
+        expect(inPool(VRIENDEN_NEUTRAAL, line)).toBe(true);
+      }
+    }
+  });
+});

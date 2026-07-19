@@ -83,6 +83,64 @@
   text-wrap: balance;
 }
 
+/* Coach Rudy als presentator (#295): een bubbel onder de kaart-copy. */
+.wrapped-coach {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--coach-line);
+  border-radius: var(--radius-md);
+  background: var(--coach-soft);
+  text-align: left;
+}
+.wrapped-coach__face {
+  flex: 0 0 auto;
+}
+.wrapped-coach__text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--coach-ink);
+  text-wrap: pretty;
+}
+
+/* De afsluitende "Rudy's Eindoordeel"-kaart: warm accent, verdict centraal. */
+.wrapped-card--eindoordeel .wrapped-card__body {
+  border-color: var(--coach-line);
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--coach-soft), transparent 70%),
+    var(--surface);
+}
+.wrapped-card--eindoordeel .wrapped-card__kicker {
+  color: var(--coach);
+}
+.wrapped-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+.wrapped-verdict__face {
+  margin-bottom: var(--sp-1);
+}
+.wrapped-verdict__kop {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--coach);
+}
+.wrapped-verdict__regel {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
 /* Navigatie: vorige/volgende + dots. */
 .wrapped-nav {
   display: flex;

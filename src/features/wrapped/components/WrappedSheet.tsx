@@ -6,10 +6,13 @@ import { sharePng } from "@/lib/utils/shareImage";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getCompletedMatchesBetween } from "@/features/matches/api";
-import type { Match, Profile, RatingPoint, Team } from "@/types";
+import type { Match, Profile, RatingPoint, RoastIntensiteit, Team } from "@/types";
 import { deriveWrapped } from "@/features/wrapped/wrapped";
 import type { WrappedCard } from "@/features/wrapped/wrapped";
 import { drawWrappedCard, posterLayout } from "@/features/wrapped/wrappedPoster";
+import { coachEindoordeel, coachWrappedRegel } from "@/features/wrapped/coachWrapped";
+import { CoachAvatar, type CoachMood } from "@/features/coach/components/CoachAvatar";
+import { roastCtx, roastSeed } from "@/features/coach/roastTone";
 import "@/features/wrapped/wrapped.css";
 
 // Padel Wrapped (#115): swipebaar jaaroverzicht in een sheet. De kaarten
@@ -27,6 +30,7 @@ export function WrappedSheet({
   teams,
   profiles,
   ratingHistory,
+  intensiteit = "gemeen",
   onClose,
 }: {
   jaar: number;
@@ -36,6 +40,8 @@ export function WrappedSheet({
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   ratingHistory?: RatingPoint[];
+  /** Roast-toon van de eigen groep; schild komt uit het eigen profiel (#295). */
+  intensiteit?: RoastIntensiteit;
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -67,7 +73,26 @@ export function WrappedSheet({
       }),
     [jaar, matches, teams, profiles, playerId, ratingHistory, clubMatches.data],
   );
-  const cards = wrapped?.cards ?? [];
+  const cards = useMemo(() => wrapped?.cards ?? [], [wrapped]);
+
+  // Coach Rudy's regel + mood per kaart (#295). Eén gedeelde `gebruikt`-set over
+  // het deck voorkomt dat dezelfde quip twee keer opduikt; schild komt uit het
+  // eigen profiel. Index-gelijk aan `cards`.
+  const coachPerKaart = useMemo<
+    { mood: CoachMood; kop: string | null; regels: string[]; tekst: string | null }[]
+  >(() => {
+    const ctx = roastCtx({ roast_intensiteit: intensiteit }, profiles[playerId]);
+    const gebruikt = new Set<string>();
+    return cards.map((card) => {
+      const seed = roastSeed("wrapped", playerId, String(jaar), card.kind);
+      if (card.kind === "eindoordeel") {
+        const eo = coachEindoordeel(card.stats, ctx, seed);
+        return { mood: eo.mood, kop: eo.kop, regels: eo.regels, tekst: null };
+      }
+      const r = coachWrappedRegel(card, ctx, seed, gebruikt);
+      return { mood: r.mood, kop: null, regels: [r.tekst], tekst: r.tekst };
+    });
+  }, [cards, profiles, playerId, jaar, intensiteit]);
 
   const naar = (i: number) => {
     const track = trackRef.current;
@@ -86,10 +111,10 @@ export function WrappedSheet({
     setActief(Math.round(track.scrollLeft / track.clientWidth));
   };
 
-  async function deel(card: WrappedCard) {
+  async function deel(card: WrappedCard, regels: string[]) {
     setBusyKind(card.kind);
     try {
-      const outcome = await sharePng((ctx) => drawWrappedCard(ctx, card, naam, jaar), {
+      const outcome = await sharePng((ctx) => drawWrappedCard(ctx, card, naam, jaar, { regels }), {
         width: POSTER_W,
         height: POSTER_H,
         filename: `vamos-wrapped-${jaar}-${card.kind}.png`,
@@ -119,10 +144,15 @@ export function WrappedSheet({
       }}
     >
         <div className="wrapped-track" ref={trackRef} onScroll={onScroll}>
-          {cards.map((card) => {
+          {cards.map((card, i) => {
             const l = posterLayout(card, naam, jaar);
+            const coach = coachPerKaart[i];
+            const isEind = card.kind === "eindoordeel";
             return (
-              <article key={card.kind} className="wrapped-card">
+              <article
+                key={card.kind}
+                className={`wrapped-card${isEind ? " wrapped-card--eindoordeel" : ""}`}
+              >
                 <div className="wrapped-card__body">
                   <p className="wrapped-card__kicker">{l.kicker}</p>
                   <p
@@ -135,10 +165,34 @@ export function WrappedSheet({
                       {regel}
                     </p>
                   ))}
+                  {isEind ? (
+                    <div className="wrapped-verdict">
+                      <CoachAvatar
+                        size={72}
+                        mood={coach.mood}
+                        className="wrapped-verdict__face"
+                      />
+                      {coach.kop && <p className="wrapped-verdict__kop">{coach.kop}</p>}
+                      {coach.regels.map((r) => (
+                        <p key={r} className="wrapped-verdict__regel">
+                          {r}
+                        </p>
+                      ))}
+                    </div>
+                  ) : coach.tekst ? (
+                    <div className="wrapped-coach">
+                      <CoachAvatar
+                        size={40}
+                        mood={coach.mood}
+                        className="wrapped-coach__face"
+                      />
+                      <p className="wrapped-coach__text">{coach.tekst}</p>
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   className="btn btn--sm wrapped-card__share"
-                  onClick={() => deel(card)}
+                  onClick={() => deel(card, coach.regels)}
                   disabled={busyKind !== null}
                 >
                   {busyKind === card.kind ? "Bezig…" : "↗ Deel"}

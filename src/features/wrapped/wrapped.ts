@@ -9,6 +9,7 @@ import type { Match, Profile, RatingPoint, Team } from "@/types";
 import { matchDate } from "@/features/dashboard/missions";
 import {
   biggestWin,
+  inTeam,
   longestLossStreak,
   longestStreak,
   outcomeFor,
@@ -49,6 +50,25 @@ export interface RivaalStat {
   gespeeld: number;
 }
 
+/**
+ * Kale jaarcijfers waar Coach Rudy zijn eindoordeel op baseert (#295). Puur
+ * afgeleid uit de jaarmatches; `ratingDelta` is null zonder rating-historie.
+ */
+export interface WrappedJaarStats {
+  gespeeld: number;
+  gewonnen: number;
+  verloren: number;
+  winrate: number | null;
+  langsteWinst: number;
+  langsteVerlies: number;
+  /** 6-0's uitgedeeld. */
+  bagelsVoor: number;
+  /** 0-6's geïncasseerd. */
+  bagelsTegen: number;
+  /** Rating-eind minus -start binnen het jaar, of null. */
+  ratingDelta: number | null;
+}
+
 export type WrappedCard =
   | { kind: "cover"; jaar: number; naam: string; gespeeld: number; kort: boolean }
   | { kind: "volume"; gespeeld: number; gewonnen: number; winrate: number | null }
@@ -67,12 +87,15 @@ export type WrappedCard =
     }
   | { kind: "rating"; start: number; piek: number; eind: number }
   | { kind: "badge"; badgeId: string; naam: string; emoji: string; aantalSpelers: number }
-  | { kind: "outro"; jaar: number; kort: boolean };
+  | { kind: "outro"; jaar: number; kort: boolean }
+  | { kind: "eindoordeel"; stats: WrappedJaarStats };
 
 export interface WrappedData {
   jaar: number;
   variant: "vol" | "kort";
   cards: WrappedCard[];
+  /** De cijfers achter Coach Rudy's eindoordeel-kaart (#295). */
+  jaarStats: WrappedJaarStats;
 }
 
 /** Onder dit aantal matches krijgt de speler de charmante korte variant. */
@@ -119,6 +142,30 @@ function besteComeback(
     }
   }
   return beste >= 2 ? { naVerliezen: beste } : null;
+}
+
+/**
+ * Telt de 6-0's: uitgedeeld (tegenstander 0 games) versus geïncasseerd (jouw
+ * team 0 games). Volgt het bagel-patroon van feedLogic (min-score === 0).
+ */
+function bagelTelling(
+  jaarMatches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): { voor: number; tegen: number } {
+  let voor = 0;
+  let tegen = 0;
+  for (const m of jaarMatches) {
+    if (m.score_a == null || m.score_b == null) continue;
+    const lo = Math.min(m.score_a, m.score_b);
+    const hi = Math.max(m.score_a, m.score_b);
+    if (lo !== 0 || hi === 0) continue;
+    const inA = inTeam(teams[m.team_a_id], playerId);
+    const mijnScore = inA ? m.score_a : m.score_b;
+    if (mijnScore === 0) tegen += 1;
+    else voor += 1;
+  }
+  return { voor, tegen };
 }
 
 /** Drukste maand en topdag (meeste matches; bij gelijkspel wint de vroegste). */
@@ -283,11 +330,13 @@ export function deriveWrapped(opts: {
     const d = new Date(p.played_at);
     return !Number.isNaN(d.getTime()) && d.getFullYear() === jaar;
   });
+  let ratingDelta: number | null = null;
   if (punten.length >= 2) {
     const start = punten[0].rating_before;
     const eind = punten[punten.length - 1].rating_after;
     const piek = Math.max(start, ...punten.map((p) => p.rating_after));
     cards.push({ kind: "rating", start, piek, eind });
+    ratingDelta = eind - start;
   }
 
   if (opts.clubMatches) {
@@ -301,18 +350,37 @@ export function deriveWrapped(opts: {
 
   cards.push({ kind: "outro", jaar, kort: false });
 
+  // De cijfers achter Coach Rudy's eindoordeel; de eindoordeel-kaart zelf is de
+  // finale (na de outro) en telt bewust níét mee voor de variant-drempel.
+  const bagels = bagelTelling(jaarMatches, teams, playerId);
+  const jaarStats: WrappedJaarStats = {
+    gespeeld,
+    gewonnen,
+    verloren: jaarMatches.filter((m) => outcomeFor(m, teams, playerId) === "L").length,
+    winrate: winRate(gewonnen, gespeeld),
+    langsteWinst: winst,
+    langsteVerlies: verlies,
+    bagelsVoor: bagels.voor,
+    bagelsTegen: bagels.tegen,
+    ratingDelta,
+  };
+
   // Korte variant: te weinig matches óf te weinig verhaal voor een volle
-  // reeks → drie charmante kaarten in plaats van lege statistieken.
+  // reeks → drie charmante kaarten in plaats van lege statistieken. Rudy's
+  // eindoordeel sluit ook de korte variant af.
   if (gespeeld < KORT_DREMPEL || cards.length < MIN_VOL_KAARTEN) {
     return {
       jaar,
       variant: "kort",
+      jaarStats,
       cards: [
         { kind: "cover", jaar, naam, gespeeld, kort: true },
         { kind: "volume", gespeeld, gewonnen, winrate: winRate(gewonnen, gespeeld) },
         { kind: "outro", jaar, kort: true },
+        { kind: "eindoordeel", stats: jaarStats },
       ],
     };
   }
-  return { jaar, variant: "vol", cards };
+  cards.push({ kind: "eindoordeel", stats: jaarStats });
+  return { jaar, variant: "vol", cards, jaarStats };
 }
