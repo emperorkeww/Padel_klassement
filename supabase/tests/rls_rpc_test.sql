@@ -19,7 +19,9 @@ values
   ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000003','authenticated','authenticated','t3@test.nl','x',now(),'{}','{"username":"t3"}',now(),now(),'','','',''),
   ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000004','authenticated','authenticated','t4@test.nl','x',now(),'{}','{"username":"t4"}',now(),now(),'','','',''),
   ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000005','authenticated','authenticated','t5@test.nl','x',now(),'{}','{"username":"t5"}',now(),now(),'','','',''),
-  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000006','authenticated','authenticated','t6@test.nl','x',now(),'{}','{"username":"t6"}',now(),now(),'','','','');
+  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000006','authenticated','authenticated','t6@test.nl','x',now(),'{}','{"username":"t6"}',now(),now(),'','','',''),
+  -- t7: niet-vindbaar profiel voor discoverable-test (issue #564)
+  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000007','authenticated','authenticated','t7@test.nl','x',now(),'{}','{"username":"t7"}',now(),now(),'','','','');
 
 -- t1 is bevriend met t2, t3, t4 én t6 (geaccepteerd); t5 niet. t6 zit NIET in de
 -- groep — bewust, om de netwerk-regel (#326) te onderscheiden van de oude
@@ -29,7 +31,9 @@ values
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000002','accepted'),
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000003','accepted'),
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000004','accepted'),
-  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000006','accepted');
+  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000006','accepted'),
+  -- t7 is bevriend met t1 voor discoverable-test (issue #564)
+  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000007','accepted');
 
 -- Groep met t1 als eigenaar (trigger voegt t1 toe) + t2,t3,t4 als leden.
 insert into public.groups (id, name, created_by)
@@ -39,6 +43,9 @@ values
   ('a0000000-0000-0000-0000-0000000000f0','a0000000-0000-0000-0000-000000000002','member'),
   ('a0000000-0000-0000-0000-0000000000f0','a0000000-0000-0000-0000-000000000003','member'),
   ('a0000000-0000-0000-0000-0000000000f0','a0000000-0000-0000-0000-000000000004','member');
+
+-- t7 is niet vindbaar (discoverable=false) voor issue #564
+update public.profiles set discoverable = false where id = 'a0000000-0000-0000-0000-000000000007';
 
 ------------------------------------------------------------------------
 -- are_friends
@@ -223,6 +230,14 @@ select is(
   (select count(*)::int from public.get_friend_suggestions(12)
      where id = 'a0000000-0000-0000-0000-000000000001'),
   0, 'get_friend_suggestions: bestaande vriend t1 wordt niet voorgesteld'
+);
+
+-- t7 heeft discoverable=false en mag NIET in de suggesties verschijnen,
+-- ook al is t7 bevriend met t1 (gemeenschappelijke vriend met t2).
+select is(
+  (select count(*)::int from public.get_friend_suggestions(12)
+     where id = 'a0000000-0000-0000-0000-000000000007'),
+  0, 'get_friend_suggestions: discoverable=false-profiel (t7) wordt niet voorgesteld (issue #564)'
 );
 
 reset role;
