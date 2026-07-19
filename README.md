@@ -92,6 +92,7 @@ src/
     availability/           # Playtomic baanbeschikbaarheid & posters
     coach/                  # Coach Rudy's roast-algoritmes en visualisaties (Bubble, Sneer, Avatar)
     dashboard/              # Startpagina na inloggen
+    dictator/               # Dictator-troon assets: portretten, volksliederen en imperium-illustraties
     feed/                   # Activiteitenfeed & Coach Rudy integratie
     friends/                # Vriendenbeheer, verzoeken & vriendsuggesties
     groups/                 # Groepsbeheer, Americano/Mexicano & Spelen-pagina (dagoverzicht, matches- en spelen-tab)
@@ -150,6 +151,7 @@ scripts/
 | Tabel | Omschrijving |
 | :--- | :--- |
 | [`player_ratings`](supabase/schemas/tables/08_ratings.sql) | Actuele Elo-rating per speler (startwaarde: 1000). |
+| `dictator_termijnen` | Historie en actieve ambtstermijnen van dictators (El Padelissimo) ten behoeve van machtsbehoud. |
 
 ### Plannen & Aanwezigheid
 
@@ -159,6 +161,7 @@ scripts/
 | [`slot_availability`](supabase/schemas/tables/12_slot_availability.sql) | Gecachte baanbeschikbaarheid en tarieven vanuit Playtomic. |
 | [`play_polls`](supabase/schemas/tables/13_play_polls.sql) / `_options` / `_votes` | Tabellen voor het aanmaken van, en stemmen op speeldag-polls. |
 | [`match_reminders`](supabase/schemas/tables/12_match_reminders.sql) | Registratie van verzonden herinneringen ter voorkoming van dubbele pushberichten. |
+| [`court_availability_snapshots`](supabase/schemas/tables/18_court_availability_snapshots.sql) | Gecachte momentopnames van baanbeschikbaarheid voor het genereren van posters. |
 
 ### Notificaties & Extra's
 
@@ -169,6 +172,7 @@ scripts/
 | [`pias_of_week`](supabase/schemas/tables/15_pias_of_week.sql) | De gekozen *"Pias van de week"* (minst presterende speler) per groep. |
 | [`zwarte_piet`](supabase/schemas/tables/16_zwarte_piet.sql) | Het actieve *"Zwarte Piet"* schande-token binnen een groep. |
 | [`match_smoesjes`](supabase/schemas/tables/17_match_smoesjes.sql) | Uitvluchten en excuses ingediend door spelers na verliespartijen. |
+| [`vendettas`](supabase/schemas/tables/19_vendettas.sql) | Onderlinge rivaliteit (vendetta's) tussen spelers op basis van head-to-head resultaten. |
 
 > [!NOTE]
 > **Beveiliging:** Alle tabellen zijn beveiligd met Row Level Security (RLS). Gegevens zijn doorgaans publiek leesbaar, maar schrijfacties zijn strikt beperkt tot geautoriseerde spelers, groepsleden of de eigenaar van het object.
