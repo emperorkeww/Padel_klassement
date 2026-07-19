@@ -45,6 +45,7 @@ import { ProfileOverview } from "@/features/profiles/components/ProfileOverview"
 import { ProfileStats } from "@/features/profiles/components/ProfileStats";
 import { ProfileBadges } from "@/features/profiles/components/ProfileBadges";
 import { ProfileMatches } from "@/features/profiles/components/ProfileMatches";
+import { ComparisonSheet } from "@/features/profiles/components/ComparisonSheet";
 import type { ProfileData, ProfileTab, H2HRow } from "@/features/profiles/components/types";
 import type { Match } from "@/types";
 import "./PlayerProfile.css";
@@ -126,6 +127,9 @@ export function PlayerProfile() {
   // ook op touch, waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  // Speler Duel & Vergelijker (#469): sheet die deze speler tegen de ingelogde
+  // gebruiker (of elke andere) legt.
+  const [compareOpen, setCompareOpen] = useState(false);
   // Optimistische kopie van de uitgelichte badges: null = nog niets gewijzigd,
   // dan geldt de waarde uit het geladen profiel.
   const [featuredOverride, setFeaturedOverride] = useState<string[] | null>(null);
@@ -391,6 +395,15 @@ export function PlayerProfile() {
               ))}
             </select>
           )}
+          {user && !isMe && (
+            <button
+              className="btn btn--sm"
+              aria-haspopup="dialog"
+              onClick={() => setCompareOpen(true)}
+            >
+              ⚔️ Vergelijk met mij
+            </button>
+          )}
           {heeftWrapped && (
             <button
               className="btn btn--sm"
@@ -417,6 +430,15 @@ export function PlayerProfile() {
           profiles={pmap}
           ratingHistory={rhist}
           onClose={() => setWrappedOpen(false)}
+        />
+      )}
+
+      {compareOpen && user && (
+        <ComparisonSheet
+          open
+          defaultLeftId={user.id}
+          defaultRightId={id}
+          onClose={() => setCompareOpen(false)}
         />
       )}
 
