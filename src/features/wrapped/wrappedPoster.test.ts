@@ -1,9 +1,21 @@
 import { describe, it, expect } from "vitest";
 import { posterLayout } from "./wrappedPoster";
-import type { WrappedCard } from "./wrapped";
+import type { WrappedCard, WrappedJaarStats } from "./wrapped";
 
 const JAAR = 2025;
 const layout = (card: WrappedCard) => posterLayout(card, "Alice Anders", JAAR);
+
+const stats = (winrate: number | null): WrappedJaarStats => ({
+  gespeeld: 10,
+  gewonnen: 5,
+  verloren: 5,
+  winrate,
+  langsteWinst: 2,
+  langsteVerlies: 2,
+  bagelsVoor: 0,
+  bagelsTegen: 0,
+  ratingDelta: null,
+});
 
 describe("posterLayout", () => {
   it("cover: naam als hero, korte variant met charmante copy", () => {
@@ -81,5 +93,13 @@ describe("posterLayout", () => {
       "Een korte maar krachtige eerste set.",
       "2026 wordt jouw jaar",
     ]);
+  });
+
+  it("eindoordeel: Rudy-frame met een cijfer-emoji op winrate; body komt van de coach", () => {
+    const goed = layout({ kind: "eindoordeel", stats: stats(70) });
+    expect(goed).toMatchObject({ kicker: "🎙️ Rudy's Eindoordeel", hero: "🏆", sub: [] });
+    expect(layout({ kind: "eindoordeel", stats: stats(30) }).hero).toBe("📉");
+    expect(layout({ kind: "eindoordeel", stats: stats(50) }).hero).toBe("📋");
+    expect(layout({ kind: "eindoordeel", stats: stats(null) }).hero).toBe("📋");
   });
 });

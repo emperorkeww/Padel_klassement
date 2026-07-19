@@ -100,7 +100,7 @@ describe("deriveWrapped — varianten", () => {
     expect(derive([op("2025-06-01T10:00:00", { status: "scheduled", winner_team_id: null })])).toBeNull();
   });
 
-  it(`kiest de korte variant onder ${KORT_DREMPEL} matches, met exact 3 kaarten`, () => {
+  it(`kiest de korte variant onder ${KORT_DREMPEL} matches, met 4 kaarten incl. eindoordeel`, () => {
     const w = derive([
       op("2025-03-01T10:00:00"),
       op("2025-03-08T10:00:00", { winner_team_id: "tB" }),
@@ -108,11 +108,21 @@ describe("deriveWrapped — varianten", () => {
       op("2025-05-01T10:00:00"),
     ]);
     expect(w?.variant).toBe("kort");
-    expect(w?.cards.map((c) => c.kind)).toEqual(["cover", "volume", "outro"]);
+    expect(w?.cards.map((c) => c.kind)).toEqual([
+      "cover",
+      "volume",
+      "outro",
+      "eindoordeel",
+    ]);
     const cover = kaart(w!.cards, "cover");
     expect(cover?.kort).toBe(true);
     expect(cover?.naam).toBe("Speler 1");
     expect(kaart(w!.cards, "volume")).toMatchObject({ gespeeld: 4, gewonnen: 3, winrate: 75 });
+    expect(kaart(w!.cards, "eindoordeel")?.stats).toMatchObject({
+      gespeeld: 4,
+      gewonnen: 3,
+      winrate: 75,
+    });
   });
 
   it("bouwt een volle variant met minstens 6 kaarten en de jaarstatistieken", () => {
@@ -135,7 +145,9 @@ describe("deriveWrapped — varianten", () => {
     expect(w?.variant).toBe("vol");
     expect(w!.cards.length).toBeGreaterThanOrEqual(6);
     expect(w!.cards[0].kind).toBe("cover");
-    expect(w!.cards[w!.cards.length - 1].kind).toBe("outro");
+    // Rudy's eindoordeel is de finale; de outro staat er direct vóór.
+    expect(w!.cards[w!.cards.length - 1].kind).toBe("eindoordeel");
+    expect(w!.cards[w!.cards.length - 2].kind).toBe("outro");
 
     expect(kaart(w!.cards, "volume")).toMatchObject({ gespeeld: 6, gewonnen: 4, winrate: 67 });
     expect(kaart(w!.cards, "kalender")?.maand).toMatchObject({ label: "juni", aantal: 4 });
@@ -153,6 +165,29 @@ describe("deriveWrapped — varianten", () => {
     });
     expect(kaart(w!.cards, "rating")).toMatchObject({ start: 1000, piek: 1040, eind: 1025 });
     expect(kaart(w!.cards, "badge")).toBeDefined();
+    expect(w!.jaarStats).toMatchObject({
+      gespeeld: 6,
+      gewonnen: 4,
+      verloren: 2,
+      winrate: 67,
+      langsteWinst: 4,
+      langsteVerlies: 2,
+      bagelsVoor: 0,
+      bagelsTegen: 0,
+      ratingDelta: 25,
+    });
+  });
+
+  it("telt bagels voor (6-0 uitgedeeld) en tegen (0-6 geslikt) in jaarStats", () => {
+    const w = derive([
+      op("2025-02-01T10:00:00", { score_a: 6, score_b: 0 }), // p1 (tA) wint 6-0
+      op("2025-02-08T10:00:00", { winner_team_id: "tB", score_a: 0, score_b: 6 }), // p1 slikt 0-6
+      op("2025-03-01T10:00:00", { score_a: 6, score_b: 3 }), // geen bagel
+      op("2025-03-08T10:00:00"),
+      op("2025-03-15T10:00:00"),
+    ]);
+    expect(w!.jaarStats.bagelsVoor).toBe(1);
+    expect(w!.jaarStats.bagelsTegen).toBe(1);
   });
 });
 
