@@ -7,6 +7,7 @@ import { MatchListSkeleton } from "@/ui/Skeleton";
 import { winRate } from "@/features/rating/results";
 import { displayName } from "@/features/profiles/api";
 import { HighlightTile } from "@/features/profiles/components/HighlightTile";
+import { regeerduurZin } from "@/features/dashboard/dictator";
 import type { ProfileData } from "@/features/profiles/components/types";
 
 // Aantal recente matches in de peek op Overzicht (de volle lijst zit onder de
@@ -37,6 +38,8 @@ export function ProfileOverview({
     best,
     tierVoortgang,
     nextBadge,
+    isDictator,
+    regeerduur,
     favoriet,
     balans,
     vsGespeeld,
@@ -61,7 +64,12 @@ export function ProfileOverview({
           primary
           badge={
             myRating != null ? (
-              <TierBadge rating={myRating} dimmed={thinRating} size="sm" />
+              <TierBadge
+                rating={myRating}
+                dimmed={thinRating}
+                size="sm"
+                capDictator={!isDictator}
+              />
             ) : undefined
           }
         />
@@ -74,6 +82,24 @@ export function ProfileOverview({
           <span className="stat__label">Vorm</span>
         </div>
       </div>
+
+      {/* Regeerduur-erepalmpje (#545): wie ooit op De Troon zat draagt dat
+          blijvend op zijn profiel — een ereteken voor de zittende dictator, een
+          schandpaal-herinnering voor de afgezette. */}
+      {regeerduur && (
+        <p
+          className={`troon-erepalm${regeerduur.zittend ? " troon-erepalm--zittend" : ""}`}
+        >
+          <span className="troon-erepalm__emoji" aria-hidden="true">
+            🫡
+          </span>
+          {regeerduurZin(
+            regeerduur.totaalMs,
+            regeerduur.termijnen,
+            regeerduur.zittend,
+          )}
+        </p>
+      )}
 
       {isMe ? (
         <ProfileHighlights

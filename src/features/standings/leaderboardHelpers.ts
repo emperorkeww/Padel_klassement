@@ -2,7 +2,6 @@ import type { MouseEvent } from "react";
 import type { Profile, RatingPoint } from "@/types";
 import { winRate, type Outcome } from "@/features/rating/results";
 import type { Shift } from "@/features/rating/rankShift";
-import { tierFor } from "@/features/rating/tiers";
 
 /** Rating van een speler zoals die was op (of vóór) een datum, uit de historie
  *  (rating_after van de laatste match ≤ die dag). Null als er niets is. */
@@ -42,20 +41,22 @@ export type Row = {
   rank?: number;
 };
 
-/** De Troon (#528): splitst een gekwalificeerde dictator-#1 af van de ranglijst.
- *  Een dictator is de bovenste speler wiens rating in de tier `dictator` valt
- *  (1600+, #527); die krijgt een eigen troon en verdwijnt uit podium en tabel,
- *  zodat het volk (`rest`) bij #2 begint. Een gewone #1 zonder dictator-tier
- *  blijft staan (throne = null) en dus gewoon Big Daddy op het podium.
- *  Verwacht `rows` al op rating gesorteerd (hoog → laag). */
-export function splitDictatorThrone<T extends { rating: number | null }>(
+/** De Troon (#528 + machtsbehoud #545): tilt de zittende dictator uit de
+ *  ranglijst. Wie de troon houdt is server-side bepaald (`dictator_termijnen`,
+ *  een chronologische replay met machtsbehoud), niet meer de toevallige #1 met
+ *  1600+ uit de rating-snapshot. We trekken dus de rij met `key === dictatorKey`
+ *  eruit; die krijgt een eigen troon en verdwijnt uit podium en tabel, zodat het
+ *  volk (`rest`) bij #2 begint. Is de troon vacant (`dictatorKey` null) of staat
+ *  de dictator niet in deze (gefilterde) lijst, dan blijft alles staan
+ *  (throne = null) en valt de UI terug op de waarnemend dictator (#530). */
+export function splitDictatorThrone<T extends { key: string }>(
   rows: T[],
+  dictatorKey: string | null,
 ): { throne: T | null; rest: T[] } {
-  const top = rows[0];
-  if (top && tierFor(top.rating)?.key === "dictator") {
-    return { throne: top, rest: rows.slice(1) };
-  }
-  return { throne: null, rest: rows };
+  if (!dictatorKey) return { throne: null, rest: rows };
+  const idx = rows.findIndex((r) => r.key === dictatorKey);
+  if (idx < 0) return { throne: null, rest: rows };
+  return { throne: rows[idx], rest: rows.filter((_, i) => i !== idx) };
 }
 
 /** Zet de view-transition-naam op de avatar van de aangeklikte rij, zodat die

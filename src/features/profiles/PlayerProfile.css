@@ -871,3 +871,28 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Regeerduur-erepalmpje (#545): troon-tijd blijft op het profiel staan. Goud
+   voor de zittende dictator, ingetogen grijs voor een afgezette. */
+.troon-erepalm {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.troon-erepalm--zittend {
+  border-color: color-mix(in srgb, var(--dictator-gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--dictator-gold) 12%, var(--surface-2));
+  color: color-mix(in srgb, var(--dictator-gold) 70%, var(--ink));
+}
+.troon-erepalm__emoji {
+  font-size: 1.1rem;
+  line-height: 1;
+}

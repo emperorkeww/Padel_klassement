@@ -10,6 +10,10 @@ import {
   getRatingHistory,
   getAllRatingHistories,
 } from "@/features/standings/ratingsApi";
+import {
+  getHuidigeDictator,
+  getRegeerduur,
+} from "@/features/standings/dictatorApi";
 import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { useClub } from "@/features/availability/club";
@@ -81,6 +85,11 @@ export function PlayerProfile() {
   const profiles = useAsync(getProfilesMap, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(() => getRatingHistory(id), [id]);
+  // De Troon met machtsbehoud (#545): zit deze speler nú op de troon, en hoe
+  // lang heeft-ie in totaal geheerst? Voedt de tier-badge (El Padelissimo alleen
+  // voor de troonhouder) en het regeerduur-erepalmpje.
+  const dictator = useAsync(getHuidigeDictator, []);
+  const regeerduur = useAsync(() => getRegeerduur(id), [id]);
   // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
   const allHistories = useAsync(getAllRatingHistories, []);
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
@@ -340,6 +349,8 @@ export function PlayerProfile() {
     partner,
     tierVoortgang: tierProgress(myRating),
     nextBadge,
+    isDictator: dictator.data?.profileId === id,
+    regeerduur: regeerduur.data ?? null,
     hasRating,
     hasRank,
     rhist,

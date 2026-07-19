@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "@/components/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
+import { formatDate } from "@/lib/utils/format";
 import {
   DICTATOR_INSIGNE,
   DEFAULT_DICTATOR_LABEL,
@@ -40,6 +41,9 @@ export interface DictatorThroneProps {
     onToggleMute: () => void;
     onStart: () => void;
   };
+  /** Begin van de lopende ambtstermijn (ISO) — voedt "regeert sinds …" (#545).
+   *  Alleen voor een echte dictator; null bij de waarnemend variant. */
+  sinds?: string | null;
 }
 
 export function DictatorThrone({
@@ -53,6 +57,7 @@ export function DictatorThrone({
   delta,
   image,
   anthem,
+  sinds,
 }: DictatorThroneProps) {
   // Waarnemend (#530): Mbappé is geen clublid — geen rating-hoofdgetal, geen
   // ambtstermijn en géén link naar een spelerprofiel; wel een eigen label.
@@ -81,7 +86,14 @@ export function DictatorThrone({
               {DEFAULT_DICTATOR_LABEL}
             </span>
           ) : (
-            <TierBadge rating={rating} size="sm" />
+            <>
+              <TierBadge rating={rating} size="sm" />
+              {sinds && (
+                <span className="dictator-throne__sinds">
+                  regeert sinds {formatDate(sinds)}
+                </span>
+              )}
+            </>
           )}
         </span>
       </span>

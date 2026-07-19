@@ -115,6 +115,59 @@ export type Database = {
         }
         Relationships: []
       }
+      dictator_termijnen: {
+        Row: {
+          begon_op: string
+          claim_rating: number
+          eindigde_op: string | null
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          begon_op: string
+          claim_rating: number
+          eindigde_op?: string | null
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          begon_op?: string
+          claim_rating?: number
+          eindigde_op?: string | null
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dictator_termijnen_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "dictator_termijnen_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "dictator_termijnen_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "dictator_termijnen_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -1834,6 +1887,7 @@ export type Database = {
         Args: { p_match: string; p_team: string }
         Returns: number
       }
+      recompute_dictator_termijnen: { Args: never; Returns: undefined }
       recompute_pias: { Args: never; Returns: undefined }
       recompute_rank_state: { Args: never; Returns: undefined }
       recompute_ratings: { Args: never; Returns: undefined }
