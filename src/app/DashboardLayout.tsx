@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
+import { useStreakAnnouncement } from "@/features/standings/useStreakAnnouncement";
 import { useMissionCelebration } from "@/features/dashboard/useMissionCelebration";
 import { useOutboxFlush } from "@/features/matches/useOutbox";
 import { Avatar } from "@/ui/Avatar";
@@ -68,6 +69,9 @@ export function DashboardLayout() {
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt.
   useTierAnnouncement(myId, me?.roast_schild ?? false);
+  // Streak-mijlpaal (#300): één app-brede Rudy-toast zodra een winst-/verlies-
+  // reeks precies 3, 5 of 10 raakt — jubel bij winst, sneer bij verlies.
+  useStreakAnnouncement(myId, me?.roast_schild ?? false);
   // Weekmissie-confetti (#414): één app-brede viering op het moment dat een
   // missie behaald raakt — niet bij een latere, aanleidingsloze dashboardview.
   useMissionCelebration(myId);
