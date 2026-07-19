@@ -51,7 +51,7 @@ export function DictatorThrone({
   const frame = (
     <span className="dictator-throne__frame">
       <span className="dictator-throne__insig">
-        {waarnemend ? "🐐 Waarnemend" : `🫡 ${DICTATOR_INSIGNE}`}
+        {waarnemend ? "🐐 Generalissimo" : `🫡 ${DICTATOR_INSIGNE}`}
       </span>
       <span className="dictator-throne__portrait">
         {image ? (
@@ -83,7 +83,7 @@ export function DictatorThrone({
       className={`dictator-throne${waarnemend ? " dictator-throne--waarnemend" : ""}`}
       aria-label={
         waarnemend
-          ? `De troon — ${name}, waarnemend dictator`
+          ? `De troon — ${name}, Madrid-Dictator`
           : `De troon — ${name}, El Padelissimo`
       }
     >

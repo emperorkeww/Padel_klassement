@@ -69,7 +69,7 @@ describe("<DictatorThrone /> — waarnemend (#530)", () => {
   it("toont een 'regeert bij verstek'-label i.p.v. een ambtstermijn/tierbadge", () => {
     const { container } = renderWaarnemend();
     // Exacte match: het chip-label (niet de langere propaganda-zin).
-    expect(screen.getByText("Sportief Directeur bij verstek")).toBeInTheDocument();
+    expect(screen.getByText("Madrid-Dictator")).toBeInTheDocument();
     expect(container.querySelector(".tier-badge")).toBeNull();
     // Geen rating-hoofdgetal voor een waarnemend dictator.
     expect(container.querySelector(".dictator-throne__rate")).toBeNull();

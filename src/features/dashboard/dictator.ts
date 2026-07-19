@@ -57,8 +57,8 @@ export const DEFAULT_DICTATOR = {
 } as const;
 
 /** Waarnemend-label i.p.v. een ambtstermijn — het is geen echt clublid. */
-export const DEFAULT_DICTATOR_LABEL = "Sportief Directeur bij verstek";
+export const DEFAULT_DICTATOR_LABEL = "Madrid-Dictator";
 
 /** Korte slogan op de troon voor de waarnemend dictator (los van de echte roast). */
 export const DEFAULT_DICTATOR_PROPAGANDA =
-  "regeert bij verstek en veto't de kantine-kebab";
+  "regeert vanuit Madrid en verbiedt de kantine-kebab";
