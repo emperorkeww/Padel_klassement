@@ -63,7 +63,7 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
             {Math.round(pias.winChance * 100)}%) onderuit.
           </>
         ) : (
-          "🤡 Elke pias zweert dat-ie GOAT is — de rating liegt niet."
+          "🤡 Elke pias waant zich de sportief directeur van de club — de rating liegt niet."
         )}
       </p>
       {pias && <CoachSneer ctx={pias.ctx} seed={pias.seed} size={26} />}

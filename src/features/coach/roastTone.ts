@@ -406,10 +406,10 @@ export function coachLof(
  *  dictator zelf. Los van de roast-intensiteiten; geldt enkel bij de troon. */
 export const BUIGING: readonly string[] = [
   "Ik? Roasten? Niet vandaag. Voor de dictator buig ik — en jij ook. 🙇🫡",
-  "Neem me niet kwalijk, Generaal. Ik hou m'n grote mond. Volk, op de knieën. 🙇",
-  "Zelfs de grootste muil van de club zwijgt nu. Buigen jij, saluut geven. 🫡",
-  "Geen sneer vandaag, enkel ontzag. De troon is bezet en wij zijn maar het volk. 🫡",
-  "Sorry Generaal, ik zei niks — helemaal niks. Jij daar, dieper buigen. 🙇🫡",
+  "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en schrap de kebabs van de menukaart. 🙇",
+  "Geen sneer vandaag. Als de sportief directeur eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
+  "Ik zwijg. Ik wil geen brief van de advocaten van de dictator op m'n mat krijgen. Volk, op de knieën! 🙇",
+  "Puntensponsoring en transfer-veto's... tegen de Generaal zeg ik geen woord. Buigen, jij daar! 🫡🙇",
 ] as const;
 
 /** Kruiperige buig-regel voor de troon; deterministisch per seed (speler-key /

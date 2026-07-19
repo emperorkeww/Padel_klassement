@@ -384,6 +384,8 @@ const TIER_PROMOTIE_DICTATOR = [
   "Machtsovername voltooid: El Padelissimo. Je bent geen speler meer maar de sportief directeur — de kooi is nu een dictatuur en jij regeert. 🫡",
   "El Padelissimo bereikt! Ik roep het uit tot staatsfeestdag. De vlaggen gaan uit, de kebabs met jouw beeltenis gaan eruit. 🫡",
   "De troon is bezet: El Padelissimo. Van GOAT naar Generaal — wie tegen je speelt, pakt beter meteen de koffers. 🫡",
+  "El Padelissimo! Net als Kylian bepaal jij vanaf nu de transfertargets en wie er überhaupt de club binnenkomt. 🫡",
+  "EL PADELISSIMO! De ultieme dictator. Je hebt de volledige controle en veto't elke wissel langs de lijn. 🫡",
 ] as const;
 const TIER_DEGRADATIE: Record<RoastIntensiteit, readonly string[]> = {
   mild: [

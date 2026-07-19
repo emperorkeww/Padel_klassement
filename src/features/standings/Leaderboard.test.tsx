@@ -117,7 +117,7 @@ describe("<Leaderboard />", () => {
     expect(troon).not.toBeNull();
     expect(troon).toHaveClass("dictator-throne--waarnemend");
     expect(screen.getByText("Kylian Mbappé")).toBeInTheDocument();
-    expect(screen.getByText("Regeert bij verstek")).toBeInTheDocument();
+    expect(screen.getByText("Sportief Directeur bij verstek")).toBeInTheDocument();
     // Mbappé regeert in absentia: de echte #1 houdt gewoon z'n Big Daddy-kroon.
     expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
   });

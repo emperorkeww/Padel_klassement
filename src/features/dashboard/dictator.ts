@@ -23,9 +23,11 @@ const PROPAGANDA = [
   "bepaalt wie er speelt en wie z'n koffers pakt",
   "het volk speelt hooguit om plek twee",
   "onaantastbaar, onbetwist, ondraaglijk",
-  "de baan buigt naar z'n hand of gaat op slot",
-  "z'n woord is vanaf nu de huisregel",
-  "verbiedt kebabs met z'n beeltenis in de kantine",
+  "de kooi is nu een dictatuur en hij regeert",
+  "eist de rol van sportief directeur en speler-voorzitter op",
+  "veto't elke wissel en ontslaat de kantinebeheerder",
+  "weert tegenstanders per direct uit de groepsapp",
+  "verbiedt kebabs met z'n beeltenis op het menu",
 ] as const;
 
 // Stabiele, kleine string-hash (djb2-variant) — zelfde idee als bigDaddy.ts,
@@ -55,8 +57,8 @@ export const DEFAULT_DICTATOR = {
 } as const;
 
 /** Waarnemend-label i.p.v. een ambtstermijn — het is geen echt clublid. */
-export const DEFAULT_DICTATOR_LABEL = "Regeert bij verstek";
+export const DEFAULT_DICTATOR_LABEL = "Sportief Directeur bij verstek";
 
 /** Korte slogan op de troon voor de waarnemend dictator (los van de echte roast). */
 export const DEFAULT_DICTATOR_PROPAGANDA =
-  "de waarnemend despoot van de baan";
+  "regeert bij verstek en veto't de kantine-kebab";
