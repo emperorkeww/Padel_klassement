@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
@@ -10,13 +10,17 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { GroupStandTab } from "./GroupStandTab";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import type { ZwartePietHolder } from "../zwartePietApi";
 import type {
   Group,
   GroupMember,
+  Match,
   PlayerRating,
   PlayerStanding,
   Profile,
   RatingPoint,
+  Team,
 } from "@/types";
 import type { PredictionStanding } from "@/features/matches/predictions";
 
@@ -88,13 +92,20 @@ const group: Group = {
   created_at: NOW,
 };
 
-function renderTab() {
+function renderTab(
+  overrides: {
+    completedMatches?: Match[];
+    teams?: Record<string, Team>;
+    zwartePiet?: ZwartePietHolder | null;
+  } = {},
+) {
   return render(
     <MemoryRouter>
+      <ToastProvider>
       <GroupStandTab
         matches={[]}
-        completedMatches={[]}
-        teams={{}}
+        completedMatches={overrides.completedMatches ?? []}
+        teams={overrides.teams ?? {}}
         profiles={profiles}
         ratings={ratings}
         histories={histories}
@@ -108,8 +119,9 @@ function renderTab() {
         shownPredictionStandings={predictions}
         group={group}
         piasRatings={new Map()}
-        zwartePiet={null}
+        zwartePiet={overrides.zwartePiet ?? null}
       />
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -143,6 +155,67 @@ describe("<GroupStandTab /> tabellen in .table-scroll (#358)", () => {
     renderTab();
     fireEvent.click(screen.getByRole("button", { name: "Toto" }));
     expectTablesWrapped();
+  });
+});
+
+// #523: 🃏 Zwarte Piet-drager en 🤡 Pias als emoji naast de naam in de stand.
+describe("<GroupStandTab /> schande-tokens naast de naam (#523)", () => {
+  const holder = (holderId: string): ZwartePietHolder => ({
+    groupId: "g1",
+    holderId,
+    fromId: null,
+    reden: "bagel",
+    ernst: 6,
+    detail: "kreeg een pandoering",
+    matchId: "m1",
+    since: "2026-07-01",
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("toont geen tekentje zonder Zwarte Piet of Pias", () => {
+    renderTab();
+    expect(screen.queryByTitle("Draagt de Zwarte Piet")).toBeNull();
+    expect(screen.queryByTitle("Pias van de maand")).toBeNull();
+  });
+
+  it("zet 🃏 naast de naam van de Zwarte Piet-drager (p4, in de tabel)", () => {
+    renderTab({ zwartePiet: holder("p4") });
+    const mark = screen.getByTitle("Draagt de Zwarte Piet");
+    expect(mark).toHaveTextContent("🃏");
+    // Hoort bij Speler 4 — niet bij een willekeurige andere rij.
+    expect(mark.closest(".cell-player")).toHaveTextContent("Speler 4");
+  });
+
+  it("zet 🤡 naast de naam van de Pias van de maand", () => {
+    // monthRange() leunt op new Date(); prik de klok op juli 2026 en laat
+    // team A (p4/p5) een bagel slikken → p4 is de pias (tie-break op laagste id).
+    vi.setSystemTime(new Date("2026-07-15T12:00:00Z"));
+    const teams: Record<string, Team> = {
+      tA: { id: "tA", name: null, player1_id: "p4", player2_id: "p5", created_at: "" },
+      tB: { id: "tB", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },
+    };
+    const bagel: Match = {
+      id: "m1",
+      team_a_id: "tA",
+      team_b_id: "tB",
+      status: "completed",
+      winner_team_id: "tB",
+      played_at: "2026-07-10T12:00:00Z",
+      created_by: null,
+      created_at: "2026-07-10T12:00:00Z",
+      group_id: "g1",
+      round_number: null,
+      score_a: 0,
+      score_b: 6,
+      format: "2v2",
+    };
+    renderTab({ completedMatches: [bagel], teams });
+    const mark = screen.getByTitle("Pias van de maand");
+    expect(mark).toHaveTextContent("🤡");
+    expect(mark.closest(".cell-player")).toHaveTextContent("Speler 4");
   });
 });
 

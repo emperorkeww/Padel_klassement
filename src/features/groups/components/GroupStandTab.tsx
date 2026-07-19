@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Sparkline } from "@/features/rating/components/Sparkline";
 import { Podium } from "@/features/standings/components/Podium";
 import { deltaToday } from "@/features/standings/ratingDelta";
@@ -8,7 +8,8 @@ import { Avatar } from "@/ui/Avatar";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
 import { displayName } from "@/features/profiles/api";
 import { groupRatingStandings, playedInGroup } from "../groupRating";
-import type { MatchRatings } from "../maandpias";
+import { bepaalPias, type MatchRatings } from "../maandpias";
+import { monthRange } from "@/features/dashboard/missions";
 import type { ZwartePietHolder } from "../zwartePietApi";
 import { RivalryCard } from "./RivalryCard";
 import { VendettaCard } from "./VendettaCard";
@@ -74,6 +75,21 @@ export function GroupStandTab({
   );
   const club = useClub();
 
+  // De Pias van de lopende maand (#167) — zelfde client-side afleiding als de
+  // PiasCard, zodat 🤡 naast de naam en de kaart hetzelfde slachtoffer aanwijzen.
+  const pias = useMemo(
+    () => bepaalPias(completedMatches, teams, monthRange(new Date()), piasRatings),
+    [completedMatches, teams, piasRatings],
+  );
+
+  // Schande-tokens naast de naam (#523): enkel de emoji, betekenis via `title`.
+  const marksFor = (playerId: string) => (
+    <StandMarks
+      piet={zwartePiet?.holderId === playerId}
+      pias={pias?.playerId === playerId}
+    />
+  );
+
   return (
     <>
       {/* Klassementtabel eerst; de roast/rivaliteit-kaarten staan eronder
@@ -129,6 +145,7 @@ export function GroupStandTab({
                     entries={podium.map((r) => ({
                       key: r.playerId,
                       name: displayName(profiles[r.playerId]),
+                      markers: marksFor(r.playerId),
                       profile: profiles[r.playerId] ?? null,
                       link: `/spelers/${r.playerId}`,
                       isMe: r.playerId === myId,
@@ -167,6 +184,7 @@ export function GroupStandTab({
                                     </span>
                                     <Avatar profile={profiles[r.playerId]} size={24} />
                                     {displayName(profiles[r.playerId])}
+                                    {marksFor(r.playerId)}
                                   </span>
                                 </td>
                                 <td className="num">
@@ -269,6 +287,7 @@ export function GroupStandTab({
             entries={shownStandings.slice(0, 3).map((p) => ({
               key: p.player_id,
               name: displayName(p),
+              markers: marksFor(p.player_id),
               profile: profiles[p.player_id] ?? p,
               link: `/spelers/${p.player_id}`,
               isMe: p.player_id === myId,
@@ -304,6 +323,7 @@ export function GroupStandTab({
                         <span className={`rank rank--${i + 4}`}>{i + 4}</span>
                         <Avatar profile={profiles[p.player_id] ?? p} size={24} />
                         {displayName(p)}
+                        {marksFor(p.player_id)}
                       </span>
                     </td>
                     <td className="num">{p.played}</td>
@@ -339,6 +359,7 @@ export function GroupStandTab({
                 entries={shownPredictionStandings.slice(0, 3).map((p) => ({
                   key: p.player_id,
                   name: displayName(p),
+                  markers: marksFor(p.player_id),
                   profile: profiles[p.player_id] ?? p,
                   link: `/spelers/${p.player_id}`,
                   isMe: p.player_id === myId,
@@ -369,6 +390,7 @@ export function GroupStandTab({
                             <span className={`rank rank--${i + 4}`}>{i + 4}</span>
                             <Avatar profile={profiles[p.player_id] ?? p} size={24} />
                             {displayName(p)}
+                            {marksFor(p.player_id)}
                           </span>
                         </td>
                         <td className="num">{p.predicted}</td>
@@ -408,6 +430,26 @@ export function GroupStandTab({
       />
       {zwartePiet && (
         <ZwartePietCard piet={zwartePiet} group={group} profiles={profiles} />
+      )}
+    </>
+  );
+}
+
+/** 🃏 Zwarte Piet-drager en/of 🤡 Pias naast een naam (#523). Enkel de emoji;
+ *  de betekenis zit in het `title`, de emoji zelf is `aria-hidden`. */
+function StandMarks({ piet, pias }: { piet: boolean; pias: boolean }) {
+  if (!piet && !pias) return null;
+  return (
+    <>
+      {piet && (
+        <span className="stand-mark" title="Draagt de Zwarte Piet" aria-hidden="true">
+          🃏
+        </span>
+      )}
+      {pias && (
+        <span className="stand-mark" title="Pias van de maand" aria-hidden="true">
+          🤡
+        </span>
       )}
     </>
   );
