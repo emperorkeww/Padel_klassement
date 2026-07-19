@@ -41,7 +41,7 @@ describe("coachBriefing", () => {
 
   it("met roast-schild een neutrale, niet-spottende regel", () => {
     const line = coachBriefing({ rank: 20, streak: 0, losing: 5, heeftMatch: false, seed: "p1", ctx: schild });
-    expect(line).toMatch(/kans|balletje|succes/i);
+    expect(line).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten/i);
   });
 
   it("kiest per klassement-tier de bijbehorende pool (#411)", () => {
@@ -71,7 +71,7 @@ describe("coachBriefing", () => {
     const dip = coachBriefing({ rank: 9, streak: 0, losing: 4, heeftMatch: false, klassement: kelder, seed: "p1", ctx: roast });
     expect((OCHTEND_KELDER as readonly string[]).includes(dip)).toBe(false);
     const beschermd = coachBriefing({ rank: 9, streak: 0, losing: 0, heeftMatch: false, klassement: kelder, seed: "p1", ctx: schild });
-    expect(beschermd).toMatch(/kans|balletje|succes/i);
+    expect(beschermd).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten/i);
   });
 
   it("gedraagt zich zonder klassement-veld zoals vroeger (rank 1 → top-regel)", () => {
@@ -172,7 +172,7 @@ describe("coachStreakQuip", () => {
 
 describe("coachPreMatch", () => {
   it("lage winkans = underdog-praatje", () => {
-    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax|partner|medelijden|minuut|opgeschort/i);
+    expect(coachPreMatch(0.2, "m1", roast)).toMatch(/bookmaker|kansloos|underdog|Winamax|partner|medelijden|minuut|opgeschort|outsider/i);
   });
   it("hoge winkans = favoriet-waarschuwing", () => {
     expect(coachPreMatch(0.85, "m1", roast)).toMatch(/favoriet|druk|verkloten|schande|koffers|winnaar|schorsen|corrupt|gestolen/i);

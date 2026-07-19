@@ -58,9 +58,13 @@ function kandidaten(s: Signalen): string[] {
   const uit: string[] = [];
   if (s.verliesreeks >= 3) {
     uit.push(`Verloor nu al ${s.verliesreeks}× op rij. Misschien je racket toch maar huren in plaats van kopen? 😬`);
+    uit.push(`Staat momenteel op een verliesreeks van ${s.verliesreeks} matches. Ik zou m'n spiekbriefjes en tactiekborden maar ritueel verbranden.`);
+    uit.push(`Nu al ${s.verliesreeks} nederlagen op rij. Zelfs de Belgische pers zou me ontslaan als ik jou nu nog opstel.`);
   }
   if (s.winrate != null && s.winrate < 35) {
     uit.push(`Met een winrate van ${s.winrate}% speel je vooral voor de gezelligheid, toch? 📉`);
+    uit.push(`Een winrate van maar ${s.winrate}%... Zelfs Napoli onder mijn leiding toonde meer tactische bezieling.`);
+    uit.push(`Met een dramatisch winstpercentage van ${s.winrate}% is het een wonder dat je racket nog niet bij het grofvuil ligt.`);
   }
   if (s.bagelsGeslikt >= 1) {
     uit.push(
@@ -68,12 +72,19 @@ function kandidaten(s: Signalen): string[] {
         ? "Slikte al eens een bagel 🥯 — hopelijk smaakte die nul een beetje."
         : `Slikte al ${s.bagelsGeslikt} bagels 🥯. Spaart waarschijnlijk voor een eigen bakkerij.`,
     );
+    if (s.bagelsGeslikt >= 1) {
+      uit.push(`Heeft al ${s.bagelsGeslikt} bagels op de teller staan. Dat is geen padelcarrière, dat is een uitgebreid ontbijtbuffet.`);
+    }
   }
   if (s.grootsteAframing >= 6) {
     uit.push(`Ooit met ${s.grootsteAframing} games verschil afgedroogd. Zelfs de ramen van de kooi waren beslagen. 🚑`);
+    uit.push(`Met maar liefst ${s.grootsteAframing} games verschil om de oren gekregen. Mijn kletsnatte pak zat vandaag strakker in elkaar dan die verdediging.`);
+    uit.push(`Een afstraffing van ${s.grootsteAframing} games verschil. Zelfs een trauma-helikopter had deze tactische moderamp niet kunnen redden.`);
   }
   if (s.divisie) {
     uit.push(`Hummelt nog steeds rond in divisie ${s.divisie}. Promotie is blijkbaar een vijfjarenplan. 🐢`);
+    uit.push(`Hangt nog steeds vast in divisie ${s.divisie}. Zelfs Gianni Infantino kan deze prestaties niet corrupt genoeg herberekenen voor promotie.`);
+    uit.push(`Slijt zijn dagen in divisie ${s.divisie}. Je hanteert je racket blijkbaar nog steeds als een hete pan mosselen.`);
   }
   return uit;
 }
