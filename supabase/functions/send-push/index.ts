@@ -5,6 +5,8 @@
 //  - UPDATE op matches naar status = completed  → "Uitslag ingevoerd" naar de 4 spelers
 //  - INSERT op friendships (pending)            → "Vriendschapsverzoek" naar de ontvanger
 //  - INSERT/UPDATE op pias_of_week (#203)       → Coach Rudy-sneer naar de pias zelf
+//  - UPDATE op matches met een afdroging (#409) → Rudy-sneer voor de verliezers,
+//    een schouderklopje voor de winnaars, i.p.v. de neutrale "Uitslag ingevoerd"
 //
 // Notificatie-voorkeuren (#57): de notify_*-kolommen op profiles bepalen per
 // type wie een push krijgt (nieuwe ronde, uitslag, vriendschapsverzoek).
@@ -18,6 +20,16 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import {
+  AFDROGING_LOF,
+  afdrogingLabel,
+  BAGEL_SNEER,
+  kiesUit,
+  MONSTER_SNEER,
+  PIAS_SNEER,
+  type RoastIntensiteit,
+  roastSeed,
+} from "../_shared/roast.ts";
 
 // Gedeeld geheim voor de database-webhook (#459). Bewust fail-closed: is het
 // niet gezet, dan weigert de handler álles (i.p.v. de fail-open cron-guards
@@ -42,6 +54,7 @@ type MatchRecord = {
   status: string;
   score_a: number | null;
   score_b: number | null;
+  winner_team_id: string | null;
   group_id: string | null;
 };
 
@@ -54,8 +67,6 @@ type PiasRecord = {
   win_chance: number;
   week_start: string; // YYYY-MM-DD (maandag van de ISO-week)
 };
-
-type RoastIntensiteit = "mild" | "gemeen" | "radioactief";
 
 type WebhookPayload = {
   type: "INSERT" | "UPDATE" | "DELETE";
@@ -74,7 +85,7 @@ type Message = {
   body: string;
   url: string;
   // null = altijd sturen: polls hebben (nog) geen voorkeur, en pias filtert
-  // zichzelf al via roast_schild in messageFor.
+  // zichzelf al via roast_schild in messagesFor.
   kind: MessageKind | null;
 };
 
@@ -86,6 +97,20 @@ async function playersOf(match: MatchRecord): Promise<string[]> {
   return (data ?? []).flatMap((t) => [t.player1_id, t.player2_id]);
 }
 
+/** Spelers per team-id (#409): nodig om bij een afdroging winnaars en verliezers
+ *  te scheiden, waar playersOf beide teams platslaat. */
+async function playersByTeam(
+  match: MatchRecord,
+): Promise<Record<string, string[]>> {
+  const { data } = await supabase
+    .from("teams")
+    .select("id, player1_id, player2_id")
+    .in("id", [match.team_a_id, match.team_b_id]);
+  const byTeam: Record<string, string[]> = {};
+  for (const t of data ?? []) byTeam[t.id] = [t.player1_id, t.player2_id];
+  return byTeam;
+}
+
 async function nameOf(playerId: string): Promise<string> {
   const { data } = await supabase
     .from("profiles")
@@ -93,51 +118,6 @@ async function nameOf(playerId: string): Promise<string> {
     .eq("id", playerId)
     .maybeSingle();
   return data?.full_name?.trim() || data?.username || "Een speler";
-}
-
-// Pias-sneren voor de push (#203), bewust kort genoeg voor een notificatie.
-// Toon-conventies en intensiteitsniveaus spiegelen src/features/coach/
-// roastTone.ts (plagend over padel en ego, nooit persoonlijk of grof); de
-// edge functions delen geen code met src/, dus dit is een eigen compacte set.
-const PIAS_SNEER: Record<RoastIntensiteit, readonly string[]> = {
-  mild: [
-    "Grote favoriet, klein resultaat. Gebeurt de besten. Jou net iets vaker.",
-    "De statistieken geloofden in je. De bal duidelijk niet.",
-    "Iedereen mag eens verliezen. Alleen deed jij het als torenhoge favoriet.",
-    "Kop op: volgende week is er een nieuwe pias. Al ben jij nu wel favoriet.",
-    "Je was dé favoriet. Wás. Verleden tijd, net als je vormpeil.",
-    "Padel is een teamsport, maar deze titel heb je helemaal zelf verdiend.",
-  ],
-  gemeen: [
-    "De favoriet van de week werd de pias van de week. Poëzie, eigenlijk.",
-    "Jij had de hoogste rating op de baan. De baan had daar geen boodschap aan.",
-    "Winnen was het minimum. Jij ging vol voor het maximum aan schaamte.",
-    "De underdogs danken je hartelijk. Hun hele week is goedgemaakt.",
-    "Ik heb je winkans nagerekend. De wiskunde klopte, jij niet.",
-    "Zelfs de glazen wand speelde beter mee dan jij.",
-  ],
-  radioactief: [
-    "Dit zet ik in de groepschat. Voor de eeuwigheid.",
-    "Zo'n winkans verprutsen hoort in een museum. Vitrine, spotje erop.",
-    "De bookmakers zijn failliet aan jou. Je team ook, mentaal.",
-    "Choke van de week? Choke van het seizoen, als je het mij vraagt.",
-    "Je rating schreef een cheque die je armen niet konden innen.",
-    "Ik heb het teruggekeken. Twee keer. Het werd niet beter.",
-  ],
-};
-
-// Stabiele djb2-hash + deterministische keuze, gekopieerd uit
-// src/features/coach/roastTone.ts (roastSeed/seedIndex) zodat een
-// webhook-retry dezelfde tekst oplevert.
-function roastSeed(...delen: string[]): number {
-  let h = 5381;
-  const s = delen.join("|");
-  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) + s.charCodeAt(i)) | 0;
-  return h;
-}
-
-function kiesUit(pool: readonly string[], seed: number): string {
-  return pool[((seed % pool.length) + pool.length) % pool.length];
 }
 
 /** Maandag van de huidige ISO-week als YYYY-MM-DD, in UTC — dezelfde klok
@@ -149,51 +129,41 @@ function mondayOfCurrentWeek(): string {
   return maandag.toISOString().slice(0, 10);
 }
 
-async function messageFor(payload: WebhookPayload): Promise<Message | null> {
+async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
   if (payload.table === "friendships" && payload.type === "INSERT") {
     const rec = payload.record as {
       requester_id: string;
       addressee_id: string;
       status: string;
     };
-    if (rec.status !== "pending") return null;
-    return {
+    if (rec.status !== "pending") return [];
+    return [{
       recipients: [rec.addressee_id],
       title: "Nieuw vriendschapsverzoek 🎾",
       body: `${await nameOf(rec.requester_id)} wil met je padellen.`,
       url: "/vrienden",
       kind: "friend_request",
-    };
+    }];
   }
 
   if (payload.table === "matches" && payload.type === "INSERT") {
     const rec = payload.record as unknown as MatchRecord;
     // Alleen geplande (gegenereerde) matches; direct gelogde uitslagen niet.
-    if (rec.status === "completed") return null;
-    return {
+    if (rec.status === "completed") return [];
+    return [{
       recipients: await playersOf(rec),
       title: "Nieuwe ronde gegenereerd 🎾",
       body: "Jouw match staat klaar — bekijk tegen wie je speelt.",
       url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
       kind: "new_round",
-    };
+    }];
   }
 
   if (payload.table === "matches" && payload.type === "UPDATE") {
     const rec = payload.record as unknown as MatchRecord;
     const old = payload.old_record as unknown as MatchRecord | null;
-    if (rec.status !== "completed" || old?.status === "completed") return null;
-    const score =
-      rec.score_a != null && rec.score_b != null
-        ? ` ${rec.score_a}–${rec.score_b}`
-        : "";
-    return {
-      recipients: await playersOf(rec),
-      title: "Uitslag ingevoerd",
-      body: `Jouw match is afgerond:${score}. Bekijk het nieuwe klassement.`,
-      url: `/matches/${rec.id}`,
-      kind: "result",
-    };
+    if (rec.status !== "completed" || old?.status === "completed") return [];
+    return await matchResultMessages(rec);
   }
 
   // Speeldag-polls: nieuwe poll → hele groep; gelockt/geboekt → de stemmers.
@@ -212,7 +182,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
         .from("group_members")
         .select("player_id")
         .eq("group_id", rec.group_id);
-      return {
+      return [{
         recipients: (members ?? [])
           .map((m) => m.player_id)
           .filter((id) => id !== rec.created_by),
@@ -220,7 +190,7 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
         body: `${await nameOf(rec.created_by)} stelt momenten voor — stem wanneer je kunt.`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
-      };
+      }];
     }
 
     if (
@@ -231,13 +201,13 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
     ) {
       const moment = await pollMoment(rec.locked_option_id);
       const voters = await pollVoters(rec.id);
-      return {
+      return [{
         recipients: voters,
         title: "Speelmoment gekozen 🎾",
         body: `De groep speelt ${moment}. Kijk of je erbij bent.`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
-      };
+      }];
     }
 
     if (
@@ -248,13 +218,13 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
     ) {
       const moment = await pollMoment(rec.locked_option_id);
       const yes = await optionYesVoters(rec.locked_option_id);
-      return {
+      return [{
         recipients: yes,
         title: "Baan geboekt ✓",
         body: `Jullie spelen ${moment}. Zet het in je agenda!`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
-      };
+      }];
     }
   }
 
@@ -267,9 +237,9 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
   ) {
     const rec = payload.record as unknown as PiasRecord;
     const old = payload.old_record as unknown as PiasRecord | null;
-    if (rec.week_start !== mondayOfCurrentWeek()) return null;
+    if (rec.week_start !== mondayOfCurrentWeek()) return [];
     if (payload.type === "UPDATE" && old?.player_id === rec.player_id) {
-      return null;
+      return [];
     }
 
     const { data: profiel } = await supabase
@@ -278,20 +248,96 @@ async function messageFor(payload: WebhookPayload): Promise<Message | null> {
       .eq("id", rec.player_id)
       .maybeSingle();
     // Schild aan (of profiel weg) → Coach Rudy zwijgt, net als in de feed.
-    if (!profiel || profiel.roast_schild) return null;
+    if (!profiel || profiel.roast_schild) return [];
 
     const seed = roastSeed(rec.player_id, `${rec.iso_year}-W${rec.iso_week}`);
     const intensiteit = (profiel.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
-    return {
+    return [{
       recipients: [rec.player_id],
       title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
       body: `Jij bent de pias van de week. ${kiesUit(PIAS_SNEER[intensiteit], seed)}`,
       url: `/groepen/${rec.group_id}?tab=stand`,
       kind: null,
-    };
+    }];
   }
 
-  return null;
+  return [];
+}
+
+/**
+ * De push-berichten bij een afgeronde match (#409). Zonder afdroging: één
+ * neutrale "Uitslag ingevoerd" naar alle vier de spelers (zoals voorheen). Bij
+ * een bagel/monsterzege krijgen de winnaars een schouderklopje en de verliezers
+ * een Coach Rudy-sneer, tenzij hun roast-schild aanstaat — dan de neutrale
+ * melding. De teksten vervángen de neutrale (kind "result"), dus elke speler zit
+ * in precies één bericht: geen dubbele push voor dezelfde match.
+ */
+async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
+  const score = rec.score_a != null && rec.score_b != null
+    ? ` ${rec.score_a}–${rec.score_b}`
+    : "";
+  const neutraal = (recipients: string[]): Message => ({
+    recipients,
+    title: "Uitslag ingevoerd",
+    body: `Jouw match is afgerond:${score}. Bekijk het nieuwe klassement.`,
+    url: `/matches/${rec.id}`,
+    kind: "result",
+  });
+
+  const label = afdrogingLabel(rec);
+  if (!label || !rec.winner_team_id) return [neutraal(await playersOf(rec))];
+
+  const byTeam = await playersByTeam(rec);
+  const winners = byTeam[rec.winner_team_id] ?? [];
+  const loserTeamId = rec.winner_team_id === rec.team_a_id
+    ? rec.team_b_id
+    : rec.team_a_id;
+  const losers = byTeam[loserTeamId] ?? [];
+  // Teamdata weg → val terug op de neutrale melding voor iedereen.
+  if (winners.length === 0 && losers.length === 0) {
+    return [neutraal(await playersOf(rec))];
+  }
+
+  const messages: Message[] = [];
+  // Winnaars: één schouderklopje, deterministisch op de match-id.
+  if (winners.length > 0) {
+    messages.push({
+      recipients: winners,
+      title: "🎙️ Coach Rudy is onder de indruk",
+      body: kiesUit(AFDROGING_LOF, roastSeed(rec.id, "winst")),
+      url: `/matches/${rec.id}`,
+      kind: "result",
+    });
+  }
+
+  // Verliezers: per speler bepaalt het schild roast of neutraal.
+  const { data: profielen } = await supabase
+    .from("profiles")
+    .select("id, roast_schild, roast_intensiteit")
+    .in("id", losers);
+  const profielVan = new Map((profielen ?? []).map((p) => [p.id, p]));
+  const neutraleVerliezers: string[] = [];
+  const pool = label === "bagel" ? BAGEL_SNEER : MONSTER_SNEER;
+  for (const pid of losers) {
+    const p = profielVan.get(pid);
+    // Schild aan (of profiel weg) → geen sneer, wel de neutrale result-push.
+    if (!p || p.roast_schild) {
+      neutraleVerliezers.push(pid);
+      continue;
+    }
+    const intensiteit = (p.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
+    messages.push({
+      recipients: [pid],
+      title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
+      body: kiesUit(pool[intensiteit], roastSeed(rec.id, pid)),
+      url: `/matches/${rec.id}`,
+      kind: "result",
+    });
+  }
+  if (neutraleVerliezers.length > 0) {
+    messages.push(neutraal(neutraleVerliezers));
+  }
+  return messages;
 }
 
 /** "vrijdag 11 juli om 20:00" van de gekozen optie. */
@@ -383,48 +429,57 @@ Deno.serve(async (req) => {
     });
   }
 
-  const message = await messageFor(payload);
-  const recipients = message
-    ? await filterByPreference(message.recipients, message.kind)
-    : [];
-  if (!message || recipients.length === 0) {
+  // Eén webhook kan nu meerdere berichten opleveren (#409: winnaars vs.
+  // verliezers van een afdroging krijgen elk een eigen tekst).
+  const messages = await messagesFor(payload);
+  let sent = 0;
+  let totalRecipients = 0;
+  for (const message of messages) {
+    const recipients = await filterByPreference(
+      message.recipients,
+      message.kind,
+    );
+    if (recipients.length === 0) continue;
+    totalRecipients += recipients.length;
+
+    const { data: subs } = await supabase
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth")
+      .in("user_id", recipients);
+
+    await Promise.all(
+      (subs ?? []).map(async (s) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+            JSON.stringify({
+              title: message.title,
+              body: message.body,
+              url: message.url,
+            }),
+          );
+          sent += 1;
+        } catch (err) {
+          // Verlopen/ingetrokken abonnementen opruimen.
+          const status = (err as { statusCode?: number }).statusCode;
+          if (status === 404 || status === 410) {
+            await supabase
+              .from("push_subscriptions")
+              .delete()
+              .eq("endpoint", s.endpoint);
+          }
+        }
+      }),
+    );
+  }
+
+  if (totalRecipients === 0) {
     return new Response(JSON.stringify({ skipped: true }), {
       headers: { "content-type": "application/json" },
     });
   }
 
-  const { data: subs } = await supabase
-    .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .in("user_id", recipients);
-
-  let sent = 0;
-  await Promise.all(
-    (subs ?? []).map(async (s) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify({
-            title: message.title,
-            body: message.body,
-            url: message.url,
-          }),
-        );
-        sent += 1;
-      } catch (err) {
-        // Verlopen/ingetrokken abonnementen opruimen.
-        const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
-          await supabase
-            .from("push_subscriptions")
-            .delete()
-            .eq("endpoint", s.endpoint);
-        }
-      }
-    }),
-  );
-
-  return new Response(JSON.stringify({ sent, recipients: recipients.length }), {
+  return new Response(JSON.stringify({ sent, recipients: totalRecipients }), {
     headers: { "content-type": "application/json" },
   });
 });

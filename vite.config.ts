@@ -1,9 +1,37 @@
 /// <reference types="vitest/config" />
+import { createHash } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+
+// Vult de service-worker-versie in bij de build (#463). public/sw.js wordt
+// verbatim naar dist/ gekopieerd (Vite verwerkt het niet), dus vervangen we
+// hier de __SW_VERSION__-placeholder door een hash van het build-manifest.
+// Zo bumpt de SW-cacheversie automatisch én precies wanneer assets wijzigen:
+// geen handmatige VERSION-bump meer, en geen onnodige cache-churn.
+function serviceWorkerVersion(): Plugin {
+  return {
+    name: "service-worker-version",
+    apply: "build",
+    // closeBundle draait ná het kopiëren van publicDir, dus dist/sw.js bestaat.
+    closeBundle() {
+      let source: string;
+      try {
+        source = readFileSync(r("./dist/sw.js"), "utf8");
+      } catch {
+        return; // geen SW in deze build-output: niets te doen
+      }
+      const hash = createHash("sha256")
+        .update(readFileSync(r("./dist/.vite/manifest.json")))
+        .digest("hex")
+        .slice(0, 12);
+      writeFileSync(r("./dist/sw.js"), source.replace(/__SW_VERSION__/g, hash));
+    },
+  };
+}
 
 // Dev-tegenhanger van de club-slug-route in de Cloudflare Worker
 // (worker/index.js): volgt de 308 van playtomic.io/clubs/{uuid} en geeft de
@@ -41,7 +69,7 @@ function playtomicClubSlug(): Plugin {
 
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
-  plugins: [playtomicClubSlug(), react()],
+  plugins: [playtomicClubSlug(), react(), serviceWorkerVersion()],
   // Path-aliases — houd in sync met tsconfig.app.json "paths" (zie docs/architecture.md §5).
   // Langste sleutels eerst zodat "@/lib" vóór "@/" matcht.
   resolve: {
