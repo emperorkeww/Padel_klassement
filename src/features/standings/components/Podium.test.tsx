@@ -52,6 +52,46 @@ describe("<Podium /> — Big Daddy", () => {
   });
 });
 
+describe("<Podium /> — De Troon (#528)", () => {
+  it("kroont niemand als bigDaddy uit staat (dictator staat al op de troon)", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Podium
+          bigDaddy={false}
+          entries={[
+            { ...entry("p2", "Bob", 1543), tier: true },
+            { ...entry("p3", "Carol", 1498), tier: true },
+            { ...entry("p4", "Dan", 1471), tier: true },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/Big Daddy/)).not.toBeInTheDocument();
+    expect(container.querySelector(".is-bigdaddy")).toBeNull();
+    expect(container.querySelector(".podium__crown")).toBeNull();
+  });
+
+  it("toont het echte rangnummer op de medaille via `medal` (volk begint bij #2)", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Podium
+          bigDaddy={false}
+          entries={[
+            { ...entry("p2", "Bob", 1543), tier: true, medal: 2 },
+            { ...entry("p3", "Carol", 1498), tier: true, medal: 3 },
+            { ...entry("p4", "Dan", 1471), tier: true, medal: 4 },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    const medals = Array.from(
+      container.querySelectorAll(".podium__medal"),
+    ).map((n) => n.textContent);
+    // Visuele volgorde zilver — goud — brons ⇒ 3 · 2 · 4.
+    expect(medals).toEqual(["3", "2", "4"]);
+  });
+});
+
 describe("<Podium /> — geen Coach Rudy over de #1 (#411)", () => {
   it("toont geen bubbel over de nummer 1 — Rudy spreekt alleen de kijker aan", () => {
     // De vroegere Big-Daddy-bubbel (#297) is vervallen: klassement-commentaar

@@ -115,6 +115,12 @@
      bóven GOAT's dieproze uit. */
   --dictator: #8a1c3b;
   --dictator-soft: #f7ecd0;
+  /* De Troon (#528): keizerlijk verloop voor de losse DictatorThrone-strip —
+     goud accent op diepbordeaux/aubergine. Bewust donker in beide thema's, want
+     de troon torent boven het volk uit. */
+  --dictator-gold: #e6b34d;
+  --dictator-wine: #a52347;
+  --dictator-deep: #5e1228;
   /* Big Daddy (#1 van het klassement): zacht pastelroze. --bigdaddy is de vlak-
      kleur (medaille/kroon), -ink de tekst dáárop, -text de leesbare roze tekst
      op de paginakleur (naam/badge). */
@@ -278,6 +284,10 @@
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #e6b34d;
   --dictator-soft: #3a1421;
+  /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
+  --dictator-gold: #f0c766;
+  --dictator-wine: #7a1a34;
+  --dictator-deep: #2a0d16;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #f288bc;
   --bigdaddy-soft: #40213a;

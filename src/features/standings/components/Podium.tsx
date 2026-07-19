@@ -34,9 +34,21 @@ export interface PodiumEntry {
   tier?: boolean;
   /** Emoji-tekentjes naast de naam, bv. 🃏 Zwarte Piet / 🤡 Pias (#523). */
   markers?: ReactNode;
+  /** Rangnummer op de medaille, als dat afwijkt van de podiumplaats. Bij De
+   *  Troon (#528) begint het volk bij #2, dus de tegels tonen 2·3·4 i.p.v.
+   *  1·2·3. Zonder waarde valt het terug op de podiumplaats. */
+  medal?: number;
 }
 
-export function Podium({ entries }: { entries: PodiumEntry[] }) {
+export function Podium({
+  entries,
+  bigDaddy = true,
+}: {
+  entries: PodiumEntry[];
+  /** Toon de "Big Daddy"-kroon op #1 (#127). Uit wanneer De Troon (#528) actief
+   *  is: dan is de dictator al losgekoppeld en is de #1-tegel gewoon het volk. */
+  bigDaddy?: boolean;
+}) {
   const [first, second, third] = entries;
   if (!first) return null;
   // Visuele volgorde: zilver — goud — brons.
@@ -51,8 +63,9 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
       <div className="podium" aria-label="Top 3">
         {order.map(({ entry, place }) => {
           // De #1 van een rating-podium (tier: true) is de "Big Daddy": roze kroon
-          // + spot. Punten/toto-podia (geen tier) blijven ongemoeid.
-          const isBigDaddy = place === 1 && !!entry.tier;
+          // + spot. Punten/toto-podia (geen tier) blijven ongemoeid, en met De
+          // Troon (#528) actief staat de dictator al apart — dan geen kroon.
+          const isBigDaddy = place === 1 && !!entry.tier && bigDaddy;
           const body = (
             <>
               {isBigDaddy && (
@@ -63,7 +76,7 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
                   <span className="podium__roast">{bigDaddyRoast(entry.key)}</span>
                 </span>
               )}
-              <span className="podium__medal">{place}</span>
+              <span className="podium__medal">{entry.medal ?? place}</span>
               <Avatar
                 profile={entry.profile}
                 name={entry.name}
