@@ -29,6 +29,11 @@ create table public.profiles (
   -- eigenaar zet); deze bepaalt enkel niet-groep-gescoopte, persoonlijke roasts.
   -- Default 'gemeen' = bestaand gedrag. Het schild blijft de harde opt-out.
   roast_intensiteit public.roast_intensiteit not null default 'gemeen',
+  -- Waarnemend dictator (#542): cosmetische weergavevoorkeur — toont het
+  -- klassement de waarnemend Kylian Mbappé (#530) bovenaan zolang niemand de
+  -- El Padelissimo-tier haalt? De dictator-divisie zelf (#527) blijft altijd
+  -- bestaan; dit verbergt enkel de meme-figuur. Default 'true' = bestaand gedrag.
+  toon_waarnemend_dictator boolean not null default true,
   -- Notificatie-voorkeuren (#57): per push-type aan/uit, server-side
   -- gerespecteerd door send-push en match-reminders. Standaard alles aan.
   notify_new_round boolean not null default true,

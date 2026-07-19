@@ -29,6 +29,7 @@ import {
   pushAvailability,
 } from "@/lib/supabase/push";
 import { SESSION } from "@/test/fixtures";
+import * as profilesApi from "@/features/profiles/api";
 
 function renderPage() {
   return render(
@@ -87,30 +88,23 @@ describe("<ProfileSettings />", () => {
     }
   });
 
-  it("zet de waarnemend dictator (Mbappé) aan/uit via de weergavekaart (#542)", async () => {
-    window.localStorage.removeItem("dictator-waarnemend-verborgen");
+  it("zet de waarnemend dictator (Mbappé) uit via de weergavekaart (#542)", async () => {
+    // Cross-device voorkeur: de toggle schrijft naar de profiles-kolom via
+    // updateProfile. Het profiel heeft standaard geen waarde → aangevinkt.
+    const spy = vi.spyOn(profilesApi, "updateProfile").mockResolvedValue();
     try {
       renderPage();
       const toggle = await screen.findByRole("checkbox", {
         name: /waarnemend dictator/i,
       });
-      // Default aan (zichtbaar).
       expect(toggle).toBeChecked();
 
       await userEvent.click(toggle);
-      expect(toggle).not.toBeChecked();
-      expect(
-        window.localStorage.getItem("dictator-waarnemend-verborgen"),
-      ).toBe("1");
-
-      // Weer aan → de vlag verdwijnt (default = zichtbaar).
-      await userEvent.click(toggle);
-      expect(toggle).toBeChecked();
-      expect(
-        window.localStorage.getItem("dictator-waarnemend-verborgen"),
-      ).toBeNull();
+      expect(spy).toHaveBeenCalledWith("p1", {
+        toon_waarnemend_dictator: false,
+      });
     } finally {
-      window.localStorage.removeItem("dictator-waarnemend-verborgen");
+      spy.mockRestore();
     }
   });
 

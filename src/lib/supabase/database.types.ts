@@ -1155,6 +1155,7 @@ export type Database = {
           owner_id: string | null
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild: boolean
+          toon_waarnemend_dictator: boolean
           username: string
         }
         Insert: {
@@ -1174,6 +1175,7 @@ export type Database = {
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
+          toon_waarnemend_dictator?: boolean
           username: string
         }
         Update: {
@@ -1193,6 +1195,7 @@ export type Database = {
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
+          toon_waarnemend_dictator?: boolean
           username?: string
         }
         Relationships: []

@@ -39,7 +39,6 @@ import {
   DEFAULT_DICTATOR,
   defaultDictatorEnabled,
   laadWaarnemendPortret,
-  waarnemendDictatorZichtbaar,
 } from "@/features/dashboard/dictator";
 import { coachBuiging } from "@/features/coach/roastTone";
 import { TierLegend } from "@/features/rating/components/TierLegend";
@@ -83,10 +82,6 @@ export function Leaderboard() {
   const club = useClub();
   const [tab, setTab] = useState<Tab>("player");
   const [groupId, setGroupId] = useState<string>("");
-  // Cosmetische voorkeur (#542): heeft deze gebruiker de waarnemend Mbappé
-  // aangelaten? Eén keer per mount uit localStorage; het klassement herlaadt bij
-  // navigatie, dus een wijziging in de instellingen komt vanzelf mee.
-  const [waarnemendAan] = useState(waarnemendDictatorZichtbaar);
 
   // Speler zoeken (#282): het zoekveld filtert de al geladen ranglijst live op
   // naam. Daarnaast zoeken we vindbare spelers die (nog) niet in de ranglijst
@@ -528,7 +523,9 @@ export function Leaderboard() {
   // De troon (#536/#542): een échte dictator (throneRow != null) staat er altijd;
   // de waarnemend Mbappé (throneRow == null) alleen als de globale build-vlag
   // (#536) én de eigen voorkeur (#542) aan staan. Uit → geen troon bij verstek,
-  // dus het Big Daddy-podium (#528) blijft gewoon staan.
+  // dus het Big Daddy-podium (#528) blijft gewoon staan. De voorkeur komt uit het
+  // eigen profiel (cross-device); ontbreekt/nog-ladend → zichtbaar (default).
+  const waarnemendAan = pmap[myId]?.toon_waarnemend_dictator ?? true;
   const toonTroon =
     canThrone &&
     (throneRow != null || (defaultDictatorEnabled() && waarnemendAan));

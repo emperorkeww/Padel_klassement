@@ -70,6 +70,7 @@ vi.mock("@/lib/supabase/client", () => {
   };
 });
 
+import * as profilesApi from "@/features/profiles/api";
 import Leaderboard from "./Leaderboard";
 
 function renderPage(url = "/") {
@@ -137,10 +138,19 @@ describe("<Leaderboard />", () => {
     }
   });
 
-  it("verbergt de waarnemend Mbappé wanneer de gebruiker 'm uitzet (#542)", async () => {
-    // Persoonlijke voorkeur uit → geen troon bij verstek, ook al staat de
-    // globale flag aan. Het Big Daddy-podium (#528) blijft.
-    window.localStorage.setItem("dictator-waarnemend-verborgen", "1");
+  it("verbergt de waarnemend Mbappé wanneer de gebruiker 'm in z'n profiel uitzet (#542)", async () => {
+    // Voorkeur uit in het eigen profiel → geen troon bij verstek, ook al staat
+    // de globale flag aan. Het Big Daddy-podium (#528) blijft.
+    const spy = vi.spyOn(profilesApi, "getProfilesMap").mockResolvedValue({
+      p1: {
+        id: "p1",
+        username: "alice",
+        full_name: "Alice Anders",
+        avatar_url: null,
+        created_at: "2026-01-01T00:00:00.000Z",
+        toon_waarnemend_dictator: false,
+      },
+    });
     try {
       const { container } = renderPage();
       await screen.findAllByText(/alice anders/i);
@@ -148,7 +158,7 @@ describe("<Leaderboard />", () => {
       expect(screen.queryByText("Kylian Mbappé")).toBeNull();
       expect(screen.getAllByText(/big daddy/i).length).toBeGreaterThan(0);
     } finally {
-      window.localStorage.removeItem("dictator-waarnemend-verborgen");
+      spy.mockRestore();
     }
   });
 

@@ -35,10 +35,6 @@ import {
   setThemePreference,
   type ThemePreference,
 } from "@/lib/utils/theme";
-import {
-  waarnemendDictatorZichtbaar,
-  setWaarnemendDictatorZichtbaar,
-} from "@/features/dashboard/dictator";
 import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
@@ -89,7 +85,11 @@ export function ProfileSettings() {
       </section>
       <div className="grid grid--2">
         <EmailCard currentEmail={user?.email ?? ""} />
-        <ThemeCard />
+        <ThemeCard
+          userId={myId}
+          toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+          onUpdated={profile.reload}
+        />
       </div>
       <PasswordCard email={user?.email ?? ""} />
 
@@ -409,11 +409,19 @@ const THEMA_OPTIES: { value: ThemePreference; label: string }[] = [
   { value: "dark", label: "Donker" },
 ];
 
-function ThemeCard() {
+function ThemeCard({
+  userId,
+  toonWaarnemend,
+  onUpdated,
+}: {
+  userId: string;
+  /** Huidige waarde uit het profiel (#542); default zichtbaar. */
+  toonWaarnemend: boolean;
+  onUpdated: () => void;
+}) {
   const [pref, setPref] = useState<ThemePreference>(getThemePreference);
-  // Cosmetische, client-only voorkeur (#542) — zelfde localStorage-aanpak als
-  // het thema hierboven.
-  const [mbappeAan, setMbappeAan] = useState(waarnemendDictatorZichtbaar);
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
 
   function choose(next: ThemePreference) {
     setPref(next);
@@ -421,9 +429,18 @@ function ThemeCard() {
     setThemePreference(next);
   }
 
-  function toggleMbappe(zichtbaar: boolean) {
-    setMbappeAan(zichtbaar);
-    setWaarnemendDictatorZichtbaar(zichtbaar);
+  // Cosmetische voorkeur (#542): cross-device in de profiles-kolom, zodat het
+  // ook op je andere apparaten geldt (anders dan het thema, dat per apparaat is).
+  async function toggleMbappe(zichtbaar: boolean) {
+    setBusy(true);
+    try {
+      await updateProfile(userId, { toon_waarnemend_dictator: zichtbaar });
+      onUpdated();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -457,7 +474,8 @@ function ThemeCard() {
         </span>
         <input
           type="checkbox"
-          checked={mbappeAan}
+          checked={toonWaarnemend}
+          disabled={busy}
           onChange={(e) => toggleMbappe(e.target.checked)}
         />
       </label>
