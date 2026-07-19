@@ -520,11 +520,15 @@ export function Leaderboard() {
   // verstek (throneRow == null, #530) of een echt clublid dat zo heet — speelt
   // op de zichtbare spelers-tab z'n dictator-anthem, tot je het klassement
   // verlaat of het tabblad verbergt.
-  // De troon (#536): een échte dictator (throneRow != null) staat er altijd; de
-  // waarnemend Mbappé (throneRow == null) alleen als de flag aan is. Uit → geen
-  // troon bij verstek, dus het Big Daddy-podium (#528) blijft gewoon staan.
+  // De troon (#536/#542): een échte dictator (throneRow != null) staat er altijd;
+  // de waarnemend Mbappé (throneRow == null) alleen als de globale build-vlag
+  // (#536) én de eigen voorkeur (#542) aan staan. Uit → geen troon bij verstek,
+  // dus het Big Daddy-podium (#528) blijft gewoon staan. De voorkeur komt uit het
+  // eigen profiel (cross-device); ontbreekt/nog-ladend → zichtbaar (default).
+  const waarnemendAan = pmap[myId]?.toon_waarnemend_dictator ?? true;
   const toonTroon =
-    canThrone && (throneRow != null || defaultDictatorEnabled());
+    canThrone &&
+    (throneRow != null || (defaultDictatorEnabled() && waarnemendAan));
   const toonWaarnemend = toonTroon && throneRow == null;
   const mbappeRegeert =
     toonTroon &&

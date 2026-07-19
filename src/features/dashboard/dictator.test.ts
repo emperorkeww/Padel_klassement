@@ -1,8 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import {
-  defaultDictatorEnabled,
-  laadWaarnemendPortret,
-} from "./dictator";
+import { defaultDictatorEnabled, laadWaarnemendPortret } from "./dictator";
 
 afterEach(() => {
   vi.unstubAllEnvs();
