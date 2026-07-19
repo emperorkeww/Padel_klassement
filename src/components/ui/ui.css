@@ -99,6 +99,10 @@
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 600;
+  /* Centreer ook meerregelige labels: justify-content centreert alleen het
+     flex-item, text-align de regels erbinnen — anders staat een afgebroken
+     label (bv. "Wedstrijden genereren" in een smalle mobiele pil) links. */
+  text-align: center;
   cursor: pointer;
   text-decoration: none;
   /* Geen 300ms dubbeltik-zoom-vertraging op touch. */
