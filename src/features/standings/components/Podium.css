@@ -138,11 +138,20 @@
   text-overflow: ellipsis;
 }
 
+/* Naam + eventuele schande-emoji (#523) op één regel; de naam kapt af met een
+   ellips, de emoji (flex:none via .stand-mark) blijft altijd volledig staan. */
+.podium__nameline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  max-width: 100%;
+}
 .podium__name {
   font-weight: 700;
   font-size: var(--fs-base);
   letter-spacing: -0.01em;
-  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -69,8 +69,8 @@ export function Podium({ entries }: { entries: PodiumEntry[] }) {
                 name={entry.name}
                 size={place === 1 ? 56 : 44}
               />
-              <span className="podium__name">
-                {entry.name}
+              <span className="podium__nameline">
+                <span className="podium__name">{entry.name}</span>
                 {entry.markers}
               </span>
               <span className={`podium__value${entry.dimmed ? " is-dim" : ""}`}>
