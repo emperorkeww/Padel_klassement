@@ -273,6 +273,11 @@ const NOTIFY_OPTIES: {
     label: "Match-herinneringen",
     hint: "Een paar uur vóór een geplande match.",
   },
+  {
+    key: "notify_rank_change",
+    label: "Promotie & degradatie",
+    hint: "Als je stijgt of zakt in het klassement (troon, top-3, kelder).",
+  },
 ];
 
 function NotificationsCard({ userId }: { userId: string }) {

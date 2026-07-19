@@ -1090,6 +1090,7 @@ export type Database = {
           notify_friend_request: boolean
           notify_match_reminder: boolean
           notify_new_round: boolean
+          notify_rank_change: boolean
           notify_result: boolean
           owner_id: string | null
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
@@ -1108,6 +1109,7 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
@@ -1126,6 +1128,7 @@ export type Database = {
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
+          notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
