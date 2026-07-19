@@ -80,7 +80,7 @@ export const TIER_BANDEN: ReadonlyArray<{
   { naam: "Racketconsument", key: "diamant", emoji: "🛍️", flavor: "gelooft oprecht dat zijn zevende racket dit jaar zijn vreselijke backhand gaat redden", min: 1200, max: 1300 },
   { naam: "Forever second", key: "meester", emoji: "🥈", flavor: "eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant", min: 1300, max: 1400 },
   { naam: "GOAT", key: "legende", emoji: "🐐", flavor: "heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past", min: 1400, max: 1600 },
-  { naam: "El Padelissimo", key: "dictator", emoji: "🫡", flavor: "regeert de club als sportief directeur, weert tegenstanders uit de groepsapp en verbiedt kebabs met zijn beeltenis in de kantine", min: 1600, max: null },
+  { naam: "El Padelissimo", key: "dictator", emoji: "🫡", flavor: "regeert de club als absolute dictator, weert tegenstanders per direct uit de groepsapp en eist 90% van de baromzet", min: 1600, max: null },
 ];
 
 const ROMEINS = ["III", "II", "I"] as const;

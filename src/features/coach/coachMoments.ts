@@ -379,10 +379,10 @@ const TIER_PROMOTIE: Record<RoastIntensiteit, readonly string[]> = {
 // El Padelissimo (#527) — geen %tier%, want dit is een absolute alleenheerser
 // zonder sub-niveau. Vervangt de generieke promotieregel voor deze ene tier.
 const TIER_PROMOTIE_DICTATOR = [
-  "El Padelissimo! Buig voor de Generaal — hij bepaalt vanaf nu de opstellingen, ontslaat de kantinebeheerder en bant alle kebabs van de club. 🫡",
+  "El Padelissimo! Buig voor de Generaal — hij bepaalt vanaf nu de opstellingen, ontslaat de kantinebeheerder en annexeert de kooi ernaast. 🫡",
   "EL PADELISSIMO! De baan heeft een dictator. Tegenstanders worden per direct uit de groepsapp verwijderd en begroeten je voortaan met een saluut. 🫡",
   "Machtsovername voltooid: El Padelissimo. Je bent geen speler meer maar de sportief directeur — de kooi is nu een dictatuur en jij regeert. 🫡",
-  "El Padelissimo bereikt! Ik roep het uit tot staatsfeestdag. De vlaggen gaan uit, de kebabs met jouw beeltenis gaan eruit. 🫡",
+  "El Padelissimo bereikt! Ik roep het uit tot staatsfeestdag. De vlaggen gaan uit, je standbeeld in de kantine wordt onthuld. 🫡",
   "De troon is bezet: El Padelissimo. Van GOAT naar Generaal — wie tegen je speelt, pakt beter meteen de koffers. 🫡",
   "El Padelissimo! Net als Kylian bepaal jij vanaf nu de transfertargets en wie er überhaupt de club binnenkomt. 🫡",
   "EL PADELISSIMO! De ultieme dictator. Je hebt de volledige controle en veto't elke wissel langs de lijn. 🫡",

@@ -27,7 +27,7 @@ const PROPAGANDA = [
   "eist de rol van sportief directeur en speler-voorzitter op",
   "veto't elke wissel en ontslaat de kantinebeheerder",
   "weert tegenstanders per direct uit de groepsapp",
-  "verbiedt kebabs met z'n beeltenis op het menu",
+  "verbiedt tegenstanders om z'n racket aan te raken",
 ] as const;
 
 // Stabiele, kleine string-hash (djb2-variant) — zelfde idee als bigDaddy.ts,
@@ -61,4 +61,4 @@ export const DEFAULT_DICTATOR_LABEL = "Madrid-Dictator";
 
 /** Korte slogan op de troon voor de waarnemend dictator (los van de echte roast). */
 export const DEFAULT_DICTATOR_PROPAGANDA =
-  "regeert vanuit Madrid en verbiedt de kantine-kebab";
+  "regeert vanuit Madrid en veto't elke opstelling";
