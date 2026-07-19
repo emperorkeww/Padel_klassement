@@ -405,7 +405,7 @@ export function coachLof(
  *  kruiperige knieval — kijker-gericht ("jij ook"), nooit een roast op de
  *  dictator zelf. Los van de roast-intensiteiten; geldt enkel bij de troon. */
 export const BUIGING: readonly string[] = [
-  "Ik? Roasten? Niet vandaag. Voor de dictator buig ik — en jij ook. 🙇🫡",
+  "Ik? Roasten? Ik ben wel gek, maar niet suïcidaal. Voor de Generalissimo buig ik — en jij ook. 🙇🫡",
   "Neem me niet kwalijk, Generaal Mbappé. Ik hou m'n grote mond en schrap de kebabs van de menukaart. 🙇",
   "Geen sneer vandaag. Als de Madrid-Dictator eist dat we buigen, dan buigen we. Ik wil niet uit de groepsapp gegooid worden. 🫡",
   "Ik zwijg. Ik wil geen brief van de advocaten van de dictator op m'n mat krijgen. Volk, op de knieën! 🙇",
