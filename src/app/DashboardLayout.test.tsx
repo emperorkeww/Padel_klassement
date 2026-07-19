@@ -150,9 +150,10 @@ describe("tier-aankondiging (#127)", () => {
       pt("m-x", 1095, 1105),
     ]);
     renderShell();
-    expect(
-      await screen.findByText(/gepromoveerd naar glazenwasser iii/i),
-    ).toBeInTheDocument();
+    // De toast is een seeded Coach Rudy-quip (#299); alleen het nieuwe
+    // tier-label is deterministisch, dus daarop toetsen we — niet op één
+    // specifieke quip-variant.
+    expect(await screen.findByText(/glazenwasser iii\b/i)).toBeInTheDocument();
     expect(celebrate).toHaveBeenCalled();
     expect(window.localStorage.getItem("tier-announced:p1")).toBe("m-x");
   });
@@ -164,7 +165,8 @@ describe("tier-aankondiging (#127)", () => {
       pt("m-x", 1105, 1095),
     ]);
     renderShell();
-    expect(await screen.findByText(/je zakt naar wannabe i/i)).toBeInTheDocument();
+    // Seeded degradatie-quip (#299); toets op het deterministische tier-label.
+    expect(await screen.findByText(/wannabe i\b/i)).toBeInTheDocument();
     expect(celebrate).not.toHaveBeenCalled();
   });
 });
