@@ -16,8 +16,8 @@ describe("tierFor", () => {
     [534, "Sletje van de baan II"],
     [599, "Sletje van de baan I"],
     [600, "Toerist III"],
-    [700, "Prutser III"],
-    [799, "Prutser I"],
+    [700, "Windhapper III"],
+    [799, "Windhapper I"],
     // Bestaande banden (vanaf 800) — ongewijzigd.
     [800, "Bankvuller III"],
     [833, "Bankvuller III"],
@@ -101,11 +101,11 @@ describe("tierChange", () => {
     expect(w.naar.label).toBe("Glazenwasser III");
   });
 
-  it("promotie over de nieuwe onderste grens (Prutser → Bankvuller)", () => {
+  it("promotie over de nieuwe onderste grens (Windhapper → Bankvuller)", () => {
     const w = tierChange(790, 810)!;
     expect(w.richting).toBe("promotie");
     expect(w.hoofdtier).toBe(true);
-    expect(w.van.naam).toBe("Prutser");
+    expect(w.van.naam).toBe("Windhapper");
     expect(w.naar.label).toBe("Bankvuller III");
   });
 

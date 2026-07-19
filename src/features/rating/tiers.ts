@@ -12,7 +12,7 @@
 export type TierNaam =
   | "Sletje van de baan"
   | "Toerist"
-  | "Prutser"
+  | "Windhapper"
   | "Bankvuller"
   | "Blaaskaak"
   | "Wannabe"
@@ -69,7 +69,7 @@ export const TIER_BANDEN: ReadonlyArray<{
 }> = [
   { naam: "Sletje van de baan", key: "slof", emoji: "🥴", flavor: "wordt door de rest van de club gebruikt voor makkelijke gratis winst", min: 500, max: 600 },
   { naam: "Toerist", key: "karton", emoji: "🌴", flavor: "draagt een zonnebril, doet alsof-ie op vakantie is en beweegt voor geen meter", min: 600, max: 700 },
-  { naam: "Prutser", key: "hout", emoji: "🫠", flavor: "heeft de hand-oogcoördinatie van een dronken pinguïn", min: 700, max: 800 },
+  { naam: "Windhapper", key: "hout", emoji: "🫠", flavor: "maakt spectaculaire slagen in de lucht zonder ooit de bal te raken", min: 700, max: 800 },
   { naam: "Bankvuller", key: "brons", emoji: "🪑", flavor: "blijft bij voorkeur op de bank zitten om het spelniveau niet te verpesten", min: 800, max: 900 },
   { naam: "Blaaskaak", key: "zilver", emoji: "💨", flavor: "geeft luidkeels tactisch advies dat-ie zelf nog nooit succesvol heeft uitgevoerd", min: 900, max: 1000 },
   { naam: "Wannabe", key: "goud", emoji: "😤", flavor: "koopt een racket van €350 om het chronische gebrek aan talent te compenseren", min: 1000, max: 1100 },
