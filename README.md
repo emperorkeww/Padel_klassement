@@ -31,8 +31,9 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
     *   Historische Elo-ratinggrafieken op spelersprofielen.
 *   🏆 **Klassementen & Tiers**
     *   Ranglijsten op zowel globaal niveau als per specifieke groep.
-    *   Indeling in divisies/tiers op basis van Elo-rating.
+    *   Indeling in divisies/tiers op basis van Elo-rating (van *Sletje van de baan* tot de absolute toprank *El Padelissimo*).
     *   De nummer 1 van het klassement krijgt de felbegeerde roze kroon en de titel *"Big Daddy"*.
+    *   **De Troon (Dictatorschap):** Als een speler de grens van 1600 rating passeert, bestijgt hij **De Troon** als dictator (*El Padelissimo*) en wordt hij afgezonderd van het reguliere klassement. Bij gebrek aan een gekwalificeerde speler wordt de troon bij verstek bezet door Kylian Mbappé als *Madrid-Dictator* (inclusief eigen dictator-volkslied).
 *   🎾 **Playtomic Integratie & Boekingen**
     *   Live ophalen van vrije banen en tarieven via Playtomic (geproxied via de Cloudflare Worker).
     *   Genereer direct deelbare visuele posters van beschikbare banen voor in groepschats (WhatsApp/Signal).
@@ -46,6 +47,26 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
 *   🔔 **Notificaties & PWA**
     *   Web-Push notificaties voor nieuwe speelrondes, uitslagen, wedstrijdherinneringen en poll-deadlines.
     *   Installeerbaar als Progressive Web App (PWA) op mobiel en desktop.
+
+---
+
+## 🏆 Tiers & Divisies
+
+De applicatie verdeelt spelers op basis van hun actieve Elo-rating onder in verschillende divisies. Deze indeling bepaalt de badges, toasts, en visuals in de app:
+
+| Divisie | Rating | Sleutel | Emoji | Karakteristiek / Flavor |
+| :--- | :--- | :--- | :--- | :--- |
+| **El Padelissimo** | 1600+ | `dictator` | 🫡 | Regeert de club als absolute dictator, weert tegenstanders per direct uit de groepsapp en eist 90% van de baromzet. |
+| **GOAT** | 1400–1599 | `legende` | 🐐 | Heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past. |
+| **Forever second** | 1300–1400 | `meester` | 🥈 | Eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant. |
+| **Eeuwige belofte** | 1200–1300 | `diamant` | ⏳ | Staat in theorie altijd 5-1 voor in de beslissende set, maar choket gegarandeerd zodra er druk op de ketel staat. |
+| **Glazenwasser** | 1100–1200 | `platina` | 🪟 | Heeft de glazen achterwand zo vaak geraakt dat hij er inmiddels woont. |
+| **Wannabe** | 1000–1100 | `goud` | 😤 | Koopt een racket van €350 om het chronische gebrek aan talent te compenseren. *(Startniveau)* |
+| **Blaaskaak** | 900–1000 | `zilver` | 💨 | Geeft luidkeels tactisch advies dat-ie zelf nog nooit succesvol heeft uitgevoerd. |
+| **Bankvuller** | 800–900 | `brons` | 🪑 | Blijft bij voorkeur op de bank zitten om het spelniveau niet te verpesten. |
+| **Ballenraper** | 700–800 | `hout` | 🎾 | Besteedt 90% van de tijd aan het bukken en rapen van ballen; slaat ze zelden over het net. |
+| **Stofzuiger** | 600–700 | `karton` | 🧹 | Rent blindelings op elke bal af, inclusief de ballen die overduidelijk voor zijn partner bedoeld waren. |
+| **Sletje van de baan** | 500–600 | `slof` | 🥴 | Wordt door de rest van de club gebruikt voor makkelijke gratis winst. |
 
 ---
 
