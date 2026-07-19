@@ -127,3 +127,91 @@ export const AFDROGING_LOF: readonly string[] = [
   "Absolute klasse. De tegenstander mocht enkel toekijken.",
   "Zo domineer je een baan. M'n notitieboekje krijgt een gouden randje.",
 ];
+
+// ── Anticipatie-pushes in Rudy's stem (#302) ────────────────────────────────
+// Nieuwe-ronde en "jouw beurt" zijn géén straf maar een vooruitblik: schild aan
+// (of onbekend profiel) → een warme, neutrale regel, anders een op intensiteit
+// geschaalde plaag. Bewust notificatie-kort, zoals de PIAS/BAGEL-pools.
+
+// Nieuwe ronde gegenereerd — de match staat klaar (send-push, new_round).
+export const NIEUWE_MATCH_NEUTRAAL: readonly string[] = [
+  "Er staat een nieuwe match voor je klaar. Veel plezier op de baan.",
+  "Nieuwe ronde gegenereerd — kijk maar eens tegen wie je speelt.",
+  "Je volgende match staat ingepland. Succes ermee.",
+];
+export const NIEUWE_MATCH: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Nieuwe ronde. Warm die smoesjes alvast op.",
+    "Er staat een match klaar. Probeer deze keer wél te winnen.",
+    "Je volgende tegenstander is bekend. Slaap er maar een nachtje minder om.",
+    "Nieuwe match gegenereerd. Mijn notitieboekje ligt weer open.",
+  ],
+  gemeen: [
+    "Nieuwe ronde. Je tegenstander slaapt nog — verrassingsaanval?",
+    "Er staat een match klaar. Ik heb de EHBO alvast stand-by gezet.",
+    "Nieuwe match. Deze keer graag de bal wél over het net, als experiment.",
+    "Je volgende partij is ingepland. Mijn tactische plan: hoop op geluk.",
+  ],
+  radioactief: [
+    "Nieuwe ronde. Verlies deze en ik lees het voor op de persconferentie.",
+    "Er staat een match klaar. Begin vast met een creatief excuus verzinnen.",
+    "Nieuwe match. Ik heb m'n rode pen al geslepen voor het notitieboekje.",
+    "Je volgende tegenstander is bekend. Zij ook — en zij lachen.",
+  ],
+};
+
+// "Jouw beurt": vlak vóór een geplande match (match-reminders). De regels volgen
+// op "Om <tijd> sta je op de baan.", dus ze staan op zichzelf zonder tijd.
+export const JOUW_BEURT_NEUTRAAL: readonly string[] = [
+  "Succes met je match!",
+  "Zet 'm op vandaag.",
+  "Veel plezier op de baan.",
+];
+export const JOUW_BEURT: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Vergeet je racket niet, en je smoesjes ook niet.",
+    "Warmloopschoenen aan — het is bijna tijd.",
+    "Tijd om te laten zien dat je getraind hebt. Toch?",
+    "Nog even en de bal rolt. Focus.",
+  ],
+  gemeen: [
+    "Probeer deze keer op te komen dagen én te scoren.",
+    "Ik hou m'n notitieboekje bij de hand. Voor de zekerheid.",
+    "Je tegenstander is al aan het rekken. Jij nog aan het twijfelen?",
+    "Tijd om te bewijzen dat het geen typefout in het klassement was.",
+  ],
+  radioactief: [
+    "Verlies je deze, dan hoort de hele groepschat het van me.",
+    "Laatste kans om m'n tactische plan niet volledig te verpesten.",
+    "De persconferentie na afloop schrijf ik nu al. Kies zelf de toon.",
+    "Kom opdagen. Of niet — dan win ik de weddenschap met mezelf.",
+  ],
+};
+
+// Relationele/planning-pushes (#302): een vriendschapsverzoek en de speeldag-
+// polls zijn niet-kwetsend en gaan vaak naar meerdere ontvangers, dus één warme,
+// licht plagende pool — schild-neutraal per definitie, niet intensiteit-geschaald
+// (zoals AFDROGING_LOF). Ze volgen op een informatieve eerste zin.
+export const VRIENDSCHAP: readonly string[] = [
+  "Vers bloed voor je vijandenlijst. Ik noteer 'm.",
+  "Een nieuwe rivaal in de maak. Accepteer maar, dan kun je verliezen.",
+  "Nog een naam om straks van te winnen. Of andersom.",
+  "Tijd om die vriendschap op de baan te testen.",
+  "Ik verheug me nu al op jullie eerste onderlinge bloedbad.",
+];
+export const POLL_NIEUW: readonly string[] = [
+  "Stem wanneer je kunt — mijn wisselschema hangt ervan af.",
+  "Laat weten wanneer je kan, dan plan ik de vernedering in.",
+  "Geef je momenten door voordat de groep zonder jou beslist.",
+  "Stemmen is verplicht. Nou ja, sterk aangeraden.",
+];
+export const POLL_MOMENT: readonly string[] = [
+  "Zet 'm in je agenda, geen smoesjes achteraf.",
+  "Kom opdagen, of leg het straks maar uit aan mij.",
+  "De baan roept. Jij hopelijk ook.",
+];
+export const POLL_GEBOEKT: readonly string[] = [
+  "Baan geboekt. Nu jij nog, in vorm.",
+  "Het is officieel. Poets die rackets op.",
+  "Geregeld. Ik verwacht een waardig schouwspel.",
+];

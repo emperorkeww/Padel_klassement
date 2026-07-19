@@ -4,6 +4,11 @@
 //  - INSERT op matches met status != completed  → "Nieuwe ronde" naar de 4 spelers
 //  - UPDATE op matches naar status = completed  → "Uitslag ingevoerd" naar de 4 spelers
 //  - INSERT op friendships (pending)            → "Vriendschapsverzoek" naar de ontvanger
+//
+// Coach Rudy's stem (#302): de nieuwe-ronde-, vriendschaps- en poll-teksten
+// zijn on-brand. De nieuwe ronde gaat per speler (respecteert schild +
+// intensiteit, zie personalMessages); vriendschap/polls zijn niet-kwetsend en
+// gebruiken één schild-neutrale pool.
 //  - INSERT/UPDATE op pias_of_week (#203)       → Coach Rudy-sneer naar de pias zelf
 //  - UPDATE op matches met een afdroging (#409) → Rudy-sneer voor de verliezers,
 //    een schouderklopje voor de winnaars, i.p.v. de neutrale "Uitslag ingevoerd"
@@ -26,9 +31,15 @@ import {
   BAGEL_SNEER,
   kiesUit,
   MONSTER_SNEER,
+  NIEUWE_MATCH,
+  NIEUWE_MATCH_NEUTRAAL,
   PIAS_SNEER,
+  POLL_GEBOEKT,
+  POLL_MOMENT,
+  POLL_NIEUW,
   type RoastIntensiteit,
   roastSeed,
+  VRIENDSCHAP,
 } from "../_shared/roast.ts";
 
 // Gedeeld geheim voor de database-webhook (#459). Bewust fail-closed: is het
@@ -137,10 +148,16 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       status: string;
     };
     if (rec.status !== "pending") return [];
+    // Rudy's stem (#302): informatieve eerste zin + een lichte plaag. Niet-
+    // kwetsend en één ontvanger, dus één schild-neutrale pool. Seed op het paar.
+    const quip = kiesUit(
+      VRIENDSCHAP,
+      roastSeed(rec.requester_id, rec.addressee_id),
+    );
     return [{
       recipients: [rec.addressee_id],
       title: "Nieuw vriendschapsverzoek 🎾",
-      body: `${await nameOf(rec.requester_id)} wil met je padellen.`,
+      body: `${await nameOf(rec.requester_id)} wil met je padellen. ${quip}`,
       url: "/vrienden",
       kind: "friend_request",
     }];
@@ -150,13 +167,17 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     const rec = payload.record as unknown as MatchRecord;
     // Alleen geplande (gegenereerde) matches; direct gelogde uitslagen niet.
     if (rec.status === "completed") return [];
-    return [{
+    // Nieuwe ronde in Rudy's stem (#302): per speler een eigen tekst zodat het
+    // schild + de intensiteit gerespecteerd worden, seed op (match, speler).
+    return await personalMessages({
       recipients: await playersOf(rec),
-      title: "Nieuwe ronde gegenereerd 🎾",
-      body: "Jouw match staat klaar — bekijk tegen wie je speelt.",
+      neutraal: NIEUWE_MATCH_NEUTRAAL,
+      pool: NIEUWE_MATCH,
+      seedKey: `nieuwe-match|${rec.id}`,
+      title: "🎙️ Coach Rudy heeft een nieuwe ronde voor je",
       url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
       kind: "new_round",
-    }];
+    });
   }
 
   if (payload.table === "matches" && payload.type === "UPDATE") {
@@ -187,7 +208,9 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
           .map((m) => m.player_id)
           .filter((id) => id !== rec.created_by),
         title: "Nieuwe speeldag-poll 🎾",
-        body: `${await nameOf(rec.created_by)} stelt momenten voor — stem wanneer je kunt.`,
+        body: `${await nameOf(rec.created_by)} stelt momenten voor. ${
+          kiesUit(POLL_NIEUW, roastSeed(rec.id, "poll-nieuw"))
+        }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
       }];
@@ -204,7 +227,9 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       return [{
         recipients: voters,
         title: "Speelmoment gekozen 🎾",
-        body: `De groep speelt ${moment}. Kijk of je erbij bent.`,
+        body: `De groep speelt ${moment}. ${
+          kiesUit(POLL_MOMENT, roastSeed(rec.id, "locked"))
+        }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
       }];
@@ -221,7 +246,9 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       return [{
         recipients: yes,
         title: "Baan geboekt ✓",
-        body: `Jullie spelen ${moment}. Zet het in je agenda!`,
+        body: `Jullie spelen ${moment}. ${
+          kiesUit(POLL_GEBOEKT, roastSeed(rec.id, "booked"))
+        }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
       }];
@@ -262,6 +289,41 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
   }
 
   return [];
+}
+
+/**
+ * Bouwt per speler een eigen bericht in Rudy's stem (#302), met respect voor het
+ * roast-schild + de intensiteit: schild aan (of profiel weg) → een neutrale
+ * regel, anders een op intensiteit geschaalde plaag. Deterministisch op
+ * (seedKey, speler-id) zodat een webhook-retry dezelfde tekst oplevert. Bewust
+ * één bericht per speler, zoals de afdroging-verliezers (#409), zodat vier
+ * spelers met verschillende voorkeuren elk hun eigen toon krijgen.
+ */
+async function personalMessages(opts: {
+  recipients: string[];
+  neutraal: readonly string[];
+  pool: Record<RoastIntensiteit, readonly string[]>;
+  seedKey: string;
+  title: string;
+  url: string;
+  kind: MessageKind | null;
+}): Promise<Message[]> {
+  const { recipients, neutraal, pool, seedKey, title, url, kind } = opts;
+  if (recipients.length === 0) return [];
+  const { data: profielen } = await supabase
+    .from("profiles")
+    .select("id, roast_schild, roast_intensiteit")
+    .in("id", recipients);
+  const profielVan = new Map((profielen ?? []).map((p) => [p.id, p]));
+  return recipients.map((pid) => {
+    const p = profielVan.get(pid);
+    const seed = roastSeed(seedKey, pid);
+    // Schild aan of profiel onbekend → neutraal (fail-safe, geen plaag).
+    const body = !p || p.roast_schild
+      ? kiesUit(neutraal, seed)
+      : kiesUit(pool[(p.roast_intensiteit ?? "gemeen") as RoastIntensiteit], seed);
+    return { recipients: [pid], title, body, url, kind };
+  });
 }
 
 /**
