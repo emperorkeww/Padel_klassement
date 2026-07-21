@@ -266,6 +266,65 @@ describe("coachPreMatch", () => {
   it("schild → neutraal", () => {
     expect(coachPreMatch(0.1, "m1", schild)).toMatch(/plezier|succes|focus/i);
   });
+
+  // ── Head-to-head (#581) ───────────────────────────────────────────────────
+  it("H2H-verliesreeks → angstgegner-toon met naam en aantal", () => {
+    const r = coachPreMatch(0.5, "m1", roast, {
+      rivaal: "Zoë",
+      mijnWins: 1,
+      oppWins: 4,
+      verliesreeks: 3,
+    });
+    expect(r).toContain("Zoë");
+    expect(r).toContain("3");
+    expect(r).not.toMatch(/%\w+%/);
+  });
+
+  it("H2H-voorsprong → baas-toon met saldo", () => {
+    const r = coachPreMatch(0.5, "m1", roast, {
+      rivaal: "Zoë",
+      mijnWins: 5,
+      oppWins: 2,
+      verliesreeks: 0,
+    });
+    expect(r).toContain("Zoë");
+    expect(r).toContain("3"); // |5 - 2|
+    expect(r).not.toMatch(/%\w+%/);
+  });
+
+  it("H2H-achterstand → inhaal-toon met saldo", () => {
+    const r = coachPreMatch(0.5, "m1", roast, {
+      rivaal: "Zoë",
+      mijnWins: 2,
+      oppWins: 5,
+      verliesreeks: 0,
+    });
+    expect(r).toContain("Zoë");
+    expect(r).toContain("3");
+    expect(r).not.toMatch(/%\w+%/);
+  });
+
+  it("gelijke H2H zonder reeks valt terug op de winkans", () => {
+    const r = coachPreMatch(0.2, "m1", roast, {
+      rivaal: "Zoë",
+      mijnWins: 3,
+      oppWins: 3,
+      verliesreeks: 0,
+    });
+    expect(r).not.toContain("Zoë");
+    expect(r).toMatch(/bookmaker|kansloos|underdog|Winamax|partner|medelijden|minuut|opgeschort|outsider/i);
+  });
+
+  it("schild negeert de H2H en blijft neutraal", () => {
+    const r = coachPreMatch(0.5, "m1", schild, {
+      rivaal: "Zoë",
+      mijnWins: 1,
+      oppWins: 4,
+      verliesreeks: 3,
+    });
+    expect(r).toMatch(/plezier|succes|focus/i);
+    expect(r).not.toContain("Zoë");
+  });
 });
 
 import { coachEmptyState } from "@/features/coach/coachMoments";
