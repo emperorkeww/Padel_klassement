@@ -29,27 +29,37 @@ const COVER = [
   "Ik heb m'n notitieboekje van dit jaar er nog eens bij gepakt. Boeiende lectuur.",
   "Jouw padeljaar, becommentarieerd door ondergetekende. Een eer, uiteraard.",
   "Tijd voor de jaarrekening. Geen zorgen, ik tel de nederlagen maar één keer.",
+  "De statistieken van een heel jaar. Tijd voor de onthulling.",
+  "Jouw jaaroverzicht. Laten we kijken of er nog wat tactiek tussen zat.",
 ] as const;
 
 const VOLUME_HOOG = [
   "Zoveel potten én een nette winrate? Ik noteer dit bij de zeldzame lichtpuntjes.",
   "Een indrukwekkend aantal matches. Je woont zowat op de baan.",
   "Volume én rendement. Dat schrijf ik met een groene pen op, voor de verandering.",
+  "Niet te stoppen op de baan. Je racket heeft amper rust gehad.",
+  "Indrukwekkend volume. De kooi is zowat je tweede adres.",
 ] as const;
 const VOLUME_MID = [
   "Een keurig aantal matches. De middenmoot van de inzet, zullen we maar zeggen.",
   "Genoeg gespeeld om een oordeel te vormen. Dat oordeel volgt zo.",
   "Netjes gevuld seizoen. De kwantiteit zat wel snor.",
+  "Een stabiel aantal matches. Een degelijk seizoen.",
+  "Regelmatig gespeeld. Goed voor de fitheid, prima.",
 ] as const;
 const VOLUME_LAAG = [
   "Al die matches en tóch die winrate? Kwantiteit is duidelijk je ding, kwaliteit iets minder.",
   "Zoveel gespeeld, zo weinig gewonnen. Mijn pen raakte er bijna van leeg.",
   "Veel baan-tijd, weinig zeges. Volgend jaar minder volume, meer tactiek.",
+  "Te veel verloren voor het aantal matches dat je speelde. Tijd voor training.",
+  "De kwantiteit was hoog, maar m'n notitieboekje schreeuwde om kwaliteit.",
 ] as const;
 const VOLUME_NEUTRAAL = [
   "Een mooi aantal matches dit jaar. Elke pot telt.",
   "Lekker veel gespeeld. Zo hoort het.",
   "Een goedgevuld padeljaar. Chapeau voor de inzet.",
+  "Een mooi seizoen achter de rug. Op naar de volgende matches.",
+  "Elke match heeft bijgedragen aan de cijfers. Netjes.",
 ] as const;
 
 const KALENDER = [
@@ -57,6 +67,8 @@ const KALENDER = [
   "Je drukste maand spreekt boekdelen. Toen stond de baan in brand.",
   "Zo te zien had je een favoriete speeldag. Gewoontedier, en dat siert je.",
   "Een mooi patroon in de planning. Regelmaat is het halve werk.",
+  "Een prachtig patroon. Een speler die leeft for de vaste padelmomenten.",
+  "De maanden vlogen voorbij op de baan. Regelmaat siert de speler.",
 ] as const;
 
 const REEKS_WINST = [
@@ -64,12 +76,16 @@ const REEKS_WINST = [
   "Op rij winnen is een kunst. Deze keer eentje die je echt beheerste.",
   "Een reeks om trots op te zijn. Ik heb 'm dubbel onderstreept.",
   "Zo'n reeks bouw je niet met geluk alleen. Petje af — een échte pet.",
+  "Een winreeks om in te lijsten. Meesterlijk gedaan.",
+  "Onstuitbaar tijdens je beste reeks. Dat noteer ik met plezier.",
 ] as const;
 const REEKS_VERLIES = [
   "Die verliesreeks kleurde m'n notitieboekje aardig rood. Maar je bleef terugkomen.",
   "Een pijnlijke reeks. Karakter opbouwen, noemen ze dat. Heel véél karakter.",
   "Zo'n reeks doet pijn aan de ogen. Gelukkig krabbelde je er weer bovenop.",
   "De donkerste periode van je jaar. Ik heb er een heel hoofdstuk over geschreven.",
+  "Een reeks nederlagen die we snel gaan vergeten. Of juist analyseren.",
+  "Die verliesreeks was pijnlijk, maar je toonde ruggengraat.",
 ] as const;
 
 const MAATJE = [
@@ -77,22 +93,30 @@ const MAATJE = [
   "Een gouden koppel. Samen sta je duidelijk sterker.",
   "Met dit maatje aan je zij ging het een stuk beter. Koester die klik.",
   "Een partnerschap uit het tactische boekje. Blijven doen.",
+  "Een fantastisch duo. Samen de baan domineren.",
+  "Rotsvaste chemie met je partner. Een genot om te zien.",
 ] as const;
 
 const RIVAAL_FAVORIET = [
   "Je favoriete tegenstander mag je dankbaar zijn voor het entertainment. Jij hem voor de punten.",
   "Sommige tegenstanders zijn gewoon een cadeautje. Jij weet welke.",
   "Tegen deze speler kwam je best op dreef. Blijf hem uitnodigen.",
+  "Tegen deze rivaal liep het gesmeerd. Blijf hem uitdagen.",
+  "Puntenpakker tegen je favoriete tegenstander. Lekker.",
 ] as const;
 const RIVAAL_NEMESIS = [
   "En dan die angstgegner. Zelfs ik kreeg hoofdpijn van die confrontaties.",
   "Iedereen heeft een nemesis. De jouwe zit duidelijk in je hoofd.",
   "Tegen die ene tegenstander wil het maar niet lukken. Huiswerk voor volgend jaar.",
+  "Je nemesis had de overhand. Huiswerk voor de komende trainingen.",
+  "Angstgegner op papier en op de baan. Tijd voor revanche.",
 ] as const;
 const RIVAAL_MIX = [
   "Een favoriet én een angstgegner. Zo hoort een rivaliteit eruit te zien.",
   "De een geeft je punten, de ander grijze haren. Balans in alles.",
   "Je vrienden en je vijanden op de baan. Beiden even leerzaam.",
+  "Rivaliteiten die het seizoen kleur gaven. Dat is sport.",
+  "Je vrienden en je vijanden. De balans was perfect.",
 ] as const;
 
 const PRESTATIE = [
@@ -100,28 +124,38 @@ const PRESTATIE = [
   "Je sterkste moment van het jaar. Zelfs mijn kritische pen viel stil.",
   "Hier liet je zien waartoe je in staat bent. Doe dat vaker.",
   "Een hoogtepunt om te bewaren. Ik zet 'm bij m'n eigen masterplans in de kast.",
+  "Een moment van absolute glorie. Dit blijft me bij.",
+  "Je absolute hoogtepunt. Zelfs ik stond te klappen.",
 ] as const;
 
 const RATING_UP = [
   "Je rating klom netjes. Ik durf bijna te zeggen dat het geen toeval was.",
   "De cijfers gingen omhoog. Blijf op dit spoor en ik word nog aardig ook.",
   "Rating in de lift. Dat noteer ik met een tevreden krabbel.",
+  "Rating in stijgende lijn. De vooruitgang is heel duidelijk.",
+  "Elo omhoog. De trainingen werpen hun vruchten af.",
 ] as const;
 const RATING_DOWN = [
   "Je rating zakte wat weg. We noemen het een investering in volgend jaar.",
   "De curve wees naar beneden. Tijd voor een tactische heropbouw.",
   "Rating in mineur. Geen ramp — het punt is dat je weer stijgt.",
+  "Rating gezakt. Een tijdelijke dip voor een grote sprong volgend jaar.",
+  "Curve naar beneden. Tijd om de looplijnen opnieuw te bestuderen.",
 ] as const;
 const RATING_FLAT = [
   "Je rating bleef stabiel. Betrouwbaar, zoals een goede bondscoach.",
   "Weinig beweging in de cijfers. Stabiliteit heeft ook z'n charme.",
   "Rating netjes op koers gehouden. Nu de volgende stap nog.",
+  "Rating stabiel gehouden. Een betrouwbare prestatie.",
+  "Weinig schommelingen. Stabiliteit als stevig fundament.",
 ] as const;
 
 const BADGE = [
   "Een zeldzame vangst. Daar mag je stiekem best trots op zijn.",
   "Deze badge haalt bijna niemand. Jij dus wel. Chapeau.",
   "Een unieke prestatie in de collectie. Ik knik goedkeurend.",
+  "Een zeldzame prestatie. Chapeau voor deze badge.",
+  "Unieke vangst in je collectie. Dat mag gevierd.",
 ] as const;
 
 const OUTRO = [
@@ -129,6 +163,8 @@ const OUTRO = [
   "Tot zover de terugblik. Op naar een seizoen met nog meer verhalen.",
   "Einde van de rit. Deel 'm met je maatjes — ik ben benieuwd naar de reacties.",
   "Zo, dat was het jaar. Volgend seizoen sta ik er weer, pen in de aanslag.",
+  "Tot zover het jaaroverzicht. M'n pen ligt al klaar voor het nieuwe seizoen.",
+  "Einde van de terugblik. Laten we er volgend jaar weer tegenaan gaan.",
 ] as const;
 
 /**
@@ -191,62 +227,84 @@ const EIND_KOP_LOF = [
   "Coach Rudy's Eindoordeel: geslaagd",
   "Het rapport ligt klaar: dik voldoende",
   "Mijn eindconclusie: knap gedaan",
+  "Coach Rudy's Eindoordeel: meesterlijk",
+  "Mijn eindrapport: uiterst succesvol",
 ] as const;
 const EIND_KOP_MID = [
   "Coach Rudy's Eindoordeel: ruim voldoende",
   "Het rapport ligt klaar: netjes",
   "Mijn eindconclusie: prima basis",
+  "Coach Rudy's Eindoordeel: stabiel jaar",
+  "Mijn eindconclusie: degelijk seizoen",
 ] as const;
 const EIND_KOP_SNEER = [
   "Coach Rudy's Eindoordeel: werk aan de winkel",
   "Het rapport ligt klaar: onvoldoende",
   "Mijn eindconclusie: terug de trainingsbank op",
+  "Coach Rudy's Eindoordeel: dramatisch",
+  "Mijn eindrapport: zware tekortkomingen",
 ] as const;
 
 const EIND_WINRATE_HOOG = [
   "Je hebt gewonnen, ja. Maar tactisch vond ik het ongeorganiseerd. Volgend jaar begin je gewoon weer op de bank.",
   "Een prima winrate. Ik weiger alleen te geloven dat er geen geluk bij zat.",
   "Je won vaker dan je verloor. Zeldzaam, en ik gun het je — deze ene keer.",
+  "Een indrukwekkend winpercentage. Ik zet 'm met een trotse glimlach in het jaarboek.",
+  "Je hebt de overhand gehad dit jaar. Heel netjes gedaan, al mag de service nog strakker.",
 ] as const;
 const EIND_WINRATE_MID = [
   "Je winrate hangt precies rond het midden. Veilig, grijs, en nét niet indrukwekkend.",
   "Winst en verlies in evenwicht. De diplomatieke uitslag van een bange speler.",
   "Fiftyfifty ongeveer. Volgend jaar wil ik die balans richting winst zien kantelen.",
+  "Stabiel in het midden. Niets om je voor te schamen, niets om over op te scheppen.",
+  "Precies gemiddeld. Volgend jaar de tactiek wat scherper zetten voor de winst.",
 ] as const;
 const EIND_WINRATE_LAAG = [
   "Mijn notitieboekje zit vol met rode strepen door jouw toedoen. Volgend jaar fungeer je uitsluitend als ballenjongen.",
   "Meer verloren dan gewonnen. Ik heb er een aparte, dikke map voor aangelegd.",
   "Die winrate deed pijn aan m'n ogen. We beginnen volgend jaar helemaal opnieuw.",
+  "Dit jaaroverzicht deed pijn aan m'n ogen. Zoveel rode cijfers is bijna een kunst.",
+  "De grafiek ging genadeloos omlaag. Tijd voor een totale tactische heroverweging.",
 ] as const;
 const EIND_WINRATE_SCHILD = [
   "Je hebt een heel seizoen volgemaakt. Dat verdient sowieso een pluim.",
   "De inzet zat er het hele jaar in. Daar houd ik van.",
   "Een compleet padeljaar op de teller. Chapeau voor het doorzetten.",
+  "Een heel jaar strijd geleverd op de baan. Klasse inzet.",
+  "Elke match heeft bijgedragen aan dit jaaroverzicht. Chapeau.",
 ] as const;
 
 const EIND_WINST = [
   "Die langste winreeks blijft me bij — even leek je onstuitbaar.",
   "Je beste reeks liet zien wat er in je zit. Nu vaker.",
+  "Die winstreak liet zien hoe dominant je kunt zijn. Probeer dat vast te houden.",
+  "Je langste reeks overwinningen was een absoluut hoogtepunt dit seizoen.",
 ] as const;
 const EIND_VERLIES = [
   "En dan die verliesreeks... daar hebben we het volgend jaar niet meer over, afgesproken?",
   "Je langste verliesreeks vulde in m'n boekje een treurig hoofdstuk.",
+  "Die verliesreeks was een zware test. Maar je bleef wel vechten.",
+  "M'n spiekbriefje kleurde rood tijdens je mindere periode, maar je herpakte je.",
 ] as const;
 const EIND_BAGEL_VOOR = [
   "Een paar keer een 6-0 uitgedeeld. Genadeloos — dat mag ik wel.",
   "Je deelde zowaar wat bagels uit. Daar krijg ik trek in.",
+  "Bagels uitdelen is het lekkerst wat er is. Zorg dat je er volgend jaar nog meer bakt.",
 ] as const;
 const EIND_BAGEL_TEGEN = [
   "Een paar keer met 0-6 ingemaakt. Die avonden slaan we stilletjes over.",
   "Je slikte wat bagels. Volgend jaar staan die aan de óverkant, hoop ik.",
+  "Die bagels tegen waren pijnlijk. Volgend jaar beter opletten aan het net.",
 ] as const;
 const EIND_RATING_UP = [
   "Je rating klom door het jaar heen. De grafiek wijst de goede kant op.",
   "Onder de streep ging je rating vooruit. Dat telt.",
+  "Een stijgende rating over het hele jaar. De weg omhoog is ingezet.",
 ] as const;
 const EIND_RATING_DOWN = [
   "Je rating zakte over het jaar. Beschouw het als aanloop naar de comeback.",
   "De rating eindigde lager dan hij begon. Werk aan de winkel.",
+  "Ratingverlies over het jaar. Tijd voor een frisse start volgend seizoen.",
 ] as const;
 
 /**

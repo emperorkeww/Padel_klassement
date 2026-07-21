@@ -9,6 +9,8 @@ import {
   OCHTEND_JAGER,
   OCHTEND_KELDER,
   OCHTEND_NIEUW,
+  RIVAAL_REEKS_MIN,
+  DAGDELTA_DREMPEL,
 } from "@/features/coach/coachMoments";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import type { KlassementFeiten, PositieTier } from "@/features/coach/klassementFeiten";
@@ -79,6 +81,90 @@ describe("coachBriefing", () => {
     expect(top).toMatch(/één|Bovenaan/i);
     const rest = coachBriefing({ rank: 7, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast });
     expect(rest).toMatch(/middenmoot|midden|klassement|voetstuk|stabiel/i);
+  });
+
+  // ── Persoonlijke briefing-verrijkingen (#579) ─────────────────────────────
+  const basis = { rank: 7, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast };
+
+  it("benoemt de rivaal-match met ingevulde naam en reeks, zonder rest-placeholder", () => {
+    const r = coachBriefing({
+      ...basis,
+      heeftMatch: true,
+      rivaalMatch: { naam: "Zoë", verliesreeks: 3 },
+    });
+    expect(r).toContain("Zoë");
+    expect(r).toContain("3");
+    expect(r).not.toMatch(/%\w+%/);
+  });
+
+  it("valt onder RIVAAL_REEKS_MIN terug op de gewone matchdag-toon", () => {
+    const r = coachBriefing({
+      ...basis,
+      heeftMatch: true,
+      rivaalMatch: { naam: "Zoë", verliesreeks: RIVAAL_REEKS_MIN - 1 },
+    });
+    expect(r).not.toContain("Zoë");
+  });
+
+  it("de rivaal-match wint van promotie-nabij en de gewone match", () => {
+    const r = coachBriefing({
+      ...basis,
+      heeftMatch: true,
+      rivaalMatch: { naam: "Zoë", verliesreeks: 4 },
+      promotieNabij: { divisie: "Prof II", emoji: "🏆", punten: 10 },
+    });
+    expect(r).toContain("Zoë");
+  });
+
+  it("meldt een promotie binnen handbereik met divisie en Elo-afstand", () => {
+    const r = coachBriefing({
+      ...basis,
+      promotieNabij: { divisie: "Prof II", emoji: "🏆", punten: 12 },
+    });
+    expect(r).toContain("Prof II");
+    expect(r).toContain("12");
+    expect(r).not.toMatch(/%\w+%/);
+  });
+
+  it("meldt de dag-Elo-beweging boven de drempel en valt eronder terug", () => {
+    const up = coachBriefing({ ...basis, dayDelta: DAGDELTA_DREMPEL + 5 });
+    expect(up).toContain(String(DAGDELTA_DREMPEL + 5));
+    expect(up).not.toMatch(/%\w+%/);
+    const onder = coachBriefing({ ...basis, dayDelta: DAGDELTA_DREMPEL - 1 });
+    expect(onder).toMatch(/middenmoot|midden|klassement|voetstuk|stabiel/i);
+  });
+
+  it("nudget richting een badge op een haar na, met resterend aantal", () => {
+    const r = coachBriefing({
+      ...basis,
+      badgeNabij: { naam: "Halve eeuw zeges", emoji: "🏆", nu: 45, doel: 50 },
+    });
+    expect(r).toContain("Halve eeuw zeges");
+    expect(r).toContain("5");
+    expect(r).not.toMatch(/%\w+%/);
+    // Ver van klaar → geen badge-nudge.
+    const ver = coachBriefing({
+      ...basis,
+      badgeNabij: { naam: "Halve eeuw zeges", emoji: "🏆", nu: 1, doel: 50 },
+    });
+    expect(ver).not.toContain("Halve eeuw zeges");
+  });
+
+  it("port bij wisselvallige vorm, maar het schild dempt dat", () => {
+    const wissel = coachBriefing({ ...basis, vorm: ["W", "L", "W", "L"] });
+    expect(wissel).toMatch(/kant|hobbelt|muntworp|zigzag|grillige|richting|pias|weer/i);
+    const beschermd = coachBriefing({ ...basis, vorm: ["W", "L", "W", "L"], ctx: schild });
+    expect(beschermd).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten/i);
+  });
+
+  it("laat dip (losing ≥ 3) boven de rivaal-match gaan", () => {
+    const r = coachBriefing({
+      ...basis,
+      losing: 4,
+      heeftMatch: true,
+      rivaalMatch: { naam: "Zoë", verliesreeks: 5 },
+    });
+    expect(r).not.toContain("Zoë");
   });
 });
 
