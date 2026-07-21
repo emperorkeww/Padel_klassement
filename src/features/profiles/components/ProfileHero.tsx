@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Avatar } from "@/ui/Avatar";
+import { AvatarLightbox } from "@/features/profiles/components/AvatarLightbox";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { displayName } from "@/features/profiles/api";
+import { withViewTransition } from "@/lib/utils/motion";
 import type { ProfileData } from "@/features/profiles/components/types";
 
 // Vaste kop boven de tabs: avatar, naam (+ "jij"/streak) en @handle. Altijd
@@ -18,13 +20,42 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
   // Bij een roast-schild is `roast` null en `nick` neutraal (#183): dan blijft
   // enkel de rustige doopregel over, zonder plaag.
   const aanhef = isMe ? "je" : displayName(p);
+  // De avatar is alleen zinvol klikbaar wanneer er echt een foto is; bij een
+  // initialen-avatar blijft het de kale (decoratieve) span (#572).
+  const photoUrl = p.avatar_url ?? null;
+  const [zoomed, setZoomed] = useState(false);
   return (
     <section className="card profile-hero">
       {/* Zelfde view-transition-naam als de aangetikte klassement-avatar:
-          de foto groeit vloeiend door naar deze grote variant. */}
-      <span style={{ viewTransitionName: "player-avatar", display: "inline-flex" }}>
-        <Avatar profile={p} size={72} />
-      </span>
+          de foto groeit vloeiend door naar deze grote variant. Zodra de
+          lightbox open staat draagt díe de naam, dus geven we 'm hier "none"
+          zodat er nooit twee elementen tegelijk "player-avatar" heten. */}
+      {photoUrl ? (
+        <button
+          type="button"
+          className="profile-hero__avatar-btn"
+          style={{
+            viewTransitionName: zoomed ? "none" : "player-avatar",
+            display: "inline-flex",
+          }}
+          aria-label="Profielfoto vergroten"
+          onClick={() => withViewTransition(() => setZoomed(true))}
+        >
+          <Avatar profile={p} size={72} />
+        </button>
+      ) : (
+        <span style={{ viewTransitionName: "player-avatar", display: "inline-flex" }}>
+          <Avatar profile={p} size={72} />
+        </span>
+      )}
+      {photoUrl && (
+        <AvatarLightbox
+          open={zoomed}
+          onClose={() => withViewTransition(() => setZoomed(false))}
+          url={photoUrl}
+          name={displayName(p)}
+        />
+      )}
       <div className="profile-hero__body">
         <h1 className="profile-hero__name">
           {displayName(p)}

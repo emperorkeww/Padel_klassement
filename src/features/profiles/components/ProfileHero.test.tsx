@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Profile } from "@/types";
 import type { ProfileData } from "@/features/profiles/components/types";
 import { ProfileHero } from "@/features/profiles/components/ProfileHero";
@@ -10,6 +11,11 @@ const ALICE: Profile = {
   full_name: "Alice",
   avatar_url: null,
   created_at: "",
+};
+
+const ALICE_MET_FOTO: Profile = {
+  ...ALICE,
+  avatar_url: "https://example.com/alice.jpg",
 };
 
 // ProfileHero leest maar een handvol velden uit ProfileData; de rest laten we
@@ -59,5 +65,47 @@ describe("ProfileHero — Coach Rudy deelt de bijnaam uit (#298)", () => {
     expect(screen.getByText(/Ik doop/)).toBeInTheDocument();
     // Rudy is er (deelt de doopnaam uit) maar zonder tweede, plagende regel.
     expect(screen.getByText("Coach Rudy")).toBeInTheDocument();
+  });
+});
+
+describe("ProfileHero — klikbare profielfoto (#572)", () => {
+  it("toont geen vergroot-knop bij een initialen-avatar (geen foto)", () => {
+    render(<ProfileHero d={hero({ p: ALICE })} />);
+    expect(
+      screen.queryByRole("button", { name: "Profielfoto vergroten" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("maakt de foto klikbaar en vergroot naar een dialoog", async () => {
+    const user = userEvent.setup();
+    render(<ProfileHero d={hero({ p: ALICE_MET_FOTO })} />);
+
+    const knop = screen.getByRole("button", { name: "Profielfoto vergroten" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(knop);
+    expect(screen.getByRole("dialog", { name: "Vergrote profielfoto" })).toBeInTheDocument();
+  });
+
+  it("sluit met Escape en geeft focus terug aan de avatar-knop", async () => {
+    const user = userEvent.setup();
+    render(<ProfileHero d={hero({ p: ALICE_MET_FOTO })} />);
+
+    const knop = screen.getByRole("button", { name: "Profielfoto vergroten" });
+    await user.click(knop);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(knop).toHaveFocus();
+  });
+
+  it("sluit door op de achtergrond/foto te klikken", async () => {
+    const user = userEvent.setup();
+    render(<ProfileHero d={hero({ p: ALICE_MET_FOTO })} />);
+
+    await user.click(screen.getByRole("button", { name: "Profielfoto vergroten" }));
+    await user.click(screen.getByRole("dialog"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
