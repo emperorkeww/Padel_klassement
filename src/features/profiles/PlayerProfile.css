@@ -8,6 +8,48 @@
     var(--surface);
 }
 
+/* Klikbare profielfoto → vergroten (#572). De knop is enkel een transparante
+   hitbox rond de avatar; de morph loopt via viewTransitionName player-avatar. */
+.profile-hero__avatar-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  line-height: 0;
+  cursor: zoom-in;
+}
+.profile-hero__avatar-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Vergrote weergave: donkere backdrop met de foto groot en gecentreerd. De foto
+   erft de player-avatar-morph, dus hij groeit/krimpt vloeiend heen en terug. */
+.avatar-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  background: var(--overlay);
+  cursor: zoom-out;
+  animation: sheet-fade 0.15s ease-out;
+}
+.avatar-lightbox__img {
+  width: min(80vw, 80vh, 420px);
+  height: min(80vw, 80vh, 420px);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: var(--shadow-lg);
+  cursor: zoom-out;
+  view-transition-name: player-avatar;
+}
+.avatar-lightbox__img:focus-visible {
+  outline: none;
+}
+
 /* Tier-pil op een eigen regel binnen de (geaccentueerde) rating-tegel, zodat
    hij nooit botst met de delta naast de ratingwaarde. */
 .stat__badge {
