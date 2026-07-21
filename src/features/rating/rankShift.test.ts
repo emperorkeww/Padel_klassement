@@ -129,4 +129,24 @@ describe("rankShifts", () => {
     expect(shifts.get("a")?.shift).toBe(1);
     expect(shifts.get("c")?.shift).toBe(-1);
   });
+
+  it("gebruikt de rating-snapshot voor de huidige rang, niet de historie (#570)", () => {
+    const standings = [
+      row("a", "alice", 3, { played: 2, won: 1, lost: 1, goal_diff: 0 }),
+      row("c", "carol", 3, { played: 2, won: 1, lost: 1, goal_diff: 0 }),
+    ];
+    // De historie zou alice hoger zetten (1600 > 1400), maar de autoritatieve
+    // snapshot zegt het omgekeerde — die is leidend, net als in het klassement.
+    const histories = {
+      a: [hp("2026-07-01T18:00:00Z", 1500, 1600)],
+      c: [hp("2026-07-01T18:00:00Z", 1500, 1400)],
+    };
+    const ratings = {
+      a: { player_id: "a", rating: 1400, games: 2, updated_at: "x" },
+      c: { player_id: "c", rating: 1600, games: 2, updated_at: "x" },
+    };
+    const shifts = rankShifts(standings, [match({})], TEAMS, null, histories, ratings);
+    expect(shifts.get("c")?.rank).toBe(1);
+    expect(shifts.get("a")?.rank).toBe(2);
+  });
 });

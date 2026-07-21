@@ -248,8 +248,8 @@ export function Leaderboard() {
   const pmap = profilesMap.data ?? {};
   // Stabiele referentie: tmap voedt de useMemo van de rangverschuivingen.
   const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
-  const rmap = ratings.data ?? {};
-  // Stabiele referentie: hmap voedt de useMemo van de rangverschuivingen.
+  // Stabiele referenties: rmap/hmap voeden de useMemo van de rangverschuivingen.
+  const rmap = useMemo(() => ratings.data ?? {}, [ratings.data]);
   const hmap = useMemo(() => histories.data ?? {}, [histories.data]);
 
   // AI dictator-portret (#554): pre-warm het eigen portret zodra ik in range kom
@@ -355,8 +355,8 @@ export function Leaderboard() {
   // in "Alle tijden": een seizoensarchief beweegt niet meer.
   const shifts = useMemo(
     () =>
-      rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null, hmap),
-    [players.data, recent.data, tmap, groupId, hmap],
+      rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null, hmap, rmap),
+    [players.data, recent.data, tmap, groupId, hmap, rmap],
   );
 
   // Datum van mijn laatste afgeronde match — preset voor "stand op datum".

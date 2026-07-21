@@ -5,15 +5,23 @@
 // verschuiving.
 //
 // Het klassement voor spelers is rating-leidend (#52): rating ↓, en pas bij
-// gelijke/ontbrekende rating de klassieke punten-tie-break. De rating komt uit
-// de rating-historie (rating_after) — de huidige rating is het laatste punt,
-// de rating "van vóór de laatste speeldag" is het laatste punt vóór die dag.
-// Zonder historie valt de berekening terug op louter punten (o.a. de tests en
-// scopes zonder rating-data), zodat het gedrag identiek blijft.
+// gelijke/ontbrekende rating de klassieke punten-tie-break. De huidige rating
+// komt uit de autoritatieve snapshot (`player_ratings`, net als de Leaderboard),
+// zodat de huidige rang exact overeenkomt met wat het klassement toont. Voor de
+// rating "van vóór de laatste speeldag" bestaat geen snapshot; die reconstrueren
+// we uit de rating-historie (het laatste rating_after vóór die dag). Ontbreekt de
+// snapshot, dan valt de huidige rating terug op de historie; ontbreekt álle
+// rating-data (o.a. de tests en scopes), dan valt het terug op louter punten.
 
 import { playersOf } from "@/features/rating/results";
 import { byRank } from "@/features/rating/standings";
-import type { Match, PlayerStanding, RatingPoint, Team } from "@/types";
+import type {
+  Match,
+  PlayerRating,
+  PlayerStanding,
+  RatingPoint,
+  Team,
+} from "@/types";
 
 /** Positief = gestegen, negatief = gezakt, 0 = gelijk, "nieuw" = stond er
  *  vóór de laatste speeldag nog niet in. */
@@ -67,6 +75,7 @@ export function rankShifts(
   teams: Record<string, Team>,
   groupId: string | null = null,
   histories: Record<string, RatingPoint[]> = {},
+  ratings: Record<string, PlayerRating> = {},
 ): Map<string, RankShift> {
   const out = new Map<string, RankShift>();
   const done = matches.filter(
@@ -120,10 +129,15 @@ export function rankShifts(
     );
   }
 
+  // Huidige rating: de autoritatieve snapshot (zoals de Leaderboard), met de
+  // historie als terugval zodat het ook werkt als de snapshot ontbreekt.
+  const currentRating = (pid: string) =>
+    ratings[pid]?.rating ?? ratingBefore(histories[pid], null);
+
   // Huidige rang: de standings zélf opnieuw ordenen op de klassement-volgorde —
   // de aangeleverde array-volgorde (punten) is níét leidend (#570).
   const currentRanked = [...standings]
-    .map((p) => ({ ...p, rating: ratingBefore(histories[p.player_id], null) }))
+    .map((p) => ({ ...p, rating: currentRating(p.player_id) }))
     .sort(byDisplay);
   const currentRank = new Map(
     currentRanked.map((p, i) => [p.player_id, i + 1] as const),
