@@ -2,6 +2,7 @@ import type {
   Friendship,
   GroupMember,
   Match,
+  PlayerRating,
   PlayerStanding,
   Profile,
   RatingPoint,
@@ -217,6 +218,8 @@ export function buildFeed(input: {
   histories?: Record<string, RatingPoint[]>;
   /** Globale stand → klassementsprongen (rankShifts). */
   standings?: PlayerStanding[];
+  /** Huidige rating-snapshot per speler → rating-leidende rang in rankShifts. */
+  ratings?: Record<string, PlayerRating>;
   /** Eigen groepen (+ leden en polls) → groeps- en poll-items. */
   groups?: FeedGroup[];
   membersByGroup?: Record<string, GroupMember[]>;
@@ -244,6 +247,7 @@ export function buildFeed(input: {
     limit = FEED_LIMIT,
     histories = {},
     standings,
+    ratings = {},
     groups = [],
     membersByGroup = {},
     pollsByGroup = {},
@@ -632,18 +636,15 @@ export function buildFeed(input: {
   // ── Klassementsprongen (dag-granulair, na de laatste speeldag) ──
   // NB: zodra #107 (show_in_global_ranking) bestaat hier ook op filteren.
   if (standings && standings.length > 0) {
-    const shifts = rankShifts(standings, matches, teams, null);
+    const shifts = rankShifts(standings, matches, teams, null, histories, ratings);
     const lastPlayed = matches
       .filter((m) => m.status === "completed")
       .map((m) => m.played_at ?? m.created_at)
       .sort()
       .pop();
     if (lastPlayed) {
-      const rankOf = new Map(standings.map((r, i) => [r.player_id, i + 1]));
-      for (const [pid, shift] of shifts) {
+      for (const [pid, { shift, rank, was }] of shifts) {
         if (!network.has(pid)) continue;
-        const rank = rankOf.get(pid) ?? 0;
-        const was = shift === "nieuw" ? null : rank + shift;
         const enteredTop3 = rank > 0 && rank <= 3 && (was === null || was > 3);
         const leftTop3 = rank > 3 && was !== null && was <= 3;
         const bigShift = typeof shift === "number" && Math.abs(shift) >= RANK_SPRONG;
