@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { rankShifts } from "@/features/rating/rankShift";
-import type { Match, PlayerStanding, Team } from "@/types";
+import type { Match, PlayerStanding, RatingPoint, Team } from "@/types";
+
+const hp = (played_at: string, before: number, after: number): RatingPoint => ({
+  match_id: "m",
+  rating_before: before,
+  rating_after: after,
+  delta: after - before,
+  played_at,
+});
 
 const row = (
   id: string,
@@ -56,10 +64,10 @@ describe("rankShifts", () => {
     // Teruggedraaid stond c/d op 3 punten (saldo +3) en a/b op 0 (saldo −3):
     // c en d stonden dus eerste en tweede, a en b derde en vierde.
     const shifts = rankShifts(standings, [match({})], TEAMS);
-    expect(shifts.get("a")).toBe(2); // van 3 naar 1
-    expect(shifts.get("b")).toBe(2); // van 4 naar 2
-    expect(shifts.get("c")).toBe(-2);
-    expect(shifts.get("d")).toBe(-2);
+    expect(shifts.get("a")?.shift).toBe(2); // van 3 naar 1
+    expect(shifts.get("b")?.shift).toBe(2); // van 4 naar 2
+    expect(shifts.get("c")?.shift).toBe(-2);
+    expect(shifts.get("d")?.shift).toBe(-2);
   });
 
   it("markeert spelers zonder eerdere matches als nieuw", () => {
@@ -71,7 +79,7 @@ describe("rankShifts", () => {
     ];
     const shifts = rankShifts(standings, [match({})], TEAMS);
     // Iedereen speelde zijn allereerste match op de laatste speeldag.
-    for (const id of ["a", "b", "c", "d"]) expect(shifts.get(id)).toBe("nieuw");
+    for (const id of ["a", "b", "c", "d"]) expect(shifts.get(id)?.shift).toBe("nieuw");
   });
 
   it("respecteert het groepsfilter en geeft niets terug zonder matches", () => {
@@ -91,7 +99,34 @@ describe("rankShifts", () => {
       TEAMS,
     );
     // Beide spelers verliezen 1 punt (gelijkspel) — volgorde blijft gelijk.
-    expect(shifts.get("a")).toBe(0);
-    expect(shifts.get("c")).toBe(0);
+    expect(shifts.get("a")?.shift).toBe(0);
+    expect(shifts.get("c")?.shift).toBe(0);
+  });
+
+  it("rangschikt op rating, niet op de punten-volgorde van de input (#570)", () => {
+    // Het klassement is rating-leidend: de feed en de pijl moeten dezelfde
+    // volgorde volgen als het zichtbare klassement, niet de punten-index.
+    // Input staat in punten-volgorde (carol vóór alice), maar de rating zegt
+    // het omgekeerde.
+    const stats = { played: 2, won: 1, drawn: 0, lost: 1, goal_diff: 0 };
+    const standings = [
+      row("c", "carol", 6, { played: 2, won: 2, drawn: 0, lost: 0, goal_diff: 3 }),
+      row("a", "alice", 3, stats),
+    ];
+    const histories = {
+      a: [hp("2026-07-01T18:00:00Z", 1500, 1490), hp("2026-07-02T19:00:00Z", 1490, 1540)],
+      c: [hp("2026-07-01T18:00:00Z", 1500, 1510), hp("2026-07-02T19:00:00Z", 1510, 1460)],
+    };
+    const shifts = rankShifts(standings, [match({})], TEAMS, null, histories);
+    // Huidige rating: alice 1540 > carol 1460 → alice op 1 ondanks minder punten
+    // en een latere positie in de input-array.
+    expect(shifts.get("a")?.rank).toBe(1);
+    expect(shifts.get("c")?.rank).toBe(2);
+    // Vóór de laatste speeldag: alice 1490 < carol 1510 → alice 2e, carol 1e.
+    expect(shifts.get("a")?.was).toBe(2);
+    expect(shifts.get("c")?.was).toBe(1);
+    // Alice klom van 2 → 1, carol zakte van 1 → 2.
+    expect(shifts.get("a")?.shift).toBe(1);
+    expect(shifts.get("c")?.shift).toBe(-1);
   });
 });
