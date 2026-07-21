@@ -503,7 +503,7 @@ export function Leaderboard() {
       })),
       myId,
       groupId ? "groep" : "globaal",
-      shifts.get(myId) ?? null,
+      shifts.get(myId)?.shift ?? null,
     );
     if (feiten) {
       // Voor het groep-vs-globaal-contrast: de globale stand uit de al geladen
