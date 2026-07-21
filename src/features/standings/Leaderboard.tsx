@@ -248,8 +248,9 @@ export function Leaderboard() {
   const pmap = profilesMap.data ?? {};
   // Stabiele referentie: tmap voedt de useMemo van de rangverschuivingen.
   const tmap = useMemo(() => teamsMap.data ?? {}, [teamsMap.data]);
-  const rmap = ratings.data ?? {};
-  const hmap = histories.data ?? {};
+  // Stabiele referenties: rmap/hmap voeden de useMemo van de rangverschuivingen.
+  const rmap = useMemo(() => ratings.data ?? {}, [ratings.data]);
+  const hmap = useMemo(() => histories.data ?? {}, [histories.data]);
 
   // AI dictator-portret (#554): pre-warm het eigen portret zodra ik in range kom
   // om dictator te worden (of het al ben), zodat De Troon meteen een vers portret
@@ -353,8 +354,9 @@ export function Leaderboard() {
   // Verschuiving t.o.v. vóór de laatste speeldag (▲2 / ▼1 / nieuw) — alleen
   // in "Alle tijden": een seizoensarchief beweegt niet meer.
   const shifts = useMemo(
-    () => rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null),
-    [players.data, recent.data, tmap, groupId],
+    () =>
+      rankShifts(players.data ?? [], recent.data ?? [], tmap, groupId || null, hmap, rmap),
+    [players.data, recent.data, tmap, groupId, hmap, rmap],
   );
 
   // Datum van mijn laatste afgeronde match — preset voor "stand op datum".
@@ -398,7 +400,7 @@ export function Leaderboard() {
     games: rmap[p.player_id]?.games ?? 0,
     history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
-    shift: usingScope ? undefined : shifts.get(p.player_id),
+    shift: usingScope ? undefined : shifts.get(p.player_id)?.shift,
   }));
 
   const teamRows = teamStandings.map((t) => ({
@@ -501,7 +503,7 @@ export function Leaderboard() {
       })),
       myId,
       groupId ? "groep" : "globaal",
-      shifts.get(myId) ?? null,
+      shifts.get(myId)?.shift ?? null,
     );
     if (feiten) {
       // Voor het groep-vs-globaal-contrast: de globale stand uit de al geladen

@@ -42,7 +42,7 @@ import { getMyFriendships } from "@/features/friends/api";
 import { getMyGroups, getGroupMembers } from "@/features/groups/api";
 import { getGroupPollOptions, getGroupPolls } from "@/features/groups/pollsApi";
 import { getPlayerStandings } from "@/features/standings/api";
-import { getAllRatingHistories } from "@/features/standings/ratingsApi";
+import { getAllRatingHistories, getPlayerRatings } from "@/features/standings/ratingsApi";
 import { getPiasWeeks } from "@/features/standings/piasApi";
 import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
@@ -76,6 +76,9 @@ export function Feed() {
   // Verrijkende bronnen (progressief; buildFeed werkt ook zonder).
   const histories = useAsync(getAllRatingHistories, []);
   const standings = useAsync(getPlayerStandings, []);
+  // Rating-snapshot: de rating-leidende rang in de klassementsprongen (#570)
+  // gebruikt dezelfde bron als het klassement, niet de historie-benadering.
+  const ratings = useAsync(getPlayerRatings, []);
   // Pias van de week per groep (serverside aangeduid; de trigger herrekent bij
   // elke uitslag). Alle groepen tegelijk — RLS beperkt tot de eigen groepen.
   const piasWeeks = useAsync(getPiasWeeks, []);
@@ -93,10 +96,11 @@ export function Feed() {
     matches.reload();
     histories.reload();
     standings.reload();
+    ratings.reload();
     piasWeeks.reload();
     shame.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, histories.reload, standings.reload, piasWeeks.reload, shame.reload]);
+  }, [matches.reload, histories.reload, standings.reload, ratings.reload, piasWeeks.reload, shame.reload]);
   useRealtime("matches", reloadMatchSources);
   const groups = useAsync(getMyGroups, []);
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
@@ -202,6 +206,7 @@ export function Feed() {
             limit: Number.MAX_SAFE_INTEGER,
             histories: histories.data ?? undefined,
             standings: standings.data ?? undefined,
+            ratings: ratings.data ?? undefined,
             groups: groups.data ?? undefined,
             membersByGroup: groupExtras.data?.membersByGroup,
             pollsByGroup: groupExtras.data?.pollsByGroup,
@@ -223,6 +228,7 @@ export function Feed() {
       myId,
       histories.data,
       standings.data,
+      ratings.data,
       groups.data,
       groupExtras.data,
       groupMatches.data,
