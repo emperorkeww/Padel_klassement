@@ -774,11 +774,82 @@ const PRE_GELIJK = [
   "Twee teams die aan elkaar gewaagd zijn. Dit wordt een schaakspel in de kooi.",
 ] as const;
 
+// ── Pre-match head-to-head (#581): de rivaliteit met de tegenstander ─────────
+// Krijgt voorrang op de kale kansentaal als er een duidelijk verhaal is:
+// een lopende verliesreeks (angstgegner), of een scheve onderlinge balans.
+// %rivaal% = naam tegenstander, %n% = verliesreeks, %saldo% = |balans|.
+
+/** Je verliest al ≥ RIVAAL_REEKS_MIN keer op rij van deze tegenstander. */
+const PRE_H2H_ANGST = [
+  "%rivaal% is je angstgegner: %n% keer op rij verloren. Vandaag breek je die vloek.",
+  "Je verloor de laatste %n% van %rivaal%. Tijd om dat script eindelijk te scheuren.",
+  "%rivaal% zit diep in je hoofd — %n% nederlagen op rij. Toon lef vandaag.",
+  "%n% keer achter elkaar onderuit tegen %rivaal%. Zelfs ik word er nerveus van; draai het om.",
+  "Daar is %rivaal% weer, je nachtmerrie. %n% keer op rij verslagen — nu of nooit.",
+  "%rivaal% pakt je telkens: %n% op rij. Ik heb een speciaal tactisch plan (het staat op een servetje).",
+  "Tegen %rivaal% verlies je al %n% keer op een rij. Vandaag geen alibi's meer.",
+  "%n% nederlagen op rij tegen %rivaal%. De statistieken smeken om een ommekeer.",
+] as const;
+
+/** Je leidt de onderlinge balans tegen deze tegenstander. */
+const PRE_H2H_BAAS = [
+  "%rivaal% verslaat je zelden — je staat %saldo% voor. Bevestig dat op de baan.",
+  "Tegen %rivaal% ben jij de baas (%saldo% voorsprong). Nu niet verslappen.",
+  "Je hebt %rivaal% meestal in je zak: %saldo% in de plus. Hou die reputatie hoog.",
+  "%rivaal% is jouw prooi — %saldo% duels voor. Ik noteer graag nog een streepje.",
+  "In de onderlinge stand leid je op %rivaal% met %saldo%. Verpest het nu niet.",
+  "Je domineert %rivaal% (%saldo% voorsprong). Voeg er vandaag een zege aan toe.",
+  "%saldo% duels voorsprong op %rivaal%. Speel als de favoriet die je onderling bent.",
+  "%rivaal% kan je zelden aan: %saldo% in jouw voordeel. Maak het af.",
+] as const;
+
+/** Je staat achter in de onderlinge balans (maar geen actuele verliesreeks). */
+const PRE_H2H_ACHTER = [
+  "In de onderlinge stand kijk je tegen %rivaal% omhoog (%saldo% achter). Tijd om in te lopen.",
+  "%rivaal% heeft de betere papieren tegen jou: %saldo% achterstand. Werk aan de winkel.",
+  "Je staat %saldo% achter op %rivaal%. Vandaag een uitgelezen kans om bij te trekken.",
+  "Tegen %rivaal% trek je meestal aan het kortste eind (%saldo% achter). Draai de trend.",
+  "De balans met %rivaal% helt de verkeerde kant op (%saldo%). Zet dat recht.",
+  "%rivaal% leidt jullie onderlinge duel met %saldo%. Knok je terug in de stand.",
+  "Je hebt een %saldo%-achterstand op %rivaal%. Perfecte dag om te beginnen met inhalen.",
+  "%rivaal% is je nét de baas (%saldo% voor). Bewijs dat het anders kan.",
+] as const;
+
+/** Onderling H2H-feit voor de pre-match hype (#581), vanuit jóuw perspectief. */
+export interface PreMatchH2H {
+  /** Naam van de tegenstander/rivaal. */
+  rivaal: string;
+  /** Onderlinge zeges van jou en van de rivaal. */
+  mijnWins: number;
+  oppWins: number;
+  /** Lopende onderlinge verliesreeks (≥ 0). */
+  verliesreeks: number;
+}
+
 /** Korte hype/waarschuwing bij een geplande match, op basis van de winkans
- *  (0..1) van jóuw team. */
-export function coachPreMatch(winkans: number, seed: string, ctx: RoastCtx): string {
+ *  (0..1) van jóuw team. Met een H2H-feit (#581) krijgt de rivaliteit voorrang
+ *  op de kale kansentaal; zonder duidelijk verhaal valt hij terug op de winkans. */
+export function coachPreMatch(
+  winkans: number,
+  seed: string,
+  ctx: RoastCtx,
+  h2h?: PreMatchH2H | null,
+): string {
   const s = roastSeed("prematch", seed);
   if (ctx.schild) return kiesUniek(PRE_NEUTRAAL, s);
+  if (h2h) {
+    const saldo = Math.abs(h2h.mijnWins - h2h.oppWins);
+    if (h2h.verliesreeks >= RIVAAL_REEKS_MIN) {
+      return vul(kiesUniek(PRE_H2H_ANGST, s), { rivaal: h2h.rivaal, n: h2h.verliesreeks });
+    }
+    if (h2h.mijnWins > h2h.oppWins) {
+      return vul(kiesUniek(PRE_H2H_BAAS, s), { rivaal: h2h.rivaal, saldo });
+    }
+    if (h2h.oppWins > h2h.mijnWins) {
+      return vul(kiesUniek(PRE_H2H_ACHTER, s), { rivaal: h2h.rivaal, saldo });
+    }
+    // Gelijke stand zonder verliesreeks → geen sterk verhaal; val terug op winkans.
+  }
   if (winkans < 0.35) return kiesUniek(PRE_UNDERDOG, s);
   if (winkans > 0.65) return kiesUniek(PRE_FAVORIET, s);
   return kiesUniek(PRE_GELIJK, s);

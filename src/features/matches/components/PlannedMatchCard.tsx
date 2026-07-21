@@ -10,6 +10,7 @@ import { winChance } from "@/features/rating/elo";
 import { inTeam } from "@/features/rating/results";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachPreMatch } from "@/features/coach/coachMoments";
+import { verliesreeksTegen } from "@/features/coach/coachStats";
 import {
   groupRivalries,
   rivalryForMatch,
@@ -155,12 +156,36 @@ export function PlannedMatchCard({
       : mijnTeam === "a"
         ? chance
         : 1 - chance;
+  // Head-to-head tegen de tegenstander (#581): leid het uit de al berekende
+  // `rivalry` af, mits ík in het rivaliteitspaar zit; anders geen H2H-hook.
+  const preH2H =
+    rivalry && myId && (myId === rivalry.a || myId === rivalry.b)
+      ? {
+          rivaal: displayName(
+            profiles[myId === rivalry.a ? rivalry.b : rivalry.a],
+          ),
+          mijnWins: myId === rivalry.a ? rivalry.winsA : rivalry.winsB,
+          oppWins: myId === rivalry.a ? rivalry.winsB : rivalry.winsA,
+          verliesreeks: verliesreeksTegen(
+            history ?? [],
+            teams,
+            myId,
+            myId === rivalry.a ? rivalry.b : rivalry.a,
+            m,
+          ),
+        }
+      : null;
   const coachPre =
     mijnKans != null && myId
-      ? coachPreMatch(mijnKans, `${m.id}-${myId}`, {
-          intensiteit,
-          schild: profiles[myId]?.roast_schild ?? false,
-        })
+      ? coachPreMatch(
+          mijnKans,
+          `${m.id}-${myId}`,
+          {
+            intensiteit,
+            schild: profiles[myId]?.roast_schild ?? false,
+          },
+          preH2H,
+        )
       : null;
   // Eerste opslag (#435): alleen relevant zolang de match nog gespeeld moet
   // worden; na afronding verdwijnt de chip.
