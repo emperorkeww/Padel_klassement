@@ -200,6 +200,123 @@ export const OCHTEND_NIEUW = [
   "De eerste Elo-schattingen zijn binnen. Tijd voor de echte cijfers.",
 ] as const;
 
+// ── Persoonlijke briefing-varianten (#579) ──────────────────────────────────
+// Extra pools die de kale positie-/reekstoon vervangen zodra er iets concreets
+// te melden valt: een match tegen je vaste rivaal, een promotie binnen handbereik,
+// de Elo-beweging van vandaag, een badge op een haar na, of wisselvallige vorm.
+// Placeholders (%rivaal%, %n%, %divisie%, %delta%, %badge%) worden door `vul`
+// ingevuld — net als %tier% in coachTierQuip.
+
+/** Vaste rivaal wacht in de volgende match, met een lopende verliesreeks. */
+const OCHTEND_RIVAAL = [
+  "%rivaal% wacht vandaag. Je verloor de laatste %n% keer — tijd om dat script te scheuren.",
+  "Vandaag tegen %rivaal%. %n% keer op rij onderuit; zelfs Infantino zou nu een revanche eisen.",
+  "Daar is %rivaal% weer. De teller staat op %n% nederlagen — maak er vandaag een streep doorheen.",
+  "%rivaal% op het programma. Je bent %n% keer verslagen; ik heb de wraakplannen al uitgetekend.",
+  "Matchdag tegen %rivaal%. Na %n% verliespartijen is het tijd voor een tactische ommekeer van WK-proporties.",
+  "Je nemesis %rivaal% staat klaar. %n% keer verloren — vandaag stemmen we die reeks om.",
+  "%rivaal% opnieuw. Ik noteerde %n% nederlagen op rij; vandaag wil ik eindelijk een vinkje.",
+  "Vandaag treft %rivaal% je weer. %n% keer aan het kortste eind — de statistieken schreeuwen om revanche.",
+  "Daar heb je %rivaal%. %n% keer op rij verloren; zelfs mijn geduld begint op te raken.",
+  "%rivaal% wacht in de kooi. Na %n% afgangen op rij is er maar één acceptabel resultaat vandaag.",
+  "Matchdag, en uitgerekend tegen %rivaal%. %n% nederlagen diep — tijd om de trend te breken.",
+  "Je oude bekende %rivaal% staat op de rol. %n% keer verslagen; vandaag draaien we de rollen om.",
+  "%rivaal% weer als tegenstander. %n% keer verloren — ik hou m'n gouden pen klaar voor een ander verhaal.",
+  "Vandaag: %rivaal%. Die %n% nederlagen op rij? Vergeten we vanaf de eerste service.",
+] as const;
+
+/** Promotie naar de volgende divisie ligt binnen handbereik. */
+const OCHTEND_PROMOTIE_NABIJ = [
+  "Nog %delta% Elo tot %divisie%. Eén zege en ik roep meteen een persconferentie bijeen.",
+  "%divisie% ligt op %delta% Elo afstand. Zo dichtbij dat ik m'n sportpet al klaar heb liggen.",
+  "Maar %delta% Elo tot %divisie%. Vandaag geen excuses over de wind — dit is te pakken.",
+  "Nog %delta% Elo en %divisie% is van jou. Ik heb de promotie-krabbel al half geschreven.",
+  "%delta% Elo van %divisie% verwijderd. Eén goede match en we vieren het met een extra persmoment.",
+  "Je staat %delta% Elo onder %divisie%. Dat is geen kloof, dat is een aanloopje.",
+  "Nog %delta% Elo tot %divisie%. Zelfs Infantino kan deze promotie niet meer tegenhouden.",
+  "%divisie% wenkt op %delta% Elo. Ga ervoor, dan hoef ik vanavond niks kritisch te noteren.",
+  "Nog %delta% schamele Elo-puntjes tot %divisie%. Ik ruik een historische, Trumpiaanse opmars.",
+  "%delta% Elo scheidt je van %divisie%. Vandaag is een uitstekende dag om die streep over te steken.",
+  "Bijna %divisie%: nog %delta% Elo. M'n notitieboekje ligt al open op de felicitatiepagina.",
+  "Nog %delta% Elo tot %divisie%. Eén overtuigende zege en de promotie is een feit.",
+  "%divisie% op %delta% Elo. Zo dichtbij dat de ballenjongens al staan te trappelen om te juichen.",
+] as const;
+
+/** Vandaag al Elo gewonnen (cumulatief, voor wie later terugkeert). */
+const OCHTEND_DAG_UP = [
+  "Vandaag al %delta% Elo verdiend. En de dag is nog jong.",
+  "%delta% Elo in de plus vandaag. Ga zo door, m'n gouden pen gloeit al.",
+  "Al %delta% Elo winst op de teller vandaag. Dit ruikt naar meer.",
+  "Vandaag %delta% Elo gepakt. Ik noteer 't met een tevreden krabbel.",
+  "%delta% Elo erbij vandaag. Blijf hameren, de concurrentie kijkt nerveus toe.",
+  "Al %delta% Elo omhoog vandaag. Zelfs ik begin bijna te geloven in je tactiek.",
+  "Vandaag staat de teller op +%delta% Elo. Een prima basis om op door te bouwen.",
+  "%delta% Elo winst tot nu toe. Hou dit vast en de dag wordt legendarisch.",
+] as const;
+
+/** Vandaag al Elo verspeeld (cumulatief). */
+const OCHTEND_DAG_DOWN = [
+  "Vandaag al %delta% Elo verspeeld. Tijd voor een tactische koerswijziging.",
+  "%delta% Elo in de min vandaag. Kop op, de dag is nog te redden.",
+  "Al %delta% Elo ingeleverd vandaag. Ik heb de rode pen er alvast bij gepakt.",
+  "Vandaag %delta% Elo kwijtgeraakt. Eén goede match en we praten er niet meer over.",
+  "%delta% Elo eraf vandaag. Zelfs de watersproeiers kijken meewarig toe.",
+  "De teller staat op -%delta% Elo vandaag. Tijd om die trend eigenhandig te keren.",
+  "Al %delta% Elo verdampt vandaag. Niks dat een overtuigende zege niet oplost.",
+  "Vandaag %delta% Elo verloren. M'n notitieboekje kleurt licht rood — herstel dat.",
+] as const;
+
+/** Een prestatiebadge ligt op een haar na klaar. */
+const OCHTEND_BADGE = [
+  "Nog %n% te gaan voor de %badge%. Zó dichtbij dat ik 'm al bijna noteer.",
+  "De %badge% ligt op %n% afstand. Eén laatste zetje en hij is binnen.",
+  "Nog %n% en de %badge% is van jou. Ik hou de felicitaties klaar.",
+  "%badge%: nog %n% te gaan. Dat is geen doel meer, dat is een formaliteit.",
+  "Nog %n% voor de %badge%. Vandaag een uitgelezen dag om 'm binnen te harken.",
+  "De %badge% wenkt — nog %n% te overbruggen. Ik heb m'n gouden pen in de aanslag.",
+  "Nog %n% tot de %badge%. Zo dichtbij dat zelfs ik zenuwachtig word.",
+  "%badge% bijna binnen: nog %n%. Maak er vandaag werk van.",
+] as const;
+
+/** Wisselvallige vorm: win-verlies-win-verlies. Sneer, dus schild-gevoelig. */
+const OCHTEND_WISSELVALLIG = [
+  "Win, verlies, win, verlies… kies vandaag eens een kant.",
+  "Je vorm hobbelt op en neer als m'n populariteit bij de Belgische pers. Tijd voor stabiliteit.",
+  "De ene dag held, de andere pias. M'n notitieboekje raakt in de war van jou.",
+  "Om en om winnen en verliezen — dat is geen vorm, dat is een muntworp. Maak er vandaag een lijn van.",
+  "Je resultaten zigzaggen alle kanten op. Zelfs mijn tactische bord wordt er duizelig van.",
+  "Wisselvallig als het weer boven de kooi. Zorg vandaag voor een sec stukje zon.",
+  "Winst, nederlaag, winst, nederlaag. Kies een richting voordat ik er een hoofdstuk over schrijf.",
+  "Je vorm is één grote grillige lijn. Vandaag trekken we 'm eindelijk recht.",
+] as const;
+
+// Drempels voor de persoonlijke briefing-branches (#579). Geëxporteerd zodat de
+// tak-tests er exact op kunnen mikken.
+/** Vanaf zoveel onderlinge nederlagen op rij benoemt Rudy de rivaal-match. */
+export const RIVAAL_REEKS_MIN = 2;
+/** Binnen zoveel Elo tot de volgende divisie geldt promotie als "nabij". */
+export const PROMOTIE_DREMPEL = 25;
+/** Vanaf deze absolute dag-Elo-beweging is de day-delta het vermelden waard. */
+export const DAGDELTA_DREMPEL = 15;
+/** Vanaf deze voortgangsratio (nu/doel) is een badge "op een haar na" klaar. */
+export const BADGE_NABIJ_RATIO = 0.7;
+
+/** Vervangt %sleutel%-placeholders in een quip (zoals coachTierQuip met %tier%). */
+function vul(zin: string, subs: Record<string, string | number>): string {
+  let out = zin;
+  for (const [k, v] of Object.entries(subs)) out = out.replaceAll(`%${k}%`, String(v));
+  return out;
+}
+
+/** Wisselvallig = de laatste vier resultaten alterneren strikt tussen W en L. */
+function isWisselvallig(vorm: readonly ("W" | "L" | "D")[]): boolean {
+  const laatste = vorm.slice(-4);
+  if (laatste.length < 4) return false;
+  return laatste.every(
+    (v, i) => (v === "W" || v === "L") && (i === 0 || v !== laatste[i - 1]),
+  );
+}
+
 export interface BriefingFeiten {
   rank: number | null;
   /** Lopende winreeks. */
@@ -210,6 +327,16 @@ export interface BriefingFeiten {
   heeftMatch: boolean;
   /** Klassement-feiten (#411); zonder dit veld geldt het oude rank===1-gedrag. */
   klassement?: KlassementFeiten | null;
+  /** Volgende match is tegen je vaste rivaal, met een lopende verliesreeks (#579). */
+  rivaalMatch?: { naam: string; verliesreeks: number } | null;
+  /** Promotie binnen handbereik: nog `punten` Elo tot `divisie` (#579). */
+  promotieNabij?: { divisie: string; emoji: string; punten: number } | null;
+  /** Cumulatieve Elo-beweging vandaag; alleen ≠0 nadat je vandaag speelde (#579). */
+  dayDelta?: number;
+  /** Recente vorm (nieuwste eerst), voor de wisselvallig-detectie (#579). */
+  vorm?: readonly ("W" | "L" | "D")[];
+  /** Badge op een haar na klaar: nog `doel - nu` te gaan (#579). */
+  badgeNabij?: { naam: string; emoji: string; nu: number; doel: number } | null;
   seed: string;
   ctx: RoastCtx;
 }
@@ -220,7 +347,28 @@ export function coachBriefing(f: BriefingFeiten): string {
   if (f.ctx.schild) return kiesUniek(OCHTEND_NEUTRAAL, seed);
   if (f.losing >= 3) return kiesUniek(OCHTEND_DIP, seed);
   if (f.streak >= 3) return kiesUniek(OCHTEND_HYPE, seed);
+  // Match tegen je vaste rivaal met een lopende verliesreeks: persoonlijker dan
+  // de generieke matchdag-toon, dus vóór OCHTEND_MATCH.
+  if (f.rivaalMatch && f.rivaalMatch.verliesreeks >= RIVAAL_REEKS_MIN) {
+    return vul(kiesUniek(OCHTEND_RIVAAL, seed), {
+      rivaal: f.rivaalMatch.naam,
+      n: f.rivaalMatch.verliesreeks,
+    });
+  }
+  // Promotie binnen handbereik: zeldzaam, dus mag de matchdag-toon overrulen.
+  if (f.promotieNabij) {
+    return vul(kiesUniek(OCHTEND_PROMOTIE_NABIJ, seed), {
+      divisie: `${f.promotieNabij.emoji} ${f.promotieNabij.divisie}`,
+      delta: f.promotieNabij.punten,
+    });
+  }
   if (f.heeftMatch) return kiesUniek(OCHTEND_MATCH, seed);
+  // Dag-Elo-beweging: valt in een échte ochtend (nog niet gespeeld) op 0 terug en
+  // vuurt dan niet — bedoeld voor wie later op de dag terugkeert.
+  if (f.dayDelta != null && Math.abs(f.dayDelta) >= DAGDELTA_DREMPEL) {
+    const pool = f.dayDelta > 0 ? OCHTEND_DAG_UP : OCHTEND_DAG_DOWN;
+    return vul(kiesUniek(pool, seed), { delta: Math.abs(f.dayDelta) });
+  }
   switch (f.klassement?.tier) {
     case "troon":
       return kiesUniek(OCHTEND_TOP, seed);
@@ -230,6 +378,21 @@ export function coachBriefing(f: BriefingFeiten): string {
       return kiesUniek(OCHTEND_KELDER, seed);
     case "nieuw":
       return kiesUniek(OCHTEND_NIEUW, seed);
+  }
+  // Alleen de middenmoot (en onbekende tier) valt hier door: verrijk 'm met een
+  // badge-nudge of een por over wisselvallige vorm vóór de kale ALGEMEEN-pool.
+  if (
+    f.badgeNabij &&
+    f.badgeNabij.doel > 0 &&
+    f.badgeNabij.nu / f.badgeNabij.doel >= BADGE_NABIJ_RATIO
+  ) {
+    return vul(kiesUniek(OCHTEND_BADGE, seed), {
+      badge: `${f.badgeNabij.emoji} ${f.badgeNabij.naam}`,
+      n: Math.max(1, f.badgeNabij.doel - f.badgeNabij.nu),
+    });
+  }
+  if (!f.ctx.schild && f.vorm && isWisselvallig(f.vorm)) {
+    return kiesUniek(OCHTEND_WISSELVALLIG, seed);
   }
   if (f.rank === 1) return kiesUniek(OCHTEND_TOP, seed);
   return kiesUniek(OCHTEND_ALGEMEEN, seed);
