@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { coachAvond, type AvondCtx } from "./coachEvening";
 import type { EveningSummary, EveningRow } from "@/features/feed/eveningSummary";
-import type { Profile } from "@/types";
+import type { Match, Profile, Team } from "@/types";
 
 const row = (over: Partial<EveningRow> & { playerId: string }): EveningRow => ({
   played: 0,
@@ -25,6 +25,30 @@ const ctx = (over: Partial<AvondCtx> = {}): AvondCtx => ({
   intensiteit: "gemeen",
   profiles: {},
   naam: (id) => id,
+  ...over,
+});
+
+const team = (id: string, ...players: string[]): Team => ({
+  id,
+  name: null,
+  player1_id: players[0],
+  player2_id: players[1] ?? null,
+  created_at: "2026-07-01",
+});
+
+const match = (over: Partial<Match> & { id: string }): Match => ({
+  team_a_id: "ta",
+  team_b_id: "tb",
+  status: "completed",
+  winner_team_id: null,
+  played_at: "2026-07-01T18:00:00Z",
+  created_by: null,
+  created_at: "2026-07-01T18:00:00Z",
+  group_id: "g1",
+  round_number: null,
+  score_a: null,
+  score_b: null,
+  format: "2v2",
   ...over,
 });
 
@@ -77,5 +101,79 @@ describe("coachAvond", () => {
       matches: [{} as never, {} as never],
     });
     expect(coachAvond(s, "g1|d", ctx())).toEqual(coachAvond(s, "g1|d", ctx()));
+  });
+
+  // ── Concrete varianten met `teams` (#580) ─────────────────────────────────
+  it("noemt tegenstander en score bij een overtuigende zege van de held", () => {
+    const teams = { t1: team("t1", "p1", "p2"), t2: team("t2", "p3", "p4") };
+    const m = match({
+      id: "m1",
+      team_a_id: "t1",
+      team_b_id: "t2",
+      winner_team_id: "t1",
+      score_a: 6,
+      score_b: 1,
+    });
+    const s = summary({ rows: [row({ playerId: "p1", won: 1, played: 1 })], matches: [m] });
+    const uit = coachAvond(s, "g1|d", ctx({ teams }));
+    expect(uit[0]).toContain("6-1");
+    expect(uit[0]).toContain("p3");
+    expect(uit[0]).toContain("p4");
+  });
+
+  it("valt bij een nipte zege terug op de generieke flavor", () => {
+    const teams = { t1: team("t1", "p1"), t2: team("t2", "p3") };
+    const m = match({
+      id: "m1",
+      team_a_id: "t1",
+      team_b_id: "t2",
+      winner_team_id: "t1",
+      score_a: 6,
+      score_b: 5,
+      format: "1v1",
+    });
+    const s = summary({ rows: [row({ playerId: "p1", won: 1, played: 1 })], matches: [m] });
+    const uit = coachAvond(s, "g1|d", ctx({ teams }));
+    expect(uit[0]).not.toContain("6-5");
+    expect(uit[0]).not.toContain("p3");
+  });
+
+  it("valt zonder teams terug op de generieke held-flavor (geen score)", () => {
+    const m = match({ id: "m1", winner_team_id: "ta", score_a: 6, score_b: 0 });
+    const s = summary({ rows: [row({ playerId: "p1", won: 1, played: 1 })], matches: [m] });
+    const uit = coachAvond(s, "g1|d", ctx());
+    expect(uit[0]).not.toMatch(/\d-\d/);
+  });
+
+  it("noemt de kale bagel bij de afgang", () => {
+    const teams = { t1: team("t1", "p1"), t2: team("t2", "p3") };
+    const m = match({
+      id: "m1",
+      team_a_id: "t1",
+      team_b_id: "t2",
+      winner_team_id: "t1",
+      score_a: 6,
+      score_b: 0,
+      format: "1v1",
+    });
+    const rows = [
+      row({ playerId: "p1", won: 1, played: 1 }),
+      row({ playerId: "p3", won: 0, lost: 1, played: 1 }),
+    ];
+    const uit = coachAvond(summary({ rows, matches: [m] }), "g1|d", ctx({ teams }));
+    const afgangregel = uit.find((l) => l.includes("onderuit"));
+    expect(afgangregel).toContain("0-6");
+    expect(afgangregel).toMatch(/kale/);
+  });
+
+  it("noemt de winnaar bij een upset als teams beschikbaar zijn", () => {
+    const teams = { t2: team("t2", "p3", "p4") };
+    const s = summary({
+      rows: [row({ playerId: "p1", won: 1, played: 1 })],
+      biggestUpset: { winnerTeamId: "t2", chance: 0.18, matchId: "m1" },
+    });
+    const upsetregel = coachAvond(s, "g1|d", ctx({ teams })).find((l) => l.includes("18%"));
+    expect(upsetregel).toBeTruthy();
+    expect(upsetregel).toContain("p3");
   });
 });

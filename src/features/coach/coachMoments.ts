@@ -40,9 +40,9 @@ const OCHTEND_DIP = [
   "Zelfs mijn meest onbegrijpelijke wissels bij de Rode Duivels vallen in het niet bij deze hopeloze vormcrisis.",
   "Ik heb net een hele bladzijde van mijn notitieboekje rood gekleurd. Jouw vorm is een tactische ramp van WK-proporties.",
   "Een meervoudige nederlaag... Zelfs een tactisch genie als ik kan hier geen positieve draai aan geven.",
-  "Zelfs de slechtste bondscoach ter wereld had je na deze serie allang geruisloos naar de tribune verwezen.",
-  "Met zo'n verliesreeks is je rating sneller gedaald dan mijn populariteit bij de Belgische sportpers.",
-  "Ik ben serieus aan het overwegen om een viervoudige wissel door te voeren in je hele dagelijkse routine.",
+  "Zelfs de slechtste bondscoach had je na al die nederlagen allang naar de tribune verwezen.",
+  "Met zo'n reeks nederlagen is je rating sneller gedaald dan mijn populariteit bij de Belgische sportpers.",
+  "Ik ben serieus aan het overwegen om na deze nederlaag een viervoudige wissel door te voeren.",
   "Zelfs als ik Donald Trump inschakel om Infantino persoonlijk te bellen, is er geen reglementaire basis om deze dip te redden.",
   "Je verliesreeks is zo lang dat zelfs de FIFA-disciplinaire commissie hier geen voorwaardelijke opschorting voor kan verzinnen.",
   "Een dip? Fake news! Mijn tactische notitieboekje bevat alleen maar virtuele overwinningen. De statistieken zijn gemanipuleerd.",
@@ -50,12 +50,16 @@ const OCHTEND_DIP = [
   "Wakker worden! Jouw vorm is momenteel zo diep gezonken dat we de marine moeten inschakelen om je niveau te bergen.",
   "Vier nederlagen op rij... M'n pen weigert bijna nog te schrijven.",
   "De vormcrisis is compleet. Tijd om Infantino te bellen voor dispensatie.",
-  "Zelfs een getrainde eend had momenteel een actievere forehand.",
-  "Tijd voor een crisisberaad in m'n chique pak. Dit kan echt niet meer zo.",
-  "Met deze verliesreeks ben je populairder bij de tegenstander dan bij je eigen partner.",
-  "Heb je er al over nagedacht om de padelbaan te verruilen voor de tribune? Vanaf daar kun je in ieder geval geen ballen out slaan.",
-  "Je verliesreeks begint astronomische vormen aan te nemen. Zelfs Aurelio De Laurentiis had je al lang op staande voet ontslagen.",
-  "Tijd om de videobeelden te analyseren. Al raad ik je aan om dit met een zonnebril op te doen.",
+  "Kijk eens in de spiegel: zelfs een getrainde eend had momenteel een actievere forehand.",
+  "Tijd voor een crisisberaad over deze nederlaag. Dit kan echt niet meer zo.",
+  "Met al die nederlagen ben je populairder bij de tegenstander dan bij je partner.",
+  "Na zoveel nederlagen kun je beter op de tribune gaan zitten.",
+  "Deze reeks nederlagen begint astronomische vormen aan te nemen. Aurelio had je al ontslagen.",
+  "Tijd om de beelden van deze nederlaag te analyseren. Doe het wel met een zonnebril op.",
+  "Nog steeds in de dip? Kijk omhoog en probeer vandaag wél die bal te raken.",
+  "De reeks nederlagen duurt voort. Tijd voor een grondige tactische heroverweging.",
+  "Door elke nederlaag zakt je rating sneller dan m'n humeur op persconferenties.",
+  "Een diepe dip. De weg omhoog begint vandaag: raak in ieder geval de bal.",
 ] as const;
 const OCHTEND_HYPE = [
   "Je bent niet te stoppen. Doe the rest een lol en verlies eens.",
@@ -112,32 +116,39 @@ const OCHTEND_TOP = [
   "De troon is heet vandaag. Verdedig hem met hand en tand.",
   "Bovenaan de ladder! De concurrentie kijkt omhoog met knikkende knieën.",
   "Heerser van de club. Mijn notitieboekje glinstert als ik je stats opschrijf.",
+  "Heerser van het complex. Zelfs de terreinknecht groet je vandaag met extra egards.",
+  "De nummer één. Probeer niet te bezwijken onder de loodzware druk van m'n torenhoge verwachtingen.",
+  "Koning van de ranking. Je troon staat stevig, zolang je die forehand tenminste niet verleert.",
+  "Bovenaan. Een tactisch meesterwerk van formaat, al zeg ik het zelf.",
 ] as const;
 const OCHTEND_ALGEMEEN = [
   "Netjes in de middenmoot. Grijs, maar veilig.",
   "Genoeg gekeken naar het klassement — ga het veranderen.",
   "Vandaag een goeie dag om iemand van hun voetstuk te meppen.",
-  "Een deugdelijke bondscoach streeft natuurlijk altijd naar meer.",
+  "Een deugdelijke bondscoach streeft natuurlijk altijd naar meer dan de middenmoot.",
   "Grijs in de middenmoot. Precies de plek waar kleurloze spelers zonder tactisch vernuft thuishoren.",
   "Stabiel in het midden. Het doet me pijnlijk sterk denken aan mijn meest saaie gelijke spelen.",
   "Nog steeds in de middenmoot. Een uiterst corrupt systeem, we eisen een hertelling van alle Elo-punten!",
   "Middenmoot. De ideale plek voor mensen die bang zijn om te winnen én te lui zijn om te verliezen.",
   "De middenmoot is veilig, maar we zijn hier niet voor comfort.",
   "Stabiel op je positie. Maar stabiliteit is voor ambtenaren, niet voor padellers.",
-  "Tijd om wat plekken te stijgen vandaag. De top is nog ver.",
-  "Vandaag een ideale dag om de ranglijst flink op te schudden.",
+  "Tijd om de middenmoot te verlaten en te stijgen vandaag. De top is nog ver.",
+  "Vandaag een ideale dag om het klassement flink op te schudden.",
   "In het midden van het pak. Sluip geruisloos dichter bij de top.",
   "In het grijze midden. Ik ga m'n sportpet er nog niet voor afnemen.",
   "Middenmoot. Ideale uitvalsbasis om stiekem de top-3 te bestormen.",
+  "Middenmoot. Ideaal om onopgemerkt te blijven voor de persconferentie, maar niet voor mij.",
+  "Stabiel in het midden van de tabel. Hopelijk zit er vandaag wat meer pit in je spel.",
+  "Stabiel in de middenmoot. In m'n notitieboekje staat bij jouw naam: 'kan veel beter'.",
+  "Middenin de lijst. De perfecte positie om geruisloos naar boven te sluipen.",
 ] as const;
 // Tier-pools van de briefing (#411). Geëxporteerd voor de tak-tests, net als
 // KAMPIOEN in coachFeed.
 export const OCHTEND_JAGER = [
-  "Goedemorgen, jager. De nummer één ontbijt vandaag met een onrustig gevoel.",
-  "Je staat vlak achter de koploper. Vandaag lijkt me een prima dag voor een machtsgreep.",
-  "Zo dicht bij de top. Ik heb de aanvalsplannen al klaarliggen in m'n notitieboekje.",
-  "De troon is bijna binnen handbereik. Nog even doorbijten, dan mag je zwaaien naar beneden.",
-  "Tweede viool? Vandaag stemmen we 'm om naar eerste.",
+  "Goedemorgen, jager. De koploper zit momenteel met knikkende knieën aan de koffie omdat jij eraan komt.",
+  "Je staat vlak achter de koploper. Vandaag lijkt me een prima dag voor een tactische machtsgreep.",
+  "De troon is binnen handbereik. Eén fatsoenlijke smash vandaag en we kunnen eindelijk die prutser daarboven onttronen.",
+  "Tweede viool? Ik weiger tweede viool te spelen, en jij hopelijk ook. Tijd voor de aanval.",
   "De kop is in zicht. Wie boven je staat, voelt vandaag iemand hijgen in z'n nek.",
   "Jagen doe je 's ochtends vroeg. De koploper hoort je al aankomen.",
   "Bijna bovenaan het klassement. Eén tactische zet — van mij uiteraard — en het kantelt.",
@@ -152,12 +163,16 @@ export const OCHTEND_JAGER = [
   "De top-3 is leuk, maar de nummer één positie glanst toch echt harder.",
   "Jij bent het roofdier, de koppositie is de prooi. Ga ervoor.",
   "Vlak achter de koploper. M'n notitieboekje staat al in de aanslag voor de machtswisseling.",
+  "De koppositie is zo dichtbij dat je de champagne al kunt ruiken. Blijf jagen!",
+  "Achtervolger op scherp. Eén tactische winst vandaag en je stoot de koning van z'n troon.",
+  "Vlak achter de leider. Tijd om het gaspedaal volledig in te trappen op de baan.",
+  "De top-3 is een prima uitvalsbasis, maar de troon wacht op de rechtmatige eigenaar.",
 ] as const;
 export const OCHTEND_KELDER = [
-  "Goedemorgen vanuit de kelder van het klassement. Het ontbijt smaakt daar hetzelfde, de ambitie hopelijk niet.",
-  "Onderin de lijst. Vandaag lijkt me een uitstekende dag om daar iets aan te doen.",
-  "De rode lantaarn hangt aan jouw naam. Draag 'm vandaag over aan iemand anders.",
-  "Onderaan het klassement. De enige weg is omhoog, en die begint bij de eerstvolgende match.",
+  "Goedemorgen vanuit de vochtige kruipruimte van de club. Het bier staat hier in ieder geval koud.",
+  "Onderin de lijst. Vandaag een uitstekende dag om die rode lantaarn met een rotvaart naar boven te gooien.",
+  "De rode lantaarn hangt aan jouw naam. Zorg dat je 'm niet permanent in je binnenzak houdt.",
+  "Onderaan het klassement. Zelfs de zwaartekracht schaamt zich dat je zó diep gezakt bent.",
   "De kelder. Ik heb er een motiverende krabbel over gemaakt in m'n notitieboekje: 'omhoog, nu'.",
   "Laag in de stand. Niks dat een paar gewonnen potten niet kunnen oplossen.",
   "Hekkensluiter. Iemand moet het zijn, maar het staat je niet.",
@@ -173,6 +188,10 @@ export const OCHTEND_KELDER = [
   "Onderin de tabel. Blijf trainen, the ommekeer begint vandaag.",
   "Op de bodem van de lijst. Zorg dat je vandaag de weg omhoog vindt.",
   "Rode lantaarn. Niet getreurd: er zijn legendarische comebacks begonnen vanaf deze positie.",
+  "Hekkensluiter voor nu. Maar comebacks vanaf de bodem zijn de allermooiste.",
+  "Onderaan het klassement. Pak je racket en vecht jezelf vandaag nog uit deze diepe kuil.",
+  "De kelder is tochtig, maar met de juiste tactische instelling ben je er zo weer weg.",
+  "Onderin de tabel. Blijf gefocust op de basisslagen, de klim omhoog begint vandaag.",
 ] as const;
 export const OCHTEND_NIEUW = [
   "Nieuw in het klassement. Vandaag is een mooie dag om je Elo een verhaal te geven.",
@@ -194,7 +213,128 @@ export const OCHTEND_NIEUW = [
   "Welkom in het klassement. Laat je eerste match direct een statement zijn.",
   "Nog geen historie hier. Die ga je vanaf vandaag zelf schrijven.",
   "De eerste Elo-schattingen zijn binnen. Tijd voor de echte cijfers.",
+  "Net geregistreerd in het klassement. Tijd om direct je stempel op de ranglijst te drukken.",
+  "Elo-rating in de opwarmfase. We zijn uiterst benieuwd naar je eerste officiële statement.",
+  "Net gestart. Een onbeschreven blad, maar m'n gouden pen ligt al klaar om te schrijven.",
+  "Nieuwe uitdager. Speel meer matches om je Elo een betekenisvol getal te geven.",
 ] as const;
+
+// ── Persoonlijke briefing-varianten (#579) ──────────────────────────────────
+// Extra pools die de kale positie-/reekstoon vervangen zodra er iets concreets
+// te melden valt: een match tegen je vaste rivaal, een promotie binnen handbereik,
+// de Elo-beweging van vandaag, een badge op een haar na, of wisselvallige vorm.
+// Placeholders (%rivaal%, %n%, %divisie%, %delta%, %badge%) worden door `vul`
+// ingevuld — net als %tier% in coachTierQuip.
+
+/** Vaste rivaal wacht in de volgende match, met een lopende verliesreeks. */
+const OCHTEND_RIVAAL = [
+  "%rivaal% wacht vandaag. Je verloor de laatste %n% keer — tijd om dat script te scheuren.",
+  "Vandaag tegen %rivaal%. %n% keer op rij onderuit; zelfs Infantino zou nu een revanche eisen.",
+  "Daar is %rivaal% weer. De teller staat op %n% nederlagen — maak er vandaag een streep doorheen.",
+  "%rivaal% op het programma. Je bent %n% keer verslagen; ik heb de wraakplannen al uitgetekend.",
+  "Matchdag tegen %rivaal%. Na %n% verliespartijen is het tijd voor een tactische ommekeer van WK-proporties.",
+  "Je nemesis %rivaal% staat klaar. %n% keer verloren — vandaag stemmen we die reeks om.",
+  "%rivaal% opnieuw. Ik noteerde %n% nederlagen op rij; vandaag wil ik eindelijk een vinkje.",
+  "Vandaag treft %rivaal% je weer. %n% keer aan het kortste eind — de statistieken schreeuwen om revanche.",
+  "Daar heb je %rivaal%. %n% keer op rij verloren; zelfs mijn geduld begint op te raken.",
+  "%rivaal% wacht in de kooi. Na %n% afgangen op rij is er maar één acceptabel resultaat vandaag.",
+  "Matchdag, en uitgerekend tegen %rivaal%. %n% nederlagen diep — tijd om de trend te breken.",
+  "Je oude bekende %rivaal% staat op de rol. %n% keer verslagen; vandaag draaien we de rollen om.",
+  "%rivaal% weer als tegenstander. %n% keer verloren — ik hou m'n gouden pen klaar voor een ander verhaal.",
+  "Vandaag: %rivaal%. Die %n% nederlagen op rij? Vergeten we vanaf de eerste service.",
+] as const;
+
+/** Promotie naar de volgende divisie ligt binnen handbereik. */
+const OCHTEND_PROMOTIE_NABIJ = [
+  "Nog %delta% Elo tot %divisie%. Eén zege en ik roep meteen een persconferentie bijeen.",
+  "%divisie% ligt op %delta% Elo afstand. Zo dichtbij dat ik m'n sportpet al klaar heb liggen.",
+  "Maar %delta% Elo tot %divisie%. Vandaag geen excuses over de wind — dit is te pakken.",
+  "Nog %delta% Elo en %divisie% is van jou. Ik heb de promotie-krabbel al half geschreven.",
+  "%delta% Elo van %divisie% verwijderd. Eén goede match en we vieren het met een extra persmoment.",
+  "Je staat %delta% Elo onder %divisie%. Dat is geen kloof, dat is een aanloopje.",
+  "Nog %delta% Elo tot %divisie%. Zelfs Infantino kan deze promotie niet meer tegenhouden.",
+  "%divisie% wenkt op %delta% Elo. Ga ervoor, dan hoef ik vanavond niks kritisch te noteren.",
+  "Nog %delta% schamele Elo-puntjes tot %divisie%. Ik ruik een historische, Trumpiaanse opmars.",
+  "%delta% Elo scheidt je van %divisie%. Vandaag is een uitstekende dag om die streep over te steken.",
+  "Bijna %divisie%: nog %delta% Elo. M'n notitieboekje ligt al open op de felicitatiepagina.",
+  "Nog %delta% Elo tot %divisie%. Eén overtuigende zege en de promotie is een feit.",
+  "%divisie% op %delta% Elo. Zo dichtbij dat de ballenjongens al staan te trappelen om te juichen.",
+] as const;
+
+/** Vandaag al Elo gewonnen (cumulatief, voor wie later terugkeert). */
+const OCHTEND_DAG_UP = [
+  "Vandaag al %delta% Elo verdiend. En de dag is nog jong.",
+  "%delta% Elo in de plus vandaag. Ga zo door, m'n gouden pen gloeit al.",
+  "Al %delta% Elo winst op de teller vandaag. Dit ruikt naar meer.",
+  "Vandaag %delta% Elo gepakt. Ik noteer 't met een tevreden krabbel.",
+  "%delta% Elo erbij vandaag. Blijf hameren, de concurrentie kijkt nerveus toe.",
+  "Al %delta% Elo omhoog vandaag. Zelfs ik begin bijna te geloven in je tactiek.",
+  "Vandaag staat de teller op +%delta% Elo. Een prima basis om op door te bouwen.",
+  "%delta% Elo winst tot nu toe. Hou dit vast en de dag wordt legendarisch.",
+] as const;
+
+/** Vandaag al Elo verspeeld (cumulatief). */
+const OCHTEND_DAG_DOWN = [
+  "Vandaag al %delta% Elo verspeeld. Tijd voor een tactische koerswijziging.",
+  "%delta% Elo in de min vandaag. Kop op, de dag is nog te redden.",
+  "Al %delta% Elo ingeleverd vandaag. Ik heb de rode pen er alvast bij gepakt.",
+  "Vandaag %delta% Elo kwijtgeraakt. Eén goede match en we praten er niet meer over.",
+  "%delta% Elo eraf vandaag. Zelfs de watersproeiers kijken meewarig toe.",
+  "De teller staat op -%delta% Elo vandaag. Tijd om die trend eigenhandig te keren.",
+  "Al %delta% Elo verdampt vandaag. Niks dat een overtuigende zege niet oplost.",
+  "Vandaag %delta% Elo verloren. M'n notitieboekje kleurt licht rood — herstel dat.",
+] as const;
+
+/** Een prestatiebadge ligt op een haar na klaar. */
+const OCHTEND_BADGE = [
+  "Nog %n% te gaan voor de %badge%. Zó dichtbij dat ik 'm al bijna noteer.",
+  "De %badge% ligt op %n% afstand. Eén laatste zetje en hij is binnen.",
+  "Nog %n% en de %badge% is van jou. Ik hou de felicitaties klaar.",
+  "%badge%: nog %n% te gaan. Dat is geen doel meer, dat is een formaliteit.",
+  "Nog %n% voor de %badge%. Vandaag een uitgelezen dag om 'm binnen te harken.",
+  "De %badge% wenkt — nog %n% te overbruggen. Ik heb m'n gouden pen in de aanslag.",
+  "Nog %n% tot de %badge%. Zo dichtbij dat zelfs ik zenuwachtig word.",
+  "%badge% bijna binnen: nog %n%. Maak er vandaag werk van.",
+] as const;
+
+/** Wisselvallige vorm: win-verlies-win-verlies. Sneer, dus schild-gevoelig. */
+const OCHTEND_WISSELVALLIG = [
+  "Win, verlies, win, verlies… kies vandaag eens een kant.",
+  "Je vorm hobbelt op en neer als m'n populariteit bij de Belgische pers. Tijd voor stabiliteit.",
+  "De ene dag held, de andere pias. M'n notitieboekje raakt in de war van jou.",
+  "Om en om winnen en verliezen — dat is geen vorm, dat is een muntworp. Maak er vandaag een lijn van.",
+  "Je resultaten zigzaggen alle kanten op. Zelfs mijn tactische bord wordt er duizelig van.",
+  "Wisselvallig als het weer boven de kooi. Zorg vandaag voor een sec stukje zon.",
+  "Winst, nederlaag, winst, nederlaag. Kies een richting voordat ik er een hoofdstuk over schrijf.",
+  "Je vorm is één grote grillige lijn. Vandaag trekken we 'm eindelijk recht.",
+] as const;
+
+// Drempels voor de persoonlijke briefing-branches (#579). Geëxporteerd zodat de
+// tak-tests er exact op kunnen mikken.
+/** Vanaf zoveel onderlinge nederlagen op rij benoemt Rudy de rivaal-match. */
+export const RIVAAL_REEKS_MIN = 2;
+/** Binnen zoveel Elo tot de volgende divisie geldt promotie als "nabij". */
+export const PROMOTIE_DREMPEL = 25;
+/** Vanaf deze absolute dag-Elo-beweging is de day-delta het vermelden waard. */
+export const DAGDELTA_DREMPEL = 15;
+/** Vanaf deze voortgangsratio (nu/doel) is een badge "op een haar na" klaar. */
+export const BADGE_NABIJ_RATIO = 0.7;
+
+/** Vervangt %sleutel%-placeholders in een quip (zoals coachTierQuip met %tier%). */
+function vul(zin: string, subs: Record<string, string | number>): string {
+  let out = zin;
+  for (const [k, v] of Object.entries(subs)) out = out.replaceAll(`%${k}%`, String(v));
+  return out;
+}
+
+/** Wisselvallig = de laatste vier resultaten alterneren strikt tussen W en L. */
+function isWisselvallig(vorm: readonly ("W" | "L" | "D")[]): boolean {
+  const laatste = vorm.slice(-4);
+  if (laatste.length < 4) return false;
+  return laatste.every(
+    (v, i) => (v === "W" || v === "L") && (i === 0 || v !== laatste[i - 1]),
+  );
+}
 
 export interface BriefingFeiten {
   rank: number | null;
@@ -206,6 +346,16 @@ export interface BriefingFeiten {
   heeftMatch: boolean;
   /** Klassement-feiten (#411); zonder dit veld geldt het oude rank===1-gedrag. */
   klassement?: KlassementFeiten | null;
+  /** Volgende match is tegen je vaste rivaal, met een lopende verliesreeks (#579). */
+  rivaalMatch?: { naam: string; verliesreeks: number } | null;
+  /** Promotie binnen handbereik: nog `punten` Elo tot `divisie` (#579). */
+  promotieNabij?: { divisie: string; emoji: string; punten: number } | null;
+  /** Cumulatieve Elo-beweging vandaag; alleen ≠0 nadat je vandaag speelde (#579). */
+  dayDelta?: number;
+  /** Recente vorm (nieuwste eerst), voor de wisselvallig-detectie (#579). */
+  vorm?: readonly ("W" | "L" | "D")[];
+  /** Badge op een haar na klaar: nog `doel - nu` te gaan (#579). */
+  badgeNabij?: { naam: string; emoji: string; nu: number; doel: number } | null;
   seed: string;
   ctx: RoastCtx;
 }
@@ -216,7 +366,28 @@ export function coachBriefing(f: BriefingFeiten): string {
   if (f.ctx.schild) return kiesUniek(OCHTEND_NEUTRAAL, seed);
   if (f.losing >= 3) return kiesUniek(OCHTEND_DIP, seed);
   if (f.streak >= 3) return kiesUniek(OCHTEND_HYPE, seed);
+  // Match tegen je vaste rivaal met een lopende verliesreeks: persoonlijker dan
+  // de generieke matchdag-toon, dus vóór OCHTEND_MATCH.
+  if (f.rivaalMatch && f.rivaalMatch.verliesreeks >= RIVAAL_REEKS_MIN) {
+    return vul(kiesUniek(OCHTEND_RIVAAL, seed), {
+      rivaal: f.rivaalMatch.naam,
+      n: f.rivaalMatch.verliesreeks,
+    });
+  }
+  // Promotie binnen handbereik: zeldzaam, dus mag de matchdag-toon overrulen.
+  if (f.promotieNabij) {
+    return vul(kiesUniek(OCHTEND_PROMOTIE_NABIJ, seed), {
+      divisie: `${f.promotieNabij.emoji} ${f.promotieNabij.divisie}`,
+      delta: f.promotieNabij.punten,
+    });
+  }
   if (f.heeftMatch) return kiesUniek(OCHTEND_MATCH, seed);
+  // Dag-Elo-beweging: valt in een échte ochtend (nog niet gespeeld) op 0 terug en
+  // vuurt dan niet — bedoeld voor wie later op de dag terugkeert.
+  if (f.dayDelta != null && Math.abs(f.dayDelta) >= DAGDELTA_DREMPEL) {
+    const pool = f.dayDelta > 0 ? OCHTEND_DAG_UP : OCHTEND_DAG_DOWN;
+    return vul(kiesUniek(pool, seed), { delta: Math.abs(f.dayDelta) });
+  }
   switch (f.klassement?.tier) {
     case "troon":
       return kiesUniek(OCHTEND_TOP, seed);
@@ -226,6 +397,21 @@ export function coachBriefing(f: BriefingFeiten): string {
       return kiesUniek(OCHTEND_KELDER, seed);
     case "nieuw":
       return kiesUniek(OCHTEND_NIEUW, seed);
+  }
+  // Alleen de middenmoot (en onbekende tier) valt hier door: verrijk 'm met een
+  // badge-nudge of een por over wisselvallige vorm vóór de kale ALGEMEEN-pool.
+  if (
+    f.badgeNabij &&
+    f.badgeNabij.doel > 0 &&
+    f.badgeNabij.nu / f.badgeNabij.doel >= BADGE_NABIJ_RATIO
+  ) {
+    return vul(kiesUniek(OCHTEND_BADGE, seed), {
+      badge: `${f.badgeNabij.emoji} ${f.badgeNabij.naam}`,
+      n: Math.max(1, f.badgeNabij.doel - f.badgeNabij.nu),
+    });
+  }
+  if (!f.ctx.schild && f.vorm && isWisselvallig(f.vorm)) {
+    return kiesUniek(OCHTEND_WISSELVALLIG, seed);
   }
   if (f.rank === 1) return kiesUniek(OCHTEND_TOP, seed);
   return kiesUniek(OCHTEND_ALGEMEEN, seed);
@@ -607,11 +793,82 @@ const PRE_GELIJK = [
   "Twee teams die aan elkaar gewaagd zijn. Dit wordt een schaakspel in de kooi.",
 ] as const;
 
+// ── Pre-match head-to-head (#581): de rivaliteit met de tegenstander ─────────
+// Krijgt voorrang op de kale kansentaal als er een duidelijk verhaal is:
+// een lopende verliesreeks (angstgegner), of een scheve onderlinge balans.
+// %rivaal% = naam tegenstander, %n% = verliesreeks, %saldo% = |balans|.
+
+/** Je verliest al ≥ RIVAAL_REEKS_MIN keer op rij van deze tegenstander. */
+const PRE_H2H_ANGST = [
+  "%rivaal% is je angstgegner: %n% keer op rij verloren. Vandaag breek je die vloek.",
+  "Je verloor de laatste %n% van %rivaal%. Tijd om dat script eindelijk te scheuren.",
+  "%rivaal% zit diep in je hoofd — %n% nederlagen op rij. Toon lef vandaag.",
+  "%n% keer achter elkaar onderuit tegen %rivaal%. Zelfs ik word er nerveus van; draai het om.",
+  "Daar is %rivaal% weer, je nachtmerrie. %n% keer op rij verslagen — nu of nooit.",
+  "%rivaal% pakt je telkens: %n% op rij. Ik heb een speciaal tactisch plan (het staat op een servetje).",
+  "Tegen %rivaal% verlies je al %n% keer op een rij. Vandaag geen alibi's meer.",
+  "%n% nederlagen op rij tegen %rivaal%. De statistieken smeken om een ommekeer.",
+] as const;
+
+/** Je leidt de onderlinge balans tegen deze tegenstander. */
+const PRE_H2H_BAAS = [
+  "%rivaal% verslaat je zelden — je staat %saldo% voor. Bevestig dat op de baan.",
+  "Tegen %rivaal% ben jij de baas (%saldo% voorsprong). Nu niet verslappen.",
+  "Je hebt %rivaal% meestal in je zak: %saldo% in de plus. Hou die reputatie hoog.",
+  "%rivaal% is jouw prooi — %saldo% duels voor. Ik noteer graag nog een streepje.",
+  "In de onderlinge stand leid je op %rivaal% met %saldo%. Verpest het nu niet.",
+  "Je domineert %rivaal% (%saldo% voorsprong). Voeg er vandaag een zege aan toe.",
+  "%saldo% duels voorsprong op %rivaal%. Speel als de favoriet die je onderling bent.",
+  "%rivaal% kan je zelden aan: %saldo% in jouw voordeel. Maak het af.",
+] as const;
+
+/** Je staat achter in de onderlinge balans (maar geen actuele verliesreeks). */
+const PRE_H2H_ACHTER = [
+  "In de onderlinge stand kijk je tegen %rivaal% omhoog (%saldo% achter). Tijd om in te lopen.",
+  "%rivaal% heeft de betere papieren tegen jou: %saldo% achterstand. Werk aan de winkel.",
+  "Je staat %saldo% achter op %rivaal%. Vandaag een uitgelezen kans om bij te trekken.",
+  "Tegen %rivaal% trek je meestal aan het kortste eind (%saldo% achter). Draai de trend.",
+  "De balans met %rivaal% helt de verkeerde kant op (%saldo%). Zet dat recht.",
+  "%rivaal% leidt jullie onderlinge duel met %saldo%. Knok je terug in de stand.",
+  "Je hebt een %saldo%-achterstand op %rivaal%. Perfecte dag om te beginnen met inhalen.",
+  "%rivaal% is je nét de baas (%saldo% voor). Bewijs dat het anders kan.",
+] as const;
+
+/** Onderling H2H-feit voor de pre-match hype (#581), vanuit jóuw perspectief. */
+export interface PreMatchH2H {
+  /** Naam van de tegenstander/rivaal. */
+  rivaal: string;
+  /** Onderlinge zeges van jou en van de rivaal. */
+  mijnWins: number;
+  oppWins: number;
+  /** Lopende onderlinge verliesreeks (≥ 0). */
+  verliesreeks: number;
+}
+
 /** Korte hype/waarschuwing bij een geplande match, op basis van de winkans
- *  (0..1) van jóuw team. */
-export function coachPreMatch(winkans: number, seed: string, ctx: RoastCtx): string {
+ *  (0..1) van jóuw team. Met een H2H-feit (#581) krijgt de rivaliteit voorrang
+ *  op de kale kansentaal; zonder duidelijk verhaal valt hij terug op de winkans. */
+export function coachPreMatch(
+  winkans: number,
+  seed: string,
+  ctx: RoastCtx,
+  h2h?: PreMatchH2H | null,
+): string {
   const s = roastSeed("prematch", seed);
   if (ctx.schild) return kiesUniek(PRE_NEUTRAAL, s);
+  if (h2h) {
+    const saldo = Math.abs(h2h.mijnWins - h2h.oppWins);
+    if (h2h.verliesreeks >= RIVAAL_REEKS_MIN) {
+      return vul(kiesUniek(PRE_H2H_ANGST, s), { rivaal: h2h.rivaal, n: h2h.verliesreeks });
+    }
+    if (h2h.mijnWins > h2h.oppWins) {
+      return vul(kiesUniek(PRE_H2H_BAAS, s), { rivaal: h2h.rivaal, saldo });
+    }
+    if (h2h.oppWins > h2h.mijnWins) {
+      return vul(kiesUniek(PRE_H2H_ACHTER, s), { rivaal: h2h.rivaal, saldo });
+    }
+    // Gelijke stand zonder verliesreeks → geen sterk verhaal; val terug op winkans.
+  }
   if (winkans < 0.35) return kiesUniek(PRE_UNDERDOG, s);
   if (winkans > 0.65) return kiesUniek(PRE_FAVORIET, s);
   return kiesUniek(PRE_GELIJK, s);

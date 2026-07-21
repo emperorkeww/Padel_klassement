@@ -309,6 +309,7 @@ export function Feed() {
       intensiteit: mijnIntensiteit,
       profiles: pmap,
       naam: name,
+      teams: tmap,
       gebruikt: gebruiktCoach,
     });
     return { summary, coachLines };

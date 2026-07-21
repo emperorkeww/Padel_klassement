@@ -9,11 +9,12 @@ import { Avatar } from "@/ui/Avatar";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { COMMENTATOR } from "@/features/coach/roastTone";
-import { coachBriefing, coachEmptyState } from "@/features/coach/coachMoments";
+import { coachBriefing, coachEmptyState, PROMOTIE_DREMPEL } from "@/features/coach/coachMoments";
 import { klassementFeiten } from "@/features/coach/klassementFeiten";
+import { verliesreeksTegen } from "@/features/coach/coachStats";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
-import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
+import { inTeam, recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
 import { deriveBadges } from "@/features/profiles/badges";
 import { weekRange } from "@/features/dashboard/missions";
 import { RatingChart } from "@/features/rating/components/RatingChart";
@@ -286,12 +287,55 @@ export function Dashboard() {
   // gescoopt), dus het volgt jóuw eigen profiel-intensiteit (#183) — net als de
   // feed — en respecteert je roast-schild. De klassement-feiten (#411) geven de
   // briefing zijn positie-tier: troon, jager, middenmoot, kelder of nieuw.
+  // #579 — persoonlijke briefing-feiten uit al geladen data:
+  // Volgende match tegen je vaste rivaal (met een lopende onderlinge verliesreeks)?
+  const rivaalMatch = (() => {
+    if (!rival || !nextMatch) return null;
+    const mijnA = inTeam(tmap[nextMatch.team_a_id], myId);
+    const mijnB = inTeam(tmap[nextMatch.team_b_id], myId);
+    const tegenTeam = mijnA
+      ? tmap[nextMatch.team_b_id]
+      : mijnB
+        ? tmap[nextMatch.team_a_id]
+        : undefined;
+    if (!tegenTeam || !inTeam(tegenTeam, rival.oppId)) return null;
+    const verliesreeks = verliesreeksTegen(myGames, tmap, myId, rival.oppId, nextMatch);
+    if (verliesreeks < 2) return null;
+    return { naam: displayName(pmap[rival.oppId]), verliesreeks };
+  })();
+  // Promotie binnen handbereik.
+  const promotieNabij =
+    myTierNext?.volgende &&
+    myTierNext.puntenNodig != null &&
+    myTierNext.puntenNodig > 0 &&
+    myTierNext.puntenNodig <= PROMOTIE_DREMPEL
+      ? {
+          divisie: myTierNext.volgende.naam,
+          emoji: myTierNext.volgende.emoji,
+          punten: myTierNext.puntenNodig,
+        }
+      : null;
+  // Badge op een haar na klaar.
+  const badgeNabij =
+    nextBadge?.voortgang
+      ? {
+          naam: nextBadge.naam,
+          emoji: nextBadge.emoji,
+          nu: nextBadge.voortgang.nu,
+          doel: nextBadge.voortgang.doel,
+        }
+      : null;
   const coachBriefingTekst = me
     ? coachBriefing({
         rank,
         streak,
         losing,
         heeftMatch: !!nextMatch,
+        rivaalMatch,
+        promotieNabij,
+        dayDelta,
+        vorm: form,
+        badgeNabij,
         klassement: klassementFeiten(
           eloRanked.map((p) => ({
             playerId: p.player_id,
