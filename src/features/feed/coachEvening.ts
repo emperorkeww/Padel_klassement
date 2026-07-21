@@ -43,6 +43,11 @@ const HELD_FLAVOR = [
   "had de regie stevig in handen en dicteerde elke rally",
   "liet de concurrentie volstrekt gedesillusioneerd achter",
   "speelde zo soepel dat m'n sportpet er bijna van afwaaide",
+  "veegde de vloer aan met de tegenstander",
+  "was simpelweg een klasse apart vanavond",
+  "liet zien waarom die bovenaan de ranglijst thuishoort",
+  "speelde met een ongekende intensiteit en focus",
+  "gaf een masterclass in omschakelingspadel",
 ] as const;
 
 /** Cijfer-flavors als er geen upset was om te melden. */
@@ -63,6 +68,11 @@ const CIJFER_FLAVOR = [
   "Zoveel padel dat we er een extra persconferentie voor moeten inplannen.",
   "De kooi heeft alle hoeken gezien vanavond.",
   "Genoeg data verzameld om een heel boekwerk mee te vullen.",
+  "De statistieken stromen binnen en ze zien er heerlijk uit.",
+  "Een avond die nog lang zal nagalmen in de kantine.",
+  "De banen zijn warm gespeeld, m'n notitieboekje ook.",
+  "Genoeg spektakel om een hele persconferentie mee te vullen.",
+  "Heerlijke potjes gezien. Mijn coach-hart sprong op.",
 ] as const;
 
 /**
