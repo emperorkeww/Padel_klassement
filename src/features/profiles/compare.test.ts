@@ -5,8 +5,9 @@ import {
   jointRol,
   ratingRankIndex,
   ratioBalk,
+  vsKaartVoor,
 } from "./compare";
-import type { Match, PlayerRating, PlayerStanding, Team } from "@/types";
+import type { Match, PlayerRating, PlayerStanding, Profile, Team } from "@/types";
 
 // Vier spelers in wisselende duo's, zodat p1 en p2 zowel partners als
 // tegenstanders kunnen zijn.
@@ -163,6 +164,81 @@ describe("jointMatches", () => {
       }),
     );
     expect(jointMatches(many, teams, "p1", "p2", 10)).toHaveLength(10);
+  });
+});
+
+describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders", () => {
+  const profile = (id: string, extra: Partial<Profile> = {}): Profile => ({
+    id,
+    username: id,
+    full_name: null,
+    avatar_url: null,
+    created_at: "",
+    ...extra,
+  });
+  const ratings: Record<string, PlayerRating> = {
+    p1: { player_id: "p1", rating: 1650, games: 20, updated_at: "" },
+    p2: { player_id: "p2", rating: 1250, games: 20, updated_at: "" },
+  };
+
+  it("klemt 1600+ terug naar GOAT tenzij de speler zelf de zittende dictator is (#621)", () => {
+    const nietDictator = vsKaartVoor({
+      id: "p1",
+      profile: profile("p1"),
+      naam: "Alice",
+      ratings,
+      isDictator: false,
+      iconKey: null,
+      inForm: null,
+    });
+    expect(nietDictator.tier?.key).toBe("legende");
+
+    const zittendeDictator = vsKaartVoor({
+      id: "p1",
+      profile: profile("p1"),
+      naam: "Alice",
+      ratings,
+      isDictator: true,
+      iconKey: null,
+      inForm: null,
+    });
+    expect(zittendeDictator.tier?.key).toBe("dictator");
+  });
+
+  it("draagt dezelfde editie en playstyles als de rest van de app", () => {
+    const inForm = { playerId: "p2", delta: 48, matches: 3 };
+    const kaart = vsKaartVoor({
+      id: "p2",
+      profile: profile("p2", {
+        avatar_url: "https://example.com/p2.png",
+        featured_badges: ["eerste-overwinning"],
+      }),
+      naam: "Bob",
+      ratings,
+      isDictator: false,
+      iconKey: null,
+      inForm,
+    });
+    expect(kaart.editie).toBe("inform");
+    expect(kaart.editieTekst).toBe("⚡ In-Form · +48");
+    expect(kaart.avatarUrl).toBe("https://example.com/p2.png");
+    expect(kaart.playstyles.map((b) => b.id)).toContain("eerste-overwinning");
+  });
+
+  it("valt netjes terug zonder rating", () => {
+    const kaart = vsKaartVoor({
+      id: "px",
+      profile: profile("px"),
+      naam: "Onbekend",
+      ratings: {},
+      isDictator: false,
+      iconKey: null,
+      inForm: null,
+    });
+    expect(kaart.rating).toBeNull();
+    expect(kaart.tier).toBeNull();
+    expect(kaart.editie).toBeNull();
+    expect(kaart.playstyles).toEqual([]);
   });
 });
 

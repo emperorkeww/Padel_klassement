@@ -1,0 +1,35 @@
+/* Head-to-Head versus-kaarten (#499): twee compacte FUT-kaarten met een
+   VS-medaillon ertussen, boven de bestaande onderlinge-stand-lijst. Rij op
+   breder scherm, kolom (medaillon als scheiding) op mobiel — zelfde
+   breekpunt als de rest van het profiel (640px, zie PlayerProfile.css). */
+.vs-kaarten {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+@media (max-width: 640px) {
+  .vs-kaarten {
+    flex-direction: column;
+  }
+}
+
+.vs-kaarten__kaart {
+  flex: 0 0 auto;
+}
+.vs-kaarten__kaart .fut-kaart {
+  --fut-kw: clamp(104px, 26vw, 136px);
+}
+
+.vs-kaarten__medaillon {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  padding: var(--sp-1) var(--sp-3);
+}

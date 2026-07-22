@@ -32,6 +32,7 @@ import {
   outcomeFor,
 } from "@/features/rating/results";
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
+import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
 import { listSeasons, seasonFromId } from "@/features/rating/seasons";
 import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
@@ -332,6 +333,30 @@ export function PlayerProfile() {
     dictator.data?.profileId ?? null,
   );
   const editie = editieVoor(id, iconKey, inForm);
+  // Head-to-Head versus-kaarten (#499): dezelfde bundel als hierboven, maar
+  // dan voor de bekeken speler ("hunKaart") én — mét reeds app-breed geladen
+  // data, dus zonder extra fetch — voor de ingelogde gebruiker ("mijnKaart").
+  const hunKaart = vsKaartVoor({
+    id,
+    profile: p,
+    naam: displayName(p),
+    ratings: ratings.data ?? {},
+    isDictator,
+    iconKey,
+    inForm,
+  });
+  const mijnKaart =
+    user && !isMe && pmap[user.id]
+      ? vsKaartVoor({
+          id: user.id,
+          profile: pmap[user.id],
+          naam: displayName(pmap[user.id]),
+          ratings: ratings.data ?? {},
+          isDictator: dictator.data?.profileId === user.id,
+          iconKey,
+          inForm,
+        })
+      : null;
   const shareData: ProfileShareData = {
     name: displayName(p),
     avatarUrl: p.avatar_url ?? null,
@@ -492,6 +517,8 @@ export function PlayerProfile() {
       {tab === "overzicht" && (
         <ProfileOverview
           d={d}
+          mijnKaart={mijnKaart}
+          hunKaart={hunKaart}
           onOpenBadge={setOpenBadge}
           onShowMatches={() => setTab("matches")}
         />
