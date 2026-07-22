@@ -7,8 +7,10 @@ import { MatchListSkeleton } from "@/ui/Skeleton";
 import { winRate } from "@/features/rating/results";
 import { displayName } from "@/features/profiles/api";
 import { HighlightTile } from "@/features/profiles/components/HighlightTile";
+import { VersusKaarten } from "@/features/profiles/components/VersusKaarten";
 import { regeerduurZin } from "@/features/dashboard/dictator";
 import type { ProfileData } from "@/features/profiles/components/types";
+import type { VsKaart } from "@/features/profiles/compare";
 
 // Aantal recente matches in de peek op Overzicht (de volle lijst zit onder de
 // Matches-tab).
@@ -19,10 +21,16 @@ const PEEK = 3;
 // jij-vs-kaart) + een korte peek naar de recente matches.
 export function ProfileOverview({
   d,
+  mijnKaart,
+  hunKaart,
   onOpenBadge,
   onShowMatches,
 }: {
   d: ProfileData;
+  /** Mijn FUT-kaart voor het versus-blok (#499); null zonder ingelogde
+   *  gebruiker of op je eigen profiel — dan blijft de sectie zoals nu. */
+  mijnKaart: VsKaart | null;
+  hunKaart: VsKaart;
   onOpenBadge: (id: string) => void;
   onShowMatches: () => void;
 }) {
@@ -115,6 +123,7 @@ export function ProfileOverview({
         balans && (
           <section className="card">
             <h2 className="card__title">Jij vs {displayName(p)}</h2>
+            {mijnKaart && <VersusKaarten mij={mijnKaart} hen={hunKaart} />}
             {vsGespeeld === 0 && samenGespeeld === 0 ? (
               <p className="onderling__leeg">Nog geen gezamenlijke matches.</p>
             ) : (

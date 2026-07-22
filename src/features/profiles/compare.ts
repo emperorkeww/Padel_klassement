@@ -3,7 +3,7 @@
 // data en importeren we bewust géén api/supabase, zodat de logica los testbaar
 // blijft. De onderlinge balans zelf komt uit headToHead() (profiles/headToHead).
 
-import type { Match, PlayerRating, PlayerStanding, Team } from "@/types";
+import type { Match, PlayerRating, PlayerStanding, Profile, Team } from "@/types";
 import {
   inTeam,
   recentForm,
@@ -11,8 +11,14 @@ import {
   type Outcome,
 } from "@/features/rating/results";
 import { byRank } from "@/features/rating/standings";
-import { tierFor, type Tier } from "@/features/rating/tiers";
-import { deriveBadges } from "@/features/profiles/badges";
+import { tierFor, tierForWeergave, type Tier } from "@/features/rating/tiers";
+import { deriveBadges, featuredPlaystyles, type Badge } from "@/features/profiles/badges";
+import {
+  editieLabel,
+  editieVoor,
+  type Editie,
+  type EditieContext,
+} from "@/features/standings/edities";
 
 /** De side-by-side statistieken van één speler in de vergelijker. */
 export interface VergelijkKant {
@@ -136,5 +142,45 @@ export function ratioBalk(
     win: (gewonnen / totaal) * 100,
     draw: (gelijk / totaal) * 100,
     loss: (verloren / totaal) * 100,
+  };
+}
+
+/** Eén kant van een FUT-kaart-duel (#499): de velden die `FutKaart`/
+ *  `FutKaartVoorkant` nodig hebben, dictator- en editie-bewust zoals overal
+ *  elders (#621/#624) — zodat een speler ook hier dezelfde kaart draagt als
+ *  op klassement, profiel en matchdetail. */
+export interface VsKaart {
+  id: string;
+  naam: string;
+  rating: number | null;
+  tier: Tier | null;
+  avatarUrl: string | null;
+  editie: Editie;
+  editieTekst: string | null;
+  playstyles: Badge[];
+}
+
+/** Bouwt één duel-kaart uit reeds app-breed geladen data (ratings-/profiel-map,
+ *  de al opgebouwde `EditieContext`, #625) — geen extra fetch per speler
+ *  nodig; dictator-klem en editie volgen automatisch uit de context. */
+export function vsKaartVoor(input: {
+  id: string;
+  profile: Profile;
+  naam: string;
+  ratings: Record<string, PlayerRating>;
+  edities: EditieContext;
+}): VsKaart {
+  const { id, profile, naam, ratings, edities } = input;
+  const rating = ratings[id]?.rating ?? null;
+  const editie = editieVoor(id, edities);
+  return {
+    id,
+    naam,
+    rating,
+    tier: tierForWeergave(rating, id === edities.dictatorId),
+    avatarUrl: profile.avatar_url ?? null,
+    editie,
+    editieTekst: editieLabel(editie, edities),
+    playstyles: featuredPlaystyles(profile.featured_badges),
   };
 }
