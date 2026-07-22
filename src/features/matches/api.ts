@@ -5,8 +5,12 @@ import type { CourtType, Match, Profile, Team } from "@/types";
 import { displayName } from "@/features/profiles/api";
 
 // Alles wat een uitslag raakt: matchlijsten, standen (views), teams (nieuwe
-// paren bij het loggen), ratings (trigger herrekent ze) en tips (de
-// grading-trigger beoordeelt ze bij een uitslag of correctie, #116).
+// paren bij het loggen), ratings (trigger herrekent ze), tips (de
+// grading-trigger beoordeelt ze bij een uitslag of correctie, #116), de pias
+// (de trigger duidt 'm bij elke uitslag opnieuw aan) en de Zwarte Piet (die
+// verhuist ook bij elke uitslag, #185). Moet in de pas lopen met
+// CACHE_PREFIXES.matches in useRealtime.ts, anders blijven pias/piet op de
+// invoerende client stale tot de cache-TTL verloopt (#603).
 function invalidateMatchData() {
   invalidate(
     "matches",
@@ -15,6 +19,8 @@ function invalidateMatchData() {
     "ratings",
     "match-predictions",
     "prediction-standings",
+    "pias",
+    "shame",
   );
 }
 
