@@ -103,8 +103,13 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    // Tier-badge (#127) op de rating-tegel: rating 1012 = Wannabe III, gedimd (1 match).
-    expect(await screen.findByText("Wannabe III")).toHaveClass("is-dim");
+    // Tier-badge (#127) op de rating-tegel: rating 1012 = Wannabe III, gedimd
+    // (1 match). Sinds #496 noemt ook de hero-kaart de divisie, vandaar
+    // findAll + filteren op de badge.
+    const tiers = await screen.findAllByText("Wannabe III");
+    expect(tiers.find((el) => el.classList.contains("tier-badge"))).toHaveClass(
+      "is-dim",
+    );
     // Punten (6) staan onder de Statistieken-tab.
     clickTab("Statistieken");
     expect(await screen.findByText("6")).toBeInTheDocument();

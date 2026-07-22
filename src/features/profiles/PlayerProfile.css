@@ -1,16 +1,68 @@
 .profile-hero {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  flex-wrap: wrap;
+  gap: var(--sp-5);
   margin-bottom: var(--sp-5);
   background:
     radial-gradient(110% 140% at 100% 0%, var(--accent-soft) 0%, transparent 55%),
     var(--surface);
 }
 
+/* De hero-kaart (#496): de gedeelde FutKaart op profiel-maat, met de
+   flip-hint eronder. De focus-ring kleurt met het accent (op --surface,
+   niet op het veld zoals in de Opstelling). */
+.profile-hero__kaart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-inline: auto;
+}
+.profile-hero .fut-kaart {
+  --fut-kw: clamp(170px, 52vw, 210px);
+  --fut-focus: var(--accent);
+}
+.profile-hero__fliphint {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* Achterkant-extra's: klassement/beste naast elkaar boven een hairline, en de
+   tier-voortgang als slotregel — in de kaart-inktkleuren van FutKaart.css. */
+.profile-hero__statrij {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--fut-kw) * 0.1);
+  padding-top: calc(var(--fut-kw) * 0.03);
+  margin-top: calc(var(--fut-kw) * 0.02);
+  border-top: 1.5px solid var(--kaart-lijn);
+}
+.profile-hero__progress {
+  font-size: calc(var(--fut-kw) * 0.058);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--kaart-ink-soft);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* De hero-kaart is groter dan de lineup-variant: stats-tekst iets ruimer. */
+.profile-hero .fut-kaart__stats-rij {
+  font-size: var(--fs-sm);
+}
+.profile-hero .fut-kaart__stats-label {
+  font-size: calc(var(--fut-kw) * 0.055);
+}
+
 /* Klikbare profielfoto → vergroten (#572). De knop is enkel een transparante
-   hitbox rond de avatar; de morph loopt via viewTransitionName player-avatar. */
+   hitbox rond de avatar; de morph loopt via viewTransitionName player-avatar.
+   Op de kaart ligt hij bóven de flip-overlay: avatar = zoomen, rest = flip. */
 .profile-hero__avatar-btn {
+  position: relative;
+  z-index: 2;
   padding: 0;
   border: 0;
   background: none;
