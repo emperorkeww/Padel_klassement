@@ -184,39 +184,63 @@
   color: var(--danger);
 }
 
-/* FUT-schildkaart: buitenlaag = divisiekleurig frame, binnenlaag = kaartvlak;
-   beide dragen dezelfde clip-path (een rand kan een clip-path niet volgen).
-   Tikken draait de kaart om (3D-flip) naar de statistieken-achterkant. */
+/* FUT-schildkaart (#495): drie geclipte lagen — frame (metaal-gradient) →
+   liner (donkere binnenrand) → vlak — die alle drie dezelfde schildclip uit
+   SchildDefs dragen (een rand kan een clip-path niet volgen, dus de lagen
+   maken de rand). De bovenrand wisselt per divisiegroep via --schild; de
+   onderkant, en dus het chemielijn-anker op de schildpunt, is overal
+   identiek. Tikken draait de kaart om (3D-flip) naar de achterkant. */
 .lineup-kaart {
-  /* Zonder rating: neutraal frame. */
+  /* Zonder rating: neutraal grijs metaal. */
   --tier: var(--ink-soft);
   --tier-soft: var(--surface-2);
+  --schild: url(#lineup-schild-notch);
+  /* Metaalvlak: de tierkleur gemixt richting warm wit. De kaart blijft een
+     "fysiek" licht kaartje met donkere inkt in béide thema's (zoals een echte
+     FUT-kaart); alleen de special-toptiers verderop zijn donker. */
+  --kaart-hi: color-mix(in srgb, var(--tier) 20%, #fdfbf6);
+  --kaart-mid: color-mix(in srgb, var(--tier) 46%, #f1eadb);
+  --kaart-lo: color-mix(in srgb, var(--tier) 62%, #d9cfba);
+  --kaart-ink: color-mix(in srgb, var(--tier) 52%, #1d1508);
+  --kaart-ink-soft: color-mix(in srgb, var(--tier) 58%, #4a3d26);
+  --kaart-lijn: color-mix(in srgb, var(--tier) 55%, #a8987a);
   width: var(--kaart-breedte);
   perspective: 600px;
 }
 .lineup-kaart__flipper {
   position: relative;
+  /* FUT-verhouding; zo houdt het schild overal dezelfde vorm. */
+  aspect-ratio: 100 / 139;
   transform-style: preserve-3d;
 }
 .lineup-kaart.is-omgedraaid .lineup-kaart__flipper {
   transform: rotateY(180deg);
 }
 .lineup-kaart__zijde {
-  padding: 2.5px;
-  clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
+  height: 100%;
+  padding: 3px;
+  clip-path: var(--schild);
   background: linear-gradient(
     160deg,
-    var(--tier) 0%,
-    var(--tier-soft) 55%,
-    var(--tier) 100%
+    color-mix(in srgb, var(--tier) 55%, #fff8e8) 0%,
+    color-mix(in srgb, var(--tier) 88%, #3a2f18) 42%,
+    color-mix(in srgb, var(--tier) 60%, #fff3d6) 68%,
+    color-mix(in srgb, var(--tier) 90%, #241b0c) 100%
   );
-  filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.25));
+  filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
   backface-visibility: hidden;
 }
 .lineup-kaart__zijde--achter {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
+}
+.lineup-kaart__liner {
+  display: block;
+  height: 100%;
+  clip-path: var(--schild);
+  padding: 1.5px;
+  background: color-mix(in srgb, var(--tier) 70%, #211806);
 }
 /* Onzichtbare flip-knop over het hele vlak; de profiel-link op de achterkant
    ligt erbóven en blijft zo een echte link. */
@@ -255,62 +279,117 @@
   }
 }
 .lineup-kaart__vlak {
-  clip-path: polygon(0 6%, 8% 0, 92% 0, 100% 6%, 100% 86%, 50% 100%, 0 86%);
-  background: linear-gradient(180deg, var(--tier-soft) 0%, var(--surface) 78%);
-  padding: var(--sp-3) var(--sp-2) var(--sp-4);
+  position: relative;
+  height: 100%;
+  clip-path: var(--schild);
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 255, 255, 0.5),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+  display: flex;
+  flex-direction: column;
+  /* De forse bodem houdt naamplaat en divisieregel boven de schildtaille
+     (de punt blijft leeg, zoals op echte FUT-kaarten); padding-% rekent
+     tegen de kaartbreedte, dus dit schaalt mee. */
+  padding: 12% 9% 24%;
+  color: var(--kaart-ink);
+}
+/* Sheen: één diagonale lichtbaan over het vlak, zoals op echte kaarten. */
+.lineup-kaart__vlak::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 58%
+  );
+}
+.lineup-kaart__boven {
   display: grid;
   grid-template-columns: auto 1fr;
+  column-gap: 4%;
+  align-items: start;
+  flex: 1;
+}
+.lineup-kaart__eloblok {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  column-gap: var(--sp-2);
+  gap: 1px;
+  padding-bottom: 5px;
+  border-bottom: 1.5px solid var(--kaart-lijn);
 }
 .lineup-kaart__elo {
   font-family: var(--font-rounded);
-  font-size: 1.3rem;
+  font-size: calc(var(--kaart-breedte) * 0.2);
   font-weight: 900;
   line-height: 1;
-  color: var(--ink);
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
-.lineup-kaart__elo-label {
-  font-size: 0.58rem;
+.lineup-kaart__sub {
+  font-size: calc(var(--kaart-breedte) * 0.085);
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  color: var(--kaart-ink-soft);
 }
 .lineup-kaart__tier {
-  font-size: 0.95rem;
-  line-height: 1;
+  font-size: calc(var(--kaart-breedte) * 0.115);
+  line-height: 1.4;
 }
 .lineup-kaart__avatar {
-  grid-column: 2;
-  grid-row: 1 / span 3;
   justify-self: center;
+  align-self: center;
+  min-width: 0;
 }
 .lineup-kaart__naam {
-  grid-column: 1 / -1;
+  margin-top: 5%;
   text-align: center;
-  font-size: var(--fs-sm);
+  font-size: calc(var(--kaart-breedte) * 0.1);
   font-weight: 800;
-  color: var(--ink);
-  border-top: 1px solid var(--line);
-  padding-top: var(--sp-1);
-  margin-top: var(--sp-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 0 3px;
+  border-top: 1.5px solid var(--kaart-lijn);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--kaart-lijn) 55%, transparent);
+}
+.lineup-kaart__divisie {
+  margin-top: 3px;
+  text-align: center;
+  font-size: calc(var(--kaart-breedte) * 0.068);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kaart-ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Achterkant: vorm, balans en profiel-link, gecentreerd in het schild.
-   Label bóven waarde — naast elkaar past niet in de smalle kaart. */
+/* Achterkant: vorm, balans en profiel-link, gecentreerd in het schild en in
+   de kaart-inktkleur op hetzelfde metaalvlak. Label bóven waarde — naast
+   elkaar past niet in de smalle kaart. */
 .lineup-kaart__vlak--stats {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+  padding: 12% 9%;
 }
 .lineup-kaart__stats-rij {
   display: flex;
@@ -318,26 +397,25 @@
   align-items: center;
   gap: 1px;
   font-size: var(--fs-xs);
-  color: var(--ink);
+  color: var(--kaart-ink);
   white-space: nowrap;
   max-width: 100%;
 }
 .lineup-kaart__stats-label {
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   font-size: 0.58rem;
-  color: var(--ink-soft);
+  color: var(--kaart-ink-soft);
 }
 .lineup-kaart__stats-link {
   position: relative;
   z-index: 2;
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--accent);
+  color: var(--kaart-ink);
   text-decoration: none;
-  border: 1px solid var(--accent-line);
-  background: var(--accent-soft);
+  border: 1.5px solid var(--kaart-lijn);
   border-radius: 999px;
   padding: 1px 10px;
 }
@@ -389,6 +467,81 @@
 .lineup-kaart--dictator {
   --tier: var(--dictator);
   --tier-soft: var(--dictator-soft);
+}
+
+/* Bovenrand per divisiegroep (zoals de FUT-kaarttypes): instap vlak,
+   middenmoot kroon-notch (de default hierboven), subtop spitse vleugels;
+   de special-toptiers krijgen de kroon-crest in het special-blok. */
+.lineup-kaart--slof,
+.lineup-kaart--karton,
+.lineup-kaart--hout {
+  --schild: url(#lineup-schild-vlak);
+}
+.lineup-kaart--platina,
+.lineup-kaart--diamant,
+.lineup-kaart--meester {
+  --schild: url(#lineup-schild-punt);
+}
+
+/* Special-kaarten: GOAT en El Padelissimo als donkere FUT-special
+   (TOTW-stijl) — donker vlak, gloed en inkt in de glanskleur, kroon-crest
+   als bovenrand. De dictator draait op de troon-tokens; de GOAT-glans is de
+   vaste roze uit het donkere thema, leesbaar op het donkere vlak in beide
+   thema's. */
+.lineup-kaart--legende,
+.lineup-kaart--dictator {
+  --schild: url(#lineup-schild-kroon);
+  --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
+  --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
+  --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
+}
+.lineup-kaart--legende {
+  --sp-glans: #f7869f;
+  --sp-diep-hi: #3c1524;
+  --sp-diep: #24101a;
+}
+.lineup-kaart--dictator {
+  --sp-glans: var(--dictator-gold);
+  --sp-diep-hi: var(--dictator-wine);
+  --sp-diep: var(--dictator-deep);
+}
+.lineup-kaart--legende .lineup-kaart__zijde,
+.lineup-kaart--dictator .lineup-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--sp-glans) 85%, #fff) 0%,
+    color-mix(in srgb, var(--sp-glans) 55%, #201505) 45%,
+    color-mix(in srgb, var(--sp-glans) 92%, #fff8e0) 70%,
+    color-mix(in srgb, var(--sp-glans) 45%, #140d02) 100%
+  );
+}
+.lineup-kaart--legende .lineup-kaart__liner,
+.lineup-kaart--dictator .lineup-kaart__liner {
+  background: #0c0805;
+}
+.lineup-kaart--legende .lineup-kaart__vlak,
+.lineup-kaart--dictator .lineup-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      color-mix(in srgb, var(--sp-glans) 40%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--sp-diep-hi) 0%,
+      var(--sp-diep) 60%,
+      #120a10 100%
+    );
+}
+.lineup-kaart--legende .lineup-kaart__vlak::before,
+.lineup-kaart--dictator .lineup-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 240, 200, 0.14) 50%,
+    transparent 58%
+  );
 }
 
 /* Uitleg onder het veld (zelfde explainer-recept als het klassement), met een
