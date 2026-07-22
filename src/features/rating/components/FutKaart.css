@@ -170,6 +170,38 @@
   align-self: center;
   min-width: 0;
 }
+/* PlayStyles (#500): de ★-uitgelichte badges als kleine hex-chips vlak boven
+   de naamplaat — chemie-stijl icoontjes zoals in FC. De buitenlaag maakt de
+   rand (zelfde clip-truc als de kaartlagen); alles schaalt mee met --fut-kw. */
+.fut-kaart__playstyles {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--fut-kw) * 0.035);
+  margin-bottom: calc(var(--fut-kw) * 0.025);
+}
+.fut-kaart__playstyle {
+  width: calc(var(--fut-kw) * 0.16);
+  aspect-ratio: 0.88;
+  padding: 1.5px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--kaart-lijn);
+  display: inline-grid;
+}
+.fut-kaart__playstyle-vlak {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: color-mix(in srgb, var(--tier) 12%, #fdfbf6);
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--fut-kw) * 0.078);
+  line-height: 1;
+}
+/* Op de donkere special-kaarten een donker chipvlak, zodat de chips bij het
+   TOTW-vlak horen i.p.v. er als lichte stickers op te liggen. */
+.fut-kaart--legende .fut-kaart__playstyle-vlak,
+.fut-kaart--dictator .fut-kaart__playstyle-vlak {
+  background: color-mix(in srgb, var(--sp-diep-hi) 65%, #000);
+}
+
 .fut-kaart__naam {
   margin-top: 5%;
   text-align: center;

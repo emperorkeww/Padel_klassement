@@ -101,15 +101,29 @@ export function FutKaart({
   );
 }
 
+/** PlayStyle-chip (#500): het minimale badge-vlak dat de kaart nodig heeft.
+ *  Structureel gelijk aan `Badge` uit de profielen, maar hier los gedefinieerd
+ *  zodat de kaart geen profiel-afhankelijkheid krijgt. */
+export interface FutPlaystyle {
+  id: string;
+  naam: string;
+  emoji: string;
+}
+
+/** Hooguit zoveel PlayStyle-chips passen leesbaar boven de naamplaat. */
+export const MAX_PLAYSTYLES = 3;
+
 /** Standaard-voorkant: Elo met sub-niveau (Romeins) en divisie-emoji links,
  *  avatar rechts, naam op de naamplaat en de divisienaam voluit eronder;
- *  optioneel een editie-regel ("👑 Big Daddy") als slotregel. */
+ *  optioneel een editie-regel ("👑 Big Daddy") als slotregel.
+ *  `playstyles` (#500): uitgelichte badges als hex-chips boven de naamplaat. */
 export function FutKaartVoorkant({
   elo,
   tier,
   avatar,
   naam,
   editie,
+  playstyles,
 }: {
   elo: number | null;
   tier: Tier | null;
@@ -117,7 +131,9 @@ export function FutKaartVoorkant({
   naam: string;
   /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
   editie?: ReactNode;
+  playstyles?: FutPlaystyle[];
 }) {
+  const chips = (playstyles ?? []).slice(0, MAX_PLAYSTYLES);
   return (
     <>
       <span className="fut-kaart__boven">
@@ -134,6 +150,27 @@ export function FutKaartVoorkant({
         </span>
         <span className="fut-kaart__avatar">{avatar}</span>
       </span>
+      {chips.length > 0 && (
+        <span
+          className="fut-kaart__playstyles"
+          role="list"
+          aria-label="Uitgelichte badges"
+        >
+          {chips.map((b) => (
+            <span
+              key={b.id}
+              role="listitem"
+              className="fut-kaart__playstyle"
+              title={b.naam}
+              aria-label={b.naam}
+            >
+              <span className="fut-kaart__playstyle-vlak" aria-hidden="true">
+                {b.emoji}
+              </span>
+            </span>
+          ))}
+        </span>
+      )}
       <span className="fut-kaart__naam">{naam}</span>
       {tier && <span className="fut-kaart__divisie">{tier.label}</span>}
       {editie && <span className="fut-kaart__editie">{editie}</span>}
