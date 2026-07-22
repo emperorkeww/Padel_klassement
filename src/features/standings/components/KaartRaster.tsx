@@ -10,6 +10,7 @@ import {
   FutKaart,
   FutKaartVoorkant,
 } from "@/features/rating/components/FutKaart";
+import { featuredPlaystyles } from "@/features/profiles/badges";
 import type { Row } from "../leaderboardHelpers";
 import type { InForm } from "../spelerVanDeWeek";
 import { editieLabel, editieVoor } from "../edities";
@@ -62,6 +63,9 @@ export function KaartRaster({
                   naam={r.name}
                   avatar={<Avatar profile={r.profile} name={r.name} size={44} />}
                   editie={editieLabel(editie, inForm)}
+                  // PlayStyles (#500) ook op de wand (#621): dezelfde
+                  // ★-uitgelichte badges als op de profielkaart.
+                  playstyles={featuredPlaystyles(r.profile?.featured_badges)}
                 />
               }
             />

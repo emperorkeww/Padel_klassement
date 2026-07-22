@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -36,6 +36,9 @@ import {
   getPlayerRatings,
 } from "@/features/standings/ratingsApi";
 import { getHuidigeDictator } from "@/features/standings/dictatorApi";
+import { getPlayerStandings } from "@/features/standings/api";
+import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { iconKeyVoor } from "@/features/standings/edities";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { matchDerby } from "@/features/matches/derby";
 import { playersOf } from "@/features/rating/results";
@@ -87,6 +90,19 @@ export function MatchDetail() {
   // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
   // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
   const dictator = useAsync(getHuidigeDictator, []);
+  // Speciale edities (#497) ook op het veld (#621): dezelfde regels als het
+  // klassement — Icon voor de Big Daddy, In-Form voor de speler van de week.
+  // Alle drie gecachte, app-breed gedeelde bronnen; hooks vóór de vroege returns.
+  const standings = useAsync(getPlayerStandings, []);
+  const inForm = useMemo(
+    () => spelerVanDeWeek(histories.data ?? {}),
+    [histories.data],
+  );
+  const iconKey = iconKeyVoor(
+    standings.data ?? [],
+    ratings.data ?? {},
+    dictator.data?.profileId ?? null,
+  );
   const [editing, setEditing] = useState(false);
 
   if (match.loading)
@@ -308,6 +324,8 @@ export function MatchDetail() {
         matchesA={matchesA.data ?? []}
         matchesB={matchesB.data ?? []}
         dictatorId={dictator.data?.profileId ?? null}
+        iconKey={iconKey}
+        inForm={inForm}
       />
 
       {iLost && (

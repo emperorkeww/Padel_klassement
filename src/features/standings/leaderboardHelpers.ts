@@ -22,7 +22,11 @@ export type Row = {
   key: string;
   isMe: boolean;
   name: string;
-  profile: Pick<Profile, "username" | "full_name"> & { avatar_url?: string | null } | null;
+  profile:
+    | (Pick<Profile, "username" | "full_name" | "featured_badges"> & {
+        avatar_url?: string | null;
+      })
+    | null;
   link?: string;
   played: number;
   won: number;

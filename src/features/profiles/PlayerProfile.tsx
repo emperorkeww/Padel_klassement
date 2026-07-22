@@ -16,6 +16,8 @@ import {
 } from "@/features/standings/dictatorApi";
 import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
+import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { editieLabel, editieVoor, iconKeyVoor } from "@/features/standings/edities";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
@@ -39,7 +41,7 @@ import { matchesInYear, wrappedJaar } from "@/features/wrapped/wrapped";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "@/ui/Sheet";
-import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { tierForWeergave, tierProgress } from "@/features/rating/tiers";
 import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
 import { roast } from "@/features/profiles/roast";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -114,6 +116,12 @@ export function PlayerProfile() {
   const upsets = useMemo(
     () => upsetsByMatch(matches.data ?? [], teams.data ?? {}, allHistories.data ?? {}),
     [matches.data, teams.data, allHistories.data],
+  );
+  // Speler van de week (#497) óók op het profiel (#621): dezelfde bron als
+  // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.
+  const inForm = useMemo(
+    () => spelerVanDeWeek(allHistories.data ?? {}),
+    [allHistories.data],
   );
 
   // Tab en seizoen staan in de URL zodat deep-links en herladen blijven werken.
@@ -315,11 +323,20 @@ export function PlayerProfile() {
           naam: earned[earned.length - 1].naam,
         }
       : null;
+  // Eén speler → één kaart (#621): dezelfde dictator-klem en editie-regels
+  // als klassement en matchdetail, ook op de deel-poster.
+  const isDictator = dictator.data?.profileId === id;
+  const iconKey = iconKeyVoor(
+    standings.data ?? [],
+    ratings.data ?? {},
+    dictator.data?.profileId ?? null,
+  );
+  const editie = editieVoor(id, iconKey, inForm);
   const shareData: ProfileShareData = {
     name: displayName(p),
     avatarUrl: p.avatar_url ?? null,
     rating: myRating,
-    tier: tierFor(myRating),
+    tier: tierForWeergave(myRating, isDictator),
     rank,
     form,
     topBadge,
@@ -350,8 +367,10 @@ export function PlayerProfile() {
     partner,
     tierVoortgang: tierProgress(myRating),
     nextBadge,
-    isDictator: dictator.data?.profileId === id,
+    isDictator,
     regeerduur: regeerduur.data ?? null,
+    editie,
+    editieTekst: editieLabel(editie, inForm),
     hasRating,
     hasRank,
     rhist,
