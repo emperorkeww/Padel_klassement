@@ -40,16 +40,19 @@ const SLUG_STORE_SECONDS = 604_800;
 const FRESH_MS = 60_000;
 const STORE_SECONDS = 600;
 
-function fetchUpstream(target) {
+function fetchUpstream(target, secret) {
   // Geen User-Agent meer: playtomic.com/api werkt zonder, en een losse
   // Chrome-UA zonder bijpassende sec-ch-ua-headers is juist een fingerprint
   // die een WAF kan uitpikken.
-  return fetch(target, {
-    headers: {
-      Accept: "application/json",
-      "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.8",
-    },
-  });
+  const headers = {
+    Accept: "application/json",
+    "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.8",
+  };
+  // Het gedeelde geheim gaat uitsluitend naar de Supabase-egressfunctie (#466),
+  // nooit rechtstreeks naar playtomic.com in de fallback: `secret` is alleen
+  // waar op het egress-pad, zodat het geheim niet naar een derde partij lekt.
+  if (secret) headers["x-cron-secret"] = secret;
+  return fetch(target, { headers });
 }
 
 // Volgt de 308 van playtomic.io/clubs/{uuid} en leest de canonieke slug uit de
@@ -93,9 +96,9 @@ function clientResponse(stored) {
   return res;
 }
 
-async function refreshInBackground(cache, cacheKey, target) {
+async function refreshInBackground(cache, cacheKey, target, secret) {
   try {
-    const upstream = await fetchUpstream(target);
+    const upstream = await fetchUpstream(target, secret);
     if (upstream.ok) await cache.put(cacheKey, await storedResponse(upstream));
   } catch {
     // Stil laten mislukken; de volgende bezoeker triggert een nieuwe poging.
@@ -185,6 +188,11 @@ export default {
         ? new URL(env.PLAYTOMIC_EGRESS + url.search)
         : canonical;
 
+      // Gedeeld geheim alleen op het egress-pad meesturen (#466). In de
+      // fallback (tests/lokaal, geen PLAYTOMIC_EGRESS) fetchen we rechtstreeks
+      // playtomic.com en mag het geheim daar niet heen.
+      const secret = env.PLAYTOMIC_EGRESS ? env.CRON_SECRET : null;
+
       // Edge-cache eerst: gelijktijdige gebruikers delen zo één upstream-call
       // en een edge-hit kost geen rate-limit-budget en geen Playtomic-verkeer.
       const cache = caches.default;
@@ -193,7 +201,7 @@ export default {
       if (hit) {
         const fetchedAt = Number(hit.headers.get("x-fetched-at") ?? 0);
         if (Date.now() - fetchedAt > FRESH_MS) {
-          ctx.waitUntil(refreshInBackground(cache, cacheKey, target));
+          ctx.waitUntil(refreshInBackground(cache, cacheKey, target, secret));
         }
         return clientResponse(hit);
       }
@@ -209,7 +217,7 @@ export default {
         });
       }
 
-      const upstream = await fetchUpstream(target);
+      const upstream = await fetchUpstream(target, secret);
       const stored = await storedResponse(upstream);
       // Alleen geslaagde antwoorden de edge-cache in; fouten blijven vers.
       if (upstream.ok) {
