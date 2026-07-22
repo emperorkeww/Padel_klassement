@@ -1,0 +1,189 @@
+/* Pack-opening (#500): donkere backdrop met een goudfoil-pack; tik en de
+   geüpgradede FUT-kaart springt eruit. Het pack is altijd goud — het is een
+   prijs, ongeacht de divisie erin; de kaart zelf draagt de tierkleur.
+   Alle beweging zit achter prefers-reduced-motion: no-preference; zonder
+   bewegingsvoorkeur rendert de component meteen de kaart-fase. */
+.pack-opening {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: rgba(8, 18, 13, 0.82);
+}
+
+/* Het pack: goudfoil-envelop met glans-sweep en zegel. */
+.pack-opening__pack {
+  position: relative;
+  width: min(180px, 46vw);
+  aspect-ratio: 100 / 141;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px 12px 16px 16px;
+  background: linear-gradient(
+    150deg,
+    #f6d98a 0%,
+    var(--dictator-gold) 34%,
+    #a4741f 62%,
+    #e8c264 100%
+  );
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 2px rgba(255, 248, 220, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  overflow: hidden;
+  font-family: inherit;
+}
+.pack-opening__pack:focus-visible {
+  outline: 4px solid #fff8e6;
+  outline-offset: 3px;
+}
+.pack-opening__zegel {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  display: grid;
+  place-items: center;
+  font-size: 1.7rem;
+}
+.pack-opening__titel {
+  font-size: var(--fs-md);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fffbe9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.pack-opening__sub {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 251, 233, 0.8);
+}
+
+.pack-opening__resultaat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  max-width: min(340px, 100%);
+}
+.pack-opening__banner {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff8e6;
+  text-wrap: balance;
+}
+/* De kaart uit het pack: groter dan de lineup-maat, met een gloed in de
+   tierkleur zodat hij "van het licht" komt. */
+.pack-opening__kaart {
+  --fut-kw: 190px;
+}
+.pack-opening__kaart .fut-kaart__zijde {
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--tier) 60%, transparent))
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
+}
+.pack-opening__coach .coach-sneer__text {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pack-opening__pack {
+    animation: pack-val 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  }
+  /* Glans-sweep over de foil zolang het pack wacht. */
+  .pack-opening__pack::after {
+    content: "";
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    left: -60%;
+    width: 45%;
+    background: linear-gradient(
+      105deg,
+      transparent,
+      rgba(255, 255, 255, 0.55),
+      transparent
+    );
+    transform: skewX(-18deg);
+    animation: pack-glans 2.6s ease-in-out infinite;
+  }
+  .pack-opening__pack.is-open {
+    animation: pack-open 0.55s ease-in forwards;
+    pointer-events: none;
+  }
+  .pack-opening__resultaat > * {
+    animation: pack-kaart-op 0.55s cubic-bezier(0.2, 0.8, 0.25, 1.15) both;
+  }
+  .pack-opening__banner {
+    animation-delay: 0.25s;
+  }
+  .pack-opening__coach,
+  .pack-opening__resultaat > .btn {
+    animation-name: pack-fade;
+    animation-delay: 0.55s;
+  }
+}
+@keyframes pack-val {
+  from {
+    transform: translateY(-64px) rotate(-4deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(8px) rotate(1.5deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(0) rotate(0);
+  }
+}
+@keyframes pack-glans {
+  0%,
+  55% {
+    left: -60%;
+  }
+  85%,
+  100% {
+    left: 130%;
+  }
+}
+@keyframes pack-open {
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+    filter: brightness(2.4);
+  }
+}
+@keyframes pack-kaart-op {
+  from {
+    transform: translateY(70px) scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes pack-fade {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

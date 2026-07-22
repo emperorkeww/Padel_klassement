@@ -61,6 +61,9 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
               tier={tier}
               naam={naam}
               avatar={<KaartAvatar d={d} zoomed={zoomed} onZoom={setZoomed} />}
+              // PlayStyles (#500): de ★-uitgelichte badges als hex-chips op de
+              // kaart; zonder uitgelichte badges blijft de kaart zoals hij was.
+              playstyles={d.featuredBadges ?? []}
             />
           }
           achterOverlay={

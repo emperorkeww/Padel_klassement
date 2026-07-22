@@ -143,19 +143,39 @@ describe("tier-aankondiging (#127)", () => {
     expect(screen.queryByText(/gepromoveerd|je zakt/i)).not.toBeInTheDocument();
   });
 
-  it("meldt een hoofdtier-promotie met confetti", async () => {
+  it("viert een hoofdtier-promotie als pack-opening (#500)", async () => {
     window.localStorage.setItem("tier-announced:p1", "m-0");
     vi.mocked(getRatingHistory).mockResolvedValue([
       pt("m-0", 1080, 1095),
       pt("m-x", 1095, 1105),
     ]);
     renderShell();
-    // De toast is een seeded Coach Rudy-quip (#299); alleen het nieuwe
-    // tier-label is deterministisch, dus daarop toetsen we — niet op één
-    // specifieke quip-variant.
-    expect(await screen.findByText(/glazenwasser iii\b/i)).toBeInTheDocument();
-    expect(celebrate).toHaveBeenCalled();
+    // Geen toast meer: er verschijnt een dicht pack; confetti pas bij het
+    // openscheuren zelf.
+    const openKnop = await screen.findByRole("button", {
+      name: "Open het pack",
+    });
+    expect(celebrate).not.toHaveBeenCalled();
     expect(window.localStorage.getItem("tier-announced:p1")).toBe("m-x");
+
+    await userEvent.click(openKnop);
+    expect(celebrate).toHaveBeenCalled();
+    // De kaart springt eruit met de nieuwe divisie; Rudy's quip is seeded
+    // (#299), dus we toetsen op het deterministische tier-label erin.
+    expect(
+      await screen.findByText(/Promotie! Wannabe → Glazenwasser/, undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText(/glazenwasser iii\b/i)).length,
+    ).toBeGreaterThan(0);
+
+    // Verder sluit het overlay weer.
+    await userEvent.click(screen.getByRole("button", { name: "Verder" }));
+    expect(
+      screen.queryByRole("dialog", { name: /promotie/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("meldt een degradatie sober, zonder confetti", async () => {

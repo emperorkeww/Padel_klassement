@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Profile } from "@/types";
 import type { ProfileData } from "@/features/profiles/components/types";
@@ -107,5 +107,41 @@ describe("ProfileHero — klikbare profielfoto (#572)", () => {
     await user.click(screen.getByRole("button", { name: "Profielfoto vergroten" }));
     await user.click(screen.getByRole("dialog"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProfileHero — PlayStyles op de kaart (#500)", () => {
+  const BADGES = [
+    { id: "comeback", naam: "Comebackkoning", emoji: "👑", omschrijving: "", behaald: true },
+    { id: "reus", naam: "Reuzendoder", emoji: "🗡️", omschrijving: "", behaald: true },
+    { id: "uil", naam: "Nachtbraker", emoji: "🦉", omschrijving: "", behaald: true },
+    { id: "ster", naam: "Perfecte dag", emoji: "🌟", omschrijving: "", behaald: true },
+  ];
+
+  it("toont de uitgelichte badges als PlayStyles-chips op de kaart", () => {
+    render(<ProfileHero d={hero({ featuredBadges: BADGES.slice(0, 2) })} />);
+    const rij = screen.getByRole("list", { name: "Uitgelichte badges" });
+    expect(rij).toBeInTheDocument();
+    expect(screen.getByLabelText("Comebackkoning")).toBeInTheDocument();
+    expect(screen.getByLabelText("Reuzendoder")).toBeInTheDocument();
+  });
+
+  it("toont maximaal drie chips, in de volgorde van uitlichten", () => {
+    render(<ProfileHero d={hero({ featuredBadges: BADGES })} />);
+    const chips = within(
+      screen.getByRole("list", { name: "Uitgelichte badges" }),
+    ).getAllByRole("listitem");
+    expect(chips.map((c) => c.getAttribute("aria-label"))).toEqual([
+      "Comebackkoning",
+      "Reuzendoder",
+      "Nachtbraker",
+    ]);
+  });
+
+  it("toont geen chip-rij zonder uitgelichte badges", () => {
+    render(<ProfileHero d={hero({ featuredBadges: [] })} />);
+    expect(
+      screen.queryByRole("list", { name: "Uitgelichte badges" }),
+    ).not.toBeInTheDocument();
   });
 });
