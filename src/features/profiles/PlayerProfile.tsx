@@ -317,6 +317,7 @@ export function PlayerProfile() {
       : null;
   const shareData: ProfileShareData = {
     name: displayName(p),
+    avatarUrl: p.avatar_url ?? null,
     rating: myRating,
     tier: tierFor(myRating),
     rank,
