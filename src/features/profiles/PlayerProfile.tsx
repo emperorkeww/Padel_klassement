@@ -16,6 +16,14 @@ import {
 } from "@/features/standings/dictatorApi";
 import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
+import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { getSeizoenskampioen } from "@/features/standings/kampioen";
+import {
+  editieLabel,
+  editieVoor,
+  iconKeyVoor,
+  type EditieContext,
+} from "@/features/standings/edities";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
@@ -30,6 +38,7 @@ import {
   outcomeFor,
 } from "@/features/rating/results";
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
+import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
 import { listSeasons, seasonFromId } from "@/features/rating/seasons";
 import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
@@ -39,7 +48,7 @@ import { matchesInYear, wrappedJaar } from "@/features/wrapped/wrapped";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "@/ui/Sheet";
-import { tierFor, tierProgress } from "@/features/rating/tiers";
+import { tierForWeergave, tierProgress } from "@/features/rating/tiers";
 import { bijnaam, neutraleBijnaam } from "@/features/profiles/nickname";
 import { roast } from "@/features/profiles/roast";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -90,6 +99,8 @@ export function PlayerProfile() {
   // voor de troonhouder) en het regeerduur-erepalmpje.
   const dictator = useAsync(getHuidigeDictator, []);
   const regeerduur = useAsync(() => getRegeerduur(id), [id]);
+  // Kampioen-editie (#625): winnaar van het vorige kwartaal (gecacht).
+  const kampioen = useAsync(getSeizoenskampioen, []);
   // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
   const allHistories = useAsync(getAllRatingHistories, []);
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
@@ -114,6 +125,12 @@ export function PlayerProfile() {
   const upsets = useMemo(
     () => upsetsByMatch(matches.data ?? [], teams.data ?? {}, allHistories.data ?? {}),
     [matches.data, teams.data, allHistories.data],
+  );
+  // Speler van de week (#497) óók op het profiel (#621): dezelfde bron als
+  // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.
+  const inForm = useMemo(
+    () => spelerVanDeWeek(allHistories.data ?? {}),
+    [allHistories.data],
   );
 
   // Tab en seizoen staan in de URL zodat deep-links en herladen blijven werken.
@@ -315,11 +332,46 @@ export function PlayerProfile() {
           naam: earned[earned.length - 1].naam,
         }
       : null;
+  // Eén speler → één kaart (#621/#625): dezelfde dictator-klem en
+  // editie-context als klassement en matchdetail, ook op de deel-poster.
+  const isDictator = dictator.data?.profileId === id;
+  const editieCtx: EditieContext = {
+    dictatorId: dictator.data?.profileId ?? null,
+    iconKey: iconKeyVoor(
+      standings.data ?? [],
+      ratings.data ?? {},
+      dictator.data?.profileId ?? null,
+    ),
+    kampioen: kampioen.data ?? null,
+    inForm,
+  };
+  const editie = editieVoor(id, editieCtx);
+  // Head-to-Head versus-kaarten (#499): dezelfde editie-context als
+  // hierboven, voor de bekeken speler ("hunKaart") én — mét reeds app-breed
+  // geladen data, dus zonder extra fetch — de ingelogde gebruiker
+  // ("mijnKaart").
+  const hunKaart = vsKaartVoor({
+    id,
+    profile: p,
+    naam: displayName(p),
+    ratings: ratings.data ?? {},
+    edities: editieCtx,
+  });
+  const mijnKaart =
+    user && !isMe && pmap[user.id]
+      ? vsKaartVoor({
+          id: user.id,
+          profile: pmap[user.id],
+          naam: displayName(pmap[user.id]),
+          ratings: ratings.data ?? {},
+          edities: editieCtx,
+        })
+      : null;
   const shareData: ProfileShareData = {
     name: displayName(p),
     avatarUrl: p.avatar_url ?? null,
     rating: myRating,
-    tier: tierFor(myRating),
+    tier: tierForWeergave(myRating, isDictator),
     rank,
     form,
     topBadge,
@@ -350,8 +402,10 @@ export function PlayerProfile() {
     partner,
     tierVoortgang: tierProgress(myRating),
     nextBadge,
-    isDictator: dictator.data?.profileId === id,
+    isDictator,
     regeerduur: regeerduur.data ?? null,
+    editie,
+    editieTekst: editieLabel(editie, editieCtx),
     hasRating,
     hasRank,
     rhist,
@@ -441,6 +495,7 @@ export function PlayerProfile() {
           teams={tmap}
           profiles={pmap}
           ratingHistory={rhist}
+          rating={myRating}
           onClose={() => setWrappedOpen(false)}
         />
       )}
@@ -473,6 +528,8 @@ export function PlayerProfile() {
       {tab === "overzicht" && (
         <ProfileOverview
           d={d}
+          mijnKaart={mijnKaart}
+          hunKaart={hunKaart}
           onOpenBadge={setOpenBadge}
           onShowMatches={() => setTab("matches")}
         />

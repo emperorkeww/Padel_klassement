@@ -53,10 +53,11 @@ export function FutKaart({
   achterOverlay,
 }: {
   tier: Tier | null;
-  /** Speciale editie (#497): kleurt frame en vlak bóvenop de tier-klasse
-   *  (icon = Big Daddy, inform = speler van de week); de schildvorm blijft
-   *  die van de divisie. */
-  editie?: "icon" | "inform" | null;
+  /** Speciale editie (#497/#625): kleurt frame en vlak bóvenop de
+   *  tier-klasse (icon = Big Daddy, kampioen = winnaar vorig kwartaal,
+   *  inform = speler van de week); de schildvorm blijft die van de divisie.
+   *  Elke waarde heeft zijn eigen skin in FutKaart.css. */
+  editie?: "icon" | "kampioen" | "inform" | null;
   omgedraaid?: boolean;
   /** Extra klasse op de wrapper (bv. "lineup-kaart" voor de veld-maat). */
   className?: string;
@@ -124,6 +125,7 @@ export function FutKaartVoorkant({
   naam,
   editie,
   playstyles,
+  nieuwPlaystyleId,
 }: {
   elo: number | null;
   tier: Tier | null;
@@ -132,6 +134,8 @@ export function FutKaartVoorkant({
   /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
   editie?: ReactNode;
   playstyles?: FutPlaystyle[];
+  /** Zojuist verdiende badge (#615): die chip pulseert in het pack-overlay. */
+  nieuwPlaystyleId?: string;
 }) {
   const chips = (playstyles ?? []).slice(0, MAX_PLAYSTYLES);
   return (
@@ -160,7 +164,9 @@ export function FutKaartVoorkant({
             <span
               key={b.id}
               role="listitem"
-              className="fut-kaart__playstyle"
+              className={`fut-kaart__playstyle${
+                b.id === nieuwPlaystyleId ? " fut-kaart__playstyle--nieuw" : ""
+              }`}
               title={b.naam}
               aria-label={b.naam}
             >

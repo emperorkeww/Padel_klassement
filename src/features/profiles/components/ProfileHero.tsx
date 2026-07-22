@@ -45,6 +45,8 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
       <div className="profile-hero__kaart">
         <FutKaart
           tier={tier}
+          // Editie (#497/#621): dezelfde Icon/In-Form-rand als het klassement.
+          editie={d.editie ?? null}
           omgedraaid={omgedraaid}
           voorOverlay={
             <button
@@ -64,6 +66,7 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
               // PlayStyles (#500): de ★-uitgelichte badges als hex-chips op de
               // kaart; zonder uitgelichte badges blijft de kaart zoals hij was.
               playstyles={d.featuredBadges ?? []}
+              editie={d.editieTekst ?? null}
             />
           }
           achterOverlay={

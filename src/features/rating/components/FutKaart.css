@@ -22,6 +22,29 @@
   --fut-kw: 116px;
   width: var(--fut-kw);
   perspective: 600px;
+  /* De kaart is zijn eigen inline-size-container (#625): zo kan de
+     compact-zetting hieronder op de échte kaartbreedte reageren, waar die
+     ook staat (veld, wand, preview, hero). */
+  container: fut-kaart / inline-size;
+}
+
+/* Compact-zetting (#625) voor de kleine maten — het veld (96–124px) en de
+   raster-wand (130px). Met chips én editie-regel tegelijk gevuld wordt het
+   vlak daar druk: de chips overlappen licht (FC-stijl), de editie-regel
+   zet een fractie kleiner en strakker, en het elo-blok geeft de avatar wat
+   lucht. Vanaf de preview-/hero-maat (≥150px) verandert er niets. */
+@container fut-kaart (max-width: 132px) {
+  .fut-kaart__boven {
+    column-gap: 2%;
+  }
+  .fut-kaart__playstyle:not(:first-child) {
+    margin-left: calc(var(--fut-kw) * -0.045);
+  }
+  .fut-kaart__editie {
+    margin-top: 2px;
+    font-size: calc(var(--fut-kw) * 0.055);
+    letter-spacing: 0.08em;
+  }
 }
 .fut-kaart__flipper {
   position: relative;
@@ -201,6 +224,19 @@
 .fut-kaart--dictator .fut-kaart__playstyle-vlak {
   background: color-mix(in srgb, var(--sp-diep-hi) 65%, #000);
 }
+/* Zojuist verdiende badge in het pack-overlay (#615): pulseert 3× nadat de
+   kaart is opgekomen. De delay laat de pack-kaart-op-animatie eerst uitlopen. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart__playstyle--nieuw {
+    animation: fut-chip-puls 0.8s ease-in-out 0.85s 3;
+  }
+}
+@keyframes fut-chip-puls {
+  50% {
+    transform: scale(1.25);
+    filter: brightness(1.15);
+  }
+}
 
 .fut-kaart__naam {
   margin-top: 5%;
@@ -252,12 +288,16 @@
   gap: var(--sp-1);
   padding: 12% 9%;
 }
+/* De stats-maten schalen mee met --fut-kw (#625), met een leesbaarheids-
+   bodem voor de kleinste kaarten; op de preview-/hero-maten (≥150px) komt
+   de clamp exact op de oude rem-maten uit, dus daar verandert niets. Zo
+   houden voor- en achterkant op élke maat dezelfde typografie-verhouding. */
 .fut-kaart__stats-rij {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  font-size: var(--fs-xs);
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
   color: var(--kaart-ink);
   white-space: nowrap;
   max-width: 100%;
@@ -266,22 +306,33 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: 0.58rem;
+  font-size: clamp(7px, calc(var(--fut-kw) * 0.062), 0.58rem);
   color: var(--kaart-ink-soft);
 }
 .fut-kaart__stats-link {
   position: relative;
   z-index: 2;
-  font-size: var(--fs-xs);
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
   font-weight: 700;
   color: var(--kaart-ink);
   text-decoration: none;
   border: 1.5px solid var(--kaart-lijn);
   border-radius: 999px;
-  padding: 1px 10px;
+  padding: 1px clamp(6px, calc(var(--fut-kw) * 0.07), 10px);
 }
 .fut-kaart__stats-link:hover {
   text-decoration: underline;
+}
+/* De vorm-chips (FormChips --sm, vast 16px in ui.css) krimpen binnen het
+   stats-vlak mee: vijf vaste chips + gaps passen anders niet op de
+   veldmaat (96px − 18% padding ≈ 79px vlakbreedte). */
+.fut-kaart__vlak--stats .formchips--sm .formchip {
+  width: clamp(11px, calc(var(--fut-kw) * 0.107), 16px);
+  height: clamp(11px, calc(var(--fut-kw) * 0.107), 16px);
+  font-size: clamp(6.5px, calc(var(--fut-kw) * 0.06), 0.5625rem);
+}
+.fut-kaart__vlak--stats .formchips--sm {
+  gap: clamp(2px, calc(var(--fut-kw) * 0.027), 4px);
 }
 
 /* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
@@ -408,34 +459,39 @@
 /* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
    van de divisie, de editie kleurt frame, vlak en inkt. */
 
-/* Icon (Big Daddy, de #1 van het klassement): wit-goud, zoals de
-   FUT-Icon-kaarten. */
+/* Icon (Big Daddy, de #1 van het klassement): roze/goud (#625). Het roze
+   vlak met bordeaux-roze inkt maakt de kaart in één oogopslag "de Big
+   Daddy" — los van de reguliere (goud)tiers en van In-Form; het frame
+   wisselt goud en roze af zodat de kroon-associatie blijft. De kleuren
+   komen uit de gedeelde --bigdaddy-kaart-tokens (index.css), dezelfde
+   familie als de Big Daddy-badge en straks de dashboard-hero (#613). */
 .fut-kaart--icon {
-  --kaart-hi: #fffdf8;
-  --kaart-mid: #faf3e0;
-  --kaart-lo: #efe0bb;
-  --kaart-ink: #6e5410;
-  --kaart-ink-soft: #96803f;
-  --kaart-lijn: #cbb26a;
-  --editie-kleur: #a8863a;
+  --kaart-hi: var(--bigdaddy-kaart-hi);
+  --kaart-mid: var(--bigdaddy-kaart-mid);
+  --kaart-lo: var(--bigdaddy-kaart-lo);
+  --kaart-ink: var(--bigdaddy-kaart-ink);
+  --kaart-ink-soft: var(--bigdaddy-kaart-ink-soft);
+  --kaart-lijn: var(--bigdaddy-kaart-lijn);
+  --editie-kleur: var(--bigdaddy-kaart-editie);
 }
 .fut-kaart--icon .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #f9e9b3 0%,
-    #b8912f 42%,
-    #fff6d8 68%,
-    #7c611a 100%
+    #f6d7a0 0%,
+    var(--bigdaddy-frame-roze) 38%,
+    #ffeef6 62%,
+    var(--bigdaddy-frame-goud) 82%,
+    #8f3560 100%
   );
 }
 .fut-kaart--icon .fut-kaart__liner {
-  background: #5c4a12;
+  background: #54203a;
 }
 .fut-kaart--icon .fut-kaart__vlak {
   background:
     radial-gradient(
       120% 55% at 50% -6%,
-      rgba(255, 244, 200, 0.85),
+      rgba(255, 226, 240, 0.9),
       transparent 62%
     ),
     linear-gradient(
@@ -446,7 +502,9 @@
     );
 }
 
-/* In-Form (speler van de week): navy-goud met een lopende shimmer. */
+/* In-Form (speler van de week): navy-goud met een lopende shimmer.
+   Beoordeeld bij #625: blijft zoals hij is — het donkere navy-vlak staat
+   ruim genoeg af van het lichte roze van de nieuwe Big Daddy. */
 .fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
@@ -495,4 +553,45 @@
       transform: translateX(55%);
     }
   }
+}
+
+/* Kampioen (winnaar van het vorige kwartaal, #625): platina-wit met
+   lauwergroen — bewust wég van goud (dat is In-Form/dictator-territorium)
+   en van het roze van Big Daddy. Lokale hexen: er is (nog) geen tweede
+   consument, dus geen index.css-tokens zoals bij --bigdaddy-kaart-*.
+   Contrast: ink op hi ≈ 7,7:1 (AAA). */
+.fut-kaart--kampioen {
+  --kaart-hi: #fbfdfc;
+  --kaart-mid: #e9f2ee;
+  --kaart-lo: #cfe0d6;
+  --kaart-ink: #1f5c40;
+  --kaart-ink-soft: #48745e;
+  --kaart-lijn: #9dbfab;
+  --editie-kleur: #2e7050;
+}
+.fut-kaart--kampioen .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #eef6f1 0%,
+    #8fb3a0 42%,
+    #f6fbf8 68%,
+    #4f7a63 100%
+  );
+}
+.fut-kaart--kampioen .fut-kaart__liner {
+  background: #223c2f;
+}
+.fut-kaart--kampioen .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(236, 250, 242, 0.9),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
 }

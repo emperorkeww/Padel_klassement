@@ -3,7 +3,12 @@
 // zelfde flow als ShareProfile/ShareChampion. posterLayout voedt óók de
 // DOM-kaarten in WrappedSheet, zodat poster en scherm dezelfde copy delen.
 
-import { canvasPalette, wrapCentered } from "@/lib/utils/shareImage";
+import { canvasPalette, ellipsize, wrapCentered } from "@/lib/utils/shareImage";
+import {
+  drawKaartSchild,
+  schildVorm,
+  type FutKaartKleuren,
+} from "@/lib/utils/futKaartCanvas";
 import type { WrappedCard } from "./wrapped";
 
 export interface PosterLayout {
@@ -137,6 +142,21 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
       const hero = wr == null ? "📋" : wr >= 55 ? "🏆" : wr < 45 ? "📉" : "📋";
       return { kicker: "🎙️ Rudy's Eindoordeel", hero, sub: [] };
     }
+    case "seizoenskaart": {
+      // Vooral een terugval: de DOM-kaart (WrappedSheet) en de canvas-poster
+      // (drawSeizoenskaart) tonen de échte FUT-kaart-layout, niet deze
+      // kicker/hero/sub-tekst.
+      const sub: string[] = [];
+      if (card.maatje) sub.push(`🤝 ${card.maatje.naam} — ${card.maatje.samen}x samen`);
+      if (card.langsteReeks)
+        sub.push(
+          card.langsteReeks.type === "winst"
+            ? `🔥 ${card.langsteReeks.lengte} op rij gewonnen`
+            : `🧗 ${card.langsteReeks.lengte} op rij verloren`,
+        );
+      sub.push(`🎙️ ${card.aantalRoasts}× aan het woord dit Wrapped`);
+      return { kicker: `Seizoen ${jaar}`, hero: naam, heroKlein: true, sub };
+    }
   }
 }
 
@@ -237,6 +257,180 @@ export function drawWrappedCard(
   ctx.fillStyle = c.inkSoft;
   ctx.font = "700 34px Outfit, system-ui, sans-serif";
   ctx.fillText(`${naam} · Wrapped ${jaar}`, W / 2, H - 120);
+  ctx.fillStyle = c.lime;
+  ctx.fillRect(W / 2 - 80, H - 70, 160, 10);
+}
+
+/** Eigen thema van de seizoenskaart (#498): donkere court-groene glans met
+ *  lime inkt/frame — bewust géén hergebruik van de witgouden Icon- of
+ *  marineblauwe In-Form-skin uit FutKaart.css, zodat de kaart meteen als
+ *  "Wrapped" leesbaar is. De schildvorm blijft die van de eigen divisie. */
+const SEIZOEN_KLEUREN: FutKaartKleuren = {
+  frame: ["#eafccb", "#3c5a1c", "#d7f28c", "#1c2b0e"],
+  liner: "#0c1408",
+  vlak: ["#14563e", "#0b241a", "#071510"],
+  vlakMidOffset: 0.6,
+  glow: "rgba(199, 230, 58, 0.32)",
+  sheen: "rgba(234, 252, 203, 0.16)",
+};
+const SEIZOEN_INK = "#eafccb";
+const SEIZOEN_INK_SOFT = "#a9c97e";
+const SEIZOEN_LIJN = "rgba(199, 230, 58, 0.5)";
+
+function initialenVan(naam: string): string {
+  const delen = naam.trim().split(/\s+/).filter(Boolean);
+  if (delen.length === 0) return "?";
+  if (delen.length === 1) return delen[0].slice(0, 2).toUpperCase();
+  return (delen[0][0] + delen[delen.length - 1][0]).toUpperCase();
+}
+
+/**
+ * Canvas-poster van de seizoenskaart (#498): dezelfde donkere court-gloed als
+ * ShareProfile, met de FUT-schildkaart (via `drawKaartSchild`, #498-refactor)
+ * in het lime seizoensthema en de drie jaarstats eronder. `avatarImg` moet al
+ * geladen zijn (zelfde `laadAvatar`-patroon als ShareProfile) — deze functie
+ * tekent puur synchroon, zoals `sharePng` vereist.
+ */
+export function drawSeizoenskaart(
+  ctx: CanvasRenderingContext2D,
+  card: Extract<WrappedCard, { kind: "seizoenskaart" }>,
+  jaar: number,
+  avatarImg: HTMLImageElement | null,
+) {
+  const c = canvasPalette();
+
+  const bg = ctx.createRadialGradient(W / 2, -H * 0.1, 0, W / 2, -H * 0.1, H * 1.15);
+  bg.addColorStop(0, "#14563e");
+  bg.addColorStop(0.6, "#0b241a");
+  bg.addColorStop(1, "#071510");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+  ctx.lineWidth = 4;
+  const rand = 36;
+  ctx.strokeRect(rand, rand, W - rand * 2, H - rand * 2);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = c.lime;
+  ctx.font = "800 64px Outfit, system-ui, sans-serif";
+  ctx.fillText("Vamos!", W / 2, 130);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+  ctx.font = "800 26px Outfit, system-ui, sans-serif";
+  ctx.fillText(`S E I Z O E N ${jaar}`, W / 2, 176);
+
+  // De kaart als blikvanger — zelfde geometrie als ShareProfile's kaartW=560.
+  const kaartW = 560;
+  const kaartH = kaartW * 1.39;
+  const x = (W - kaartW) / 2;
+  const y = 218;
+  const vorm = schildVorm(card.tier?.key);
+  const { fx, fy, fw, fh } = drawKaartSchild(ctx, x, y, kaartW, kaartH, vorm, SEIZOEN_KLEUREN);
+
+  // Eloblok links: rating, sub-niveau, divisie-emoji.
+  const ex = fx + fw * 0.27;
+  ctx.fillStyle = SEIZOEN_INK;
+  ctx.font = `800 ${Math.round(kaartW * 0.185)}px Outfit, system-ui, sans-serif`;
+  ctx.fillText(card.rating != null ? String(card.rating) : "—", ex, fy + fh * 0.19);
+  ctx.fillStyle = SEIZOEN_INK_SOFT;
+  if (card.tier?.subLabel) {
+    ctx.font = `800 ${Math.round(kaartW * 0.075)}px Outfit, system-ui, sans-serif`;
+    ctx.fillText(card.tier.subLabel, ex, fy + fh * 0.26);
+  }
+  if (card.tier) {
+    ctx.font = `${Math.round(kaartW * 0.1)}px system-ui, sans-serif`;
+    ctx.fillText(card.tier.emoji, ex, fy + fh * 0.36);
+  }
+  ctx.strokeStyle = SEIZOEN_LIJN;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(ex - fw * 0.17, fy + fh * 0.41);
+  ctx.lineTo(ex + fw * 0.17, fy + fh * 0.41);
+  ctx.stroke();
+
+  // Avatar rechts: de echte foto cirkelvormig geclipt, anders initialen op
+  // het eigen (lime-op-donker) seizoensthema i.p.v. ShareProfile's hue-set.
+  const ax = fx + fw * 0.67;
+  const ay = fy + fh * 0.26;
+  const ar = kaartW * 0.185;
+  if (avatarImg) {
+    const iw = avatarImg.naturalWidth || avatarImg.width;
+    const ih = avatarImg.naturalHeight || avatarImg.height;
+    const schaal = Math.max((ar * 2) / iw, (ar * 2) / ih);
+    const dw = iw * schaal;
+    const dh = ih * schaal;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(avatarImg, ax - dw / 2, ay - dh / 2, dw, dh);
+    ctx.restore();
+  } else {
+    ctx.beginPath();
+    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+    ctx.fillStyle = "#1c2b0e";
+    ctx.fill();
+    ctx.fillStyle = SEIZOEN_INK;
+    ctx.font = `800 ${Math.round(ar * 0.75)}px Outfit, system-ui, sans-serif`;
+    ctx.fillText(initialenVan(card.naam), ax, ay + ar * 0.27);
+  }
+  ctx.beginPath();
+  ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.stroke();
+
+  // Naamplaat + seizoens-editieregel i.p.v. de gewone divisieregel.
+  const nY = fy + fh * 0.6;
+  ctx.strokeStyle = SEIZOEN_LIJN;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(fx + fw * 0.06, nY);
+  ctx.lineTo(fx + fw * 0.94, nY);
+  ctx.stroke();
+  ctx.fillStyle = SEIZOEN_INK;
+  ctx.font = `800 ${Math.round(kaartW * 0.093)}px Outfit, system-ui, sans-serif`;
+  ctx.fillText(
+    ellipsize(ctx, card.naam.toUpperCase(), fw * 0.84),
+    fx + fw / 2,
+    nY + fh * 0.078,
+  );
+  ctx.strokeStyle = SEIZOEN_LIJN;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(fx + fw * 0.06, nY + fh * 0.105);
+  ctx.lineTo(fx + fw * 0.94, nY + fh * 0.105);
+  ctx.stroke();
+  ctx.fillStyle = c.lime;
+  ctx.font = `900 ${Math.round(kaartW * 0.06)}px Outfit, system-ui, sans-serif`;
+  ctx.fillText(`🎬 SEIZOEN ${jaar}`, fx + fw / 2, nY + fh * 0.165);
+  ctx.restore();
+
+  // Jaarstats onder de kaart, gestapeld i.p.v. naast elkaar (drie stuks
+  // passen niet leesbaar in twee kolommen zoals ShareProfile).
+  const stats: { label: string; waarde: string }[] = [];
+  if (card.maatje)
+    stats.push({
+      label: "🤝 MAATJE VAN HET JAAR",
+      waarde: `${card.maatje.naam} · ${card.maatje.samen}× samen`,
+    });
+  if (card.langsteReeks)
+    stats.push({
+      label: card.langsteReeks.type === "winst" ? "🔥 LANGSTE REEKS" : "🧗 TAAISTE REEKS",
+      waarde: `${card.langsteReeks.lengte} op rij`,
+    });
+  stats.push({ label: "🎙️ ROASTS VAN RUDY", waarde: `${card.aantalRoasts}× dit Wrapped` });
+
+  const statsY = 1020;
+  stats.forEach((s, i) => {
+    const rijY = statsY + i * 78;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.font = "800 24px Outfit, system-ui, sans-serif";
+    ctx.fillText(s.label, W / 2, rijY);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "800 34px Outfit, system-ui, sans-serif";
+    ctx.fillText(s.waarde, W / 2, rijY + 38);
+  });
+
   ctx.fillStyle = c.lime;
   ctx.fillRect(W / 2 - 80, H - 70, 160, 10);
 }

@@ -2,6 +2,14 @@ import { useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, ellipsize, sharePng } from "@/lib/utils/shareImage";
+import {
+  drawKaartSchild,
+  laadAvatar,
+  mix,
+  rgba,
+  schildVorm,
+  type FutKaartKleuren,
+} from "@/lib/utils/futKaartCanvas";
 import type { Outcome } from "@/features/rating/results";
 import type { Tier, TierKey } from "@/features/rating/tiers";
 
@@ -30,106 +38,6 @@ export type ProfileShareData = {
   form: Outcome[];
   topBadge: { emoji: string; naam: string } | null;
 };
-
-/* ------------------------------ kleurmix ------------------------------ */
-
-/** color-mix(in srgb, a p, b 1-p) voor hexkleuren, zoals de CSS van FutKaart. */
-function mix(a: string, b: string, p: number): string {
-  const va = parseInt(a.slice(1), 16);
-  const vb = parseInt(b.slice(1), 16);
-  const kanaal = (shift: number) =>
-    Math.round(((va >> shift) & 0xff) * p + ((vb >> shift) & 0xff) * (1 - p));
-  return `rgb(${kanaal(16)}, ${kanaal(8)}, ${kanaal(0)})`;
-}
-
-function rgba(hex: string, alpha: number): string {
-  const v = parseInt(hex.slice(1), 16);
-  return `rgba(${(v >> 16) & 0xff}, ${(v >> 8) & 0xff}, ${v & 0xff}, ${alpha})`;
-}
-
-/* ----------------------------- schildpaden ----------------------------- */
-
-type SchildVorm = "vlak" | "notch" | "punt" | "kroon";
-
-/** Bovenrand per divisiegroep — zelfde mapping als FutKaart.css. */
-function schildVorm(key: TierKey | undefined): SchildVorm {
-  if (key === "slof" || key === "karton" || key === "hout") return "vlak";
-  if (key === "platina" || key === "diamant" || key === "meester")
-    return "punt";
-  if (key === "legende" || key === "dictator") return "kroon";
-  return "notch";
-}
-
-/** Zet het genormaliseerde schildpad (de objectBoundingBox-paden van
- *  FutKaartDefs ×(w,h)) op de context. Alle vier de vormen delen exact
- *  dezelfde onderkant met de punt op (0.5, 1). */
-function schildPad(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  vorm: SchildVorm,
-) {
-  const X = (u: number) => x + u * w;
-  const Y = (v: number) => y + v * h;
-  const L = (u: number, v: number) => ctx.lineTo(X(u), Y(v));
-  const C = (
-    a: number,
-    b: number,
-    c: number,
-    d: number,
-    e: number,
-    f: number,
-  ) => ctx.bezierCurveTo(X(a), Y(b), X(c), Y(d), X(e), Y(f));
-  ctx.beginPath();
-  // Bovenrand per vorm; eindigt telkens op de rechterschouder (1, y).
-  if (vorm === "vlak") {
-    ctx.moveTo(X(0.04), Y(0));
-    L(0.96, 0);
-    L(1, 0.055);
-  } else if (vorm === "notch") {
-    ctx.moveTo(X(0.085), Y(0));
-    L(0.4, 0);
-    C(0.44, 0, 0.46, 0.022, 0.5, 0.022);
-    C(0.54, 0.022, 0.56, 0, 0.6, 0);
-    L(0.915, 0);
-    C(0.962, 0, 1, 0.028, 1, 0.062);
-  } else if (vorm === "punt") {
-    ctx.moveTo(X(0.035), Y(0.01));
-    L(0.44, 0.04);
-    C(0.47, 0.042, 0.48, 0.058, 0.5, 0.058);
-    C(0.52, 0.058, 0.53, 0.042, 0.56, 0.04);
-    L(0.965, 0.01);
-    L(1, 0.075);
-  } else {
-    ctx.moveTo(X(0.085), Y(0.035));
-    L(0.38, 0.035);
-    C(0.43, 0.035, 0.44, 0, 0.5, 0);
-    C(0.56, 0, 0.57, 0.035, 0.62, 0.035);
-    L(0.915, 0.035);
-    C(0.962, 0.035, 1, 0.062, 1, 0.095);
-  }
-  // Gedeelde onderkant: rechterzijde → taille → punt → linkerzijde.
-  L(1, 0.6);
-  C(1, 0.74, 0.955, 0.795, 0.865, 0.838);
-  L(0.565, 0.972);
-  C(0.545, 0.982, 0.523, 1, 0.5, 1);
-  C(0.477, 1, 0.455, 0.982, 0.435, 0.972);
-  L(0.135, 0.838);
-  C(0.045, 0.795, 0, 0.74, 0, 0.6);
-  // Linkerschouder terug naar het beginpunt van de bovenrand.
-  if (vorm === "vlak") L(0, 0.055);
-  else if (vorm === "notch") {
-    L(0, 0.062);
-    C(0, 0.028, 0.038, 0, 0.085, 0);
-  } else if (vorm === "punt") L(0, 0.075);
-  else {
-    L(0, 0.095);
-    C(0, 0.062, 0.038, 0.035, 0.085, 0.035);
-  }
-  ctx.closePath();
-}
 
 /* ------------------------------- avatar ------------------------------- */
 
@@ -203,79 +111,41 @@ function drawKaart(
     : mix(tier, "#4a3d26", 0.58);
   const lijn = special ? rgba(glans, 0.55) : mix(tier, "#a8987a", 0.55);
 
-  // Frame (metaal-gradient met twee glanspunten, ~160°).
-  const frame = ctx.createLinearGradient(x, y, x + w * 0.34, y + h * 0.94);
-  if (special) {
-    frame.addColorStop(0, mix(glans, "#ffffff", 0.85));
-    frame.addColorStop(0.42, mix(glans, "#201505", 0.55));
-    frame.addColorStop(0.68, mix(glans, "#fff8e0", 0.92));
-    frame.addColorStop(1, mix(glans, "#140d02", 0.45));
-  } else {
-    frame.addColorStop(0, mix(tier, "#fff8e8", 0.55));
-    frame.addColorStop(0.42, mix(tier, "#3a2f18", 0.88));
-    frame.addColorStop(0.68, mix(tier, "#fff3d6", 0.6));
-    frame.addColorStop(1, mix(tier, "#241b0c", 0.9));
-  }
-  ctx.save();
-  ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 16;
-  schildPad(ctx, x, y, w, h, vorm);
-  ctx.fillStyle = frame;
-  ctx.fill();
-  ctx.restore();
-
-  // Liner (donkere binnenrand).
-  schildPad(ctx, x + 6, y + 6, w - 12, h - 12, vorm);
-  ctx.fillStyle = special ? "#0c0805" : mix(tier, "#211806", 0.7);
-  ctx.fill();
-
-  // Vlak, geclipt: metaal (of special-diepte) + topglans + sheen.
-  const fx = x + 9;
-  const fy = y + 9;
-  const fw = w - 18;
-  const fh = h - 18;
-  ctx.save();
-  schildPad(ctx, fx, fy, fw, fh, vorm);
-  ctx.clip();
-  const vlak = ctx.createLinearGradient(0, fy, 0, fy + fh);
-  if (special) {
-    vlak.addColorStop(0, diepHi);
-    vlak.addColorStop(0.6, diep);
-    vlak.addColorStop(1, "#120a10");
-  } else {
-    vlak.addColorStop(0, mix(tier, "#fdfbf6", 0.2));
-    vlak.addColorStop(0.56, mix(tier, "#f1eadb", 0.46));
-    vlak.addColorStop(1, mix(tier, "#d9cfba", 0.62));
-  }
-  ctx.fillStyle = vlak;
-  ctx.fillRect(fx, fy, fw, fh);
-  const glow = ctx.createRadialGradient(
-    fx + fw / 2,
-    fy - fh * 0.06,
-    0,
-    fx + fw / 2,
-    fy - fh * 0.06,
-    fh * 0.55,
-  );
-  glow.addColorStop(0, special ? rgba(glans, 0.4) : "rgba(255, 255, 255, 0.5)");
-  glow.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(fx, fy, fw, fh);
-  const sheen = ctx.createLinearGradient(
-    fx,
-    fy + fh * 0.2,
-    fx + fw,
-    fy + fh * 0.62,
-  );
-  const sheenKleur = special
-    ? "rgba(255, 240, 200, 0.14)"
-    : "rgba(255, 255, 255, 0.28)";
-  sheen.addColorStop(0.42, "rgba(255, 255, 255, 0)");
-  sheen.addColorStop(0.5, sheenKleur);
-  sheen.addColorStop(0.58, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = sheen;
-  ctx.fillRect(fx, fy, fw, fh);
+  // Laag-opbouw (frame → liner → geclipt vlak met topglans + sheen) komt uit
+  // de gedeelde schildkaart-tekening (#498); alleen de kleuren wisselen
+  // tussen een gewone divisiekaart en een special-toptier (GOAT/dictator).
+  const kleuren: FutKaartKleuren = special
+    ? {
+        frame: [
+          mix(glans, "#ffffff", 0.85),
+          mix(glans, "#201505", 0.55),
+          mix(glans, "#fff8e0", 0.92),
+          mix(glans, "#140d02", 0.45),
+        ],
+        liner: "#0c0805",
+        vlak: [diepHi, diep, "#120a10"],
+        vlakMidOffset: 0.6,
+        glow: rgba(glans, 0.4),
+        sheen: "rgba(255, 240, 200, 0.14)",
+      }
+    : {
+        frame: [
+          mix(tier, "#fff8e8", 0.55),
+          mix(tier, "#3a2f18", 0.88),
+          mix(tier, "#fff3d6", 0.6),
+          mix(tier, "#241b0c", 0.9),
+        ],
+        liner: mix(tier, "#211806", 0.7),
+        vlak: [
+          mix(tier, "#fdfbf6", 0.2),
+          mix(tier, "#f1eadb", 0.46),
+          mix(tier, "#d9cfba", 0.62),
+        ],
+        vlakMidOffset: 0.56,
+        glow: "rgba(255, 255, 255, 0.5)",
+        sheen: "rgba(255, 255, 255, 0.28)",
+      };
+  const { fx, fy, fw, fh } = drawKaartSchild(ctx, x, y, w, h, vorm, kleuren);
 
   // Eloblok links: rating groot, sub-niveau (Romeins), divisie-emoji.
   const ex = fx + fw * 0.27;
@@ -472,23 +342,6 @@ function draw(
   // Lime accentstreep onderaan.
   ctx.fillStyle = c.lime;
   ctx.fillRect(W / 2 - 80, H - 78, 160, 10);
-}
-
-/**
- * Laadt de profielfoto met crossOrigin="anonymous" zodat het canvas na het
- * tekenen niet getaint raakt (#618). Elke faaltak — geen url, laad-/CORS-fout —
- * resolvet naar null, waarna de kaart stil op de initialen-avatar terugvalt en
- * de deel-actie gewoon doorloopt.
- */
-function laadAvatar(url: string | null): Promise<HTMLImageElement | null> {
-  if (!url) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
 }
 
 export function ShareProfile({

@@ -14,7 +14,13 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
-import { tierFor } from "@/features/rating/tiers";
+import { tierForWeergave } from "@/features/rating/tiers";
+import {
+  editieLabel,
+  editieVoor,
+  type EditieContext,
+} from "@/features/standings/edities";
+import { featuredPlaystyles } from "@/features/profiles/badges";
 import { FormChips } from "@/features/rating/components/FormChips";
 import {
   FutKaart,
@@ -38,6 +44,7 @@ export function Lineup({
   ratings,
   matchesA,
   matchesB,
+  edities,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -47,6 +54,9 @@ export function Lineup({
   /** Recente matches van (een speler van) team A resp. B — voedt de chemie. */
   matchesA: Match[];
   matchesB: Match[];
+  /** Editie- en dictator-context (#545/#621/#625): overal identiek
+   *  opgebouwd, zodat de kaart op het veld dezelfde is als elders. */
+  edities: EditieContext;
 }) {
   return (
     <section className="card lineup">
@@ -65,6 +75,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
+          edities={edities}
         />
         <Helft
           side="b"
@@ -75,6 +86,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
+          edities={edities}
         />
       </div>
       <LineupUitleg />
@@ -115,6 +127,7 @@ function Helft({
   histories,
   ratings,
   matchId,
+  edities,
 }: {
   side: "a" | "b";
   team: Team | undefined;
@@ -124,6 +137,7 @@ function Helft({
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
+  edities: EditieContext;
 }) {
   const spelers = playersOf(team);
   const duo = spelers.length === 2;
@@ -142,6 +156,7 @@ function Helft({
             histories={histories}
             ratings={ratings}
             matchId={matchId}
+            edities={edities}
           />
         ))}
       </div>
@@ -207,12 +222,14 @@ function SpelerKaart({
   histories,
   ratings,
   matchId,
+  edities,
 }: {
   pid: string;
   profiel: Profile | undefined;
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
+  edities: EditieContext;
 }) {
   const [omgedraaid, setOmgedraaid] = useState(false);
   // Eenmaal omgedraaid blijft de achterkant gemount, zodat hij tijdens het
@@ -224,7 +241,14 @@ function SpelerKaart({
     histories[pid]?.find((h) => h.match_id === matchId)?.rating_after ??
     ratings[pid]?.rating ??
     null;
-  const tier = tierFor(elo);
+  // Weergave-tier (#545/#621): buiten De Troon draagt niemand de dictator-special.
+  // Alleen de zittende dictator toont de troon-kaart; overige 1600+-spelers
+  // zakken visueel naar GOAT voor consistentie met klassement en profiel.
+  const isDictator = pid === edities.dictatorId;
+  const tier = tierForWeergave(elo, isDictator);
+  // Editie (#497/#621/#625): dezelfde rand als op klassement en profiel —
+  // de kaart van een speler is overal dezelfde.
+  const editie = editieVoor(pid, edities);
   const naam = profiel ? displayName(profiel) : "Onbekend";
   const draai = () => {
     setOmgedraaid((v) => !v);
@@ -234,6 +258,7 @@ function SpelerKaart({
     <FutKaart
       className="lineup-kaart"
       tier={tier}
+      editie={editie}
       omgedraaid={omgedraaid}
       voorOverlay={
         <button
@@ -250,6 +275,10 @@ function SpelerKaart({
           tier={tier}
           naam={naam}
           avatar={<Avatar profile={profiel} size={48} />}
+          editie={editieLabel(editie, edities)}
+          // PlayStyles (#500) ook op het veld (#621): dezelfde chips als op
+          // de profielkaart, uit de opgeslagen featured-ids.
+          playstyles={featuredPlaystyles(profiel?.featured_badges)}
         />
       }
       achterOverlay={

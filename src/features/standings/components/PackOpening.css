@@ -1,6 +1,7 @@
 /* Pack-opening (#500): donkere backdrop met een goudfoil-pack; tik en de
-   geüpgradede FUT-kaart springt eruit. Het pack is altijd goud — het is een
-   prijs, ongeacht de divisie erin; de kaart zelf draagt de tierkleur.
+   geüpgradede FUT-kaart springt eruit. Het promotie-pack is altijd goud — het
+   is een prijs, ongeacht de divisie erin; de kaart zelf draagt de tierkleur.
+   Een zeldzame badge (#615) krijgt de paarse foil (--badge-modifier onderaan).
    Alle beweging zit achter prefers-reduced-motion: no-preference; zonder
    bewegingsvoorkeur rendert de component meteen de kaart-fase. */
 .pack-opening {
@@ -68,6 +69,33 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255, 251, 233, 0.8);
+}
+
+/* Zeldzame badge (#615): paarse foil — meester-paars, net zo fel in beide
+   thema's als het goud (vaste hexen, bewust geen gedempte dark-tokens). */
+.pack-opening--badge .pack-opening__pack {
+  background: linear-gradient(
+    150deg,
+    #c4b5fd 0%,
+    #7c3aed 34%,
+    #4c1d95 62%,
+    #a78bfa 100%
+  );
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 2px rgba(237, 233, 254, 0.5);
+}
+.pack-opening--badge .pack-opening__pack:focus-visible {
+  outline-color: #f3efff;
+}
+.pack-opening--badge .pack-opening__titel {
+  color: #f5f0ff;
+}
+.pack-opening--badge .pack-opening__sub {
+  color: rgba(245, 240, 255, 0.8);
+}
+.pack-opening--badge .pack-opening__banner {
+  color: #ece4ff;
 }
 
 .pack-opening__resultaat {

@@ -126,3 +126,22 @@ export const REEKSEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 10, naam: "Onstuitbaar", emoji: "🚀" },
   { doel: 20, naam: "Onaanraakbaar", emoji: "🛡️" },
 ];
+
+/** Curated "zeldzame" badges (#615): het behalen hiervan opent een paars pack
+ *  (useBadgeAnnouncement). Bewust een vaste lijst i.p.v. een veld op de
+ *  badge-definitie: een deel wordt in loops uit de tabellen hierboven
+ *  gegenereerd, en de aankondiging heeft via deriveBadges toch het volledige
+ *  Badge-object in handen. Alleen échte prestaties — geen pech- of
+ *  kalendertoeval-badges, en geen tellers die buiten het geladen matchvenster
+ *  vallen (matches-1000). */
+export const ZELDZAME_BADGES: ReadonlySet<string> = new Set([
+  "perfectionist", // 💎 10+ matches zonder verlies
+  "comebackkoning", // 👑 winst na een verliesreeks
+  "feniks", // 🐦‍🔥 winst direct na 5 verliezen op rij
+  "ironman", // 🏋️ 5 matches op één dag
+  "angstgegner", // 😈 eindelijk winst op je angstgegner
+  "reeks-20", // 🛡️ Onaanraakbaar: 20 winsten op rij
+  "winsten-100", // 🏛️ Honderd zeges
+  "perfecte-weken-10", // 🦸 Weekheld: 10 perfecte missieweken
+  "rating-1300", // 👑 Levende legende
+]);

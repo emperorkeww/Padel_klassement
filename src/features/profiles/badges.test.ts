@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { deriveBadges, REUZENDODER_DREMPEL } from "@/features/profiles/badges";
+import {
+  deriveBadges,
+  featuredPlaystyles,
+  REUZENDODER_DREMPEL,
+  ZELDZAME_BADGES,
+} from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
 import type { Match, PlayerRating, Team } from "@/types";
 
@@ -716,5 +721,48 @@ describe("deriveBadges — nieuwe lading (#119)", () => {
     expect(badge(deriveBadges(vierPlusWinst, teams, "p1"), "angstgegner").behaald).toBe(false);
     const metRemise = [...Array.from({ length: 5 }, loss), match({ winner_team_id: null }), win()];
     expect(badge(deriveBadges(metRemise, teams, "p1"), "angstgegner").behaald).toBe(false);
+  });
+});
+
+describe("featuredPlaystyles (#621)", () => {
+  it("resolvet opgeslagen featured-ids naar statische naam + emoji", () => {
+    const chips = featuredPlaystyles(["eerste-overwinning"]);
+    expect(chips).toHaveLength(1);
+    expect(chips[0].id).toBe("eerste-overwinning");
+    expect(chips[0].naam).toBe("Eerste overwinning");
+    expect(chips[0].emoji).toBe("🎉");
+  });
+
+  it("behoudt de volgorde van de ids en laat onbekende ids stil wegvallen", () => {
+    const chips = featuredPlaystyles([
+      "tweelingzielen",
+      "bestaat-niet",
+      "eerste-overwinning",
+    ]);
+    expect(chips.map((b) => b.id)).toEqual([
+      "tweelingzielen",
+      "eerste-overwinning",
+    ]);
+  });
+
+  it("geeft een lege lijst voor null/undefined/lege ids", () => {
+    expect(featuredPlaystyles(null)).toEqual([]);
+    expect(featuredPlaystyles(undefined)).toEqual([]);
+    expect(featuredPlaystyles([])).toEqual([]);
+  });
+});
+
+describe("ZELDZAME_BADGES (#615)", () => {
+  it("bevat alleen ids die echt in de catalogus bestaan", () => {
+    const bekend = new Set(deriveBadges([], teams, "p1").map((b) => b.id));
+    for (const id of ZELDZAME_BADGES) {
+      expect(bekend.has(id), `onbekende zeldzame badge-id: ${id}`).toBe(true);
+    }
+  });
+
+  it("viert geen pech-badges", () => {
+    for (const id of ["pechvogel", "zwarte-reeks", "rampdag", "afgedroogd"]) {
+      expect(ZELDZAME_BADGES.has(id)).toBe(false);
+    }
   });
 });

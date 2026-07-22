@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -35,6 +35,11 @@ import {
   getAllRatingHistories,
   getPlayerRatings,
 } from "@/features/standings/ratingsApi";
+import { getHuidigeDictator } from "@/features/standings/dictatorApi";
+import { getPlayerStandings } from "@/features/standings/api";
+import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { getSeizoenskampioen } from "@/features/standings/kampioen";
+import { iconKeyVoor, type EditieContext } from "@/features/standings/edities";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { matchDerby } from "@/features/matches/derby";
 import { playersOf } from "@/features/rating/results";
@@ -83,6 +88,28 @@ export function MatchDetail() {
     () => (groupId ? getGroup(groupId) : Promise.resolve(null)),
     [groupId],
   );
+  // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
+  // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
+  const dictator = useAsync(getHuidigeDictator, []);
+  // Speciale edities (#497) ook op het veld (#621/#625): dezelfde
+  // editie-context als klassement en profiel — Icon, Kampioen en In-Form.
+  // Alle bronnen gecacht en app-breed gedeeld; hooks vóór de vroege returns.
+  const standings = useAsync(getPlayerStandings, []);
+  const kampioen = useAsync(getSeizoenskampioen, []);
+  const inForm = useMemo(
+    () => spelerVanDeWeek(histories.data ?? {}),
+    [histories.data],
+  );
+  const editieCtx: EditieContext = {
+    dictatorId: dictator.data?.profileId ?? null,
+    iconKey: iconKeyVoor(
+      standings.data ?? [],
+      ratings.data ?? {},
+      dictator.data?.profileId ?? null,
+    ),
+    kampioen: kampioen.data ?? null,
+    inForm,
+  };
   const [editing, setEditing] = useState(false);
 
   if (match.loading)
@@ -303,6 +330,7 @@ export function MatchDetail() {
         ratings={ratings.data ?? {}}
         matchesA={matchesA.data ?? []}
         matchesB={matchesB.data ?? []}
+        edities={editieCtx}
       />
 
       {iLost && (

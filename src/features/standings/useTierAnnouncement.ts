@@ -78,7 +78,12 @@ export function useTierAnnouncement(myId: string, schild = false) {
     if (wissel.richting === "promotie") {
       // Pack-opening (#500): confetti en haptiek vuren pas op het moment dat
       // de gebruiker het pack openscheurt, in de component zelf.
-      setPack({ wissel, rating: latest.rating_after, quip: zin });
+      setPack({
+        soort: "promotie",
+        wissel,
+        rating: latest.rating_after,
+        quip: zin,
+      });
     } else {
       toast.info(zin);
     }

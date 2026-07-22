@@ -84,3 +84,25 @@ export function deriveBadges(
   };
   return buildBadges(ctx);
 }
+
+// Statische kaart-info (id, naam, emoji) per badge: de catalogus afgeleid uit
+// een lege context — de definities zijn statisch, alleen behaald/voortgang
+// hangen van de speler af. Lui opgebouwd bij het eerste gebruik.
+let catalogus: Map<string, Badge> | null = null;
+
+/**
+ * PlayStyle-chips buiten het profiel (#621): resolvet de opgeslagen
+ * featured-ids van een speler naar badge-definities voor op de FUT-kaart in
+ * klassement en opstelling. Daar is niet de volledige matchhistorie van elke
+ * speler geladen, dus we vertrouwen de opgeslagen ids — uitlichten kan alleen
+ * bij behaalde badges. Onbekende ids vallen stil weg.
+ */
+export function featuredPlaystyles(
+  ids: readonly string[] | null | undefined,
+): Badge[] {
+  if (!ids || ids.length === 0) return [];
+  catalogus ??= new Map(deriveBadges([], {}, "").map((b) => [b.id, b]));
+  return ids
+    .map((id) => catalogus!.get(id))
+    .filter((b): b is Badge => b != null);
+}

@@ -65,7 +65,8 @@ import {
   type Row,
 } from "./leaderboardHelpers";
 import { spelerVanDeWeek } from "./spelerVanDeWeek";
-import { editieVoor } from "./edities";
+import { getSeizoenskampioen } from "./kampioen";
+import type { EditieContext } from "./edities";
 import { KaartRaster } from "./components/KaartRaster";
 import { KaartPreview } from "./components/KaartPreview";
 import { FutKaartDefs } from "@/features/rating/components/FutKaart";
@@ -179,6 +180,8 @@ export function Leaderboard() {
   // De zittende dictator (#545): server-side bepaald via de troon-replay, niet
   // meer de toevallige 1600+-#1. Bepaalt wie op De Troon komt.
   const dictator = useAsync(getHuidigeDictator, []);
+  // Kampioen-editie (#625): winnaar van het vorige kwartaal (gecacht).
+  const kampioen = useAsync(getSeizoenskampioen, []);
   // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
   // tonen de pias van de geselecteerde groep.
   const piasWeeks = useAsync(getPiasWeeks, []);
@@ -636,6 +639,14 @@ export function Leaderboard() {
     !usingScope && spelerTab && !throneRow && rankedRows[0]?.rating != null
       ? rankedRows[0].key
       : null;
+  // Eén editie-context (#625) voor raster én preview — dezelfde opbouw als
+  // profiel en matchdetail. Kampioen en In-Form alleen op de live stand.
+  const editieCtx: EditieContext = {
+    dictatorId: dictator.data?.profileId ?? null,
+    iconKey,
+    kampioen: usingScope ? null : (kampioen.data ?? null),
+    inForm,
+  };
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
 
@@ -997,9 +1008,7 @@ export function Leaderboard() {
         ) : tab === "kaarten" ? (
           <KaartRaster
             rows={visibleRows}
-            dictatorId={dictator.data?.profileId ?? null}
-            iconKey={iconKey}
-            inForm={inForm}
+            edities={editieCtx}
             onPreview={setPreview}
           />
         ) : (
@@ -1058,9 +1067,7 @@ export function Leaderboard() {
       {preview && (
         <KaartPreview
           row={preview}
-          dictatorId={dictator.data?.profileId ?? null}
-          editie={editieVoor(preview.key, iconKey, inForm)}
-          inForm={inForm}
+          edities={editieCtx}
           onClose={() => setPreview(null)}
         />
       )}

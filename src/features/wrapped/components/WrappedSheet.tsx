@@ -1,18 +1,29 @@
 import { useMemo, useRef, useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { Sheet } from "@/ui/Sheet";
+import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
 import { sharePng } from "@/lib/utils/shareImage";
+import { laadAvatar } from "@/lib/utils/futKaartCanvas";
 import { prefersReducedMotion } from "@/lib/utils/motion";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getCompletedMatchesBetween } from "@/features/matches/api";
 import type { Match, Profile, RatingPoint, RoastIntensiteit, Team } from "@/types";
 import { deriveWrapped } from "@/features/wrapped/wrapped";
 import type { WrappedCard } from "@/features/wrapped/wrapped";
-import { drawWrappedCard, posterLayout } from "@/features/wrapped/wrappedPoster";
+import {
+  drawSeizoenskaart,
+  drawWrappedCard,
+  posterLayout,
+} from "@/features/wrapped/wrappedPoster";
 import { coachEindoordeel, coachWrappedRegel } from "@/features/wrapped/coachWrapped";
 import { CoachAvatar, type CoachMood } from "@/features/coach/components/CoachAvatar";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
+import {
+  FutKaart,
+  FutKaartDefs,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import "@/features/wrapped/wrapped.css";
 
 // Padel Wrapped (#115): swipebaar jaaroverzicht in een sheet. De kaarten
@@ -30,6 +41,7 @@ export function WrappedSheet({
   teams,
   profiles,
   ratingHistory,
+  rating = null,
   intensiteit = "gemeen",
   onClose,
 }: {
@@ -40,6 +52,9 @@ export function WrappedSheet({
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   ratingHistory?: RatingPoint[];
+  /** Huidige rating, voor de seizoenskaart aan het slot (#498). Zonder blijft
+   *  het eloblok van die kaart leeg — geen harde eis. */
+  rating?: number | null;
   /** Roast-toon van de eigen groep; schild komt uit het eigen profiel (#295). */
   intensiteit?: RoastIntensiteit;
   onClose: () => void;
@@ -48,6 +63,7 @@ export function WrappedSheet({
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [actief, setActief] = useState(0);
   const [busyKind, setBusyKind] = useState<string | null>(null);
+  const [seizoenOmgedraaid, setSeizoenOmgedraaid] = useState(false);
 
   // Clubmatches van het jaar voor de zeldzaamste-badge-kaart; zonder deze
   // data valt alleen die kaart weg (graceful).
@@ -70,8 +86,10 @@ export function WrappedSheet({
         playerId,
         ratingHistory,
         clubMatches: clubMatches.data ?? undefined,
+        rating,
+        avatarUrl: profiles[playerId]?.avatar_url ?? null,
       }),
-    [jaar, matches, teams, profiles, playerId, ratingHistory, clubMatches.data],
+    [jaar, matches, teams, profiles, playerId, ratingHistory, clubMatches.data, rating],
   );
   const cards = useMemo(() => wrapped?.cards ?? [], [wrapped]);
 
@@ -114,12 +132,26 @@ export function WrappedSheet({
   async function deel(card: WrappedCard, regels: string[]) {
     setBusyKind(card.kind);
     try {
-      const outcome = await sharePng((ctx) => drawWrappedCard(ctx, card, naam, jaar, { regels }), {
-        width: POSTER_W,
-        height: POSTER_H,
-        filename: `vamos-wrapped-${jaar}-${card.kind}.png`,
-        title: `Wrapped ${jaar}`,
-      });
+      // Seizoenskaart (#498): eigen tekenfunctie op de gedeelde schildkaart-
+      // canvas, met een vooraf geladen avatarfoto — zelfde patroon als
+      // ShareProfile.
+      const outcome =
+        card.kind === "seizoenskaart"
+          ? await (async () => {
+              const avatarImg = await laadAvatar(card.avatarUrl);
+              return sharePng((ctx) => drawSeizoenskaart(ctx, card, jaar, avatarImg), {
+                width: POSTER_W,
+                height: POSTER_H,
+                filename: `vamos-wrapped-${jaar}-seizoenskaart.png`,
+                title: `Wrapped ${jaar}`,
+              });
+            })()
+          : await sharePng((ctx) => drawWrappedCard(ctx, card, naam, jaar, { regels }), {
+              width: POSTER_W,
+              height: POSTER_H,
+              filename: `vamos-wrapped-${jaar}-${card.kind}.png`,
+              title: `Wrapped ${jaar}`,
+            });
       if (outcome === "clipboard") toast.success("Poster gekopieerd naar klembord.");
       if (outcome === "download") toast.success("Poster gedownload.");
     } catch (err) {
@@ -148,23 +180,103 @@ export function WrappedSheet({
             const l = posterLayout(card, naam, jaar);
             const coach = coachPerKaart[i];
             const isEind = card.kind === "eindoordeel";
+            const isSeizoen = card.kind === "seizoenskaart";
             return (
               <article
                 key={card.kind}
-                className={`wrapped-card${isEind ? " wrapped-card--eindoordeel" : ""}`}
+                className={`wrapped-card${isEind ? " wrapped-card--eindoordeel" : ""}${isSeizoen ? " wrapped-card--seizoen" : ""}`}
               >
                 <div className="wrapped-card__body">
-                  <p className="wrapped-card__kicker">{l.kicker}</p>
-                  <p
-                    className={`wrapped-card__hero ${l.heroKlein ? "wrapped-card__hero--klein" : ""}`}
-                  >
-                    {l.hero}
-                  </p>
-                  {l.sub.map((regel) => (
-                    <p key={regel} className="wrapped-card__sub">
-                      {regel}
-                    </p>
-                  ))}
+                  {isSeizoen && card.kind === "seizoenskaart" ? (
+                    <>
+                      <FutKaartDefs />
+                      <FutKaart
+                        tier={card.tier}
+                        className="wrapped-seizoenskaart"
+                        omgedraaid={seizoenOmgedraaid}
+                        voorOverlay={
+                          <button
+                            type="button"
+                            className="fut-kaart__flip"
+                            onClick={() => setSeizoenOmgedraaid((v) => !v)}
+                            aria-expanded={seizoenOmgedraaid}
+                            aria-label="Jaarstatistieken van je seizoenskaart"
+                          />
+                        }
+                        voor={
+                          <FutKaartVoorkant
+                            elo={card.rating}
+                            tier={card.tier}
+                            naam={card.naam}
+                            avatar={
+                              <Avatar
+                                profile={{ avatar_url: card.avatarUrl }}
+                                name={card.naam}
+                                size={56}
+                              />
+                            }
+                            editie={`🎬 Seizoen ${jaar}`}
+                          />
+                        }
+                        achterOverlay={
+                          <button
+                            type="button"
+                            className="fut-kaart__flip"
+                            onClick={() => setSeizoenOmgedraaid((v) => !v)}
+                            tabIndex={seizoenOmgedraaid ? 0 : -1}
+                            aria-label="Draai de kaart terug"
+                          />
+                        }
+                        achter={
+                          <>
+                            {card.maatje && (
+                              <span className="fut-kaart__stats-rij">
+                                <span className="fut-kaart__stats-label">
+                                  🤝 Maatje van het jaar
+                                </span>
+                                <span>
+                                  {card.maatje.naam} · {card.maatje.samen}×
+                                </span>
+                              </span>
+                            )}
+                            {card.langsteReeks && (
+                              <span className="fut-kaart__stats-rij">
+                                <span className="fut-kaart__stats-label">
+                                  {card.langsteReeks.type === "winst"
+                                    ? "🔥 Langste reeks"
+                                    : "🧗 Taaiste reeks"}
+                                </span>
+                                <span>{card.langsteReeks.lengte} op rij</span>
+                              </span>
+                            )}
+                            <span className="fut-kaart__stats-rij">
+                              <span className="fut-kaart__stats-label">
+                                🎙️ Roasts van Rudy
+                              </span>
+                              <span>{card.aantalRoasts}× dit Wrapped</span>
+                            </span>
+                          </>
+                        }
+                      />
+                      <p className="wrapped-seizoenskaart__hint" aria-hidden="true">
+                        Tik op de kaart voor je jaarstats
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="wrapped-card__kicker">{l.kicker}</p>
+                      <p
+                        className={`wrapped-card__hero ${l.heroKlein ? "wrapped-card__hero--klein" : ""}`}
+                      >
+                        {l.hero}
+                      </p>
+                      {l.sub.map((regel) => (
+                        <p key={regel} className="wrapped-card__sub">
+                          {regel}
+                        </p>
+                      ))}
+                    </>
+                  )}
                   {isEind ? (
                     <div className="wrapped-verdict">
                       <CoachAvatar

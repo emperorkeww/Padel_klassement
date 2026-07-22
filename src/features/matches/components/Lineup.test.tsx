@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { Lineup } from "./Lineup";
+import type { EditieContext } from "@/features/standings/edities";
 import {
   LINEUP_HISTORY,
   LINEUP_MATCHES,
@@ -29,6 +30,14 @@ const TEAMS_MAP = Object.fromEntries(
   TEAMS.map((t) => [t.id, t]),
 ) as Record<string, Team>;
 const PROFILES_MAP = Object.fromEntries(PROFILES.map((p) => [p.id, p]));
+// Editie-context met alles uit (en gerichte overrides per test).
+const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
+  dictatorId: null,
+  iconKey: null,
+  kampioen: null,
+  inForm: null,
+  ...over,
+});
 const RATINGS_MAP = Object.fromEntries(
   PLAYER_RATINGS.map((r) => [r.player_id, r]),
 ) as Record<string, PlayerRating>;
@@ -50,6 +59,7 @@ function renderLineup(overrides: Partial<Parameters<typeof Lineup>[0]> = {}) {
     ratings: RATINGS_MAP,
     matchesA: LINEUP_MATCHES as Match[],
     matchesB: LINEUP_MATCHES as Match[],
+    edities: ctx(),
     ...overrides,
   };
   return render(
@@ -147,5 +157,88 @@ describe("<Lineup />", () => {
     expect(
       container.querySelectorAll(".lineup__lijn--voorbeeld"),
     ).toHaveLength(4);
+  });
+
+  it("toont GOAT voor niet-dictator met dictator-band rating (#621)", () => {
+    // p1 heeft in de fixture een rating van 1012 (Wannabe), maar we overschrijven
+    // met een dictator-band rating (1600+) voor een niet-dictator.
+    const rating1600plus = {
+      ...RATINGS_MAP,
+      p1: { ...RATINGS_MAP.p1, rating: 1650 },
+    };
+    const { container } = renderLineup({
+      ratings: rating1600plus,
+      edities: ctx({ dictatorId: "p2" }), // p2 is de dictator, p1 niet
+    });
+    // p1 heeft rating 1650 maar is geen dictator → moet GOAT (legende) tonen,
+    // niet dictator. De kaart-kleur voor GOAT is "legende".
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--legende");
+    expect(p1Kaart).not.toHaveClass("fut-kaart--dictator");
+  });
+
+  it("draagt de Icon-editie (Big Daddy) op het veld, net als op het klassement (#621)", () => {
+    const { container } = renderLineup({ edities: ctx({ iconKey: "p1" }) });
+    // p1 is de Big Daddy → zijn kaart krijgt de icon-rand en de editie-regel.
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--icon");
+    expect(screen.getByText("👑 Big Daddy")).toBeInTheDocument();
+    // De rest van het veld blijft zonder editie.
+    expect(container.querySelectorAll(".fut-kaart--icon")).toHaveLength(1);
+  });
+
+  it("draagt de In-Form-editie van de speler van de week op het veld (#621)", () => {
+    const { container } = renderLineup({
+      edities: ctx({ inForm: { playerId: "p3", delta: 12, matches: 3 } }),
+    });
+    expect(container.querySelectorAll(".fut-kaart--inform")).toHaveLength(1);
+    expect(screen.getByText("⚡ In-Form · +12")).toBeInTheDocument();
+  });
+
+  it("draagt de Kampioen-editie van de winnaar van vorig kwartaal (#625)", () => {
+    const { container } = renderLineup({
+      edities: ctx({ kampioen: { playerId: "p2", seasonLabel: "Q2 2026" } }),
+    });
+    expect(container.querySelectorAll(".fut-kaart--kampioen")).toHaveLength(1);
+    expect(screen.getByText("\u{1F3C6} Kampioen Q2 2026")).toBeInTheDocument();
+  });
+
+  it("geeft de zittende dictator nooit een editie bovenop de troonkaart (#625)", () => {
+    const { container } = renderLineup({
+      edities: ctx({
+        dictatorId: "p1",
+        inForm: { playerId: "p1", delta: 30, matches: 4 },
+      }),
+    });
+    expect(container.querySelector(".fut-kaart--inform")).toBeNull();
+  });
+
+  it("toont de uitgelichte badges als PlayStyle-chips, net als op de profielkaart (#621)", () => {
+    const metBadges = {
+      ...PROFILES_MAP,
+      p1: { ...PROFILES_MAP.p1, featured_badges: ["eerste-overwinning"] },
+    };
+    renderLineup({ profiles: metBadges });
+    const lijst = screen.getByRole("list", { name: "Uitgelichte badges" });
+    expect(lijst).toBeInTheDocument();
+    expect(
+      screen.getByRole("listitem", { name: "Eerste overwinning" }),
+    ).toBeInTheDocument();
+  });
+
+  it("toont dictator-special voor zittende dictator (#621)", () => {
+    // p1 is de dictator met een dictator-band rating
+    const rating1600plus = {
+      ...RATINGS_MAP,
+      p1: { ...RATINGS_MAP.p1, rating: 1650 },
+    };
+    const { container } = renderLineup({
+      ratings: rating1600plus,
+      edities: ctx({ dictatorId: "p1" }), // p1 is de dictator
+    });
+    // p1 heeft rating 1650 en IS de dictator → moet dictator-special tonen
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--dictator");
+    expect(p1Kaart).not.toHaveClass("fut-kaart--legende");
   });
 });

@@ -686,6 +686,7 @@ export function Dashboard() {
           teams={tmap}
           profiles={profiles.data ?? {}}
           ratingHistory={ratingHistory.data ?? []}
+          rating={myRating}
           onClose={() => setWrappedOpen(false)}
         />
       )}

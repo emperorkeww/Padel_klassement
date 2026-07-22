@@ -129,10 +129,13 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Big Daddy/)).toBeInTheDocument();
+    // Drie keer Big Daddy: de badge naast de naam, de Icon-editie-regel op de
+    // hero-kaart (#621), én — sinds #499 — bobs kaart in het "Jij vs Bob"-
+    // versus-blok draagt dezelfde editie.
+    expect(screen.getAllByText(/Big Daddy/)).toHaveLength(3);
   });
 
-  it("toont geen Big Daddy-badge als de speler niet #1 staat", async () => {
+  it("toont geen Big Daddy-badge voor de bekeken speler als hij niet #1 staat", async () => {
     setTables("p2");
     state.tables.player_standings = [
       { player_id: "p1", username: "x", full_name: null, played: 4, won: 3, drawn: 0, lost: 1, points: 9, goal_diff: 0 },
@@ -142,18 +145,47 @@ describe("<PlayerProfile />", () => {
       { player_id: "p1", rating: 1300, games: 5, updated_at: "" },
       { player_id: "p2", rating: 1000, games: 5, updated_at: "" },
     ];
-    renderProfile("p2");
+    const { container } = renderProfile("p2");
     expect(
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Big Daddy/)).not.toBeInTheDocument();
+    // Bob (bekeken speler, niet #1) draagt nergens Big Daddy: niet naast zijn
+    // naam, niet op zijn hero-kaart, en niet op zijn kant van het versus-blok.
+    expect(container.querySelector(".badge--bigdaddy")).toBeNull();
+    expect(
+      within(container.querySelector(".profile-hero") as HTMLElement).queryByText(
+        /Big Daddy/,
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      within(
+        container.querySelector(".vs-kaarten__kaart--hen") as HTMLElement,
+      ).queryByText(/Big Daddy/),
+    ).not.toBeInTheDocument();
+    // Alice (ingelogd, wél #1) draagt haar Icon-editie terecht op haar eigen
+    // kant van het duel — dat is geen regressie maar #499/#624 in actie.
+    expect(
+      within(
+        container.querySelector(".vs-kaarten__kaart--mij") as HTMLElement,
+      ).getByText(/Big Daddy/),
+    ).toBeInTheDocument();
   });
 
   it("toont de jij-vs-balans op het overzicht van andermans profiel", async () => {
     setTables("p2");
-    renderProfile("p2");
+    const { container } = renderProfile("p2");
     expect(
       await screen.findByRole("heading", { name: /jij vs bob boers/i }),
+    ).toBeInTheDocument();
+    // Head-to-Head versus-kaarten (#499): beide FUT-kaarten naast elkaar,
+    // geen extra fetch nodig — de namen komen uit de al geladen profielenmap.
+    const vsBlok = container.querySelector(".vs-kaarten");
+    expect(vsBlok).not.toBeNull();
+    expect(
+      within(vsBlok as HTMLElement).getByText("Alice Anders"),
+    ).toBeInTheDocument();
+    expect(
+      within(vsBlok as HTMLElement).getByText("Bob Boers"),
     ).toBeInTheDocument();
     // Als tegenstanders: alice won 1 van de 1 (m-tegen).
     expect(screen.getByText(/jij won 1 van de 1/i)).toBeInTheDocument();
@@ -174,12 +206,13 @@ describe("<PlayerProfile />", () => {
 
   it("toont geen jij-vs-balans op het eigen profiel", async () => {
     setTables("p1");
-    renderProfile("p1");
+    const { container } = renderProfile("p1");
     expect(
       await screen.findByRole("heading", { name: /alice anders/i, level: 1 }),
     ).toBeInTheDocument();
     // Geen balans-met-jezelf op het overzicht...
     expect(screen.queryByText(/jij vs/i)).not.toBeInTheDocument();
+    expect(container.querySelector(".vs-kaarten")).toBeNull();
     // ...maar het beste maatje staat er wél (onder Statistieken).
     clickTab("Statistieken");
     expect(await screen.findByText("Beste maatje")).toBeInTheDocument();
