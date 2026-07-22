@@ -74,7 +74,10 @@ describe("<MatchDetail />", () => {
     // Check that p1's ELO and delta are shown
     expect(await screen.findByText(/1012 ELO/i)).toBeInTheDocument();
     expect(await screen.findByText(/▲7/i)).toBeInTheDocument();
-    // Check that the TierBadge is rendered
-    expect(await screen.findByText(/Wannabe III/i)).toBeInTheDocument();
+    // Check that the TierBadge is rendered (sinds #495 noemt ook de
+    // divisieregel op de lineup-kaart de tier, vandaar findAll).
+    expect((await screen.findAllByText(/Wannabe III/i)).length).toBeGreaterThan(
+      0,
+    );
   });
 });

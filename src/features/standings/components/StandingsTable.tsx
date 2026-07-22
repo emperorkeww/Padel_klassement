@@ -23,10 +23,14 @@ export function StandingsTable({
   rows,
   showForm,
   meRef,
+  onPreview,
 }: {
   rows: Row[];
   showForm: boolean;
   meRef?: React.Ref<HTMLTableRowElement>;
+  /** Kaart-preview (#497): een tik op de rij (buiten links/knoppen) of op de
+   *  avatar-knop opent de FUT-kaart; de naamlink blijft direct navigeren. */
+  onPreview?: (row: Row) => void;
 }) {
   // Sortering is client-side: de aangeleverde volgorde (spelers op rating,
   // teams op punten) is de standaard; klikken op een kolomkop hersorteert
@@ -110,7 +114,18 @@ export function StandingsTable({
                 key={r.key}
                 data-flip-key={r.key}
                 ref={r.isMe ? meRef : undefined}
-                className={r.isMe ? "is-me" : ""}
+                className={`${r.isMe ? "is-me" : ""}${onPreview ? " rij--kaart" : ""}`}
+                onClick={
+                  onPreview
+                    ? (e) => {
+                        // Links en knoppen in de rij houden hun eigen gedrag;
+                        // de rest van de rij opent de kaart-preview.
+                        if ((e.target as HTMLElement).closest("a, button"))
+                          return;
+                        onPreview(r);
+                      }
+                    : undefined
+                }
               >
                 <td>
                   <span className="rank-wrap">
@@ -122,7 +137,19 @@ export function StandingsTable({
                 </td>
                 <td>
                   <span className="cell-player">
-                    <Avatar profile={r.profile} name={r.name} size={26} />
+                    {onPreview ? (
+                      // Toetsenbord-pad naar de preview: de avatar als knop.
+                      <button
+                        type="button"
+                        className="cell-player__kaartknop"
+                        onClick={() => onPreview(r)}
+                        aria-label={`FUT-kaart van ${r.name}`}
+                      >
+                        <Avatar profile={r.profile} name={r.name} size={26} />
+                      </button>
+                    ) : (
+                      <Avatar profile={r.profile} name={r.name} size={26} />
+                    )}
                     {r.link ? (
                       <Link
                         className="profile-link"

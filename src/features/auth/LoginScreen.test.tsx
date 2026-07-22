@@ -132,6 +132,45 @@ describe("<LoginScreen />", () => {
     expect(await screen.findByText(/je wordt ingelogd/i)).toBeInTheDocument();
   });
 
+  it("toont een NL-melding bij verkeerde inloggegevens (geen Engelse Supabase-tekst)", async () => {
+    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: { code: "invalid_credentials", message: "Invalid login credentials" },
+    } as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>);
+    renderPage();
+    await userEvent.type(
+      await screen.findByPlaceholderText(/jij@voorbeeld/i),
+      "alice@example.com",
+    );
+    const [wachtwoord] = screen.getAllByPlaceholderText("••••••••");
+    await userEvent.type(wachtwoord, "fout");
+    await userEvent.click(screen.getByRole("button", { name: /^inloggen$/i }));
+    expect(await screen.findByText(/klopt niet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/invalid/i)).not.toBeInTheDocument();
+  });
+
+  it("meldt een te kort wachtwoord bij registratie vóór submit", async () => {
+    vi.mocked(supabase.auth.signUp).mockClear();
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole("tab", { name: /registreren/i }),
+    );
+    await userEvent.type(
+      screen.getByPlaceholderText(/jij@voorbeeld/i),
+      "kort@example.com",
+    );
+    const velden = screen.getAllByPlaceholderText("••••••••");
+    await userEvent.type(velden[0], "123");
+    await userEvent.type(velden[1], "123");
+    await userEvent.click(
+      screen.getByRole("button", { name: /account aanmaken/i }),
+    );
+    expect(
+      await screen.findByText(/kies een wachtwoord van minstens 6 tekens/i),
+    ).toBeInTheDocument();
+    expect(supabase.auth.signUp).not.toHaveBeenCalled();
+  });
+
   it("stuurt een herstellink bij wachtwoord vergeten", async () => {
     renderPage();
     await userEvent.click(

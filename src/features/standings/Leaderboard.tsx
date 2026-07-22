@@ -64,6 +64,11 @@ import {
   splitDictatorThrone,
   type Row,
 } from "./leaderboardHelpers";
+import { spelerVanDeWeek } from "./spelerVanDeWeek";
+import { editieVoor } from "./edities";
+import { KaartRaster } from "./components/KaartRaster";
+import { KaartPreview } from "./components/KaartPreview";
+import { FutKaartDefs } from "@/features/rating/components/FutKaart";
 import { TierProgressBanner } from "./components/TierProgressBanner";
 import { useDictatorAnthem } from "./useDictatorAnthem";
 import kmAnthem from "@/features/dictator/components/km_dictator_anthem.mp3";
@@ -76,7 +81,7 @@ import { RankList } from "./components/RankList";
 import type { Match, PlayerStanding, Profile, RatingPoint, TeamStanding } from "@/types";
 import "./Leaderboard.css";
 
-type Tab = "player" | "team" | "divisies";
+type Tab = "player" | "team" | "divisies" | "kaarten";
 
 // Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
 // mount van het klassement pakt de volgende buig-regel, zodat opeenvolgende
@@ -463,7 +468,10 @@ export function Leaderboard() {
       : tab === "team"
         ? teams.error
         : players.error;
-  const showPodium = tab === "player" && !loading && !error && rows.length >= 3;
+  // De Kaarten-tab (#497) is een tweede gezicht van het spelersklassement:
+  // podium, troon en coach gedragen zich er hetzelfde als op de Spelers-tab.
+  const spelerTab = tab === "player" || tab === "kaarten";
+  const showPodium = spelerTab && !loading && !error && rows.length >= 3;
 
   // Kampioensbanner: de nummer 1 van een volledig afgesloten kwartaal.
   const champion =
@@ -555,7 +563,7 @@ export function Leaderboard() {
   // bij verstek (#530). Hij zit er "in absentia" boven, dus de echte #1 blijft
   // gewoon op het podium staan — mét z'n Big Daddy-kroon.
   const canThrone =
-    tab === "player" &&
+    spelerTab &&
     !nq &&
     !loading &&
     !error &&
@@ -616,6 +624,21 @@ export function Leaderboard() {
       alive = false;
     };
   }, [toonWaarnemend]);
+  // Speciale edities (#497), alleen op de live stand (een archief of
+  // tijdmachine heeft geen "deze week"): Icon voor de Big Daddy (#1, en die
+  // bestaat alleen zonder échte dictator op de troon — anders begint het volk
+  // bij #2, zonder kroon) en In-Form voor de speler van de week.
+  const inForm = useMemo(
+    () => (usingScope ? null : spelerVanDeWeek(hmap)),
+    [usingScope, hmap],
+  );
+  const iconKey =
+    !usingScope && spelerTab && !throneRow && rankedRows[0]?.rating != null
+      ? rankedRows[0].key
+      : null;
+  // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
+  const [preview, setPreview] = useState<Row | null>(null);
+
   const matchesName = (r: Row) =>
     r.name.toLowerCase().includes(nq) ||
     (r.profile?.username?.toLowerCase().includes(nq) ?? false);
@@ -642,12 +665,15 @@ export function Leaderboard() {
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
         <p className="page-subtitle">
-          {tab === "player"
-            ? "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
-            : "Vaste duo's gesorteerd op pure puntenheerschappij."}
+          {tab === "kaarten"
+            ? "De hele club als kaartenwand — tik op een kaart voor de close-up."
+            : tab === "player"
+              ? "Wie is de koning en wie is het slofje? Puur gesorteerd op rating."
+              : "Vaste duo's gesorteerd op pure puntenheerschappij."}
         </p>
       </header>
 
+      <FutKaartDefs />
       <div className="lb-toolbar">
         <div className="tabs">
           <button
@@ -667,6 +693,12 @@ export function Leaderboard() {
             onClick={() => setTab("divisies")}
           >
             Divisies
+          </button>
+          <button
+            className={`tab ${tab === "kaarten" ? "is-active" : ""}`}
+            onClick={() => setTab("kaarten")}
+          >
+            🃏 Kaarten
           </button>
         </div>
 
@@ -962,17 +994,27 @@ export function Leaderboard() {
           <p className="empty">
             Geen speler in de ranglijst gevonden voor “{q.trim()}”.
           </p>
+        ) : tab === "kaarten" ? (
+          <KaartRaster
+            rows={visibleRows}
+            dictatorId={dictator.data?.profileId ?? null}
+            iconKey={iconKey}
+            inForm={inForm}
+            onPreview={setPreview}
+          />
         ) : (
           <div className="standings-switch">
             <StandingsTable
               rows={visibleRows}
               showForm={tab === "player"}
               meRef={meRowRef}
+              onPreview={tab === "player" ? setPreview : undefined}
             />
             <RankList
               rows={visibleRows}
               meRef={meItemRef}
               lead={tab === "player" ? "rating" : "points"}
+              onPreview={tab === "player" ? setPreview : undefined}
             />
           </div>
         )}
@@ -1011,6 +1053,16 @@ export function Leaderboard() {
         <button className="me-chip" onClick={scrollToMe}>
           Jouw positie · #{myRankIdx + 1}
         </button>
+      )}
+
+      {preview && (
+        <KaartPreview
+          row={preview}
+          dictatorId={dictator.data?.profileId ?? null}
+          editie={editieVoor(preview.key, iconKey, inForm)}
+          inForm={inForm}
+          onClose={() => setPreview(null)}
+        />
       )}
     </div>
   );

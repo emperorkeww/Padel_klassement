@@ -14,8 +14,13 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
-import { tierFor, tierTitle } from "@/features/rating/tiers";
+import { tierFor } from "@/features/rating/tiers";
 import { FormChips } from "@/features/rating/components/FormChips";
+import {
+  FutKaart,
+  FutKaartDefs,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import {
   chemie,
   CHEMIE_MATCH_LIMIT,
@@ -48,6 +53,7 @@ export function Lineup({
       <div className="card__head">
         <h2 className="card__title">Opstelling</h2>
       </div>
+      <FutKaartDefs />
       <div className="lineup__veld">
         <VeldLijnen />
         <Helft
@@ -189,11 +195,12 @@ function ChemieBadge({ chemie: c }: { chemie: Chemie }) {
   );
 }
 
-/** FUT-schildkaart: Elo groot, divisie-emoji, avatar en naam; het frame kleurt
- *  mee met de divisie van de speler (zelfde token-mapping als TierBadge.css).
- *  Tikken draait de kaart om (3D-flip, zoals in FUT) naar een achterkant met
- *  vorm en balans. De flip-knop is een onzichtbare overlay zodat de link op
- *  de achterkant een echte <Link> kan blijven (geen geneste interactie). */
+/** FUT-schildkaart in de opstelling (#495): de gedeelde FutKaart met de
+ *  standaard-voorkant en een vorm/balans-achterkant. Tikken draait de kaart
+ *  om (3D-flip, zoals in FUT). De flip-knop is een onzichtbare overlay zodat
+ *  de link op de achterkant een echte <Link> kan blijven (geen geneste
+ *  interactie). De "lineup-kaart"-klasse bindt de veld-maat (--kaart-breedte)
+ *  en de focus-ring aan de kaart. */
 function SpelerKaart({
   pid,
   profiel,
@@ -224,51 +231,42 @@ function SpelerKaart({
     setOoitOmgedraaid(true);
   };
   return (
-    <div
-      className={`lineup-kaart${tier ? ` lineup-kaart--${tier.key}` : ""}${omgedraaid ? " is-omgedraaid" : ""}`}
-    >
-      <div className="lineup-kaart__flipper">
-        <div className="lineup-kaart__zijde lineup-kaart__zijde--voor">
-          <button
-            type="button"
-            className="lineup-kaart__flip"
-            onClick={draai}
-            aria-expanded={omgedraaid}
-            aria-label={`Statistieken van ${naam}`}
-          />
-          <span className="lineup-kaart__vlak">
-            <span className="lineup-kaart__elo">{elo ?? "—"}</span>
-            <span className="lineup-kaart__elo-label">Elo</span>
-            {tier && (
-              <span className="lineup-kaart__tier" title={tierTitle(tier)}>
-                {tier.emoji}
-              </span>
-            )}
-            <span className="lineup-kaart__avatar">
-              <Avatar profile={profiel} size={44} />
-            </span>
-            <span className="lineup-kaart__naam">{naam}</span>
-          </span>
-        </div>
-        <div
-          className="lineup-kaart__zijde lineup-kaart__zijde--achter"
-          aria-hidden={!omgedraaid}
-        >
-          <button
-            type="button"
-            className="lineup-kaart__flip"
-            onClick={draai}
-            tabIndex={omgedraaid ? 0 : -1}
-            aria-label="Draai de kaart terug"
-          />
-          <span className="lineup-kaart__vlak lineup-kaart__vlak--stats">
-            {ooitOmgedraaid && (
-              <KaartStats pid={pid} profiel={profiel} actief={omgedraaid} />
-            )}
-          </span>
-        </div>
-      </div>
-    </div>
+    <FutKaart
+      className="lineup-kaart"
+      tier={tier}
+      omgedraaid={omgedraaid}
+      voorOverlay={
+        <button
+          type="button"
+          className="fut-kaart__flip"
+          onClick={draai}
+          aria-expanded={omgedraaid}
+          aria-label={`Statistieken van ${naam}`}
+        />
+      }
+      voor={
+        <FutKaartVoorkant
+          elo={elo}
+          tier={tier}
+          naam={naam}
+          avatar={<Avatar profile={profiel} size={48} />}
+        />
+      }
+      achterOverlay={
+        <button
+          type="button"
+          className="fut-kaart__flip"
+          onClick={draai}
+          tabIndex={omgedraaid ? 0 : -1}
+          aria-label="Draai de kaart terug"
+        />
+      }
+      achter={
+        ooitOmgedraaid && (
+          <KaartStats pid={pid} profiel={profiel} actief={omgedraaid} />
+        )
+      }
+    />
   );
 }
 
@@ -301,12 +299,12 @@ function KaartStats({
   const gespeeld = balans.W + balans.D + balans.L;
   return (
     <>
-      <span className="lineup-kaart__stats-rij">
-        <span className="lineup-kaart__stats-label">Vorm</span>
+      <span className="fut-kaart__stats-rij">
+        <span className="fut-kaart__stats-label">Vorm</span>
         {vorm.length > 0 ? <FormChips form={vorm} size="sm" /> : "—"}
       </span>
-      <span className="lineup-kaart__stats-rij">
-        <span className="lineup-kaart__stats-label">Balans</span>
+      <span className="fut-kaart__stats-rij">
+        <span className="fut-kaart__stats-label">Balans</span>
         <span
           aria-label={`${balans.W} winst, ${balans.D} gelijk, ${balans.L} verlies`}
         >
@@ -315,7 +313,7 @@ function KaartStats({
       </span>
       {profiel && (
         <Link
-          className="lineup-kaart__stats-link"
+          className="fut-kaart__stats-link"
           to={`/spelers/${pid}`}
           tabIndex={actief ? 0 : -1}
         >
@@ -356,7 +354,10 @@ function LineupUitleg() {
             </dt>
             <dd>
               Elo van de speler ná deze match (bij een geplande match: de
-              huidige rating). Het kader kleurt mee met zijn divisie.
+              huidige rating), met daaronder het sub-niveau als Romeins
+              cijfer. De kaart kleurt mee met zijn divisie en de vorm van de
+              bovenkant stijgt mee met de divisiegroep — de toptiers krijgen
+              een donkere special-kaart.
             </dd>
           </div>
           <div>

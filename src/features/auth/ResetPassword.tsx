@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { updateUser } from "./api";
 import { useAuth } from "./AuthProvider";
+import { authErrorMessage, passwordError, PASSWORD_RULE } from "./authErrors";
 import { BallIcon } from "@/ui/BallIcon";
 import "./LoginScreen.css";
 
@@ -18,9 +19,10 @@ export function ResetPassword() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setMessage("");
-    if (password.length < 6) {
+    const pwError = passwordError(password);
+    if (pwError) {
       setStatus("error");
-      setMessage("Wachtwoord: minstens 6 tekens.");
+      setMessage(pwError);
       return;
     }
     if (password !== confirm) {
@@ -32,7 +34,7 @@ export function ResetPassword() {
     const { error } = await updateUser({ password });
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(authErrorMessage(error));
       return;
     }
     setStatus("success");
@@ -79,6 +81,7 @@ export function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <span className="field__hint">{PASSWORD_RULE}</span>
             </label>
             <label className="field">
               <span className="field__label">Bevestig wachtwoord</span>

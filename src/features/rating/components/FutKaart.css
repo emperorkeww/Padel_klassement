@@ -1,0 +1,498 @@
+/* FUT-schildkaart (#495, gedeeld sinds #496): drie geclipte lagen — frame
+   (metaal-gradient) → liner (donkere binnenrand) → vlak — die alle drie
+   dezelfde schildclip uit FutKaartDefs dragen (een rand kan een clip-path
+   niet volgen, dus de lagen maken de rand). De bovenrand wisselt per
+   divisiegroep via --schild; de onderkant (met de punt op 50%/100%) is
+   overal identiek. De maat stuurt --fut-kw: alle typografie schaalt mee.
+   Callers leggen hun flip-knop als .fut-kaart__flip-overlay op de zijden. */
+.fut-kaart {
+  /* Zonder rating: neutraal grijs metaal. */
+  --tier: var(--ink-soft);
+  --tier-soft: var(--surface-2);
+  --schild: url(#fut-schild-notch);
+  /* Metaalvlak: de tierkleur gemixt richting warm wit. De kaart blijft een
+     "fysiek" licht kaartje met donkere inkt in béide thema's (zoals een echte
+     FUT-kaart); alleen de special-toptiers verderop zijn donker. */
+  --kaart-hi: color-mix(in srgb, var(--tier) 20%, #fdfbf6);
+  --kaart-mid: color-mix(in srgb, var(--tier) 46%, #f1eadb);
+  --kaart-lo: color-mix(in srgb, var(--tier) 62%, #d9cfba);
+  --kaart-ink: color-mix(in srgb, var(--tier) 52%, #1d1508);
+  --kaart-ink-soft: color-mix(in srgb, var(--tier) 58%, #4a3d26);
+  --kaart-lijn: color-mix(in srgb, var(--tier) 55%, #a8987a);
+  --fut-kw: 116px;
+  width: var(--fut-kw);
+  perspective: 600px;
+}
+.fut-kaart__flipper {
+  position: relative;
+  /* FUT-verhouding; zo houdt het schild overal dezelfde vorm. */
+  aspect-ratio: 100 / 139;
+  transform-style: preserve-3d;
+}
+.fut-kaart.is-omgedraaid .fut-kaart__flipper {
+  transform: rotateY(180deg);
+}
+.fut-kaart__zijde {
+  height: 100%;
+  padding: 3px;
+  clip-path: var(--schild);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--tier) 55%, #fff8e8) 0%,
+    color-mix(in srgb, var(--tier) 88%, #3a2f18) 42%,
+    color-mix(in srgb, var(--tier) 60%, #fff3d6) 68%,
+    color-mix(in srgb, var(--tier) 90%, #241b0c) 100%
+  );
+  filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
+  backface-visibility: hidden;
+}
+.fut-kaart__zijde--achter {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.fut-kaart__liner {
+  display: block;
+  height: 100%;
+  clip-path: var(--schild);
+  padding: 1.5px;
+  background: color-mix(in srgb, var(--tier) 70%, #211806);
+}
+/* Onzichtbare interactieknop over het hele vlak; links of andere knoppen op
+   het vlak leggen zichzelf erbóven met een eigen z-index. */
+.fut-kaart__flip {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.fut-kaart__flip:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--fut-focus, var(--accent));
+}
+/* Hover/focus: de kaart licht op en komt van de ondergrond — maakt meteen
+   duidelijk dat hij klikbaar is; de flip zelf draait vloeiend. Alleen mét
+   bewegingsvoorkeur; anders wisselt de kaart direct. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart {
+    transition:
+      transform 0.18s ease,
+      filter 0.18s ease;
+  }
+  .fut-kaart__flipper {
+    transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.1);
+  }
+  .fut-kaart:has(.fut-kaart__flip:hover),
+  .fut-kaart:has(.fut-kaart__flip:focus-visible) {
+    transform: translateY(-4px) scale(1.05);
+    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4));
+  }
+  .fut-kaart:has(.fut-kaart__flip:active) {
+    transform: translateY(-1px) scale(1.01);
+  }
+}
+.fut-kaart__vlak {
+  position: relative;
+  height: 100%;
+  clip-path: var(--schild);
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 255, 255, 0.5),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+  display: flex;
+  flex-direction: column;
+  /* De forse bodem houdt naamplaat en divisieregel boven de schildtaille
+     (de punt blijft leeg, zoals op echte FUT-kaarten); padding-% rekent
+     tegen de kaartbreedte, dus dit schaalt mee. */
+  padding: 12% 9% 24%;
+  color: var(--kaart-ink);
+}
+/* Sheen: één diagonale lichtbaan over het vlak, zoals op echte kaarten. */
+.fut-kaart__vlak::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 58%
+  );
+}
+.fut-kaart__boven {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 4%;
+  align-items: start;
+  flex: 1;
+}
+.fut-kaart__eloblok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding-bottom: 5px;
+  border-bottom: 1.5px solid var(--kaart-lijn);
+}
+.fut-kaart__elo {
+  font-family: var(--font-rounded);
+  font-size: calc(var(--fut-kw) * 0.2);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fut-kaart__sub {
+  font-size: calc(var(--fut-kw) * 0.085);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  color: var(--kaart-ink-soft);
+}
+.fut-kaart__tier {
+  font-size: calc(var(--fut-kw) * 0.115);
+  line-height: 1.4;
+}
+.fut-kaart__avatar {
+  justify-self: center;
+  align-self: center;
+  min-width: 0;
+}
+/* PlayStyles (#500): de ★-uitgelichte badges als kleine hex-chips vlak boven
+   de naamplaat — chemie-stijl icoontjes zoals in FC. De buitenlaag maakt de
+   rand (zelfde clip-truc als de kaartlagen); alles schaalt mee met --fut-kw. */
+.fut-kaart__playstyles {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--fut-kw) * 0.035);
+  margin-bottom: calc(var(--fut-kw) * 0.025);
+}
+.fut-kaart__playstyle {
+  width: calc(var(--fut-kw) * 0.16);
+  aspect-ratio: 0.88;
+  padding: 1.5px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--kaart-lijn);
+  display: inline-grid;
+}
+.fut-kaart__playstyle-vlak {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: color-mix(in srgb, var(--tier) 12%, #fdfbf6);
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--fut-kw) * 0.078);
+  line-height: 1;
+}
+/* Op de donkere special-kaarten een donker chipvlak, zodat de chips bij het
+   TOTW-vlak horen i.p.v. er als lichte stickers op te liggen. */
+.fut-kaart--legende .fut-kaart__playstyle-vlak,
+.fut-kaart--dictator .fut-kaart__playstyle-vlak {
+  background: color-mix(in srgb, var(--sp-diep-hi) 65%, #000);
+}
+
+.fut-kaart__naam {
+  margin-top: 5%;
+  text-align: center;
+  font-size: calc(var(--fut-kw) * 0.1);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 0 3px;
+  border-top: 1.5px solid var(--kaart-lijn);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--kaart-lijn) 55%, transparent);
+}
+.fut-kaart__divisie {
+  margin-top: 3px;
+  text-align: center;
+  font-size: calc(var(--fut-kw) * 0.068);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kaart-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Editie-regel (#497): onder de divisieregel, in de editie-kleur — de divisie
+   blijft leesbaar, de editie komt erbij. */
+.fut-kaart__editie {
+  margin-top: 3px;
+  text-align: center;
+  font-size: calc(var(--fut-kw) * 0.06);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--editie-kleur, var(--kaart-ink));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Achterkant: gecentreerd stats-vlak in de kaart-inktkleur; label bóven
+   waarde — naast elkaar past niet in de smalle kaart. */
+.fut-kaart__vlak--stats {
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: 12% 9%;
+}
+.fut-kaart__stats-rij {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: var(--fs-xs);
+  color: var(--kaart-ink);
+  white-space: nowrap;
+  max-width: 100%;
+}
+.fut-kaart__stats-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.58rem;
+  color: var(--kaart-ink-soft);
+}
+.fut-kaart__stats-link {
+  position: relative;
+  z-index: 2;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--kaart-ink);
+  text-decoration: none;
+  border: 1.5px solid var(--kaart-lijn);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.fut-kaart__stats-link:hover {
+  text-decoration: underline;
+}
+
+/* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
+.fut-kaart--slof {
+  --tier: var(--slof);
+  --tier-soft: var(--slof-soft);
+}
+.fut-kaart--karton {
+  --tier: var(--karton);
+  --tier-soft: var(--karton-soft);
+}
+.fut-kaart--hout {
+  --tier: var(--hout);
+  --tier-soft: var(--hout-soft);
+}
+.fut-kaart--brons {
+  --tier: var(--bronze);
+  --tier-soft: var(--bronze-soft);
+}
+.fut-kaart--zilver {
+  --tier: var(--silver);
+  --tier-soft: var(--silver-soft);
+}
+.fut-kaart--goud {
+  --tier: var(--gold);
+  --tier-soft: var(--gold-soft);
+}
+.fut-kaart--platina {
+  --tier: var(--platina);
+  --tier-soft: var(--platina-soft);
+}
+.fut-kaart--diamant {
+  --tier: var(--diamant);
+  --tier-soft: var(--diamant-soft);
+}
+.fut-kaart--meester {
+  --tier: var(--meester);
+  --tier-soft: var(--meester-soft);
+}
+.fut-kaart--legende {
+  --tier: var(--legende);
+  --tier-soft: var(--legende-soft);
+}
+.fut-kaart--dictator {
+  --tier: var(--dictator);
+  --tier-soft: var(--dictator-soft);
+}
+
+/* Bovenrand per divisiegroep (zoals de FUT-kaarttypes): instap vlak,
+   middenmoot kroon-notch (de default hierboven), subtop spitse vleugels;
+   de special-toptiers krijgen de kroon-crest in het special-blok. */
+.fut-kaart--slof,
+.fut-kaart--karton,
+.fut-kaart--hout {
+  --schild: url(#fut-schild-vlak);
+}
+.fut-kaart--platina,
+.fut-kaart--diamant,
+.fut-kaart--meester {
+  --schild: url(#fut-schild-punt);
+}
+
+/* Special-kaarten: GOAT en El Padelissimo als donkere FUT-special
+   (TOTW-stijl) — donker vlak, gloed en inkt in de glanskleur, kroon-crest
+   als bovenrand. De dictator draait op de troon-tokens; de GOAT-glans is de
+   vaste roze uit het donkere thema, leesbaar op het donkere vlak in beide
+   thema's. */
+.fut-kaart--legende,
+.fut-kaart--dictator {
+  --schild: url(#fut-schild-kroon);
+  --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
+  --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
+  --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
+}
+.fut-kaart--legende {
+  --sp-glans: #f7869f;
+  --sp-diep-hi: #3c1524;
+  --sp-diep: #24101a;
+}
+.fut-kaart--dictator {
+  --sp-glans: var(--dictator-gold);
+  --sp-diep-hi: var(--dictator-wine);
+  --sp-diep: var(--dictator-deep);
+}
+.fut-kaart--legende .fut-kaart__zijde,
+.fut-kaart--dictator .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--sp-glans) 85%, #fff) 0%,
+    color-mix(in srgb, var(--sp-glans) 55%, #201505) 45%,
+    color-mix(in srgb, var(--sp-glans) 92%, #fff8e0) 70%,
+    color-mix(in srgb, var(--sp-glans) 45%, #140d02) 100%
+  );
+}
+.fut-kaart--legende .fut-kaart__liner,
+.fut-kaart--dictator .fut-kaart__liner {
+  background: #0c0805;
+}
+.fut-kaart--legende .fut-kaart__vlak,
+.fut-kaart--dictator .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      color-mix(in srgb, var(--sp-glans) 40%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--sp-diep-hi) 0%,
+      var(--sp-diep) 60%,
+      #120a10 100%
+    );
+}
+.fut-kaart--legende .fut-kaart__vlak::before,
+.fut-kaart--dictator .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 240, 200, 0.14) 50%,
+    transparent 58%
+  );
+}
+
+/* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
+   van de divisie, de editie kleurt frame, vlak en inkt. */
+
+/* Icon (Big Daddy, de #1 van het klassement): wit-goud, zoals de
+   FUT-Icon-kaarten. */
+.fut-kaart--icon {
+  --kaart-hi: #fffdf8;
+  --kaart-mid: #faf3e0;
+  --kaart-lo: #efe0bb;
+  --kaart-ink: #6e5410;
+  --kaart-ink-soft: #96803f;
+  --kaart-lijn: #cbb26a;
+  --editie-kleur: #a8863a;
+}
+.fut-kaart--icon .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f9e9b3 0%,
+    #b8912f 42%,
+    #fff6d8 68%,
+    #7c611a 100%
+  );
+}
+.fut-kaart--icon .fut-kaart__liner {
+  background: #5c4a12;
+}
+.fut-kaart--icon .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 244, 200, 0.85),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+
+/* In-Form (speler van de week): navy-goud met een lopende shimmer. */
+.fut-kaart--inform {
+  --kaart-ink: #f2cf7d;
+  --kaart-ink-soft: #c9a95e;
+  --kaart-lijn: rgba(240, 199, 102, 0.45);
+  --editie-kleur: #f2cf7d;
+}
+.fut-kaart--inform .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f7dfa0 0%,
+    #8a6a1c 45%,
+    #ffe9ac 70%,
+    #4c390a 100%
+  );
+}
+.fut-kaart--inform .fut-kaart__liner {
+  background: #0a0c14;
+}
+.fut-kaart--inform .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      rgba(240, 199, 102, 0.28),
+      transparent 62%
+    ),
+    linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
+}
+.fut-kaart--inform .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 222, 140, 0.28) 50%,
+    transparent 62%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--inform .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 2.6s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-shimmer {
+    0% {
+      transform: translateX(-55%);
+    }
+    55%,
+    100% {
+      transform: translateX(55%);
+    }
+  }
+}

@@ -65,9 +65,6 @@ export function DictatorThrone({
 
   const frame = (
     <span className="dictator-throne__frame">
-      <span className="dictator-throne__insig">
-        {waarnemend ? "🐐 Generalissimo" : `🫡 ${DICTATOR_INSIGNE}`}
-      </span>
       <span className="dictator-throne__portrait">
         {image ? (
           <img className="dictator-throne__img" src={image} alt="" />
@@ -94,14 +91,7 @@ export function DictatorThrone({
               {DEFAULT_DICTATOR_LABEL}
             </span>
           ) : (
-            <>
-              <TierBadge rating={rating} size="sm" />
-              {sinds && (
-                <span className="dictator-throne__sinds">
-                  regeert sinds {formatDate(sinds)}
-                </span>
-              )}
-            </>
+            <TierBadge rating={rating} size="sm" />
           )}
         </span>
       </span>
@@ -118,27 +108,35 @@ export function DictatorThrone({
       }
     >
       <span className="dictator-throne__beam" aria-hidden="true" />
-      {anthem &&
-        (anthem.blocked ? (
-          <button
-            type="button"
-            className="dictator-throne__anthem"
-            onClick={anthem.onStart}
-            title="Speel het volkslied"
-          >
-            🔊 Volkslied
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="dictator-throne__anthem"
-            onClick={anthem.onToggleMute}
-            aria-pressed={anthem.muted}
-            title={anthem.muted ? "Volkslied dempen staat aan" : "Volkslied dempen"}
-          >
-            {anthem.muted ? "🔇" : "🔊"}
-          </button>
-        ))}
+      {/* Topline (#609): insigne en volkslied-knop delen één grid-regel boven
+          het portret — het insigne zweeft niet langer over het kader en kan
+          per constructie niet meer met de knop botsen. */}
+      <span className="dictator-throne__topline">
+        <span className="dictator-throne__insig">
+          {waarnemend ? "🐐 Generalissimo" : `🫡 ${DICTATOR_INSIGNE}`}
+        </span>
+        {anthem &&
+          (anthem.blocked ? (
+            <button
+              type="button"
+              className="dictator-throne__anthem"
+              onClick={anthem.onStart}
+              title="Speel het volkslied"
+            >
+              🔊 Volkslied
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="dictator-throne__anthem"
+              onClick={anthem.onToggleMute}
+              aria-pressed={anthem.muted}
+              title={anthem.muted ? "Volkslied dempen staat aan" : "Volkslied dempen"}
+            >
+              {anthem.muted ? "🔇" : "🔊"}
+            </button>
+          ))}
+      </span>
       {link && !waarnemend ? (
         <Link className="dictator-throne__body" to={link}>
           {frame}
@@ -148,18 +146,27 @@ export function DictatorThrone({
       )}
       {!waarnemend && (
         <span className="dictator-throne__rate">
-          <span className="dictator-throne__rating">
-            {rating ?? "—"}
-            {delta != null && delta !== 0 && (
-              <span
-                className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}
-              >
-                {delta > 0 ? "▲" : "▼"}
-                {Math.abs(delta)}
-              </span>
-            )}
+          <span className="dictator-throne__score">
+            <span className="dictator-throne__rating">
+              {rating ?? "—"}
+              {delta != null && delta !== 0 && (
+                <span
+                  className={`stat__delta ${delta > 0 ? "is-up" : "is-down"}`}
+                >
+                  {delta > 0 ? "▲" : "▼"}
+                  {Math.abs(delta)}
+                </span>
+              )}
+            </span>
+            <span className="dictator-throne__rate-label">rating</span>
           </span>
-          <span className="dictator-throne__rate-label">rating</span>
+          {/* "regeert sinds" (#545) — sinds #609 hier als meta naast de rating,
+              zodat de nameplate op het portret niet dichtslibt. */}
+          {sinds && (
+            <span className="dictator-throne__sinds">
+              regeert sinds {formatDate(sinds)}
+            </span>
+          )}
         </span>
       )}
       {/* Eén korte slogan — de volle propaganda-toon staat in Coach Rudy's
