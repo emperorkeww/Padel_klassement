@@ -231,6 +231,7 @@ export function GroupLedenTab({
           {inviteUrl && (
             <input
               className="input invite-url"
+              aria-label="Uitnodigingslink"
               readOnly
               value={inviteUrl}
               onFocus={(e) => e.currentTarget.select()}
