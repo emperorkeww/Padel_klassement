@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
+import { PackOpening } from "@/features/standings/components/PackOpening";
 import { useStreakAnnouncement } from "@/features/standings/useStreakAnnouncement";
 import { useMissionCelebration } from "@/features/dashboard/useMissionCelebration";
 import { useOutboxFlush } from "@/features/matches/useOutbox";
@@ -67,8 +68,12 @@ export function DashboardLayout() {
   );
   const me = profile.data ?? null;
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
-  // je rating over een divisiegrens tilt.
-  useTierAnnouncement(myId, me?.roast_schild ?? false);
+  // je rating over een divisiegrens tilt. Een promotie komt sinds #500 als
+  // pack-opening (overlay onderaan deze layout); degradatie blijft een toast.
+  const { pack, sluitPack } = useTierAnnouncement(
+    myId,
+    me?.roast_schild ?? false,
+  );
   // Streak-mijlpaal (#300): één app-brede Rudy-toast zodra een winst-/verlies-
   // reeks precies 3, 5 of 10 raakt — jubel bij winst, sneer bij verlies.
   useStreakAnnouncement(myId, me?.roast_schild ?? false);
@@ -169,6 +174,16 @@ export function DashboardLayout() {
           </Suspense>
         </div>
       </main>
+
+      {/* Pack-opening bij hoofdtier-promotie (#500). */}
+      <PackOpening
+        pack={pack}
+        naam={me ? displayName(me) : ""}
+        avatar={
+          <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={76} />
+        }
+        onClose={sluitPack}
+      />
 
       {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}
       <nav className="tabbar" aria-label="Hoofdnavigatie">

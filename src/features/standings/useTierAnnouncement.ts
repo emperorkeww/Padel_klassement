@@ -1,11 +1,10 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
-import { celebrate } from "@/lib/utils/confetti";
-import { winPulse } from "@/lib/utils/haptics";
 import { tierChange } from "@/features/rating/tiers";
 import { coachTierQuip } from "@/features/coach/coachMoments";
+import type { PackData } from "./components/PackOpening";
 import { getRatingHistory } from "./ratingsApi";
 
 // Promotie/degradatie-aankondiging (#127). Client-side gedetecteerd uit de
@@ -13,6 +12,8 @@ import { getRatingHistory } from "./ratingsApi";
 // (zelfde transactie), dus de reload ziet het nieuwe punt — óók wanneer
 // iemand anders de uitslag invoerde. Bij het opslaan zelf is de nieuwe rating
 // nog niet bekend; daarom hangt dit hier en niet in de uitslag-flow.
+// Sinds #500 is een promotie geen toast meer maar een pack-opening: de hook
+// levert de PackData en de layout rendert het PackOpening-overlay.
 
 const flagKey = (userId: string) => `tier-announced:${userId}`;
 
@@ -32,9 +33,11 @@ function writeFlag(userId: string, matchId: string) {
   }
 }
 
-/** Meldt de eigen tier-wissel (toast; confetti bij hoofdtier-promotie) zodra
- *  een nieuwe uitslag de rating over een drempel tilt. Eén mount app-breed.
- *  `schild` is het eigen roast-schild: aan → een zachtere/neutrale Rudy-toast. */
+/** Meldt de eigen tier-wissel zodra een nieuwe uitslag de rating over een
+ *  drempel tilt: een hoofdtier-promotie als pack-opening (#500), een
+ *  degradatie als toast. Eén mount app-breed; de caller rendert
+ *  `<PackOpening pack={pack} onClose={sluitPack} …/>`.
+ *  `schild` is het eigen roast-schild: aan → een zachtere/neutrale Rudy-tekst. */
 export function useTierAnnouncement(myId: string, schild = false) {
   const history = useAsync(
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
@@ -42,6 +45,7 @@ export function useTierAnnouncement(myId: string, schild = false) {
   );
   useRealtime("matches", history.reload);
   const toast = useToast();
+  const [pack, setPack] = useState<PackData | null>(null);
 
   useEffect(() => {
     const points = history.data;
@@ -72,11 +76,14 @@ export function useTierAnnouncement(myId: string, schild = false) {
       ctx: { intensiteit: "gemeen", schild },
     });
     if (wissel.richting === "promotie") {
-      toast.success(zin);
-      celebrate();
-      winPulse();
+      // Pack-opening (#500): confetti en haptiek vuren pas op het moment dat
+      // de gebruiker het pack openscheurt, in de component zelf.
+      setPack({ wissel, rating: latest.rating_after, quip: zin });
     } else {
       toast.info(zin);
     }
   }, [history.data, myId, schild, toast]);
+
+  const sluitPack = useCallback(() => setPack(null), []);
+  return { pack, sluitPack };
 }
