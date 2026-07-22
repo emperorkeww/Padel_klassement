@@ -200,3 +200,20 @@ export function drawKaartSchild(
 
   return { fx, fy, fw, fh };
 }
+
+/**
+ * Laadt een afbeelding met crossOrigin="anonymous" zodat het canvas na het
+ * tekenen niet getaint raakt (nodig voor Supabase Storage-URL's, #618). Elke
+ * faaltak — geen url, laad-/CORS-fout — resolvet naar null, zodat de caller
+ * stil op een initialen-avatar kan terugvallen.
+ */
+export function laadAvatar(url: string | null): Promise<HTMLImageElement | null> {
+  if (!url) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}

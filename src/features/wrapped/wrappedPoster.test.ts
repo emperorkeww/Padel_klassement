@@ -102,4 +102,35 @@ describe("posterLayout", () => {
     expect(layout({ kind: "eindoordeel", stats: stats(50) }).hero).toBe("📋");
     expect(layout({ kind: "eindoordeel", stats: stats(null) }).hero).toBe("📋");
   });
+
+  it("seizoenskaart: naam als hero, jaarstats als sub — vooral een terugval voor de echte FUT-kaart", () => {
+    const vol = layout({
+      kind: "seizoenskaart",
+      naam: "Alice Anders",
+      rating: 1234,
+      tier: null,
+      avatarUrl: null,
+      maatje: { naam: "Bob", samen: 8 },
+      langsteReeks: { type: "winst", lengte: 5 },
+      aantalRoasts: 7,
+    });
+    expect(vol).toMatchObject({ kicker: "Seizoen 2025", hero: "Alice Anders", heroKlein: true });
+    expect(vol.sub).toEqual([
+      "🤝 Bob — 8x samen",
+      "🔥 5 op rij gewonnen",
+      "🎙️ 7× aan het woord dit Wrapped",
+    ]);
+
+    const zonder = layout({
+      kind: "seizoenskaart",
+      naam: "Alice Anders",
+      rating: null,
+      tier: null,
+      avatarUrl: null,
+      maatje: null,
+      langsteReeks: null,
+      aantalRoasts: 3,
+    });
+    expect(zonder.sub).toEqual(["🎙️ 3× aan het woord dit Wrapped"]);
+  });
 });

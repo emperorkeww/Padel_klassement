@@ -145,9 +145,10 @@ describe("deriveWrapped — varianten", () => {
     expect(w?.variant).toBe("vol");
     expect(w!.cards.length).toBeGreaterThanOrEqual(6);
     expect(w!.cards[0].kind).toBe("cover");
-    // Rudy's eindoordeel is de finale; de outro staat er direct vóór.
-    expect(w!.cards[w!.cards.length - 1].kind).toBe("eindoordeel");
-    expect(w!.cards[w!.cards.length - 2].kind).toBe("outro");
+    // De seizoenskaart is de finale; eindoordeel en outro staan er vóór.
+    expect(w!.cards[w!.cards.length - 1].kind).toBe("seizoenskaart");
+    expect(w!.cards[w!.cards.length - 2].kind).toBe("eindoordeel");
+    expect(w!.cards[w!.cards.length - 3].kind).toBe("outro");
 
     expect(kaart(w!.cards, "volume")).toMatchObject({ gespeeld: 6, gewonnen: 4, winrate: 67 });
     expect(kaart(w!.cards, "kalender")?.maand).toMatchObject({ label: "juni", aantal: 4 });
@@ -264,5 +265,44 @@ describe("deriveWrapped — kaartdetails", () => {
     // Zonder clubMatches geen badge-kaart, de rest blijft overeind.
     const zonder = derive(club);
     expect(kaart(zonder!.cards, "badge")).toBeUndefined();
+  });
+
+  it("seizoenskaart: sluit de volle variant af met rating/avatar en samengevatte stats", () => {
+    const matches = [
+      op("2025-05-03T10:00:00", { winner_team_id: "tB" }),
+      op("2025-05-10T10:00:00", { winner_team_id: "tB" }),
+      op("2025-06-07T10:00:00", { score_a: 6, score_b: 1 }),
+      op("2025-06-14T10:00:00"),
+      op("2025-06-14T19:00:00"),
+      op("2025-06-21T10:00:00"),
+    ];
+    const w = derive(matches, { rating: 1050, avatarUrl: "https://x.test/foto.png" });
+    expect(w?.variant).toBe("vol");
+    const seizoen = kaart(w!.cards, "seizoenskaart");
+    expect(seizoen).toMatchObject({
+      naam: "Speler 1",
+      rating: 1050,
+      avatarUrl: "https://x.test/foto.png",
+      maatje: { naam: "Speler 2", samen: 6 },
+      langsteReeks: { type: "winst", lengte: 4 },
+    });
+    expect(seizoen?.tier?.key).toBe("goud");
+    // Aantal roasts = elke kaart vóór de seizoenskaart (die krijgt in
+    // WrappedSheet stuk voor stuk een coach-regel), dus cards.length - 1.
+    expect(seizoen?.aantalRoasts).toBe(w!.cards.length - 1);
+
+    // Zonder rating/avatar blijft de kaart bestaan, met null-velden.
+    const zonderRating = derive(matches);
+    const seizoenZonder = kaart(zonderRating!.cards, "seizoenskaart");
+    expect(seizoenZonder).toMatchObject({ rating: null, tier: null, avatarUrl: null });
+  });
+
+  it("laat de seizoenskaart weg bij de korte variant", () => {
+    const w = derive([
+      op("2025-03-01T10:00:00"),
+      op("2025-03-08T10:00:00", { winner_team_id: "tB" }),
+    ]);
+    expect(w?.variant).toBe("kort");
+    expect(kaart(w!.cards, "seizoenskaart")).toBeUndefined();
   });
 });

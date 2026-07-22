@@ -4,6 +4,7 @@ import { errorMessage } from "@/lib/utils/errors";
 import { canvasPalette, ellipsize, sharePng } from "@/lib/utils/shareImage";
 import {
   drawKaartSchild,
+  laadAvatar,
   mix,
   rgba,
   schildVorm,
@@ -341,23 +342,6 @@ function draw(
   // Lime accentstreep onderaan.
   ctx.fillStyle = c.lime;
   ctx.fillRect(W / 2 - 80, H - 78, 160, 10);
-}
-
-/**
- * Laadt de profielfoto met crossOrigin="anonymous" zodat het canvas na het
- * tekenen niet getaint raakt (#618). Elke faaltak — geen url, laad-/CORS-fout —
- * resolvet naar null, waarna de kaart stil op de initialen-avatar terugvalt en
- * de deel-actie gewoon doorloopt.
- */
-function laadAvatar(url: string | null): Promise<HTMLImageElement | null> {
-  if (!url) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
 }
 
 export function ShareProfile({

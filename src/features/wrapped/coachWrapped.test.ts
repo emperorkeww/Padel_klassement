@@ -51,6 +51,22 @@ describe("coachWrappedRegel", () => {
     expect(coachWrappedRegel({ kind: "reeks", type: "verlies", lengte: 6 }, schild, SEED).mood).toBe("portret");
     expect(coachWrappedRegel({ kind: "rating", start: 1050, piek: 1050, eind: 1000 }, schild, SEED).mood).toBe("portret");
   });
+
+  it("seizoenskaart: een trotse regel voor de slotkaart", () => {
+    const card: WrappedCard = {
+      kind: "seizoenskaart",
+      naam: "Alice",
+      rating: 1200,
+      tier: null,
+      avatarUrl: null,
+      maatje: null,
+      langsteReeks: null,
+      aantalRoasts: 5,
+    };
+    const r = coachWrappedRegel(card, gemeen, SEED);
+    expect(r.tekst.length).toBeGreaterThan(0);
+    expect(r.mood).toBe("trots");
+  });
 });
 
 describe("coachEindoordeel", () => {
