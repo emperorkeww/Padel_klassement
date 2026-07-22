@@ -15,6 +15,7 @@
 //    optioneel SNAPSHOT_TENANT_ID voor een andere thuisclub.)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { cronGuard } from "../_shared/cronAuth.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -53,11 +54,9 @@ function addDays(date: string, n: number): string {
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 Deno.serve(async (req) => {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
-    return new Response(JSON.stringify({ error: "Geen toegang" }), {
-      status: 401,
-    });
-  }
+  // Fail-closed cron-guard (#460).
+  const denied = cronGuard(req, CRON_SECRET);
+  if (denied) return denied;
 
   // Aantal dagen vanaf vandaag; de cron stuurt {"days":2} (vers) of
   // {"days":7} (weeksweep). Clamp zodat een vreemde body nooit een burst

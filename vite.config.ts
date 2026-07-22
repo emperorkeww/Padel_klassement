@@ -119,6 +119,8 @@ export default defineConfig({
       "src/**/*.{test,spec}.{ts,tsx}",
       "worker/**/*.{test,spec}.js",
       "scripts/**/*.{test,spec}.mjs",
+      // Deno edge-function-helpers met pure logica (bv. cronAuth, #460).
+      "supabase/functions/**/*.{test,spec}.ts",
     ],
     coverage: {
       reporter: ["text", "html"],

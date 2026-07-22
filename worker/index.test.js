@@ -59,14 +59,17 @@ describe("Worker Playtomic-proxy", () => {
     // Geen gespoofte User-Agent meer.
     const headers = upstream.mock.calls[0][1]?.headers ?? {};
     expect(headers["User-Agent"]).toBeUndefined();
+    // Fallback naar playtomic.com: het gedeelde geheim mag hier niet heen (#466).
+    expect(headers["x-cron-secret"]).toBeUndefined();
   });
 
-  it("availability: fetcht via de egress-hop wanneer PLAYTOMIC_EGRESS is gezet", async () => {
+  it("availability: fetcht via de egress-hop met x-cron-secret wanneer PLAYTOMIC_EGRESS is gezet", async () => {
     const upstream = vi.fn(async () => new Response("[]", { status: 200 }));
     vi.stubGlobal("fetch", upstream);
     const env = {
       ...makeEnv(),
       PLAYTOMIC_EGRESS: "https://x.supabase.co/functions/v1/playtomic-availability",
+      CRON_SECRET: "topsecret",
     };
     const res = await worker.fetch(
       req("https://app.test/api/playtomic/api/clubs/availability?tenant_id=x&date=2026-07-02&sport_id=PADEL"),
@@ -78,6 +81,8 @@ describe("Worker Playtomic-proxy", () => {
     expect(String(upstream.mock.calls[0][0])).toBe(
       "https://x.supabase.co/functions/v1/playtomic-availability?tenant_id=x&date=2026-07-02&sport_id=PADEL",
     );
+    // …en met het gedeelde geheim als header, zodat de egressfunctie het accepteert (#466).
+    expect(upstream.mock.calls[0][1]?.headers?.["x-cron-secret"]).toBe("topsecret");
   });
 
   it("availability: cache-sleutel blijft canoniek — tweede verzoek is een edge-hit", async () => {

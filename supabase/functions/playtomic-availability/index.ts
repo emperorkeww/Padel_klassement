@@ -7,9 +7,16 @@
 // daadwerkelijke upstream-fetch via deze functie.
 //
 // Bewust smal gehouden: uitsluitend het availability-endpoint, met strikte
-// parametervalidatie. De functie draait zonder JWT-verificatie (de Worker is
-// een anonieme proxy), dus de validatie is de enige poort — géén generieke
-// doorgeefluik van paden of hosts.
+// parametervalidatie. De functie draait zonder JWT-verificatie (--no-verify-jwt),
+// maar is geen open proxy: de Worker stuurt het gedeelde CRON_SECRET mee als
+// 'x-cron-secret'. Zonder dat geheim geen toegang (#466) — anders omzeilt een
+// directe hit op deze URL de per-IP ratelimit + edge-cache van de Worker (#385).
+//
+// De check is fail-closed (#460): ontbreekt de secret in de omgeving, dan
+// weigeren we álles i.p.v. de poort open te zetten. CRON_SECRET is hetzelfde
+// geheim als de andere edge-functies (match-reminders, snapshot-availability e.a.).
+
+const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
 const UPSTREAM = "https://playtomic.com/api/clubs/availability";
 
@@ -20,6 +27,15 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
 Deno.serve(async (req) => {
+  // Fail-closed (#460, #466): ontbreekt het geheim of matcht de header niet,
+  // dan weigeren. Zo is de Worker de enige poort naar deze egress-hop.
+  if (!CRON_SECRET || req.headers.get("x-cron-secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "Geen toegang" }), {
+      status: 401,
+      headers: JSON_HEADERS,
+    });
+  }
+
   if (req.method !== "GET") {
     return new Response("Method Not Allowed", { status: 405 });
   }

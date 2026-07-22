@@ -45,6 +45,17 @@ const at = (iso: string) => new Date(iso).getTime();
 
 const noVotes: PollVote[] = [];
 
+function vote(overrides: Partial<PollVote> = {}): PollVote {
+  return {
+    option_id: "opt-1",
+    group_id: "g1",
+    player_id: "p1",
+    status: "yes",
+    updated_at: "2026-07-08T10:00:00Z",
+    ...overrides,
+  };
+}
+
 describe("pickPollBanner", () => {
   it("prijst een lopende open poll aan zolang er een moment te spelen valt", () => {
     const rows = [
@@ -66,7 +77,7 @@ describe("pickPollBanner", () => {
           option({ id: "opt-oud", poll_id: "oud", date: "2026-07-10" }),
           option({ id: "opt-b", poll_id: "geboekt", date: "2026-07-14" }),
         ],
-        votes: noVotes,
+        votes: [vote({ option_id: "opt-b" })],
       },
     ];
     // 2026-07-10 20:00 + 90 min + 30 min marge is voorbij → open poll telt niet meer.
@@ -82,12 +93,48 @@ describe("pickPollBanner", () => {
         group: group(),
         polls: [poll({ status: "booked", locked_option_id: "opt-1" })],
         options: [option()],
-        votes: noVotes,
+        votes: [vote({ option_id: "opt-1" })],
       },
     ];
     expect(pickPollBanner(rows, "p1", at("2026-07-10T19:59:00Z"))?.kind).toBe(
       "fixed", // net vóór slot-einde + marge nog wel
     );
     expect(pickPollBanner(rows, "p1", at("2026-07-10T20:01:00Z"))).toBeNull();
+  });
+
+  const fixedRows = (votes: PollVote[]) => [
+    {
+      group: group(),
+      polls: [poll({ status: "booked", locked_option_id: "opt-1" })],
+      options: [option()],
+      votes,
+    },
+  ];
+
+  it("toont de vastgelegde banner aan wie zich als 'kan' (yes) zette", () => {
+    const pick = pickPollBanner(
+      fixedRows([vote({ status: "yes" })]),
+      "p1",
+      at("2026-07-10T12:00:00Z"),
+    );
+    expect(pick?.kind).toBe("fixed");
+  });
+
+  it("verbergt de banner voor wie 'nee' of 'misschien' stemde", () => {
+    for (const status of ["no", "maybe"] as const) {
+      expect(
+        pickPollBanner(
+          fixedRows([vote({ status })]),
+          "p1",
+          at("2026-07-10T12:00:00Z"),
+        ),
+      ).toBeNull();
+    }
+  });
+
+  it("verbergt de banner voor wie helemaal niet stemde", () => {
+    expect(
+      pickPollBanner(fixedRows(noVotes), "p1", at("2026-07-10T12:00:00Z")),
+    ).toBeNull();
   });
 });

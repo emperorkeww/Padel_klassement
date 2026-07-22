@@ -22,6 +22,7 @@ import {
   type RoastIntensiteit,
   roastSeed,
 } from "../_shared/roast.ts";
+import { cronGuard } from "../_shared/cronAuth.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -96,13 +97,9 @@ async function pushTo(recipients: string[], payload: unknown): Promise<number> {
 }
 
 Deno.serve(async (req) => {
-  // Alleen aanroepbaar met het juiste cron-geheim.
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
-    return new Response(JSON.stringify({ error: "Niet toegestaan" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    });
-  }
+  // Alleen aanroepbaar met het juiste cron-geheim (fail-closed, #460).
+  const denied = cronGuard(req, CRON_SECRET);
+  if (denied) return denied;
 
   const now = Date.now();
   const until = new Date(now + REMINDER_HOURS * 3600_000).toISOString();
