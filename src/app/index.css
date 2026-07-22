@@ -128,6 +128,22 @@
   --bigdaddy-soft: #fce2ee;
   --bigdaddy-ink: #7d1f4d;
   --bigdaddy-text: #b23a74;
+  /* Big Daddy als FUT-kaartvlak (#625): dezelfde roze familie, maar als
+     "fysiek" kaartje — roze vlak, bordeaux-roze inkt en een frame dat goud
+     en roze afwisselt. Bewust gelijk in beide thema's, net als de andere
+     editie-kaarten (zie --dictator-gold hierboven). Gedeelde bron voor de
+     FUT-Icon-editie én straks de dashboard-hero (#613).
+     Contrast: kaart-ink op kaart-hi ≈ 7,5:1 (AAA), kaart-ink-soft op
+     kaart-mid ≈ 4,5:1 (AA). */
+  --bigdaddy-kaart-hi: #fff6fa;
+  --bigdaddy-kaart-mid: #fbdeed;
+  --bigdaddy-kaart-lo: #f2bcd7;
+  --bigdaddy-kaart-ink: #8c2f5a;
+  --bigdaddy-kaart-ink-soft: #a04a72;
+  --bigdaddy-kaart-lijn: #d989ae;
+  --bigdaddy-kaart-editie: #c2447c;
+  --bigdaddy-frame-goud: #c99a3f;
+  --bigdaddy-frame-roze: #dd6ba2;
 
   /* Feed-categoriekleuren (#232): coderen de filtercategorie (informatie, geen
      sier). Wonen hier zodat het één palet is, onder dezelfde contrast-CI. */
