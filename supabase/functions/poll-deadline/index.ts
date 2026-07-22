@@ -17,6 +17,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { cronGuard } from "../_shared/cronAuth.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -121,9 +122,9 @@ function fmtMoment(o: OptionRow): string {
 }
 
 Deno.serve(async (req) => {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
-    return new Response(JSON.stringify({ error: "Geen toegang" }), { status: 401 });
-  }
+  // Fail-closed cron-guard (#460).
+  const denied = cronGuard(req, CRON_SECRET);
+  if (denied) return denied;
 
   const now = Date.now();
   const result = { lastCall: 0, locked: 0, cancelled: 0, dayOf: 0 };
