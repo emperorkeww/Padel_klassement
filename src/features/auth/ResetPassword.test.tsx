@@ -32,7 +32,9 @@ describe("<ResetPassword />", () => {
     await userEvent.type(velden[0], "kort");
     await userEvent.type(velden[1], "kort");
     await userEvent.click(screen.getByRole("button", { name: /wachtwoord opslaan/i }));
-    expect(await screen.findByText(/minstens 6 tekens/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/kies een wachtwoord van minstens 6 tekens/i),
+    ).toBeInTheDocument();
 
     await userEvent.type(velden[0], "erbij-lang-genoeg");
     await userEvent.click(screen.getByRole("button", { name: /wachtwoord opslaan/i }));
@@ -52,6 +54,21 @@ describe("<ResetPassword />", () => {
       password: "nieuwgeheim",
     });
     expect(await screen.findByText(/wachtwoord gewijzigd/i)).toBeInTheDocument();
+  });
+
+  it("toont een NL-melding bij een serverfout (geen rauwe Supabase-tekst)", async () => {
+    (supabase.auth.updateUser as Mock).mockResolvedValueOnce({
+      error: { code: "same_password", message: "New password should be different" },
+    });
+    renderPage();
+    const velden = await screen.findAllByPlaceholderText("••••••••");
+    await userEvent.type(velden[0], "nieuwgeheim");
+    await userEvent.type(velden[1], "nieuwgeheim");
+    await userEvent.click(
+      screen.getByRole("button", { name: /wachtwoord opslaan/i }),
+    );
+    expect(await screen.findByText(/verschilt van je huidige/i)).toBeInTheDocument();
+    expect(screen.queryByText(/should be different/i)).not.toBeInTheDocument();
   });
 
   it("meldt een ongeldige herstellink zonder sessie", async () => {
