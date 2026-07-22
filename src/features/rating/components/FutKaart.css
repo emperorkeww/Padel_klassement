@@ -22,6 +22,29 @@
   --fut-kw: 116px;
   width: var(--fut-kw);
   perspective: 600px;
+  /* De kaart is zijn eigen inline-size-container (#625): zo kan de
+     compact-zetting hieronder op de échte kaartbreedte reageren, waar die
+     ook staat (veld, wand, preview, hero). */
+  container: fut-kaart / inline-size;
+}
+
+/* Compact-zetting (#625) voor de kleine maten — het veld (96–124px) en de
+   raster-wand (130px). Met chips én editie-regel tegelijk gevuld wordt het
+   vlak daar druk: de chips overlappen licht (FC-stijl), de editie-regel
+   zet een fractie kleiner en strakker, en het elo-blok geeft de avatar wat
+   lucht. Vanaf de preview-/hero-maat (≥150px) verandert er niets. */
+@container fut-kaart (max-width: 132px) {
+  .fut-kaart__boven {
+    column-gap: 2%;
+  }
+  .fut-kaart__playstyle:not(:first-child) {
+    margin-left: calc(var(--fut-kw) * -0.045);
+  }
+  .fut-kaart__editie {
+    margin-top: 2px;
+    font-size: calc(var(--fut-kw) * 0.055);
+    letter-spacing: 0.08em;
+  }
 }
 .fut-kaart__flipper {
   position: relative;
@@ -252,12 +275,16 @@
   gap: var(--sp-1);
   padding: 12% 9%;
 }
+/* De stats-maten schalen mee met --fut-kw (#625), met een leesbaarheids-
+   bodem voor de kleinste kaarten; op de preview-/hero-maten (≥150px) komt
+   de clamp exact op de oude rem-maten uit, dus daar verandert niets. Zo
+   houden voor- en achterkant op élke maat dezelfde typografie-verhouding. */
 .fut-kaart__stats-rij {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  font-size: var(--fs-xs);
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
   color: var(--kaart-ink);
   white-space: nowrap;
   max-width: 100%;
@@ -266,22 +293,33 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: 0.58rem;
+  font-size: clamp(7px, calc(var(--fut-kw) * 0.062), 0.58rem);
   color: var(--kaart-ink-soft);
 }
 .fut-kaart__stats-link {
   position: relative;
   z-index: 2;
-  font-size: var(--fs-xs);
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
   font-weight: 700;
   color: var(--kaart-ink);
   text-decoration: none;
   border: 1.5px solid var(--kaart-lijn);
   border-radius: 999px;
-  padding: 1px 10px;
+  padding: 1px clamp(6px, calc(var(--fut-kw) * 0.07), 10px);
 }
 .fut-kaart__stats-link:hover {
   text-decoration: underline;
+}
+/* De vorm-chips (FormChips --sm, vast 16px in ui.css) krimpen binnen het
+   stats-vlak mee: vijf vaste chips + gaps passen anders niet op de
+   veldmaat (96px − 18% padding ≈ 79px vlakbreedte). */
+.fut-kaart__vlak--stats .formchips--sm .formchip {
+  width: clamp(11px, calc(var(--fut-kw) * 0.107), 16px);
+  height: clamp(11px, calc(var(--fut-kw) * 0.107), 16px);
+  font-size: clamp(6.5px, calc(var(--fut-kw) * 0.06), 0.5625rem);
+}
+.fut-kaart__vlak--stats .formchips--sm {
+  gap: clamp(2px, calc(var(--fut-kw) * 0.027), 4px);
 }
 
 /* Divisie → kleurtokens; zelfde mapping als TierBadge.css. */
