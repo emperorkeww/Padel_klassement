@@ -408,34 +408,39 @@
 /* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
    van de divisie, de editie kleurt frame, vlak en inkt. */
 
-/* Icon (Big Daddy, de #1 van het klassement): wit-goud, zoals de
-   FUT-Icon-kaarten. */
+/* Icon (Big Daddy, de #1 van het klassement): roze/goud (#625). Het roze
+   vlak met bordeaux-roze inkt maakt de kaart in één oogopslag "de Big
+   Daddy" — los van de reguliere (goud)tiers en van In-Form; het frame
+   wisselt goud en roze af zodat de kroon-associatie blijft. De kleuren
+   komen uit de gedeelde --bigdaddy-kaart-tokens (index.css), dezelfde
+   familie als de Big Daddy-badge en straks de dashboard-hero (#613). */
 .fut-kaart--icon {
-  --kaart-hi: #fffdf8;
-  --kaart-mid: #faf3e0;
-  --kaart-lo: #efe0bb;
-  --kaart-ink: #6e5410;
-  --kaart-ink-soft: #96803f;
-  --kaart-lijn: #cbb26a;
-  --editie-kleur: #a8863a;
+  --kaart-hi: var(--bigdaddy-kaart-hi);
+  --kaart-mid: var(--bigdaddy-kaart-mid);
+  --kaart-lo: var(--bigdaddy-kaart-lo);
+  --kaart-ink: var(--bigdaddy-kaart-ink);
+  --kaart-ink-soft: var(--bigdaddy-kaart-ink-soft);
+  --kaart-lijn: var(--bigdaddy-kaart-lijn);
+  --editie-kleur: var(--bigdaddy-kaart-editie);
 }
 .fut-kaart--icon .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #f9e9b3 0%,
-    #b8912f 42%,
-    #fff6d8 68%,
-    #7c611a 100%
+    #f6d7a0 0%,
+    var(--bigdaddy-frame-roze) 38%,
+    #ffeef6 62%,
+    var(--bigdaddy-frame-goud) 82%,
+    #8f3560 100%
   );
 }
 .fut-kaart--icon .fut-kaart__liner {
-  background: #5c4a12;
+  background: #54203a;
 }
 .fut-kaart--icon .fut-kaart__vlak {
   background:
     radial-gradient(
       120% 55% at 50% -6%,
-      rgba(255, 244, 200, 0.85),
+      rgba(255, 226, 240, 0.9),
       transparent 62%
     ),
     linear-gradient(
@@ -446,7 +451,9 @@
     );
 }
 
-/* In-Form (speler van de week): navy-goud met een lopende shimmer. */
+/* In-Form (speler van de week): navy-goud met een lopende shimmer.
+   Beoordeeld bij #625: blijft zoals hij is — het donkere navy-vlak staat
+   ruim genoeg af van het lichte roze van de nieuwe Big Daddy. */
 .fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
