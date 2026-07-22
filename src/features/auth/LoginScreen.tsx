@@ -7,6 +7,7 @@ import {
   findProfileByUsername,
 } from "./api";
 import { useAuth } from "./AuthProvider";
+import { authErrorMessage, passwordError, PASSWORD_RULE } from "./authErrors";
 import { BallIcon } from "@/ui/BallIcon";
 import "./LoginScreen.css";
 
@@ -77,10 +78,18 @@ export function LoginScreen() {
 
     const cleanEmail = email.trim();
 
-    if (mode === "signup" && password !== confirm) {
-      setStatus("error");
-      setMessage("De wachtwoorden komen niet overeen.");
-      return;
+    if (mode === "signup") {
+      const pwError = passwordError(password);
+      if (pwError) {
+        setStatus("error");
+        setMessage(pwError);
+        return;
+      }
+      if (password !== confirm) {
+        setStatus("error");
+        setMessage("De wachtwoorden komen niet overeen.");
+        return;
+      }
     }
 
     if (mode === "signin") {
@@ -88,7 +97,7 @@ export function LoginScreen() {
         email: cleanEmail,
         password,
       });
-      if (error) return fail(error.message);
+      if (error) return fail(authErrorMessage(error));
       return done("Welkom terug!");
     }
 
@@ -103,7 +112,7 @@ export function LoginScreen() {
           },
         },
       });
-      if (error) return fail(error.message);
+      if (error) return fail(authErrorMessage(error));
       // Met e-mailbevestiging aan levert signUp géén sessie op: de speler moet
       // eerst de link in de bevestigingsmail openen. Alleen bij een directe
       // sessie klopt "je wordt ingelogd" (de redirect-useEffect vuurt dan).
@@ -121,7 +130,7 @@ export function LoginScreen() {
     const { error } = await resetPasswordForEmail(cleanEmail, {
       redirectTo: `${window.location.origin}/reset-wachtwoord`,
     });
-    if (error) return fail(error.message);
+    if (error) return fail(authErrorMessage(error));
     return done("We hebben je een herstellink gemaild.");
   }
 
@@ -155,7 +164,20 @@ export function LoginScreen() {
           <span className="login-brand__name">Vamos!</span>
         </div>
 
+        {isForgot && (
+          <button
+            type="button"
+            className="login-back"
+            onClick={() => switchMode("signin")}
+          >
+            ← Terug naar inloggen
+          </button>
+        )}
+
         <header className="login-head">
+          {isForgot && (
+            <span className="login-eyebrow">Wachtwoord vergeten</span>
+          )}
           <h1 className="login-title">
             {isForgot
               ? "Wachtwoord herstellen"
@@ -272,6 +294,9 @@ export function LoginScreen() {
                   {showPassword ? "Verberg" : "Toon"}
                 </button>
               </div>
+              {isSignup && (
+                <span className="field__hint">{PASSWORD_RULE}</span>
+              )}
             </label>
           )}
 
@@ -314,15 +339,7 @@ export function LoginScreen() {
         </form>
 
         <footer className="login-foot">
-          {isForgot ? (
-            <button
-              type="button"
-              className="login-link"
-              onClick={() => switchMode("signin")}
-            >
-              ← Terug naar inloggen
-            </button>
-          ) : isSignup ? (
+          {isForgot ? null : isSignup ? (
             <>
               Al lid?{" "}
               <button
