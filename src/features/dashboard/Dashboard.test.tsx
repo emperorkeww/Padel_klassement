@@ -121,6 +121,42 @@ describe("<Dashboard />", () => {
     ).toHaveAttribute("href", "/banen");
   });
 
+  it("stuurt de genereer-knop bij één groep direct naar de Spelen-tab (#73)", async () => {
+    renderPage();
+    const knop = await screen.findByRole("link", {
+      name: /wedstrijden genereren/i,
+    });
+    // Alice zit in precies één groep (g1): de knop lost zijn belofte in door
+    // rechtstreeks naar de genereer-tab van die groep te gaan, niet naar de
+    // groepenlijst.
+    expect(knop).toHaveAttribute("href", "/groepen/g1?tab=spelen");
+  });
+
+  it("toont zonder groep een 'maak een groep'-actie i.p.v. genereren (#73)", async () => {
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    fromMock.mockImplementation((table) =>
+      table === "groups" ? makeQuery({ data: [], error: null }) : orig(table),
+    );
+    try {
+      renderPage();
+      // Zonder groep is "genereren" een loze belofte: de knop wordt een
+      // eerlijke call-to-action die naar de groepenlijst leidt.
+      const knop = await screen.findByRole("link", { name: /maak een groep/i });
+      expect(knop).toHaveAttribute("href", "/groepen");
+      expect(
+        screen.queryByRole("link", { name: /wedstrijden genereren/i }),
+      ).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
+  });
+
   it("toont de lopende speeldag-poll prominent op het overzicht", async () => {
     renderPage();
     expect(
