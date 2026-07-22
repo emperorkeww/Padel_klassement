@@ -50,6 +50,7 @@ function renderLineup(overrides: Partial<Parameters<typeof Lineup>[0]> = {}) {
     ratings: RATINGS_MAP,
     matchesA: LINEUP_MATCHES as Match[],
     matchesB: LINEUP_MATCHES as Match[],
+    dictatorId: null as string | null,
     ...overrides,
   };
   return render(
@@ -147,5 +148,39 @@ describe("<Lineup />", () => {
     expect(
       container.querySelectorAll(".lineup__lijn--voorbeeld"),
     ).toHaveLength(4);
+  });
+
+  it("toont GOAT voor niet-dictator met dictator-band rating (#621)", () => {
+    // p1 heeft in de fixture een rating van 1012 (Wannabe), maar we overschrijven
+    // met een dictator-band rating (1600+) voor een niet-dictator.
+    const rating1600plus = {
+      ...RATINGS_MAP,
+      p1: { ...RATINGS_MAP.p1, rating: 1650 },
+    };
+    const { container } = renderLineup({
+      ratings: rating1600plus,
+      dictatorId: "p2", // p2 is de dictator, p1 niet
+    });
+    // p1 heeft rating 1650 maar is geen dictator → moet GOAT (legende) tonen,
+    // niet dictator. De kaart-kleur voor GOAT is "legende".
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--legende");
+    expect(p1Kaart).not.toHaveClass("fut-kaart--dictator");
+  });
+
+  it("toont dictator-special voor zittende dictator (#621)", () => {
+    // p1 is de dictator met een dictator-band rating
+    const rating1600plus = {
+      ...RATINGS_MAP,
+      p1: { ...RATINGS_MAP.p1, rating: 1650 },
+    };
+    const { container } = renderLineup({
+      ratings: rating1600plus,
+      dictatorId: "p1", // p1 is de dictator
+    });
+    // p1 heeft rating 1650 en IS de dictator → moet dictator-special tonen
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--dictator");
+    expect(p1Kaart).not.toHaveClass("fut-kaart--legende");
   });
 });
