@@ -14,8 +14,13 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
-import { tierFor, tierTitle } from "@/features/rating/tiers";
+import { tierFor } from "@/features/rating/tiers";
 import { FormChips } from "@/features/rating/components/FormChips";
+import {
+  FutKaart,
+  FutKaartDefs,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import {
   chemie,
   CHEMIE_MATCH_LIMIT,
@@ -48,7 +53,7 @@ export function Lineup({
       <div className="card__head">
         <h2 className="card__title">Opstelling</h2>
       </div>
-      <SchildDefs />
+      <FutKaartDefs />
       <div className="lineup__veld">
         <VeldLijnen />
         <Helft
@@ -74,32 +79,6 @@ export function Lineup({
       </div>
       <LineupUitleg />
     </section>
-  );
-}
-
-/** Schildvormen (#495): vier clipPaths met exact dezelfde onderkant (de punt
- *  op 50%/100% blijft het chemielijn-anker) en een bovenrand die oploopt met
- *  de divisiegroep — vlak, kroon-notch, spitse vleugels, kroon-crest.
- *  Lineup.css kiest per tier via de --schild-variabele. objectBoundingBox
- *  laat de paden meeschalen met elke kaartbreedte. */
-function SchildDefs() {
-  return (
-    <svg width="0" height="0" className="lineup__schilddefs" aria-hidden="true">
-      <defs>
-        <clipPath id="lineup-schild-vlak" clipPathUnits="objectBoundingBox">
-          <path d="M 0.04 0 L 0.96 0 L 1 0.055 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.055 Z" />
-        </clipPath>
-        <clipPath id="lineup-schild-notch" clipPathUnits="objectBoundingBox">
-          <path d="M 0.085 0 L 0.40 0 C 0.44 0 0.46 0.022 0.5 0.022 C 0.54 0.022 0.56 0 0.60 0 L 0.915 0 C 0.962 0 1 0.028 1 0.062 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.062 C 0 0.028 0.038 0 0.085 0 Z" />
-        </clipPath>
-        <clipPath id="lineup-schild-punt" clipPathUnits="objectBoundingBox">
-          <path d="M 0.035 0.01 L 0.44 0.04 C 0.47 0.042 0.48 0.058 0.5 0.058 C 0.52 0.058 0.53 0.042 0.56 0.04 L 0.965 0.01 L 1 0.075 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.075 Z" />
-        </clipPath>
-        <clipPath id="lineup-schild-kroon" clipPathUnits="objectBoundingBox">
-          <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
-        </clipPath>
-      </defs>
-    </svg>
   );
 }
 
@@ -216,14 +195,12 @@ function ChemieBadge({ chemie: c }: { chemie: Chemie }) {
   );
 }
 
-/** FUT-schildkaart (#495): Elo met sub-niveau (Romeins) en divisie-emoji
- *  links, avatar rechts, naam op de naamplaat en de divisienaam voluit
- *  eronder; het metaalvlak en frame kleuren mee met de divisie (zelfde
- *  token-mapping als TierBadge.css) en de bovenrand van het schild wisselt
- *  per divisiegroep (zie SchildDefs). Tikken draait de kaart om (3D-flip,
- *  zoals in FUT) naar een achterkant met vorm en balans. De flip-knop is een
- *  onzichtbare overlay zodat de link op de achterkant een echte <Link> kan
- *  blijven (geen geneste interactie). */
+/** FUT-schildkaart in de opstelling (#495): de gedeelde FutKaart met de
+ *  standaard-voorkant en een vorm/balans-achterkant. Tikken draait de kaart
+ *  om (3D-flip, zoals in FUT). De flip-knop is een onzichtbare overlay zodat
+ *  de link op de achterkant een echte <Link> kan blijven (geen geneste
+ *  interactie). De "lineup-kaart"-klasse bindt de veld-maat (--kaart-breedte)
+ *  en de focus-ring aan de kaart. */
 function SpelerKaart({
   pid,
   profiel,
@@ -254,67 +231,42 @@ function SpelerKaart({
     setOoitOmgedraaid(true);
   };
   return (
-    <div
-      className={`lineup-kaart${tier ? ` lineup-kaart--${tier.key}` : ""}${omgedraaid ? " is-omgedraaid" : ""}`}
-    >
-      <div className="lineup-kaart__flipper">
-        <div className="lineup-kaart__zijde lineup-kaart__zijde--voor">
-          <button
-            type="button"
-            className="lineup-kaart__flip"
-            onClick={draai}
-            aria-expanded={omgedraaid}
-            aria-label={`Statistieken van ${naam}`}
-          />
-          <span className="lineup-kaart__liner">
-            <span className="lineup-kaart__vlak">
-              <span className="lineup-kaart__boven">
-                <span className="lineup-kaart__eloblok">
-                  <span className="lineup-kaart__elo">{elo ?? "—"}</span>
-                  {tier?.subLabel && (
-                    <span className="lineup-kaart__sub">{tier.subLabel}</span>
-                  )}
-                  {tier && (
-                    <span
-                      className="lineup-kaart__tier"
-                      title={tierTitle(tier)}
-                    >
-                      {tier.emoji}
-                    </span>
-                  )}
-                </span>
-                <span className="lineup-kaart__avatar">
-                  <Avatar profile={profiel} size={48} />
-                </span>
-              </span>
-              <span className="lineup-kaart__naam">{naam}</span>
-              {tier && (
-                <span className="lineup-kaart__divisie">{tier.label}</span>
-              )}
-            </span>
-          </span>
-        </div>
-        <div
-          className="lineup-kaart__zijde lineup-kaart__zijde--achter"
-          aria-hidden={!omgedraaid}
-        >
-          <button
-            type="button"
-            className="lineup-kaart__flip"
-            onClick={draai}
-            tabIndex={omgedraaid ? 0 : -1}
-            aria-label="Draai de kaart terug"
-          />
-          <span className="lineup-kaart__liner">
-            <span className="lineup-kaart__vlak lineup-kaart__vlak--stats">
-              {ooitOmgedraaid && (
-                <KaartStats pid={pid} profiel={profiel} actief={omgedraaid} />
-              )}
-            </span>
-          </span>
-        </div>
-      </div>
-    </div>
+    <FutKaart
+      className="lineup-kaart"
+      tier={tier}
+      omgedraaid={omgedraaid}
+      voorOverlay={
+        <button
+          type="button"
+          className="fut-kaart__flip"
+          onClick={draai}
+          aria-expanded={omgedraaid}
+          aria-label={`Statistieken van ${naam}`}
+        />
+      }
+      voor={
+        <FutKaartVoorkant
+          elo={elo}
+          tier={tier}
+          naam={naam}
+          avatar={<Avatar profile={profiel} size={48} />}
+        />
+      }
+      achterOverlay={
+        <button
+          type="button"
+          className="fut-kaart__flip"
+          onClick={draai}
+          tabIndex={omgedraaid ? 0 : -1}
+          aria-label="Draai de kaart terug"
+        />
+      }
+      achter={
+        ooitOmgedraaid && (
+          <KaartStats pid={pid} profiel={profiel} actief={omgedraaid} />
+        )
+      }
+    />
   );
 }
 
@@ -347,12 +299,12 @@ function KaartStats({
   const gespeeld = balans.W + balans.D + balans.L;
   return (
     <>
-      <span className="lineup-kaart__stats-rij">
-        <span className="lineup-kaart__stats-label">Vorm</span>
+      <span className="fut-kaart__stats-rij">
+        <span className="fut-kaart__stats-label">Vorm</span>
         {vorm.length > 0 ? <FormChips form={vorm} size="sm" /> : "—"}
       </span>
-      <span className="lineup-kaart__stats-rij">
-        <span className="lineup-kaart__stats-label">Balans</span>
+      <span className="fut-kaart__stats-rij">
+        <span className="fut-kaart__stats-label">Balans</span>
         <span
           aria-label={`${balans.W} winst, ${balans.D} gelijk, ${balans.L} verlies`}
         >
@@ -361,7 +313,7 @@ function KaartStats({
       </span>
       {profiel && (
         <Link
-          className="lineup-kaart__stats-link"
+          className="fut-kaart__stats-link"
           to={`/spelers/${pid}`}
           tabIndex={actief ? 0 : -1}
         >
