@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "@/test/supabaseMock";
 import { TABLES, SESSION, TEAMS, PROFILES, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
@@ -363,5 +363,55 @@ describe("<Leaderboard />", () => {
     expect(await screen.findByText("Vaste duo's gesorteerd op pure puntenheerschappij.")).toBeInTheDocument();
     const teamHeaders = await screen.findAllByRole("columnheader");
     expect(teamHeaders[teamHeaders.length - 1]).toHaveTextContent(/punten/i);
+  });
+});
+
+describe("Kaarten-tab en kaart-preview (#497)", () => {
+  it("toont op de Kaarten-tab de kaartenwand met rang-munten en de Big Daddy als Icon", async () => {
+    const { container } = renderPage();
+    await screen.findAllByText(/alice anders/i);
+    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+    // Alle spelers als kaart, met een rang-munt; de #1 draagt goud.
+    expect(
+      container.querySelectorAll(".kaart-raster .fut-kaart").length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(container.querySelector(".kaart-raster__rang--1")).not.toBeNull();
+    // Mbappé regeert slechts in absentia (#530), dus de echte #1 blijft Big
+    // Daddy — en die krijgt de Icon-editie op zijn kaart.
+    expect(container.querySelector(".fut-kaart--icon")).not.toBeNull();
+    expect(
+      container.querySelector(".fut-kaart--icon .fut-kaart__editie"),
+    ).toHaveTextContent(/big daddy/i);
+  });
+
+  it("opent de kaart-preview vanaf een raster-kaart en sluit met Escape", async () => {
+    renderPage();
+    await screen.findAllByText(/alice anders/i);
+    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /fut-kaart van/i })[0],
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: /fut-kaart van/i,
+    });
+    expect(dialog).toBeInTheDocument();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(
+      screen.queryByRole("dialog", { name: /fut-kaart van/i }),
+    ).toBeNull();
+  });
+
+  it("opent de preview via de avatar-knop op de spelersrij, met profiel-link", async () => {
+    renderPage();
+    await screen.findAllByText(/alice anders/i);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /fut-kaart van alice/i })[0],
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: /fut-kaart van alice/i,
+    });
+    expect(
+      within(dialog).getByRole("link", { name: /profiel/i }),
+    ).toHaveAttribute("href", expect.stringContaining("/spelers/"));
   });
 });

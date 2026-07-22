@@ -13,11 +13,16 @@ export function RankList({
   rows,
   meRef,
   lead,
+  onPreview,
 }: {
   rows: Row[];
   meRef?: React.Ref<HTMLLIElement>;
   /** Welk getal groot staat: rating (spelers, #139) of punten (teams). */
   lead: "rating" | "points";
+  /** Kaart-preview (#497): mét deze callback opent een tik op de rij de
+   *  FUT-kaart (overlay-knop) en navigeert alleen de naam nog direct naar het
+   *  profiel; zonder blijft de hele rij de profiel-link. */
+  onPreview?: (row: Row) => void;
 }) {
   const flipRef = useFlip<HTMLOListElement>(rows.map((r) => r.key).join("|"));
   return (
@@ -28,6 +33,19 @@ export function RankList({
         // goud/zilver/brons minder (die volgorde is puur op punten).
         const topClass =
           lead === "rating" && rank <= 3 ? ` ranklist__row--top${rank}` : "";
+        const preview = onPreview && r.link ? onPreview : null;
+        const naam = preview && r.link ? (
+          <Link
+            className="ranklist__naamlink"
+            to={r.link}
+            viewTransition
+            onClick={primeAvatarMorph}
+          >
+            {r.name}
+          </Link>
+        ) : (
+          r.name
+        );
         const body = (
           <>
             <span className="rank-wrap ranklist__rank">
@@ -37,7 +55,7 @@ export function RankList({
             <Avatar profile={r.profile} name={r.name} size={40} />
             <span className="ranklist__main">
               <span className="ranklist__name">
-                {r.name}
+                {naam}
                 {r.isMe && <span className="badge badge--accent">jij</span>}
               </span>
               <span className="ranklist__meta">
@@ -81,7 +99,20 @@ export function RankList({
             ref={r.isMe ? meRef : undefined}
             className={`ranklist__row ${r.isMe ? "is-me" : ""}${topClass}`}
           >
-            {r.link ? (
+            {preview ? (
+              // Rij-tik = kaart-preview (overlay-knop); de naamlink erbóven
+              // blijft direct naar het profiel navigeren — zelfde
+              // overlay-recept als de flip-knop op de FutKaart.
+              <span className="ranklist__link ranklist__link--preview">
+                <button
+                  type="button"
+                  className="ranklist__kaartknop"
+                  onClick={() => preview(r)}
+                  aria-label={`FUT-kaart van ${r.name}`}
+                />
+                {body}
+              </span>
+            ) : r.link ? (
               <Link
                 className="ranklist__link"
                 to={r.link}

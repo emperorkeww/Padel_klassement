@@ -197,6 +197,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Editie-regel (#497): onder de divisieregel, in de editie-kleur — de divisie
+   blijft leesbaar, de editie komt erbij. */
+.fut-kaart__editie {
+  margin-top: 3px;
+  text-align: center;
+  font-size: calc(var(--fut-kw) * 0.06);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--editie-kleur, var(--kaart-ink));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Achterkant: gecentreerd stats-vlak in de kaart-inktkleur; label bóven
    waarde — naast elkaar past niet in de smalle kaart. */
@@ -357,4 +371,96 @@
     rgba(255, 240, 200, 0.14) 50%,
     transparent 58%
   );
+}
+
+/* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
+   van de divisie, de editie kleurt frame, vlak en inkt. */
+
+/* Icon (Big Daddy, de #1 van het klassement): wit-goud, zoals de
+   FUT-Icon-kaarten. */
+.fut-kaart--icon {
+  --kaart-hi: #fffdf8;
+  --kaart-mid: #faf3e0;
+  --kaart-lo: #efe0bb;
+  --kaart-ink: #6e5410;
+  --kaart-ink-soft: #96803f;
+  --kaart-lijn: #cbb26a;
+  --editie-kleur: #a8863a;
+}
+.fut-kaart--icon .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f9e9b3 0%,
+    #b8912f 42%,
+    #fff6d8 68%,
+    #7c611a 100%
+  );
+}
+.fut-kaart--icon .fut-kaart__liner {
+  background: #5c4a12;
+}
+.fut-kaart--icon .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 244, 200, 0.85),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+
+/* In-Form (speler van de week): navy-goud met een lopende shimmer. */
+.fut-kaart--inform {
+  --kaart-ink: #f2cf7d;
+  --kaart-ink-soft: #c9a95e;
+  --kaart-lijn: rgba(240, 199, 102, 0.45);
+  --editie-kleur: #f2cf7d;
+}
+.fut-kaart--inform .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f7dfa0 0%,
+    #8a6a1c 45%,
+    #ffe9ac 70%,
+    #4c390a 100%
+  );
+}
+.fut-kaart--inform .fut-kaart__liner {
+  background: #0a0c14;
+}
+.fut-kaart--inform .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      rgba(240, 199, 102, 0.28),
+      transparent 62%
+    ),
+    linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
+}
+.fut-kaart--inform .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 222, 140, 0.28) 50%,
+    transparent 62%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--inform .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 2.6s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-shimmer {
+    0% {
+      transform: translateX(-55%);
+    }
+    55%,
+    100% {
+      transform: translateX(55%);
+    }
+  }
 }
