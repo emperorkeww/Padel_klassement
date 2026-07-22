@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { editieLabel, editieVoor, iconKeyVoor } from "./edities";
+import {
+  EDITIE_PRIORITEIT,
+  editieLabel,
+  editieVoor,
+  iconKeyVoor,
+  type EditieContext,
+} from "./edities";
 import type { PlayerRating, PlayerStanding } from "@/types";
 
 const standing = (
@@ -28,20 +34,69 @@ const ratingsFor = (per: Record<string, number>): Record<string, PlayerRating> =
     ]),
   );
 
-describe("editieVoor / editieLabel (#497)", () => {
-  const inForm = { playerId: "p2", delta: 48, matches: 3 };
+const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
+  dictatorId: null,
+  iconKey: null,
+  kampioen: null,
+  inForm: null,
+  ...over,
+});
 
-  it("Icon wint van In-Form; anderen krijgen geen editie", () => {
-    expect(editieVoor("p1", "p1", inForm)).toBe("icon");
-    expect(editieVoor("p2", "p2", inForm)).toBe("icon");
-    expect(editieVoor("p2", "p1", inForm)).toBe("inform");
-    expect(editieVoor("p3", "p1", inForm)).toBeNull();
+const inForm = { playerId: "p2", delta: 48, matches: 3 };
+const kampioen = { playerId: "p3", seasonLabel: "Q2 2026" };
+
+describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
+  it("kent elke editie toe aan zijn drager", () => {
+    const c = ctx({ iconKey: "p1", kampioen, inForm });
+    expect(editieVoor("p1", c)).toBe("icon");
+    expect(editieVoor("p3", c)).toBe("kampioen");
+    expect(editieVoor("p2", c)).toBe("inform");
+    expect(editieVoor("p9", c)).toBeNull();
   });
 
+  it("volgt de prioriteit: icon > kampioen > inform, voor álle varianten", () => {
+    // Eén speler die alles tegelijk verdient: de lijst beslist.
+    const alles = ctx({
+      iconKey: "p1",
+      kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
+      inForm: { ...inForm, playerId: "p1" },
+    });
+    expect(editieVoor("p1", alles)).toBe(EDITIE_PRIORITEIT[0]);
+    // Zonder icon wint kampioen; zonder beide wint inform.
+    expect(
+      editieVoor("p1", { ...alles, iconKey: null }),
+    ).toBe("kampioen");
+    expect(
+      editieVoor("p1", { ...alles, iconKey: null, kampioen: null }),
+    ).toBe("inform");
+  });
+
+  it("geeft de zittende dictator nooit een editie (troonkaart is genoeg)", () => {
+    const c = ctx({
+      dictatorId: "p1",
+      iconKey: "p1",
+      kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
+      inForm: { ...inForm, playerId: "p1" },
+    });
+    expect(editieVoor("p1", c)).toBeNull();
+    // Andere spelers houden hun editie gewoon.
+    expect(editieVoor("p2", ctx({ dictatorId: "p1", inForm }))).toBe("inform");
+  });
+});
+
+describe("editieLabel (#497/#625)", () => {
   it("maakt de editie-regel voor op het kaartvlak", () => {
-    expect(editieLabel("icon", null)).toBe("👑 Big Daddy");
-    expect(editieLabel("inform", inForm)).toBe("⚡ In-Form · +48");
-    expect(editieLabel(null, inForm)).toBeNull();
+    expect(editieLabel("icon", ctx())).toBe("👑 Big Daddy");
+    expect(editieLabel("kampioen", ctx({ kampioen }))).toBe(
+      "🏆 Kampioen Q2 2026",
+    );
+    expect(editieLabel("inform", ctx({ inForm }))).toBe("⚡ In-Form · +48");
+    expect(editieLabel(null, ctx({ inForm }))).toBeNull();
+  });
+
+  it("valt defensief terug zonder contextdata", () => {
+    expect(editieLabel("kampioen", ctx())).toBe("🏆 Kampioen");
+    expect(editieLabel("inform", ctx())).toBe("⚡ In-Form");
   });
 });
 

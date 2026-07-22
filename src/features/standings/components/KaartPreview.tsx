@@ -15,25 +15,22 @@ import {
 } from "@/features/rating/components/FutKaart";
 import { featuredPlaystyles } from "@/features/profiles/badges";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
-import type { InForm } from "../spelerVanDeWeek";
-import { editieLabel, type Editie } from "../edities";
+import { editieLabel, editieVoor, type EditieContext } from "../edities";
 
 export function KaartPreview({
   row,
-  dictatorId,
-  editie,
-  inForm,
+  edities,
   onClose,
 }: {
   row: Row;
-  dictatorId: string | null;
-  editie: Editie;
-  inForm: InForm | null;
+  /** Editie- en dictator-context (#625): zelfde opbouw als het raster. */
+  edities: EditieContext;
   onClose: () => void;
 }) {
   const [omgedraaid, setOmgedraaid] = useState(false);
   const draai = () => setOmgedraaid((v) => !v);
-  const tier = tierForWeergave(row.rating, row.key === dictatorId);
+  const tier = tierForWeergave(row.rating, row.key === edities.dictatorId);
+  const editie = editieVoor(row.key, edities);
   const paneelRef = useRef<HTMLDivElement>(null);
 
   // Focus in de dialoog bij openen; terug naar de opener bij sluiten.
@@ -93,7 +90,7 @@ export function KaartPreview({
               avatar={
                 <Avatar profile={row.profile} name={row.name} size={64} />
               }
-              editie={editieLabel(editie, inForm)}
+              editie={editieLabel(editie, edities)}
               // PlayStyles (#500) ook in de preview (#621): dezelfde chips
               // als op de profielkaart.
               playstyles={featuredPlaystyles(row.profile?.featured_badges)}
