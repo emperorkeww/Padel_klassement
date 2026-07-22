@@ -10,15 +10,19 @@ import type { Tier, TierKey } from "@/features/rating/tiers";
 // donkere court-gloed, met klassement, vorm en topbadge eronder. Canvas kent
 // geen color-mix, dus de metaal- en inktkleuren worden hier in JS gemixt uit
 // de canvasPalette-tierkleuren met dezélfde verhoudingen als de CSS. De
-// avatar is bewust de initialen-variant: een externe profielfoto zou het
-// canvas tainten en daarmee sharePng breken. Zelfde deel-flow (sharePng)
-// als ShareChampion en ShareEvening.
+// profielfoto (#618) wordt vooraf met crossOrigin="anonymous" geladen en
+// cirkelvormig op de kaart getekend; Supabase Storage levert CORS-headers,
+// dus het canvas blijft schoon en sharePng blijft werken. Zonder foto of bij
+// een laadfout valt hij stil terug op de initialen-avatar. Zelfde deel-flow
+// (sharePng) als ShareChampion en ShareEvening.
 
 const W = 1080;
 const H = 1350;
 
 export type ProfileShareData = {
   name: string;
+  /** Publieke Supabase-Storage-URL van de profielfoto; null zonder foto. */
+  avatarUrl: string | null;
   rating: number | null;
   /** Divisie bij de rating (#127); null zonder rating. */
   tier: Tier | null;
@@ -163,6 +167,7 @@ function hueIndex(name: string): number {
 function drawKaart(
   ctx: CanvasRenderingContext2D,
   d: ProfileShareData,
+  avatarImg: HTMLImageElement | null,
   x: number,
   y: number,
   w: number,
@@ -294,21 +299,40 @@ function drawKaart(
   ctx.lineTo(ex + fw * 0.17, fy + fh * 0.41);
   ctx.stroke();
 
-  // Initialen-avatar rechts (geen foto: die zou het canvas tainten).
-  const hue = AVATAR_HUES[hueIndex(d.name)];
+  // Avatar rechts: de echte profielfoto cirkelvormig geclipt (#618), met de
+  // initialen-variant als terugval wanneer de foto ontbreekt of niet laadde.
   const ax = fx + fw * 0.67;
   const ay = fy + fh * 0.26;
   const ar = w * 0.185;
+  if (avatarImg) {
+    // Cover-fit: de foto vult de cirkel, overtollige randen worden geklipt.
+    const iw = avatarImg.naturalWidth || avatarImg.width;
+    const ih = avatarImg.naturalHeight || avatarImg.height;
+    const schaal = Math.max((ar * 2) / iw, (ar * 2) / ih);
+    const dw = iw * schaal;
+    const dh = ih * schaal;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(avatarImg, ax - dw / 2, ay - dh / 2, dw, dh);
+    ctx.restore();
+  } else {
+    const hue = AVATAR_HUES[hueIndex(d.name)];
+    ctx.beginPath();
+    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+    ctx.fillStyle = hue.bg;
+    ctx.fill();
+    ctx.fillStyle = hue.fg;
+    ctx.font = `800 ${Math.round(ar * 0.75)}px Outfit, system-ui, sans-serif`;
+    ctx.fillText(initials(d.name), ax, ay + ar * 0.27);
+  }
+  // Witte rand rondom beide varianten.
   ctx.beginPath();
   ctx.arc(ax, ay, ar, 0, Math.PI * 2);
-  ctx.fillStyle = hue.bg;
-  ctx.fill();
   ctx.lineWidth = 5;
   ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
   ctx.stroke();
-  ctx.fillStyle = hue.fg;
-  ctx.font = `800 ${Math.round(ar * 0.75)}px Outfit, system-ui, sans-serif`;
-  ctx.fillText(initials(d.name), ax, ay + ar * 0.27);
 
   // Naamplaat met dubbele hairline, daaronder de divisie voluit.
   const nY = fy + fh * 0.6;
@@ -343,7 +367,11 @@ function drawKaart(
   ctx.restore();
 }
 
-function draw(ctx: CanvasRenderingContext2D, d: ProfileShareData) {
+function draw(
+  ctx: CanvasRenderingContext2D,
+  d: ProfileShareData,
+  avatarImg: HTMLImageElement | null,
+) {
   const c = canvasPalette();
 
   // Donkere court-gloed als achtergrond (de kaart is de lichtbron) met een
@@ -378,7 +406,7 @@ function draw(ctx: CanvasRenderingContext2D, d: ProfileShareData) {
 
   // De kaart als blikvanger.
   const kaartW = 560;
-  drawKaart(ctx, d, (W - kaartW) / 2, 218, kaartW);
+  drawKaart(ctx, d, avatarImg, (W - kaartW) / 2, 218, kaartW);
 
   // Klassement en vorm naast elkaar onder de kaart.
   const statsY = 1108;
@@ -446,6 +474,23 @@ function draw(ctx: CanvasRenderingContext2D, d: ProfileShareData) {
   ctx.fillRect(W / 2 - 80, H - 78, 160, 10);
 }
 
+/**
+ * Laadt de profielfoto met crossOrigin="anonymous" zodat het canvas na het
+ * tekenen niet getaint raakt (#618). Elke faaltak — geen url, laad-/CORS-fout —
+ * resolvet naar null, waarna de kaart stil op de initialen-avatar terugvalt en
+ * de deel-actie gewoon doorloopt.
+ */
+function laadAvatar(url: string | null): Promise<HTMLImageElement | null> {
+  if (!url) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
 export function ShareProfile({
   data,
   label = "↗ Deel profiel",
@@ -459,7 +504,8 @@ export function ShareProfile({
   async function share() {
     setBusy(true);
     try {
-      const outcome = await sharePng((ctx) => draw(ctx, data), {
+      const avatarImg = await laadAvatar(data.avatarUrl);
+      const outcome = await sharePng((ctx) => draw(ctx, data, avatarImg), {
         width: W,
         height: H,
         filename: "vamos-profiel.png",
