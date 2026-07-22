@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
@@ -38,10 +39,37 @@ import {
 import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
+// De secties liggen sinds #70 achter tabs — één behapbaar blok per tab i.p.v.
+// alles onder elkaar. Zelfde tab-patroon als GroupDetail/PlayerProfile.
+type SettingsTab = "profiel" | "privacy" | "account";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
+  { id: "profiel", label: "Profiel" },
+  { id: "privacy", label: "Meldingen & privacy" },
+  { id: "account", label: "Account" },
+];
+
+function tabFrom(value: string | null): SettingsTab {
+  return SETTINGS_TABS.some((t) => t.id === value)
+    ? (value as SettingsTab)
+    : "profiel";
+}
+
 export function ProfileSettings() {
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
+
+  // Actieve tab in de URL (?tab=): deelbaar en refresh-bestendig. De default
+  // (profiel) laat de param weg, net als elders in de app.
+  const [params, setParams] = useSearchParams();
+  const tab = tabFrom(params.get("tab"));
+  function setTab(next: SettingsTab) {
+    const p = new URLSearchParams(params);
+    if (next === "profiel") p.delete("tab");
+    else p.set("tab", next);
+    setParams(p, { replace: true });
+  }
 
   if (profile.loading)
     return (
@@ -66,47 +94,73 @@ export function ProfileSettings() {
 
       <AccountNav />
 
-      <div className="grid grid--2">
-        <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-        <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-      </div>
-
-      <div className="grid grid--2">
-        <NotificationsCard userId={myId} />
-        <PrivacyCard userId={myId} />
-      </div>
-
-      <section className="card">
-        <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
-        <p className="card__subtitle">
-          Wie hij is en hoe je hem afstelt.
-        </p>
-        <CoachAbout />
-      </section>
-      <div className="grid grid--2">
-        <EmailCard currentEmail={user?.email ?? ""} />
-        <ThemeCard
-          userId={myId}
-          toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
-          dictatorPortret={profile.data?.dictator_portret ?? true}
-          onUpdated={profile.reload}
-        />
-      </div>
-      <PasswordCard email={user?.email ?? ""} />
-
-      <section className="card">
-        <div className="row-between">
-          <div>
-            <h2 className="card__title card__title--tight">Sessie</h2>
-            <p className="empty empty--bare">Ingelogd als {user?.email}</p>
-          </div>
-          <button className="btn btn--danger" onClick={() => signOut()}>
-            Uitloggen
+      <nav className="tabs" aria-label="Instellingen">
+        {SETTINGS_TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`tab ${tab === t.id ? "is-active" : ""}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
           </button>
-        </div>
-      </section>
+        ))}
+      </nav>
 
-      <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+      {tab === "profiel" && (
+        <>
+          <div className="grid grid--2">
+            <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+            <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+          </div>
+          <ThemeCard
+            userId={myId}
+            toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+            dictatorPortret={profile.data?.dictator_portret ?? true}
+            onUpdated={profile.reload}
+          />
+        </>
+      )}
+
+      {tab === "privacy" && (
+        <>
+          <div className="grid grid--2">
+            <NotificationsCard userId={myId} />
+            <PrivacyCard userId={myId} />
+          </div>
+          <section className="card">
+            <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+            <p className="card__subtitle">
+              Wie hij is en hoe je hem afstelt.
+            </p>
+            <CoachAbout />
+          </section>
+        </>
+      )}
+
+      {tab === "account" && (
+        <>
+          <div className="grid grid--2">
+            <EmailCard currentEmail={user?.email ?? ""} />
+            <PasswordCard email={user?.email ?? ""} />
+          </div>
+
+          <section className="card">
+            <div className="row-between">
+              <div>
+                <h2 className="card__title card__title--tight">Sessie</h2>
+                <p className="empty empty--bare">Ingelogd als {user?.email}</p>
+              </div>
+              <button className="btn btn--danger" onClick={() => signOut()}>
+                Uitloggen
+              </button>
+            </div>
+          </section>
+
+          <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+        </>
+      )}
     </div>
   );
 }
