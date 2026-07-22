@@ -17,7 +17,12 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
+  /* Centreert de kaart wanneer de identiteit eronder wrapt (smal scherm);
+     naast de groeiende body is er geen vrije ruimte, dus daar plakt hij links. */
   margin-inline: auto;
+}
+.profile-hero__body {
+  flex: 1 1 300px;
 }
 .profile-hero .fut-kaart {
   --fut-kw: clamp(170px, 52vw, 210px);
@@ -39,9 +44,9 @@
   border-top: 1.5px solid var(--kaart-lijn);
 }
 .profile-hero__progress {
-  font-size: calc(var(--fut-kw) * 0.058);
+  font-size: calc(var(--fut-kw) * 0.052);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-align: center;
   color: var(--kaart-ink-soft);
   max-width: 100%;
@@ -55,6 +60,11 @@
 }
 .profile-hero .fut-kaart__stats-label {
   font-size: calc(var(--fut-kw) * 0.055);
+}
+/* Lange divisienamen ("Eeuwige belofte III") passen op hero-maat nét niet
+   met de volle letterspatiëring — iets strakker i.p.v. afkappen. */
+.profile-hero .fut-kaart__divisie {
+  letter-spacing: 0.04em;
 }
 
 /* Klikbare profielfoto → vergroten (#572). De knop is enkel een transparante

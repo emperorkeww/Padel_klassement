@@ -167,6 +167,7 @@ function KaartStats({ d }: { d: ProfileData }) {
     if (o) balans[o]++;
   }
   const gespeeld = balans.W + balans.D + balans.L;
+  // `best` is de langste winreeks (longestStreak), niet de beste rating.
   const best = d.best ?? 0;
   const voortgang = d.tierVoortgang;
   return (
@@ -189,8 +190,8 @@ function KaartStats({ d }: { d: ProfileData }) {
           <span>{d.rank != null ? `#${d.rank}` : "—"}</span>
         </span>
         <span className="fut-kaart__stats-rij">
-          <span className="fut-kaart__stats-label">Beste</span>
-          <span>{best > 0 ? best : "—"}</span>
+          <span className="fut-kaart__stats-label">Topreeks</span>
+          <span>{best > 0 ? `${best} op rij` : "—"}</span>
         </span>
       </span>
       {voortgang?.volgende && voortgang.puntenNodig != null && (
