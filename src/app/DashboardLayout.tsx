@@ -4,7 +4,9 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { useTierAnnouncement } from "@/features/standings/useTierAnnouncement";
+import { useBadgeAnnouncement } from "@/features/standings/useBadgeAnnouncement";
 import { PackOpening } from "@/features/standings/components/PackOpening";
+import { featuredPlaystyles } from "@/features/profiles/badges";
 import { useStreakAnnouncement } from "@/features/standings/useStreakAnnouncement";
 import { useMissionCelebration } from "@/features/dashboard/useMissionCelebration";
 import { useOutboxFlush } from "@/features/matches/useOutbox";
@@ -70,10 +72,18 @@ export function DashboardLayout() {
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt. Een promotie komt sinds #500 als
   // pack-opening (overlay onderaan deze layout); degradatie blijft een toast.
-  const { pack, sluitPack } = useTierAnnouncement(
+  const { pack: tierPack, sluitPack } = useTierAnnouncement(
     myId,
     me?.roast_schild ?? false,
   );
+  // Zeldzame badge (#615): paars pack zodra een curated badge behaald raakt.
+  // Bij een botsing met een promotie uit dezelfde uitslag wint het gouden pack;
+  // de badge-hook houdt zijn pack vast, dus na "Verder" volgt het paarse.
+  const { pack: badgePack, sluitPack: sluitBadgePack } = useBadgeAnnouncement(
+    myId,
+    me?.roast_schild ?? false,
+  );
+  const pack = tierPack ?? badgePack;
   // Streak-mijlpaal (#300): één app-brede Rudy-toast zodra een winst-/verlies-
   // reeks precies 3, 5 of 10 raakt — jubel bij winst, sneer bij verlies.
   useStreakAnnouncement(myId, me?.roast_schild ?? false);
@@ -175,14 +185,15 @@ export function DashboardLayout() {
         </div>
       </main>
 
-      {/* Pack-opening bij hoofdtier-promotie (#500). */}
+      {/* Pack-opening bij hoofdtier-promotie (#500) of zeldzame badge (#615). */}
       <PackOpening
         pack={pack}
         naam={me ? displayName(me) : ""}
         avatar={
           <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={76} />
         }
-        onClose={sluitPack}
+        playstyles={featuredPlaystyles(me?.featured_badges)}
+        onClose={tierPack ? sluitPack : sluitBadgePack}
       />
 
       {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}

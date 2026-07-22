@@ -3,6 +3,7 @@ import {
   coachBriefing,
   coachMatchQuip,
   coachTierQuip,
+  coachBadgeQuip,
   coachStreakQuip,
   STREAK_MIJLPALEN,
   coachPreMatch,
@@ -211,6 +212,27 @@ describe("coachTierQuip", () => {
     expect(zin).toContain("Prof II");
     // Promotie is lof: geen kale/degradatie-toon, gewoon een promotie-regel.
     expect(zin.toLowerCase()).not.toContain("zakt");
+  });
+});
+
+describe("coachBadgeQuip (#615)", () => {
+  const badge = (over: Partial<Parameters<typeof coachBadgeQuip>[0]> = {}) =>
+    coachBadgeQuip({ badge: "💎 Perfectionist", seed: "m1", ctx: roast, ...over });
+
+  it("vervangt %badge% door emoji + naam", () => {
+    const zin = badge();
+    expect(zin).toContain("💎 Perfectionist");
+    expect(zin).not.toContain("%badge%");
+  });
+
+  it("is deterministisch per seed", () => {
+    expect(badge({ seed: "x" })).toBe(badge({ seed: "x" }));
+  });
+
+  it("schild tempert naar mild maar blokkeert de lof niet", () => {
+    const zin = badge({ ctx: schild });
+    expect(zin).toContain("💎 Perfectionist");
+    expect(zin).not.toBe(badge());
   });
 });
 

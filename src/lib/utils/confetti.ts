@@ -14,9 +14,15 @@ const CONFETTI_COLORS = [
   "#e6f5ee",
 ];
 
-function paletteColors(): string[] {
-  return CONFETTI_COLORS;
-}
+/** Paars palet voor het zeldzame-badge-pack (#615) — zelfde felle filosofie. */
+export const BADGE_CONFETTI = [
+  "#7c3aed",
+  "#a78bfa",
+  "#c4b5fd",
+  "#4f46e5",
+  "#8b5cf6",
+  "#ede9fe",
+] as const;
 
 const COUNT = 90;
 const DURATION = 1400; // ms
@@ -32,7 +38,7 @@ type Particle = {
   color: string;
 };
 
-export function celebrate() {
+export function celebrate(colors: readonly string[] = CONFETTI_COLORS) {
   if (prefersReducedMotion()) return;
 
   const canvas = document.createElement("canvas");
@@ -48,7 +54,6 @@ export function celebrate() {
 
   const w = window.innerWidth;
   const h = window.innerHeight;
-  const colors = paletteColors();
   // Burst vanuit het onderste midden, omhoog uitwaaierend.
   const particles: Particle[] = Array.from({ length: COUNT }, (_, i) => {
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
