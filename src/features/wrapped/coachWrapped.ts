@@ -167,6 +167,17 @@ const OUTRO = [
   "Einde van de terugblik. Laten we er volgend jaar weer tegenaan gaan.",
 ] as const;
 
+/** Seizoenskaart (#498): de FUT-schildkaart als slot van de presentatie, na
+ *  de outro en het eindoordeel — dus bewust een ander register dan die twee:
+ *  geen terugblik meer, maar het overhandigen van de kaart zelf. */
+const SEIZOENSKAART = [
+  "En hier is-ie dan: jouw eigen seizoenskaart. Zelfs ik geef toe dat dat er goed uitziet.",
+  "De officiële kaart van dit seizoen. Laminaat 'm, of gewoon delen — ik vind het allebei best.",
+  "Team of the Season, editie jouw naam. Verdiend, na dit hele verhaal.",
+  "Deze kaart is nu voor altijd van jou. Bewaar 'm goed, ik teken volgend jaar een nieuwe.",
+  "De collectible van het jaar. Draag 'm met dezelfde overtuiging als op de baan.",
+] as const;
+
 /**
  * Coach Rudy's regel + mood voor één Wrapped-kaart. Deterministisch op `seed`;
  * met een gedeelde `gebruikt`-set komt geen regel twee keer voor in één deck.
@@ -219,6 +230,8 @@ export function coachWrappedRegel(
       // De eindoordeel-kaart heeft z'n eigen generator (coachEindoordeel); dit
       // is enkel een veilige terugval als hij toch hierlangs komt.
       return { tekst: kies(OUTRO), mood: "portret" };
+    case "seizoenskaart":
+      return { tekst: kies(SEIZOENSKAART), mood: "trots" };
   }
 }
 

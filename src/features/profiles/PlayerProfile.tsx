@@ -495,6 +495,7 @@ export function PlayerProfile() {
           teams={tmap}
           profiles={pmap}
           ratingHistory={rhist}
+          rating={myRating}
           onClose={() => setWrappedOpen(false)}
         />
       )}

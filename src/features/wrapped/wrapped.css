@@ -169,3 +169,46 @@
 .wrapped-dot.is-active {
   background: var(--accent);
 }
+
+/* Seizoenskaart (#498): een echte FUT-schildkaart als slot van de
+   presentatie, met een eigen donkere court-groene/lime skin bovenop de
+   eigen divisie van de speler — bewust géén hergebruik van de witgouden
+   Icon- of marineblauwe In-Form-skin uit FutKaart.css, zodat de kaart
+   meteen als "Wrapped" leesbaar is en niet als een reguliere editie. */
+.wrapped-seizoenskaart {
+  --fut-kw: clamp(150px, 42vw, 190px);
+  --kaart-ink: #eafccb;
+  --kaart-ink-soft: #a9c97e;
+  --kaart-lijn: rgba(199, 230, 58, 0.5);
+  --editie-kleur: #c7e63a;
+}
+.wrapped-seizoenskaart .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #eafccb 0%,
+    #3c5a1c 42%,
+    #d7f28c 68%,
+    #1c2b0e 100%
+  );
+}
+.wrapped-seizoenskaart .fut-kaart__liner {
+  background: #0c1408;
+}
+.wrapped-seizoenskaart .fut-kaart__vlak {
+  background:
+    radial-gradient(130% 60% at 50% -8%, rgba(199, 230, 58, 0.32), transparent 62%),
+    linear-gradient(172deg, #14563e 0%, #0b241a 60%, #071510 100%);
+}
+.wrapped-seizoenskaart .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(234, 252, 203, 0.16) 50%,
+    transparent 58%
+  );
+}
+.wrapped-seizoenskaart__hint {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

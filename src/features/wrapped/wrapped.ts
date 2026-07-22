@@ -19,6 +19,7 @@ import {
 import { opponentExtremes } from "@/features/profiles/trends";
 import { bestPartner } from "@/features/profiles/headToHead";
 import { deriveBadges } from "@/features/profiles/badges";
+import { tierFor, type Tier } from "@/features/rating/tiers";
 
 /**
  * Het jaar waarvan het Wrapped nu beschikbaar is: vanaf 15 december het
@@ -88,7 +89,19 @@ export type WrappedCard =
   | { kind: "rating"; start: number; piek: number; eind: number }
   | { kind: "badge"; badgeId: string; naam: string; emoji: string; aantalSpelers: number }
   | { kind: "outro"; jaar: number; kort: boolean }
-  | { kind: "eindoordeel"; stats: WrappedJaarStats };
+  | { kind: "eindoordeel"; stats: WrappedJaarStats }
+  | {
+      kind: "seizoenskaart";
+      naam: string;
+      rating: number | null;
+      tier: Tier | null;
+      avatarUrl: string | null;
+      maatje: { naam: string; samen: number } | null;
+      langsteReeks: { type: "winst" | "verlies"; lengte: number } | null;
+      /** Aantal coach-regels dat Rudy dit Wrapped-verhaal liet vallen (geen
+       *  seizoenbrede roast-teller — die bestaat niet, #498). */
+      aantalRoasts: number;
+    };
 
 export interface WrappedData {
   jaar: number;
@@ -256,6 +269,10 @@ export function deriveWrapped(opts: {
   playerId: string;
   ratingHistory?: RatingPoint[];
   clubMatches?: Match[];
+  /** Huidige rating/avatar voor de seizoenskaart (#498); zonder blijft die
+   *  kaart's schild neutraal grijs resp. zonder foto — geen harde eis. */
+  rating?: number | null;
+  avatarUrl?: string | null;
 }): WrappedData | null {
   const { jaar, teams, profiles, playerId } = opts;
   const chrono = chronologisch(opts.matches);
@@ -282,9 +299,14 @@ export function deriveWrapped(opts: {
 
   const winst = longestStreak(jaarMatches, teams, playerId);
   const verlies = longestLossStreak(jaarMatches, teams, playerId);
-  if (winst >= 2) cards.push({ kind: "reeks", type: "winst", lengte: winst });
-  else if (verlies >= 3)
-    cards.push({ kind: "reeks", type: "verlies", lengte: verlies });
+  // Ook bewaard voor de seizoenskaart (#498), die dezelfde langste-reeks toont.
+  const langsteReeks: { type: "winst" | "verlies"; lengte: number } | null =
+    winst >= 2
+      ? { type: "winst", lengte: winst }
+      : verlies >= 3
+        ? { type: "verlies", lengte: verlies }
+        : null;
+  if (langsteReeks) cards.push({ kind: "reeks", ...langsteReeks });
 
   const maatje = bestPartner(jaarMatches, teams, playerId);
   if (maatje)
@@ -382,5 +404,23 @@ export function deriveWrapped(opts: {
     };
   }
   cards.push({ kind: "eindoordeel", stats: jaarStats });
+
+  // Seizoenskaart (#498): een echte FUT-schildkaart als slot, alleen op de
+  // volle variant — een korte Wrapped heeft te weinig verhaal voor een
+  // seizoenskaart. `aantalRoasts` telt de kaarten tot nu toe: elke daarvan
+  // kreeg in WrappedSheet een coach-regel (coachWrappedRegel/coachEindoordeel).
+  cards.push({
+    kind: "seizoenskaart",
+    naam,
+    rating: opts.rating ?? null,
+    tier: tierFor(opts.rating ?? null),
+    avatarUrl: opts.avatarUrl ?? null,
+    maatje: maatje
+      ? { naam: naamVan(profiles, maatje.partnerId), samen: maatje.samen }
+      : null,
+    langsteReeks,
+    aantalRoasts: cards.length,
+  });
+
   return { jaar, variant: "vol", cards, jaarStats };
 }
