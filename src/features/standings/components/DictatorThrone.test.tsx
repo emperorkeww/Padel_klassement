@@ -57,6 +57,26 @@ describe("<DictatorThrone /> (#528)", () => {
     const { container } = renderThrone();
     expect(container.querySelector(".dictator-throne__sinds")).toBeNull();
   });
+
+  it("zet het insigne in de topline en niet meer op het portret-kader (#609)", () => {
+    const { container } = renderThrone();
+    expect(
+      container.querySelector(".dictator-throne__topline .dictator-throne__insig"),
+    ).not.toBeNull();
+    expect(
+      container.querySelector(".dictator-throne__frame .dictator-throne__insig"),
+    ).toBeNull();
+  });
+
+  it("toont de ambtstermijn bij de rating i.p.v. op de nameplate (#609)", () => {
+    const { container } = renderThrone({ sinds: "2026-07-01T10:00:00Z" });
+    expect(
+      container.querySelector(".dictator-throne__rate .dictator-throne__sinds"),
+    ).not.toBeNull();
+    expect(
+      container.querySelector(".dictator-throne__plate .dictator-throne__sinds"),
+    ).toBeNull();
+  });
 });
 
 describe("<DictatorThrone /> — waarnemend (#530)", () => {
