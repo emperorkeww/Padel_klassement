@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { deriveBadges, featuredPlaystyles, REUZENDODER_DREMPEL } from "@/features/profiles/badges";
+import {
+  deriveBadges,
+  featuredPlaystyles,
+  REUZENDODER_DREMPEL,
+  ZELDZAME_BADGES,
+} from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
 import type { Match, PlayerRating, Team } from "@/types";
 
@@ -744,5 +749,20 @@ describe("featuredPlaystyles (#621)", () => {
     expect(featuredPlaystyles(null)).toEqual([]);
     expect(featuredPlaystyles(undefined)).toEqual([]);
     expect(featuredPlaystyles([])).toEqual([]);
+  });
+});
+
+describe("ZELDZAME_BADGES (#615)", () => {
+  it("bevat alleen ids die echt in de catalogus bestaan", () => {
+    const bekend = new Set(deriveBadges([], teams, "p1").map((b) => b.id));
+    for (const id of ZELDZAME_BADGES) {
+      expect(bekend.has(id), `onbekende zeldzame badge-id: ${id}`).toBe(true);
+    }
+  });
+
+  it("viert geen pech-badges", () => {
+    for (const id of ["pechvogel", "zwarte-reeks", "rampdag", "afgedroogd"]) {
+      expect(ZELDZAME_BADGES.has(id)).toBe(false);
+    }
   });
 });

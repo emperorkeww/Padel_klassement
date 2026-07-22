@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
-import type { RatingPoint } from "@/types";
+import type { Match, RatingPoint, Team } from "@/types";
 
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
@@ -14,14 +14,28 @@ vi.mock("@/lib/supabase/client", async () => {
 
 // De tier-aankondiging leest de eigen rating-historie; hier gemockt zodat we
 // per test een drempel-kruising kunnen opvoeren zonder de querycache te raken.
+// getPlayerRatings hoort erbij sinds de badge-aankondiging (#615) mee mount.
 vi.mock("../features/standings/ratingsApi", () => ({
   getRatingHistory: vi.fn().mockResolvedValue([]),
+  getPlayerRatings: vi.fn().mockResolvedValue({}),
 }));
-vi.mock("@/lib/utils/confetti", () => ({ celebrate: vi.fn() }));
+// De badge-aankondiging (#615) leest de eigen matches; gemockt om per test een
+// vers behaalde badge op te voeren zonder de querycache. De streak-/missie-
+// hooks delen deze functies en seeden dan gewoon stil mee.
+vi.mock("@/features/matches/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/matches/api")>()),
+  getPlayerMatches: vi.fn().mockResolvedValue([]),
+  getTeamsMap: vi.fn().mockResolvedValue({}),
+}));
+vi.mock("@/lib/utils/confetti", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/utils/confetti")>()),
+  celebrate: vi.fn(),
+}));
 
 import DashboardLayout from "@/app/DashboardLayout";
 import { supabase } from "@/lib/supabase/client";
-import { getRatingHistory } from "@/features/standings/ratingsApi";
+import { getRatingHistory, getPlayerRatings } from "@/features/standings/ratingsApi";
+import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { celebrate } from "@/lib/utils/confetti";
 
 // Node's globale localStorage (zonder --localstorage-file) is een kreupele
@@ -74,6 +88,9 @@ function renderShell() {
 beforeEach(() => {
   store = {};
   vi.mocked(getRatingHistory).mockReset().mockResolvedValue([]);
+  vi.mocked(getPlayerRatings).mockReset().mockResolvedValue({});
+  vi.mocked(getPlayerMatches).mockReset().mockResolvedValue([]);
+  vi.mocked(getTeamsMap).mockReset().mockResolvedValue({});
   vi.mocked(celebrate).mockClear();
 });
 
@@ -188,5 +205,139 @@ describe("tier-aankondiging (#127)", () => {
     // Seeded degradatie-quip (#299); toets op het deterministische tier-label.
     expect(await screen.findByText(/wannabe i\b/i)).toBeInTheDocument();
     expect(celebrate).not.toHaveBeenCalled();
+  });
+});
+
+// ── Zeldzame badge (#615) ───────────────────────────────────────────────────
+
+const badgeTeams: Record<string, Team> = {
+  tA: { id: "tA", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },
+  tB: { id: "tB", name: null, player1_id: "p3", player2_id: "p4", created_at: "" },
+};
+
+let matchSeq = 0;
+function uitslag(winner: "tA" | "tB"): Match {
+  matchSeq += 1;
+  const ts = new Date(Date.UTC(2026, 5, 1) + matchSeq * 60_000).toISOString();
+  return {
+    id: `bm${matchSeq}`,
+    team_a_id: "tA",
+    team_b_id: "tB",
+    status: "completed",
+    winner_team_id: winner,
+    played_at: ts,
+    created_by: null,
+    created_at: ts,
+    group_id: null,
+    round_number: null,
+    score_a: null,
+    score_b: null,
+    format: "2v2",
+  };
+}
+
+/** 3 verliezen + winst: p1 behaalt de zeldzame Comebackkoning (en o.a. de
+ *  niet-zeldzame Eerste overwinning). */
+const comebackMatches = () => [
+  uitslag("tB"),
+  uitslag("tB"),
+  uitslag("tB"),
+  uitslag("tA"),
+];
+
+const geseed = (ids: string[]) =>
+  window.localStorage.setItem("badges-announced:p1", JSON.stringify(ids));
+const badgeSet = (): string[] =>
+  JSON.parse(window.localStorage.getItem("badges-announced:p1") ?? "[]");
+
+describe("zeldzame badge (#615)", () => {
+  it("seedt bij het eerste bezoek de behaalde ids zonder pack", async () => {
+    vi.mocked(getPlayerMatches).mockResolvedValue(comebackMatches());
+    vi.mocked(getTeamsMap).mockResolvedValue(badgeTeams);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    await vi.waitFor(() =>
+      expect(badgeSet()).toContain("comebackkoning"),
+    );
+    expect(badgeSet()).toContain("eerste-overwinning");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("viert een vers behaalde zeldzame badge als paars pack", async () => {
+    geseed(["eerste-overwinning"]);
+    vi.mocked(getPlayerMatches).mockResolvedValue(comebackMatches());
+    vi.mocked(getTeamsMap).mockResolvedValue(badgeTeams);
+    renderShell();
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Zeldzame badge: Comebackkoning",
+    });
+    expect(dialog).toHaveClass("pack-opening--badge");
+    expect(badgeSet()).toContain("comebackkoning");
+    expect(celebrate).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open het pack" }));
+    expect(celebrate).toHaveBeenCalled();
+    expect(
+      await screen.findByText(/Zeldzame badge · 👑 Comebackkoning/, undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Verder" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("zwijgt bij een nieuwe niet-zeldzame badge maar noteert hem wel", async () => {
+    geseed([]);
+    vi.mocked(getPlayerMatches).mockResolvedValue([uitslag("tA")]);
+    vi.mocked(getTeamsMap).mockResolvedValue(badgeTeams);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    await vi.waitFor(() =>
+      expect(badgeSet()).toContain("eerste-overwinning"),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("viert een al aangekondigde badge niet opnieuw (dedup overleeft reload)", async () => {
+    geseed(["eerste-overwinning", "comebackkoning"]);
+    vi.mocked(getPlayerMatches).mockResolvedValue(comebackMatches());
+    vi.mocked(getTeamsMap).mockResolvedValue(badgeTeams);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    // De data is verwerkt zodra de set opnieuw is weggeschreven.
+    await vi.waitFor(() => expect(badgeSet()).toContain("comebackkoning"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("queuet achter een tier-promotie: eerst goud, na Verder paars", async () => {
+    window.localStorage.setItem("tier-announced:p1", "m-0");
+    geseed(["eerste-overwinning"]);
+    vi.mocked(getRatingHistory).mockResolvedValue([
+      pt("m-0", 1080, 1095),
+      pt("m-x", 1095, 1105),
+    ]);
+    vi.mocked(getPlayerMatches).mockResolvedValue(comebackMatches());
+    vi.mocked(getTeamsMap).mockResolvedValue(badgeTeams);
+    renderShell();
+
+    // Eerst het gouden promotie-pack.
+    const goud = await screen.findByRole("dialog", { name: /promotie naar/i });
+    expect(goud).not.toHaveClass("pack-opening--badge");
+    await userEvent.click(screen.getByRole("button", { name: "Open het pack" }));
+    await screen.findByText(/Promotie! Wannabe → Glazenwasser/, undefined, {
+      timeout: 3000,
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Verder" }));
+
+    // Meteen daarna het paarse badge-pack, opnieuw dicht.
+    const paars = await screen.findByRole("dialog", {
+      name: "Zeldzame badge: Comebackkoning",
+    });
+    expect(paars).toHaveClass("pack-opening--badge");
+    expect(
+      screen.getByRole("button", { name: "Open het pack" }),
+    ).toBeInTheDocument();
   });
 });

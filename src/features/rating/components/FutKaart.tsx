@@ -124,6 +124,7 @@ export function FutKaartVoorkant({
   naam,
   editie,
   playstyles,
+  nieuwPlaystyleId,
 }: {
   elo: number | null;
   tier: Tier | null;
@@ -132,6 +133,8 @@ export function FutKaartVoorkant({
   /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
   editie?: ReactNode;
   playstyles?: FutPlaystyle[];
+  /** Zojuist verdiende badge (#615): die chip pulseert in het pack-overlay. */
+  nieuwPlaystyleId?: string;
 }) {
   const chips = (playstyles ?? []).slice(0, MAX_PLAYSTYLES);
   return (
@@ -160,7 +163,9 @@ export function FutKaartVoorkant({
             <span
               key={b.id}
               role="listitem"
-              className="fut-kaart__playstyle"
+              className={`fut-kaart__playstyle${
+                b.id === nieuwPlaystyleId ? " fut-kaart__playstyle--nieuw" : ""
+              }`}
               title={b.naam}
               aria-label={b.naam}
             >

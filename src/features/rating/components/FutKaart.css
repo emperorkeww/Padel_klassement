@@ -224,6 +224,19 @@
 .fut-kaart--dictator .fut-kaart__playstyle-vlak {
   background: color-mix(in srgb, var(--sp-diep-hi) 65%, #000);
 }
+/* Zojuist verdiende badge in het pack-overlay (#615): pulseert 3× nadat de
+   kaart is opgekomen. De delay laat de pack-kaart-op-animatie eerst uitlopen. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart__playstyle--nieuw {
+    animation: fut-chip-puls 0.8s ease-in-out 0.85s 3;
+  }
+}
+@keyframes fut-chip-puls {
+  50% {
+    transform: scale(1.25);
+    filter: brightness(1.15);
+  }
+}
 
 .fut-kaart__naam {
   margin-top: 5%;

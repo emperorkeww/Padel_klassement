@@ -634,6 +634,50 @@ export function coachTierQuip(f: TierFeiten): string {
   return zin.replace("%tier%", f.tierLabel);
 }
 
+// ── Zeldzame badge: paars pack (#615) ───────────────────────────────────────
+// %badge% wordt door coachBadgeQuip vervangen door emoji + naam (bv.
+// "💎 Perfectionist"). Een badge is lof: het schild blokkeert niet, het
+// tempert alleen naar mild — zelfde afspraak als TIER_PROMOTIE.
+const BADGE_PACK: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "%badge% — die heeft lang niet iedereen. Netjes binnengehaald.",
+    "%badge% verdiend. Stilletjes knap, dat noteer ik.",
+    "Een zeldzame: %badge%. Mooi moment om even bij stil te staan.",
+    "%badge% is binnen. Rustig verdiend, blijvend bezit.",
+    "%badge% aan de muur. Een verzamelstuk, koester 'm.",
+  ],
+  gemeen: [
+    "%badge%! Die hangt bij bijna niemand aan de muur. Persconferentie waardig.",
+    "Zeldzaam spul: %badge%. Zelfs mijn notitieboekje krijgt er een gouden randje van.",
+    "%badge% gepakt! Dit soort trofeeën wint niemand per ongeluk — mijn tactiek dus.",
+    "%badge%! De vitrinekast moet worden uitgebreid, ik bel de aannemer.",
+    "Kijk aan: %badge%. De rest van de club mag heel jaloers komen kijken.",
+    "%badge% binnengesleept! Ik laat er een plakkaat van maken voor de kantine.",
+  ],
+  radioactief: [
+    "%badge%!!! De zeldzaamste vangst sinds mijn WK-selectie. Absoluut gigantisch.",
+    "%badge% VEROVERD! Ik bel Infantino, dit moet in het museum van de sport.",
+    "%badge%! Eén op de miljoen — mijn tactische bord staat spontaan in lichterlaaie.",
+    "%badge% GEHAALD! Vlag uit, volkslied aan, de kooi wordt herdoopt naar jou.",
+    "%badge%! Een relikwie van kosmische, radioactieve zeldzaamheid. Enorm.",
+  ],
+};
+
+export interface BadgeFeiten {
+  /** Emoji + naam van de badge (bv. "💎 Perfectionist"), vult %badge%. */
+  badge: string;
+  seed: string;
+  ctx: RoastCtx;
+}
+
+/** Coach-quip in het paarse pack bij een zeldzame badge (#615). */
+export function coachBadgeQuip(f: BadgeFeiten): string {
+  const seed = roastSeed("badge-pack", f.seed);
+  // Lof: schild blokkeert niet, tempert alleen tot mild.
+  const zin = kiesUniek(BADGE_PACK[f.ctx.schild ? "mild" : f.ctx.intensiteit], seed);
+  return zin.replaceAll("%badge%", f.badge);
+}
+
 // ── Winst-/verliesreeks-mijlpaal: 3/5/10 toast (#300) ───────────────────────
 // %n% wordt door coachStreakQuip vervangen door het reekscijfer (3, 5 of 10).
 // De toon loopt op mét de mijlpaal (3 < 5 < 10), niet met de groep-intensiteit:
