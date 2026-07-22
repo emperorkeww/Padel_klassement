@@ -46,13 +46,10 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Gedeeld geheim dat de Worker meestuurt als x-cron-secret naar de
-          # playtomic-availability egressfunctie (#466). De repo-secret heet
-          # PLAYTOMIC_CRON_SECRET (= dezelfde waarde als de Supabase-secret
-          # CRON_SECRET; zie known-courts.yml); de Worker-binding heet CRON_SECRET.
-          # Wrangler zet dit als Worker-secret bij elke deploy; het staat dus
-          # niet in wrangler.jsonc (dat is plaintext).
-          secrets: |
-            CRON_SECRET
-        env:
-          CRON_SECRET: ${{ secrets.PLAYTOMIC_CRON_SECRET }}
+          # NB: CRON_SECRET wordt NIET per deploy gezet (#466). wrangler-action's
+          # `secrets:`-invoer draait `wrangler secret bulk`, wat botst met de
+          # Worker-versions-modus (Cloudflare-fout 10215: "latest version isn't
+          # currently deployed"). Worker-secrets zijn persistent, dus zet het
+          # geheim één keer out-of-band en laat de deploy alleen code+assets doen:
+          #   npx wrangler secret put CRON_SECRET   # waarde = PLAYTOMIC_CRON_SECRET
+          # De Worker leest env.CRON_SECRET; het geheim blijft over deploys heen bestaan.
