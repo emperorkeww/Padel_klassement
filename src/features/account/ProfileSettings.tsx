@@ -94,7 +94,7 @@ export function ProfileSettings() {
 
       <AccountNav />
 
-      <nav className="tabs" aria-label="Instellingen">
+      <nav className="tabs settings-tabs" aria-label="Instellingen">
         {SETTINGS_TABS.map((t) => (
           <button
             key={t.id}
