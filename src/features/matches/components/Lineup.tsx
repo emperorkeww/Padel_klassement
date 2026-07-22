@@ -15,8 +15,11 @@ import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
 import { tierForWeergave } from "@/features/rating/tiers";
-import { editieLabel, editieVoor } from "@/features/standings/edities";
-import type { InForm } from "@/features/standings/spelerVanDeWeek";
+import {
+  editieLabel,
+  editieVoor,
+  type EditieContext,
+} from "@/features/standings/edities";
 import { featuredPlaystyles } from "@/features/profiles/badges";
 import { FormChips } from "@/features/rating/components/FormChips";
 import {
@@ -41,9 +44,7 @@ export function Lineup({
   ratings,
   matchesA,
   matchesB,
-  dictatorId,
-  iconKey = null,
-  inForm = null,
+  edities,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -53,12 +54,9 @@ export function Lineup({
   /** Recente matches van (een speler van) team A resp. B — voedt de chemie. */
   matchesA: Match[];
   matchesB: Match[];
-  /** Zittende dictator (#545): alleen hij draagt de dictator-special op het veld. */
-  dictatorId: string | null;
-  /** Speler met de Icon-editie (Big Daddy, #621) — null zonder Big Daddy. */
-  iconKey?: string | null;
-  /** Speler van de week (In-Form, #621) — null zonder speler van de week. */
-  inForm?: InForm | null;
+  /** Editie- en dictator-context (#545/#621/#625): overal identiek
+   *  opgebouwd, zodat de kaart op het veld dezelfde is als elders. */
+  edities: EditieContext;
 }) {
   return (
     <section className="card lineup">
@@ -77,9 +75,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
-          dictatorId={dictatorId}
-          iconKey={iconKey}
-          inForm={inForm}
+          edities={edities}
         />
         <Helft
           side="b"
@@ -90,9 +86,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
-          dictatorId={dictatorId}
-          iconKey={iconKey}
-          inForm={inForm}
+          edities={edities}
         />
       </div>
       <LineupUitleg />
@@ -133,9 +127,7 @@ function Helft({
   histories,
   ratings,
   matchId,
-  dictatorId,
-  iconKey,
-  inForm,
+  edities,
 }: {
   side: "a" | "b";
   team: Team | undefined;
@@ -145,9 +137,7 @@ function Helft({
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
-  dictatorId: string | null;
-  iconKey: string | null;
-  inForm: InForm | null;
+  edities: EditieContext;
 }) {
   const spelers = playersOf(team);
   const duo = spelers.length === 2;
@@ -166,9 +156,7 @@ function Helft({
             histories={histories}
             ratings={ratings}
             matchId={matchId}
-            dictatorId={dictatorId}
-            iconKey={iconKey}
-            inForm={inForm}
+            edities={edities}
           />
         ))}
       </div>
@@ -234,18 +222,14 @@ function SpelerKaart({
   histories,
   ratings,
   matchId,
-  dictatorId,
-  iconKey,
-  inForm,
+  edities,
 }: {
   pid: string;
   profiel: Profile | undefined;
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
-  dictatorId: string | null;
-  iconKey: string | null;
-  inForm: InForm | null;
+  edities: EditieContext;
 }) {
   const [omgedraaid, setOmgedraaid] = useState(false);
   // Eenmaal omgedraaid blijft de achterkant gemount, zodat hij tijdens het
@@ -260,11 +244,11 @@ function SpelerKaart({
   // Weergave-tier (#545/#621): buiten De Troon draagt niemand de dictator-special.
   // Alleen de zittende dictator toont de troon-kaart; overige 1600+-spelers
   // zakken visueel naar GOAT voor consistentie met klassement en profiel.
-  const isDictator = pid === dictatorId;
+  const isDictator = pid === edities.dictatorId;
   const tier = tierForWeergave(elo, isDictator);
-  // Editie (#497/#621): dezelfde Icon/In-Form-rand als op klassement en
-  // profiel — de kaart van een speler is overal dezelfde.
-  const editie = editieVoor(pid, iconKey, inForm);
+  // Editie (#497/#621/#625): dezelfde rand als op klassement en profiel —
+  // de kaart van een speler is overal dezelfde.
+  const editie = editieVoor(pid, edities);
   const naam = profiel ? displayName(profiel) : "Onbekend";
   const draai = () => {
     setOmgedraaid((v) => !v);
@@ -291,7 +275,7 @@ function SpelerKaart({
           tier={tier}
           naam={naam}
           avatar={<Avatar profile={profiel} size={48} />}
-          editie={editieLabel(editie, inForm)}
+          editie={editieLabel(editie, edities)}
           // PlayStyles (#500) ook op het veld (#621): dezelfde chips als op
           // de profielkaart, uit de opgeslagen featured-ids.
           playstyles={featuredPlaystyles(profiel?.featured_badges)}

@@ -17,7 +17,13 @@ import {
 import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
-import { editieLabel, editieVoor, iconKeyVoor } from "@/features/standings/edities";
+import { getSeizoenskampioen } from "@/features/standings/kampioen";
+import {
+  editieLabel,
+  editieVoor,
+  iconKeyVoor,
+  type EditieContext,
+} from "@/features/standings/edities";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
@@ -93,6 +99,8 @@ export function PlayerProfile() {
   // voor de troonhouder) en het regeerduur-erepalmpje.
   const dictator = useAsync(getHuidigeDictator, []);
   const regeerduur = useAsync(() => getRegeerduur(id), [id]);
+  // Kampioen-editie (#625): winnaar van het vorige kwartaal (gecacht).
+  const kampioen = useAsync(getSeizoenskampioen, []);
   // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
   const allHistories = useAsync(getAllRatingHistories, []);
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
@@ -324,26 +332,30 @@ export function PlayerProfile() {
           naam: earned[earned.length - 1].naam,
         }
       : null;
-  // Eén speler → één kaart (#621): dezelfde dictator-klem en editie-regels
-  // als klassement en matchdetail, ook op de deel-poster.
+  // Eén speler → één kaart (#621/#625): dezelfde dictator-klem en
+  // editie-context als klassement en matchdetail, ook op de deel-poster.
   const isDictator = dictator.data?.profileId === id;
-  const iconKey = iconKeyVoor(
-    standings.data ?? [],
-    ratings.data ?? {},
-    dictator.data?.profileId ?? null,
-  );
-  const editie = editieVoor(id, iconKey, inForm);
-  // Head-to-Head versus-kaarten (#499): dezelfde bundel als hierboven, maar
-  // dan voor de bekeken speler ("hunKaart") én — mét reeds app-breed geladen
-  // data, dus zonder extra fetch — voor de ingelogde gebruiker ("mijnKaart").
+  const editieCtx: EditieContext = {
+    dictatorId: dictator.data?.profileId ?? null,
+    iconKey: iconKeyVoor(
+      standings.data ?? [],
+      ratings.data ?? {},
+      dictator.data?.profileId ?? null,
+    ),
+    kampioen: kampioen.data ?? null,
+    inForm,
+  };
+  const editie = editieVoor(id, editieCtx);
+  // Head-to-Head versus-kaarten (#499): dezelfde editie-context als
+  // hierboven, voor de bekeken speler ("hunKaart") én — mét reeds app-breed
+  // geladen data, dus zonder extra fetch — de ingelogde gebruiker
+  // ("mijnKaart").
   const hunKaart = vsKaartVoor({
     id,
     profile: p,
     naam: displayName(p),
     ratings: ratings.data ?? {},
-    isDictator,
-    iconKey,
-    inForm,
+    edities: editieCtx,
   });
   const mijnKaart =
     user && !isMe && pmap[user.id]
@@ -352,9 +364,7 @@ export function PlayerProfile() {
           profile: pmap[user.id],
           naam: displayName(pmap[user.id]),
           ratings: ratings.data ?? {},
-          isDictator: dictator.data?.profileId === user.id,
-          iconKey,
-          inForm,
+          edities: editieCtx,
         })
       : null;
   const shareData: ProfileShareData = {
@@ -395,7 +405,7 @@ export function PlayerProfile() {
     isDictator,
     regeerduur: regeerduur.data ?? null,
     editie,
-    editieTekst: editieLabel(editie, inForm),
+    editieTekst: editieLabel(editie, editieCtx),
     hasRating,
     hasRank,
     rhist,

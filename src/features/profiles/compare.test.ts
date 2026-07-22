@@ -7,6 +7,7 @@ import {
   ratioBalk,
   vsKaartVoor,
 } from "./compare";
+import type { EditieContext } from "@/features/standings/edities";
 import type { Match, PlayerRating, PlayerStanding, Profile, Team } from "@/types";
 
 // Vier spelers in wisselende duo's, zodat p1 en p2 zowel partners als
@@ -168,6 +169,14 @@ describe("jointMatches", () => {
 });
 
 describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders", () => {
+  // Editie-context met alles uit (en gerichte overrides per test, #625).
+  const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
+    dictatorId: null,
+    iconKey: null,
+    kampioen: null,
+    inForm: null,
+    ...over,
+  });
   const profile = (id: string, extra: Partial<Profile> = {}): Profile => ({
     id,
     username: id,
@@ -187,9 +196,7 @@ describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders
       profile: profile("p1"),
       naam: "Alice",
       ratings,
-      isDictator: false,
-      iconKey: null,
-      inForm: null,
+      edities: ctx(),
     });
     expect(nietDictator.tier?.key).toBe("legende");
 
@@ -198,9 +205,7 @@ describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders
       profile: profile("p1"),
       naam: "Alice",
       ratings,
-      isDictator: true,
-      iconKey: null,
-      inForm: null,
+      edities: ctx({ dictatorId: "p1" }),
     });
     expect(zittendeDictator.tier?.key).toBe("dictator");
   });
@@ -215,9 +220,7 @@ describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders
       }),
       naam: "Bob",
       ratings,
-      isDictator: false,
-      iconKey: null,
-      inForm,
+      edities: ctx({ inForm }),
     });
     expect(kaart.editie).toBe("inform");
     expect(kaart.editieTekst).toBe("⚡ In-Form · +48");
@@ -231,9 +234,7 @@ describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders
       profile: profile("px"),
       naam: "Onbekend",
       ratings: {},
-      isDictator: false,
-      iconKey: null,
-      inForm: null,
+      edities: ctx(),
     });
     expect(kaart.rating).toBeNull();
     expect(kaart.tier).toBeNull();

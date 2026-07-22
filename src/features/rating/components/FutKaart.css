@@ -541,3 +541,44 @@
     }
   }
 }
+
+/* Kampioen (winnaar van het vorige kwartaal, #625): platina-wit met
+   lauwergroen — bewust wég van goud (dat is In-Form/dictator-territorium)
+   en van het roze van Big Daddy. Lokale hexen: er is (nog) geen tweede
+   consument, dus geen index.css-tokens zoals bij --bigdaddy-kaart-*.
+   Contrast: ink op hi ≈ 7,7:1 (AAA). */
+.fut-kaart--kampioen {
+  --kaart-hi: #fbfdfc;
+  --kaart-mid: #e9f2ee;
+  --kaart-lo: #cfe0d6;
+  --kaart-ink: #1f5c40;
+  --kaart-ink-soft: #48745e;
+  --kaart-lijn: #9dbfab;
+  --editie-kleur: #2e7050;
+}
+.fut-kaart--kampioen .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #eef6f1 0%,
+    #8fb3a0 42%,
+    #f6fbf8 68%,
+    #4f7a63 100%
+  );
+}
+.fut-kaart--kampioen .fut-kaart__liner {
+  background: #223c2f;
+}
+.fut-kaart--kampioen .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(236, 250, 242, 0.9),
+      transparent 62%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}

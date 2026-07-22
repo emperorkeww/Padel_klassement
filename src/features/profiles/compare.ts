@@ -13,8 +13,12 @@ import {
 import { byRank } from "@/features/rating/standings";
 import { tierFor, tierForWeergave, type Tier } from "@/features/rating/tiers";
 import { deriveBadges, featuredPlaystyles, type Badge } from "@/features/profiles/badges";
-import { editieLabel, editieVoor, type Editie } from "@/features/standings/edities";
-import type { InForm } from "@/features/standings/spelerVanDeWeek";
+import {
+  editieLabel,
+  editieVoor,
+  type Editie,
+  type EditieContext,
+} from "@/features/standings/edities";
 
 /** De side-by-side statistieken van één speler in de vergelijker. */
 export interface VergelijkKant {
@@ -157,27 +161,26 @@ export interface VsKaart {
 }
 
 /** Bouwt één duel-kaart uit reeds app-breed geladen data (ratings-/profiel-map,
- *  de al bepaalde `iconKey`/`inForm`) — geen extra fetch per speler nodig. */
+ *  de al opgebouwde `EditieContext`, #625) — geen extra fetch per speler
+ *  nodig; dictator-klem en editie volgen automatisch uit de context. */
 export function vsKaartVoor(input: {
   id: string;
   profile: Profile;
   naam: string;
   ratings: Record<string, PlayerRating>;
-  isDictator: boolean;
-  iconKey: string | null;
-  inForm: InForm | null;
+  edities: EditieContext;
 }): VsKaart {
-  const { id, profile, naam, ratings, isDictator, iconKey, inForm } = input;
+  const { id, profile, naam, ratings, edities } = input;
   const rating = ratings[id]?.rating ?? null;
-  const editie = editieVoor(id, iconKey, inForm);
+  const editie = editieVoor(id, edities);
   return {
     id,
     naam,
     rating,
-    tier: tierForWeergave(rating, isDictator),
+    tier: tierForWeergave(rating, id === edities.dictatorId),
     avatarUrl: profile.avatar_url ?? null,
     editie,
-    editieTekst: editieLabel(editie, inForm),
+    editieTekst: editieLabel(editie, edities),
     playstyles: featuredPlaystyles(profile.featured_badges),
   };
 }
