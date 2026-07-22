@@ -137,6 +137,15 @@ export function pickPollBanner(
     if (fixed) {
       const opt = options.find((o) => o.id === fixed.locked_option_id);
       if (opt && !pollExpired(fixed, options, nowMs)) {
+        // Alleen wie zich als "kan" (yes) zette op de vastgelegde optie speelt
+        // mee — anderen krijgen geen "Jullie spelen…"-reminder.
+        const iCan = votes.some(
+          (v) =>
+            v.option_id === fixed.locked_option_id &&
+            v.player_id === myId &&
+            v.status === "yes",
+        );
+        if (!iCan) continue;
         return {
           kind: "fixed",
           group,
