@@ -496,6 +496,18 @@ textarea {
   letter-spacing: 0.05em;
   color: var(--accent);
 }
+/* Bevestigings-sheet (#68): korte uitleg + knoprij rechts onderin. */
+.confirm__body {
+  margin: var(--sp-3) 0 var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
 /* Stappenindicator in een wizard-sheet: genummerde bolletjes met een
    verbindingslijn; de actieve stap kleurt accent, afgeronde stappen zacht. */
 .steps {

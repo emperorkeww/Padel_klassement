@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { useToast } from "@/ui/ToastProvider";
+import { useConfirm } from "@/ui/ConfirmDialog";
 import { displayName } from "@/features/profiles/api";
 import { errorMessage } from "@/lib/utils/errors";
 import {
@@ -46,6 +47,7 @@ export function GroupLedenTab({
 }: GroupLedenTabProps) {
   const navigate = useNavigate();
   const toast = useToast();
+  const [confirm, confirmUi] = useConfirm();
   // Meervoudige selectie voor "voeg vrienden toe" + deelbare uitnodigingslink.
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
   const [guestName, setGuestName] = useState("");
@@ -107,12 +109,21 @@ export function GroupLedenTab({
               <button
                 className="btn btn--danger btn--sm"
                 disabled={busy}
-                onClick={() =>
+                onClick={async () => {
+                  if (
+                    !(await confirm({
+                      title: "Lid verwijderen?",
+                      body: `${displayName(profiles[m.player_id])} wordt uit deze groep verwijderd.`,
+                      confirmLabel: "Verwijderen",
+                      danger: true,
+                    }))
+                  )
+                    return;
                   act(
                     () => removeGroupMember(groupId, m.player_id),
                     "Lid verwijderd.",
-                  )
-                }
+                  );
+                }}
               >
                 Verwijderen
               </button>
@@ -299,11 +310,14 @@ export function GroupLedenTab({
             <button
               className="btn btn--danger btn--sm"
               disabled={busy}
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  !window.confirm(
-                    "Deze groep en al zijn wedstrijden verwijderen? Dit kan niet ongedaan worden gemaakt.",
-                  )
+                  !(await confirm({
+                    title: "Groep verwijderen?",
+                    body: "Deze groep en al zijn wedstrijden worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+                    confirmLabel: "Verwijderen",
+                    danger: true,
+                  }))
                 )
                   return;
                 act(async () => {
@@ -321,8 +335,15 @@ export function GroupLedenTab({
           <button
             className="btn btn--danger btn--sm"
             disabled={busy}
-            onClick={() => {
-              if (!window.confirm("Weet je zeker dat je deze groep wilt verlaten?"))
+            onClick={async () => {
+              if (
+                !(await confirm({
+                  title: "Groep verlaten?",
+                  body: "Je verlaat deze groep. Je kunt later opnieuw uitgenodigd worden.",
+                  confirmLabel: "Verlaten",
+                  danger: true,
+                }))
+              )
                 return;
               act(async () => {
                 await leaveGroup(groupId, myId);
@@ -334,6 +355,7 @@ export function GroupLedenTab({
           </button>
         </div>
       )}
+      {confirmUi}
     </section>
   );
 }
