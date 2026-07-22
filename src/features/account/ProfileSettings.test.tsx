@@ -43,8 +43,14 @@ function renderPage() {
   );
 }
 
+// De secties zitten sinds #70 achter tabs (Profiel / Meldingen & privacy /
+// Account); open eerst de juiste tab voor de kaart die de test nodig heeft.
+async function openTab(name: RegExp) {
+  await userEvent.click(await screen.findByRole("button", { name }));
+}
+
 describe("<ProfileSettings />", () => {
-  it("toont profiel-, naam-, e-mail- en wachtwoordkaarten", async () => {
+  it("toont de algemene tab met foto- en naamkaart", async () => {
     renderPage();
     expect(
       await screen.findByRole("heading", { name: /^profiel$/i }),
@@ -52,8 +58,18 @@ describe("<ProfileSettings />", () => {
     expect(screen.getByText(/profielfoto/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue("alice")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Alice Anders")).toBeInTheDocument();
+  });
+
+  it("toont e-mail- en wachtwoordkaart onder de accounttab", async () => {
+    renderPage();
+    await screen.findByText(/profielfoto/i);
+    // Standaard staat de algemene tab open; account zit achter een tab.
     expect(
-      screen.getByRole("heading", { name: /e-mailadres/i }),
+      screen.queryByRole("heading", { name: /e-mailadres/i }),
+    ).not.toBeInTheDocument();
+    await openTab(/^account$/i);
+    expect(
+      await screen.findByRole("heading", { name: /e-mailadres/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /wachtwoord wijzigen/i }),
@@ -119,6 +135,7 @@ describe("<ProfileSettings />", () => {
 
   it("wijzigt het e-mailadres via supabase auth", async () => {
     renderPage();
+    await openTab(/^account$/i);
     await screen.findByRole("heading", { name: /e-mailadres/i });
     await userEvent.type(
       screen.getByPlaceholderText(/nieuw@voorbeeld/i),
@@ -134,6 +151,7 @@ describe("<ProfileSettings />", () => {
 
   it("verifieert het huidige wachtwoord vóór wijziging", async () => {
     renderPage();
+    await openTab(/^account$/i);
     await screen.findByRole("heading", { name: /e-mailadres/i });
     await userEvent.type(screen.getByLabelText(/huidig wachtwoord/i), "geheim1");
     await userEvent.type(screen.getByLabelText(/^nieuw wachtwoord$/i), "geheim2");
@@ -169,6 +187,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
   it("toont op iOS zonder installatie een gerichte beginscherm-instructie", async () => {
     vi.mocked(pushAvailability).mockReturnValue("needs-install");
     renderPage();
+    await openTab(/meldingen & privacy/i);
     expect(
       await screen.findByText(/zet op beginscherm/i),
     ).toBeInTheDocument();
@@ -180,6 +199,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
   it("legt bij geweigerde permissie uit waar je die weer aanzet", async () => {
     vi.mocked(pushAvailability).mockReturnValue("denied");
     renderPage();
+    await openTab(/meldingen & privacy/i);
     expect(await screen.findByText(/geweigerd/i)).toBeInTheDocument();
     expect(screen.getByText(/instellingen → meldingen/i)).toBeInTheDocument();
     expect(
@@ -189,6 +209,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
 
   it("meldt kort dat het niet kan in een niet-ondersteunde browser", async () => {
     renderPage();
+    await openTab(/meldingen & privacy/i);
     expect(
       await screen.findByText(/in deze browser niet ondersteund/i),
     ).toBeInTheDocument();
@@ -197,6 +218,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
   it("komt uit 'Controleren…' zodra bekend is dat er geen abonnement is", async () => {
     vi.mocked(pushAvailability).mockReturnValue("ready");
     renderPage();
+    await openTab(/meldingen & privacy/i);
     const knop = await screen.findByRole("button", {
       name: /meldingen aanzetten/i,
     });
@@ -206,6 +228,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
   it("zet meldingen aan en toont een bevestiging", async () => {
     vi.mocked(pushAvailability).mockReturnValue("ready");
     renderPage();
+    await openTab(/meldingen & privacy/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /meldingen aanzetten/i }),
     );
@@ -219,6 +242,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
       endpoint: "https://push.example/abc",
     } as PushSubscription);
     renderPage();
+    await openTab(/meldingen & privacy/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /meldingen uitzetten/i }),
     );
@@ -232,6 +256,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
       new Error("Meldingen zijn geweigerd — zet ze aan via Instellingen."),
     );
     renderPage();
+    await openTab(/meldingen & privacy/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /meldingen aanzetten/i }),
     );
@@ -248,6 +273,7 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
     // pushAvailability is standaard "unsupported": bewijst dat de voorkeuren
     // zichtbaar blijven als push op dít apparaat niet kan.
     renderPage();
+    await openTab(/meldingen & privacy/i);
     expect(
       await screen.findByRole("heading", { name: /welke meldingen wil je/i }),
     ).toBeInTheDocument();
@@ -264,9 +290,50 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
 
   it("slaat een uitgezette voorkeur op en bevestigt met een toast", async () => {
     renderPage();
+    await openTab(/meldingen & privacy/i);
     await userEvent.click(
       await screen.findByRole("checkbox", { name: /nieuwe ronde/i }),
     );
     expect(await screen.findByText(/meldingen bijgewerkt/i)).toBeInTheDocument();
+  });
+});
+
+describe("<ProfileSettings /> — tabs (#70)", () => {
+  function renderAt(path: string) {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <AuthProvider>
+          <ToastProvider>
+            <ProfileSettings />
+          </ToastProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it("opent standaard de algemene tab en verbergt de andere secties", async () => {
+    renderAt("/profiel");
+    expect(await screen.findByText(/profielfoto/i)).toBeInTheDocument();
+    // Privacy- en accountkaarten zitten achter hun eigen tab.
+    expect(
+      screen.queryByRole("heading", { name: /privacy/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /e-mailadres/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("respecteert een deeplink naar de accounttab (?tab=account)", async () => {
+    renderAt("/profiel?tab=account");
+    expect(
+      await screen.findByRole("heading", { name: /e-mailadres/i }),
+    ).toBeInTheDocument();
+    // De algemene-tab-inhoud staat dan niet in beeld.
+    expect(screen.queryByText(/profielfoto/i)).not.toBeInTheDocument();
+  });
+
+  it("valt bij een onbekende tab terug op de algemene tab", async () => {
+    renderAt("/profiel?tab=onzin");
+    expect(await screen.findByText(/profielfoto/i)).toBeInTheDocument();
   });
 });
