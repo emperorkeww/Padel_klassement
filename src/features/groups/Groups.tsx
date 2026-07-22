@@ -307,6 +307,7 @@ export function Groups() {
           <input
             ref={nameRef}
             className="input"
+            aria-label="Groepsnaam"
             placeholder="Groepsnaam, bijv. Vrijdagavond"
             maxLength={60}
             value={name}

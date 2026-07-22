@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
+import { useConfirm } from "@/ui/ConfirmDialog";
 import { Skeleton } from "@/ui/Skeleton";
 import { Sheet } from "@/ui/Sheet";
 import {
@@ -53,6 +54,7 @@ export function Friends() {
   });
 
   const toast = useToast();
+  const [confirm, confirmUi] = useConfirm();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
@@ -323,7 +325,18 @@ export function Friends() {
                   <PersonCell profile={pmap[fid]} to={`/spelers/${fid}`} />
                   <button
                     className="btn btn--danger btn--sm"
-                    onClick={() => act(() => removeFriendship(f.id), "Verwijderd.")}
+                    onClick={async () => {
+                      if (
+                        !(await confirm({
+                          title: "Vriend verwijderen?",
+                          body: `${displayName(pmap[fid])} wordt uit je vriendenlijst verwijderd.`,
+                          confirmLabel: "Verwijderen",
+                          danger: true,
+                        }))
+                      )
+                        return;
+                      act(() => removeFriendship(f.id), "Verwijderd.");
+                    }}
                   >
                     Verwijderen
                   </button>
@@ -425,6 +438,7 @@ export function Friends() {
           </div>
         </Sheet>
       )}
+      {confirmUi}
     </div>
   );
 }

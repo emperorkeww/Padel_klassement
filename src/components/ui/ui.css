@@ -496,6 +496,18 @@ textarea {
   letter-spacing: 0.05em;
   color: var(--accent);
 }
+/* Bevestigings-sheet (#68): korte uitleg + knoprij rechts onderin. */
+.confirm__body {
+  margin: var(--sp-3) 0 var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
 /* Stappenindicator in een wizard-sheet: genummerde bolletjes met een
    verbindingslijn; de actieve stap kleurt accent, afgeronde stappen zacht. */
 .steps {
@@ -760,24 +772,16 @@ textarea {
   height: 100%;
   object-fit: cover;
 }
-/* Acht stabiele tinten; de naam-hash kiest er één. */
-.avatar--h0 { background: #dcefdd; color: #256d33; }
-.avatar--h1 { background: #dbeafe; color: #1d4ed8; }
-.avatar--h2 { background: #fde8d7; color: #b45309; }
-.avatar--h3 { background: #ede9fe; color: #6d28d9; }
-.avatar--h4 { background: #fce7f3; color: #be185d; }
-.avatar--h5 { background: #cffafe; color: #0e7490; }
-.avatar--h6 { background: #fef3c7; color: #a16207; }
-.avatar--h7 { background: #e2e8f0; color: #334155; }
-/* Donker thema: zelfde hue-familie, gedempte donkere vlakken + lichte initialen. */
-:root[data-theme="dark"] .avatar--h0 { background: #22392a; color: #a7d4b0; }
-:root[data-theme="dark"] .avatar--h1 { background: #1e2a44; color: #a9c4f5; }
-:root[data-theme="dark"] .avatar--h2 { background: #3a2a1a; color: #e6b98a; }
-:root[data-theme="dark"] .avatar--h3 { background: #2c2542; color: #c6b6ee; }
-:root[data-theme="dark"] .avatar--h4 { background: #3a2230; color: #eaaccb; }
-:root[data-theme="dark"] .avatar--h5 { background: #16333a; color: #93d3e0; }
-:root[data-theme="dark"] .avatar--h6 { background: #37301a; color: #dfc687; }
-:root[data-theme="dark"] .avatar--h7 { background: #262d36; color: #b9c4d1; }
+/* Acht stabiele tinten; de naam-hash kiest er één. Kleuren als tokens in
+   index.css (#74) — die regelen ook meteen het donkere thema. */
+.avatar--h0 { background: var(--avatar-h0-bg); color: var(--avatar-h0-fg); }
+.avatar--h1 { background: var(--avatar-h1-bg); color: var(--avatar-h1-fg); }
+.avatar--h2 { background: var(--avatar-h2-bg); color: var(--avatar-h2-fg); }
+.avatar--h3 { background: var(--avatar-h3-bg); color: var(--avatar-h3-fg); }
+.avatar--h4 { background: var(--avatar-h4-bg); color: var(--avatar-h4-fg); }
+.avatar--h5 { background: var(--avatar-h5-bg); color: var(--avatar-h5-fg); }
+.avatar--h6 { background: var(--avatar-h6-bg); color: var(--avatar-h6-fg); }
+.avatar--h7 { background: var(--avatar-h7-bg); color: var(--avatar-h7-fg); }
 
 /* Overlappende avatar-paren (team in een matchkaart). */
 .avatar-pair {

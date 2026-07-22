@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "@/test/supabaseMock";
@@ -149,10 +149,17 @@ describe("<Friends />", () => {
     }
   });
 
-  it("verwijdert een vriend", async () => {
+  it("verwijdert een vriend na bevestiging (#68)", async () => {
     renderPage();
+    // Klik opent nu eerst een bevestigings-dialoog i.p.v. direct te verwijderen.
     await userEvent.click(
       await screen.findByRole("button", { name: /verwijderen/i }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: /vriend verwijderen/i,
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /verwijderen/i }),
     );
     expect(await screen.findByText(/^verwijderd\.$/i)).toBeInTheDocument();
   });

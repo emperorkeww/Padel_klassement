@@ -41,7 +41,7 @@ function makeQuery(table: string) {
   const q: Record<string, unknown> = {};
   for (const m of [
     "select", "order", "eq", "neq", "ilike", "limit", "or", "match",
-    "insert", "update", "delete",
+    "insert", "update", "upsert", "delete",
   ]) {
     q[m] = (...args: unknown[]) => {
       calls.push({ table, method: m, args });

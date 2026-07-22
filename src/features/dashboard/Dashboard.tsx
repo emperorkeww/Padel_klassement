@@ -258,8 +258,25 @@ export function Dashboard() {
     setWrappedDismissed(true);
   };
   const hasFriend = accepted.length > 0;
-  const hasGroup = (groups.data ?? []).length > 0;
+  const myGroups = groups.data ?? [];
+  const hasGroup = myGroups.length > 0;
   const hasPlayed = (me?.played ?? 0) > 0;
+  // Hero-CTA voor wedstrijden genereren (#73): het label moet kloppen met waar
+  // je landt. Genereren gebeurt op de Spelen-tab van een groep, dus met precies
+  // één groep sturen we daar direct heen; zonder groep is "genereren" een loze
+  // belofte, dus wordt het een "maak een groep"-call-to-action; met meerdere
+  // groepen kies je eerst op de lijst. Tijdens het laden een neutrale fallback
+  // om geen valse belofte te tonen.
+  const generateCta = groups.loading
+    ? { to: "/groepen", label: "Wedstrijden genereren" }
+    : myGroups.length === 0
+      ? { to: "/groepen", label: "Maak een groep" }
+      : myGroups.length === 1
+        ? {
+            to: `/groepen/${myGroups[0].id}?tab=spelen`,
+            label: "Wedstrijden genereren",
+          }
+        : { to: "/groepen", label: "Wedstrijden genereren" };
   const coreLoading = standings.loading || friendships.loading || groups.loading;
   const showOnboarding =
     !coreLoading && !onbDismissed && !(hasFriend && hasGroup && hasPlayed);
@@ -497,8 +514,8 @@ export function Dashboard() {
             <Link className="btn btn--primary" to="/matches">
               + Match loggen
             </Link>
-            <Link className="btn" to="/groepen">
-              Wedstrijden genereren
+            <Link className="btn" to={generateCta.to}>
+              {generateCta.label}
             </Link>
             <Link className="btn" to="/banen">
               Vrije banen
