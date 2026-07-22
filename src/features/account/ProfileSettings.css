@@ -80,3 +80,16 @@
   accent-color: var(--accent);
   flex-shrink: 0;
 }
+
+/* #70: de sectie-tabbar van de instellingen is de enige tab-rij op de pagina,
+   dus houdt hij de gewone pil-stijl (.tabs). Enige toevoeging: lange labels
+   ("Meldingen & privacy") mogen op smal scherm horizontaal doorschuiven i.p.v.
+   de pagina op te rekken. */
+.settings-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.settings-tabs::-webkit-scrollbar {
+  display: none;
+}

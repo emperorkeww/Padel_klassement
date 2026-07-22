@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
@@ -19,7 +20,6 @@ import {
   type NotificationPrefs,
   type Privacy,
 } from "./api";
-import { AccountNav } from "@/ui/AccountNav";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import type { RoastIntensiteit } from "@/types";
 import { formatDate } from "@/lib/utils/format";
@@ -38,10 +38,39 @@ import {
 import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
+// De secties liggen sinds #70 achter tabs — één behapbaar blok per tab i.p.v.
+// alles onder elkaar. Zelfde tab-patroon als GroupDetail/PlayerProfile. De
+// eerste tab heet "Algemeen" (niet "Profiel") om dubbeling met de paginatitel
+// en de Vrienden-schakelaar te vermijden.
+type SettingsTab = "algemeen" | "privacy" | "account";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
+  { id: "algemeen", label: "Algemeen" },
+  { id: "privacy", label: "Meldingen & privacy" },
+  { id: "account", label: "Account" },
+];
+
+function tabFrom(value: string | null): SettingsTab {
+  return SETTINGS_TABS.some((t) => t.id === value)
+    ? (value as SettingsTab)
+    : "algemeen";
+}
+
 export function ProfileSettings() {
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
+
+  // Actieve tab in de URL (?tab=): deelbaar en refresh-bestendig. De default
+  // (profiel) laat de param weg, net als elders in de app.
+  const [params, setParams] = useSearchParams();
+  const tab = tabFrom(params.get("tab"));
+  function setTab(next: SettingsTab) {
+    const p = new URLSearchParams(params);
+    if (next === "algemeen") p.delete("tab");
+    else p.set("tab", next);
+    setParams(p, { replace: true });
+  }
 
   if (profile.loading)
     return (
@@ -60,53 +89,84 @@ export function ProfileSettings() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Profiel</h1>
+        <div className="row-between">
+          <h1 className="page-title">Profiel</h1>
+          {/* Vrienden is de zusterpagina van het account-gebied; een discrete
+              link i.p.v. een tweede tab-rij (#70). Ook op mobiel bereikbaar. */}
+          <Link className="btn btn--sm" to="/vrienden">
+            Vrienden →
+          </Link>
+        </div>
         <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>
 
-      <AccountNav />
-
-      <div className="grid grid--2">
-        <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-        <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-      </div>
-
-      <div className="grid grid--2">
-        <NotificationsCard userId={myId} />
-        <PrivacyCard userId={myId} />
-      </div>
-
-      <section className="card">
-        <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
-        <p className="card__subtitle">
-          Wie hij is en hoe je hem afstelt.
-        </p>
-        <CoachAbout />
-      </section>
-      <div className="grid grid--2">
-        <EmailCard currentEmail={user?.email ?? ""} />
-        <ThemeCard
-          userId={myId}
-          toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
-          dictatorPortret={profile.data?.dictator_portret ?? true}
-          onUpdated={profile.reload}
-        />
-      </div>
-      <PasswordCard email={user?.email ?? ""} />
-
-      <section className="card">
-        <div className="row-between">
-          <div>
-            <h2 className="card__title card__title--tight">Sessie</h2>
-            <p className="empty empty--bare">Ingelogd als {user?.email}</p>
-          </div>
-          <button className="btn btn--danger" onClick={() => signOut()}>
-            Uitloggen
+      <nav className="tabs settings-tabs" aria-label="Instellingen">
+        {SETTINGS_TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`tab ${tab === t.id ? "is-active" : ""}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
           </button>
-        </div>
-      </section>
+        ))}
+      </nav>
 
-      <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+      {tab === "algemeen" && (
+        <>
+          <div className="grid grid--2">
+            <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+            <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+          </div>
+          <ThemeCard
+            userId={myId}
+            toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+            dictatorPortret={profile.data?.dictator_portret ?? true}
+            onUpdated={profile.reload}
+          />
+        </>
+      )}
+
+      {tab === "privacy" && (
+        <>
+          <div className="grid grid--2">
+            <NotificationsCard userId={myId} />
+            <PrivacyCard userId={myId} />
+          </div>
+          <section className="card">
+            <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+            <p className="card__subtitle">
+              Wie hij is en hoe je hem afstelt.
+            </p>
+            <CoachAbout />
+          </section>
+        </>
+      )}
+
+      {tab === "account" && (
+        <>
+          <div className="grid grid--2">
+            <EmailCard currentEmail={user?.email ?? ""} />
+            <PasswordCard email={user?.email ?? ""} />
+          </div>
+
+          <section className="card">
+            <div className="row-between">
+              <div>
+                <h2 className="card__title card__title--tight">Sessie</h2>
+                <p className="empty empty--bare">Ingelogd als {user?.email}</p>
+              </div>
+              <button className="btn btn--danger" onClick={() => signOut()}>
+                Uitloggen
+              </button>
+            </div>
+          </section>
+
+          <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+        </>
+      )}
     </div>
   );
 }
