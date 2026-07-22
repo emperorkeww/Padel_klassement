@@ -14,7 +14,7 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
-import { tierFor } from "@/features/rating/tiers";
+import { tierForWeergave } from "@/features/rating/tiers";
 import { FormChips } from "@/features/rating/components/FormChips";
 import {
   FutKaart,
@@ -38,6 +38,7 @@ export function Lineup({
   ratings,
   matchesA,
   matchesB,
+  dictatorId,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -47,6 +48,8 @@ export function Lineup({
   /** Recente matches van (een speler van) team A resp. B — voedt de chemie. */
   matchesA: Match[];
   matchesB: Match[];
+  /** Zittende dictator (#545): alleen hij draagt de dictator-special op het veld. */
+  dictatorId: string | null;
 }) {
   return (
     <section className="card lineup">
@@ -65,6 +68,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
+          dictatorId={dictatorId}
         />
         <Helft
           side="b"
@@ -75,6 +79,7 @@ export function Lineup({
           histories={histories}
           ratings={ratings}
           matchId={match.id}
+          dictatorId={dictatorId}
         />
       </div>
       <LineupUitleg />
@@ -115,6 +120,7 @@ function Helft({
   histories,
   ratings,
   matchId,
+  dictatorId,
 }: {
   side: "a" | "b";
   team: Team | undefined;
@@ -124,6 +130,7 @@ function Helft({
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
+  dictatorId: string | null;
 }) {
   const spelers = playersOf(team);
   const duo = spelers.length === 2;
@@ -142,6 +149,7 @@ function Helft({
             histories={histories}
             ratings={ratings}
             matchId={matchId}
+            dictatorId={dictatorId}
           />
         ))}
       </div>
@@ -207,12 +215,14 @@ function SpelerKaart({
   histories,
   ratings,
   matchId,
+  dictatorId,
 }: {
   pid: string;
   profiel: Profile | undefined;
   histories: Record<string, RatingPoint[]>;
   ratings: Record<string, PlayerRating>;
   matchId: string;
+  dictatorId: string | null;
 }) {
   const [omgedraaid, setOmgedraaid] = useState(false);
   // Eenmaal omgedraaid blijft de achterkant gemount, zodat hij tijdens het
@@ -224,7 +234,11 @@ function SpelerKaart({
     histories[pid]?.find((h) => h.match_id === matchId)?.rating_after ??
     ratings[pid]?.rating ??
     null;
-  const tier = tierFor(elo);
+  // Weergave-tier (#545/#621): buiten De Troon draagt niemand de dictator-special.
+  // Alleen de zittende dictator toont de troon-kaart; overige 1600+-spelers
+  // zakken visueel naar GOAT voor consistentie met klassement en profiel.
+  const isDictator = pid === dictatorId;
+  const tier = tierForWeergave(elo, isDictator);
   const naam = profiel ? displayName(profiel) : "Onbekend";
   const draai = () => {
     setOmgedraaid((v) => !v);

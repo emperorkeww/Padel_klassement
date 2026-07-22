@@ -35,6 +35,7 @@ import {
   getAllRatingHistories,
   getPlayerRatings,
 } from "@/features/standings/ratingsApi";
+import { getHuidigeDictator } from "@/features/standings/dictatorApi";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { matchDerby } from "@/features/matches/derby";
 import { playersOf } from "@/features/rating/results";
@@ -134,6 +135,9 @@ export function MatchDetail() {
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
+  // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
+  // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
+  const dictator = useAsync(getHuidigeDictator, []);
   // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
   const setPairs = readSetScores(m);
   // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
@@ -303,6 +307,7 @@ export function MatchDetail() {
         ratings={ratings.data ?? {}}
         matchesA={matchesA.data ?? []}
         matchesB={matchesB.data ?? []}
+        dictatorId={dictator.data?.profileId ?? null}
       />
 
       {iLost && (
