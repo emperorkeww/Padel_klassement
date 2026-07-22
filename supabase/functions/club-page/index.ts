@@ -13,6 +13,8 @@
 //   supabase functions deploy club-page --no-verify-jwt
 //   (CRON_SECRET is dezelfde secret als snapshot-availability e.a.)
 
+import { cronGuard } from "../_shared/cronAuth.ts";
+
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 
 const UUID_RE =
@@ -38,12 +40,9 @@ async function resolveSlug(tenantId: string): Promise<string | null> {
 }
 
 Deno.serve(async (req) => {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
-    return new Response(JSON.stringify({ error: "Geen toegang" }), {
-      status: 401,
-      headers: JSON_HEADERS,
-    });
-  }
+  // Fail-closed cron-guard (#460).
+  const denied = cronGuard(req, CRON_SECRET);
+  if (denied) return denied;
   if (req.method !== "GET") {
     return new Response("Method Not Allowed", { status: 405 });
   }
