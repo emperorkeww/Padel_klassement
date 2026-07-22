@@ -44,6 +44,7 @@ export function FutKaartDefs() {
  *  liggen bóven het vlak. De maat stuurt de caller via --fut-kw (CSS). */
 export function FutKaart({
   tier,
+  editie = null,
   omgedraaid = false,
   className,
   voor,
@@ -52,6 +53,10 @@ export function FutKaart({
   achterOverlay,
 }: {
   tier: Tier | null;
+  /** Speciale editie (#497): kleurt frame en vlak bóvenop de tier-klasse
+   *  (icon = Big Daddy, inform = speler van de week); de schildvorm blijft
+   *  die van de divisie. */
+  editie?: "icon" | "inform" | null;
   omgedraaid?: boolean;
   /** Extra klasse op de wrapper (bv. "lineup-kaart" voor de veld-maat). */
   className?: string;
@@ -65,6 +70,7 @@ export function FutKaart({
   const klassen = [
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
+    editie ? `fut-kaart--${editie}` : "",
     omgedraaid ? "is-omgedraaid" : "",
     className ?? "",
   ]
@@ -108,19 +114,23 @@ export interface FutPlaystyle {
 export const MAX_PLAYSTYLES = 3;
 
 /** Standaard-voorkant: Elo met sub-niveau (Romeins) en divisie-emoji links,
- *  avatar rechts, naam op de naamplaat en de divisienaam voluit eronder.
+ *  avatar rechts, naam op de naamplaat en de divisienaam voluit eronder;
+ *  optioneel een editie-regel ("👑 Big Daddy") als slotregel.
  *  `playstyles` (#500): uitgelichte badges als hex-chips boven de naamplaat. */
 export function FutKaartVoorkant({
   elo,
   tier,
   avatar,
   naam,
+  editie,
   playstyles,
 }: {
   elo: number | null;
   tier: Tier | null;
   avatar: ReactNode;
   naam: string;
+  /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
+  editie?: ReactNode;
   playstyles?: FutPlaystyle[];
 }) {
   const chips = (playstyles ?? []).slice(0, MAX_PLAYSTYLES);
@@ -163,6 +173,7 @@ export function FutKaartVoorkant({
       )}
       <span className="fut-kaart__naam">{naam}</span>
       {tier && <span className="fut-kaart__divisie">{tier.label}</span>}
+      {editie && <span className="fut-kaart__editie">{editie}</span>}
     </>
   );
 }
