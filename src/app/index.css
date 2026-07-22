@@ -136,6 +136,18 @@
   --cat-roast: #d84f95; /* roast: pias / zwarte piet */
   --cat-match: var(--accent); /* volgt het app-accent (per thema) */
 
+  /* Avatar-tinten (#74): acht stabiele hue-families; de naam-hash kiest er één.
+     Codering (naam→kleur), geen sier — daarom hier bij de andere informatieve
+     paletten en niet los in ui.css. -bg is het vlak, -fg de initialen erop. */
+  --avatar-h0-bg: #dcefdd; --avatar-h0-fg: #256d33;
+  --avatar-h1-bg: #dbeafe; --avatar-h1-fg: #1d4ed8;
+  --avatar-h2-bg: #fde8d7; --avatar-h2-fg: #b45309;
+  --avatar-h3-bg: #ede9fe; --avatar-h3-fg: #6d28d9;
+  --avatar-h4-bg: #fce7f3; --avatar-h4-fg: #be185d;
+  --avatar-h5-bg: #cffafe; --avatar-h5-fg: #0e7490;
+  --avatar-h6-bg: #fef3c7; --avatar-h6-fg: #a16207;
+  --avatar-h7-bg: #e2e8f0; --avatar-h7-fg: #334155;
+
   --placeholder: #6a786c; /* donker genoeg voor AA op wit (≥4.5:1) */
   --skeleton-hi: #e6ece6;
 
@@ -299,6 +311,17 @@
   --cat-rank: #6f9bff;
   --cat-champ: #e6b13f;
   --cat-roast: #f072b0;
+
+  /* Avatar-tinten op donker (#74): zelfde hue-families, gedempte donkere vlakken
+     + lichte initialen (zie licht-blok). */
+  --avatar-h0-bg: #22392a; --avatar-h0-fg: #a7d4b0;
+  --avatar-h1-bg: #1e2a44; --avatar-h1-fg: #a9c4f5;
+  --avatar-h2-bg: #3a2a1a; --avatar-h2-fg: #e6b98a;
+  --avatar-h3-bg: #2c2542; --avatar-h3-fg: #c6b6ee;
+  --avatar-h4-bg: #3a2230; --avatar-h4-fg: #eaaccb;
+  --avatar-h5-bg: #16333a; --avatar-h5-fg: #93d3e0;
+  --avatar-h6-bg: #37301a; --avatar-h6-fg: #dfc687;
+  --avatar-h7-bg: #262d36; --avatar-h7-fg: #b9c4d1;
 
   --placeholder: #8a9a90;
   --skeleton-hi: #26312a;
