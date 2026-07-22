@@ -84,6 +84,9 @@ export function MatchDetail() {
     () => (groupId ? getGroup(groupId) : Promise.resolve(null)),
     [groupId],
   );
+  // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
+  // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
+  const dictator = useAsync(getHuidigeDictator, []);
   const [editing, setEditing] = useState(false);
 
   if (match.loading)
@@ -135,9 +138,6 @@ export function MatchDetail() {
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
-  // De Troon (#545): wie is de zittende dictator? Wordt doorgegeven aan Lineup
-  // voor consistente tier-weergave (dictator-special alleen voor de troonhouder).
-  const dictator = useAsync(getHuidigeDictator, []);
   // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
   const setPairs = readSetScores(m);
   // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
