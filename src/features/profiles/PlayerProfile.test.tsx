@@ -129,7 +129,9 @@ describe("<PlayerProfile />", () => {
     expect(
       await screen.findByRole("heading", { name: /bob boers/i, level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Big Daddy/)).toBeInTheDocument();
+    // Twee keer Big Daddy: de badge naast de naam én — sinds #621 — de
+    // Icon-editie-regel op de hero-kaart, net als op het klassement.
+    expect(screen.getAllByText(/Big Daddy/)).toHaveLength(2);
   });
 
   it("toont geen Big Daddy-badge als de speler niet #1 staat", async () => {

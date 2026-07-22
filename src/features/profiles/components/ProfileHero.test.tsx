@@ -145,3 +145,31 @@ describe("ProfileHero — PlayStyles op de kaart (#500)", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("ProfileHero — speciale editie op de kaart (#621)", () => {
+  it("draagt de Icon-editie mét editie-regel, net als op het klassement", () => {
+    const { container } = render(
+      <ProfileHero d={hero({ editie: "icon", editieTekst: "👑 Big Daddy" })} />,
+    );
+    expect(container.querySelector(".fut-kaart")).toHaveClass("fut-kaart--icon");
+    expect(screen.getByText("👑 Big Daddy")).toBeInTheDocument();
+  });
+
+  it("draagt de In-Form-editie van de speler van de week", () => {
+    const { container } = render(
+      <ProfileHero
+        d={hero({ editie: "inform", editieTekst: "⚡ In-Form · +48" })}
+      />,
+    );
+    expect(container.querySelector(".fut-kaart")).toHaveClass(
+      "fut-kaart--inform",
+    );
+    expect(screen.getByText("⚡ In-Form · +48")).toBeInTheDocument();
+  });
+
+  it("blijft zonder editie een gewone tier-kaart", () => {
+    const { container } = render(<ProfileHero d={hero()} />);
+    expect(container.querySelector(".fut-kaart--icon")).toBeNull();
+    expect(container.querySelector(".fut-kaart--inform")).toBeNull();
+  });
+});

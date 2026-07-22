@@ -4,6 +4,7 @@ import type { Outcome } from "@/features/rating/results";
 import type { Badge } from "@/features/profiles/badges";
 import type { TierProgress } from "@/features/rating/tiers";
 import type { Regeerduur } from "@/features/standings/dictatorApi";
+import type { Editie } from "@/features/standings/edities";
 import type { Upset } from "@/features/matches/upset";
 import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "@/features/rating/components/RatingChart";
@@ -67,6 +68,13 @@ export interface ProfileData {
   isDictator: boolean;
   /** Regeerduur-samenvatting (#545); null als de speler nooit dictator was. */
   regeerduur: Regeerduur | null;
+  /** Speciale editie op de hero-kaart (#497/#621): Icon (Big Daddy) of
+   *  In-Form (speler van de week) — dezelfde regels als het klassement,
+   *  zodat één speler overal dezelfde kaart draagt. Optioneel zodat een
+   *  halfgevulde ProfileData (tests) zonder editie blijft werken. */
+  editie?: Editie;
+  /** Editie-regel op het kaartvlak, bv. "⚡ In-Form · +48". */
+  editieTekst?: string | null;
 
   // Grafieken
   hasRating: boolean;

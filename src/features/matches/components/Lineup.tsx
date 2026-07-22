@@ -15,6 +15,9 @@ import { displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
 import { tierForWeergave } from "@/features/rating/tiers";
+import { editieLabel, editieVoor } from "@/features/standings/edities";
+import type { InForm } from "@/features/standings/spelerVanDeWeek";
+import { featuredPlaystyles } from "@/features/profiles/badges";
 import { FormChips } from "@/features/rating/components/FormChips";
 import {
   FutKaart,
@@ -39,6 +42,8 @@ export function Lineup({
   matchesA,
   matchesB,
   dictatorId,
+  iconKey = null,
+  inForm = null,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -50,6 +55,10 @@ export function Lineup({
   matchesB: Match[];
   /** Zittende dictator (#545): alleen hij draagt de dictator-special op het veld. */
   dictatorId: string | null;
+  /** Speler met de Icon-editie (Big Daddy, #621) — null zonder Big Daddy. */
+  iconKey?: string | null;
+  /** Speler van de week (In-Form, #621) — null zonder speler van de week. */
+  inForm?: InForm | null;
 }) {
   return (
     <section className="card lineup">
@@ -69,6 +78,8 @@ export function Lineup({
           ratings={ratings}
           matchId={match.id}
           dictatorId={dictatorId}
+          iconKey={iconKey}
+          inForm={inForm}
         />
         <Helft
           side="b"
@@ -80,6 +91,8 @@ export function Lineup({
           ratings={ratings}
           matchId={match.id}
           dictatorId={dictatorId}
+          iconKey={iconKey}
+          inForm={inForm}
         />
       </div>
       <LineupUitleg />
@@ -121,6 +134,8 @@ function Helft({
   ratings,
   matchId,
   dictatorId,
+  iconKey,
+  inForm,
 }: {
   side: "a" | "b";
   team: Team | undefined;
@@ -131,6 +146,8 @@ function Helft({
   ratings: Record<string, PlayerRating>;
   matchId: string;
   dictatorId: string | null;
+  iconKey: string | null;
+  inForm: InForm | null;
 }) {
   const spelers = playersOf(team);
   const duo = spelers.length === 2;
@@ -150,6 +167,8 @@ function Helft({
             ratings={ratings}
             matchId={matchId}
             dictatorId={dictatorId}
+            iconKey={iconKey}
+            inForm={inForm}
           />
         ))}
       </div>
@@ -216,6 +235,8 @@ function SpelerKaart({
   ratings,
   matchId,
   dictatorId,
+  iconKey,
+  inForm,
 }: {
   pid: string;
   profiel: Profile | undefined;
@@ -223,6 +244,8 @@ function SpelerKaart({
   ratings: Record<string, PlayerRating>;
   matchId: string;
   dictatorId: string | null;
+  iconKey: string | null;
+  inForm: InForm | null;
 }) {
   const [omgedraaid, setOmgedraaid] = useState(false);
   // Eenmaal omgedraaid blijft de achterkant gemount, zodat hij tijdens het
@@ -239,6 +262,9 @@ function SpelerKaart({
   // zakken visueel naar GOAT voor consistentie met klassement en profiel.
   const isDictator = pid === dictatorId;
   const tier = tierForWeergave(elo, isDictator);
+  // Editie (#497/#621): dezelfde Icon/In-Form-rand als op klassement en
+  // profiel — de kaart van een speler is overal dezelfde.
+  const editie = editieVoor(pid, iconKey, inForm);
   const naam = profiel ? displayName(profiel) : "Onbekend";
   const draai = () => {
     setOmgedraaid((v) => !v);
@@ -248,6 +274,7 @@ function SpelerKaart({
     <FutKaart
       className="lineup-kaart"
       tier={tier}
+      editie={editie}
       omgedraaid={omgedraaid}
       voorOverlay={
         <button
@@ -264,6 +291,10 @@ function SpelerKaart({
           tier={tier}
           naam={naam}
           avatar={<Avatar profile={profiel} size={48} />}
+          editie={editieLabel(editie, inForm)}
+          // PlayStyles (#500) ook op het veld (#621): dezelfde chips als op
+          // de profielkaart, uit de opgeslagen featured-ids.
+          playstyles={featuredPlaystyles(profiel?.featured_badges)}
         />
       }
       achterOverlay={

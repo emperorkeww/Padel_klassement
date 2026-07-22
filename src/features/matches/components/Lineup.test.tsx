@@ -51,6 +51,8 @@ function renderLineup(overrides: Partial<Parameters<typeof Lineup>[0]> = {}) {
     matchesA: LINEUP_MATCHES as Match[],
     matchesB: LINEUP_MATCHES as Match[],
     dictatorId: null as string | null,
+    iconKey: null as string | null,
+    inForm: null,
     ...overrides,
   };
   return render(
@@ -166,6 +168,37 @@ describe("<Lineup />", () => {
     const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
     expect(p1Kaart).toHaveClass("fut-kaart--legende");
     expect(p1Kaart).not.toHaveClass("fut-kaart--dictator");
+  });
+
+  it("draagt de Icon-editie (Big Daddy) op het veld, net als op het klassement (#621)", () => {
+    const { container } = renderLineup({ iconKey: "p1" });
+    // p1 is de Big Daddy → zijn kaart krijgt de icon-rand en de editie-regel.
+    const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
+    expect(p1Kaart).toHaveClass("fut-kaart--icon");
+    expect(screen.getByText("👑 Big Daddy")).toBeInTheDocument();
+    // De rest van het veld blijft zonder editie.
+    expect(container.querySelectorAll(".fut-kaart--icon")).toHaveLength(1);
+  });
+
+  it("draagt de In-Form-editie van de speler van de week op het veld (#621)", () => {
+    const { container } = renderLineup({
+      inForm: { playerId: "p3", delta: 12, matches: 3 },
+    });
+    expect(container.querySelectorAll(".fut-kaart--inform")).toHaveLength(1);
+    expect(screen.getByText("⚡ In-Form · +12")).toBeInTheDocument();
+  });
+
+  it("toont de uitgelichte badges als PlayStyle-chips, net als op de profielkaart (#621)", () => {
+    const metBadges = {
+      ...PROFILES_MAP,
+      p1: { ...PROFILES_MAP.p1, featured_badges: ["eerste-overwinning"] },
+    };
+    renderLineup({ profiles: metBadges });
+    const lijst = screen.getByRole("list", { name: "Uitgelichte badges" });
+    expect(lijst).toBeInTheDocument();
+    expect(
+      screen.getByRole("listitem", { name: "Eerste overwinning" }),
+    ).toBeInTheDocument();
   });
 
   it("toont dictator-special voor zittende dictator (#621)", () => {

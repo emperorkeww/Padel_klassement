@@ -13,6 +13,7 @@ import {
   FutKaart,
   FutKaartVoorkant,
 } from "@/features/rating/components/FutKaart";
+import { featuredPlaystyles } from "@/features/profiles/badges";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
 import type { InForm } from "../spelerVanDeWeek";
 import { editieLabel, type Editie } from "../edities";
@@ -93,6 +94,9 @@ export function KaartPreview({
                 <Avatar profile={row.profile} name={row.name} size={64} />
               }
               editie={editieLabel(editie, inForm)}
+              // PlayStyles (#500) ook in de preview (#621): dezelfde chips
+              // als op de profielkaart.
+              playstyles={featuredPlaystyles(row.profile?.featured_badges)}
             />
           }
           achterOverlay={
