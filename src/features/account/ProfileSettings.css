@@ -81,20 +81,11 @@
   flex-shrink: 0;
 }
 
-/* #70: sectie-tabs binnen de instellingen. Ze staan onder de AccountNav-pil
-   (Profiel/Vrienden), dus krijgen ze een lichtere, open uitvoering zonder eigen
-   pil-omhulsel — zo lezen ze als ondergeschikte sectiekeuze i.p.v. een tweede
-   concurrerende segmentbalk. De actieve tab houdt wél het pil-accent, zodat de
-   huidige sectie duidelijk oplicht. Zelfde .tab-knoppen als elders. */
+/* #70: de sectie-tabbar van de instellingen is de enige tab-rij op de pagina,
+   dus houdt hij de gewone pil-stijl (.tabs). Enige toevoeging: lange labels
+   ("Meldingen & privacy") mogen op smal scherm horizontaal doorschuiven i.p.v.
+   de pagina op te rekken. */
 .settings-tabs {
-  background: transparent;
-  border: none;
-  padding: 0;
-  gap: var(--sp-1);
-  /* Iets dichter onder de AccountNav trekken: samen één navigatieblok. */
-  margin-top: calc(-1 * var(--sp-3));
-  /* Lange labels ("Meldingen & privacy") mogen op smal scherm doorschuiven
-     i.p.v. de pagina horizontaal op te rekken. */
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;

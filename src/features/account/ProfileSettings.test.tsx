@@ -50,7 +50,7 @@ async function openTab(name: RegExp) {
 }
 
 describe("<ProfileSettings />", () => {
-  it("toont de profieltab met foto- en naamkaart", async () => {
+  it("toont de algemene tab met foto- en naamkaart", async () => {
     renderPage();
     expect(
       await screen.findByRole("heading", { name: /^profiel$/i }),
@@ -63,7 +63,7 @@ describe("<ProfileSettings />", () => {
   it("toont e-mail- en wachtwoordkaart onder de accounttab", async () => {
     renderPage();
     await screen.findByText(/profielfoto/i);
-    // Standaard staat de profieltab open; account zit achter een tab.
+    // Standaard staat de algemene tab open; account zit achter een tab.
     expect(
       screen.queryByRole("heading", { name: /e-mailadres/i }),
     ).not.toBeInTheDocument();
@@ -311,7 +311,7 @@ describe("<ProfileSettings /> — tabs (#70)", () => {
     );
   }
 
-  it("opent standaard de profieltab en verbergt de andere secties", async () => {
+  it("opent standaard de algemene tab en verbergt de andere secties", async () => {
     renderAt("/profiel");
     expect(await screen.findByText(/profielfoto/i)).toBeInTheDocument();
     // Privacy- en accountkaarten zitten achter hun eigen tab.
@@ -328,11 +328,11 @@ describe("<ProfileSettings /> — tabs (#70)", () => {
     expect(
       await screen.findByRole("heading", { name: /e-mailadres/i }),
     ).toBeInTheDocument();
-    // De profieltab-inhoud staat dan niet in beeld.
+    // De algemene-tab-inhoud staat dan niet in beeld.
     expect(screen.queryByText(/profielfoto/i)).not.toBeInTheDocument();
   });
 
-  it("valt bij een onbekende tab terug op de profieltab", async () => {
+  it("valt bij een onbekende tab terug op de algemene tab", async () => {
     renderAt("/profiel?tab=onzin");
     expect(await screen.findByText(/profielfoto/i)).toBeInTheDocument();
   });

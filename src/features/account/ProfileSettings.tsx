@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
@@ -20,7 +20,6 @@ import {
   type NotificationPrefs,
   type Privacy,
 } from "./api";
-import { AccountNav } from "@/ui/AccountNav";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import type { RoastIntensiteit } from "@/types";
 import { formatDate } from "@/lib/utils/format";
@@ -40,11 +39,13 @@ import type { Profile } from "@/types";
 import "./ProfileSettings.css";
 
 // De secties liggen sinds #70 achter tabs — één behapbaar blok per tab i.p.v.
-// alles onder elkaar. Zelfde tab-patroon als GroupDetail/PlayerProfile.
-type SettingsTab = "profiel" | "privacy" | "account";
+// alles onder elkaar. Zelfde tab-patroon als GroupDetail/PlayerProfile. De
+// eerste tab heet "Algemeen" (niet "Profiel") om dubbeling met de paginatitel
+// en de Vrienden-schakelaar te vermijden.
+type SettingsTab = "algemeen" | "privacy" | "account";
 
 const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
-  { id: "profiel", label: "Profiel" },
+  { id: "algemeen", label: "Algemeen" },
   { id: "privacy", label: "Meldingen & privacy" },
   { id: "account", label: "Account" },
 ];
@@ -52,7 +53,7 @@ const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
 function tabFrom(value: string | null): SettingsTab {
   return SETTINGS_TABS.some((t) => t.id === value)
     ? (value as SettingsTab)
-    : "profiel";
+    : "algemeen";
 }
 
 export function ProfileSettings() {
@@ -66,7 +67,7 @@ export function ProfileSettings() {
   const tab = tabFrom(params.get("tab"));
   function setTab(next: SettingsTab) {
     const p = new URLSearchParams(params);
-    if (next === "profiel") p.delete("tab");
+    if (next === "algemeen") p.delete("tab");
     else p.set("tab", next);
     setParams(p, { replace: true });
   }
@@ -88,11 +89,16 @@ export function ProfileSettings() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Profiel</h1>
+        <div className="row-between">
+          <h1 className="page-title">Profiel</h1>
+          {/* Vrienden is de zusterpagina van het account-gebied; een discrete
+              link i.p.v. een tweede tab-rij (#70). Ook op mobiel bereikbaar. */}
+          <Link className="btn btn--sm" to="/vrienden">
+            Vrienden →
+          </Link>
+        </div>
         <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>
-
-      <AccountNav />
 
       <nav className="tabs settings-tabs" aria-label="Instellingen">
         {SETTINGS_TABS.map((t) => (
@@ -108,7 +114,7 @@ export function ProfileSettings() {
         ))}
       </nav>
 
-      {tab === "profiel" && (
+      {tab === "algemeen" && (
         <>
           <div className="grid grid--2">
             <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
