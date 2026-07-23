@@ -687,3 +687,48 @@
       var(--kaart-lo) 100%
     );
 }
+
+/* Zwarte Piet (#645): het rondgaande schande-token, kaartenspel-thema — mat
+   speelkaart-wit met een zwart lakframe, bone binnenrand en rood/zwarte
+   suit-pips (SVG-laag, ♠♥♦♣). Net als de pias geen shimmer en geen metaal
+   (schande glimt niet), maar bewust een ánder register: speelkaart i.p.v.
+   kraftkarton. En bewust licht: donkere vlakken zijn hier het prestige-
+   register (In-Form, On-Fire, Legende, dictator). Lokale hexen, net als
+   kampioen (geen tweede consument). Contrast: ink op hi ≈ 13:1 (AAA). */
+.fut-kaart--piet {
+  --kaart-hi: #f4eedb;
+  --kaart-mid: #e6ddc2;
+  --kaart-lo: #cfc4a4;
+  --kaart-ink: #201d16;
+  --kaart-ink-soft: #5d5645;
+  --kaart-lijn: #a2977a;
+  --editie-kleur: #a8271b;
+}
+.fut-kaart--piet .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #3c3a36 0%,
+    #100f0d 45%,
+    #4a4742 70%,
+    #050505 100%
+  );
+}
+.fut-kaart--piet .fut-kaart__liner {
+  background: #efe7d2;
+}
+.fut-kaart--piet .fut-kaart__vlak {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 139'%3E%3Cg font-size='13' font-family='serif'%3E%3Ctext x='11' y='28' fill='rgba(32,29,24,0.2)'%3E%E2%99%A0%3C/text%3E%3Ctext x='77' y='42' fill='rgba(168,39,27,0.22)'%3E%E2%99%A5%3C/text%3E%3Ctext x='16' y='100' fill='rgba(168,39,27,0.22)'%3E%E2%99%A6%3C/text%3E%3Ctext x='77' y='90' fill='rgba(32,29,24,0.2)'%3E%E2%99%A3%3C/text%3E%3C/g%3E%3C/svg%3E")
+      center / 100% 100% no-repeat,
+    repeating-linear-gradient(
+      -38deg,
+      rgba(32, 29, 24, 0.05) 0 5px,
+      transparent 5px 12px
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}

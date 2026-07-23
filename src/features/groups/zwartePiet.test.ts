@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { zwartePiet } from "@/features/groups/zwartePiet";
+import { pickGlobaleZwartePiet, zwartePiet } from "@/features/groups/zwartePiet";
 import type { MatchRatings } from "@/features/groups/maandpias";
 import type { Match, RatingPoint, Team } from "@/types";
 
@@ -116,5 +116,62 @@ describe("zwartePiet — reeks & choke", () => {
     const p = zwartePiet([m], teams, rb);
     expect(p?.reden).toBe("choke");
     expect(p?.holderId).toBe("p1");
+  });
+});
+
+describe("pickGlobaleZwartePiet (#645) — spiegel van get_global_zwarte_piet", () => {
+  const holder = (
+    over: Partial<{
+      groupId: string;
+      holderId: string;
+      ernst: number;
+      since: string;
+    }>,
+  ) => ({
+    groupId: "g1",
+    holderId: "p1",
+    fromId: null,
+    reden: "afdroging" as const,
+    ernst: 55,
+    detail: "ging de boot in",
+    matchId: "m1",
+    since: "2026-07-14",
+    ...over,
+  });
+
+  it("null zonder dragers (de Piet is overal vrij)", () => {
+    expect(pickGlobaleZwartePiet([])).toBeNull();
+  });
+
+  it("kiest de drager met de hoogste ernst over alle groepen", () => {
+    const rows = [
+      holder({ groupId: "g1", holderId: "p1", ernst: 55 }),
+      holder({ groupId: "g2", holderId: "p2", ernst: 110 }),
+      holder({ groupId: "g3", holderId: "p3", ernst: 43 }),
+    ];
+    expect(pickGlobaleZwartePiet(rows)?.holderId).toBe("p2");
+  });
+
+  it("breekt gelijke ernst op de oudste since (draagt 'm het langst)", () => {
+    const rows = [
+      holder({ groupId: "g1", holderId: "p1", since: "2026-07-16" }),
+      holder({ groupId: "g2", holderId: "p2", since: "2026-07-10" }),
+    ];
+    expect(pickGlobaleZwartePiet(rows)?.holderId).toBe("p2");
+  });
+
+  it("breekt daarna op laagste holderId en groupId — determinisme, zoals de SQL", () => {
+    expect(
+      pickGlobaleZwartePiet([
+        holder({ groupId: "g1", holderId: "p2" }),
+        holder({ groupId: "g2", holderId: "p1" }),
+      ])?.holderId,
+    ).toBe("p1");
+    expect(
+      pickGlobaleZwartePiet([
+        holder({ groupId: "g2" }),
+        holder({ groupId: "g1" }),
+      ])?.groupId,
+    ).toBe("g1");
   });
 });

@@ -36,6 +36,48 @@ export interface ZwartePiet {
   since: string;
 }
 
+/** De globale Zwarte Piet (#645): de drager over álle groepen heen. Spiegelt
+ *  get_global_zwarte_piet — zelfde velden als ZwartePiet, maar zonder
+ *  fromId/matchId (die lekken vreemde-groep-details) en mét het roast-schild
+ *  van de drager: de kaart zwijgt dan (de Piet blijft wel de Piet). */
+export interface GlobaleZwartePiet {
+  playerId: string;
+  reden: PiasReden;
+  ernst: number;
+  detail: string;
+  /** Speeldatum van de overname-match, YYYY-MM-DD. */
+  since: string;
+  /** roast_schild (#183) van de drager: geen kaart-editie, niemand schuift door. */
+  beschermd: boolean;
+}
+
+/**
+ * Pure spiegel van get_global_zwarte_piet (supabase/schemas/functions/
+ * 26_global_zwarte_piet.sql): uit de per-groep-dragers de Piet met de hoogste
+ * ernst — tie-breaks: oudste since (draagt 'm het langst), laagste holderId,
+ * dan groupId voor determinisme. Omdat de invoer de per-groep-dragers zijn, is
+ * de globale Piet per definitie ook de Piet van z'n eigen groep. Anders dan de
+ * globale pias geen weekvenster: het token is tijdloos, tot verlossing.
+ */
+export function pickGlobaleZwartePiet<
+  T extends Pick<ZwartePiet, "holderId" | "ernst" | "since"> & { groupId: string },
+>(rows: T[]): T | null {
+  let best: T | null = null;
+  for (const r of rows) {
+    if (
+      !best ||
+      r.ernst > best.ernst ||
+      (r.ernst === best.ernst &&
+        (r.since < best.since ||
+          (r.since === best.since &&
+            (r.holderId < best.holderId ||
+              (r.holderId === best.holderId && r.groupId < best.groupId)))))
+    )
+      best = r;
+  }
+  return best;
+}
+
 interface Flop {
   playerId: string;
   reden: PiasReden;
