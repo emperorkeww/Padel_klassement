@@ -1952,6 +1952,10 @@ export type Database = {
           won: number
         }[]
       }
+      set_match_group: {
+        Args: { p_group_id?: string; p_match_id: string }
+        Returns: undefined
+      }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }
     Enums: {

@@ -336,6 +336,22 @@ export async function setMatchResult(params: {
   }
 }
 
+/** Koppelt een match achteraf aan een groep, verhangt hem, of maakt hem weer
+ *  groepsloos (null) via de SECURITY DEFINER RPC (#648). De RPC eist
+ *  lidmaatschap van de doelgroep, en bij verhangen/loskoppelen ook van de
+ *  huidige groep. */
+export async function setMatchGroup(
+  matchId: string,
+  groupId: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc("set_match_group", {
+    p_match_id: matchId,
+    p_group_id: groupId ?? undefined,
+  });
+  if (error) throw error;
+  invalidateMatchData();
+}
+
 /**
  * Corrigeert de eindscore van een reeds afgeronde match. Alleen de aanmaker
  * mag dit (RLS). Anders dan setMatchResult blijft played_at behouden — het is
