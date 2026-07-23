@@ -596,6 +596,53 @@
     );
 }
 
+/* On-Fire (actieve winstreak, #632): sintel-donker vlak met een ember-frame
+   en dezelfde lopende shimmer als In-Form, alleen warmer — de gloed van
+   vuur i.p.v. goud. Warm-donker staat maximaal af van het navy-koele
+   In-Form, het roze van Big Daddy en het platina-groen van Kampioen.
+   Lokale hexen, net als kampioen (geen tweede consument). Contrast: ink op
+   het donkere vlak ≈ 11:1 (AAA). */
+.fut-kaart--onfire {
+  --kaart-ink: #ffc98a;
+  --kaart-ink-soft: #d1915b;
+  --kaart-lijn: rgba(255, 160, 92, 0.45);
+  --editie-kleur: #ffb35c;
+}
+.fut-kaart--onfire .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #ffd9a0 0%,
+    #b3411a 42%,
+    #ffc07a 68%,
+    #591107 100%
+  );
+}
+.fut-kaart--onfire .fut-kaart__liner {
+  background: #180a05;
+}
+.fut-kaart--onfire .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      rgba(255, 140, 66, 0.34),
+      transparent 62%
+    ),
+    linear-gradient(172deg, #3a180c 0%, #241009 60%, #140704 100%);
+}
+.fut-kaart--onfire .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 170, 92, 0.3) 50%,
+    transparent 62%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--onfire .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 2.6s ease-in-out infinite;
+  }
+}
+
 /* Pias (grootste choke van de week, alle groepen, #631): mat kraftkarton met
    confetti-stipjes — onmiskenbaar "geen beloning" naast het glimmende goud,
    roze en platina van de verdiende edities. Geen shimmer, geen metaal: het

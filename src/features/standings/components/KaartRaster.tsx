@@ -56,7 +56,7 @@ export function KaartRaster({
                   tier={tier}
                   naam={r.name}
                   avatar={<Avatar profile={r.profile} name={r.name} size={44} />}
-                  editie={editieLabel(editie, edities)}
+                  editie={editieLabel(editie, edities, r.key)}
                   // PlayStyles (#500) ook op de wand (#621): dezelfde
                   // ★-uitgelichte badges als op de profielkaart.
                   playstyles={featuredPlaystyles(r.profile?.featured_badges)}

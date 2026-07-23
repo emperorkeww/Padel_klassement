@@ -90,7 +90,7 @@ export function KaartPreview({
               avatar={
                 <Avatar profile={row.profile} name={row.name} size={64} />
               }
-              editie={editieLabel(editie, edities)}
+              editie={editieLabel(editie, edities, row.key)}
               // PlayStyles (#500) ook in de preview (#621): dezelfde chips
               // als op de profielkaart.
               playstyles={featuredPlaystyles(row.profile?.featured_badges)}
