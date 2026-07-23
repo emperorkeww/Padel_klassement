@@ -9,24 +9,41 @@
 //   kampioen  🏆 Winnaar van het vorige kwartaal, het hele lopende
 //              kwartaal lang (kampioen.ts).
 //   inform    ⚡ Speler van de week (spelerVanDeWeek.ts).
+//   pias      🤡 Grootste choke van de week, over alle groepen heen
+//              (#631) — achteraan: een schand-editie verdringt nooit een
+//              verdiende.
+//
+// Scoping van de pias (#631, bewuste keuze): de pias is per gróep vastgelegd
+// (pias_of_week), maar de kaart is overal globaal (#621/#624). Client-side
+// scopen ("de groep van de kijker", of "alleen als hij in precies één groep
+// pias is") zou de kaart per kijker anders maken: RLS toont iedereen alleen
+// zijn eigen groepen, dus zelfs "eenduidigheid" is een gezichtspunt, geen
+// feit. Daarom beslist de server: get_global_pias geeft per week de
+// per-groep-pias met de hoogste winkans — die is per definitie ook de pias
+// van z'n eigen groep, dus kaart en PiasBanner spreken elkaar nooit tegen.
+// Draagt de pias een roast-schild (#183), dan zwijgt de kaart en schuift er
+// níemand door — de pias blijft de pias, alleen de kaart houdt z'n mond
+// (dragerVan geeft null i.p.v. een vervanger).
 //
 // Bewuste niet-edities: de zittende dictator draagt nooit een editie — zijn
 // troonkaart is al de sterkste special (tier-gedreven, #545); een editie
-// erbovenop zou dubbelop zijn. 🤡 Pias en 🔥 On-Fire zijn kandidaten voor
-// een vervolgissue (pias is per groep bepaald; een streak-editie vergt
-// matchdata die niet overal geladen is).
+// erbovenop zou dubbelop zijn. 🔥 On-Fire is kandidaat voor een
+// vervolgissue (een streak-editie vergt matchdata die niet overal geladen
+// is).
 
 import { byRank } from "@/features/rating/standings";
 import type { PlayerRating, PlayerStanding } from "@/types";
 import type { InForm } from "./spelerVanDeWeek";
 import type { Kampioen } from "./kampioen";
+import type { GlobalePias } from "./pias";
 
-export type Editie = "icon" | "kampioen" | "inform" | null;
+export type Editie = "icon" | "kampioen" | "inform" | "pias" | null;
 
 /** Prioriteit: de eerste editie die een speler draagt wint — gerangschikt op
  *  zeldzaamheid en duur. Er is hooguit één Big Daddy (en die is al de kroon),
- *  een kampioenschap duurt een kwartaal, In-Form wisselt wekelijks. */
-export const EDITIE_PRIORITEIT = ["icon", "kampioen", "inform"] as const;
+ *  een kampioenschap duurt een kwartaal, In-Form wisselt wekelijks, en de
+ *  pias sluit achteraan de rij: schande verdringt nooit verdienste. */
+export const EDITIE_PRIORITEIT = ["icon", "kampioen", "inform", "pias"] as const;
 
 /** Alles wat nodig is om de editie van élke speler te bepalen — op alle
  *  plekken identiek opgebouwd, zodat de kaart overal dezelfde is. */
@@ -39,6 +56,9 @@ export interface EditieContext {
   kampioen: Kampioen | null;
   /** Speler van de week, null zonder (of buiten de live stand). */
   inForm: InForm | null;
+  /** Globale pias van de lopende (anders vorige) week, null zonder choke of
+   *  buiten de live stand; bij een roast-schild (beschermd) zwijgt de kaart. */
+  pias: GlobalePias | null;
 }
 
 /** Wie draagt deze editie volgens de context? */
@@ -53,6 +73,10 @@ function dragerVan(
       return ctx.kampioen?.playerId ?? null;
     case "inform":
       return ctx.inForm?.playerId ?? null;
+    case "pias":
+      // Roast-schild (#183): geen editie én geen doorschuiving — de kaart
+      // zwijgt, maar de pias blijft de pias.
+      return ctx.pias && !ctx.pias.beschermd ? ctx.pias.playerId : null;
   }
 }
 
@@ -100,5 +124,9 @@ export function editieLabel(
     return `🏆 Kampioen${ctx.kampioen ? ` ${ctx.kampioen.seasonLabel}` : ""}`;
   if (editie === "inform")
     return `⚡ In-Form${ctx.inForm ? ` · +${ctx.inForm.delta}` : ""}`;
+  if (editie === "pias")
+    return `🤡 Pias van de week${
+      ctx.pias ? ` · ${Math.round(ctx.pias.winChance * 100)}%` : ""
+    }`;
   return null;
 }

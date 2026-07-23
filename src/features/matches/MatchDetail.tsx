@@ -39,6 +39,8 @@ import { getHuidigeDictator } from "@/features/standings/dictatorApi";
 import { getPlayerStandings } from "@/features/standings/api";
 import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
 import { getSeizoenskampioen } from "@/features/standings/kampioen";
+import { getGlobalePias } from "@/features/standings/piasApi";
+import { currentPias } from "@/features/standings/pias";
 import { iconKeyVoor, type EditieContext } from "@/features/standings/edities";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { matchDerby } from "@/features/matches/derby";
@@ -96,6 +98,8 @@ export function MatchDetail() {
   // Alle bronnen gecacht en app-breed gedeeld; hooks vóór de vroege returns.
   const standings = useAsync(getPlayerStandings, []);
   const kampioen = useAsync(getSeizoenskampioen, []);
+  // Pias-editie (#631): de globale pias van deze (of anders vorige) week.
+  const globalePias = useAsync(getGlobalePias, []);
   const inForm = useMemo(
     () => spelerVanDeWeek(histories.data ?? {}),
     [histories.data],
@@ -109,6 +113,7 @@ export function MatchDetail() {
     ),
     kampioen: kampioen.data ?? null,
     inForm,
+    pias: currentPias(globalePias.data ?? []),
   };
   const [editing, setEditing] = useState(false);
 

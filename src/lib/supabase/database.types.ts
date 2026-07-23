@@ -1871,6 +1871,17 @@ export type Database = {
           mutual_ids: string[]
         }[]
       }
+      get_global_pias: {
+        Args: { weken_terug?: number }
+        Returns: {
+          beschermd: boolean
+          iso_week: number
+          iso_year: number
+          player_id: string
+          week_start: string
+          win_chance: number
+        }[]
+      }
       is_accepted_friend: {
         Args: { p_a: string; p_b: string }
         Returns: boolean
