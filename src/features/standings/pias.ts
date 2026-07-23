@@ -27,6 +27,21 @@ export interface PiasWeek {
   winChance: number;
 }
 
+/** De globale pias (#631): één rij per ISO-week, over alle groepen heen.
+ *  Spiegelt get_global_pias — zelfde velden als PiasWeek, maar zonder
+ *  groep/match (die lekken vreemde-groep-details) en mét het roast-schild
+ *  van de drager: de kaart zwijgt dan (de pias blijft wel de pias). */
+export interface GlobalePias {
+  isoYear: number;
+  isoWeek: number;
+  /** Maandag van de ISO-week, YYYY-MM-DD. */
+  weekStart: string;
+  playerId: string;
+  winChance: number;
+  /** roast_schild (#183) van de drager: geen kaart-editie, niemand schuift door. */
+  beschermd: boolean;
+}
+
 /** YYYY-MM-DD (UTC) van een datum. */
 function ymd(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -62,13 +77,14 @@ export function isoParts(date: Date): {
   return { isoYear, isoWeek, weekStart: ymd(monday) };
 }
 
-/** De pias van de lópende week uit de rijen van één groep, of anders de meest
- *  recente. Werkt op weekStart, dus zonder eigen ISO-herberekening — de DB is
- *  autoritair voor de weeknummers. Null als er geen enkele rij is. */
-export function currentPias(
-  rows: PiasWeek[],
+/** De pias van de lópende week uit de rijen van één groep (of de globale
+ *  rijen, #631), of anders de meest recente. Werkt op weekStart, dus zonder
+ *  eigen ISO-herberekening — de DB is autoritair voor de weeknummers. Null
+ *  als er geen enkele rij is. */
+export function currentPias<T extends { weekStart: string }>(
+  rows: T[],
   now: Date = new Date(),
-): PiasWeek | null {
+): T | null {
   if (rows.length === 0) return null;
   const today = ymd(now);
   for (const r of rows) {
@@ -141,6 +157,27 @@ export function pickPias(
       matchId: m.id,
       winChance: chance,
     });
+  }
+  return [...best.values()];
+}
+
+/**
+ * Pure spiegel van get_global_pias (supabase/schemas/functions/25_global_pias):
+ * per ISO-week de per-groep-pias met de hoogste winkans, over alle groepen
+ * heen — zelfde tie-break als de SQL (win_chance desc, match_id asc). Omdat
+ * de invoer de per-groep-rijen zijn, is de globale pias per definitie ook de
+ * pias van z'n eigen groep. Geteste specificatie; runtime leest de RPC.
+ */
+export function pickGlobalePias(rows: PiasWeek[]): PiasWeek[] {
+  const best = new Map<string, PiasWeek>();
+  for (const r of rows) {
+    const key = `${r.isoYear}|${r.isoWeek}`;
+    const prev = best.get(key);
+    if (prev) {
+      if (prev.winChance > r.winChance) continue;
+      if (prev.winChance === r.winChance && prev.matchId <= r.matchId) continue;
+    }
+    best.set(key, r);
   }
   return [...best.values()];
 }

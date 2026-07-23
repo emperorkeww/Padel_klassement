@@ -175,6 +175,7 @@ describe("vsKaartVoor (#499) — dictator- en editie-bewust, zoals overal elders
     iconKey: null,
     kampioen: null,
     inForm: null,
+    pias: null,
     ...over,
   });
   const profile = (id: string, extra: Partial<Profile> = {}): Profile => ({

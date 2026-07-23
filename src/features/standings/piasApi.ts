@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
 import type { Tables } from "@/lib/supabase/database.types";
-import type { PiasWeek } from "@/features/standings/pias";
+import type { GlobalePias, PiasWeek } from "@/features/standings/pias";
 
 // Pias van de week (#127): de serverside aangeduide pias per groep, per
 // ISO-week (tabel public.pias_of_week, gevuld door recompute_pias). Zelfde
@@ -33,5 +33,26 @@ export function getPiasWeeks(): Promise<Record<string, PiasWeek[]>> {
       (byGroup[pias.groupId] ??= []).push(pias);
     }
     return byGroup;
+  });
+}
+
+/** De globale pias per ISO-week (#631): server-side het maximum over álle
+ *  groepen (get_global_pias, SECURITY DEFINER — RLS toont een kijker anders
+ *  alleen eigen groepen, terwijl de FUT-kaart overal globaal is). Venster:
+ *  lopende + vorige week; nieuwste eerst, zodat currentPias zo kan kiezen. */
+export function getGlobalePias(): Promise<GlobalePias[]> {
+  return cached("pias:globaal", async () => {
+    const { data, error } = await supabase.rpc("get_global_pias");
+    if (error) throw error;
+    return (data ?? [])
+      .map((r) => ({
+        isoYear: r.iso_year,
+        isoWeek: r.iso_week,
+        weekStart: r.week_start,
+        playerId: r.player_id,
+        winChance: Number(r.win_chance),
+        beschermd: r.beschermd,
+      }))
+      .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
   });
 }
