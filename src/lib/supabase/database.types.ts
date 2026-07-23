@@ -1894,6 +1894,17 @@ export type Database = {
           win_chance: number
         }[]
       }
+      get_global_zwarte_piet: {
+        Args: never
+        Returns: {
+          beschermd: boolean
+          detail: string
+          ernst: number
+          player_id: string
+          reden: string
+          since: string
+        }[]
+      }
       is_accepted_friend: {
         Args: { p_a: string; p_b: string }
         Returns: boolean

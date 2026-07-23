@@ -41,6 +41,7 @@ import { getPlayerStandings } from "@/features/standings/api";
 import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
 import { getSeizoenskampioen } from "@/features/standings/kampioen";
 import { getGlobalePias } from "@/features/standings/piasApi";
+import { getGlobaleZwartePiet } from "@/features/groups/zwartePietApi";
 import { currentPias } from "@/features/standings/pias";
 import { onFireSpelers } from "@/features/standings/onFire";
 import { iconKeyVoor, type EditieContext } from "@/features/standings/edities";
@@ -102,6 +103,8 @@ export function MatchDetail() {
   const kampioen = useAsync(getSeizoenskampioen, []);
   // Pias-editie (#631): de globale pias van deze (of anders vorige) week.
   const globalePias = useAsync(getGlobalePias, []);
+  // Piet-editie (#645): de globale Zwarte Piet over alle groepen heen.
+  const globaleZwartePiet = useAsync(getGlobaleZwartePiet, []);
   const inForm = useMemo(
     () => spelerVanDeWeek(histories.data ?? {}),
     [histories.data],
@@ -122,6 +125,7 @@ export function MatchDetail() {
     inForm,
     onFire,
     pias: currentPias(globalePias.data ?? []),
+    piet: globaleZwartePiet.data ?? null,
   };
   const [editing, setEditing] = useState(false);
 
