@@ -1891,7 +1891,7 @@ export type Database = {
           reden: string
           waarde: number
           week_start: string
-          win_chance: number | null
+          win_chance: number
         }[]
       }
       is_accepted_friend: {
