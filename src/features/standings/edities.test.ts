@@ -39,36 +39,56 @@ const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
   iconKey: null,
   kampioen: null,
   inForm: null,
+  pias: null,
   ...over,
 });
 
 const inForm = { playerId: "p2", delta: 48, matches: 3 };
 const kampioen = { playerId: "p3", seasonLabel: "Q2 2026" };
+const pias = {
+  isoYear: 2026,
+  isoWeek: 30,
+  weekStart: "2026-07-20",
+  playerId: "p4",
+  winChance: 0.87,
+  beschermd: false,
+};
 
 describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
   it("kent elke editie toe aan zijn drager", () => {
-    const c = ctx({ iconKey: "p1", kampioen, inForm });
+    const c = ctx({ iconKey: "p1", kampioen, inForm, pias });
     expect(editieVoor("p1", c)).toBe("icon");
     expect(editieVoor("p3", c)).toBe("kampioen");
     expect(editieVoor("p2", c)).toBe("inform");
+    expect(editieVoor("p4", c)).toBe("pias");
     expect(editieVoor("p9", c)).toBeNull();
   });
 
-  it("volgt de prioriteit: icon > kampioen > inform, voor álle varianten", () => {
-    // Eén speler die alles tegelijk verdient: de lijst beslist.
+  it("volgt de prioriteit: icon > kampioen > inform > pias, voor álle varianten", () => {
+    // Eén speler die alles tegelijk verdient (én verpest): de lijst beslist.
     const alles = ctx({
       iconKey: "p1",
       kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
       inForm: { ...inForm, playerId: "p1" },
+      pias: { ...pias, playerId: "p1" },
     });
     expect(editieVoor("p1", alles)).toBe(EDITIE_PRIORITEIT[0]);
-    // Zonder icon wint kampioen; zonder beide wint inform.
+    // Zonder icon wint kampioen; daarna inform; de pias sluit de rij — een
+    // schand-editie verdringt nooit een verdiende (#631).
     expect(
       editieVoor("p1", { ...alles, iconKey: null }),
     ).toBe("kampioen");
     expect(
       editieVoor("p1", { ...alles, iconKey: null, kampioen: null }),
     ).toBe("inform");
+    expect(
+      editieVoor("p1", {
+        ...alles,
+        iconKey: null,
+        kampioen: null,
+        inForm: null,
+      }),
+    ).toBe("pias");
   });
 
   it("geeft de zittende dictator nooit een editie (troonkaart is genoeg)", () => {
@@ -77,10 +97,20 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
       iconKey: "p1",
       kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
       inForm: { ...inForm, playerId: "p1" },
+      pias: { ...pias, playerId: "p1" },
     });
     expect(editieVoor("p1", c)).toBeNull();
     // Andere spelers houden hun editie gewoon.
     expect(editieVoor("p2", ctx({ dictatorId: "p1", inForm }))).toBe("inform");
+  });
+
+  it("zwijgt bij een roast-schild: geen pias-editie én niemand schuift door (#631)", () => {
+    const c = ctx({ pias: { ...pias, beschermd: true } });
+    expect(editieVoor("p4", c)).toBeNull();
+    // De beschermde pias blijft de pias — er is geen vervangende drager.
+    for (const key of ["p1", "p2", "p3", "p9"]) {
+      expect(editieVoor(key, c)).toBeNull();
+    }
   });
 });
 
@@ -91,12 +121,16 @@ describe("editieLabel (#497/#625)", () => {
       "🏆 Kampioen Q2 2026",
     );
     expect(editieLabel("inform", ctx({ inForm }))).toBe("⚡ In-Form · +48");
+    expect(editieLabel("pias", ctx({ pias }))).toBe(
+      "🤡 Pias van de week · 87%",
+    );
     expect(editieLabel(null, ctx({ inForm }))).toBeNull();
   });
 
   it("valt defensief terug zonder contextdata", () => {
     expect(editieLabel("kampioen", ctx())).toBe("🏆 Kampioen");
     expect(editieLabel("inform", ctx())).toBe("⚡ In-Form");
+    expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de week");
   });
 });
 

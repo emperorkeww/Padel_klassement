@@ -595,3 +595,48 @@
       var(--kaart-lo) 100%
     );
 }
+
+/* Pias (grootste choke van de week, alle groepen, #631): mat kraftkarton met
+   confetti-stipjes — onmiskenbaar "geen beloning" naast het glimmende goud,
+   roze en platina van de verdiende edities. Geen shimmer, geen metaal: het
+   frame is dof karton. Lokale hexen, net als kampioen (geen tweede
+   consument). Contrast: ink op hi ≈ 9:1 (AAA). */
+.fut-kaart--pias {
+  --kaart-hi: #dcbd85;
+  --kaart-mid: #c9a468;
+  --kaart-lo: #a37e46;
+  --kaart-ink: #3a250c;
+  --kaart-ink-soft: #6b4d24;
+  --kaart-lijn: #8a6534;
+  --editie-kleur: #8c2a17;
+}
+.fut-kaart--pias .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #c6a06a 0%,
+    #8a6534 45%,
+    #d4b384 70%,
+    #6e5128 100%
+  );
+}
+.fut-kaart--pias .fut-kaart__liner {
+  background: #4a3315;
+}
+.fut-kaart--pias .fut-kaart__vlak {
+  background:
+    radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.3) 0 3.2%, transparent 4.2%),
+    radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.26) 0 2.8%, transparent 3.8%),
+    radial-gradient(circle at 38% 76%, rgba(31, 74, 128, 0.24) 0 2.8%, transparent 3.8%),
+    radial-gradient(circle at 84% 64%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 3.4%),
+    repeating-linear-gradient(
+      -38deg,
+      rgba(58, 37, 12, 0.07) 0 5px,
+      transparent 5px 12px
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}

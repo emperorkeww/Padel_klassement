@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { currentPias, isoParts, pickPias, type PiasWeek } from "@/features/standings/pias";
+import {
+  currentPias,
+  isoParts,
+  pickGlobalePias,
+  pickPias,
+  type PiasWeek,
+} from "@/features/standings/pias";
 import type { Match, RatingPoint, Team } from "@/types";
 
 const team = (id: string, p1: string, p2: string): Team =>
@@ -126,6 +132,49 @@ describe("currentPias", () => {
 
   it("null zonder rijen", () => {
     expect(currentPias([], new Date("2026-07-08T10:00:00Z"))).toBeNull();
+  });
+});
+
+describe("pickGlobalePias (#631) — spiegel van get_global_pias", () => {
+  const rij = (over: Partial<PiasWeek>): PiasWeek => ({
+    groupId: "g1",
+    isoYear: 2026,
+    isoWeek: 30,
+    weekStart: "2026-07-20",
+    playerId: "p1",
+    matchId: "m1",
+    winChance: 0.7,
+    ...over,
+  });
+
+  it("kiest per week de per-groep-pias met de hoogste winkans", () => {
+    const rows = [
+      rij({ groupId: "g1", playerId: "p1", matchId: "m1", winChance: 0.72 }),
+      rij({ groupId: "g2", playerId: "p2", matchId: "m2", winChance: 0.91 }),
+      rij({ groupId: "g3", playerId: "p3", matchId: "m3", winChance: 0.8 }),
+    ];
+    const globaal = pickGlobalePias(rows);
+    expect(globaal).toHaveLength(1);
+    // De globale pias is per definitie ook de pias van z'n eigen groep.
+    expect(globaal[0]).toEqual(rows[1]);
+  });
+
+  it("breekt gelijke kansen met het laagste match-id (zelfde als de SQL)", () => {
+    const rows = [
+      rij({ groupId: "g2", playerId: "p2", matchId: "m9", winChance: 0.8 }),
+      rij({ groupId: "g1", playerId: "p1", matchId: "m2", winChance: 0.8 }),
+    ];
+    expect(pickGlobalePias(rows)[0].matchId).toBe("m2");
+  });
+
+  it("levert één winnaar per ISO-week", () => {
+    const rows = [
+      rij({ isoWeek: 29, weekStart: "2026-07-13", playerId: "p1", winChance: 0.9 }),
+      rij({ isoWeek: 30, weekStart: "2026-07-20", playerId: "p2", winChance: 0.7 }),
+      rij({ isoWeek: 30, weekStart: "2026-07-20", groupId: "g2", playerId: "p3", matchId: "m3", winChance: 0.75 }),
+    ];
+    const globaal = pickGlobalePias(rows);
+    expect(globaal.map((r) => r.playerId).sort()).toEqual(["p1", "p3"]);
   });
 });
 
