@@ -41,6 +41,7 @@ const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
   inForm: null,
   onFire: {},
   pias: null,
+  piet: null,
   ...over,
 });
 
@@ -57,19 +58,35 @@ const pias = {
   winChance: 0.87,
   beschermd: false,
 };
+const piet = {
+  playerId: "p6",
+  reden: "zwarte-reeks" as const,
+  ernst: 45,
+  detail: "verloor 5× op rij",
+  since: "2026-07-14",
+  beschermd: false,
+};
 
 describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
   it("kent elke editie toe aan zijn drager", () => {
-    const c = ctx({ iconKey: "p1", kampioen, inForm, onFire: { p5: 6 }, pias });
+    const c = ctx({
+      iconKey: "p1",
+      kampioen,
+      inForm,
+      onFire: { p5: 6 },
+      pias,
+      piet,
+    });
     expect(editieVoor("p1", c)).toBe("icon");
     expect(editieVoor("p3", c)).toBe("kampioen");
     expect(editieVoor("p2", c)).toBe("inform");
     expect(editieVoor("p5", c)).toBe("onfire");
     expect(editieVoor("p4", c)).toBe("pias");
+    expect(editieVoor("p6", c)).toBe("piet");
     expect(editieVoor("p9", c)).toBeNull();
   });
 
-  it("volgt de prioriteit: icon > kampioen > inform > onfire > pias, voor álle varianten", () => {
+  it("volgt de prioriteit: icon > kampioen > inform > onfire > pias > piet, voor álle varianten", () => {
     // Eén speler die alles tegelijk verdient (én verpest): de lijst beslist.
     const alles = ctx({
       iconKey: "p1",
@@ -77,6 +94,7 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
       inForm: { ...inForm, playerId: "p1" },
       onFire: { p1: 6 },
       pias: { ...pias, playerId: "p1" },
+      piet: { ...piet, playerId: "p1" },
     });
     expect(editieVoor("p1", alles)).toBe(EDITIE_PRIORITEIT[0]);
     // Zonder icon wint kampioen; daarna inform; dan onfire (de weeklens wint
@@ -105,6 +123,17 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
         onFire: {},
       }),
     ).toBe("pias");
+    // Binnen de schande wint de pias (weeklens) van de Piet (token, #645).
+    expect(
+      editieVoor("p1", {
+        ...alles,
+        iconKey: null,
+        kampioen: null,
+        inForm: null,
+        onFire: {},
+        pias: null,
+      }),
+    ).toBe("piet");
   });
 
   it("kan meerdere On-Fire-dragers tegelijk hebben (#632)", () => {
@@ -136,6 +165,15 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
       expect(editieVoor(key, c)).toBeNull();
     }
   });
+
+  it("zwijgt óók bij een roast-schild op de Piet — zelfde gedrag (#645)", () => {
+    const c = ctx({ piet: { ...piet, beschermd: true } });
+    expect(editieVoor("p6", c)).toBeNull();
+    // De beschermde Piet blijft de Piet — er is geen vervangende drager.
+    for (const key of ["p1", "p2", "p3", "p9"]) {
+      expect(editieVoor(key, c)).toBeNull();
+    }
+  });
 });
 
 describe("editieLabel (#497/#625)", () => {
@@ -150,6 +188,10 @@ describe("editieLabel (#497/#625)", () => {
     );
     expect(editieLabel("pias", ctx({ pias }))).toBe(
       "🤡 Pias van de week · 87%",
+    );
+    // De Piet draagt zijn sinds-datum als reden-specifiek getal (#645).
+    expect(editieLabel("piet", ctx({ piet }))).toBe(
+      "🃏 Zwarte Piet · sinds 14/7",
     );
     expect(editieLabel(null, ctx({ inForm }))).toBeNull();
   });
@@ -176,6 +218,7 @@ describe("editieLabel (#497/#625)", () => {
     expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }))).toBe("🔥 On Fire");
     expect(editieLabel("onfire", ctx(), "p5")).toBe("🔥 On Fire");
     expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de week");
+    expect(editieLabel("piet", ctx())).toBe("🃏 Zwarte Piet");
   });
 });
 

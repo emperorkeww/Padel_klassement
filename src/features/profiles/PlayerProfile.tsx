@@ -20,6 +20,7 @@ import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
 import { onFireSpelers } from "@/features/standings/onFire";
 import { getSeizoenskampioen } from "@/features/standings/kampioen";
 import { getGlobalePias } from "@/features/standings/piasApi";
+import { getGlobaleZwartePiet } from "@/features/groups/zwartePietApi";
 import { currentPias } from "@/features/standings/pias";
 import {
   editieLabel,
@@ -106,6 +107,8 @@ export function PlayerProfile() {
   const kampioen = useAsync(getSeizoenskampioen, []);
   // Pias-editie (#631): de globale pias van deze (of anders vorige) week.
   const globalePias = useAsync(getGlobalePias, []);
+  // Piet-editie (#645): de globale Zwarte Piet over alle groepen heen.
+  const globaleZwartePiet = useAsync(getGlobaleZwartePiet, []);
   // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
   const allHistories = useAsync(getAllRatingHistories, []);
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
@@ -356,6 +359,7 @@ export function PlayerProfile() {
     inForm,
     onFire,
     pias: currentPias(globalePias.data ?? []),
+    piet: globaleZwartePiet.data ?? null,
   };
   const editie = editieVoor(id, editieCtx);
   // Head-to-Head versus-kaarten (#499): dezelfde editie-context als

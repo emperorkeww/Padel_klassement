@@ -16,18 +16,25 @@
 //              zwarte reeks of choke — zelfde regels als bepaalPias), over
 //              alle groepen heen — achteraan: een schand-editie verdringt
 //              nooit een verdiende.
+//   piet      🃏 De Zwarte Piet (#645/#185): het rondgaande schande-token,
+//              over alle groepen heen — helemaal achteraan: binnen de
+//              schande wint de weeklens (pias) van het lopende token,
+//              dezelfde parallel als inform › onfire.
 //
-// Scoping van de pias (#631, bewuste keuze): de pias is per gróep vastgelegd
-// (pias_of_week), maar de kaart is overal globaal (#621/#624). Client-side
-// scopen ("de groep van de kijker", of "alleen als hij in precies één groep
-// pias is") zou de kaart per kijker anders maken: RLS toont iedereen alleen
-// zijn eigen groepen, dus zelfs "eenduidigheid" is een gezichtspunt, geen
-// feit. Daarom beslist de server: get_global_pias geeft per week de
-// per-groep-pias met de hoogste ernst — die is per definitie ook de pias
-// van z'n eigen groep, dus kaart en PiasBanner spreken elkaar nooit tegen.
-// Draagt de pias een roast-schild (#183), dan zwijgt de kaart en schuift er
-// níemand door — de pias blijft de pias, alleen de kaart houdt z'n mond
-// (dragerVan geeft null i.p.v. een vervanger).
+// Scoping van de pias (#631) en de Piet (#645, zelfde bewuste keuze): beide
+// zijn per gróep vastgelegd (pias_of_week resp. zwarte_piet), maar de kaart
+// is overal globaal (#621/#624). Client-side scopen ("de groep van de
+// kijker", of "alleen als hij in precies één groep pias/Piet is") zou de
+// kaart per kijker anders maken: RLS toont iedereen alleen zijn eigen
+// groepen, dus zelfs "eenduidigheid" is een gezichtspunt, geen feit. Daarom
+// beslist de server: get_global_pias geeft per week de per-groep-pias met de
+// hoogste ernst, get_global_zwarte_piet de per-groep-drager met de hoogste
+// ernst (tie-break: oudste since) — die zijn per definitie ook pias/Piet van
+// hun eigen groep, dus kaart en groepsweergave spreken elkaar nooit tegen.
+// Anders dan de pias kent de Piet geen weekvenster: het token is tijdloos,
+// tot verlossing. Draagt de pias of de Piet een roast-schild (#183), dan
+// zwijgt de kaart en schuift er níemand door — de drager blijft de drager,
+// alleen de kaart houdt z'n mond (isDrager geeft false i.p.v. een vervanger).
 //
 // On-Fire (#632) telt niet op échte uitslagen maar op delta > 0 uit de
 // rating-histories — de enige streak-bron die overal al geladen is. De reeks
@@ -43,6 +50,7 @@ import type { PlayerRating, PlayerStanding } from "@/types";
 import type { InForm } from "./spelerVanDeWeek";
 import type { Kampioen } from "./kampioen";
 import type { GlobalePias } from "./pias";
+import type { GlobaleZwartePiet } from "@/features/groups/zwartePiet";
 
 export type Editie =
   | "icon"
@@ -50,19 +58,23 @@ export type Editie =
   | "inform"
   | "onfire"
   | "pias"
+  | "piet"
   | null;
 
 /** Prioriteit: de eerste editie die een speler draagt wint — gerangschikt op
  *  zeldzaamheid en duur. Er is hooguit één Big Daddy (en die is al de kroon),
  *  een kampioenschap duurt een kwartaal, In-Form wisselt wekelijks, On-Fire
- *  komt daarna (de weeklens wint van de reeks, #632), en de pias sluit
- *  achteraan de rij: schande verdringt nooit verdienste. */
+ *  komt daarna (de weeklens wint van de reeks, #632), en de schande sluit
+ *  achteraan de rij: schande verdringt nooit verdienste. Binnen de schande
+ *  wint de pias (de afgang van déze week) van de Piet (het lopende token,
+ *  #645) — dezelfde weeklens-boven-reeks-parallel als inform › onfire. */
 export const EDITIE_PRIORITEIT = [
   "icon",
   "kampioen",
   "inform",
   "onfire",
   "pias",
+  "piet",
 ] as const;
 
 /** Alles wat nodig is om de editie van élke speler te bepalen — op alle
@@ -82,6 +94,9 @@ export interface EditieContext {
   /** Globale pias van de lopende (anders vorige) week, null zonder choke of
    *  buiten de live stand; bij een roast-schild (beschermd) zwijgt de kaart. */
   pias: GlobalePias | null;
+  /** Globale Zwarte Piet (#645), null als de Piet overal vrij is of buiten
+   *  de live stand; bij een roast-schild (beschermd) zwijgt de kaart. */
+  piet: GlobaleZwartePiet | null;
 }
 
 /** Draagt deze speler deze editie volgens de context? Per speler i.p.v.
@@ -105,6 +120,9 @@ function isDrager(
       // Roast-schild (#183): geen editie én geen doorschuiving — de kaart
       // zwijgt, maar de pias blijft de pias.
       return ctx.pias != null && !ctx.pias.beschermd && ctx.pias.playerId === key;
+    case "piet":
+      // Zelfde roast-schild-gedrag als de pias (#645).
+      return ctx.piet != null && !ctx.piet.beschermd && ctx.piet.playerId === key;
   }
 }
 
@@ -158,7 +176,17 @@ export function editieLabel(
     return `🔥 On Fire${streak != null ? ` · ${streak} op rij` : ""}`;
   }
   if (editie === "pias") return `🤡 Pias van de week${piasSuffix(ctx.pias)}`;
+  if (editie === "piet") return `🃏 Zwarte Piet${pietSuffix(ctx.piet)}`;
   return null;
+}
+
+/** Sinds-aanduiding voor op het kaartvlak (#645): de speeldatum van de
+ *  overname-match, kort als d/m — het reden-specifieke getal van de Piet is
+ *  hoe lang hij 'm al meedraagt. */
+function pietSuffix(piet: GlobaleZwartePiet | null): string {
+  if (!piet) return "";
+  const [, m, d] = piet.since.split("-");
+  return ` · sinds ${Number(d)}/${Number(m)}`;
 }
 
 /** Compacte reden-aanduiding voor op het kaartvlak (#643): het getal dat de

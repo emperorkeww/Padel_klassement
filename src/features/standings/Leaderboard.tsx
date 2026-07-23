@@ -34,6 +34,7 @@ import {
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getGlobalePias, getPiasWeeks } from "./piasApi";
+import { getGlobaleZwartePiet } from "@/features/groups/zwartePietApi";
 import { currentPias } from "@/features/standings/pias";
 import { roastCtx, roastSeed, type CoachMood } from "@/features/coach/roastTone";
 import { klassementFeiten } from "@/features/coach/klassementFeiten";
@@ -189,6 +190,8 @@ export function Leaderboard() {
   // Pias-editie (#631): de globale pias — server-side het maximum over álle
   // groepen, zodat de kaart voor iedereen dezelfde is.
   const globalePias = useAsync(getGlobalePias, []);
+  // Piet-editie (#645): de globale Zwarte Piet over alle groepen heen.
+  const globaleZwartePiet = useAsync(getGlobaleZwartePiet, []);
   // Globale kwartaalstand komt sinds #461 van een SECURITY DEFINER RPC: de ruwe
   // matches-tabel is niet meer publiek, dus een client-side berekening zou de
   // globale seizoensstand per-kijker maken (groepsmatches vallen weg). Een
@@ -659,6 +662,7 @@ export function Leaderboard() {
     inForm,
     onFire,
     pias: usingScope ? null : currentPias(globalePias.data ?? []),
+    piet: usingScope ? null : (globaleZwartePiet.data ?? null),
   };
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
