@@ -798,33 +798,42 @@ export type Database = {
       pias_of_week: {
         Row: {
           created_at: string
+          ernst: number
           group_id: string
           iso_week: number
           iso_year: number
           match_id: string
           player_id: string
+          reden: string
+          waarde: number
           week_start: string
-          win_chance: number
+          win_chance: number | null
         }
         Insert: {
           created_at?: string
+          ernst: number
           group_id: string
           iso_week: number
           iso_year: number
           match_id: string
           player_id: string
+          reden: string
+          waarde: number
           week_start: string
-          win_chance: number
+          win_chance?: number | null
         }
         Update: {
           created_at?: string
+          ernst?: number
           group_id?: string
           iso_week?: number
           iso_year?: number
           match_id?: string
           player_id?: string
+          reden?: string
+          waarde?: number
           week_start?: string
-          win_chance?: number
+          win_chance?: number | null
         }
         Relationships: [
           {
@@ -1875,9 +1884,12 @@ export type Database = {
         Args: { weken_terug?: number }
         Returns: {
           beschermd: boolean
+          ernst: number
           iso_week: number
           iso_year: number
           player_id: string
+          reden: string
+          waarde: number
           week_start: string
           win_chance: number
         }[]
@@ -1939,6 +1951,10 @@ export type Database = {
           team_name: string
           won: number
         }[]
+      }
+      set_match_group: {
+        Args: { p_group_id?: string; p_match_id: string }
+        Returns: undefined
       }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }

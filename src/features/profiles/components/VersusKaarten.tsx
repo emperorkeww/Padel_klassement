@@ -37,7 +37,7 @@ function VersusKaart({ kaart, className }: { kaart: VsKaart; className: string }
               <Avatar
                 profile={{ avatar_url: kaart.avatarUrl }}
                 name={kaart.naam}
-                size={40}
+                size={64}
               />
             }
             editie={kaart.editieTekst}

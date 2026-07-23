@@ -68,6 +68,7 @@ create policy "Deelnemer kan uitslag invullen"
 --   updatePlannedMatchTime played_at
 -- Zo blijven created_by, group_id, team_a_id/team_b_id, round_number, format
 -- en id buiten bereik. anon (geen UPDATE-policy) en service_role: ongemoeid.
+-- group_id muteert uitsluitend via de RPC set_match_group (#648).
 revoke update on table public.matches from authenticated;
 grant update (status, winner_team_id, score_a, score_b, set_scores, played_at)
   on table public.matches to authenticated;

@@ -16,7 +16,8 @@ import { FormChips } from "@/features/rating/components/FormChips";
 import { CountUp } from "@/ui/CountUp";
 import { inTeam, recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
 import { deriveBadges } from "@/features/profiles/badges";
-import { weekRange } from "@/features/dashboard/missions";
+import { getPiasWeeks } from "@/features/standings/piasApi";
+import { isoParts } from "@/features/standings/pias";
 import { RatingChart } from "@/features/rating/components/RatingChart";
 import { getPlayerStandings } from "@/features/standings/api";
 import {
@@ -34,7 +35,7 @@ import { eveningSummary } from "@/features/feed/eveningSummary";
 import { ShareEvening } from "@/features/groups/components/ShareEvening";
 import { PiasCard } from "@/features/groups/components/PiasCard";
 import { getZwartePiet } from "@/features/groups/zwartePietApi";
-import { bepaalPias } from "@/features/groups/maandpias";
+import { piasDetail } from "@/features/groups/maandpias";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
 import { DICTATOR_EMOJI, dictatorPropaganda } from "@/features/dashboard/dictator";
 import { getHuidigeDictator } from "@/features/standings/dictatorApi";
@@ -98,6 +99,9 @@ export function Dashboard() {
   const groups = useAsync(getMyGroups, []);
   // Zwarte Piet-dragers per eigen groep (#287): voor de titel-hoek in de hero.
   const zwartePiet = useAsync(getZwartePiet, []);
+  // Pias-alarm (#643): de serverside aangeduide piassen van mijn groepen —
+  // dezelfde bron als banner, feed en FUT-kaart.
+  const piasWeeks = useAsync(getPiasWeeks, []);
   const ratings = useAsync(getPlayerRatings, []);
   const ratingHistory = useAsync(
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
@@ -162,9 +166,11 @@ export function Dashboard() {
   const myProfile = pmap[myId];
   // Titels voor de rechterbovenhoek van de hero (#287): de kroon als je #1 van
   // het klassement bent (Big Daddy), de Zwarte Piet als je in een van je
-  // groepen het rondgaande schande-token draagt, en de Pias als je de choke
-  // van de week bent. Bij een roast-schild tonen we de neutrale 📊-variant,
-  // consistent met de kaarten.
+  // groepen het rondgaande schande-token draagt, en de Pias als je in een van
+  // je groepen de aangeduide pias van de lópende week bent — sinds #643 uit
+  // dezelfde serverbron als banner, feed en FUT-kaart, zodat het alarm nooit
+  // een pias roept die nergens anders bestaat. Bij een roast-schild tonen we
+  // de neutrale 📊-variant, consistent met de kaarten.
   // Hero-thema (#613): ben ik zelf de zittende dictator, dan kleurt de hero
   // keizerlijk; een bezette troon dooft bovendien de Big Daddy-kroon — ook als
   // de dictator iemand anders is (Podium.tsx doet hetzelfde). Zolang de troon-
@@ -174,11 +180,12 @@ export function Dashboard() {
   const isZwartePiet = Object.values(zwartePiet.data ?? {}).some(
     (h) => h.holderId === myId,
   );
-  const weekPias =
-    myMatches.data && teams.data
-      ? bepaalPias(myMatches.data, tmap, weekRange(new Date()))
-      : null;
-  const isWeekPias = weekPias?.playerId === myId;
+  const huidigeWeek = isoParts(new Date()).weekStart;
+  const mijnWeekPias =
+    Object.values(piasWeeks.data ?? {})
+      .flat()
+      .find((r) => r.weekStart === huidigeWeek && r.playerId === myId) ?? null;
+  const isWeekPias = mijnWeekPias != null;
   const roastSchild = myProfile?.roast_schild ?? false;
   // Naam direct tonen zonder e-mail-flits: zolang de profielen laden valt de
   // begroeting terug op de gecachete naam van een eerder bezoek.
@@ -912,15 +919,24 @@ export function Dashboard() {
 
           {/* Pias-alarm blijft zichtbaar (#276): deze kaart verschijnt alléén
               als jíj deze week de pias bent — een tijdgevoelige waarschuwing,
-              geen kaart om weg te vouwen. */}
-          {myMatches.data && teams.data && (
+              geen kaart om weg te vouwen. Sinds #643 uit de serverbron
+              (pias_of_week), zodat het alarm dezelfde persoon roept als
+              banner, feed en FUT-kaart. */}
+          {mijnWeekPias && (
             <PiasCard
-              matches={myMatches.data}
+              matches={[]}
               teams={tmap}
               profiles={pmap}
               scope="week"
               restrictTo={myId}
               selfId={myId}
+              pias={{
+                playerId: mijnWeekPias.playerId,
+                reden: mijnWeekPias.reden,
+                detail: piasDetail(mijnWeekPias.reden, mijnWeekPias.waarde),
+                ernst: mijnWeekPias.ernst,
+                waarde: mijnWeekPias.waarde,
+              }}
             />
           )}
 

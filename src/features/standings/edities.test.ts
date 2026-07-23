@@ -51,6 +51,9 @@ const pias = {
   isoWeek: 30,
   weekStart: "2026-07-20",
   playerId: "p4",
+  reden: "choke" as const,
+  ernst: 39,
+  waarde: 0.87,
   winChance: 0.87,
   beschermd: false,
 };
@@ -149,6 +152,21 @@ describe("editieLabel (#497/#625)", () => {
       "🤡 Pias van de week · 87%",
     );
     expect(editieLabel(null, ctx({ inForm }))).toBeNull();
+  });
+
+  it("vat elke pias-reden compact samen op het kaartvlak (#643)", () => {
+    const met = (reden: "bagel" | "afdroging" | "zwarte-reeks", waarde: number) =>
+      ctx({ pias: { ...pias, reden, waarde, winChance: null } });
+    expect(editieLabel("pias", met("bagel", 1))).toBe("🤡 Pias van de week · 🥯");
+    expect(editieLabel("pias", met("bagel", 2))).toBe(
+      "🤡 Pias van de week · 2× 🥯",
+    );
+    expect(editieLabel("pias", met("afdroging", 5))).toBe(
+      "🤡 Pias van de week · −5 games",
+    );
+    expect(editieLabel("pias", met("zwarte-reeks", 3))).toBe(
+      "🤡 Pias van de week · 3× op rij",
+    );
   });
 
   it("valt defensief terug zonder contextdata", () => {

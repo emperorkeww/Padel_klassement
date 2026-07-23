@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { CoachSneer } from "@/features/coach/components/CoachSneer";
-import { bepaalPias, type MatchRatings } from "@/features/groups/maandpias";
+import { bepaalPias, type MatchRatings, type Pias } from "@/features/groups/maandpias";
 import { monthRange, weekRange } from "@/features/dashboard/missions";
 import { roastCtx, roastSeed } from "@/features/coach/roastTone";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
@@ -32,6 +32,7 @@ export function PiasCard({
   restrictTo,
   selfId,
   intensiteit = "gemeen",
+  pias: piasVast,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -45,15 +46,20 @@ export function PiasCard({
   selfId?: string;
   /** Roast-toon van de groep (#183); bepaalt de commentator-sneer. */
   intensiteit?: RoastIntensiteit;
+  /** Serverside aangeduide pias (#643, bv. het week-alarm op het dashboard):
+   *  slaat de eigen bepaalPias-berekening over, zodat de kaart nooit iemand
+   *  anders roept dan banner, feed en FUT-kaart. */
+  pias?: Pias;
 }) {
   const period = useMemo(
     () => (scope === "maand" ? monthRange(now) : weekRange(now)),
     [scope, now],
   );
-  const pias = useMemo(
+  const berekend = useMemo(
     () => bepaalPias(matches, teams, period, ratingsByMatch),
     [matches, teams, period, ratingsByMatch],
   );
+  const pias = piasVast ?? berekend;
   if (!pias) return null;
   if (restrictTo && pias.playerId !== restrictTo) return null;
 

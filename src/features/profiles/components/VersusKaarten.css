@@ -1,29 +1,60 @@
-/* Head-to-Head versus-kaarten (#499): twee compacte FUT-kaarten met een
-   VS-medaillon ertussen, boven de bestaande onderlinge-stand-lijst. Rij op
-   breder scherm, kolom (medaillon als scheiding) op mobiel — zelfde
-   breekpunt als de rest van het profiel (640px, zie PlayerProfile.css). */
+/* Head-to-Head versus-kaarten (#499): twee FUT-kaarten met een VS-medaillon
+   ertussen, boven de bestaande onderlinge-stand-lijst. Altijd als rij (het
+   FIFA-laadscherm-duel), ook op mobiel: het medaillon ligt als overlay óp de
+   naad tussen de kaarten, zodat de volle containerbreedte naar de kaarten
+   gaat. De kaartmaat rekent in cqw tegen de sectiebreedte (#642): op de
+   oude 104–136px zakten naam-, divisie- en editie-regel onleesbaar klein in
+   de schildpunt; vanaf het wrapped-/hero-bereik (±150–190px) is dezelfde
+   volle inhoud (chips + naam + divisie + editie) bewezen leesbaar. */
 .vs-kaarten {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   margin-bottom: var(--sp-5);
+  container-type: inline-size;
 }
-@media (max-width: 640px) {
-  .vs-kaarten {
-    flex-direction: column;
-  }
+
+/* Registratie als <length> is essentieel: een gewone custom property geeft
+   de cqw-expressie ongeëvalueerd door, en bínnen de kaart rekent 100cqw dan
+   tegen de kaart zelf (die is zijn eigen container, zie FutKaart.css) — de
+   typografie kromp naar ~half formaat. Zo wordt de maat op de declaratieplek
+   tegen .vs-kaarten uitgerekend en erft hij als kant-en-klare px door. */
+@property --vs-kaart-breedte {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
 }
 
 .vs-kaarten__kaart {
   flex: 0 0 auto;
+  --vs-kaart-breedte: min(190px, calc((100cqw - var(--sp-3)) / 2));
 }
 .vs-kaarten__kaart .fut-kaart {
-  --fut-kw: clamp(104px, 26vw, 136px);
+  --fut-kw: var(--vs-kaart-breedte);
 }
 
+/* De divisieregel is hier een fractie smaller gezet dan op de hero: op 190px
+   scheelt "Eeuwige belofte III" anders 12px en valt de subdivisie weg in een
+   ellipsis. Iets minder letterspatiëring plus een sliver van de 9%-padding
+   (de schildrand ligt op deze hoogte pas op ±93%) maakt dat verschil goed. */
+.vs-kaarten .fut-kaart__divisie {
+  letter-spacing: 0.06em;
+  margin-inline: -1.5%;
+}
+.vs-kaarten .fut-kaart__naam {
+  letter-spacing: 0.04em;
+}
+
+/* Overlay op de naad: het pilletje overlapt alleen de 9%-padding van de
+   kaartvlakken, nooit hun inhoud. */
 .vs-kaarten__medaillon {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
   font-size: var(--fs-xs);
   font-weight: 800;
   letter-spacing: 0.05em;

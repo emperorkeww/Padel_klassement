@@ -55,33 +55,32 @@ const HIST: Record<string, RatingPoint[]> = {
   p4: [point("m1", 1000)],
 };
 
-describe("pickPias — choke-detectie", () => {
-  it("kiest de favoriet die verloor; pias = hoogst-gerate verliezer", () => {
+describe("pickPias (#643) — anti-MVP-spiegel van recompute_pias/bepaalPias", () => {
+  it("choke: de favoriet die verloor draagt de schande (tie → laagste id)", () => {
+    // strong (1300/1250) verliest van weak (1000/1000): winkans ~83% → choke.
+    // p1 en p2 choken allebei even hard: het laagste id wint, zoals bepaalPias.
     const rows = pickPias([match("m1", "weak")], TEAMS, HIST);
     expect(rows).toHaveLength(1);
     expect(rows[0].groupId).toBe("g1");
-    expect(rows[0].playerId).toBe("p1"); // 1300 > 1250
+    expect(rows[0].playerId).toBe("p1");
+    expect(rows[0].reden).toBe("choke");
     expect(rows[0].matchId).toBe("m1");
     expect(rows[0].weekStart).toBe("2026-07-06");
-    expect(rows[0].winChance).toBeGreaterThan(0.65);
+    expect(rows[0].winChance).toBeGreaterThan(0.6);
+    expect(rows[0].waarde).toBe(rows[0].winChance);
   });
 
-  it("negeert de favoriet die gewoon wint (geen choke)", () => {
+  it("geen afgang boven een drempel → geen pias (winst, draw, underdog)", () => {
     expect(pickPias([match("m1", "strong")], TEAMS, HIST)).toEqual([]);
-  });
-
-  it("negeert een gelijkspel", () => {
     expect(pickPias([match("m1", null)], TEAMS, HIST)).toEqual([]);
-  });
-
-  it("negeert een underdog die verliest (verliezer was geen favoriet)", () => {
-    // weak verliest van strong: verliezer had ~15% kans, geen choke.
-    const rows = pickPias(
-      [match("m1", "strong", { team_a_id: "weak", team_b_id: "strong" })],
-      TEAMS,
-      HIST,
-    );
-    expect(rows).toEqual([]);
+    // weak verliest zonder scores van strong: geen favoriet, geen marge.
+    expect(
+      pickPias(
+        [match("m1", "strong", { team_a_id: "weak", team_b_id: "strong" })],
+        TEAMS,
+        HIST,
+      ),
+    ).toEqual([]);
   });
 
   it("negeert matches zonder groep", () => {
@@ -90,20 +89,80 @@ describe("pickPias — choke-detectie", () => {
     );
   });
 
-  it("kiest per (groep, week) de pijnlijkste choke", () => {
-    // m1: 1300/1250 favoriet flopt (grote kans). m2: 1150/1150 kleiner favoriet.
-    const hist: Record<string, RatingPoint[]> = {
-      p1: [point("m1", 1300)],
-      p2: [point("m1", 1250)],
-      p3: [point("m1", 1000), point("m2", 1000)],
-      p4: [point("m1", 1000), point("m2", 1000)],
-      p5: [point("m2", 1150)],
-      p6: [point("m2", 1150)],
-    };
-    const m2 = match("m2", "weak", { team_a_id: "mid", team_b_id: "weak" });
-    const rows = pickPias([match("m1", "weak"), m2], TEAMS, hist);
+  it("bagel: 6–0 slikken weegt zwaarder dan elke choke", () => {
+    // m1: strong choket tegen weak (ernst ~38); m2: weak krijgt een bagel van
+    // mid (ernst 110) → de bagel-eter is de pias, tie → p3.
+    const m2 = match("m2", "mid", {
+      team_a_id: "mid",
+      team_b_id: "weak",
+      score_a: 6,
+      score_b: 0,
+      played_at: "2026-07-08T19:00:00Z",
+    });
+    const rows = pickPias([match("m1", "weak"), m2], TEAMS, HIST);
     expect(rows).toHaveLength(1);
-    expect(rows[0].matchId).toBe("m1");
+    expect(rows[0]).toMatchObject({
+      playerId: "p3",
+      reden: "bagel",
+      ernst: 110,
+      waarde: 1,
+      winChance: null,
+      matchId: "m2",
+    });
+  });
+
+  it("afdroging: verlies met ≥ 4 games verschil, anker = laatste verlies", () => {
+    // p3/p4 verliezen 6–2 (marge 4) en daarna 6–4: reden blijft de afdroging,
+    // het anker is de láátste verloren match (zoals de SQL).
+    const m1 = match("m1", "strong", { score_a: 6, score_b: 2 });
+    const m2 = match("m2", "strong", {
+      score_a: 6,
+      score_b: 4,
+      played_at: "2026-07-09T18:00:00Z",
+    });
+    const rows = pickPias([m1, m2], TEAMS, {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      playerId: "p3",
+      reden: "afdroging",
+      ernst: 54,
+      waarde: 4,
+      winChance: null,
+      matchId: "m2",
+    });
+  });
+
+  it("zwarte reeks: drie verliezen op rij binnen de week", () => {
+    const verlies = (id: string, uur: number) =>
+      match(id, "strong", { played_at: `2026-07-08T${uur}:00:00Z` });
+    const rows = pickPias(
+      [verlies("m1", 16), verlies("m2", 17), verlies("m3", 18)],
+      TEAMS,
+      {},
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      playerId: "p3",
+      reden: "zwarte-reeks",
+      ernst: 43,
+      waarde: 3,
+      matchId: "m3",
+    });
+  });
+
+  it("levert één pias per (groep, ISO-week)", () => {
+    const week1 = match("m1", "strong", { score_a: 6, score_b: 0 });
+    const week2 = match("m2", "strong", {
+      score_a: 6,
+      score_b: 0,
+      played_at: "2026-07-15T18:00:00Z",
+    });
+    const rows = pickPias([week1, week2], TEAMS, {});
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.weekStart).sort()).toEqual([
+      "2026-07-06",
+      "2026-07-13",
+    ]);
   });
 });
 
@@ -115,6 +174,9 @@ describe("currentPias", () => {
     weekStart,
     playerId: "p1",
     matchId: "m",
+    reden: "choke",
+    ernst: 38,
+    waarde: 0.8,
     winChance: 0.8,
   });
 
@@ -135,7 +197,7 @@ describe("currentPias", () => {
   });
 });
 
-describe("pickGlobalePias (#631) — spiegel van get_global_pias", () => {
+describe("pickGlobalePias (#631/#643) — spiegel van get_global_pias", () => {
   const rij = (over: Partial<PiasWeek>): PiasWeek => ({
     groupId: "g1",
     isoYear: 2026,
@@ -143,15 +205,18 @@ describe("pickGlobalePias (#631) — spiegel van get_global_pias", () => {
     weekStart: "2026-07-20",
     playerId: "p1",
     matchId: "m1",
+    reden: "choke",
+    ernst: 37,
+    waarde: 0.7,
     winChance: 0.7,
     ...over,
   });
 
-  it("kiest per week de per-groep-pias met de hoogste winkans", () => {
+  it("kiest per week de per-groep-pias met de hoogste ernst", () => {
     const rows = [
-      rij({ groupId: "g1", playerId: "p1", matchId: "m1", winChance: 0.72 }),
-      rij({ groupId: "g2", playerId: "p2", matchId: "m2", winChance: 0.91 }),
-      rij({ groupId: "g3", playerId: "p3", matchId: "m3", winChance: 0.8 }),
+      rij({ groupId: "g1", playerId: "p1", ernst: 37 }),
+      rij({ groupId: "g2", playerId: "p2", reden: "bagel", ernst: 110, waarde: 1, winChance: null }),
+      rij({ groupId: "g3", playerId: "p3", reden: "afdroging", ernst: 55, waarde: 5, winChance: null }),
     ];
     const globaal = pickGlobalePias(rows);
     expect(globaal).toHaveLength(1);
@@ -159,19 +224,19 @@ describe("pickGlobalePias (#631) — spiegel van get_global_pias", () => {
     expect(globaal[0]).toEqual(rows[1]);
   });
 
-  it("breekt gelijke kansen met het laagste match-id (zelfde als de SQL)", () => {
+  it("breekt gelijke ernst met het laagste player-id (zelfde als bepaalPias)", () => {
     const rows = [
-      rij({ groupId: "g2", playerId: "p2", matchId: "m9", winChance: 0.8 }),
-      rij({ groupId: "g1", playerId: "p1", matchId: "m2", winChance: 0.8 }),
+      rij({ groupId: "g2", playerId: "p9", ernst: 54 }),
+      rij({ groupId: "g1", playerId: "p2", ernst: 54 }),
     ];
-    expect(pickGlobalePias(rows)[0].matchId).toBe("m2");
+    expect(pickGlobalePias(rows)[0].playerId).toBe("p2");
   });
 
   it("levert één winnaar per ISO-week", () => {
     const rows = [
-      rij({ isoWeek: 29, weekStart: "2026-07-13", playerId: "p1", winChance: 0.9 }),
-      rij({ isoWeek: 30, weekStart: "2026-07-20", playerId: "p2", winChance: 0.7 }),
-      rij({ isoWeek: 30, weekStart: "2026-07-20", groupId: "g2", playerId: "p3", matchId: "m3", winChance: 0.75 }),
+      rij({ isoWeek: 29, weekStart: "2026-07-13", playerId: "p1", ernst: 39 }),
+      rij({ isoWeek: 30, weekStart: "2026-07-20", playerId: "p2", ernst: 37 }),
+      rij({ isoWeek: 30, weekStart: "2026-07-20", groupId: "g2", playerId: "p3", ernst: 38 }),
     ];
     const globaal = pickGlobalePias(rows);
     expect(globaal.map((r) => r.playerId).sort()).toEqual(["p1", "p3"]);

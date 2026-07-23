@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
 import type { Tables } from "@/lib/supabase/database.types";
+import type { PiasReden } from "@/features/groups/maandpias";
 import type { GlobalePias, PiasWeek } from "@/features/standings/pias";
 
-// Pias van de week (#127): de serverside aangeduide pias per groep, per
-// ISO-week (tabel public.pias_of_week, gevuld door recompute_pias). Zelfde
-// cache/RLS-patroon als predictionsApi. De tabel is read-only voor de
-// client — enkel de SECURITY DEFINER-trigger schrijft erin.
+// Pias van de week (#127, sinds #643 anti-MVP): de serverside aangeduide pias
+// per groep, per ISO-week (tabel public.pias_of_week, gevuld door
+// recompute_pias). Zelfde cache/RLS-patroon als predictionsApi. De tabel is
+// read-only voor de client — enkel de SECURITY DEFINER-trigger schrijft erin.
 
 const toPiasWeek = (r: Tables<"pias_of_week">): PiasWeek => ({
   groupId: r.group_id,
@@ -14,7 +15,10 @@ const toPiasWeek = (r: Tables<"pias_of_week">): PiasWeek => ({
   isoWeek: r.iso_week,
   playerId: r.player_id,
   matchId: r.match_id,
-  winChance: Number(r.win_chance),
+  reden: r.reden as PiasReden,
+  ernst: r.ernst,
+  waarde: Number(r.waarde),
+  winChance: r.win_chance == null ? null : Number(r.win_chance),
   weekStart: r.week_start,
 });
 
@@ -36,7 +40,7 @@ export function getPiasWeeks(): Promise<Record<string, PiasWeek[]>> {
   });
 }
 
-/** De globale pias per ISO-week (#631): server-side het maximum over álle
+/** De globale pias per ISO-week (#631): server-side de gênantste over álle
  *  groepen (get_global_pias, SECURITY DEFINER — RLS toont een kijker anders
  *  alleen eigen groepen, terwijl de FUT-kaart overal globaal is). Venster:
  *  lopende + vorige week; nieuwste eerst, zodat currentPias zo kan kiezen. */
@@ -50,7 +54,10 @@ export function getGlobalePias(): Promise<GlobalePias[]> {
         isoWeek: r.iso_week,
         weekStart: r.week_start,
         playerId: r.player_id,
-        winChance: Number(r.win_chance),
+        reden: r.reden as PiasReden,
+        ernst: r.ernst,
+        waarde: Number(r.waarde),
+        winChance: r.win_chance == null ? null : Number(r.win_chance),
         beschermd: r.beschermd,
       }))
       .sort((a, b) => b.weekStart.localeCompare(a.weekStart));

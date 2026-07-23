@@ -92,7 +92,7 @@ export type FeedEvent =
   | { kind: "tier"; at: string; playerId: string; vanLabel: string; naarLabel: string; vanEmoji: string; naarEmoji: string; richting: "promotie" | "degradatie"; matchId: string }
   | { kind: "season-champion"; at: string; groupId: string; groupName: string; playerId: string; seasonLabel: string }
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
-  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; winChance: number; weekStart: string }
+  | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; waarde: number; winChance: number | null; weekStart: string }
   | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
   | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null }
   | { kind: "vendetta"; at: string; sub: "gestart" | "omgeslagen" | "beslist"; groupId: string; groupName: string; challengerId: string; rivalId: string; winsChallenger: number; winsRival: number; doel: number; matchId: string | null };
@@ -589,6 +589,8 @@ export function buildFeed(input: {
       groupId: p.groupId,
       groupName,
       playerId: p.playerId,
+      reden: p.reden,
+      waarde: p.waarde,
       winChance: p.winChance,
       weekStart: p.weekStart,
     });

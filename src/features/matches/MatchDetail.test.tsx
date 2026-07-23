@@ -34,8 +34,11 @@ describe("<MatchDetail />", () => {
     expect(await screen.findByText(/winnaar/i)).toBeInTheDocument();
     expect(await screen.findByText(/afgerond/i)).toBeInTheDocument();
     expect(await screen.findByText(/ronde 1/i)).toBeInTheDocument();
-    // Groepsbadge met de groepsnaam.
-    expect(await screen.findByText(/vrijdagavond padel/i)).toBeInTheDocument();
+    // Groepsbadge met de groepsnaam (sinds #648 noemt ook de koppel-select
+    // de groep, vandaar findAll).
+    expect(
+      (await screen.findAllByText(/vrijdagavond padel/i)).length,
+    ).toBeGreaterThan(0);
     // Delen-knop (ShareMatch) is aanwezig bij een afgeronde match.
     expect(await screen.findByText(/delen/i)).toBeInTheDocument();
   });
@@ -54,6 +57,24 @@ describe("<MatchDetail />", () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
     expect(await screen.findByText(/score bijgewerkt/i)).toBeInTheDocument();
+  });
+
+  it("laat een lid van de groep de match loskoppelen (#648)", async () => {
+    renderPage();
+    // Kijker p1 is lid van g1: de groepssectie toont de select met de huidige
+    // groep; kies "Losse match" en sla op → de RPC ontkoppelt.
+    const select = await screen.findByLabelText(/^groep$/i);
+    const opslaan = screen.getByRole("button", { name: /groep opslaan/i });
+    // Ongewijzigd = niets op te slaan.
+    expect(opslaan).toBeDisabled();
+    await userEvent.selectOptions(select, "");
+    await userEvent.click(opslaan);
+    expect(await screen.findByText(/match losgekoppeld/i)).toBeInTheDocument();
+    const { supabase } = await import("@/lib/supabase/client");
+    expect(supabase.rpc).toHaveBeenCalledWith("set_match_group", {
+      p_match_id: "m-done",
+      p_group_id: undefined,
+    });
   });
 
   it("toont de opstelling met chemie-badges", async () => {
