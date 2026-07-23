@@ -1,5 +1,6 @@
 // De Zwarte Piet-kaart (#185): wie het rondgaande schande-token 🃏 van de groep
-// nú draagt, sinds wanneer en waarom. Rendert niets als de Piet vrij is. De
+// nú draagt, sinds wanneer en waarom. Zonder drager toont de kaart de
+// vrij-staat (#607): een onzichtbare kaart oogde als een bug. De
 // commentator-sneer (#183) respecteert het roast-schild van de drager.
 
 import { Link } from "react-router-dom";
@@ -23,10 +24,28 @@ export function ZwartePietCard({
   group,
   profiles,
 }: {
-  piet: ZwartePietHolder;
+  piet: ZwartePietHolder | null;
   group: Pick<Group, "roast_intensiteit"> | null | undefined;
   profiles: Record<string, Profile>;
 }) {
+  if (!piet) {
+    return (
+      <section className="card pias-card pias-card--piet">
+        <div className="card__head">
+          <h2 className="card__title">🃏 De Zwarte Piet</h2>
+        </div>
+        <p className="pias-card__lede">
+          Het rondgaande schande-token. Blijft bij dezelfde speler tot die wint
+          en het doorschuift — los van de maandelijkse Pias.
+        </p>
+        <p className="pias-card__meta">
+          De Piet is vrij — niemand draagt de schande. De volgende afgang wijst
+          een nieuwe drager aan.
+        </p>
+      </section>
+    );
+  }
+
   const naam = displayName(profiles[piet.holderId]);
   const beschermd = profiles[piet.holderId]?.roast_schild ?? false;
   // Coach Rudy als geattribueerde spreker (#287) i.p.v. de losse 🎙️-emoji.
