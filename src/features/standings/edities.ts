@@ -9,6 +9,9 @@
 //   kampioen  🏆 Winnaar van het vorige kwartaal, het hele lopende
 //              kwartaal lang (kampioen.ts).
 //   inform    ⚡ Speler van de week (spelerVanDeWeek.ts).
+//   onfire    🔥 Actieve winstreak van ≥ ONFIRE_DREMPEL (onFire.ts, #632) —
+//              ná In-Form: wie beide verdient, draagt de weeklens. Anders dan
+//              de rest kan deze editie meerdere dragers tegelijk hebben.
 //   pias      🤡 Grootste choke van de week, over alle groepen heen
 //              (#631) — achteraan: een schand-editie verdringt nooit een
 //              verdiende.
@@ -25,11 +28,14 @@
 // níemand door — de pias blijft de pias, alleen de kaart houdt z'n mond
 // (dragerVan geeft null i.p.v. een vervanger).
 //
+// On-Fire (#632) telt niet op échte uitslagen maar op delta > 0 uit de
+// rating-histories — de enige streak-bron die overal al geladen is. De reeks
+// kan daardoor één afwijken van winStreak (results.ts); drempel en
+// benadering staan gedocumenteerd in onFire.ts.
+//
 // Bewuste niet-edities: de zittende dictator draagt nooit een editie — zijn
 // troonkaart is al de sterkste special (tier-gedreven, #545); een editie
-// erbovenop zou dubbelop zijn. 🔥 On-Fire is kandidaat voor een
-// vervolgissue (een streak-editie vergt matchdata die niet overal geladen
-// is).
+// erbovenop zou dubbelop zijn.
 
 import { byRank } from "@/features/rating/standings";
 import type { PlayerRating, PlayerStanding } from "@/types";
@@ -37,13 +43,26 @@ import type { InForm } from "./spelerVanDeWeek";
 import type { Kampioen } from "./kampioen";
 import type { GlobalePias } from "./pias";
 
-export type Editie = "icon" | "kampioen" | "inform" | "pias" | null;
+export type Editie =
+  | "icon"
+  | "kampioen"
+  | "inform"
+  | "onfire"
+  | "pias"
+  | null;
 
 /** Prioriteit: de eerste editie die een speler draagt wint — gerangschikt op
  *  zeldzaamheid en duur. Er is hooguit één Big Daddy (en die is al de kroon),
- *  een kampioenschap duurt een kwartaal, In-Form wisselt wekelijks, en de
- *  pias sluit achteraan de rij: schande verdringt nooit verdienste. */
-export const EDITIE_PRIORITEIT = ["icon", "kampioen", "inform", "pias"] as const;
+ *  een kampioenschap duurt een kwartaal, In-Form wisselt wekelijks, On-Fire
+ *  komt daarna (de weeklens wint van de reeks, #632), en de pias sluit
+ *  achteraan de rij: schande verdringt nooit verdienste. */
+export const EDITIE_PRIORITEIT = [
+  "icon",
+  "kampioen",
+  "inform",
+  "onfire",
+  "pias",
+] as const;
 
 /** Alles wat nodig is om de editie van élke speler te bepalen — op alle
  *  plekken identiek opgebouwd, zodat de kaart overal dezelfde is. */
@@ -56,27 +75,35 @@ export interface EditieContext {
   kampioen: Kampioen | null;
   /** Speler van de week, null zonder (of buiten de live stand). */
   inForm: InForm | null;
+  /** Actieve winstreak per speler (onFireSpelers, #632) — de enige editie
+   *  met mogelijk meerdere dragers tegelijk; leeg buiten de live stand. */
+  onFire: Record<string, number>;
   /** Globale pias van de lopende (anders vorige) week, null zonder choke of
    *  buiten de live stand; bij een roast-schild (beschermd) zwijgt de kaart. */
   pias: GlobalePias | null;
 }
 
-/** Wie draagt deze editie volgens de context? */
-function dragerVan(
+/** Draagt deze speler deze editie volgens de context? Per speler i.p.v.
+ *  per editie ("wie is de drager?"), omdat On-Fire (#632) als enige meerdere
+ *  dragers tegelijk kan hebben. */
+function isDrager(
   editie: (typeof EDITIE_PRIORITEIT)[number],
+  key: string,
   ctx: EditieContext,
-): string | null {
+): boolean {
   switch (editie) {
     case "icon":
-      return ctx.iconKey;
+      return ctx.iconKey === key;
     case "kampioen":
-      return ctx.kampioen?.playerId ?? null;
+      return ctx.kampioen?.playerId === key;
     case "inform":
-      return ctx.inForm?.playerId ?? null;
+      return ctx.inForm?.playerId === key;
+    case "onfire":
+      return ctx.onFire[key] != null;
     case "pias":
       // Roast-schild (#183): geen editie én geen doorschuiving — de kaart
       // zwijgt, maar de pias blijft de pias.
-      return ctx.pias && !ctx.pias.beschermd ? ctx.pias.playerId : null;
+      return ctx.pias != null && !ctx.pias.beschermd && ctx.pias.playerId === key;
   }
 }
 
@@ -85,8 +112,7 @@ function dragerVan(
 export function editieVoor(key: string, ctx: EditieContext): Editie {
   if (ctx.dictatorId && key === ctx.dictatorId) return null;
   for (const editie of EDITIE_PRIORITEIT) {
-    const drager = dragerVan(editie, ctx);
-    if (drager != null && key === drager) return editie;
+    if (isDrager(editie, key, ctx)) return editie;
   }
   return null;
 }
@@ -114,16 +140,22 @@ export function iconKeyVoor(
     : null;
 }
 
-/** Editie-regel op het kaartvlak, bv. "⚡ In-Form · +48". */
+/** Editie-regel op het kaartvlak, bv. "⚡ In-Form · +48". De `key` is nodig
+ *  voor On-Fire (#632): de streaklengte is per speler. */
 export function editieLabel(
   editie: Editie,
   ctx: EditieContext,
+  key?: string,
 ): string | null {
   if (editie === "icon") return "👑 Big Daddy";
   if (editie === "kampioen")
     return `🏆 Kampioen${ctx.kampioen ? ` ${ctx.kampioen.seasonLabel}` : ""}`;
   if (editie === "inform")
     return `⚡ In-Form${ctx.inForm ? ` · +${ctx.inForm.delta}` : ""}`;
+  if (editie === "onfire") {
+    const streak = key != null ? ctx.onFire[key] : undefined;
+    return `🔥 On Fire${streak != null ? ` · ${streak} op rij` : ""}`;
+  }
   if (editie === "pias")
     return `🤡 Pias van de week${
       ctx.pias ? ` · ${Math.round(ctx.pias.winChance * 100)}%` : ""

@@ -53,12 +53,12 @@ export function FutKaart({
   achterOverlay,
 }: {
   tier: Tier | null;
-  /** Speciale editie (#497/#625/#631): kleurt frame en vlak bóvenop de
+  /** Speciale editie (#497/#625/#631/#632): kleurt frame en vlak bóvenop de
    *  tier-klasse (icon = Big Daddy, kampioen = winnaar vorig kwartaal,
-   *  inform = speler van de week, pias = grootste choke van de week); de
-   *  schildvorm blijft die van de divisie. Elke waarde heeft zijn eigen
-   *  skin in FutKaart.css. */
-  editie?: "icon" | "kampioen" | "inform" | "pias" | null;
+   *  inform = speler van de week, onfire = actieve winstreak, pias =
+   *  grootste choke van de week); de schildvorm blijft die van de divisie.
+   *  Elke waarde heeft zijn eigen skin in FutKaart.css. */
+  editie?: "icon" | "kampioen" | "inform" | "onfire" | "pias" | null;
   omgedraaid?: boolean;
   /** Extra klasse op de wrapper (bv. "lineup-kaart" voor de veld-maat). */
   className?: string;

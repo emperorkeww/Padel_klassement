@@ -41,6 +41,7 @@ import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
 import { getSeizoenskampioen } from "@/features/standings/kampioen";
 import { getGlobalePias } from "@/features/standings/piasApi";
 import { currentPias } from "@/features/standings/pias";
+import { onFireSpelers } from "@/features/standings/onFire";
 import { iconKeyVoor, type EditieContext } from "@/features/standings/edities";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { matchDerby } from "@/features/matches/derby";
@@ -104,6 +105,11 @@ export function MatchDetail() {
     () => spelerVanDeWeek(histories.data ?? {}),
     [histories.data],
   );
+  // On-Fire (#632): actieve winstreaks uit dezelfde gedeelde histories.
+  const onFire = useMemo(
+    () => onFireSpelers(histories.data ?? {}),
+    [histories.data],
+  );
   const editieCtx: EditieContext = {
     dictatorId: dictator.data?.profileId ?? null,
     iconKey: iconKeyVoor(
@@ -113,6 +119,7 @@ export function MatchDetail() {
     ),
     kampioen: kampioen.data ?? null,
     inForm,
+    onFire,
     pias: currentPias(globalePias.data ?? []),
   };
   const [editing, setEditing] = useState(false);

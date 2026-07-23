@@ -220,6 +220,92 @@ describe("<Dashboard />", () => {
     }
   });
 
+  it("kleurt de hero roze voor de Big Daddy bij een vacante troon (#613)", async () => {
+    invalidateAll();
+    const { container } = renderPage();
+    // Alice staat #1 (rating-tie-break) en dictator_termijnen is leeg (vacante
+    // troon) → de kaart zelf draagt het Big Daddy-thema, mét de kroon-chip
+    // ernaast zodat kleur nooit de enige indicator is.
+    expect(
+      await screen.findByRole("button", { name: /big daddy/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".hero")).toHaveClass("hero--bigdaddy");
+    expect(container.querySelector(".hero--dictator")).toBeNull();
+  });
+
+  it("kleurt de hero keizerlijk voor de zittende dictator, met propaganda (#613)", async () => {
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    fromMock.mockImplementation((table) =>
+      table === "dictator_termijnen"
+        ? makeQuery({
+            data: [
+              { profile_id: "p1", begon_op: "2026-07-01T10:00:00Z", claim_rating: 1620 },
+            ],
+            error: null,
+          })
+        : orig(table),
+    );
+    try {
+      const { container } = renderPage();
+      // Propaganda-copy (dictatorPropaganda) i.p.v. de Big Daddy-roast.
+      expect(
+        await screen.findByRole("button", {
+          name: /el padelissimo: zittende dictator — /i,
+        }),
+      ).toBeInTheDocument();
+      expect(container.querySelector(".hero")).toHaveClass("hero--dictator");
+      // Wederzijds uitsluitend, net als op het klassement: geen kroon erbij.
+      expect(
+        screen.queryByRole("button", { name: /big daddy/i }),
+      ).toBeNull();
+      expect(container.querySelector(".hero--bigdaddy")).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
+  });
+
+  it("dooft de Big Daddy-styling zodra een ánder de troon bezet (#613)", async () => {
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    fromMock.mockImplementation((table) =>
+      table === "dictator_termijnen"
+        ? makeQuery({
+            data: [
+              { profile_id: "p2", begon_op: "2026-07-01T10:00:00Z", claim_rating: 1610 },
+            ],
+            error: null,
+          })
+        : orig(table),
+    );
+    try {
+      const { container } = renderPage();
+      // Wachten tot de afgeleide hero-data er staat (badges uit myMatches),
+      // zodat de troon-query zeker verwerkt is vóór de asserts.
+      await screen.findByRole("button", { name: /Eerste overwinning/ });
+      // Alice is #1, maar Bob zit op De Troon: neutraal — geen kroon, geen
+      // thema, exact zoals het klassement (Podium dooft de kroon ook).
+      expect(
+        screen.queryByRole("button", { name: /big daddy/i }),
+      ).toBeNull();
+      expect(container.querySelector(".hero")).toHaveClass("hero");
+      expect(container.querySelector(".hero--bigdaddy")).toBeNull();
+      expect(container.querySelector(".hero--dictator")).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
+  });
+
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {
     renderPage();
     const badge = await screen.findByRole("button", {

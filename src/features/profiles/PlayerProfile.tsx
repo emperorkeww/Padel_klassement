@@ -17,6 +17,7 @@ import {
 import { getPlayerVendettas } from "@/features/groups/vendettaApi";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { onFireSpelers } from "@/features/standings/onFire";
 import { getSeizoenskampioen } from "@/features/standings/kampioen";
 import { getGlobalePias } from "@/features/standings/piasApi";
 import { currentPias } from "@/features/standings/pias";
@@ -134,6 +135,11 @@ export function PlayerProfile() {
   // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.
   const inForm = useMemo(
     () => spelerVanDeWeek(allHistories.data ?? {}),
+    [allHistories.data],
+  );
+  // On-Fire (#632): actieve winstreaks uit dezelfde gedeelde histories.
+  const onFire = useMemo(
+    () => onFireSpelers(allHistories.data ?? {}),
     [allHistories.data],
   );
 
@@ -348,6 +354,7 @@ export function PlayerProfile() {
     ),
     kampioen: kampioen.data ?? null,
     inForm,
+    onFire,
     pias: currentPias(globalePias.data ?? []),
   };
   const editie = editieVoor(id, editieCtx);
@@ -410,7 +417,7 @@ export function PlayerProfile() {
     isDictator,
     regeerduur: regeerduur.data ?? null,
     editie,
-    editieTekst: editieLabel(editie, editieCtx),
+    editieTekst: editieLabel(editie, editieCtx, id),
     hasRating,
     hasRank,
     rhist,

@@ -65,6 +65,7 @@ import {
   type Row,
 } from "./leaderboardHelpers";
 import { spelerVanDeWeek } from "./spelerVanDeWeek";
+import { onFireSpelers } from "./onFire";
 import { getSeizoenskampioen } from "./kampioen";
 import type { EditieContext } from "./edities";
 import { KaartRaster } from "./components/KaartRaster";
@@ -638,6 +639,12 @@ export function Leaderboard() {
     () => (usingScope ? null : spelerVanDeWeek(hmap)),
     [usingScope, hmap],
   );
+  // On-Fire (#632): actieve winstreaks uit dezelfde histories — een archief
+  // of tijdmachine heeft geen "nu", dus ook deze alleen op de live stand.
+  const onFire = useMemo(
+    () => (usingScope ? {} : onFireSpelers(hmap)),
+    [usingScope, hmap],
+  );
   const iconKey =
     !usingScope && spelerTab && !throneRow && rankedRows[0]?.rating != null
       ? rankedRows[0].key
@@ -649,6 +656,7 @@ export function Leaderboard() {
     iconKey,
     kampioen: usingScope ? null : (kampioen.data ?? null),
     inForm,
+    onFire,
     pias: usingScope ? null : currentPias(globalePias.data ?? []),
   };
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.

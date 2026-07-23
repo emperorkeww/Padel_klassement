@@ -36,6 +36,7 @@ const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
   iconKey: null,
   kampioen: null,
   inForm: null,
+  onFire: {},
   pias: null,
   ...over,
 });

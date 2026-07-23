@@ -33,6 +33,83 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Hero-thema's (#613): de kaart zelf verschiet van kleur voor de Big Daddy of
+   de zittende dictator — bestaande tokens, geen derde palet. Kleur is nooit de
+   enige indicator: de HeroCrest-chips blijven ernaast staan. */
+
+/* Big Daddy: de lime/smaragd-was wordt de roze Big Daddy-was. De tokens zijn
+   thema-bewust (index.css), dus het donkere thema kleurt vanzelf mee. */
+.hero--bigdaddy {
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--bigdaddy-soft) 0%, transparent 58%),
+    radial-gradient(
+      90% 120% at 0% 100%,
+      color-mix(in srgb, var(--bigdaddy-soft) 55%, var(--surface)) 0%,
+      transparent 55%
+    ),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--bigdaddy) 45%, var(--line));
+}
+.hero--bigdaddy .hero__eyebrow {
+  color: var(--bigdaddy-text);
+}
+.hero--bigdaddy .hero__divide {
+  background: color-mix(in srgb, var(--bigdaddy) 35%, var(--line));
+}
+
+/* Dictator: hetzelfde keizerlijke verloop als De Troon (DictatorThrone.css) —
+   bewust donker in beide thema's, want de troon torent boven het volk uit.
+   Tekst en knoppen schakelen naar wit/goud voor leesbaarheid op het donkere
+   vlak; de goud-op-bordeaux-paren komen 1-op-1 van de troon. */
+.hero--dictator {
+  color: #fff;
+  background:
+    radial-gradient(
+      120% 82% at 50% -8%,
+      color-mix(in srgb, var(--dictator-gold) 42%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(162deg, var(--dictator-wine), var(--dictator-deep) 92%);
+  border-color: color-mix(in srgb, var(--dictator-gold) 50%, transparent);
+}
+.hero--dictator .hero__eyebrow {
+  color: var(--dictator-gold);
+}
+.hero--dictator .hero__name {
+  color: #fff;
+}
+.hero--dictator .hero__sub,
+.hero--dictator .hero__coach,
+.hero--dictator .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--dictator-gold));
+}
+.hero--dictator .hero__coach-name {
+  color: var(--dictator-gold);
+}
+.hero--dictator .hero__divide {
+  background: color-mix(in srgb, var(--dictator-gold) 40%, transparent);
+}
+/* Knoppen in de glas-op-donker-stijl van de troon; de primaire actie wordt
+   goud, zodat "Match loggen" ook hier de blikvanger blijft. */
+.hero--dictator .hero__actions .btn {
+  background: color-mix(in srgb, var(--dictator-deep) 62%, transparent);
+  border-color: color-mix(in srgb, var(--dictator-gold) 45%, transparent);
+  color: #fff;
+}
+.hero--dictator .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--dictator-deep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--dictator-gold) 70%, transparent);
+}
+.hero--dictator .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #f4d488, var(--dictator-gold));
+  border-color: var(--dictator-gold);
+  color: var(--dictator-deep);
+}
+.hero--dictator .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f8dfa2, var(--dictator-gold));
+  border-color: var(--dictator-gold);
+}
+
 .hero__main {
   display: flex;
   align-items: center;
@@ -103,6 +180,13 @@
   background: var(--warn-soft);
   border-color: var(--warn-line);
   color: var(--warn);
+}
+/* Dictator-crest (#613): het gouden troon-insigne als chip, leesbaar op het
+   donkere dictator-hero-vlak (zelfde paar als .dictator-throne__insig). */
+.hero-crest--dictator {
+  background: linear-gradient(180deg, #f4d488, var(--dictator-gold));
+  border-color: var(--dictator-deep);
+  color: var(--dictator-deep);
 }
 
 /* Tooltip: verborgen tot hover/focus (tap = focus op mobiel). Verankerd

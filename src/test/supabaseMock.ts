@@ -14,6 +14,7 @@ export function makeQuery(result: { data: unknown; error: unknown }) {
     "lt",
     "lte",
     "in",
+    "is",
     "or",
     "ilike",
     "limit",

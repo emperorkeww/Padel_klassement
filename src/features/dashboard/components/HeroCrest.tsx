@@ -8,7 +8,7 @@ export function HeroCrest({
   label,
   uitleg,
 }: {
-  variant: "bigdaddy" | "piet" | "pias";
+  variant: "bigdaddy" | "piet" | "pias" | "dictator";
   emoji: string;
   label: string;
   uitleg: string;
