@@ -180,7 +180,7 @@ export function vsKaartVoor(input: {
     tier: tierForWeergave(rating, id === edities.dictatorId),
     avatarUrl: profile.avatar_url ?? null,
     editie,
-    editieTekst: editieLabel(editie, edities),
+    editieTekst: editieLabel(editie, edities, id),
     playstyles: featuredPlaystyles(profile.featured_badges),
   };
 }

@@ -39,6 +39,7 @@ const ctx = (over: Partial<EditieContext> = {}): EditieContext => ({
   iconKey: null,
   kampioen: null,
   inForm: null,
+  onFire: {},
   pias: null,
   ...over,
 });
@@ -56,25 +57,28 @@ const pias = {
 
 describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
   it("kent elke editie toe aan zijn drager", () => {
-    const c = ctx({ iconKey: "p1", kampioen, inForm, pias });
+    const c = ctx({ iconKey: "p1", kampioen, inForm, onFire: { p5: 6 }, pias });
     expect(editieVoor("p1", c)).toBe("icon");
     expect(editieVoor("p3", c)).toBe("kampioen");
     expect(editieVoor("p2", c)).toBe("inform");
+    expect(editieVoor("p5", c)).toBe("onfire");
     expect(editieVoor("p4", c)).toBe("pias");
     expect(editieVoor("p9", c)).toBeNull();
   });
 
-  it("volgt de prioriteit: icon > kampioen > inform > pias, voor álle varianten", () => {
+  it("volgt de prioriteit: icon > kampioen > inform > onfire > pias, voor álle varianten", () => {
     // Eén speler die alles tegelijk verdient (én verpest): de lijst beslist.
     const alles = ctx({
       iconKey: "p1",
       kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
       inForm: { ...inForm, playerId: "p1" },
+      onFire: { p1: 6 },
       pias: { ...pias, playerId: "p1" },
     });
     expect(editieVoor("p1", alles)).toBe(EDITIE_PRIORITEIT[0]);
-    // Zonder icon wint kampioen; daarna inform; de pias sluit de rij — een
-    // schand-editie verdringt nooit een verdiende (#631).
+    // Zonder icon wint kampioen; daarna inform; dan onfire (de weeklens wint
+    // van de reeks, #632); de pias sluit de rij — een schand-editie
+    // verdringt nooit een verdiende (#631).
     expect(
       editieVoor("p1", { ...alles, iconKey: null }),
     ).toBe("kampioen");
@@ -88,7 +92,23 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
         kampioen: null,
         inForm: null,
       }),
+    ).toBe("onfire");
+    expect(
+      editieVoor("p1", {
+        ...alles,
+        iconKey: null,
+        kampioen: null,
+        inForm: null,
+        onFire: {},
+      }),
     ).toBe("pias");
+  });
+
+  it("kan meerdere On-Fire-dragers tegelijk hebben (#632)", () => {
+    const c = ctx({ onFire: { p1: 5, p2: 9 } });
+    expect(editieVoor("p1", c)).toBe("onfire");
+    expect(editieVoor("p2", c)).toBe("onfire");
+    expect(editieVoor("p3", c)).toBeNull();
   });
 
   it("geeft de zittende dictator nooit een editie (troonkaart is genoeg)", () => {
@@ -97,6 +117,7 @@ describe("editieVoor (#497/#625) — prioriteitsmodel", () => {
       iconKey: "p1",
       kampioen: { playerId: "p1", seasonLabel: "Q2 2026" },
       inForm: { ...inForm, playerId: "p1" },
+      onFire: { p1: 8 },
       pias: { ...pias, playerId: "p1" },
     });
     expect(editieVoor("p1", c)).toBeNull();
@@ -121,6 +142,9 @@ describe("editieLabel (#497/#625)", () => {
       "🏆 Kampioen Q2 2026",
     );
     expect(editieLabel("inform", ctx({ inForm }))).toBe("⚡ In-Form · +48");
+    expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }), "p5")).toBe(
+      "🔥 On Fire · 6 op rij",
+    );
     expect(editieLabel("pias", ctx({ pias }))).toBe(
       "🤡 Pias van de week · 87%",
     );
@@ -130,6 +154,9 @@ describe("editieLabel (#497/#625)", () => {
   it("valt defensief terug zonder contextdata", () => {
     expect(editieLabel("kampioen", ctx())).toBe("🏆 Kampioen");
     expect(editieLabel("inform", ctx())).toBe("⚡ In-Form");
+    // Zonder key (of zonder reeks in de context) blijft het kale label over.
+    expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }))).toBe("🔥 On Fire");
+    expect(editieLabel("onfire", ctx(), "p5")).toBe("🔥 On Fire");
     expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de week");
   });
 });

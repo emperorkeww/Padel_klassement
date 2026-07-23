@@ -275,7 +275,7 @@ function SpelerKaart({
           tier={tier}
           naam={naam}
           avatar={<Avatar profile={profiel} size={48} />}
-          editie={editieLabel(editie, edities)}
+          editie={editieLabel(editie, edities, pid)}
           // PlayStyles (#500) ook op het veld (#621): dezelfde chips als op
           // de profielkaart, uit de opgeslagen featured-ids.
           playstyles={featuredPlaystyles(profiel?.featured_badges)}
