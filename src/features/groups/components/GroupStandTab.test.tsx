@@ -219,3 +219,31 @@ describe("<GroupStandTab /> schande-tokens naast de naam (#523)", () => {
     expect(mark.closest(".cell-player")).toHaveTextContent("Speler 4");
   });
 });
+
+// #607: de Zwarte Piet-kaart onderaan de stand rendert altijd — zonder drager
+// als vrij-staat, zodat "kaart verdwenen" nooit meer als bug oogt.
+describe("<GroupStandTab /> Zwarte Piet-kaart onderaan (#607)", () => {
+  const holder = (holderId: string): ZwartePietHolder => ({
+    groupId: "g1",
+    holderId,
+    fromId: null,
+    reden: "bagel",
+    ernst: 110,
+    detail: "slikte een bagel 🥯",
+    matchId: "m1",
+    since: "2026-07-01",
+  });
+
+  it("toont de vrij-staat als niemand de Piet draagt", () => {
+    renderTab();
+    expect(screen.getByText("🃏 De Zwarte Piet")).toBeInTheDocument();
+    expect(screen.getByText(/De Piet is vrij/)).toBeInTheDocument();
+  });
+
+  it("toont de drager in plaats van de vrij-staat", () => {
+    renderTab({ zwartePiet: holder("p4") });
+    expect(screen.getByText("🃏 De Zwarte Piet")).toBeInTheDocument();
+    expect(screen.getByText("slikte een bagel 🥯")).toBeInTheDocument();
+    expect(screen.queryByText(/De Piet is vrij/)).toBeNull();
+  });
+});

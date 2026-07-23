@@ -420,9 +420,7 @@ export function GroupStandTab({
         ratingsByMatch={piasRatings}
         intensiteit={group.roast_intensiteit ?? "gemeen"}
       />
-      {zwartePiet && (
-        <ZwartePietCard piet={zwartePiet} group={group} profiles={profiles} />
-      )}
+      <ZwartePietCard piet={zwartePiet} group={group} profiles={profiles} />
     </>
   );
 }
