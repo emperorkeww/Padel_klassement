@@ -129,6 +129,8 @@ describe("coachOpmerking", () => {
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
+      reden: "choke",
+      waarde: 0.8,
       winChance: 0.8,
       weekStart: "2026-06-29",
     };
@@ -347,6 +349,8 @@ describe("coachOpmerking — stats-bewust (#200)", () => {
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
+      reden: "choke",
+      waarde: 0.8,
       winChance: 0.8,
       weekStart: "2026-07-13",
     };
@@ -443,6 +447,8 @@ describe("coachStemming", () => {
       groupId: "g1",
       groupName: "Vrijdag",
       playerId: "p1",
+      reden: "choke",
+      waarde: 0.8,
       winChance: 0.8,
       weekStart: "2026-06-29",
     };

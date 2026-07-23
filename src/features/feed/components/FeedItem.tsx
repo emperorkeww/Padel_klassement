@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/utils/format";
 import { displayName } from "@/features/profiles/api";
+import { piasDetail } from "@/features/groups/maandpias";
 import type { Profile, Team } from "@/types";
 import type { FeedEvent } from "../feedLogic";
 import { FeedHighlight } from "./FeedHighlight";
@@ -219,17 +220,17 @@ export function FeedItem({
             {beschermd ? (
               <>
                 {name(event.playerId)} had een <strong>opvallende week</strong> in {event.groupName}:
-                verloor als favoriet ({Math.round(event.winChance * 100)}% kans).
+                een week om snel te vergeten.
               </>
             ) : event.playerId === myId ? (
               <>
-                Jij bent de <strong>pias van de week</strong> in {event.groupName}: verloor als
-                torenhoge favoriet ({Math.round(event.winChance * 100)}%).
+                Jij bent de <strong>pias van de week</strong> in {event.groupName}: je{" "}
+                {piasDetail(event.reden, event.waarde)}.
               </>
             ) : (
               <>
-                {name(event.playerId)} is de <strong>pias van de week</strong> in {event.groupName}:
-                verloor als torenhoge favoriet ({Math.round(event.winChance * 100)}%).
+                {name(event.playerId)} is de <strong>pias van de week</strong> in {event.groupName}:{" "}
+                {piasDetail(event.reden, event.waarde)}.
               </>
             )}
           </FeedHighlight>

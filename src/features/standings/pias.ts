@@ -1,18 +1,17 @@
-// Pias van de week: per groep, per ISO-week één speler aangeduid als "pias" —
-// de grootste choke, d.w.z. de speler die als duidelijkste favoriet toch
-// verloor. De aanduiding wordt serverside vastgelegd (supabase pias_of_week +
-// recompute_pias); dit bestand levert het type, de client-selectie van de
-// lopende week, en `pickPias` als pure, geteste spiegel van de SQL — dezelfde
-// rol die standings.ts speelt t.o.v. de standen-views.
+// Pias van de week: per groep, per ISO-week één speler aangeduid als "pias".
+// Sinds #643 niet meer alleen de grootste choke (#127), maar de anti-MVP
+// volgens exact dezelfde regels als bepaalPias (maandpias.ts, #167): bagel,
+// afdroging, zwarte reeks of choke ≥ 60%. Zo wijzen het dashboard-alarm, de
+// banner, de feed én de FUT-kaart (#631) dezelfde persoon aan. De aanduiding
+// wordt serverside vastgelegd (supabase pias_of_week + recompute_pias); dit
+// bestand levert de types, de client-selectie van de lopende week, en
+// `pickPias` als pure, geteste spiegel van de SQL — die letterlijk óver
+// bepaalPias composeert, zodat spiegel en zichtbare aanduiding nooit kunnen
+// divergeren.
 
-import { BASE_RATING, expected } from "@/features/rating/elo";
-import { UPSET_MAX_KANS } from "@/features/feed/feedLogic";
+import { bepaalPias, buildMatchRatings, type PiasReden } from "@/features/groups/maandpias";
+import { outcomeFor } from "@/features/rating/results";
 import type { Match, RatingPoint, Team } from "@/types";
-
-/** Winkans-grens waarboven een verliezend favorietenteam een "choke" is —
- *  spiegelbeeld van de upset-grens (een upset onder 0.35 → een choke boven
- *  0.65). Eén bron voor beide kanten van hetzelfde verhaal. */
-export const CHOKE_MIN_KANS = 1 - UPSET_MAX_KANS;
 
 /** Eén aangeduide pias voor een (groep, ISO-week). Spiegelt public.pias_of_week. */
 export interface PiasWeek {
@@ -22,9 +21,16 @@ export interface PiasWeek {
   /** Maandag van de ISO-week, YYYY-MM-DD. */
   weekStart: string;
   playerId: string;
+  /** Ankermatch: de laatste verloren match van de pias in die (groep, week). */
   matchId: string;
-  /** Pre-match winkans van het verliezende favorietenteam (de choke-maat). */
-  winChance: number;
+  /** Waarom deze speler de pias is (#643), spiegel van PiasReden. */
+  reden: PiasReden;
+  /** Ernst-score (zelfde formules als ergsteRedenVoor); hoger = gênanter. */
+  ernst: number;
+  /** Reden-specifiek getal: bagels, marge, reekslengte of winkans (0–1). */
+  waarde: number;
+  /** Pre-match winkans van het verliezende favorietenteam; alleen bij choke. */
+  winChance: number | null;
 }
 
 /** De globale pias (#631): één rij per ISO-week, over alle groepen heen.
@@ -37,7 +43,10 @@ export interface GlobalePias {
   /** Maandag van de ISO-week, YYYY-MM-DD. */
   weekStart: string;
   playerId: string;
-  winChance: number;
+  reden: PiasReden;
+  ernst: number;
+  waarde: number;
+  winChance: number | null;
   /** roast_schild (#183) van de drager: geen kaart-editie, niemand schuift door. */
   beschermd: boolean;
 }
@@ -99,74 +108,75 @@ function round4(x: number): number {
 
 /**
  * Pure spiegel van recompute_pias (supabase/schemas/functions/20_pias_of_week):
- * per (groep, ISO-week) de pijnlijkste choke onder de afgeronde groepsmatches.
- * De pias is de verliezer met de hoogste pre-match rating. Bedoeld als geteste
- * specificatie; runtime leest de vastgelegde rijen uit de DB.
+ * per (groep, ISO-week) de anti-MVP — letterlijk bepaalPias (#167) over de
+ * groepsmatches van die week, zodat de serverside week-pias per constructie
+ * dezelfde is als de zichtbare aanduiding. Het anker (matchId) is de laatste
+ * verloren match van de pias in die week. Bedoeld als geteste specificatie;
+ * runtime leest de vastgelegde rijen uit de DB.
  */
 export function pickPias(
   matches: Match[],
   teams: Record<string, Team>,
   histories: Record<string, RatingPoint[]>,
 ): PiasWeek[] {
-  const ratingBefore = (playerId: string, matchId: string): number =>
-    histories[playerId]?.find((p) => p.match_id === matchId)?.rating_before ??
-    BASE_RATING;
-
-  const best = new Map<string, PiasWeek>();
+  // Afgeronde groepsmatches emmeren per (groep, ISO-week).
+  const emmers = new Map<string, { groupId: string; isoYear: number; isoWeek: number; weekStart: string; matches: Match[] }>();
   for (const m of matches) {
-    if (m.status !== "completed" || !m.group_id || !m.winner_team_id) continue;
-    const loserTeamId =
-      m.winner_team_id === m.team_a_id ? m.team_b_id : m.team_a_id;
-    const loser = teams[loserTeamId];
-    const winner = teams[m.winner_team_id];
-    if (!loser || !winner) continue;
-
-    // Singles (1v1): de teamrating is de rating van die ene speler, geen
-    // gemiddelde — zelfde regel als _apply_match_rating/recompute_pias.
-    const rl1 = ratingBefore(loser.player1_id, m.id);
-    const rl2 = loser.player2_id ? ratingBefore(loser.player2_id, m.id) : null;
-    const loserRating = rl2 == null ? rl1 : (rl1 + rl2) / 2;
-    const rw1 = ratingBefore(winner.player1_id, m.id);
-    const winnerRating = winner.player2_id
-      ? (rw1 + ratingBefore(winner.player2_id, m.id)) / 2
-      : rw1;
-    // Winkans van het verliezende team vóór de match; geklemd < 1 net als de SQL.
-    const chance = Math.min(0.9999, round4(expected(loserRating, winnerRating)));
-    if (chance <= CHOKE_MIN_KANS) continue;
-
+    if (m.status !== "completed" || !m.group_id) continue;
     const { isoYear, isoWeek, weekStart } = isoParts(
       new Date(m.played_at ?? m.created_at),
     );
     const key = `${m.group_id}|${isoYear}|${isoWeek}`;
-    const prev = best.get(key);
-    // Hoogste kans wint; bij gelijke kans het laagste match-id (determinisme,
-    // zelfde tie-break als `order by loser_chance desc, match_id` in de SQL).
-    if (prev) {
-      if (prev.winChance > chance) continue;
-      if (prev.winChance === chance && prev.matchId <= m.id) continue;
-    }
-    best.set(key, {
-      groupId: m.group_id,
-      isoYear,
-      isoWeek,
-      weekStart,
-      playerId:
-        loser.player2_id == null || rl2 == null || rl1 >= rl2
-          ? loser.player1_id
-          : loser.player2_id,
-      matchId: m.id,
-      winChance: chance,
+    let emmer = emmers.get(key);
+    if (!emmer)
+      emmers.set(
+        key,
+        (emmer = { groupId: m.group_id, isoYear, isoWeek, weekStart, matches: [] }),
+      );
+    emmer.matches.push(m);
+  }
+
+  const byMatch = buildMatchRatings(histories);
+  const rows: PiasWeek[] = [];
+  for (const emmer of emmers.values()) {
+    const periode = {
+      start: new Date(`${emmer.weekStart}T00:00:00Z`),
+      end: new Date(`${addDays(emmer.weekStart, 7)}T00:00:00Z`),
+    };
+    const pias = bepaalPias(emmer.matches, teams, periode, byMatch);
+    if (!pias) continue;
+    // Anker: de laatste verloren match van de pias in deze (groep, week) —
+    // zelfde keuze als de SQL (order by gespeeld desc, match_id desc).
+    const anker = [...emmer.matches]
+      .filter((m) => outcomeFor(m, teams, pias.playerId) === "L")
+      .sort(
+        (a, b) =>
+          (b.played_at ?? b.created_at).localeCompare(a.played_at ?? a.created_at) ||
+          b.id.localeCompare(a.id),
+      )[0];
+    if (!anker) continue;
+    rows.push({
+      groupId: emmer.groupId,
+      isoYear: emmer.isoYear,
+      isoWeek: emmer.isoWeek,
+      weekStart: emmer.weekStart,
+      playerId: pias.playerId,
+      matchId: anker.id,
+      reden: pias.reden,
+      ernst: pias.ernst,
+      waarde: pias.reden === "choke" ? round4(pias.waarde) : pias.waarde,
+      winChance: pias.reden === "choke" ? round4(pias.waarde) : null,
     });
   }
-  return [...best.values()];
+  return rows;
 }
 
 /**
  * Pure spiegel van get_global_pias (supabase/schemas/functions/25_global_pias):
- * per ISO-week de per-groep-pias met de hoogste winkans, over alle groepen
- * heen — zelfde tie-break als de SQL (win_chance desc, match_id asc). Omdat
- * de invoer de per-groep-rijen zijn, is de globale pias per definitie ook de
- * pias van z'n eigen groep. Geteste specificatie; runtime leest de RPC.
+ * per ISO-week de per-groep-pias met de hoogste ernst, over alle groepen heen —
+ * zelfde tie-break als bepaalPias (ernst desc, laagste player_id; daarna
+ * group_id voor determinisme). Omdat de invoer de per-groep-rijen zijn, is de
+ * globale pias per definitie ook de pias van z'n eigen groep.
  */
 export function pickGlobalePias(rows: PiasWeek[]): PiasWeek[] {
   const best = new Map<string, PiasWeek>();
@@ -174,8 +184,14 @@ export function pickGlobalePias(rows: PiasWeek[]): PiasWeek[] {
     const key = `${r.isoYear}|${r.isoWeek}`;
     const prev = best.get(key);
     if (prev) {
-      if (prev.winChance > r.winChance) continue;
-      if (prev.winChance === r.winChance && prev.matchId <= r.matchId) continue;
+      if (prev.ernst > r.ernst) continue;
+      if (prev.ernst === r.ernst && prev.playerId < r.playerId) continue;
+      if (
+        prev.ernst === r.ernst &&
+        prev.playerId === r.playerId &&
+        prev.groupId <= r.groupId
+      )
+        continue;
     }
     best.set(key, r);
   }
