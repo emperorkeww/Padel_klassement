@@ -36,6 +36,8 @@ import { PiasCard } from "@/features/groups/components/PiasCard";
 import { getZwartePiet } from "@/features/groups/zwartePietApi";
 import { bepaalPias } from "@/features/groups/maandpias";
 import { BIG_DADDY_EMOJI } from "@/features/dashboard/bigDaddy";
+import { DICTATOR_EMOJI, dictatorPropaganda } from "@/features/dashboard/dictator";
+import { getHuidigeDictator } from "@/features/standings/dictatorApi";
 import { getMyFriendships, categorize } from "@/features/friends/api";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
@@ -103,6 +105,10 @@ export function Dashboard() {
   );
   // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
   const histories = useAsync(getAllRatingHistories, []);
+  // De zittende dictator (#613): server-side uit de troon-replay (#545). Kleurt
+  // de eigen hero keizerlijk als jíj op De Troon zit, en dooft de Big Daddy-
+  // styling zodra de troon bezet is — zelfde uitsluiting als het klassement.
+  const dictator = useAsync(getHuidigeDictator, []);
 
   const club = useClub();
   const today = dateInZone(club.timezone);
@@ -123,9 +129,11 @@ export function Dashboard() {
     ratings.reload();
     ratingHistory.reload();
     zwartePiet.reload();
+    // De troon kan wisselen na een match (kroning/afzetting via de replay).
+    dictator.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload, zwartePiet.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload, zwartePiet.reload, dictator.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -157,7 +165,12 @@ export function Dashboard() {
   // groepen het rondgaande schande-token draagt, en de Pias als je de choke
   // van de week bent. Bij een roast-schild tonen we de neutrale 📊-variant,
   // consistent met de kaarten.
-  const isBigDaddy = rank === 1;
+  // Hero-thema (#613): ben ik zelf de zittende dictator, dan kleurt de hero
+  // keizerlijk; een bezette troon dooft bovendien de Big Daddy-kroon — ook als
+  // de dictator iemand anders is (Podium.tsx doet hetzelfde). Zolang de troon-
+  // query laadt blijft de hero neutraal, zodat er geen kleurflits optreedt.
+  const isDictator = !!dictator.data && dictator.data.profileId === myId;
+  const isBigDaddy = rank === 1 && !dictator.loading && !dictator.data;
   const isZwartePiet = Object.values(zwartePiet.data ?? {}).some(
     (h) => h.holderId === myId,
   );
@@ -426,7 +439,18 @@ export function Dashboard() {
 
   return (
     <div className="dashboard">
-      <section className="hero">
+      {/* De hero draagt de status van de speler zelf (#613): keizerlijk donker
+          voor de zittende dictator, roze/goud voor de Big Daddy. Kleur is nooit
+          de enige indicator — de HeroCrest-chips hieronder blijven staan. */}
+      <section
+        className={`hero${
+          isDictator
+            ? " hero--dictator"
+            : isBigDaddy
+              ? " hero--bigdaddy"
+              : ""
+        }`}
+      >
         <div className="hero__main">
           <Avatar profile={myProfile} name={myName || undefined} size={56} />
           <div className="hero__text">
@@ -457,11 +481,20 @@ export function Dashboard() {
                     : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
               </p>
             )}
-            {(isBigDaddy ||
+            {(isDictator ||
+              isBigDaddy ||
               isZwartePiet ||
               isWeekPias ||
               earnedBadges.length > 0) && (
               <div className="hero__titles" aria-label="Jouw titels en badges">
+                {isDictator && (
+                  <HeroCrest
+                    variant="dictator"
+                    emoji={DICTATOR_EMOJI}
+                    label="El Padelissimo"
+                    uitleg={`Zittende dictator — ${dictatorPropaganda(myId)}.`}
+                  />
+                )}
                 {isBigDaddy && (
                   <HeroCrest
                     variant="bigdaddy"
