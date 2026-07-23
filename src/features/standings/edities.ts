@@ -12,9 +12,10 @@
 //   onfire    🔥 Actieve winstreak van ≥ ONFIRE_DREMPEL (onFire.ts, #632) —
 //              ná In-Form: wie beide verdient, draagt de weeklens. Anders dan
 //              de rest kan deze editie meerdere dragers tegelijk hebben.
-//   pias      🤡 Grootste choke van de week, over alle groepen heen
-//              (#631) — achteraan: een schand-editie verdringt nooit een
-//              verdiende.
+//   pias      🤡 De anti-MVP van de week (#631/#643: bagel, afdroging,
+//              zwarte reeks of choke — zelfde regels als bepaalPias), over
+//              alle groepen heen — achteraan: een schand-editie verdringt
+//              nooit een verdiende.
 //
 // Scoping van de pias (#631, bewuste keuze): de pias is per gróep vastgelegd
 // (pias_of_week), maar de kaart is overal globaal (#621/#624). Client-side
@@ -22,7 +23,7 @@
 // pias is") zou de kaart per kijker anders maken: RLS toont iedereen alleen
 // zijn eigen groepen, dus zelfs "eenduidigheid" is een gezichtspunt, geen
 // feit. Daarom beslist de server: get_global_pias geeft per week de
-// per-groep-pias met de hoogste winkans — die is per definitie ook de pias
+// per-groep-pias met de hoogste ernst — die is per definitie ook de pias
 // van z'n eigen groep, dus kaart en PiasBanner spreken elkaar nooit tegen.
 // Draagt de pias een roast-schild (#183), dan zwijgt de kaart en schuift er
 // níemand door — de pias blijft de pias, alleen de kaart houdt z'n mond
@@ -156,9 +157,22 @@ export function editieLabel(
     const streak = key != null ? ctx.onFire[key] : undefined;
     return `🔥 On Fire${streak != null ? ` · ${streak} op rij` : ""}`;
   }
-  if (editie === "pias")
-    return `🤡 Pias van de week${
-      ctx.pias ? ` · ${Math.round(ctx.pias.winChance * 100)}%` : ""
-    }`;
+  if (editie === "pias") return `🤡 Pias van de week${piasSuffix(ctx.pias)}`;
   return null;
+}
+
+/** Compacte reden-aanduiding voor op het kaartvlak (#643): het getal dat de
+ *  afgang samenvat, in de kortst mogelijke vorm. */
+function piasSuffix(pias: GlobalePias | null): string {
+  if (!pias) return "";
+  switch (pias.reden) {
+    case "bagel":
+      return pias.waarde === 1 ? " · 🥯" : ` · ${pias.waarde}× 🥯`;
+    case "afdroging":
+      return ` · −${pias.waarde} games`;
+    case "zwarte-reeks":
+      return ` · ${pias.waarde}× op rij`;
+    case "choke":
+      return ` · ${Math.round(pias.waarde * 100)}%`;
+  }
 }

@@ -29,6 +29,28 @@ export interface Pias {
   detail: string;
   /** Ernst-score om kandidaten te rangschikken; hoger = gênanter. */
   ernst: number;
+  /** Het reden-specifieke getal: bagels-aantal, verliesmarge, reekslengte of
+   *  winkans (0–1). Sinds #643 ook serverside vastgelegd (pias_of_week.waarde)
+   *  zodat banner, feed en FUT-kaart dezelfde omschrijving kunnen bouwen. */
+  waarde: number;
+}
+
+/** De ludieke reden-tekst zónder naam — één bron voor de maandkaart, de
+ *  week-banner, de feed en het kaartvlak (#643). `waarde` is het
+ *  reden-specifieke getal uit `Pias.waarde`/`pias_of_week.waarde`. */
+export function piasDetail(reden: PiasReden, waarde: number): string {
+  switch (reden) {
+    case "bagel":
+      return waarde === 1
+        ? "kreeg een bagel om de oren 🥯"
+        : `is inmiddels eigenaar van een bagel-bakkerij (${waarde} stuks) 🥯`;
+    case "afdroging":
+      return `werd met ${waarde} games verschil vakkundig afgedroogd`;
+    case "zwarte-reeks":
+      return `stapelde verlies op verlies (${waarde}× op rij)`;
+    case "choke":
+      return `dacht de buit al binnen te hebben, maar choke-te hard (${Math.round(waarde * 100)}% winkans vooraf)`;
+  }
 }
 
 /** Ratings per speler bij een match (playerId → punt), zoals feed.ts ze bouwt. */
@@ -116,33 +138,37 @@ function ergsteRedenVoor(
     kandidaten.push({
       playerId,
       reden: "bagel",
-      detail: bagels === 1 ? "kreeg een bagel om de oren 🥯" : `is inmiddels eigenaar van een bagel-bakkerij (${bagels} stuks) 🥯`,
+      detail: piasDetail("bagel", bagels),
       // Een bagel is het sappigste verhaal: weegt zwaar zodat hij meestal wint.
       ernst: 100 + bagels * 10,
+      waarde: bagels,
     });
   }
   if (afdroging >= AFDROGING_DREMPEL) {
     kandidaten.push({
       playerId,
       reden: "afdroging",
-      detail: `werd met ${afdroging} games verschil vakkundig afgedroogd`,
+      detail: piasDetail("afdroging", afdroging),
       ernst: 50 + afdroging,
+      waarde: afdroging,
     });
   }
   if (langsteReeks >= ZWARTE_REEKS_DREMPEL) {
     kandidaten.push({
       playerId,
       reden: "zwarte-reeks",
-      detail: `stapelde verlies op verlies (${langsteReeks}× op rij)`,
+      detail: piasDetail("zwarte-reeks", langsteReeks),
       ernst: 40 + langsteReeks,
+      waarde: langsteReeks,
     });
   }
   if (choke >= FAVORIET_DREMPEL) {
     kandidaten.push({
       playerId,
       reden: "choke",
-      detail: `dacht de buit al binnen te hebben, maar choke-te hard (${Math.round(choke * 100)}% winkans vooraf)`,
+      detail: piasDetail("choke", choke),
       ernst: 30 + Math.round(choke * 10),
+      waarde: choke,
     });
   }
   if (kandidaten.length === 0) return null;

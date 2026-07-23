@@ -2,6 +2,7 @@ import type { FeedEvent } from "@/features/feed/feedLogic";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { kleurRoast, roastCtx, roastSeed } from "@/features/coach/roastTone";
+import { piasDetail } from "@/features/groups/maandpias";
 import { teamLabel } from "@/features/matches/api";
 import { displayName } from "@/features/profiles/api";
 
@@ -138,7 +139,7 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
       return {
         icon: "🤡",
         tekst: kleurRoast(
-          `${naam(ctx, e.playerId)} is de pias van de week in ${e.groupName}: verloor als torenhoge favoriet (${Math.round(e.winChance * 100)}%)`,
+          `${naam(ctx, e.playerId)} is de pias van de week in ${e.groupName}: ${piasDetail(e.reden, e.waarde)}`,
           piasCtx(ctx, e.groupId, e.playerId),
           roastSeed(e.playerId, e.weekStart),
         ),

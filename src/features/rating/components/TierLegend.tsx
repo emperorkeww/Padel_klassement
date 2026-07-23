@@ -1,14 +1,17 @@
 import { CoachSneer } from "@/features/coach/components/CoachSneer";
 import type { RoastCtx } from "@/features/coach/roastTone";
+import { piasDetail, type PiasReden } from "@/features/groups/maandpias";
 import { tierLegend } from "@/features/rating/tiers";
 import "./TierLegend.css";
 
-/** Pias van de week voor de voetnoot: de naam, hoe hoog de favoriet stond en de
- *  context waarmee Coach Rudy zijn sneer plaatst (#183/#287). */
+/** Pias van de week voor de voetnoot: de naam, waarom (#643: anti-MVP-reden)
+ *  en de context waarmee Coach Rudy zijn sneer plaatst (#183/#287). */
 export interface TierLegendPias {
   naam: string;
-  /** Pre-match winkans van de verloren favoriet (0..1). */
-  winChance: number;
+  /** Waarom deze speler de pias is (bagel/afdroging/zwarte reeks/choke). */
+  reden: PiasReden;
+  /** Het reden-specifieke getal voor de omschrijving (piasDetail). */
+  waarde: number;
   /** Heeft de pias zijn roast-schild aan? Dan tonen we een neutrale voetnoot. */
   beschermd: boolean;
   /** Roast-context (toon + schild) van de pias. */
@@ -58,9 +61,10 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
         {pias ? (
           <>
             {pias.beschermd ? "📊 Opvallende week" : "🤡 Pias van de week"}:{" "}
-            <strong>{pias.naam}</strong> — ging als{" "}
-            {pias.beschermd ? "favoriet" : "torenhoge favoriet"} (
-            {Math.round(pias.winChance * 100)}%) onderuit.
+            <strong>{pias.naam}</strong> —{" "}
+            {pias.beschermd
+              ? "had een week om snel te vergeten."
+              : `${piasDetail(pias.reden, pias.waarde)}.`}
           </>
         ) : (
           "🤡 Elke pias waant zich de sportief directeur van de club — de rating liegt niet."

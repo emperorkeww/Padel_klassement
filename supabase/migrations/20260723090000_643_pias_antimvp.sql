@@ -1,29 +1,23 @@
--- Pias van de week: berekent per groep, per ISO-week de "pias" — sinds #643
--- de anti-MVP volgens exact dezelfde regels als bepaalPias/ergsteRedenVoor
--- (src/features/groups/maandpias.ts), zodat het dashboard-alarm, de banner,
--- de feed en de FUT-kaart dezelfde persoon aanwijzen:
---   bagel        verloor een partij met 0 eigen games          ernst 100 + 10n
---   afdroging    verloor met ≥ 4 games verschil                ernst 50 + marge
---   zwarte-reeks ≥ 3 verliezen op rij binnen de week           ernst 40 + n
---   choke        verloor als favoriet met winkans ≥ 0.6        ernst 30 + round(kans*10)
--- Per speler telt zijn ergste reden (tie: bagel > afdroging > reeks > choke,
--- de insertievolgorde van ergsteRedenVoor); per (groep, week) wint de hoogste
--- ernst, bij gelijke ernst het laagste player_id — beide identiek aan
--- bepaalPias. De client-spiegel pickPias (src/features/standings/pias.ts)
--- composeert daarom letterlijk óver bepaalPias.
---
--- Diff-gebaseerd (#203): bij elke wijziging aan matches wordt de stand opnieuw
--- berekend, maar alleen échte verschillen raken de tabel — nieuwe weken worden
--- geïnsert, gewijzigde weken geüpdatet en vervallen weken verwijderd. Rijen
--- die niet veranderen ondergaan géén DML, zodat triggers op pias_of_week
--- (push-webhook, realtime) enkel bij een echte pias-wissel vuren en
--- created_at het moment van de eerste aanwijzing blijft.
---
--- De choke-winkans komt uit de PRE-match ratings (rating_history.rating_before),
--- gemiddeld per team op de 400-schaal, identiek aan expected() in
--- src/features/rating/elo.ts. Let op: anders dan de oude choke-only variant is
--- er GEEN 1000-terugval — ontbreekt een rating, dan telt de match niet als
--- choke-kandidaat (spiegel van favorietKans, die dan null geeft).
+-- #643: pias van de week verbreed van choke-only naar de anti-MVP-regels van
+-- bepaalPias (bagel / afdroging / zwarte reeks / choke ≥ 0.6), zodat het
+-- dashboard-alarm, de banner, de feed én de FUT-kaart (#631) dezelfde persoon
+-- aanwijzen. Spiegel van supabase/schemas/tables/15_pias_of_week.sql en
+-- schemas/functions/20_pias_of_week.sql + 25_global_pias.sql; zie die
+-- bestanden voor de volledige regels en motivatie.
+
+-- 1) Tabel: reden/ernst/waarde erbij, win_chance alleen nog voor chokes.
+alter table public.pias_of_week
+  add column reden  text,
+  add column ernst  smallint,
+  add column waarde numeric;
+
+alter table public.pias_of_week alter column win_chance drop not null;
+alter table public.pias_of_week drop constraint if exists pias_of_week_win_chance_check;
+alter table public.pias_of_week
+  add constraint pias_of_week_win_chance_check
+  check (win_chance is null or (win_chance > 0 and win_chance < 1));
+
+-- 2) recompute_pias: anti-MVP-spiegel van bepaalPias/ergsteRedenVoor.
 create or replace function public.recompute_pias()
 returns void
 language plpgsql
@@ -32,9 +26,6 @@ set search_path = ''
 as $$
 begin
   with deelnames as (
-    -- Elke (afgeronde groepsmatch, deelnemer): uitkomst + eigen/tegen-score.
-    -- Draws (winner null) tellen mee: ze breken een zwarte reeks, net als
-    -- ergsteRedenVoor (alles behalve 'L' reset de teller).
     select
       m.id                                                                as match_id,
       m.group_id,
@@ -63,9 +54,6 @@ begin
     where m.status = 'completed' and m.group_id is not null
   ),
   teamrating as (
-    -- Pre-match teamrating per (match, team): gemiddelde van de aanwezige
-    -- rating_history-rijen, maar alléén als élk teamlid er een heeft (geen
-    -- 1000-terugval — spiegel van favorietKans). Singles: de ene speler zelf.
     select d.match_id, d.team_id,
       case when count(rh.rating_before) = count(*)
            then avg(rh.rating_before) end as rating
@@ -75,9 +63,6 @@ begin
     group by d.match_id, d.team_id
   ),
   kansen as (
-    -- Winkans van het eigen (verliezende) team vóór de match. Alleen relevant
-    -- voor verliezers; de favoriet-ondergrens (≥ 0.5) zit in favorietKans, de
-    -- choke-drempel (≥ 0.6) in de kandidatenstap.
     select d.match_id, d.player_id,
       1.0 / (1.0 + power(10.0, (thun.rating - teigen.rating) / 400.0)) as kans
     from deelnames d
@@ -92,8 +77,6 @@ begin
       and teigen.rating is not null and thun.rating is not null
   ),
   reeksen as (
-    -- Langste aaneengesloten verliesreeks per (speler, groep, week):
-    -- gaps-and-islands op de chronologische uitkomsten binnen de week.
     select player_id, group_id, iso_year, iso_week, max(lengte) as reeks
     from (
       select player_id, group_id, iso_year, iso_week, eiland, count(*) as lengte
@@ -111,8 +94,6 @@ begin
     group by player_id, group_id, iso_year, iso_week
   ),
   per_speler as (
-    -- Grondstoffen per (speler, groep, week), spiegel van ergsteRedenVoor.
-    -- Het anker is de laatste verloren match (voor de feed-datering).
     select
       d.player_id, d.group_id, d.iso_year, d.iso_week,
       min(d.week_start) as week_start,
@@ -126,8 +107,6 @@ begin
     group by d.player_id, d.group_id, d.iso_year, d.iso_week
   ),
   kandidaten as (
-    -- Alle geldige redenen per speler, met dezelfde ernst-formules en
-    -- dezelfde volgorde-prioriteit bij gelijke ernst als ergsteRedenVoor.
     select ps.*, x.reden, x.ernst, x.waarde, x.prio
     from per_speler ps
     left join reeksen r using (player_id, group_id, iso_year, iso_week)
@@ -150,8 +129,6 @@ begin
     order by player_id, group_id, iso_year, iso_week, ernst desc, prio
   ),
   computed as (
-    -- Per (groep, week) de gênantste speler; tie-break laagste player_id,
-    -- identiek aan bepaalPias.
     select distinct on (group_id, iso_year, iso_week)
       group_id, iso_year, iso_week, player_id, match_id,
       reden, ernst::smallint as ernst, waarde,
@@ -161,8 +138,6 @@ begin
     order by group_id, iso_year, iso_week, ernst desc, player_id
   ),
   upsert as (
-    -- Alleen nieuwe of écht gewijzigde weken raken de tabel; de WHERE op de
-    -- DO UPDATE slaat identieke rijen volledig over (geen DML, geen triggers).
     insert into public.pias_of_week
       (group_id, iso_year, iso_week, player_id, match_id,
        reden, ernst, waarde, win_chance, week_start)
@@ -185,11 +160,6 @@ begin
              excluded.ernst, excluded.waarde, excluded.win_chance,
              excluded.week_start)
   )
-  -- Vervallen weken opruimen (bv. na correctie of verwijdering van de
-  -- ankermatch). De delete ziet de snapshot van vóór dit statement, dus de
-  -- zojuist geüpsertte rijen zijn hier onzichtbaar en blijven staan. De
-  -- WHERE-clausule houdt bovendien safeupdate tevreden (de authenticator-rol
-  -- laadt die, ook binnen deze SECURITY DEFINER-functie — zie 09_ratings).
   delete from public.pias_of_week p
   where not exists (
     select 1 from computed c
@@ -199,24 +169,47 @@ begin
 end;
 $$;
 
-revoke execute on function public.recompute_pias() from public;
+-- 3) Backfill met de nieuwe regels; oude choke-only rijen worden geüpdatet of
+--    opgeruimd, waarna de nieuwe kolommen overal gevuld zijn.
+select public.recompute_pias();
 
--- Trigger-wrapper: herberekent na elke wijziging aan matches. Draait ná de
--- matches_ratings_*-triggers (alfabetische triggervolgorde: "ratings" <
--- "refresh"), zodat rating_history al vernieuwd is als we de choke bepalen.
-create or replace function public.trigger_recompute_pias()
-returns trigger
-language plpgsql
+alter table public.pias_of_week
+  alter column reden  set not null,
+  alter column ernst  set not null,
+  alter column waarde set not null;
+alter table public.pias_of_week
+  add constraint pias_of_week_reden_check
+  check (reden in ('bagel', 'afdroging', 'zwarte-reeks', 'choke'));
+
+-- 4) get_global_pias: kiest nu op ernst (tie: laagste player_id, dan groep) en
+--    geeft reden/ernst/waarde mee. Return-type wijzigt → eerst droppen.
+drop function if exists public.get_global_pias(int);
+create or replace function public.get_global_pias(weken_terug int default 1)
+returns table (
+  iso_year   smallint,
+  iso_week   smallint,
+  week_start date,
+  player_id  uuid,
+  reden      text,
+  ernst      smallint,
+  waarde     numeric,
+  win_chance numeric,
+  beschermd  boolean
+)
+language sql
+stable
 security definer
 set search_path = ''
 as $$
-begin
-  perform public.recompute_pias();
-  return null;
-end;
+  select distinct on (p.iso_year, p.iso_week)
+    p.iso_year, p.iso_week, p.week_start, p.player_id,
+    p.reden, p.ernst, p.waarde, p.win_chance,
+    coalesce(pr.roast_schild, false) as beschermd
+  from public.pias_of_week p
+  left join public.profiles pr on pr.id = p.player_id
+  where p.week_start >=
+    (date_trunc('week', now()) - make_interval(weeks => weken_terug))::date
+  order by p.iso_year, p.iso_week, p.ernst desc, p.player_id, p.group_id
 $$;
 
-create trigger matches_refresh_pias
-  after insert or update or delete on public.matches
-  for each statement
-  execute function public.trigger_recompute_pias();
+grant execute on function public.get_global_pias(int) to authenticated;

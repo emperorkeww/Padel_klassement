@@ -316,7 +316,8 @@ export function Leaderboard() {
     );
     return {
       naam: displayName(profile),
-      winChance: pias.winChance,
+      reden: pias.reden,
+      waarde: pias.waarde,
       beschermd: profile?.roast_schild ?? false,
       // Coach Rudy spreekt nu als geattribueerde spreker (#287): geef de
       // context + seed door i.p.v. een kant-en-klare 🎙️-string.
