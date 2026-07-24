@@ -90,23 +90,28 @@
   --warn-soft: #fdf4e7;
   --warn-line: #f0ddba;
 
-  /* Podium + tiers (#127) */
-  --slof: #6b7280;
-  --slof-soft: #f1f3f5;
-  --karton: #9a6b3a;
-  --karton-soft: #f6efe3;
-  --hout: #6f4a26;
-  --hout-soft: #efe6da;
+  /* Podium + tiers (#127; herijkt in #664 naar de FUT-materiaalladder):
+     rommel-materialen onderin (vale slof-taupe, kraftkarton, walnoothout),
+     dan de metalen (koper-brons, koel zilver, goud) en de premium-registers
+     erboven (ijs-platina, saffier-diamant, violet meester). Elke buur moet
+     op de kaartenwand naast elkaar te onderscheiden zijn; wijzig je hier
+     iets, sync dan canvasPalette (shareImage.ts). */
+  --slof: #7f7a6f;
+  --slof-soft: #f2f0ea;
+  --karton: #a87d42;
+  --karton-soft: #f6efe0;
+  --hout: #77441d;
+  --hout-soft: #efe3d5;
   --gold: #d4a017;
   --gold-soft: #faf3dd;
-  --silver: #8c98a4;
+  --silver: #8595a8;
   --silver-soft: #eef1f4;
-  --bronze: #b0722d;
-  --bronze-soft: #f7ece0;
-  --platina: #4e7d8f;
-  --platina-soft: #e9f2f6;
-  --diamant: #4f46e5;
-  --diamant-soft: #eceafc;
+  --bronze: #b45f1d;
+  --bronze-soft: #f8ead9;
+  --platina: #2f9ab8;
+  --platina-soft: #e6f3f7;
+  --diamant: #3b6ce8;
+  --diamant-soft: #e9eefc;
   --meester: #7c3aed;
   --meester-soft: #f0ebfe;
   --legende: #c2185b;
@@ -289,22 +294,24 @@
   --warn-soft: #32260f;
   --warn-line: #5f4c24;
 
-  --slof: #a1a8b0;
-  --slof-soft: #21262b;
-  --karton: #c6975f;
+  /* Tiers op donker (#664): zelfde materiaalladder, lichter gezet voor
+     leesbare badge-tekst op donkere vlakken. */
+  --slof: #a69d8c;
+  --slof-soft: #262219;
+  --karton: #c9a061;
   --karton-soft: #2c2417;
-  --hout: #bb8f66;
+  --hout: #c08a58;
   --hout-soft: #281d14;
   --gold: #c09b4e;
   --gold-soft: #322810;
   --silver: #a8b2bd;
   --silver-soft: #232930;
-  --bronze: #ad8155;
-  --bronze-soft: #33241a;
-  --platina: #8fb3c2;
-  --platina-soft: #1d2b31;
-  --diamant: #a49df0;
-  --diamant-soft: #232041;
+  --bronze: #cc8447;
+  --bronze-soft: #331f10;
+  --platina: #74c9e2;
+  --platina-soft: #16303a;
+  --diamant: #8faaf2;
+  --diamant-soft: #1b2440;
   --meester: #c4b5fd;
   --meester-soft: #241d3a;
   --legende: #f7869f;
