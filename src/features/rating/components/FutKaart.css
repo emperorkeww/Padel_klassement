@@ -28,24 +28,6 @@
   container: fut-kaart / inline-size;
 }
 
-/* Compact-zetting (#625) voor de kleine maten — het veld (96–124px) en de
-   raster-wand (130px). Met chips én editie-regel tegelijk gevuld wordt het
-   vlak daar druk: de chips overlappen licht (FC-stijl), de editie-regel
-   zet een fractie kleiner en strakker, en het elo-blok geeft de avatar wat
-   lucht. Vanaf de preview-/hero-maat (≥150px) verandert er niets. */
-@container fut-kaart (max-width: 132px) {
-  .fut-kaart__boven {
-    column-gap: 2%;
-  }
-  .fut-kaart__playstyle:not(:first-child) {
-    margin-left: calc(var(--fut-kw) * -0.045);
-  }
-  .fut-kaart__editie {
-    margin-top: 2px;
-    font-size: calc(var(--fut-kw) * 0.055);
-    letter-spacing: 0.08em;
-  }
-}
 .fut-kaart__flipper {
   position: relative;
   /* FUT-verhouding; zo houdt het schild overal dezelfde vorm. */
@@ -278,6 +260,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Compact-zetting (#625) voor de kleine maten — het veld (96–124px) en de
+   raster-wand (130px). Met chips én editie-regel tegelijk gevuld wordt het
+   vlak daar druk: de chips overlappen licht (FC-stijl), de editie-regel
+   zet een fractie kleiner en strakker, en het elo-blok geeft de avatar wat
+   lucht. Vanaf de preview-/hero-maat (≥150px) verandert er niets.
+   Ná de basisregels hierboven: een @container-block voegt geen specificiteit
+   toe, dus eerder in het bestand verloor deze zetting de cascade van de
+   basis-.fut-kaart__editie/__boven en deed hij stilletjes niets (#654). */
+@container fut-kaart (max-width: 132px) {
+  .fut-kaart__boven {
+    column-gap: 2%;
+  }
+  .fut-kaart__playstyle:not(:first-child) {
+    margin-left: calc(var(--fut-kw) * -0.045);
+  }
+  .fut-kaart__editie {
+    margin-top: 2px;
+    font-size: calc(var(--fut-kw) * 0.055);
+    /* #654: nóg iets strakker — vangnet voor de langste editie-regels
+       (pias/Piet) op de veldmaat. */
+    letter-spacing: 0.06em;
+  }
 }
 
 /* Achterkant: gecentreerd stats-vlak in de kaart-inktkleur; label bóven
