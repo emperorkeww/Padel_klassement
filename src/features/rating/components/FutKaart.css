@@ -1,5 +1,6 @@
-/* FUT-schildkaart (#495, gedeeld sinds #496): drie geclipte lagen — frame
-   (metaal-gradient) → liner (donkere binnenrand) → vlak — die alle drie
+/* FUT-schildkaart (#495, gedeeld sinds #496): vier geclipte lagen — frame
+   (metaal-gradient) → liner (donkere binnenrand) → keyline (dunne lichte
+   lijn, #664) → vlak — die alle vier
    dezelfde schildclip uit FutKaartDefs dragen (een rand kan een clip-path
    niet volgen, dus de lagen maken de rand). De bovenrand wisselt per
    divisiegroep via --schild; de onderkant (met de punt op 50%/100%) is
@@ -62,6 +63,16 @@
   clip-path: var(--schild);
   padding: 1.5px;
   background: color-mix(in srgb, var(--tier) 70%, #211806);
+}
+/* Keyline (#664, naar de FUT-voorbeelden): een dunne lichte lijn tussen de
+   donkere liner en het vlak — de gelaagde binnenrand die echte FUT-kaarten
+   hun "gegraveerde" rand geeft. Zelfde clip-truc als de andere lagen. */
+.fut-kaart__keyline {
+  display: block;
+  height: 100%;
+  clip-path: var(--schild);
+  padding: 1px;
+  background: color-mix(in srgb, var(--kaart-lijn) 75%, #fff8e8);
 }
 /* Onzichtbare interactieknop over het hele vlak; links of andere knoppen op
    het vlak leggen zichzelf erbóven met een eigen z-index. */
@@ -136,6 +147,59 @@
     transparent 58%
   );
 }
+/* Vlak-textuur (#664, naar de FUT-voorbeelden): een fijn satijn-weefsel in
+   de sheen-richting — echte kaartvlakken zijn nooit egaal. Bewust ijl
+   (wit op ~7%): het mag voelen, niet opvallen. */
+.fut-kaart__vlak::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.07) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Hero-maten (preview, profiel, pack, ≥168px): hier is naast de elo wél
+   ruimte en vulde de kleine cirkel het vlak niet — de speler wordt de held. */
+@container fut-kaart (min-width: 168px) {
+  .fut-kaart {
+    --fut-avatar: 0.44;
+  }
+}
+/* Premium-registers (spitse vleugels en kroon-crest): een stralenkrans
+   achter het bovenvlak, zoals de special-artworks in FUT — subtiel genoeg
+   om onder elo en avatar door te lopen. */
+.fut-kaart--platina .fut-kaart__vlak::after,
+.fut-kaart--diamant .fut-kaart__vlak::after,
+.fut-kaart--meester .fut-kaart__vlak::after,
+.fut-kaart--legende .fut-kaart__vlak::after,
+.fut-kaart--dictator .fut-kaart__vlak::after {
+  background:
+    radial-gradient(
+      130% 75% at 50% 8%,
+      rgba(255, 255, 255, 0.12),
+      transparent 55%
+    ),
+    repeating-conic-gradient(
+      from -10deg at 50% 10%,
+      rgba(255, 255, 255, 0.1) 0deg 5deg,
+      transparent 5deg 13deg
+    ),
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.05) 0 1.5px,
+      transparent 1.5px 5px
+    );
+}
+/* Kaarten met een eigen vlak-textuur (kraftkarton, speelkaart): geen
+   satijn of stralen eroverheen — dubbel weefsel wordt druk. Ná het
+   premium-block, zodat dit ook wint als de drager een premium-tier heeft. */
+.fut-kaart--pias .fut-kaart__vlak::after,
+.fut-kaart--piet .fut-kaart__vlak::after {
+  background: none;
+}
 .fut-kaart__boven {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -174,6 +238,22 @@
   justify-self: center;
   align-self: center;
   min-width: 0;
+}
+/* De speler draagt de kaart (#664, naar de FUT-voorbeelden): de avatar
+   schaalt met de kaart mee i.p.v. de vaste px-maat van de caller — op de
+   hero-/previewmaat vulde de kleine cirkel het vlak niet. !important is hier
+   het gereedschap: Avatar zet zijn maat als inline style. De ratio loopt op
+   met de maat (--fut-avatar hieronder per containerbreedte): naast een
+   4-cijferige elo is op de kleine maten geen ruimte voor een grotere cirkel
+   zonder het laatste cijfer te bedekken; op de grote maten mag de speler
+   juist de held zijn. */
+.fut-kaart {
+  --fut-avatar: 0.36;
+}
+.fut-kaart__avatar .avatar {
+  width: calc(var(--fut-kw) * var(--fut-avatar)) !important;
+  height: calc(var(--fut-kw) * var(--fut-avatar)) !important;
+  font-size: calc(var(--fut-kw) * var(--fut-avatar) * 0.38) !important;
 }
 /* PlayStyles (#500): de ★-uitgelichte badges als kleine hex-chips vlak boven
    de naamplaat — chemie-stijl icoontjes zoals in FC. De buitenlaag maakt de
@@ -284,6 +364,9 @@
    toe, dus eerder in het bestand verloor deze zetting de cascade van de
    basis-.fut-kaart__editie/__boven en deed hij stilletjes niets (#654). */
 @container fut-kaart (max-width: 132px) {
+  .fut-kaart {
+    --fut-avatar: 0.34;
+  }
   .fut-kaart__boven {
     column-gap: 2%;
   }
