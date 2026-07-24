@@ -30,6 +30,11 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []): State<T
         if (active) setData(res);
       })
       .catch((e: unknown) => {
+        // Niet elke consument toont de error-state (bv. de editie-context op
+        // de FUT-kaart): zonder log was een falende RPC onzichtbaar (#661 —
+        // de Zwarte Piet-editie verdween geluidloos toen get_global_zwarte_piet
+        // op hosted ontbrak).
+        console.warn("useAsync:", e);
         if (active) setError(e instanceof Error ? e.message : String(e));
       })
       .finally(() => {
