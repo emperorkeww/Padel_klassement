@@ -220,13 +220,17 @@
   }
 }
 
+/* Naamzetting (#664): 0.095/0.02em i.p.v. 0.1/0.05em — met de oude tracking
+   paste een gewone voor+achternaam ("Alice Anders") tot aan 150px nérgens en
+   ellipste de naamplaat dus overal behalve op de hero. De naam blijft het
+   tweede niveau (vet, caps, plaatranden); alleen de spreiding is eraf. */
 .fut-kaart__naam {
   margin-top: 5%;
   text-align: center;
-  font-size: calc(var(--fut-kw) * 0.1);
+  font-size: calc(var(--fut-kw) * 0.095);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -238,9 +242,12 @@
 .fut-kaart__divisie {
   margin-top: 3px;
   text-align: center;
-  font-size: calc(var(--fut-kw) * 0.068);
+  /* #664: 0.063/0.05em i.p.v. 0.068/0.1em — de langste divisienaam
+     ("Eeuwige belofte III") ellipste anders zelfs op de previewmaat (210px);
+     ondersteunende regel, dus iets kleiner en strakker mag. */
+  font-size: calc(var(--fut-kw) * 0.063);
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--kaart-ink-soft);
   overflow: hidden;
@@ -252,9 +259,15 @@
 .fut-kaart__editie {
   margin-top: 3px;
   text-align: center;
-  font-size: calc(var(--fut-kw) * 0.06);
+  /* #664: leesbaarheidsbodem zoals de achterkant al had — 0.06 × 96px gaf
+     ~5,3px, kleiner dan élke bodem op de stats-kant. */
+  font-size: max(7px, calc(var(--fut-kw) * 0.06));
   font-weight: 900;
-  letter-spacing: 0.12em;
+  /* #664: 0.05em i.p.v. 0.12em — met de brede tracking liep de langste
+     pias-regel zelfs op de previewmaat (150–210px) uit het vlak, waardoor
+     de emoji links half wegviel (gecentreerde tekst clipt aan twee kanten);
+     op 150px schuurde 0.07em nog steeds tegen de rand. */
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--editie-kleur, var(--kaart-ink));
   overflow: hidden;
@@ -279,10 +292,79 @@
   }
   .fut-kaart__editie {
     margin-top: 2px;
-    font-size: calc(var(--fut-kw) * 0.055);
-    /* #654: nóg iets strakker — vangnet voor de langste editie-regels
-       (pias/Piet) op de veldmaat. */
-    letter-spacing: 0.06em;
+    /* #664: zelfde bodem als de basisregel; 0.055 × 96px was ~5,3px. */
+    font-size: max(6.5px, calc(var(--fut-kw) * 0.055));
+    /* #654/#664: nóg iets strakker — vangnet voor de langste editie-regels
+       (pias/Piet) op de veldmaat, nu de bodem de regel iets breder maakt. */
+    letter-spacing: 0.03em;
+  }
+  /* #661: chips én editie-regel samen passen op deze maat nooit — zelfs
+     maximaal gecomprimeerd zakt de editie-regel dan de smalle schildpunt in.
+     De chips wijken: de editie is een titel, de chips zijn decoratie en
+     staan vol op preview, hero en wand-zonder-editie. */
+  .fut-kaart__vlak:has(.fut-kaart__editie) .fut-kaart__playstyles {
+    display: none;
+  }
+}
+
+/* Volle-kaart-zetting (#661): met chips én editie-regel tegelijk was de
+   vlak-stapel op élke maat ~30px hoger dan het schild. De vlak-children zijn
+   flex-items, dus de browser plette dan stilletjes naam-, divisie- en
+   editie-regel (flex-shrink) — de overlappende, half afgeknipte regels uit
+   de bugmelding. Tekst mag nooit krimpen (shrink: 0); de ruimte komt uit de
+   inhoud zelf, gescaled op hoe vol de kaart is:
+   — mét chips: strakkere naam-marge en licht overlappende, iets kleinere
+     chips (FC-stijl, zelfde middel als de veldmaat-zetting hierboven);
+   — mét editie-regel: een deel van de lege schildpunt (padding-bottom);
+   — mét allebei: bovendien een compacter elo-blok en strakkere regels; de
+     onderrand blijft boven de schildtaille (±84% hoogte), waar het schild
+     nog op volle breedte is. */
+.fut-kaart__playstyles,
+.fut-kaart__naam,
+.fut-kaart__divisie,
+.fut-kaart__editie {
+  flex-shrink: 0;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__naam {
+  margin-top: 2%;
+  padding: 3px 0 2px;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__playstyle {
+  width: calc(var(--fut-kw) * 0.145);
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles)
+  .fut-kaart__playstyle:not(:first-child) {
+  margin-left: calc(var(--fut-kw) * -0.03);
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__tier {
+  line-height: 1.1;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__eloblok {
+  padding-bottom: 3px;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__divisie {
+  margin-top: 2px;
+}
+.fut-kaart__vlak:has(.fut-kaart__editie) {
+  padding-bottom: 20%;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles):has(.fut-kaart__editie) {
+  padding-bottom: 17.5%;
+}
+.fut-kaart__vlak:has(.fut-kaart__playstyles):has(.fut-kaart__editie)
+  .fut-kaart__editie {
+  margin-top: 2px;
+}
+/* Op de veld-/wandmaat overlappen de chips sterker dan de basiszetting
+   hierboven (die zou de #625-overlap anders juist verzwakken: :has weegt
+   zwaarder dan de @container-regel). */
+@container fut-kaart (max-width: 132px) {
+  .fut-kaart__vlak:has(.fut-kaart__playstyles) .fut-kaart__playstyle {
+    width: calc(var(--fut-kw) * 0.13);
+  }
+  .fut-kaart__vlak:has(.fut-kaart__playstyles)
+    .fut-kaart__playstyle:not(:first-child) {
+    margin-left: calc(var(--fut-kw) * -0.045);
   }
   /* #661: chips én editie-regel samen passen op deze maat nooit — zelfs
      maximaal gecomprimeerd zakt de editie-regel dan de smalle schildpunt in.
@@ -371,7 +453,11 @@
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
+  /* #664: plafond 14px i.p.v. --fs-xs (12px) — bij 12px stopte de achterkant
+     al op 150px met meeschalen terwijl de voorkant doorschaalt; op de
+     hero-/previewmaat (190–210px) oogde de stats-kant daardoor onderschaald
+     na de flip. 14px dekt tot ~175px; daarboven blijft de kalme rem-zetting. */
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), 14px);
   color: var(--kaart-ink);
   white-space: nowrap;
   max-width: 100%;
@@ -380,13 +466,16 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: clamp(7px, calc(var(--fut-kw) * 0.062), 0.58rem);
+  /* #664: plafond mee omhoog met de stats-rij (0.58rem → 11px). */
+  font-size: clamp(7px, calc(var(--fut-kw) * 0.062), 11px);
   color: var(--kaart-ink-soft);
 }
 .fut-kaart__stats-link {
   position: relative;
   z-index: 2;
-  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), var(--fs-xs));
+  /* #664: zelfde plafond als de stats-rij, zodat de hele achterkant als
+     één blok meeschaalt. */
+  font-size: clamp(9px, calc(var(--fut-kw) * 0.08), 14px);
   font-weight: 700;
   color: var(--kaart-ink);
   text-decoration: none;
