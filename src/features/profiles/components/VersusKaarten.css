@@ -4,8 +4,9 @@
    naad tussen de kaarten, zodat de volle containerbreedte naar de kaarten
    gaat. De kaartmaat rekent in cqw tegen de sectiebreedte (#642): op de
    oude 104–136px zakten naam-, divisie- en editie-regel onleesbaar klein in
-   de schildpunt; vanaf het wrapped-/hero-bereik (±150–190px) is dezelfde
-   volle inhoud (chips + naam + divisie + editie) bewezen leesbaar. */
+   de schildpunt. Dat de volle inhoud (chips + naam + divisie + editie) op
+   150–190px past, komt sinds #661 van de volle-kaart-zetting in FutKaart.css
+   — zonder die zetting plette flex-shrink de onderste regels op élke maat. */
 .vs-kaarten {
   position: relative;
   display: flex;
