@@ -19,6 +19,13 @@ const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
 
+// Dev-showcase (#664): alle FUT-kaartvarianten naast elkaar. Alleen in
+// development geregistreerd; de conditionele import houdt de chunk uit de
+// productie-build.
+const KaartShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/KaartShowcase"))
+  : null;
+
 function App() {
   return (
     <Suspense fallback={<div className="route-loading">Laden…</div>}>
@@ -46,6 +53,10 @@ function App() {
             <Route path="/profiel" element={<ProfileSettings />} />
           </Route>
         </Route>
+
+        {KaartShowcase && (
+          <Route path="/dev/kaarten" element={<KaartShowcase />} />
+        )}
 
         {/* Onbekende paden terug naar de start. */}
         <Route path="*" element={<Navigate to="/" replace />} />

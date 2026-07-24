@@ -1,0 +1,35 @@
+/* Dev-showcase (#664): neutraal grid om de kaarten heen — bewust géén eigen
+   opmaak op de kaarten zelf, alleen maat (--maat → --fut-kw, zelfde patroon
+   als de echte callers: een selector op .fut-kaart wint van de 116px-default)
+   en wat lucht/labels. */
+.kaart-showcase {
+  padding: var(--sp-5);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.kaart-showcase__sectie {
+  margin-top: var(--sp-6);
+}
+.kaart-showcase__sectie h2 {
+  font-size: var(--fs-md);
+  margin-bottom: var(--sp-3);
+}
+.kaart-showcase__rij {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-3);
+  align-items: flex-end;
+}
+.kaart-showcase__maat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.kaart-showcase__maat .fut-kaart {
+  --fut-kw: var(--maat, 116px);
+}
+.kaart-showcase__maatlabel {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
