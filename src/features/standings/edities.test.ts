@@ -186,9 +186,7 @@ describe("editieLabel (#497/#625)", () => {
     expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }), "p5")).toBe(
       "🔥 On Fire · 6 op rij",
     );
-    expect(editieLabel("pias", ctx({ pias }))).toBe(
-      "🤡 Pias van de week · 87%",
-    );
+    expect(editieLabel("pias", ctx({ pias }))).toBe("🤡 Pias · 87%");
     // De Piet draagt zijn sinds-datum als reden-specifiek getal (#645).
     expect(editieLabel("piet", ctx({ piet }))).toBe(
       "🃏 Zwarte Piet · sinds 14/7",
@@ -196,19 +194,26 @@ describe("editieLabel (#497/#625)", () => {
     expect(editieLabel(null, ctx({ inForm }))).toBeNull();
   });
 
-  it("vat elke pias-reden compact samen op het kaartvlak (#643)", () => {
+  it("vat elke pias-reden compact samen op het kaartvlak (#643/#654)", () => {
     const met = (reden: "bagel" | "afdroging" | "zwarte-reeks", waarde: number) =>
       ctx({ pias: { ...pias, reden, waarde, winChance: null } });
-    expect(editieLabel("pias", met("bagel", 1))).toBe("🤡 Pias van de week · 🥯");
-    expect(editieLabel("pias", met("bagel", 2))).toBe(
-      "🤡 Pias van de week · 2× 🥯",
-    );
-    expect(editieLabel("pias", met("afdroging", 5))).toBe(
-      "🤡 Pias van de week · −5 games",
-    );
+    expect(editieLabel("pias", met("bagel", 1))).toBe("🤡 Pias · 🥯");
+    expect(editieLabel("pias", met("bagel", 2))).toBe("🤡 Pias · 2× 🥯");
+    expect(editieLabel("pias", met("afdroging", 5))).toBe("🤡 Pias · −5 games");
     expect(editieLabel("pias", met("zwarte-reeks", 3))).toBe(
-      "🤡 Pias van de week · 3× op rij",
+      "🤡 Pias · 3× op rij",
     );
+    // De realistisch langste waarden per reden (#654): ook dubbelcijferig en
+    // een bijna-zekere choke blijven binnen de breedte van de kleinste kaart.
+    expect(editieLabel("pias", met("afdroging", 12))).toBe(
+      "🤡 Pias · −12 games",
+    );
+    expect(editieLabel("pias", met("zwarte-reeks", 12))).toBe(
+      "🤡 Pias · 12× op rij",
+    );
+    expect(
+      editieLabel("pias", ctx({ pias: { ...pias, waarde: 0.99, winChance: 0.99 } })),
+    ).toBe("🤡 Pias · 99%");
   });
 
   it("valt defensief terug zonder contextdata", () => {

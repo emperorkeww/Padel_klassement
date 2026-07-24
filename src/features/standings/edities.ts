@@ -175,7 +175,13 @@ export function editieLabel(
     const streak = key != null ? ctx.onFire[key] : undefined;
     return `🔥 On Fire${streak != null ? ` · ${streak} op rij` : ""}`;
   }
-  if (editie === "pias") return `🤡 Pias van de week${piasSuffix(ctx.pias)}`;
+  // #654: mét reden-suffix vervangt het getal de kwalificatie — "🤡 Pias ·
+  // −12 games" i.p.v. het op kleine kaarten afgekapte "🤡 Pias van de week ·
+  // −12 games". Alleen de defensieve terugval zónder reden houdt de volle
+  // titel; zo blijft élke variant hooguit zo lang als "🔥 On Fire · 6 op
+  // rij", die op alle kaartmaten past.
+  if (editie === "pias")
+    return ctx.pias ? `🤡 Pias${piasSuffix(ctx.pias)}` : "🤡 Pias van de week";
   if (editie === "piet") return `🃏 Zwarte Piet${pietSuffix(ctx.piet)}`;
   return null;
 }
@@ -190,7 +196,9 @@ function pietSuffix(piet: GlobaleZwartePiet | null): string {
 }
 
 /** Compacte reden-aanduiding voor op het kaartvlak (#643): het getal dat de
- *  afgang samenvat, in de kortst mogelijke vorm. */
+ *  afgang samenvat, in de kortst mogelijke vorm. Sinds #654 vervangt de
+ *  suffix de kwalificatie "van de week" in editieLabel — samen waren ze te
+ *  lang voor de kleine kaartmaten. */
 function piasSuffix(pias: GlobalePias | null): string {
   if (!pias) return "";
   switch (pias.reden) {
