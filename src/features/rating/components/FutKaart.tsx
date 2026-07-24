@@ -126,6 +126,7 @@ export function FutKaartVoorkant({
   avatar,
   naam,
   editie,
+  editieTitel,
   playstyles,
   nieuwPlaystyleId,
 }: {
@@ -135,6 +136,9 @@ export function FutKaartVoorkant({
   naam: string;
   /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
   editie?: ReactNode;
+  /** Hover-uitleg bij de editie-regel (#655, editieUitleg): alleen gezet
+   *  wanneer het label uitleg nodig heeft, zoals de club-scope van de pias. */
+  editieTitel?: string | null;
   playstyles?: FutPlaystyle[];
   /** Zojuist verdiende badge (#615): die chip pulseert in het pack-overlay. */
   nieuwPlaystyleId?: string;
@@ -181,7 +185,11 @@ export function FutKaartVoorkant({
       )}
       <span className="fut-kaart__naam">{naam}</span>
       {tier && <span className="fut-kaart__divisie">{tier.label}</span>}
-      {editie && <span className="fut-kaart__editie">{editie}</span>}
+      {editie && (
+        <span className="fut-kaart__editie" title={editieTitel ?? undefined}>
+          {editie}
+        </span>
+      )}
     </>
   );
 }

@@ -326,6 +326,9 @@ export function Leaderboard() {
       // context + seed door i.p.v. een kant-en-klare 🎙️-string.
       ctx,
       seed: roastSeed(pias.playerId, pias.weekStart),
+      // Groepsnaam in de banner (#655): onderscheidt de groeps-pias van de
+      // club-brede kaart-editie.
+      groepsnaam: groep?.name ?? "je groep",
     };
   }, [groupId, piasWeeks.data, profilesMap.data, groups.data]);
 
@@ -980,7 +983,9 @@ export function Leaderboard() {
       {tab === "divisies" && (
         <>
           <TierProgressBanner rating={rmap[myId]?.rating ?? null} />
-          {groupPias && <PiasBanner pias={groupPias} />}
+          {groupPias && (
+            <PiasBanner pias={groupPias} groepsnaam={groupPias.groepsnaam} />
+          )}
           <TierLegend pias={groupPias} />
         </>
       )}

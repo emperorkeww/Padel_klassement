@@ -4,6 +4,12 @@
 // de week" #127, die per groep de choke aanduidt). Puur client-side uit de al
 // geladen matches — zonder afgang boven de drempel rendert de kaart niets, net
 // als RivalryCard.
+//
+// Naamgeving (#655, bewuste keuze): deze twee client-side varianten blijven
+// buiten de groeps-vs-club-onderscheiding. Hun titels ("Pias-alarm", "Op weg
+// naar de pias van de maand") zeggen al nergens "Pias van de week", dus ze
+// botsen niet met de groeps-banner/-crest ("Pias van de week in {groep}") of
+// de kaart-editie ("Pias van de club", edities.ts).
 
 import { useMemo } from "react";
 import { Link } from "react-router-dom";

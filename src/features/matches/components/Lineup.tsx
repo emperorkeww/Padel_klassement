@@ -17,6 +17,7 @@ import { outcomeFor, playersOf, recentForm } from "@/features/rating/results";
 import { tierForWeergave } from "@/features/rating/tiers";
 import {
   editieLabel,
+  editieUitleg,
   editieVoor,
   type EditieContext,
 } from "@/features/standings/edities";
@@ -276,6 +277,7 @@ function SpelerKaart({
           naam={naam}
           avatar={<Avatar profile={profiel} size={48} />}
           editie={editieLabel(editie, edities, pid)}
+          editieTitel={editieUitleg(editie)}
           // PlayStyles (#500) ook op het veld (#621): dezelfde chips als op
           // de profielkaart, uit de opgeslagen featured-ids.
           playstyles={featuredPlaystyles(profiel?.featured_badges)}
