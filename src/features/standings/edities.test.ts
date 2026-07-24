@@ -187,7 +187,7 @@ describe("editieLabel (#497/#625)", () => {
       "🔥 On Fire · 6 op rij",
     );
     expect(editieLabel("pias", ctx({ pias }))).toBe(
-      "🤡 Pias van de week · 87%",
+      "🤡 Pias van de club · 87%",
     );
     // De Piet draagt zijn sinds-datum als reden-specifiek getal (#645).
     expect(editieLabel("piet", ctx({ piet }))).toBe(
@@ -199,15 +199,15 @@ describe("editieLabel (#497/#625)", () => {
   it("vat elke pias-reden compact samen op het kaartvlak (#643)", () => {
     const met = (reden: "bagel" | "afdroging" | "zwarte-reeks", waarde: number) =>
       ctx({ pias: { ...pias, reden, waarde, winChance: null } });
-    expect(editieLabel("pias", met("bagel", 1))).toBe("🤡 Pias van de week · 🥯");
+    expect(editieLabel("pias", met("bagel", 1))).toBe("🤡 Pias van de club · 🥯");
     expect(editieLabel("pias", met("bagel", 2))).toBe(
-      "🤡 Pias van de week · 2× 🥯",
+      "🤡 Pias van de club · 2× 🥯",
     );
     expect(editieLabel("pias", met("afdroging", 5))).toBe(
-      "🤡 Pias van de week · −5 games",
+      "🤡 Pias van de club · −5 games",
     );
     expect(editieLabel("pias", met("zwarte-reeks", 3))).toBe(
-      "🤡 Pias van de week · 3× op rij",
+      "🤡 Pias van de club · 3× op rij",
     );
   });
 
@@ -217,7 +217,7 @@ describe("editieLabel (#497/#625)", () => {
     // Zonder key (of zonder reeks in de context) blijft het kale label over.
     expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }))).toBe("🔥 On Fire");
     expect(editieLabel("onfire", ctx(), "p5")).toBe("🔥 On Fire");
-    expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de week");
+    expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de club");
     expect(editieLabel("piet", ctx())).toBe("🃏 Zwarte Piet");
   });
 });

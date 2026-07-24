@@ -181,11 +181,24 @@ export function Dashboard() {
     (h) => h.holderId === myId,
   );
   const huidigeWeek = isoParts(new Date()).weekStart;
-  const mijnWeekPias =
-    Object.values(piasWeeks.data ?? {})
-      .flat()
-      .find((r) => r.weekStart === huidigeWeek && r.playerId === myId) ?? null;
+  // Alle groepen waarin ik deze week de pias ben (#655): de crest noemt de
+  // groep(en) bij naam, zodat duidelijk is dat dit de groeps-scope is en niet
+  // de club-brede kaart-editie.
+  const mijnPiasWeken = Object.values(piasWeeks.data ?? {})
+    .flat()
+    .filter((r) => r.weekStart === huidigeWeek && r.playerId === myId);
+  const mijnWeekPias = mijnPiasWeken[0] ?? null;
   const isWeekPias = mijnWeekPias != null;
+  const piasGroepNaam = mijnWeekPias
+    ? ((groups.data ?? []).find((g) => g.id === mijnWeekPias.groupId)?.name ??
+      null)
+    : null;
+  const piasWaar =
+    mijnPiasWeken.length > 1
+      ? `in ${mijnPiasWeken.length} van je groepen`
+      : piasGroepNaam
+        ? `in ${piasGroepNaam}`
+        : "in je groep";
   const roastSchild = myProfile?.roast_schild ?? false;
   // Naam direct tonen zonder e-mail-flits: zolang de profielen laden valt de
   // begroeting terug op de gecachete naam van een eerder bezoek.
@@ -523,7 +536,7 @@ export function Dashboard() {
                     variant="pias"
                     emoji={roastSchild ? "📊" : "🤡"}
                     label={roastSchild ? "Opvallende week" : "Pias van de week"}
-                    uitleg="De grootste afgang van de week — de clown van de groep."
+                    uitleg={`De grootste afgang van deze week ${piasWaar}. De 🤡-editie op de FUT-kaart is voor de Pias van de club — de ergste van álle groepen samen.`}
                   />
                 )}
                 {earnedBadges.length > 0 && (

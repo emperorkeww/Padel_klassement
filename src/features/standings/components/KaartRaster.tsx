@@ -12,7 +12,12 @@ import {
 } from "@/features/rating/components/FutKaart";
 import { featuredPlaystyles } from "@/features/profiles/badges";
 import type { Row } from "../leaderboardHelpers";
-import { editieLabel, editieVoor, type EditieContext } from "../edities";
+import {
+  editieLabel,
+  editieUitleg,
+  editieVoor,
+  type EditieContext,
+} from "../edities";
 
 export function KaartRaster({
   rows,
@@ -57,6 +62,7 @@ export function KaartRaster({
                   naam={r.name}
                   avatar={<Avatar profile={r.profile} name={r.name} size={44} />}
                   editie={editieLabel(editie, edities, r.key)}
+                  editieTitel={editieUitleg(editie)}
                   // PlayStyles (#500) ook op de wand (#621): dezelfde
                   // ★-uitgelichte badges als op de profielkaart.
                   playstyles={featuredPlaystyles(r.profile?.featured_badges)}

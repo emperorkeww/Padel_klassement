@@ -15,7 +15,9 @@
 //   pias      🤡 De anti-MVP van de week (#631/#643: bagel, afdroging,
 //              zwarte reeks of choke — zelfde regels als bepaalPias), over
 //              alle groepen heen — achteraan: een schand-editie verdringt
-//              nooit een verdiende.
+//              nooit een verdiende. Heet op de kaart "Pias van de club"
+//              (#655), zodat de club-brede editie niet verwart met de
+//              groeps-"Pias van de week" van banner en dashboard.
 //   piet      🃏 De Zwarte Piet (#645/#185): het rondgaande schande-token,
 //              over alle groepen heen — helemaal achteraan: binnen de
 //              schande wint de weeklens (pias) van het lopende token,
@@ -31,6 +33,9 @@
 // hoogste ernst, get_global_zwarte_piet de per-groep-drager met de hoogste
 // ernst (tie-break: oudste since) — die zijn per definitie ook pias/Piet van
 // hun eigen groep, dus kaart en groepsweergave spreken elkaar nooit tegen.
+// Omgekeerd kan een groeps-pias de kaart-editie mislopen (een andere groep
+// had een nog gênantere afgang); daarom heet de editie sinds #655 "Pias van
+// de club" en legt editieUitleg dat op de kaart zelf uit.
 // Anders dan de pias kent de Piet geen weekvenster: het token is tijdloos,
 // tot verlossing. Draagt de pias of de Piet een roast-schild (#183), dan
 // zwijgt de kaart en schuift er níemand door — de drager blijft de drager,
@@ -175,9 +180,19 @@ export function editieLabel(
     const streak = key != null ? ctx.onFire[key] : undefined;
     return `🔥 On Fire${streak != null ? ` · ${streak} op rij` : ""}`;
   }
-  if (editie === "pias") return `🤡 Pias van de week${piasSuffix(ctx.pias)}`;
+  if (editie === "pias") return `🤡 Pias van de club${piasSuffix(ctx.pias)}`;
   if (editie === "piet") return `🃏 Zwarte Piet${pietSuffix(ctx.piet)}`;
   return null;
+}
+
+/** Tooltip bij de editie-regel (#655). Alleen de club-pias heeft er een: het
+ *  label lijkt op de groeps-"Pias van de week" (banner, dashboard-crest),
+ *  maar de kaart-editie is club-breed — dat verschil moet de UI zelf
+ *  uitleggen. De andere edities spreken voor zich. */
+export function editieUitleg(editie: Editie): string | null {
+  return editie === "pias"
+    ? "De gênantste afgang van de hele club deze week — per definitie ook de pias van zijn eigen groep, maar niet elke groeps-pias is de club-pias."
+    : null;
 }
 
 /** Sinds-aanduiding voor op het kaartvlak (#645): de speeldatum van de
