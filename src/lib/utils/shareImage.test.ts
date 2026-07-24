@@ -49,7 +49,8 @@ describe("canvasPalette", () => {
 
   it("gebruikt de medaille-tokens van het design-system", () => {
     const c = canvasPalette();
-    expect(c.silver).toBe("#8c98a4");
-    expect(c.bronze).toBe("#b0722d");
+    // #664: de FUT-materiaalladder — waarden spiegelen index.css.
+    expect(c.silver).toBe("#8595a8");
+    expect(c.bronze).toBe("#b45f1d");
   });
 });
