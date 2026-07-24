@@ -1,5 +1,5 @@
 // Gedeelde FUT-schildkaart (#495, gedeeld sinds #496): het kaartrecept van de
-// Opstelling — drie geclipte lagen rond een schildclip waarvan de bovenrand
+// Opstelling — vier geclipte lagen (frame → liner → keyline → vlak, #664) rond een schildclip waarvan de bovenrand
 // oploopt met de divisiegroep, metaalvlak in de tierkleur en donkere
 // special-toptiers — als herbruikbare component voor de Opstelling (Lineup)
 // en het spelersprofiel (ProfileHero). Puur presentationeel: flip-state en
@@ -85,7 +85,9 @@ export function FutKaart({
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
-            <span className="fut-kaart__vlak">{voor}</span>
+            <span className="fut-kaart__keyline">
+              <span className="fut-kaart__vlak">{voor}</span>
+            </span>
           </span>
         </div>
         <div
@@ -94,8 +96,10 @@ export function FutKaart({
         >
           {achterOverlay}
           <span className="fut-kaart__liner">
-            <span className="fut-kaart__vlak fut-kaart__vlak--stats">
-              {achter}
+            <span className="fut-kaart__keyline">
+              <span className="fut-kaart__vlak fut-kaart__vlak--stats">
+                {achter}
+              </span>
             </span>
           </span>
         </div>

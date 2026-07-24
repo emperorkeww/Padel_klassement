@@ -127,6 +127,10 @@ function drawKaart(
         vlakMidOffset: 0.6,
         glow: rgba(glans, 0.4),
         sheen: "rgba(255, 240, 200, 0.14)",
+        // #664: keyline + stralen zoals de live kaart (special-toptiers
+        // dragen altijd het premium-register).
+        keyline: mix(glans, "#fff8e8", 0.55),
+        stralen: true,
       }
     : {
         frame: [
@@ -144,6 +148,10 @@ function drawKaart(
         vlakMidOffset: 0.56,
         glow: "rgba(255, 255, 255, 0.5)",
         sheen: "rgba(255, 255, 255, 0.28)",
+        // #664: keyline zoals .fut-kaart__keyline; stralen alleen voor het
+        // premium-register (spiegel van FutKaart.css).
+        keyline: mix(lijn, "#fff8e8", 0.75),
+        stralen: key === "platina" || key === "diamant" || key === "meester",
       };
   const { fx, fy, fw, fh } = drawKaartSchild(ctx, x, y, w, h, vorm, kleuren);
 

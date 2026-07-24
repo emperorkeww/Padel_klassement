@@ -121,6 +121,12 @@ export interface FutKaartKleuren {
   glow: string;
   /** Sheen-kleur op offset 0.5 (0.42/0.58 zijn altijd transparant wit). */
   sheen: string;
+  /** Keyline (#664): dunne lichte lijn tussen liner en vlak — spiegel van
+   *  .fut-kaart__keyline. Weglaten = geen keyline (oude opbouw). */
+  keyline?: string;
+  /** Stralenkrans (#664): premium-registers (platina/diamant/meester en de
+   *  special-toptiers) — spiegel van de ::after-stralen in FutKaart.css. */
+  stralen?: boolean;
 }
 
 /**
@@ -160,6 +166,15 @@ export function drawKaartSchild(
   ctx.fillStyle = kleuren.liner;
   ctx.fill();
 
+  // Keyline (#664): dunne lichte lijn tussen liner en vlak, zoals
+  // .fut-kaart__keyline (de vlak-inset van 9px hieronder maakt de lijn
+  // ~1.5px dik).
+  if (kleuren.keyline) {
+    schildPad(ctx, x + 7.5, y + 7.5, w - 15, h - 15, vorm);
+    ctx.fillStyle = kleuren.keyline;
+    ctx.fill();
+  }
+
   // Vlak, geclipt: metaal (of special-diepte) + topglans + sheen.
   const fx = x + 9;
   const fy = y + 9;
@@ -197,6 +212,36 @@ export function drawKaartSchild(
   sheen.addColorStop(0.58, "rgba(255, 255, 255, 0)");
   ctx.fillStyle = sheen;
   ctx.fillRect(fx, fy, fw, fh);
+
+  // Stralenkrans (#664): wiggen vanuit het topcentrum, spiegel van de
+  // repeating-conic-gradient in FutKaart.css (clip staat nog actief).
+  if (kleuren.stralen) {
+    const cx = fx + fw / 2;
+    const cy = fy + fh * 0.1;
+    const R = fh * 1.3;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.09)";
+    for (let a = -100; a < 260; a += 13) {
+      const a1 = (a * Math.PI) / 180;
+      const a2 = ((a + 5) * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, a1, a2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // Satijn-weefsel (#664): fijne diagonale banen in de sheen-richting,
+  // spiegel van de ::after-textuur in FutKaart.css.
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+  ctx.lineWidth = 2;
+  const helling = fh * 0.47; // ~115° t.o.v. de kaart, zoals de CSS
+  for (let i = -helling; i < fw; i += 7) {
+    ctx.beginPath();
+    ctx.moveTo(fx + i, fy);
+    ctx.lineTo(fx + i + helling, fy + fh);
+    ctx.stroke();
+  }
 
   return { fx, fy, fw, fh };
 }

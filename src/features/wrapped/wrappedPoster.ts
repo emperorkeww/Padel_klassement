@@ -272,6 +272,9 @@ const SEIZOEN_KLEUREN: FutKaartKleuren = {
   vlakMidOffset: 0.6,
   glow: "rgba(199, 230, 58, 0.32)",
   sheen: "rgba(234, 252, 203, 0.16)",
+  // #664: keyline + stralen — de seizoenskaart is per definitie de special.
+  keyline: "rgba(214, 240, 140, 0.75)",
+  stralen: true,
 };
 const SEIZOEN_INK = "#eafccb";
 const SEIZOEN_INK_SOFT = "#a9c97e";
