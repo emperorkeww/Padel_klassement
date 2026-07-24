@@ -15,7 +15,12 @@ import {
 } from "@/features/rating/components/FutKaart";
 import { featuredPlaystyles } from "@/features/profiles/badges";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
-import { editieLabel, editieVoor, type EditieContext } from "../edities";
+import {
+  editieLabel,
+  editieUitleg,
+  editieVoor,
+  type EditieContext,
+} from "../edities";
 
 export function KaartPreview({
   row,
@@ -91,6 +96,7 @@ export function KaartPreview({
                 <Avatar profile={row.profile} name={row.name} size={64} />
               }
               editie={editieLabel(editie, edities, row.key)}
+              editieTitel={editieUitleg(editie)}
               // PlayStyles (#500) ook in de preview (#621): dezelfde chips
               // als op de profielkaart.
               playstyles={featuredPlaystyles(row.profile?.featured_badges)}

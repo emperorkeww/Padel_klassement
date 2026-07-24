@@ -12,6 +12,7 @@ import {
   FutKaartDefs,
   FutKaartVoorkant,
 } from "@/features/rating/components/FutKaart";
+import { editieUitleg } from "@/features/standings/edities";
 import type { ProfileData } from "@/features/profiles/components/types";
 
 // Kop boven de tabs (#496): de speler als grote interactieve FUT-kaart
@@ -67,6 +68,7 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
               // kaart; zonder uitgelichte badges blijft de kaart zoals hij was.
               playstyles={d.featuredBadges ?? []}
               editie={d.editieTekst ?? null}
+              editieTitel={editieUitleg(d.editie ?? null)}
             />
           }
           achterOverlay={

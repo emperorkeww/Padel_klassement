@@ -7,6 +7,7 @@
 
 import { Avatar } from "@/components/ui/Avatar";
 import { FutKaart, FutKaartVoorkant } from "@/features/rating/components/FutKaart";
+import { editieUitleg } from "@/features/standings/edities";
 import type { VsKaart } from "@/features/profiles/compare";
 import "./VersusKaarten.css";
 
@@ -41,6 +42,7 @@ function VersusKaart({ kaart, className }: { kaart: VsKaart; className: string }
               />
             }
             editie={kaart.editieTekst}
+            editieTitel={editieUitleg(kaart.editie)}
             playstyles={kaart.playstyles}
           />
         }

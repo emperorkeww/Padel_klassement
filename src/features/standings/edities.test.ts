@@ -222,7 +222,7 @@ describe("editieLabel (#497/#625)", () => {
     // Zonder key (of zonder reeks in de context) blijft het kale label over.
     expect(editieLabel("onfire", ctx({ onFire: { p5: 6 } }))).toBe("🔥 On Fire");
     expect(editieLabel("onfire", ctx(), "p5")).toBe("🔥 On Fire");
-    expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de week");
+    expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de club");
     expect(editieLabel("piet", ctx())).toBe("🃏 Zwarte Piet");
   });
 });
