@@ -1,0 +1,214 @@
+/* Rudi's Tactische Klikker (#260): notitieboekje-look. Papier-tinten als lokale
+   custom properties zodat het donkere thema ze in één blok kan omzetten naar
+   "boekje bij avondlicht"; de rest van de pagina volgt de gewone app-tokens. */
+.klikker {
+  --papier: #fffdf2;
+  --papier-lijn: #c9dcef;
+  --papier-kantlijn: #e8a8a8;
+  --papier-inkt: #2a3550;
+  --papier-inkt-zacht: #5d6a86;
+  --fluo: rgba(255, 235, 59, 0.65);
+  --fluo-roze: rgba(255, 105, 180, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+[data-theme="dark"] .klikker {
+  --papier: #232019;
+  --papier-lijn: #3a4250;
+  --papier-kantlijn: #6e4040;
+  --papier-inkt: #e3e0d4;
+  --papier-inkt-zacht: #aaa695;
+  --fluo: rgba(255, 235, 59, 0.28);
+  --fluo-roze: rgba(255, 105, 180, 0.22);
+}
+
+.klikker__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.klikker__intro {
+  margin: var(--sp-1) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+  max-width: 46rem;
+}
+.klikker__geluid {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-md);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.klikker__geluid:hover {
+  border-color: var(--coach);
+}
+@media (max-width: 480px) {
+  .klikker__geluid-label {
+    display: none;
+  }
+}
+
+/* ---- Het boekje: gelinieerd papier + rode kantlijn + spiraal-rand ---- */
+.klikker-notitie {
+  position: relative;
+  min-height: 7.5rem;
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) calc(var(--sp-6) + 14px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  color: var(--papier-inkt);
+  /* Liniatuur: 28px-regels met een dun lijntje onderaan elke regel. */
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--papier) 0 27px,
+      var(--papier-lijn) 27px 28px
+    );
+}
+/* Rode kantlijn links van de tekst. */
+.klikker-notitie::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 calc(var(--sp-6) + 2px);
+  width: 2px;
+  background: var(--papier-kantlijn);
+}
+/* Spiraal-gaatjes langs de linkerrand. */
+.klikker-notitie::after {
+  content: "";
+  position: absolute;
+  inset: 6px auto 6px 8px;
+  width: 8px;
+  background: radial-gradient(circle 4px, var(--line-strong) 55%, transparent 60%);
+  background-size: 8px 24px;
+  background-repeat: repeat-y;
+}
+.klikker-notitie__inhoud {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  animation: klikker-krabbel 0.25s ease-out;
+}
+.klikker-notitie__face {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.klikker-notitie__tekst {
+  min-width: 0;
+}
+.klikker-notitie__kop {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 28px;
+}
+.klikker-notitie__quote,
+.klikker-notitie__leeg {
+  margin: 0;
+  font-family: var(--font-hand);
+  /* Caveat is dun op gewicht 400; 600 houdt het handschrift leesbaar. */
+  font-weight: 600;
+  font-size: 1.35rem;
+  line-height: 28px; /* handschrift op de liniatuur */
+}
+.klikker-notitie__leeg {
+  color: var(--papier-inkt-zacht);
+  line-height: 28px;
+}
+@keyframes klikker-krabbel {
+  from {
+    opacity: 0;
+    transform: rotate(-0.8deg) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .klikker-notitie__inhoud {
+    animation: none;
+  }
+}
+
+/* ---- Hulpklassen in notitieboekje-stijl (ook voor #261–#263) ---- */
+.klikker-fluo {
+  background: linear-gradient(
+    100deg,
+    transparent 2%,
+    var(--fluo) 8%,
+    var(--fluo) 92%,
+    transparent 98%
+  );
+  padding: 0 0.15em;
+}
+.klikker-doorgestreept {
+  position: relative;
+  text-decoration: line-through;
+  text-decoration-color: var(--papier-kantlijn);
+  text-decoration-thickness: 2px;
+}
+
+/* ---- Categorieën met tik-knoppen ---- */
+.klikker-categorie__titel {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-lg);
+}
+.klikker-categorie__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--sp-3);
+}
+/* Tik-knop als losgescheurd notitieblaadje: handschrift, lichte rotatie die
+   per positie wisselt, fluo-veeg bij hover/actief. */
+.klikker-knop {
+  padding: var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px 14px 6px 12px;
+  background: var(--papier);
+  color: var(--papier-inkt);
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-0.6deg);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.klikker-categorie__grid .klikker-knop:nth-child(2n) {
+  transform: rotate(0.7deg);
+  border-radius: 12px 5px 14px 6px;
+}
+.klikker-categorie__grid .klikker-knop:nth-child(3n) {
+  transform: rotate(-0.3deg);
+}
+.klikker-knop:hover {
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.klikker-knop:active {
+  transform: rotate(0deg) scale(0.97);
+}
+.klikker-knop.is-actief {
+  background-image: linear-gradient(100deg, var(--fluo-roze), transparent 70%);
+  border-color: var(--coach);
+}
+@media (prefers-reduced-motion: reduce) {
+  .klikker-knop,
+  .klikker-knop:hover,
+  .klikker-knop:active {
+    transition: none;
+    transform: none;
+  }
+}
