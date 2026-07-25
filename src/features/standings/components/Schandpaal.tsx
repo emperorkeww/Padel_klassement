@@ -23,7 +23,7 @@ export interface SchandpaalProps {
   weekStart: string;
   link?: string;
   isMe?: boolean;
-  /** AI-clownportret (#682) i.p.v. de gewone avatar, zodra het klaar is.
+  /** AI-hofnar-portret (#682) i.p.v. de gewone avatar, zodra het klaar is.
    *  Ontbreekt het, dan staat de gewone avatar er — geen skeleton-flits (#555). */
   image?: string;
   /** Roast-context van de pias; bij een schild zwijgt CoachSneer volledig. */

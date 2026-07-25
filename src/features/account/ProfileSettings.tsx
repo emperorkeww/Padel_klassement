@@ -527,7 +527,7 @@ function ThemeCard({
   }
 
   // AI pias-portret opt-out (#682): los van de dictator — als generalissimo op de
-  // troon verschijnen betekent niet dat je ook als clown aan de schandpaal wil
+  // troon verschijnen betekent niet dat je ook als hofnar aan de schandpaal wil
   // hangen. Uitzetten nult ook het bewaarde portret (guard-trigger), dus je foto
   // verdwijnt echt i.p.v. onzichtbaar bewaard te blijven.
   async function togglePiasPortret(aan: boolean) {
@@ -600,7 +600,7 @@ function ThemeCard({
           <span className="toggle-row__label">Pias-portret 🤡</span>
           <span className="toggle-row__hint">
             Word je de pias van de club, dan maakt een AI van je foto een
-            clownportret (via OpenAI) voor op De Schandpaal. Zet uit als je je
+            hofnar-portret (via OpenAI) voor op De Schandpaal. Zet uit als je je
             foto liever niet laat versturen — dan blijft je gewone avatar staan
             en verdwijnt een eerder gemaakt portret. Heb je je roast-schild aan,
             dan gebeurt dit hoe dan ook niet.

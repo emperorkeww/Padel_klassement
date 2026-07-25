@@ -19,11 +19,14 @@
 //   node scripts/upload-pias-referentie.mjs ~/Downloads/pias-stijl.png
 //
 // Waar het beeld aan moet voldoen (de prompt in _shared/aiPortret.ts leunt erop):
-// een vierkant kop-en-schouders-clownportret, goedmoedig i.p.v. grotesk, met de
-// stijl-elementen die de prompt noemt — schmink, rode neus, kleurrijke kraag,
-// helder circuslicht, egale achtergrond. Het gezicht op de referentie doet niet
-// mee: de function kopieert er uitsluitend kostuum en licht van, en zonder eigen
-// profielfoto vraagt de prompt expliciet om een ánder, verzonnen gezicht.
+// een vierkant kop-en-schouders-portret van een hofnar, goedmoedig i.p.v. grotesk,
+// met de stijl-elementen die de prompt noemt — narrenkap met drie punten en
+// pompons, grote tule-kraag, gestreept/gestipt motley-kostuum, roze padelbaan met
+// confetti, helder speels licht. Bewust géén schmink of rode neus: het gezicht
+// blijft onbeschminkt, zodat het kostuum de grap draagt. Het gezicht op de
+// referentie doet niet mee: de function kopieert er uitsluitend kostuum,
+// achtergrond en licht van, en zonder eigen profielfoto vraagt de prompt expliciet
+// om een ánder, verzonnen gezicht.
 
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";

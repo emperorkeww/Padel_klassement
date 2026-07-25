@@ -166,4 +166,18 @@ describe("STIJLEN", () => {
       /do not exaggerate or distort their facial features/,
     );
   });
+
+  it("vraagt om een hofnar met onbeschminkt gezicht, geen circusclown", () => {
+    // De referentie in de bucket is een hofnar (narrenkap, tule-kraag, motley)
+    // met een kaal gezicht. Zou de prompt om schmink of een rode neus vragen, dan
+    // werkt hij tegen de referentie in én tegen "niet vervormen".
+    for (const prompt of [
+      STIJLEN.pias.promptMetAvatar,
+      STIJLEN.pias.promptZonderAvatar,
+    ]) {
+      expect(prompt).toMatch(/jester/);
+      expect(prompt).not.toMatch(/clown/i);
+      expect(prompt).toMatch(/no red nose|un-painted face/);
+    }
+  });
 });

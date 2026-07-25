@@ -63,7 +63,7 @@ describe("<Schandpaal /> (#682)", () => {
     expect(container.querySelector(".schandpaal__img")).toBeNull();
   });
 
-  it("vervangt de avatar door het clownportret zodra dat er is", () => {
+  it("vervangt de avatar door het hofnar-portret zodra dat er is", () => {
     const { container } = renderSchandpaal({ image: "https://x/pias.png" });
     expect(container.querySelector(".schandpaal__img")).toHaveAttribute(
       "src",
