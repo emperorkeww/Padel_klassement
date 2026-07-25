@@ -84,7 +84,7 @@ describe("portretVervallen (#554/#682)", () => {
   });
 
   it("kijkt per soort naar de eigen kolommen", () => {
-    // Een klaar dictator-portret zegt niets over het clownportret.
+    // Een klaar dictator-portret zegt niets over het hofnar-portret.
     const p = {
       avatar_url: "a.png",
       dictator_avatar_url: "p.png",

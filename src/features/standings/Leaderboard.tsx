@@ -1099,7 +1099,7 @@ export function Leaderboard() {
           weekStart={schandpaal.weekStart}
           link={schandpaal.link}
           isMe={schandpaal.isMe}
-          // Het AI-clownportret (#682) zodra het klaar is en de opt-out aan
+          // Het AI-hofnar-portret (#682) zodra het klaar is en de opt-out aan
           // staat; anders undefined → de gewone avatar, geen skeleton (#555).
           image={portretVoor(schandpaal.profile, "pias") ?? undefined}
           ctx={schandpaal.ctx}

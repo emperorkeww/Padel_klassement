@@ -69,11 +69,17 @@ export const STIJLEN: Record<PortretSoort, PortretStijl> = {
       "Generic, non-identifiable ruler; do not reproduce the reference person's " +
       "likeness. Head-and-shoulders square portrait.",
   },
-  // #682: de tegenhanger voor De Schandpaal — dezelfde persoon, maar als clown.
+  // #682: de tegenhanger voor De Schandpaal — dezelfde persoon, maar als hofnar.
   // Spiegelt de dictator-prompt regel voor regel (gelijkenis uit de EERSTE foto,
-  // styling uit de TWEEDE), zodat het verschil in het resultaat van de
-  // referentie komt en niet van een anders geformuleerde prompt. Plagend, niet
-  // vernederend: circusclown, geen karikatuur van de persoon zelf.
+  // styling uit de TWEEDE), zodat het verschil in het resultaat van de referentie
+  // komt en niet van een anders geformuleerde prompt.
+  //
+  // Hofnar, bewust géén circusclown: de referentie in de bucket is een narrenkap
+  // met drie punten en pompons, een grote tule-kraag en een motley-kostuum op een
+  // roze padelbaan met confetti — en het gezicht blijft er ónbeschminkt. Dat is
+  // precies de grens die we willen: het kostuum is de grap, niet iemands gezicht.
+  // Zou de prompt om schmink en een rode neus vragen, dan werkt hij tegen de
+  // referentie in én tegen "niet vervormen of uitvergroten".
   pias: {
     soort: "pias",
     bestand: "pias.png",
@@ -82,23 +88,29 @@ export const STIJLEN: Record<PortretSoort, PortretStijl> = {
     urlKolom: "pias_avatar_url",
     bronKolom: "pias_avatar_bron",
     promptMetAvatar:
-      "Transform the person in the FIRST image into a good-natured circus clown. " +
-      "Preserve their facial likeness, identity and skin tone from the FIRST image. " +
+      "Transform the person in the FIRST image into a padel court jester (medieval " +
+      "fool). Preserve their facial likeness, identity and skin tone from the FIRST " +
+      "image, and keep their face bare — no face paint, no make-up, no red nose. " +
       "Apply ONLY the visual style, costume and composition of the SECOND " +
-      "(reference) image: clown make-up, red nose, colourful ruffled collar and " +
-      "costume, bright circus lighting, matching color palette and framing. " +
-      "Head-and-shoulders square portrait, centered, plain colourful backdrop. " +
-      "Keep it playful and warm, never grotesque or humiliating, and do not " +
-      "exaggerate or distort their facial features. Do NOT copy the reference " +
-      "person's face — only their outfit and styling.",
+      "(reference) image: multicoloured motley jester cap with three drooping points " +
+      "and pom-poms, oversized multicoloured tulle ruff collar with pom-poms, " +
+      "brightly striped and polka-dotted motley costume, bright pink padel-court " +
+      "backdrop with falling confetti, bright playful lighting, matching colour " +
+      "palette and framing. Head-and-shoulders square portrait, centered. Keep it " +
+      "playful and warm, never grotesque or humiliating, and do not exaggerate or " +
+      "distort their facial features. Do NOT copy the reference person's face — " +
+      "only their outfit and styling.",
     promptZonderAvatar:
-      "Create a good-natured circus clown portrait in the exact visual style of the " +
-      "reference image (clown make-up, red nose, colourful ruffled collar and " +
-      "costume, bright circus lighting, matching palette and framing), but with a " +
+      "Create a padel court jester (medieval fool) portrait in the exact visual " +
+      "style of the reference image (multicoloured motley jester cap with three " +
+      "drooping points and pom-poms, oversized tulle ruff collar, striped and " +
+      "polka-dotted motley costume, bright pink padel-court backdrop with confetti, " +
+      "bright playful lighting, matching palette and framing), but with a " +
       "COMPLETELY DIFFERENT, invented, anonymous face — clearly NOT the person in " +
       "the reference image and not a real public figure. Generic, non-identifiable " +
-      "clown; do not reproduce the reference person's likeness. Playful and warm, " +
-      "never grotesque. Head-and-shoulders square portrait.",
+      "jester with a bare, un-painted face; do not reproduce the reference person's " +
+      "likeness. Playful and warm, never grotesque. Head-and-shoulders square " +
+      "portrait.",
   },
 };
 

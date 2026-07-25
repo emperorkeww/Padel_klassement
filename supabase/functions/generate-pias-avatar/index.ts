@@ -1,6 +1,6 @@
 // Edge Function: "Genereer pias-portret" (#682).
 //
-// Maakt van de profielfoto een goedmoedig clownportret via OpenAI gpt-image-1
+// Maakt van de profielfoto een hofnar-portret via OpenAI gpt-image-1
 // (image *edit*), in de vaste stijl van de pias-referentie in de publieke
 // avatars-bucket. Het resultaat komt op `{userId}/pias.png` en wordt op De
 // Schandpaal getoond i.p.v. de gewone avatar.

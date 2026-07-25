@@ -1,7 +1,7 @@
 # generate-pias-avatar — AI pias-portret (#682)
 
-Maakt van de profielfoto een goedmoedig clownportret (OpenAI `gpt-image-1`, image
-*edit*) in de vaste stijl van de pias-referentie in de publieke `avatars`-bucket.
+Maakt van de profielfoto een hofnar-portret (OpenAI `gpt-image-1`, image *edit*)
+in de vaste stijl van de pias-referentie in de publieke `avatars`-bucket.
 Het portret komt op `{userId}/pias.png` en wordt op **De Schandpaal** getoond
 i.p.v. de gewone avatar.
 
@@ -43,10 +43,13 @@ pad 1).
    Doe dit óók lokaal (URL/key uit `npx supabase status`). Zonder referentie geeft
    de function `{ error: "reference-missing" }` (503) en verandert er niets.
 
-   Waaraan het beeld moet voldoen: vierkant kop-en-schouders-clownportret,
-   goedmoedig i.p.v. grotesk, met de elementen die de prompt noemt — schmink, rode
-   neus, kleurrijke kraag, helder circuslicht, egale achtergrond. Het gezicht op de
-   referentie doet niet mee; de function kopieert er alleen kostuum en licht van.
+   Waaraan het beeld moet voldoen: vierkant kop-en-schouders-portret van een
+   hofnar, goedmoedig i.p.v. grotesk, met de elementen die de prompt noemt —
+   narrenkap met drie punten en pompons, grote tule-kraag, gestreept/gestipt
+   motley-kostuum, roze padelbaan met confetti, helder speels licht. Bewust géén
+   schmink of rode neus: het gezicht blijft onbeschminkt, zodat het kostuum de grap
+   draagt en niet iemands gezicht. Het gezicht op de referentie doet niet mee; de
+   function kopieert er alleen kostuum, achtergrond en licht van.
 
 2. **Secrets** (dezelfde als de dictator-function — al gezet? dan niets te doen):
 
@@ -95,7 +98,7 @@ geen context van andere gebruikers. Opt-out via `profiles.pias_portret`
 (Instellingen → Weergave), los van de dictator-opt-out. Een opt-out nult ook het
 bewaarde portret (#682-migratie). Vermeld dit in de privacyvoorwaarden.
 
-De prompt vraagt expliciet om een *goedmoedige* clown en verbiedt het uitvergroten
-of vervormen van iemands gezichtstrekken: de grap is de rol, niet de persoon. Wie
-een roast-schild (#183) aan heeft, komt niet op De Schandpaal en krijgt dus ook
-nooit een clownportret.
+De prompt vraagt expliciet om een *goedmoedige* hofnar met een onbeschminkt gezicht
+en verbiedt het uitvergroten of vervormen van iemands gezichtstrekken: de grap is
+het kostuum, niet de persoon. Wie een roast-schild (#183) aan heeft, komt niet op De
+Schandpaal en krijgt dus ook nooit een hofnar-portret.

@@ -41,12 +41,12 @@ export interface Profile {
   /** AI pias-portret opt-out (#682): staat dit uit, dan gaat de profielfoto nooit
    *  naar OpenAI en toont De Schandpaal de gewone avatar. Ontbreekt/true = aan.
    *  Los van dictator_portret — als generalissimo verschijnen betekent niet dat je
-   *  ook als clown wil verschijnen. */
+   *  ook als hofnar wil verschijnen. */
   pias_portret?: boolean;
-  /** Publieke URL van het gegenereerde clownportret (#682), of null/ontbrekend als
+  /** Publieke URL van het gegenereerde hofnar-portret (#682), of null/ontbrekend als
    *  er nog geen is of het vervallen is. Alleen de edge function schrijft dit. */
   pias_avatar_url?: string | null;
-  /** De avatar_url waarop het clownportret is gebaseerd (#682), of de sentinel
+  /** De avatar_url waarop het hofnar-portret is gebaseerd (#682), of de sentinel
    *  '__geen_avatar__' — zelfde invalidatie-afspraak als bij de dictator. */
   pias_avatar_bron?: string | null;
   /** Gastspeler: naamloze deelnemer zonder account, aangemaakt door een lid
