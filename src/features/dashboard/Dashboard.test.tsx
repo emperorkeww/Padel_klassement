@@ -64,6 +64,18 @@ describe("<Dashboard />", () => {
     }
   });
 
+  // De profielweergave was alleen bereikbaar via de Rating-kaart, ver onder de
+  // vouw (#706). De hero-avatar is nu de primaire ingang, mét zichtbaar label —
+  // een klikbare avatar alleen is niet vindbaar.
+  it("linkt vanuit de hero-avatar naar de eigen profielweergave", async () => {
+    renderPage();
+    const link = await screen.findByRole("link", { name: /naar mijn profiel/i });
+    expect(link).toHaveAttribute("href", "/spelers/p1");
+    expect(link).toHaveTextContent(/mijn profiel/i);
+    // De ingang staat in de hero, niet pas in de Rating-kaart onderaan.
+    expect(link.closest(".hero")).not.toBeNull();
+  });
+
   it("toont de eerstvolgende geplande match compact met doorlink naar invullen", async () => {
     renderPage();
     expect(await screen.findByText(/jouw volgende match/i)).toBeInTheDocument();

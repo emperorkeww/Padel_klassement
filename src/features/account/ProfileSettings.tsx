@@ -88,14 +88,23 @@ export function ProfileSettings() {
 
   return (
     <div>
-      <header className="page-head">
+      <header className="page-head settings-head">
+        {/* Deze pagina heette "Profiel", net als de profielweergave op
+            /spelers/:id — de "Ik"-tab en de topbalk-avatar landden hier en je
+            kwam nergens meer. Vandaar "Instellingen" als titel én een directe
+            link naar je eigen kaart (#706). */}
         <div className="row-between">
-          <h1 className="page-title">Profiel</h1>
-          {/* Vrienden is de zusterpagina van het account-gebied; een discrete
-              link i.p.v. een tweede tab-rij (#70). Ook op mobiel bereikbaar. */}
-          <Link className="btn btn--sm" to="/vrienden">
-            Vrienden →
-          </Link>
+          <h1 className="page-title">Instellingen</h1>
+          <div className="btn-row">
+            <Link className="btn btn--sm" to={`/spelers/${myId}`}>
+              Mijn profiel →
+            </Link>
+            {/* Vrienden is de zusterpagina van het account-gebied; een discrete
+                link i.p.v. een tweede tab-rij (#70). Ook op mobiel bereikbaar. */}
+            <Link className="btn btn--sm" to="/vrienden">
+              Vrienden →
+            </Link>
+          </div>
         </div>
         <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>

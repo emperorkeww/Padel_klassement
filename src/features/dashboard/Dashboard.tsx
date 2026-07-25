@@ -472,7 +472,17 @@ export function Dashboard() {
         }`}
       >
         <div className="hero__main">
-          <Avatar profile={myProfile} name={myName || undefined} size={56} />
+          {/* Primaire ingang naar de profielweergave (#706). De avatar is de
+              conventionele gesture, maar een klikbare avatar alleen is niet
+              vindbaar — vandaar het zichtbare label eronder. Het staat in de
+              avatarkolom (die korter is dan het tekstblok ernaast) zodat de
+              hero geen regel hoger wordt op smalle schermen. */}
+          <Link className="hero__me" to={`/spelers/${myId}`} aria-label="Naar mijn profiel">
+            <Avatar profile={myProfile} name={myName || undefined} size={56} />
+            <span className="hero__me-label" aria-hidden="true">
+              Mijn profiel →
+            </span>
+          </Link>
           <div className="hero__text">
             <p className="hero__eyebrow">Racket in de aanslag?</p>
             <h1 className="hero__name">

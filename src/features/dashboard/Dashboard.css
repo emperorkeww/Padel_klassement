@@ -50,7 +50,8 @@
     var(--surface);
   border-color: color-mix(in srgb, var(--bigdaddy) 45%, var(--line));
 }
-.hero--bigdaddy .hero__eyebrow {
+.hero--bigdaddy .hero__eyebrow,
+.hero--bigdaddy .hero__me-label {
   color: var(--bigdaddy-text);
 }
 .hero--bigdaddy .hero__divide {
@@ -80,6 +81,7 @@
 }
 .hero--dictator .hero__sub,
 .hero--dictator .hero__coach,
+.hero--dictator .hero__me-label,
 .hero--dictator .hero__form-label {
   color: color-mix(in srgb, #fff 80%, var(--dictator-gold));
 }
@@ -120,6 +122,33 @@
    begroeting op 320px net buiten de hero. */
 .hero__text {
   min-width: 0;
+}
+
+/* Profielingang (#706): avatar met label eronder, als één kolom. De kolom blijft
+   exact zo breed als de avatar (het label wrapt binnen 56px) — zo kost de
+   ingang geen breedte aan het tekstblok op 320px. De hero wordt er ook niet
+   hoger van: `hero__main` centreert en het tekstblok ernaast is hoger. */
+.hero__me {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: 0 0 auto;
+  width: 56px;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: opacity 0.15s;
+}
+.hero__me:hover {
+  opacity: 0.75;
+}
+.hero__me-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--accent);
 }
 
 /* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
