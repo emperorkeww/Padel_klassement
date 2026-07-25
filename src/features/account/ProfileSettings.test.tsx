@@ -53,11 +53,19 @@ describe("<ProfileSettings />", () => {
   it("toont de algemene tab met foto- en naamkaart", async () => {
     renderPage();
     expect(
-      await screen.findByRole("heading", { name: /^profiel$/i }),
+      await screen.findByRole("heading", { name: /^instellingen$/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/profielfoto/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue("alice")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Alice Anders")).toBeInTheDocument();
+  });
+
+  // De "Ik"-tab en de topbalk-avatar landen hier; zonder deze link is je eigen
+  // profielweergave vanaf de instellingen onbereikbaar (#706).
+  it("linkt vanuit de kop naar de eigen profielweergave", async () => {
+    renderPage();
+    const link = await screen.findByRole("link", { name: /mijn profiel/i });
+    expect(link).toHaveAttribute("href", `/spelers/${SESSION.user.id}`);
   });
 
   it("toont e-mail- en wachtwoordkaart onder de accounttab", async () => {
