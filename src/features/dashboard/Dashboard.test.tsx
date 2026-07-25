@@ -14,6 +14,8 @@ import Dashboard from "./Dashboard";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
+import { PROFILES } from "@/test/fixtures";
+import { isoParts } from "@/features/standings/pias";
 
 // De baanbeschikbaarheid komt via fetch (Playtomic-proxy); leeg antwoord volstaat.
 function stubPlaytomic() {
@@ -316,6 +318,180 @@ describe("<Dashboard />", () => {
       fromMock.mockImplementation(orig);
       invalidateAll();
     }
+  });
+
+  // Hero-thema voor de schande (#644): de Pias van de week en de Zwarte Piet
+  // kleuren de hero net zo goed als de eer dat doet. De crest-chips blijven in
+  // álle gevallen staan — kleur is nooit de enige indicator.
+  describe("schande-thema's op de hero (#644)", () => {
+    const fromMock = () =>
+      supabase.from as unknown as {
+        getMockImplementation: () => (table: string) => unknown;
+        mockImplementation: (impl: (table: string) => unknown) => void;
+      };
+
+    /** Rendert met extra/vervangen tabelrijen. `troonBezet` zet Bob op De Troon,
+     *  waardoor Alice haar Big Daddy-status kwijt is (#528) — nodig om een
+     *  schande-thema kaal te kunnen zien. */
+    function renderMet(
+      rijen: Record<string, unknown[]>,
+      opts: { troonBezet?: boolean } = {},
+    ) {
+      invalidateAll();
+      const mock = fromMock();
+      const orig = mock.getMockImplementation();
+      mock.mockImplementation((table) => {
+        if (table in rijen)
+          return makeQuery({ data: rijen[table], error: null });
+        if (opts.troonBezet && table === "dictator_termijnen")
+          return makeQuery({
+            data: [
+              { profile_id: "p2", begon_op: "2026-07-01T10:00:00Z", claim_rating: 1610 },
+            ],
+            error: null,
+          });
+        return orig(table);
+      });
+      return {
+        ...renderPage(),
+        herstel: () => {
+          mock.mockImplementation(orig);
+          invalidateAll();
+        },
+      };
+    }
+
+    const piasRij = (weekStart: string) => ({
+      group_id: "g1",
+      iso_year: Number(weekStart.slice(0, 4)),
+      iso_week: 27,
+      player_id: "p1",
+      match_id: "m-done",
+      reden: "afdroging",
+      ernst: 3,
+      waarde: 12,
+      win_chance: null,
+      week_start: weekStart,
+    });
+
+    const pietRij = {
+      group_id: "g1",
+      holder_id: "p1",
+      from_id: "p2",
+      reden: "afdroging",
+      ernst: 3,
+      detail: "6-0 6-1",
+      match_id: "m-done",
+      since: "2026-07-01",
+    };
+
+    /** De pias hangt aan de lópende ISO-week, dus de klok moet vaststaan. */
+    async function metVasteWeek(fn: (weekStart: string) => Promise<void>) {
+      const now = new Date("2026-07-08T10:00:00.000Z");
+      vi.useFakeTimers({ toFake: ["Date"], now });
+      try {
+        await fn(isoParts(now).weekStart);
+      } finally {
+        vi.useRealTimers();
+      }
+    }
+
+    it("kleurt de hero als kraftkarton voor de Pias van de week", async () => {
+      await metVasteWeek(async (week) => {
+        const { container, herstel } = renderMet(
+          { pias_of_week: [piasRij(week)] },
+          { troonBezet: true },
+        );
+        try {
+          expect(
+            await screen.findByRole("button", { name: /pias van de week/i }),
+          ).toBeInTheDocument();
+          expect(container.querySelector(".hero")).toHaveClass("hero--pias");
+          expect(container.querySelector(".hero--piet")).toBeNull();
+        } finally {
+          herstel();
+        }
+      });
+    });
+
+    it("kleurt de hero als speelkaart voor de Zwarte Piet", async () => {
+      const { container, herstel } = renderMet(
+        { zwarte_piet: [pietRij] },
+        { troonBezet: true },
+      );
+      try {
+        expect(
+          await screen.findByRole("button", { name: /zwarte piet/i }),
+        ).toBeInTheDocument();
+        expect(container.querySelector(".hero")).toHaveClass("hero--piet");
+        expect(container.querySelector(".hero--pias")).toBeNull();
+      } finally {
+        herstel();
+      }
+    });
+
+    it("laat de pias van deze week winnen van het rondgaande token", async () => {
+      await metVasteWeek(async (week) => {
+        const { container, herstel } = renderMet(
+          { pias_of_week: [piasRij(week)], zwarte_piet: [pietRij] },
+          { troonBezet: true },
+        );
+        try {
+          // Beide chips blijven staan; alleen het vlak kiest partij.
+          expect(
+            await screen.findByRole("button", { name: /pias van de week/i }),
+          ).toBeInTheDocument();
+          expect(
+            screen.getByRole("button", { name: /zwarte piet/i }),
+          ).toBeInTheDocument();
+          expect(container.querySelector(".hero")).toHaveClass("hero--pias");
+          expect(container.querySelector(".hero--piet")).toBeNull();
+        } finally {
+          herstel();
+        }
+      });
+    });
+
+    it("laat de Big Daddy-kroon de schande verdringen", async () => {
+      // Vacante troon: Alice is #1 én draagt het schande-token. Verdienste
+      // wint van schande, zoals in EDITIE_PRIORITEIT op de FUT-kaart.
+      const { container, herstel } = renderMet({ zwarte_piet: [pietRij] });
+      try {
+        expect(
+          await screen.findByRole("button", { name: /big daddy/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /zwarte piet/i }),
+        ).toBeInTheDocument();
+        expect(container.querySelector(".hero")).toHaveClass("hero--bigdaddy");
+        expect(container.querySelector(".hero--piet")).toBeNull();
+      } finally {
+        herstel();
+      }
+    });
+
+    it("dooft het thema bij een roast-schild, maar houdt de crest", async () => {
+      const { container, herstel } = renderMet(
+        {
+          zwarte_piet: [pietRij],
+          profiles: PROFILES.map((p) =>
+            p.id === "p1" ? { ...p, roast_schild: true } : p,
+          ),
+        },
+        { troonBezet: true },
+      );
+      try {
+        // Het feit blijft (neutrale 📊-variant), de spot verdwijnt.
+        expect(
+          await screen.findByRole("button", { name: /schande-token/i }),
+        ).toBeInTheDocument();
+        expect(container.querySelector(".hero--piet")).toBeNull();
+        expect(container.querySelector(".hero--pias")).toBeNull();
+        expect(container.querySelector(".hero")).toHaveClass("hero");
+      } finally {
+        herstel();
+      }
+    });
   });
 
   it("toont badge-uitleg bij tik op een hero-badge zonder te navigeren", async () => {

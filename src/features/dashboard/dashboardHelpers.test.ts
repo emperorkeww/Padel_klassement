@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickPollBanner } from "./dashboardHelpers";
+import { heroThema, pickPollBanner } from "./dashboardHelpers";
 import type { GroupSummary } from "@/features/groups/api";
 import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
 
@@ -191,5 +191,50 @@ describe("pickPollBanner", () => {
       );
       expect(pick).toMatchObject({ accessCode: null });
     });
+  });
+});
+
+describe("heroThema (#644)", () => {
+  const geen = {
+    dictator: false,
+    bigDaddy: false,
+    pias: false,
+    piet: false,
+    schild: false,
+  };
+
+  it("laat de hero neutraal zonder enige status", () => {
+    expect(heroThema(geen)).toBeNull();
+  });
+
+  it("geeft elke status zijn eigen thema", () => {
+    expect(heroThema({ ...geen, dictator: true })).toBe("dictator");
+    expect(heroThema({ ...geen, bigDaddy: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, pias: true })).toBe("pias");
+    expect(heroThema({ ...geen, piet: true })).toBe("piet");
+  });
+
+  it("laat verdienste de schande verdringen, net als op de FUT-kaart", () => {
+    // Andere assen: het klassement kent geen groepen, de schande-tokens wel.
+    // Wie tegelijk #1 en schande-drager is, krijgt het thema van de eer — de
+    // schande-crest blijft ernaast staan (Dashboard.tsx).
+    expect(heroThema({ ...geen, bigDaddy: true, piet: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, bigDaddy: true, pias: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, dictator: true, pias: true, piet: true })).toBe(
+      "dictator",
+    );
+  });
+
+  it("laat binnen de schande de weeklens winnen van het rondgaande token", () => {
+    expect(heroThema({ ...geen, pias: true, piet: true })).toBe("pias");
+  });
+
+  it("dooft met een roast-schild alleen de schande-thema's", () => {
+    expect(heroThema({ ...geen, pias: true, schild: true })).toBeNull();
+    expect(heroThema({ ...geen, piet: true, schild: true })).toBeNull();
+    expect(heroThema({ ...geen, pias: true, piet: true, schild: true })).toBeNull();
+    // Eer valt niet onder het schild: daar valt niets te beschermen.
+    expect(heroThema({ ...geen, bigDaddy: true, schild: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, dictator: true, schild: true })).toBe("dictator");
   });
 });
