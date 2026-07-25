@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -41,6 +41,20 @@ import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
 type View = "rondes" | "plannen" | "spelen" | "matches" | "stand" | "leden";
+
+// De tabbalk in reis-volgorde. De id's zijn de URL-keys (?tab=…) en staan in
+// pushberichten, feed-links en edge functions — labels mogen wisselen (#673),
+// keys niet.
+const TABS: { id: View; label: string }[] = [
+  { id: "plannen", label: "Plannen" },
+  { id: "rondes", label: "Vandaag" },
+  { id: "spelen", label: "Teams" },
+  { id: "matches", label: "Historie" },
+  { id: "stand", label: "Stand" },
+  { id: "leden", label: "Leden" },
+];
+
+const TABPANEL_ID = "group-tabpanel";
 
 export function GroupDetail() {
   const { id = "" } = useParams();
@@ -93,6 +107,8 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  // Voor de pijltjes-navigatie: focus verplaatsen naar de nieuwe tabknop.
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   // De actieve tab leeft in de URL: refresh-bestendig en deelbaar
   // ("kijk even bij de stand").
   const [params, setParams] = useSearchParams();
@@ -221,6 +237,32 @@ export function GroupDetail() {
     list.some((m) => m.status !== "completed"),
   );
 
+  // Tellers per tab; 0 = geen teller tonen.
+  const tabCounts: Record<View, number> = {
+    plannen: 0,
+    rondes: rounds.length,
+    spelen: 0,
+    matches: completedMatches.length,
+    stand: 0,
+    leden: memberList.length,
+  };
+  // Pijltjes-navigatie binnen de tablist (WAI-ARIA tabs pattern): selectie
+  // volgt de focus, zoals bij de meeste tabbalken.
+  const onTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const i = TABS.findIndex((t) => t.id === view);
+    const last = TABS.length - 1;
+    const next =
+      e.key === "ArrowRight" ? (i === last ? 0 : i + 1)
+      : e.key === "ArrowLeft" ? (i === 0 ? last : i - 1)
+      : e.key === "Home" ? 0
+      : e.key === "End" ? last
+      : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    setView(TABS[next].id);
+    tabRefs.current[next]?.focus();
+  };
+
   if (group.loading)
     return (
       <div className="card">
@@ -242,9 +284,8 @@ export function GroupDetail() {
             ← Spelen
           </Link>
         </div>
-        <p className="page-subtitle">
-          {memberList.length} leden{isOwner ? " · jij bent eigenaar" : ""}
-        </p>
+        {/* Het ledenaantal staat al als teller op de Leden-tab (#674). */}
+        {isOwner && <p className="page-subtitle">jij bent eigenaar</p>}
       </header>
 
       {/* Lege groep: Rudy verwelkomt en zet de toon (#301) */}
@@ -280,178 +321,167 @@ export function GroupDetail() {
 
       {/* Tabs in reis-volgorde (#106): plannen → spelen → stand.
           Labels ≠ URL-keys (#673): de keys (spelen/matches) staan in
-          pushberichten en edge functions en blijven daarom ongewijzigd. */}
-      <div className="tabs">
-        <button
-          className={`tab ${view === "plannen" ? "is-active" : ""}`}
-          onClick={() => setView("plannen")}
-        >
-          Plannen
-        </button>
-        <button
-          className={`tab ${view === "rondes" ? "is-active" : ""}`}
-          onClick={() => setView("rondes")}
-        >
-          Vandaag
-          {rounds.length > 0 && (
-            <span className="tab__count" aria-hidden="true">
-              {rounds.length}
-            </span>
-          )}
-        </button>
-        <button
-          className={`tab ${view === "spelen" ? "is-active" : ""}`}
-          onClick={() => setView("spelen")}
-        >
-          Teams
-        </button>
-        <button
-          className={`tab ${view === "matches" ? "is-active" : ""}`}
-          onClick={() => setView("matches")}
-        >
-          Historie
-          {completedMatches.length > 0 && (
-            <span className="tab__count" aria-hidden="true">
-              {completedMatches.length}
-            </span>
-          )}
-        </button>
-        <button
-          className={`tab ${view === "stand" ? "is-active" : ""}`}
-          onClick={() => setView("stand")}
-        >
-          Stand
-        </button>
-        <button
-          className={`tab ${view === "leden" ? "is-active" : ""}`}
-          onClick={() => setView("leden")}
-        >
-          Leden
-          {memberList.length > 0 && (
-            <span className="tab__count" aria-hidden="true">
-              {memberList.length}
-            </span>
-          )}
-        </button>
+          pushberichten en edge functions en blijven daarom ongewijzigd.
+          Echte tab-semantiek (#674): rol, aria-selected, pijltjes en de
+          teller in de toegankelijke naam ("Leden, 6"). De balk scrollt
+          horizontaal via .tabs--page — zes labels passen niet op 375px. */}
+      <div
+        className="tabs tabs--page"
+        role="tablist"
+        aria-label="Groepsonderdelen"
+        onKeyDown={onTabKeyDown}
+      >
+        {TABS.map((t, i) => {
+          const active = view === t.id;
+          const count = tabCounts[t.id];
+          return (
+            <button
+              key={t.id}
+              type="button"
+              id={`grouptab-${t.id}`}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              role="tab"
+              aria-selected={active}
+              aria-controls={TABPANEL_ID}
+              // Eén tabstop voor de hele balk (roving tabindex): binnen de
+              // balk navigeer je met de pijltjes, niet met Tab.
+              tabIndex={active ? 0 : -1}
+              aria-label={count ? `${t.label}, ${count}` : undefined}
+              className={`tab ${active ? "is-active" : ""}`}
+              onClick={() => setView(t.id)}
+            >
+              {t.label}
+              {count > 0 && (
+                <span className="tab__count" aria-hidden="true">
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {view === "rondes" && (
-        /* Wedstrijden en uitslagen invullen primair, dagoverzicht
-           ondersteunend; afsluitkaart zodra alles binnen is (#377). */
-        <VandaagTab
-          groupId={id}
-          groupName={group.data.name}
-          myId={myId}
-          isOwner={isOwner}
-          matches={matches.data ?? []}
-          rounds={rounds}
-          dayDone={dayDone}
-          today={today}
-          teams={tmap}
-          profiles={pmap}
-          histories={histories.data ?? {}}
-          upsets={upsets}
-          zwartePiet={zwartePiet}
-          intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
-          onMatches={onMatches}
-          onShowSpelen={() => setView("spelen")}
-          onShowStand={() => setView("stand")}
-        />
-      )}
+      <div id={TABPANEL_ID} role="tabpanel" aria-labelledby={`grouptab-${view}`}>
+        {view === "rondes" && (
+          /* Wedstrijden en uitslagen invullen primair, dagoverzicht
+             ondersteunend; afsluitkaart zodra alles binnen is (#377). */
+          <VandaagTab
+            groupId={id}
+            groupName={group.data.name}
+            myId={myId}
+            isOwner={isOwner}
+            matches={matches.data ?? []}
+            rounds={rounds}
+            dayDone={dayDone}
+            today={today}
+            teams={tmap}
+            profiles={pmap}
+            histories={histories.data ?? {}}
+            upsets={upsets}
+            zwartePiet={zwartePiet}
+            intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
+            onMatches={onMatches}
+            onShowSpelen={() => setView("spelen")}
+            onShowStand={() => setView("stand")}
+          />
+        )}
 
-      {view === "spelen" && (
-        /* Teams maken primair, losse partij secundair; reis-CTA naar
-           Vandaag zodra er wedstrijden klaarstaan (#364). */
-        <SpelenTab
-          groupId={id}
-          group={group.data!}
-          myId={myId}
-          members={memberList}
-          profiles={pmap}
-          matches={matches.data ?? []}
-          todaysMatches={todaysMatches}
-          teams={tmap}
-          openRound={openRound ?? null}
-          busy={busy}
-          intensiteit={group.data.roast_intensiteit ?? "gemeen"}
-          onMatches={onMatches}
-          onGuestCreated={profiles.reload}
-          onShowRondes={() => setView("rondes")}
-        />
-      )}
+        {view === "spelen" && (
+          /* Teams maken primair, losse partij secundair; reis-CTA naar
+             Vandaag zodra er wedstrijden klaarstaan (#364). */
+          <SpelenTab
+            groupId={id}
+            group={group.data!}
+            myId={myId}
+            members={memberList}
+            profiles={pmap}
+            matches={matches.data ?? []}
+            todaysMatches={todaysMatches}
+            teams={tmap}
+            openRound={openRound ?? null}
+            busy={busy}
+            intensiteit={group.data.roast_intensiteit ?? "gemeen"}
+            onMatches={onMatches}
+            onGuestCreated={profiles.reload}
+            onShowRondes={() => setView("rondes")}
+          />
+        )}
 
-      {view === "plannen" && (
-        /* Eén fase-gedreven flow (#349): fasebalk + suggesties + focus-poll
-           + secundaire speeldagen, met de wizard als bottom-sheet. */
-        <PlanTab
-          groupId={id}
-          groupName={group.data.name}
-          members={memberList}
-          profiles={pmap}
-          myId={myId}
-          isOwner={isOwner}
-          matches={matches.data ?? []}
-        />
-      )}
+        {view === "plannen" && (
+          /* Eén fase-gedreven flow (#349): fasebalk + suggesties + focus-poll
+             + secundaire speeldagen, met de wizard als bottom-sheet. */
+          <PlanTab
+            groupId={id}
+            groupName={group.data.name}
+            members={memberList}
+            profiles={pmap}
+            myId={myId}
+            isOwner={isOwner}
+            matches={matches.data ?? []}
+          />
+        )}
 
-      {view === "matches" && (
-        <MatchHistory
-          title="Gespeelde matches"
-          matches={completedMatches}
-          teams={tmap}
-          profiles={pmap}
-          myId={myId}
-          upsets={upsets}
-          canManage={isOwner}
-          onChanged={onMatches}
-          loading={matches.loading}
-          error={matches.error}
-          emptyAll={
-            <p className="empty">
-              Nog geen gespeelde matches in deze groep — log er een op de
-              Teams-tab.
-            </p>
-          }
-        />
-      )}
+        {view === "matches" && (
+          <MatchHistory
+            title="Gespeelde matches"
+            matches={completedMatches}
+            teams={tmap}
+            profiles={pmap}
+            myId={myId}
+            upsets={upsets}
+            canManage={isOwner}
+            onChanged={onMatches}
+            loading={matches.loading}
+            error={matches.error}
+            emptyAll={
+              <p className="empty">
+                Nog geen gespeelde matches in deze groep — log er een op de
+                Teams-tab.
+              </p>
+            }
+          />
+        )}
 
-      {view === "stand" && (
-        <GroupStandTab
-          matches={matches.data ?? []}
-          completedMatches={completedMatches}
-          teams={tmap}
-          profiles={pmap}
-          ratings={ratings.data ?? {}}
-          histories={histories.data ?? {}}
-          memberList={memberList}
-          myId={myId}
-          season={season}
-          setSeasonId={setSeasonId}
-          seasons={seasons}
-          shownStandings={shownStandings}
-          champion={champion}
-          shownPredictionStandings={shownPredictionStandings}
-          group={group.data!}
-          piasRatings={piasRatings}
-          zwartePiet={zwartePiet}
-        />
-      )}
+        {view === "stand" && (
+          <GroupStandTab
+            matches={matches.data ?? []}
+            completedMatches={completedMatches}
+            teams={tmap}
+            profiles={pmap}
+            ratings={ratings.data ?? {}}
+            histories={histories.data ?? {}}
+            memberList={memberList}
+            myId={myId}
+            season={season}
+            setSeasonId={setSeasonId}
+            seasons={seasons}
+            shownStandings={shownStandings}
+            champion={champion}
+            shownPredictionStandings={shownPredictionStandings}
+            group={group.data!}
+            piasRatings={piasRatings}
+            zwartePiet={zwartePiet}
+          />
+        )}
 
-      {view === "leden" && (
-        <GroupLedenTab
-          groupId={id}
-          myId={myId}
-          isOwner={isOwner}
-          busy={busy}
-          act={act}
-          memberList={memberList}
-          profiles={pmap}
-          zwartePiet={zwartePiet}
-          group={group.data!}
-          reloadGroup={group.reload}
-          addableFriendIds={addableFriendIds}
-        />
-      )}
+        {view === "leden" && (
+          <GroupLedenTab
+            groupId={id}
+            myId={myId}
+            isOwner={isOwner}
+            busy={busy}
+            act={act}
+            memberList={memberList}
+            profiles={pmap}
+            zwartePiet={zwartePiet}
+            group={group.data!}
+            reloadGroup={group.reload}
+            addableFriendIds={addableFriendIds}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -752,15 +752,7 @@
 
 /* ── #103: tab-herontwerp ─────────────────────────────────────────────── */
 
-/* Paginabrede tabbar onder de hero; schuift horizontaal op smalle schermen. */
-.tabs--page {
-  margin-bottom: var(--sp-5);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tabs--page::-webkit-scrollbar {
-  display: none;
-}
+/* .tabs--page staat sinds #674 in ui.css: de groepspagina gebruikt 'm ook. */
 
 /* Handle + tier-pil naast elkaar in de hero. */
 .profile-hero__meta {
