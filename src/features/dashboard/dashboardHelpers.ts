@@ -88,6 +88,10 @@ export type PollPick =
       booked: boolean;
       date: string;
       startTime: string;
+      /** Toegangscode van de velden (#675), maar alléén op de speeldag zelf —
+       *  daarbuiten is het ruis op een overzichtsscherm. Null zonder code,
+       *  vóór de dag, of als de baan nog niet geboekt is. */
+      accessCode: string | null;
     };
 
 /** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
@@ -146,12 +150,16 @@ export function pickPollBanner(
             v.status === "yes",
         );
         if (!iCan) continue;
+        const isVandaag =
+          opt.date === dateInZone(fixed.club_timezone, 0, nowMs);
         return {
           kind: "fixed",
           group,
           booked: fixed.status === "booked",
           date: opt.date,
           startTime: opt.start_time,
+          accessCode:
+            fixed.status === "booked" && isVandaag ? fixed.access_code : null,
         };
       }
     }

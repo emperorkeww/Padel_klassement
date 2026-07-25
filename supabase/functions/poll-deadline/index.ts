@@ -90,6 +90,7 @@ type PollRow = {
   deadline_notified_at: string | null;
   dayof_notified_at: string | null;
   club_timezone: string | null;
+  access_code: string | null;
 };
 type OptionRow = {
   id: string;
@@ -131,7 +132,7 @@ Deno.serve(async (req) => {
 
   const { data: polls } = await admin
     .from("play_polls")
-    .select("id, group_id, status, locked_option_id, deadline_notified_at, dayof_notified_at, club_timezone")
+    .select("id, group_id, status, locked_option_id, deadline_notified_at, dayof_notified_at, club_timezone, access_code")
     .in("status", ["open", "locked", "booked"]);
 
   for (const poll of (polls ?? []) as PollRow[]) {
@@ -238,9 +239,18 @@ Deno.serve(async (req) => {
     const start = clubEpoch(locked.date, locked.start_time, tz);
     if (start > now && start - now <= DAY_OF_HOURS * 3600_000) {
       const players = [...new Set(yesOn(locked.id).map((v) => v.player_id))];
+      // Toegangscode mee in de herinnering (#675): dit is exact het moment
+      // waarop je hem nodig hebt, en het scheelt het zoekwerk in de groepschat.
+      // Alleen bij een geboekte baan — een code zonder boeking zegt niets.
+      const geboekt = poll.status === "booked";
+      const code = geboekt ? poll.access_code : null;
       result.dayOf += await pushTo(players, {
         title: "Vandaag padel 🎾",
-        body: `Jullie spelen om ${locked.start_time}${poll.status === "booked" ? " — baan geboekt ✓" : " — vergeet de baan niet te boeken"}.`,
+        body:
+          `Jullie spelen om ${locked.start_time}` +
+          (geboekt ? " — baan geboekt ✓" : " — vergeet de baan niet te boeken") +
+          (code ? ` · code ${code}` : "") +
+          ".",
         url: `/groepen/${poll.group_id}?tab=plannen`,
       });
       await admin

@@ -438,6 +438,19 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
+/* Toegangscode op de speeldag zelf (#675): hiervoor open je het overzicht op
+   dat moment, dus de code zelf leest groot en monospace. */
+.poll-banner__code {
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.poll-banner__code strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
 .poll-banner .btn {
   justify-self: start;
 }
