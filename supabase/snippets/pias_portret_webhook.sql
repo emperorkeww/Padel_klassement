@@ -1,7 +1,7 @@
 -- Server-side vangnet voor het AI pias-portret (#682). Zodra recompute_pias de
 -- pias-aanduidingen bijwerkt, vuurt deze trigger fire-and-forget de edge function
 -- generate-pias-avatar af voor de húidige globale pias, zodat ook een pias die de
--- app zelf niet opent een vers clownportret op De Schandpaal krijgt.
+-- app zelf niet opent een vers hofnar-portret op De Schandpaal krijgt.
 --
 -- Eén keer uitvoeren in de SQL-editor van je GEHOSTE project (vervang
 -- <PROJECT-REF> én <CRON-SECRET>). Zelfde pg_net-aanpak als push_webhooks.sql en
