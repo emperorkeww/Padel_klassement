@@ -42,6 +42,8 @@ import { coachKlassement, coachKlassementMood } from "@/features/coach/klassemen
 import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
 import { DictatorThrone } from "@/features/standings/components/DictatorThrone";
+import { Schandpaal } from "./components/Schandpaal";
+import { schandpaalUit } from "./schandpaal";
 import {
   DEFAULT_DICTATOR,
   defaultDictatorEnabled,
@@ -667,6 +669,20 @@ export function Leaderboard() {
     pias: usingScope ? null : currentPias(globalePias.data ?? []),
     piet: usingScope ? null : (globaleZwartePiet.data ?? null),
   };
+  // De Schandpaal (#682): de globale pias als uitgelichte kaart ónder de
+  // ranglijst — de tegenhanger van De Troon erboven. Zelfde bron als de
+  // 🤡-editie hierboven (getGlobalePias → currentPias), dus kaart en editie
+  // wijzen per constructie dezelfde speler aan; de selector valt zelf dicht bij
+  // een leeg venster of een roast-schild. Alleen op de live stand, om dezelfde
+  // reden als editieCtx.pias daar null is: een archief of tijdmachine heeft
+  // geen "deze week".
+  const schandpaal = useMemo(
+    () =>
+      usingScope || !spelerTab
+        ? null
+        : schandpaalUit(globalePias.data ?? [], profilesMap.data ?? {}, myId),
+    [usingScope, spelerTab, globalePias.data, profilesMap.data, myId],
+  );
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
 
@@ -1050,6 +1066,23 @@ export function Leaderboard() {
           </div>
         )}
       </div>
+
+      {/* De Schandpaal (#682): de pias van de club onder de ranglijst. De troon
+          staat erboven, de schandpaal eronder — de sandwich vertelt het verhaal.
+          Zelfde poorten als de troon: niet tijdens laden/fouten en niet terwijl
+          je zoekt (dan is de lijst geen klassement meer). */}
+      {schandpaal && !loading && !error && !nq && (
+        <Schandpaal
+          name={schandpaal.naam}
+          profile={schandpaal.profile}
+          detail={schandpaal.detail}
+          weekStart={schandpaal.weekStart}
+          link={schandpaal.link}
+          isMe={schandpaal.isMe}
+          ctx={schandpaal.ctx}
+          seed={schandpaal.seed}
+        />
+      )}
 
       {/* Ook gevonden buiten de ranglijst (#282): vindbare spelers die (nog)
           niet meespelen — met een link naar hun profiel. */}
