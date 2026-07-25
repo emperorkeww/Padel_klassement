@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -95,6 +95,10 @@ export function PlanTab({
     setWizardOpen(false);
   };
 
+  // Gedeelde speeldag uit de URL (#675): ?poll=<id> zet die poll in focus.
+  const [urlParams] = useSearchParams();
+  const gedeeldePollId = urlParams.get("poll");
+
   // polls/options staan in GroupDetail (die abonneert er ook op); alleen de
   // stemmen zijn puur van deze tab.
   const votes = useAsync<PollVote[]>(() => getGroupPollVotes(groupId), [groupId]);
@@ -127,7 +131,9 @@ export function PlanTab({
   }
 
   // De focus-poll bepaalt de fase van de hele tab; de rest klapt samen.
-  const focus = focusPoll(active, allOptions, today);
+  // ?poll=<id> uit een gedeelde link (#675) wint; onbekend of verlopen valt
+  // stil terug op de gewone keuze.
+  const focus = focusPoll(active, allOptions, today, gedeeldePollId);
   const rest = active.filter((p) => p.id !== focus?.id);
   const chosen = focus ? lockedOptionOf(focus, allOptions) : null;
   const roundsExist = focus

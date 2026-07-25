@@ -139,6 +139,21 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     expect(writeText).toHaveBeenCalledWith("1234");
   });
 
+  it("stuurt de deellink naar deze speeldag mee in de tekst", async () => {
+    const share = vi.fn<(data: ShareData) => Promise<void>>(async () => {});
+    Object.assign(navigator, { share });
+
+    renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "1234" });
+    await userEvent.click(screen.getByRole("button", { name: /↗ tekst/i }));
+
+    const arg = share.mock.calls[0][0];
+    expect(arg.url).toBe(
+      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-1`,
+    );
+    // De code staat in de tekst zelf — die lees je vóór je verstuurt.
+    expect(arg.text).toContain("🔑 Code velden: 1234");
+  });
+
   it("zet de code in de description van het agenda-item", async () => {
     // De ICS is een persoonlijke download; de code staat daarmee in je agenda
     // op het moment dat je hem nodig hebt.

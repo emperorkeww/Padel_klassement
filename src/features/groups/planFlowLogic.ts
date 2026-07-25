@@ -46,15 +46,26 @@ export function pollPhase(poll: PlayPoll, roundsExist: boolean): PlanPhase {
 /**
  * Welke actieve poll krijgt de focus (groot in beeld)? `active` is de
  * soonest-first uitvoer van activePolls.
- * 1. De speeldag van vandaag zelf wint altijd (rondes zetten/laatste check).
+ * 0. Een gedeelde link (#675) wint van alles: wie op "kijk, vrijdag" tikt hoort
+ *    díé speeldag te zien, niet degene die de app zelf zou kiezen.
+ * 1. De speeldag van vandaag zelf (rondes zetten/laatste check).
  * 2. Anders de eerste poll waar nog actie nodig is (stemmen, kiezen of boeken).
  * 3. Anders de eerstvolgende volledig geboekte speeldag.
+ *
+ * `preferId` valt stil terug op de normale keuze als de poll niet (meer)
+ * actief is — verlopen, geannuleerd of uit een andere groep. Een oude link
+ * hoort de tab niet leeg of stuk te laten lijken.
  */
 export function focusPoll(
   active: PlayPoll[],
   options: PollOption[],
   today: string,
+  preferId?: string | null,
 ): PlayPoll | null {
+  if (preferId) {
+    const gevraagd = active.find((p) => p.id === preferId);
+    if (gevraagd) return gevraagd;
+  }
   const todaysPoll = active.find(
     (p) => lockedOptionOf(p, options)?.date === today,
   );

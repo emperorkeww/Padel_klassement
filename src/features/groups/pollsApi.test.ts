@@ -13,6 +13,7 @@ import {
   createPoll,
   addPollOption,
   removePollOption,
+  pollShareUrl,
   markPollBooked,
   setPollAccessCode,
   reopenPoll,
@@ -315,5 +316,18 @@ describe("reopenPoll", () => {
       booked_at: null,
       access_code: null,
     });
+  });
+});
+
+// Deep-link naar één speeldag (#675): spiegel van slotShareUrl.
+describe("pollShareUrl", () => {
+  it("bouwt een absolute link met tab en poll-id", () => {
+    expect(pollShareUrl("g1", "poll-1")).toBe(
+      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-1`,
+    );
+  });
+
+  it("codeert id's die niet URL-veilig zijn", () => {
+    expect(pollShareUrl("g1", "a b&c")).toContain("poll=a+b%26c");
   });
 });
