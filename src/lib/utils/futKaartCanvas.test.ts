@@ -10,9 +10,11 @@ const lees = (pad: string) =>
   readFileSync(fileURLToPath(new URL(pad, import.meta.url)), "utf8");
 const FUT_CSS = lees("../../features/rating/components/FutKaart.css");
 const INDEX_CSS = lees("../../app/index.css");
-// De Schandpaal (#682) deelt het kraftpapier van de pias letterlijk — de
-// vezeltegel-pariteitstest onderaan bewaakt dat (#705).
+// De Schandpaal (#682) en, sinds #644, de schande-hero op het dashboard delen
+// het kraftpapier van de pias letterlijk — de vezeltegel-pariteitstest onderaan
+// bewaakt dat (#705).
 const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css");
+const DASHBOARD_CSS = lees("../../features/dashboard/Dashboard.css");
 
 const EDITIES: KaartEditie[] = [
   "icon",
@@ -214,10 +216,11 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     },
   );
 
-  it("pias-kaart en Schandpaal delen letterlijk dezelfde vezeltegel (#705)", () => {
-    // Zelfde papier op kaart en klassement: de 28px-SVG-tegel moet in beide
-    // stylesheets byte-gelijk zijn, anders lopen de twee kraftvlakken stil
-    // uit elkaar (de Schandpaal heeft geen canvas-tegenhanger of synctest).
+  it("pias-kaart, Schandpaal en hero delen letterlijk dezelfde vezeltegel (#705/#644)", () => {
+    // Zelfde papier op kaart, klassement en dashboard-hero: de 28px-SVG-tegel
+    // moet in alle drie de stylesheets byte-gelijk zijn, anders lopen de
+    // kraftvlakken stil uit elkaar (Schandpaal en hero hebben geen
+    // canvas-tegenhanger of eigen synctest).
     const tegel = (css: string, blok: RegExp): string | undefined => {
       const m = blok.exec(css);
       expect(m).not.toBeNull();
@@ -228,8 +231,51 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       /\.fut-kaart--pias \.fut-kaart__vlak\s*\{[^}]*\}/,
     );
     const vanSchandpaal = tegel(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/);
+    const vanHero = tegel(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/);
     expect(vanKaart).toBeDefined();
     expect(vanKaart).toBe(vanSchandpaal);
+    expect(vanKaart).toBe(vanHero);
+  });
+
+  it("de schande-hero's houden de materiaalwaarden van hun FUT-editie (#644)", () => {
+    // De hero kopieert de lokale hexen van de kaart-edities (geen gedeelde
+    // tokens: dit materiaal is thema-onafhankelijk, zie Dashboard.css). Zonder
+    // deze check drijft de hero stil weg zodra de kaart hertint wordt — precies
+    // wat #705 met de kaart en De Schandpaal deed.
+    const waarden = (css: string, blok: RegExp, prefix: string) => {
+      const m = blok.exec(css);
+      expect(m).not.toBeNull();
+      const out: Record<string, string> = {};
+      for (const v of m![0].matchAll(
+        new RegExp(`--${prefix}-([\\w-]+):\\s*(#[0-9a-f]{3,8});`, "g"),
+      ))
+        out[v[1]] = v[2];
+      return out;
+    };
+    const kaartPias = waarden(FUT_CSS, /\.fut-kaart--pias\s*\{[^}]*\}/, "kaart");
+    const heroPias = waarden(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/, "kraft");
+    // De hero volgt de póstervariant van De Schandpaal (lichtere --lo, want er
+    // staat tekst tot onderaan), maar deelt de rest met de kaart.
+    const schandpaal = waarden(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/, "kraft");
+    expect(heroPias.hi).toBe(kaartPias.hi);
+    expect(heroPias.ink).toBe(kaartPias.ink);
+    expect(heroPias.lijn).toBe(kaartPias.lijn);
+    // Het stempelrood heet op de kaart --editie-kleur (buiten de --kaart-*-reeks).
+    expect(heroPias.stempel).toBe(
+      /--editie-kleur:\s*(#[0-9a-f]{3,8});/.exec(
+        /\.fut-kaart--pias\s*\{[^}]*\}/.exec(FUT_CSS)![0],
+      )![1],
+    );
+    expect(heroPias.stempel).toBe(schandpaal.stempel);
+    expect(heroPias.mid).toBe(schandpaal.mid);
+    expect(heroPias.lo).toBe(schandpaal.lo);
+
+    const kaartPiet = waarden(FUT_CSS, /\.fut-kaart--piet\s*\{[^}]*\}/, "kaart");
+    const heroPiet = waarden(DASHBOARD_CSS, /\.hero--piet\s*\{[^}]*\}/, "kaart");
+    for (const sleutel of ["hi", "mid", "lo", "ink", "lijn"])
+      expect(heroPiet[sleutel]).toBe(kaartPiet[sleutel]);
+    expect(heroPiet.lak).toBe(kaartPiet["frame-hi"]);
+    expect(heroPiet["lak-diep"]).toBe(kaartPiet["frame-lo"]);
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {

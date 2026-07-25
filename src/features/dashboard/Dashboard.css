@@ -112,6 +112,200 @@
   border-color: var(--dictator-gold);
 }
 
+/* ---- Schande-thema's (#644) ----
+   De twee schand-statussen krijgen hetzelfde materiaal dat ze op de FUT-kaart
+   en De Schandpaal al dragen: kraftkarton voor de pias (#631/#682/#705), de
+   speelkaart voor de Zwarte Piet (#645/#705). Geen shimmer, geen metaal,
+   geen animatie — schande glimt niet, dus er is ook niets dat
+   `prefers-reduced-motion` moet dempen.
+
+   Allebei bewust licht in beide thema's, net als hun kaarten: papier is papier,
+   ook 's nachts. Dat vraagt een andere aanpak dan .hero--dictator hierboven,
+   die element voor element pint. Die kán dat, want hij is in beide thema's
+   dónker en genest wit blijft daar leesbaar. Een licht vlak in de donkere app
+   is het omgekeerde geval: elk genest onderdeel (knoppen, crests, vormbolletjes,
+   skeletonregel) komt dan in donkere smaak op licht papier binnen. Daarom
+   herdefiniëren deze twee blokken de neutrale tokens naar hun eigen papier —
+   een token-eiland, hetzelfde recept als de --kaart-*-locals van FutKaart.css —
+   en volgt de rest van de hero vanzelf. Alleen wat een eigen kleurbetekenis
+   heeft (eyebrow, coach, de crest van het winnende thema) staat er los onder. */
+
+/* Pias van de week: het matte kraftkarton met confetti-stipjes. De waarden
+   komen van De Schandpaal (#682) en niet van de FUT-editie — dat is de variant
+   die al is afgestemd op een groot vlak waar tekst tot onderaan op staat
+   (--kraft-lo #c39a5f i.p.v. #a37e46). De vezeltegel is byte-gelijk aan die in
+   FutKaart.css en Schandpaal.css; de synctest in futKaartCanvas.test.ts bewaakt
+   dat. Net als daar staan de confetti-stipjes in px i.p.v. procenten: dit vlak
+   is vele malen groter dan een kaartje, en procent-radii zouden er vlekken van
+   maken. Contrast op de donkerste stop van het verloop (de ongunstigste plek,
+   onderaan): --kraft-ink 5,6:1, --kraft-ink-soft 4,6:1; bovenaan 8,0:1. Het
+   stempelrood van de eyebrow staat op de lichtste stop (5,6:1), crème op
+   stempel 7,2:1. Allemaal ≥ AA. */
+.hero--pias {
+  --kraft-hi: #dcbd85;
+  --kraft-mid: #d3b177;
+  --kraft-lo: #c39a5f;
+  --kraft-ink: #3a250c;
+  --kraft-ink-soft: #4d3212;
+  --kraft-lijn: #8a6534;
+  --kraft-stempel: #8c2a17;
+  --kraft-stempel-diep: #7a2413;
+  /* Papier op karton: het vlak van de knoppen en chips die erop liggen. */
+  --kraft-papier: #f3e4c9;
+
+  /* Token-eiland: alles binnen de hero rekent met papier. */
+  --surface: var(--kraft-papier);
+  --surface-2: #e8d3ab;
+  --ink: var(--kraft-ink);
+  --ink-soft: var(--kraft-ink-soft);
+  --ink-soft-strong: var(--kraft-ink-soft);
+  --line: var(--kraft-lijn);
+  --line-strong: var(--kraft-lijn);
+  --accent: var(--kraft-stempel);
+  --accent-hover: var(--kraft-stempel-diep);
+  --accent-ink: #fbe9d8;
+  /* Winst/verlies blijven onderscheidbaar, maar als inkt op dit papier: het
+     app-groen en -rood zijn hier vreemde plastic stickers. */
+  --success: #1f5c40;
+  --success-soft: #e9dcbb;
+  --success-line: #a98a55;
+  --danger: var(--kraft-stempel);
+  --danger-soft: #edd8b7;
+  --danger-line: #a98a55;
+  --warn: var(--kraft-stempel-diep);
+  --warn-soft: #edd8b7;
+  --warn-line: #a98a55;
+  --skeleton-hi: #e6cf9f;
+
+  color: var(--kraft-ink);
+  border-color: var(--kraft-lijn);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(140, 42, 23, 0.2) 0 4px, transparent 7px),
+    radial-gradient(circle at 88% 22%, rgba(31, 92, 64, 0.18) 0 3px, transparent 6px),
+    radial-gradient(circle at 22% 88%, rgba(31, 74, 128, 0.16) 0 3px, transparent 6px),
+    radial-gradient(circle at 92% 78%, rgba(140, 42, 23, 0.16) 0 2px, transparent 5px),
+    radial-gradient(circle at 68% 8%, rgba(31, 74, 128, 0.13) 0 2px, transparent 5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 28px 28px repeat,
+    radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),
+    radial-gradient(100% 80% at 78% 74%, rgba(255, 246, 222, 0.05), transparent 60%),
+    linear-gradient(
+      172deg,
+      var(--kraft-hi) 0%,
+      var(--kraft-mid) 56%,
+      var(--kraft-lo) 100%
+    );
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--kraft-ink) 26%, transparent);
+}
+.hero--pias .hero__eyebrow,
+.hero--pias .hero__me-label,
+.hero--pias .hero__coach-name {
+  color: var(--kraft-stempel-diep);
+}
+.hero--pias .hero__divide {
+  background: color-mix(in srgb, var(--kraft-lijn) 55%, transparent);
+}
+/* De crest van het wínnende thema wordt de stempel (hetzelfde crème-op-rood als
+   het schandpaal-insigne); een eventuele tweede schande-crest ernaast blijft
+   gewone inkt op papier, zodat de hiërarchie ook in de chips zichtbaar is. */
+.hero--pias .hero-crest--pias {
+  background: var(--kraft-stempel);
+  border-color: #52170c;
+  color: #fbe9d8;
+}
+
+/* Zwarte Piet: de speelkaart van de 🃏-editie — mat kaartwit met linnen-finish,
+   een vlak zwart lakframe en de bleke snijkant van het kaartkarton ertussen,
+   met ♠♥♦♣ op de vier hoeken zoals op een kaartgezicht. Op de FUT-kaart passen
+   de pips in één uitgerekte SVG-laag; een hero is veel breder dan hoog, dus
+   staan ze hier als vier losse hoeklagen op vaste maat — anders trekt de tekening
+   scheef. Contrast: --kaart-ink 14,5:1 bovenaan en 9,7:1 op de donkerste stop,
+   --kaart-ink-soft 5,2:1 daar, kaartrood 5,1:1, bot-op-lak 13,9:1. */
+.hero--piet {
+  --kaart-hi: #f4eedb;
+  --kaart-mid: #e6ddc2;
+  --kaart-lo: #cfc4a4;
+  --kaart-ink: #201d16;
+  --kaart-ink-soft: #4f483a;
+  --kaart-lijn: #a2977a;
+  --kaart-lak: #23211d;
+  --kaart-lak-diep: #131211;
+  /* Iets dieper dan de --editie-kleur van de kaart (#a8271b): hier moet het
+     rood ook onderaan het verloop nog AA halen. */
+  --kaart-rood: #8e2117;
+  --kaart-bone: #efe7d2;
+
+  /* Token-eiland, zie de kop hierboven. */
+  --surface: #faf6ea;
+  --surface-2: var(--kaart-mid);
+  --ink: var(--kaart-ink);
+  --ink-soft: var(--kaart-ink-soft);
+  --ink-soft-strong: var(--kaart-ink-soft);
+  --line: var(--kaart-lijn);
+  --line-strong: var(--kaart-lijn);
+  --accent: var(--kaart-lak);
+  --accent-hover: var(--kaart-lak-diep);
+  --accent-ink: var(--kaart-hi);
+  --success: #1f5c40;
+  --success-soft: #e6e0cb;
+  --success-line: var(--kaart-lijn);
+  --danger: var(--kaart-rood);
+  --danger-soft: #eee3d0;
+  --danger-line: var(--kaart-lijn);
+  --warn: #7a5a1d;
+  --warn-soft: #eee3d0;
+  --warn-line: var(--kaart-lijn);
+  --skeleton-hi: #f0e9d6;
+
+  color: var(--kaart-ink);
+  border-color: var(--kaart-lak);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A0%3C/text%3E%3C/svg%3E")
+      left 14px top 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A5%3C/text%3E%3C/svg%3E")
+      right 14px top 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A6%3C/text%3E%3C/svg%3E")
+      left 14px bottom 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A3%3C/text%3E%3C/svg%3E")
+      right 14px bottom 12px / 30px 30px no-repeat,
+    repeating-linear-gradient(
+      0deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+  /* De bone liner als binnenring: precies de opbouw van de kaart, waar de
+     witte kern van het karton tussen lakframe en vlak zichtbaar is. */
+  box-shadow:
+    inset 0 0 0 4px var(--kaart-bone),
+    0 8px 24px color-mix(in srgb, var(--kaart-lak) 30%, transparent);
+}
+.hero--piet .hero__eyebrow,
+.hero--piet .hero__me-label,
+.hero--piet .hero__coach-name {
+  color: var(--kaart-rood);
+}
+.hero--piet .hero__divide {
+  background: color-mix(in srgb, var(--kaart-lijn) 70%, transparent);
+}
+/* Zelfde regel als bij de pias: de winnende crest wordt het materiaal zelf —
+   hier de zwarte rugzijde van de kaart die je doorgeeft. */
+.hero--piet .hero-crest--piet {
+  background: var(--kaart-lak);
+  border-color: var(--kaart-lak-diep);
+  color: var(--kaart-hi);
+}
+
 .hero__main {
   display: flex;
   align-items: center;

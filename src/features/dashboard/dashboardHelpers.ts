@@ -30,6 +30,67 @@ export function rememberName(userId: string, name: string) {
   }
 }
 
+/* ----------------------------- Hero-thema -------------------------------- */
+
+/** Statussen die de dashboard-hero een eigen skin geven (#613/#644). */
+export type HeroThema = "dictator" | "bigdaddy" | "pias" | "piet" | null;
+
+/** Prioriteit: het eerste thema dat de speler draagt wint. Bewust dezelfde
+ *  volgorde als EDITIE_PRIORITEIT op de FUT-kaart (edities.ts) — verdienste
+ *  verdringt schande, en binnen de schande wint de weeklens (de pias van déze
+ *  week) van het rondgaande token (de Piet), net als inform › onfire daar.
+ *
+ *  De twee assen zijn onafhankelijk: dictator/Big Daddy komen uit het
+ *  club-klassement, pias/Piet uit een groep. Je kunt dus tegelijk #1 én
+ *  schande-token-drager zijn; dan kleurt de hero naar de eer en blijft de
+ *  schande-crest ernaast staan. Kleur is nooit de enige indicator (#613), dus
+ *  het verliezende thema verdwijnt alleen als vlak, niet als chip.
+ *
+ *  Dictator staat vóór Big Daddy zoals de hero dat al deed sinds #613 (en
+ *  Podium.tsx op het klassement): in de praktijk sluiten ze elkaar al uit —
+ *  een bezette troon dooft de kroon — maar de volgorde legt vast wat er zou
+ *  gebeuren als dat ooit verandert. Op de FUT-kaart draagt de dictator juist
+ *  géén editie (troonkaart); hier is de hero zélf zijn troonvlak. */
+export const HERO_THEMA_PRIORITEIT = [
+  "dictator",
+  "bigdaddy",
+  "pias",
+  "piet",
+] as const;
+
+/** Welk thema draagt de hero? `schild` is het roast-schild (#183) van de
+ *  speler zelf: dat dooft de twee schande-thema's volledig — de hero valt terug
+ *  op neutraal, precies zoals de FUT-kaart bij een schild z'n mond houdt. De
+ *  crest-chip blijft wél staan (met de neutrale 📊-variant, zie Dashboard.tsx):
+ *  het feit blijft, de spot verdwijnt. Halfslachtig dempen — kartonnen vlak met
+ *  een neutraal woordje erop — zou geen schild zijn maar een zachtere sneer.
+ *  Op eer heeft het schild geen invloed: er valt niets te beschermen. */
+export function heroThema(s: {
+  dictator: boolean;
+  bigDaddy: boolean;
+  pias: boolean;
+  piet: boolean;
+  schild: boolean;
+}): HeroThema {
+  for (const thema of HERO_THEMA_PRIORITEIT) {
+    switch (thema) {
+      case "dictator":
+        if (s.dictator) return "dictator";
+        break;
+      case "bigdaddy":
+        if (s.bigDaddy) return "bigdaddy";
+        break;
+      case "pias":
+        if (s.pias && !s.schild) return "pias";
+        break;
+      case "piet":
+        if (s.piet && !s.schild) return "piet";
+        break;
+    }
+  }
+  return null;
+}
+
 /** Korte "wanneer"-regel voor de compacte volgende-match op het overzicht:
  *  datum + tijd als die gepland is, anders de ronde; met de groepsnaam erbij. */
 export function matchWhen(m: Match, groupName?: string | null): string {
