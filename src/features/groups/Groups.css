@@ -105,7 +105,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  align-self: start;
+  /* .group-card__body is een grid: zonder dit rekt de pil over de volle
+     kaartbreedte en leest hij als een balk in plaats van een label. */
+  justify-self: start;
   margin-top: var(--sp-2);
   padding: 0.125rem var(--sp-2);
   border: 1px solid transparent;
