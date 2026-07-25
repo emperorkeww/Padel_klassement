@@ -23,7 +23,8 @@ import {
 } from "@/features/rating/seasons";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { bepaalPias, type MatchRatings, type Pias } from "@/features/groups/maandpias";
-import type { Match, PlayerStanding, Profile, Team } from "@/types";
+import { seizoenAwards, type Award } from "./awards";
+import type { Match, PlayerStanding, Profile, RatingPoint, Team } from "@/types";
 
 export interface SeizoenEer {
   season: Season;
@@ -41,6 +42,9 @@ export interface SeizoenEer {
    *  anders dan de stand (#468). Bewust: de pias is een grap over wie er die
    *  avond bij was, en dashboard, groepskaart en feed doen het al zo. */
   pias: Pias | null;
+  /** De medaille-uitreiking van dit kwartaal (#713), in vaste volgorde;
+   *  awards zonder laureaat zitten er niet in. */
+  awards: Award[];
 }
 
 /**
@@ -57,6 +61,9 @@ export function eregalerij(opts: {
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   ratingsByMatch?: Map<string, MatchRatings>;
+  /** Rating-historie per speler; voedt twee awards (#713). Zonder deze data
+   *  vallen alleen de stijger- en gigantendoder-award weg. */
+  histories?: Record<string, RatingPoint[]>;
   now?: Date;
 }): SeizoenEer[] {
   const { teams, profiles, ratingsByMatch } = opts;
@@ -75,19 +82,30 @@ export function eregalerij(opts: {
     const inSeizoen = matchesInSeason(completed, season);
     if (inSeizoen.length === 0) continue;
     const standings = computePlayerStandings(inSeizoen, teams, profiles);
+    // bepaalPias neemt een vrije periode: het kwartaal past er direct in.
+    const pias = bepaalPias(
+      inSeizoen,
+      teams,
+      { start: season.start, end: season.end },
+      ratingsByMatch,
+    );
+    // De pias gaat mee de uitreiking in; de UI laat hem weg bij een
+    // roast-schild (#183) — een poster is minder vergeeflijk dan een regel.
+    const beschermd = pias ? (profiles[pias.playerId]?.roast_schild ?? false) : false;
     rijen.push({
       season,
       naam: seizoenNaam(season),
       standings,
       kampioen: standings[0] ?? null,
       gespeeld: inSeizoen.length,
-      // bepaalPias neemt een vrije periode: het kwartaal past er direct in.
-      pias: bepaalPias(
-        inSeizoen,
+      pias,
+      awards: seizoenAwards({
+        matches: inSeizoen,
         teams,
-        { start: season.start, end: season.end },
-        ratingsByMatch,
-      ),
+        profiles,
+        histories: opts.histories,
+        pias: beschermd ? null : pias,
+      }),
     });
   }
   return rijen;

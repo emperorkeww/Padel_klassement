@@ -514,6 +514,8 @@ export function GroupDetail() {
             teams={tmap}
             profiles={pmap}
             ratingsByMatch={piasRatings}
+            histories={histories.data ?? {}}
+            groepsnaam={group.data!.name}
             myId={myId}
           />
         )}
