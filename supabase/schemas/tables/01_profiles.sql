@@ -44,9 +44,9 @@ create table public.profiles (
   dictator_avatar_url text,
   dictator_avatar_bron text,
   -- AI pias-portret (#682): dezelfde drie velden voor De Schandpaal — het
-  -- clownportret dat generate-pias-avatar uit de profielfoto maakt. Losse
+  -- hofnar-portret dat generate-pias-avatar uit de profielfoto maakt. Losse
   -- opt-out van de dictator: wie op de troon wél als generalissimo wil, hoeft
-  -- niet ook als clown te verschijnen (en omgekeerd).
+  -- niet ook als hofnar te verschijnen (en omgekeerd).
   pias_portret boolean not null default true,
   pias_avatar_url text,
   pias_avatar_bron text,
