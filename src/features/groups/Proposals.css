@@ -897,6 +897,19 @@
   align-items: center;
   gap: var(--sp-3);
 }
+/* Aantal rondes in één keer (#727): zelfde vorm als .gen-controls__rounds op
+   de Vandaag-tab, zodat dezelfde keuze er op beide plekken hetzelfde uitziet. */
+.winner-card__rondes {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.winner-card__rondes .select {
+  width: auto;
+}
 .winner-card__rounds-hint {
   font-size: var(--fs-sm);
   color: var(--ink-soft);

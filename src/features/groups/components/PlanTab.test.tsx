@@ -235,10 +235,14 @@ describe("<PlanTab />", () => {
     expect(
       screen.getByText(/de wedstrijden staan klaar/i),
     ).toBeInTheDocument();
-    // Reis-CTA in de action-regel (en in de winner-card).
-    expect(
-      screen.getAllByRole("link", { name: /bekijk de wedstrijden/i }).length,
-    ).toBeGreaterThan(0);
+    // Reis-CTA in de action-regel (en in de winner-card). Mét ?tab=spelen
+    // (#727): het kale pad is de route waar je al op staat, dus dat wisselt
+    // geen tab en de knop leek stuk.
+    const cta = screen.getAllByRole("link", { name: /bekijk de wedstrijden/i });
+    expect(cta.length).toBeGreaterThan(0);
+    for (const link of cta) {
+      expect(link).toHaveAttribute("href", "/groepen/g1?tab=spelen");
+    }
   });
 
   it("opent de plan-wizard als sheet en ruimt bij sluiten de opslag op", async () => {
