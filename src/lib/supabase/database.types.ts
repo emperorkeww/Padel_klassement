@@ -1221,6 +1221,9 @@ export type Database = {
           notify_rank_change: boolean
           notify_result: boolean
           owner_id: string | null
+          pias_avatar_bron: string | null
+          pias_avatar_url: string | null
+          pias_portret: boolean
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild: boolean
           toon_waarnemend_dictator: boolean
@@ -1244,6 +1247,9 @@ export type Database = {
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
+          pias_avatar_bron?: string | null
+          pias_avatar_url?: string | null
+          pias_portret?: boolean
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
           toon_waarnemend_dictator?: boolean
@@ -1267,6 +1273,9 @@ export type Database = {
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
+          pias_avatar_bron?: string | null
+          pias_avatar_url?: string | null
+          pias_portret?: boolean
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
           toon_waarnemend_dictator?: boolean
