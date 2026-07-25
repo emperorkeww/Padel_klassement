@@ -9,7 +9,7 @@ import {
   schildVorm,
   type FutKaartKleuren,
 } from "@/lib/utils/futKaartCanvas";
-import type { WrappedCard } from "./wrapped";
+import type { WrappedCard, WrappedPeriode } from "./wrapped";
 
 export interface PosterLayout {
   /** Kleine kop boven het herogetal, bv. "Wrapped 2025" of "🤝 Jouw gouden duo". */
@@ -26,23 +26,31 @@ export interface PosterLayout {
 const pct = (gewonnen: number, totaal: number) =>
   totaal > 0 ? `${Math.round((gewonnen / totaal) * 100)}%` : "—";
 
-/** Pure copy per kaartsoort — los testbaar, zonder canvas. */
-export function posterLayout(card: WrappedCard, naam: string, jaar: number): PosterLayout {
+/**
+ * Pure copy per kaartsoort — los testbaar, zonder canvas. Sinds #712 leest de
+ * tijdvak-afhankelijke copy uit `periode` (jaar óf kwartaal), zodat één set
+ * kaarten beide decks bedient.
+ */
+export function posterLayout(
+  card: WrappedCard,
+  naam: string,
+  periode: WrappedPeriode,
+): PosterLayout {
   switch (card.kind) {
     case "cover":
       return {
-        kicker: `Wrapped ${jaar}`,
+        kicker: periode.kicker,
         hero: naam,
         heroKlein: true,
         sub: card.kort
           ? [
               `${card.gespeeld} ${card.gespeeld === 1 ? "match" : "matches"} — elke legende begint ergens.`,
             ]
-          : ["Jouw jaar in padel", `${card.gespeeld} matches vol verhalen`],
+          : [`Jouw ${periode.noemer} in padel`, `${card.gespeeld} matches vol verhalen`],
       };
     case "volume":
       return {
-        kicker: `Wrapped ${jaar}`,
+        kicker: periode.kicker,
         hero: String(card.gespeeld),
         sub: [
           card.gespeeld === 1 ? "match gespeeld" : "matches gespeeld",
@@ -64,7 +72,7 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
         ? {
             kicker: "🔥 Niet te stoppen",
             hero: String(card.lengte),
-            sub: ["op rij gewonnen", `je langste reeks van ${jaar}`],
+            sub: ["op rij gewonnen", `je langste reeks van ${periode.titel}`],
           }
         : {
             kicker: "🧗 Taaiste periode",
@@ -93,6 +101,16 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
         );
       return { kicker: "Jouw rivalen", hero: "⚔️", sub };
     }
+    case "slachtoffer":
+      return {
+        kicker: "🎯 Jouw favoriete slachtoffer",
+        hero: card.rivaal.naam,
+        heroKlein: true,
+        sub: [
+          `${card.rivaal.gewonnen} van ${card.rivaal.gespeeld} gewonnen`,
+          `dit ${periode.noemer} jouw favoriete tegenstander`,
+        ],
+      };
     case "prestatie": {
       const sub: string[] = [];
       if (card.zege) sub.push(`Grootste zege: ${card.zege.score} (+${card.zege.marge})`);
@@ -111,8 +129,8 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
         sub: [
           `Start ${card.start} → piek ${card.piek} → eind ${card.eind}`,
           card.eind >= card.start
-            ? `+${card.eind - card.start} dit jaar`
-            : `${card.eind - card.start} dit jaar — volgend jaar pak je ze terug`,
+            ? `+${card.eind - card.start} dit ${periode.noemer}`
+            : `${card.eind - card.start} dit ${periode.noemer} — volgend ${periode.noemer} pak je ze terug`,
         ],
       };
     case "badge":
@@ -122,22 +140,25 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
         sub: [
           card.naam,
           card.aantalSpelers === 1
-            ? `Jij was de enige die deze in ${jaar} haalde`
-            : `Slechts ${card.aantalSpelers} spelers haalden deze in ${jaar}`,
+            ? `Jij was de enige die deze in ${periode.titel} haalde`
+            : `Slechts ${card.aantalSpelers} spelers haalden deze in ${periode.titel}`,
         ],
       };
     case "outro":
       return {
-        kicker: `Wrapped ${jaar}`,
+        kicker: periode.kicker,
         hero: "🎾",
         sub: card.kort
-          ? ["Een korte maar krachtige eerste set.", `${jaar + 1} wordt jouw jaar`]
-          : [`Vamos! Op naar ${jaar + 1}`, "Deel je Wrapped met je maatjes"],
+          ? [
+              "Een korte maar krachtige eerste set.",
+              `${periode.volgendeTitel} wordt jouw ${periode.noemer}`,
+            ]
+          : [`Vamos! Op naar ${periode.volgendeTitel}`, "Deel je Wrapped met je maatjes"],
       };
     case "eindoordeel": {
       // De verdict-regels zijn viewer-afhankelijk en worden via de coach-payload
-      // getekend (drawWrappedCard); hier alleen het frame. Een cijfer-emoji vat
-      // het jaar samen op winrate.
+      // getekend (drawWrappedCard); hier alleen het frame. Een emoji vat het
+      // tijdvak samen op winrate.
       const wr = card.stats.winrate;
       const hero = wr == null ? "📋" : wr >= 55 ? "🏆" : wr < 45 ? "📉" : "📋";
       return { kicker: "🎙️ Rudy's Eindoordeel", hero, sub: [] };
@@ -155,7 +176,7 @@ export function posterLayout(card: WrappedCard, naam: string, jaar: number): Pos
             : `🧗 ${card.langsteReeks.lengte} op rij verloren`,
         );
       sub.push(`🎙️ ${card.aantalRoasts}× aan het woord dit Wrapped`);
-      return { kicker: `Seizoen ${jaar}`, hero: naam, heroKlein: true, sub };
+      return { kicker: periode.kaartKicker, hero: naam, heroKlein: true, sub };
     }
   }
 }
@@ -174,11 +195,11 @@ export function drawWrappedCard(
   ctx: CanvasRenderingContext2D,
   card: WrappedCard,
   naam: string,
-  jaar: number,
+  periode: WrappedPeriode,
   coach?: { regels: string[] } | null,
 ) {
   const c = canvasPalette();
-  const l = posterLayout(card, naam, jaar);
+  const l = posterLayout(card, naam, periode);
 
   const eindoordeel = card.kind === "eindoordeel";
 
@@ -256,7 +277,7 @@ export function drawWrappedCard(
   // Voet: naam + lime accentstreep.
   ctx.fillStyle = c.inkSoft;
   ctx.font = "700 34px Outfit, system-ui, sans-serif";
-  ctx.fillText(`${naam} · Wrapped ${jaar}`, W / 2, H - 120);
+  ctx.fillText(`${naam} · ${periode.kicker}`, W / 2, H - 120);
   ctx.fillStyle = c.lime;
   ctx.fillRect(W / 2 - 80, H - 70, 160, 10);
 }
@@ -288,6 +309,13 @@ const SEIZOEN_INK = "#eafccb";
 const SEIZOEN_INK_SOFT = "#a9c97e";
 const SEIZOEN_LIJN = "rgba(199, 230, 58, 0.5)";
 
+/** "ZOMER" → "Z O M E R": de gespatieerde kop van de seizoenskaart-poster.
+ *  Canvas kent geen letter-spacing, dus doen we het met de hand (#712 — het
+ *  woord komt sinds dan uit de periode en is niet meer vast "SEIZOEN"). */
+function spatieer(woord: string): string {
+  return [...woord].join(" ");
+}
+
 function initialenVan(naam: string): string {
   const delen = naam.trim().split(/\s+/).filter(Boolean);
   if (delen.length === 0) return "?";
@@ -305,7 +333,7 @@ function initialenVan(naam: string): string {
 export function drawSeizoenskaart(
   ctx: CanvasRenderingContext2D,
   card: Extract<WrappedCard, { kind: "seizoenskaart" }>,
-  jaar: number,
+  periode: WrappedPeriode,
   avatarImg: HTMLImageElement | null,
 ) {
   const c = canvasPalette();
@@ -327,7 +355,7 @@ export function drawSeizoenskaart(
   ctx.fillText("Vamos!", W / 2, 130);
   ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
   ctx.font = "800 26px Outfit, system-ui, sans-serif";
-  ctx.fillText(`S E I Z O E N ${jaar}`, W / 2, 176);
+  ctx.fillText(`${spatieer(periode.kaartWoord)} ${periode.jaar}`, W / 2, 176);
 
   // De kaart als blikvanger — zelfde geometrie als ShareProfile's kaartW=560.
   const kaartW = 560;
@@ -413,7 +441,7 @@ export function drawSeizoenskaart(
   ctx.stroke();
   ctx.fillStyle = c.lime;
   ctx.font = `900 ${Math.round(kaartW * 0.06)}px Outfit, system-ui, sans-serif`;
-  ctx.fillText(`🎬 SEIZOEN ${jaar}`, fx + fw / 2, nY + fh * 0.165);
+  ctx.fillText(periode.kaartEditie.toUpperCase(), fx + fw / 2, nY + fh * 0.165);
   ctx.restore();
 
   // Jaarstats onder de kaart, gestapeld i.p.v. naast elkaar (drie stuks

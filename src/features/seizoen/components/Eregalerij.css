@@ -1,0 +1,327 @@
+/* Eregalerij (#711/#713): per afgesloten seizoen een kaart met podium, pias en
+   uitreiking, en onderaan het recordboek.
+
+   Uitgangspunt van de vormgeving: aanklikbaar is altijd een héle rij of tegel,
+   met `text-decoration: none` en een hover-vlak — zoals .podium__spot en
+   .person-row elders in de app. Losse onderstreepte woorden lezen als een
+   linkenlijst, niet als een galerij. Kleuren komen uit de bestaande tokens
+   (--gold/--coach/--surface-2), dus licht en donker lopen vanzelf mee. */
+
+.eregalerij-seizoen__meta {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Podium ───────────────────────────────────────────────────────────────── */
+
+.eregalerij-podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.eregalerij-podium__rij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.eregalerij-podium__rij:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+/* De kampioen krijgt het goud: zachte vulling met een gouden rand. */
+.eregalerij-podium__rij--kampioen {
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--gold-soft) 0%, transparent 70%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--line));
+}
+
+.eregalerij-podium__rij--kampioen:hover {
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+}
+
+.eregalerij-podium__medaille {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eregalerij-podium__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.eregalerij-podium__naam {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-podium__plaats {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Kampioen: het plaats-label in goud, gemengd met de inkt van het actieve
+   thema — kaal --gold haalt op --gold-soft in het lichte thema maar 2,14:1
+   (de bekende let-op-regel van npm run contrast). */
+.eregalerij-podium__rij--kampioen .eregalerij-podium__plaats {
+  color: color-mix(in srgb, var(--gold) 55%, var(--ink));
+}
+
+.eregalerij-podium__punten {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.eregalerij-podium__punten-getal {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+}
+
+.eregalerij-podium__punten-label {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* ── Pias van het seizoen ─────────────────────────────────────────────────── */
+
+.eregalerij-pias {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--coach-line);
+  border-left: 3px solid var(--coach);
+  background: var(--coach-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+
+.eregalerij-pias:hover {
+  filter: brightness(0.98);
+}
+
+/* Roast-schild (#183): neutrale rand en vlak, geen spot-tint. */
+.eregalerij-pias--schild {
+  border-color: var(--line);
+  border-left-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.eregalerij-pias__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eregalerij-pias__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.eregalerij-pias__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--coach-ink);
+}
+
+.eregalerij-pias--schild .eregalerij-pias__label {
+  color: var(--ink-soft);
+}
+
+.eregalerij-pias__naam {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-pias__detail {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+/* ── Medaille-uitreiking (#713) ───────────────────────────────────────────── */
+
+.eregalerij-kop {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 800;
+  text-transform: none;
+}
+
+.eregalerij-awards__lijst {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.eregalerij-award {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line));
+  border-left: 3px solid var(--gold);
+  background: var(--gold-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+
+.eregalerij-award:hover {
+  filter: brightness(0.98);
+}
+
+.eregalerij-award--schande {
+  border-color: var(--coach-line);
+  border-left-color: var(--coach);
+  background: var(--coach-soft);
+}
+
+.eregalerij-award__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eregalerij-award__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.eregalerij-award__titel {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* Zelfde meng-truc als het kampioen-label hierboven. */
+  color: color-mix(in srgb, var(--gold) 55%, var(--ink));
+}
+
+.eregalerij-award--schande .eregalerij-award__titel {
+  color: var(--coach-ink);
+}
+
+.eregalerij-award__naam {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-award__detail {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+/* ── Acties onderaan de seizoenskaart ─────────────────────────────────────── */
+
+.eregalerij-acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+/* ── Recordboek ───────────────────────────────────────────────────────────── */
+
+.eregalerij-records {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+/* Tegel in de stijl van .stat: label boven, waarde groot, houder eronder. */
+.eregalerij-record {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+  padding: var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+a.eregalerij-record:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.eregalerij-record__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.eregalerij-record__waarde {
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-record__houder {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-record__datum {
+  white-space: nowrap;
+}

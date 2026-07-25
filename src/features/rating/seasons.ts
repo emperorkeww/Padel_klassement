@@ -62,3 +62,45 @@ export function listSeasons(from: Date, now: Date = new Date()): Season[] {
 export function isSeasonClosed(season: Season, now: Date = new Date()): boolean {
   return now >= season.end;
 }
+
+/** Alleen de kwartalen die al voorbij zijn, nieuwste eerst — de seizoenen die
+ *  een kampioen hébben (eregalerij, #711). */
+export function afgeslotenSeizoenen(from: Date, now: Date = new Date()): Season[] {
+  return listSeasons(from, now).filter((s) => isSeasonClosed(s, now));
+}
+
+/** Seizoensnaam per kwartaal, op de meteorologische seizoenen van de Benelux
+ *  (#474): Q1 (jan–mrt) valt in de winter, Q2 (apr–jun) in de lente, Q3
+ *  (jul–sep) in de zomer en Q4 (okt–dec) in de herfst. Index = kwartaal − 1. */
+const SEIZOEN_NAMEN = [
+  { naam: "Winter", emoji: "❄️" },
+  { naam: "Lente", emoji: "🌱" },
+  { naam: "Zomer", emoji: "☀️" },
+  { naam: "Herfst", emoji: "🍂" },
+] as const;
+
+export interface SeizoenNaam {
+  /** Bv. "☀️". */
+  emoji: string;
+  /** Bv. "Zomer". */
+  naam: string;
+  /** Bv. "Zomer 2026" — zonder emoji, voor posters en deel-teksten. */
+  titel: string;
+  /** Bv. "☀️ Zomer 2026" — de volle vorm voor koppen in de UI. */
+  label: string;
+}
+
+/**
+ * De sfeernaam van een kwartaal ("☀️ Zomer 2026"), voor de eregalerij, het
+ * kwartaal-Wrapped (#712) en de posters. Bewust náást `Season.label`
+ * ("Q3 2026") en niet in de plaats ervan: de kampioen-editie op de FUT-kaart
+ * draagt dat korte label en zit daar al op de maatgrens (#654/#665).
+ */
+export function seizoenNaam(season: Season): SeizoenNaam {
+  const parsed = parseSeasonId(season.id);
+  // Een Season komt altijd uit makeSeason en heeft dus een geldig id; de
+  // terugval houdt de functie totaal, zonder een niet-testbare throw.
+  const { naam, emoji } = SEIZOEN_NAMEN[(parsed?.quarter ?? 1) - 1];
+  const jaar = parsed?.year ?? season.start.getFullYear();
+  return { emoji, naam, titel: `${naam} ${jaar}`, label: `${emoji} ${naam} ${jaar}` };
+}

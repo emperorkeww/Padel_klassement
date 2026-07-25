@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { posterLayout } from "./wrappedPoster";
+import { jaarPeriode } from "./wrapped";
 import type { WrappedCard, WrappedJaarStats } from "./wrapped";
 
 const JAAR = 2025;
-const layout = (card: WrappedCard) => posterLayout(card, "Alice Anders", JAAR);
+const layout = (card: WrappedCard) =>
+  posterLayout(card, "Alice Anders", jaarPeriode(JAAR));
 
 const stats = (winrate: number | null): WrappedJaarStats => ({
   gespeeld: 10,

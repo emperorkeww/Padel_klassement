@@ -39,16 +39,29 @@ import { journeyFor } from "./journey";
 import { getGroupPolls, getGroupPollOptions } from "./pollsApi";
 import { GroupStandTab } from "./components/GroupStandTab";
 import { GroupLedenTab } from "./components/GroupLedenTab";
+import { EregalerijTab } from "@/features/seizoen/components/EregalerijTab";
 import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
-type View = "vandaag" | "plannen" | "matches" | "stand" | "leden";
+type View =
+  | "vandaag"
+  | "plannen"
+  | "matches"
+  | "stand"
+  | "eregalerij"
+  | "leden";
 
 /** URL-key → tab. De keys "spelen" (de oude Teams-tab) en "rondes" staan in
  *  pushberichten en edge functions die al de deur uit zijn; sinds #674 wijzen
  *  ze allebei naar de samengevoegde Vandaag-tab. */
 function viewFromParam(raw: string | null): View | null {
-  if (raw === "plannen" || raw === "matches" || raw === "stand" || raw === "leden")
+  if (
+    raw === "plannen" ||
+    raw === "matches" ||
+    raw === "stand" ||
+    raw === "eregalerij" ||
+    raw === "leden"
+  )
     return raw;
   if (raw === "spelen" || raw === "rondes") return "vandaag";
   return null;
@@ -198,6 +211,12 @@ export function GroupDetail() {
     return min === null || d < min ? d : min;
   }, null);
   const seasons = firstMatchDate ? listSeasons(new Date(firstMatchDate)) : [];
+  // Teller op de Eregalerij-tab (#711): het aantal afgesloten kwartalen waarin
+  // gespeeld is. Bewust niet via eregalerij() — die rekent per kwartaal de
+  // volledige stand én de pias uit, en dat hoort achter het openen van de tab.
+  const eregalerijCount = seasons.filter(
+    (s) => isSeasonClosed(s) && matchesInSeason(completedMatches, s).length > 0,
+  ).length;
   const seasonStandings: PlayerStanding[] | null = season
     ? computePlayerStandings(
         matchesInSeason(completedMatches, season),
@@ -302,6 +321,14 @@ export function GroupDetail() {
       count: completedMatches.length || undefined,
     },
     { id: "stand", label: "Stand" },
+    // Eregalerij (#711) staat ná de stand: eerst het heden, dan de
+    // geschiedenis. De teller is het aantal afgesloten seizoenen met een
+    // kampioen — nul betekent geen teller (en een uitnodigende leegstand).
+    {
+      id: "eregalerij",
+      label: "Eregalerij",
+      count: eregalerijCount || undefined,
+    },
     { id: "leden", label: "Leden", count: memberList.length || undefined },
   ];
 
@@ -478,6 +505,18 @@ export function GroupDetail() {
             group={group.data!}
             piasRatings={piasRatings}
             zwartePiet={zwartePiet}
+          />
+        )}
+
+        {view === "eregalerij" && (
+          <EregalerijTab
+            matches={matches.data ?? []}
+            teams={tmap}
+            profiles={pmap}
+            ratingsByMatch={piasRatings}
+            histories={histories.data ?? {}}
+            groepsnaam={group.data!.name}
+            myId={myId}
           />
         )}
 

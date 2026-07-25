@@ -44,11 +44,21 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
-import { listSeasons, seasonFromId } from "@/features/rating/seasons";
+import {
+  afgeslotenSeizoenen,
+  listSeasons,
+  seasonFromId,
+} from "@/features/rating/seasons";
 import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
 import { ShareProfile, type ProfileShareData } from "@/features/profiles/components/ShareProfile";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
-import { matchesInYear, wrappedJaar } from "@/features/wrapped/wrapped";
+import {
+  jaarPeriode,
+  matchesInPeriode,
+  matchesInYear,
+  seizoenPeriode,
+  wrappedJaar,
+} from "@/features/wrapped/wrapped";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { Sheet } from "@/ui/Sheet";
@@ -166,6 +176,11 @@ export function PlayerProfile() {
   // ook op touch, waar de title-tooltip onbereikbaar is).
   const [openBadge, setOpenBadge] = useState<string | null>(null);
   const [wrappedOpen, setWrappedOpen] = useState(false);
+  // Een deeplink (?wrapped=2026-q3, bv. uit de Eregalerij van een groep, #711)
+  // opent het kwartaal-Wrapped meteen.
+  const [seizoenWrappedOpen, setSeizoenWrappedOpen] = useState(
+    () => params.get("wrapped") != null,
+  );
   // Speler Duel & Vergelijker (#469): sheet die deze speler tegen de ingelogde
   // gebruiker (of elke andere) legt.
   const [compareOpen, setCompareOpen] = useState(false);
@@ -404,6 +419,29 @@ export function PlayerProfile() {
   const wrappedYr = wrappedJaar(new Date());
   const heeftWrapped = isMe && matchesInYear(mlist, wrappedYr).length > 0;
 
+  // Kwartaal-Wrapped (#712): het profiel is de blijvende ingang. Standaard het
+  // recentste afgesloten kwartaal waarin je speelde; ?wrapped=<seizoen-id>
+  // opent een specifiek kwartaal (zo linkt de Eregalerij van een groep, #711,
+  // naar het persoonlijke deck — de groepspagina heeft alleen groepsmatches).
+  const seizoenWrapped = (() => {
+    if (!isMe || mlist.length === 0) return null;
+    const gevraagd = seasonFromId(params.get("wrapped") ?? "");
+    const eerste = mlist.reduce<string | null>((min, m) => {
+      const dag = m.played_at ?? m.created_at;
+      return min === null || dag < min ? dag : min;
+    }, null);
+    const kandidaten = gevraagd
+      ? [gevraagd]
+      : eerste
+        ? afgeslotenSeizoenen(new Date(eerste))
+        : [];
+    for (const season of kandidaten) {
+      const periode = seizoenPeriode(season);
+      if (matchesInPeriode(mlist, periode).length > 0) return periode;
+    }
+    return null;
+  })();
+
   const d: ProfileData = {
     id,
     p,
@@ -501,6 +539,15 @@ export function PlayerProfile() {
               🎁 Wrapped {wrappedYr}
             </button>
           )}
+          {seizoenWrapped && (
+            <button
+              className="btn btn--sm"
+              aria-haspopup="dialog"
+              onClick={() => setSeizoenWrappedOpen(true)}
+            >
+              {seizoenWrapped.kicker}
+            </button>
+          )}
           <ShareProfile
             data={shareData}
             label={isMe ? "↗ Deel mijn profiel" : "↗ Deel profiel"}
@@ -508,9 +555,23 @@ export function PlayerProfile() {
         </div>
       </header>
 
+      {seizoenWrappedOpen && seizoenWrapped && (
+        <WrappedSheet
+          periode={seizoenWrapped}
+          playerId={id}
+          naam={displayName(p)}
+          matches={mlist}
+          teams={tmap}
+          profiles={pmap}
+          ratingHistory={rhist}
+          rating={myRating}
+          onClose={() => setSeizoenWrappedOpen(false)}
+        />
+      )}
+
       {wrappedOpen && heeftWrapped && (
         <WrappedSheet
-          jaar={wrappedYr}
+          periode={jaarPeriode(wrappedYr)}
           playerId={id}
           naam={displayName(p)}
           matches={mlist}
