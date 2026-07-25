@@ -43,10 +43,15 @@ import { getMyFriendships, categorize } from "@/features/friends/api";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import {
+  jaarPeriode,
+  matchesInPeriode,
   matchesInYear,
+  seizoenPeriode,
+  seizoenWrappedVenster,
   toonWrappedBanner,
   wrappedJaar,
 } from "@/features/wrapped/wrapped";
+import { seizoenNaam } from "@/features/rating/seasons";
 import { getMyGroups } from "@/features/groups/api";
 import { TeamSide } from "@/features/matches/components/MatchList";
 import { getClubAvailability, nextFreeSlot } from "@/features/availability/api";
@@ -289,6 +294,26 @@ export function Dashboard() {
   const dismissWrapped = () => {
     writeFlag(`wrapped-${wrappedYr}-dismissed`);
     setWrappedDismissed(true);
+  };
+
+  // Kwartaal-Wrapped (#712): dezelfde banner-mechaniek, maar in de eerste twee
+  // weken van een nieuw kwartaal en over het net afgesloten seizoen.
+  // seizoenWrappedVenster zwijgt in het jaarvenster (15 dec – 31 jan), zodat
+  // de twee banners elkaar nooit verdringen; het kwartaal blijft dan
+  // bereikbaar via het profiel en de Eregalerij (#711).
+  const seizoenVenster = seizoenWrappedVenster(new Date());
+  const seizoenPer = seizoenVenster ? seizoenPeriode(seizoenVenster) : null;
+  const [seizoenOpen, setSeizoenOpen] = useState(false);
+  const [seizoenDismissed, setSeizoenDismissed] = useState(() =>
+    seizoenVenster ? readFlag(`wrapped-${seizoenVenster.id}-dismissed`) : true,
+  );
+  const toonSeizoenWrapped =
+    seizoenPer != null &&
+    !seizoenDismissed &&
+    matchesInPeriode(myGames, seizoenPer).length > 0;
+  const dismissSeizoenWrapped = () => {
+    if (seizoenVenster) writeFlag(`wrapped-${seizoenVenster.id}-dismissed`);
+    setSeizoenDismissed(true);
   };
   const hasFriend = accepted.length > 0;
   const myGroups = groups.data ?? [];
@@ -747,9 +772,50 @@ export function Dashboard() {
         </section>
       )}
 
+      {toonSeizoenWrapped && seizoenVenster && (
+        <section className="card wrapped-banner">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">
+              {seizoenNaam(seizoenVenster).emoji} Jouw{" "}
+              {seizoenNaam(seizoenVenster).naam} Wrapped is klaar
+            </h2>
+          </div>
+          <p className="wrapped-banner__text">
+            Het seizoen zit erop. Bekijk je matches, reeksen en rivalen van{" "}
+            {seizoenNaam(seizoenVenster).titel}.
+          </p>
+          <div className="wrapped-banner__actions">
+            <button
+              className="btn btn--sm btn--primary"
+              aria-haspopup="dialog"
+              onClick={() => setSeizoenOpen(true)}
+            >
+              Bekijk
+            </button>
+            <button className="btn btn--sm" onClick={dismissSeizoenWrapped}>
+              Later
+            </button>
+          </div>
+        </section>
+      )}
+
+      {seizoenOpen && seizoenPer && (
+        <WrappedSheet
+          periode={seizoenPer}
+          playerId={myId}
+          naam={myName}
+          matches={myGames}
+          teams={tmap}
+          profiles={profiles.data ?? {}}
+          ratingHistory={ratingHistory.data ?? []}
+          rating={myRating}
+          onClose={() => setSeizoenOpen(false)}
+        />
+      )}
+
       {wrappedOpen && (
         <WrappedSheet
-          jaar={wrappedYr}
+          periode={jaarPeriode(wrappedYr)}
           playerId={myId}
           naam={myName}
           matches={myGames}

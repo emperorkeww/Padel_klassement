@@ -9,8 +9,8 @@ import { prefersReducedMotion } from "@/lib/utils/motion";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getCompletedMatchesBetween } from "@/features/matches/api";
 import type { Match, Profile, RatingPoint, RoastIntensiteit, Team } from "@/types";
-import { deriveWrapped } from "@/features/wrapped/wrapped";
-import type { WrappedCard } from "@/features/wrapped/wrapped";
+import { derivePeriodeWrapped } from "@/features/wrapped/wrapped";
+import type { WrappedCard, WrappedPeriode } from "@/features/wrapped/wrapped";
 import {
   drawSeizoenskaart,
   drawWrappedCard,
@@ -26,15 +26,17 @@ import {
 } from "@/features/rating/components/FutKaart";
 import "@/features/wrapped/wrapped.css";
 
-// Padel Wrapped (#115): swipebaar jaaroverzicht in een sheet. De kaarten
-// delen hun copy met de posters (posterLayout); elke kaart is los deelbaar
-// als 1080×1350-afbeelding via de bestaande sharePng-flow.
+// Padel Wrapped (#115): swipebaar overzicht in een sheet. De kaarten delen hun
+// copy met de posters (posterLayout); elke kaart is los deelbaar als
+// 1080×1350-afbeelding via de bestaande sharePng-flow. Sinds #712 draait
+// dezelfde sheet op een jaar én op een kwartaal — het tijdvak komt als
+// `periode` binnen (jaarPeriode/seizoenPeriode) en draagt alle copy.
 
 const POSTER_W = 1080;
 const POSTER_H = 1350;
 
 export function WrappedSheet({
-  jaar,
+  periode,
   playerId,
   naam,
   matches,
@@ -45,7 +47,8 @@ export function WrappedSheet({
   intensiteit = "gemeen",
   onClose,
 }: {
-  jaar: number;
+  /** Het tijdvak: jaarPeriode(2026) of seizoenPeriode(season). */
+  periode: WrappedPeriode;
   playerId: string;
   naam: string;
   matches: Match[];
@@ -65,21 +68,21 @@ export function WrappedSheet({
   const [busyKind, setBusyKind] = useState<string | null>(null);
   const [seizoenOmgedraaid, setSeizoenOmgedraaid] = useState(false);
 
-  // Clubmatches van het jaar voor de zeldzaamste-badge-kaart; zonder deze
+  // Clubmatches van de periode voor de zeldzaamste-badge-kaart; zonder deze
   // data valt alleen die kaart weg (graceful).
   const clubMatches = useAsync(
     () =>
       getCompletedMatchesBetween(
-        new Date(jaar, 0, 1).toISOString(),
-        new Date(jaar + 1, 0, 1).toISOString(),
+        periode.start.toISOString(),
+        periode.end.toISOString(),
       ),
-    [jaar],
+    [periode.id],
   );
 
   const wrapped = useMemo(
     () =>
-      deriveWrapped({
-        jaar,
+      derivePeriodeWrapped({
+        periode,
         matches,
         teams,
         profiles,
@@ -89,7 +92,7 @@ export function WrappedSheet({
         rating,
         avatarUrl: profiles[playerId]?.avatar_url ?? null,
       }),
-    [jaar, matches, teams, profiles, playerId, ratingHistory, clubMatches.data, rating],
+    [periode, matches, teams, profiles, playerId, ratingHistory, clubMatches.data, rating],
   );
   const cards = useMemo(() => wrapped?.cards ?? [], [wrapped]);
 
@@ -102,15 +105,15 @@ export function WrappedSheet({
     const ctx = roastCtx({ roast_intensiteit: intensiteit }, profiles[playerId]);
     const gebruikt = new Set<string>();
     return cards.map((card) => {
-      const seed = roastSeed("wrapped", playerId, String(jaar), card.kind);
+      const seed = roastSeed("wrapped", playerId, periode.id, card.kind);
       if (card.kind === "eindoordeel") {
-        const eo = coachEindoordeel(card.stats, ctx, seed);
+        const eo = coachEindoordeel(card.stats, ctx, seed, periode.soort);
         return { mood: eo.mood, kop: eo.kop, regels: eo.regels, tekst: null };
       }
-      const r = coachWrappedRegel(card, ctx, seed, gebruikt);
+      const r = coachWrappedRegel(card, ctx, seed, gebruikt, periode.soort);
       return { mood: r.mood, kop: null, regels: [r.tekst], tekst: r.tekst };
     });
-  }, [cards, profiles, playerId, jaar, intensiteit]);
+  }, [cards, profiles, playerId, periode, intensiteit]);
 
   const naar = (i: number) => {
     const track = trackRef.current;
@@ -139,18 +142,18 @@ export function WrappedSheet({
         card.kind === "seizoenskaart"
           ? await (async () => {
               const avatarImg = await laadAvatar(card.avatarUrl);
-              return sharePng((ctx) => drawSeizoenskaart(ctx, card, jaar, avatarImg), {
+              return sharePng((ctx) => drawSeizoenskaart(ctx, card, periode, avatarImg), {
                 width: POSTER_W,
                 height: POSTER_H,
-                filename: `vamos-wrapped-${jaar}-seizoenskaart.png`,
-                title: `Wrapped ${jaar}`,
+                filename: `vamos-wrapped-${periode.id}-seizoenskaart.png`,
+                title: periode.kicker,
               });
             })()
-          : await sharePng((ctx) => drawWrappedCard(ctx, card, naam, jaar, { regels }), {
+          : await sharePng((ctx) => drawWrappedCard(ctx, card, naam, periode, { regels }), {
               width: POSTER_W,
               height: POSTER_H,
-              filename: `vamos-wrapped-${jaar}-${card.kind}.png`,
-              title: `Wrapped ${jaar}`,
+              filename: `vamos-wrapped-${periode.id}-${card.kind}.png`,
+              title: periode.kicker,
             });
       if (outcome === "clipboard") toast.success("Poster gekopieerd naar klembord.");
       if (outcome === "download") toast.success("Poster gedownload.");
@@ -168,8 +171,8 @@ export function WrappedSheet({
       open
       onClose={onClose}
       className="wrapped-sheet"
-      title={`🎁 Wrapped ${jaar}`}
-      ariaLabel={`Wrapped ${jaar}`}
+      title={periode.soort === "jaar" ? `🎁 ${periode.kicker}` : periode.kicker}
+      ariaLabel={periode.kicker}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight") naar(actief + 1);
         if (e.key === "ArrowLeft") naar(actief - 1);
@@ -177,7 +180,7 @@ export function WrappedSheet({
     >
         <div className="wrapped-track" ref={trackRef} onScroll={onScroll}>
           {cards.map((card, i) => {
-            const l = posterLayout(card, naam, jaar);
+            const l = posterLayout(card, naam, periode);
             const coach = coachPerKaart[i];
             const isEind = card.kind === "eindoordeel";
             const isSeizoen = card.kind === "seizoenskaart";
@@ -200,7 +203,7 @@ export function WrappedSheet({
                             className="fut-kaart__flip"
                             onClick={() => setSeizoenOmgedraaid((v) => !v)}
                             aria-expanded={seizoenOmgedraaid}
-                            aria-label="Jaarstatistieken van je seizoenskaart"
+                            aria-label="Statistieken van je seizoenskaart"
                           />
                         }
                         voor={
@@ -215,7 +218,7 @@ export function WrappedSheet({
                                 size={56}
                               />
                             }
-                            editie={`🎬 Seizoen ${jaar}`}
+                            editie={periode.kaartEditie}
                           />
                         }
                         achterOverlay={
@@ -232,7 +235,7 @@ export function WrappedSheet({
                             {card.maatje && (
                               <span className="fut-kaart__stats-rij">
                                 <span className="fut-kaart__stats-label">
-                                  🤝 Maatje van het jaar
+                                  🤝 Maatje van het {periode.noemer}
                                 </span>
                                 <span>
                                   {card.maatje.naam} · {card.maatje.samen}×
@@ -259,7 +262,7 @@ export function WrappedSheet({
                         }
                       />
                       <p className="wrapped-seizoenskaart__hint" aria-hidden="true">
-                        Tik op de kaart voor je jaarstats
+                        Tik op de kaart voor je {periode.noemer}stats
                       </p>
                     </>
                   ) : (
