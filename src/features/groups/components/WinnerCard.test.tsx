@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -85,10 +85,16 @@ function renderCard(poll: Partial<PlayPoll> = {}) {
   );
 }
 
+const originalCreateElement = document.createElement;
+
 describe("<WinnerCard /> toegangscode (#675)", () => {
   beforeEach(() => {
     markPollBooked.mockClear();
     setPollAccessCode.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("'Baan geboekt ✓' vraagt eerst om de code i.p.v. meteen te boeken", async () => {
@@ -131,6 +137,26 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     const chip = screen.getByRole("button", { name: /1234/ });
     await userEvent.click(chip);
     expect(writeText).toHaveBeenCalledWith("1234");
+  });
+
+  it("zet de code in de description van het agenda-item", async () => {
+    // De ICS is een persoonlijke download; de code staat daarmee in je agenda
+    // op het moment dat je hem nodig hebt.
+    const anchor = document.createElement("a");
+    const click = vi.spyOn(anchor, "click").mockImplementation(() => {});
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) =>
+      tag === "a" ? anchor : originalCreateElement.call(document, tag),
+    );
+    const createObjectURL = vi.fn((_blob: Blob) => "blob:test");
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+
+    renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "b3: 1234" });
+    await userEvent.click(screen.getByRole("button", { name: /zet in agenda/i }));
+
+    expect(click).toHaveBeenCalled();
+    const ics = await createObjectURL.mock.calls[0][0].text();
+    // RFC 5545 escapet de newline tot \n binnen DESCRIPTION.
+    expect(ics).toContain("Toegangscode: b3: 1234");
   });
 
   it("laat de beheerder de code ook ná het boeken nog toevoegen", async () => {

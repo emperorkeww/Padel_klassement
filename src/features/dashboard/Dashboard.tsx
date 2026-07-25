@@ -694,6 +694,13 @@ export function Dashboard() {
             Jullie spelen {pollDay(pollPick.date)} om {pollPick.startTime}
             {pollPick.booked ? " — baan geboekt ✓" : " — baan nog te boeken."}
           </p>
+          {/* Toegangscode (#675) alleen op de speeldag zelf: dan open je het
+              overzicht juist hiervoor. pickPollBanner bewaakt die dagkeuze. */}
+          {pollPick.accessCode != null && (
+            <p className="poll-banner__code">
+              🔑 Toegangscode velden: <strong>{pollPick.accessCode}</strong>
+            </p>
+          )}
           <Link
             className={`btn btn--sm${pollPick.booked ? "" : " btn--primary"}`}
             to={`/groepen/${pollPick.group.id}?tab=plannen`}

@@ -98,11 +98,18 @@ export function WinnerCard({
   }
 
   function exportIcs() {
+    // De toegangscode (#675) hoort juist hier: op het moment dat je hem nodig
+    // hebt staat hij al in je agenda, zonder de app te openen. Een ICS is een
+    // persoonlijke download, geen deelbare poster — dus geen opt-in nodig.
+    const beschrijving = [
+      `Deelnemers: ${t.yes.map(name).join(", ") || "nog onbekend"}`,
+      ...(code != null ? [`Toegangscode: ${code}`] : []),
+    ].join("\n");
     downloadIcs(
       `padel-${o.date}.ics`,
       icsEvent({
         title: `Padel — ${club.name}`,
-        description: `Deelnemers: ${t.yes.map(name).join(", ") || "nog onbekend"}`,
+        description: beschrijving,
         location: club.name,
         date: o.date,
         startTime: o.start_time,
