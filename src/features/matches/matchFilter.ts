@@ -2,7 +2,7 @@ import { outcomeFor } from "@/features/rating/results";
 import type { Match, Team } from "@/types";
 
 /** Filters voor de matchlijst — gedeeld door de globale Matches-pagina en de
- *  Matches-tab op de groepspagina (#342). */
+ *  Historie-tab op de groepspagina (#342). */
 export type Filter = "all" | "mine" | "won" | "lost";
 
 /** De filterknoppen in vaste volgorde, als [sleutel, label]. */

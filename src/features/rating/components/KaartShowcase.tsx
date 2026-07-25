@@ -5,7 +5,7 @@
 // FutKaart met synthetische props. Alleen geregistreerd in development
 // (App.tsx, import.meta.env.DEV) — geen productiechunk.
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   FutKaart,
   FutKaartDefs,
@@ -14,6 +14,7 @@ import {
 } from "@/features/rating/components/FutKaart";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { tierFor, type Tier } from "@/features/rating/tiers";
+import { drawKaart } from "@/features/profiles/profielPoster";
 import { Avatar } from "@/ui/Avatar";
 import "./KaartShowcase.css";
 
@@ -21,14 +22,14 @@ import "./KaartShowcase.css";
 const TIER_RATINGS = [550, 650, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1650];
 
 /** Realistische editie-regels: exact de vormen die editieLabel produceert —
- *  inclusief de langste varianten (pias/Piet, #654) als stress-case. */
+ *  inclusief de langste varianten (pias #654, Piet #665) als stress-case. */
 const EDITIES: ReadonlyArray<{ editie: Editie; label: string }> = [
   { editie: "icon", label: "👑 Big Daddy" },
   { editie: "kampioen", label: "🏆 Kampioen Q2 2026" },
   { editie: "inform", label: "⚡ In-Form · +48" },
   { editie: "onfire", label: "🔥 On Fire · 6 op rij" },
   { editie: "pias", label: "🤡 Pias · −12 games" },
-  { editie: "piet", label: "🃏 Zwarte Piet · sinds 3/7" },
+  { editie: "piet", label: "🃏 Piet · 3/7" },
 ];
 
 type Editie = NonNullable<Parameters<typeof FutKaart>[0]["editie"]>;
@@ -106,6 +107,68 @@ function Kaart({
   );
 }
 
+/** De kaart zoals de deel-poster hem tekent (#666), op canvas — naast de
+ *  DOM-kaart hierboven de enige manier om "export = live" met het oog te
+ *  controleren; seed-data levert nooit alle zes edities tegelijk. Zelfde maten
+ *  als op de poster (kaart 560px breed op de donkere court-gloed), alleen
+ *  teruggeschaald naar de weergavebreedte ernaast. */
+const POSTER_KAART_W = 560;
+const POSTER_MARGE = 48; // ruimte voor de slagschaduw van het frame
+
+function PosterKaart({
+  tier,
+  editie,
+  editieLabel = null,
+  naam = "Alice Anders",
+  breedte,
+}: {
+  tier: Tier | null;
+  editie: Editie | null;
+  editieLabel?: string | null;
+  naam?: string;
+  breedte: number;
+}) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const w = POSTER_KAART_W + POSTER_MARGE * 2;
+  const h = Math.round(POSTER_KAART_W * 1.39) + POSTER_MARGE * 2;
+  useEffect(() => {
+    const ctx = ref.current?.getContext("2d");
+    if (!ctx) return;
+    // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0b241a";
+    ctx.fillRect(0, 0, w, h);
+    drawKaart(
+      ctx,
+      {
+        name: naam,
+        avatarUrl: null,
+        rating: tier?.min != null ? tier.min + 50 : 1050,
+        tier,
+        editie,
+        editieTekst: editieLabel,
+        rank: 4,
+        form: [],
+        topBadge: null,
+      },
+      null,
+      POSTER_MARGE,
+      POSTER_MARGE,
+      POSTER_KAART_W,
+    );
+  }, [tier, editie, editieLabel, naam, w, h]);
+  return (
+    <canvas
+      ref={ref}
+      width={w}
+      height={h}
+      // De kaart zélf komt zo op `breedte` uit, gelijk aan de DOM-kaart ernaast.
+      style={{ width: `${(breedte * w) / POSTER_KAART_W}px`, height: "auto" }}
+      aria-label={`Posterkaart ${naam}${editie ? ` (${editie})` : ""}`}
+    />
+  );
+}
+
 function Sectie({
   titel,
   children,
@@ -176,6 +239,24 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* #665: de Piet-regel kapte juist op de veld- en wandmaten af, dus
+          krijgt hij dezelfde maten-rij als de pias — mét de langst mogelijke
+          datum (28/12), de variant waarop de oude vorm sneuvelde. */}
+      <Sectie titel="Contextmaten (piet-editie + chips, langste datum)">
+        {MATEN.map((kw) => (
+          <div key={kw} className="kaart-showcase__maat" style={{ ["--maat" as string]: `${kw}px` }}>
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/12"
+              chips={CHIPS}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+      </Sectie>
+
       <Sectie titel="Donkere varianten naast elkaar (96 / 116 / 130px)">
         {[96, 116, 130].map((kw) =>
           donker.map((d, i) => (
@@ -190,6 +271,35 @@ export function KaartShowcase() {
             </div>
           )),
         )}
+      </Sectie>
+
+      <Sectie titel="Live vs. deel-poster (#666): DOM-kaart naast de canvas-kaart">
+        {[{ editie: null, label: null }, ...EDITIES].map((e) => (
+          <div key={e.editie ?? "geen"} className="kaart-showcase__pariteit">
+            <span className="kaart-showcase__maatlabel">
+              {e.editie ?? "geen editie"}
+            </span>
+            <div className="kaart-showcase__pariteit-paar">
+              <div
+                className="kaart-showcase__maat"
+                style={{ ["--maat" as string]: "150px" }}
+              >
+                <Kaart
+                  kw={150}
+                  tier={tierFor(1250)}
+                  editie={e.editie}
+                  editieLabel={e.label}
+                />
+              </div>
+              <PosterKaart
+                tier={tierFor(1250)}
+                editie={e.editie}
+                editieLabel={e.label}
+                breedte={150}
+              />
+            </div>
+          </div>
+        ))}
       </Sectie>
 
       <Sectie titel="Achterkant (96 / 130 / 210px)">
@@ -207,7 +317,7 @@ export function KaartShowcase() {
               kw={kw}
               tier={tierFor(1250)}
               editie="piet"
-              editieLabel="🃏 Zwarte Piet · sinds 28/12"
+              editieLabel="🃏 Piet · 28/12"
               naam="Bartholomeus van Wijngaarden"
               chips={CHIPS}
             />

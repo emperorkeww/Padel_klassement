@@ -120,7 +120,7 @@ export function VandaagTab({
               </button>
             }
           >
-            Maak teams op de Spelen-tab — de wedstrijden en uitslagen
+            Maak teams op de Teams-tab — de wedstrijden en uitslagen
             verschijnen hier.
           </EmptyState>
         )}

@@ -266,10 +266,18 @@ export function drawWrappedCard(
  *  marineblauwe In-Form-skin uit FutKaart.css, zodat de kaart meteen als
  *  "Wrapped" leesbaar is. De schildvorm blijft die van de eigen divisie. */
 const SEIZOEN_KLEUREN: FutKaartKleuren = {
-  frame: ["#eafccb", "#3c5a1c", "#d7f28c", "#1c2b0e"],
+  frame: [
+    [0, "#eafccb"],
+    [0.42, "#3c5a1c"],
+    [0.68, "#d7f28c"],
+    [1, "#1c2b0e"],
+  ],
   liner: "#0c1408",
-  vlak: ["#14563e", "#0b241a", "#071510"],
-  vlakMidOffset: 0.6,
+  vlak: [
+    [0, "#14563e"],
+    [0.6, "#0b241a"],
+    [1, "#071510"],
+  ],
   glow: "rgba(199, 230, 58, 0.32)",
   sheen: "rgba(234, 252, 203, 0.16)",
   // #664: keyline + stralen — de seizoenskaart is per definitie de special.

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   EDITIE_PRIORITEIT,
   editieLabel,
+  editieUitleg,
   editieVoor,
   iconKeyVoor,
   type EditieContext,
@@ -187,10 +188,8 @@ describe("editieLabel (#497/#625)", () => {
       "🔥 On Fire · 6 op rij",
     );
     expect(editieLabel("pias", ctx({ pias }))).toBe("🤡 Pias · 87%");
-    // De Piet draagt zijn sinds-datum als reden-specifiek getal (#645).
-    expect(editieLabel("piet", ctx({ piet }))).toBe(
-      "🃏 Zwarte Piet · sinds 14/7",
-    );
+    // De Piet draagt zijn overnamedatum als reden-specifiek getal (#645).
+    expect(editieLabel("piet", ctx({ piet }))).toBe("🃏 Piet · 14/7");
     expect(editieLabel(null, ctx({ inForm }))).toBeNull();
   });
 
@@ -216,6 +215,21 @@ describe("editieLabel (#497/#625)", () => {
     ).toBe("🤡 Pias · 99%");
   });
 
+  it("houdt de Piet-regel compact genoeg voor de kleine kaartmaten (#665)", () => {
+    const sinds = (since: string) => ctx({ piet: { ...piet, since } });
+    // Mét datum kort de titel in tot "Piet" — een eencijferige dag/maand...
+    expect(editieLabel("piet", sinds("2026-07-03"))).toBe("🃏 Piet · 3/7");
+    // ...en de langst mogelijke datum (twee keer dubbelcijferig), de variant
+    // die op de veldmaat (96px) buiten de schildpunt viel.
+    expect(editieLabel("piet", sinds("2025-12-28"))).toBe("🃏 Piet · 28/12");
+    // Elke variant blijft korter dan de langste pias-regel, die daar past.
+    for (const since of ["2026-07-03", "2025-12-28"]) {
+      expect(editieLabel("piet", sinds(since))!.length).toBeLessThan(
+        editieLabel("pias", ctx({ pias: { ...pias, reden: "afdroging", waarde: 12, winChance: null } }))!.length,
+      );
+    }
+  });
+
   it("valt defensief terug zonder contextdata", () => {
     expect(editieLabel("kampioen", ctx())).toBe("🏆 Kampioen");
     expect(editieLabel("inform", ctx())).toBe("⚡ In-Form");
@@ -224,6 +238,18 @@ describe("editieLabel (#497/#625)", () => {
     expect(editieLabel("onfire", ctx(), "p5")).toBe("🔥 On Fire");
     expect(editieLabel("pias", ctx())).toBe("🤡 Pias van de club");
     expect(editieLabel("piet", ctx())).toBe("🃏 Zwarte Piet");
+  });
+});
+
+describe("editieUitleg (#655/#665)", () => {
+  it("legt alleen de twee schand-edities uit", () => {
+    // De club-pias: club-breed, ondanks een label dat op de groeps-pias lijkt.
+    expect(editieUitleg("pias")).toMatch(/club/);
+    // De Piet: wat de kale datum betekent, nu "sinds" van de kaart af is.
+    expect(editieUitleg("piet")).toMatch(/sinds/);
+    for (const editie of ["icon", "kampioen", "inform", "onfire", null] as const) {
+      expect(editieUitleg(editie)).toBeNull();
+    }
   });
 });
 

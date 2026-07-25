@@ -22,7 +22,7 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
 
 *   👥 **Groepen & Spelen (Groepspagina)**
     *   Maak groepen aan met een eigen klassement en voeg leden toe via een invite-link.
-    *   De vernieuwde **Spelen-pagina** binnen een groep toont een helder **dagoverzicht**, een **Matches-tab** (voor het inzien van geplande en gespeelde wedstrijden) en een **Spelen-tab** (voor de speelpolls en planning).
+    *   De groepspagina volgt de reis van een speeldag: **Plannen** (speelpolls en baankeuze), **Vandaag** (de rondes van vandaag met de uitslagen), **Teams** (de teamgenerator en losse partijen), **Historie** (alle gespeelde wedstrijden), **Stand** en **Leden**.
     *   Genereer automatisch teams op basis van speelsterkte (**eerlijke teams** op basis van Elo) of organiseer specifieke toernooivormen zoals **Americano** en **Mexicano**.
     *   Ondersteuning voor gastspelers zonder geregistreerd account.
 *   📊 **Wedstrijden & Statistieken**
@@ -95,7 +95,7 @@ src/
     dictator/               # Dictator-troon assets: portretten, volksliederen en imperium-illustraties
     feed/                   # Activiteitenfeed & Coach Rudy integratie
     friends/                # Vriendenbeheer, verzoeken & vriendsuggesties
-    groups/                 # Groepsbeheer, Americano/Mexicano & Spelen-pagina (dagoverzicht, matches- en spelen-tab)
+    groups/                 # Groepsbeheer, Americano/Mexicano & groepspagina (Plannen · Vandaag · Teams · Historie · Stand · Leden)
     matches/                # Wedstrijdregistratie (wizard, score-steppers, toto, excuses)
     profiles/               # Publieke spelersprofielen & statistieken
     rating/                 # Elo-berekeningen, tiers/divisies & ratinggrafieken (RatingChart, RankChart)

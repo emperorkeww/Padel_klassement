@@ -15,8 +15,10 @@ import type {
 } from "@/types";
 import "./SpelenTab.css";
 
-// De Spelen-tab van de groepspagina (#364): teams maken voor vandaag is de
+// De Teams-tab van de groepspagina (#364): teams maken voor vandaag is de
 // primaire actie, een losse partij loggen/plannen de secundaire voetnoot.
+// Heet in de UI "Teams" (#673); bestandsnaam en URL-key blijven "spelen",
+// want die key staat in pushberichten en edge functions.
 // Zodra er vandaag wedstrijden klaarstaan wijst een reis-CTA (#106) door naar
 // de Vandaag-tab om te spelen en uitslagen in te vullen. Data-gedreven i.p.v.
 // callback-gedreven: het Eerlijk-formaat maakt rondes zonder onGenerated te

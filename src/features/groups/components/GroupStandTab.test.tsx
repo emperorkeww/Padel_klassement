@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 
 // De roast/rivaliteit-kaarten onder de tabel (Rivalry/Pias/ZwartePiet) halen
 // zelf contracten op en abonneren realtime; zonder mock zou de test een echte
-// websocket openen. (Vendetta staat sinds #524 op de Spelen-tab.)
+// websocket openen. (Vendetta staat sinds #524 op de Teams-tab.)
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
   return { supabase: makeSupabaseMock() };

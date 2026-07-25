@@ -14,7 +14,7 @@ import "./MatchHistory.css";
 
 /** De "Recente matches"-kaart: filter-tabs met tellers en een per-dag
  *  gegroepeerde lijst. Gedeeld door de globale Matches-pagina (#106) en de
- *  Matches-tab op de groepspagina (#342). De aanroeper levert de kandidatenlijst
+ *  Historie-tab op de groepspagina (#342). De aanroeper levert de kandidatenlijst
  *  (en sluit zelf uit wat elders al getoond wordt, bv. "Te spelen"). */
 export function MatchHistory({
   matches,

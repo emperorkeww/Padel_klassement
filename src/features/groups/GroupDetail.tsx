@@ -214,7 +214,7 @@ export function GroupDetail() {
     todaysMatches.every((m) => m.status === "completed");
 
   // De Vandaag-tab toont enkel de rondes van vandaag; de volledige historie
-  // staat op de Matches-tab (#342).
+  // staat op de Historie-tab (#342).
   const rounds = groupByRound(todaysMatches);
   // Ronde met openstaande uitslagen (blokkeert Mexicano in MakeTeams).
   const openRound = rounds.find(({ list }) =>
@@ -278,7 +278,9 @@ export function GroupDetail() {
         </section>
       )}
 
-      {/* Tabs in reis-volgorde (#106): plannen → spelen → stand. */}
+      {/* Tabs in reis-volgorde (#106): plannen → spelen → stand.
+          Labels ≠ URL-keys (#673): de keys (spelen/matches) staan in
+          pushberichten en edge functions en blijven daarom ongewijzigd. */}
       <div className="tabs">
         <button
           className={`tab ${view === "plannen" ? "is-active" : ""}`}
@@ -301,13 +303,13 @@ export function GroupDetail() {
           className={`tab ${view === "spelen" ? "is-active" : ""}`}
           onClick={() => setView("spelen")}
         >
-          Spelen
+          Teams
         </button>
         <button
           className={`tab ${view === "matches" ? "is-active" : ""}`}
           onClick={() => setView("matches")}
         >
-          Matches
+          Historie
           {completedMatches.length > 0 && (
             <span className="tab__count" aria-hidden="true">
               {completedMatches.length}
@@ -407,7 +409,7 @@ export function GroupDetail() {
           emptyAll={
             <p className="empty">
               Nog geen gespeelde matches in deze groep — log er een op de
-              Vandaag-tab.
+              Teams-tab.
             </p>
           }
         />

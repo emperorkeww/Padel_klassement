@@ -1,5 +1,5 @@
 /* De dag-kopjes (.match-day*) wonen sinds #342 bij MatchHistory.css, zodat ze
-   ook laden op de groep-Matches-tab. */
+   ook laden op de groep-Historie-tab. */
 
 /* Per-set uitslag onder de score op een matchkaart, bv. "6-4 3-6 7-5". */
 .match-card__sets {

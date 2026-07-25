@@ -69,9 +69,9 @@ function stubPlaytomic() {
   );
 }
 
-function renderPage() {
+function renderPage(entry = "/groepen/g1") {
   return render(
-    <MemoryRouter initialEntries={["/groepen/g1"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <AuthProvider>
         <ToastProvider>
           <Routes>
@@ -100,10 +100,10 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
-  it("toont de teamgenerator op Spelen en de suggesties op Plannen", async () => {
+  it("toont de teamgenerator op Teams en de suggesties op Plannen", async () => {
     renderPage();
     // Op de standaard Vandaag-tab staan sinds #342 noch de suggesties noch de
-    // teamgenerator: die zijn naar Plannen resp. Spelen verhuisd.
+    // teamgenerator: die zijn naar Plannen resp. Teams verhuisd.
     expect(
       await screen.findByRole("heading", { name: /^vandaag$/i }),
     ).toBeInTheDocument();
@@ -114,8 +114,8 @@ describe("<GroupDetail />", () => {
       screen.queryByRole("heading", { name: /maak teams/i }),
     ).not.toBeInTheDocument();
 
-    // Teamgenerator staat op de Spelen-tab.
-    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
+    // Teamgenerator staat op de Teams-tab.
+    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe("<GroupDetail />", () => {
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
     await userEvent.click(
-      await screen.findByRole("button", { name: /^spelen$/i }),
+      await screen.findByRole("button", { name: /^teams$/i }),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
@@ -162,9 +162,9 @@ describe("<GroupDetail />", () => {
 
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderPage();
-    // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Spelen.
+    // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Teams.
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
     await userEvent.click(
       await screen.findByRole("button", { name: /^mexicano$/i }),
     );
@@ -179,7 +179,7 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^spelen$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
       await screen.findByRole("button", { name: /^americano$/i }),
@@ -300,6 +300,23 @@ describe("<GroupDetail />", () => {
     ).toBeGreaterThan(0);
   });
 
+  // #673: de tabs heten "Teams" en "Historie", maar de URL-keys bleven
+  // "spelen" en "matches" — die staan hard in de edge functions en in
+  // pushberichten die al op telefoons staan. Deze test borgt dat zo'n oude
+  // link op de juiste tab landt.
+  it("opent ?tab=spelen op Teams en ?tab=matches op Historie (#673)", async () => {
+    const teams = renderPage("/groepen/g1?tab=spelen");
+    expect(
+      await screen.findByRole("heading", { name: /maak teams/i }),
+    ).toBeInTheDocument();
+
+    teams.unmount();
+    renderPage("/groepen/g1?tab=matches");
+    expect(
+      await screen.findByRole("heading", { name: /gespeelde matches/i }),
+    ).toBeInTheDocument();
+  });
+
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
     const inputA = await screen.findByLabelText(/^score alice anders & bob boers$/i);
@@ -323,10 +340,10 @@ describe("<GroupDetail />", () => {
     expect(screen.getByText(/MVP ·/i)).toBeInTheDocument();
   });
 
-  it("toont de gespeelde matches op de Matches-tab met filters (#342)", async () => {
+  it("toont de gespeelde matches op de Historie-tab met filters (#342)", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^matches/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^historie$/i }));
     expect(
       await screen.findByRole("heading", { name: /gespeelde matches/i }),
     ).toBeInTheDocument();
