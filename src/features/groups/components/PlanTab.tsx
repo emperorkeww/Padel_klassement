@@ -25,15 +25,16 @@ import {
 } from "@/features/groups/pollLogic";
 import {
   focusPoll,
+  heeftGestemd,
   lockedOptionOf,
   pollPhase,
   roundsExistFor,
+  splitPolls,
 } from "@/features/groups/planFlowLogic";
 import type { GroupMember, Match, Profile } from "@/types";
 import { shortDay } from "../planPollHelpers";
 import { PlanPhaseHeader, type PlanAction } from "./PlanPhaseHeader";
-import { OtherPollsList } from "./OtherPollsList";
-import { PollCard } from "./PollCard";
+import { PlanSection } from "./PlanSection";
 import { PollWizard } from "./PollWizard";
 import { PollWizardSheet } from "./PollWizardSheet";
 import { SuggestionsCard } from "./SuggestionsCard";
@@ -41,8 +42,13 @@ import "@/features/groups/Proposals.css";
 
 /* ------------------------------------------------------------------ */
 /* Plannen-tab (#349): één fase-gedreven flow i.p.v. een kaartenstapel.*/
-/* Fasebalk + next-action bovenaan, suggesties als instap, één poll in */
-/* focus, secundaire polls compact, wizard als bottom-sheet.           */
+/* Fasebalk + next-action bovenaan, wizard als bottom-sheet.           */
+/*                                                                     */
+/* Sinds #721 geordend op hoe vast een speeldag staat, niet op één      */
+/* focus-poll met een restlijst: eerst wat vastligt, dan waarop nog     */
+/* gestemd wordt, en pas daaronder de suggesties. Die stonden bovenaan  */
+/* en duwden juist de geboekte speeldag — de vraag waarvoor iedereen    */
+/* deze tab opent — onder de vouw.                                      */
 /* ------------------------------------------------------------------ */
 
 export function PlanTab({
@@ -130,16 +136,26 @@ export function PlanTab({
     votes.reload();
   }
 
-  // De focus-poll bepaalt de fase van de hele tab; de rest klapt samen.
-  // ?poll=<id> uit een gedeelde link (#675) wint; onbekend of verlopen valt
-  // stil terug op de gewone keuze.
+  // De speeldagen in twee secties: vastgelegd boven, stemmen eronder (#721).
+  const { vastgelegd, stemmen } = splitPolls(active);
+
+  // De focus-poll bepaalt nog steeds de fase en de next-action van de tab, en
+  // staat open in de sectie waar hij in valt. ?poll=<id> uit een gedeelde link
+  // (#675) wint; onbekend of verlopen valt stil terug op de gewone keuze.
   const focus = focusPoll(active, allOptions, today, gedeeldePollId);
-  const rest = active.filter((p) => p.id !== focus?.id);
   const chosen = focus ? lockedOptionOf(focus, allOptions) : null;
-  const roundsExist = focus
-    ? roundsExistFor(focus, matches) || locallyRounded.has(focus.id)
-    : false;
+  const rondesVoor = (p: PlayPoll) =>
+    roundsExistFor(p, matches) || locallyRounded.has(p.id);
+  const roundsExist = focus ? rondesVoor(focus) : false;
   const phase = focus ? pollPhase(focus, roundsExist) : null;
+
+  // Polls waarop ik nog niet stemde: het enige wat je met meerdere polls
+  // naast elkaar echt uit elkaar moet kunnen houden (#267).
+  const wachtOpJou = new Set(
+    stemmen
+      .filter((p) => !heeftGestemd(p, allOptions, allVotes, myId))
+      .map((p) => p.id),
+  );
 
   const action = useMemo<PlanAction>(() => {
     if (!focus || !phase) {
@@ -215,33 +231,15 @@ export function PlanTab({
       <PlanPhaseHeader
         phase={phase}
         action={action}
+        aantalSpeeldagen={active.length}
         onPlan={() => setWizardOpen(true)}
       />
 
-      {/* Suggesties leiden de plan-flow in: wie kan/moet er spelen? →
-          plan de speeldag via de poll eronder (#342). */}
-      <SuggestionsCard groupId={groupId} myId={myId} matches={matches} />
-
-      {focus && (
-        <PollCard
-          poll={focus}
-          groupName={groupName}
-          members={members}
-          options={pollOptions(focus, allOptions)}
-          votes={allVotes}
-          profiles={profiles}
-          myId={myId}
-          isOwner={isOwner}
-          onChanged={reloadAll}
-          roundsExist={roundsExist}
-          onRoundsMade={() =>
-            setLocallyRounded((cur) => new Set(cur).add(focus.id))
-          }
-        />
-      )}
-
-      <OtherPollsList
-        polls={rest}
+      {/* Wat vastligt eerst: "wanneer spelen we en is de baan geregeld?" is
+          de vraag waarvoor de groep deze tab opent. */}
+      <PlanSection
+        title="Vastgelegd"
+        polls={vastgelegd}
         options={allOptions}
         votes={allVotes}
         groupName={groupName}
@@ -250,6 +248,38 @@ export function PlanTab({
         myId={myId}
         isOwner={isOwner}
         onChanged={reloadAll}
+        openId={focus?.id}
+        roundsExist={rondesVoor}
+        onRoundsMade={(p) =>
+          setLocallyRounded((cur) => new Set(cur).add(p.id))
+        }
+      />
+
+      <PlanSection
+        title="Stemmen loopt"
+        polls={stemmen}
+        options={allOptions}
+        votes={allVotes}
+        groupName={groupName}
+        members={members}
+        profiles={profiles}
+        myId={myId}
+        isOwner={isOwner}
+        onChanged={reloadAll}
+        openId={focus?.id}
+        wachtOpJou={wachtOpJou}
+      />
+
+      {/* Suggesties sluiten de tab af (#721): een instap voor wie nog niets
+          gepland heeft, geen blok dat de lopende speeldagen wegdrukt. */}
+      <SuggestionsCard
+        groupId={groupId}
+        myId={myId}
+        matches={matches}
+        polls={polls.data ?? []}
+        options={allOptions}
+        votes={allVotes}
+        onStarted={reloadAll}
       />
 
       {/* Banen-verkenning altijd zichtbaar op de Plannen-tab (niet alleen in

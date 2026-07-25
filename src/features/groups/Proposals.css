@@ -384,39 +384,59 @@
 .plan-phases__action {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--sp-2);
   margin: var(--sp-2) 0 0;
   color: var(--ink-soft);
   font-size: var(--fs-sm);
 }
+/* Meerdere lopende speeldagen (#721): de fasebalk toont er maar één fase, dus
+   deze teller zegt dat er meer zijn. */
+.plan-phases__count {
+  padding: 2px var(--sp-2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
 
-/* ---------- Secundaire speeldagen, compact ingeklapt (#349) ---------- */
-.plan-other__summary {
+/* ---------- Secties van de Plannen-tab (#721) ---------- */
+/* "Vastgelegd" en "Stemmen loopt" als eigen blokken, niet als één
+   dichtgeklapte restlijst onder een focus-poll (#349). De kop is een kicker
+   bóven de kaarten in plaats van een kaarttitel: de kaarten eronder zijn de
+   inhoud, de kop zegt alleen in welke fase ze zitten. */
+.plan-section {
+  display: block;
+}
+.plan-section + .plan-section,
+.plan-section + .card,
+.card + .plan-section {
+  margin-top: var(--sp-5);
+}
+.plan-section__title {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  cursor: pointer;
-  list-style: none;
-}
-.plan-other__summary::-webkit-details-marker {
-  display: none;
-}
-.plan-other__summary::after {
-  content: "⌄";
-  margin-left: auto;
-  font-size: 1.1rem;
-  line-height: 1;
+  margin: 0 0 var(--sp-2);
+  padding-left: var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--ink-soft);
-  transition: transform 0.15s ease;
 }
-.plan-other[open] .plan-other__summary::after {
-  transform: rotate(180deg);
-}
-.plan-other__summary .card__title {
-  margin: 0;
-}
-.plan-other[open] .plan-other__summary {
-  margin-bottom: var(--sp-3);
+.plan-section__count {
+  min-width: 1.35rem;
+  padding: 0 var(--sp-1);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft-strong);
+  font-size: var(--fs-xs);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 .plan-other__rows {
   list-style: none;
@@ -426,8 +446,9 @@
   gap: var(--sp-2);
 }
 .plan-other__row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
+  /* Flex i.p.v. een vast grid: een rij draagt naast de status soms ook het
+     "jij moet nog stemmen"-signaal (#721). */
+  display: flex;
   align-items: center;
   gap: var(--sp-2);
   width: 100%;
@@ -441,6 +462,7 @@
   cursor: pointer;
 }
 .plan-other__when {
+  flex: 1;
   min-width: 0;
   font-weight: 700;
 }
@@ -461,6 +483,12 @@
 }
 .plan-other__badge.is-booked {
   color: var(--success);
+}
+/* Het enige signaal dat om jóu gaat: warm i.p.v. het groene app-accent, zodat
+   het niet met de statusbadge ernaast concurreert. */
+.plan-other__badge.is-jij {
+  color: var(--warn);
+  background: var(--warn-soft);
 }
 .plan-other__chevron {
   color: var(--ink-soft);
@@ -675,17 +703,16 @@
   .plan-phases__step {
     white-space: nowrap;
   }
-  /* Secundaire speeldag-rijen: badge mag onder het moment schuiven. */
+  /* Speeldag-rijen: het moment houdt zijn eigen regel, de badges schuiven
+     eronder met de chevron rechts. */
   .plan-other__row {
-    grid-template-columns: 1fr auto;
+    flex-wrap: wrap;
+  }
+  .plan-other__when {
+    flex: 1 0 100%;
   }
   .plan-other__chevron {
-    grid-row: 1;
-    grid-column: 2;
-  }
-  .plan-other__badge {
-    grid-column: 1;
-    justify-self: start;
+    margin-left: auto;
   }
   /* Footer-acties (Kies …, Heropen, Annuleer) op volle breedte: fijnere
      tikdoelen en één actie per regel bij weinig ruimte. */

@@ -1,5 +1,6 @@
 import type { Match } from "@/types";
-import type { PlayPoll, PollOption } from "./pollsApi";
+import { pollOptions } from "./pollLogic";
+import type { PlayPoll, PollOption, PollVote } from "./pollsApi";
 
 // Pure logica voor de fase-gedreven Plannen-tab (#349): welke fase de tab
 // toont, of er al wedstrijdrondes voor een geboekte poll bestaan en welke
@@ -56,6 +57,41 @@ export function pollPhase(poll: PlayPoll, roundsExist: boolean): PlanPhase {
  * actief is — verlopen, geannuleerd of uit een andere groep. Een oude link
  * hoort de tab niet leeg of stuk te laten lijken.
  */
+/**
+ * De twee secties van de Plannen-tab (#721): wat al vastligt en waarop nog
+ * gestemd wordt. Vóór deze splitsing stonden beide door elkaar in één stroom
+ * met één poll in focus — waardoor een al geboekte speeldag onder een verse
+ * poll verdween, terwijl "wanneer spelen we?" nu net de vraag is die iedereen
+ * op deze tab komt stellen. `active` is de soonest-first uitvoer van
+ * activePolls, dus beide lijsten blijven chronologisch.
+ */
+export function splitPolls(active: PlayPoll[]): {
+  vastgelegd: PlayPoll[];
+  stemmen: PlayPoll[];
+} {
+  return {
+    vastgelegd: active.filter(
+      (p) => p.status === "locked" || p.status === "booked",
+    ),
+    stemmen: active.filter((p) => p.status === "open"),
+  };
+}
+
+/**
+ * Heeft deze speler al op minstens één moment van de poll gestemd? Voedt het
+ * "jij moet nog stemmen"-signaal per poll: met meerdere polls naast elkaar
+ * (#267) is dat het enige wat je echt uit elkaar moet kunnen houden.
+ */
+export function heeftGestemd(
+  poll: PlayPoll,
+  options: PollOption[],
+  votes: PollVote[],
+  playerId: string,
+): boolean {
+  const eigen = new Set(pollOptions(poll, options).map((o) => o.id));
+  return votes.some((v) => v.player_id === playerId && eigen.has(v.option_id));
+}
+
 export function focusPoll(
   active: PlayPoll[],
   options: PollOption[],

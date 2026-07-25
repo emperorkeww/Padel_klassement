@@ -23,11 +23,14 @@ export type PlanAction = {
 export function PlanPhaseHeader({
   phase,
   action,
+  aantalSpeeldagen = 0,
   onPlan,
 }: {
   /** Fase van de focus-poll; null zolang er geen speeldag loopt. */
   phase: PlanPhase | null;
   action: PlanAction | null;
+  /** Aantal actieve speeldagen: vanaf twee zegt de balk dat er meer lopen. */
+  aantalSpeeldagen?: number;
   onPlan: () => void;
 }) {
   const activeIdx = phase ? PLAN_PHASES.indexOf(phase) : -1;
@@ -62,6 +65,13 @@ export function PlanPhaseHeader({
       </div>
       {action && (
         <p className="plan-phases__action">
+          {/* De balk toont de fase van één speeldag; met meerdere lopende
+              polls (#267) zou dat suggereren dat er maar één is (#721). */}
+          {aantalSpeeldagen > 1 && (
+            <span className="plan-phases__count">
+              {aantalSpeeldagen} speeldagen lopen
+            </span>
+          )}
           {action.text}
           {action.to && (
             <Link to={action.to}>{action.linkText ?? "Bekijk →"}</Link>
