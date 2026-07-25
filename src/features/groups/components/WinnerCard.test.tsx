@@ -147,7 +147,7 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     vi.spyOn(document, "createElement").mockImplementation((tag: string) =>
       tag === "a" ? anchor : originalCreateElement.call(document, tag),
     );
-    const createObjectURL = vi.fn((_blob: Blob) => "blob:test");
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => "blob:test");
     Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
 
     renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "b3: 1234" });
