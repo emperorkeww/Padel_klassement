@@ -30,6 +30,10 @@ import { longDay, shortDay } from "../planPollHelpers";
 /* en het klaarzetten van eerlijke rondes.                             */
 /* ------------------------------------------------------------------ */
 
+/** Rondes die je in één keer kunt klaarzetten (#727). Tien is ruim boven een
+ *  normale speelavond; meer is eerder een vergissing dan een wens. */
+const RONDE_KEUZES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 export function WinnerCard({
   poll,
   option: o,
@@ -68,6 +72,11 @@ export function WinnerCard({
   // roundsExist dekt rondes die elders (of eerder) zijn klaargezet.
   const [roundsMade, setRoundsMade] = useState(0);
   const roundsDone = roundsExist || roundsMade > 0;
+  // Hoeveel rondes deze tik klaarzet (#727): een hele avond vooruit plannen
+  // kostte evenveel tikken als rondes.
+  const [rondes, setRondes] = useState(1);
+  /** Volle banen bij de huidige bevestigingen — één match per baan per ronde. */
+  const banen = Math.floor(t.yes.length / 4);
 
   // Toegangscode-sheet (#675). "boeken" hangt de code aan de boekstap vast,
   // "wijzigen" zet 'm los achteraf — de code komt vaak pas met de
@@ -164,19 +173,29 @@ export function WinnerCard({
   function generateRounds() {
     return run(async () => {
       const ratings = await getPlayerRatings();
-      const teams = fairTeams(t.yes, ratings, roundsMade);
-      const courts = teams.courts.map((c) => ({
-        teamA: c.teamA.playerIds,
-        teamB: c.teamB.playerIds,
-      }));
-      if (courts.length === 0) throw new Error("Geen volledige banen te vullen.");
-      const ids = await createFairRound(poll.group_id, courts);
-      setRoundsMade((n) => n + 1);
+      let total = 0;
+      // Eén serverronde per gevraagde ronde, met een oplopende `variant`:
+      // precies wat herhaald op "Nog een ronde" tikken deed, maar in één
+      // handeling (#727). Zo krijgt elke ronde een eigen indeling.
+      for (let i = 0; i < rondes; i++) {
+        const teams = fairTeams(t.yes, ratings, roundsMade + i);
+        const courts = teams.courts.map((c) => ({
+          teamA: c.teamA.playerIds,
+          teamB: c.teamB.playerIds,
+        }));
+        if (courts.length === 0) {
+          if (total === 0) throw new Error("Geen volledige banen te vullen.");
+          break;
+        }
+        const ids = await createFairRound(poll.group_id, courts);
+        total += ids.length;
+      }
+      setRoundsMade((n) => n + rondes);
       onRoundsMade?.();
       toast.success(
-        ids.length === 1
+        total === 1
           ? "Eerlijke match klaargezet — zie Vandaag."
-          : `${ids.length} eerlijke matches klaargezet — zie Vandaag.`,
+          : `${total} eerlijke matches klaargezet — zie Vandaag.`,
       );
     });
   }
@@ -307,6 +326,25 @@ export function WinnerCard({
         >
           <h3 className="winner-card__section-title">Klaarzetten</h3>
           <div className="winner-card__rounds">
+            {/* Aantal rondes vóór de knop: je kiest eerst hoeveel, dan zet je
+                ze klaar — en het label van de knop volgt de keuze. */}
+            {t.yes.length >= 4 && (
+              <label className="winner-card__rondes">
+                <span>Rondes</span>
+                <select
+                  className="select"
+                  value={rondes}
+                  disabled={busy}
+                  onChange={(e) => setRondes(Number(e.target.value))}
+                >
+                  {RONDE_KEUZES.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button
               className={`btn btn--sm${poll.status === "booked" && !roundsDone && t.yes.length >= 4 ? " btn--primary" : ""}`}
               disabled={busy || t.yes.length < 4}
@@ -317,13 +355,23 @@ export function WinnerCard({
               }
               onClick={generateRounds}
             >
-              ⚡ {roundsMade === 0 ? "Genereer wedstrijden" : "Nog een wedstrijd"}
+              ⚡{" "}
+              {rondes > 1
+                ? `Genereer ${rondes} rondes`
+                : roundsMade === 0
+                  ? "Genereer wedstrijden"
+                  : "Nog een ronde"}
               {t.yes.length >= 4 &&
-                ` (${Math.floor(t.yes.length / 4)} ${Math.floor(t.yes.length / 4) === 1 ? "baan" : "banen"})`}
+                ` (${banen * rondes} ${banen * rondes === 1 ? "match" : "matches"})`}
             </button>
-            {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. */}
+            {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. Mét
+                ?tab=spelen (#727) — het kale pad is de route waar je al op
+                staat, dus dat wisselt geen tab. */}
             {roundsDone && (
-              <Link className="btn btn--sm" to={`/groepen/${poll.group_id}`}>
+              <Link
+                className="btn btn--sm"
+                to={`/groepen/${poll.group_id}?tab=spelen`}
+              >
                 Bekijk de wedstrijden →
               </Link>
             )}

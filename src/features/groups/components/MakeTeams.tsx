@@ -217,7 +217,8 @@ export function MakeTeams({
                   value={roundsToGen}
                   onChange={(e) => setRoundsToGen(Number(e.target.value))}
                 >
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                  {/* Tot 10, gelijk aan de winner-card op de Plannen-tab (#727). */}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>
