@@ -56,6 +56,7 @@ function setup(matches: Match[], profiles = PROFILES) {
           matches={matches}
           teams={TEAMS}
           profiles={profiles}
+          groepsnaam="De Testploeg"
           myId="a"
           now={NU}
         />
@@ -135,5 +136,37 @@ describe("<EregalerijTab />", () => {
   it("biedt de kampioensposter per seizoen aan", () => {
     setup([match({ played_at: "2026-02-10T19:00:00" })]);
     expect(screen.getByRole("button", { name: /Deel poster/ })).toBeInTheDocument();
+  });
+
+  it("reikt de medailles uit met een deelbare gala-poster (#713)", () => {
+    setup([
+      match({ played_at: "2026-02-03T19:00:00" }),
+      match({ played_at: "2026-02-10T19:00:00" }),
+      match({ played_at: "2026-02-17T19:00:00" }),
+    ]);
+    expect(screen.getByText("🏅 Uitreiking")).toBeInTheDocument();
+    expect(screen.getByText("Bagelbakker")).toBeInTheDocument();
+    expect(screen.getByText("Langste reeks")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Deel de uitreiking/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("houdt de pias-award van de poster bij een roast-schild (#183)", () => {
+    const beschermd = {
+      ...PROFILES,
+      c: profile("c", "Carol", { roast_schild: true }),
+      d: profile("d", "Daan", { roast_schild: true }),
+    };
+    setup(
+      [
+        match({ played_at: "2026-02-03T19:00:00" }),
+        match({ played_at: "2026-02-10T19:00:00" }),
+        match({ played_at: "2026-02-17T19:00:00" }),
+      ],
+      beschermd,
+    );
+    expect(screen.getByText("🏅 Uitreiking")).toBeInTheDocument();
+    expect(screen.queryByText("Pias van het seizoen")).not.toBeInTheDocument();
   });
 });

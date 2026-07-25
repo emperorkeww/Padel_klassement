@@ -13,10 +13,11 @@ import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { displayName } from "@/features/profiles/api";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
+import { ShareAwards } from "@/features/seizoen/components/ShareAwards";
 import { eregalerij } from "@/features/seizoen/eregalerij";
 import { groepsRecords } from "@/features/seizoen/records";
 import type { MatchRatings } from "@/features/groups/maandpias";
-import type { Match, PlayerStanding, Profile, Team } from "@/types";
+import type { Match, PlayerStanding, Profile, RatingPoint, Team } from "@/types";
 import "./Eregalerij.css";
 
 /** 🥇🥈🥉 voor de eerste drie; daarna geen medaille meer. */
@@ -39,6 +40,8 @@ export function EregalerijTab({
   teams,
   profiles,
   ratingsByMatch,
+  histories,
+  groepsnaam,
   myId,
   now,
 }: {
@@ -48,13 +51,17 @@ export function EregalerijTab({
   profiles: Record<string, Profile>;
   /** Pre-match ratings voor de choke-detectie van de pias (optioneel). */
   ratingsByMatch?: Map<string, MatchRatings>;
+  /** Rating-historie per speler; voedt twee awards (#713). */
+  histories?: Record<string, RatingPoint[]>;
+  /** Groepsnaam op de gala-poster. */
+  groepsnaam: string;
   myId: string;
   /** Injecteerbaar voor tests; anders de klok. */
   now?: Date;
 }) {
   const seizoenen = useMemo(
-    () => eregalerij({ matches, teams, profiles, ratingsByMatch, now }),
-    [matches, teams, profiles, ratingsByMatch, now],
+    () => eregalerij({ matches, teams, profiles, ratingsByMatch, histories, now }),
+    [matches, teams, profiles, ratingsByMatch, histories, now],
   );
   const records = useMemo(
     () => groepsRecords(matches, teams, profiles),
@@ -144,6 +151,42 @@ export function EregalerijTab({
                   </li>
                 ))}
               </ol>
+
+              {s.awards.length > 0 && (
+                <div className="eregalerij-awards">
+                  <div className="eregalerij-awards__kop">
+                    <h3 className="eregalerij-awards__titel">🏅 Uitreiking</h3>
+                    <ShareAwards
+                      groepsnaam={groepsnaam}
+                      seizoen={s.naam.label}
+                      awards={s.awards}
+                      naam={naamVan}
+                    />
+                  </div>
+                  <ul className="eregalerij-awards__lijst">
+                    {s.awards.map((a) => (
+                      <li
+                        className={`eregalerij-award${a.id === "pias" ? " eregalerij-award--schande" : ""}`}
+                        key={a.id}
+                      >
+                        <span className="eregalerij-award__emoji" aria-hidden="true">
+                          {a.emoji}
+                        </span>
+                        <span className="eregalerij-award__body">
+                          <span className="eregalerij-award__titel">{a.titel}</span>
+                          <Link
+                            className="eregalerij-award__naam"
+                            to={`/spelers/${a.playerId}`}
+                          >
+                            {naamVan(a.playerId)}
+                          </Link>
+                          <span className="eregalerij-award__detail">{a.detail}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {pias && (
                 <p className="eregalerij-pias">

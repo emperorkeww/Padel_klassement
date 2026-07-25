@@ -247,8 +247,11 @@ function chronologisch(matches: Match[]): Match[] {
  * verliesrun (minstens 2 — de badge-drempel COMEBACK_DREMPEL is strenger,
  * maar binnen één jaar is elke opgestane speler een verhaal waard). De run
  * mag vóór het jaar begonnen zijn; de winst zelf moet erin vallen.
+ *
+ * Sinds #713 ook de definitie achter de Comebackkoning-award
+ * (features/seizoen/awards.ts) — één begrip van "comeback" in de hele app.
  */
-function besteComeback(
+export function besteComeback(
   chrono: Match[],
   jaarIds: Set<string>,
   teams: Record<string, Team>,
