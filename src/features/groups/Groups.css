@@ -96,19 +96,103 @@
   font-weight: 700;
 }
 
-/* Reis-status op de groepskaart: waar zit de groep in de kernreis? */
+/* Reis-status op de groepskaart: waar zit de groep in de kernreis?
+   De drie tonen verschilden alleen in tekstkleur (#674 B6) — een groep die op
+   jouw stem wacht zag er even zwaar uit als een groep waar alles vaststaat.
+   "act" is nu een echte pil met een zachte puls, "info" een rustige pil en
+   "idle" blijft platte tekst. */
 .group-card__journey {
-  display: inline-block;
-  margin-top: var(--sp-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  align-self: start;
+  margin-top: var(--sp-2);
+  padding: 0.125rem var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-size: var(--fs-xs);
   font-weight: 700;
 }
 .group-card__journey--act {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
   color: var(--accent);
+  animation: journey-nudge 2.6s ease-in-out infinite;
 }
 .group-card__journey--info {
+  background: var(--success-soft);
+  border-color: var(--success-line);
   color: var(--success);
 }
 .group-card__journey--idle {
+  padding-left: 0;
+  padding-right: 0;
   color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* Zachte pols op de rand — genoeg om het oog te trekken, niet genoeg om te
+   irriteren naast vier andere kaarten. */
+@keyframes journey-nudge {
+  0%,
+  70%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  35% {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-card__journey--act {
+    animation: none;
+  }
+}
+
+/* Nieuwe groep: zeldzame actie, dus een knop in plaats van een altijd open
+   formulier (#674 A5). */
+.hub-new {
+  width: 100%;
+  margin-bottom: var(--sp-5);
+}
+
+/* Secundaire rij onder de groepen: losse match + vrije banen. Compacter dan
+   een volle kaart, zodat de groepen de pagina blijven dragen. */
+.hub-extra {
+  display: grid;
+  gap: var(--sp-3);
+}
+@media (min-width: 640px) {
+  .hub-extra {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.hub-extra__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.hub-extra__title {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.hub-extra__text {
+  margin: 0;
+  flex: 1;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.hub-extra__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
