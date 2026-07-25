@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -19,6 +20,7 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import GroupDetail from "./GroupDetail";
+import { supabase } from "@/lib/supabase/client";
 import { TABLES } from "@/test/fixtures";
 
 function stubPlaytomic() {
@@ -49,6 +51,8 @@ function renderPage(entry = "/groepen/g1") {
 
 describe("<GroupDetail /> landingstab (#674)", () => {
   beforeEach(() => {
+    // Schone call-historie: de C2-test kijkt naar welke tabellen zijn bevraagd.
+    vi.clearAllMocks();
     stubPlaytomic();
     // De fixture-matches liggen in het verleden → vandaag staat er niets.
     for (const [k, v] of Object.entries(TABLES)) tables[k] = [...v];
@@ -97,6 +101,34 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     expect(
       await screen.findByRole("link", { name: /← spelen/i }),
     ).toBeInTheDocument();
+  });
+
+  // #674 C2: de pagina deed dertien queries bij mount, ook als je alleen een
+  // uitslag kwam invullen. Wat alleen de Stand-tab voedt wacht nu tot je die
+  // tab opent.
+  it("haalt de klassement-data pas op als je de Stand opent", async () => {
+    renderPage();
+    await screen.findByRole("tablist");
+    const tabellen = () =>
+      (supabase.from as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
+        (c) => c[0],
+      );
+    for (const t of [
+      "group_player_standings",
+      "player_ratings",
+      "match_predictions",
+      "group_prediction_standings",
+    ]) {
+      expect(tabellen()).not.toContain(t);
+    }
+    // De rating-historie blijft wél eager: die voedt de upsets en het
+    // dagoverzicht op Vandaag/Historie.
+    expect(tabellen()).toContain("rating_history");
+
+    await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
+    await screen.findByRole("heading", { name: /groepsklassement/i });
+    expect(tabellen()).toContain("group_player_standings");
+    expect(tabellen()).toContain("player_ratings");
   });
 
   it("landt op Vandaag zodra er vandaag wedstrijden staan", async () => {

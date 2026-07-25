@@ -228,7 +228,7 @@ describe("<VandaagTab />", () => {
     renderTab();
 
     await userEvent.click(
-      screen.getByRole("button", { name: /\+ log match/i }),
+      screen.getByRole("button", { name: /\+ match loggen/i }),
     );
     expect(
       await screen.findByRole("dialog", { name: /match loggen/i }),
@@ -236,7 +236,9 @@ describe("<VandaagTab />", () => {
     await userEvent.click(screen.getByRole("button", { name: /sluiten/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /plan match/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /match plannen/i }),
+    );
     expect(
       await screen.findByRole("dialog", { name: /match plannen/i }),
     ).toBeInTheDocument();
