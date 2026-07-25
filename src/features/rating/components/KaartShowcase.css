@@ -33,3 +33,17 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+/* Pariteitsblok (#666): de DOM-kaart en de canvas-posterkaart strak tegen
+   elkaar, zodat kleurverschillen tussen live en export opvallen i.p.v.
+   verdrinken in de tussenruimte. */
+.kaart-showcase__pariteit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.kaart-showcase__pariteit-paar {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+}
