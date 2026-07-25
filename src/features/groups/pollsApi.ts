@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { normalizeAccessCode } from "@/features/groups/planPollHelpers";
 import type { Club } from "@/features/availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
@@ -25,6 +26,9 @@ export type PlayPoll = {
   club_name: string;
   club_city: string | null;
   club_timezone: string;
+  /** Toegangscode van de velden (#675); null als de club er geen heeft of hij
+   *  nog niet bekend is. Alleen groepsleden krijgen 'm (RLS). */
+  access_code: string | null;
 };
 
 /** De op een poll opgeslagen locatie als Club-object (voor de UI/availability). */
@@ -251,11 +255,43 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
   invalidate("play-poll");
 }
 
-/** Markeert de gelockte poll als geboekt op Playtomic. */
-export async function markPollBooked(pollId: string): Promise<void> {
+/**
+ * Markeert de gelockte poll als geboekt op Playtomic. `accessCode` is optioneel
+ * (#675): laat 'm weg en de kolom blijft ongemoeid — boeken zonder code is nog
+ * altijd één actie. Meegeven (ook als lege string of null) zet de code, zodat
+ * hetzelfde invoerveld ook "geen code" kan betekenen.
+ */
+export async function markPollBooked(
+  pollId: string,
+  accessCode?: string | null,
+): Promise<void> {
   const { error } = await supabase
     .from("play_polls")
-    .update({ status: "booked", booked_at: new Date().toISOString() })
+    .update({
+      status: "booked",
+      booked_at: new Date().toISOString(),
+      ...(accessCode !== undefined
+        ? { access_code: normalizeAccessCode(accessCode) }
+        : {}),
+    })
+    .eq("id", pollId);
+  if (error) throw error;
+  invalidate("play-poll");
+}
+
+/**
+ * Zet, wijzigt of wist de toegangscode van de velden (#675). Apart van
+ * markPollBooked omdat de code in de praktijk vaak pas ná het boeken binnenkomt
+ * (bevestigingsmail) — zonder dit zou je de poll moeten heropenen. RLS:
+ * play_polls_update_manager (maker of groepseigenaar), zonder statusfilter.
+ */
+export async function setPollAccessCode(
+  pollId: string,
+  code: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("play_polls")
+    .update({ access_code: normalizeAccessCode(code) })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");
@@ -270,6 +306,9 @@ export async function reopenPoll(pollId: string): Promise<void> {
       locked_option_id: null,
       locked_at: null,
       booked_at: null,
+      // De boeking vervalt, dus de code van díé boeking ook (#675) — anders
+      // blijft een oude clubcode achter op een poll die opnieuw open staat.
+      access_code: null,
     })
     .eq("id", pollId);
   if (error) throw error;

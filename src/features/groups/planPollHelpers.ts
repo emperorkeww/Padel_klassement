@@ -35,3 +35,18 @@ export function floorHalfHour(time: string): string {
 }
 
 export const optKey = (o: { date: string; startTime: string }) => `${o.date}|${o.startTime}`;
+
+/** Maximale lengte van de toegangscode (#675); spiegelt de CHECK in de DB. */
+export const MAX_ACCESS_CODE = 60;
+
+/**
+ * Toegangscode van de velden (#675) klaarmaken voor opslag: trimmen, witruimte
+ * inklappen en afkappen op MAX_ACCESS_CODE. Leeg → null, zodat "geen code" één
+ * representatie heeft en het lege veld gewoon overslaan blijft. Bewust géén
+ * cijfer-validatie: clubs gebruiken ook letters of een code per baan.
+ */
+export function normalizeAccessCode(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const code = raw.replace(/\s+/g, " ").trim().slice(0, MAX_ACCESS_CODE);
+  return code === "" ? null : code;
+}
