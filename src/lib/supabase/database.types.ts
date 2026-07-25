@@ -2073,6 +2073,10 @@ export type Database = {
       recompute_ratings: { Args: never; Returns: undefined }
       recompute_zwarte_piet: { Args: never; Returns: undefined }
       redeem_group_invite: { Args: { p_token: string }; Returns: string }
+      replace_match_player: {
+        Args: { p_from_player: string; p_match_id: string; p_to_player: string }
+        Returns: undefined
+      }
       request_guest_claim: {
         Args: { p_guest_id: string; p_player_id: string }
         Returns: string
