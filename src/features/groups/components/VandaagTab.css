@@ -1,5 +1,56 @@
-/* Vandaag-tab (#377). De afsluitkaart bovenaan hergebruikt .flow-next uit
-   GroupDetail.css (de parent laadt die altijd). */
+/* Vandaag-tab (#377, sinds #674 ook de teamgenerator van de oude Teams-tab).
+   De afsluitkaart bovenaan hergebruikt .flow-next uit GroupDetail.css (de
+   parent laadt die altijd). */
+
+/* Zodra de dag loopt klapt de teamgenerator weg: je maakt hooguit nog een
+   volgende ronde, dus hij hoort niet meer boven de uitslagen te staan. */
+.next-round {
+  padding: 0;
+}
+.next-round__toggle {
+  padding: var(--sp-3) var(--sp-4);
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  list-style-position: inside;
+  border-radius: inherit;
+}
+.next-round__toggle:hover {
+  color: var(--ink);
+}
+.next-round[open] .next-round__toggle {
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+.next-round__body {
+  padding: var(--sp-4);
+}
+
+/* Losse match loggen/plannen binnen de groep — bewust een gedempte voetnoot
+   onder de teamgenerator (#364). */
+.group-log {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.group-log__hint {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.group-log__actions {
+  display: flex;
+  gap: var(--sp-2);
+}
 
 /* Rondeblokken: inzetlijn links + ruimere tussenafstand, zodat rondes bij
    het scrollen als eenheden lezen. De open ronde krijgt de accentkleur en

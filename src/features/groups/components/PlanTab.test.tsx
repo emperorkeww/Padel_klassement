@@ -19,6 +19,8 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { PlanTab } from "./PlanTab";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { getGroupPolls, getGroupPollOptions } from "@/features/groups/pollsApi";
 import { GROUP_MEMBERS, PROFILES } from "@/test/fixtures";
 
 const baseClub = {
@@ -93,19 +95,32 @@ const profileMap = Object.fromEntries(
   PROFILES.map((p) => [p.id, p]),
 ) as Record<string, Profile>;
 
+// Polls en opties komen sinds #674 uit GroupDetail (de landingstab heeft de
+// reis-status nodig vóór deze tab mount). Dit harnas doet wat de parent doet,
+// zodat de tests hun poll-situatie gewoon in `tables` kunnen blijven zetten.
+function PlanTabHarness({ matches }: { matches: Match[] }) {
+  const polls = useAsync(() => getGroupPolls("g1"), []);
+  const options = useAsync(() => getGroupPollOptions("g1"), []);
+  return (
+    <PlanTab
+      groupId="g1"
+      groupName="Vrijdagavond padel"
+      members={GROUP_MEMBERS as GroupMember[]}
+      profiles={profileMap}
+      myId="p1"
+      isOwner
+      matches={matches}
+      polls={polls}
+      options={options}
+    />
+  );
+}
+
 function renderTab(matches: Match[] = []) {
   return render(
     <MemoryRouter>
       <ToastProvider>
-        <PlanTab
-          groupId="g1"
-          groupName="Vrijdagavond padel"
-          members={GROUP_MEMBERS as GroupMember[]}
-          profiles={profileMap}
-          myId="p1"
-          isOwner
-          matches={matches}
-        />
+        <PlanTabHarness matches={matches} />
       </ToastProvider>
     </MemoryRouter>,
   );
