@@ -816,6 +816,30 @@
   border-color: var(--accent);
 }
 
+/* Deelblok van een geboekte speeldag (#675): tekst/afbeelding + de opt-in
+   voor de code op de poster. */
+.share-speeldag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.share-speeldag__optin {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.share-speeldag__optin input {
+  margin-top: 0.15em;
+  flex: none;
+}
+.share-speeldag__optin em {
+  font-style: normal;
+  opacity: 0.75;
+}
+
 /* Toegangscode-sheet (#675). */
 .access-code__field {
   display: flex;

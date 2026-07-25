@@ -16,6 +16,7 @@ import {
   type PollOption,
 } from "@/features/groups/pollsApi";
 import { AccessCodeSheet } from "./AccessCodeSheet";
+import { ShareSpeeldag } from "./ShareSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { createFairRound } from "@/features/groups/api";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
@@ -133,6 +134,10 @@ export function WinnerCard({
         : canBook
           ? `⏳ Baan nog boeken: ${await bookingUrl(club, o.date)}`
           : "⏳ Baan nog boeken.",
+      // De code hoort juist wél in de groepschat-tekst (#675): dat is precies
+      // waar mensen 'm nu handmatig overtikken. Anders dan bij de poster is
+      // hier geen opt-in nodig — je ziet de tekst vóór je 'm verstuurt.
+      ...(code != null ? [`🔑 Code velden: ${code}`] : []),
     ];
     try {
       const outcome = await shareOrCopyText({
@@ -273,10 +278,20 @@ export function WinnerCard({
               <button className="btn btn--sm" onClick={exportIcs}>
                 📅 Zet in agenda
               </button>
-              <button className="btn btn--sm" onClick={shareWinner}>
-                ↗ Deel
-              </button>
             </div>
+            {/* Twee expliciete keuzes (#675), zoals ShareAvailability: de
+                tekstregels voor de groepschat, of de opstelling als poster
+                met de FUT-kaarten van de deelnemers. */}
+            <ShareSpeeldag
+              groupName={groupName}
+              moment={`${longDay(o.date)} · ${o.start_time}`}
+              club={`${club.name} · ${o.duration} min`}
+              deelnemers={t.yes}
+              profiles={profiles}
+              bestand={`padel-${o.date}.png`}
+              accessCode={code}
+              onShareText={shareWinner}
+            />
           </section>
         )}
 
