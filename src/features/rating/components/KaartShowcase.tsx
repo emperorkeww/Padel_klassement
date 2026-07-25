@@ -21,14 +21,14 @@ import "./KaartShowcase.css";
 const TIER_RATINGS = [550, 650, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1650];
 
 /** Realistische editie-regels: exact de vormen die editieLabel produceert —
- *  inclusief de langste varianten (pias/Piet, #654) als stress-case. */
+ *  inclusief de langste varianten (pias #654, Piet #665) als stress-case. */
 const EDITIES: ReadonlyArray<{ editie: Editie; label: string }> = [
   { editie: "icon", label: "👑 Big Daddy" },
   { editie: "kampioen", label: "🏆 Kampioen Q2 2026" },
   { editie: "inform", label: "⚡ In-Form · +48" },
   { editie: "onfire", label: "🔥 On Fire · 6 op rij" },
   { editie: "pias", label: "🤡 Pias · −12 games" },
-  { editie: "piet", label: "🃏 Zwarte Piet · sinds 3/7" },
+  { editie: "piet", label: "🃏 Piet · 3/7" },
 ];
 
 type Editie = NonNullable<Parameters<typeof FutKaart>[0]["editie"]>;
@@ -176,6 +176,24 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* #665: de Piet-regel kapte juist op de veld- en wandmaten af, dus
+          krijgt hij dezelfde maten-rij als de pias — mét de langst mogelijke
+          datum (28/12), de variant waarop de oude vorm sneuvelde. */}
+      <Sectie titel="Contextmaten (piet-editie + chips, langste datum)">
+        {MATEN.map((kw) => (
+          <div key={kw} className="kaart-showcase__maat" style={{ ["--maat" as string]: `${kw}px` }}>
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/12"
+              chips={CHIPS}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+      </Sectie>
+
       <Sectie titel="Donkere varianten naast elkaar (96 / 116 / 130px)">
         {[96, 116, 130].map((kw) =>
           donker.map((d, i) => (
@@ -207,7 +225,7 @@ export function KaartShowcase() {
               kw={kw}
               tier={tierFor(1250)}
               editie="piet"
-              editieLabel="🃏 Zwarte Piet · sinds 28/12"
+              editieLabel="🃏 Piet · 28/12"
               naam="Bartholomeus van Wijngaarden"
               chips={CHIPS}
             />

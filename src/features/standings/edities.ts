@@ -21,7 +21,9 @@
 //   piet      🃏 De Zwarte Piet (#645/#185): het rondgaande schande-token,
 //              over alle groepen heen — helemaal achteraan: binnen de
 //              schande wint de weeklens (pias) van het lopende token,
-//              dezelfde parallel als inform › onfire.
+//              dezelfde parallel als inform › onfire. Draagt de overname-
+//              datum als suffix ("🃏 Piet sinds 3/7"), sinds #665 met een
+//              ingekorte titel om op de veldmaat te passen — zie pietDatum.
 //
 // Scoping van de pias (#631) en de Piet (#645, zelfde bewuste keuze): beide
 // zijn per gróep vastgelegd (pias_of_week resp. zwarte_piet), maar de kaart
@@ -35,7 +37,8 @@
 // hun eigen groep, dus kaart en groepsweergave spreken elkaar nooit tegen.
 // Omgekeerd kan een groeps-pias de kaart-editie mislopen (een andere groep
 // had een nog gênantere afgang); daarom heet de editie sinds #655 "Pias van
-// de club" en legt editieUitleg dat op de kaart zelf uit.
+// de club" en legt editieUitleg dat op de kaart zelf uit — net als, sinds
+// #665, wat de kale datum van de Piet betekent.
 // Anders dan de pias kent de Piet geen weekvenster: het token is tijdloos,
 // tot verlossing. Draagt de pias of de Piet een roast-schild (#183), dan
 // zwijgt de kaart en schuift er níemand door — de drager blijft de drager,
@@ -187,27 +190,54 @@ export function editieLabel(
   // hooguit zo lang als "🔥 On Fire · 6 op rij", die op alle kaartmaten past.
   if (editie === "pias")
     return ctx.pias ? `🤡 Pias${piasSuffix(ctx.pias)}` : "🤡 Pias van de club";
-  if (editie === "piet") return `🃏 Zwarte Piet${pietSuffix(ctx.piet)}`;
+  // #665: zelfde ingreep als hierboven voor de pias — mét datum kort de titel
+  // in tot "Piet", zónder blijft de volle naam staan.
+  if (editie === "piet")
+    return ctx.piet ? `🃏 Piet · ${pietDatum(ctx.piet)}` : "🃏 Zwarte Piet";
   return null;
 }
 
-/** Tooltip bij de editie-regel (#655). Alleen de club-pias heeft er een: het
- *  label lijkt op de groeps-"Pias van de week" (banner, dashboard-crest),
- *  maar de kaart-editie is club-breed — dat verschil moet de UI zelf
- *  uitleggen. De andere edities spreken voor zich. */
+/** Tooltip bij de editie-regel (#655). Alleen de twee schand-edities hebben er
+ *  een. De club-pias: het label lijkt op de groeps-"Pias van de week" (banner,
+ *  dashboard-crest), maar de kaart-editie is club-breed — dat verschil moet de
+ *  UI zelf uitleggen. De Piet (#665): op de kaart staat hij als "Piet" met een
+ *  datum — de tooltip geeft de volle naam en wat er op die datum gebeurde. De
+ *  overige edities spreken voor zich.
+ *
+ *  Bewust statisch (geen EditieContext-parameter): twee van de vijf
+ *  aanroepplekken — VersusKaarten (VsKaart uit compare.ts) en ProfileHero —
+ *  krijgen alleen een voorgekookt editielabel en hebben geen ctx bij de hand.
+ *  De exacte datum staat al op de kaart; de tooltip hoeft 'm niet te herhalen. */
 export function editieUitleg(editie: Editie): string | null {
-  return editie === "pias"
-    ? "De gênantste afgang van de hele club deze week — per definitie ook de pias van zijn eigen groep, maar niet elke groeps-pias is de club-pias."
-    : null;
+  if (editie === "pias")
+    return "De gênantste afgang van de hele club deze week — per definitie ook de pias van zijn eigen groep, maar niet elke groeps-pias is de club-pias.";
+  if (editie === "piet")
+    return "Draagt de Zwarte Piet, het rondgaande schande-token van de club, sinds die speeldag — tot hij zich vrijspeelt met een overwinning.";
+  return null;
 }
 
-/** Sinds-aanduiding voor op het kaartvlak (#645): de speeldatum van de
- *  overname-match, kort als d/m — het reden-specifieke getal van de Piet is
- *  hoe lang hij 'm al meedraagt. */
-function pietSuffix(piet: GlobaleZwartePiet | null): string {
-  if (!piet) return "";
+/** Speeldatum van de overname-match, kort als d/m (#645): het reden-specifieke
+ *  getal van de Piet is hoe lang hij 'm al meedraagt.
+ *
+ *  #665 — de maatvoering achter "🃏 Piet · 28/12", gemeten in de dev-showcase
+ *  op de veldmaat (96px) met de langste datum. Het editie-vak is daar 70px,
+ *  maar de échte ruimte is smaller: de regel staat op ~85% hoogte en dáár
+ *  knijpt de schildclip het vlak al tot ~66px. "🃏 Zwarte Piet · sinds 28/12"
+ *  ging daar ruim overheen, en ook enkel "sinds" schrappen (76,7px) of enkel
+ *  de titel inkorten tot "🃏 Piet sinds 28/12" (65,8px, tot op de diagonaal)
+ *  liet niets over. CSS-ruimte is er niet meer: #664 zit al op de
+ *  leesbaarheidsbodem van 6,5px en tracking 0,03em. Dus allebei — dezelfde
+ *  ingreep als #654 bij de pias (mét waarde vervalt de kwalificatie) plús de
+ *  suffix-grammatica van de andere edities. Resultaat: 46,5px, ruim binnen de
+ *  schildpunt, tegen 66,3px voor "🤡 Pias · −12 games". Wat de datum betékent
+ *  staat in de tooltip (editieUitleg).
+ *
+ *  Niet gekozen: dagen-gedragen ("12d") — semantisch mooier, maar dat maakt
+ *  editieLabel klok-afhankelijk (nu puur, zonder Date-injectie getest) en
+ *  geeft de kaart elke dag een ander label. */
+function pietDatum(piet: GlobaleZwartePiet): string {
   const [, m, d] = piet.since.split("-");
-  return ` · sinds ${Number(d)}/${Number(m)}`;
+  return `${Number(d)}/${Number(m)}`;
 }
 
 /** Compacte reden-aanduiding voor op het kaartvlak (#643): het getal dat de
