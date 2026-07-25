@@ -485,10 +485,14 @@
   color: var(--success);
 }
 /* Het enige signaal dat om jóu gaat: warm i.p.v. het groene app-accent, zodat
-   het niet met de statusbadge ernaast concurreert. */
+   het niet met de statusbadge ernaast concurreert. De kleur zit in het vlak en
+   de rand, niet in de tekst: `warn op warn-soft` haalt in het lichte thema maar
+   2,92 (zie scripts/contrast-check.mjs), te weinig voor een badge van 12px.
+   Met --ink erop: 14,4 licht en 11,5 donker. */
 .plan-other__badge.is-jij {
-  color: var(--warn);
+  color: var(--ink);
   background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
 }
 .plan-other__chevron {
   color: var(--ink-soft);
