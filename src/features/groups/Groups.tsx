@@ -20,10 +20,8 @@ import { getMyGroups, createGroup, type GroupSummary } from "./api";
 import {
   getGroupPolls,
   getGroupPollOptions,
-  getGroupPollVotes,
   type PlayPoll,
   type PollOption,
-  type PollVote,
 } from "./pollsApi";
 import { activePolls } from "./pollLogic";
 import "./Groups.css";
@@ -91,17 +89,19 @@ function journeyFor(
   return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
 }
 
+// Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
+// en nooit gelezen — bij 5 groepen 5 nutteloze queries (#674 C1). Het blijft
+// een N+1; één RPC per hub-load is de volgende stap als dat gaat knellen.
 async function loadJourneys(
   groups: GroupSummary[],
-): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }>> {
+): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[] }>> {
   const rows = await Promise.all(
     groups.map(async (g) => {
-      const [polls, options, votes] = await Promise.all([
+      const [polls, options] = await Promise.all([
         getGroupPolls(g.id),
         getGroupPollOptions(g.id),
-        getGroupPollVotes(g.id),
       ]);
-      return [g.id, { polls, options, votes }] as const;
+      return [g.id, { polls, options }] as const;
     }),
   );
   return Object.fromEntries(rows);

@@ -1,3 +1,11 @@
+/* Eigenaar-badge in de paginakop (#674 B4). Staat in de <h1>, dus de strakke
+   letterafstand van .page-title terugdraaien en op de tekst uitlijnen. */
+.group-head__owner {
+  margin-left: var(--sp-2);
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
 /* Reis-CTA: volgende stap in de kernreis (#106). Ook hergebruikt door
    SpelenTab (#364) en VandaagTab (#377) — die mounten alleen binnen
    GroupDetail, dus dit blad is daar altijd geladen. */
