@@ -151,8 +151,12 @@ export type VlakTextuur = "satijn" | "confetti" | "speelkaart";
  *  editie-frames dat aantal niet delen (het Icon-frame wisselt goud en roze af
  *  over vijf stops, de tierladder heeft vier). */
 export interface FutKaartKleuren {
-  /** Metaalgradient van het frame — de stops van .fut-kaart__zijde. */
+  /** Framegradient — de stops van .fut-kaart__zijde. De metaalregisters
+   *  dragen er vier (twee glanspunten), de matte schand-edities twee (#705). */
   frame: ReadonlyArray<readonly [number, string]>;
+  /** Snijkant (#705): dunne bleke lijn langs de bovenrand van het frame — de
+   *  pulpkern van doorgesneden karton. Alleen de pias zet hem. */
+  snijkant?: string;
   liner: string;
   /** Vlakgradient — de stops van de linear-gradient in .fut-kaart__vlak. */
   vlak: ReadonlyArray<readonly [number, string]>;
@@ -190,7 +194,8 @@ export function drawKaartSchild(
   vorm: SchildVorm,
   kleuren: FutKaartKleuren,
 ): { fx: number; fy: number; fw: number; fh: number } {
-  // Frame (metaal-gradient met twee glanspunten, ~160°).
+  // Frame op ~160°: bij de metaalregisters vier stops met twee glanspunten,
+  // bij de matte schand-edities twee vlakke tonen (#705).
   const frame = ctx.createLinearGradient(x, y, x + w * 0.34, y + h * 0.94);
   for (const [offset, kleur] of kleuren.frame) frame.addColorStop(offset, kleur);
   ctx.save();
@@ -201,6 +206,17 @@ export function drawKaartSchild(
   ctx.fillStyle = frame;
   ctx.fill();
   ctx.restore();
+
+  // Snijkant (#705): de bleke pulpkern langs de bovenrand — spiegel van de
+  // 2px-laag in de CSS (3 canvas-px, de vaste ~1,4×-kalibratie).
+  if (kleuren.snijkant) {
+    ctx.save();
+    schildPad(ctx, x, y, w, h, vorm);
+    ctx.clip();
+    ctx.fillStyle = kleuren.snijkant;
+    ctx.fillRect(x, y, w, 3);
+    ctx.restore();
+  }
 
   // Liner (donkere binnenrand).
   schildPad(ctx, x + 6, y + 6, w - 12, h - 12, vorm);
@@ -297,36 +313,93 @@ export function drawKaartSchild(
   return { fx, fy, fw, fh };
 }
 
-/** Diagonale ribbels van de twee schand-edities: de
- *  `repeating-linear-gradient(-38deg, … 0 5px, transparent 5px 12px)` die
- *  pias én Piet hun matte, papieren vlak geeft. Bij -38° loopt de gradient-as
- *  linksboven, dus de banen zelf klimmen naar rechts (dx = -0.78 × hoogte over
- *  de volle hoogte). De maten zijn ~1,4× de CSS-px, dezelfde verhouding die
- *  het satijn hierboven op posterformaat aanhoudt. */
-function drawRibbels(
+/** Deterministische PRNG (mulberry32) voor de vezelkorrel: de poster moet bij
+ *  elke export dezelfde pixels geven (en de kaart naast een eerdere export
+ *  dezelfde korrel), dus nooit Math.random(). */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Mottling (#705): twee grote, zachte vlekken onder de korrel — spiegel van
+ *  de twee grote radial-gradients in de CSS ([u, v, rx, ry] als fracties van
+ *  het vlak; transparant op 60% van de ellips, zoals daar). */
+function drawMottling(
   ctx: CanvasRenderingContext2D,
   fx: number,
   fy: number,
   fw: number,
   fh: number,
-  kleur: string,
 ) {
-  const helling = fh * 0.78;
-  ctx.strokeStyle = kleur;
-  ctx.lineWidth = 7;
-  for (let i = 0; i < fw + helling; i += 17) {
-    ctx.beginPath();
-    ctx.moveTo(fx + i, fy);
-    ctx.lineTo(fx + i - helling, fy + fh);
-    ctx.stroke();
+  const vlekken: ReadonlyArray<
+    readonly [number, number, number, number, string]
+  > = [
+    [0.28, 0.22, 1.2, 0.9, "rgba(58, 37, 12, 0.05)"],
+    [0.78, 0.74, 1.0, 0.8, "rgba(255, 246, 222, 0.05)"],
+  ];
+  for (const [u, v, rx, ry, kleur] of vlekken) {
+    const straal = rx * fw * 0.6;
+    ctx.save();
+    ctx.translate(fx + u * fw, fy + v * fh);
+    ctx.scale(1, (ry * fh) / (rx * fw));
+    const vlek = ctx.createRadialGradient(0, 0, 0, 0, 0, straal);
+    vlek.addColorStop(0, kleur);
+    vlek.addColorStop(1, rgba(kleur, 0));
+    ctx.fillStyle = vlek;
+    ctx.fillRect(-straal, -straal, straal * 2, straal * 2);
+    ctx.restore();
   }
 }
 
-/** Kraftkarton-weefsel van de pias (#631): ribbels met vier zachte
- *  confetti-stipjes erop. De CSS-radiussen (2,4–3,2%) rekenen tegen de
- *  gradient-straal (farthest-corner ≈ 1,25–1,39 × de vlakbreedte); hier
- *  uitgerekend als fractie van die breedte, met dezelfde zachte rand
- *  (kleurstop → transparant op ~1,3 × de radius). */
+/** Vezelkorrel (#705): spiegel van de 28px-SVG-tegel in de CSS — donkere
+ *  vezelstreepjes en lichtere pulp-stipjes, om en om. De tegel draagt 14
+ *  spikkels per 28×28 CSS-px; hier dezelfde dichtheid over het vlak op de
+ *  vaste ~1,4×-kalibratie (vezel ~2,6 CSS-px → 3,6, breedte 0,8 → 1,1,
+ *  stip-r 0,7 → 1). Geen tegel-herhaling maar een uitgerolde puntwolk: op
+ *  posterformaat zou de herhaling van 39px zichtbaar gaan rasteren. */
+function drawVezelkorrel(
+  ctx: CanvasRenderingContext2D,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+) {
+  const rnd = mulberry32(0x631705);
+  const aantal = Math.round((((fw / 1.4) * (fh / 1.4)) / (28 * 28)) * 14);
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = "rgba(58, 37, 12, 0.1)";
+  ctx.fillStyle = "rgba(255, 246, 222, 0.35)";
+  for (let i = 0; i < aantal; i++) {
+    const px = fx + rnd() * fw;
+    const py = fy + rnd() * fh;
+    if (i % 2 === 0) {
+      const hoek = rnd() * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(hoek) * 3.6, py + Math.sin(hoek) * 3.6);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(px, py, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/** Kraftkarton-weefsel van de pias (#631/#705): mottling en vezelkorrel met
+ *  vier confetti-stipjes erop, als gedrukte inkt — zachtere rand en lagere
+ *  alpha dan #631. De CSS-radiussen rekenen tegen de gradient-straal
+ *  (farthest-corner ≈ 1,25–1,39 × de vlakbreedte); hier uitgerekend als
+ *  fractie van die breedte, met de veer van de CSS (vol tot ~55%,
+ *  transparant op 1,5 × de radius). */
 function drawConfetti(
   ctx: CanvasRenderingContext2D,
   fx: number,
@@ -334,34 +407,37 @@ function drawConfetti(
   fw: number,
   fh: number,
 ) {
-  drawRibbels(ctx, fx, fy, fw, fh, "rgba(58, 37, 12, 0.07)");
+  drawMottling(ctx, fx, fy, fw, fh);
+  drawVezelkorrel(ctx, fx, fy, fw, fh);
   const stippen: ReadonlyArray<
     readonly [number, number, number, string]
   > = [
-    [0.24, 0.16, 0.045, "rgba(140, 42, 23, 0.3)"],
-    [0.76, 0.28, 0.035, "rgba(31, 92, 64, 0.26)"],
-    [0.38, 0.76, 0.034, "rgba(31, 74, 128, 0.24)"],
-    [0.84, 0.64, 0.029, "rgba(140, 42, 23, 0.24)"],
+    [0.24, 0.16, 0.045, "rgba(140, 42, 23, 0.24)"],
+    [0.76, 0.28, 0.035, "rgba(31, 92, 64, 0.21)"],
+    [0.38, 0.76, 0.034, "rgba(31, 74, 128, 0.19)"],
+    [0.84, 0.64, 0.029, "rgba(140, 42, 23, 0.19)"],
   ];
   for (const [u, v, r, kleur] of stippen) {
     const cx = fx + u * fw;
     const cy = fy + v * fh;
     const straal = r * fw;
-    const stip = ctx.createRadialGradient(cx, cy, 0, cx, cy, straal * 1.3);
+    const stip = ctx.createRadialGradient(cx, cy, 0, cx, cy, straal * 1.5);
     stip.addColorStop(0, kleur);
-    stip.addColorStop(1 / 1.3, kleur);
+    stip.addColorStop(0.55, kleur);
     stip.addColorStop(1, rgba(kleur, 0));
     ctx.fillStyle = stip;
     ctx.beginPath();
-    ctx.arc(cx, cy, straal * 1.3, 0, Math.PI * 2);
+    ctx.arc(cx, cy, straal * 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
-/** Speelkaart-weefsel van de Zwarte Piet (#645): ribbels met de vier
- *  suit-pips erop. Coördinaten en tekengrootte komen 1-op-1 uit de
- *  inline-SVG-laag in FutKaart.css (viewBox 100×139 — precies de
- *  kaartverhouding, dus één schaalfactor volstaat). */
+/** Speelkaart-weefsel van de Zwarte Piet (#645/#705): linnen-finish met de
+ *  vier suit-pips erop. Het linnen is de spiegel van de twee gekruiste
+ *  repeating-linear-gradients (0°/90°, 1px lijn op periode 3) — op de vaste
+ *  ~1,4×-kalibratie: lijn 1,5, periode 4. Pip-coördinaten en tekengrootte
+ *  komen 1-op-1 uit de inline-SVG-laag in FutKaart.css (viewBox 100×139 —
+ *  precies de kaartverhouding, dus één schaalfactor volstaat). */
 function drawSpeelkaart(
   ctx: CanvasRenderingContext2D,
   fx: number,
@@ -369,7 +445,20 @@ function drawSpeelkaart(
   fw: number,
   fh: number,
 ) {
-  drawRibbels(ctx, fx, fy, fw, fh, "rgba(32, 29, 24, 0.05)");
+  ctx.strokeStyle = "rgba(32, 29, 24, 0.045)";
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < fh; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(fx, fy + i);
+    ctx.lineTo(fx + fw, fy + i);
+    ctx.stroke();
+  }
+  for (let i = 0; i < fw; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(fx + i, fy);
+    ctx.lineTo(fx + i, fy + fh);
+    ctx.stroke();
+  }
   const pips: ReadonlyArray<readonly [number, number, string, string]> = [
     [11, 28, "♠", "rgba(32, 29, 24, 0.2)"],
     [77, 42, "♥", "rgba(168, 39, 27, 0.22)"],
@@ -423,6 +512,8 @@ export interface KaartSkin {
  *  (56% voor de lichte registers, 60% voor de donkere). */
 interface EditieRegister {
   frame: ReadonlyArray<readonly [number, string]>;
+  /** Snijkant (#705) — de --kaart-snijkant-token; alleen de pias. */
+  snijkant?: string;
   liner: string;
   vlak: readonly [string, string, string];
   vlakMid: number;
@@ -444,7 +535,7 @@ interface EditieRegister {
  *  die kalibratie houden we aan, ook voor de edities. */
 const BASIS_SHEEN = "rgba(255, 255, 255, 0.28)";
 
-/** De zes editie-registers — waarden spiegelen FutKaart.css (regels 637-912)
+/** De zes editie-registers — waarden spiegelen FutKaart.css (regels 637-951)
  *  en, voor de Icon, de --bigdaddy-kaart-/--bigdaddy-frame-tokens uit
  *  index.css. Bewaakt door de synctest in futKaartCanvas.test.ts. */
 const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
@@ -524,36 +615,38 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "rgba(255, 160, 92, 0.45)",
     editieKleur: "#ffb35c",
   },
-  // Pias (#631): mat kraftkarton met confetti — geen gloed, geen metaal.
+  // Pias (#631/#705): mat kraftkarton met confetti — vlak frame met bleke
+  // snijkant, warme diffuse waas i.p.v. de witte specular-baan.
   pias: {
     frame: [
-      [0, "#c6a06a"],
-      [0.45, "#8a6534"],
-      [0.7, "#d4b384"],
-      [1, "#6e5128"],
+      [0, "#a8814e"],
+      [1, "#987040"],
     ],
+    snijkant: "#d9c193",
     liner: "#4a3315",
     vlak: ["#dcbd85", "#c9a468", "#a37e46"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
+    sheen: "rgba(255, 240, 214, 0.06)",
+    sheenSpreiding: 0.2,
     ink: "#3a250c",
     inkSoft: "#6b4d24",
     lijn: "#8a6534",
     editieKleur: "#8c2a17",
     textuur: "confetti",
   },
-  // Zwarte Piet (#645): speelkaart-wit met zwart lakframe en bone liner.
+  // Zwarte Piet (#645/#705): speelkaart-wit met vlak mat lakframe; de bone
+  // liner is de witte snijkant van het kaartkarton. Sheen uit.
   piet: {
     frame: [
-      [0, "#3c3a36"],
-      [0.45, "#100f0d"],
-      [0.7, "#4a4742"],
-      [1, "#050505"],
+      [0, "#23211d"],
+      [1, "#131211"],
     ],
     liner: "#efe7d2",
     vlak: ["#f4eedb", "#e6ddc2", "#cfc4a4"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
+    sheen: "rgba(255, 255, 255, 0)",
     ink: "#201d16",
     inkSoft: "#5d5645",
     lijn: "#a2977a",
@@ -620,6 +713,7 @@ export function kaartSkin(
     return {
       kleuren: {
         frame: r.frame,
+        snijkant: r.snijkant,
         liner: r.liner,
         vlak: [
           [0, r.vlak[0]],

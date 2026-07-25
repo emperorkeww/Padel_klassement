@@ -10,6 +10,9 @@ const lees = (pad: string) =>
   readFileSync(fileURLToPath(new URL(pad, import.meta.url)), "utf8");
 const FUT_CSS = lees("../../features/rating/components/FutKaart.css");
 const INDEX_CSS = lees("../../app/index.css");
+// De Schandpaal (#682) deelt het kraftpapier van de pias letterlijk — de
+// vezeltegel-pariteitstest onderaan bewaakt dat (#705).
+const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css");
 
 const EDITIES: KaartEditie[] = [
   "icon",
@@ -120,6 +123,12 @@ describe("kaartSkin", () => {
     expect(piet.kleuren.textuur).toBe("speelkaart");
     // En geen radiale topgloed: die hebben ze in de CSS niet.
     expect(pias.kleuren.glow).toBe("rgba(255, 255, 255, 0)");
+    // Mat materiaal (#705): ook geen witte specular-baan. De pias draagt een
+    // warme waas op 6% over een brede spreiding (de 30/50/70-::before in de
+    // CSS), de Piet niets — hand-gespiegeld, net als de gradient-stops.
+    expect(pias.kleuren.sheen).toBe("rgba(255, 240, 214, 0.06)");
+    expect(pias.kleuren.sheenSpreiding).toBe(0.2);
+    expect(piet.kleuren.sheen).toBe("rgba(255, 255, 255, 0)");
   });
 
   it("geeft de shimmer-edities hun bredere sheen-baan", () => {
@@ -181,6 +190,46 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       token(blok, "--kaart-mid"),
       token(blok, "--kaart-lo"),
     ]);
+  });
+
+  it.each(["pias", "piet"] as const)(
+    "%s: mat frame i.p.v. metaal (#705)",
+    (editie) => {
+      // Twee vlakke stops, geen glanspunten — de frame-tokens staan in het
+      // editie-blok en worden hier dus wél uit de CSS gelezen.
+      const blok = editieBlok(editie);
+      const { kleuren } = kaartSkin("goud", editie);
+      expect(kleuren.frame).toEqual([
+        [0, token(blok, "--kaart-frame-hi")],
+        [1, token(blok, "--kaart-frame-lo")],
+      ]);
+      if (editie === "pias") {
+        expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
+      } else {
+        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
+        // witte kern van het kaartkarton.
+        expect(kleuren.snijkant).toBeUndefined();
+        expect(kleuren.liner).toBe("#efe7d2");
+      }
+    },
+  );
+
+  it("pias-kaart en Schandpaal delen letterlijk dezelfde vezeltegel (#705)", () => {
+    // Zelfde papier op kaart en klassement: de 28px-SVG-tegel moet in beide
+    // stylesheets byte-gelijk zijn, anders lopen de twee kraftvlakken stil
+    // uit elkaar (de Schandpaal heeft geen canvas-tegenhanger of synctest).
+    const tegel = (css: string, blok: RegExp): string | undefined => {
+      const m = blok.exec(css);
+      expect(m).not.toBeNull();
+      return /url\("(data:image\/svg\+xml[^"]+)"\)/.exec(m![0])?.[1];
+    };
+    const vanKaart = tegel(
+      FUT_CSS,
+      /\.fut-kaart--pias \.fut-kaart__vlak\s*\{[^}]*\}/,
+    );
+    const vanSchandpaal = tegel(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/);
+    expect(vanKaart).toBeDefined();
+    expect(vanKaart).toBe(vanSchandpaal);
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {
