@@ -229,7 +229,7 @@ describe("<SpelenTab />", () => {
     ).not.toBeInTheDocument();
   });
 
-  // #524: de vendetta-kaart verhuisde van de Stand- naar de Spelen-tab.
+  // #524: de vendetta-kaart verhuisde van de Stand- naar de Teams-tab.
   it("toont de vendetta-kaart met een uitklapbare uitleg (#524)", async () => {
     renderTab();
 

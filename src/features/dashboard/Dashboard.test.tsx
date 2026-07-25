@@ -121,7 +121,7 @@ describe("<Dashboard />", () => {
     ).toHaveAttribute("href", "/banen");
   });
 
-  it("stuurt de genereer-knop bij één groep direct naar de Spelen-tab (#73)", async () => {
+  it("stuurt de genereer-knop bij één groep direct naar de Teams-tab (#73)", async () => {
     renderPage();
     const knop = await screen.findByRole("link", {
       name: /wedstrijden genereren/i,

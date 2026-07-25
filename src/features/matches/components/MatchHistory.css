@@ -1,5 +1,5 @@
 /* Dag-kopjes boven de per-dag gegroepeerde matchlijst. Woont bij MatchHistory
-   zelf (#342) zodat de stijl óók laadt op de groep-Matches-tab, niet alleen op
+   zelf (#342) zodat de stijl óók laadt op de groep-Historie-tab, niet alleen op
    de globale /matches-route. */
 .match-day + .match-day {
   margin-top: var(--sp-4);
