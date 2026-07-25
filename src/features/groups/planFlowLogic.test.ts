@@ -161,4 +161,40 @@ describe("focusPoll", () => {
     expect(focusPoll(active, opts, today)?.id).toBe("geboekt");
     expect(focusPoll([], [], today)).toBeNull();
   });
+  // Gedeelde link (#675): ?poll=<id> zet die speeldag in focus.
+  describe("gedeelde link", () => {
+    const active = [
+      poll({ id: "vandaag", status: "booked", locked_option_id: "opt-vandaag" }),
+      poll({ id: "open", status: "open" }),
+      poll({ id: "later", status: "booked", locked_option_id: "opt-later" }),
+    ];
+    const opts = [
+      option({ id: "opt-vandaag", poll_id: "vandaag", date: today }),
+      option({ id: "opt-open", poll_id: "open", date: "2026-07-12" }),
+      option({ id: "opt-later", poll_id: "later", date: "2026-07-20" }),
+    ];
+
+    it("wint van de speeldag van vandaag", () => {
+      // Zonder link zou "vandaag" winnen; wie op de link tikt wil "later".
+      expect(focusPoll(active, opts, today)?.id).toBe("vandaag");
+      expect(focusPoll(active, opts, today, "later")?.id).toBe("later");
+    });
+
+    it("kan ook een poll kiezen die actie nodig heeft", () => {
+      expect(focusPoll(active, opts, today, "open")?.id).toBe("open");
+    });
+
+    it("valt stil terug als de poll niet meer actief is", () => {
+      // Verlopen, geannuleerd of uit een andere groep: geen lege tab, gewoon
+      // de normale keuze.
+      expect(focusPoll(active, opts, today, "bestaat-niet")?.id).toBe("vandaag");
+      expect(focusPoll([], [], today, "bestaat-niet")).toBeNull();
+    });
+
+    it("negeert een lege of ontbrekende parameter", () => {
+      expect(focusPoll(active, opts, today, "")?.id).toBe("vandaag");
+      expect(focusPoll(active, opts, today, null)?.id).toBe("vandaag");
+      expect(focusPoll(active, opts, today, undefined)?.id).toBe("vandaag");
+    });
+  });
 });

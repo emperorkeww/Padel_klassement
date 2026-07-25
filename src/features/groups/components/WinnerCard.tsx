@@ -11,6 +11,7 @@ import { shareOrCopyText } from "@/lib/utils/shareText";
 import { displayName } from "@/features/profiles/api";
 import {
   markPollBooked,
+  pollShareUrl,
   setPollAccessCode,
   type PlayPoll,
   type PollOption,
@@ -143,6 +144,10 @@ export function WinnerCard({
       const outcome = await shareOrCopyText({
         title: `Padel ${shortDay(o.date)}`,
         text: lines.join("\n"),
+        // Deep-link naar déze speeldag (#675) — als los url-veld, zodat het
+        // deelvenster er een nette preview van maakt en het klembord 'm onder
+        // de tekst zet. Alleen bruikbaar voor groepsleden; dat is de bedoeling.
+        url: pollShareUrl(poll.group_id, poll.id),
       });
       if (outcome === "clipboard") toast.success("Tekst gekopieerd naar klembord.");
     } catch (err) {

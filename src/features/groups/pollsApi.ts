@@ -31,6 +31,22 @@ export type PlayPoll = {
   access_code: string | null;
 };
 
+/**
+ * Absolute deep-link naar één speeldag (#675) — spiegel van slotShareUrl. Tot
+ * nu toe was een poll niet adresseerbaar: je kwam op ?tab=plannen uit en
+ * focusPoll besliste wélke speeldag je zag. Met `poll` in de URL opent de
+ * gedeelde speeldag zelf.
+ *
+ * Member-only, en bewust zo: play_polls_select_member laat alleen groepsleden
+ * de poll lezen. Dat dekt "even doorsturen in de groepschat" zonder nieuwe
+ * publieke oppervlakte; voor iemand buiten de groep is de groepsuitnodiging
+ * (/groepen/join/:token) de weg.
+ */
+export function pollShareUrl(groupId: string, pollId: string): string {
+  const params = new URLSearchParams({ tab: "plannen", poll: pollId });
+  return `${window.location.origin}/groepen/${groupId}?${params.toString()}`;
+}
+
 /** De op een poll opgeslagen locatie als Club-object (voor de UI/availability). */
 export function pollClub(poll: PlayPoll): Club {
   return {

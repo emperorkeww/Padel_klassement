@@ -116,9 +116,9 @@ function PlanTabHarness({ matches }: { matches: Match[] }) {
   );
 }
 
-function renderTab(matches: Match[] = []) {
+function renderTab(matches: Match[] = [], zoekstring = "") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/groepen/g1${zoekstring}`]}>
       <ToastProvider>
         <PlanTabHarness matches={matches} />
       </ToastProvider>
@@ -225,5 +225,29 @@ describe("<PlanTab />", () => {
     await userEvent.click(screen.getByRole("button", { name: /sluiten/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(sessionStorage.getItem("poll-wizard:g1")).toBeNull();
+  });
+
+  // Gedeelde speeldag-link (#675): ?poll=<id> opent díé speeldag.
+  it("zet de gedeelde poll uit de URL in focus", async () => {
+    // Zonder link wint de open poll (er is nog actie nodig); mét link hoort
+    // de geboekte speeldag groot in beeld te staan.
+    renderTab([], "?tab=plannen&poll=poll-booked");
+
+    expect(
+      await screen.findByRole("heading", { name: /agenda & delen/i }),
+    ).toBeInTheDocument();
+    // De open poll is nu juist de ingeklapte "andere speeldag".
+    expect(screen.getByText(/andere speeldagen \(1\)/i)).toBeInTheDocument();
+  });
+
+  it("valt stil terug op de gewone keuze bij een onbekende poll-id", async () => {
+    renderTab([], "?tab=plannen&poll=bestaat-niet");
+
+    expect(
+      await screen.findByRole("heading", { name: /speeldag-poll/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
+    ).toBeInTheDocument();
   });
 });
