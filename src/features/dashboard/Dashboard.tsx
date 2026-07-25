@@ -74,6 +74,7 @@ import {
   rivalVerdict,
   rivalVerdictLabel,
   deriveEvening,
+  heroThema,
 } from "./dashboardHelpers";
 import { WeekMissions } from "./components/WeekMissions";
 import { HeroCrest } from "./components/HeroCrest";
@@ -205,6 +206,16 @@ export function Dashboard() {
         ? `in ${piasGroepNaam}`
         : "in je groep";
   const roastSchild = myProfile?.roast_schild ?? false;
+  // Skin van de hero (#613/#644): de prioriteit tussen de vier statussen en de
+  // rol van het roast-schild zitten in heroThema, zodat de regel getest is en
+  // op één plek staat.
+  const thema = heroThema({
+    dictator: isDictator,
+    bigDaddy: isBigDaddy,
+    pias: isWeekPias,
+    piet: isZwartePiet,
+    schild: roastSchild,
+  });
   // Naam direct tonen zonder e-mail-flits: zolang de profielen laden valt de
   // begroeting terug op de gecachete naam van een eerder bezoek.
   const myName = myProfile
@@ -484,18 +495,14 @@ export function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* De hero draagt de status van de speler zelf (#613): keizerlijk donker
-          voor de zittende dictator, roze/goud voor de Big Daddy. Kleur is nooit
-          de enige indicator — de HeroCrest-chips hieronder blijven staan. */}
-      <section
-        className={`hero${
-          isDictator
-            ? " hero--dictator"
-            : isBigDaddy
-              ? " hero--bigdaddy"
-              : ""
-        }`}
-      >
+      {/* De hero draagt de status van de speler zelf (#613, uitgebreid in
+          #644): keizerlijk donker voor de zittende dictator, roze/goud voor de
+          Big Daddy, kraftkarton voor de Pias van de week en de speelkaart voor
+          de Zwarte Piet. Welk thema wint bij meerdere statussen — en waarom een
+          roast-schild de schande-thema's dooft — staat in heroThema. Kleur is
+          nooit de enige indicator: de HeroCrest-chips hieronder blijven staan,
+          ook die van het verliezende thema. */}
+      <section className={`hero${thema ? ` hero--${thema}` : ""}`}>
         <div className="hero__main">
           {/* Primaire ingang naar de profielweergave (#706). De avatar is de
               conventionele gesture, maar een klikbare avatar alleen is niet
