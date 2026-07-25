@@ -40,10 +40,22 @@
   border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
-.group-log__hint {
-  margin: 0;
+.group-log__intro {
   flex: 1;
   min-width: 12rem;
+}
+/* Kop zoals de andere blokken die hebben (#674 B5) — dit was het enige blok
+   zonder titel, terwijl het op de hub wél "Losse match" heet. */
+.group-log__title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.group-log__hint {
+  margin: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }

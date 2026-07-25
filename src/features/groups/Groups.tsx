@@ -93,16 +93,17 @@ export function Groups() {
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   // Het aanmaakformulier zit achter een knop (#674 A5), behalve als je nog
-  // geen groep hebt — dan is dít de actie van de pagina.
+  // geen groep hebt — dan is dít de actie van de pagina. Afgeleid tijdens de
+  // render en niet in een effect, anders verschijnt het formulier één frame
+  // ná de lege staat.
   const [newOpen, setNewOpen] = useState(false);
   const noGroups = !groups.loading && !groups.error && list.length === 0;
+  const showNew = newOpen || noGroups;
+  // Zelf uitklappen zet de cursor meteen in het naamveld; bij een lege hub
+  // niet, want dan zou de pagina bij het laden je focus kapen.
   useEffect(() => {
-    if (noGroups) setNewOpen(true);
-  }, [noGroups]);
-  // Uitklappen zet de cursor meteen in het naamveld.
-  useEffect(() => {
-    if (newOpen && !noGroups) nameRef.current?.focus();
-  }, [newOpen, noGroups]);
+    if (newOpen) nameRef.current?.focus();
+  }, [newOpen]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -231,7 +232,7 @@ export function Groups() {
       {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
           even zwaar als de groepen zelf (#674 A5). Achter een knop dus — met
           nul groepen staat hij meteen open, want dan ís dit de actie. */}
-      {newOpen ? (
+      {showNew ? (
         <section className="card">
           <h2 className="card__title">Nieuwe groep</h2>
           <form className="row-between account-form" onSubmit={create}>

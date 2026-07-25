@@ -62,10 +62,26 @@ export function GroupDetail() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
+  // De actieve tab leeft in de URL: refresh-bestendig en deelbaar
+  // ("kijk even bij de stand"). Staat bewust vóór de queries: een directe
+  // ?tab=stand moet de stand-data meteen aanzetten (zie standSeen).
+  const [params, setParams] = useSearchParams();
+  const urlView = viewFromParam(params.get("tab"));
+
+  // #674 C2 — de pagina deed dertien queries bij mount, ook als je alleen een
+  // uitslag kwam invullen. Wat alleen de Stand-tab voedt wacht tot je die tab
+  // opent; daarna blijft hij aan staan, zodat heen en weer klikken niets
+  // herlaadt. De rating-historie blijft wél eager: die voedt ook de upsets op
+  // Vandaag/Historie en het dagoverzicht.
+  const [standOpened, setStandOpened] = useState(false);
+  const standSeen = standOpened || urlView === "stand";
+
   const group = useAsync(() => getGroup(id), [id]);
   const members = useAsync(() => getGroupMembers(id), [id]);
   const matches = useAsync(() => getGroupMatches(id), [id]);
-  const standings = useAsync(() => getGroupPlayerStandings(id), [id]);
+  const standings = useAsync(() => getGroupPlayerStandings(id), [id], {
+    enabled: standSeen,
+  });
   const piet = useAsync(getZwartePiet, []);
   const profiles = useAsync(getProfilesMap, []);
   const teams = useAsync(getTeamsMap, []);
@@ -75,14 +91,17 @@ export function GroupDetail() {
   const myGroups = useAsync(getMyGroups, []);
 
   // Voor het rating-klassement op de Stand-tab (#52).
-  const ratings = useAsync(getPlayerRatings, []);
+  const ratings = useAsync(getPlayerRatings, [], { enabled: standSeen });
   const histories = useAsync(getAllRatingHistories, []);
 
   // Toto (#116): tips + voorspellersklassement van deze groep.
-  const predictions = useAsync(() => getGroupPredictions(id), [id]);
+  const predictions = useAsync(() => getGroupPredictions(id), [id], {
+    enabled: standSeen,
+  });
   const predictionStandings = useAsync(
     () => getGroupPredictionStandings(id),
     [id],
+    { enabled: standSeen },
   );
 
   // Speeldag-polls: voeden de Plannen-tab én de landingstab (#674 A3). Ze
@@ -119,10 +138,6 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  // De actieve tab leeft in de URL: refresh-bestendig en deelbaar
-  // ("kijk even bij de stand").
-  const [params, setParams] = useSearchParams();
-  const urlView = viewFromParam(params.get("tab"));
   // Zonder ?tab bepaalt de reis-status waar je landt (#674 A3) — voorheen was
   // dat altijd Vandaag, ook op een dag zonder plan. Eén keer beslissen en
   // vasthouden: daarna is de tab van de gebruiker.
@@ -268,6 +283,12 @@ export function GroupDetail() {
   useEffect(() => {
     if (!urlView && landed === null && landingTab !== null) setLanded(landingTab);
   }, [urlView, landed, landingTab]);
+
+  // Eenrichtingsschakelaar: vanaf het eerste bezoek aan Stand blijft de zware
+  // klassement-data laden, ook als je later weer wegklikt (#674 C2).
+  useEffect(() => {
+    if (view === "stand") setStandOpened(true);
+  }, [view]);
 
   // Tabs in reis-volgorde (#106, #674 A1): plannen → vandaag → stand.
   // Tellers alleen tonen als er iets te tellen valt; ze zitten in de
@@ -429,7 +450,16 @@ export function GroupDetail() {
           />
         )}
 
-        {view === "stand" && (
+        {/* Eerste keer Stand: de klassement-data komt nu pas binnen (#674 C2),
+            dus een skeleton in plaats van een lege tabel. Bij een reload (data
+            staat er al) blijft de bestaande stand gewoon staan. */}
+        {view === "stand" && standings.data === null && standings.loading && (
+          <div className="card">
+            <Skeleton rows={4} />
+          </div>
+        )}
+
+        {view === "stand" && !(standings.data === null && standings.loading) && (
           <GroupStandTab
             matches={matches.data ?? []}
             completedMatches={completedMatches}

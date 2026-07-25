@@ -127,12 +127,20 @@ export function VandaagTab({
     />
   );
 
+  // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
+  // het bleef hetzelfde ding, maar het heette hier anders en had als enige
+  // blok geen titel.
   const losseMatch = (
-    <section className="group-log" aria-label="Losse partij">
-      <p className="group-log__hint">
-        Losse partij gespeeld of eentje inplannen? Log 'm hier — hij telt mee
-        in de groepsstand en de avondsamenvatting.
-      </p>
+    <section className="group-log" aria-labelledby="group-log-title">
+      <div className="group-log__intro">
+        <h3 className="group-log__title" id="group-log-title">
+          Losse partij
+        </h3>
+        <p className="group-log__hint">
+          Buiten de rondes om gespeeld of eentje inplannen? Telt gewoon mee in
+          de groepsstand en de avondsamenvatting.
+        </p>
+      </div>
       <div className="group-log__actions">
         <button
           className="btn btn--sm"
@@ -142,7 +150,7 @@ export function VandaagTab({
             setLogOpen(true);
           }}
         >
-          + Log match
+          + Match loggen
         </button>
         <button
           className="btn btn--sm"
@@ -152,7 +160,7 @@ export function VandaagTab({
             setLogOpen(true);
           }}
         >
-          Plan match
+          Match plannen
         </button>
       </div>
     </section>
