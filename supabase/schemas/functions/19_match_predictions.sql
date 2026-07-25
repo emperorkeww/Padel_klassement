@@ -92,6 +92,25 @@ begin
   if m.id is null then
     raise exception 'match bestaat niet';
   end if;
+
+  -- Herstel na een team-merge (#681): claim_guest_player verhangt een match
+  -- naar een ander team, waardoor bestaande tips naar een team wijzen dat niet
+  -- meer meespeelt. Zo'n bungelende verwijzing mag rechtgezet worden naar een
+  -- team dat er wél in zit — ook op een al afgeronde match, anders zou de
+  -- toto-historie sneuvelen. Strikt afgebakend: alleen het team verandert, de
+  -- winkans-snapshot en de toegekende punten blijven staan, en de oude waarde
+  -- moet écht bungelen. Een tipper kan hier niets mee winnen: zijn punten zijn
+  -- al toegekend en wijzigen niet mee.
+  if tg_op = 'UPDATE'
+     and new.match_id = old.match_id
+     and new.player_id = old.player_id
+     and new.group_id = old.group_id
+     and new.win_chance = old.win_chance
+     and new.points is not distinct from old.points
+     and old.predicted_team_id not in (m.team_a_id, m.team_b_id)
+     and new.predicted_team_id in (m.team_a_id, m.team_b_id) then
+    return new;
+  end if;
   if m.group_id is null or m.group_id is distinct from new.group_id then
     raise exception 'tippen kan alleen op groepsmatches';
   end if;
@@ -151,6 +170,31 @@ create trigger match_predictions_delete_guard
 -- gecorrigeerd wordt) worden alle tips van die match beoordeeld. Juiste tip
 -- krijgt prediction_points(win_chance); fout of gelijkspel = 0. Wordt de
 -- afronding teruggedraaid, dan gaat de beoordeling weer open (null).
+-- Beoordeelt de tips van één afgeronde match. Apart van de trigger, omdat
+-- claim_guest_player (#681) na het verhangen van een team de tips meeverhuist
+-- en ze daarna opnieuw moet laten scoren: tijdens de matches-UPDATE wees de tip
+-- nog naar het opgeruimde team en zou hij onterecht als 'mis' eindigen.
+create or replace function public._grade_completed_match(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.match_predictions p
+     set points = case
+           when m.winner_team_id is not null
+            and p.predicted_team_id = m.winner_team_id
+           then public.prediction_points(p.win_chance)
+           else 0
+         end
+    from public.matches m
+   where m.id = p_match and m.status = 'completed' and p.match_id = m.id;
+end;
+$$;
+
+revoke execute on function public._grade_completed_match(uuid) from public;
+
 create or replace function public.grade_match_predictions()
 returns trigger
 language plpgsql
@@ -159,14 +203,7 @@ set search_path = ''
 as $$
 begin
   if new.status = 'completed' then
-    update public.match_predictions p
-       set points = case
-             when new.winner_team_id is not null
-              and p.predicted_team_id = new.winner_team_id
-             then public.prediction_points(p.win_chance)
-             else 0
-           end
-     where p.match_id = new.id;
+    perform public._grade_completed_match(new.id);
   elsif old.status = 'completed' then
     update public.match_predictions p
        set points = null
