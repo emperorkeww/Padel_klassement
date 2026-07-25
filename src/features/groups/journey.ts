@@ -10,6 +10,9 @@ import type { PlayPoll, PollOption } from "./pollsApi";
 export type JourneyTab = "plannen" | "vandaag";
 
 export type Journey = {
+  /** Decoratief icoon vóór het label; los van de tekst zodat de screenreader
+   *  "Poll loopt" hoort en niet "staafdiagram Poll loopt" (#674 B6). */
+  icon: string | null;
   label: string;
   /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
   tone: "act" | "info" | "idle";
@@ -33,21 +36,33 @@ export function journeyFor(
     ? (options.find((o) => o.id === active.locked_option_id) ?? null)
     : null;
   if (active?.status === "open") {
-    return { label: "📊 Poll loopt — stem mee", tone: "act", tab: "plannen" };
+    return {
+      icon: "📊",
+      label: "Poll loopt — stem mee",
+      tone: "act",
+      tab: "plannen",
+    };
   }
   if (active?.status === "locked" && locked) {
     return {
-      label: `📆 ${shortDay(locked.date)} gekozen — boek de baan`,
+      icon: "📆",
+      label: `${shortDay(locked.date)} gekozen — boek de baan`,
       tone: "act",
       tab: "plannen",
     };
   }
   if (active?.status === "booked" && locked) {
     return {
-      label: `🎾 ${shortDay(locked.date)} · ${locked.start_time} geboekt`,
+      icon: "🎾",
+      label: `${shortDay(locked.date)} · ${locked.start_time} geboekt`,
       tone: "info",
       tab: locked.date === today ? "vandaag" : "plannen",
     };
   }
-  return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
+  return {
+    icon: null,
+    label: "Plan een speeldag →",
+    tone: "idle",
+    tab: "plannen",
+  };
 }

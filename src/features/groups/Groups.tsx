@@ -92,6 +92,17 @@ export function Groups() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  // Het aanmaakformulier zit achter een knop (#674 A5), behalve als je nog
+  // geen groep hebt — dan is dít de actie van de pagina.
+  const [newOpen, setNewOpen] = useState(false);
+  const noGroups = !groups.loading && !groups.error && list.length === 0;
+  useEffect(() => {
+    if (noGroups) setNewOpen(true);
+  }, [noGroups]);
+  // Uitklappen zet de cursor meteen in het naamveld.
+  useEffect(() => {
+    if (newOpen && !noGroups) nameRef.current?.focus();
+  }, [newOpen, noGroups]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -199,6 +210,9 @@ export function Groups() {
                         <span
                           className={`group-card__journey group-card__journey--${journey.tone}`}
                         >
+                          {journey.icon && (
+                            <span aria-hidden="true">{journey.icon}</span>
+                          )}
                           {journey.label}
                         </span>
                       )}
@@ -214,57 +228,71 @@ export function Groups() {
         </>
       )}
 
-      {/* Losse matches (buiten een groep) + het archief. */}
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Losse match</h2>
-        </div>
-        <p className="card__subtitle">
-          Buiten een groep om gespeeld? Log de uitslag — hij telt gewoon mee
-          voor je rating.
-        </p>
-        <div className="proposal__links">
-          <Link className="btn btn--sm btn--primary" to="/matches?log=1">
-            + Match loggen
-          </Link>
-          <Link className="btn btn--sm" to="/matches">
-            Alle matches →
-          </Link>
-        </div>
-      </section>
+      {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
+          even zwaar als de groepen zelf (#674 A5). Achter een knop dus — met
+          nul groepen staat hij meteen open, want dan ís dit de actie. */}
+      {newOpen ? (
+        <section className="card">
+          <h2 className="card__title">Nieuwe groep</h2>
+          <form className="row-between account-form" onSubmit={create}>
+            <input
+              ref={nameRef}
+              className="input"
+              aria-label="Groepsnaam"
+              placeholder="Groepsnaam, bijv. Vrijdagavond"
+              maxLength={60}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <button
+              className="btn btn--primary"
+              disabled={busy || !name.trim()}
+            >
+              {busy ? "Aanmaken…" : "Aanmaken"}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <button
+          type="button"
+          className="btn hub-new"
+          onClick={() => setNewOpen(true)}
+        >
+          + Nieuwe groep
+        </button>
+      )}
 
-      {/* Duidelijke mobiele ingang naar de baanbeschikbaarheid (zit niet in
-          de onderbalk; binnen de plan-flow is hij er ook). */}
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Vrije banen</h2>
+      {/* Secundaire rij: losse matches (buiten een groep) en de
+          baanbeschikbaarheid. Stonden eerst als volwaardige kaarten tussen de
+          groepen, waardoor de hub drie gelijkwaardige acties toonde. */}
+      <section className="hub-extra" aria-label="Ook hier">
+        <div className="hub-extra__card">
+          <h2 className="hub-extra__title">Losse match</h2>
+          <p className="hub-extra__text">
+            Buiten een groep gespeeld? De uitslag telt gewoon mee voor je
+            rating.
+          </p>
+          <div className="hub-extra__links">
+            <Link className="btn btn--sm" to="/matches?log=1">
+              + Match loggen
+            </Link>
+            <Link className="btn btn--sm" to="/matches">
+              Alle matches →
+            </Link>
+          </div>
         </div>
-        <p className="card__subtitle">
-          Bekijk per dag of week welke banen vrij zijn bij {club.name}.
-        </p>
-        <div className="proposal__links">
-          <Link className="btn btn--sm" to="/banen">
-            🎾 Vrije banen bekijken →
-          </Link>
-        </div>
-      </section>
 
-      <section className="card">
-        <h2 className="card__title">Nieuwe groep</h2>
-        <form className="row-between account-form" onSubmit={create}>
-          <input
-            ref={nameRef}
-            className="input"
-            aria-label="Groepsnaam"
-            placeholder="Groepsnaam, bijv. Vrijdagavond"
-            maxLength={60}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <button className="btn btn--primary" disabled={busy || !name.trim()}>
-            {busy ? "Aanmaken…" : "Aanmaken"}
-          </button>
-        </form>
+        <div className="hub-extra__card">
+          <h2 className="hub-extra__title">Vrije banen</h2>
+          <p className="hub-extra__text">
+            Kijk per dag of week welke banen vrij zijn bij {club.name}.
+          </p>
+          <div className="hub-extra__links">
+            <Link className="btn btn--sm" to="/banen">
+              🎾 Banen bekijken →
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   );
