@@ -11,9 +11,11 @@ import { shareOrCopyText } from "@/lib/utils/shareText";
 import { displayName } from "@/features/profiles/api";
 import {
   markPollBooked,
+  setPollAccessCode,
   type PlayPoll,
   type PollOption,
 } from "@/features/groups/pollsApi";
+import { AccessCodeSheet } from "./AccessCodeSheet";
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { createFairRound } from "@/features/groups/api";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
@@ -64,6 +66,36 @@ export function WinnerCard({
   // roundsExist dekt rondes die elders (of eerder) zijn klaargezet.
   const [roundsMade, setRoundsMade] = useState(0);
   const roundsDone = roundsExist || roundsMade > 0;
+
+  // Toegangscode-sheet (#675). "boeken" hangt de code aan de boekstap vast,
+  // "wijzigen" zet 'm los achteraf — de code komt vaak pas met de
+  // bevestigingsmail. null = sheet dicht.
+  const [codeSheet, setCodeSheet] = useState<"boeken" | "wijzigen" | null>(null);
+  const code = poll.access_code;
+
+  function submitCode(value: string | null) {
+    const mode = codeSheet;
+    setCodeSheet(null);
+    if (mode === "boeken") {
+      void run(() => markPollBooked(poll.id, value), "Speeldag geboekt ✓");
+      return;
+    }
+    void run(
+      () => setPollAccessCode(poll.id, value),
+      value ? "Code opgeslagen." : "Code gewist.",
+    );
+  }
+
+  /** Tik op de code = naar het klembord: je staat met je telefoon bij de deur. */
+  async function copyCode() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success("Code gekopieerd.");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  }
 
   function exportIcs() {
     downloadIcs(
@@ -183,9 +215,7 @@ export function WinnerCard({
                 <button
                   className="btn btn--sm"
                   disabled={busy}
-                  onClick={() =>
-                    run(() => markPollBooked(poll.id), "Speeldag geboekt ✓")
-                  }
+                  onClick={() => setCodeSheet("boeken")}
                 >
                   Baan geboekt ✓
                 </button>
@@ -195,7 +225,35 @@ export function WinnerCard({
               </button>
             </div>
           ) : (
-            <p className="winner-card__section-done">Geboekt ✓ · {club.name}</p>
+            <>
+              <p className="winner-card__section-done">
+                Geboekt ✓ · {club.name}
+              </p>
+              {/* Toegangscode (#675): de plek waar je 'm zoekt als je voor de
+                  deur staat — tik = klembord. Alleen groepsleden zien dit. */}
+              <div className="winner-card__code-row">
+                {code != null && (
+                  <button
+                    type="button"
+                    className="winner-card__code"
+                    onClick={copyCode}
+                    title="Tik om te kopiëren"
+                  >
+                    🔑 <strong>{code}</strong>
+                  </button>
+                )}
+                {isManager && (
+                  <button
+                    type="button"
+                    className="btn btn--sm winner-card__code-edit"
+                    disabled={busy}
+                    onClick={() => setCodeSheet("wijzigen")}
+                  >
+                    {code == null ? "＋ Code" : "Wijzig code"}
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </section>
 
@@ -254,6 +312,26 @@ export function WinnerCard({
           </div>
         </section>
       </div>
+
+      {codeSheet !== null && (
+        <AccessCodeSheet
+          open
+          busy={busy}
+          initial={codeSheet === "wijzigen" ? code : null}
+          title={
+            codeSheet === "boeken"
+              ? "Baan geboekt ✓"
+              : code == null
+                ? "Code toevoegen"
+                : "Code wijzigen"
+          }
+          confirmLabel={
+            codeSheet === "boeken" ? "Markeer als geboekt" : "Opslaan"
+          }
+          onClose={() => setCodeSheet(null)}
+          onSubmit={submitCode}
+        />
+      )}
     </li>
   );
 }

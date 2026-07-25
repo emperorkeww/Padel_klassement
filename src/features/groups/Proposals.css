@@ -784,6 +784,57 @@
   color: var(--success);
 }
 
+/* Toegangscode in de geboekte staat (#675): de code zelf is de knop — tik =
+   kopiëren. Monospace en ruim getekend, want dit lees je van je scherm af
+   terwijl je voor de deur staat. */
+.winner-card__code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.winner-card__code {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.winner-card__code strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.winner-card__code:hover {
+  border-color: var(--accent);
+}
+
+/* Toegangscode-sheet (#675). */
+.access-code__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.access-code__field .select {
+  width: 100%;
+}
+.access-code__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
 /* Rondes-blok in de Klaarzetten-sectie. */
 .winner-card__rounds {
   display: flex;
