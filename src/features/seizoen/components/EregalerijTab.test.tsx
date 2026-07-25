@@ -94,7 +94,7 @@ describe("<EregalerijTab />", () => {
       match({ played_at: "2026-02-10T19:00:00" }),
       match({ played_at: "2026-02-17T19:00:00" }),
     ]);
-    expect(screen.getByText("Pias van het seizoen:")).toBeInTheDocument();
+    expect(screen.getAllByText("Pias van het seizoen").length).toBeGreaterThan(0);
   });
 
   it("houdt de pias-regel neutraal bij een roast-schild (#183)", () => {
@@ -111,8 +111,8 @@ describe("<EregalerijTab />", () => {
       ],
       beschermd,
     );
-    expect(screen.queryByText("Pias van het seizoen:")).not.toBeInTheDocument();
-    expect(screen.getByText(/Opvallend seizoen voor/)).toBeInTheDocument();
+    expect(screen.queryByText("Pias van het seizoen")).not.toBeInTheDocument();
+    expect(screen.getByText("Opvallend seizoen")).toBeInTheDocument();
     expect(screen.getByText(/roast-schild staat aan/)).toBeInTheDocument();
   });
 
