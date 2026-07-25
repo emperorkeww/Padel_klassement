@@ -27,11 +27,12 @@ create policy "Gebruiker kan eigen profiel bijwerken"
 -- Zo blijven id, is_guest, owner_id, created_at en de guard-beschermde
 -- dictator_avatar_url/-bron buiten bereik. Komt er een nieuwe client-schrijfbare
 -- kolom bij, voeg die hier én in de migratie toe. anon (geen UPDATE-policy) en
--- service_role: ongemoeid.
+-- service_role: ongemoeid. De portret-opt-outs (dictator_portret #554,
+-- pias_portret #682) staan er wél in — de gegenereerde *_avatar_url/-bron niet.
 revoke update on table public.profiles from authenticated;
 grant update (username, full_name, avatar_url, discoverable, allow_friend_requests,
               featured_badges, roast_schild, roast_intensiteit,
-              toon_waarnemend_dictator, dictator_portret,
+              toon_waarnemend_dictator, dictator_portret, pias_portret,
               notify_new_round, notify_result, notify_friend_request,
               notify_match_reminder, notify_rank_change)
   on table public.profiles to authenticated;

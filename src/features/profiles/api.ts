@@ -78,6 +78,9 @@ export async function updateProfile(
     /** AI dictator-portret opt-out (#554). De gegenereerde URL/bron-kolommen
      *  zijn niet client-schrijfbaar (guard-trigger); alleen deze vlag. */
     dictator_portret?: boolean;
+    /** AI pias-portret opt-out (#682) — zelfde afspraak als hierboven: enkel de
+     *  vlag is client-schrijfbaar, en 'false' nult ook het bewaarde portret. */
+    pias_portret?: boolean;
   },
 ): Promise<void> {
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
