@@ -26,16 +26,21 @@
   padding: var(--sp-4);
 }
 
-/* Losse match loggen/plannen binnen de groep — bewust een gedempte voetnoot
-   onder de teamgenerator (#364). */
+/* Losse match loggen/plannen binnen de groep. Stond als gedempte voetnoot
+   onder de teamgenerator (#364) en verdween zodra de dag liep in de inklapper
+   "Nog een ronde maken"; sinds #722 het eerste blok van de tab. De gestippelde,
+   gedempte stijl blijft — hij mag opvallen door zijn plek, niet door zijn
+   kleur, zodat de wedstrijden eronder het accent houden. */
 .group-log {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  margin-top: var(--sp-3);
-  padding: var(--sp-3);
+  /* Zelfde tussenruimte als .card + .card, want de volgende kaart krijgt die
+     niet: haar voorganger is geen .card. */
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
   border: 1px dashed var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);

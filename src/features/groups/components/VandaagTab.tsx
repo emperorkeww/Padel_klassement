@@ -33,6 +33,11 @@ import "./VandaagTab.css";
 //
 // Daardoor kunnen de flow-next-banners weg (#674 B3): de volgende stap zit in
 // de tab zelf in plaats van in een kaart die de inhoud omlaag duwt.
+//
+// Eén blok beweegt bewust níét mee met de dag: "Losse partij" (#722). Dat
+// verhuisde vroeger van onder de generator naar ín de inklapper "Nog een ronde
+// maken" — een paneel dat het tegenovergestelde belooft van wat je komt doen.
+// Het staat nu vast bovenaan, in beide dagstaten.
 // Puur presentatie: alle data en de reload-cascade komen uit GroupDetail.
 
 interface VandaagTabProps {
@@ -129,7 +134,9 @@ export function VandaagTab({
 
   // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
   // het bleef hetzelfde ding, maar het heette hier anders en had als enige
-  // blok geen titel.
+  // blok geen titel. Sinds #722 het eerste blok van de tab: dit is de enige
+  // manier om binnen een groep een partij buiten de rondes om te loggen, dus
+  // hij hoort niet onder de generator of in een inklapper te liggen.
   const losseMatch = (
     <section className="group-log" aria-labelledby="group-log-title">
       <div className="group-log__intro">
@@ -168,8 +175,11 @@ export function VandaagTab({
 
   return (
     <>
-      {/* Staat 3: alles ingevuld. Enige kaart die nog bovenaan mag staan —
-          hij duwt niets weg, want hij verschijnt aan het eind van de dag. */}
+      {/* Vaste plek bovenaan (#722), los van de dagstaat: compact genoeg om
+          niets weg te drukken, zichtbaar genoeg om gevonden te worden. */}
+      {losseMatch}
+
+      {/* Staat 3: alles ingevuld. */}
       {dayDone && (
         <div className="card flow-next" role="status">
           <span>🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!</span>
@@ -256,16 +266,10 @@ export function VandaagTab({
       {dayStarted ? (
         <details className="card next-round">
           <summary className="next-round__toggle">Nog een ronde maken</summary>
-          <div className="next-round__body">
-            {makeTeams}
-            {losseMatch}
-          </div>
+          <div className="next-round__body">{makeTeams}</div>
         </details>
       ) : (
-        <>
-          {makeTeams}
-          {losseMatch}
-        </>
+        makeTeams
       )}
 
       {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
