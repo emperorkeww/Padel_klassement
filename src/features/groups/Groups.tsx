@@ -18,12 +18,10 @@ import { useClub } from "@/features/availability/club";
 import { getProfilesMap } from "@/features/profiles/api";
 import { getMyGroups, createGroup, type GroupSummary } from "./api";
 import {
-  getGroupPolls,
-  getGroupPollOptions,
-  getGroupPollVotes,
+  getPollsForGroups,
+  getPollOptionsForGroups,
   type PlayPoll,
   type PollOption,
-  type PollVote,
 } from "./pollsApi";
 import { activePolls } from "./pollLogic";
 import "./Groups.css";
@@ -91,20 +89,25 @@ function journeyFor(
   return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
 }
 
+/** Polls + opties van alle groepen in twee queries (#674): per groep drie
+ *  queries afvuren was een N+1, en de stemmen werden niet eens gebruikt. */
 async function loadJourneys(
   groups: GroupSummary[],
-): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }>> {
-  const rows = await Promise.all(
-    groups.map(async (g) => {
-      const [polls, options, votes] = await Promise.all([
-        getGroupPolls(g.id),
-        getGroupPollOptions(g.id),
-        getGroupPollVotes(g.id),
-      ]);
-      return [g.id, { polls, options, votes }] as const;
-    }),
+): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[] }>> {
+  const ids = groups.map((g) => g.id);
+  const [polls, options] = await Promise.all([
+    getPollsForGroups(ids),
+    getPollOptionsForGroups(ids),
+  ]);
+  return Object.fromEntries(
+    groups.map((g) => [
+      g.id,
+      {
+        polls: polls.filter((p) => p.group_id === g.id),
+        options: options.filter((o) => o.group_id === g.id),
+      },
+    ]),
   );
-  return Object.fromEntries(rows);
 }
 
 export function Groups() {

@@ -84,6 +84,41 @@ export function getGroupPollOptions(groupId: string): Promise<PollOption[]> {
   });
 }
 
+/** Polls van meerdere groepen in één query — voor de Spelen-hub, die anders
+ *  per groep een aparte call deed (#674). Cachekey deelt de "play-poll"-prefix,
+ *  dus de bestaande invalidate() raakt 'm mee. */
+export function getPollsForGroups(groupIds: string[]): Promise<PlayPoll[]> {
+  if (groupIds.length === 0) return Promise.resolve([]);
+  const key = [...groupIds].sort().join(",");
+  return cached(`play-polls:multi:${key}`, async () => {
+    const { data, error } = await supabase
+      .from("play_polls")
+      .select("*")
+      .in("group_id", groupIds)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as PlayPoll[];
+  });
+}
+
+/** Idem voor de opties van die polls. */
+export function getPollOptionsForGroups(
+  groupIds: string[],
+): Promise<PollOption[]> {
+  if (groupIds.length === 0) return Promise.resolve([]);
+  const key = [...groupIds].sort().join(",");
+  return cached(`play-poll-options:multi:${key}`, async () => {
+    const { data, error } = await supabase
+      .from("play_poll_options")
+      .select("*")
+      .in("group_id", groupIds)
+      .order("date")
+      .order("start_time");
+    if (error) throw error;
+    return (data ?? []) as PollOption[];
+  });
+}
+
 /** Alle stemmen op de polls van een groep. */
 export function getGroupPollVotes(groupId: string): Promise<PollVote[]> {
   return cached(`play-poll-votes:${groupId}`, async () => {

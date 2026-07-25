@@ -977,6 +977,19 @@ textarea {
   color: inherit;
   opacity: 0.75;
 }
+/* Paginabrede tabbalk (#103, #674): schuift horizontaal op smalle schermen in
+   plaats van de laatste tabs buiten beeld te duwen. */
+.tabs--page {
+  /* Blijft inline-flex: de pil krimpt naar de inhoud zolang die past, en
+     scrollt pas zodra hij breder wordt dan het scherm. */
+  max-width: 100%;
+  margin-bottom: var(--sp-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs--page::-webkit-scrollbar {
+  display: none;
+}
 
 /* ---------- Stat-kaarten ---------- */
 .stats {
