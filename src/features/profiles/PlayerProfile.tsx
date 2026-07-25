@@ -362,6 +362,10 @@ export function PlayerProfile() {
     piet: globaleZwartePiet.data ?? null,
   };
   const editie = editieVoor(id, editieCtx);
+  // Eén formulering voor hero én deel-poster (#666): de export droeg de editie
+  // tot nu toe helemaal niet, waardoor de Big Daddy op zijn poster als gewone
+  // tierkaart verscheen.
+  const editieTekst = editieLabel(editie, editieCtx, id);
   // Head-to-Head versus-kaarten (#499): dezelfde editie-context als
   // hierboven, voor de bekeken speler ("hunKaart") én — mét reeds app-breed
   // geladen data, dus zonder extra fetch — de ingelogde gebruiker
@@ -388,6 +392,8 @@ export function PlayerProfile() {
     avatarUrl: p.avatar_url ?? null,
     rating: myRating,
     tier: tierForWeergave(myRating, isDictator),
+    editie,
+    editieTekst,
     rank,
     form,
     topBadge,
@@ -421,7 +427,7 @@ export function PlayerProfile() {
     isDictator,
     regeerduur: regeerduur.data ?? null,
     editie,
-    editieTekst: editieLabel(editie, editieCtx, id),
+    editieTekst,
     hasRating,
     hasRank,
     rhist,

@@ -5,7 +5,7 @@
 // FutKaart met synthetische props. Alleen geregistreerd in development
 // (App.tsx, import.meta.env.DEV) — geen productiechunk.
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   FutKaart,
   FutKaartDefs,
@@ -14,6 +14,7 @@ import {
 } from "@/features/rating/components/FutKaart";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { tierFor, type Tier } from "@/features/rating/tiers";
+import { drawKaart } from "@/features/profiles/profielPoster";
 import { Avatar } from "@/ui/Avatar";
 import "./KaartShowcase.css";
 
@@ -102,6 +103,68 @@ function Kaart({
           </span>
         </>
       }
+    />
+  );
+}
+
+/** De kaart zoals de deel-poster hem tekent (#666), op canvas — naast de
+ *  DOM-kaart hierboven de enige manier om "export = live" met het oog te
+ *  controleren; seed-data levert nooit alle zes edities tegelijk. Zelfde maten
+ *  als op de poster (kaart 560px breed op de donkere court-gloed), alleen
+ *  teruggeschaald naar de weergavebreedte ernaast. */
+const POSTER_KAART_W = 560;
+const POSTER_MARGE = 48; // ruimte voor de slagschaduw van het frame
+
+function PosterKaart({
+  tier,
+  editie,
+  editieLabel = null,
+  naam = "Alice Anders",
+  breedte,
+}: {
+  tier: Tier | null;
+  editie: Editie | null;
+  editieLabel?: string | null;
+  naam?: string;
+  breedte: number;
+}) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  const w = POSTER_KAART_W + POSTER_MARGE * 2;
+  const h = Math.round(POSTER_KAART_W * 1.39) + POSTER_MARGE * 2;
+  useEffect(() => {
+    const ctx = ref.current?.getContext("2d");
+    if (!ctx) return;
+    // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0b241a";
+    ctx.fillRect(0, 0, w, h);
+    drawKaart(
+      ctx,
+      {
+        name: naam,
+        avatarUrl: null,
+        rating: tier?.min != null ? tier.min + 50 : 1050,
+        tier,
+        editie,
+        editieTekst: editieLabel,
+        rank: 4,
+        form: [],
+        topBadge: null,
+      },
+      null,
+      POSTER_MARGE,
+      POSTER_MARGE,
+      POSTER_KAART_W,
+    );
+  }, [tier, editie, editieLabel, naam, w, h]);
+  return (
+    <canvas
+      ref={ref}
+      width={w}
+      height={h}
+      // De kaart zélf komt zo op `breedte` uit, gelijk aan de DOM-kaart ernaast.
+      style={{ width: `${(breedte * w) / POSTER_KAART_W}px`, height: "auto" }}
+      aria-label={`Posterkaart ${naam}${editie ? ` (${editie})` : ""}`}
     />
   );
 }
@@ -208,6 +271,35 @@ export function KaartShowcase() {
             </div>
           )),
         )}
+      </Sectie>
+
+      <Sectie titel="Live vs. deel-poster (#666): DOM-kaart naast de canvas-kaart">
+        {[{ editie: null, label: null }, ...EDITIES].map((e) => (
+          <div key={e.editie ?? "geen"} className="kaart-showcase__pariteit">
+            <span className="kaart-showcase__maatlabel">
+              {e.editie ?? "geen editie"}
+            </span>
+            <div className="kaart-showcase__pariteit-paar">
+              <div
+                className="kaart-showcase__maat"
+                style={{ ["--maat" as string]: "150px" }}
+              >
+                <Kaart
+                  kw={150}
+                  tier={tierFor(1250)}
+                  editie={e.editie}
+                  editieLabel={e.label}
+                />
+              </div>
+              <PosterKaart
+                tier={tierFor(1250)}
+                editie={e.editie}
+                editieLabel={e.label}
+                breedte={150}
+              />
+            </div>
+          </div>
+        ))}
       </Sectie>
 
       <Sectie titel="Achterkant (96 / 130 / 210px)">

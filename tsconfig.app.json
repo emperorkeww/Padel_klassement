@@ -30,8 +30,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Vitest globals + jest-dom matchers */
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    /* Vitest globals + jest-dom matchers. "node" staat erbij voor tests die
+       projectbestanden inlezen (de CSS↔canvas-synctest van #666 leest
+       FutKaart.css); Vitest kortsluit CSS-imports op een lege string, dus
+       node:fs is daar de enige weg. */
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
   "include": ["src"]
 }

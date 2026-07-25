@@ -635,7 +635,12 @@
 }
 
 /* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
-   van de divisie, de editie kleurt frame, vlak en inkt. */
+   van de divisie, de editie kleurt frame, vlak en inkt.
+   Tweede lezer (#666): de deel-posters tekenen deze registers op canvas na, in
+   de tabel EDITIE_REGISTERS in lib/utils/futKaartCanvas.ts. Die kan de live
+   tokens niet lezen (posters staan vast op het lichte palet, #125), dus wie
+   hieronder een kleur herijkt, herijkt hem daar ook — de synctest in
+   futKaartCanvas.test.ts leest dit bestand in en houdt de twee gelijk. */
 
 /* Icon (Big Daddy, de #1 van het klassement): roze/goud (#625). Het roze
    vlak met bordeaux-roze inkt maakt de kaart in één oogopslag "de Big
