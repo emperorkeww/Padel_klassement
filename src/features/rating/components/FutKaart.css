@@ -826,11 +826,15 @@
   }
 }
 
-/* Pias (grootste choke van de week, alle groepen, #631): mat kraftkarton met
-   confetti-stipjes — onmiskenbaar "geen beloning" naast het glimmende goud,
-   roze en platina van de verdiende edities. Geen shimmer, geen metaal: het
-   frame is dof karton. Lokale hexen, net als kampioen (geen tweede
-   consument). Contrast: ink op hi ≈ 9:1 (AAA). */
+/* Pias (grootste choke van de week, alle groepen, #631/#705): mat kraftkarton
+   met confetti-stipjes — onmiskenbaar "geen beloning" naast het glimmende
+   goud, roze en platina van de verdiende edities. Geen shimmer, geen metaal
+   (#705): het frame is één vlakke kartontoon met een bleke snijkant (de
+   pulpkern van doorgesneden karton) langs de bovenrand, de sheen is een
+   nauwelijks zichtbare warme waas en het vlak draagt een vezelkorrel i.p.v.
+   glansbanen. Lokale hexen, net als kampioen; de vezeltegel wordt wél
+   letterlijk gedeeld met De Schandpaal (#682) — zelfde papier, de synctest
+   in futKaartCanvas.test.ts bewaakt dat. Contrast: ink op hi ≈ 9:1 (AAA). */
 .fut-kaart--pias {
   --kaart-hi: #dcbd85;
   --kaart-mid: #c9a468;
@@ -839,30 +843,47 @@
   --kaart-ink-soft: #6b4d24;
   --kaart-lijn: #8a6534;
   --editie-kleur: #8c2a17;
+  --kaart-frame-hi: #a8814e;
+  --kaart-frame-lo: #987040;
+  --kaart-snijkant: #d9c193;
 }
 .fut-kaart--pias .fut-kaart__zijde {
-  background: linear-gradient(
-    160deg,
-    #c6a06a 0%,
-    #8a6534 45%,
-    #d4b384 70%,
-    #6e5128 100%
-  );
+  background:
+    linear-gradient(180deg, var(--kaart-snijkant) 0 2px, transparent 2px),
+    linear-gradient(
+      160deg,
+      var(--kaart-frame-hi) 0%,
+      var(--kaart-frame-lo) 100%
+    );
 }
 .fut-kaart--pias .fut-kaart__liner {
   background: #4a3315;
 }
+/* Mat karton reflecteert diffuus: geen witte specular-baan maar een brede,
+   warme waas op 6% — canvas-spiegel: sheen + sheenSpreiding 0.2. */
+.fut-kaart--pias .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 240, 214, 0.06) 50%,
+    transparent 70%
+  );
+}
+/* Laagvolgorde (boven → onder): confetti als gedrukte inkt (zachtere rand en
+   lagere alpha dan #631 — de stipjes zijn in het papier gezogen), de
+   vezeltegel (28px-SVG met vezelstreepjes en pulp-stipjes, byte-gelijk aan
+   die in Schandpaal.css), twee grote zachte mottling-vlekken en het
+   kartonverloop. Canvas-spiegel: drawConfetti in futKaartCanvas.ts. */
 .fut-kaart--pias .fut-kaart__vlak {
   background:
-    radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.3) 0 3.2%, transparent 4.2%),
-    radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.26) 0 2.8%, transparent 3.8%),
-    radial-gradient(circle at 38% 76%, rgba(31, 74, 128, 0.24) 0 2.8%, transparent 3.8%),
-    radial-gradient(circle at 84% 64%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 3.4%),
-    repeating-linear-gradient(
-      -38deg,
-      rgba(58, 37, 12, 0.07) 0 5px,
-      transparent 5px 12px
-    ),
+    radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 4.2%),
+    radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.21) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 38% 76%, rgba(31, 74, 128, 0.19) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 84% 64%, rgba(140, 42, 23, 0.19) 0 1.8%, transparent 3.4%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 28px 28px repeat,
+    radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),
+    radial-gradient(100% 80% at 78% 74%, rgba(255, 246, 222, 0.05), transparent 60%),
     linear-gradient(
       172deg,
       var(--kaart-hi) 0%,
@@ -871,13 +892,16 @@
     );
 }
 
-/* Zwarte Piet (#645): het rondgaande schande-token, kaartenspel-thema — mat
-   speelkaart-wit met een zwart lakframe, bone binnenrand en rood/zwarte
-   suit-pips (SVG-laag, ♠♥♦♣). Net als de pias geen shimmer en geen metaal
-   (schande glimt niet), maar bewust een ánder register: speelkaart i.p.v.
-   kraftkarton. En bewust licht: donkere vlakken zijn hier het prestige-
-   register (In-Form, On-Fire, Legende, dictator). Lokale hexen, net als
-   kampioen (geen tweede consument). Contrast: ink op hi ≈ 13:1 (AAA). */
+/* Zwarte Piet (#645/#705): het rondgaande schande-token, kaartenspel-thema —
+   mat speelkaart-wit met een vlak zwart lakframe en rood/zwarte suit-pips
+   (SVG-laag, ♠♥♦♣). De bone liner (#efe7d2) is de witte snijkant van het
+   kaartkarton, zichtbaar tussen frame en vlak. Net als de pias geen shimmer
+   en geen metaal (schande glimt niet): de sheen staat uit en het vlak draagt
+   een linnen-finish (twee gekruiste fijne rasters op 0°/90° — recht op het
+   pixelgrid, dus geen moiré op de kleinste kaartmaat) i.p.v. glansbanen.
+   En bewust licht: donkere vlakken zijn hier het prestige-register (In-Form,
+   On-Fire, Legende, dictator). Lokale hexen, net als kampioen (geen tweede
+   consument). Contrast: ink op hi ≈ 13:1 (AAA). */
 .fut-kaart--piet {
   --kaart-hi: #f4eedb;
   --kaart-mid: #e6ddc2;
@@ -886,27 +910,37 @@
   --kaart-ink-soft: #5d5645;
   --kaart-lijn: #a2977a;
   --editie-kleur: #a8271b;
+  --kaart-frame-hi: #23211d;
+  --kaart-frame-lo: #131211;
 }
 .fut-kaart--piet .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #3c3a36 0%,
-    #100f0d 45%,
-    #4a4742 70%,
-    #050505 100%
+    var(--kaart-frame-hi) 0%,
+    var(--kaart-frame-lo) 100%
   );
 }
 .fut-kaart--piet .fut-kaart__liner {
   background: #efe7d2;
+}
+/* Gecoat kaartkarton glanst hooguit breed en diffuus, nooit als een smalle
+   baan; hier simpelweg uit — het linnen hieronder draagt de textuur. */
+.fut-kaart--piet .fut-kaart__vlak::before {
+  background: none;
 }
 .fut-kaart--piet .fut-kaart__vlak {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 139'%3E%3Cg font-size='13' font-family='serif'%3E%3Ctext x='11' y='28' fill='rgba(32,29,24,0.2)'%3E%E2%99%A0%3C/text%3E%3Ctext x='77' y='42' fill='rgba(168,39,27,0.22)'%3E%E2%99%A5%3C/text%3E%3Ctext x='16' y='100' fill='rgba(168,39,27,0.22)'%3E%E2%99%A6%3C/text%3E%3Ctext x='77' y='90' fill='rgba(32,29,24,0.2)'%3E%E2%99%A3%3C/text%3E%3C/g%3E%3C/svg%3E")
       center / 100% 100% no-repeat,
     repeating-linear-gradient(
-      -38deg,
-      rgba(32, 29, 24, 0.05) 0 5px,
-      transparent 5px 12px
+      0deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
     ),
     linear-gradient(
       172deg,

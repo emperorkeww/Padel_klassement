@@ -31,21 +31,23 @@
   color: var(--kraft-ink);
   text-align: center;
   border: 1px solid var(--kraft-lijn);
-  /* Zelfde stapel als .fut-kaart--pias .fut-kaart__vlak: confetti-stipjes, de
-     diagonale kartonribbels en het verloop van het vlak zelf. Anders dan op de
+  /* Zelfde stapel als .fut-kaart--pias .fut-kaart__vlak (#705): confetti als
+     gedrukte inkt, de vezeltegel (28px-SVG, byte-gelijk aan die in
+     FutKaart.css — zelfde papier, de synctest in futKaartCanvas.test.ts
+     bewaakt dat), mottling en het verloop van het vlak zelf. Anders dan op de
      kaart staan de stipjes hier in px i.p.v. procenten: dit vlak is vele malen
-     groter dan een FUT-kaart, en procent-radii zouden er vlekken van maken. */
+     groter dan een FUT-kaart, en procent-radii zouden er vlekken van maken —
+     om dezelfde reden zit de korrel in een px-tegel, die schaalt niet mee. */
   background:
-    radial-gradient(circle at 12% 14%, rgba(140, 42, 23, 0.26) 0 5px, transparent 6px),
-    radial-gradient(circle at 88% 22%, rgba(31, 92, 64, 0.22) 0 4px, transparent 5px),
-    radial-gradient(circle at 22% 88%, rgba(31, 74, 128, 0.2) 0 4px, transparent 5px),
-    radial-gradient(circle at 92% 78%, rgba(140, 42, 23, 0.2) 0 3px, transparent 4px),
-    radial-gradient(circle at 68% 8%, rgba(31, 74, 128, 0.16) 0 3px, transparent 4px),
-    repeating-linear-gradient(
-      -38deg,
-      rgba(58, 37, 12, 0.07) 0 5px,
-      transparent 5px 12px
-    ),
+    radial-gradient(circle at 12% 14%, rgba(140, 42, 23, 0.2) 0 4px, transparent 7px),
+    radial-gradient(circle at 88% 22%, rgba(31, 92, 64, 0.18) 0 3px, transparent 6px),
+    radial-gradient(circle at 22% 88%, rgba(31, 74, 128, 0.16) 0 3px, transparent 6px),
+    radial-gradient(circle at 92% 78%, rgba(140, 42, 23, 0.16) 0 2px, transparent 5px),
+    radial-gradient(circle at 68% 8%, rgba(31, 74, 128, 0.13) 0 2px, transparent 5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 28px 28px repeat,
+    radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),
+    radial-gradient(100% 80% at 78% 74%, rgba(255, 246, 222, 0.05), transparent 60%),
     linear-gradient(
       172deg,
       var(--kraft-hi) 0%,
@@ -102,9 +104,13 @@
   aspect-ratio: 4 / 5;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: linear-gradient(160deg, #4a3315, #2c1e0b);
+  /* Matte kartonpassepartout (#705) i.p.v. het 160°-glansverloop van vroeger:
+     één vlakke toon, met de bleke snijkant als binnenring en dan pas de
+     kraftlijst — in lijn met het nieuwe pias-frame. */
+  background: #3d2a11;
   box-shadow:
-    0 0 0 3px var(--kraft-lijn),
+    0 0 0 1px #e8d5ae,
+    0 0 0 4px var(--kraft-lijn),
     0 10px 22px color-mix(in srgb, var(--kraft-ink) 32%, transparent);
 }
 .schandpaal__img {
