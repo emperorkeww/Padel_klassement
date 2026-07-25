@@ -407,7 +407,7 @@ export function GroupStandTab({
         )}
       </section>
 
-      {/* Vendetta's staan sinds #524 op de Teams-tab (bij de duels). */}
+      {/* Vendetta's staan sinds #524 bij het spelen zelf (Vandaag-tab). */}
       <RivalryCard
         matches={matches}
         teams={teams}

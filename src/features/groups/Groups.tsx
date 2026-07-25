@@ -23,7 +23,7 @@ import {
   type PlayPoll,
   type PollOption,
 } from "./pollsApi";
-import { activePolls } from "./pollLogic";
+import { journeyFor } from "./journey";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
@@ -35,58 +35,6 @@ const MAX_MEMBER_AVATARS = 4;
 
 function ledenLabel(n: number): string {
   return n === 1 ? "1 lid" : `${n} leden`;
-}
-
-function shortDay(date: string): string {
-  return new Intl.DateTimeFormat("nl-BE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00`));
-}
-
-type Journey = {
-  label: string;
-  /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
-  tone: "act" | "info" | "idle";
-  tab: "plannen" | "rondes";
-};
-
-/** Reis-status van een groep: waar zit de groep in de kernreis? */
-function journeyFor(
-  polls: PlayPoll[],
-  options: PollOption[],
-  today: string,
-  nowMs: number,
-): Journey {
-  // Bij meerdere speeldagen (#267) toont de reis-badge de meest dringende:
-  // een poll die stemmen/boeken vraagt gaat vóór een al geboekt moment.
-  const running = activePolls(polls, options, nowMs);
-  const active =
-    running.find((p) => p.status === "open" || p.status === "locked") ??
-    running[0] ??
-    null;
-  const locked = active?.locked_option_id
-    ? (options.find((o) => o.id === active.locked_option_id) ?? null)
-    : null;
-  if (active?.status === "open") {
-    return { label: "📊 Poll loopt — stem mee", tone: "act", tab: "plannen" };
-  }
-  if (active?.status === "locked" && locked) {
-    return {
-      label: `📆 ${shortDay(locked.date)} gekozen — boek de baan`,
-      tone: "act",
-      tab: "plannen",
-    };
-  }
-  if (active?.status === "booked" && locked) {
-    return {
-      label: `🎾 ${shortDay(locked.date)} · ${locked.start_time} geboekt`,
-      tone: "info",
-      tab: locked.date === today ? "rondes" : "plannen",
-    };
-  }
-  return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
 }
 
 // Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
@@ -209,7 +157,7 @@ export function Groups() {
                   <Link
                     key={g.id}
                     className="group-card"
-                    to={`/groepen/${g.id}${journey && journey.tab !== "rondes" ? "?tab=plannen" : ""}`}
+                    to={`/groepen/${g.id}${journey && journey.tab !== "vandaag" ? "?tab=plannen" : ""}`}
                   >
                     <Avatar name={g.name} size={44} />
                     <span className="group-card__body">

@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
-type State<T> = {
+/** Wat useAsync teruggeeft. Geëxporteerd zodat een parent zijn geladen data
+ *  als geheel kan doorgeven (bv. GroupDetail → PlanTab, #674). */
+export type AsyncState<T> = {
   data: T | null;
   loading: boolean;
   error: string | null;
   reload: () => void;
 };
+
+type State<T> = AsyncState<T>;
 
 /**
  * Draait een async functie bij mount en wanneer een dependency verandert.

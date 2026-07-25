@@ -295,9 +295,9 @@ export function Dashboard() {
   const hasGroup = myGroups.length > 0;
   const hasPlayed = (me?.played ?? 0) > 0;
   // Hero-CTA voor wedstrijden genereren (#73): het label moet kloppen met waar
-  // je landt. Genereren gebeurt op de Teams-tab van een groep, dus met precies
-  // één groep sturen we daar direct heen; zonder groep is "genereren" een loze
-  // belofte, dus wordt het een "maak een groep"-call-to-action; met meerdere
+  // je landt. Genereren gebeurt op de Vandaag-tab van een groep (#674), dus met
+  // precies één groep sturen we daar direct heen; zonder groep is "genereren"
+  // een loze belofte, dus wordt het een "maak een groep"-CTA; met meerdere
   // groepen kies je eerst op de lijst. Tijdens het laden een neutrale fallback
   // om geen valse belofte te tonen.
   const generateCta = groups.loading

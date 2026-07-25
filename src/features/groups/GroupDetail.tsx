@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -20,7 +20,6 @@ import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { PlanTab } from "@/features/groups/components/PlanTab";
-import { SpelenTab } from "@/features/groups/components/SpelenTab";
 import { VandaagTab } from "@/features/groups/components/VandaagTab";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { upsetsByMatch } from "@/features/matches/upset";
@@ -36,12 +35,24 @@ import {
 } from "@/features/rating/seasons";
 import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound } from "./groupDetailHelpers";
+import { journeyFor } from "./journey";
+import { getGroupPolls, getGroupPollOptions } from "./pollsApi";
 import { GroupStandTab } from "./components/GroupStandTab";
 import { GroupLedenTab } from "./components/GroupLedenTab";
 import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
-type View = "rondes" | "plannen" | "spelen" | "matches" | "stand" | "leden";
+type View = "vandaag" | "plannen" | "matches" | "stand" | "leden";
+
+/** URL-key → tab. De keys "spelen" (de oude Teams-tab) en "rondes" staan in
+ *  pushberichten en edge functions die al de deur uit zijn; sinds #674 wijzen
+ *  ze allebei naar de samengevoegde Vandaag-tab. */
+function viewFromParam(raw: string | null): View | null {
+  if (raw === "plannen" || raw === "matches" || raw === "stand" || raw === "leden")
+    return raw;
+  if (raw === "spelen" || raw === "rondes") return "vandaag";
+  return null;
+}
 
 /** Prefix voor de tab-/paneel-id's van de groepspagina. */
 const TAB_ID = "groep";
@@ -70,6 +81,14 @@ export function GroupDetail() {
     () => getGroupPredictionStandings(id),
     [id],
   );
+
+  // Speeldag-polls: voeden de Plannen-tab én de landingstab (#674 A3). Ze
+  // staan hier in plaats van in PlanTab zodat de reis-status bekend is vóór
+  // je een tab kiest — en zodat ze niet twee keer worden opgehaald.
+  const polls = useAsync(() => getGroupPolls(id), [id]);
+  const pollOpts = useAsync(() => getGroupPollOptions(id), [id]);
+  useRealtime("play_polls", polls.reload, `group_id=eq.${id}`);
+  useRealtime("play_poll_options", pollOpts.reload, `group_id=eq.${id}`);
 
   const onPredictions = useCallback(() => {
     predictions.reload();
@@ -100,20 +119,17 @@ export function GroupDetail() {
   // De actieve tab leeft in de URL: refresh-bestendig en deelbaar
   // ("kijk even bij de stand").
   const [params, setParams] = useSearchParams();
-  const rawTab = params.get("tab");
-  const view: View =
-    rawTab === "stand" ||
-    rawTab === "leden" ||
-    rawTab === "plannen" ||
-    rawTab === "spelen" ||
-    rawTab === "matches"
-      ? rawTab
-      : "rondes";
+  const urlView = viewFromParam(params.get("tab"));
+  // Zonder ?tab bepaalt de reis-status waar je landt (#674 A3) — voorheen was
+  // dat altijd Vandaag, ook op een dag zonder plan. Eén keer beslissen en
+  // vasthouden: daarna is de tab van de gebruiker.
+  const [landed, setLanded] = useState<View | null>(null);
   const setView = (v: View) => {
     const next = new URLSearchParams(params);
-    if (v === "rondes") next.delete("tab");
+    if (v === "vandaag") next.delete("tab");
     else next.set("tab", v);
     setParams(next, { replace: true });
+    setLanded(v);
   };
   const pmap = useMemo(() => profiles.data ?? {}, [profiles.data]);
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
@@ -225,12 +241,37 @@ export function GroupDetail() {
     list.some((m) => m.status !== "completed"),
   );
 
+  // #674 A3 — landingstab. journeyFor() wist al waar een groep in de reis zit,
+  // maar dat werd alleen gebruikt voor de links op de hub; direct landen gaf
+  // altijd Vandaag, óók op een dag zonder plan. We wachten met renderen tot de
+  // reis bekend is (alleen zonder ?tab, dus deelbare links raken dit niet) —
+  // liever één skeleton-tel langer dan een tab die onder je vinger wegspringt.
+  // De keuze valt tijdens de render, niet in een effect: anders zie je één
+  // frame lang Vandaag voordat hij naar Plannen springt.
+  const landingTab: View | null = (() => {
+    if (polls.loading || pollOpts.loading || matches.loading) return null;
+    // Wedstrijden van vandaag winnen het van de poll: wie ad hoc speelt heeft
+    // geen poll, maar hoort wel op Vandaag te landen. Bij een mislukte
+    // poll-query vallen we terug op het oude gedrag.
+    if (rounds.length > 0 || polls.error || pollOpts.error) return "vandaag";
+    const j = journeyFor(polls.data ?? [], pollOpts.data ?? [], today, Date.now());
+    return j.tab === "plannen" ? "plannen" : "vandaag";
+  })();
+  // Eigen keuze (?tab of een tik) gaat vóór de reis-status.
+  const view: View = urlView ?? landed ?? landingTab ?? "vandaag";
+  const landingPending = !urlView && landed === null && landingTab === null;
+  // Zodra de tab in beeld staat leggen we hem vast: een poll die verloopt of
+  // via realtime binnenkomt mag de tab niet meer onder je vinger wegtrekken.
+  useEffect(() => {
+    if (!urlView && landed === null && landingTab !== null) setLanded(landingTab);
+  }, [urlView, landed, landingTab]);
+
+  // Tabs in reis-volgorde (#106, #674 A1): plannen → vandaag → stand.
   // Tellers alleen tonen als er iets te tellen valt; ze zitten in de
   // toegankelijke naam van de tab ("Leden, 6") — zie PageTabs.
   const tabs: PageTabItem<View>[] = [
     { id: "plannen", label: "Plannen" },
-    { id: "rondes", label: "Vandaag", count: rounds.length || undefined },
-    { id: "spelen", label: "Teams" },
+    { id: "vandaag", label: "Vandaag", count: rounds.length || undefined },
     {
       id: "matches",
       label: "Historie",
@@ -240,7 +281,7 @@ export function GroupDetail() {
     { id: "leden", label: "Leden", count: memberList.length || undefined },
   ];
 
-  if (group.loading)
+  if (group.loading || landingPending)
     return (
       <div className="card">
         <Skeleton rows={2} />
@@ -316,16 +357,18 @@ export function GroupDetail() {
       />
 
       <TabPanel id={view} idPrefix={TAB_ID}>
-        {view === "rondes" && (
-          /* Wedstrijden en uitslagen invullen primair, dagoverzicht
-             ondersteunend; afsluitkaart zodra alles binnen is (#377). */
+        {view === "vandaag" && (
+          /* Eén tab voor de hele speeldag (#674): teams maken, spelen en
+             uitslagen invullen, met de afsluitkaart zodra alles binnen is. */
           <VandaagTab
             groupId={id}
-            groupName={group.data.name}
+            group={group.data!}
             myId={myId}
             isOwner={isOwner}
+            members={memberList}
             matches={matches.data ?? []}
             rounds={rounds}
+            openRound={openRound ?? null}
             dayDone={dayDone}
             today={today}
             teams={tmap}
@@ -333,31 +376,10 @@ export function GroupDetail() {
             histories={histories.data ?? {}}
             upsets={upsets}
             zwartePiet={zwartePiet}
-            intensiteit={group.data?.roast_intensiteit ?? "gemeen"}
-            onMatches={onMatches}
-            onShowSpelen={() => setView("spelen")}
-            onShowStand={() => setView("stand")}
-          />
-        )}
-
-        {view === "spelen" && (
-          /* Teams maken primair, losse partij secundair; reis-CTA naar
-             Vandaag zodra er wedstrijden klaarstaan (#364). */
-          <SpelenTab
-            groupId={id}
-            group={group.data!}
-            myId={myId}
-            members={memberList}
-            profiles={pmap}
-            matches={matches.data ?? []}
-            todaysMatches={todaysMatches}
-            teams={tmap}
-            openRound={openRound ?? null}
             busy={busy}
-            intensiteit={group.data.roast_intensiteit ?? "gemeen"}
             onMatches={onMatches}
             onGuestCreated={profiles.reload}
-            onShowRondes={() => setView("rondes")}
+            onShowStand={() => setView("stand")}
           />
         )}
 
@@ -372,6 +394,8 @@ export function GroupDetail() {
             myId={myId}
             isOwner={isOwner}
             matches={matches.data ?? []}
+            polls={polls}
+            options={pollOpts}
           />
         )}
 
@@ -390,7 +414,7 @@ export function GroupDetail() {
             emptyAll={
               <p className="empty">
                 Nog geen gespeelde matches in deze groep — log er een op de
-                Teams-tab.
+                Vandaag-tab.
               </p>
             }
           />

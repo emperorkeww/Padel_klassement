@@ -105,22 +105,24 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
-  it("toont de teamgenerator op Teams en de suggesties op Plannen", async () => {
+  it("houdt de teamgenerator op Vandaag en de suggesties op Plannen", async () => {
     renderPage();
-    // Op de standaard Vandaag-tab staan sinds #342 noch de suggesties noch de
-    // teamgenerator: die zijn naar Plannen resp. Teams verhuisd.
+    // De dag loopt (rondes van vandaag), dus de uitslagen staan bovenaan en de
+    // teamgenerator zit ingeklapt eronder (#674 A2). De suggesties horen bij
+    // Plannen (#342) en horen hier niet te staan.
     expect(
       await screen.findByRole("heading", { name: /^vandaag$/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /suggesties/i }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: /maak teams/i }),
-    ).not.toBeInTheDocument();
+    const details = screen
+      .getByText(/nog een ronde maken/i)
+      .closest("details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
 
-    // Teamgenerator staat op de Teams-tab.
-    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
+    // Uitklappen geeft de volle teamgenerator.
+    await userEvent.click(screen.getByText(/nog een ronde maken/i));
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
@@ -146,7 +148,7 @@ describe("<GroupDetail />", () => {
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
     await userEvent.click(
-      await screen.findByRole("tab", { name: /^teams$/i }),
+      await screen.findByText(/nog een ronde maken/i),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
@@ -169,7 +171,7 @@ describe("<GroupDetail />", () => {
     renderPage();
     // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Teams.
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
+    await userEvent.click(screen.getByText(/nog een ronde maken/i));
     await userEvent.click(
       await screen.findByRole("button", { name: /^mexicano$/i }),
     );
@@ -184,7 +186,7 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
+    await userEvent.click(screen.getByText(/nog een ronde maken/i));
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
       await screen.findByRole("button", { name: /^americano$/i }),
@@ -329,14 +331,14 @@ describe("<GroupDetail />", () => {
       "-1",
     );
 
-    // Pijltje rechts: Vandaag → Teams (volgende in de balk).
+    // Pijltje rechts: Vandaag → Historie (volgende in de balk).
     vandaag.focus();
     await userEvent.keyboard("{ArrowRight}");
-    const teams = screen.getByRole("tab", { name: /^teams$/i });
-    expect(teams).toHaveAttribute("aria-selected", "true");
-    expect(teams).toHaveFocus();
+    const historie = screen.getByRole("tab", { name: /^historie/i });
+    expect(historie).toHaveAttribute("aria-selected", "true");
+    expect(historie).toHaveFocus();
     expect(
-      await screen.findByRole("heading", { name: /maak teams/i }),
+      await screen.findByRole("heading", { name: /gespeelde matches/i }),
     ).toBeInTheDocument();
 
     // End springt naar de laatste tab; de teller zit in de naam.
@@ -347,17 +349,22 @@ describe("<GroupDetail />", () => {
     );
   });
 
-  // #673: de tabs heten "Teams" en "Historie", maar de URL-keys bleven
-  // "spelen" en "matches" — die staan hard in de edge functions en in
-  // pushberichten die al op telefoons staan. Deze test borgt dat zo'n oude
-  // link op de juiste tab landt.
-  it("opent ?tab=spelen op Teams en ?tab=matches op Historie (#673)", async () => {
-    const teams = renderPage("/groepen/g1?tab=spelen");
-    expect(
-      await screen.findByRole("heading", { name: /maak teams/i }),
-    ).toBeInTheDocument();
+  // #673/#674: de URL-keys "spelen" (de oude Teams-tab), "rondes" en "matches"
+  // staan hard in de edge functions en in pushberichten die al op telefoons
+  // staan. Sinds Teams en Vandaag zijn samengevoegd wijzen "spelen" en
+  // "rondes" allebei naar Vandaag; deze test borgt dat zo'n oude link landt.
+  it("laat oude tab-keys op de juiste tab landen (#673, #674)", async () => {
+    for (const key of ["spelen", "rondes"]) {
+      const page = renderPage(`/groepen/g1?tab=${key}`);
+      expect(
+        await screen.findByRole("tab", { name: /^vandaag/i }),
+      ).toHaveAttribute("aria-selected", "true");
+      expect(
+        screen.getByRole("heading", { name: /^wedstrijden$/i }),
+      ).toBeInTheDocument();
+      page.unmount();
+    }
 
-    teams.unmount();
     renderPage("/groepen/g1?tab=matches");
     expect(
       await screen.findByRole("heading", { name: /gespeelde matches/i }),
