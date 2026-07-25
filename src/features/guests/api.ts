@@ -75,6 +75,8 @@ export async function claimGuestPlayer(
     "standings",
     "ratings",
     "groups",
+    // De ledenlijst cachet onder "members:", niet onder "groups:".
+    "members",
     "friendships",
     "vendettas",
     "pias",

@@ -352,6 +352,25 @@ export async function setMatchGroup(
   invalidateMatchData();
 }
 
+/** Vervangt in één match een gastdeelnemer door de speler die er écht stond
+ *  (#681). Voor het geval één gastprofiel voor meerdere personen gebruikt is.
+ *  De RPC eist dat je de match aanmaakte of de groep bezit, dat de vervangen
+ *  speler een gast is, en dat de vervanger nog niet meespeelt. De ratings
+ *  worden serverzijdig herberekend. */
+export async function replaceMatchPlayer(
+  matchId: string,
+  fromPlayerId: string,
+  toPlayerId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("replace_match_player", {
+    p_match_id: matchId,
+    p_from_player: fromPlayerId,
+    p_to_player: toPlayerId,
+  });
+  if (error) throw error;
+  invalidateMatchData();
+}
+
 /**
  * Corrigeert de eindscore van een reeds afgeronde match. Alleen de aanmaker
  * mag dit (RLS). Anders dan setMatchResult blijft played_at behouden — het is
