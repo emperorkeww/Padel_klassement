@@ -44,6 +44,8 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
     *   Activiteitenfeed met dynamische highlight-kaarten en live commentaar van Coach Rudy.
     *   **Toto:** Voorspel de uitslagen van geplande wedstrijden en strijd mee in het toto-klassement van je groep.
     *   **Roast & Anti-Eer:** Wekelijkse/maandelijkse *"Pias van de week"* verkiezingen en de rondgaande *"Zwarte Piet"* schande-token. De roast-intensiteit en het roast-schild zijn per groep configureerbaar.
+    *   **De Schandpaal:** de tegenhanger van De Troon, onderaan het klassement — de pias van de club groot in beeld met de reden van zijn afgang en een sneer van Coach Rudy. Wie een roast-schild aan heeft, verschijnt er niet.
+    *   **AI-portretten:** wie de troon of de schandpaal haalt, krijgt van zijn profielfoto een gegenereerd portret (generalissimo respectievelijk hofnar, via OpenAI `gpt-image-1`). Per soort uit te zetten in Instellingen → Weergave; uitgezet betekent dat de foto nooit verstuurd wordt.
 *   🔔 **Notificaties & PWA**
     *   Web-Push notificaties voor nieuwe speelrondes, uitslagen, wedstrijdherinneringen en poll-deadlines.
     *   Installeerbaar als Progressive Web App (PWA) op mobiel en desktop.

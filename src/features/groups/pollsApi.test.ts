@@ -13,6 +13,10 @@ import {
   createPoll,
   addPollOption,
   removePollOption,
+  pollShareUrl,
+  markPollBooked,
+  setPollAccessCode,
+  reopenPoll,
   type PlayPoll,
   type NewPollOption,
 } from "./pollsApi";
@@ -34,6 +38,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_name: "Padel Gent",
     club_city: "Gent",
     club_timezone: "Europe/Brussels",
+    access_code: null,
     ...overrides,
   };
 }
@@ -222,5 +227,107 @@ describe("removePollOption", () => {
   it("gooit bij een fout", async () => {
     enqueue({ error: { message: "stuk" } });
     await expect(removePollOption("o1")).rejects.toEqual({ message: "stuk" });
+  });
+});
+
+// Toegangscode van de velden (#675): optioneel bij het boeken, los te zetten of
+// te wissen achteraf, en weg zodra de boeking vervalt.
+describe("markPollBooked", () => {
+  beforeEach(() => reset());
+
+  it("laat access_code ongemoeid zonder argument", async () => {
+    enqueue({ error: null });
+    await markPollBooked("poll1");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.table).toBe("play_polls");
+    expect(upd?.args[0]).toMatchObject({ status: "booked" });
+    expect(upd?.args[0]).not.toHaveProperty("access_code");
+  });
+
+  it("zet de genormaliseerde code mee", async () => {
+    enqueue({ error: null });
+    await markPollBooked("poll1", "  b3:  1234 ");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toMatchObject({
+      status: "booked",
+      access_code: "b3: 1234",
+    });
+  });
+
+  it("een leeg veld betekent expliciet 'geen code'", async () => {
+    enqueue({ error: null });
+    await markPollBooked("poll1", "   ");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toMatchObject({ access_code: null });
+  });
+
+  it("gooit bij een fout", async () => {
+    enqueue({ error: { message: "stuk" } });
+    await expect(markPollBooked("poll1")).rejects.toEqual({ message: "stuk" });
+  });
+});
+
+describe("setPollAccessCode", () => {
+  beforeEach(() => reset());
+
+  it("zet de code op de poll", async () => {
+    enqueue({ error: null });
+    await setPollAccessCode("poll1", "A12");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.table).toBe("play_polls");
+    expect(upd?.args[0]).toEqual({ access_code: "A12" });
+    const eq = calls.find((c) => c.method === "eq");
+    expect(eq?.args).toEqual(["id", "poll1"]);
+  });
+
+  it("wist de code met null", async () => {
+    enqueue({ error: null });
+    await setPollAccessCode("poll1", null);
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toEqual({ access_code: null });
+  });
+
+  it("raakt de status niet aan", async () => {
+    enqueue({ error: null });
+    await setPollAccessCode("poll1", "1234");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).not.toHaveProperty("status");
+  });
+
+  it("gooit bij een fout", async () => {
+    enqueue({ error: { message: "stuk" } });
+    await expect(setPollAccessCode("poll1", "1234")).rejects.toEqual({
+      message: "stuk",
+    });
+  });
+});
+
+describe("reopenPoll", () => {
+  beforeEach(() => reset());
+
+  it("wist de code samen met de boeking", async () => {
+    enqueue({ error: null });
+    await reopenPoll("poll1");
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toMatchObject({
+      status: "open",
+      locked_option_id: null,
+      locked_at: null,
+      booked_at: null,
+      access_code: null,
+    });
+  });
+});
+
+// Deep-link naar één speeldag (#675): spiegel van slotShareUrl.
+describe("pollShareUrl", () => {
+  it("bouwt een absolute link met tab en poll-id", () => {
+    expect(pollShareUrl("g1", "poll-1")).toBe(
+      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-1`,
+    );
+  });
+
+  it("codeert id's die niet URL-veilig zijn", () => {
+    expect(pollShareUrl("g1", "a b&c")).toContain("poll=a+b%26c");
   });
 });

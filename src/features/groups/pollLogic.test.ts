@@ -30,6 +30,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_name: "LAGO CLUB Padel Beveren",
     club_city: "Beveren",
     club_timezone: "Europe/Brussels",
+    access_code: null,
     ...overrides,
   };
 }

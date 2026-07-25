@@ -21,6 +21,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_name: "LAGO CLUB Padel Beveren",
     club_city: "Beveren",
     club_timezone: "Europe/Brussels",
+    access_code: null,
     ...overrides,
   };
 }
@@ -136,5 +137,59 @@ describe("pickPollBanner", () => {
     expect(
       pickPollBanner(fixedRows(noVotes), "p1", at("2026-07-10T12:00:00Z")),
     ).toBeNull();
+  });
+  // Toegangscode op het overzicht (#675): alleen op de speeldag zelf, en alleen
+  // als de baan ook echt geboekt is. Daarbuiten is het ruis op een dashboard.
+  describe("toegangscode (#675)", () => {
+    const metCode = (overrides: Partial<PlayPoll> = {}) => [
+      {
+        group: group(),
+        polls: [
+          poll({
+            status: "booked",
+            locked_option_id: "opt-1",
+            access_code: "1234",
+            ...overrides,
+          }),
+        ],
+        options: [option()],
+        votes: [vote({ status: "yes" })],
+      },
+    ];
+
+    it("toont de code op de speeldag zelf", () => {
+      const pick = pickPollBanner(metCode(), "p1", at("2026-07-10T12:00:00Z"));
+      expect(pick).toMatchObject({ kind: "fixed", accessCode: "1234" });
+    });
+
+    it("zwijgt de dag ervoor", () => {
+      const pick = pickPollBanner(metCode(), "p1", at("2026-07-09T12:00:00Z"));
+      expect(pick).toMatchObject({ kind: "fixed", accessCode: null });
+    });
+
+    it("rekent de dag in clubtijd, niet in UTC", () => {
+      // 2026-07-09 23:30 UTC = 2026-07-10 01:30 in Brussel: de speeldag is
+      // daar al begonnen, dus de code hoort er te staan.
+      const pick = pickPollBanner(metCode(), "p1", at("2026-07-09T23:30:00Z"));
+      expect(pick).toMatchObject({ accessCode: "1234" });
+    });
+
+    it("zwijgt zolang de baan nog niet geboekt is", () => {
+      const pick = pickPollBanner(
+        metCode({ status: "locked" }),
+        "p1",
+        at("2026-07-10T12:00:00Z"),
+      );
+      expect(pick).toMatchObject({ booked: false, accessCode: null });
+    });
+
+    it("geeft null zonder code", () => {
+      const pick = pickPollBanner(
+        metCode({ access_code: null }),
+        "p1",
+        at("2026-07-10T12:00:00Z"),
+      );
+      expect(pick).toMatchObject({ accessCode: null });
+    });
   });
 });

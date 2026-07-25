@@ -26,9 +26,15 @@ export function buildTimeAxis(open: string, close: string, stepMin = 30): string
   return times;
 }
 
-/** Datum (YYYY-MM-DD) van vandaag + offsetDays in de opgegeven tijdzone. */
-export function dateInZone(timeZone: string, offsetDays = 0): string {
-  const d = new Date(Date.now() + offsetDays * 86_400_000);
+/** Datum (YYYY-MM-DD) van vandaag + offsetDays in de opgegeven tijdzone.
+ *  `nowMs` is er voor aanroepers die hun eigen "nu" doorgeven en daarmee
+ *  testbaar blijven (pickPollBanner, #675). */
+export function dateInZone(
+  timeZone: string,
+  offsetDays = 0,
+  nowMs = Date.now(),
+): string {
+  const d = new Date(nowMs + offsetDays * 86_400_000);
   // en-CA formatteert als YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,

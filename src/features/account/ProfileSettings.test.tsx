@@ -124,6 +124,24 @@ describe("<ProfileSettings />", () => {
     }
   });
 
+  it("zet het pias-portret uit via de weergavekaart (#682)", async () => {
+    // Losse opt-out van het dictator-portret: aan de troon als generalissimo
+    // verschijnen zegt niets over de schandpaal. Standaard aangevinkt.
+    const spy = vi.spyOn(profilesApi, "updateProfile").mockResolvedValue();
+    try {
+      renderPage();
+      const toggle = await screen.findByRole("checkbox", {
+        name: /pias-portret/i,
+      });
+      expect(toggle).toBeChecked();
+
+      await userEvent.click(toggle);
+      expect(spy).toHaveBeenCalledWith("p1", { pias_portret: false });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("slaat een nieuwe naam op", async () => {
     renderPage();
     const veld = await screen.findByDisplayValue("Alice Anders");

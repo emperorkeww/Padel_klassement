@@ -422,6 +422,121 @@ export type Database = {
           },
         ]
       }
+      guest_claims: {
+        Row: {
+          created_at: string
+          guest_id: string
+          id: string
+          player_id: string
+          requested_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guest_id: string
+          id?: string
+          player_id: string
+          requested_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guest_id?: string
+          id?: string
+          player_id?: string
+          requested_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_claims_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_claims_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_claims_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "guest_claims_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_points: {
         Row: {
           created_at: string
@@ -997,6 +1112,7 @@ export type Database = {
       }
       play_polls: {
         Row: {
+          access_code: string | null
           booked_at: string | null
           club_city: string | null
           club_id: string
@@ -1013,6 +1129,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          access_code?: string | null
           booked_at?: string | null
           club_city?: string | null
           club_id?: string
@@ -1029,6 +1146,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          access_code?: string | null
           booked_at?: string | null
           club_city?: string | null
           club_id?: string
@@ -1218,6 +1336,9 @@ export type Database = {
           notify_rank_change: boolean
           notify_result: boolean
           owner_id: string | null
+          pias_avatar_bron: string | null
+          pias_avatar_url: string | null
+          pias_portret: boolean
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild: boolean
           toon_waarnemend_dictator: boolean
@@ -1241,6 +1362,9 @@ export type Database = {
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
+          pias_avatar_bron?: string | null
+          pias_avatar_url?: string | null
+          pias_portret?: boolean
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
           toon_waarnemend_dictator?: boolean
@@ -1264,6 +1388,9 @@ export type Database = {
           notify_rank_change?: boolean
           notify_result?: boolean
           owner_id?: string | null
+          pias_avatar_bron?: string | null
+          pias_avatar_url?: string | null
+          pias_portret?: boolean
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
           roast_schild?: boolean
           toon_waarnemend_dictator?: boolean
@@ -1822,7 +1949,17 @@ export type Database = {
         Returns: boolean
       }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
+      _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
+      _guest_claim_conflict: {
+        Args: { p_guest: string; p_player: string }
+        Returns: string
+      }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
+      cancel_guest_claim: { Args: { p_claim_id: string }; Returns: undefined }
+      claim_guest_player: {
+        Args: { p_guest_id: string; p_player_id: string }
+        Returns: Json
+      }
       create_completed_match: {
         Args: {
           p_a1: string
@@ -1936,6 +2073,14 @@ export type Database = {
       recompute_ratings: { Args: never; Returns: undefined }
       recompute_zwarte_piet: { Args: never; Returns: undefined }
       redeem_group_invite: { Args: { p_token: string }; Returns: string }
+      replace_match_player: {
+        Args: { p_from_player: string; p_match_id: string; p_to_player: string }
+        Returns: undefined
+      }
+      request_guest_claim: {
+        Args: { p_guest_id: string; p_player_id: string }
+        Returns: string
+      }
       season_player_standings: {
         Args: { p_end: string; p_start: string }
         Returns: {

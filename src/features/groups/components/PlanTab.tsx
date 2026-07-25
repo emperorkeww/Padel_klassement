@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useAsync } from "@/lib/hooks/useAsync";
+import { Link, useSearchParams } from "react-router-dom";
+import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { Skeleton } from "@/ui/Skeleton";
@@ -10,8 +10,6 @@ import { useClub, type Club } from "@/features/availability/club";
 import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import { displayName } from "@/features/profiles/api";
 import {
-  getGroupPolls,
-  getGroupPollOptions,
   getGroupPollVotes,
   createPoll,
   type PlayPoll,
@@ -55,6 +53,8 @@ export function PlanTab({
   myId,
   isOwner,
   matches,
+  polls,
+  options,
 }: {
   groupId: string;
   groupName: string;
@@ -64,6 +64,10 @@ export function PlanTab({
   isOwner: boolean;
   /** Alle group-matches (uit GroupDetail): voedt de Klaar-fase-detectie. */
   matches: Match[];
+  /** Polls en opties komen sinds #674 uit GroupDetail: de landingstab heeft
+   *  de reis-status al nodig vóór deze tab mount. De stemmen blijven hier. */
+  polls: AsyncState<PlayPoll[]>;
+  options: AsyncState<PollOption[]>;
 }) {
   const globalClub = useClub();
   const toast = useToast();
@@ -91,14 +95,13 @@ export function PlanTab({
     setWizardOpen(false);
   };
 
-  const polls = useAsync<PlayPoll[]>(() => getGroupPolls(groupId), [groupId]);
-  const options = useAsync<PollOption[]>(
-    () => getGroupPollOptions(groupId),
-    [groupId],
-  );
+  // Gedeelde speeldag uit de URL (#675): ?poll=<id> zet die poll in focus.
+  const [urlParams] = useSearchParams();
+  const gedeeldePollId = urlParams.get("poll");
+
+  // polls/options staan in GroupDetail (die abonneert er ook op); alleen de
+  // stemmen zijn puur van deze tab.
   const votes = useAsync<PollVote[]>(() => getGroupPollVotes(groupId), [groupId]);
-  useRealtime("play_polls", polls.reload, `group_id=eq.${groupId}`);
-  useRealtime("play_poll_options", options.reload, `group_id=eq.${groupId}`);
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
   // Vrije banen (7-daags venster) van de gekozen nieuwe-poll-club: voedt de
@@ -128,7 +131,9 @@ export function PlanTab({
   }
 
   // De focus-poll bepaalt de fase van de hele tab; de rest klapt samen.
-  const focus = focusPoll(active, allOptions, today);
+  // ?poll=<id> uit een gedeelde link (#675) wint; onbekend of verlopen valt
+  // stil terug op de gewone keuze.
+  const focus = focusPoll(active, allOptions, today, gedeeldePollId);
   const rest = active.filter((p) => p.id !== focus?.id);
   const chosen = focus ? lockedOptionOf(focus, allOptions) : null;
   const roundsExist = focus

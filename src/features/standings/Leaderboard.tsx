@@ -26,11 +26,13 @@ import {
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
+import { magDictatorPortretGenereren } from "./dictatorPortret";
 import {
-  magDictatorPortretGenereren,
+  GEEN_AVATAR_BRON,
   portretVervallen,
-  prewarmDictatorPortret,
-} from "./dictatorPortret";
+  portretVoor,
+  prewarmPortret,
+} from "./aiPortret";
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getGlobalePias, getPiasWeeks } from "./piasApi";
@@ -42,6 +44,8 @@ import { coachKlassement, coachKlassementMood } from "@/features/coach/klassemen
 import { KlassementCommentaar } from "./components/KlassementCommentaar";
 import { Podium } from "@/features/standings/components/Podium";
 import { DictatorThrone } from "@/features/standings/components/DictatorThrone";
+import { Schandpaal } from "./components/Schandpaal";
+import { schandpaalUit } from "./schandpaal";
 import {
   DEFAULT_DICTATOR,
   defaultDictatorEnabled,
@@ -296,11 +300,11 @@ export function Leaderboard() {
       })
     )
       return;
-    if (!portretVervallen(me)) return;
-    const bron = me.avatar_url ?? "__geen_avatar__";
+    if (!portretVervallen(me, "dictator")) return;
+    const bron = me.avatar_url ?? GEEN_AVATAR_BRON;
     if (prewarmedRef.current === bron) return;
     prewarmedRef.current = bron;
-    void prewarmDictatorPortret();
+    void prewarmPortret("dictator");
   }, [profilesMap.data, ratings.data, dictator.data, myId]);
 
   // Pias van de week voor de gekozen groep (niets bij "Alle groepen"). De
@@ -667,6 +671,38 @@ export function Leaderboard() {
     pias: usingScope ? null : currentPias(globalePias.data ?? []),
     piet: usingScope ? null : (globaleZwartePiet.data ?? null),
   };
+  // De Schandpaal (#682): de globale pias als uitgelichte kaart ónder de
+  // ranglijst — de tegenhanger van De Troon erboven. Zelfde bron als de
+  // 🤡-editie hierboven (getGlobalePias → currentPias), dus kaart en editie
+  // wijzen per constructie dezelfde speler aan; de selector valt zelf dicht bij
+  // een leeg venster of een roast-schild. Alleen op de live stand, om dezelfde
+  // reden als editieCtx.pias daar null is: een archief of tijdmachine heeft
+  // geen "deze week".
+  const schandpaal = useMemo(
+    () =>
+      usingScope || !spelerTab
+        ? null
+        : schandpaalUit(globalePias.data ?? [], profilesMap.data ?? {}, myId),
+    [usingScope, spelerTab, globalePias.data, profilesMap.data, myId],
+  );
+
+  // AI pias-portret (#682): vangnet voor het geval de server-trigger op
+  // pias_of_week niet gelopen heeft. Anders dan bij de dictator is er geen
+  // goedkope voorspeller (rating ≥ 1576) — je bent de pias of je bent het niet —
+  // dus dit vuurt alleen als ík de globale pias ben en m'n portret vervallen is.
+  // Zelfde ref-truc: hooguit één aanroep per bron-foto per sessie.
+  const piasPrewarmRef = useRef<string | null>(null);
+  useEffect(() => {
+    const pm = profilesMap.data;
+    if (!pm || schandpaal?.playerId !== myId) return;
+    const me = pm[myId];
+    if (!me || me.pias_portret === false) return;
+    if (!portretVervallen(me, "pias")) return;
+    const bron = me.avatar_url ?? GEEN_AVATAR_BRON;
+    if (piasPrewarmRef.current === bron) return;
+    piasPrewarmRef.current = bron;
+    void prewarmPortret("pias");
+  }, [profilesMap.data, schandpaal?.playerId, myId]);
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
 
@@ -917,10 +953,10 @@ export function Leaderboard() {
             image={
               throneRow
                 ? // Echte dictator: z'n AI-portret (#554) als het klaar is en de
-                  // opt-out aan staat; anders undefined → gewone avatar.
-                  pmap[throneRow.key]?.dictator_portret !== false
-                  ? (pmap[throneRow.key]?.dictator_avatar_url ?? undefined)
-                  : undefined
+                  // opt-out aan staat; anders undefined → gewone avatar. Sinds
+                  // #682 loopt die beslissing via portretVoor, dezelfde helper
+                  // als de Schandpaal gebruikt.
+                  (portretVoor(pmap[throneRow.key], "dictator") ?? undefined)
                 : (waarnemendPortret ?? undefined)
             }
             anthem={
@@ -1050,6 +1086,26 @@ export function Leaderboard() {
           </div>
         )}
       </div>
+
+      {/* De Schandpaal (#682): de pias van de club onder de ranglijst. De troon
+          staat erboven, de schandpaal eronder — de sandwich vertelt het verhaal.
+          Zelfde poorten als de troon: niet tijdens laden/fouten en niet terwijl
+          je zoekt (dan is de lijst geen klassement meer). */}
+      {schandpaal && !loading && !error && !nq && (
+        <Schandpaal
+          name={schandpaal.naam}
+          profile={schandpaal.profile}
+          detail={schandpaal.detail}
+          weekStart={schandpaal.weekStart}
+          link={schandpaal.link}
+          isMe={schandpaal.isMe}
+          // Het AI-hofnar-portret (#682) zodra het klaar is en de opt-out aan
+          // staat; anders undefined → de gewone avatar, geen skeleton (#555).
+          image={portretVoor(schandpaal.profile, "pias") ?? undefined}
+          ctx={schandpaal.ctx}
+          seed={schandpaal.seed}
+        />
+      )}
 
       {/* Ook gevonden buiten de ranglijst (#282): vindbare spelers die (nog)
           niet meespelen — met een link naar hun profiel. */}

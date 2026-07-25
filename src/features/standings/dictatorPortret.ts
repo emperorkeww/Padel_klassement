@@ -1,8 +1,12 @@
-import { supabase } from "@/lib/supabase/client";
-
 // AI dictator-portret (#554): lazy pre-warm-logica. We genereren het portret niet
 // bij elke upload, maar zodra een speler in range komt om volgende match dictator
 // te worden — plus als vangnet wanneer hij daadwerkelijk zittend dictator is.
+//
+// Sinds #682 staan de soort-onafhankelijke helpers (portretVervallen, portretVoor,
+// prewarmPortret, GEEN_AVATAR_BRON) in aiPortret.ts, omdat de pias ze deelt. Wat
+// hier blijft is precies wat de dictator eigen is: de rating-drempel waarop
+// pre-warmen zin heeft. De pias heeft zo'n voorspeller niet — daar is de
+// client-aanroep puur een vangnet.
 
 /** Rating-drempel voor de El Padelissimo/dictator-tier (#527). */
 export const DICTATOR_DREMPEL = 1600;
@@ -13,11 +17,6 @@ export const MAX_ELO_PER_MATCH = 24;
 /** Absolute ondergrens om te pre-warmen: onder 1576 kun je met één match (max
  *  +24) geen 1600 halen, dus genereren we niets. */
 export const PREWARM_ONDERGRENS = DICTATOR_DREMPEL - MAX_ELO_PER_MATCH; // 1576
-
-/** Sentinel-bron voor een gebruiker zonder profielfoto (spiegelt de edge
- *  function): zo geldt het portret als vervallen zodra hij later wél een avatar
- *  uploadt. */
-export const GEEN_AVATAR_BRON = "__geen_avatar__";
 
 export interface PrewarmInput {
   /** Huidige rating van de speler (null = onbekend/geen rating). */
@@ -47,27 +46,4 @@ export function magDictatorPortretGenereren({
   if (rating == null || rating < PREWARM_ONDERGRENS) return false;
   if (echteDictatorRating == null) return true;
   return echteDictatorRating - rating <= MAX_ELO_PER_MATCH;
-}
-
-/** Is het bewaarde portret vervallen t.o.v. de huidige profielfoto? True als er
- *  nog geen portret is of de bron niet meer matcht (fotowissel, #554). */
-export function portretVervallen(p: {
-  avatar_url?: string | null;
-  dictator_avatar_url?: string | null;
-  dictator_avatar_bron?: string | null;
-}): boolean {
-  const bron = p.avatar_url ?? GEEN_AVATAR_BRON;
-  return !p.dictator_avatar_url || p.dictator_avatar_bron !== bron;
-}
-
-/** Roept de edge function fire-and-forget aan om het eigen portret te (her)maken.
- *  De function leidt de userId uit de JWT af en respecteert opt-out/idempotentie,
- *  dus dit is veilig om vaker aan te roepen. Faalt stil — de troon toont zolang
- *  de gewone avatar. */
-export async function prewarmDictatorPortret(): Promise<void> {
-  try {
-    await supabase.functions.invoke("generate-dictator-avatar", { body: {} });
-  } catch {
-    // fire-and-forget
-  }
 }

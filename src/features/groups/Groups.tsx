@@ -20,12 +20,10 @@ import { getMyGroups, createGroup, type GroupSummary } from "./api";
 import {
   getGroupPolls,
   getGroupPollOptions,
-  getGroupPollVotes,
   type PlayPoll,
   type PollOption,
-  type PollVote,
 } from "./pollsApi";
-import { activePolls } from "./pollLogic";
+import { journeyFor } from "./journey";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
@@ -39,69 +37,19 @@ function ledenLabel(n: number): string {
   return n === 1 ? "1 lid" : `${n} leden`;
 }
 
-function shortDay(date: string): string {
-  return new Intl.DateTimeFormat("nl-BE", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00`));
-}
-
-type Journey = {
-  label: string;
-  /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
-  tone: "act" | "info" | "idle";
-  tab: "plannen" | "rondes";
-};
-
-/** Reis-status van een groep: waar zit de groep in de kernreis? */
-function journeyFor(
-  polls: PlayPoll[],
-  options: PollOption[],
-  today: string,
-  nowMs: number,
-): Journey {
-  // Bij meerdere speeldagen (#267) toont de reis-badge de meest dringende:
-  // een poll die stemmen/boeken vraagt gaat vóór een al geboekt moment.
-  const running = activePolls(polls, options, nowMs);
-  const active =
-    running.find((p) => p.status === "open" || p.status === "locked") ??
-    running[0] ??
-    null;
-  const locked = active?.locked_option_id
-    ? (options.find((o) => o.id === active.locked_option_id) ?? null)
-    : null;
-  if (active?.status === "open") {
-    return { label: "📊 Poll loopt — stem mee", tone: "act", tab: "plannen" };
-  }
-  if (active?.status === "locked" && locked) {
-    return {
-      label: `📆 ${shortDay(locked.date)} gekozen — boek de baan`,
-      tone: "act",
-      tab: "plannen",
-    };
-  }
-  if (active?.status === "booked" && locked) {
-    return {
-      label: `🎾 ${shortDay(locked.date)} · ${locked.start_time} geboekt`,
-      tone: "info",
-      tab: locked.date === today ? "rondes" : "plannen",
-    };
-  }
-  return { label: "Plan een speeldag →", tone: "idle", tab: "plannen" };
-}
-
+// Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
+// en nooit gelezen — bij 5 groepen 5 nutteloze queries (#674 C1). Het blijft
+// een N+1; één RPC per hub-load is de volgende stap als dat gaat knellen.
 async function loadJourneys(
   groups: GroupSummary[],
-): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }>> {
+): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[] }>> {
   const rows = await Promise.all(
     groups.map(async (g) => {
-      const [polls, options, votes] = await Promise.all([
+      const [polls, options] = await Promise.all([
         getGroupPolls(g.id),
         getGroupPollOptions(g.id),
-        getGroupPollVotes(g.id),
       ]);
-      return [g.id, { polls, options, votes }] as const;
+      return [g.id, { polls, options }] as const;
     }),
   );
   return Object.fromEntries(rows);
@@ -144,6 +92,18 @@ export function Groups() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  // Het aanmaakformulier zit achter een knop (#674 A5), behalve als je nog
+  // geen groep hebt — dan is dít de actie van de pagina. Afgeleid tijdens de
+  // render en niet in een effect, anders verschijnt het formulier één frame
+  // ná de lege staat.
+  const [newOpen, setNewOpen] = useState(false);
+  const noGroups = !groups.loading && !groups.error && list.length === 0;
+  const showNew = newOpen || noGroups;
+  // Zelf uitklappen zet de cursor meteen in het naamveld; bij een lege hub
+  // niet, want dan zou de pagina bij het laden je focus kapen.
+  useEffect(() => {
+    if (newOpen) nameRef.current?.focus();
+  }, [newOpen]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -209,7 +169,7 @@ export function Groups() {
                   <Link
                     key={g.id}
                     className="group-card"
-                    to={`/groepen/${g.id}${journey && journey.tab !== "rondes" ? "?tab=plannen" : ""}`}
+                    to={`/groepen/${g.id}${journey && journey.tab !== "vandaag" ? "?tab=plannen" : ""}`}
                   >
                     <Avatar name={g.name} size={44} />
                     <span className="group-card__body">
@@ -251,6 +211,9 @@ export function Groups() {
                         <span
                           className={`group-card__journey group-card__journey--${journey.tone}`}
                         >
+                          {journey.icon && (
+                            <span aria-hidden="true">{journey.icon}</span>
+                          )}
                           {journey.label}
                         </span>
                       )}
@@ -266,57 +229,71 @@ export function Groups() {
         </>
       )}
 
-      {/* Losse matches (buiten een groep) + het archief. */}
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Losse match</h2>
-        </div>
-        <p className="card__subtitle">
-          Buiten een groep om gespeeld? Log de uitslag — hij telt gewoon mee
-          voor je rating.
-        </p>
-        <div className="proposal__links">
-          <Link className="btn btn--sm btn--primary" to="/matches?log=1">
-            + Match loggen
-          </Link>
-          <Link className="btn btn--sm" to="/matches">
-            Alle matches →
-          </Link>
-        </div>
-      </section>
+      {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
+          even zwaar als de groepen zelf (#674 A5). Achter een knop dus — met
+          nul groepen staat hij meteen open, want dan ís dit de actie. */}
+      {showNew ? (
+        <section className="card">
+          <h2 className="card__title">Nieuwe groep</h2>
+          <form className="row-between account-form" onSubmit={create}>
+            <input
+              ref={nameRef}
+              className="input"
+              aria-label="Groepsnaam"
+              placeholder="Groepsnaam, bijv. Vrijdagavond"
+              maxLength={60}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <button
+              className="btn btn--primary"
+              disabled={busy || !name.trim()}
+            >
+              {busy ? "Aanmaken…" : "Aanmaken"}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <button
+          type="button"
+          className="btn hub-new"
+          onClick={() => setNewOpen(true)}
+        >
+          + Nieuwe groep
+        </button>
+      )}
 
-      {/* Duidelijke mobiele ingang naar de baanbeschikbaarheid (zit niet in
-          de onderbalk; binnen de plan-flow is hij er ook). */}
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Vrije banen</h2>
+      {/* Secundaire rij: losse matches (buiten een groep) en de
+          baanbeschikbaarheid. Stonden eerst als volwaardige kaarten tussen de
+          groepen, waardoor de hub drie gelijkwaardige acties toonde. */}
+      <section className="hub-extra" aria-label="Ook hier">
+        <div className="hub-extra__card">
+          <h2 className="hub-extra__title">Losse match</h2>
+          <p className="hub-extra__text">
+            Buiten een groep gespeeld? De uitslag telt gewoon mee voor je
+            rating.
+          </p>
+          <div className="hub-extra__links">
+            <Link className="btn btn--sm" to="/matches?log=1">
+              + Match loggen
+            </Link>
+            <Link className="btn btn--sm" to="/matches">
+              Alle matches →
+            </Link>
+          </div>
         </div>
-        <p className="card__subtitle">
-          Bekijk per dag of week welke banen vrij zijn bij {club.name}.
-        </p>
-        <div className="proposal__links">
-          <Link className="btn btn--sm" to="/banen">
-            🎾 Vrije banen bekijken →
-          </Link>
-        </div>
-      </section>
 
-      <section className="card">
-        <h2 className="card__title">Nieuwe groep</h2>
-        <form className="row-between account-form" onSubmit={create}>
-          <input
-            ref={nameRef}
-            className="input"
-            aria-label="Groepsnaam"
-            placeholder="Groepsnaam, bijv. Vrijdagavond"
-            maxLength={60}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <button className="btn btn--primary" disabled={busy || !name.trim()}>
-            {busy ? "Aanmaken…" : "Aanmaken"}
-          </button>
-        </form>
+        <div className="hub-extra__card">
+          <h2 className="hub-extra__title">Vrije banen</h2>
+          <p className="hub-extra__text">
+            Kijk per dag of week welke banen vrij zijn bij {club.name}.
+          </p>
+          <div className="hub-extra__links">
+            <Link className="btn btn--sm" to="/banen">
+              🎾 Banen bekijken →
+            </Link>
+          </div>
+        </div>
       </section>
     </div>
   );

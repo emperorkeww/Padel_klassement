@@ -124,6 +124,7 @@ export function ProfileSettings() {
             userId={myId}
             toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
             dictatorPortret={profile.data?.dictator_portret ?? true}
+            piasPortret={profile.data?.pias_portret ?? true}
             onUpdated={profile.reload}
           />
         </>
@@ -474,6 +475,7 @@ function ThemeCard({
   userId,
   toonWaarnemend,
   dictatorPortret,
+  piasPortret,
   onUpdated,
 }: {
   userId: string;
@@ -481,6 +483,8 @@ function ThemeCard({
   toonWaarnemend: boolean;
   /** AI dictator-portret opt-out (#554); default aan. */
   dictatorPortret: boolean;
+  /** AI pias-portret opt-out (#682); default aan. */
+  piasPortret: boolean;
   onUpdated: () => void;
 }) {
   const [pref, setPref] = useState<ThemePreference>(getThemePreference);
@@ -514,6 +518,22 @@ function ThemeCard({
     setBusy(true);
     try {
       await updateProfile(userId, { dictator_portret: aan });
+      onUpdated();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // AI pias-portret opt-out (#682): los van de dictator — als generalissimo op de
+  // troon verschijnen betekent niet dat je ook als hofnar aan de schandpaal wil
+  // hangen. Uitzetten nult ook het bewaarde portret (guard-trigger), dus je foto
+  // verdwijnt echt i.p.v. onzichtbaar bewaard te blijven.
+  async function togglePiasPortret(aan: boolean) {
+    setBusy(true);
+    try {
+      await updateProfile(userId, { pias_portret: aan });
       onUpdated();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -573,6 +593,24 @@ function ThemeCard({
           checked={dictatorPortret}
           disabled={busy}
           onChange={(e) => toggleDictatorPortret(e.target.checked)}
+        />
+      </label>
+      <label className="toggle-row">
+        <span className="toggle-row__text">
+          <span className="toggle-row__label">Pias-portret 🤡</span>
+          <span className="toggle-row__hint">
+            Word je de pias van de club, dan maakt een AI van je foto een
+            hofnar-portret (via OpenAI) voor op De Schandpaal. Zet uit als je je
+            foto liever niet laat versturen — dan blijft je gewone avatar staan
+            en verdwijnt een eerder gemaakt portret. Heb je je roast-schild aan,
+            dan gebeurt dit hoe dan ook niet.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          checked={piasPortret}
+          disabled={busy}
+          onChange={(e) => togglePiasPortret(e.target.checked)}
         />
       </label>
     </section>

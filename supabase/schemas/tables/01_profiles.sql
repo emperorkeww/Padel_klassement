@@ -43,6 +43,13 @@ create table public.profiles (
   dictator_portret boolean not null default true,
   dictator_avatar_url text,
   dictator_avatar_bron text,
+  -- AI pias-portret (#682): dezelfde drie velden voor De Schandpaal — het
+  -- hofnar-portret dat generate-pias-avatar uit de profielfoto maakt. Losse
+  -- opt-out van de dictator: wie op de troon wél als generalissimo wil, hoeft
+  -- niet ook als hofnar te verschijnen (en omgekeerd).
+  pias_portret boolean not null default true,
+  pias_avatar_url text,
+  pias_avatar_bron text,
   -- Notificatie-voorkeuren (#57): per push-type aan/uit, server-side
   -- gerespecteerd door send-push en match-reminders. Standaard alles aan.
   notify_new_round boolean not null default true,
@@ -122,12 +129,16 @@ create trigger on_auth_user_deleted
   after delete on auth.users
   for each row execute function public.handle_deleted_user();
 
--- Guard op de gegenereerde dictator-portret-kolommen (#554). Nult het portret bij
--- een fotowissel (invalidatie) en laat enkel de service-role (edge function
--- generate-dictator-avatar) dictator_avatar_url/-bron schrijven; een gewone
--- client kan z'n troon-portret zo niet spoofen of de opt-out omzeilen. SECURITY
--- INVOKER, zodat current_role de echte aanroeper weerspiegelt.
-create function public.profiles_dictator_portret_guard()
+-- Guard op de gegenereerde portret-kolommen: dictator (#554) én pias (#682) in
+-- één function, want twee guards met bijna-gelijke regels op dezelfde tabel
+-- divergeren bij de eerste wijziging die er maar één raakt. Drie taken:
+--   1. fotowissel  => beide portretten vervallen (invalidatie);
+--   2. geen service-role => client-writes op de url/bron-kolommen terugdraaien,
+--      zodat niemand z'n portret kan spoofen (de kolom-grant weigert ze al met
+--      42501; dit is de tweede laag);
+--   3. opt-out uit => het bewaarde portret nullen ("uit" = weg, niet "verborgen").
+-- SECURITY INVOKER, zodat current_role de echte aanroeper weerspiegelt.
+create function public.profiles_ai_portret_guard()
   returns trigger
   language plpgsql
   set search_path = ''
@@ -136,14 +147,26 @@ begin
   if new.avatar_url is distinct from old.avatar_url then
     new.dictator_avatar_url := null;
     new.dictator_avatar_bron := null;
+    new.pias_avatar_url := null;
+    new.pias_avatar_bron := null;
   elsif current_role <> 'service_role' then
     new.dictator_avatar_url := old.dictator_avatar_url;
     new.dictator_avatar_bron := old.dictator_avatar_bron;
+    new.pias_avatar_url := old.pias_avatar_url;
+    new.pias_avatar_bron := old.pias_avatar_bron;
+  end if;
+  if new.dictator_portret is false then
+    new.dictator_avatar_url := null;
+    new.dictator_avatar_bron := null;
+  end if;
+  if new.pias_portret is false then
+    new.pias_avatar_url := null;
+    new.pias_avatar_bron := null;
   end if;
   return new;
 end;
 $$;
 
-create trigger profiles_dictator_portret_guard
+create trigger profiles_ai_portret_guard
   before update on public.profiles
-  for each row execute function public.profiles_dictator_portret_guard();
+  for each row execute function public.profiles_ai_portret_guard();

@@ -17,6 +17,7 @@ import {
   updateMatchScore,
   createGuestPlayer,
   deleteMatch,
+  replaceMatchPlayer,
 } from "./api";
 import type { Match } from "@/types";
 
@@ -304,5 +305,26 @@ describe("deleteMatch", () => {
   it("gooit door bij een fout", async () => {
     enqueue({ error: new Error("delete stuk") });
     await expect(deleteMatch("m1")).rejects.toThrow("delete stuk");
+  });
+});
+
+// --- replaceMatchPlayer ------------------------------------------------------
+
+describe("replaceMatchPlayer", () => {
+  it("roept replace_match_player met match, gast en vervanger", async () => {
+    enqueue({ error: null });
+    await replaceMatchPlayer("m1", "g1", "p5");
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "replace_match_player",
+      args: [{ p_match_id: "m1", p_from_player: "g1", p_to_player: "p5" }],
+    });
+  });
+
+  it("gooit de weigering van de RPC door", async () => {
+    enqueue({ error: new Error("Die speler staat al in deze match") });
+    await expect(replaceMatchPlayer("m1", "g1", "p2")).rejects.toThrow(
+      "Die speler staat al in deze match",
+    );
   });
 });

@@ -1,31 +1,55 @@
+import { useState } from "react";
 import { DayStats } from "./DayStats";
+import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
+import { VendettaCard } from "./VendettaCard";
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
-import { EmptyState } from "@/ui/EmptyState";
+import {
+  NewMatchSheet,
+  type NewMatchMode,
+} from "@/features/matches/components/NewMatchSheet";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 import type { Upset } from "@/features/matches/upset";
-import type { Match, Profile, RatingPoint, RoastIntensiteit, Team } from "@/types";
+import type {
+  Group,
+  GroupMember,
+  Match,
+  Profile,
+  RatingPoint,
+  Team,
+} from "@/types";
 import "./VandaagTab.css";
 
-// De Vandaag-tab van de groepspagina (#377): uitslagen invullen is de primaire
-// actie, dus de wedstrijden staan bovenaan en het dagoverzicht (DayStats)
-// eronder als ondersteuning. Zodra alles binnen is verschijnt bovenaan de
-// afsluitkaart met de reis-CTA (#106) naar de stand én de deel-poster als
-// natuurlijk deelmoment. Puur presentatie: alle data en de reload-cascade
-// komen uit GroupDetail.
+// De Vandaag-tab van de groepspagina: één tab voor de hele speeldag (#674 A2).
+// Teams maken stond eerst op een aparte Teams-tab (#364) en spelen/uitslagen
+// hier (#377), waardoor één speelavond minstens drie tabwissels kostte en de
+// tabs elkaar met flow-CTA's heen en weer stuurden. Nu beweegt de tab met de
+// dag mee:
+//
+//   1. niets gepland   → de teamgenerator staat centraal
+//   2. wedstrijden klaar → de rondes staan bovenaan, generator klapt weg
+//   3. alles ingevuld  → afsluitkaart met de stap naar de stand + deel-poster
+//
+// Daardoor kunnen de flow-next-banners weg (#674 B3): de volgende stap zit in
+// de tab zelf in plaats van in een kaart die de inhoud omlaag duwt.
+// Puur presentatie: alle data en de reload-cascade komen uit GroupDetail.
 
 interface VandaagTabProps {
   groupId: string;
-  groupName: string;
+  /** Volledige groep — nodig voor de vendetta-kaart en de roast-intensiteit. */
+  group: Group;
   myId: string;
   /** Eigenaar mag ook andermans uitslagen beheren (canManage). */
   isOwner: boolean;
-  /** Volledige groepshistorie: DayStats filtert zelf op vandaag en de
-   *  rondekaarten gebruiken 'm als roast-context. */
+  members: GroupMember[];
+  /** Volledige groepshistorie: DayStats filtert zelf op vandaag, de
+   *  rondekaarten en de teamgenerator gebruiken 'm als context. */
   matches: Match[];
-  /** Rondes van vandaag (parent berekent ze al voor SpelenTab en de tab-teller). */
+  /** Rondes van vandaag (parent berekent ze al voor de tab-teller). */
   rounds: { round: number; list: Match[] }[];
+  /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. */
+  openRound: { round: number } | null;
   /** Alle uitslagen van vandaag binnen → afsluitkaart tonen. */
   dayDone: boolean;
   /** Clubdag (parent bepaalt de tijdzone). */
@@ -35,21 +59,23 @@ interface VandaagTabProps {
   histories: Record<string, RatingPoint[]>;
   upsets: Map<string, Upset>;
   zwartePiet: ZwartePiet | null;
-  intensiteit: RoastIntensiteit;
-  /** Reload-cascade van de parent na een uitslag of verwijdering. */
+  busy: boolean;
+  /** Reload-cascade van de parent na een nieuwe match, uitslag of verwijdering. */
   onMatches: () => void;
-  /** Reis-CTA's: lege staat → Spelen, dag afgerond → Stand. */
-  onShowSpelen: () => void;
+  onGuestCreated: () => void;
+  /** Reis-CTA: dag afgerond → door naar de stand. */
   onShowStand: () => void;
 }
 
 export function VandaagTab({
   groupId,
-  groupName,
+  group,
   myId,
   isOwner,
+  members,
   matches,
   rounds,
+  openRound,
   dayDone,
   today,
   teams,
@@ -57,16 +83,29 @@ export function VandaagTab({
   histories,
   upsets,
   zwartePiet,
-  intensiteit,
+  busy,
   onMatches,
-  onShowSpelen,
+  onGuestCreated,
   onShowStand,
 }: VandaagTabProps) {
+  // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
+  const [logOpen, setLogOpen] = useState(false);
+  const [logMode, setLogMode] = useState<NewMatchMode>("score");
+
+  const intensiteit = group.roast_intensiteit ?? "gemeen";
+  // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
+  const groupPlayers = members
+    .map((m) => profiles[m.player_id])
+    .filter(Boolean) as Profile[];
+
+  // Staat 1: er staat vandaag nog niets klaar, dus teams maken is dé actie.
+  const dayStarted = rounds.length > 0;
+
   // Verschijnt zodra er vanavond een uitslag is: poster voor de groepschat.
   const share = (
     <ShareEvening
       groupId={groupId}
-      groupName={groupName}
+      groupName={group.name}
       matches={matches}
       teams={teams}
       profiles={profiles}
@@ -75,18 +114,67 @@ export function VandaagTab({
     />
   );
 
+  const makeTeams = (
+    <MakeTeams
+      groupId={groupId}
+      members={members}
+      profiles={profiles}
+      myId={myId}
+      matches={matches}
+      teams={teams}
+      openRound={openRound}
+      onGenerated={onMatches}
+    />
+  );
+
+  // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
+  // het bleef hetzelfde ding, maar het heette hier anders en had als enige
+  // blok geen titel.
+  const losseMatch = (
+    <section className="group-log" aria-labelledby="group-log-title">
+      <div className="group-log__intro">
+        <h3 className="group-log__title" id="group-log-title">
+          Losse partij
+        </h3>
+        <p className="group-log__hint">
+          Buiten de rondes om gespeeld of eentje inplannen? Telt gewoon mee in
+          de groepsstand en de avondsamenvatting.
+        </p>
+      </div>
+      <div className="group-log__actions">
+        <button
+          className="btn btn--sm"
+          disabled={busy}
+          onClick={() => {
+            setLogMode("score");
+            setLogOpen(true);
+          }}
+        >
+          + Match loggen
+        </button>
+        <button
+          className="btn btn--sm"
+          disabled={busy}
+          onClick={() => {
+            setLogMode("plan");
+            setLogOpen(true);
+          }}
+        >
+          Match plannen
+        </button>
+      </div>
+    </section>
+  );
+
   return (
     <>
+      {/* Staat 3: alles ingevuld. Enige kaart die nog bovenaan mag staan —
+          hij duwt niets weg, want hij verschijnt aan het eind van de dag. */}
       {dayDone && (
         <div className="card flow-next" role="status">
-          <span>
-            🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!
-          </span>
+          <span>🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!</span>
           <div className="vandaag-done__actions">
-            <button
-              className="btn btn--sm btn--primary"
-              onClick={onShowStand}
-            >
+            <button className="btn btn--sm btn--primary" onClick={onShowStand}>
               Bekijk de stand →
             </button>
             {share}
@@ -94,93 +182,105 @@ export function VandaagTab({
         </div>
       )}
 
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Wedstrijden</h2>
-          {!dayDone && share}
-        </div>
-        {rounds.length > 0 && (
+      {/* Staat 2 en 3: de wedstrijden van vandaag met de uitslagen. */}
+      {dayStarted && (
+        <section className="card">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">Wedstrijden</h2>
+            {!dayDone && share}
+          </div>
           <p className="card__subtitle">
             De wedstrijden en gelogde partijen van vandaag — vul de uitslagen
             in en de stand rekent live mee.
           </p>
-        )}
 
-        {rounds.length === 0 && (
-          <EmptyState
-            icon="🎾"
-            title="Nog niets gespeeld vandaag"
-            action={
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={onShowSpelen}
-              >
-                Genereer teams of log een partij →
-              </button>
-            }
-          >
-            Maak teams op de Teams-tab — de wedstrijden en uitslagen
-            verschijnen hier.
-          </EmptyState>
-        )}
+          <div className="rounds">
+            {rounds.map(({ round, list }) => {
+              const done = list.filter((m) => m.status === "completed").length;
+              const roundDone = done === list.length;
+              return (
+                <div
+                  key={round}
+                  className={`round ${roundDone ? "is-done" : "is-open"}`}
+                >
+                  <div className="round-head">
+                    <h3 className="card__title card__title--compact">
+                      {round === 0 ? "Losse matches" : `Ronde ${round}`}
+                    </h3>
+                    <span
+                      className={`round-head__progress ${
+                        roundDone ? "round-head__progress--done" : ""
+                      }`}
+                    >
+                      {roundDone
+                        ? "Afgerond"
+                        : `${done}/${list.length} uitslagen`}
+                    </span>
+                  </div>
+                  <div className="stack">
+                    {list.map((m) =>
+                      m.status === "completed" ? (
+                        <DeletableMatchCard
+                          key={m.id}
+                          match={m}
+                          teams={teams}
+                          profiles={profiles}
+                          perspectiveId={myId}
+                          upset={upsets.get(m.id) ?? null}
+                          canManage={isOwner}
+                          onDeleted={onMatches}
+                        />
+                      ) : (
+                        <PlannedMatchCard
+                          key={m.id}
+                          match={m}
+                          teams={teams}
+                          profiles={profiles}
+                          perspectiveId={myId}
+                          history={matches}
+                          intensiteit={intensiteit}
+                          onSaved={onMatches}
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
-        <div className="rounds">
-          {rounds.map(({ round, list }) => {
-            const done = list.filter((m) => m.status === "completed").length;
-            const roundDone = done === list.length;
-            return (
-              <div
-                key={round}
-                className={`round ${roundDone ? "is-done" : "is-open"}`}
-              >
-                <div className="round-head">
-                  <h3 className="card__title card__title--compact">
-                    {round === 0 ? "Losse matches" : `Ronde ${round}`}
-                  </h3>
-                  <span
-                    className={`round-head__progress ${
-                      roundDone ? "round-head__progress--done" : ""
-                    }`}
-                  >
-                    {roundDone ? "Afgerond" : `${done}/${list.length} uitslagen`}
-                  </span>
-                </div>
-                <div className="stack">
-                  {list.map((m) =>
-                    m.status === "completed" ? (
-                      <DeletableMatchCard
-                        key={m.id}
-                        match={m}
-                        teams={teams}
-                        profiles={profiles}
-                        perspectiveId={myId}
-                        upset={upsets.get(m.id) ?? null}
-                        canManage={isOwner}
-                        onDeleted={onMatches}
-                      />
-                    ) : (
-                      <PlannedMatchCard
-                        key={m.id}
-                        match={m}
-                        teams={teams}
-                        profiles={profiles}
-                        perspectiveId={myId}
-                        history={matches}
-                        intensiteit={intensiteit}
-                        onSaved={onMatches}
-                      />
-                    ),
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {/* Staat 1: de teamgenerator is de inhoud van de tab. Zodra de dag
+          loopt klapt hij weg — je maakt hooguit nog een volgende ronde. */}
+      {dayStarted ? (
+        <details className="card next-round">
+          <summary className="next-round__toggle">Nog een ronde maken</summary>
+          <div className="next-round__body">
+            {makeTeams}
+            {losseMatch}
+          </div>
+        </details>
+      ) : (
+        <>
+          {makeTeams}
+          {losseMatch}
+        </>
+      )}
+
+      {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
+          de Stand — daar drukten ze de eigenlijke ranglijst weg. */}
+      <VendettaCard
+        group={group}
+        matches={matches}
+        teams={teams}
+        profiles={profiles}
+        memberList={members}
+        myId={myId}
+      />
 
       {/* Dagoverzicht: telling + highlights van vandaag (#342), ondersteunend
-          onder de wedstrijden (#377). */}
+          onder de wedstrijden (#377). Rendert niets op een lege dag. */}
       <DayStats
         matches={matches}
         teams={teams}
@@ -188,6 +288,17 @@ export function VandaagTab({
         histories={histories}
         zwartePiet={zwartePiet}
         today={today}
+      />
+
+      <NewMatchSheet
+        open={logOpen}
+        players={groupPlayers}
+        mode={logMode}
+        groupId={groupId}
+        intensiteit={intensiteit}
+        onClose={() => setLogOpen(false)}
+        onCreated={onMatches}
+        onGuestCreated={onGuestCreated}
       />
     </>
   );

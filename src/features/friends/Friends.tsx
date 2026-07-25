@@ -18,6 +18,11 @@ import {
   otherId,
   type FriendSuggestion,
 } from "./api";
+import {
+  getMyGuestClaims,
+  claimGuestPlayer,
+  cancelGuestClaim,
+} from "@/features/guests/api";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { headToHead } from "@/features/profiles/headToHead";
@@ -129,6 +134,44 @@ export function Friends() {
     if (query.trim()) doSearch(query.trim());
   }
 
+  // Koppelverzoeken voor gastspelers (#681): iemand claimt dat een gast die hij
+  // aanmaakte in werkelijkheid dit account is. Alleen ik kan dat bevestigen.
+  const guestClaims = useAsync(getMyGuestClaims, []);
+  const inkomendeClaims = (guestClaims.data ?? []).filter(
+    (c) => c.player_id === myId,
+  );
+  // Hoeveel historie er op het spel staat — zonder dat getal is "bevestigen"
+  // een blinde keuze. Alleen opgehaald als er echt een verzoek ligt.
+  const claimGuestIds = inkomendeClaims.map((c) => c.guest_id).join(",");
+  const claimMatchCounts = useAsync(async () => {
+    const ids = claimGuestIds ? claimGuestIds.split(",") : [];
+    const entries = await Promise.all(
+      ids.map(
+        async (gid) =>
+          [
+            gid,
+            (await getPlayerMatches(gid, 200)).filter(
+              (m) => m.status === "completed",
+            ).length,
+          ] as const,
+      ),
+    );
+    return Object.fromEntries(entries) as Record<string, number>;
+  }, [claimGuestIds]);
+
+  // De koppeling raakt profielen, matches én de vriendenlijst; de actie geeft
+  // zelf de tekst terug, omdat die het aantal overgenomen matches noemt.
+  async function claimAct(fn: () => Promise<string>) {
+    try {
+      toast.success(await fn());
+      guestClaims.reload();
+      profiles.reload();
+      friendships.reload();
+    } catch (err) {
+      toast.error(errMsg(err));
+    }
+  }
+
   async function act(fn: () => Promise<void>, ok: string) {
     try {
       await fn();
@@ -167,6 +210,64 @@ export function Friends() {
             Opnieuw proberen
           </button>
         </div>
+      )}
+
+      {inkomendeClaims.length > 0 && (
+        <section className="card">
+          <h2 className="card__title">Ben jij deze gast? 👤</h2>
+          <p className="card__subtitle">
+            Iemand speelde je als gast in, voordat je een account had. Bevestig
+            je dat, dan komt die historie op jouw naam te staan.
+          </p>
+          <div className="person-list">
+            {inkomendeClaims.map((c) => {
+              const gast = displayName(pmap[c.guest_id]);
+              const vrager = displayName(pmap[c.requested_by]);
+              const aantal = claimMatchCounts.data?.[c.guest_id];
+              return (
+                <div key={c.id} className="person-row person-row--attn">
+                  <PersonCell profile={pmap[c.guest_id]} />
+                  <span className="btn-row">
+                    <span className="badge">
+                      {vrager} vraagt
+                      {aantal != null && ` · ${aantal} matches`}
+                    </span>
+                    <button
+                      className="btn btn--primary btn--sm"
+                      onClick={async () => {
+                        if (
+                          !(await confirm({
+                            title: "Ben jij deze gast?",
+                            body: `Alle matches, punten en groepen van ${gast} komen op jouw account te staan en je rating wordt opnieuw berekend — inclusief de matches die je als gast speelde. ${gast} verdwijnt daarna. Dit kan niet ongedaan worden gemaakt.`,
+                            confirmLabel: "Ja, koppel mijn account",
+                          }))
+                        )
+                          return;
+                        await claimAct(async () => {
+                          const res = await claimGuestPlayer(c.guest_id, myId);
+                          return `Gekoppeld — ${res.matches} matches staan nu op jouw naam.`;
+                        });
+                      }}
+                    >
+                      Ja, dat ben ik
+                    </button>
+                    <button
+                      className="btn btn--sm"
+                      onClick={() =>
+                        claimAct(async () => {
+                          await cancelGuestClaim(c.id);
+                          return "Verzoek geweigerd.";
+                        })
+                      }
+                    >
+                      Nee
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       <div className="grid grid--2">

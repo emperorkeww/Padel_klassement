@@ -19,6 +19,8 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { PlanTab } from "./PlanTab";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { getGroupPolls, getGroupPollOptions } from "@/features/groups/pollsApi";
 import { GROUP_MEMBERS, PROFILES } from "@/test/fixtures";
 
 const baseClub = {
@@ -93,19 +95,32 @@ const profileMap = Object.fromEntries(
   PROFILES.map((p) => [p.id, p]),
 ) as Record<string, Profile>;
 
-function renderTab(matches: Match[] = []) {
+// Polls en opties komen sinds #674 uit GroupDetail (de landingstab heeft de
+// reis-status nodig vóór deze tab mount). Dit harnas doet wat de parent doet,
+// zodat de tests hun poll-situatie gewoon in `tables` kunnen blijven zetten.
+function PlanTabHarness({ matches }: { matches: Match[] }) {
+  const polls = useAsync(() => getGroupPolls("g1"), []);
+  const options = useAsync(() => getGroupPollOptions("g1"), []);
+  return (
+    <PlanTab
+      groupId="g1"
+      groupName="Vrijdagavond padel"
+      members={GROUP_MEMBERS as GroupMember[]}
+      profiles={profileMap}
+      myId="p1"
+      isOwner
+      matches={matches}
+      polls={polls}
+      options={options}
+    />
+  );
+}
+
+function renderTab(matches: Match[] = [], zoekstring = "") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/groepen/g1${zoekstring}`]}>
       <ToastProvider>
-        <PlanTab
-          groupId="g1"
-          groupName="Vrijdagavond padel"
-          members={GROUP_MEMBERS as GroupMember[]}
-          profiles={profileMap}
-          myId="p1"
-          isOwner
-          matches={matches}
-        />
+        <PlanTabHarness matches={matches} />
       </ToastProvider>
     </MemoryRouter>,
   );
@@ -210,5 +225,29 @@ describe("<PlanTab />", () => {
     await userEvent.click(screen.getByRole("button", { name: /sluiten/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(sessionStorage.getItem("poll-wizard:g1")).toBeNull();
+  });
+
+  // Gedeelde speeldag-link (#675): ?poll=<id> opent díé speeldag.
+  it("zet de gedeelde poll uit de URL in focus", async () => {
+    // Zonder link wint de open poll (er is nog actie nodig); mét link hoort
+    // de geboekte speeldag groot in beeld te staan.
+    renderTab([], "?tab=plannen&poll=poll-booked");
+
+    expect(
+      await screen.findByRole("heading", { name: /agenda & delen/i }),
+    ).toBeInTheDocument();
+    // De open poll is nu juist de ingeklapte "andere speeldag".
+    expect(screen.getByText(/andere speeldagen \(1\)/i)).toBeInTheDocument();
+  });
+
+  it("valt stil terug op de gewone keuze bij een onbekende poll-id", async () => {
+    renderTab([], "?tab=plannen&poll=bestaat-niet");
+
+    expect(
+      await screen.findByRole("heading", { name: /speeldag-poll/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
+    ).toBeInTheDocument();
   });
 });
