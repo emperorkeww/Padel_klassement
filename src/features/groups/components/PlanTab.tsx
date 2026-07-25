@@ -211,7 +211,11 @@ export function PlanTab({
     }
     return {
       text: "De wedstrijden staan klaar — bekijk ze op Vandaag.",
-      to: `/groepen/${groupId}`,
+      // Mét ?tab=spelen (#727): dit is een tabwissel binnen dezelfde route, en
+      // het kale pad zet de tab niet — het wist hooguit een bestaande ?tab,
+      // waarna `landed` je gewoon op Plannen houdt. "spelen" is de URL-sleutel
+      // voor Vandaag (viewFromParam in GroupDetail, labels ≠ keys — #673).
+      to: `/groepen/${groupId}?tab=spelen`,
       linkText: "Bekijk de wedstrijden →",
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
