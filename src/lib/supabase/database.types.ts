@@ -997,6 +997,7 @@ export type Database = {
       }
       play_polls: {
         Row: {
+          access_code: string | null
           booked_at: string | null
           club_city: string | null
           club_id: string
@@ -1013,6 +1014,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          access_code?: string | null
           booked_at?: string | null
           club_city?: string | null
           club_id?: string
@@ -1029,6 +1031,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          access_code?: string | null
           booked_at?: string | null
           club_city?: string | null
           club_id?: string

@@ -6,6 +6,14 @@ referentie (groen uniform, medailles, imperiale pose). Het portret komt in de
 publieke `avatars`-bucket op `{userId}/dictator.png` en wordt op De Troon
 (#528/#545) getoond i.p.v. de gewone avatar.
 
+**Gedeelde motor sinds #682.** Het recept staat in `_shared/aiPortretHandler.ts` en
+de stijl (prompt, referentiepad, bestandsnaam, doelkolommen) als data in
+`STIJLEN.dictator` (`_shared/aiPortret.ts`); `index.ts` is nog één regel. De
+pias-tegenhanger [`generate-pias-avatar`](../generate-pias-avatar/README.md)
+gebruikt dezelfde modules. Gedrag, aanroeppaden, secrets en deploy-vlaggen zijn
+ongewijzigd — maar deze function moet wél opnieuw gedeployd worden, want de oude
+bundel bevat de `_shared/`-modules nog niet.
+
 **Lazy + opt-out.** De function draait niet bij elke upload maar zodra iemand in
 range komt om dictator te worden (client-side pre-warm, PR3) of daadwerkelijk de
 troon pakt (server-side vangnet via de `dictator_termijnen`-trigger, PR3). Staat

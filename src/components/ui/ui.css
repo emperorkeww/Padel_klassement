@@ -967,6 +967,19 @@ textarea {
   color: var(--accent);
   box-shadow: var(--shadow-sm);
 }
+/* Paginabrede tabbar (#103); schuift horizontaal op smalle schermen in plaats
+   van van het scherm af te lopen (#674 B1 — zes labels plus tellers passen
+   niet op ~375px). Stond eerst in PlayerProfile.css, maar die laadt alleen op
+   het profiel. */
+.tabs--page {
+  margin-bottom: var(--sp-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs--page::-webkit-scrollbar {
+  display: none;
+}
+
 /* Teller achter een tablabel ("Leden · 6"). */
 .tab__count {
   margin-left: var(--sp-1);

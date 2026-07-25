@@ -29,6 +29,14 @@ create table public.play_polls (
   club_name text not null default 'LAGO CLUB Padel Beveren',
   club_city text default 'Beveren',
   club_timezone text not null default 'Europe/Brussels',
+  -- Toegangscode van de velden (#675): optioneel, want niet elke club heeft er
+  -- een. Vrije tekst i.p.v. cijfers — clubs gebruiken ook letters, of een code
+  -- per baan ("b3: 1234 · b4: 5678"); één veld houdt het model simpel. Mag ook
+  -- ná het boeken nog gezet worden (de code komt vaak pas met de
+  -- bevestigingsmail); play_polls_update_manager heeft geen statusfilter, dus
+  -- dat kan zonder policy-wijziging. Alleen groepsleden zien 'm
+  -- (play_polls_select_member) — een clubcode hoort niet op een publieke pagina.
+  access_code text check (access_code is null or length(access_code) <= 60),
   created_at timestamptz not null default now()
 );
 

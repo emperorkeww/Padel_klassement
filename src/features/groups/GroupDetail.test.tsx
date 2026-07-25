@@ -92,7 +92,12 @@ describe("<GroupDetail />", () => {
     expect(
       await screen.findByRole("heading", { name: /vrijdagavond padel/i }),
     ).toBeInTheDocument();
-    expect(await screen.findByText(/4 leden · jij bent eigenaar/i)).toBeInTheDocument();
+    // #674 B4: het ledental staat alleen nog als teller op de Leden-tab, de
+    // kop houdt de eigenaar-badge.
+    expect(await screen.findByText(/^eigenaar$/i)).toBeInTheDocument();
+    expect(
+      await screen.findByRole("tab", { name: "Leden, 4" }),
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: /^ronde 2$/i }),
     ).toBeInTheDocument();
@@ -115,7 +120,7 @@ describe("<GroupDetail />", () => {
     ).not.toBeInTheDocument();
 
     // Teamgenerator staat op de Teams-tab.
-    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
@@ -132,7 +137,7 @@ describe("<GroupDetail />", () => {
     }
 
     // Op de Plannen-tab staan de suggesties nu bovenaan, boven de poll.
-    await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^plannen$/i }));
     expect(
       await screen.findByRole("heading", { name: /suggesties/i }),
     ).toBeInTheDocument();
@@ -141,7 +146,7 @@ describe("<GroupDetail />", () => {
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
     await userEvent.click(
-      await screen.findByRole("button", { name: /^teams$/i }),
+      await screen.findByRole("tab", { name: /^teams$/i }),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
@@ -164,7 +169,7 @@ describe("<GroupDetail />", () => {
     renderPage();
     // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Teams.
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
     await userEvent.click(
       await screen.findByRole("button", { name: /^mexicano$/i }),
     );
@@ -179,7 +184,7 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^teams$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
       await screen.findByRole("button", { name: /^americano$/i }),
@@ -203,7 +208,7 @@ describe("<GroupDetail />", () => {
   it("toont de speeldag-poll op het plannen-tabblad met banen-balans", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^plannen$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^plannen$/i }));
 
     expect(
       await screen.findByRole("heading", { name: /speeldag-poll/i }),
@@ -256,7 +261,7 @@ describe("<GroupDetail />", () => {
   it("toont het groepsklassement standaard op rating, met punten-toggle", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^stand$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
 
     // Rating is de standaardweergave (fixtures: 1012/1012/988/988).
     expect(await screen.findByText(/gesorteerd op rating/i)).toBeInTheDocument();
@@ -274,7 +279,7 @@ describe("<GroupDetail />", () => {
   it("toont het voorspellersklassement onder Stand → Toto", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^stand$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     await userEvent.click(screen.getByRole("button", { name: /^toto$/i }));
 
     expect(
@@ -290,14 +295,56 @@ describe("<GroupDetail />", () => {
   it("toont Stand en Leden in eigen tabbladen", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^stand$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     expect(await screen.findByText(/groepsklassement/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /^leden$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^leden/i }));
     expect(await screen.findByText(/vrienden toevoegen/i)).toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: /verwijderen/i }).length,
     ).toBeGreaterThan(0);
+  });
+
+  // #674 B2: de tabbalk was een rij losse <button>'s met een is-active-class,
+  // dus screenreader-gebruikers hoorden niet welke tab actief was en misten de
+  // tellers (die stonden op aria-hidden).
+  it("heeft echte tab-semantiek met pijltjesnavigatie (#674)", async () => {
+    renderPage();
+    const tablist = await screen.findByRole("tablist", {
+      name: /groepsonderdelen/i,
+    });
+    expect(tablist).toBeInTheDocument();
+
+    const vandaag = screen.getByRole("tab", { name: /^vandaag/i });
+    expect(vandaag).toHaveAttribute("aria-selected", "true");
+    // Het paneel hoort bij de actieve tab.
+    expect(screen.getByRole("tabpanel")).toHaveAttribute(
+      "aria-labelledby",
+      vandaag.id,
+    );
+    // Roving tabindex: alleen de actieve tab zit in de tabvolgorde.
+    expect(vandaag).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: /^stand$/i })).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+
+    // Pijltje rechts: Vandaag → Teams (volgende in de balk).
+    vandaag.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    const teams = screen.getByRole("tab", { name: /^teams$/i });
+    expect(teams).toHaveAttribute("aria-selected", "true");
+    expect(teams).toHaveFocus();
+    expect(
+      await screen.findByRole("heading", { name: /maak teams/i }),
+    ).toBeInTheDocument();
+
+    // End springt naar de laatste tab; de teller zit in de naam.
+    await userEvent.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: "Leden, 4" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   // #673: de tabs heten "Teams" en "Historie", maar de URL-keys bleven
@@ -343,7 +390,7 @@ describe("<GroupDetail />", () => {
   it("toont de gespeelde matches op de Historie-tab met filters (#342)", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("button", { name: /^historie$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^historie/i }));
     expect(
       await screen.findByRole("heading", { name: /gespeelde matches/i }),
     ).toBeInTheDocument();
