@@ -159,28 +159,66 @@ describe("<PlanTab />", () => {
     sessionStorage.clear();
   });
 
-  it("zet de open poll in focus en klapt andere speeldagen compact in", async () => {
+  // #721: de tab ordent op hoe vast een speeldag staat. Vóór die splitsing
+  // won de open poll de focus en verdween de al geboekte speeldag in de
+  // ingeklapte restlijst "Andere speeldagen".
+  it("zet de vastgelegde speeldag boven de poll waarop nog gestemd wordt", async () => {
     renderTab();
 
-    // De open poll (actie nodig) wint de focus van de al geboekte speeldag.
+    const geboekt = await screen.findByRole("heading", {
+      name: /geboekte speeldag/i,
+    });
+    const stemmen = screen.getByRole("heading", { name: /speeldag-poll/i });
+
+    // Beide staan meteen volledig in beeld — geen van de twee zit nog achter
+    // een uitklapper — en de vastgelegde speeldag staat bovenaan.
+    expect(screen.getByText(/^vastgelegd$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^stemmen loopt$/i)).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: /speeldag-poll/i }),
-    ).toBeInTheDocument();
-    // Fasebalk op tab-niveau: Stemmen is de actieve stap.
+      geboekt.compareDocumentPosition(stemmen) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // Fasebalk + next-action blijven op de belangrijkste speeldag slaan …
     expect(screen.getByText(/^stemmen$/i)).toBeInTheDocument();
-    // Next-action: ik stemde al, twee leden nog niet.
     expect(
       screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
     ).toBeInTheDocument();
+    // … maar geven wel toe dat er meer dan één loopt.
+    expect(screen.getByText(/2 speeldagen lopen/i)).toBeInTheDocument();
+  });
 
-    // De geboekte poll staat compact onder "Andere speeldagen (1)" …
-    expect(screen.getByText(/andere speeldagen \(1\)/i)).toBeInTheDocument();
-    const row = screen.getByRole("button", { name: /geboekt/i });
-    // … en klapt bij het aantikken uit tot de volledige poll-kaart.
-    await userEvent.click(row);
+  it("markeert per speeldag of jij nog moet stemmen", async () => {
+    // Twee open polls: op de ene stemde ik, op de andere niet.
+    const tweede = { ...openPoll, id: "poll-open-2" };
+    const tweedeOptie = {
+      ...openOption,
+      id: "opt-open-2",
+      poll_id: "poll-open-2",
+      date: "2030-02-02",
+    };
+    tables.play_polls = [openPoll, tweede];
+    tables.play_poll_options = [openOption, tweedeOptie];
+    tables.play_poll_votes = [vote("opt-open", "p1")];
+    renderTab();
+
+    // Bij meerdere polls staan ze als rijen: datum en status zonder uitklappen.
+    const rijen = await screen.findAllByRole("button", {
+      name: /stemmen loopt/i,
+    });
+    expect(rijen).toHaveLength(2);
     expect(
-      await screen.findAllByRole("heading", { name: /speeldag-poll/i }),
-    ).toHaveLength(2);
+      screen.getAllByText(/jij moet nog stemmen/i),
+    ).toHaveLength(1);
+    expect(
+      within(rijen[1]).getByText(/jij moet nog stemmen/i),
+    ).toBeInTheDocument();
+
+    // Uitklappen geeft de volledige kaart.
+    await userEvent.click(rijen[1]);
+    expect(
+      await screen.findByRole("heading", { name: /speeldag-poll/i }),
+    ).toBeInTheDocument();
   });
 
   it("toont de Klaar-fase zodra er rondes na het boeken bestaan", async () => {
@@ -192,7 +230,7 @@ describe("<PlanTab />", () => {
     renderTab([ROUND_MATCH]);
 
     expect(
-      await screen.findByRole("heading", { name: /speeldag-poll/i }),
+      await screen.findByRole("heading", { name: /geboekte speeldag/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/de wedstrijden staan klaar/i),
@@ -227,17 +265,32 @@ describe("<PlanTab />", () => {
     expect(sessionStorage.getItem("poll-wizard:g1")).toBeNull();
   });
 
-  // Gedeelde speeldag-link (#675): ?poll=<id> opent díé speeldag.
-  it("zet de gedeelde poll uit de URL in focus", async () => {
-    // Zonder link wint de open poll (er is nog actie nodig); mét link hoort
-    // de geboekte speeldag groot in beeld te staan.
+  // Gedeelde speeldag-link (#675): ?poll=<id> opent díé speeldag. Met twee
+  // geboekte speeldagen in dezelfde sectie bepaalt de link welke openstaat.
+  it("zet de gedeelde poll uit de URL open in zijn sectie", async () => {
+    const vroeger = {
+      ...bookedPoll,
+      id: "poll-booked-2",
+      locked_option_id: "opt-booked-2",
+    };
+    const vroegerOptie = {
+      ...bookedOption,
+      id: "opt-booked-2",
+      poll_id: "poll-booked-2",
+      date: "2030-01-08",
+    };
+    tables.play_polls = [bookedPoll, vroeger];
+    tables.play_poll_options = [bookedOption, vroegerOptie];
     renderTab([], "?tab=plannen&poll=poll-booked");
 
+    // Zonder link zou de vroegste speeldag openstaan; mét link hoort de
+    // gedeelde speeldag uitgeklapt te zijn.
     expect(
       await screen.findByRole("heading", { name: /agenda & delen/i }),
     ).toBeInTheDocument();
-    // De open poll is nu juist de ingeklapte "andere speeldag".
-    expect(screen.getByText(/andere speeldagen \(1\)/i)).toBeInTheDocument();
+    const rijen = screen.getAllByRole("button", { name: /geboekt/i });
+    expect(rijen[0]).toHaveAttribute("aria-expanded", "false");
+    expect(rijen[1]).toHaveAttribute("aria-expanded", "true");
   });
 
   it("valt stil terug op de gewone keuze bij een onbekende poll-id", async () => {
@@ -249,5 +302,27 @@ describe("<PlanTab />", () => {
     expect(
       screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
     ).toBeInTheDocument();
+  });
+
+  // #721: de suggestiekaart klapt dicht zodra er écht een poll loopt.
+  it("klapt de suggesties dicht bij een lopende poll", async () => {
+    renderTab();
+
+    const kop = await screen.findByRole("heading", { name: /^suggesties$/i });
+    expect(kop.closest("details")).not.toHaveProperty("open", true);
+    expect(screen.getByText(/poll loopt/i)).toBeInTheDocument();
+  });
+
+  it("houdt de suggesties open als de enige poll allang gespeeld is", async () => {
+    // Vóór #721 keek de kaart enkel naar status !== "cancelled": een
+    // uitgespeelde poll hield de suggesties dicht en zette "poll loopt".
+    tables.play_polls = [bookedPoll];
+    tables.play_poll_options = [{ ...bookedOption, date: "2020-01-10" }];
+    tables.play_poll_votes = [];
+    renderTab();
+
+    const kop = await screen.findByRole("heading", { name: /^suggesties$/i });
+    expect(kop.closest("details")).toHaveProperty("open", true);
+    expect(screen.queryByText(/poll loopt/i)).not.toBeInTheDocument();
   });
 });
