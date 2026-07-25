@@ -27,7 +27,11 @@ import type { Tier } from "@/features/rating/tiers";
 export const POSTER_W = 1080;
 export const POSTER_H = 1350;
 
-export type ProfileShareData = {
+/** Precies wat de FUT-kaart zélf nodig heeft, zonder de profiel-voet
+ *  (klassement/vorm/badge). Losgetrokken bij #675, zodat een poster met
+ *  meerdere kaarten `drawKaart` kan hergebruiken zonder velden te verzinnen
+ *  die alleen de profielposter tekent. */
+export type KaartData = {
   name: string;
   /** Publieke Supabase-Storage-URL van de profielfoto; null zonder foto. */
   avatarUrl: string | null;
@@ -39,6 +43,9 @@ export type ProfileShareData = {
   /** De editie-regel zoals de live kaart die draagt — letterlijk de uitvoer
    *  van `editieLabel`, zodat poster en kaart nooit anders formuleren. */
   editieTekst: string | null;
+};
+
+export type ProfileShareData = KaartData & {
   rank: number | null;
   form: Outcome[];
   topBadge: { emoji: string; naam: string } | null;
@@ -81,7 +88,7 @@ function hueIndex(name: string): number {
  *  Geëxporteerd voor de dev-showcase. */
 export function drawKaart(
   ctx: CanvasRenderingContext2D,
-  d: ProfileShareData,
+  d: KaartData,
   avatarImg: HTMLImageElement | null,
   x: number,
   y: number,
