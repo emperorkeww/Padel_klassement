@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { dateInZone } from "@/lib/utils/time";
@@ -8,10 +7,10 @@ import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
 import { weekHeatmap } from "@/features/availability/availabilityShare";
 import { useClub } from "@/features/availability/club";
 import {
-  getGroupPolls,
-  getGroupPollOptions,
-  getGroupPollVotes,
   createPoll,
+  type PlayPoll,
+  type PollOption,
+  type PollVote,
 } from "@/features/groups/pollsApi";
 import { tallyOption } from "@/features/groups/pollLogic";
 import {
@@ -40,38 +39,45 @@ export function SuggestionsCard({
   groupId,
   myId,
   matches,
+  polls,
+  options,
+  votes,
+  onStarted,
 }: {
   groupId: string;
   myId: string;
   /** Alle matches van de groep (voor de speelhistoriek). */
   matches: Match[];
+  /** Polls, opties en stemmen komen sinds #721 uit PlanTab: die had ze al
+   *  binnen, dus deze kaart hoefde ze niet nog een tweede keer op te halen
+   *  (en had zo ook een eigen, afwijkend antwoord op "loopt er een poll?"). */
+  polls: PlayPoll[];
+  options: PollOption[];
+  votes: PollVote[];
+  /** Reload-cascade van de tab na het starten van een poll. */
+  onStarted: () => void;
 }) {
   const club = useClub();
   const toast = useToast();
   const today = dateInZone(club.timezone);
 
   const week = useAsync<WeekDay[]>(() => getWeekAvailability(today), [today, club.id]);
-  const polls = useAsync(() => getGroupPolls(groupId), [groupId]);
-  const options = useAsync(() => getGroupPollOptions(groupId), [groupId]);
-  const votes = useAsync(() => getGroupPollVotes(groupId), [groupId]);
-  useRealtime("play_polls", polls.reload, `group_id=eq.${groupId}`);
-  useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
   const livePolls = useMemo(
-    () => (polls.data ?? []).filter((p) => p.status !== "cancelled"),
-    [polls.data],
+    () => polls.filter((p) => p.status !== "cancelled"),
+    [polls],
   );
 
   const suggestions: Suggestion[] = useMemo(() => {
     const heat = weekHeatmap(week.data ?? [], null);
     const liveIds = new Set(livePolls.map((p) => p.id));
-    const allOptions = (options.data ?? []).filter((o) => liveIds.has(o.poll_id));
+    const allOptions = options.filter((o) => liveIds.has(o.poll_id));
 
     // Stemmen op komende poll-opties zijn het enige "kan dan"-signaal: die
     // zijn zichtbaar en intrekbaar via de poll. (De stemmen uit het
     // verwijderde slot-raster tellen bewust niet meer mee — zie issue #121.)
     const optionById = new Map(allOptions.map((o) => [o.id, o]));
-    const pollVoteSignals: CanSignal[] = (votes.data ?? []).flatMap((v) => {
+    const pollVoteSignals: CanSignal[] = votes.flatMap((v) => {
       const o = optionById.get(v.option_id);
       if (!o || o.date < today) return [];
       return [
@@ -86,8 +92,7 @@ export function SuggestionsCard({
 
     // Eerdere opties met genoeg spelers = bewezen goede momenten.
     const pastPlayable = allOptions.filter(
-      (o) =>
-        o.date < today && tallyOption(o, votes.data ?? []).enoughPlayers,
+      (o) => o.date < today && tallyOption(o, votes).enoughPlayers,
     );
 
     const history = playedMoments(
@@ -104,7 +109,7 @@ export function SuggestionsCard({
       pastPlayable,
       existing: allOptions.filter((o) => o.date >= today),
     });
-  }, [week.data, livePolls, options.data, votes.data, matches, today, club.timezone]);
+  }, [week.data, livePolls, options, votes, matches, today, club.timezone]);
 
   async function startPoll(s: Suggestion) {
     try {
@@ -117,23 +122,44 @@ export function SuggestionsCard({
           { date: s.date, startTime: s.time, duration: 90, courtsFree: s.freeCourts },
         ],
       });
-      polls.reload();
-      options.reload();
+      onStarted();
       toast.success("Poll gestart — de groep kan stemmen op de Plannen-tab.");
     } catch (err) {
       toast.error(errorMessage(err));
     }
   }
 
-  const loading = week.loading || polls.loading;
+  const loading = week.loading;
 
   // Bij een lopende poll blijven de suggesties staan (#267): je kunt in
   // dezelfde week nog een speeldag plannen. Momenten die al als poll-optie
   // bestaan filtert suggestMoments er via `existing` zelf uit. Maar zodra er
   // een poll loopt, klapt de kaart standaard dicht — plannen is dan al bezig.
-  const hasLivePoll = livePolls.length > 0;
-  // null = volg de poll-status; een boolean = de gebruiker koos zelf.
+  //
+  // "Loopt" = open én met een moment vanaf vandaag (#721). De oude check keek
+  // enkel naar status !== "cancelled", dus een allang gespeelde poll hield de
+  // kaart dicht en zette de badge "poll loopt" terwijl er niets liep.
+  const lopend = useMemo(
+    () =>
+      polls.filter(
+        (p) =>
+          p.status === "open" &&
+          options.some((o) => o.poll_id === p.id && o.date >= today),
+      ).length,
+    [polls, options, today],
+  );
+  const hasLivePoll = lopend > 0;
+
+  // null = volg de poll-status; een boolean = de gebruiker koos zelf. Die
+  // keuze mag niet blijven plakken: wie de kaart openzette om een poll te
+  // starten, hield hem anders de hele sessie open — juist nadat plannen al
+  // begonnen was. Een nieuwe lopende poll geeft de sturing terug.
   const [manualOpen, setManualOpen] = useState<boolean | null>(null);
+  const vorigLopend = useRef(lopend);
+  useEffect(() => {
+    if (lopend > vorigLopend.current) setManualOpen(null);
+    vorigLopend.current = lopend;
+  }, [lopend]);
   const open = manualOpen ?? !hasLivePoll;
 
   return (

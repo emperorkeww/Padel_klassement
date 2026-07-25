@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   focusPoll,
+  heeftGestemd,
   lockedOptionOf,
   pollPhase,
   roundsExistFor,
+  splitPolls,
 } from "./planFlowLogic";
-import type { PlayPoll, PollOption } from "./pollsApi";
+import type { PlayPoll, PollOption, PollVote } from "./pollsApi";
 import type { Match } from "@/types";
 
 function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
@@ -108,6 +110,51 @@ describe("roundsExistFor", () => {
     expect(
       roundsExistFor(poll({ status: "booked", booked_at: null }), [match()]),
     ).toBe(false);
+  });
+});
+
+describe("splitPolls", () => {
+  it("scheidt vastgelegde speeldagen van polls waarop nog gestemd wordt", () => {
+    const active = [
+      poll({ id: "open-1", status: "open" }),
+      poll({ id: "gekozen", status: "locked" }),
+      poll({ id: "geboekt", status: "booked" }),
+      poll({ id: "open-2", status: "open" }),
+    ];
+    const { vastgelegd, stemmen } = splitPolls(active);
+    // Beide lijsten houden de chronologische volgorde van activePolls aan.
+    expect(vastgelegd.map((p) => p.id)).toEqual(["gekozen", "geboekt"]);
+    expect(stemmen.map((p) => p.id)).toEqual(["open-1", "open-2"]);
+  });
+
+  it("levert lege lijsten zonder actieve speeldagen", () => {
+    expect(splitPolls([])).toEqual({ vastgelegd: [], stemmen: [] });
+  });
+});
+
+describe("heeftGestemd", () => {
+  const p = poll({ id: "poll-1" });
+  const opts = [
+    option({ id: "opt-a", poll_id: "poll-1" }),
+    option({ id: "opt-b", poll_id: "poll-1" }),
+    option({ id: "opt-vreemd", poll_id: "poll-2" }),
+  ];
+  const vote = (option_id: string, player_id: string): PollVote => ({
+    option_id,
+    group_id: "g1",
+    player_id,
+    status: "yes",
+    updated_at: "2026-07-08T10:00:00Z",
+  });
+
+  it("is waar zodra er op één eigen moment gestemd is", () => {
+    expect(heeftGestemd(p, opts, [vote("opt-b", "p1")], "p1")).toBe(true);
+  });
+
+  it("telt stemmen van anderen of op een andere poll niet mee", () => {
+    expect(heeftGestemd(p, opts, [vote("opt-a", "p2")], "p1")).toBe(false);
+    expect(heeftGestemd(p, opts, [vote("opt-vreemd", "p1")], "p1")).toBe(false);
+    expect(heeftGestemd(p, opts, [], "p1")).toBe(false);
   });
 });
 

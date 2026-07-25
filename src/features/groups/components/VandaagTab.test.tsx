@@ -125,7 +125,7 @@ describe("<VandaagTab />", () => {
   // Vóór #674 kreeg je hier een lege "Wedstrijden"-kaart met een knop naar de
   // Teams-tab; nu is de teamgenerator zelf de inhoud.
 
-  it("zet op een lege dag de teamgenerator centraal, met de losse partij als voetnoot", async () => {
+  it("zet op een lege dag de teamgenerator centraal, met de losse partij erboven", async () => {
     renderTab();
 
     const generator = await screen.findByRole("heading", {
@@ -150,11 +150,11 @@ describe("<VandaagTab />", () => {
       screen.queryByRole("button", { name: /deel avond-samenvatting/i }),
     ).not.toBeInTheDocument();
 
-    // De losse partij blijft een gedempte voetnoot ónder de generator.
-    const footer = screen.getByRole("region", { name: /losse partij/i });
+    // De losse partij staat sinds #722 bovenaan, dus vóór de generator.
+    const losse = screen.getByRole("region", { name: /losse partij/i });
     expect(
-      generator.compareDocumentPosition(footer) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      generator.compareDocumentPosition(losse) &
+        Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
 
@@ -279,6 +279,15 @@ describe("<VandaagTab />", () => {
     expect(
       wedstrijden.compareDocumentPosition(details) &
         Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // De losse partij verhuist niet mee de inklapper in (#722): ook met
+    // rondes op het scherm staat hij los, bovenaan, boven de wedstrijden.
+    const losse = screen.getByRole("region", { name: /losse partij/i });
+    expect(details.contains(losse)).toBe(false);
+    expect(
+      wedstrijden.compareDocumentPosition(losse) &
+        Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
 
     // Geen banners meer die naar een andere tab wijzen (#674 B3).

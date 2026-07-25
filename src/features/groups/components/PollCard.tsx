@@ -41,6 +41,16 @@ import { PollOptionRow } from "./PollOptionRow";
 /* Poll-kaart: fase-verloop + compacte stemrijen.                      */
 /* ------------------------------------------------------------------ */
 
+/* De kaartkop volgt de fase (#721): sinds de tab een vastgelegde en een
+   stemmende speeldag naast elkaar toont, zouden twee kaarten met dezelfde
+   kop "Speeldag-poll" niet meer uit elkaar te houden zijn. */
+const CARD_TITLE: Record<PlayPoll["status"], string> = {
+  open: "Speeldag-poll",
+  locked: "Gekozen speeldag",
+  booked: "Geboekte speeldag",
+  cancelled: "Geannuleerde speeldag",
+};
+
 export function PollCard({
   poll,
   groupName,
@@ -270,7 +280,7 @@ export function PollCard({
   return (
     <section className="card">
       <div className="card__head">
-        <h2 className="card__title">Speeldag-poll</h2>
+        <h2 className="card__title">{CARD_TITLE[poll.status]}</h2>
         <div className="proposal__links">
           {/* Locatie (#322): wijzigbaar zolang de poll niet geboekt is; daarna
               een vaste weergave, want de baan ligt dan vast. */}
