@@ -63,6 +63,11 @@ export function EregalerijTab({
 
   const naamVan = (id: string) => displayName(profiles[id]);
   const isIk = (id: string) => id === myId;
+  /** Speelde de kijker mee in dit kwartaal? Gate voor de Wrapped-link (#712).
+   *  Gemeten binnen déze groep — buiten de groep kunnen er meer matches zijn,
+   *  maar dan is de link hoogstens ergens anders óók te vinden. */
+  const ikSpeeldeIn = (standings: PlayerStanding[]) =>
+    standings.some((p) => p.player_id === myId);
 
   return (
     <div className="eregalerij">
@@ -96,6 +101,22 @@ export function EregalerijTab({
               <p className="eregalerij-seizoen__meta">
                 {s.gespeeld === 1 ? "1 match" : `${s.gespeeld} matches`} ·{" "}
                 {s.season.label}
+                {/* Kwartaal-Wrapped (#712): de blijvende ingang. Het deck is
+                    persoonlijk en gaat over ál je matches, niet enkel die van
+                    deze groep — dus linken we naar het eigen profiel, waar die
+                    data al geladen is, i.p.v. een groeps-gescopet deck te
+                    tonen dat "jouw seizoen in padel" belooft. */}
+                {ikSpeeldeIn(s.standings) && (
+                  <>
+                    {" · "}
+                    <Link
+                      className="eregalerij-seizoen__wrapped"
+                      to={`/spelers/${myId}?wrapped=${s.season.id}`}
+                    >
+                      🎬 jouw {s.naam.naam} Wrapped
+                    </Link>
+                  </>
+                )}
               </p>
 
               <ol className="eregalerij-podium">

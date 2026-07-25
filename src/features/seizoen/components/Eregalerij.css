@@ -148,3 +148,11 @@
   font-size: var(--fs-xs, 0.75rem);
   color: var(--ink-soft);
 }
+
+/* Ingang naar het persoonlijke kwartaal-Wrapped (#712): inline in de meta-regel,
+   dus dezelfde maat — alleen de link-kleur onderscheidt hem. */
+.eregalerij-seizoen__wrapped {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}

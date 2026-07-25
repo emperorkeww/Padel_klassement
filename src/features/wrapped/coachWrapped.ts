@@ -10,11 +10,38 @@ import {
   type CoachMood,
   type RoastCtx,
 } from "@/features/coach/roastTone";
-import type { WrappedCard, WrappedJaarStats } from "@/features/wrapped/wrapped";
+import type {
+  WrappedCard,
+  WrappedJaarStats,
+  WrappedPeriode,
+} from "@/features/wrapped/wrapped";
 
 export interface CoachRegel {
   tekst: string;
   mood: CoachMood;
+}
+
+// ── Kwartaal-Wrapped (#712) ──────────────────────────────────────────────────
+//
+// Rudy's pools zijn geschreven voor een jáároverzicht: ze zeggen "volgend
+// jaar", "de jaarrekening", "een heel jaar". In een Herfst Wrapped klopt dat
+// niet. Twee ingrepen, elk waar hij het meest oplevert:
+//
+//  1. De kaarten waar Rudy het kader zet — cover, outro, seizoenskaart — en de
+//     nieuwe slachtoffer-kaart krijgen eigen kwartaal-pools. Daar is de tekst
+//     structureel over het tijdvak, dus daar is bespoke copy het waard.
+//  2. Voor alle andere pools (en het hele eindoordeel) filtert `zonderJaar` de
+//     regels weg die "jaar" bevatten. Zo hoeft geen enkele pool verdubbeld te
+//     worden en glipt er nooit een "volgend jaar" in een kwartaaloverzicht. In
+//     elke pool blijft minstens één regel over; mocht dat ooit niet zo zijn,
+//     dan valt de filter terug op de volle pool (liever een jaar-woord dan
+//     geen regel).
+const JAAR_WOORD = /jaar/i;
+
+function zonderJaar(pool: readonly string[], soort: WrappedPeriode["soort"]) {
+  if (soort === "jaar") return pool;
+  const over = pool.filter((r) => !JAAR_WOORD.test(r));
+  return over.length > 0 ? over : pool;
 }
 
 /** Mood van een burn: het schild dempt tot het neutrale portret, anders volgt
@@ -178,21 +205,62 @@ const SEIZOENSKAART = [
   "De collectible van het jaar. Draag 'm met dezelfde overtuiging als op de baan.",
 ] as const;
 
+/** Kwartaal-varianten (#712) van de kaarten waar Rudy het kader zet. */
+const COVER_SEIZOEN = [
+  "Daar is het dan: jouw kwartaal in cijfers. Ik heb m'n leesbril al opgezet.",
+  "Eén seizoen, een handvol kaarten. Zet je schrap.",
+  "Ik heb m'n notitieboekje van dit seizoen er nog eens bij gepakt. Boeiende lectuur.",
+  "Jouw seizoen, becommentarieerd door ondergetekende. Een eer, uiteraard.",
+  "Tijd voor de seizoensrekening. Geen zorgen, ik tel de nederlagen maar één keer.",
+  "De statistieken van drie maanden padel. Tijd voor de onthulling.",
+] as const;
+
+const OUTRO_SEIZOEN = [
+  "En dat was jouw seizoen. Ik ga m'n notitieboekje bijwerken voor het volgende.",
+  "Tot zover de terugblik. Op naar een kwartaal met nog meer verhalen.",
+  "Einde van de rit. Deel 'm met je maatjes — ik ben benieuwd naar de reacties.",
+  "Zo, dat was het seizoen. Volgend kwartaal sta ik er weer, pen in de aanslag.",
+  "Tot zover het seizoensoverzicht. M'n pen ligt al klaar voor het volgende.",
+] as const;
+
+const SEIZOENSKAART_SEIZOEN = [
+  "En hier is-ie dan: jouw kaart van dit seizoen. Zelfs ik geef toe dat dat er goed uitziet.",
+  "De officiële kaart van dit kwartaal. Laminaat 'm, of gewoon delen — ik vind het allebei best.",
+  "Team of the Season, editie jouw naam. Verdiend, na dit hele verhaal.",
+  "Deze kaart is nu voor altijd van jou. Bewaar 'm goed, ik teken er volgend seizoen een nieuwe.",
+  "De collectible van het seizoen. Draag 'm met dezelfde overtuiging als op de baan.",
+] as const;
+
+/** Slachtoffer-kaart (#712): de favoriete tegenstander van het kwartaal. */
+const SLACHTOFFER = [
+  "Deze tegenstander mag je dankbaar zijn voor het entertainment. Jij hem voor de punten.",
+  "Sommige tegenstanders zijn gewoon een cadeautje. Jij weet welke.",
+  "Tegen deze speler kwam je steevast op dreef. Blijf hem uitnodigen.",
+  "Jouw favoriete slachtoffer. Ik noteer 'm met een vriendelijke krabbel.",
+  "Tegen hem liep het gesmeerd. Zet hem maar weer op de lijst.",
+] as const;
+
 /**
  * Coach Rudy's regel + mood voor één Wrapped-kaart. Deterministisch op `seed`;
  * met een gedeelde `gebruikt`-set komt geen regel twee keer voor in één deck.
  * Het roast-schild dempt de burns tot een neutrale toon (portret-illustratie).
+ * `soort` kiest tussen de jaar- en kwartaal-copy (#712).
  */
 export function coachWrappedRegel(
   card: WrappedCard,
   ctx: RoastCtx,
   seed: number,
   gebruikt?: Set<string>,
+  soort: WrappedPeriode["soort"] = "jaar",
 ): CoachRegel {
-  const kies = (pool: readonly string[]) => kiesUniek(pool, seed, gebruikt);
+  const kies = (pool: readonly string[]) =>
+    kiesUniek(zonderJaar(pool, soort), seed, gebruikt);
+  const seizoen = soort === "seizoen";
   switch (card.kind) {
     case "cover":
-      return { tekst: kies(COVER), mood: "portret" };
+      return { tekst: kies(seizoen ? COVER_SEIZOEN : COVER), mood: "portret" };
+    case "slachtoffer":
+      return { tekst: kies(SLACHTOFFER), mood: "trots" };
     case "volume": {
       const wr = card.winrate;
       if (ctx.schild || wr == null) return { tekst: kies(VOLUME_NEUTRAAL), mood: "portret" };
@@ -225,13 +293,16 @@ export function coachWrappedRegel(
     case "badge":
       return { tekst: kies(BADGE), mood: "trots" };
     case "outro":
-      return { tekst: kies(OUTRO), mood: "portret" };
+      return { tekst: kies(seizoen ? OUTRO_SEIZOEN : OUTRO), mood: "portret" };
     case "eindoordeel":
       // De eindoordeel-kaart heeft z'n eigen generator (coachEindoordeel); dit
       // is enkel een veilige terugval als hij toch hierlangs komt.
-      return { tekst: kies(OUTRO), mood: "portret" };
+      return { tekst: kies(seizoen ? OUTRO_SEIZOEN : OUTRO), mood: "portret" };
     case "seizoenskaart":
-      return { tekst: kies(SEIZOENSKAART), mood: "trots" };
+      return {
+        tekst: kies(seizoen ? SEIZOENSKAART_SEIZOEN : SEIZOENSKAART),
+        mood: "trots",
+      };
   }
 }
 
@@ -321,18 +392,20 @@ const EIND_RATING_DOWN = [
 ] as const;
 
 /**
- * Coach Rudy's afsluitende jaarrapport (#295): een kop + 2-3 regels langs de
- * assen winrate, reeksen, bagels en rating. Deterministisch op `seed`; het
+ * Coach Rudy's afsluitende rapport (#295): een kop + 2-3 regels langs de assen
+ * winrate, reeksen, bagels en rating. Deterministisch op `seed`; het
  * roast-schild verzacht het tot een oprecht, positief slot (mood portret).
+ * `soort` houdt de jaar-woorden uit een kwartaalrapport (#712).
  */
 export function coachEindoordeel(
   stats: WrappedJaarStats,
   ctx: RoastCtx,
   seed: number,
+  soort: WrappedPeriode["soort"] = "jaar",
 ): { kop: string; regels: string[]; mood: CoachMood } {
   const gebruikt = new Set<string>();
   const pick = (pool: readonly string[], n: number) =>
-    kiesUniek(pool, (seed + n * 101) | 0, gebruikt);
+    kiesUniek(zonderJaar(pool, soort), (seed + n * 101) | 0, gebruikt);
   const wr = stats.winrate;
   const regels: string[] = [];
 

@@ -8,6 +8,11 @@
 import type { Match, Profile, RatingPoint, Team } from "@/types";
 import { matchDate } from "@/features/dashboard/missions";
 import {
+  seasonFor,
+  seizoenNaam,
+  type Season,
+} from "@/features/rating/seasons";
+import {
   biggestWin,
   inTeam,
   longestLossStreak,
@@ -36,11 +41,109 @@ export function toonWrappedBanner(now: Date): boolean {
   return (now.getMonth() === 11 && now.getDate() >= 15) || now.getMonth() === 0;
 }
 
+// ── Periode: één deck, twee tijdvakken (#712) ────────────────────────────────
+//
+// Het Wrapped bestond als jaaroverzicht (#115); sinds #712 draait exact
+// hetzelfde deck ook op een kwartaal. In plaats van een tweede implementatie
+// draagt een `WrappedPeriode` alle tijdvak-afhankelijke copy: de kaartdata en
+// de posterlayout blijven één set code. Alle copy staat in het object en niet
+// in een if/else verspreid over posterLayout — zo is een nieuw tijdvak (een
+// maand? een toernooi?) later een derde fabriek en geen refactor.
+
+export interface WrappedPeriode {
+  soort: "jaar" | "seizoen";
+  /** "2026" of "2026-q3" — voor bestandsnamen, dismiss-flags en roast-seeds. */
+  id: string;
+  /** Zelfstandig naamwoord in lopende tekst: "jaar" of "seizoen". */
+  noemer: string;
+  /** Kop op elke kaart: "Wrapped 2026" of "☀️ Zomer Wrapped". */
+  kicker: string;
+  /** Het tijdvak als naam: "2026" of "Zomer 2026". */
+  titel: string;
+  /** Het volgende tijdvak als naam: "2027" of "Herfst 2026". */
+  volgendeTitel: string;
+  /** Woord bovenaan de seizoenskaart-poster: "SEIZOEN" of "ZOMER". */
+  kaartWoord: string;
+  /** Editie-regel op de seizoenskaart: "🎬 Seizoen 2026" of "☀️ Zomer 2026". */
+  kaartEditie: string;
+  /** Kicker van de seizoenskaart-terugval in posterLayout — zelfde regel maar
+   *  zonder de 🎬 van de kaart-editie: "Seizoen 2026" of "☀️ Zomer 2026". */
+  kaartKicker: string;
+  /** Begin (inclusief) en einde (exclusief) van het tijdvak. */
+  start: Date;
+  end: Date;
+  /** Kalenderjaar waarin het tijdvak (begint) — voor jaargebonden data. */
+  jaar: number;
+}
+
+/** Het klassieke jaaroverzicht (#115). */
+export function jaarPeriode(jaar: number): WrappedPeriode {
+  return {
+    soort: "jaar",
+    id: String(jaar),
+    noemer: "jaar",
+    kicker: `Wrapped ${jaar}`,
+    titel: String(jaar),
+    volgendeTitel: String(jaar + 1),
+    kaartWoord: "SEIZOEN",
+    kaartEditie: `🎬 Seizoen ${jaar}`,
+    kaartKicker: `Seizoen ${jaar}`,
+    start: new Date(jaar, 0, 1),
+    end: new Date(jaar + 1, 0, 1),
+    jaar,
+  };
+}
+
+/** Kwartaaloverzicht (#712): Lente/Zomer/Herfst/Winter Wrapped. */
+export function seizoenPeriode(season: Season): WrappedPeriode {
+  const naam = seizoenNaam(season);
+  // Het volgende kwartaal: één milliseconde ná het einde van dit kwartaal.
+  const volgende = seizoenNaam(seasonFor(new Date(season.end.getTime() + 1)));
+  return {
+    soort: "seizoen",
+    id: season.id,
+    noemer: "seizoen",
+    kicker: `${naam.emoji} ${naam.naam} Wrapped`,
+    titel: naam.titel,
+    volgendeTitel: volgende.titel,
+    kaartWoord: naam.naam.toUpperCase(),
+    kaartEditie: naam.label,
+    kaartKicker: naam.label,
+    start: season.start,
+    end: season.end,
+    jaar: season.start.getFullYear(),
+  };
+}
+
+/**
+ * Het net afgesloten kwartaal, zolang het nieuwe kwartaal jong is (14 dagen) —
+ * het bannervenster van het kwartaal-Wrapped. Null buiten dat venster, en ook
+ * tijdens het jaar-Wrapped-venster (15 dec – 31 jan): dan wint het jaarverhaal
+ * en blijft het kwartaal bereikbaar via het profiel.
+ */
+export const SEIZOEN_BANNER_DAGEN = 14;
+
+export function seizoenWrappedVenster(now: Date): Season | null {
+  if (toonWrappedBanner(now)) return null;
+  const huidig = seasonFor(now);
+  const dagen = (now.getTime() - huidig.start.getTime()) / 86_400_000;
+  if (dagen >= SEIZOEN_BANNER_DAGEN) return null;
+  return seasonFor(new Date(huidig.start.getTime() - 1));
+}
+
 /** Matches die (lokale tijd) in het kalenderjaar vallen. */
 export function matchesInYear(matches: Match[], jaar: number): Match[] {
+  return matchesInPeriode(matches, jaarPeriode(jaar));
+}
+
+/** Matches die (lokale tijd) binnen [start, end) van de periode vallen. */
+export function matchesInPeriode(
+  matches: Match[],
+  periode: WrappedPeriode,
+): Match[] {
   return matches.filter((m) => {
     const d = matchDate(m);
-    return d != null && d.getFullYear() === jaar;
+    return d != null && d >= periode.start && d < periode.end;
   });
 }
 
@@ -81,6 +184,11 @@ export type WrappedCard =
   | { kind: "reeks"; type: "winst" | "verlies"; lengte: number }
   | { kind: "maatje"; naam: string; samen: number; gewonnen: number }
   | { kind: "rivalen"; favoriet: RivaalStat | null; nemesis: RivaalStat | null }
+  /** "Je favoriete slachtoffer van dit seizoen" (#712): in het kwartaal-deck
+   *  krijgt de favoriete tegenstander een eigen kaart in plaats van een regel
+   *  op de rivalen-kaart — een kwartaal heeft minder verhalen, dus mag het
+   *  beste verhaal meer ruimte. In het jaardeck blijft `rivalen` de plek. */
+  | { kind: "slachtoffer"; rivaal: RivaalStat }
   | {
       kind: "prestatie";
       zege: { score: string; marge: number } | null;
@@ -104,7 +212,10 @@ export type WrappedCard =
     };
 
 export interface WrappedData {
+  /** Kalenderjaar van de periode; bij een kwartaal het jaar waarin het valt. */
   jaar: number;
+  /** Het tijdvak van dit deck (#712) — draagt alle copy-varianten. */
+  periode: WrappedPeriode;
   variant: "vol" | "kort";
   cards: WrappedCard[];
   /** De cijfers achter Coach Rudy's eindoordeel-kaart (#295). */
@@ -256,13 +367,7 @@ function zeldzaamsteBadge(
   return beste;
 }
 
-/**
- * Het volledige Wrapped van een speler voor één kalenderjaar, of null zonder
- * afgewerkte matches in dat jaar (dan is er geen entry). `clubMatches` is
- * optioneel: zonder valt alleen de zeldzaamste-badge-kaart weg.
- */
-export function deriveWrapped(opts: {
-  jaar: number;
+interface WrappedOpts {
   matches: Match[];
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
@@ -273,10 +378,32 @@ export function deriveWrapped(opts: {
    *  kaart's schild neutraal grijs resp. zonder foto — geen harde eis. */
   rating?: number | null;
   avatarUrl?: string | null;
-}): WrappedData | null {
-  const { jaar, teams, profiles, playerId } = opts;
+}
+
+/**
+ * Het volledige Wrapped van een speler voor één kalenderjaar, of null zonder
+ * afgewerkte matches in dat jaar (dan is er geen entry). `clubMatches` is
+ * optioneel: zonder valt alleen de zeldzaamste-badge-kaart weg.
+ *
+ * Dunne wikkel om derivePeriodeWrapped (#712): het jaar is één periodesoort.
+ */
+export function deriveWrapped(
+  opts: WrappedOpts & { jaar: number },
+): WrappedData | null {
+  return derivePeriodeWrapped({ ...opts, periode: jaarPeriode(opts.jaar) });
+}
+
+/**
+ * Het Wrapped van een speler over een vrij tijdvak (#712): een kalenderjaar
+ * (#115) of een kwartaal. Null zonder afgewerkte matches in dat tijdvak.
+ */
+export function derivePeriodeWrapped(
+  opts: WrappedOpts & { periode: WrappedPeriode },
+): WrappedData | null {
+  const { periode, teams, profiles, playerId } = opts;
+  const jaar = periode.jaar;
   const chrono = chronologisch(opts.matches);
-  const jaarMatches = matchesInYear(chrono, jaar).filter(
+  const jaarMatches = matchesInPeriode(chrono, periode).filter(
     (m) => outcomeFor(m, teams, playerId) !== null,
   );
   const gespeeld = jaarMatches.length;
@@ -327,8 +454,17 @@ export function deriveWrapped(opts: {
           gespeeld: r.played,
         }
       : null;
-  if (favorite || hardest)
-    cards.push({ kind: "rivalen", favoriet: rivaal(favorite), nemesis: rivaal(hardest) });
+  const favoriet = rivaal(favorite);
+  const nemesis = rivaal(hardest);
+  if (periode.soort === "seizoen") {
+    // Kwartaal-deck (#712): de favoriete tegenstander krijgt zijn eigen kaart
+    // ("Je favoriete slachtoffer van dit seizoen"); de rivalen-kaart blijft
+    // over voor de angstgegner, zodat niemand twee keer langskomt.
+    if (favoriet) cards.push({ kind: "slachtoffer", rivaal: favoriet });
+    if (nemesis) cards.push({ kind: "rivalen", favoriet: null, nemesis });
+  } else if (favoriet || nemesis) {
+    cards.push({ kind: "rivalen", favoriet, nemesis });
+  }
 
   const zege = biggestWin(jaarMatches, teams, playerId);
   const jaarIds = new Set(jaarMatches.map((m) => m.id));
@@ -345,12 +481,14 @@ export function deriveWrapped(opts: {
       comeback,
     });
 
-  // Rating-reis: start vóór de eerste jaarmatch, piek en eindstand. Let op:
-  // getRatingHistory capt op de nieuwste 100 punten (ratingsApi.ts) — voor
-  // een jaaroverzicht een geaccepteerde benadering.
+  // Rating-reis: start vóór de eerste match van de periode, piek en eindstand.
+  // Let op: getRatingHistory capt op de nieuwste 100 punten (ratingsApi.ts) —
+  // voor een jaaroverzicht een geaccepteerde benadering.
   const punten = (opts.ratingHistory ?? []).filter((p) => {
     const d = new Date(p.played_at);
-    return !Number.isNaN(d.getTime()) && d.getFullYear() === jaar;
+    return (
+      !Number.isNaN(d.getTime()) && d >= periode.start && d < periode.end
+    );
   });
   let ratingDelta: number | null = null;
   if (punten.length >= 2) {
@@ -363,7 +501,7 @@ export function deriveWrapped(opts: {
 
   if (opts.clubMatches) {
     const badge = zeldzaamsteBadge(
-      matchesInYear(opts.clubMatches, jaar),
+      matchesInPeriode(opts.clubMatches, periode),
       teams,
       playerId,
     );
@@ -393,6 +531,7 @@ export function deriveWrapped(opts: {
   if (gespeeld < KORT_DREMPEL || cards.length < MIN_VOL_KAARTEN) {
     return {
       jaar,
+      periode,
       variant: "kort",
       jaarStats,
       cards: [
@@ -422,5 +561,5 @@ export function deriveWrapped(opts: {
     aantalRoasts: cards.length,
   });
 
-  return { jaar, variant: "vol", cards, jaarStats };
+  return { jaar, periode, variant: "vol", cards, jaarStats };
 }
