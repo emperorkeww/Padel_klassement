@@ -1,0 +1,150 @@
+/* Eregalerij (#711): per afgesloten seizoen een kaart met podium en pias, en
+   onderaan het recordboek. Kleuren komen uit de bestaande medaille-tokens
+   (--gold/--silver/--bronze), zodat licht en donker vanzelf meelopen. */
+
+.eregalerij-seizoen__meta {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.eregalerij-podium {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.eregalerij-podium__rij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border-radius: var(--radius, 12px);
+  background: var(--bg);
+}
+
+/* De kampioen krijgt het goud: een zachte vulling met een gouden rand links. */
+.eregalerij-podium__rij--kampioen {
+  background: var(--gold-soft);
+  border-left: 3px solid var(--gold);
+}
+
+.eregalerij-podium__medaille {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eregalerij-podium__naam {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-podium__naam:hover {
+  text-decoration: underline;
+}
+
+.eregalerij-podium__ik {
+  flex-shrink: 0;
+}
+
+.eregalerij-podium__punten {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.eregalerij-podium__titel {
+  font-weight: 800;
+  font-size: var(--fs-xs, 0.75rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* Kale --gold op --gold-soft haalt in het lichte thema maar 2,14:1 (de
+     bekende let-op-regel van npm run contrast). Deze micro-tekst is te klein
+     om daarmee weg te komen, dus mengen we het goud met de inkt van het
+     actieve thema: 4,8:1 in licht en 7,7:1 in donker, en het blijft goud. */
+  color: color-mix(in srgb, var(--gold) 55%, var(--ink));
+}
+
+.eregalerij-pias {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* Recordboek: emoji · titel + houder · waarde met datum eronder. */
+.eregalerij-records {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.eregalerij-record {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.eregalerij-record:first-child {
+  border-top: 0;
+}
+
+.eregalerij-record__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eregalerij-record__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.eregalerij-record__titel {
+  font-weight: 700;
+}
+
+.eregalerij-record__houder {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.eregalerij-record__waarde {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.eregalerij-record__datum {
+  font-weight: 400;
+  font-size: var(--fs-xs, 0.75rem);
+  color: var(--ink-soft);
+}

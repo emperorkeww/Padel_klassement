@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
+  afgeslotenSeizoenen,
   isSeasonClosed,
   listSeasons,
   parseSeasonId,
   seasonFor,
   seasonFromId,
+  seizoenNaam,
 } from "@/features/rating/seasons";
 
 describe("parseSeasonId", () => {
@@ -91,5 +93,37 @@ describe("isSeasonClosed", () => {
   it("loopt nog tot en met de laatste tel van het kwartaal", () => {
     expect(isSeasonClosed(q2, new Date(2026, 5, 30, 23, 59, 59))).toBe(false);
     expect(isSeasonClosed(q2, new Date(2026, 3, 1))).toBe(false);
+  });
+});
+
+describe("afgeslotenSeizoenen", () => {
+  it("laat het lopende kwartaal weg", () => {
+    const list = afgeslotenSeizoenen(new Date(2025, 10, 15), new Date(2026, 6, 3));
+    expect(list.map((s) => s.id)).toEqual(["2026-q2", "2026-q1", "2025-q4"]);
+  });
+
+  it("geeft niets als er alleen een lopend kwartaal is", () => {
+    expect(afgeslotenSeizoenen(new Date(2026, 6, 1), new Date(2026, 6, 20))).toEqual(
+      [],
+    );
+  });
+});
+
+describe("seizoenNaam", () => {
+  it("koppelt elk kwartaal aan zijn seizoen", () => {
+    expect(seizoenNaam(seasonFromId("2026-q1")!).label).toBe("❄️ Winter 2026");
+    expect(seizoenNaam(seasonFromId("2026-q2")!).label).toBe("🌱 Lente 2026");
+    expect(seizoenNaam(seasonFromId("2026-q3")!).label).toBe("☀️ Zomer 2026");
+    expect(seizoenNaam(seasonFromId("2026-q4")!).label).toBe("🍂 Herfst 2026");
+  });
+
+  it("geeft de titel zonder emoji voor posters", () => {
+    const n = seizoenNaam(seasonFromId("2025-q4")!);
+    expect(n).toEqual({
+      emoji: "🍂",
+      naam: "Herfst",
+      titel: "Herfst 2025",
+      label: "🍂 Herfst 2025",
+    });
   });
 });
