@@ -26,11 +26,13 @@ import {
 import { getMyGroups } from "@/features/groups/api";
 import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
+import { magDictatorPortretGenereren } from "./dictatorPortret";
 import {
-  magDictatorPortretGenereren,
+  GEEN_AVATAR_BRON,
   portretVervallen,
-  prewarmDictatorPortret,
-} from "./dictatorPortret";
+  portretVoor,
+  prewarmPortret,
+} from "./aiPortret";
 import { deltaToday } from "./ratingDelta";
 import { useClub } from "@/features/availability/club";
 import { getGlobalePias, getPiasWeeks } from "./piasApi";
@@ -298,11 +300,11 @@ export function Leaderboard() {
       })
     )
       return;
-    if (!portretVervallen(me)) return;
-    const bron = me.avatar_url ?? "__geen_avatar__";
+    if (!portretVervallen(me, "dictator")) return;
+    const bron = me.avatar_url ?? GEEN_AVATAR_BRON;
     if (prewarmedRef.current === bron) return;
     prewarmedRef.current = bron;
-    void prewarmDictatorPortret();
+    void prewarmPortret("dictator");
   }, [profilesMap.data, ratings.data, dictator.data, myId]);
 
   // Pias van de week voor de gekozen groep (niets bij "Alle groepen"). De
@@ -683,6 +685,24 @@ export function Leaderboard() {
         : schandpaalUit(globalePias.data ?? [], profilesMap.data ?? {}, myId),
     [usingScope, spelerTab, globalePias.data, profilesMap.data, myId],
   );
+
+  // AI pias-portret (#682): vangnet voor het geval de server-trigger op
+  // pias_of_week niet gelopen heeft. Anders dan bij de dictator is er geen
+  // goedkope voorspeller (rating ≥ 1576) — je bent de pias of je bent het niet —
+  // dus dit vuurt alleen als ík de globale pias ben en m'n portret vervallen is.
+  // Zelfde ref-truc: hooguit één aanroep per bron-foto per sessie.
+  const piasPrewarmRef = useRef<string | null>(null);
+  useEffect(() => {
+    const pm = profilesMap.data;
+    if (!pm || schandpaal?.playerId !== myId) return;
+    const me = pm[myId];
+    if (!me || me.pias_portret === false) return;
+    if (!portretVervallen(me, "pias")) return;
+    const bron = me.avatar_url ?? GEEN_AVATAR_BRON;
+    if (piasPrewarmRef.current === bron) return;
+    piasPrewarmRef.current = bron;
+    void prewarmPortret("pias");
+  }, [profilesMap.data, schandpaal?.playerId, myId]);
   // Kaart-preview (#497): geopend vanaf een rij-tik of raster-kaart.
   const [preview, setPreview] = useState<Row | null>(null);
 
@@ -933,10 +953,10 @@ export function Leaderboard() {
             image={
               throneRow
                 ? // Echte dictator: z'n AI-portret (#554) als het klaar is en de
-                  // opt-out aan staat; anders undefined → gewone avatar.
-                  pmap[throneRow.key]?.dictator_portret !== false
-                  ? (pmap[throneRow.key]?.dictator_avatar_url ?? undefined)
-                  : undefined
+                  // opt-out aan staat; anders undefined → gewone avatar. Sinds
+                  // #682 loopt die beslissing via portretVoor, dezelfde helper
+                  // als de Schandpaal gebruikt.
+                  (portretVoor(pmap[throneRow.key], "dictator") ?? undefined)
                 : (waarnemendPortret ?? undefined)
             }
             anthem={
@@ -1079,6 +1099,9 @@ export function Leaderboard() {
           weekStart={schandpaal.weekStart}
           link={schandpaal.link}
           isMe={schandpaal.isMe}
+          // Het AI-clownportret (#682) zodra het klaar is en de opt-out aan
+          // staat; anders undefined → de gewone avatar, geen skeleton (#555).
+          image={portretVoor(schandpaal.profile, "pias") ?? undefined}
           ctx={schandpaal.ctx}
           seed={schandpaal.seed}
         />
