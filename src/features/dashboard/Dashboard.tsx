@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { recentForm, winRate, winStreak, lossStreak } from "@/features/rating/results";
 import { deriveBadges } from "@/features/profiles/badges";
 import { isoParts } from "@/features/standings/pias";
+import { spelerVanDeWeek } from "@/features/standings/spelerVanDeWeek";
+import { onFireSpelers } from "@/features/standings/onFire";
+import { editieLabel, type EditieContext } from "@/features/standings/edities";
 import { PiasCard } from "@/features/groups/components/PiasCard";
 import { piasDetail } from "@/features/groups/maandpias";
 import { categorize } from "@/features/friends/api";
@@ -15,6 +18,7 @@ import {
   rememberName,
   pickRival,
   heroThema,
+  heroCrestTekst,
 } from "./dashboardHelpers";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { PushPrompt } from "./components/PushPrompt";
@@ -52,6 +56,7 @@ export function Dashboard() {
     ratingHistory,
     histories,
     dictator,
+    kampioen,
     availability,
     openPolls,
     completed,
@@ -118,12 +123,46 @@ export function Dashboard() {
         ? `in ${piasGroepNaam}`
         : "in je groep";
   const roastSchild = myProfile?.roast_schild ?? false;
-  // Skin van de hero (#613/#644): de prioriteit tussen de vier statussen en de
-  // rol van het roast-schild zitten in heroThema, zodat de regel getest is en
-  // op één plek staat.
+  // De drie club-brede kaart-edities die de hero sinds #760 óók draagt. Bewust
+  // met dezelfde functies als klassement, matchdetail en profiel — geen tweede
+  // definitie van "wie is In-Form": spelerVanDeWeek en onFireSpelers rekenen op
+  // de gedeelde historie die useDashboardData toch al laadt, de kampioen komt
+  // uit getSeizoenskampioen.
+  //
+  // Niet via laadEditieContext() (#699), hoewel dat de hele context in één keer
+  // zou geven: die haalt ook de club-brede pias en Zwarte Piet op, en de hero
+  // gebruikt daarvoor juist de groeps-scope (#655/#645). Dat zouden dus twee
+  // queries zijn voor data die de hero weggooit.
+  const allHistories = histories.data ?? {};
+  const inForm = spelerVanDeWeek(allHistories);
+  const onFire = onFireSpelers(allHistories);
+  const isKampioen = !!kampioen.data && kampioen.data.playerId === myId;
+  const isInForm = inForm?.playerId === myId;
+  const isOnFire = onFire[myId] != null;
+  // Editie-regels voor de crests uit editieLabel(), zodat hero en FUT-kaart
+  // dezelfde tekst tonen ("⚡ In-Form · +48"). Alleen de drie club-brede velden
+  // zijn hier gevuld: editieLabel wordt in de hero nooit voor icon/pias/piet
+  // aangeroepen — die drie hebben hun eigen, groeps-gescopete crest hieronder.
+  const editieCtx: EditieContext = {
+    dictatorId: dictator.data?.profileId ?? null,
+    iconKey: null,
+    kampioen: kampioen.data ?? null,
+    inForm,
+    onFire,
+    pias: null,
+    piet: null,
+  };
+  const editieCrest = (editie: "kampioen" | "inform" | "onfire") =>
+    heroCrestTekst(editieLabel(editie, editieCtx, myId) ?? "");
+  // Skin van de hero (#613/#644/#760): de prioriteit tussen de zeven statussen
+  // en de rol van het roast-schild zitten in heroThema, zodat de regel getest is
+  // en op één plek staat.
   const thema = heroThema({
     dictator: isDictator,
     bigDaddy: isBigDaddy,
+    kampioen: isKampioen,
+    inForm: isInForm,
+    onFire: isOnFire,
     pias: isWeekPias,
     piet: isZwartePiet,
     schild: roastSchild,
@@ -262,11 +301,19 @@ export function Dashboard() {
         status={{
           dictator: isDictator,
           bigDaddy: isBigDaddy,
+          kampioen: isKampioen,
+          inForm: isInForm,
+          onFire: isOnFire,
           piet: isZwartePiet,
           pias: isWeekPias,
           piasWaar,
           schild: roastSchild,
           thema,
+          labels: {
+            kampioen: editieCrest("kampioen"),
+            inform: editieCrest("inform"),
+            onfire: editieCrest("onfire"),
+          },
         }}
         earnedBadges={earnedBadges}
         form={form}

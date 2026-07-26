@@ -8,7 +8,7 @@ import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
 import { PageTabs, TabPanel, type PageTabItem } from "@/ui/PageTabs";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { coachEmptyState } from "@/features/coach/coachMoments";
-import { getGroup, getGroupMembers, getMyGroups } from "./api";
+import { getGroup, getGroupMembers } from "./api";
 import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
 import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "@/features/availability/club";
@@ -104,9 +104,6 @@ export function GroupDetail() {
   const profiles = useAsync(getProfilesMap, []);
   const teams = useAsync(getTeamsMap, []);
   const friendships = useAsync(getMyFriendships, []);
-  // Alleen om te weten of de terugknop ergens op slaat (#674 A4). Gedeelde
-  // cache met de hub en het dashboard, dus meestal gratis.
-  const myGroups = useAsync(getMyGroups, []);
 
   // Voor het rating-klassement op de Stand-tab (#52).
   const ratings = useAsync(getPlayerRatings, [], { enabled: standSeen });
@@ -383,15 +380,15 @@ export function GroupDetail() {
               </span>
             )}
           </h1>
-          {/* Met één groep stuurt /spelen je meteen hierheen, dus "← Spelen"
-              wees naar een hub die je nooit gezien hebt en waar één kaart
-              staat die terugleidt (#674 A4). Pas tonen zodra we zeker weten
-              dat er iets is om naar terug te gaan. */}
-          {(myGroups.data?.length ?? 0) > 1 && (
-            <Link className="btn btn--sm" to="/spelen?hub=1">
-              ← Spelen
-            </Link>
-          )}
+          {/* Altijd zichtbaar (#761). #674 A4 verborg deze knop bij één groep,
+              omdat /spelen je dan tóch meteen hierheen stuurt en de hub dus
+              alleen een kaart toonde die terugleidt. Maar de hub draagt ook
+              "+ Nieuwe groep" — de enige plek met die actie — en dit is de
+              enige link naar /spelen?hub=1: wie één groep had, zat vast. De
+              hub met één kaart is de goedkopere prijs. */}
+          <Link className="btn btn--sm" to="/spelen?hub=1">
+            ← Alle groepen
+          </Link>
         </div>
       </header>
 

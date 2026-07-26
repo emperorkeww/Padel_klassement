@@ -102,9 +102,6 @@ describe("Dashboard: queries bij mount (#736)", () => {
       player_standings: 1,
       player_ratings: 1,
       rating_history: 1, // mijn eigen grafiek
-      // NB: de gedeelde historie (rpc recent_rating_history) staat hier
-      // bewust níét — die hoort bij de speelavond-kaart en wordt alleen op een
-      // speeldag opgehaald (#736). Zie de test hieronder.
       // Matches: de recente uitslagen en mijn eigen wedstrijden (die eerst
       // mijn teams opzoekt — vandaar twee keer teams).
       matches: 2,
@@ -117,6 +114,18 @@ describe("Dashboard: queries bij mount (#736)", () => {
       zwarte_piet: 1,
       pias_of_week: 1,
       dictator_termijnen: 1,
+      // De gedeelde historie draagt de In-Form- en On-Fire-status van de hero
+      // (#760). Stond hier tot dan bewust níét: hij hoorde alleen bij de
+      // speelavond-kaart en kwam dus alleen op een speeldag mee (#736). "Wie
+      // won deze week het meest?" is echter een vergelijking over álle spelers,
+      // dus valt niet uit de eigen historie te rekenen — en een thema dat
+      // alleen op speeldagen verschijnt, wisselt van kleur om een reden die de
+      // speler nergens kan zien. Gecacht, dus klassement en profiel hergebruiken
+      // deze fetch.
+      "rpc:recent_rating_history": 1,
+      // Seizoensstand van het vórige kwartaal voor het kampioen-thema (#760),
+      // eveneens gecacht en gedeeld met klassement en profiel.
+      "rpc:season_player_standings": 1,
       // Speeldag-polls van mijn groepen: drie queries in totaal, ongeacht het
       // aantal groepen (#736).
       play_polls: 1,
@@ -125,17 +134,18 @@ describe("Dashboard: queries bij mount (#736)", () => {
       // Baanbeschikbaarheid van vandaag uit de cron-snapshot.
       court_availability_snapshots: 1,
     });
-    expect(som(per)).toBe(17);
+    expect(som(per)).toBe(19);
   });
 
-  it("haalt de gedeelde rating-historie er alleen bij op een speeldag", async () => {
-    // De fixture-match is gespeeld op 2026-07-02; met de klok op die dag toont
-    // het overzicht de speelavond-terugblik, en pas dán is de historie nodig.
+  it("haalt de gedeelde historie ook buiten een speeldag precies één keer op", async () => {
+    // Twee consumenten sinds #760 (de hero-status én de avondkaart), maar één
+    // gecachete fetch: op de fixture-speeldag — als de speelavond-terugblik er
+    // óók staat — mag het totaal niet oplopen.
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-07-02T18:00:00.000Z") });
     try {
       const per = await tellQueries();
       expect(per["rpc:recent_rating_history"]).toBe(1);
-      expect(som(per)).toBe(18);
+      expect(som(per)).toBe(19);
     } finally {
       vi.useRealTimers();
     }
@@ -154,6 +164,6 @@ describe("Dashboard: queries bij mount (#736)", () => {
     expect(per.play_polls).toBe(1);
     expect(per.play_poll_options).toBe(1);
     expect(per.play_poll_votes).toBe(1);
-    expect(som(per)).toBe(17);
+    expect(som(per)).toBe(19);
   });
 });

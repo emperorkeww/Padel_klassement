@@ -51,9 +51,14 @@ function App() {
               <Route path="/banen" element={<Availability />} />
               <Route path="/matches/:id" element={<MatchDetail />} />
               {/* "Spelen" is de hub van de kernreis (#106); de oude
-                  groepen-URL blijft werken via een redirect. */}
+                  groepen-URL blijft werken via een redirect. Die gaat naar
+                  ?hub=1 (#761): /groepen betekende "het overzicht", en kaal
+                  /spelen stuurt je bij één groep meteen door naar die groep. */}
               <Route path="/spelen" element={<Groups />} />
-              <Route path="/groepen" element={<Navigate to="/spelen" replace />} />
+              <Route
+                path="/groepen"
+                element={<Navigate to="/spelen?hub=1" replace />}
+              />
               <Route path="/groepen/join/:token" element={<JoinGroup />} />
               <Route path="/groepen/:id" element={<GroupDetail />} />
               <Route path="/vrienden" element={<Friends />} />

@@ -14,17 +14,24 @@ import type { HeroThema } from "../dashboardHelpers";
 import { HeroCrest } from "./HeroCrest";
 import { BadgeStrip } from "./BadgeStrip";
 
-// De hero draagt de status van de speler zelf (#613, uitgebreid in #644):
-// keizerlijk donker voor de zittende dictator, roze/goud voor de Big Daddy,
-// kraftkarton voor de Pias van de week en de speelkaart voor de Zwarte Piet.
-// Welk thema wint bij meerdere statussen — en waarom een roast-schild de
-// schande-thema's dooft — staat in heroThema. Kleur is nooit de enige
-// indicator: de HeroCrest-chips blijven staan, ook die van het verliezende
-// thema.
+// De hero draagt de status van de speler zelf (#613, uitgebreid in #644 en
+// #760): keizerlijk donker voor de zittende dictator, roze/goud voor de Big
+// Daddy, platina-lauwer voor de kampioen, navy-goud voor de speler van de week,
+// sintel voor een lopende reeks, kraftkarton voor de Pias van de week en de
+// speelkaart voor de Zwarte Piet. Welk thema wint bij meerdere statussen — en
+// waarom een roast-schild alleen de schande-thema's dooft — staat in heroThema.
+// Kleur is nooit de enige indicator: de HeroCrest-chips blijven staan, ook die
+// van het verliezende thema.
+
+/** Icoon + labeltekst van één crest, uit heroCrestTekst. */
+type CrestTekst = { emoji: string; label: string };
 
 export type HeroStatus = {
   dictator: boolean;
   bigDaddy: boolean;
+  kampioen: boolean;
+  inForm: boolean;
+  onFire: boolean;
   piet: boolean;
   pias: boolean;
   /** Waar je pias bent, bv. "in Vrijdagavond Padel" — voor de crest-uitleg. */
@@ -32,6 +39,9 @@ export type HeroStatus = {
   schild: boolean;
   /** Winnende skin; null laat de hero neutraal. */
   thema: HeroThema;
+  /** Editie-regels van de drie club-brede statussen, zoals de FUT-kaart ze
+   *  schrijft (editieLabel) — alleen gelezen als de bijbehorende vlag staat. */
+  labels: { kampioen: CrestTekst; inform: CrestTekst; onfire: CrestTekst };
 };
 
 export function DashboardHero({
@@ -109,6 +119,9 @@ export function DashboardHero({
           )}
           {(status.dictator ||
             status.bigDaddy ||
+            status.kampioen ||
+            status.inForm ||
+            status.onFire ||
             status.piet ||
             status.pias ||
             earnedBadges.length > 0) && (
@@ -127,6 +140,34 @@ export function DashboardHero({
                   emoji={BIG_DADDY_EMOJI}
                   label="Big Daddy"
                   uitleg="#1 van het klassement — de baas van de baan."
+                />
+              )}
+              {/* De drie club-brede edities (#760). De uitleg zegt telkens
+                  expliciet "van de club": de pias- en Piet-crests eronder zijn
+                  per gróep (#655/#645), en zonder dat woord zou de hero twee
+                  scopes door elkaar tonen zonder ze te benoemen. */}
+              {status.kampioen && (
+                <HeroCrest
+                  variant="kampioen"
+                  emoji={status.labels.kampioen.emoji}
+                  label={status.labels.kampioen.label}
+                  uitleg="Je won het vorige kwartaal in de hele club en draagt de titel het lopende kwartaal lang."
+                />
+              )}
+              {status.inForm && (
+                <HeroCrest
+                  variant="inform"
+                  emoji={status.labels.inform.emoji}
+                  label={status.labels.inform.label}
+                  uitleg="Speler van de week van de hele club: de grootste Elo-winst van de laatste zeven dagen."
+                />
+              )}
+              {status.onFire && (
+                <HeroCrest
+                  variant="onfire"
+                  emoji={status.labels.onfire.emoji}
+                  label={status.labels.onfire.label}
+                  uitleg="Je hebt een lopende winstreek. Anders dan de andere titels kunnen meerdere spelers in de club tegelijk on fire zijn."
                 />
               )}
               {status.piet && (
