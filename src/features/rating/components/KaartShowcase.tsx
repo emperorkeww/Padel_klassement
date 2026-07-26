@@ -52,6 +52,7 @@ function Kaart({
   elo,
   chips,
   omgedraaid = false,
+  zaad,
 }: {
   kw: number;
   tier: Tier | null;
@@ -61,12 +62,16 @@ function Kaart({
   elo?: number | null;
   chips?: FutPlaystyle[];
   omgedraaid?: boolean;
+  /** Zaad voor de premium-glansvertraging (#773), om een rij kaarten uit de
+   *  fase te halen zoals op de echte wand. */
+  zaad?: string;
 }) {
   return (
     <FutKaart
       tier={tier}
       editie={editie}
       omgedraaid={omgedraaid}
+      glansZaad={zaad}
       className="kaart-showcase__kaart"
       // Zelfde overlay als de echte callers, zodat de hover-/focus-stijl
       // hier ook te beoordelen is.
@@ -202,6 +207,80 @@ export function KaartShowcase() {
         Synthetische kaarten voor visuele review (#664): tiers, edities,
         contextmaten en achterkant. Deze route bestaat alleen in development.
       </p>
+
+      {/* Premium glans (#773): de vier permanente kaarten met ingebouwde glans,
+          naast elkaar op één rij. Dít is de sectie waar je ze beoordeelt — de
+          eis is dat ze duidelijk familie zijn maar elk een eigen karakter
+          houden, en dat zie je alleen door ze samen te laten lopen. Elke kaart
+          krijgt een ander zaad, dus ze starten net als op de echte wand uit de
+          fase. Zet in devtools `prefers-reduced-motion: reduce` aan om de
+          statische variant te controleren. */}
+      <Sectie titel="Premium glans (#773): Big Daddy · Kampioen · GOAT · El Padelissimo — verschillende zaden, dus uit de fase">
+        {[
+          { tier: tierFor(1084), editie: "icon" as const, label: "👑 Big Daddy", zaad: "alice" },
+          {
+            tier: tierFor(1084),
+            editie: "kampioen" as const,
+            label: "🏆 Kampioen Q2 2026",
+            zaad: "bob",
+          },
+          { tier: tierFor(1450), editie: null, label: null, zaad: "carol" },
+          { tier: tierFor(1650), editie: null, label: null, zaad: "dave" },
+        ].map((k) => (
+          <div
+            key={k.zaad}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "190px" }}
+          >
+            <Kaart
+              kw={190}
+              tier={k.tier}
+              editie={k.editie}
+              editieLabel={k.label}
+              zaad={k.zaad}
+              naam="Alice Anders"
+            />
+            <span className="kaart-showcase__label">
+              {k.tier?.naam} · zaad {k.zaad}
+            </span>
+          </div>
+        ))}
+      </Sectie>
+
+      {/* Voorrang (#773, eis 7 en 8): dezelfde twee premium toptiers, nu mét een
+          tijdelijke overlay. De permanente glans hoort hier gedempt te zijn —
+          statische highlight, geen beweging — zodat er nooit twee zware
+          animaties over elkaar lopen. */}
+      <Sectie titel="Premium glans × tijdelijke overlay (#773): de glans dempt, In-Form en On Fire houden voorrang">
+        {[
+          { tier: tierFor(1450), editie: "inform" as const, label: "⚡ In-Form · +48" },
+          { tier: tierFor(1450), editie: "onfire" as const, label: "🔥 On Fire · 6 op rij" },
+          { tier: tierFor(1650), editie: "inform" as const, label: "⚡ In-Form · +48" },
+          {
+            tier: tierFor(1650),
+            editie: "onfire" as const,
+            label: "🔥 On Fire · 6 op rij",
+          },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={k.tier}
+              editie={k.editie}
+              editieLabel={k.label}
+              zaad={`overlay-${i}`}
+              naam="Alice Anders"
+            />
+            <span className="kaart-showcase__label">
+              {k.tier?.naam} + {k.editie}
+            </span>
+          </div>
+        ))}
+      </Sectie>
 
       {/* GOAT-variant (#710, hertekend in #772): de kaart met bokhoorns,
           baardfiligraan, geitenwatermerk en het eigen divisie-icoon, op de
