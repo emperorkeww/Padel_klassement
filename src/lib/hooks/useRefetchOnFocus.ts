@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { sweepExpired } from "@/lib/supabase/queryCache";
 
 /**
  * Roept `onFocus` aan zodra de gebruiker terugkeert naar het tabblad/venster
@@ -7,6 +8,9 @@ import { useEffect, useRef } from "react";
  *
  * `visibilitychange` en `focus` kunnen samen afgaan bij het terugkeren naar een
  * tab; een korte cooldown voorkomt een dubbele refetch.
+ *
+ * Meteen het moment om de querycache te vegen (#738): een tab die uren op de
+ * achtergrond stond, heeft alleen nog verlopen entries.
  */
 export function useRefetchOnFocus(onFocus: () => void, cooldownMs = 2000) {
   const last = useRef(0);
@@ -17,6 +21,7 @@ export function useRefetchOnFocus(onFocus: () => void, cooldownMs = 2000) {
       const now = Date.now();
       if (now - last.current < cooldownMs) return;
       last.current = now;
+      sweepExpired();
       onFocus();
     };
 
