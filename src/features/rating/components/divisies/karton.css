@@ -1,5 +1,138 @@
 /* Divisiekaart "Stofzuiger" (karton) — 600–699 — haverbeige composiet en ruwe vezelplaat.
-   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
-   generieke metaalladder uit FutKaart.css. Zet hier het
-   `.fut-kaart--karton`-register, en spiegel dezelfde waarden in karton.ts
-   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */
+
+   Het register van de op-één-na-laagste divisie (#710): zandkleurig composiet
+   als vlak, gedempt brons als rand. Waarom dit blok de generieke metaalladder
+   opzij zet: die mixt de tierkleur richting warm wit en levert daarmee een
+   glimmend kaartje met twee glanspunten in het frame — precies wat een
+   gestanste vezelplaat níet is. Hier lopen vier bronstonen in één richting weg
+   (licht → dof → licht → diep) en vangt het vlak het licht diffuus: een brede
+   warme waas i.p.v. een smalle witte specular-baan, ijler satijn en geen
+   stralenkrans. Dat is wat de acceptatie-eis "duidelijk eenvoudiger dan
+   Ballenraper" in materiaal betekent.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in karton.ts; de
+   synctest in karton.test.ts leest dít bestand in en houdt de twee gelijk. */
+.fut-kaart--karton {
+  /* Haverbeige composiet. Contrast (WCAG, gerekend op de vlak-gradient):
+     ink #3c2d19 haalt 10,7:1 op --kaart-hi, 8,8:1 op --kaart-mid en 5,9:1 op
+     --kaart-lo; op de hoogtes waar de inkt écht staat 10,2:1 (eloblok),
+     8,4:1 (naamplaat) en 7,0:1 (divisieregel). De zwakste combinatie van de
+     kaart is inkSoft #584526 op de divisieregel — daar is de gradient al tot
+     ±#cdbc9e gezakt — en dat is nog altijd 4,9:1, boven de AA-grens van 4,5:1
+     voor kleine tekst. De donkerste stop (5,9:1 / 4,1:1) raakt alleen de lege
+     schildpunt, waar geen tekst komt: het vlak heeft 24% bodempadding.
+     Let op bij een herziening van het watermerk: de baltrajecten komen precies
+     op de hoogte van de divisieregel samen en vormen daar een knoop van ±2 px
+     breed waar de achtergrond lokaal naar ±#7b6b51 zakt. Dat is smaller dan één
+     letterstam en dus geen achtergrond in de zin van 1.4.3, maar het is wél de
+     plek om te meten zodra de motiefkleur donkerder wordt.
+     De langste titel is "STOFZUIGER III" — 14 tekens tegen de 19 van
+     "EEUWIGE BELOFTE III", waar de zetting van .fut-kaart__divisie op is
+     afgesteld — dus ook op de veldmaat (116px) houdt de regel ruimte over en
+     hoeft de compact-zetting niets af te kappen. */
+  --kaart-hi: #efe6d4;
+  --kaart-mid: #ded1b8;
+  --kaart-lo: #bfaa88;
+  --kaart-ink: #3c2d19;
+  --kaart-ink-soft: #584526;
+  --kaart-lijn: #9c855f;
+  /* Eén donkere haarlijn tussen keyline en vlak: de opstaande kant van de
+     stans. Bewust geen dubbele of drievoudige binnenlijn en geen --kaart-echo —
+     een tweede, verschoven silhouet leest als "zeldzaam", en dat is het
+     randwerk van de prestige-kaarten. */
+  --kaart-binnenlijn: inset 0 0 0 1.2px rgba(74, 58, 34, 0.3);
+}
+/* Vier vlakke bronstonen op de gedeelde frame-as (160°). Eén glanspunt (66%)
+   i.p.v. de twee van de metaalladder: geperst brons licht op één plek op,
+   gepolijst metaal op twee. */
+.fut-kaart--karton .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #d9c7a4 0%,
+    #a5895c 38%,
+    #cdb994 66%,
+    #6b5330 100%
+  );
+}
+/* Zelfde diepe bruin als de bodem van een zuiggroef en van het aanzuigrooster
+   (BRONS_SCHADUW in karton.ts): rand en stans komen uit hetzelfde blik. */
+.fut-kaart--karton .fut-kaart__liner {
+  background: #4a3a22;
+}
+/* Géén eigen keyline: de gedeelde regel mixt --kaart-lijn naar warm wit
+   (#b5a281) en dat is precies de opstaande kant die deze plaat nodig heeft —
+   één plek minder waar DOM en poster uiteen kunnen lopen. Het `register` in
+   karton.ts laat `keyline` daarom ook weg. */
+
+/* Vezelplaat reflecteert diffuus: de topgloed is een warme waas op 34% i.p.v.
+   het koele wit op 50% van de basiskaart. Dát is de enige reden dat dit blok de
+   vlak-achtergrond overschrijft — de linear-gradient eronder is letterlijk die
+   van FutKaart.css, inclusief de 56%-middenstop. Canvas-spiegel: `glow` in
+   karton.ts. */
+.fut-kaart--karton .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 248, 232, 0.34),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+/* Geen smalle witte glansbaan maar een brede, warme waas op 8%: ruw composiet
+   strooit het licht en levert nooit een puntreflectie. Canvas-spiegel: `sheen`
+   met sheenSpreiding 0,22 in karton.ts — 0,5 ± 0,22 is exact de 28%/72% die
+   hier staat. */
+.fut-kaart--karton .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 28%,
+    rgba(255, 246, 226, 0.08) 50%,
+    transparent 72%
+  );
+}
+/* Satijn op 4,5% i.p.v. de 7% van de basiskaart: het weefsel mag de vezel
+   suggereren, niet de plaat laten glimmen. En geen stralenkrans eroverheen —
+   die hoort bij de premium-divisies, drie treden hoger. Canvas-spiegel:
+   satijnAlpha 0.045 en stralen: false in karton.ts. */
+.fut-kaart--karton .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.045) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* De waas drift traag heen en weer — de lucht die de kaart naar binnen trekt,
+   niet een glimp op metaal. Veel trager dan de shimmer-edities (8,5s bij goud,
+   2,6s bij On-Fire) en met een véél kortere slag: ±16% i.p.v. de ±55% van
+   fut-kaart-shimmer, want een 44% brede baan die van de kaart af loopt leest
+   als pulserende helderheid in plaats van als beweging. Zonder
+   bewegingsvoorkeur staat de baan ongetransformeerd stil, en dát is precies de
+   stand die de deel-poster tekent. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--karton .fut-kaart__vlak::before {
+    animation: fut-kaart-karton-zuig 14s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-karton-zuig {
+    0%,
+    100% {
+      transform: translateX(-16%);
+    }
+    50% {
+      transform: translateX(16%);
+    }
+  }
+}
+/* Warme, strakke schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel
+   in FutKaart.css is roze getint (Big Daddy) en dat vloekt op brons. Kort
+   gehouden omdat bezemcrest en aanzuigrooster ín de plaat gestanst zitten — ze
+   zweven er niet boven. */
+.fut-kaart--karton .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 1.5px rgba(58, 45, 25, 0.4));
+}
