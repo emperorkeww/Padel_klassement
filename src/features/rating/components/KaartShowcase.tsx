@@ -200,6 +200,40 @@ export function KaartShowcase() {
         contextmaten en achterkant. Deze route bestaat alleen in development.
       </p>
 
+      {/* GOAT-variant (#710): de kaart met bokhoorns en baardornament op de
+          maten waar het ornament het meest te lijden heeft — veldmaat, wand,
+          hero — plus de canvas-spiegel ernaast. Bewust bovenaan: dit is de
+          variant die je bij elke wijziging aan de ornamentlaag wilt zien. */}
+      <Sectie titel="GOAT (#710): hoorns + baardornament — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1450)} naam="Senne" elo={1487} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1450)} editie={null} editieLabel={null} breedte={210} />
+        {/* Onder een editie-skin: de hoorns blijven (ornament hangt aan de
+            tier), het medaillon-motief wijkt voor het editie-vlak. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1450)}
+            editie="inform"
+            editieLabel="⚡ In-Form · +48"
+            naam="Senne"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">GOAT + In-Form</span>
+        </div>
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

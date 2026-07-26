@@ -18,6 +18,24 @@
 // en de tokens hieronder ertegen vergelijkt.
 
 import type { TierKey } from "@/features/rating/tiers";
+import {
+  GOAT_BAARD_BLAD,
+  GOAT_BAARD_FLICK,
+  GOAT_BAARD_NERVEN,
+  GOAT_HOORN,
+  GOAT_MEDAILLON,
+  GOAT_MEDAILLON_BREEDTE,
+  GOAT_MEDAILLON_KLEUR,
+  GOAT_MEDAILLON_POSITIE,
+  GOAT_METAAL_CONTOUR,
+  GOAT_METAAL_GLANS,
+  GOAT_METAAL_RIBBEL,
+  GOAT_METAAL_RIBBELGLANS,
+  GOAT_METAAL_SCHADUW,
+  GOAT_METAAL_VERLOOP,
+  type OrnamentPad,
+  type Streng,
+} from "@/features/rating/components/futKaartOrnamenten";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 export type SchildVorm = "vlak" | "notch" | "punt" | "kroon";
@@ -171,10 +189,39 @@ export interface FutKaartKleuren {
    *  .fut-kaart__keyline. Weglaten = geen keyline (oude opbouw). */
   keyline?: string;
   /** Stralenkrans (#664): premium-registers (platina/diamant/meester en de
-   *  special-toptiers) — spiegel van de ::after-stralen in FutKaart.css. */
+   *  dictator; GOAT draagt sinds #710 zijn eigen medaillon) — spiegel van de
+   *  ::after-stralen in FutKaart.css. */
   stralen?: boolean;
   /** Vlak-textuur; default "satijn". */
   textuur?: VlakTextuur;
+  /** Satijn-alpha (#710): GOAT zet zijn weefsel ijler (CSS 0.04 → hier
+   *  0.035, dezelfde ~0.875-kalibratie als de sheen). Default 0.06. */
+  satijnAlpha?: number;
+  /** Geborsteld frame (#710): conic-ribbels die uit het kaartmidden stralen
+   *  en dus rondom loodrecht op de rand staan — spiegel van de
+   *  repeating-conic-laag op .fut-kaart__zijde. */
+  frameRibbels?: boolean;
+  /** Echo-contour (#710): het schildpad nog eens, verschoven gevuld achter
+   *  het frame — spiegel van de --kaart-echo drop-shadow(dx dy 0 kleur).
+   *  Offsets als fractie van de kaartbreedte, zoals de CSS-calc op --fut-kw. */
+  echo?: ReadonlyArray<readonly [number, number, string]>;
+  /** Binnenlijnen (#710): geclipte ringen langs het vlak — spiegel van de
+   *  --kaart-binnenlijn inset-schaduwen, [spreiding in CSS-px, kleur] in
+   *  dezelfde volgorde als daar (smal → breed; hier omgekeerd getekend). */
+  binnenlijn?: ReadonlyArray<readonly [number, string]>;
+  /** Vlak-motief (#710): het geëtste watermerk (FutKaartMotief in de DOM),
+   *  met letterlijk dezelfde paden uit futKaartOrnamenten.ts als Path2D. */
+  motief?: {
+    paden: readonly OrnamentPad[];
+    kleur: string;
+    /** Breedte als fractie van het vlak (CSS --motief-b / 100). */
+    breedte: number;
+    /** Verticale positie als background-position-fractie (--motief-pos). */
+    positie: number;
+  };
+  /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
+   *  het frame getekend (de DOM legt ze als eerste kind achter de kaart). */
+  ornament?: "goat";
 }
 
 /**
@@ -194,6 +241,21 @@ export function drawKaartSchild(
   vorm: SchildVorm,
   kleuren: FutKaartKleuren,
 ): { fx: number; fy: number; fw: number; fh: number } {
+  // Ornamentlaag (#710): hoorns en andere uitsteeksels éérst — de DOM legt
+  // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
+  if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
+
+  // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
+  // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
+  // het schild volgt.
+  if (kleuren.echo) {
+    for (const [dx, dy, kleur] of kleuren.echo) {
+      schildPad(ctx, x + dx * w, y + dy * w, w, h, vorm);
+      ctx.fillStyle = kleur;
+      ctx.fill();
+    }
+  }
+
   // Frame op ~160°: bij de metaalregisters vier stops met twee glanspunten,
   // bij de matte schand-edities twee vlakke tonen (#705).
   const frame = ctx.createLinearGradient(x, y, x + w * 0.34, y + h * 0.94);
@@ -206,6 +268,29 @@ export function drawKaartSchild(
   ctx.fillStyle = frame;
   ctx.fill();
   ctx.restore();
+
+  // Geborsteld frame (#710): wiggen vanuit het kaartmidden over de volle
+  // schildclip — liner en vlak dekken zo dadelijk het midden af, dus alleen
+  // de randstrip houdt de ribbels (dezelfde truc als de CSS, waar de conic
+  // onder de liner-laag ligt).
+  if (kleuren.frameRibbels) {
+    ctx.save();
+    schildPad(ctx, x, y, w, h, vorm);
+    ctx.clip();
+    const rcx = x + w / 2;
+    const rcy = y + h / 2;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    for (let a = 0; a < 360; a += 2.2) {
+      const a1 = (a * Math.PI) / 180;
+      const a2 = ((a + 0.7) * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.moveTo(rcx, rcy);
+      ctx.arc(rcx, rcy, h, a1, a2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
 
   // Snijkant (#705): de bleke pulpkern langs de bovenrand — spiegel van de
   // 2px-laag in de CSS (3 canvas-px, de vaste ~1,4×-kalibratie).
@@ -264,6 +349,25 @@ export function drawKaartSchild(
   glow.addColorStop(1, "rgba(255, 255, 255, 0)");
   ctx.fillStyle = glow;
   ctx.fillRect(fx, fy, fw, fh);
+
+  // Binnenlijnen (#710): geclipte ringen langs het vlak — spiegel van de
+  // inset-schaduwen in --kaart-binnenlijn. Breedste eerst (de CSS somt
+  // smal → breed op en de eerste schaduw wint); door de actieve clip blijft
+  // van elke stroke alleen de binnenhelft over, dus lineWidth = 2 × de
+  // spreiding (CSS-px × 1,4-kalibratie).
+  if (kleuren.binnenlijn) {
+    for (const [spreiding, kleur] of [...kleuren.binnenlijn].reverse()) {
+      schildPad(ctx, fx, fy, fw, fh, vorm);
+      ctx.strokeStyle = kleur;
+      ctx.lineWidth = spreiding * 1.4 * 2;
+      ctx.stroke();
+    }
+  }
+
+  // Vlak-motief (#710): het geëtste watermerk, exact de DOM-laagvolgorde —
+  // boven achtergrond, gloed en binnenlijnen, onder sheen en textuur.
+  if (kleuren.motief) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief);
+
   const sheen = ctx.createLinearGradient(
     fx,
     fy + fh * 0.2,
@@ -299,7 +403,7 @@ export function drawKaartSchild(
   // spiegel van de ::after-textuur in FutKaart.css. De kaarten met een eigen
   // weefsel slaan dit over (#666, zoals de `background: none`-regel daar).
   if ((kleuren.textuur ?? "satijn") === "satijn") {
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+    ctx.strokeStyle = `rgba(255, 255, 255, ${kleuren.satijnAlpha ?? 0.06})`;
     ctx.lineWidth = 2;
     const helling = fh * 0.47; // ~115° t.o.v. de kaart, zoals de CSS
     for (let i = -helling; i < fw; i += 7) {
@@ -311,6 +415,127 @@ export function drawKaartSchild(
   }
 
   return { fx, fy, fw, fh };
+}
+
+/** Vlak-motief (#710): de geëtste watermerkpaden uit futKaartOrnamenten.ts —
+ *  letterlijk dezelfde strings die FutKaartMotief in de DOM rendert, hier als
+ *  Path2D. De 100×100-viewBox schaalt naar `breedte` × het vlak en staat
+ *  gecentreerd op de `positie`-fractie, exact zoals de CSS-plaatsing van
+ *  .fut-kaart__motief (`center P% / B%`). */
+function drawMotief(
+  ctx: CanvasRenderingContext2D,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+  motief: NonNullable<FutKaartKleuren["motief"]>,
+) {
+  const maat = motief.breedte * fw;
+  const schaal = maat / 100;
+  ctx.save();
+  ctx.translate(
+    fx + (fw - maat) / 2,
+    fy + motief.positie * (fh - maat),
+  );
+  ctx.scale(schaal, schaal);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const pad of motief.paden) {
+    const p = new Path2D(pad.d);
+    ctx.globalAlpha = pad.alpha ?? 1;
+    if (pad.soort === "vlak") {
+      ctx.fillStyle = motief.kleur;
+      ctx.fill(p);
+    } else {
+      ctx.strokeStyle = motief.kleur;
+      ctx.lineWidth = pad.breedte ?? 1;
+      ctx.stroke(p);
+    }
+  }
+  ctx.restore();
+}
+
+/** Eén getaperde metaalstreng (#710) op canvas: gevulde omtrek met contour,
+ *  dwarsribbels en glanslijn — spiegel van FutStreng in FutKaart.tsx, met
+ *  letterlijk dezelfde pad-strings uit futKaartOrnamenten.ts. */
+function strokeStreng(
+  ctx: CanvasRenderingContext2D,
+  streng: Streng,
+  ribbelBreedte: number,
+) {
+  const omtrek = new Path2D(streng.omtrek);
+  const verloop = ctx.createLinearGradient(
+    0,
+    streng.bbox.yMin,
+    (streng.bbox.yMax - streng.bbox.yMin) * 0.35,
+    streng.bbox.yMax,
+  );
+  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
+    verloop.addColorStop(offset, kleur);
+  ctx.fillStyle = verloop;
+  ctx.fill(omtrek);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
+  ctx.lineWidth = 0.7;
+  ctx.stroke(omtrek);
+  ctx.lineWidth = ribbelBreedte;
+  ctx.strokeStyle = GOAT_METAAL_RIBBELGLANS;
+  for (const d of streng.ribbelGlans) ctx.stroke(new Path2D(d));
+  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  for (const d of streng.ribbels) ctx.stroke(new Path2D(d));
+  ctx.strokeStyle = GOAT_METAAL_SCHADUW;
+  ctx.lineWidth = 1.3;
+  ctx.stroke(new Path2D(streng.schaduw));
+  ctx.strokeStyle = GOAT_METAAL_GLANS;
+  ctx.lineWidth = 0.9;
+  ctx.stroke(new Path2D(streng.highlight));
+}
+
+/** GOAT-ornament (#710): de bokhoorns en het baardornament die buiten het
+ *  schild uitsteken. Eén helft plus zijn spiegeling om x=50, net als de
+ *  <use transform> in de DOM-defs; de asstreng van de baard staat op x=50 en
+ *  wordt daarom niet gespiegeld. Units zijn kaart-units (100 breed), dus één
+ *  schaalfactor volstaat. */
+function drawGoatOrnament(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+
+  // Baardblad: staat op de as, dus niet gespiegeld — met zijn nerven erin.
+  const blad = new Path2D(GOAT_BAARD_BLAD);
+  const bladVerloop = ctx.createLinearGradient(0, 132, 6, 158);
+  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
+    bladVerloop.addColorStop(offset, kleur);
+  ctx.fillStyle = bladVerloop;
+  ctx.fill(blad);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
+  ctx.lineWidth = 0.7;
+  ctx.stroke(blad);
+  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  ctx.lineWidth = 0.42;
+  for (const d of GOAT_BAARD_NERVEN) ctx.stroke(new Path2D(d));
+
+  // Hoorn en baard-flick: één helft plus zijn spiegeling om x=50.
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, GOAT_HOORN, 0.62);
+    strokeStreng(ctx, GOAT_BAARD_FLICK, 0.34);
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 /** Deterministische PRNG (mulberry32) voor de vezelkorrel: de poster moet bij
@@ -535,6 +760,13 @@ interface EditieRegister {
  *  die kalibratie houden we aan, ook voor de edities. */
 const BASIS_SHEEN = "rgba(255, 255, 255, 0.28)";
 
+/** Glanskleuren van de twee toptiers (#710). Beide vast: de poster staat op
+ *  het lichte palet vastgepind (#125), dus alleen vaste hexen garanderen dat
+ *  DOM-kaart en deel-poster in béide thema's gelijk zijn — de dictator draaide
+ *  tot #710 op --dictator-gold en week in dark mode dus af van zijn poster. */
+const GOAT_GLANS = "#f7869f";
+const DICTATOR_GLANS = "#e6b34d";
+
 /** De zes editie-registers — waarden spiegelen FutKaart.css (regels 637-951)
  *  en, voor de Icon, de --bigdaddy-kaart-/--bigdaddy-frame-tokens uit
  *  index.css. Bewaakt door de synctest in futKaartCanvas.test.ts. */
@@ -675,13 +907,14 @@ function tierKleur(key: TierKey | undefined): string {
 }
 
 /** Draagt deze divisiegroep de stralenkrans? Spiegel van het premium-blok in
- *  FutKaart.css: de spitse vleugels en de kroon-crest. */
+ *  FutKaart.css: de spitse vleugels en de dictator-crest. De GOAT stond hier
+ *  tot #710 ook bij, maar heeft nu een eigen ::after met ijl satijn — ook
+ *  onder een editie-skin, want editie-blokken raken ::after niet aan. */
 function premiumTier(key: TierKey | undefined): boolean {
   return (
     key === "platina" ||
     key === "diamant" ||
     key === "meester" ||
-    key === "legende" ||
     key === "dictator"
   );
 }
@@ -705,7 +938,6 @@ export function kaartSkin(
   key: TierKey | undefined,
   editie: KaartEditie | null,
 ): KaartSkin {
-  const special = key === "legende" || key === "dictator";
   const stralen = premiumTier(key) && editie !== "pias" && editie !== "piet";
 
   if (editie) {
@@ -726,6 +958,15 @@ export function kaartSkin(
         keyline: mix(r.lijn, "#fff8e8", 0.75),
         stralen,
         textuur: r.textuur,
+        // Het ijle GOAT-satijn overleeft de editie (eigen ::after-regel,
+        // die editie-blokken niet raken); pias en Piet zetten hun eigen
+        // weefsel en slaan het satijn sowieso over.
+        satijnAlpha: key === "legende" ? 0.035 : undefined,
+        // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
+        // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
+        // vlak-register en verdwijnt wél — het medaillon zou op het
+        // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
+        ornament: key === "legende" ? "goat" : undefined,
       },
       ink: r.ink,
       inkSoft: r.inkSoft,
@@ -734,12 +975,63 @@ export function kaartSkin(
     };
   }
 
-  if (special) {
-    // Special-glans en -diepten: dezelfde constanten als FutKaart.css
-    // (dictator = troon-tokens, GOAT = vaste roze).
-    const glans = key === "dictator" ? "#e6b34d" : "#f7869f";
-    const diepHi = key === "dictator" ? "#a52347" : "#3c1524";
-    const diep = key === "dictator" ? "#5e1228" : "#24101a";
+  // GOAT (#710): het monument — eigen rosé-frame met geborsteld metaal,
+  // medaillon-motief, sterkere roze sheen, hoorns, echo en binnenlijnen.
+  // Spiegel van het .fut-kaart--legende-blok in FutKaart.css.
+  if (key === "legende") {
+    const glans = GOAT_GLANS;
+    return {
+      kleuren: {
+        frame: [
+          [0, "#ffd3de"],
+          [0.4, "#c25573"],
+          [0.66, "#fff0f4"],
+          [1, "#4a1526"],
+        ],
+        frameRibbels: true,
+        liner: "#140609",
+        vlak: [
+          [0, "#3c1524"],
+          [0.6, "#24101a"],
+          [1, "#120a10"],
+        ],
+        glow: "rgba(247, 134, 159, 0.46)",
+        // De CSS zet 0.28 over een bredere baan (36/50/64); op canvas loopt
+        // de baan over een kortere as, dus dezelfde ~0,875-kalibratie als de
+        // basis-sheen (0.32 → 0.28) en de spreiding van de shimmer-edities.
+        sheen: "rgba(255, 187, 204, 0.245)",
+        sheenSpreiding: 0.12,
+        keyline: "#f2b7c5",
+        // Geen stralenkrans: het medaillon ís de textuur (de CSS geeft
+        // .fut-kaart--legende een eigen, ijler satijn).
+        stralen: false,
+        satijnAlpha: 0.035,
+        echo: [[0.019, 0.024, "rgba(226, 133, 158, 0.75)"]],
+        binnenlijn: [
+          [1, "rgba(249, 163, 183, 0.5)"],
+          [3.5, "rgba(20, 6, 9, 0.9)"],
+          [4.5, "rgba(249, 163, 183, 0.28)"],
+        ],
+        motief: {
+          paden: GOAT_MEDAILLON,
+          kleur: GOAT_MEDAILLON_KLEUR,
+          breedte: GOAT_MEDAILLON_BREEDTE,
+          positie: GOAT_MEDAILLON_POSITIE,
+        },
+        ornament: "goat",
+      },
+      ink: mix(glans, "#ffffff", 0.8),
+      inkSoft: mix(glans, "#b7a98c", 0.65),
+      lijn: rgba(glans, 0.55),
+      editieKleur: mix(glans, "#ffffff", 0.8),
+    };
+  }
+
+  // El Padelissimo: het donkere TOTW-recept in goud op wijn. Tot #710 gedeeld
+  // met de GOAT; de tinten staan nu vast op de troonwaarden van het lichte
+  // thema, precies wat deze tabel altijd al tekende.
+  if (key === "dictator") {
+    const glans = DICTATOR_GLANS;
     return {
       kleuren: {
         frame: [
@@ -750,8 +1042,8 @@ export function kaartSkin(
         ],
         liner: "#0c0805",
         vlak: [
-          [0, diepHi],
-          [0.6, diep],
+          [0, "#a52347"],
+          [0.6, "#5e1228"],
           [1, "#120a10"],
         ],
         glow: rgba(glans, 0.4),

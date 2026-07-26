@@ -8,6 +8,23 @@
 
 import type { ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
+import {
+  GOAT_BAARD_BLAD,
+  GOAT_BAARD_FLICK,
+  GOAT_BAARD_NERVEN,
+  GOAT_HOORN,
+  GOAT_MEDAILLON,
+  GOAT_MEDAILLON_KLEUR,
+  GOAT_METAAL_CONTOUR,
+  GOAT_METAAL_GLANS,
+  GOAT_METAAL_RIBBEL,
+  GOAT_METAAL_RIBBELGLANS,
+  GOAT_METAAL_SCHADUW,
+  GOAT_METAAL_VERLOOP,
+  ORNAMENT_VIEWBOX,
+  type OrnamentPad,
+  type Streng,
+} from "./futKaartOrnamenten";
 import "./FutKaart.css";
 
 /** Schildvormen: vier clipPaths met exact dezelfde onderkant (de punt op
@@ -17,6 +34,63 @@ import "./FutKaart.css";
  *  objectBoundingBox laat de paden meeschalen met elke kaartbreedte.
  *  Eén keer renderen per pagina; dubbel renderen is onschadelijk (identieke
  *  defs), maar onnodig. */
+/** Eén getaperde metaalstreng (#710): gevulde omtrek met contour, dwarsribbels
+ *  en glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus
+ *  DOM en canvas tekenen letterlijk dezelfde paden. */
+function FutStreng({
+  streng,
+  ribbelBreedte = 0.4,
+}: {
+  streng: Streng;
+  ribbelBreedte?: number;
+}) {
+  return (
+    <>
+      <path
+        d={streng.omtrek}
+        fill="url(#fut-orn-metaal)"
+        stroke={GOAT_METAAL_CONTOUR}
+        strokeWidth="0.7"
+        strokeLinejoin="round"
+      />
+      {streng.ribbelGlans.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={GOAT_METAAL_RIBBELGLANS}
+          strokeWidth={ribbelBreedte}
+          strokeLinecap="round"
+        />
+      ))}
+      {streng.ribbels.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={GOAT_METAAL_RIBBEL}
+          strokeWidth={ribbelBreedte}
+          strokeLinecap="round"
+        />
+      ))}
+      <path
+        d={streng.schaduw}
+        fill="none"
+        stroke={GOAT_METAAL_SCHADUW}
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d={streng.highlight}
+        fill="none"
+        stroke={GOAT_METAAL_GLANS}
+        strokeWidth="0.9"
+        strokeLinecap="round"
+      />
+    </>
+  );
+}
+
 export function FutKaartDefs() {
   return (
     <svg width="0" height="0" className="fut-kaart__defs" aria-hidden="true">
@@ -33,7 +107,90 @@ export function FutKaartDefs() {
         <clipPath id="fut-schild-kroon" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
         </clipPath>
+        {/* Ornamenten (#710): de laag die búiten het schild uitsteekt. Eén
+            linkerhelft; de tweede <use> spiegelt om x=50 — links en rechts
+            zijn per constructie gelijk, zoals de canvas-spiegel dat met
+            scale(-1,1) doet. Kaarten verwijzen met <use> naar deze groep,
+            dus de paden staan één keer per pagina. */}
+        <linearGradient
+          id="fut-orn-metaal"
+          x1="0"
+          y1="0"
+          x2="0.35"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {GOAT_METAAL_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <g id="fut-orn-goat-helft">
+          <FutStreng streng={GOAT_HOORN} ribbelBreedte={0.62} />
+          <FutStreng streng={GOAT_BAARD_FLICK} ribbelBreedte={0.34} />
+        </g>
+        <g id="fut-orn-goat">
+          {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
+              nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
+          <path
+            d={GOAT_BAARD_BLAD}
+            fill="url(#fut-orn-metaal)"
+            stroke={GOAT_METAAL_CONTOUR}
+            strokeWidth="0.7"
+            strokeLinejoin="round"
+          />
+          {GOAT_BAARD_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={GOAT_METAAL_RIBBEL}
+              strokeWidth="0.42"
+              strokeLinecap="round"
+            />
+          ))}
+          <use href="#fut-orn-goat-helft" />
+          <use href="#fut-orn-goat-helft" transform="translate(100,0) scale(-1,1)" />
+        </g>
       </defs>
+    </svg>
+  );
+}
+
+/** Motief-svg (#710): het geëtste watermerk ín het vlak, als échte laag
+ *  achter de inkt (z-index −1; het vlak is door zijn clip-path een eigen
+ *  stacking context). Paden en kleur komen uit futKaartOrnamenten.ts en
+ *  worden op canvas als Path2D hergebruikt. */
+function FutKaartMotief({
+  paden,
+  kleur,
+  className,
+}: {
+  paden: readonly OrnamentPad[];
+  kleur: string;
+  className?: string;
+}) {
+  return (
+    <svg
+      className={`fut-kaart__motief${className ? ` ${className}` : ""}`}
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      {paden.map((p) =>
+        p.soort === "vlak" ? (
+          <path key={p.d} d={p.d} fill={kleur} opacity={p.alpha} />
+        ) : (
+          <path
+            key={p.d}
+            d={p.d}
+            fill="none"
+            stroke={kleur}
+            strokeWidth={p.breedte}
+            opacity={p.alpha}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ),
+      )}
     </svg>
   );
 }
@@ -79,14 +236,38 @@ export function FutKaart({
   ]
     .filter(Boolean)
     .join(" ");
+  // Ornament (#710): de laag die buiten het schild uitsteekt, hangt aan de
+  // tíer — een GOAT met In-Form houdt zijn hoorns. Zodra een editie een
+  // eigen ornament heeft (#710 PR 3), wint dat van het tier-ornament, zoals
+  // de editie-skin ook het vlak wint.
+  const ornament = tier?.key === "legende" ? "goat" : null;
+  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register en
+  // verdwijnt dus wél onder een editie-skin (het medaillon zou op het
+  // In-Form-navy vloeken); alleen de voorkant draagt het.
+  const motief =
+    !editie && tier?.key === "legende" ? (
+      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+    ) : null;
   return (
     <div className={klassen}>
+      {ornament && (
+        <svg
+          className="fut-kaart__ornament"
+          viewBox={ORNAMENT_VIEWBOX}
+          aria-hidden="true"
+        >
+          <use href={`#fut-orn-${ornament}`} />
+        </svg>
+      )}
       <div className="fut-kaart__flipper">
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
             <span className="fut-kaart__keyline">
-              <span className="fut-kaart__vlak">{voor}</span>
+              <span className="fut-kaart__vlak">
+                {motief}
+                {voor}
+              </span>
             </span>
           </span>
         </div>

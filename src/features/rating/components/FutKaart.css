@@ -22,6 +22,9 @@
   --kaart-lijn: color-mix(in srgb, var(--tier) 55%, #a8987a);
   --fut-kw: 116px;
   width: var(--fut-kw);
+  /* Anker voor de ornamentlaag (#710): de svg die buiten het schild
+     uitsteekt, positioneert tegen de kaart zelf. */
+  position: relative;
   perspective: 600px;
   /* De kaart is zijn eigen inline-size-container (#625): zo kan de
      compact-zetting hieronder op de échte kaartbreedte reageren, waar die
@@ -49,8 +52,27 @@
     color-mix(in srgb, var(--tier) 60%, #fff3d6) 68%,
     color-mix(in srgb, var(--tier) 90%, #241b0c) 100%
   );
-  filter: drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
+  /* Echo-contour (#710): een register kan vóór de slagschaduw een extra
+     drop-shadow(dx dy 0 kleur) zetten — een filter werkt ná de clip, dus de
+     echo volgt het schildsilhouet exact. De lege fallback laat de gewone
+     kaarten ongemoeid. Canvas-spiegel: het echo-veld in drawKaartSchild. */
+  filter: var(--kaart-echo, ) drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
   backface-visibility: hidden;
+}
+/* Ornamentlaag (#710): de énige laag die búiten de schildclip valt — hoorns,
+   kroonpunten, linten. Ligt áchter de kaart (eerste kind; de flipper tekent
+   eroverheen), zodat een uitsteeksel van achter het schild vandaan komt en
+   nooit over de inkt valt. Doos = de ORNAMENT_VIEWBOX uit
+   futKaartOrnamenten.ts als procenten van de kaartmaat: 18 units marge
+   rondom, 28 boven (kaart = 100 × 139 units). */
+.fut-kaart__ornament {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  top: -27.338%;
+  height: 152.518%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
 }
 .fut-kaart__zijde--achter {
   position: absolute;
@@ -114,6 +136,10 @@
   position: relative;
   height: 100%;
   clip-path: var(--schild);
+  /* Binnenlijnen (#710): inset-schaduwen worden mee-geclipt en volgen dus
+     het schild — extra contourlijnen zonder extra laag. Registers zetten
+     --kaart-binnenlijn; de gewone kaarten houden none. */
+  box-shadow: var(--kaart-binnenlijn, none);
   background:
     radial-gradient(
       120% 55% at 50% -6%,
@@ -168,13 +194,28 @@
     --fut-avatar: 0.44;
   }
 }
+/* Motief (#710): het geëtste watermerk ín het vlak (FutKaartMotief in
+   FutKaart.tsx). Het vlak is door zijn clip-path een stacking context, dus
+   z-index −1 legt het motief bóven de vlak-achtergrond maar onder alle
+   inkt; sheen (::before) en textuur (::after) blijven erboven lopen.
+   Positie: het CSS-equivalent van `background: center P% / B% no-repeat`. */
+.fut-kaart__motief {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: calc(var(--motief-pos, 20%) * (139 - var(--motief-b, 92)) / 100 / 1.39);
+  width: calc(var(--motief-b, 92) * 1%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 /* Premium-registers (spitse vleugels en kroon-crest): een stralenkrans
    achter het bovenvlak, zoals de special-artworks in FUT — subtiel genoeg
-   om onder elo en avatar door te lopen. */
+   om onder elo en avatar door te lopen. GOAT stond hier tot #710 ook bij,
+   maar draagt nu zijn eigen medaillon-motief met een ijler satijn. */
 .fut-kaart--platina .fut-kaart__vlak::after,
 .fut-kaart--diamant .fut-kaart__vlak::after,
 .fut-kaart--meester .fut-kaart__vlak::after,
-.fut-kaart--legende .fut-kaart__vlak::after,
 .fut-kaart--dictator .fut-kaart__vlak::after {
   background:
     radial-gradient(
@@ -192,6 +233,16 @@
       rgba(255, 255, 255, 0.05) 0 1.5px,
       transparent 1.5px 5px
     );
+}
+/* GOAT (#710): geen stralen maar een héél ijl satijn (0.04) — het medaillon
+   is de textuur. Vóór het schand-blok hieronder, zodat pias/piet met hun
+   `background: none` ook op een GOAT-drager blijven winnen. */
+.fut-kaart--legende .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.04) 0 1.5px,
+    transparent 1.5px 5px
+  );
 }
 /* Kaarten met een eigen vlak-textuur (kraftkarton, speelkaart): geen
    satijn of stralen eroverheen — dubbel weefsel wordt druk. Ná het
@@ -573,29 +624,93 @@
   --schild: url(#fut-schild-punt);
 }
 
-/* Special-kaarten: GOAT en El Padelissimo als donkere FUT-special
-   (TOTW-stijl) — donker vlak, gloed en inkt in de glanskleur, kroon-crest
-   als bovenrand. De dictator draait op de troon-tokens; de GOAT-glans is de
-   vaste roze uit het donkere thema, leesbaar op het donkere vlak in beide
-   thema's. */
-.fut-kaart--legende,
+/* GOAT (#710): het monument — een eigen register, niet langer een
+   kleurvariant van de dictator. Vast rosé-frame met geborsteld metaal
+   (conic-ribbels stralen uit het kaartmidden en staan dus rondom loodrecht
+   op de rand), donker vlak met het geëtste geiten-medaillon (FutKaartMotief
+   in FutKaart.tsx), roze sheen op In-Form-breedte met een trage shimmer,
+   ramshoorns als ornamentlaag, offset-echo en dubbele binnenlijn.
+   Vaste hexen (tokenregime #710): beide toptiers staan vast, zodat
+   DOM-kaart en deel-poster in béide thema's gelijk zijn.
+   Canvas-spiegel: de legende-tak in kaartSkin() (futKaartCanvas.ts). */
+.fut-kaart--legende {
+  --schild: url(#fut-schild-kroon);
+  --sp-glans: #f7869f;
+  --sp-diep-hi: #3c1524;
+  --sp-diep: #24101a;
+  --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
+  --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
+  --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.019) calc(var(--fut-kw) * 0.024) 0
+      rgba(226, 133, 158, 0.75)
+  );
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(249, 163, 183, 0.5),
+    inset 0 0 0 3.5px rgba(20, 6, 9, 0.9),
+    inset 0 0 0 4.5px rgba(249, 163, 183, 0.28);
+}
+.fut-kaart--legende .fut-kaart__zijde {
+  background:
+    repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(255, 255, 255, 0.12) 0deg 0.7deg,
+      transparent 0.7deg 2.2deg
+    ),
+    linear-gradient(
+      160deg,
+      #ffd3de 0%,
+      #c25573 40%,
+      #fff0f4 66%,
+      #4a1526 100%
+    );
+}
+.fut-kaart--legende .fut-kaart__liner {
+  background: #140609;
+}
+.fut-kaart--legende .fut-kaart__keyline {
+  background: #f2b7c5;
+}
+.fut-kaart--legende .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      130% 60% at 50% -8%,
+      rgba(247, 134, 159, 0.46),
+      transparent 62%
+    ),
+    linear-gradient(172deg, #3c1524 0%, #24101a 60%, #120a10 100%);
+}
+/* Sheen op In-Form-niveau (0.28, was 0.14) en roze getint — een monument
+   mag licht vangen; de shimmer is bewust traag (7.5s tegen In-Forms 2.6s):
+   prestige beweegt bedaard. */
+.fut-kaart--legende .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgba(255, 187, 204, 0.28) 50%,
+    transparent 64%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--legende .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 7.5s ease-in-out infinite;
+  }
+}
+
+/* El Padelissimo (dictator): donkere FUT-special in goud op wijn — het
+   TOTW-recept dat tot #710 met de GOAT werd gedeeld, nu als eigen register.
+   De tinten staan vast op de troonwaarden van het lichte thema (tokenregime
+   #710): dat zijn de waarden die de deel-poster altijd al tekende, dus DOM
+   en poster wijken in geen enkel thema meer af. */
 .fut-kaart--dictator {
   --schild: url(#fut-schild-kroon);
+  --sp-glans: #e6b34d;
+  --sp-diep-hi: #a52347;
+  --sp-diep: #5e1228;
   --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
   --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
   --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
 }
-.fut-kaart--legende {
-  --sp-glans: #f7869f;
-  --sp-diep-hi: #3c1524;
-  --sp-diep: #24101a;
-}
-.fut-kaart--dictator {
-  --sp-glans: var(--dictator-gold);
-  --sp-diep-hi: var(--dictator-wine);
-  --sp-diep: var(--dictator-deep);
-}
-.fut-kaart--legende .fut-kaart__zijde,
 .fut-kaart--dictator .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
@@ -605,11 +720,9 @@
     color-mix(in srgb, var(--sp-glans) 45%, #140d02) 100%
   );
 }
-.fut-kaart--legende .fut-kaart__liner,
 .fut-kaart--dictator .fut-kaart__liner {
   background: #0c0805;
 }
-.fut-kaart--legende .fut-kaart__vlak,
 .fut-kaart--dictator .fut-kaart__vlak {
   background:
     radial-gradient(
@@ -624,7 +737,6 @@
       #120a10 100%
     );
 }
-.fut-kaart--legende .fut-kaart__vlak::before,
 .fut-kaart--dictator .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
