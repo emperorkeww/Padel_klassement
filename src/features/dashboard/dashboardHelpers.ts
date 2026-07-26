@@ -123,9 +123,7 @@ export function matchWhen(m: Match, groupName?: string | null): string {
  *  in één `in(group_id, …)` past. */
 export async function loadOpenPolls(
   groups: GroupSummary[],
-): Promise<
-  { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
-> {
+): Promise<OpenPollBundle[]> {
   if (groups.length === 0) return [];
   const ids = groups.map((g) => g.id);
   const [polls, options, votes] = await Promise.all([
@@ -174,13 +172,16 @@ export function pollDay(date: string): string {
  * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
  * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
  */
+/** Eén groep met zijn polls, opties en stemmen — wat loadOpenPolls teruggeeft. */
+export type OpenPollBundle = {
+  group: GroupSummary;
+  polls: PlayPoll[];
+  options: PollOption[];
+  votes: PollVote[];
+};
+
 export function pickPollBanner(
-  rows: {
-    group: GroupSummary;
-    polls: PlayPoll[];
-    options: PollOption[];
-    votes: PollVote[];
-  }[],
+  rows: OpenPollBundle[],
   myId: string,
   nowMs: number,
 ): PollPick | null {
@@ -237,12 +238,15 @@ export function pickPollBanner(
 export type RivalRec = { won: number; drawn: number; lost: number; played: number };
 
 /** Tegenstander met de meeste onderlinge duels (min. 3), of null. */
+/** De vaste tegenstander plus de onderlinge balans. */
+export type Rival = { oppId: string; rec: RivalRec };
+
 export function pickRival(
   matches: Match[],
   teams: Record<string, Team>,
   myId: string,
-): { oppId: string; rec: RivalRec } | null {
-  let best: { oppId: string; rec: RivalRec } | null = null;
+): Rival | null {
+  let best: Rival | null = null;
   for (const [oppId, rec] of headToHead(matches, teams, myId)) {
     if (rec.played < 3) continue;
     if (!best || rec.played > best.rec.played) best = { oppId, rec };
