@@ -61,17 +61,34 @@ function status(
   };
 }
 
+/** Eén rating midden in elke band, zodat élke divisie langskomt. 994 (Blaaskaak)
+ *  is de divisie uit de referentieontwerpen en dus de standaard hieronder. */
+const DIVISIES: ReadonlyArray<readonly [rating: number, naam: string]> = [
+  [550, "Sletje van de baan"],
+  [650, "Stofzuiger"],
+  [750, "Ballenraper"],
+  [850, "Bankvuller"],
+  [994, "Blaaskaak"],
+  [1050, "Wannabe"],
+  [1150, "Glazenwasser"],
+  [1250, "Eeuwige belofte"],
+  [1350, "Forever second"],
+  [1450, "GOAT (toptier, premium glans)"],
+];
+
 function Kaart({
   titel,
   uitleg,
   status: s,
   naam = "Remco",
+  rating = 994,
   briefing = "Bijna 🤡 Wannabe: nog 6 Elo. M'n notitieboekje ligt al open op de felicitatiepagina.",
 }: {
   titel: string;
   uitleg: string;
   status: HeroStatus;
   naam?: string;
+  rating?: number | null;
   briefing?: string | null;
 }) {
   return (
@@ -82,7 +99,7 @@ function Kaart({
         myId="p1"
         profile={undefined}
         naam={naam}
-        rating={994}
+        rating={rating}
         ratingGames={24}
         rank={6}
         heeftStand
@@ -160,6 +177,29 @@ export function HeroShowcase() {
         status={status("bigdaddy", "onfire")}
       />
 
+      <h2 className="hero-showcase__sectie">
+        De basiskaart per divisie (#771)
+      </h2>
+      <p className="hero-showcase__uitleg">
+        Zelfde recept, ander materiaal: rand, keyline, was en watermerk komen uit
+        het register van de divisiekaart (#710).
+      </p>
+      {DIVISIES.map(([rating, naam]) => (
+        <Kaart
+          key={rating}
+          titel={naam}
+          uitleg={`rating ${rating}`}
+          status={status(null)}
+          rating={rating}
+        />
+      ))}
+      <Kaart
+        titel="Zonder rating"
+        uitleg="Nog nooit gespeeld: geen divisie, dus de neutrale kaart."
+        status={status(null)}
+        rating={null}
+      />
+
       <h2 className="hero-showcase__sectie">Randgevallen</h2>
       <Kaart
         titel="Roast-schild op de pias"
@@ -179,7 +219,7 @@ export function HeroShowcase() {
         briefing="Zes op een rij, en tóch nog steeds die tweede opslag als een verontschuldiging. Ik heb je vorige week horen zeggen dat je nu écht gaat trainen; mijn notitieboekje staat vol met diezelfde belofte, in vier verschillende handschriften."
       />
       <Kaart
-        titel="Zonder rating en zonder coachbericht"
+        titel="Zonder coachbericht"
         uitleg="Lege staat: geen briefing, geen chips."
         status={status(null)}
         briefing={null}

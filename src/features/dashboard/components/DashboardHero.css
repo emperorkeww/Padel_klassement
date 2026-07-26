@@ -57,6 +57,120 @@
   z-index: 1;
 }
 
+/* ---- Basisthema: je divisie (#771) ----
+   Draagt een speler geen permanent thema, dan is de kaart die van zijn divisie.
+   De kleuren komen als custom properties binnen uit het register van #710
+   (heroDivisie.ts), dus hier staan alleen de dekkingen — die zijn gedeeld door
+   alle negen divisies en door beide thema's, en dat is precies de bedoeling:
+   één zuinig recept dat per divisie ander materiaal krijgt, geen negen skins.
+
+   De lime/accent-was van de neutrale kaart valt weg zodra er een divisie is; de
+   materiaallaag neemt hem over. Alleen wie geen rating heeft (nog nooit
+   gespeeld) houdt de oude neutrale kaart. */
+.hero--divisie {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--hero-div-lijn) 45%, var(--line));
+  /* De keyline van de kaart als dunne binnenring, plus de gewone kaartschaduw. */
+  box-shadow:
+    inset 0 0 0 1px
+      color-mix(in srgb, var(--hero-div-keyline, var(--hero-div-hoog)) 35%, transparent),
+    var(--shadow-sm);
+}
+/* Stap 3 van de laagvolgorde: het materiaal. Dekkingen bewust laag — de kaart
+   moet leesbaar blijven met een coachbriefing, drie knoppen en een vormreeks
+   erop. De gloed staat rechtsboven zoals op de neutrale kaart, zodat het licht
+   in de app uit dezelfde hoek blijft komen. */
+.hero__materiaal {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 140% at 100% 0%,
+      color-mix(in srgb, var(--hero-div-gloed) 20%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      172deg,
+      color-mix(in srgb, var(--hero-div-was) 12%, transparent) 0%,
+      transparent 64%
+    );
+}
+/* Het divisiemotief als watermerk: groot, rechts, en ruim buiten de kaart
+   doorlopend — de lagen-container klipt het op de kaartvorm. `aspect-ratio` in
+   plaats van een breedte in procenten: het motief is een vierkante doos
+   (viewBox 0 0 100 100) en mag op een breed vlak niet uitrekken. */
+.hero__watermerk {
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  height: 190%;
+  aspect-ratio: 1;
+  width: auto;
+  max-width: var(--hero-watermerk-b, 92%);
+  transform: translateY(-50%);
+  opacity: 0.34;
+  /* Naar links uitdoven. Zonder deze mask stopt het motief in een rechte lijn
+     op de rand van zijn eigen doos — dan leest het als een ingeplakt plaatje in
+     plaats van een watermerk, en op smalle schermen zou het bovendien tot achter
+     de tekst komen. Ontbreekt mask-image (oude browser), dan blijft het motief
+     gewoon staan; het is decoratie, dus dat is een acceptabele terugval. */
+  mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+  -webkit-mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+}
+/* In het donkere thema keert de gravure om: de inkt van het register is
+   afgestemd op het lichte kaartmateriaal, en donker op donker is geen
+   watermerk maar een vlek. Invert houdt de tekening identiek — alleen de
+   helderheid draait. */
+:root[data-theme="dark"] .hero__watermerk {
+  filter: invert(1);
+  opacity: 0.16;
+}
+/* De twee toptiers (#773): GOAT en El Padelissimo hebben geen divisieregister
+   maar wél een premium glans. De hero toont daarvan de státische stand — exact
+   wat de kaart aan `prefers-reduced-motion` geeft. Bewust niet de lopende baan:
+   die duurt 8–11 seconden per cyclus, wat past bij een kaartje in een raster en
+   niet bij de kop van je startpagina. Er valt hier dus ook niets te dempen. */
+.hero__glans {
+  position: absolute;
+  inset: -35%;
+  background: var(--hero-glans-baan);
+  transform: rotate(var(--hero-glans-hoek, 0deg));
+  opacity: var(--hero-glans-kracht, 0.3);
+}
+/* GOAT — roségoud op bordeaux; de zwakste van de vier op de kaart, en hier nog
+   eens zwakker dan zijn statische kaartstand (0,8 × 0,55 = 0,44 → 0,3): de
+   kaart draagt die baan op zijn eigen donkere materiaal, de hero op het gewone
+   kaartoppervlak. De stops zijn byte-gelijk aan die van de kaart; de synctest in
+   futKaartCanvas.test.ts bewaakt dat. */
+.hero--glans-goat {
+  --hero-glans-hoek: 0deg;
+  --hero-glans-kracht: 0.3;
+  --hero-glans-baan: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgba(255, 187, 204, 0.14) 46%,
+    rgba(255, 226, 224, 0.22) 50%,
+    rgba(226, 154, 122, 0.1) 55%,
+    transparent 66%
+  );
+}
+/* El Padelissimo — statige commandogloed, smal en bijna horizontaal. Ook deze
+   stops zijn byte-gelijk aan de kaart. In de praktijk zie je deze basis zelden:
+   de El-Padelissimo-tier is voorbehouden aan de troonhouder (#545), en die
+   draagt het dictator-thema, dat het materiaal overneemt. */
+.hero--glans-dictator {
+  --hero-glans-hoek: -8deg;
+  --hero-glans-kracht: 0.26;
+  --hero-glans-baan: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(230, 179, 77, 0.12) 47%,
+    rgba(246, 222, 160, 0.3) 50%,
+    rgba(230, 179, 77, 0.1) 53%,
+    transparent 60%
+  );
+}
+
 /* Hero-thema's (#613): de kaart zelf verschiet van kleur voor de Big Daddy of
    de zittende dictator — bestaande tokens, geen derde palet. Kleur is nooit de
    enige indicator: de HeroCrest-chips blijven ernaast staan. */

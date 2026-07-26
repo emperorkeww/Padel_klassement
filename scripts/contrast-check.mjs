@@ -96,8 +96,117 @@ for (const [name, tokens, strict] of [
   }
 }
 
-if (darkFailures > 0) {
-  console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+// ---- Token-eilanden van de dashboard player card (#771) ----
+// De thema's van de kaart herdefiniëren de neutrale tokens naar hun eigen
+// materiaal (papier, karton, speelkaart). Die hexen staan buiten index.css en
+// vielen dus buiten deze check: hun contrast stond alleen als getal in het
+// CSS-commentaar, met de hand uitgerekend. Sinds #771 rekent het script mee.
+//
+// De achtergrond is telkens de dónkerste stop van het verloop — de ongunstigste
+// plek op het vlak, waar de tekst tot onderaan doorloopt. Deze eilanden zijn
+// bewust thema-onafhankelijk (papier is papier, ook 's nachts), dus ze worden
+// één keer gecontroleerd en tellen hard mee.
+const heroCss = readFileSync(
+  new URL("../src/features/dashboard/components/DashboardHero.css", import.meta.url),
+  "utf8",
+);
+
+function islandTokens(selector) {
+  const block = heroCss.match(
+    new RegExp(`\\${selector}\\s*\\{([\\s\\S]*?)\\n\\}`),
+  )?.[1];
+  if (!block) return null;
+  const out = tokensOf(block);
+  // Eén niveau var()-indirectie oplossen (--ink: var(--lauwer-ink)).
+  for (const [k, v] of Object.entries(out)) {
+    const ref = /^var\((--[\w-]+)\)$/.exec(v);
+    if (ref) out[k] = out[ref[1].slice(2)] ?? v;
+  }
+  return out;
+}
+
+// [selector, omschrijving, [voorgrond, achtergrond, drempel, label]...]
+const ISLANDS = [
+  [
+    ".hero--pias",
+    "Pias-kaart (kraftkarton)",
+    [
+      ["kraft-ink", "kraft-lo", 4.5, "inkt op de donkerste kartonstop"],
+      ["kraft-ink-soft", "kraft-lo", 4.5, "zachte inkt op de donkerste stop"],
+      ["kraft-stempel", "kraft-hi", 4.5, "stempelrood op de lichtste stop"],
+      ["accent-ink", "kraft-stempel", 4.5, "knoptekst op de stempelknop"],
+    ],
+  ],
+  [
+    ".hero--piet",
+    "Schande-token (speelkaart)",
+    [
+      ["kaart-ink", "kaart-lo", 4.5, "inkt op de donkerste kaartstop"],
+      ["kaart-ink-soft", "kaart-lo", 4.5, "zachte inkt op de donkerste stop"],
+      ["kaart-rood", "kaart-lo", 4.5, "kaartrood op de donkerste stop"],
+      ["kaart-bone", "kaart-lak", 4.5, "bot op het lakframe"],
+    ],
+  ],
+  [
+    ".hero--kampioen",
+    "Kampioen (platina-lauwer)",
+    [
+      ["lauwer-ink", "lauwer-lo", 4.5, "inkt op de donkerste platinastop"],
+      ["lauwer-ink-soft", "lauwer-lo", 4.5, "zachte inkt op de donkerste stop"],
+      ["lauwer-bone", "lauwer-groen", 4.5, "bot op de lauwerknop"],
+    ],
+  ],
+  [
+    ".hero--overlay-inform",
+    "In-Form-overlay (navy-goud)",
+    [
+      ["inform-goud", "inform-navy", 4.5, "goud op de lichtste tintstop"],
+      ["inform-navy-diep", "inform-goud", 4.5, "knoptekst op de gouden knop"],
+    ],
+  ],
+  [
+    ".hero--overlay-onfire",
+    "On Fire-overlay (sintel-ember)",
+    [
+      ["onfire-ember", "onfire-sintel", 4.5, "ember op de lichtste tintstop"],
+      ["onfire-sintel-diep", "onfire-ember", 4.5, "knoptekst op de emberknop"],
+    ],
+  ],
+];
+
+let islandFailures = 0;
+console.log("\n— Token-eilanden van de dashboardkaart (#771) —");
+for (const [selector, omschrijving, pairs] of ISLANDS) {
+  const tokens = islandTokens(selector);
+  if (!tokens) {
+    console.error(`  FAIL blok ${selector} niet gevonden in DashboardHero.css`);
+    islandFailures++;
+    continue;
+  }
+  console.log(`  ${omschrijving} (${selector})`);
+  for (const [fg, bg, min, label] of pairs) {
+    const f = tokens[fg];
+    const b = tokens[bg];
+    if (!f?.startsWith("#") || !b?.startsWith("#")) {
+      console.error(`    FAIL ${fg} of ${bg} ontbreekt of is geen hex`);
+      islandFailures++;
+      continue;
+    }
+    const c = contrast(f, b);
+    if (c < min) islandFailures++;
+    console.log(
+      `    ${c >= min ? "ok  " : "FAIL"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${fg} op ${bg} (${label})`,
+    );
+  }
+}
+
+if (darkFailures > 0 || islandFailures > 0) {
+  if (darkFailures > 0)
+    console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
+  if (islandFailures > 0)
+    console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
   process.exit(1);
 }
-console.log("\nDonker thema voldoet aan AA (licht: zie eventuele let-op-regels).");
+console.log(
+  "\nDonker thema en de kaart-eilanden voldoen aan AA (licht: zie eventuele let-op-regels).",
+);
