@@ -251,123 +251,115 @@ export function GroupLedenTab({
         )}
       </Sheet>
 
-      {isOwner && (
+      {/* Uitnodigen mag elk lid (#776), niet alleen de eigenaar; wie deze tab
+          ziet is per RLS al lid. Verwijderen en beheren blijven owner-only. */}
+      <h3 className="card__title card__title--section">Vrienden toevoegen</h3>
+      {addableFriendIds.length === 0 ? (
+        <p className="empty">
+          Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
+        </p>
+      ) : (
         <>
-          <h3 className="card__title card__title--section">
-            Vrienden toevoegen
-          </h3>
-          {addableFriendIds.length === 0 ? (
-            <p className="empty">
-              Geen vrienden om toe te voegen. Voeg eerst vrienden toe.
-            </p>
-          ) : (
-            <>
-              <div className="person-list">
-                {addableFriendIds.map((pid) => (
-                  <label key={pid} className="person-row person-row--pick">
-                    <span className="cell-player">
-                      <input
-                        type="checkbox"
-                        className="member-check"
-                        checked={selectedToAdd.has(pid)}
-                        onChange={() => toggleSelected(pid)}
-                      />
-                      <Avatar profile={profiles[pid]} size={28} />
-                      {displayName(profiles[pid])}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <div className="form-actions">
-                <button
-                  className="btn btn--primary btn--sm"
-                  disabled={busy || selectedToAdd.size === 0}
-                  onClick={() =>
-                    act(async () => {
-                      await addGroupMembers(groupId, [...selectedToAdd]);
-                      setSelectedToAdd(new Set());
-                    }, "Leden toegevoegd.")
-                  }
-                >
-                  {selectedToAdd.size <= 1
-                    ? "Voeg toe"
-                    : `Voeg ${selectedToAdd.size} toe`}
-                </button>
-              </div>
-            </>
-          )}
-
-          <h3 className="card__title card__title--section">
-            Gast toevoegen
-          </h3>
-          <p className="card__subtitle">
-            Speelt er iemand zonder account mee? Voeg 'm als gast toe met een
-            naam; hij telt mee in gegenereerde rondes.
-          </p>
-          <div className="guest-add">
-            <input
-              className="input guest-add__input"
-              type="text"
-              placeholder="Naam van de gast…"
-              aria-label="Naam van een gastspeler"
-              value={guestName}
-              maxLength={40}
-              disabled={busy}
-              onChange={(e) => setGuestName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && guestName.trim()) {
-                  e.preventDefault();
-                  const naam = guestName.trim();
-                  void act(async () => {
-                    const gid = await createGuestPlayer(naam);
-                    await addGroupMembers(groupId, [gid]);
-                    setGuestName("");
-                  }, "Gast toegevoegd.");
-                }
-              }}
-            />
-            <button
-              className="btn btn--primary btn--sm"
-              disabled={busy || !guestName.trim()}
-              onClick={() => {
-                const naam = guestName.trim();
-                void act(async () => {
-                  const gid = await createGuestPlayer(naam);
-                  await addGroupMembers(groupId, [gid]);
-                  setGuestName("");
-                }, "Gast toegevoegd.");
-              }}
-            >
-              + Gast
-            </button>
+          <div className="person-list">
+            {addableFriendIds.map((pid) => (
+              <label key={pid} className="person-row person-row--pick">
+                <span className="cell-player">
+                  <input
+                    type="checkbox"
+                    className="member-check"
+                    checked={selectedToAdd.has(pid)}
+                    onChange={() => toggleSelected(pid)}
+                  />
+                  <Avatar profile={profiles[pid]} size={28} />
+                  {displayName(profiles[pid])}
+                </span>
+              </label>
+            ))}
           </div>
-
-          <h3 className="card__title card__title--section">
-            Uitnodigingslink
-          </h3>
-          <p className="card__subtitle">
-            Deel deze link; wie 'm opent en ingelogd is, wordt automatisch
-            lid — ook zonder vriendschap.
-          </p>
           <div className="form-actions">
             <button
-              className="btn btn--sm"
-              disabled={inviteBusy}
-              onClick={makeInvite}
+              className="btn btn--primary btn--sm"
+              disabled={busy || selectedToAdd.size === 0}
+              onClick={() =>
+                act(async () => {
+                  await addGroupMembers(groupId, [...selectedToAdd]);
+                  setSelectedToAdd(new Set());
+                }, "Leden toegevoegd.")
+              }
             >
-              {inviteBusy ? "Bezig…" : "Maak uitnodigingslink"}
+              {selectedToAdd.size <= 1
+                ? "Voeg toe"
+                : `Voeg ${selectedToAdd.size} toe`}
             </button>
           </div>
-          {inviteUrl && (
-            <input
-              className="input invite-url"
-              aria-label="Uitnodigingslink"
-              readOnly
-              value={inviteUrl}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-          )}
         </>
+      )}
+
+      <h3 className="card__title card__title--section">Gast toevoegen</h3>
+      <p className="card__subtitle">
+        Speelt er iemand zonder account mee? Voeg 'm als gast toe met een naam;
+        hij telt mee in gegenereerde rondes.
+      </p>
+      <div className="guest-add">
+        <input
+          className="input guest-add__input"
+          type="text"
+          placeholder="Naam van de gast…"
+          aria-label="Naam van een gastspeler"
+          value={guestName}
+          maxLength={40}
+          disabled={busy}
+          onChange={(e) => setGuestName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && guestName.trim()) {
+              e.preventDefault();
+              const naam = guestName.trim();
+              void act(async () => {
+                const gid = await createGuestPlayer(naam);
+                await addGroupMembers(groupId, [gid]);
+                setGuestName("");
+              }, "Gast toegevoegd.");
+            }
+          }}
+        />
+        <button
+          className="btn btn--primary btn--sm"
+          disabled={busy || !guestName.trim()}
+          onClick={() => {
+            const naam = guestName.trim();
+            void act(async () => {
+              const gid = await createGuestPlayer(naam);
+              await addGroupMembers(groupId, [gid]);
+              setGuestName("");
+            }, "Gast toegevoegd.");
+          }}
+        >
+          + Gast
+        </button>
+      </div>
+
+      <h3 className="card__title card__title--section">Uitnodigingslink</h3>
+      <p className="card__subtitle">
+        Deel deze link; wie 'm opent en ingelogd is, wordt automatisch lid — ook
+        zonder vriendschap.
+      </p>
+      <div className="form-actions">
+        <button
+          className="btn btn--sm"
+          disabled={inviteBusy}
+          onClick={makeInvite}
+        >
+          {inviteBusy ? "Bezig…" : "Maak uitnodigingslink"}
+        </button>
+      </div>
+      {inviteUrl && (
+        <input
+          className="input invite-url"
+          aria-label="Uitnodigingslink"
+          readOnly
+          value={inviteUrl}
+          onFocus={(e) => e.currentTarget.select()}
+        />
       )}
 
       <h3 className="card__title card__title--section">Groep beheren</h3>

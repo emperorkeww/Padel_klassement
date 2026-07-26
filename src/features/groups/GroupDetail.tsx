@@ -411,15 +411,15 @@ export function GroupDetail() {
             Nodig vrienden uit via de Leden-tab om deze groep tot leven te
             brengen.
           </p>
-          {isOwner && (
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => setView("leden")}
-            >
-              Leden uitnodigen
-            </button>
-          )}
+          {/* Sinds #776 nodigt elk lid uit, dus deze knop is niet meer
+              owner-only. */}
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => setView("leden")}
+          >
+            Leden uitnodigen
+          </button>
         </section>
       )}
 
