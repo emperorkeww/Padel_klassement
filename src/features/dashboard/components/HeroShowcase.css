@@ -1,0 +1,36 @@
+/* Dev-showcase (#771): neutrale omlijsting om de kaarten heen — bewust géén
+   opmaak op de kaart zelf, alleen lucht en labels, zodat wat je ziet exact de
+   kaart is die het dashboard rendert. */
+.hero-showcase {
+  padding: var(--sp-5);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.hero-showcase__kop {
+  font-size: var(--fs-xl);
+  margin: 0 0 var(--sp-2);
+}
+.hero-showcase__intro {
+  margin: 0 0 var(--sp-6);
+  max-width: 60ch;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.hero-showcase__sectie {
+  margin: var(--sp-7) 0 var(--sp-4);
+  font-size: var(--fs-md);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.hero-showcase__geval {
+  margin-bottom: var(--sp-6);
+}
+.hero-showcase__titel {
+  font-size: var(--fs-md);
+  margin: 0 0 var(--sp-1);
+}
+.hero-showcase__uitleg {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}

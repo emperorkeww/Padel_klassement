@@ -17,9 +17,9 @@ import {
   cachedName,
   rememberName,
   pickRival,
-  heroThema,
   heroCrestTekst,
 } from "./dashboardHelpers";
+import { heroOverlay, heroPermanent } from "./heroThema";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { PushPrompt } from "./components/PushPrompt";
 import { EveningCard } from "./components/EveningCard";
@@ -154,10 +154,11 @@ export function Dashboard() {
   };
   const editieCrest = (editie: "kampioen" | "inform" | "onfire") =>
     heroCrestTekst(editieLabel(editie, editieCtx, myId) ?? "");
-  // Skin van de hero (#613/#644/#760): de prioriteit tussen de zeven statussen
-  // en de rol van het roast-schild zitten in heroThema, zodat de regel getest is
-  // en op één plek staat.
-  const thema = heroThema({
+  // Skin van de kaart (#613/#644/#760, herzien #771): twee assen — het permanente
+  // materiaal en de tijdelijke overlay erover. De prioriteit binnen elke as en de
+  // rol van het roast-schild zitten in heroThema.ts, zodat die regels getest zijn
+  // en op één plek staan.
+  const statusVlaggen = {
     dictator: isDictator,
     bigDaddy: isBigDaddy,
     kampioen: isKampioen,
@@ -166,7 +167,9 @@ export function Dashboard() {
     pias: isWeekPias,
     piet: isZwartePiet,
     schild: roastSchild,
-  });
+  };
+  const thema = heroPermanent(statusVlaggen);
+  const overlay = heroOverlay(statusVlaggen);
   // Naam direct tonen zonder e-mail-flits: zolang de profielen laden valt de
   // begroeting terug op de gecachete naam van een eerder bezoek.
   const myName = myProfile
@@ -309,6 +312,7 @@ export function Dashboard() {
           piasWaar,
           schild: roastSchild,
           thema,
+          overlay,
           labels: {
             kampioen: editieCrest("kampioen"),
             inform: editieCrest("inform"),
