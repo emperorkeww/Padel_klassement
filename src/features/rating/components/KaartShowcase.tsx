@@ -237,6 +237,27 @@ export function KaartShowcase() {
         </div>
       </Sectie>
 
+      {/* Bankvuller (#710): de basisdivisie met houten latten achter de kaart en
+          stiksels, leren tabs, stoelcrest en zitplaatsmedaillon ervóór. Op deze
+          drie maten omdat de tab door de taille naar buiten hangt: precies de
+          plek waar de acceptatie-eis ("geen uitstekende tabs afsnijden") op de
+          veldmaat sneuvelt als de ornamentdoos niet klopt. */}
+      <Sectie titel="Bankvuller (#710): latten + stiksels + stoelcrest + bankmedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            {/* 812 → "Bankvuller III": het langste sublabel van de band, dus
+                meteen de zetting-stresscase op de veldmaat. */}
+            <Kaart kw={kw} tier={tierFor(812)} naam="Joris" elo={812} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(812)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
       {/* El Padelissimo (#710): troon-crest, kroon en epauletten achter de
           kaart, lauwerkransen en lakzegel ervóór. Zelfde opzet als de
           GOAT-sectie hierboven, inclusief de canvas-spiegel. */}
