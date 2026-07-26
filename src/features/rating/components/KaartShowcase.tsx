@@ -682,6 +682,8 @@ export function KaartShowcase() {
           naam="Ilse"
           breedte={210}
         />
+      </Sectie>
+
       {/* Blaaskaak (#710): de basisdivisie zonder editie — holle buisprofielen
           langs de flanken, wind-/spraakcrest in de bovenrand, resonatormedaillon
           in de punt en de tactische pijlen als watermerk. Op 116px is de test of
