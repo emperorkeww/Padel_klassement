@@ -230,7 +230,7 @@ function AvatarCard({
       <div className="avatar-row">
         <div className="avatar-preview">
           {shown ? (
-            <img src={shown} alt="Profielfoto" />
+            <img src={shown} alt="Profielfoto" loading="lazy" decoding="async" />
           ) : (
             <span>{displayName(profile).slice(0, 1).toUpperCase()}</span>
           )}

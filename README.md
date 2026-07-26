@@ -124,6 +124,7 @@ supabase/
   seed.sql                  # Rijke testdata voor lokale ontwikkeling
 scripts/
   contrast-check.mjs        # Toegankelijkheidstest op de design system kleurentokens
+  optimize-assets.mjs       # Comprimeert illustraties (WebP) en audio vóór ze de repo in gaan
 ```
 
 ---
@@ -215,6 +216,7 @@ scripts/
 | `npm run lint` | Controleert de codekwaliteit met ESLint. |
 | `npm run contrast` | Voert een toegankelijkheidstest uit op de design system kleurentokens. |
 | `npm run gen:courts` | Regenereert `knownCourts.ts` (baannamen/-types thuisclub) vanaf de live Playtomic-clubpagina (#392). |
+| `node scripts/optimize-assets.mjs <bestand…>` | Comprimeert een nieuwe illustratie (→ WebP) of audiofragment (→ mono 96 kbps) vóór het de repo in gaat (#732). Vereist ImageMagick en ffmpeg. |
 
 ---
 

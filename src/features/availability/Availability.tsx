@@ -195,6 +195,8 @@ export function Availability() {
             aria-hidden="true"
             width={18}
             height={18}
+            loading="lazy"
+            decoding="async"
           />
           <span>Reserveren op Playtomic</span>
         </a>
