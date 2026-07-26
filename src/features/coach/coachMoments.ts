@@ -1095,3 +1095,20 @@ export const CRASH = [
 export function coachCrash(seed: string): string {
   return kiesUniek(CRASH, roastSeed("crash", seed));
 }
+
+// ── Verouderde tab: de app is opnieuw gedeployed (#733) ─────────────────────
+// Geen crash maar een versieverschil, dus Rudy houdt het luchtig en wijst naar
+// de knop. Ook hier: over de app, niet over de speler.
+export const VERSIE = [
+  "Nieuwe versie. Ik heb nergens aangezeten.",
+  "De app is bijgewerkt terwijl jij hier stond. Even herladen en je bent bij.",
+  "Er is achter je rug om verbouwd. Eén tik en je zit in de nieuwe kooi.",
+  "Deze pagina komt uit een vorige editie. Haal de laatste erbij.",
+  "Verse code op de baan. Herlaad even, dan spelen we verder.",
+  "Jouw tab loopt een versie achter. Dat overkomt de beste — mij dagelijks.",
+] as const;
+
+/** Coach Rudy's regel wanneer de tab op een oudere versie van de app draait. */
+export function coachVersie(seed: string): string {
+  return kiesUniek(VERSIE, roastSeed("versie", seed));
+}

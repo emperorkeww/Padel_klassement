@@ -10,6 +10,7 @@ import { SmoesPromptProvider } from "@/features/matches/SmoesPromptProvider";
 import { watchSystemTheme } from "@/lib/utils/theme";
 import { initInstallPromptCapture } from "@/lib/utils/pwa";
 import { registerServiceWorker } from "@/lib/utils/swUpdate";
+import { initChunkErrorDetectie } from "@/lib/utils/chunkError";
 import "./index.css";
 
 // Het inline script in index.html zette het thema al vóór de eerste paint;
@@ -19,6 +20,10 @@ watchSystemTheme();
 // beforeinstallprompt vuurt vlak na page-load — vóór de lazy dashboard-chunk
 // geladen is — dus hier eager afvangen; InstallPrompt leest het later uit.
 initInstallPromptCapture();
+
+// Vite meldt een mislukte chunk-preload vóór de import zelf afketst; die
+// wetenschap laat de foutgrens "oude tab" van "echte crash" onderscheiden.
+initChunkErrorDetectie();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
