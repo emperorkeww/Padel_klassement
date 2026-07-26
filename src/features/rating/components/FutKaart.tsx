@@ -145,6 +145,46 @@ import {
   PIAS_STOF_VERLOOP,
   type PiasBel,
 } from "./ornamentenPias";
+import {
+  PIET_BREUK,
+  PIET_BREUK_GLANS,
+  PIET_CREST_GRAVURE,
+  PIET_CREST_PION,
+  PIET_CREST_PUNT,
+  PIET_CREST_RING,
+  PIET_CREST_SCHIJF,
+  PIET_CREST_VLEUGEL,
+  PIET_GRAVURE,
+  PIET_KETTING,
+  PIET_KETTING_DRAAD,
+  PIET_LAK,
+  PIET_LAK_RAND,
+  PIET_LAUWER,
+  PIET_LAUWER_RUIT,
+  PIET_LOOF,
+  PIET_LOOF_NERF,
+  PIET_RAND_CARTOUCHES,
+  PIET_RAND_RUIT,
+  PIET_RAND_TEKENS,
+  PIET_ROOD,
+  PIET_ROOD_RAND,
+  PIET_SLUITING,
+  PIET_STAAL_CONTOUR,
+  PIET_STAAL_GLANS,
+  PIET_STAAL_RIBBEL,
+  PIET_STAAL_VERLOOP,
+  PIET_WATERMERK,
+  PIET_WATERMERK_BREEDTE,
+  PIET_WATERMERK_KLEUR,
+  PIET_WATERMERK_POSITIE,
+  PIET_ZEGEL_BREUK,
+  PIET_ZEGEL_DRAAD,
+  PIET_ZEGEL_GRAVURE,
+  PIET_ZEGEL_HELFT_LINKS,
+  PIET_ZEGEL_HELFT_RECHTS,
+  PIET_ZEGEL_SCHIJF,
+  PIET_ZEGEL_STUKKEN,
+} from "./ornamentenPiet";
 import "./FutKaart.css";
 // Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
 // metaalladder daar.
@@ -286,6 +326,66 @@ function FutGoud({ d }: { d: string }) {
   );
 }
 
+/** Ketting met geopende sluiting (#710) — de linkerhelft van de Piet-laag
+ *  áchter de kaart. Elke schakel krijgt drie strokes op twee paden (contour,
+ *  staal, binnenglans): daarmee leest hij rond zonder extra geometrie. De
+ *  schakels worden per stuk afgemaakt, zodat de volgende er correct
+ *  overheen grijpt — dát is wat een reeks ovalen tot een ketting maakt. */
+function PietKetting() {
+  return (
+    <>
+      {PIET_KETTING.map((s) => (
+        <g key={s.ring}>
+          <path
+            d={s.ring}
+            fill="none"
+            stroke={PIET_STAAL_CONTOUR}
+            strokeWidth={PIET_KETTING_DRAAD + 0.8}
+          />
+          <path
+            d={s.ring}
+            fill="none"
+            stroke="url(#fut-orn-staal)"
+            strokeWidth={PIET_KETTING_DRAAD}
+          />
+          <path
+            d={s.binnen}
+            fill="none"
+            stroke={PIET_STAAL_GLANS}
+            strokeWidth="0.4"
+          />
+        </g>
+      ))}
+      <path
+        d={PIET_SLUITING.balk}
+        fill="none"
+        stroke={PIET_STAAL_CONTOUR}
+        strokeWidth={PIET_SLUITING.draad + 0.7}
+        strokeLinecap="round"
+      />
+      <path
+        d={PIET_SLUITING.balk}
+        fill="none"
+        stroke="url(#fut-orn-staal)"
+        strokeWidth={PIET_SLUITING.draad - 0.3}
+        strokeLinecap="round"
+      />
+      <path
+        d={PIET_SLUITING.beugel}
+        fill="none"
+        stroke={PIET_STAAL_CONTOUR}
+        strokeWidth={PIET_SLUITING.draad + 0.8}
+      />
+      <path
+        d={PIET_SLUITING.beugel}
+        fill="none"
+        stroke="url(#fut-orn-staal)"
+        strokeWidth={PIET_SLUITING.draad}
+      />
+    </>
+  );
+}
+
 /** Edelsteen (#710): omtrek in de steen-gradient met lichte facetlijnen — de
  *  kroon bovenaan en het ornament in de punt dragen dezelfde steen, zodat de
  *  twee bij elkaar horen. */
@@ -311,6 +411,34 @@ function FutSteen({
           d={d}
           fill="none"
           stroke={BD_STEEN_FACET}
+          strokeWidth="0.3"
+          strokeLinecap="round"
+        />
+      ))}
+    </>
+  );
+}
+
+/** Gravure op het lakframe (#710): de vleugel langs de bovenrand en de
+ *  lauwerblaadjes langs de onderrand. Vlakke geoxideerde zilvertint i.p.v. het
+ *  staalverloop — op bijna-zwart lak moet een gravure lichter zijn dan zijn
+ *  ondergrond, anders verdwijnt hij. */
+function PietGravure() {
+  return (
+    <>
+      <path
+        d={PIET_CREST_VLEUGEL.omtrek}
+        fill={PIET_LOOF}
+        stroke={PIET_STAAL_CONTOUR}
+        strokeWidth="0.25"
+        strokeLinejoin="round"
+      />
+      {PIET_CREST_VLEUGEL.ribbels.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={PIET_STAAL_RIBBEL}
           strokeWidth="0.3"
           strokeLinecap="round"
         />
@@ -366,6 +494,60 @@ function FutLint({ lint, vulling }: { lint: Lint; vulling: string }) {
           stroke={KAMPIOEN_LINT_LIJN}
           strokeWidth="0.4"
           strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+    </>
+  );
+}
+
+/** De rest van de lakframe-gravure (#710, Piet): de highlight langs de vleugel
+ *  en de lauwerblaadjes langs de onderrand. */
+function PietGravureLauwer() {
+  return (
+    <>
+      <path
+        d={PIET_CREST_VLEUGEL.highlight}
+        fill="none"
+        stroke={PIET_LOOF_NERF}
+        strokeWidth="0.35"
+        strokeLinecap="round"
+      />
+      {PIET_LAUWER.map((b) => (
+        <g key={b.blad}>
+          <path
+            d={b.blad}
+            fill={PIET_LOOF}
+            stroke={PIET_STAAL_CONTOUR}
+            strokeWidth="0.18"
+          />
+          <path
+            d={b.nerf}
+            fill="none"
+            stroke={PIET_LOOF_NERF}
+            strokeWidth="0.22"
+          />
+        </g>
+      ))}
+      {PIET_RAND_CARTOUCHES.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill={PIET_LAK}
+          stroke={PIET_LAK_RAND}
+          strokeWidth="0.5"
+        />
+      ))}
+      {PIET_RAND_TEKENS.map((d) => (
+        <path key={d} d={d} fill={PIET_GRAVURE} />
+      ))}
+      {[PIET_RAND_RUIT, PIET_LAUWER_RUIT].map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill={PIET_ROOD}
+          stroke={PIET_ROOD_RAND}
+          strokeWidth="0.3"
         />
       ))}
     </>
@@ -467,6 +649,67 @@ function PiasBelletje({ bel }: { bel: PiasBel }) {
         stroke={PIAS_GOUD_GLANS}
         strokeWidth="0.5"
         strokeLinecap="round"
+      />
+    </>
+  );
+}
+
+/** Het gebroken zegel in de onderpunt (#710): twee ringhelften die langs de
+ *  breuk verspringen. Niet één gebarsten ring maar twee stukken die niet meer
+ *  passen — dát is het verschil tussen beschadigd en verbroken. */
+function PietZegel() {
+  const helften = [PIET_ZEGEL_HELFT_LINKS, PIET_ZEGEL_HELFT_RECHTS];
+  return (
+    <>
+      {helften.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={PIET_STAAL_CONTOUR}
+          strokeWidth={PIET_ZEGEL_DRAAD + 0.7}
+        />
+      ))}
+      <path
+        d={PIET_ZEGEL_SCHIJF}
+        fill={PIET_LAK}
+        stroke={PIET_LAK_RAND}
+        strokeWidth="0.4"
+      />
+      {helften.map((d) => (
+        <path
+          key={`s${d}`}
+          d={d}
+          fill="none"
+          stroke="url(#fut-orn-staal)"
+          strokeWidth={PIET_ZEGEL_DRAAD}
+        />
+      ))}
+      {PIET_ZEGEL_GRAVURE.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={PIET_GRAVURE}
+          strokeWidth="0.35"
+        />
+      ))}
+      {PIET_ZEGEL_STUKKEN.map((d) => (
+        <path key={d} d={d} fill={PIET_GRAVURE} />
+      ))}
+      <path
+        d={PIET_ZEGEL_BREUK}
+        fill="none"
+        stroke={PIET_BREUK_GLANS}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d={PIET_ZEGEL_BREUK}
+        fill="none"
+        stroke={PIET_BREUK}
+        strokeWidth="0.9"
+        strokeLinejoin="round"
       />
     </>
   );
@@ -1114,6 +1357,81 @@ export function FutKaartDefs() {
             strokeLinejoin="round"
           />
         </g>
+        {/* Zwarte Piet (#710): twee lagen i.p.v. één. De kettingen hangen
+            áchter de kaart (ze komen van achter de flanken vandaan), maar de
+            crest, de randgravures en het zegel liggen ópgelegd op het
+            lakframe — die moeten dus vóór de kaart, anders verdwijnen ze er
+            volledig achter. */}
+        <linearGradient
+          id="fut-orn-staal"
+          x1="0"
+          y1="0"
+          x2="0.3"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {PIET_STAAL_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <g id="fut-orn-piet-achter-helft">
+          <PietKetting />
+        </g>
+        <g id="fut-orn-piet-achter">
+          <use href="#fut-orn-piet-achter-helft" />
+          <use
+            href="#fut-orn-piet-achter-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
+        <g id="fut-orn-piet-voor-helft">
+          <PietGravure />
+          <PietGravureLauwer />
+        </g>
+        <g id="fut-orn-piet-voor">
+          <use href="#fut-orn-piet-voor-helft" />
+          <use
+            href="#fut-orn-piet-voor-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          {/* Crest en zegel staan op de as en worden dus niet gespiegeld; ze
+              komen ná de helften, zodat ze over de vleugelwortels en de
+              uiteinden van de lauwerband vallen. */}
+          <path
+            d={PIET_CREST_PUNT}
+            fill={PIET_LAK}
+            stroke={PIET_LAK_RAND}
+            strokeWidth="0.6"
+          />
+          <path
+            d={PIET_CREST_RING}
+            fill="url(#fut-orn-staal)"
+            stroke={PIET_STAAL_CONTOUR}
+            strokeWidth="0.5"
+          />
+          <path
+            d={PIET_CREST_SCHIJF}
+            fill={PIET_LAK}
+            stroke={PIET_LAK_RAND}
+            strokeWidth="0.4"
+          />
+          {PIET_CREST_GRAVURE.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={PIET_GRAVURE}
+              strokeWidth="0.3"
+            />
+          ))}
+          <path
+            d={PIET_CREST_PION}
+            fill="#0d0c0a"
+            stroke={PIET_LAK_RAND}
+            strokeWidth="0.3"
+          />
+          <PietZegel />
+        </g>
       </defs>
     </svg>
   );
@@ -1236,22 +1554,20 @@ export function FutKaart({
         ? "kampioen"
         : editie === "pias"
           ? "pias"
-          : tier?.key === "legende"
-            ? "goat"
-            : tier?.key === "dictator"
-              ? "dictator"
-              : null;
+          : editie === "piet"
+            ? "piet"
+            : tier?.key === "legende"
+              ? "goat"
+              : tier?.key === "dictator"
+                ? "dictator"
+                : null;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
   // verdwijnen — de kroon en punt-edelsteen van Big Daddy, de lauwerkrans en
   // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen, de kraag
-  // en het maskermedaillon van de pias.
+  // en het maskermedaillon van de pias, de crest en het gebroken zegel van de
+  // Zwarte Piet.
   const ornamentVoor =
-    ornament === "bigdaddy" ||
-    ornament === "dictator" ||
-    ornament === "kampioen" ||
-    ornament === "pias"
-      ? ornament
-      : null;
+    ornament && ornament !== "goat" ? ornament : null;
   // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
   // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
@@ -1275,6 +1591,13 @@ export function FutKaart({
         kleur={PIAS_MOTIEF_INK}
         className="fut-kaart__motief--vol"
         viewBox={PIAS_MOTIEF_VIEWBOX}
+      />
+    ) : editie === "piet" ? (
+      <FutKaartMotief
+        paden={PIET_WATERMERK}
+        kleur={PIET_WATERMERK_KLEUR}
+        breedte={PIET_WATERMERK_BREEDTE}
+        positie={PIET_WATERMERK_POSITIE}
       />
     ) : divisie?.motief ? (
       <FutKaartMotief
@@ -1311,9 +1634,9 @@ export function FutKaart({
           aria-hidden="true"
         >
           <use
-            href={`#fut-orn-${
-              ornament === "dictator" ? "dictator-achter" : ornament
-            }`}
+            href={
+              ornament === "dictator" ? "#fut-orn-dictator-achter" : `#fut-orn-${ornament}${ornament === "goat" ? "" : "-achter"}`
+            }
           />
         </svg>
       )}

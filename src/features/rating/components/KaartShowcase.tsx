@@ -425,6 +425,57 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* Zwarte Piet (#710): de kaart met kettingen, geopende sluitingen,
+          pion-crest en gebroken zegel. Twee ornamentlagen (achter én voor de
+          kaart), dus dit is de variant die je bij elke wijziging aan die lagen
+          wilt zien — mét de canvas-spiegel ernaast, want de poster tekent de
+          voor-laag pas ná de content. De schildvorm wisselt met de divisie: de
+          Piet gaat door de hele club rond, dus crest en zegel moeten op alle
+          vier de bovenranden werken. */}
+      <Sectie titel="Zwarte Piet (#710): kettingen + gebroken zegel — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/6"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="piet"
+          editieLabel="🃏 Piet · 28/6"
+          naam="Remco"
+          breedte={210}
+        />
+        {schildTiers.map((t, i) => (
+          <div
+            key={`piet-vorm-${i}`}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "130px" }}
+          >
+            <Kaart
+              kw={130}
+              tier={t}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/12"
+              naam="Bartholomeus van Wijngaarden"
+              chips={CHIPS}
+            />
+            <span className="kaart-showcase__maatlabel">{t?.key}</span>
+          </div>
+        ))}
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

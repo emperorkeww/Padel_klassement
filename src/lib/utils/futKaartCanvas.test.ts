@@ -169,8 +169,10 @@ describe("kaartSkin", () => {
     expect(kaartSkin("legende", "pias").kleuren.motief?.vullend).toBe(true);
     // En omgekeerd: de GOAT houdt zijn hoorns onder élke andere editie.
     expect(kaartSkin("legende", "onfire").kleuren.ornament).toBe("goat");
-    expect(kaartSkin("goud", "piet").kleuren.ornament).toBeUndefined();
-    expect(kaartSkin("goud", "piet").kleuren.ornamentVoor).toBeUndefined();
+    // De Piet brengt er sinds #710 zélf een mee — zowel achter als vóór de
+    // kaart — dus die wint op zijn beurt van het tier-ornament.
+    expect(kaartSkin("goud", "piet").kleuren.ornament).toBe("piet");
+    expect(kaartSkin("goud", "piet").kleuren.ornamentVoor).toBe("piet");
   });
 
   it("laat de editie de kleuren van de divisie overschrijven", () => {
@@ -524,7 +526,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     // De edities die (nog) géén eigen ornament of randregister meebrengen,
     // laten het tier-ornament staan en houden de gedeelde rand. Wie een editie
     // hertekent, haalt hem hier uit de lijst — dat is precies de bedoeling.
-    for (const editie of ["inform", "onfire", "piet"] as const) {
+    for (const editie of ["inform", "onfire"] as const) {
       const k = kaartSkin("goud", editie).kleuren;
       expect(k.ornament, editie).toBeUndefined();
       expect(k.ornamentVoor, editie).toBeUndefined();
@@ -685,6 +687,59 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       kaartSkin("goud", "icon").kleuren.motief,
     );
     expect(kaartSkin("legende", "inform").kleuren.motief).toBeUndefined();
+  });
+
+  it("Piet: ornamenten, watermerk en gelaagde rand staan in beide lezers (#710)", () => {
+    // De Piet is de eerste editie met een eigen ornamentlaag. Alles wat de DOM
+    // erbij kreeg — twee ornamentlagen, het watermerk en de rand-mechanismen —
+    // moet ook in de canvas-tabel staan, anders mist de deel-poster de halve
+    // kaart. Zelfde bewaking als het GOAT-blok hierboven.
+    const blok = editieBlok("piet");
+    const { kleuren } = kaartSkin("goud", "piet");
+
+    // Kettingen áchter de kaart, crest/zegel ervóór.
+    expect(kleuren.ornament).toBe("piet");
+    expect(kleuren.ornamentVoor).toBe("piet");
+    // Het watermerk hoort bij het vlak-register en komt dus mét de editie mee
+    // (anders dan het GOAT-medaillon, dat er juist onder verdwijnt) — op élke
+    // divisie, want de Piet gaat rond in de hele club.
+    expect(kleuren.motief?.paden.length).toBeGreaterThan(0);
+    expect(kaartSkin("legende", "piet").kleuren.motief).toBe(kleuren.motief);
+    expect(kleuren.motief?.breedte).toBe(
+      Number(token(blok, "--motief-b")) / 100,
+    );
+    expect(kleuren.motief?.positie).toBe(
+      Number(token(blok, "--motief-pos")!.replace("%", "")) / 100,
+    );
+
+    // Echo en binnenlijnen: dezelfde fracties, spreidingen en kleuren als de
+    // CSS-vars.
+    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
+    const [dx, dy, kleur] = kleuren.echo![0];
+    expect(echo).toContain(`* ${dx})`);
+    expect(echo).toContain(`* ${dy})`);
+    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
+    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
+    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!)
+      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
+        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
+      );
+
+    // Papierraster (fijn linnen + grover raster) en vignette in het vlak: de
+    // canvas-spiegel zit in drawSpeelkaart, dus als de CSS-lagen verdwijnen
+    // moet dat hier opvallen.
+    const vlak = /\.fut-kaart--piet \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0];
+    expect(vlak).toContain("radial-gradient");
+    expect(vlak?.match(/transparent 1px 3px/g)).toHaveLength(2);
+    expect(vlak?.match(/transparent 1px 6px/g)).toHaveLength(2);
+
+    // En het klaverteken op de naamplaat (de poster tekent hetzelfde teken in
+    // profielPoster.drawKaart).
+    const naam = /\.fut-kaart--piet \.fut-kaart__naam::after\s*\{[^}]*\}/.exec(
+      FUT_CSS,
+    )?.[0];
+    expect(naam, "Piet mist het klaverteken naast de naam").toBeDefined();
+    expect(naam).toContain("%E2%99%A3");
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {
