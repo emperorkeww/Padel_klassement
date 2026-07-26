@@ -72,13 +72,17 @@ export function defaultDictatorEnabled(): boolean {
 
 /** Laadt het portret van de waarnemend dictator lui, achter de #536-vlag. Staat
  *  de flag uit, dan is de `import()` een dode tak (build-time constante) die
- *  Rollup wegsnoeit — de ~2 MB-asset belandt dan niet in de build. Geeft null
- *  wanneer de waarnemend dictator uit staat. */
+ *  Rollup wegsnoeit — de asset belandt dan niet in de build. Geeft null
+ *  wanneer de waarnemend dictator uit staat.
+ *
+ *  De WebP is de bundelvariant (1000px, ~70 KB); de originele PNG ernaast is de
+ *  stijlreferentie die scripts/upload-dictator-referentie.mjs naar Supabase
+ *  pusht voor generate-dictator-avatar (#732) — niet weggooien. */
 export function laadWaarnemendPortret(): Promise<string | null> {
   if (import.meta.env.VITE_DEFAULT_DICTATOR === "false")
     return Promise.resolve(null);
   return import(
-    "@/features/dictator/components/dictator-portret-groen-uniform.png"
+    "@/features/dictator/components/dictator-portret-groen-uniform.webp"
   ).then((m) => m.default as string);
 }
 
