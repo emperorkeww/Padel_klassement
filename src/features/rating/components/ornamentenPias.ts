@@ -427,6 +427,44 @@ const KRAS_INK = "rgba(255, 246, 222, 0.16)";
 const CHEVRON_INK = "rgba(140, 42, 23, 0.3)";
 const SNIPPER_INK = "rgba(140, 42, 23, 0.26)";
 
+/* --------------- bouwstenen voor andere pias-oppervlakken --------------- */
+
+// PIAS_MOTIEF hierboven is één vaste laag in kaart-units (100×139). De
+// Schandpaal (#770) is een bréde poster met een heel andere verhouding, dus die
+// legt zijn ruiten, watermerk en chevrons zélf uit — maar wél met dít materiaal.
+// Vandaar deze drie groepjes: de maten en inkten die daar nodig zijn, uit de
+// bestaande constanten, zodat er geen tweede pias-palet naast dit bestand
+// ontstaat en één hertinting hier bij alle pias-oppervlakken aankomt.
+
+/** Maat en inkt van de harlekijnruit. Bewust de halve assen (zoals de lattice
+ *  hierboven ze gebruikt): een tegel is 2×`halveBreedte` bij 2×`halveHoogte`. */
+export const PIAS_RUIT = {
+  halveBreedte: RUIT_A,
+  halveHoogte: RUIT_B,
+  donker: RUIT_DONKER,
+  licht: RUIT_LICHT,
+} as const;
+
+/** Het maskerwatermerk als losse laag. De viewBox is de omhullende van beide
+ *  silhouetten (grote masker x 14,9–73,1 / y 24,8–88; kleine x 46,2–87,8 /
+ *  y 41,1–88), zodat een consument hem als zelfstandig beeldmerk kan plaatsen
+ *  zonder de rest van het motief mee te slepen. */
+export const PIAS_WATERMERK = {
+  groot: WATERMERK_GROOT,
+  klein: WATERMERK_KLEIN,
+  trekken: WATERMERK_TREKKEN,
+  lijn: MASKER_LIJN,
+  viewBox: "14 24 75 65",
+} as const;
+
+/** De overige motief-inkten, voor lagen die buiten PIAS_MOTIEF getekend worden. */
+export const PIAS_MOTIEF_INKTEN = {
+  barst: BARST_INK,
+  kras: KRAS_INK,
+  chevron: CHEVRON_INK,
+  snipper: SNIPPER_INK,
+} as const;
+
 /** Het volledige vlak-motief, in tekenvolgorde (de laagvolgorde uit #710):
  *  harlekijnruiten → slijtage → maskerwatermerk → chevrons en snippers. Alles
  *  in kaart-units, dus deze laag vult het hele vlak (viewBox 0 0 100 139) i.p.v.
