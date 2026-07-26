@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
+import { MAX_ROWS, warnIfTruncated } from "@/lib/supabase/truncation";
 import type { PlayerRating, RatingPoint } from "@/types";
 
 /** Huidige rating per speler, als lookup-map op player_id. */
@@ -7,7 +8,8 @@ export function getPlayerRatings(): Promise<Record<string, PlayerRating>> {
   return cached("ratings:all", async () => {
     const { data, error } = await supabase.from("player_ratings").select("*");
     if (error) throw error;
-    return Object.fromEntries((data ?? []).map((r) => [r.player_id, r]));
+    const rows = warnIfTruncated(data ?? [], "player_ratings");
+    return Object.fromEntries(rows.map((r) => [r.player_id, r]));
   });
 }
 
@@ -15,20 +17,40 @@ export function getPlayerRatings(): Promise<Record<string, PlayerRating>> {
 // niet elke keer mee over de lijn.
 const HISTORY_LIMIT = 100;
 
+/** Harde grens op de gedeelde historie-query (#731). Gelijk aan `max_rows`:
+ *  hoger vragen heeft geen zin, want PostgREST kapt daar sowieso af. */
+const ALL_HISTORY_LIMIT = MAX_ROWS;
+
 /** Rating-historie van álle spelers in één query, gegroepeerd per speler en
- *  chronologisch (oud → nieuw) — voor de sparklines in het klassement. */
+ *  chronologisch (oud → nieuw) — voor de sparklines in het klassement.
+ *
+ *  Nieuwste eerst opgehaald, met expliciete limiet (#731): rating_history
+ *  groeit met ~4 rijen per match, dus deze query loopt vroeg of laat tegen
+ *  `max_rows` aan. Oplopend gesorteerd leverde die afkapping stil de oudste
+ *  1000 rijen op — bevroren sparklines, geen historie voor nieuwe spelers, en
+ *  geen error. Aflopend verlies je in het slechtste geval oude punten in plaats
+ *  van juist de recente. Wordt de limiet geraakt, dan waarschuwt de wachter. */
 export function getAllRatingHistories(): Promise<Record<string, RatingPoint[]>> {
   return cached("ratings:history:all", async () => {
     const { data, error } = await supabase
       .from("rating_history")
       .select("player_id, match_id, rating_before, rating_after, delta, played_at")
-      .order("played_at", { ascending: true });
+      .order("played_at", { ascending: false })
+      .limit(ALL_HISTORY_LIMIT);
     if (error) throw error;
+    const rows = warnIfTruncated(
+      (data ?? []) as (RatingPoint & { player_id: string })[],
+      "rating_history (alle spelers)",
+      ALL_HISTORY_LIMIT,
+    );
     const byPlayer: Record<string, RatingPoint[]> = {};
-    for (const row of (data ?? []) as (RatingPoint & { player_id: string })[]) {
+    for (const row of rows) {
       const { player_id, ...point } = row;
       (byPlayer[player_id] ??= []).push(point);
     }
+    // Nieuwste eerst opgehaald (voor de limiet), chronologisch teruggeven —
+    // sparkline, ratingAsOf en de edities rekenen op oud → nieuw.
+    for (const punten of Object.values(byPlayer)) punten.reverse();
     return byPlayer;
   });
 }

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { warnIfTruncated } from "@/lib/supabase/truncation";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import type { CourtType, Match, Profile, Team } from "@/types";
 import { displayName } from "@/features/profiles/api";
@@ -83,7 +84,10 @@ export function getTeamsMap(): Promise<Record<string, Team>> {
   return cached("teams:all", async () => {
     const { data, error } = await supabase.from("teams").select("*");
     if (error) throw error;
-    return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
+    // Ongefilterd: loopt op termijn tegen max_rows aan (#731). Een afgekapte
+    // teams-map betekent stil "Onbekend team" bij oudere matches.
+    const rows = warnIfTruncated(data ?? [], "teams");
+    return Object.fromEntries(rows.map((t) => [t.id, t]));
   });
 }
 
@@ -110,7 +114,7 @@ export function getGroupMatches(groupId: string): Promise<Match[]> {
       .order("round_number", { ascending: false })
       .order("created_at", { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    return warnIfTruncated(data ?? [], `matches (groep ${groupId})`);
   });
 }
 
@@ -153,7 +157,7 @@ export function getCompletedMatchesBetween(
       .gte("played_at", startIso)
       .lt("played_at", endIso);
     if (error) throw error;
-    return data ?? [];
+    return warnIfTruncated(data ?? [], "matches (seizoen)");
   });
 }
 

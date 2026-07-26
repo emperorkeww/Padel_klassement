@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached } from "@/lib/supabase/queryCache";
+import { warnIfTruncated } from "@/lib/supabase/truncation";
 import type { PlayerStanding, TeamStanding } from "@/types";
 
 export function getPlayerStandings(): Promise<PlayerStanding[]> {
@@ -13,7 +14,7 @@ export function getPlayerStandings(): Promise<PlayerStanding[]> {
       .order("username", { ascending: true });
     if (error) throw error;
     // Views typen alle kolommen als nullable; in de praktijk zijn ze gevuld.
-    return (data ?? []) as PlayerStanding[];
+    return warnIfTruncated((data ?? []) as PlayerStanding[], "player_standings");
   });
 }
 
@@ -40,7 +41,7 @@ export function getTeamStandings(): Promise<TeamStanding[]> {
       .order("goal_diff", { ascending: false })
       .order("won", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as TeamStanding[];
+    return warnIfTruncated((data ?? []) as TeamStanding[], "standings");
   });
 }
 
@@ -60,7 +61,11 @@ export function getSeasonPlayerStandings(
       .order("won", { ascending: false })
       .order("username", { ascending: true });
     if (error) throw error;
-    return (data ?? []) as PlayerStanding[];
+    // Ook een RPC-resultaat gaat door max_rows heen (#731).
+    return warnIfTruncated(
+      (data ?? []) as PlayerStanding[],
+      "season_player_standings",
+    );
   });
 }
 
@@ -76,7 +81,10 @@ export function getSeasonTeamStandings(
       .order("goal_diff", { ascending: false })
       .order("won", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as TeamStanding[];
+    return warnIfTruncated(
+      (data ?? []) as TeamStanding[],
+      "season_team_standings",
+    );
   });
 }
 
@@ -94,6 +102,9 @@ export function getGroupPlayerStandings(
       .order("goal_diff", { ascending: false })
       .order("won", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as PlayerStanding[];
+    return warnIfTruncated(
+      (data ?? []) as PlayerStanding[],
+      `group_player_standings (groep ${groupId})`,
+    );
   });
 }
