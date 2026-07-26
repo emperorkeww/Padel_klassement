@@ -81,25 +81,24 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ).toHaveAttribute("aria-selected", "false");
   });
 
-  // #674 A4: met precies één groep stuurt /spelen je meteen naar de
-  // groepspagina, dus "← Spelen" wees naar een hub die deze gebruiker nooit
-  // heeft gezien — met daarop één kaart die weer hierheen leidt.
-  it("verbergt de terugknop bij één groep en toont hem bij meerdere", async () => {
+  // #761: #674 A4 verborg deze knop bij precies één groep — /spelen stuurt je
+  // dan tóch hierheen. Maar dit is de enige link naar ?hub=1, en de hub draagt
+  // "+ Nieuwe groep": zonder knop kwam je daar nooit meer. Vandaar altijd.
+  it("toont de terugknop naar het overzicht ook met één groep", async () => {
     renderPage();
     await screen.findByRole("tablist");
-    expect(
-      screen.queryByRole("link", { name: /← spelen/i }),
-    ).not.toBeInTheDocument();
+    const terug = await screen.findByRole("link", { name: /← alle groepen/i });
+    expect(terug).toHaveAttribute("href", "/spelen?hub=1");
   });
 
-  it("toont de terugknop wel bij meerdere groepen", async () => {
+  it("toont de terugknop ook bij meerdere groepen", async () => {
     tables.groups = [
       ...(TABLES.groups as unknown[]),
       { ...(TABLES.groups as { id: string }[])[0], id: "g2", name: "Zondag" },
     ];
     renderPage();
     expect(
-      await screen.findByRole("link", { name: /← spelen/i }),
+      await screen.findByRole("link", { name: /← alle groepen/i }),
     ).toBeInTheDocument();
   });
 
