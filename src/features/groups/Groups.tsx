@@ -29,7 +29,8 @@ import "./Groups.css";
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
 // de reis (poll loopt → gekozen → geboekt) met één duidelijke vervolgstap;
 // losse matches en het archief zijn hiervandaan bereikbaar. Bij precies één
-// groep opent de tab direct de groepspagina (terug via "← Spelen").
+// groep opent de tab direct de groepspagina (terug via "← Alle groepen", de
+// enige link naar ?hub=1 — zonder die knop was de hub onbereikbaar, #761).
 
 const MAX_MEMBER_AVATARS = 4;
 
@@ -74,8 +75,10 @@ export function Groups() {
     [groupKey],
   );
 
-  // Eén groep → direct de groepspagina (alleen op /spelen; "?hub=1" of de
-  // legacy /groepen-route toont altijd de hub, o.a. voor de terugknop).
+  // Eén groep → direct de groepspagina, maar alleen op kaal /spelen: met
+  // "?hub=1" blijft de hub staan. Dat is de escape uit de groep (de knop
+  // "← Alle groepen" in de groepskop) én waar /groepen heen redirect — zonder
+  // die uitzondering is "+ Nieuwe groep" onbereikbaar met één groep (#761).
   const list = groups.data ?? [];
   useEffect(() => {
     if (

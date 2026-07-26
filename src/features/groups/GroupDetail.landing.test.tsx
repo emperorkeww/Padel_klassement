@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 // #674 A3 — de landingstab. Zonder ?tab kwam je altijd op Vandaag, ook op een
 // dag zonder plan: een lege staat die je meteen weer doorstuurde. journeyFor()
@@ -53,6 +54,11 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   beforeEach(() => {
     // Schone call-historie: de C2-test kijkt naar welke tabellen zijn bevraagd.
     vi.clearAllMocks();
+    // …en een koude querycache. De globale setup leegt hem in afterEach, maar
+    // een nog lopende keten uit de vorige test kan daarná nog een entry
+    // wegschrijven; die zou de C2-test een query laten missen die hij juist
+    // verwacht.
+    invalidateAll();
     stubPlaytomic();
     // De fixture-matches liggen in het verleden → vandaag staat er niets.
     for (const [k, v] of Object.entries(TABLES)) tables[k] = [...v];
@@ -81,25 +87,24 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ).toHaveAttribute("aria-selected", "false");
   });
 
-  // #674 A4: met precies één groep stuurt /spelen je meteen naar de
-  // groepspagina, dus "← Spelen" wees naar een hub die deze gebruiker nooit
-  // heeft gezien — met daarop één kaart die weer hierheen leidt.
-  it("verbergt de terugknop bij één groep en toont hem bij meerdere", async () => {
+  // #761: #674 A4 verborg deze knop bij precies één groep — /spelen stuurt je
+  // dan tóch hierheen. Maar dit is de enige link naar ?hub=1, en de hub draagt
+  // "+ Nieuwe groep": zonder knop kwam je daar nooit meer. Vandaar altijd.
+  it("toont de terugknop naar het overzicht ook met één groep", async () => {
     renderPage();
     await screen.findByRole("tablist");
-    expect(
-      screen.queryByRole("link", { name: /← spelen/i }),
-    ).not.toBeInTheDocument();
+    const terug = await screen.findByRole("link", { name: /← alle groepen/i });
+    expect(terug).toHaveAttribute("href", "/spelen?hub=1");
   });
 
-  it("toont de terugknop wel bij meerdere groepen", async () => {
+  it("toont de terugknop ook bij meerdere groepen", async () => {
     tables.groups = [
       ...(TABLES.groups as unknown[]),
       { ...(TABLES.groups as { id: string }[])[0], id: "g2", name: "Zondag" },
     ];
     renderPage();
     expect(
-      await screen.findByRole("link", { name: /← spelen/i }),
+      await screen.findByRole("link", { name: /← alle groepen/i }),
     ).toBeInTheDocument();
   });
 
@@ -113,6 +118,14 @@ describe("<GroupDetail /> landingstab (#674)", () => {
       (supabase.from as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
         (c) => c[0],
       );
+    // De rating-historie blijft wél eager: die voedt de upsets en het
+    // dagoverzicht op Vandaag/Historie. Eerst hierop wachten, dan pas de
+    // negatieve asserties: die query hangt aan de match-lijst
+    // (getRatingHistoriesForMatches) en valt dus ná de tabbalk — hoe lang
+    // erná hangt af van hoe de mock-promises interleaven. Zonder wachten
+    // slaagde de test alleen bij een gunstige volgorde, en dan zeggen de
+    // "nog niet opgehaald"-asserties eronder ook niets.
+    await waitFor(() => expect(tabellen()).toContain("rating_history"));
     for (const t of [
       "group_player_standings",
       "player_ratings",
@@ -121,9 +134,6 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ]) {
       expect(tabellen()).not.toContain(t);
     }
-    // De rating-historie blijft wél eager: die voedt de upsets en het
-    // dagoverzicht op Vandaag/Historie.
-    expect(tabellen()).toContain("rating_history");
 
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     await screen.findByRole("heading", { name: /groepsklassement/i });

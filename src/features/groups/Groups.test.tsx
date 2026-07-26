@@ -17,13 +17,16 @@ import Groups from "./Groups";
 import { supabase } from "@/lib/supabase/client";
 import { TABLES } from "@/test/fixtures";
 
-function renderPage() {
+// De hub leeft op /spelen; /groepen is in de app een redirect hierheen. De
+// doorstuur-naar-je-enige-groep (#674) kijkt naar het pad, dus de entry bepaalt
+// of die afgaat — vandaar dat hij instelbaar is (#761).
+function renderPage(entry = "/spelen?hub=1") {
   return render(
-    <MemoryRouter initialEntries={["/groepen"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <AuthProvider>
         <ToastProvider>
           <Routes>
-            <Route path="/groepen" element={<Groups />} />
+            <Route path="/spelen" element={<Groups />} />
             <Route path="/groepen/:id" element={<div>detailpagina</div>} />
           </Routes>
         </ToastProvider>
@@ -106,6 +109,26 @@ describe("<Groups />", () => {
     expect(
       within(rij).getByRole("link", { name: /match loggen/i }),
     ).not.toHaveClass("btn--primary");
+  });
+
+  // #674: met precies één groep is die groep je Spelen-tab.
+  it("stuurt kaal /spelen met één groep door naar die groep", async () => {
+    renderPage("/spelen");
+    expect(await screen.findByText(/detailpagina/i)).toBeInTheDocument();
+  });
+
+  // #761: die doorstuur maakte de hub onbereikbaar — en daarmee de enige plek
+  // met "+ Nieuwe groep". Met ?hub=1 (de knop in de groepskop, en waar /groepen
+  // heen redirect) blijft de hub staan, ook met één groep.
+  it("laat de hub staan op ?hub=1, inclusief nieuwe groep", async () => {
+    renderPage("/spelen?hub=1");
+    expect(
+      await screen.findByRole("link", { name: /vrijdagavond padel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /nieuwe groep/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/detailpagina/i)).not.toBeInTheDocument();
   });
 
   // #674 B6: "actie nodig" verschilde alleen in tekstkleur van "staat vast".
