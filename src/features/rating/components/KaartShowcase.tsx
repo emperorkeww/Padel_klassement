@@ -682,6 +682,24 @@ export function KaartShowcase() {
           naam="Ilse"
           breedte={210}
         />
+      {/* Blaaskaak (#710): de basisdivisie zonder editie — holle buisprofielen
+          langs de flanken, wind-/spraakcrest in de bovenrand, resonatormedaillon
+          in de punt en de tactische pijlen als watermerk. Op 116px is de test of
+          de buismonden en het medaillon nog uit elkaar te houden zijn; de poster
+          ernaast bewaakt dat CSS-register en canvas-register hetzelfde
+          aluminium tekenen (de synctest doet dat in getallen, dit met het oog). */}
+      <Sectie titel="Blaaskaak (#710): buisprofielen + windcrest + resonator — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(950)} naam="Wouter" elo={950} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(950)} editie={null} editieLabel={null} breedte={210} />
       </Sectie>
 
       <Sectie titel="Alle tiers (116px, geen editie)">
