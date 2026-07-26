@@ -1,4 +1,5 @@
 import { outcomeFor } from "@/features/rating/results";
+import { dateInZone, dayInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
 
 /** Filters voor de matchlijst — gedeeld door de globale Matches-pagina en de
@@ -44,25 +45,27 @@ export function applyFilter(
   });
 }
 
-export function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-  if (same(d, today)) return "Vandaag";
-  if (same(d, yesterday)) return "Gisteren";
-  return d.toLocaleDateString("nl-NL", {
+export function dayLabel(iso: string, timeZone: string): string {
+  const day = dayInZone(iso, timeZone);
+  const today = dateInZone(timeZone);
+  const yesterday = dateInZone(timeZone, -1);
+  if (day === today) return "Vandaag";
+  if (day === yesterday) return "Gisteren";
+  return new Date(iso).toLocaleDateString("nl-NL", {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone,
   });
 }
 
-export function groupByDay(matches: Match[]): { day: string; list: Match[] }[] {
+export function groupByDay(
+  matches: Match[],
+  timeZone: string,
+): { day: string; list: Match[] }[] {
   const out: { day: string; list: Match[] }[] = [];
   for (const m of matches) {
-    const day = dayLabel(m.played_at ?? m.created_at);
+    const day = dayLabel(m.played_at ?? m.created_at, timeZone);
     const last = out[out.length - 1];
     if (last && last.day === day) last.list.push(m);
     else out.push({ day, list: [m] });

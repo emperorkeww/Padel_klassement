@@ -675,7 +675,9 @@ export function buildFeed(input: {
   for (const [key, list] of buckets) {
     if (list.length < AVOND_BUNDEL_MIN) continue;
     const [groupId, day] = key.split("|");
-    const summary = eveningSummary(list.map((e) => e.match), teams, day, histories);
+    // `day` komt uit de bucket-key hierboven (UTC-slice); dat blijft zo
+    // (#783 pakt bewust alleen de groep-Vandaag-tab/globale-lijst aan).
+    const summary = eveningSummary(list.map((e) => e.match), teams, day, "UTC", histories);
     for (const e of list) bundled.add(e);
     events.push({
       kind: "evening",

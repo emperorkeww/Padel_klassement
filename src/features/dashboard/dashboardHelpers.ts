@@ -1,5 +1,5 @@
 import { headToHead } from "@/features/rating/results";
-import { dateInZone } from "@/lib/utils/time";
+import { dateInZone, dayInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
 import { type GroupSummary } from "@/features/groups/api";
 import {
@@ -233,7 +233,7 @@ export function deriveEvening(
 ): { groupId: string; count: number; isToday: boolean; day: string } | null {
   const withGroup = completed.filter((m) => m.group_id);
   if (withGroup.length === 0) return null;
-  const day = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+  const day = (m: Match) => dayInZone(m.played_at ?? m.created_at, timezone);
   const latest = withGroup.map(day).sort().at(-1)!;
   const todayStr = dateInZone(timezone);
   const yesterdayStr = dateInZone(timezone, -1);

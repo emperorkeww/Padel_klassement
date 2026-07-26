@@ -4,9 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
+import { dateInZone } from "@/lib/utils/time";
 import type { Group, GroupMember, Match, Profile, Team } from "@/types";
 
 const NOW = "2026-07-08T10:00:00.000Z";
+const TIMEZONE = "Europe/Brussels";
 
 // Muteerbare tabellen: elke test zet zijn eigen poll-situatie neer en de
 // uitslag-test schrijft naar matches; de querycache wordt tussen tests
@@ -33,10 +35,10 @@ import {
   MATCH_PLANNED,
 } from "@/test/fixtures";
 
-// ShareEvening bepaalt "vandaag" intern in UTC; dateer de fixtures en de
-// today-prop dus allebei op de UTC-dag zodat de deelknop-asserties niet
-// rond middernacht van de klok afhangen.
-const today = new Date().toISOString().slice(0, 10);
+// Vandaag in clubtijdzone (#783): ShareEvening/DayStats rekenen intern
+// consistent in TIMEZONE, dus de fixtures en de today-prop volgen dezelfde
+// clubdag i.p.v. de kale UTC-dag.
+const today = dateInZone(TIMEZONE);
 
 const profileMap = Object.fromEntries(
   PROFILES.map((p) => [p.id, p]),
@@ -78,6 +80,7 @@ function renderTab(
             openRound={null}
             dayDone={false}
             today={today}
+            timezone={TIMEZONE}
             teams={teamMap}
             profiles={profileMap}
             histories={{}}

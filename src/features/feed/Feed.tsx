@@ -330,7 +330,9 @@ export function Feed() {
     const dagMatches = (matches.data ?? []).filter(
       (m) => m.group_id === ev.groupId && dagVan(m) === ev.day,
     );
-    const summary = eveningSummary(dagMatches, tmap, ev.day, hmap);
+    // ev.day komt uit feedLogic's eigen UTC-dagbundeling; dat blijft zo
+    // (#783 pakt bewust alleen de groep-Vandaag-tab/globale-lijst aan).
+    const summary = eveningSummary(dagMatches, tmap, ev.day, "UTC", hmap);
     const coachLines = coachAvond(summary, `${ev.groupId}|${ev.day}`, {
       intensiteit: mijnIntensiteit,
       profiles: pmap,

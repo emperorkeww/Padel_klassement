@@ -42,6 +42,7 @@ describe("eveningSummary", () => {
       ],
       TEAMS,
       "2026-07-02",
+      "UTC",
     );
     expect(s.matches).toHaveLength(1);
     expect(s.rows.find((r) => r.playerId === "a")?.points).toBe(3);
@@ -56,6 +57,7 @@ describe("eveningSummary", () => {
       ],
       TEAMS,
       "2026-07-02",
+      "UTC",
     );
     // c/d: 2 winsten (6 ptn), a/b: 1 winst (3 ptn).
     expect(s.rows[0].playerId).toMatch(/c|d/);
@@ -63,11 +65,24 @@ describe("eveningSummary", () => {
     expect(s.bestDuo).toEqual({ teamId: "t-cd", won: 2 });
   });
 
+  it("rekent in de opgegeven tijdzone, niet in UTC (#783)", () => {
+    // 2026-07-02T22:30Z is in Europe/Brussels (zomertijd, UTC+2) al
+    // 2026-07-03T00:30 — dus clubdag "03", ook al is de UTC-kalenderdag nog "02".
+    const s = eveningSummary(
+      [match({ played_at: "2026-07-02T22:30:00.000Z" })],
+      TEAMS,
+      "2026-07-03",
+      "Europe/Brussels",
+    );
+    expect(s.matches).toHaveLength(1);
+  });
+
   it("geeft geen beste duo bij enkel gelijkspel", () => {
     const s = eveningSummary(
       [match({ winner_team_id: null, score_a: 5, score_b: 5 })],
       TEAMS,
       "2026-07-02",
+      "UTC",
     );
     expect(s.bestDuo).toBeNull();
     expect(s.rows[0].points).toBe(1);
@@ -76,7 +91,7 @@ describe("eveningSummary", () => {
 
 describe("eveningSummary — grootste upset (#85)", () => {
   it("is null zonder rating-historie", () => {
-    const s = eveningSummary([match({ id: "m1" })], TEAMS, "2026-07-02");
+    const s = eveningSummary([match({ id: "m1" })], TEAMS, "2026-07-02", "UTC");
     expect(s.biggestUpset).toBeNull();
   });
 
@@ -93,7 +108,7 @@ describe("eveningSummary — grootste upset (#85)", () => {
       c: [pt("m1", 1150), pt("m2", 1090)],
       d: [pt("m1", 1150), pt("m2", 1090)],
     };
-    const s = eveningSummary(matches, TEAMS, "2026-07-02", histories);
+    const s = eveningSummary(matches, TEAMS, "2026-07-02", "UTC", histories);
     expect(s.biggestUpset?.matchId).toBe("m1");
     expect(s.biggestUpset?.winnerTeamId).toBe("t-ab");
     expect(Math.round((s.biggestUpset?.chance ?? 0) * 100)).toBe(24);
@@ -104,6 +119,7 @@ describe("eveningSummary — grootste upset (#85)", () => {
       [match({ id: "m1", winner_team_id: null, score_a: 5, score_b: 5 })],
       TEAMS,
       "2026-07-02",
+      "UTC",
       { a: [pt("m1", 950)], b: [pt("m1", 950)], c: [pt("m1", 1150)], d: [pt("m1", 1150)] },
     );
     expect(s.biggestUpset).toBeNull();
