@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { SwUpdatePrompt } from "./SwUpdatePrompt.tsx";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { SmoesPromptProvider } from "@/features/matches/SmoesPromptProvider";
 import { watchSystemTheme } from "@/lib/utils/theme";
@@ -21,16 +22,22 @@ initInstallPromptCapture();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <SwUpdatePrompt />
-          <SmoesPromptProvider>
-            <App />
-          </SmoesPromptProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    {/* Buitenste vangnet (#733): staat bewust bóven de providers, zodat ook
+        een crash in AuthProvider/ToastProvider zelf nog een scherm oplevert
+        in plaats van een witte pagina. De fallback gebruikt daarom geen
+        context. */}
+    <ErrorBoundary scope="root">
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <SwUpdatePrompt />
+            <SmoesPromptProvider>
+              <App />
+            </SmoesPromptProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );
 

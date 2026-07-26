@@ -12,6 +12,7 @@ import { useMissionCelebration } from "@/features/dashboard/useMissionCelebratio
 import { useOutboxFlush } from "@/features/matches/useOutbox";
 import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
+import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
@@ -169,19 +170,25 @@ export function DashboardLayout() {
           {/* Suspense hier (i.p.v. rond alle routes) houdt de balken gemount
               tijdens het lazy-laden van een pagina — zo springt de navigatie
               op mobiel niet weg. Een neutrale, tekstloze skeleton voorkomt de
-              sprong van "Laden…" naar de pagina-eigen skeletons. */}
-          <Suspense
-            fallback={
-              <div className="route-skeleton" aria-hidden="true">
-                <div className="route-skeleton__bar route-skeleton__bar--title" />
-                <div className="route-skeleton__bar route-skeleton__bar--sub" />
-                <div className="route-skeleton__card" />
-                <div className="route-skeleton__card" />
-              </div>
-            }
-          >
-            <Outlet />
-          </Suspense>
+              sprong van "Laden…" naar de pagina-eigen skeletons.
+              Om dezelfde reden staat hier óók een foutgrens (#733): crasht een
+              pagina, dan blijft de shell eromheen staan en is de gebruiker één
+              tik van een werkende pagina verwijderd. De pathname als resetKey
+              wist de fout zodra je wegnavigeert. */}
+          <ErrorBoundary scope="pagina" resetKey={pathname}>
+            <Suspense
+              fallback={
+                <div className="route-skeleton" aria-hidden="true">
+                  <div className="route-skeleton__bar route-skeleton__bar--title" />
+                  <div className="route-skeleton__bar route-skeleton__bar--sub" />
+                  <div className="route-skeleton__card" />
+                  <div className="route-skeleton__card" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
 

@@ -1,0 +1,58 @@
+/* Fallback van de ErrorBoundary (#733). --vol vult het scherm (root/route);
+   zonder die klasse blijft hij binnen het inhoudsvlak van de shell staan,
+   zodat de navigatie eromheen bruikbaar blijft. */
+.crash {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6) var(--sp-4);
+}
+.crash--vol {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+.crash__inner {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-3);
+  max-width: 42ch;
+  text-align: center;
+}
+.crash__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.crash__text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+.crash__acties {
+  margin-top: var(--sp-1);
+}
+.crash__details {
+  margin-top: var(--sp-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  text-align: left;
+  max-width: 100%;
+}
+.crash__details summary {
+  cursor: pointer;
+  text-align: center;
+}
+.crash__melding {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  /* Kleine tekst op --surface-2: daar komt --ink-soft net onder AA 4.5:1. */
+  color: var(--ink-soft-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-sm);
+  /* Een stack-loze melding kan één lange regel zijn: laten afbreken i.p.v.
+     de layout horizontaal opblazen. */
+  overflow-wrap: anywhere;
+}

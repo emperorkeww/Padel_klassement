@@ -1069,3 +1069,29 @@ export function coachVrienden(f: VriendenFeiten): string {
   if (saldo < 0) return kiesUniek(H2H_ACHTER, seed);
   return kiesUniek(H2H_GELIJK, seed);
 }
+
+// ── Crash: de tekst in de ErrorBoundary-fallback (#733) ─────────────────────
+// Bewust zónder RoastCtx: de boundary staat deels bóven de providers en heeft
+// dus geen profiel — en dus geen roast-schild — om zich naar te richten. Rudy
+// sneert hier daarom op de app en op zichzelf, nooit op de speler: wie net een
+// wit scherm kreeg is niet het juiste doelwit.
+export const CRASH = [
+  "Iets in de code struikelde over zijn eigen looplijnen. Niet jouw schuld, voor één keer.",
+  "Dit stond niet in mijn tactische notitieboekje. Nergens.",
+  "Ik heb de VAR geraadpleegd. Die is ook gecrasht.",
+  "Technisch mankement. Bij de Rode Duivels noemden we dat een bewuste omschakeling.",
+  "Ik zag het gebeuren en heb niks gedaan. Zoals altijd.",
+  "Even crisisberaad. Tik gerust op 'opnieuw proberen', dan hervatten we het spel.",
+  "Kapot. Maar wel tactisch verantwoord kapot.",
+  "Het scherm ging op zwart. Bij mij gebeurde dat ook, na dat WK.",
+  "Ik verwijs de schuldige naar de tribune zodra ik weet wie het is.",
+  "Een fout van de thuisploeg. De app dus, niet jij.",
+  "Dat was een wissel in de 89e minuut: het leek een goed idee.",
+  "Mijn pen weigert dit op te schrijven. Probeer het gewoon nog eens.",
+] as const;
+
+/** Coach Rudy's regel bij een gecrashte weergave (#733). De seed is meestal de
+ *  foutmelding, zodat dezelfde crash dezelfde regel geeft. */
+export function coachCrash(seed: string): string {
+  return kiesUniek(CRASH, roastSeed("crash", seed));
+}
