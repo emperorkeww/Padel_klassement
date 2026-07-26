@@ -90,18 +90,16 @@
   z-index: 2;
   filter: drop-shadow(0 1px 2px rgba(88, 26, 48, 0.45));
 }
-/* Alleen de Kampioen-crest hoort echt bij de vóórkant en verdwijnt bij een
-   omgedraaide kaart; kroon en krans blijven staan — die dragen het schild ook
-   van achteren. */
-.fut-kaart--kampioen.is-omgedraaid .fut-kaart__ornament--voor {
+                                                                                                                                                                              
+.fut-kaart.fut-kaart--kampioen.is-omgedraaid .fut-kaart__ornament--voor {
   opacity: 0;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .fut-kaart--kampioen .fut-kaart__ornament--voor {
+  .fut-kaart.fut-kaart--kampioen .fut-kaart__ornament--voor {
     /* Vroeg in de flip weg, laat terug: de crest hoort bij de voorkant. */
     transition: opacity 0.22s ease 0.16s;
   }
-  .fut-kaart--kampioen.is-omgedraaid .fut-kaart__ornament--voor {
+  .fut-kaart.fut-kaart--kampioen.is-omgedraaid .fut-kaart__ornament--voor {
     transition: opacity 0.14s ease;
   }
 }
@@ -306,11 +304,9 @@
       transparent 4px 11px
     );
 }
-/* Kaarten met een eigen vlak-textuur (kraftkarton, speelkaart): geen
-   satijn of stralen eroverheen — dubbel weefsel wordt druk. Ná het
-   premium-block, zodat dit ook wint als de drager een premium-tier heeft. */
-.fut-kaart--pias .fut-kaart__vlak::after,
-.fut-kaart--piet .fut-kaart__vlak::after {
+                                                                                                                                                                                                                       
+.fut-kaart.fut-kaart--pias .fut-kaart__vlak::after,
+.fut-kaart.fut-kaart--piet .fut-kaart__vlak::after {
   background: none;
 }
 .fut-kaart__boven {
@@ -867,26 +863,10 @@
     );
 }
 
-/* Speciale edities (#497) — bóvenop de tier-klasse: de schildvorm blijft die
-   van de divisie, de editie kleurt frame, vlak en inkt.
-   Tweede lezer (#666): de deel-posters tekenen deze registers op canvas na, in
-   de tabel EDITIE_REGISTERS in lib/utils/futKaartCanvas.ts. Die kan de live
-   tokens niet lezen (posters staan vast op het lichte palet, #125), dus wie
-   hieronder een kleur herijkt, herijkt hem daar ook — de synctest in
-   futKaartCanvas.test.ts leest dit bestand in en houdt de twee gelijk. */
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 
-/* Icon (Big Daddy, de #1 van het klassement): roze/goud (#625). Het roze
-   vlak met bordeaux-roze inkt maakt de kaart in één oogopslag "de Big
-   Daddy" — los van de reguliere (goud)tiers en van In-Form; het frame
-   wisselt goud en roze af zodat de kroon-associatie blijft. De kleuren
-   komen uit de gedeelde --bigdaddy-kaart-tokens (index.css), dezelfde
-   familie als de Big Daddy-badge en de dashboard-hero (#613).
-   Sinds #710 het feestregister: roségouden echo, drie gelaagde binnenlijnen,
-   een parelmoeren glansbaan, het kroon-watermerk in het vlak en de
-   ornamentlaag (lint, ballonnen, confetti achter de kaart; kroon en
-   edelsteen-ornament ervóór — zie ornamentenBigDaddy.ts).
-   Canvas-spiegel: het icon-register in EDITIE_REGISTERS (futKaartCanvas.ts). */
-.fut-kaart--icon {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+.fut-kaart.fut-kaart--icon {
   --kaart-hi: var(--bigdaddy-kaart-hi);
   --kaart-mid: var(--bigdaddy-kaart-mid);
   --kaart-lo: var(--bigdaddy-kaart-lo);
@@ -907,7 +887,7 @@
     inset 0 0 0 2.5px rgba(201, 154, 63, 0.75),
     inset 0 0 0 4px rgba(221, 107, 162, 0.55);
 }
-.fut-kaart--icon .fut-kaart__zijde {
+.fut-kaart.fut-kaart--icon .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
     #f6d7a0 0%,
@@ -917,10 +897,10 @@
     #8f3560 100%
   );
 }
-.fut-kaart--icon .fut-kaart__liner {
+.fut-kaart.fut-kaart--icon .fut-kaart__liner {
   background: #54203a;
 }
-.fut-kaart--icon .fut-kaart__vlak {
+.fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
     radial-gradient(
       120% 55% at 50% -6%,
@@ -934,10 +914,8 @@
       var(--kaart-lo) 100%
     );
 }
-/* Parelmoer: een iets bredere, feller witte glansbaan dan de basiskaart — een
-   licht vlak vangt licht als lak, en dít is de laag die de kaart "premium"
-   maakt zonder goud toe te voegen. */
-.fut-kaart--icon .fut-kaart__vlak::before {
+                                                                                                                                                                                                 
+.fut-kaart.fut-kaart--icon .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
     transparent 40%,
@@ -946,29 +924,8 @@
   );
 }
 
-/* In-Form (speler van de week): navy-goud met een lopende glansbaan. De
-   kleurkeuze staat sinds #625 vast — het donkere navy-vlak staat ruim genoeg af
-   van het lichte roze van Big Daddy en het warme sintel van On-Fire.
-
-   Herzien bij #710 naar de referentie in de issue: zwart-titanium met
-   champagnegouden accenten. De materiaalwaarden zélf blijven staan — het
-   navy-vlak, de gouden inkt en de lijnkleur worden gekopieerd door de
-   eer-hero op het dashboard (.hero--inform, #760) en een synctest bewaakt dat
-   — de nieuwe uitstraling komt er als lagen bíj: een donkere titanium-tint,
-   geborstelde diagonale groeven, een brede bewegende reflectiebaan met
-   rustpauze, een geëtste pulse-ring met snelheidslijnen (het motief uit
-   ornamentenInform.ts) en de ornamentlaag met crest, vinnen en medaillon.
-
-   Bewust géén --kaart-echo zoals GOAT en El Padelissimo: een tweede,
-   verschoven silhouet leest als "zeldzaam voor altijd", terwijl In-Form
-   snelheid en recente vorm moet communiceren. Het randwerk zit daarom in de
-   binnenlijn — de dubbele gouden framelijn van de referentie.
-
-   Contrast: de tint máákt het vlak donkerder, dus de inkt-op-vlak-verhouding
-   (nu ≈ 11,8:1) loopt op i.p.v. terug; de bewegende baan piekt op 0.22 waar
-   hij eerst 0.28 deed, dus ook de zwakste plek onder de glans wordt beter.
-   Canvas-spiegel: het inform-register in lib/utils/futKaartCanvas.ts. */
-.fut-kaart--inform {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+.fut-kaart.fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
   --kaart-lijn: rgba(240, 199, 102, 0.45);
@@ -981,7 +938,7 @@
     inset 0 0 0 2.5px rgba(6, 8, 14, 0.95),
     inset 0 0 0 3.5px rgba(240, 199, 102, 0.35);
 }
-.fut-kaart--inform .fut-kaart__zijde {
+.fut-kaart.fut-kaart--inform .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
     #f7dfa0 0%,
@@ -990,24 +947,11 @@
     #4c390a 100%
   );
 }
-.fut-kaart--inform .fut-kaart__liner {
+.fut-kaart.fut-kaart--inform .fut-kaart__liner {
   background: #0a0c14;
 }
-/* Vlak, van boven naar onder gelezen zoals CSS het opsomt: topgloed,
-   geborstelde titaniumgroeven, titanium-tint, navy.
-   — De tint verdonkert de flanken linksboven en rechtsonder en laat het midden
-     vrij: dát maakt van het navy "zwart titanium" zonder de kaart dicht te
-     gooien (stijlbeperking uit de issue: de onderliggende kaart mag niet
-     volledig onherkenbaar zwart worden).
-   — De groeven staan bewust hier en niet op ::after: een absoluut
-     gepositioneerd pseudo-element tekent ná de tekst, en de laagvolgorde uit
-     de issue wil textuur juist ónder avatar en inkt. Dat is dezelfde route die
-     de pias en de Piet nemen (met hun ::after op `background: none`
-     hieronder). Twee frequenties: de fijne laag zet een lichte rug naast een
-     donkere groef — dát paar is wat geborsteld metaal van een streepjespatroon
-     scheidt — en de grovere laag legt er één streek over, zodat het niet in
-     moiré valt. */
-.fut-kaart--inform .fut-kaart__vlak {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+.fut-kaart.fut-kaart--inform .fut-kaart__vlak {
   background:
     radial-gradient(
       130% 60% at 50% -8%,
@@ -1033,21 +977,12 @@
     ),
     linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
 }
-/* Het gedeelde satijn (en op een premium-tier de stralenkrans) uit: het
-   titanium brengt zijn eigen weefsel mee en dat staat hierboven al in de
-   vlak-achtergrond. Editie-blokken staan in dit bestand ná de tier-blokken,
-   dus deze regel wint ook op een GOAT-, dictator- of premium-kaart.
-   Spiegel: `eigenWeefsel` in futKaartCanvas.ts. */
-.fut-kaart--inform .fut-kaart__vlak::after {
+                                                                                                                                                                                                                                                                                                                                                        
+.fut-kaart.fut-kaart--inform .fut-kaart__vlak::after {
   background: none;
 }
-/* Bewegende metaalglans: één brede diagonale baan met een zachte aanloop en
-   een witte kern, zoals de referentie. De piek zakt van 0.28 naar 0.22 omdat
-   de baan bréder is (20–80% i.p.v. 38–62%) en over de inkt heen loopt —
-   ::before is een absoluut gepositioneerd pseudo-element en tekent dus ná de
-   tekst; dat is precies de laagvolgorde die de issue vraagt, maar het maakt de
-   dekking wél een leesbaarheidsknop. */
-.fut-kaart--inform .fut-kaart__vlak::before {
+                                                                                                                                                                                                                                                                                                                                                                                                                                          
+.fut-kaart.fut-kaart--inform .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
     transparent 20%,
@@ -1059,12 +994,8 @@
   );
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* 4,2s met een rustpauze: de baan schuift in 58% van de tijd over de kaart
-     en staat de rest buiten beeld stil. Zonder die pauze wordt het effect een
-     knipperlicht i.p.v. een reflectie. translate3d houdt het op de compositor;
-     zonder bewegingsvoorkeur blijft de baan gewoon staan waar hij staat — de
-     "statische zachte highlight" die de issue vraagt. */
-  .fut-kaart--inform .fut-kaart__vlak::before {
+                                                                                                                                                                                                                                                                                                                                                                                    
+  .fut-kaart.fut-kaart--inform .fut-kaart__vlak::before {
     animation: fut-kaart-inform-glans 4.2s cubic-bezier(0.4, 0, 0.5, 1) infinite;
   }
   @keyframes fut-kaart-inform-glans {
@@ -1076,10 +1007,8 @@
       transform: translate3d(62%, 0, 0);
     }
   }
-  /* Pulse-ring: het geëtste motief ademt langzaam op i.p.v. te flikkeren —
-     alleen opacity, dus geen layout- of paint-werk. De deel-poster bevriest
-     hem op volle sterkte (zie het inform-register in futKaartCanvas.ts). */
-  .fut-kaart--inform .fut-kaart__motief {
+                                                                                                                                                                                                                                     
+  .fut-kaart.fut-kaart--inform .fut-kaart__motief {
     animation: fut-kaart-inform-puls 3.6s ease-in-out infinite;
   }
   @keyframes fut-kaart-inform-puls {
@@ -1104,18 +1033,8 @@
   }
 }
 
-/* Kampioen (winnaar van het vorige kwartaal, #625, hertekend in #710): een
-   eremedaille, geen ranking-kaart — platina-wit met lauwergroen, bewust wég
-   van goud (dat is In-Form/dictator-territorium) en van het roze van Big
-   Daddy. Sinds #710 draagt de editie ook een lauwerkrans met medaillelinten
-   achter het schild, een diamantcrest ervóór, een legacy-zegel als watermerk
-   en de gelaagde platina/smaragd-randen die de referentie kenmerken.
-   Lokale hexen: er is (nog) geen tweede consument, dus geen index.css-tokens
-   zoals bij --bigdaddy-kaart-*. Contrast: ink op hi ≈ 7,7:1 (AAA).
-   De hero-skin op het dashboard (.hero--kampioen) kopieert deze materiaal-
-   waarden; de synctest in futKaartCanvas.test.ts bewaakt dat.
-   Canvas-spiegel: het kampioen-register in EDITIE_REGISTERS. */
-.fut-kaart--kampioen {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+.fut-kaart.fut-kaart--kampioen {
   --kaart-hi: #fbfdfc;
   --kaart-mid: #e9f2ee;
   --kaart-lo: #cfe0d6;
@@ -1142,7 +1061,7 @@
     inset 0 0 0 2.5px rgba(34, 60, 47, 0.5),
     inset 0 0 0 4px rgba(157, 191, 171, 0.45);
 }
-.fut-kaart--kampioen .fut-kaart__zijde {
+.fut-kaart.fut-kaart--kampioen .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
     #eef6f1 0%,
@@ -1151,10 +1070,10 @@
     #4f7a63 100%
   );
 }
-.fut-kaart--kampioen .fut-kaart__liner {
+.fut-kaart.fut-kaart--kampioen .fut-kaart__liner {
   background: #223c2f;
 }
-.fut-kaart--kampioen .fut-kaart__vlak {
+.fut-kaart.fut-kaart--kampioen .fut-kaart__vlak {
   background:
     radial-gradient(
       120% 55% at 50% -6%,
@@ -1169,27 +1088,8 @@
     );
 }
 
-/* On-Fire (actieve winstreak, #632, herzien in #710): verhit koper en
-   rosébrons op donker mahonie, espresso en verkoold staal. Sinds #710 is dit
-   niet meer "In-Form in het warm" maar een eigen materiaal:
-   koperframe met een rosé glanspunt (bewust bruiner dan het oranje van #632 —
-   "geen overdreven oranje neon"), een espresso-vignet dat de randen dieper
-   maakt, geborstelde metaalgroeven als concentrische bogen, een vlam-watermerk
-   met thermische ringen die heel langzaam ademen, een brede koperen hitteglans
-   die in ~5,2s over het metaal loopt, en de ornamentlaag met vlamvinnen,
-   vlamcrest, medaillon en sintels (FutKaart.tsx).
-   De kaart is een *overlay*: de schildvorm blijft die van de divisie, alleen
-   frame, vlak en inkt komen hiervandaan.
-   Sintel-stops en inkt staan vast sinds #632 en worden gedeeld met de eer-hero
-   (.hero--onfire in Dashboard.css); de synctest in futKaartCanvas.test.ts
-   bewaakt dat — daarom draait al het nieuwe materiaal hier op lagen erboven en
-   niet op een hertinte basis.
-   Contrast (ink op het vlak ter hoogte van het eloblok): ≈ 9,6:1 buiten de
-   glansbaan en ≈ 4,8:1 op de piek ervan. Beide een fractie hóger dan vóór #710
-   (9,6 resp. 4,6): de glansbaan werd bréder, niet feller — de piek bleef op de
-   0,27 van #632 in plaats van de 0,42 uit de referentie-instructies, precies
-   omdat de baan over de inkt heen loopt. */
-.fut-kaart--onfire {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+.fut-kaart.fut-kaart--onfire {
   --kaart-ink: #ffc98a;
   --kaart-ink-soft: #d1915b;
   --kaart-lijn: rgba(255, 160, 92, 0.45);
@@ -1210,7 +1110,7 @@
     inset 0 0 0 3px rgba(22, 8, 4, 0.92),
     inset 0 0 0 4.5px rgba(214, 122, 66, 0.34);
 }
-.fut-kaart--onfire .fut-kaart__zijde {
+.fut-kaart.fut-kaart--onfire .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
     #f6ddc4 0%,
@@ -1219,13 +1119,11 @@
     #4b1e0d 100%
   );
 }
-.fut-kaart--onfire .fut-kaart__liner {
+.fut-kaart.fut-kaart--onfire .fut-kaart__liner {
   background: #180a05;
 }
-/* Vlak (boven → onder): espresso-vignet dat de randen dieper maakt (en de inkt
-   dus júist meer contrast geeft dan een warme tintlaag zou doen), de warme
-   topgloed en het sintelverloop. */
-.fut-kaart--onfire .fut-kaart__vlak {
+                                                                                                                                                                                                
+.fut-kaart.fut-kaart--onfire .fut-kaart__vlak {
   background:
     radial-gradient(
       118% 88% at 50% 32%,
@@ -1239,11 +1137,8 @@
     ),
     linear-gradient(172deg, #3a180c 0%, #241009 60%, #140704 100%);
 }
-/* Hitteglans: één brede koperen reflectiebaan met een zwakkere warme band aan
-   weerszijden — de gradientrichting en stops uit de referentie-instructies
-   (#710), met de piek op 0,27 gehouden zodat de leesbaarheid onder de baan
-   niet onder het niveau van #632 zakt. */
-.fut-kaart--onfire .fut-kaart__vlak::before {
+                                                                                                                                                                                                                                                                                 
+.fut-kaart.fut-kaart--onfire .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
     transparent 16%,
@@ -1255,12 +1150,8 @@
     transparent 84%
   );
 }
-/* Geborstelde metaalgroeven i.p.v. het gedeelde satijn: concentrische bogen om
-   een punt onder de kaartpunt, dus ze staan boven in het vlak bijna vlak en
-   krullen naar de punt toe mee — circulair geborsteld koper, zoals de
-   referentie. Vaste px-periode, net als het satijn, zodat het van de veldmaat
-   tot de poster niet in moiré valt. */
-.fut-kaart--onfire .fut-kaart__vlak::after {
+                                                                                                                                                                                                                                                                                                                                                          
+.fut-kaart.fut-kaart--onfire .fut-kaart__vlak::after {
   background: repeating-radial-gradient(
     circle at 50% 132%,
     rgba(255, 178, 116, 0.085) 0 1px,
@@ -1268,9 +1159,8 @@
   );
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* Zwaarder en trager dan In-Forms 2,6s (de issue vraagt 4–6s): hitte golft,
-     bliksem knippert. translate3d houdt de baan op de compositor. */
-  .fut-kaart--onfire .fut-kaart__vlak::before {
+                                                                                                                                                    
+  .fut-kaart.fut-kaart--onfire .fut-kaart__vlak::before {
     animation: fut-kaart-hitteglans 5.2s ease-in-out infinite;
   }
   @keyframes fut-kaart-hitteglans {
@@ -1282,11 +1172,8 @@
       transform: translate3d(62%, 0, 0);
     }
   }
-  /* Thermische ringen: het watermerk ademt heel langzaam mee (kleine
-     schaalverandering + dekking), i.p.v. een eigen geanimeerde ringlaag per
-     kaart. De poster bevriest hem op zijn brede stand — daar staat het motief
-     dus op schaal 1. */
-  .fut-kaart--onfire .fut-kaart__motief {
+                                                                                                                                                                                                                                                          
+  .fut-kaart.fut-kaart--onfire .fut-kaart__motief {
     animation: fut-kaart-thermiek 11s ease-in-out infinite;
   }
   @keyframes fut-kaart-thermiek {
@@ -1302,23 +1189,8 @@
   }
 }
 
-/* Pias (grootste choke van de week, alle groepen, #631/#705): mat kraftkarton
-   met confetti-stipjes — onmiskenbaar "geen beloning" naast het glimmende
-   goud, roze en platina van de verdiende edities. Geen shimmer, geen metaal
-   (#705): het frame is één vlakke kartontoon met een bleke snijkant (de
-   pulpkern van doorgesneden karton) langs de bovenrand, de sheen is een
-   nauwelijks zichtbare warme waas en het vlak draagt een vezelkorrel i.p.v.
-   glansbanen. Lokale hexen, net als kampioen; de vezeltegel wordt wél
-   letterlijk gedeeld met De Schandpaal (#682) — zelfde papier, de synctest
-   in futKaartCanvas.test.ts bewaakt dat. Contrast: ink op hi ≈ 9:1 (AAA).
-
-   Gevallen joker (#710): het kraftpapier blíjft — de pias mag geen beloning
-   worden — maar de rand wordt gelaagd zoals de referentie: aangetast honinggoud
-   (zijde) → donker brons (liner) → een gouden haarlijn (keyline) → gedempt
-   bordeauxrood (binnenlijn) → perkament. Vijf banden op ~5,5 px, precies de
-   opbouw die de referentie in doorsnede laat zien. Nog steeds mat: geen tweede
-   glanspunt in het frame en geen shimmer — aangetast goud glimt niet. */
-.fut-kaart--pias {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+.fut-kaart.fut-kaart--pias {
   --kaart-hi: #dcbd85;
   --kaart-mid: #c9a468;
   --kaart-lo: #a37e46;
@@ -1335,7 +1207,7 @@
     inset 0 0 0 2px rgba(105, 47, 39, 0.62),
     inset 0 0 0 3px rgba(198, 158, 92, 0.55);
 }
-.fut-kaart--pias .fut-kaart__zijde {
+.fut-kaart.fut-kaart--pias .fut-kaart__zijde {
   background:
     linear-gradient(180deg, var(--kaart-snijkant) 0 2px, transparent 2px),
     linear-gradient(
@@ -1344,12 +1216,11 @@
       var(--kaart-frame-lo) 100%
     );
 }
-.fut-kaart--pias .fut-kaart__liner {
+.fut-kaart.fut-kaart--pias .fut-kaart__liner {
   background: #362410;
 }
-/* Mat karton reflecteert diffuus: geen witte specular-baan maar een brede,
-   warme waas op 6% — canvas-spiegel: sheen + sheenSpreiding 0.2. */
-.fut-kaart--pias .fut-kaart__vlak::before {
+                                                                                                                                                
+.fut-kaart.fut-kaart--pias .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
     transparent 30%,
@@ -1357,12 +1228,8 @@
     transparent 70%
   );
 }
-/* Laagvolgorde (boven → onder): confetti als gedrukte inkt (zachtere rand en
-   lagere alpha dan #631 — de stipjes zijn in het papier gezogen), de
-   vezeltegel (28px-SVG met vezelstreepjes en pulp-stipjes, byte-gelijk aan
-   die in Schandpaal.css), twee grote zachte mottling-vlekken en het
-   kartonverloop. Canvas-spiegel: drawConfetti in futKaartCanvas.ts. */
-.fut-kaart--pias .fut-kaart__vlak {
+                                                                                                                                                                                                                                                                                                                                                                            
+.fut-kaart.fut-kaart--pias .fut-kaart__vlak {
   background:
     radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 4.2%),
     radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.21) 0 2.1%, transparent 3.8%),
@@ -1380,24 +1247,8 @@
     );
 }
 
-/* Zwarte Piet (#645/#705/#710): het rondgaande schande-token, kaartenspel-thema —
-   mat speelkaart-wit met een vlak zwart lakframe en rood/zwarte suit-pips
-   (SVG-laag, ♠♥♦♣). De bone liner (#efe7d2) is de witte snijkant van het
-   kaartkarton, zichtbaar tussen frame en vlak. Net als de pias geen shimmer
-   en geen metaal (schande glimt niet): de sheen staat uit en het vlak draagt
-   een linnen-finish (twee gekruiste fijne rasters op 0°/90° — recht op het
-   pixelgrid, dus geen moiré op de kleinste kaartmaat) i.p.v. glansbanen.
-   En bewust licht: donkere vlakken zijn hier het prestige-register (In-Form,
-   On-Fire, Legende, dictator). Lokale hexen, net als kampioen (geen tweede
-   consument). Contrast: ink op hi ≈ 13:1 (AAA).
-   Sinds #710 is dit de verzegelde schuldfiche uit de referentie: de enige
-   editie met een éigen ornamentlaag (kettingen met geopende sluiting achter de
-   kaart, pion-crest, randgravures en een gebroken zegel ervóór — zie
-   ornamentenPiet.ts), een watermerk in het vlak, een papierraster met vignette
-   en een gelaagde rand. De metafoor is het mechanisme: de fiche is verzegeld en
-   het zegel is al eens verbroken, de kettingen leggen hem vast en de sluitingen
-   staan open — één overwinning en je bent hem kwijt. */
-.fut-kaart--piet {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+.fut-kaart.fut-kaart--piet {
   --kaart-hi: #f4eedb;
   --kaart-mid: #e6ddc2;
   --kaart-lo: #cfc4a4;
@@ -1424,16 +1275,12 @@
   --motief-b: 80;
   --motief-pos: 36%;
 }
-/* Klaversymbool naast de naam (#710): een los teken op de naamplaat, niet in
-   de naamtekst zelf — de naam ellipst en zou het teken dan meesnijden. De
-   padding-right reserveert de ruimte, dus een lange naam kapt eerder af i.p.v.
-   eronder te schuiven. Als achtergrond-SVG en niet als ::after-tekst: zo
-   spreken schermlezers de decoratie niet mee. */
-.fut-kaart--piet .fut-kaart__naam {
+                                                                                                                                                                                                                                                                                                                                                                    
+.fut-kaart.fut-kaart--piet .fut-kaart__naam {
   position: relative;
   padding-right: 9%;
 }
-.fut-kaart--piet .fut-kaart__naam::after {
+.fut-kaart.fut-kaart--piet .fut-kaart__naam::after {
   content: "";
   position: absolute;
   right: 0;
@@ -1449,7 +1296,7 @@
    stil. Bewust géén glans-animatie: schande glimt niet (#705), en de laag vóór
    de kaart (crest, zegel) blijft dus ook stil staan. */
 @media (prefers-reduced-motion: no-preference) {
-  .fut-kaart--piet .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  .fut-kaart.fut-kaart--piet .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
     transform-origin: 50% 30%;
     animation: fut-kaart-piet-wieg 11s ease-in-out infinite;
   }
@@ -1463,34 +1310,26 @@
     }
   }
 }
-.fut-kaart--piet .fut-kaart__zijde {
+.fut-kaart.fut-kaart--piet .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
     var(--kaart-frame-hi) 0%,
     var(--kaart-frame-lo) 100%
   );
 }
-.fut-kaart--piet .fut-kaart__liner {
+.fut-kaart.fut-kaart--piet .fut-kaart__liner {
   background: #efe7d2;
 }
-/* De keyline expliciet terug op de basisformule (#710): de GOAT zet er een
-   rosé lijn voor met een descendant-selector, en die zou een Piet op een
-   GOAT-drager een roze binnenrand geven — terwijl het canvas-register voor
-   élke editie de zandkleurige mix tekent. Dit is precies die mix. */
-.fut-kaart--piet .fut-kaart__keyline {
+                                                                                                                                                                                                                                                                                                       
+.fut-kaart.fut-kaart--piet .fut-kaart__keyline {
   background: color-mix(in srgb, var(--kaart-lijn) 75%, #fff8e8);
 }
-/* Gecoat kaartkarton glanst hooguit breed en diffuus, nooit als een smalle
-   baan; hier simpelweg uit — het linnen hieronder draagt de textuur. */
-.fut-kaart--piet .fut-kaart__vlak::before {
+                                                                                                                                                    
+.fut-kaart.fut-kaart--piet .fut-kaart__vlak::before {
   background: none;
 }
-/* Laagvolgorde (boven → onder): vignette, de vier suit-pips, het grove
-   papierraster, het fijne linnen en het ivoorverloop. Het vignette ligt bovenop
-   de textuur maar onder het watermerk (dat is .fut-kaart__motief op z-index −1):
-   licht valt op het papier, het watermerk zít in het papier. Canvas-spiegel:
-   drawSpeelkaart in futKaartCanvas.ts. */
-.fut-kaart--piet .fut-kaart__vlak {
+                                                                                                                                                                                                                                                                                                                                                                   
+.fut-kaart.fut-kaart--piet .fut-kaart__vlak {
   background:
     radial-gradient(
       115% 88% at 50% 42%,

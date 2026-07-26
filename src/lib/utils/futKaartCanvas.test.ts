@@ -19,6 +19,22 @@ const INDEX_CSS = lees("../../app/index.css");
 const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css");
 const DASHBOARD_CSS = lees("../../features/dashboard/Dashboard.css");
 
+// De negen divisieregisters, als [naam, css]-paren voor de cascadetest.
+const DIVISIE_CSS: ReadonlyArray<readonly [string, string]> = [
+  "slof",
+  "karton",
+  "hout",
+  "brons",
+  "zilver",
+  "goud",
+  "platina",
+  "diamant",
+  "meester",
+].map((naam) => [
+  naam,
+  lees(`../../features/rating/components/divisies/${naam}.css`),
+]);
+
 const EDITIES: KaartEditie[] = [
   "icon",
   "kampioen",
@@ -935,5 +951,47 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       ),
     );
     expect([...gevonden].sort()).toEqual([...EDITIES].sort());
+  });
+});
+describe("cascade: een editie wint van de tier- én de divisieklasse (#710)", () => {
+  // Een kaart draagt altijd twee modifiers tegelijk: zijn tier (of divisie) én
+  // zijn editie. Beide zetten dezelfde tokens (--kaart-hi/ink/...), dus alleen
+  // de cascade beslist wie wint. Dat ging mis: de negen divisieregisters worden
+  // ná FutKaart.css geïmporteerd, en op gelijke specificiteit wint de laatste —
+  // waardoor Big Daddy op meester lila werd i.p.v. roze, en In-Form op Forever
+  // second donkerpaarse tekst op een donker vlak kreeg. Canvas kende dat
+  // probleem niet (kaartSkin geeft het editieregister eerst terug), dus DOM en
+  // poster liepen uiteen. De fix is specificiteit: elke editieselector begint
+  // met `.fut-kaart.fut-kaart--<editie>` (0,2,0) en wint daarmee van zowel
+  // `.fut-kaart--legende` als `.fut-kaart--meester` (0,1,0), ongeacht
+  // importvolgorde. Deze test houdt dat vast — een nieuwe editieregel zonder
+  // dubbele basisklasse valt hier om, niet pas in een screenshot.
+  const zonderCommentaar = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, " ");
+
+  // Alle selectorblokken: de tekst vóór elke `{` die zelf geen declaratie is.
+  const selectors = (css: string) =>
+    [...zonderCommentaar(css).matchAll(/(^|[{};])([^{};]*?)\{/g)]
+      .map((m) => m[2].replace(/\s+/g, " ").trim())
+      .filter((s) => s.startsWith("."));
+
+  it.each(EDITIES)("elke %s-regel draagt de dubbele basisklasse", (editie) => {
+    const raak = selectors(FUT_CSS).filter((s) =>
+      new RegExp(`\\.fut-kaart--${editie}\\b`).test(s),
+    );
+    expect(raak.length).toBeGreaterThan(0);
+    const zwak = raak.filter((s) =>
+      new RegExp(`(^|[\\s,])\\.fut-kaart--${editie}\\b`).test(s),
+    );
+    expect(zwak).toEqual([]);
+  });
+
+  it("geen divisieregister trekt de specificiteit mee omhoog", () => {
+    // Zou een divisiebestand óók `.fut-kaart.fut-kaart--<divisie>` gaan
+    // schrijven, dan staat hij weer gelijk met de editie en beslist de
+    // importvolgorde opnieuw. De divisies horen op 0,1,0 te blijven.
+    const fout = DIVISIE_CSS.filter(([, css]) =>
+      /\.fut-kaart\.fut-kaart--/.test(zonderCommentaar(css)),
+    ).map(([naam]) => naam);
+    expect(fout).toEqual([]);
   });
 });
