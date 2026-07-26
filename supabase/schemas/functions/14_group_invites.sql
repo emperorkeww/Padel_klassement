@@ -1,4 +1,5 @@
--- Uitnodigingslinks voor groepen: aanmaken (eigenaar) en inwisselen (auto-join).
+-- Uitnodigingslinks voor groepen: aanmaken (elk lid, #776) en inwisselen
+-- (auto-join).
 create or replace function public.create_group_invite(
   p_group_id uuid,
   p_days int default 14
@@ -15,8 +16,8 @@ begin
   if v_uid is null then
     raise exception 'Niet ingelogd';
   end if;
-  if not public.is_group_owner(p_group_id, v_uid) then
-    raise exception 'Alleen de eigenaar kan een uitnodiging maken';
+  if not public.is_group_member(p_group_id, v_uid) then
+    raise exception 'Alleen leden van deze groep kunnen een uitnodiging maken';
   end if;
 
   select token into v_token

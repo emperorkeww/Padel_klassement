@@ -6,13 +6,15 @@ create policy "Groepsleden zijn zichtbaar voor leden"
   to authenticated
   using (public.is_group_member(group_id, (select auth.uid())));
 
--- Een eigenaar kan zichzelf, een geaccepteerde vriend of zijn eigen gast
--- toevoegen (gasten doen zo mee in gegenereerde rondes).
-create policy "Eigenaar kan vrienden toevoegen"
+-- Elk lid — niet alleen de eigenaar (#776) — kan zichzelf, een geaccepteerde
+-- vriend of zijn eigen gast toevoegen (gasten doen zo mee in gegenereerde
+-- rondes). De tweede voorwaarde blijft de rem: je nodigt alleen mensen uit die
+-- je zelf kent, dus een lid kan geen willekeurige vreemde in de groep zetten.
+create policy "Lid kan vrienden toevoegen"
   on public.group_members for insert
   to authenticated
   with check (
-    public.is_group_owner(group_id, (select auth.uid()))
+    public.is_group_member(group_id, (select auth.uid()))
     and (
       player_id = (select auth.uid())
       or public.are_friends((select auth.uid()), player_id)
@@ -20,6 +22,8 @@ create policy "Eigenaar kan vrienden toevoegen"
     )
   );
 
+-- Verwijderen blijft owner-only (#776): toevoegen is open, eruit zetten niet.
+-- Ieder lid kan wel zichzelf verwijderen — dat is "groep verlaten".
 create policy "Eigenaar of lid zelf kan verwijderen"
   on public.group_members for delete
   to authenticated
