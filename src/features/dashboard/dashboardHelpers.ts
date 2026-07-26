@@ -32,19 +32,34 @@ export function rememberName(userId: string, name: string) {
 
 /* ----------------------------- Hero-thema -------------------------------- */
 
-/** Statussen die de dashboard-hero een eigen skin geven (#613/#644). */
-export type HeroThema = "dictator" | "bigdaddy" | "pias" | "piet" | null;
+/** Statussen die de dashboard-hero een eigen skin geven (#613/#644/#760). */
+export type HeroThema =
+  | "dictator"
+  | "bigdaddy"
+  | "kampioen"
+  | "inform"
+  | "onfire"
+  | "pias"
+  | "piet"
+  | null;
 
 /** Prioriteit: het eerste thema dat de speler draagt wint. Bewust dezelfde
  *  volgorde als EDITIE_PRIORITEIT op de FUT-kaart (edities.ts) — verdienste
  *  verdringt schande, en binnen de schande wint de weeklens (de pias van déze
  *  week) van het rondgaande token (de Piet), net als inform › onfire daar.
  *
- *  De twee assen zijn onafhankelijk: dictator/Big Daddy komen uit het
- *  club-klassement, pias/Piet uit een groep. Je kunt dus tegelijk #1 én
- *  schande-token-drager zijn; dan kleurt de hero naar de eer en blijft de
- *  schande-crest ernaast staan. Kleur is nooit de enige indicator (#613), dus
- *  het verliezende thema verdwijnt alleen als vlak, niet als chip.
+ *  Sinds #760 draagt de hero álle zes kaart-edities (plus de troon): een
+ *  kampioenschap duurt een kwartaal, In-Form wisselt wekelijks en On-Fire hangt
+ *  aan een lopende reeks — vandaar die volgorde onder de kroon. On-Fire staat
+ *  ná In-Form omdat het de enige status is die meerdere dragers tegelijk kan
+ *  hebben (#632): een gedeelde eer mag geen zeldzamere verdringen.
+ *
+ *  De assen zijn onafhankelijk: dictator, Big Daddy, kampioen, In-Form en
+ *  On-Fire komen club-breed uit het klassement, pias/Piet uit een gróep
+ *  (#655/#645). Je kunt dus tegelijk #1 én schande-token-drager zijn; dan
+ *  kleurt de hero naar de eer en blijft de schande-crest ernaast staan. Kleur
+ *  is nooit de enige indicator (#613), dus het verliezende thema verdwijnt
+ *  alleen als vlak, niet als chip.
  *
  *  Dictator staat vóór Big Daddy zoals de hero dat al deed sinds #613 (en
  *  Podium.tsx op het klassement): in de praktijk sluiten ze elkaar al uit —
@@ -54,6 +69,9 @@ export type HeroThema = "dictator" | "bigdaddy" | "pias" | "piet" | null;
 export const HERO_THEMA_PRIORITEIT = [
   "dictator",
   "bigdaddy",
+  "kampioen",
+  "inform",
+  "onfire",
   "pias",
   "piet",
 ] as const;
@@ -64,10 +82,14 @@ export const HERO_THEMA_PRIORITEIT = [
  *  crest-chip blijft wél staan (met de neutrale 📊-variant, zie Dashboard.tsx):
  *  het feit blijft, de spot verdwijnt. Halfslachtig dempen — kartonnen vlak met
  *  een neutraal woordje erop — zou geen schild zijn maar een zachtere sneer.
- *  Op eer heeft het schild geen invloed: er valt niets te beschermen. */
+ *  Op eer heeft het schild geen invloed: er valt niets te beschermen, dus de
+ *  vijf verdiende thema's (troon t/m On-Fire) trekken zich er niets van aan. */
 export function heroThema(s: {
   dictator: boolean;
   bigDaddy: boolean;
+  kampioen: boolean;
+  inForm: boolean;
+  onFire: boolean;
   pias: boolean;
   piet: boolean;
   schild: boolean;
@@ -80,6 +102,15 @@ export function heroThema(s: {
       case "bigdaddy":
         if (s.bigDaddy) return "bigdaddy";
         break;
+      case "kampioen":
+        if (s.kampioen) return "kampioen";
+        break;
+      case "inform":
+        if (s.inForm) return "inform";
+        break;
+      case "onfire":
+        if (s.onFire) return "onfire";
+        break;
       case "pias":
         if (s.pias && !s.schild) return "pias";
         break;
@@ -89,6 +120,21 @@ export function heroThema(s: {
     }
   }
   return null;
+}
+
+/** Splitst een editie-regel van de FUT-kaart ("⚡ In-Form · +48") in het icoon
+ *  en de rest, zodat de HeroCrest hem in zíjn vorm kan zetten — chip met een
+ *  aria-hidden emoji plus een labeltekst — zonder dat er een tweede formulering
+ *  van dezelfde titel ontstaat (#760). editieLabel (edities.ts) blijft dus de
+ *  enige plek waar de tekst staat; de hero hangt er alleen zijn eigen jasje om.
+ *
+ *  Splitst op de eerste ruimte: élke editie-regel begint met precies één
+ *  emoji-token. Zonder ruimte (defensief) is de hele regel het icoon én het
+ *  label, zodat er nooit een lege chip verschijnt. */
+export function heroCrestTekst(regel: string): { emoji: string; label: string } {
+  const knip = regel.indexOf(" ");
+  if (knip < 0) return { emoji: regel, label: regel };
+  return { emoji: regel.slice(0, knip), label: regel.slice(knip + 1) };
 }
 
 /** Korte "wanneer"-regel voor de compacte volgende-match op het overzicht:
