@@ -655,6 +655,35 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* Glazenwasser (#710): de platina-divisiekaart — raamcrest in de
+          bovenste inkeping, paneelklemmen in de zijranden, veegbogen van achter
+          de onderste zijkant en een glasmedaillon onder de punt. Op de veldmaat
+          staat de crest het krapst (hij hangt tussen de vleugels van
+          fut-schild-punt door), op de heromaat moet het paneelraster in het vlak
+          nog steeds ónder de inkt blijven. De poster ernaast is de enige manier
+          om te zien dat platina.css en het register in platina.ts hetzelfde
+          tekenen — een divisie zonder editie is precies het geval waarin de
+          divisiekaart zelf aan zet is. */}
+      <Sectie titel="Glazenwasser (#710): raamcrest, paneelklemmen, veegbogen, glasmedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1150)} naam="Ilse" elo={1163} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1150)}
+          editie={null}
+          editieLabel={null}
+          naam="Ilse"
+          breedte={210}
+        />
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />
