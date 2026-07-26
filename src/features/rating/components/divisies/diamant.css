@@ -1,0 +1,5 @@
+/* Divisiekaart "Eeuwige belofte" (diamant) — 1200–1299 — ijsblauw, kobalt en geborsteld aluminium.
+   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
+   generieke metaalladder uit FutKaart.css. Zet hier het
+   `.fut-kaart--diamant`-register, en spiegel dezelfde waarden in diamant.ts
+   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */

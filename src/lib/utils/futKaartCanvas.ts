@@ -89,6 +89,8 @@ import {
   type Doos,
   type StrengMateriaal,
 } from "@/features/rating/components/ornamentenBigDaddy";
+import { divisieKaart } from "@/features/rating/components/divisies";
+import type { DivisieDeel } from "@/features/rating/components/divisies/divisieKaart";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 /** Materiaal van de GOAT-strengen — spiegel van GOAT_MATERIAAL in
@@ -310,6 +312,10 @@ export interface FutKaartKleuren {
    *  (lauwerkrans + lakzegel, respectievelijk kroon + punt-ornament) die
    *  onderaan `drawKaartSchild` volgt — zie .fut-kaart__ornament--voor. */
   ornament?: "goat" | "dictator" | "bigdaddy";
+  /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
+   *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
+   *  of een toptier — zie de keuze in FutKaart.tsx. */
+  divisie?: TierKey;
 }
 
 /**
@@ -529,10 +535,16 @@ export function drawKaartSchild(
   // content nog binnen dezelfde clip. Dat die content dan bóven het ornament
   // komt maakt niets uit: deze ornamenten zitten in de lege inkeping en de
   // lege punt, precies waar geen inkt staat.
-  if (kleuren.ornament === "dictator" || kleuren.ornament === "bigdaddy") {
+  if (
+    kleuren.ornament === "dictator" ||
+    kleuren.ornament === "bigdaddy" ||
+    kleuren.divisie
+  ) {
     ctx.restore();
     if (kleuren.ornament === "dictator") drawDictatorVoor(ctx, x, y, w);
-    else drawBigDaddyVoor(ctx, x, y, w);
+    else if (kleuren.ornament === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
+    if (kleuren.divisie)
+      drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
     ctx.save();
     schildPad(ctx, fx, fy, fw, fh, vorm);
     ctx.clip();
@@ -947,6 +959,72 @@ function drawBigDaddyVoor(
       0.45,
     );
   drawSteen(ctx, BD_KROON_STEEN, BD_KROON_STEEN_DOOS, BD_KROON_STEEN_FACETTEN);
+  ctx.restore();
+}
+
+/** Eén ornamentdeel van een divisiekaart (#710) op canvas — spiegel van
+ *  `FutDivisieDeel` in FutKaart.tsx, met letterlijk hetzelfde pad. Canvas kent
+ *  geen paint server, dus `url(#id)` wordt hier opgezocht in de gradients van
+ *  dezelfde divisiekaart en als CanvasGradient opgebouwd. */
+function drawDivisieDeel(
+  ctx: CanvasRenderingContext2D,
+  deel: DivisieDeel,
+  verf: (paint: string) => string | CanvasGradient,
+) {
+  const pad = new Path2D(deel.d);
+  ctx.save();
+  if (deel.alpha != null) ctx.globalAlpha = deel.alpha;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  if (deel.vulling) {
+    ctx.fillStyle = verf(deel.vulling);
+    ctx.fill(pad);
+  }
+  if (deel.contour) {
+    ctx.strokeStyle = deel.contour;
+    ctx.lineWidth = deel.contourBreedte ?? 0.5;
+    ctx.stroke(pad);
+  }
+  ctx.restore();
+}
+
+/** De ornamentlaag van een divisiekaart: alle delen, plus de gespiegelde helft
+ *  van de delen die `spiegel` zetten. Units zijn kaart-units, dus één
+ *  schaalfactor volstaat — net als bij de editie-ornamenten. */
+function drawDivisieOrnament(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  key: TierKey | undefined,
+  laag: "achter" | "voor",
+) {
+  const kaart = divisieKaart(key);
+  const delen = kaart?.[laag];
+  if (!kaart || !delen?.length) return;
+  const verf = (paint: string): string | CanvasGradient => {
+    const m = /^url\(#([^)]+)\)$/.exec(paint);
+    if (!m) return paint;
+    const g = kaart.gradienten?.find((k) => k.id === m[1]);
+    if (!g) return "rgba(0, 0, 0, 0)";
+    const grad = ctx.createLinearGradient(g.as[0], g.as[1], g.as[2], g.as[3]);
+    for (const [offset, kleur] of g.stops) grad.addColorStop(offset, kleur);
+    return grad;
+  };
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const deel of delen) {
+    drawDivisieDeel(ctx, deel, verf);
+    if (deel.spiegel) {
+      ctx.save();
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+      drawDivisieDeel(ctx, deel, verf);
+      ctx.restore();
+    }
+  }
   ctx.restore();
 }
 
@@ -1530,6 +1608,49 @@ export function kaartSkin(
     };
   }
 
+  // Divisiekaart (#710): heeft deze basisdivisie een eigen register, dan wint
+  // dat van de generieke metaalladder hieronder — spiegel van het
+  // `.fut-kaart--<key>`-blok in divisies/<key>.css. Zonder register (nog niet
+  // hertekende divisie) blijft de kaart precies zoals hij was.
+  const divisie = divisieKaart(key);
+  if (divisie?.register) {
+    const r = divisie.register;
+    return {
+      kleuren: {
+        frame: r.frame,
+        liner: r.liner,
+        keyline: r.keyline ?? mix(r.lijn, "#fff8e8", 0.75),
+        vlak: [
+          [0, r.vlak[0]],
+          [r.vlakMid ?? 0.56, r.vlak[1]],
+          [1, r.vlak[2]],
+        ],
+        glow: r.glow,
+        sheen: r.sheen ?? BASIS_SHEEN,
+        sheenSpreiding: r.sheenSpreiding,
+        stralen: r.stralen ?? false,
+        textuur: r.textuur,
+        satijnAlpha: r.satijnAlpha,
+        echo: r.echo,
+        binnenlijn: r.binnenlijn,
+        motief: divisie.motief
+          ? {
+              paden: divisie.motief.paden,
+              kleur: divisie.motief.kleur,
+              breedte: divisie.motief.breedte ?? 0.92,
+              positie: divisie.motief.positie ?? 0.2,
+            }
+          : undefined,
+        divisie: key,
+      },
+      ink: r.ink,
+      inkSoft: r.inkSoft,
+      lijn: r.lijn,
+      // Zonder editie valt --editie-kleur in de CSS terug op --kaart-ink.
+      editieKleur: r.ink,
+    };
+  }
+
   const tier = tierKleur(key);
   const lijn = mix(tier, "#a8987a", 0.55);
   const ink = mix(tier, "#1d1508", 0.52);
@@ -1551,6 +1672,7 @@ export function kaartSkin(
       sheen: BASIS_SHEEN,
       keyline: mix(lijn, "#fff8e8", 0.75),
       stralen,
+      divisie: divisie ? key : undefined,
     },
     ink,
     inkSoft: mix(tier, "#4a3d26", 0.58),

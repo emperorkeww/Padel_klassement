@@ -72,7 +72,12 @@ import {
   cirkelPad,
   type StrengMateriaal,
 } from "./ornamentenBigDaddy";
+import { DIVISIE_KAARTEN, divisieKaart } from "./divisies";
+import type { DivisieDeel } from "./divisies/divisieKaart";
 import "./FutKaart.css";
+// Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
+// metaalladder daar.
+import "./divisies/index.css";
 
 /** Materiaal van de GOAT-strengen. Sinds #710 (Big Daddy) kan een ornament
  *  zijn eigen metaal meebrengen, dus wat eerst losse constanten waren staat
@@ -205,6 +210,75 @@ function FutSteen({
           strokeWidth="0.3"
           strokeLinecap="round"
         />
+      ))}
+    </>
+  );
+}
+
+/** Eén ornamentdeel van een divisiekaart (#710): vulling en/of contour, en
+ *  optioneel gespiegeld om x=50. De canvas-tegenhanger is `drawDivisieDeel`
+ *  in futKaartCanvas.ts — beide lezen letterlijk hetzelfde pad. */
+function FutDivisieDeel({ deel }: { deel: DivisieDeel }) {
+  const vorm = (
+    <path
+      d={deel.d}
+      fill={deel.vulling ?? "none"}
+      stroke={deel.contour}
+      strokeWidth={deel.contourBreedte ?? 0.5}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      opacity={deel.alpha}
+    />
+  );
+  if (!deel.spiegel) return vorm;
+  return (
+    <>
+      {vorm}
+      <g transform="translate(100,0) scale(-1,1)">{vorm}</g>
+    </>
+  );
+}
+
+/** De defs van álle uitgewerkte divisiekaarten: hun gradients en de twee
+ *  ornamentgroepen. Eén keer per pagina gerenderd, net als de schildvormen;
+ *  een divisie zonder ornamenten levert niets op. */
+function FutDivisieDefs() {
+  return (
+    <>
+      {DIVISIE_KAARTEN.flatMap((d) =>
+        (d.gradienten ?? []).map((g) => (
+          <linearGradient
+            key={g.id}
+            id={g.id}
+            gradientUnits="userSpaceOnUse"
+            x1={g.as[0]}
+            y1={g.as[1]}
+            x2={g.as[2]}
+            y2={g.as[3]}
+          >
+            {g.stops.map(([offset, kleur]) => (
+              <stop key={offset} offset={offset} stopColor={kleur} />
+            ))}
+          </linearGradient>
+        )),
+      )}
+      {DIVISIE_KAARTEN.map((d) => (
+        <g key={d.key}>
+          {(d.achter?.length ?? 0) > 0 && (
+            <g id={`fut-div-${d.key}-achter`}>
+              {d.achter!.map((deel) => (
+                <FutDivisieDeel key={deel.d} deel={deel} />
+              ))}
+            </g>
+          )}
+          {(d.voor?.length ?? 0) > 0 && (
+            <g id={`fut-div-${d.key}-voor`}>
+              {d.voor!.map((deel) => (
+                <FutDivisieDeel key={deel.d} deel={deel} />
+              ))}
+            </g>
+          )}
+        </g>
       ))}
     </>
   );
@@ -442,6 +516,7 @@ export function FutKaartDefs() {
             />
           ))}
         </g>
+        <FutDivisieDefs />
         <g id="fut-orn-goat">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
               nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
@@ -694,6 +769,12 @@ export function FutKaart({
         : tier?.key === "dictator"
           ? "dictator"
           : null;
+  // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
+  // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
+  // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
+  // deze speler dan zijn divisie. Zonder editie én zonder toptier tekent de
+  // divisie dus zijn eigen ornamentlaag.
+  const divisie = !editie && !ornament ? divisieKaart(tier?.key) : undefined;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register.
   // Onder een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op
   // het In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
@@ -703,6 +784,13 @@ export function FutKaart({
         paden={BD_KROON_MOTIEF}
         kleur={BD_KROON_MOTIEF_KLEUR}
         className="fut-kaart__motief--kroon"
+      />
+    ) : divisie?.motief ? (
+      <FutKaartMotief
+        paden={divisie.motief.paden}
+        kleur={divisie.motief.kleur}
+        breedte={divisie.motief.breedte}
+        positie={divisie.motief.positie}
       />
     ) : editie ? null : tier?.key === "legende" ? (
       <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
@@ -716,6 +804,15 @@ export function FutKaart({
     ) : null;
   return (
     <div className={klassen}>
+      {(divisie?.achter?.length ?? 0) > 0 && (
+        <svg
+          className="fut-kaart__ornament"
+          viewBox={ORNAMENT_VIEWBOX}
+          aria-hidden="true"
+        >
+          <use href={`#fut-div-${divisie!.key}-achter`} />
+        </svg>
+      )}
       {ornament && (
         <svg
           className="fut-kaart__ornament"
@@ -763,6 +860,15 @@ export function FutKaart({
           eroverheen), blijft staan bij een omgedraaide kaart — het schild
           houdt zijn kroon ook van achteren — en is pointer-events: none,
           zodat de flip-knop bereikbaar blijft. */}
+      {(divisie?.voor?.length ?? 0) > 0 && (
+        <svg
+          className="fut-kaart__ornament fut-kaart__ornament--voor"
+          viewBox={ORNAMENT_VIEWBOX}
+          aria-hidden="true"
+        >
+          <use href={`#fut-div-${divisie!.key}-voor`} />
+        </svg>
+      )}
       {(ornament === "dictator" || ornament === "bigdaddy") && (
         <svg
           className="fut-kaart__ornament fut-kaart__ornament--voor"

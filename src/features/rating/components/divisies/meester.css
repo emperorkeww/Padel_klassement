@@ -1,0 +1,5 @@
+/* Divisiekaart "Forever second" (meester) — 1300–1399 — amethist emaille, koel platina en zilver.
+   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
+   generieke metaalladder uit FutKaart.css. Zet hier het
+   `.fut-kaart--meester`-register, en spiegel dezelfde waarden in meester.ts
+   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */

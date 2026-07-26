@@ -1,0 +1,5 @@
+/* Divisiekaart "Ballenraper" (hout) — 700–799 — walnoot, versleten leer en netmateriaal.
+   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
+   generieke metaalladder uit FutKaart.css. Zet hier het
+   `.fut-kaart--hout`-register, en spiegel dezelfde waarden in hout.ts
+   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */

@@ -1,0 +1,5 @@
+/* Divisiekaart "Wannabe" (goud) — 1000–1099 — crème emaille, champagnefolie, imitatiegoud.
+   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
+   generieke metaalladder uit FutKaart.css. Zet hier het
+   `.fut-kaart--goud`-register, en spiegel dezelfde waarden in goud.ts
+   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */

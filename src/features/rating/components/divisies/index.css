@@ -1,0 +1,13 @@
+/* De negen divisieregisters (#710), elk in zijn eigen bestand zodat een divisie
+   te herzien is zonder het gedeelde FutKaart.css aan te raken. Ná FutKaart.css
+   geïmporteerd (zie FutKaart.tsx), dus deze registers winnen van de generieke
+   metaalladder. */
+@import "./slof.css";
+@import "./karton.css";
+@import "./hout.css";
+@import "./brons.css";
+@import "./zilver.css";
+@import "./goud.css";
+@import "./platina.css";
+@import "./diamant.css";
+@import "./meester.css";

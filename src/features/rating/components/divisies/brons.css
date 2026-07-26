@@ -1,0 +1,5 @@
+/* Divisiekaart "Bankvuller" (brons) — 800–899 — koper, gelakt hout en zadelbruin leer.
+   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
+   generieke metaalladder uit FutKaart.css. Zet hier het
+   `.fut-kaart--brons`-register, en spiegel dezelfde waarden in brons.ts
+   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */
