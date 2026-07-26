@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { heroCrestTekst, pickPollBanner } from "./dashboardHelpers";
+import { deriveEvening, heroCrestTekst, pickPollBanner } from "./dashboardHelpers";
+import { clubEpoch, dateInZone } from "@/lib/utils/time";
 import type { GroupSummary } from "@/features/groups/api";
 import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
+import type { Match } from "@/types";
 
 function group(id = "g1"): GroupSummary {
   return { id, name: `Groep ${id}` } as unknown as GroupSummary;
@@ -191,6 +193,42 @@ describe("pickPollBanner", () => {
       );
       expect(pick).toMatchObject({ accessCode: null });
     });
+  });
+});
+
+function match(over: Partial<Match>): Match {
+  return {
+    id: "m",
+    team_a_id: "ta",
+    team_b_id: "tb",
+    status: "completed",
+    winner_team_id: "ta",
+    score_a: 6,
+    score_b: 3,
+    played_at: "2026-07-14T18:00:00Z",
+    created_at: "2026-07-14T18:00:00Z",
+    created_by: null,
+    group_id: "g1",
+    round_number: null,
+    format: "2v2",
+    ...over,
+  };
+}
+
+describe("deriveEvening (#783)", () => {
+  it("telt een match van net ná lokale middernacht nog als 'vandaag'", () => {
+    // 00:30 lokale tijd in Europe/Brussels valt in UTC vaak nog op de
+    // vorige kalenderdag (zomertijd: 2 uur eerder) — toch is het lokaal
+    // vandaag.
+    const today = dateInZone("Europe/Brussels");
+    const iso = new Date(
+      clubEpoch(today, "00:30", "Europe/Brussels"),
+    ).toISOString();
+    const evening = deriveEvening(
+      [match({ played_at: iso, created_at: iso })],
+      "Europe/Brussels",
+    );
+    expect(evening).toMatchObject({ groupId: "g1", count: 1, isToday: true, day: today });
   });
 });
 

@@ -8,6 +8,7 @@ import {
   FILTER_TABS,
   type Filter,
 } from "@/features/matches/matchFilter";
+import { useClub } from "@/features/availability/club";
 import type { Upset } from "@/features/matches/upset";
 import type { Match, Profile, Team } from "@/types";
 import "./MatchHistory.css";
@@ -45,6 +46,7 @@ export function MatchHistory({
   emptyAll?: ReactNode;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const club = useClub();
 
   // Sorteer op de dag die het dagkopje bepaalt (played_at, anders created_at)
   // vóór het groeperen, zodat matches met een afwijkende speeldatum niet over
@@ -55,8 +57,8 @@ export function MatchHistory({
         new Date(b.played_at ?? b.created_at).getTime() -
         new Date(a.played_at ?? a.created_at).getTime(),
     );
-    return groupByDay(sorted);
-  }, [matches, teams, myId, filter]);
+    return groupByDay(sorted, club.timezone);
+  }, [matches, teams, myId, filter, club.timezone]);
 
   // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
   const counts = useMemo(() => {

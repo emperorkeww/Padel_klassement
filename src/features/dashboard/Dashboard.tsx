@@ -388,6 +388,7 @@ export function Dashboard() {
           profiles={pmap}
           histories={histories.data ?? undefined}
           intensiteit={myProfile?.roast_intensiteit ?? "gemeen"}
+          timezone={club.timezone}
         />
       )}
 

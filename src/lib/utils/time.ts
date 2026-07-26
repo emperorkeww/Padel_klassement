@@ -59,6 +59,11 @@ export function clubEpoch(date: string, time: string, timeZone: string): number 
   return naive - (inZone - utc);
 }
 
+/** Kalenderdag (YYYY-MM-DD) van een ISO-timestamp in de opgegeven tijdzone. */
+export function dayInZone(iso: string, timeZone: string): string {
+  return dateInZone(timeZone, 0, new Date(iso).getTime());
+}
+
 /** Minuten sinds middernacht van "nu" in de opgegeven tijdzone. */
 export function minutesNowInZone(timeZone: string): number {
   return toMinutes(

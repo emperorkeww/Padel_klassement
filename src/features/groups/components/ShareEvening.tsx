@@ -11,6 +11,7 @@ import {
 import { eveningSummary } from "@/features/feed/eveningSummary";
 import { displayName } from "@/features/profiles/api";
 import { teamLabel } from "@/features/matches/api";
+import { dateInZone } from "@/lib/utils/time";
 import type { Match, Profile, RatingPoint, RoastIntensiteit, Team } from "@/types";
 
 // Deelbare poster (4:5) met de samenvatting van vanavond: Coach Rudy's verslag
@@ -29,6 +30,7 @@ export function ShareEvening({
   profiles,
   histories,
   intensiteit,
+  timezone,
 }: {
   /** Seed-basis: `groupId|dag` — gelijk aan de feed, zodat de poster hetzelfde
    *  verslag toont als de app (#421). */
@@ -41,14 +43,16 @@ export function ShareEvening({
   histories?: Record<string, RatingPoint[]>;
   /** Roast-toon voor Coach Rudy's avondverslag. */
   intensiteit: RoastIntensiteit;
+  /** Clubtijdzone: bepaalt welke kalenderdag "vandaag" is voor de poster. */
+  timezone: string;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dateInZone(timezone);
   const summary = useMemo(
-    () => eveningSummary(matches, teams, today, histories),
-    [matches, teams, today, histories],
+    () => eveningSummary(matches, teams, today, timezone, histories),
+    [matches, teams, today, timezone, histories],
   );
 
   if (summary.matches.length === 0) return null;

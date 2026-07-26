@@ -4,6 +4,7 @@
 import type { Match, RatingPoint, Team } from "@/types";
 import { matchUpset, preMatchPoints } from "@/features/matches/upset";
 import { playersOf } from "@/features/rating/results";
+import { dayInZone } from "@/lib/utils/time";
 
 export type EveningRow = {
   playerId: string;
@@ -27,16 +28,18 @@ export type EveningSummary = {
   biggestUpset: { winnerTeamId: string; chance: number; matchId: string } | null;
 };
 
-const dayOf = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+const dayOf = (m: Match, timeZone: string) =>
+  dayInZone(m.played_at ?? m.created_at, timeZone);
 
 export function eveningSummary(
   matches: Match[],
   teams: Record<string, Team>,
   day: string,
+  timeZone: string,
   histories?: Record<string, RatingPoint[]>,
 ): EveningSummary {
   const todays = matches
-    .filter((m) => m.status === "completed" && dayOf(m) === day)
+    .filter((m) => m.status === "completed" && dayOf(m, timeZone) === day)
     .sort((a, b) =>
       (a.played_at ?? a.created_at).localeCompare(b.played_at ?? b.created_at),
     );

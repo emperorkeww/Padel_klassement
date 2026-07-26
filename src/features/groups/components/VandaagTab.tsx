@@ -59,6 +59,8 @@ interface VandaagTabProps {
   dayDone: boolean;
   /** Clubdag (parent bepaalt de tijdzone). */
   today: string;
+  /** Clubtijdzone: nodig om per match te bepalen of die op `today` valt. */
+  timezone: string;
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   histories: Record<string, RatingPoint[]>;
@@ -83,6 +85,7 @@ export function VandaagTab({
   openRound,
   dayDone,
   today,
+  timezone,
   teams,
   profiles,
   histories,
@@ -116,6 +119,7 @@ export function VandaagTab({
       profiles={profiles}
       histories={histories}
       intensiteit={intensiteit}
+      timezone={timezone}
     />
   );
 
@@ -292,6 +296,7 @@ export function VandaagTab({
         histories={histories}
         zwartePiet={zwartePiet}
         today={today}
+        timezone={timezone}
       />
 
       <NewMatchSheet
