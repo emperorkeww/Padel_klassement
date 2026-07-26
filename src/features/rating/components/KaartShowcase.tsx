@@ -476,6 +476,66 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* In-Form (#710): de enige editie met een eigen ornamentlaag, dus de
+          enige plek waar de overlay-eigenschap te zien is. Bewust op twee
+          tiers met een ánder schild (kroon-notch en troon-crest): de crest,
+          de vinnen en het medaillon moeten op élke bovenrand kloppen, en op de
+          GOAT/dictator-tiers moet zichtbaar zijn dat het editie-ornament van
+          het tier-ornament wint (geen hoorns, geen kroon). */}
+      <Sectie titel="In-Form (#710): titanium-overlay op twee tiers — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Remco"
+          breedte={210}
+        />
+        {[
+          { r: 1350, label: "punt-schild" },
+          { r: 1450, label: "GOAT: editie wint" },
+          { r: 1650, label: "dictator: editie wint" },
+        ].map((v) => (
+          <div
+            key={v.r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(v.r)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Senne"
+            />
+            <span className="kaart-showcase__maatlabel">{v.label}</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1650)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Senne"
+          breedte={150}
+        />
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

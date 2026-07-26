@@ -912,14 +912,40 @@
   );
 }
 
-/* In-Form (speler van de week): navy-goud met een lopende shimmer.
-   Beoordeeld bij #625: blijft zoals hij is — het donkere navy-vlak staat
-   ruim genoeg af van het lichte roze van de nieuwe Big Daddy. */
+/* In-Form (speler van de week): navy-goud met een lopende glansbaan. De
+   kleurkeuze staat sinds #625 vast — het donkere navy-vlak staat ruim genoeg af
+   van het lichte roze van Big Daddy en het warme sintel van On-Fire.
+
+   Herzien bij #710 naar de referentie in de issue: zwart-titanium met
+   champagnegouden accenten. De materiaalwaarden zélf blijven staan — het
+   navy-vlak, de gouden inkt en de lijnkleur worden gekopieerd door de
+   eer-hero op het dashboard (.hero--inform, #760) en een synctest bewaakt dat
+   — de nieuwe uitstraling komt er als lagen bíj: een donkere titanium-tint,
+   geborstelde diagonale groeven, een brede bewegende reflectiebaan met
+   rustpauze, een geëtste pulse-ring met snelheidslijnen (het motief uit
+   ornamentenInform.ts) en de ornamentlaag met crest, vinnen en medaillon.
+
+   Bewust géén --kaart-echo zoals GOAT en El Padelissimo: een tweede,
+   verschoven silhouet leest als "zeldzaam voor altijd", terwijl In-Form
+   snelheid en recente vorm moet communiceren. Het randwerk zit daarom in de
+   binnenlijn — de dubbele gouden framelijn van de referentie.
+
+   Contrast: de tint máákt het vlak donkerder, dus de inkt-op-vlak-verhouding
+   (nu ≈ 11,8:1) loopt op i.p.v. terug; de bewegende baan piekt op 0.22 waar
+   hij eerst 0.28 deed, dus ook de zwakste plek onder de glans wordt beter.
+   Canvas-spiegel: het inform-register in lib/utils/futKaartCanvas.ts. */
 .fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
   --kaart-lijn: rgba(240, 199, 102, 0.45);
   --editie-kleur: #f2cf7d;
+  /* Gouden hairline, zwarte spouw, tweede gouden lijn: de gelaagde metalen
+     binnenrand uit de referentie, zonder extra DOM-laag (inset-schaduwen
+     worden mee-geclipt en volgen dus élke schildvorm). */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 226, 150, 0.7),
+    inset 0 0 0 2.5px rgba(6, 8, 14, 0.95),
+    inset 0 0 0 3.5px rgba(240, 199, 102, 0.35);
 }
 .fut-kaart--inform .fut-kaart__zijde {
   background: linear-gradient(
@@ -933,6 +959,20 @@
 .fut-kaart--inform .fut-kaart__liner {
   background: #0a0c14;
 }
+/* Vlak, van boven naar onder gelezen zoals CSS het opsomt: topgloed,
+   geborstelde titaniumgroeven, titanium-tint, navy.
+   — De tint verdonkert de flanken linksboven en rechtsonder en laat het midden
+     vrij: dát maakt van het navy "zwart titanium" zonder de kaart dicht te
+     gooien (stijlbeperking uit de issue: de onderliggende kaart mag niet
+     volledig onherkenbaar zwart worden).
+   — De groeven staan bewust hier en niet op ::after: een absoluut
+     gepositioneerd pseudo-element tekent ná de tekst, en de laagvolgorde uit
+     de issue wil textuur juist ónder avatar en inkt. Dat is dezelfde route die
+     de pias en de Piet nemen (met hun ::after op `background: none`
+     hieronder). Twee frequenties: de fijne laag zet een lichte rug naast een
+     donkere groef — dát paar is wat geborsteld metaal van een streepjespatroon
+     scheidt — en de grovere laag legt er één streek over, zodat het niet in
+     moiré valt. */
 .fut-kaart--inform .fut-kaart__vlak {
   background:
     radial-gradient(
@@ -940,20 +980,85 @@
       rgba(240, 199, 102, 0.28),
       transparent 62%
     ),
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.055) 0 1px,
+      rgba(0, 0, 0, 0.14) 1px 2.5px,
+      transparent 2.5px 4px
+    ),
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 240, 200, 0.05) 0 1px,
+      transparent 1px 11px
+    ),
+    linear-gradient(
+      160deg,
+      rgba(5, 7, 12, 0.6) 0%,
+      rgba(5, 7, 12, 0) 46%,
+      rgba(5, 7, 12, 0.55) 100%
+    ),
     linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
 }
+/* Het gedeelde satijn (en op een premium-tier de stralenkrans) uit: het
+   titanium brengt zijn eigen weefsel mee en dat staat hierboven al in de
+   vlak-achtergrond. Editie-blokken staan in dit bestand ná de tier-blokken,
+   dus deze regel wint ook op een GOAT-, dictator- of premium-kaart.
+   Spiegel: `eigenWeefsel` in futKaartCanvas.ts. */
+.fut-kaart--inform .fut-kaart__vlak::after {
+  background: none;
+}
+/* Bewegende metaalglans: één brede diagonale baan met een zachte aanloop en
+   een witte kern, zoals de referentie. De piek zakt van 0.28 naar 0.22 omdat
+   de baan bréder is (20–80% i.p.v. 38–62%) en over de inkt heen loopt —
+   ::before is een absoluut gepositioneerd pseudo-element en tekent dus ná de
+   tekst; dat is precies de laagvolgorde die de issue vraagt, maar het maakt de
+   dekking wél een leesbaarheidsknop. */
 .fut-kaart--inform .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
-    transparent 38%,
-    rgba(255, 222, 140, 0.28) 50%,
-    transparent 62%
+    transparent 20%,
+    rgba(255, 228, 160, 0.05) 38%,
+    rgba(255, 236, 185, 0.22) 48%,
+    rgba(255, 255, 255, 0.14) 52%,
+    rgba(255, 228, 160, 0.05) 62%,
+    transparent 80%
   );
 }
 @media (prefers-reduced-motion: no-preference) {
+  /* 4,2s met een rustpauze: de baan schuift in 58% van de tijd over de kaart
+     en staat de rest buiten beeld stil. Zonder die pauze wordt het effect een
+     knipperlicht i.p.v. een reflectie. translate3d houdt het op de compositor;
+     zonder bewegingsvoorkeur blijft de baan gewoon staan waar hij staat — de
+     "statische zachte highlight" die de issue vraagt. */
   .fut-kaart--inform .fut-kaart__vlak::before {
-    animation: fut-kaart-shimmer 2.6s ease-in-out infinite;
+    animation: fut-kaart-inform-glans 4.2s cubic-bezier(0.4, 0, 0.5, 1) infinite;
   }
+  @keyframes fut-kaart-inform-glans {
+    0% {
+      transform: translate3d(-62%, 0, 0);
+    }
+    58%,
+    100% {
+      transform: translate3d(62%, 0, 0);
+    }
+  }
+  /* Pulse-ring: het geëtste motief ademt langzaam op i.p.v. te flikkeren —
+     alleen opacity, dus geen layout- of paint-werk. De deel-poster bevriest
+     hem op volle sterkte (zie het inform-register in futKaartCanvas.ts). */
+  .fut-kaart--inform .fut-kaart__motief {
+    animation: fut-kaart-inform-puls 3.6s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-inform-puls {
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  /* Blijft staan voor GOAT (7,5s) en On-Fire (2,6s), die deze keyframes nog
+     gebruiken; In-Form heeft sinds #710 zijn eigen baan met pauze. */
   @keyframes fut-kaart-shimmer {
     0% {
       transform: translateX(-55%);
