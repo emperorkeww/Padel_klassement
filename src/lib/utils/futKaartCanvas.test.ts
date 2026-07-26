@@ -18,7 +18,9 @@ const INDEX_CSS = lees("../../app/index.css");
 // het kraftpapier van de pias letterlijk — de vezeltegel-pariteitstest onderaan
 // bewaakt dat (#705).
 const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css");
-const DASHBOARD_CSS = lees("../../features/dashboard/Dashboard.css");
+// Sinds #771 staat de kaart-CSS van het dashboard in zijn eigen bestand naast de
+// component, niet meer in de stylesheet van de hele pagina.
+const HERO_CSS = lees("../../features/dashboard/components/DashboardHero.css");
 
 // De negen divisieregisters, als [naam, css]-paren voor de cascadetest.
 const DIVISIE_CSS: ReadonlyArray<readonly [string, string]> = [
@@ -363,7 +365,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       /\.fut-kaart--pias \.fut-kaart__vlak\s*\{[^}]*\}/,
     );
     const vanSchandpaal = tegel(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/);
-    const vanHero = tegel(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/);
+    const vanHero = tegel(HERO_CSS, /\.hero--pias\s*\{[^}]*\}/);
     expect(vanKaart).toBeDefined();
     expect(vanKaart).toBe(vanSchandpaal);
     expect(vanKaart).toBe(vanHero);
@@ -430,7 +432,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       /\.fut-kaart--pias \.fut-kaart__vlak\s*\{[^}]*\}/,
     );
     const vanSchandpaal = tegel(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/);
-    const vanHero = tegel(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/);
+    const vanHero = tegel(HERO_CSS, /\.hero--pias\s*\{[^}]*\}/);
     expect(vanKaart).toBeDefined();
     expect(vanKaart).toBe(vanSchandpaal);
     expect(vanKaart).toBe(vanHero);
@@ -456,7 +458,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     // deze check drijft de hero stil weg zodra de kaart hertint wordt — precies
     // wat #705 met de kaart en De Schandpaal deed.
     const kaartPias = waarden(FUT_CSS, /\.fut-kaart--pias\s*\{[^}]*\}/, "kaart");
-    const heroPias = waarden(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/, "kraft");
+    const heroPias = waarden(HERO_CSS, /\.hero--pias\s*\{[^}]*\}/, "kraft");
     // De hero volgt de póstervariant van De Schandpaal (lichtere --lo, want er
     // staat tekst tot onderaan), maar deelt de rest met de kaart.
     const schandpaal = waarden(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/, "kraft");
@@ -474,7 +476,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     expect(heroPias.lo).toBe(schandpaal.lo);
 
     const kaartPiet = waarden(FUT_CSS, /\.fut-kaart--piet\s*\{[^}]*\}/, "kaart");
-    const heroPiet = waarden(DASHBOARD_CSS, /\.hero--piet\s*\{[^}]*\}/, "kaart");
+    const heroPiet = waarden(HERO_CSS, /\.hero--piet\s*\{[^}]*\}/, "kaart");
     for (const sleutel of ["hi", "mid", "lo", "ink", "lijn"])
       expect(heroPiet[sleutel]).toBe(kaartPiet[sleutel]);
     expect(heroPiet.lak).toBe(kaartPiet["frame-hi"]);
@@ -490,7 +492,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       "kaart",
     );
     const heroKampioen = waarden(
-      DASHBOARD_CSS,
+      HERO_CSS,
       /\.hero--kampioen\s*\{[^}]*\}/,
       "lauwer",
     );
@@ -501,7 +503,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     );
     // De diepgroene binnenring is de liner van de kaart.
     expect(heroKampioen.diep).toBe(kaartSkin("goud", "kampioen").kleuren.liner);
-    // Eén bewuste afwijking (zie Dashboard.css): de donkerste stop is op een
+    // Eén bewuste afwijking (zie DashboardHero.css): de donkerste stop is op een
     // hero lichter dan op de kaart, anders zakt de zachte inkt onder AA. Deze
     // assertie legt vast dát het een keuze is — niet dat er iets verlopen is.
     expect(heroKampioen.lo).not.toBe(kaartKampioen.lo);
@@ -519,8 +521,8 @@ describe("editie-registers spiegelen FutKaart.css", () => {
         "kaart",
       );
       const hero = waarden(
-        DASHBOARD_CSS,
-        new RegExp(`\\.hero--${prefix}\\s*\\{[^}]*\\}`),
+        HERO_CSS,
+        new RegExp(`\\.hero--overlay-${prefix}\\s*\\{[^}]*\\}`),
         prefix,
       );
       expect(hero[inkt]).toBe(kaart.ink);
