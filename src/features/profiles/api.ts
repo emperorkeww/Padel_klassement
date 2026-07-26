@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { warnIfTruncated } from "@/lib/supabase/truncation";
 import { downscaleImage } from "@/lib/utils/image";
 import type { Profile } from "@/types";
 
@@ -11,7 +12,7 @@ export function getAllProfiles(): Promise<Profile[]> {
       .select("*")
       .order("username", { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    return warnIfTruncated(data ?? [], "profiles");
   });
 }
 
