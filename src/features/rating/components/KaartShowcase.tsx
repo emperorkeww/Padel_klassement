@@ -536,6 +536,58 @@ export function KaartShowcase() {
         />
       </Sectie>
 
+      {/* On Fire (#710): de enige editie met een eigen ornamentlaag, en dus de
+          enige plek waar de overlay-eigenschap te zien is — dezelfde crest,
+          vinnen en medaillon liggen op een brons-schild (vlakke bovenrand) én
+          op een GOAT (kroon-crest, waar de vlamvinnen de bokhoorns vervangen).
+          Kijk hier bij elke wijziging aan de editie-vs-tier-regel. */}
+      <Sectie titel="On Fire (#710): vlamcrest, vinnen, medaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="onfire"
+              editieLabel="🔥 On Fire · 6 op rij"
+              naam="Jelle"
+              elo={1063}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="onfire"
+          editieLabel="🔥 On Fire · 6 op rij"
+          naam="Jelle"
+          breedte={210}
+        />
+      </Sectie>
+      <Sectie titel="On Fire × schildvorm (#710): brons · goud · meester · GOAT · El Padelissimo (150px)">
+        {[750, 1050, 1350, 1450, 1650].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(r)}
+              editie="onfire"
+              editieLabel="🔥 On Fire · 12 op rij"
+              naam="Jelle"
+            />
+            <span className="kaart-showcase__maatlabel">
+              {tierFor(r)?.label ?? "—"}
+            </span>
+          </div>
+        ))}
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

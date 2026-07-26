@@ -200,6 +200,27 @@ import {
   INFORM_TITAAN,
   INFORM_VIN,
 } from "./ornamentenInform";
+import {
+  ONFIRE_CREST_BAND,
+  ONFIRE_CREST_NERVEN,
+  ONFIRE_CREST_PLAAT,
+  ONFIRE_CREST_VLAM,
+  ONFIRE_GLOED_VERLOOP,
+  ONFIRE_KOPER,
+  ONFIRE_MEDAILLON,
+  ONFIRE_MEDAILLON_DIEP,
+  ONFIRE_MEDAILLON_NERVEN,
+  ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_SINTELS,
+  ONFIRE_SINTEL_GLOED,
+  ONFIRE_SINTEL_KERN,
+  ONFIRE_STAAL_VERLOOP,
+  ONFIRE_VINNEN,
+  ONFIRE_WATERMARK,
+  ONFIRE_WATERMARK_BREEDTE,
+  ONFIRE_WATERMARK_KLEUR,
+  ONFIRE_WATERMARK_POSITIE,
+} from "./ornamentenOnfire";
 import "./FutKaart.css";
 // Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
 // metaalladder daar.
@@ -234,7 +255,8 @@ type OrnamentNaam =
   | "kampioen"
   | "pias"
   | "piet"
-  | "inform";
+  | "inform"
+  | "onfire";
 
 /** Het id uit een `url(#id)`-paint — de gradient-definitie draagt het kale id,
  *  de vorm verwijst er met de volledige paint naar. Zo staat de bron van beide
@@ -282,6 +304,17 @@ const INFORM_MATERIAAL: StrengMateriaal = {
   ribbelGlans: INFORM_GOUD_GLANS,
   schaduw: INFORM_GOUD_SCHADUW,
   glans: INFORM_GOUD_GLANS,
+};
+/** Verhit koper voor de vinnen van On Fire — zelfde generator als het rosé
+ *  metaal van de GOAT, ander materiaal. */
+const ONFIRE_MATERIAAL: StrengMateriaal = {
+  vulling: "url(#fut-orn-koper)",
+  verloop: ONFIRE_KOPER.verloop,
+  contour: ONFIRE_KOPER.contour,
+  glans: ONFIRE_KOPER.glans,
+  ribbel: ONFIRE_KOPER.ribbel,
+  ribbelGlans: ONFIRE_KOPER.ribbelGlans,
+  schaduw: ONFIRE_KOPER.schaduw,
 };
 function FutStreng({
   streng,
@@ -336,6 +369,20 @@ function FutStreng({
         strokeLinecap="round"
       />
     </>
+  );
+}
+
+/** Eén koperen ornamentvlak van de On Fire-editie: verloop-vulling met een
+ *  donkere contour — dezelfde opbouw als `FutGoud`, andere legering. */
+function FutKoper({ d, contour = ONFIRE_KOPER.contour }: { d: string; contour?: string }) {
+  return (
+    <path
+      d={d}
+      fill="url(#fut-orn-koper)"
+      stroke={contour}
+      strokeWidth="0.5"
+      strokeLinejoin="round"
+    />
   );
 }
 
@@ -1060,6 +1107,126 @@ export function FutKaartDefs() {
             glans={INFORM_GOUD_GLANS}
           />
         </g>
+        {/* On Fire (#710) — de editie-ornamentlaag. Verhit koper voor de
+            vinnen, crest en het medaillon; verkoold staal voor de crest-plaat;
+            een gloeikern voor de vlam in het medaillon. */}
+        <linearGradient
+          id="fut-orn-koper"
+          x1="0"
+          y1="0"
+          x2="0.35"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_KOPER.verloop.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-staal"
+          x1="0"
+          y1="0"
+          x2="0.2"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_STAAL_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-gloed"
+          x1="0"
+          y1="1"
+          x2="0"
+          y2="0"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_GLOED_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        {/* Áchter de kaart: de drie vlamvinnen per kant. Eén helft plus zijn
+            spiegeling om x=50, dus links en rechts zijn per constructie gelijk. */}
+        <g id="fut-orn-onfire-achter-helft">
+          {ONFIRE_VINNEN.map((vin) => (
+            <FutStreng key={vin.omtrek} streng={vin} materiaal={ONFIRE_MATERIAAL} />
+          ))}
+        </g>
+        <g id="fut-orn-onfire-achter">
+          <use href="#fut-orn-onfire-achter-helft" />
+          <use
+            href="#fut-orn-onfire-achter-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
+        {/* En vóór de kaart: de vlamcrest op de bovenrand, het gloeiende
+            medaillon over de punt en de sintelaccenten. De crest móet vóór
+            liggen — hij dekt de bovenrand af en werkt zo op élke schildvorm
+            (zie ornamentenOnfire.ts); het medaillon verbergt bovendien de
+            wortels van de vinnen. Alles staat op de as of komt uit de
+            gespiegelde sintel-helft. */}
+        <g id="fut-orn-onfire-sintels-helft">
+          {ONFIRE_SINTELS.map(([u, v, r]) => (
+            <g key={`${u}-${v}`}>
+              <circle cx={u} cy={v} r={r * 2.6} fill={ONFIRE_SINTEL_GLOED} opacity="0.35" />
+              <circle cx={u} cy={v} r={r} fill={ONFIRE_SINTEL_KERN} />
+            </g>
+          ))}
+        </g>
+        <g id="fut-orn-onfire-voor">
+          <path
+            d={ONFIRE_CREST_PLAAT}
+            fill="url(#fut-orn-staal)"
+            stroke="url(#fut-orn-koper)"
+            strokeWidth="0.55"
+            strokeLinejoin="round"
+          />
+          <FutKoper d={ONFIRE_CREST_BAND} />
+          <FutKoper d={ONFIRE_CREST_VLAM} />
+          {ONFIRE_CREST_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={ONFIRE_KOPER.ribbel}
+              strokeWidth="0.32"
+              strokeLinecap="round"
+            />
+          ))}
+          <circle
+            cx={ONFIRE_MEDAILLON.midden[0]}
+            cy={ONFIRE_MEDAILLON.midden[1]}
+            r={ONFIRE_MEDAILLON.ring}
+            fill="url(#fut-orn-koper)"
+            stroke={ONFIRE_KOPER.contour}
+            strokeWidth="0.55"
+          />
+          <circle
+            cx={ONFIRE_MEDAILLON.midden[0]}
+            cy={ONFIRE_MEDAILLON.midden[1]}
+            r={ONFIRE_MEDAILLON.vlak}
+            fill={ONFIRE_MEDAILLON_DIEP}
+            stroke={ONFIRE_KOPER.contour}
+            strokeWidth="0.35"
+          />
+          <path d={ONFIRE_MEDAILLON_VLAM} fill="url(#fut-orn-gloed)" />
+          {ONFIRE_MEDAILLON_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke="rgba(120, 40, 10, 0.5)"
+              strokeWidth="0.3"
+              strokeLinecap="round"
+            />
+          ))}
+          <use href="#fut-orn-onfire-sintels-helft" />
+          <use
+            href="#fut-orn-onfire-sintels-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
         <g id="fut-orn-goat">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
               nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
@@ -1718,6 +1885,13 @@ export function FutKaart({
         kleur={PIAS_MOTIEF_INK}
         className="fut-kaart__motief--vol"
         viewBox={PIAS_MOTIEF_VIEWBOX}
+      />
+    ) : editie === "onfire" ? (
+      <FutKaartMotief
+        paden={ONFIRE_WATERMARK}
+        kleur={ONFIRE_WATERMARK_KLEUR}
+        breedte={ONFIRE_WATERMARK_BREEDTE}
+        positie={ONFIRE_WATERMARK_POSITIE}
       />
     ) : editie === "inform" ? (
       <FutKaartMotief

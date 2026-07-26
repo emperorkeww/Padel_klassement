@@ -1135,32 +1135,69 @@
     );
 }
 
-/* On-Fire (actieve winstreak, #632): sintel-donker vlak met een ember-frame
-   en dezelfde lopende shimmer als In-Form, alleen warmer — de gloed van
-   vuur i.p.v. goud. Warm-donker staat maximaal af van het navy-koele
-   In-Form, het roze van Big Daddy en het platina-groen van Kampioen.
-   Lokale hexen, net als kampioen (geen tweede consument). Contrast: ink op
-   het donkere vlak ≈ 11:1 (AAA). */
+/* On-Fire (actieve winstreak, #632, herzien in #710): verhit koper en
+   rosébrons op donker mahonie, espresso en verkoold staal. Sinds #710 is dit
+   niet meer "In-Form in het warm" maar een eigen materiaal:
+   koperframe met een rosé glanspunt (bewust bruiner dan het oranje van #632 —
+   "geen overdreven oranje neon"), een espresso-vignet dat de randen dieper
+   maakt, geborstelde metaalgroeven als concentrische bogen, een vlam-watermerk
+   met thermische ringen die heel langzaam ademen, een brede koperen hitteglans
+   die in ~5,2s over het metaal loopt, en de ornamentlaag met vlamvinnen,
+   vlamcrest, medaillon en sintels (FutKaart.tsx).
+   De kaart is een *overlay*: de schildvorm blijft die van de divisie, alleen
+   frame, vlak en inkt komen hiervandaan.
+   Sintel-stops en inkt staan vast sinds #632 en worden gedeeld met de eer-hero
+   (.hero--onfire in Dashboard.css); de synctest in futKaartCanvas.test.ts
+   bewaakt dat — daarom draait al het nieuwe materiaal hier op lagen erboven en
+   niet op een hertinte basis.
+   Contrast (ink op het vlak ter hoogte van het eloblok): ≈ 9,6:1 buiten de
+   glansbaan en ≈ 4,8:1 op de piek ervan. Beide een fractie hóger dan vóór #710
+   (9,6 resp. 4,6): de glansbaan werd bréder, niet feller — de piek bleef op de
+   0,27 van #632 in plaats van de 0,42 uit de referentie-instructies, precies
+   omdat de baan over de inkt heen loopt. */
 .fut-kaart--onfire {
   --kaart-ink: #ffc98a;
   --kaart-ink-soft: #d1915b;
   --kaart-lijn: rgba(255, 160, 92, 0.45);
   --editie-kleur: #ffb35c;
+  /* Randgloed (#710): een warme koperen echo langs de zijkanten en onderrand.
+     Een filter werkt ná de clip, dus de echo volgt het schildsilhouet exact —
+     ook bij een tier met een afwijkende bovenrand. Canvas-spiegel: het
+     echo-veld in kaartSkin(). */
+  --kaart-echo: drop-shadow(
+      calc(var(--fut-kw) * 0.009) 0 0 rgba(198, 104, 52, 0.6)
+    )
+    drop-shadow(calc(var(--fut-kw) * -0.009) 0 0 rgba(198, 104, 52, 0.6))
+    drop-shadow(0 calc(var(--fut-kw) * 0.011) 0 rgba(122, 48, 20, 0.85));
+  /* Gelaagde binnenrand: koperen hairline, verkoolde spouw, tweede koperlijn —
+     de "kleine gloedaccenten langs de kaartomranding" zonder extra DOM-laag. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 176, 108, 0.55),
+    inset 0 0 0 3px rgba(22, 8, 4, 0.92),
+    inset 0 0 0 4.5px rgba(214, 122, 66, 0.34);
 }
 .fut-kaart--onfire .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #ffd9a0 0%,
-    #b3411a 42%,
-    #ffc07a 68%,
-    #591107 100%
+    #f6ddc4 0%,
+    #b06537 42%,
+    #e8b48d 68%,
+    #4b1e0d 100%
   );
 }
 .fut-kaart--onfire .fut-kaart__liner {
   background: #180a05;
 }
+/* Vlak (boven → onder): espresso-vignet dat de randen dieper maakt (en de inkt
+   dus júist meer contrast geeft dan een warme tintlaag zou doen), de warme
+   topgloed en het sintelverloop. */
 .fut-kaart--onfire .fut-kaart__vlak {
   background:
+    radial-gradient(
+      118% 88% at 50% 32%,
+      transparent 42%,
+      rgba(22, 8, 3, 0.52) 100%
+    ),
     radial-gradient(
       130% 60% at 50% -8%,
       rgba(255, 140, 66, 0.34),
@@ -1168,17 +1205,66 @@
     ),
     linear-gradient(172deg, #3a180c 0%, #241009 60%, #140704 100%);
 }
+/* Hitteglans: één brede koperen reflectiebaan met een zwakkere warme band aan
+   weerszijden — de gradientrichting en stops uit de referentie-instructies
+   (#710), met de piek op 0,27 gehouden zodat de leesbaarheid onder de baan
+   niet onder het niveau van #632 zakt. */
 .fut-kaart--onfire .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
-    transparent 38%,
-    rgba(255, 170, 92, 0.3) 50%,
-    transparent 62%
+    transparent 16%,
+    rgba(137, 48, 17, 0.05) 32%,
+    rgba(255, 111, 35, 0.14) 43%,
+    rgba(255, 190, 112, 0.27) 50%,
+    rgba(255, 118, 38, 0.16) 57%,
+    rgba(113, 35, 12, 0.05) 68%,
+    transparent 84%
+  );
+}
+/* Geborstelde metaalgroeven i.p.v. het gedeelde satijn: concentrische bogen om
+   een punt onder de kaartpunt, dus ze staan boven in het vlak bijna vlak en
+   krullen naar de punt toe mee — circulair geborsteld koper, zoals de
+   referentie. Vaste px-periode, net als het satijn, zodat het van de veldmaat
+   tot de poster niet in moiré valt. */
+.fut-kaart--onfire .fut-kaart__vlak::after {
+  background: repeating-radial-gradient(
+    circle at 50% 132%,
+    rgba(255, 178, 116, 0.085) 0 1px,
+    transparent 1px 4.5px
   );
 }
 @media (prefers-reduced-motion: no-preference) {
+  /* Zwaarder en trager dan In-Forms 2,6s (de issue vraagt 4–6s): hitte golft,
+     bliksem knippert. translate3d houdt de baan op de compositor. */
   .fut-kaart--onfire .fut-kaart__vlak::before {
-    animation: fut-kaart-shimmer 2.6s ease-in-out infinite;
+    animation: fut-kaart-hitteglans 5.2s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-hitteglans {
+    0% {
+      transform: translate3d(-62%, 0, 0);
+    }
+    55%,
+    100% {
+      transform: translate3d(62%, 0, 0);
+    }
+  }
+  /* Thermische ringen: het watermerk ademt heel langzaam mee (kleine
+     schaalverandering + dekking), i.p.v. een eigen geanimeerde ringlaag per
+     kaart. De poster bevriest hem op zijn brede stand — daar staat het motief
+     dus op schaal 1. */
+  .fut-kaart--onfire .fut-kaart__motief {
+    animation: fut-kaart-thermiek 11s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-thermiek {
+    0%,
+    100% {
+      transform: translateX(-50%) scale(1);
+      opacity: 0.8;
+    }
+    50% {
+      transform: translateX(-50%) scale(1.04);
+      opacity: 1;
+    }
   }
 }
 

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { kaartSkin, mix, rgba, schildVorm, type KaartEditie } from "./futKaartCanvas";
-import { INFORM_MOTIEF } from "@/features/rating/components/ornamentenInform";
 
 // De stylesheets als tekst, voor de synctest onderaan. Bewust via node:fs en
 // niet via Vite's ?raw: Vitest kortsluit CSS-imports (css: false) op een lege
@@ -195,9 +194,11 @@ describe("kaartSkin", () => {
   });
 
   it("geeft de shimmer-edities hun bredere sheen-baan", () => {
-    expect(kaartSkin("goud", "onfire").kleuren.sheenSpreiding).toBe(0.12);
     expect(kaartSkin("goud", "kampioen").kleuren.sheenSpreiding).toBeUndefined();
-    // In-Form ruilde bij #710 de drie-stops-baan in voor een eigen stoplijst:
+    // In-Form én On Fire ruilden bij #710 de drie-stops-baan in voor een eigen
+    // stoplijst — dan is sheenSpreiding dood gewicht.
+    expect(kaartSkin("goud", "onfire").kleuren.sheenStops?.length).toBeGreaterThan(3);
+    // In-Form:
     // zachte aanloop, gouden piek, witte kern. Dan is sheenSpreiding dood
     // gewicht en moeten de stops zélf oplopen en weer uitdoven.
     const stops = kaartSkin("goud", "inform").kleuren.sheenStops!;
@@ -251,6 +252,73 @@ function tierBlok(key: string, prop: string): string {
 }
 
 describe("editie-registers spiegelen FutKaart.css", () => {
+  it.each(EDITIES)("%s: inkt, lijn en editie-kleur", (editie) => {
+    const blok = editieBlok(editie);
+    const skin = kaartSkin("goud", editie);
+    expect(skin.ink).toBe(token(blok, "--kaart-ink"));
+    expect(skin.inkSoft).toBe(token(blok, "--kaart-ink-soft"));
+    expect(skin.lijn).toBe(token(blok, "--kaart-lijn"));
+    expect(skin.editieKleur).toBe(token(blok, "--editie-kleur"));
+  });
+
+  it.each(EDITIES)("%s: vlak-gradient (hi/mid/lo)", (editie) => {
+    const blok = editieBlok(editie);
+    const hi = token(blok, "--kaart-hi");
+    // In-Form en On-Fire zetten geen hi/mid/lo: hun vlak staat als literale
+    // gradient in de CSS (donkere registers). Die stops blijven handmatig
+    // gespiegeld; hier valt er dus niets te vergelijken.
+    if (hi == null) return;
+    const stops = kaartSkin("goud", editie).kleuren.vlak.map((s) => s[1]);
+    expect(stops).toEqual([
+      hi,
+      token(blok, "--kaart-mid"),
+      token(blok, "--kaart-lo"),
+    ]);
+  });
+
+  it.each(["pias", "piet"] as const)(
+    "%s: mat frame i.p.v. metaal (#705)",
+    (editie) => {
+      // Twee vlakke stops, geen glanspunten — de frame-tokens staan in het
+      // editie-blok en worden hier dus wél uit de CSS gelezen.
+      const blok = editieBlok(editie);
+      const { kleuren } = kaartSkin("goud", editie);
+      expect(kleuren.frame).toEqual([
+        [0, token(blok, "--kaart-frame-hi")],
+        [1, token(blok, "--kaart-frame-lo")],
+      ]);
+      if (editie === "pias") {
+        expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
+      } else {
+        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
+        // witte kern van het kaartkarton.
+        expect(kleuren.snijkant).toBeUndefined();
+        expect(kleuren.liner).toBe("#efe7d2");
+      }
+    },
+  );
+
+  it("pias-kaart, Schandpaal en hero delen letterlijk dezelfde vezeltegel (#705/#644)", () => {
+    // Zelfde papier op kaart, klassement en dashboard-hero: de 28px-SVG-tegel
+    // moet in alle drie de stylesheets byte-gelijk zijn, anders lopen de
+    // kraftvlakken stil uit elkaar (Schandpaal en hero hebben geen
+    // canvas-tegenhanger of eigen synctest).
+    const tegel = (css: string, blok: RegExp): string | undefined => {
+      const m = blok.exec(css);
+      expect(m).not.toBeNull();
+      return /url\("(data:image\/svg\+xml[^"]+)"\)/.exec(m![0])?.[1];
+    };
+    const vanKaart = tegel(
+      FUT_CSS,
+      /\.fut-kaart--pias \.fut-kaart__vlak\s*\{[^}]*\}/,
+    );
+    const vanSchandpaal = tegel(SCHANDPAAL_CSS, /\.schandpaal\s*\{[^}]*\}/);
+    const vanHero = tegel(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/);
+    expect(vanKaart).toBeDefined();
+    expect(vanKaart).toBe(vanSchandpaal);
+    expect(vanKaart).toBe(vanHero);
+  });
+
   it.each(EDITIES)("%s: inkt, lijn en editie-kleur", (editie) => {
     const blok = editieBlok(editie);
     const skin = kaartSkin("goud", editie);
@@ -460,151 +528,84 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     )?.[1];
     expect(kleuren.keyline).toBe(keyline);
   });
+  it("On Fire: rand-, vignet- en glansregister staan in de CSS én in de tabel (#710)", () => {
+    // Zelfde bewaking als bij de GOAT hierboven, nu voor de editie: de
+    // On-Fire-overlay leeft op twee plekken (CSS-vars op .fut-kaart--onfire en
+    // velden in EDITIE_REGISTERS) en mag niet stil uit elkaar lopen.
+    const blok = editieBlok("onfire");
+    const { kleuren } = kaartSkin("goud", "onfire");
 
-  it("Kampioen: rand-register, motiefmaat en ornamenten staan op beide plekken (#710)", () => {
-    // Zelfde bewaking als voor de GOAT hieronder, nu voor de editie die sinds
-    // #710 een eremedaille is: echo, binnenlijnen en de motiefmaat leven als
-    // CSS-vars op .fut-kaart--kampioen én als velden in kaartSkin(). Zonder
-    // deze check kan de een herijkt worden zonder de ander.
-    const blok = editieBlok("kampioen");
-    const { kleuren } = kaartSkin("goud", "kampioen");
-
-    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
-    const [dx, dy, kleur] = kleuren.echo![0];
-    expect(echo).toContain(`* ${dx})`);
-    expect(echo).toContain(`* ${dy})`);
-    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
-
-    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
-    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!) {
-      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
-        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
-      );
+    // Randgloed: drie verschoven silhouetten, met de fracties uit de CSS-calc
+    // op --fut-kw en dezelfde kleuren.
+    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1]?.replace(/\s+/g, " ") ?? "";
+    expect(kleuren.echo).toHaveLength(3);
+    for (const [dx, dy, kleur] of kleuren.echo!) {
+      if (dx !== 0) expect(echo).toContain(`* ${dx})`);
+      if (dy !== 0) expect(echo).toContain(`* ${dy})`);
+      expect(echo).toContain(kleur);
     }
 
-    // Motiefmaat: --motief-b is een percentage van het vlak (98 ≡ 0.98) en
-    // --motief-pos de background-position-fractie waarmee drawMotief rekent.
-    expect(kleuren.motief!.breedte * 100).toBe(
-      Number(/--motief-b:\s*([\d.]+);/.exec(blok)![1]),
-    );
-    expect(kleuren.motief!.positie * 100).toBe(
-      Number(/--motief-pos:\s*([\d.]+)%;/.exec(blok)![1]),
-    );
-    expect(kleuren.motief!.paden.length).toBeGreaterThan(10);
-
-    // De twee ornamentlagen: krans + linten achter de kaart, crest ervóór.
-    expect(kleuren.ornament).toBe("kampioen");
-    expect(kleuren.ornamentVoor).toBe("kampioen");
-  });
-
-
-  it("pias: de gelaagde rand staat in de CSS én in de canvas-tabel (#710)", () => {
-    // Zelfde bewaking als bij de GOAT hierboven, nu voor de bordeaux binnenlijn
-    // met gouden bies die de pias sinds #710 draagt. Zonder deze check kan de
-    // een herijkt worden zonder de ander.
-    const blok = editieBlok("pias");
-    const { kleuren } = kaartSkin("goud", "pias");
-    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
-    expect(kleuren.binnenlijn).toHaveLength(2);
-    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!) {
-      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
-        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
-      );
-    }
-    // En de donkere brons-liner tussen frame en keyline.
-    const liner = /\.fut-kaart--pias \.fut-kaart__liner\s*\{\s*background:\s*([^;]+);/.exec(
-      FUT_CSS,
-    )?.[1];
-    expect(kleuren.liner).toBe(liner);
-    // Nog steeds mat (#705): geen tweede glanspunt in het frame en geen
-    // shimmer-animatie op het vlak — aangetast goud glimt niet.
-    expect(kleuren.frame).toHaveLength(2);
-    expect(kleuren.frameRibbels).toBeUndefined();
-    const shimmer = new RegExp(
-      "\\.fut-kaart--pias \\.fut-kaart__vlak::before\\s*\\{[^}]*animation",
-    );
-    expect(shimmer.test(FUT_CSS)).toBe(false);
-  });
-
-  it("In-Form: de overlay-lagen staan in de CSS én in de canvas-tabel (#710)", () => {
-    // In-Form kreeg bij #710 vijf lagen erbij die op twee plekken leven: als
-    // CSS op .fut-kaart--inform en als velden in het inform-register hieronder.
-    // Zonder deze check kan de een herijkt worden zonder de ander — precies wat
-    // #666 voor de platte kleuren al dichtzette.
-    const blok = editieBlok("inform");
-    const { kleuren } = kaartSkin("goud", "inform");
-
-    // 1. Binnenlijnen: elke inset-schaduw komt als [spreiding, kleur] terug, in
-    //    dezelfde volgorde (smal → breed).
-    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
-    expect(kleuren.binnenlijn).toHaveLength(3);
+    // Binnenlijnen: elke inset-schaduw komt als [spreiding, kleur] terug, in
+    // dezelfde volgorde (smal → breed).
+    const binnenlijn =
+      /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1]?.replace(/\s+/g, " ") ?? "";
     for (const [spreiding, kleur] of kleuren.binnenlijn!)
-      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
-        `inset 0 0 0 ${spreiding}px ${kleur}`,
-      );
-    // Bewust géén offset-echo (zie het commentaar in FutKaart.css): dat is
-    // toptier-taal, In-Form moet snelheid uitstralen.
-    expect(blok).not.toContain("--kaart-echo");
-    expect(kleuren.echo).toBeUndefined();
+      expect(binnenlijn).toContain(`inset 0 0 0 ${spreiding}px ${kleur}`);
 
-    // 2. Titanium-tint: de tussenlaag in de vlak-`background` draagt dezelfde
-    //    stops als het tint-veld.
-    const vlak =
-      /\.fut-kaart--inform \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0] ?? "";
-    expect(kleuren.tint).toHaveLength(3);
-    for (const [offset, kleur] of kleuren.tint!)
-      expect(vlak.replace(/\s+/g, " ")).toContain(
-        `${kleur} ${Math.round(offset * 100)}%`,
-      );
+    // Vignet en hitteglans: de stops van de twee gradients uit het vlak-blok en
+    // het ::before-blok, in dezelfde alfa's. De poster bevriest de baan op deze
+    // stand, dus dit is precies waar hij op moet uitkomen.
+    const vlakBlok =
+      /\.fut-kaart--onfire \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0] ?? "";
+    for (const [, kleur] of kleuren.vignet!)
+      if (!kleur.endsWith(" 0)")) expect(vlakBlok.replace(/\s+/g, " ")).toContain(kleur);
+    const glans =
+      /\.fut-kaart--onfire \.fut-kaart__vlak::before\s*\{[^}]*\}/
+        .exec(FUT_CSS)?.[0]
+        ?.replace(/\s+/g, " ") ?? "";
+    for (const [offset, kleur] of kleuren.sheenStops!)
+      if (!kleur.endsWith(" 0)"))
+        expect(glans).toContain(`${kleur} ${Math.round(offset * 100)}%`);
+    // De piek blijft op 0,27: fellere baan = slechter contrast onder de glans,
+    // en dat mocht van #710 niet zakken t.o.v. #632.
+    expect(kleuren.sheen).toBe("rgba(255, 190, 112, 0.27)");
 
-    // 3. Geborstelde groeven: twee frequenties in de sheen-richting, in de
-    //    vlak-áchtergrond (dus onder de inkt, net als het kraft van de pias) en
-    //    niet op ::after — dat pseudo-element tekent ná de tekst. Het gedeelde
-    //    satijn staat daarom uit, en de textuur staat aan in de tabel.
-    expect(vlak.match(/repeating-linear-gradient\(\s*115deg/g)).toHaveLength(2);
-    expect(
-      /\.fut-kaart--inform \.fut-kaart__vlak::after\s*\{[^}]*\}/.exec(
-        FUT_CSS,
-      )?.[0],
-    ).toContain("background: none");
-    expect(kleuren.textuur).toBe("titanium");
+    // Groeven i.p.v. satijn, in een eigen ::after-regel (niet in het gedeelde
+    // premium-blok), plus de ornament- en motiefkeuze.
+    const after =
+      /\.fut-kaart--onfire \.fut-kaart__vlak::after\s*\{[^}]*\}/.exec(FUT_CSS)?.[0] ??
+      "";
+    expect(after).toContain("repeating-radial-gradient");
+    expect(kleuren.textuur).toBe("groeven");
+    expect(kleuren.ornament).toBe("onfire");
+    expect(kleuren.motief?.paden).toHaveLength(4);
 
-    // 4. Glansbaan: de CSS-stops staan in dezelfde volgorde in sheenStops, met
-    //    de vaste ~0,875-kalibratie op de alpha (de canvas-baan loopt over een
-    //    kortere as en leest daardoor feller).
-    const before =
-      /\.fut-kaart--inform \.fut-kaart__vlak::before\s*\{[^}]*\}/.exec(
-        FUT_CSS,
-      )?.[0] ?? "";
-    const cssStops = [...before.matchAll(/(rgba?\([^)]*\)|transparent)\s+(\d+)%/g)];
-    expect(cssStops).toHaveLength(kleuren.sheenStops!.length);
-    cssStops.forEach(([, kleur, procent], i) => {
-      const [offset, canvasKleur] = kleuren.sheenStops![i];
-      expect(offset).toBeCloseTo(Number(procent) / 100, 5);
-      const cssAlpha =
-        kleur === "transparent" ? 0 : Number(/([\d.]+)\)$/.exec(kleur)![1]);
-      const canvasAlpha = Number(/([\d.]+)\)$/.exec(canvasKleur)![1]);
-      expect(canvasAlpha).toBeCloseTo(cssAlpha * 0.875, 2);
-    });
-    // Beweging: eigen keyframes met een rustpauze (de baan staat het laatste
-    // deel van de cyclus stil), en alles achter prefers-reduced-motion.
-    expect(FUT_CSS).toMatch(
-      /@media \(prefers-reduced-motion: no-preference\)[^@]*fut-kaart-inform-glans/s,
+    // En de ornamentgroepen waar de DOM-laag naar verwijst, bestaan echt.
+    expect(FUT_TSX).toContain('id="fut-orn-onfire-achter"');
+    expect(FUT_TSX).toContain('id="fut-orn-onfire-voor"');
+  });
+
+  it("On Fire beweegt alleen mét bewegingsvoorkeur, op transform (#710)", () => {
+    // De twee animaties (hitteglans, thermische ringen) moeten binnen de
+    // prefers-reduced-motion-blokken staan en alleen transform/opacity
+    // aanspreken — anders kost de kaart layout-werk per frame, en het
+    // klassement toont er tientallen naast elkaar.
+    const media = FUT_CSS.slice(
+      FUT_CSS.indexOf(".fut-kaart--onfire {"),
+    ).match(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/);
+    expect(media, "On Fire mist zijn reduced-motion-blok").not.toBeNull();
+    const blok = media![0];
+    expect(blok).toContain("fut-kaart-hitteglans");
+    expect(blok).toContain("fut-kaart-thermiek");
+    expect(blok).toContain("translate3d");
+    // Geen animatie op een eigenschap die layout of paint forceert.
+    expect(blok).not.toMatch(/animation:[^;]*\b(width|height|top|left|filter)\b/);
+    // 4–6s uit de referentie-instructies: zwaarder dan In-Forms 2,6s.
+    const duur = Number(
+      /animation: fut-kaart-hitteglans ([\d.]+)s/.exec(blok)?.[1] ?? "0",
     );
-    expect(FUT_CSS).toMatch(
-      /@keyframes fut-kaart-inform-glans[\s\S]{0,240}?58%,/,
-    );
-    // De oude gedeelde keyframes blijven staan voor GOAT en On-Fire.
-    expect(FUT_CSS).toContain("@keyframes fut-kaart-shimmer");
-
-    // 5. Motief: de pulse-ring komt uit ornamentenInform.ts en ademt in de CSS
-    //    alleen op opacity — de poster bevriest hem op volle sterkte.
-    expect(kleuren.motief?.paden).toBe(INFORM_MOTIEF);
-    expect(FUT_CSS).toMatch(
-      /@keyframes fut-kaart-inform-puls\s*\{[^@]*opacity: 1;/s,
-    );
-    expect(FUT_TSX).toContain("fut-orn-inform-achter");
-    expect(FUT_TSX).toContain("fut-orn-inform-voor");
+    expect(duur).toBeGreaterThanOrEqual(4);
+    expect(duur).toBeLessThanOrEqual(6);
   });
 
   it("de toptiers draaien allebei op vaste hexen (#710)", () => {
@@ -782,6 +783,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       ["pias", "pias"],
       ["piet", "piet"],
       ["inform", "inform"],
+      ["onfire", "onfire"],
     ] as const) {
       expect(kaartSkin("goud", editie).kleuren.ornament, editie).toBe(verwacht);
       // Ook bovenop een toptier: de GOAT-hoorns wijken voor het editie-ornament.
@@ -789,16 +791,17 @@ describe("editie-registers spiegelen FutKaart.css", () => {
         verwacht,
       );
     }
-    // On-Fire is (nog) niet hertekend en laat het tier-ornament dus staan.
-    expect(kaartSkin("legende", "onfire").kleuren.ornament).toBe("goat");
-    expect(kaartSkin("dictator", "onfire").kleuren.ornament).toBe("dictator");
-    expect(kaartSkin("goud", "onfire").kleuren.ornament).toBeUndefined();
+    // Alle zes de edities zijn nu hertekend, dus geen enkele laat het
+    // tier-ornament nog staan. Komt er een zevende bij zonder eigen ornament,
+    // dan hoort die hier als tegenvoorbeeld terug.
 
     // Het mótief volgt een ándere regel: dat hoort bij het vlak-register, dus
     // een editie-skin neemt het tier-motief altijd over — met haar eigen
     // watermerk als ze er een heeft, en anders met niets. Het GOAT-medaillon
     // zou op het In-Form-navy vloeken.
-    expect(kaartSkin("legende", "onfire").kleuren.motief).toBeUndefined();
+    expect(kaartSkin("legende", "onfire").kleuren.motief).toBe(
+      kaartSkin("goud", "onfire").kleuren.motief,
+    );
     expect(kaartSkin("legende", "icon").kleuren.motief).toBe(
       kaartSkin("goud", "icon").kleuren.motief,
     );
