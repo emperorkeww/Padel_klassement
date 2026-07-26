@@ -838,6 +838,10 @@ export function FutKaartDefs() {
             zijn per constructie gelijk, zoals de canvas-spiegel dat met
             scale(-1,1) doet. Kaarten verwijzen met <use> naar deze groep,
             dus de paden staan één keer per pagina. */}
+        {/* Alleen de materialen zonder eigen <linearGradient> hieronder: de
+            Kampioen, de pias, In-Form en On Fire definiëren hun verloop zelf
+            in hun eigen defs-blok. Twee defs met hetzelfde id zou de tweede
+            stilletjes laten winnen. */}
         {[GOAT_MATERIAAL, BD_METAAL_MATERIAAL, BD_LINT_MATERIAAL].map((m) =>
           // Een materiaal met vaste as (het lint) krijgt zijn gradient in
           // ornament-units: twee lintbogen samen vormen één voorwerp, dus de
@@ -1123,7 +1127,7 @@ export function FutKaartDefs() {
           ))}
         </linearGradient>
         <linearGradient
-          id="fut-orn-staal"
+          id="fut-orn-onfire-staal"
           x1="0"
           y1="0"
           x2="0.2"
@@ -1177,7 +1181,7 @@ export function FutKaartDefs() {
         <g id="fut-orn-onfire-voor">
           <path
             d={ONFIRE_CREST_PLAAT}
-            fill="url(#fut-orn-staal)"
+            fill="url(#fut-orn-onfire-staal)"
             stroke="url(#fut-orn-koper)"
             strokeWidth="0.55"
             strokeLinejoin="round"
@@ -1227,7 +1231,7 @@ export function FutKaartDefs() {
             transform="translate(100,0) scale(-1,1)"
           />
         </g>
-        <g id="fut-orn-goat">
+        <g id="fut-orn-goat-achter">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
               nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
           <path
@@ -1267,7 +1271,7 @@ export function FutKaartDefs() {
             ribbelBreedte={0.4}
           />
         </g>
-        <g id="fut-orn-bigdaddy">
+        <g id="fut-orn-bigdaddy-achter">
           <use href="#fut-orn-bigdaddy-helft" />
           <use
             href="#fut-orn-bigdaddy-helft"
@@ -1433,7 +1437,7 @@ export function FutKaartDefs() {
             </g>
           ))}
         </g>
-        <g id="fut-orn-kampioen">
+        <g id="fut-orn-kampioen-achter">
           {/* Linten eerst: de onderste bladeren van de krans vallen eróver,
               net als op de referentie. Het middenlint staat op de as en wordt
               dus niet gespiegeld — het ís de spiegelas. */}
@@ -1463,7 +1467,7 @@ export function FutKaartDefs() {
             transform="translate(100,0) scale(-1,1)"
           />
         </g>
-        <g id="fut-orn-kampioen-crest">
+        <g id="fut-orn-kampioen-voor">
           <path
             d={KAMPIOEN_CREST_ZETTING}
             fill="url(#fut-orn-kampioen-zetting)"
@@ -1541,7 +1545,7 @@ export function FutKaartDefs() {
           <PiasBelletje bel={PIAS_LINT_BEL} />
           <FutStreng streng={PIAS_KAP_ZIJLOB} materiaal={PIAS_STOF_MATERIAAL} />
         </g>
-        <g id="fut-orn-pias">
+        <g id="fut-orn-pias-achter">
           <use href="#fut-orn-pias-helft" />
           <use href="#fut-orn-pias-helft" transform="translate(100,0) scale(-1,1)" />
           {/* De middenlob leunt bewust scheef en staat dus niet op de as: geen
@@ -1801,6 +1805,7 @@ const EDITIE_ORNAMENT: Record<string, OrnamentNaam | undefined> = {
   pias: "pias",
   piet: "piet",
   inform: "inform",
+  onfire: "onfire",
 };
 const TIER_ORNAMENT: Record<string, OrnamentNaam | undefined> = {
   legende: "goat",
@@ -1941,11 +1946,7 @@ export function FutKaart({
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use
-            href={
-              ornament === "dictator" ? "#fut-orn-dictator-achter" : `#fut-orn-${ornament}${ornament === "goat" ? "" : "-achter"}`
-            }
-          />
+          <use href={`#fut-orn-${ornament}-achter`} />
         </svg>
       )}
       <div className="fut-kaart__flipper">
@@ -1980,13 +1981,7 @@ export function FutKaart({
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use
-            href={
-              ornamentVoor === "kampioen"
-                ? "#fut-orn-kampioen-crest"
-                : `#fut-orn-${ornamentVoor}-voor`
-            }
-          />
+          <use href={`#fut-orn-${ornamentVoor}-voor`} />
         </svg>
       )}
     </div>

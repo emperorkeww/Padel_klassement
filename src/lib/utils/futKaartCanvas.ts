@@ -504,7 +504,7 @@ export interface FutKaartKleuren {
    *  midden laat oplichten — spiegel van de radial-gradient in de CSS, als
    *  [offset, kleur]-stops. */
   vignet?: ReadonlyArray<readonly [number, string]>;
-  ornamentVoor?: "dictator" | "bigdaddy" | "kampioen" | "pias" | "piet" | "inform" | "onfire";
+  ornamentVoor?: Exclude<Ornament, "goat">;
   /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
    *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
    *  of een toptier — zie de keuze in FutKaart.tsx. */
@@ -2695,6 +2695,12 @@ const EDITIE_ORNAMENT: Partial<Record<KaartEditie, Ornament>> = {
   inform: "inform",
   onfire: "onfire",
 };
+/** De vóór-laag van een ornament, of undefined wanneer het er geen heeft. De
+ *  GOAT-hoorns komen als enige volledig van achter het schild vandaan. */
+function voorLaag(o: Ornament | undefined): FutKaartKleuren["ornamentVoor"] {
+  return o && o !== "goat" ? o : undefined;
+}
+
 const TIER_ORNAMENT: Partial<Record<TierKey, Ornament>> = {
   legende: "goat",
   dictator: "dictator",
@@ -2774,8 +2780,12 @@ export function kaartSkin(
         // editie is het nieuws van deze week, het monument is de constante.
         ornament:
           EDITIE_ORNAMENT[editie] ?? (key ? TIER_ORNAMENT[key] : undefined),
-        ornamentVoor:
-          r.ornamentVoor ?? (key === "dictator" ? "dictator" : undefined),
+        // Alles behalve de GOAT-hoorns heeft ook een laag vóór de kaart: een
+        // crest in de bovenrand of een medaillon in de punt zou achter het
+        // schild half verdwijnen. Spiegel van FutKaart.tsx.
+        ornamentVoor: voorLaag(
+          EDITIE_ORNAMENT[editie] ?? (key ? TIER_ORNAMENT[key] : undefined),
+        ),
       },
       ink: r.ink,
       inkSoft: r.inkSoft,

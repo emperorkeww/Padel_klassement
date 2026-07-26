@@ -10,6 +10,7 @@ const lees = (pad: string) =>
   readFileSync(fileURLToPath(new URL(pad, import.meta.url)), "utf8");
 const FUT_CSS = lees("../../features/rating/components/FutKaart.css");
 const FUT_TSX = lees("../../features/rating/components/FutKaart.tsx");
+const CANVAS_TS = lees("./futKaartCanvas.ts");
 const INDEX_CSS = lees("../../app/index.css");
 // De Schandpaal (#682) en, sinds #644, de schande-hero op het dashboard delen
 // het kraftpapier van de pias letterlijk — de vezeltegel-pariteitstest onderaan
@@ -808,6 +809,56 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     // En zonder editie hangt alles aan de tier.
     expect(kaartSkin("legende", null).kleuren.ornament).toBe("goat");
     expect(kaartSkin("legende", null).kleuren.motief?.paden.length).toBeGreaterThan(0);
+  });
+
+  it("de twee ornamenttabellen staan gelijk in DOM en canvas (#710)", () => {
+    // De cascade leeft op twee plekken: EDITIE_ORNAMENT/TIER_ORNAMENT in
+    // FutKaart.tsx (voor de DOM) en dezelfde twee in futKaartCanvas.ts (voor
+    // de poster). Loopt er één achter, dan tekent de kaart een ander ornament
+    // dan de deel-poster — en dat zie je pas op de export. Regressie uit het
+    // samenvoegen van #710: On Fire ontbrak in de DOM-tabel, waardoor een
+    // GOAT-in-vuur zijn bokhoorns hield i.p.v. de vlamvinnen.
+    const tabel = (bron: string, naam: string) => {
+      const blok = new RegExp(`const ${naam}[^{]*\\{([^}]*)\\}`).exec(bron);
+      expect(blok, `${naam} niet gevonden`).not.toBeNull();
+      return [...blok![1].matchAll(/(\w+): "(\w+)"/g)]
+        .map((m) => `${m[1]}=${m[2]}`)
+        .sort();
+    };
+    for (const naam of ["EDITIE_ORNAMENT", "TIER_ORNAMENT"]) {
+      expect(tabel(FUT_TSX, naam), naam).toEqual(tabel(CANVAS_TS, naam));
+    }
+  });
+
+  it("elke ornamentlaag verwijst naar een <g> die echt bestaat (#710)", () => {
+    // Regressie uit het samenvoegen van de acht kaarten: de kaart bouwde zijn
+    // <use href> als `#fut-orn-<naam>-achter`, maar drie defs-groepen heetten
+    // nog `#fut-orn-<naam>` zonder achtervoegsel. Een <use> naar een
+    // niet-bestaand id rendert stil niets — Big Daddy verloor zo zijn linten en
+    // ballonnen, de Kampioen zijn krans, de pias zijn kap. Deze test loopt de
+    // ids na die de component samenstelt.
+    const ornamenten = [
+      "goat",
+      "dictator",
+      "bigdaddy",
+      "kampioen",
+      "pias",
+      "piet",
+      "inform",
+      "onfire",
+    ] as const;
+    for (const o of ornamenten) {
+      expect(FUT_TSX, `${o}: achter-laag mist zijn <g>`).toContain(
+        `id="fut-orn-${o}-achter"`,
+      );
+      if (o !== "goat")
+        expect(FUT_TSX, `${o}: vóór-laag mist zijn <g>`).toContain(
+          `id="fut-orn-${o}-voor"`,
+        );
+    }
+    // En de component bouwt de href precies zo op.
+    expect(FUT_TSX).toContain("`#fut-orn-${ornament}-achter`");
+    expect(FUT_TSX).toContain("`#fut-orn-${ornamentVoor}-voor`");
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {
