@@ -384,6 +384,51 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
     ).toHaveTextContent(/big daddy/i);
   });
 
+  // #763: de wand toonde frames, schilden en editie-regels zonder ergens uit
+  // te leggen wat ze betekenen. De kaarten in het paneel worden pas gerenderd
+  // als het openstaat — zeventien kaarten hoeven niet te bestaan zolang
+  // niemand kijkt.
+  it("legt de kaarten uit in een uitklapper op de Kaarten-tab", async () => {
+    const { container } = renderPage();
+    await screen.findAllByText(/alice anders/i);
+    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+
+    const legenda = container.querySelector(".kaart-legenda") as HTMLElement;
+    expect(legenda).not.toBeNull();
+    expect(legenda.querySelector(".kaart-legenda__raster")).toBeNull();
+
+    fireEvent.click(screen.getByText(/wat betekenen de kaarten/i));
+    await screen.findByText(/^divisies$/i);
+
+    // Elke speciale editie staat er als échte kaart, met zijn eigen skin.
+    for (const editie of ["icon", "kampioen", "inform", "onfire", "pias", "piet"]) {
+      expect(
+        legenda.querySelector(`.fut-kaart--${editie}`),
+        editie,
+      ).not.toBeNull();
+    }
+    // De regel óp de kaart komt uit editieLabel met voorbeeldwaarden, dus
+    // exact de vorm die een echte drager te zien krijgt; het kopje eronder
+    // draagt de kale editienaam.
+    expect(within(legenda).getByText("🔥 On Fire · 6 op rij")).toBeInTheDocument();
+    expect(within(legenda).getByText("🔥 On Fire")).toBeInTheDocument();
+    // En elke divisie, inclusief de toptiers die geen editie zijn.
+    expect(within(legenda).getByText("🐐 GOAT")).toBeInTheDocument();
+    expect(within(legenda).getByText(/Rating 1600\+/)).toBeInTheDocument();
+    // Naamplaat van de voorbeeldkaarten: de kijker zelf.
+    expect(
+      within(legenda).getAllByText(/alice anders/i).length,
+    ).toBeGreaterThan(1);
+  });
+
+  it("houdt de kaartuitleg weg van de andere tabs", async () => {
+    const { container } = renderPage();
+    await screen.findAllByText(/alice anders/i);
+    expect(container.querySelector(".kaart-legenda")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Divisies" }));
+    expect(container.querySelector(".kaart-legenda")).toBeNull();
+  });
+
   it("opent de kaart-preview vanaf een raster-kaart en sluit met Escape", async () => {
     renderPage();
     await screen.findAllByText(/alice anders/i);

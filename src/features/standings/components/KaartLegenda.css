@@ -1,0 +1,64 @@
+/* Kaartenlegenda (#763): het uitleg-paneel op de Kaarten-tab. Het omhulsel is
+   het gedeelde .explainer-patroon (inclusief het ronde ?-icoon in de summary);
+   hier staat alleen wat het kaartraster erbinnen nodig heeft. */
+
+.kaart-legenda__intro,
+.kaart-legenda__noot {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-sm);
+}
+.kaart-legenda__noot {
+  margin: var(--sp-4) 0 0;
+  font-style: italic;
+}
+
+.kaart-legenda__kop {
+  margin: var(--sp-4) 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Kleiner dan de kaartenwand (130px): dit is een legenda, geen tweede wand. */
+.kaart-legenda__raster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: var(--sp-4) var(--sp-3);
+  justify-items: center;
+}
+.kaart-legenda .fut-kaart {
+  --fut-kw: 112px;
+}
+
+.kaart-legenda__cel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  max-width: 15rem;
+  text-align: center;
+}
+/* Geen line-height-truc hier: de kaart erft 'm, en met line-height 0 vallen de
+   divisie- en editie-regel op het kaartvlak tot nul hoogte samen. De cel is een
+   flex-kolom, dus er is ook geen inline-witruimte om weg te poetsen. */
+.kaart-legenda__kaart {
+  display: block;
+}
+.kaart-legenda__titel {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  /* Lange divisienamen ("Sletje van de baan") mogen breken, niet overlopen. */
+  overflow-wrap: anywhere;
+}
+.kaart-legenda__uitleg {
+  font-size: var(--fs-xs);
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
