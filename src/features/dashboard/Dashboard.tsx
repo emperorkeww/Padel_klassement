@@ -113,10 +113,6 @@ export function Dashboard() {
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
     [myId],
   );
-  // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
-  // De avondsamenvatting kijkt naar de matches van vandaag; die zitten per
-  // definitie in ieders recente venster (#731).
-  const histories = useAsync(getRecentRatingHistories, []);
   // De zittende dictator (#613): server-side uit de troon-replay (#545). Kleurt
   // de eigen hero keizerlijk als jíj op De Troon zit, en dooft de Big Daddy-
   // styling zodra de troon bezet is — zelfde uitsluiting als het klassement.
@@ -271,6 +267,18 @@ export function Dashboard() {
 
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
+  // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
+  // De avondsamenvatting kijkt naar de matches van vandaag; die zitten per
+  // definitie in ieders recente venster (#731).
+  //
+  // Bewust hier en niet bovenaan bij de andere queries (#736): de avondkaart is
+  // de enige consument, en die rendert alleen op een dag dat er gespeeld is. Op
+  // alle andere dagen scheelt dat een RPC bij elke mount van het overzicht.
+  // `enabled` springt van false naar true zodra de uitslagen binnen zijn en er
+  // een avond blijkt te zijn — daarna niet meer terug, dus geen herlaadlus.
+  const histories = useAsync(getRecentRatingHistories, [], {
+    enabled: evening != null,
+  });
   const eveningGroup = evening
     ? (groups.data ?? []).find((g) => g.id === evening.groupId)
     : null;
