@@ -345,7 +345,7 @@ export const DIVISIE_MEESTER: DivisieKaart = {
   // thema's gelijk.
   //
   // Contrast van de inkt op het emaille (WCAG 2.1, srgb): #35266a op de
-  // donkerste vlak-stop #b9a6d9 geeft 5,81:1 en op de lichtste #ece4f7 10,39:1
+  // donkerste vlak-stop #b9a6d9 geeft 5,82:1 en op de lichtste #ece4f7 10,39:1
   // — ruim boven AA (4,5:1), op het grootste deel van het vlak zelfs AAA. De
   // zachte inkt #453578 (subniveau en divisieregel, onderaan het vlak waar
   // #b9a6d9 domineert) haalt 4,68:1 en blijft dus ook AA.
