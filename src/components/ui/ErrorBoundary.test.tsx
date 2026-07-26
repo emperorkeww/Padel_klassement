@@ -3,21 +3,38 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
-import { CRASH } from "@/features/coach/coachMoments";
+import { CRASH, VERSIE } from "@/features/coach/coachMoments";
+import { applyUpdate, getSwUpdateSnapshot } from "@/lib/utils/swUpdate";
+
+vi.mock("@/lib/utils/swUpdate", () => ({
+  applyUpdate: vi.fn(),
+  getSwUpdateSnapshot: vi.fn(() => false),
+}));
 
 // React logt een opgevangen fout zelf ook naar console.error; dat is hier
 // verwacht gedrag en zou de testuitvoer alleen maar vervuilen.
 let stil: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   stil = vi.spyOn(console, "error").mockImplementation(() => {});
+  sessionStorage.clear();
+  vi.mocked(getSwUpdateSnapshot).mockReturnValue(false);
+  vi.mocked(applyUpdate).mockClear();
 });
 afterEach(() => {
   stil.mockRestore();
+  sessionStorage.clear();
 });
 
 function Boem({ gooi = true }: { gooi?: boolean }) {
   if (gooi) throw new Error("kapotte render");
   return <p>alles in orde</p>;
+}
+
+/** Een crash die door een verdwenen route-chunk komt. */
+function ChunkWeg(): never {
+  throw new Error(
+    "Failed to fetch dynamically imported module: https://vamos.be/assets/Feed-abc123.js",
+  );
 }
 
 describe("<ErrorBoundary />", () => {
@@ -146,6 +163,56 @@ describe("<ErrorBoundary />", () => {
       expect.objectContaining({ message: "kapotte render" }),
       expect.anything(),
     );
+  });
+
+  it("noemt een verdwenen chunk een nieuwe versie, niet een crash", () => {
+    render(
+      <ErrorBoundary scope="route">
+        <ChunkWeg />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText("Er is een nieuwe versie.")).toBeInTheDocument();
+    expect(screen.queryByText("Hier ging iets mis.")).toBeNull();
+    // Eén duidelijke uitweg, geen "opnieuw proberen" dat toch niet kan werken.
+    expect(screen.getByRole("button", { name: "Herladen" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Opnieuw proberen" })).toBeNull();
+    // En Rudy houdt het luchtig i.p.v. te doen alsof er iets stuk is.
+    expect(VERSIE.filter((r) => screen.queryByText(r) !== null)).toHaveLength(1);
+    expect(CRASH.filter((r) => screen.queryByText(r) !== null)).toHaveLength(0);
+  });
+
+  it("activeert de wachtende service worker bij 'Herladen'", async () => {
+    vi.mocked(getSwUpdateSnapshot).mockReturnValue(true);
+    render(
+      <ErrorBoundary scope="route">
+        <ChunkWeg />
+      </ErrorBoundary>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Herladen" }));
+    // De SW herlaadt zelf via controllerchange (#463) — geen tweede reload.
+    expect(applyUpdate).toHaveBeenCalledOnce();
+  });
+
+  it("valt terug op de crash-weergave als herladen zojuist al niet hielp", async () => {
+    vi.mocked(getSwUpdateSnapshot).mockReturnValue(true);
+    const eerste = render(
+      <ErrorBoundary scope="route">
+        <ChunkWeg />
+      </ErrorBoundary>,
+    );
+    await userEvent.click(eerste.getByRole("button", { name: "Herladen" }));
+    eerste.unmount();
+
+    // Dezelfde chunk-fout meteen na een herlaadpoging: dan is "er is een
+    // nieuwe versie" niet meer geloofwaardig en moet de gebruiker een echte
+    // uitweg krijgen in plaats van nóg een herlaadknop.
+    render(
+      <ErrorBoundary scope="route">
+        <ChunkWeg />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText("Hier ging iets mis.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Opnieuw proberen" })).toBeInTheDocument();
   });
 
   it("vult het scherm bij root/route en blijft binnen de inhoud bij pagina", () => {
