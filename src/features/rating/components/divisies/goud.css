@@ -1,5 +1,104 @@
 /* Divisiekaart "Wannabe" (goud) — 1000–1099 — crème emaille, champagnefolie, imitatiegoud.
-   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
-   generieke metaalladder uit FutKaart.css. Zet hier het
-   `.fut-kaart--goud`-register, en spiegel dezelfde waarden in goud.ts
-   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */
+
+   Het register van de imitatie-luxe uit de referentie (#710): crèmekleurig
+   emaille als vlak, champagnefolie als glanspunten in het frame en mosterdgeel
+   imitatiegoud als grondtoon. Waarom het frame níet de generieke metaalladder
+   volgt: die mixt de tierkleur richting warm wit en levert daarmee echt goud —
+   precies wat deze divisie niet mag zijn. De donkerste framestop is hier
+   olijfbruin messing i.p.v. zwartgoud, dus de kaart blijft onder de hogere
+   divisies hangen (acceptatie-eis van de referentie).
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in goud.ts; de
+   synctest in goud.test.ts leest dít bestand in en houdt de twee gelijk. */
+.fut-kaart--goud {
+  /* Crème emaille. Contrast: ink 8,66:1 op --kaart-hi en 6,05:1 op --kaart-lo,
+     inkSoft 6,78:1 / 4,73:1 — ruim boven AA voor kleine tekst. */
+  --kaart-hi: #fdf7e6;
+  --kaart-mid: #f3e7c9;
+  --kaart-lo: #e2cfa6;
+  --kaart-ink: #5c4310;
+  --kaart-ink-soft: #6f5218;
+  --kaart-lijn: #c2a057;
+  /* Verguld messing ónder de folie: de echo verschuift het silhouet net genoeg
+     naar rechtsonder om een tweede, doffere laag te suggereren. Een filter werkt
+     ná de clip, dus de echo volgt het schild exact. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.014) calc(var(--fut-kw) * 0.018) 0
+      rgba(179, 144, 63, 0.72)
+  );
+  /* Dunne folielijn met een mosterdlijn erachter — de dubbele binnenrand van de
+     referentie, zonder extra DOM-laag. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 249, 224, 0.8),
+    inset 0 0 0 2.5px rgba(163, 128, 48, 0.55);
+}
+.fut-kaart--goud .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #faefc6 0%,
+    #b3903f 40%,
+    #f6e7b0 66%,
+    #6d5119 100%
+  );
+}
+.fut-kaart--goud .fut-kaart__liner {
+  background: #4a3510;
+}
+.fut-kaart--goud .fut-kaart__keyline {
+  background: #f0dda2;
+}
+/* Licht holografische glansbaan: dezelfde diagonale sheen als de basiskaart,
+   maar met een zweem roze en cyaan langs de flanken — folie dat kleur breekt.
+   Bewust ijl (0,10/0,12) en alleen náást de witte kern: verder opgevoerd gaat de
+   kaart er premium uitzien, en dat is precies wat een Wannabe niet is. Op de
+   poster vlakt dit af naar één champagnetoon (het `sheen`-veld in goud.ts): één
+   gradient-stop kan geen regenboog dragen — zelfde afspraak als de
+   shimmer-edities, die op de poster stilstaan. */
+.fut-kaart--goud .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgba(255, 186, 214, 0.1) 42%,
+    rgba(255, 250, 232, 0.3) 50%,
+    rgba(150, 226, 232, 0.12) 58%,
+    transparent 66%
+  );
+}
+/* De baan schuift traag heen en weer, zoals folie dat je kantelt. Trager dan
+   In-Form (2,6s): dit is decoratie, geen aankondiging. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--goud .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 8.5s ease-in-out infinite;
+  }
+}
+/* Zachte zonnestralen achter het bovenvlak, boven het satijnweefsel. Letterlijk
+   de maten van het premium-blok in FutKaart.css (radiale waas + wiggen van
+   5°/13° vanaf 50% 10%), want de canvas-tegenhanger is het `stralen`-veld in
+   goud.ts en die tekent precies díe krans — zelf andere hoeken kiezen zou DOM en
+   poster stil uiteen laten lopen. Op het crème vlak leest het witte licht al
+   champagne, dus warmer tinten is niet nodig. */
+.fut-kaart--goud .fut-kaart__vlak::after {
+  background:
+    radial-gradient(
+      130% 75% at 50% 8%,
+      rgba(255, 255, 255, 0.12),
+      transparent 55%
+    ),
+    repeating-conic-gradient(
+      from -10deg at 50% 10%,
+      rgba(255, 255, 255, 0.1) 0deg 5deg,
+      transparent 5deg 13deg
+    ),
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.05) 0 1.5px,
+      transparent 1.5px 5px
+    );
+}
+/* Warme schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel in
+   FutKaart.css is roze getint (Big Daddy), en dat vloekt op messing. */
+.fut-kaart--goud .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(58, 41, 12, 0.45));
+}

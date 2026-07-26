@@ -71,12 +71,23 @@ function helderheid(kleur: string): number {
 }
 
 describe("kaartSkin", () => {
-  it("kleurt de divisieladder uit de tierkleur", () => {
-    const goud = kaartSkin("goud", null);
-    expect(goud.kleuren.vlak[0][1]).toBe(mix("#d4a017", "#fdfbf6", 0.2));
-    expect(goud.ink).toBe(mix("#d4a017", "#1d1508", 0.52));
+  it("kleurt de generieke divisieladder uit de tierkleur", () => {
+    // De ladderformule geldt nog voor élke divisie zonder eigen register. Wie
+    // er wél een heeft (#710) valt hieronder, in de test daarna — daarom hier
+    // een tier die nog op de formule draait.
+    const hout = kaartSkin("hout", null);
+    expect(hout.kleuren.vlak[0][1]).toBe(mix("#77441d", "#fdfbf6", 0.2));
+    expect(hout.ink).toBe(mix("#77441d", "#1d1508", 0.52));
     // Zonder editie valt --editie-kleur terug op --kaart-ink.
-    expect(goud.editieKleur).toBe(goud.ink);
+    expect(hout.editieKleur).toBe(hout.ink);
+  });
+
+  it("laat een divisie met eigen register de ladderformule overrulen (#710)", () => {
+    // Zeven van de negen basisdivisies zijn hertekend en dragen nu hun eigen
+    // materiaal; de formule uit de vorige test raakt hen dus niet meer.
+    const goud = kaartSkin("goud", null);
+    expect(goud.kleuren.vlak[0][1]).not.toBe(mix("#d4a017", "#fdfbf6", 0.2));
+    expect(goud.kleuren.divisie).toBe("goud");
   });
 
   it.each([null, "legende" as const, ...EDITIES])(
@@ -157,9 +168,12 @@ describe("kaartSkin", () => {
   });
 
   it("houdt de stralenkrans bij de divisie, niet bij de editie", () => {
-    expect(kaartSkin("diamant", null).kleuren.stralen).toBe(true);
-    expect(kaartSkin("diamant", "icon").kleuren.stralen).toBe(true);
-    expect(kaartSkin("brons", "icon").kleuren.stralen).toBe(false);
+    // De gedeelde stralenkrans hoort bij de premium-schildvorm en overleeft de
+    // editie. Sinds #710 zet een hertekende divisie hem uit — die brengt zijn
+    // eigen textuur mee — dus meten we hem op een tier die nog op de generieke
+    // ladder draait: meester heeft de spitse vleugels, hout niet.
+    expect(kaartSkin("meester", "icon").kleuren.stralen).toBe(true);
+    expect(kaartSkin("hout", "icon").kleuren.stralen).toBe(false);
     // GOAT en dictator vielen met #710 uit het premium-blok: ze hebben een
     // eigen ::after (ijl satijn met medaillon, respectievelijk brokaat) en
     // houden die ook onder een editie — editie-blokken raken ::after niet aan.
