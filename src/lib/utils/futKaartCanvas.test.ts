@@ -237,21 +237,25 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     expect(vanKaart).toBe(vanHero);
   });
 
+  /** De `--<prefix>-<naam>: #hex`-declaraties binnen één CSS-blok. Alleen hexen:
+   *  een rgba()-lijn (In-Form/On-Fire) valt er bewust buiten — die staat op
+   *  beide plekken letterlijk en heeft geen indirectie om te controleren. */
+  const waarden = (css: string, blok: RegExp, prefix: string) => {
+    const m = blok.exec(css);
+    expect(m).not.toBeNull();
+    const out: Record<string, string> = {};
+    for (const v of m![0].matchAll(
+      new RegExp(`--${prefix}-([\\w-]+):\\s*(#[0-9a-f]{3,8});`, "g"),
+    ))
+      out[v[1]] = v[2];
+    return out;
+  };
+
   it("de schande-hero's houden de materiaalwaarden van hun FUT-editie (#644)", () => {
     // De hero kopieert de lokale hexen van de kaart-edities (geen gedeelde
     // tokens: dit materiaal is thema-onafhankelijk, zie Dashboard.css). Zonder
     // deze check drijft de hero stil weg zodra de kaart hertint wordt — precies
     // wat #705 met de kaart en De Schandpaal deed.
-    const waarden = (css: string, blok: RegExp, prefix: string) => {
-      const m = blok.exec(css);
-      expect(m).not.toBeNull();
-      const out: Record<string, string> = {};
-      for (const v of m![0].matchAll(
-        new RegExp(`--${prefix}-([\\w-]+):\\s*(#[0-9a-f]{3,8});`, "g"),
-      ))
-        out[v[1]] = v[2];
-      return out;
-    };
     const kaartPias = waarden(FUT_CSS, /\.fut-kaart--pias\s*\{[^}]*\}/, "kaart");
     const heroPias = waarden(DASHBOARD_CSS, /\.hero--pias\s*\{[^}]*\}/, "kraft");
     // De hero volgt de póstervariant van De Schandpaal (lichtere --lo, want er
@@ -276,6 +280,56 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       expect(heroPiet[sleutel]).toBe(kaartPiet[sleutel]);
     expect(heroPiet.lak).toBe(kaartPiet["frame-hi"]);
     expect(heroPiet["lak-diep"]).toBe(kaartPiet["frame-lo"]);
+  });
+
+  it("de eer-hero's houden de materiaalwaarden van hun FUT-editie (#760)", () => {
+    // Zelfde bewaking als bij de schande-hero's hierboven, nu voor de drie
+    // edities die de hero sinds #760 óók draagt.
+    const kaartKampioen = waarden(
+      FUT_CSS,
+      /\.fut-kaart--kampioen\s*\{[^}]*\}/,
+      "kaart",
+    );
+    const heroKampioen = waarden(
+      DASHBOARD_CSS,
+      /\.hero--kampioen\s*\{[^}]*\}/,
+      "lauwer",
+    );
+    for (const sleutel of ["hi", "mid", "ink", "ink-soft", "lijn"])
+      expect(heroKampioen[sleutel]).toBe(kaartKampioen[sleutel]);
+    expect(heroKampioen.groen).toBe(
+      token(editieBlok("kampioen"), "--editie-kleur"),
+    );
+    // De diepgroene binnenring is de liner van de kaart.
+    expect(heroKampioen.diep).toBe(kaartSkin("goud", "kampioen").kleuren.liner);
+    // Eén bewuste afwijking (zie Dashboard.css): de donkerste stop is op een
+    // hero lichter dan op de kaart, anders zakt de zachte inkt onder AA. Deze
+    // assertie legt vast dát het een keuze is — niet dat er iets verlopen is.
+    expect(heroKampioen.lo).not.toBe(kaartKampioen.lo);
+
+    // In-Form en On-Fire zetten geen hi/mid/lo op de kaart: hun vlak staat als
+    // literale gradient in de CSS. De hero-stops horen dus bij de vlak-stops van
+    // het canvas-register, dat diezelfde gradient spiegelt.
+    for (const [editie, prefix, inkt, vlakNamen] of [
+      ["inform", "inform", "goud", ["navy", "navy-mid", "navy-diep"]],
+      ["onfire", "onfire", "ember", ["sintel", "sintel-mid", "sintel-diep"]],
+    ] as const) {
+      const kaart = waarden(
+        FUT_CSS,
+        new RegExp(`\\.fut-kaart--${editie}\\s*\\{[^}]*\\}`),
+        "kaart",
+      );
+      const hero = waarden(
+        DASHBOARD_CSS,
+        new RegExp(`\\.hero--${prefix}\\s*\\{[^}]*\\}`),
+        prefix,
+      );
+      expect(hero[inkt]).toBe(kaart.ink);
+      expect(hero[`${inkt}-soft`]).toBe(kaart["ink-soft"]);
+      expect(vlakNamen.map((n) => hero[n])).toEqual(
+        kaartSkin("goud", editie).kleuren.vlak.map((s) => s[1]),
+      );
+    }
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {
