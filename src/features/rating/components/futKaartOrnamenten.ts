@@ -65,6 +65,11 @@ export interface StrengMateriaal {
   ribbel: string;
   ribbelGlans: string;
   schaduw: string;
+  /** Vulling van de `rug`-band langs de bolle flank (#772). Alleen gezet
+   *  waar een streng een tweede metaal draagt — de GOAT-hoorn krijgt zo zijn
+   *  platina highlight over de bovenste ribben, terwijl de andere strengen
+   *  (lint, loof, koper) de band gewoon niet tekenen. */
+  rugGlans?: string;
 }
 
 /* ------------------------- strenggenerator (#710) ------------------------- */
@@ -87,6 +92,14 @@ export interface Streng {
   ribbelGlans: readonly string[];
   /** Glanslijn net binnen de bolle flank. */
   highlight: string;
+  /** Gesloten band lángs de bolle flank (#772): breder dan de glanslijn en
+   *  gevuld i.p.v. gestreept, zodat er een tweede metaal op kan (platina op
+   *  de bovenste ribben van de bokhoorn). Alleen getekend als het materiaal
+   *  `rugGlans` zet. */
+  rug: string;
+  /** Omhullende van `rug`, zodat canvas dezelfde objectBoundingBox-gradient
+   *  kan leggen als de DOM-defs. */
+  rugDoos: { xMin: number; xMax: number; yMin: number; yMax: number };
   /** Schaduwlijn net binnen de holle flank — geeft de streng rondte. */
   schaduw: string;
   /** Verticale grenzen, voor het kleurverloop op canvas. */
@@ -96,14 +109,22 @@ export interface Streng {
 interface StrengOpties {
   start: Punt;
   segmenten: readonly Segment[];
-  /** Halve dikte bij de wortel. */
-  dikte: number;
+  /** Halve dikte bij de wortel. Genegeerd zodra `profiel` gezet is. */
+  dikte?: number;
   /** Aantal dwarsribbels (0 = glad). */
   ribbels?: number;
   /** Exponent van de taper: hoger = langer dik, korter spits. */
   taper?: number;
   /** Halve dikte bij de punt (0 = scherp). */
   punt?: number;
+  /** Expliciet dikteprofiel als [t, halveDikte]-knopen (#772). De machtstaper
+   *  hierboven kan maar één soort verloop: gestaag dunner. De bokhoorn van de
+   *  referentie doet iets anders — hij blijft over de hele bovenboog loodzwaar
+   *  en knijpt dán in één keer in, waar de krul naar buiten draait. Dat is met
+   *  géén exponent te halen (de verhouding dik/dun bij t=0,25 en t=0,5 loopt
+   *  bij elke taper tegen een plafond van 2 aan), dus mag een streng zijn
+   *  profiel ook uitschrijven; er wordt lineair tussen de knopen bemonsterd. */
+  profiel?: readonly (readonly [number, number])[];
   /** Aantal samples over de hele lengte. */
   stappen?: number;
 }
@@ -128,10 +149,11 @@ const rond = (n: number) => Math.round(n * 100) / 100;
 export function bouwStreng({
   start,
   segmenten,
-  dikte,
+  dikte = 4,
   ribbels = 0,
   taper = 1.6,
   punt = 0.15,
+  profiel,
   stappen = 72,
 }: StrengOpties): Streng {
   // Centerlijn uitrollen over alle segmenten.
@@ -155,7 +177,16 @@ export function bouwStreng({
   };
   const halfDik = (i: number) => {
     const t = i / stappen;
-    return punt + (dikte - punt) * (1 - Math.pow(t, taper));
+    if (!profiel) return punt + (dikte - punt) * (1 - Math.pow(t, taper));
+    // Lineair tussen de knopen; buiten het bereik de dichtstbijzijnde knoop.
+    if (t <= profiel[0][0]) return profiel[0][1];
+    for (let k = 1; k < profiel.length; k++) {
+      const [t1, d1] = profiel[k];
+      if (t > t1) continue;
+      const [t0, d0] = profiel[k - 1];
+      return d0 + ((d1 - d0) * (t - t0)) / (t1 - t0 || 1);
+    }
+    return profiel[profiel.length - 1][1];
   };
 
   const links: Punt[] = [];
@@ -204,164 +235,263 @@ export function bouwStreng({
     schaduw.push([punten[i][0] - nx * hs, punten[i][1] - ny * hs]);
   }
 
+  // Rugband (#772): een gesloten strook tussen 60% en 90% van de halve dikte
+  // aan de bolle kant. Loopt tot 78% van de lengte mee en dooft daar in de
+  // omtrek uit, zodat de punt zijn eigen kleur houdt en de band niet als los
+  // sliertje eindigt.
+  const rugTot = Math.round(stappen * 0.78);
+  const rugBinnen: Punt[] = [];
+  const rugBuiten: Punt[] = [];
+  for (let i = 0; i <= rugTot; i++) {
+    const [nx, ny] = normaal(i);
+    // De strook knijpt in het laatste kwart naar nul: 1 → 0 over [0.72, 1].
+    const knijp = Math.min(1, (1 - i / rugTot) / 0.28);
+    const hb = halfDik(i) * (0.9 - 0.3 * (1 - knijp));
+    const hi = halfDik(i) * (0.6 + 0.3 * (1 - knijp));
+    rugBuiten.push([punten[i][0] + nx * hb, punten[i][1] + ny * hb]);
+    rugBinnen.push([punten[i][0] + nx * hi, punten[i][1] + ny * hi]);
+  }
+
   const ys = [...links, ...rechts].map((p) => p[1]);
+  const rugPunten = [...rugBuiten, ...rugBinnen];
   return {
     omtrek,
     ribbels: groeven,
     ribbelGlans: ruggen,
     highlight: `M ${lijn(glans)}`,
+    rug: `M ${lijn(rugBuiten)} L ${lijn([...rugBinnen].reverse())} Z`,
+    rugDoos: {
+      xMin: Math.min(...rugPunten.map((p) => p[0])),
+      xMax: Math.max(...rugPunten.map((p) => p[0])),
+      yMin: Math.min(...rugPunten.map((p) => p[1])),
+      yMax: Math.max(...rugPunten.map((p) => p[1])),
+    },
     schaduw: `M ${lijn(schaduw)}`,
     bbox: { yMin: Math.min(...ys), yMax: Math.max(...ys) },
   };
 }
+/* --------------------------- vormhulpjes (#772) --------------------------- */
 
-/* ------------------------------ GOAT (#710) ------------------------------ */
-
-/** Linker bokhoorn: komt achter de schouder vandaan, zwiept over de bovenrand
- *  naar buiten, krult langs de zijkant omlaag en eindigt met de punt naar
- *  binnen — de ~270°-krul van de referentie. Rechts is de spiegeling om x=50,
- *  dus links en rechts zijn per constructie identiek. */
-export const GOAT_HOORN = bouwStreng({
-  // Maten opgemeten uit de referentie (issue #710), in kaart-units met de
-  // kaartlinkerrand op u=0 en de bovenrand op v=0: buitenrand tot u≈−17,5 op
-  // v≈+2, top van de boog op v≈−16,5, punt rond (−12,5 · +15,5), en een
-  // volle dikte van ~6 bij de boogtop die naar de punt toe uitloopt.
-  start: [24, 14],
-  segmenten: [
-    [
-      [17, 3],
-      [7.5, -8],
-      [0, -13.4],
-    ],
-    [
-      [-8, -15.5],
-      [-15.5, -9],
-      [-15.8, 2],
-    ],
-    [
-      [-16, 7.5],
-      [-15, 10],
-      [-13.5, 12],
-    ],
-    [
-      [-12.8, 14],
-      [-12, 15.6],
-      [-11, 16.5],
-    ],
-  ],
-  dikte: 4.2,
-  ribbels: 24,
-  taper: 1.15,
-  punt: 0.15,
-});
-
-/** Baardornament onder de schildpunt: een strak, symmetrisch filigraan dat uit
- *  de punt groeit — heraldisch van opbouw, maar met de silhouetlezing van een
- *  gestileerde sik. Vier strengen per helft plus één op de as: twee flicks die
- *  naar buiten-boven wijzen (de "krul" van de baard) en twee die met de punt
- *  meelopen. */
-// Baardornament (referentie #710): géén losse strengen maar één massief,
-// symmetrisch blad dat uit de schildpunt groeit — met twee kleine lobben op
-// de flanken, gegraveerde nerven erin en twee opkrullende flicks op de
-// schouders. Envelop opgemeten: halve breedte ~9 units, van v≈132 (verstopt
-// achter de punt) tot v≈156. Strak heraldisch, geen harige baard.
-
-/** Halve omtrek van het baardblad: van de as bovenaan, langs de linkerflank
- *  naar de as onderaan. De volle omtrek is deze helft plus zijn spiegeling —
- *  zo is het blad per constructie symmetrisch. */
-const BAARD_HALVE_OMTREK = [
-  // Snel breed worden onder de flicks: de referentie is het breedst rond
-  // v≈140 en loopt daarna strak naar de punt toe.
-  "C 46.8 133.2, 43.6 134.8, 42.2 137.6",
-  "C 41.2 140.4, 40.8 143.6, 41.2 146.6",
-  // Lob: het kleine punt dat opzij uit het blad steekt.
-  "L 38.9 145.8",
-  "C 39.8 149.6, 42.6 152.9, 46.5 155.8",
-  "C 47.6 156.6, 48.7 157.3, 50 158",
-].join(" ");
-
-/** Spiegelt een pad-string om x=50 en keert de richting om, zodat hij achter
- *  de originele helft aan sluit tot één gesloten omtrek. Alleen de commando's
- *  die hier voorkomen (C en L, absolute coördinaten). */
-function spiegelTerug(halve: string): string {
-  const tokens = halve.trim().split(/\s+/);
-  const segmenten: { cmd: string; punten: number[] }[] = [];
-  let i = 0;
-  while (i < tokens.length) {
-    const cmd = tokens[i++];
-    const aantal = cmd === "C" ? 6 : 2;
-    const punten: number[] = [];
-    for (let k = 0; k < aantal; k++)
-      punten.push(Number(tokens[i++].replace(",", "")));
-    segmenten.push({ cmd, punten });
-  }
-  // Achterstevoren doorlopen: elk segment eindigt waar het vorige begon.
-  const uit: string[] = [];
-  for (let k = segmenten.length - 1; k >= 0; k--) {
-    const { cmd, punten } = segmenten[k];
-    const spiegel = (x: number) => rond(100 - x);
-    if (cmd === "C") {
-      // Eindpunt van het vorige segment is het startpunt hier; de twee
-      // controlepunten wisselen van volgorde.
-      const vorig = k === 0 ? [50, 132.5] : segmenten[k - 1].punten.slice(-2);
-      uit.push(
-        `C ${spiegel(punten[2])} ${punten[3]}, ${spiegel(punten[0])} ${
-          punten[1]
-        }, ${spiegel(vorig[0])} ${vorig[1]}`,
-      );
-    } else {
-      const vorig = k === 0 ? [50, 132.5] : segmenten[k - 1].punten.slice(-2);
-      uit.push(`L ${spiegel(vorig[0])} ${vorig[1]}`);
-    }
-  }
-  return uit.join(" ");
+/** Eén spits blad als gesloten pad: twee bogen die in een punt samenkomen,
+ *  geplaatst op `(u, v)` en gedraaid over `hoek` (graden, 0 = naar rechts).
+ *  Gedeeld door de lauwerkrans van El Padelissimo en de haarbladen van het
+ *  GOAT-baardornament — hetzelfde blad, ander materiaal. */
+function bladVorm(u: number, v: number, hoek: number, lengte: number): string {
+  const r = (hoek * Math.PI) / 180;
+  const cos = Math.cos(r);
+  const sin = Math.sin(r);
+  const breed = lengte * 0.34;
+  const P = (langs: number, dwars: number) =>
+    `${rond(u + langs * cos - dwars * sin)} ${rond(v + langs * sin + dwars * cos)}`;
+  return `M ${P(0, 0)} C ${P(lengte * 0.3, breed)} ${P(lengte * 0.72, breed * 0.8)} ${P(
+    lengte,
+    0,
+  )} C ${P(lengte * 0.72, -breed * 0.8)} ${P(lengte * 0.3, -breed)} ${P(0, 0)} Z`;
 }
 
-/** Het gesloten baardblad: van de aspunt bovenaan langs links omlaag, en
- *  gespiegeld weer omhoog. */
-export const GOAT_BAARD_BLAD = `M 50 132.5 ${BAARD_HALVE_OMTREK} ${spiegelTerug(
-  BAARD_HALVE_OMTREK,
-)} Z`;
+/** Bouwt een gesloten vorm die op de as x=50 staat uit `[v, halveBreedte]`-
+ *  knopen: de linkerflank van boven naar onder, en dezelfde knopen gespiegeld
+ *  weer omhoog. Catmull-Rom door de knopen, zodat een handvol maten volstaat
+ *  en de vorm toch vloeiend blijft. De symmetrie is per constructie — de
+ *  rechterflank ís de linker, niet een tweede reeks getallen. */
+function bouwAsVorm(knopen: readonly (readonly [number, number])[]): string {
+  const links: Punt[] = knopen.map(([v, b]) => [50 - b, v]);
+  const punten: Punt[] = [
+    ...links,
+    ...[...links].reverse().map(([x, y]): Punt => [100 - x, y]),
+  ];
+  // Catmull-Rom → cubics. Eerste en laatste knoop verdubbelen we, zodat de
+  // vorm daar in een echte punt eindigt i.p.v. rond te lopen.
+  const p = (i: number) => punten[Math.max(0, Math.min(punten.length - 1, i))];
+  const uit: string[] = [`M ${rond(punten[0][0])} ${rond(punten[0][1])}`];
+  for (let i = 0; i < punten.length - 1; i++) {
+    const p0 = p(i - 1);
+    const p1 = p(i);
+    const p2 = p(i + 1);
+    const p3 = p(i + 2);
+    const c1: Punt = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2: Punt = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    uit.push(
+      `C ${rond(c1[0])} ${rond(c1[1])}, ${rond(c2[0])} ${rond(c2[1])}, ${rond(
+        p2[0],
+      )} ${rond(p2[1])}`,
+    );
+  }
+  return `${uit.join(" ")} Z`;
+}
 
-/** Gegraveerde nerven in het blad: vijf lijnen die met de taper meelopen —
- *  de "haren" van de sik, maar als gravure. Symmetrisch rond de as. */
-export const GOAT_BAARD_NERVEN: readonly string[] = [-2, -1, 0, 1, 2].map(
-  (k) => {
-    const top = 50 + k * 2.3;
-    const mid = 50 + k * 2.1;
-    const eind = 50 + k * 0.9;
-    return `M ${rond(top)} 135 C ${rond(mid)} 141, ${rond(
-      mid,
-    )} 147, ${rond(eind)} 154`;
-  },
-);
+/* --------------------------- GOAT (#710, #772) --------------------------- */
 
-/** De twee flicks op de schouders van het blad: kleine opkrullende hoorntjes
- *  die naar buiten-boven wijzen. Eén helft; rechts is de spiegeling. */
-export const GOAT_BAARD_FLICK = bouwStreng({
-  // Bewust láág aangezet (v≈138 → 134,6): hoger langs de schildrand is de
-  // kaart nog breed genoeg om de flick op te slokken — de ornamentlaag ligt
-  // immers áchter het schild. Op deze hoogte loopt het schild al naar de punt
-  // en steekt de krul er vrij naast uit, net als in de referentie.
-  start: [46.8, 139.6],
+/** Linker bokhoorn (#710, herijkt op de referentie van #772). Opgemeten met de
+ *  kaartlinkerrand op u=0 en de bovenrand op v=0, schaal 7,33 px per kaart-unit
+ *  uit de referentie (kaartbreedte 733 px):
+ *
+ *    wortel achter de bovenhoek  (30 · 16)   — verdwijnt onder de kaartrand
+ *    top van de boog             ( 4 · −15,5) buitenrand tot v≈−25
+ *    buitenste punt van de krul  (−16 · 2)   buitenrand tot u≈−20
+ *    laatste bocht               (−12,3 · 18,3)
+ *    punt                        (−5 · 24,2)
+ *
+ *  Dat is een krul van ruim 300°: over de bovenrand naar buiten, langs de
+ *  zijkant omlaag en met de punt weer naar binnen — zwaarder en ronder dan de
+ *  eerste opzet in #710, die op ~270° en de halve dikte bleef steken. Rechts is
+ *  de spiegeling om x=50, dus links en rechts kunnen per constructie niet uit
+ *  elkaar lopen. */
+export const GOAT_HOORN = bouwStreng({
+  start: [30, 16],
   segmenten: [
     [
-      [43.6, 139],
-      [40.4, 137.6],
-      [38.6, 135],
+      [24, 6],
+      [16, -15.5],
+      [4, -15.5],
     ],
     [
-      [37.4, 134],
-      [36.6, 133.2],
-      [36.1, 132.2],
+      [-6, -15.5],
+      [-16, -8],
+      [-16, 2],
+    ],
+    [
+      [-16, 9],
+      [-15, 15],
+      [-12.3, 18.3],
+    ],
+    [
+      [-10.4, 20.9],
+      [-8, 23],
+      [-5, 24.2],
     ],
   ],
-  dikte: 1.9,
-  ribbels: 5,
-  taper: 1.2,
-  punt: 0.08,
-  stappen: 26,
+  // Zware, brede basis die pas inknijpt waar de krul naar buiten draait: in de
+  // referentie is de boogtop ~21 units dik en de dalende flank nog maar ~8,5.
+  // Geen machtstaper haalt dat (zie `profiel` in StrengOpties).
+  profiel: [
+    [0, 10.2],
+    [0.18, 9.6],
+    [0.3, 8.4],
+    [0.42, 6.2],
+    [0.52, 4.5],
+    [0.68, 3.5],
+    [0.82, 2.6],
+    [0.93, 1.5],
+    [1, 0.15],
+  ],
+  ribbels: 26,
+  stappen: 108,
 });
+
+/** Baardornament, deel 1 — de centrale speerpunt (#772). Staat op de as, dus
+ *  hij wordt niet gespiegeld gerenderd maar is uit zichzelf symmetrisch:
+ *  `bouwAsVorm` legt de rechterflank aan uit dezelfde knopen als de linker.
+ *  Knopen zijn `[v, halveBreedte]`, opgemeten uit de referentie met de
+ *  schildpunt op v=139: een slanke lans (v≈124), een taille, het zware
+ *  middenblad dat ín de kaartpunt valt (v≈136) en een druppel die er onder
+ *  uitsteekt (v≈147). */
+export const GOAT_BAARD_SPEER = bouwAsVorm([
+  [119.6, 0],
+  [121.6, 1.5],
+  [124, 2.9],
+  [127.2, 2.1],
+  [130.2, 1.2],
+  [133.2, 3.3],
+  [136.2, 3.7],
+  [139.4, 1.9],
+  [141.8, 0.85],
+  [143.6, 2.2],
+  [145.2, 1.4],
+  [146.9, 0],
+]);
+
+/** Gegraveerde nerven in de speerpunt: drie lijnen die met de taille meelopen.
+ *  Symmetrisch rond de as, dus de middelste staat er één keer en de twee
+ *  flankerende als spiegelpaar. */
+export const GOAT_BAARD_NERVEN: readonly string[] = [-1, 0, 1].map((k) => {
+  const top = 50 + k * 1.1;
+  const mid = 50 + k * 1.5;
+  const eind = 50 + k * 0.6;
+  return `M ${rond(top)} 121.6 C ${rond(mid)} 127, ${rond(mid)} 133, ${rond(
+    eind,
+  )} 145`;
+});
+
+/** Baardornament, deel 2 — de bovenarm (#772). Eén helft; rechts is de
+ *  spiegeling om x=50. Groeit vanaf de as naar buiten-boven en eindigt in een
+ *  krul van ~300° met het middelpunt op (35,6 · 117,2): de "sierlijke naar
+ *  buiten gekrulde bovenarm" uit de issue. De krul stopt bewust op v≈116,2 —
+ *  het vlak heeft 24% bodempadding, dus de divisieregel GOAT eindigt op v≈115
+ *  en het ornament mag daar niet overheen. */
+export const GOAT_BAARD_ARM = bouwStreng({
+  start: [46.2, 130.2],
+  segmenten: [
+    [
+      [42, 128.8],
+      [37, 126.8],
+      [33.4, 123.8],
+    ],
+    [
+      [31.2, 122.2],
+      [30, 119.2],
+      [32.4, 117.7],
+    ],
+    [
+      [34.9, 116.1],
+      [37.8, 118],
+      [37.2, 120.6],
+    ],
+    [
+      [36.9, 122.1],
+      [35.7, 123.1],
+      [34.2, 123.3],
+    ],
+  ],
+  dikte: 2,
+  punt: 0.1,
+  taper: 1.5,
+  stappen: 60,
+});
+
+/** Baardornament, deel 3 — de onderkrul (#772). Kleiner dan de bovenarm en
+ *  andersom gedraaid: naar buiten-onder en dan terug omhoog. Steekt met zijn
+ *  buitenste boog nét over de schildrand (op v≈135 loopt die op u≈43), zodat
+ *  het filigraan "uit de kaartomlijsting groeit" i.p.v. erop te liggen. */
+export const GOAT_BAARD_KRUL = bouwStreng({
+  start: [47.8, 136.4],
+  segmenten: [
+    [
+      [45.4, 137.4],
+      [42.4, 137.2],
+      [40.6, 135.4],
+    ],
+    [
+      [39, 133.8],
+      [39.5, 131.2],
+      [41.8, 130.9],
+    ],
+    [
+      [43.7, 130.7],
+      [44.8, 132.5],
+      [43.8, 133.9],
+    ],
+  ],
+  dikte: 1.4,
+  punt: 0.08,
+  taper: 1.4,
+  stappen: 44,
+});
+
+/** Baardornament, deel 4 — de gelaagde haarbladen (#772). Drie spitse bladen
+ *  per kant die onder de bovenarm vandaan naar buiten waaieren: de "gelaagde
+ *  gegraveerde blad- of haarvormen" uit de issue. Ze doen het silhouetwerk —
+ *  zonder die waaier leest het ornament als een fleur-de-lis, mét als een sik.
+ *  Eén helft; rechts is de spiegeling. `[u, v, hoek, lengte]`. */
+const BAARD_BLADEN: readonly (readonly [number, number, number, number])[] = [
+  [41.2, 126.2, 192, 11.5],
+  [42.8, 130.2, 202, 10.2],
+  [44.4, 133.6, 213, 8.2],
+] as const;
+
+export const GOAT_BAARD_BLADEN: readonly string[] = BAARD_BLADEN.map(
+  ([u, v, hoek, lengte]) => bladVorm(u, v, hoek, lengte),
+);
 
 /** Rosé-metaal: verloop van boven naar onder, donkere contour, lichte glans.
  *  Gedeeld door hoorns en baard, en door DOM en canvas. */
@@ -377,48 +507,110 @@ export const GOAT_METAAL_RIBBEL = "rgba(79, 26, 43, 0.5)";
 /** Lichte rug naast elke groef, en de schaduw langs de holle flank. */
 export const GOAT_METAAL_RIBBELGLANS = "rgba(255, 226, 236, 0.45)";
 export const GOAT_METAAL_SCHADUW = "rgba(90, 30, 48, 0.42)";
-
-/** Vlak-motief: geëtst geiten-medaillon — kop met hoorns in een dubbele ring —
- *  plus twee grote trofee-ringbogen (TOTY-taal), als één gegraveerde
- *  lijntekening. ViewBox 0 0 100 100. */
-export const GOAT_MEDAILLON: readonly OrnamentPad[] = [
-  { d: "M 13 50 A 37 37 0 1 1 87 50 A 37 37 0 1 1 13 50", soort: "lijn", breedte: 1.3 },
-  {
-    d: "M 16.5 50 A 33.5 33.5 0 1 1 83.5 50 A 33.5 33.5 0 1 1 16.5 50",
-    soort: "lijn",
-    breedte: 0.6,
-    alpha: 0.8,
-  },
-  { d: "M 50 4 A 46 46 0 0 1 96 50", soort: "lijn", breedte: 0.8, alpha: 0.7 },
-  { d: "M 57 9.5 A 41 41 0 0 1 91 43", soort: "lijn", breedte: 0.5, alpha: 0.7 },
-  {
-    d: "M 43.5 40 C 41 24 27 14 18 21 C 10 27 13 41 24 43 C 17 38 16 28 23 24.5 C 31 20.5 39 28 41.5 41",
-    soort: "lijn",
-    breedte: 1.3,
-  },
-  {
-    d: "M 56.5 40 C 59 24 73 14 82 21 C 90 27 87 41 76 43 C 83 38 84 28 77 24.5 C 69 20.5 61 28 58.5 41",
-    soort: "lijn",
-    breedte: 1.3,
-  },
-  {
-    d: "M 43.5 40 C 41.5 49 42.5 57 46 63 L 49 69.5 C 49.7 71 50.3 71 51 69.5 L 54 63 C 57.5 57 58.5 49 56.5 40 C 52 36.5 48 36.5 43.5 40 Z",
-    soort: "lijn",
-    breedte: 1.3,
-  },
-  { d: "M 42.5 43 L 35 48.5", soort: "lijn", breedte: 1.3 },
-  { d: "M 57.5 43 L 65 48.5", soort: "lijn", breedte: 1.3 },
-  { d: "M 50 71 L 50 78", soort: "lijn", breedte: 1.3 },
-  { d: "M 44.4 47 A 1.2 1.2 0 1 1 46.8 47 A 1.2 1.2 0 1 1 44.4 47", soort: "vlak" },
-  { d: "M 53.2 47 A 1.2 1.2 0 1 1 55.6 47 A 1.2 1.2 0 1 1 53.2 47", soort: "vlak" },
+/** Platina langs de bovenste ribben van de hoorn (#772): koel wit-grijs op het
+ *  warme roségoud. Bewust half doorzichtig — het is een lichtval over het
+ *  ribbelreliëf, geen tweede laag metaal, dus de groeven moeten erdoorheen
+ *  blijven lezen. */
+export const GOAT_PLATINA_VERLOOP: readonly (readonly [number, string])[] = [
+  [0, "rgba(255, 253, 252, 0.7)"],
+  [0.45, "rgba(226, 224, 230, 0.4)"],
+  [1, "rgba(168, 160, 172, 0.12)"],
 ] as const;
 
-/** Etskleur van het medaillon: de GOAT-inkt op lage alpha. */
-export const GOAT_MEDAILLON_KLEUR = "rgba(249, 163, 183, 0.16)";
+/** Vlak-motief (#772): de grote geitenkop als watermerk achter de
+ *  kaartinformatie — frontaal, met de zware ramshoorns die de ornamentlaag
+ *  buiten de kaart herhaalt, plus een paar zeer lichte gebogen hoornlijnen in
+ *  de achtergrond. Géén ring eromheen meer (#710 had er twee): de referentie
+ *  zet de kop als silhouet, en een medaillonrand maakte hem klein.
+ *  ViewBox 0 0 100 100. */
+export const GOAT_WATERMERK: readonly OrnamentPad[] = [
+  // Achtergrond: gebogen hoornlijnen, ijler dan de kop zelf.
+  { d: "M 9 82 C 3 52, 21 20, 50 11", soort: "lijn", breedte: 0.9, alpha: 0.28 },
+  { d: "M 91 82 C 97 52, 79 20, 50 11", soort: "lijn", breedte: 0.9, alpha: 0.28 },
+  // Hoorns: uit de schedel naar buiten, omlaag en met de punt terug naar
+  // binnen — dezelfde krul als het ornament, in één lijn.
+  {
+    d: "M 43 27 C 32 14, 13 14, 7 28 C 1 42, 11 57, 27 56 C 15 51, 10 40, 17 32 C 25 23, 37 30, 41 41",
+    soort: "lijn",
+    breedte: 2,
+  },
+  {
+    d: "M 57 27 C 68 14, 87 14, 93 28 C 99 42, 89 57, 73 56 C 85 51, 90 40, 83 32 C 75 23, 63 30, 59 41",
+    soort: "lijn",
+    breedte: 2,
+  },
+  // Oren.
+  { d: "M 41.5 37 C 35 39, 29 43, 25 48", soort: "lijn", breedte: 1.4 },
+  { d: "M 58.5 37 C 65 39, 71 43, 75 48", soort: "lijn", breedte: 1.4 },
+  // Kop met snuit, en de sik eronder — de kaart heeft er een van metaal.
+  {
+    d: "M 41 33 C 37.5 47, 38.5 60, 44 71 L 48 84 C 49 87.5, 51 87.5, 52 84 L 56 71 C 61.5 60, 62.5 47, 59 33 C 52.5 28, 47.5 28, 41 33 Z",
+    soort: "lijn",
+    breedte: 2,
+  },
+  { d: "M 44.5 71 C 47.5 73, 52.5 73, 55.5 71", soort: "lijn", breedte: 1 },
+  { d: "M 50 87 C 48.5 91, 48.5 94, 50 97 C 51.5 94, 51.5 91, 50 87 Z", soort: "vlak" },
+  // Ogen: twee kleine vlakjes — het enige dat de kop echt laat kijken.
+  { d: "M 43.6 47 A 1.6 1.6 0 1 1 46.8 47 A 1.6 1.6 0 1 1 43.6 47", soort: "vlak" },
+  { d: "M 53.2 47 A 1.6 1.6 0 1 1 56.4 47 A 1.6 1.6 0 1 1 53.2 47", soort: "vlak" },
+] as const;
+
+/** Etskleur van het watermerk: de GOAT-inkt op lage alpha. Bewust net iets
+ *  hoger dan #710 (0.16 → 0.18): de kop is nu een lijntekening zonder ring,
+ *  en die viel op de kleine maten weg. Contrast van de inkt op het vlak blijft
+ *  ongemoeid — dit is een laag onder de tekst. */
+export const GOAT_WATERMERK_KLEUR = "rgba(249, 163, 183, 0.18)";
 /** Motiefmaat: breedte als fractie van het vlak, en de verticale positie als
- *  background-position-percentage (0.2 ≡ `center 20%`). */
-export const GOAT_MEDAILLON_BREEDTE = 0.92;
-export const GOAT_MEDAILLON_POSITIE = 0.2;
+ *  background-position-percentage (0.3 ≡ `center 30%`). Groter en iets lager
+ *  dan het medaillon van #710: de kop hoort áchter de kaartinformatie te
+ *  staan, niet erboven. */
+export const GOAT_WATERMERK_BREEDTE = 0.96;
+export const GOAT_WATERMERK_POSITIE = 0.3;
+
+/** Divisie-icoon (#772): een compacte geitenkop als eigen SVG, zodat de
+ *  GOAT-identiteit niet aan de emoji hangt — 🐐 rendert op iOS, Android en
+ *  desktop als drie verschillende beestjes en valt op 96px uit elkaar. Zelfde
+ *  silhouet als het watermerk, maar met dikkere lijnen en zonder detail: op de
+ *  kleinste kaart is dit vakje ~11 px hoog. Decoratief: de tekst "GOAT" onder
+ *  de kaart draagt de betekenis al. ViewBox 0 0 24 24. */
+export const GOAT_ICOON_VIEWBOX = "0 0 24 24";
+export const GOAT_ICOON: readonly OrnamentPad[] = [
+  // Hoorns: naar buiten-boven en met de punt terug omlaag. Bewust géén volle
+  // spiraal zoals het ornament — op 11 px loopt zo'n krul dicht en leest de
+  // kop als een muis met oren.
+  {
+    d: "M 9.8 6.2 C 8.8 3.4, 6.4 1.4, 3.4 1.5 C 5.2 3.4, 5.8 5.8, 5.2 8.2",
+    soort: "lijn",
+    breedte: 1.6,
+  },
+  {
+    d: "M 14.2 6.2 C 15.2 3.4, 17.6 1.4, 20.6 1.5 C 18.8 3.4, 18.2 5.8, 18.8 8.2",
+    soort: "lijn",
+    breedte: 1.6,
+  },
+  // Oren opzij, en de kop met snuit als één gesloten silhouet.
+  { d: "M 8.4 10.2 C 6.8 9.8, 5.4 10.4, 4.4 11.6", soort: "lijn", breedte: 1.6 },
+  { d: "M 15.6 10.2 C 17.2 9.8, 18.6 10.4, 19.6 11.6", soort: "lijn", breedte: 1.6 },
+  {
+    d: "M 8.4 6.6 C 7.4 10.6, 8.4 14, 10.4 16.8 L 11.4 19.4 C 11.6 20.1, 12.4 20.1, 12.6 19.4 L 13.6 16.8 C 15.6 14, 16.6 10.6, 15.6 6.6 C 13.2 5, 10.8 5, 8.4 6.6 Z",
+    soort: "lijn",
+    breedte: 1.6,
+  },
+  // De sik: het detail dat de kop van een ram een geit maakt.
+  {
+    d: "M 12 19.8 C 11.2 20.9, 11.2 22, 12 22.7 C 12.8 22, 12.8 20.9, 12 19.8 Z",
+    soort: "vlak",
+  },
+  {
+    d: "M 9.85 10.3 A 0.95 0.95 0 1 1 11.75 10.3 A 0.95 0.95 0 1 1 9.85 10.3",
+    soort: "vlak",
+  },
+  {
+    d: "M 12.25 10.3 A 0.95 0.95 0 1 1 14.15 10.3 A 0.95 0.95 0 1 1 12.25 10.3",
+    soort: "vlak",
+  },
+] as const;
+
 
 /* --------------------------- El Padelissimo (#710) --------------------------- */
 
@@ -556,22 +748,8 @@ const LAUWER_BLADEN: readonly (readonly [number, number, number, number])[] = [
   [7, 86.5, 214, 5.6],
 ] as const;
 
-/** Bouwt één blad als gesloten pad met twee bogen (spitse ovaal). */
-function lauwerBlad(u: number, v: number, hoek: number, lengte: number): string {
-  const r = (hoek * Math.PI) / 180;
-  const cos = Math.cos(r);
-  const sin = Math.sin(r);
-  const breed = lengte * 0.34;
-  const P = (langs: number, dwars: number) =>
-    `${rond(u + langs * cos - dwars * sin)} ${rond(v + langs * sin + dwars * cos)}`;
-  return `M ${P(0, 0)} C ${P(lengte * 0.3, breed)} ${P(lengte * 0.72, breed * 0.8)} ${P(
-    lengte,
-    0,
-  )} C ${P(lengte * 0.72, -breed * 0.8)} ${P(lengte * 0.3, -breed)} ${P(0, 0)} Z`;
-}
-
 export const DICTATOR_LAUWER_BLADEN: readonly string[] = LAUWER_BLADEN.map(
-  ([u, v, hoek, lengte]) => lauwerBlad(u, v, hoek, lengte),
+  ([u, v, hoek, lengte]) => bladVorm(u, v, hoek, lengte),
 );
 
 /** Lakzegel-medaillon in de kaartpunt: ring, zegelvlak en een ster. */

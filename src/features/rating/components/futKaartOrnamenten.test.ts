@@ -9,23 +9,43 @@ import {
   DICTATOR_LAUWER_BLADEN,
   DICTATOR_LAUWER_STENGEL,
   DICTATOR_ZEGEL,
-  GOAT_BAARD_BLAD,
-  GOAT_BAARD_FLICK,
+  GOAT_BAARD_ARM,
+  GOAT_BAARD_BLADEN,
+  GOAT_BAARD_KRUL,
   GOAT_BAARD_NERVEN,
+  GOAT_BAARD_SPEER,
   GOAT_HOORN,
-  GOAT_MEDAILLON,
+  GOAT_ICOON,
+  GOAT_ICOON_VIEWBOX,
+  GOAT_WATERMERK,
   ORNAMENT_DOOS,
   ORNAMENT_VIEWBOX,
   type Streng,
 } from "./futKaartOrnamenten";
 
-/** Alle coördinaten uit een pad-string, als [x, y]-paren. De generator schrijft
- *  alleen M/L/C met absolute getallen, dus dit dekt de hele ornamentlaag. */
+/** Alle coördinaten uit een pad-string, als [x, y]-paren. Alle paden hier
+ *  gebruiken absolute commando's; van een A-boog telt alleen het eindpunt mee,
+ *  want de vijf getallen ervóór (rx ry rotatie large-arc sweep) zijn vlaggen en
+ *  geen coördinaten — die naïef als paar lezen leverde bij de oog-cirkels een
+ *  spookpunt op (0, 1). */
 function punten(pad: string): [number, number][] {
-  const getallen = pad.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+  const tokens = pad.match(/[A-Za-z]|-?\d+(?:\.\d+)?/g) ?? [];
   const uit: [number, number][] = [];
-  for (let i = 0; i + 1 < getallen.length; i += 2)
-    uit.push([getallen[i], getallen[i + 1]]);
+  let cmd = "M";
+  let i = 0;
+  while (i < tokens.length) {
+    const t = tokens[i];
+    if (/[A-Za-z]/.test(t)) {
+      cmd = t.toUpperCase();
+      i++;
+      continue;
+    }
+    const groep = cmd === "A" ? 7 : cmd === "C" ? 6 : 2;
+    const g = tokens.slice(i, i + groep).map(Number);
+    i += groep;
+    if (cmd === "A") uit.push([g[5], g[6]]);
+    else for (let k = 0; k + 1 < g.length; k += 2) uit.push([g[k], g[k + 1]]);
+  }
   return uit;
 }
 
@@ -54,9 +74,18 @@ function schildLinkerrand(v: number): number {
 const alleStrengPaden = (s: Streng) => [
   s.omtrek,
   s.highlight,
+  s.rug,
   s.schaduw,
   ...s.ribbels,
   ...s.ribbelGlans,
+];
+
+/** Alle paden van het baardfiligraan (#772), in de helft waarin ze staan —
+ *  de renderers spiegelen arm, krul en bladen om x=50. */
+const BAARD_HELFT = [
+  ...alleStrengPaden(GOAT_BAARD_ARM),
+  ...alleStrengPaden(GOAT_BAARD_KRUL),
+  ...GOAT_BAARD_BLADEN,
 ];
 
 describe("bouwStreng", () => {
@@ -88,20 +117,73 @@ describe("bouwStreng", () => {
   it("geeft evenveel groeven als ruggen, en geen enkele NaN", () => {
     expect(GOAT_HOORN.ribbels.length).toBe(GOAT_HOORN.ribbelGlans.length);
     expect(GOAT_HOORN.ribbels.length).toBeGreaterThan(15);
-    for (const pad of alleStrengPaden(GOAT_HOORN))
+    for (const pad of [...alleStrengPaden(GOAT_HOORN), ...BAARD_HELFT])
       expect(pad, `NaN in ${pad.slice(0, 40)}…`).not.toMatch(/NaN/);
+  });
+
+  it("volgt een expliciet dikteprofiel i.p.v. de machtstaper (#772)", () => {
+    // Rechte streng langs de x-as, dus de omtrek-y ís de halve dikte. Het
+    // profiel doet iets wat geen exponent kan: eerst vlak blijven, dan in één
+    // keer inknijpen — precies de bokhoorn van de referentie.
+    const streng = bouwStreng({
+      start: [0, 0],
+      segmenten: [
+        [
+          [25, 0],
+          [75, 0],
+          [100, 0],
+        ],
+      ],
+      profiel: [
+        [0, 8],
+        [0.4, 7.6],
+        [0.6, 2.5],
+        [1, 0.2],
+      ],
+      stappen: 100,
+    });
+    const dik = (x: number) =>
+      Math.max(
+        ...punten(streng.omtrek)
+          .filter((q) => Math.abs(q[0] - x) < 1.5)
+          .map((q) => Math.abs(q[1])),
+      );
+    expect(dik(2)).toBeCloseTo(8, 0);
+    expect(dik(40)).toBeCloseTo(7.6, 0);
+    expect(dik(60)).toBeLessThan(3.5);
+    // En de verhouding die met een machtstaper onhaalbaar is (plafond 2).
+    expect(dik(40) / dik(60)).toBeGreaterThan(2.4);
+  });
+
+  it("legt de rugband bínnen de omtrek, aan de kant van de glanslijn (#772)", () => {
+    // De platina highlight mag niet buiten de hoorn steken; en hij hoort aan
+    // de bolle flank te liggen, dezelfde kant als `highlight`.
+    const buiten = grenzen([GOAT_HOORN.omtrek]);
+    const { rugDoos } = GOAT_HOORN;
+    expect(rugDoos.xMin).toBeGreaterThanOrEqual(buiten.xMin);
+    expect(rugDoos.xMax).toBeLessThanOrEqual(buiten.xMax);
+    expect(rugDoos.yMin).toBeGreaterThanOrEqual(buiten.yMin);
+    expect(rugDoos.yMax).toBeLessThanOrEqual(buiten.yMax);
+    // Bij de wortel ligt de band links van de centerlijn — net als de
+    // glanslijn, en niet aan de holle kant waar de schaduw loopt.
+    const rug0 = punten(GOAT_HOORN.rug)[0];
+    const glans0 = punten(GOAT_HOORN.highlight)[0];
+    const schaduw0 = punten(GOAT_HOORN.schaduw)[0];
+    expect(Math.hypot(rug0[0] - glans0[0], rug0[1] - glans0[1])).toBeLessThan(
+      Math.hypot(rug0[0] - schaduw0[0], rug0[1] - schaduw0[1]),
+    );
   });
 });
 
-describe("GOAT-ornament (#710)", () => {
+describe("GOAT-ornament (#710, #772)", () => {
   it("past binnen de ornament-viewBox, met de CSS-doos in dezelfde maten", () => {
     // De ornamentlaag is de énige die buiten de schildclip valt; loopt een pad
     // buiten de viewBox, dan snijdt de browser hem stil af.
     const [vx, vy, vw, vh] = ORNAMENT_VIEWBOX.split(" ").map(Number);
     const g = grenzen([
       ...alleStrengPaden(GOAT_HOORN),
-      ...alleStrengPaden(GOAT_BAARD_FLICK),
-      GOAT_BAARD_BLAD,
+      ...BAARD_HELFT,
+      GOAT_BAARD_SPEER,
       ...GOAT_BAARD_NERVEN,
     ]);
     // Ook de gespiegelde helft (x → 100 − x) moet passen.
@@ -118,14 +200,16 @@ describe("GOAT-ornament (#710)", () => {
   });
 
   it("de hoorn steekt links én boven de kaart uit, zoals de referentie", () => {
-    // Opgemeten uit de referentie in issue #710: buitenrand tot u≈−17,5 en de
-    // boogtop tot v≈−16,5. Ruime marges: dit bewaakt de leesbaarheid van het
-    // silhouet, niet de exacte kromming.
+    // Opgemeten uit de referentie van #772 (schaal 7,33 px per kaart-unit):
+    // buitenrand tot u≈−20 en de boogtop tot v≈−25. Ruime marges: dit bewaakt
+    // de leesbaarheid van het silhouet, niet de exacte kromming.
     const g = grenzen(alleStrengPaden(GOAT_HOORN));
-    expect(g.xMin).toBeLessThan(-14);
-    expect(g.xMin).toBeGreaterThan(-22);
-    expect(g.yMin).toBeLessThan(-13);
-    expect(g.yMin).toBeGreaterThan(-22);
+    expect(g.xMin).toBeLessThan(-18);
+    expect(g.xMin).toBeGreaterThan(-26);
+    expect(g.yMin).toBeLessThan(-22);
+    expect(g.yMin).toBeGreaterThan(-32);
+    // De punt krult terug naar binnen en eindigt naast de kaart, niet erboven.
+    expect(g.yMax).toBeGreaterThan(20);
     // De wortel zit áchter de kaart (rechts van de linkerrand, onder de
     // bovenrand van de kroon-crest op v≈4,9), anders zweeft de hoorn los.
     const [wortelX, wortelY] = punten(GOAT_HOORN.omtrek)[0];
@@ -133,16 +217,40 @@ describe("GOAT-ornament (#710)", () => {
     expect(wortelY).toBeGreaterThan(6);
   });
 
-  it("het baardblad is symmetrisch rond de as en groeit uit de punt", () => {
-    const p = punten(GOAT_BAARD_BLAD);
-    const g = grenzen([GOAT_BAARD_BLAD]);
+  it("de hoorn heeft een zware basis die pas bij de krul inknijpt (#772)", () => {
+    // Kern van de herijking: waar #710 een gelijkmatige taper had, moet de
+    // boogtop nu ruim twee keer zo dik zijn als de dalende flank.
+    // Bij de boogtop loopt de hoorn horizontaal, dus daar meet je de dikte
+    // verticaal; op de dalende flank loopt hij verticaal en meet je hem
+    // horizontaal. In beide gevallen alleen dát deel van de omtrek pakken —
+    // de wortel loopt door de kaart en zou elke meting verdubbelen.
+    const alle = punten(GOAT_HOORN.omtrek);
+    const spanY = (u: number) => {
+      const p = alle.filter((q) => Math.abs(q[0] - u) < 1.2 && q[1] < 0);
+      return Math.max(...p.map((q) => q[1])) - Math.min(...p.map((q) => q[1]));
+    };
+    const spanX = (v: number) => {
+      const p = alle.filter((q) => Math.abs(q[1] - v) < 1.2 && q[0] < 0);
+      return Math.max(...p.map((q) => q[0])) - Math.min(...p.map((q) => q[0]));
+    };
+    // Boogtop (u≈4): ~19 units dik, ruim een vijfde van de kaartbreedte.
+    expect(spanY(4)).toBeGreaterThan(16);
+    // Dalende flank (v≈8): nog geen helft daarvan.
+    expect(spanX(8)).toBeLessThan(11);
+    expect(spanY(4) / spanX(8)).toBeGreaterThan(1.8);
+  });
+
+  it("de speerpunt is symmetrisch rond de as en groeit uit de kaartpunt", () => {
+    const p = punten(GOAT_BAARD_SPEER);
+    const g = grenzen([GOAT_BAARD_SPEER]);
     // Even ver naar links als naar rechts van x=50.
     expect(50 - g.xMin).toBeCloseTo(g.xMax - 50, 1);
-    // Begint achter de schildpunt (v<139) en steekt eronder uit.
-    expect(g.yMin).toBeLessThan(139);
-    expect(g.yMax).toBeGreaterThan(150);
-    // Elk punt heeft zijn spiegelbeeld in het pad — de generator bouwt de
-    // tweede helft uit de eerste, dus dit vangt een handmatige tik erin.
+    // Begint ín de kaart (v<139) en steekt onder de schildpunt uit.
+    expect(g.yMin).toBeLessThan(125);
+    expect(g.yMax).toBeGreaterThan(139);
+    expect(g.yMax).toBeLessThan(150);
+    // Elk punt heeft zijn spiegelbeeld in het pad — `bouwAsVorm` legt de
+    // rechterflank aan uit dezelfde knopen, dus dit vangt een handmatige tik.
     for (const [x, y] of p) {
       const spiegel = p.some(
         (q) => Math.abs(q[0] - (100 - x)) < 0.2 && Math.abs(q[1] - y) < 0.2,
@@ -151,12 +259,54 @@ describe("GOAT-ornament (#710)", () => {
     }
   });
 
-  it("de baard-flick steekt náást het schild uit, niet erachter", () => {
-    // De ornamentlaag ligt achter de kaart: een flick die binnen de
-    // schildrand blijft, is onzichtbaar. Op zijn hoogte (v≈132–140) loopt het
-    // schild van de taille naar de punt; de flick moet daar links van blijven.
-    const g = grenzen(alleStrengPaden(GOAT_BAARD_FLICK));
-    expect(g.xMin).toBeLessThan(schildLinkerrand(g.yMin) - 1);
+  it("het baardfiligraan blijft onder de divisieregel GOAT (#772)", () => {
+    // Het vlak heeft `padding: 12% 9% 24%`, dus de laatste tekstregel eindigt
+    // op v≈115 (139 − 24). Het ornament ligt sinds #772 vóór de kaart en zou
+    // daar dus écht overheen vallen: geen enkel pad mag hoger komen.
+    const g = grenzen([...BAARD_HELFT, GOAT_BAARD_SPEER, ...GOAT_BAARD_NERVEN]);
+    expect(g.yMin).toBeGreaterThan(115.5);
+    // En het blijft compact: hooguit ~21 units naast de as, zoals de
+    // referentie (306 px op een kaart van 733 px breed).
+    expect(50 - g.xMin).toBeLessThan(22);
+    expect(50 - g.xMin).toBeGreaterThan(17);
+  });
+
+  it("de onderkrul steekt náást het schild uit, de haarbladen erbinnen", () => {
+    // De krul hoort "uit de kaartomlijsting te groeien": op zijn hoogte loopt
+    // het schild al naar de punt, dus hij moet er links van uitkomen.
+    const krul = grenzen(alleStrengPaden(GOAT_BAARD_KRUL));
+    expect(krul.xMin).toBeLessThan(schildLinkerrand(krul.yMax));
+    // De haarbladen liggen juist óp het vlak — ze mogen de rand naderen maar
+    // er niet overheen hangen, anders zweven ze los naast de kaart.
+    // De haarwaaier ligt óp het vlak. Kleinste afstand tot de schildrand, op
+    // dezelfde hoogte gemeten: hij mag de omlijsting een paar units overlappen
+    // (dat doet hij in de referentie ook) maar er niet los naast hangen, en
+    // hij moet er wél tot vlakbij komen — een waaier die in het midden blijft
+    // steken doet geen silhouetwerk.
+    const speling = Math.min(
+      ...GOAT_BAARD_BLADEN.flatMap((d) =>
+        punten(d).map(([x, y]) => x - schildLinkerrand(y)),
+      ),
+    );
+    expect(speling).toBeGreaterThan(-3);
+    expect(speling).toBeLessThan(4);
+  });
+
+  it("het watermerk en het divisie-icoon blijven in hun eigen viewBox", () => {
+    const w = grenzen(GOAT_WATERMERK.map((p) => p.d));
+    expect(w.xMin).toBeGreaterThanOrEqual(0);
+    expect(w.xMax).toBeLessThanOrEqual(100);
+    expect(w.yMin).toBeGreaterThanOrEqual(0);
+    expect(w.yMax).toBeLessThanOrEqual(100);
+
+    const [, , iw, ih] = GOAT_ICOON_VIEWBOX.split(" ").map(Number);
+    const i = grenzen(GOAT_ICOON.map((p) => p.d));
+    // Ruimte voor de lijndikte (1,6) laten: een pad exact op de rand wordt
+    // half weggeknipt.
+    expect(i.xMin).toBeGreaterThan(0.8);
+    expect(i.xMax).toBeLessThan(iw - 0.8);
+    expect(i.yMin).toBeGreaterThan(0.5);
+    expect(i.yMax).toBeLessThan(ih - 0.5);
   });
 
   it("de dictator-ornamenten passen in de viewBox en zijn symmetrisch", () => {
@@ -209,11 +359,4 @@ describe("GOAT-ornament (#710)", () => {
     expect(DICTATOR_ZEGEL.midden[1]).toBeGreaterThan(115);
   });
 
-  it("het medaillon blijft binnen zijn 100×100-viewBox", () => {
-    const g = grenzen(GOAT_MEDAILLON.map((p) => p.d));
-    expect(g.xMin).toBeGreaterThanOrEqual(0);
-    expect(g.xMax).toBeLessThanOrEqual(100);
-    expect(g.yMin).toBeGreaterThanOrEqual(0);
-    expect(g.yMax).toBeLessThanOrEqual(100);
-  });
 });

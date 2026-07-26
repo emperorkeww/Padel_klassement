@@ -27,18 +27,25 @@ import {
   DICTATOR_WATERMARK_KLEUR,
   DICTATOR_WATERMARK_POSITIE,
   DICTATOR_ZEGEL,
-  GOAT_BAARD_BLAD,
-  GOAT_BAARD_FLICK,
+  GOAT_BAARD_ARM,
+  GOAT_BAARD_BLADEN,
+  GOAT_BAARD_KRUL,
   GOAT_BAARD_NERVEN,
+  GOAT_BAARD_SPEER,
   GOAT_HOORN,
-  GOAT_MEDAILLON,
-  GOAT_MEDAILLON_KLEUR,
+  GOAT_ICOON,
+  GOAT_ICOON_VIEWBOX,
   GOAT_METAAL_CONTOUR,
   GOAT_METAAL_GLANS,
   GOAT_METAAL_RIBBEL,
   GOAT_METAAL_RIBBELGLANS,
   GOAT_METAAL_SCHADUW,
   GOAT_METAAL_VERLOOP,
+  GOAT_PLATINA_VERLOOP,
+  GOAT_WATERMERK,
+  GOAT_WATERMERK_BREEDTE,
+  GOAT_WATERMERK_KLEUR,
+  GOAT_WATERMERK_POSITIE,
   ORNAMENT_VIEWBOX,
   type OrnamentPad,
   type Streng,
@@ -237,7 +244,15 @@ const GOAT_MATERIAAL: StrengMateriaal = {
   ribbel: GOAT_METAAL_RIBBEL,
   ribbelGlans: GOAT_METAAL_RIBBELGLANS,
   schaduw: GOAT_METAAL_SCHADUW,
+  // Platina op de bovenste ribben (#772). Alleen de hoorn tekent hem: het
+  // baardfiligraan is te fijn voor een tweede metaal en zou er vlekkerig van
+  // worden, dus dat draait op `GOAT_FILIGRAAN` hieronder.
+  rugGlans: "url(#fut-orn-platina)",
 };
+
+/** Zelfde rosé metaal, zonder de platina rugband: voor het baardfiligraan,
+ *  waar de strengen maar 2–4 units breed zijn (#772). */
+const GOAT_FILIGRAAN: StrengMateriaal = { ...GOAT_MATERIAAL, rugGlans: undefined };
 
 /** Schildvormen: vier clipPaths met exact dezelfde onderkant (de punt op
  *  50%/100% blijft het chemielijn-anker in de Opstelling) en een bovenrand
@@ -334,6 +349,12 @@ function FutStreng({
         strokeWidth="0.7"
         strokeLinejoin="round"
       />
+      {/* Rugband (#772): het tweede metaal over de bolle flank, vóór de groeven
+          zodat het ribbelreliëf er doorheen blijft lopen — platina óp de ribben,
+          niet eroverheen. */}
+      {materiaal.rugGlans && (
+        <path d={streng.rug} fill={materiaal.rugGlans} stroke="none" />
+      )}
       {streng.ribbelGlans.map((d) => (
         <path
           key={d}
@@ -904,9 +925,40 @@ export function FutKaartDefs() {
             ))}
           </linearGradient>
         ))}
+        {/* Platina voor de rugband van de bokhoorn (#772): koel wit dat naar
+            doorzichtig grijs uitloopt, dwars op de streng (x1→x2) zodat de
+            highlight aan de buitenrand het felst is. */}
+        <linearGradient
+          id="fut-orn-platina"
+          x1="0"
+          y1="0"
+          x2="0.85"
+          y2="0.6"
+          gradientUnits="objectBoundingBox"
+        >
+          {GOAT_PLATINA_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
         <g id="fut-orn-goat-helft">
           <FutStreng streng={GOAT_HOORN} ribbelBreedte={0.62} />
-          <FutStreng streng={GOAT_BAARD_FLICK} ribbelBreedte={0.34} />
+        </g>
+        {/* Baardfiligraan (#772), één helft: de bovenarm met zijn haarwaaier en
+            de kleinere onderkrul. De speerpunt staat op de as en hoort dus in
+            de groep hieronder, niet in deze helft. */}
+        <g id="fut-orn-goat-baard-helft">
+          {GOAT_BAARD_BLADEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="url(#fut-orn-metaal)"
+              stroke={GOAT_METAAL_CONTOUR}
+              strokeWidth="0.35"
+              strokeLinejoin="round"
+            />
+          ))}
+          <FutStreng streng={GOAT_BAARD_ARM} materiaal={GOAT_FILIGRAAN} />
+          <FutStreng streng={GOAT_BAARD_KRUL} materiaal={GOAT_FILIGRAAN} />
         </g>
         <linearGradient
           id="fut-orn-goud"
@@ -1231,14 +1283,28 @@ export function FutKaartDefs() {
             transform="translate(100,0) scale(-1,1)"
           />
         </g>
+        {/* GOAT áchter de kaart (#772): alleen de bokhoorns. Het baardfiligraan
+            verhuisde naar de vóór-laag hieronder — in de referentie ligt het
+            óver de onderste kaartpunt, en achter het schild zag je er niets
+            meer van dan twee sliertjes naast de rand. */}
         <g id="fut-orn-goat-achter">
-          {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
-              nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
+          <use href="#fut-orn-goat-helft" />
+          <use href="#fut-orn-goat-helft" transform="translate(100,0) scale(-1,1)" />
+        </g>
+        {/* GOAT vóór de kaart (#772): het baardornament in de kaartpunt. De
+            speerpunt staat op de as (uit zichzelf symmetrisch), armen en
+            haarbladen komen twee keer uit dezelfde helft. */}
+        <g id="fut-orn-goat-voor">
+          <use href="#fut-orn-goat-baard-helft" />
+          <use
+            href="#fut-orn-goat-baard-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
           <path
-            d={GOAT_BAARD_BLAD}
+            d={GOAT_BAARD_SPEER}
             fill="url(#fut-orn-metaal)"
             stroke={GOAT_METAAL_CONTOUR}
-            strokeWidth="0.7"
+            strokeWidth="0.5"
             strokeLinejoin="round"
           />
           {GOAT_BAARD_NERVEN.map((d) => (
@@ -1247,12 +1313,10 @@ export function FutKaartDefs() {
               d={d}
               fill="none"
               stroke={GOAT_METAAL_RIBBEL}
-              strokeWidth="0.42"
+              strokeWidth="0.3"
               strokeLinecap="round"
             />
           ))}
-          <use href="#fut-orn-goat-helft" />
-          <use href="#fut-orn-goat-helft" transform="translate(100,0) scale(-1,1)" />
         </g>
         {/* Big Daddy (#710): twee groepen i.p.v. één. Het feestwerk (lint,
             ballonnen, confetti) hoort áchter de kaart, maar kroon en
@@ -1785,6 +1849,39 @@ function FutKaartMotief({
   );
 }
 
+/** Divisie-icoon van de GOAT (#772): een eigen geitenkop i.p.v. 🐐. De emoji
+ *  rendert per platform anders (iOS toont een compleet geitje, Android een
+ *  kop, desktop niets herkenbaars op 11 px) en dat is te weinig houvast voor
+ *  een divisiemerk. Decoratief: de divisieregel "GOAT" eronder draagt de
+ *  betekenis, dus `aria-hidden` — de kleur alleen mag het nooit doen. Erft de
+ *  inkt van het eloblok, zodat hij in élk register mee-kleurt. */
+function FutGoatIcoon() {
+  return (
+    <svg
+      className="fut-kaart__tier-icoon"
+      viewBox={GOAT_ICOON_VIEWBOX}
+      aria-hidden="true"
+      focusable="false"
+    >
+      {GOAT_ICOON.map((p) =>
+        p.soort === "vlak" ? (
+          <path key={p.d} d={p.d} fill="currentColor" />
+        ) : (
+          <path
+            key={p.d}
+            d={p.d}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={p.breedte}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ),
+      )}
+    </svg>
+  );
+}
+
 /** De zes speciale edities zoals de kaart ze als prop kent (#497/#625/#631/
  *  #632/#645). Canvas-spiegel: `KaartEditie` in lib/utils/futKaartCanvas.ts. */
 export type FutEditie =
@@ -1863,10 +1960,11 @@ export function FutKaart({
   // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen, de kraag
   // en het maskermedaillon van de pias, de crest en het gebroken zegel van de
   // Zwarte Piet.
-  // Alles behalve de GOAT-hoorns heeft ook een laag vóór de kaart: een crest
-  // in de bovenrand of een medaillon in de punt zou achter het schild half
-  // verdwijnen.
-  const ornamentVoor = ornament && ornament !== "goat" ? ornament : null;
+  // Elk ornament heeft ook een laag vóór de kaart: een crest in de bovenrand of
+  // een medaillon in de punt zou achter het schild half verdwijnen. Sinds #772
+  // geldt dat ook voor de GOAT: de hoorns blijven erachter (ze groeien uit de
+  // bovenhoeken vandaan), het baardfiligraan ligt ervóór, in de kaartpunt.
+  const ornamentVoor = ornament;
   // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
   // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
@@ -1920,7 +2018,12 @@ export function FutKaart({
         positie={divisie.motief.positie}
       />
     ) : editie ? null : tier?.key === "legende" ? (
-      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+      <FutKaartMotief
+        paden={GOAT_WATERMERK}
+        kleur={GOAT_WATERMERK_KLEUR}
+        breedte={GOAT_WATERMERK_BREEDTE}
+        positie={GOAT_WATERMERK_POSITIE}
+      />
     ) : tier?.key === "dictator" ? (
       <FutKaartMotief
         paden={DICTATOR_WATERMARK}
@@ -2038,7 +2141,7 @@ export function FutKaartVoorkant({
           )}
           {tier && (
             <span className="fut-kaart__tier" title={tierTitle(tier)}>
-              {tier.emoji}
+              {tier.key === "legende" ? <FutGoatIcoon /> : tier.emoji}
             </span>
           )}
         </span>

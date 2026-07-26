@@ -141,6 +141,11 @@
 .fut-kaart__flip:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 3px var(--fut-focus, var(--accent));
+  /* Bóven de vóór-liggende ornamentlaag (#772): die staat op z-index 2 en
+     dekte anders een stuk van de focusring af — het baardfiligraan van de
+     GOAT ligt precies over de onderrand van de knop. Alleen in focus, dus
+     aan de rustweergave van geen enkele kaart verandert er iets. */
+  z-index: 3;
 }
 /* Hover/focus: de kaart licht op en komt van de ondergrond — maakt meteen
    duidelijk dat hij klikbaar is; de flip zelf draait vloeiend. Alleen mét
@@ -282,15 +287,24 @@
       transparent 1.5px 5px
     );
 }
-/* GOAT (#710): geen stralen maar een héél ijl satijn (0.04) — het medaillon
-   is de textuur. Vóór het schand-blok hieronder, zodat pias/piet met hun
-   `background: none` ook op een GOAT-drager blijven winnen. */
+/* GOAT (#710, herijkt in #772): geen stralen maar een diagonale binnenstructuur
+   — brede roze banen op 0.055 met een fijne witte streep ertussen, precies de
+   schuine textuur van de referentie. Nog steeds ijl genoeg om onder elo, avatar
+   en naamplaat door te lopen; het geitenwatermerk eronder blijft de blikvanger.
+   Vóór het schand-blok hieronder, zodat pias/piet met hun `background: none`
+   ook op een GOAT-drager blijven winnen. */
 .fut-kaart--legende .fut-kaart__vlak::after {
-  background: repeating-linear-gradient(
-    115deg,
-    rgba(255, 255, 255, 0.04) 0 1.5px,
-    transparent 1.5px 5px
-  );
+  background:
+    repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.045) 0 1.5px,
+      transparent 1.5px 5px
+    ),
+    repeating-linear-gradient(
+      115deg,
+      rgba(247, 134, 159, 0.055) 0 4px,
+      transparent 4px 11px
+    );
 }
 /* Kaarten met een eigen vlak-textuur (kraftkarton, speelkaart): geen
    satijn of stralen eroverheen — dubbel weefsel wordt druk. Ná het
@@ -672,14 +686,18 @@
   --schild: url(#fut-schild-punt);
 }
 
-/* GOAT (#710): het monument — een eigen register, niet langer een
-   kleurvariant van de dictator. Vast rosé-frame met geborsteld metaal
-   (conic-ribbels stralen uit het kaartmidden en staan dus rondom loodrecht
-   op de rand), donker vlak met het geëtste geiten-medaillon (FutKaartMotief
-   in FutKaart.tsx), roze sheen op In-Form-breedte met een trage shimmer,
-   ramshoorns als ornamentlaag, offset-echo en dubbele binnenlijn.
+/* GOAT (#710, hertekend in #772): het monument — een eigen register, niet
+   langer een kleurvariant van de dictator. Vast rosé-frame met geborsteld
+   metaal (conic-ribbels stralen uit het kaartmidden en staan dus rondom
+   loodrecht op de rand), diep bordeaux-kersenrood vlak met de geëtste
+   geitenkop (FutKaartMotief in FutKaart.tsx) en een diagonale binnenstructuur,
+   roze sheen op In-Form-breedte met een trage shimmer, bokhoorns áchter en het
+   baardfiligraan vóór de kaart (ornamentlagen), offset-echo en drie gelaagde
+   metalen randlijnen met een donkere keyline ertussen.
    Vaste hexen (tokenregime #710): beide toptiers staan vast, zodat
    DOM-kaart en deel-poster in béide thema's gelijk zijn.
+   Contrast van de inkt op het lichtste stuk vlak (#f99eb2 op #3c1524):
+   7,97:1 — ruim boven AA, en de zachtere inkt (#e09298) haalt 6,95:1.
    Canvas-spiegel: de legende-tak in kaartSkin() (futKaartCanvas.ts). */
 .fut-kaart--legende {
   --schild: url(#fut-schild-kroon);
@@ -693,10 +711,26 @@
     calc(var(--fut-kw) * 0.019) calc(var(--fut-kw) * 0.024) 0
       rgba(226, 133, 158, 0.75)
   );
+  /* Drie gelaagde randlijnen (#772): roségouden hairline, donkere keyline die
+     de diepte maakt, en een derde metaallijn eronder — de gelaagde rand van de
+     referentie zonder extra DOM-laag, want inset-schaduwen worden mee-geclipt
+     en volgen dus het schild. */
   --kaart-binnenlijn:
-    inset 0 0 0 1px rgba(249, 163, 183, 0.5),
-    inset 0 0 0 3.5px rgba(20, 6, 9, 0.9),
-    inset 0 0 0 4.5px rgba(249, 163, 183, 0.28);
+    inset 0 0 0 1px rgba(255, 214, 226, 0.72),
+    inset 0 0 0 3.5px rgba(20, 6, 9, 0.92),
+    inset 0 0 0 5px rgba(226, 133, 158, 0.45);
+}
+/* De geitenkop als divisie-icoon (#772) staat in het eloblok waar anders de
+   emoji zit, dus krijgt hij precies die maat — 1em van .fut-kaart__tier — en
+   erft hij de zachte inkt. Zonder deze regel zou de svg zijn intrinsieke
+   24×24 px pakken en op de kleine maten het hele blok uit elkaar duwen. */
+.fut-kaart__tier-icoon {
+  display: block;
+  /* 1,15em breed in een regelvak van 1,4em: dan neemt het icoon exact de
+     ruimte in die de emoji hier innam en verschuift het eloblok niet. */
+  width: 1.15em;
+  height: 1.4em;
+  color: var(--kaart-ink-soft);
 }
 .fut-kaart--legende .fut-kaart__zijde {
   background:

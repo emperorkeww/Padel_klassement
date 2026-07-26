@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { kaartSkin, mix, rgba, schildVorm, type KaartEditie } from "./futKaartCanvas";
+import { GOAT_ICOON } from "@/features/rating/components/futKaartOrnamenten";
 
 // De stylesheets als tekst, voor de synctest onderaan. Bewust via node:fs en
 // niet via Vite's ?raw: Vitest kortsluit CSS-imports (css: false) op een lege
@@ -126,7 +127,7 @@ describe("kaartSkin", () => {
     // voor brokaat met een gouden propaganda-zonnestraal.
     expect(goat.stralen).toBe(false);
     expect(goat.textuur).toBeUndefined(); // satijn, maar ijler
-    expect(goat.satijnAlpha).toBe(0.035);
+    expect(goat.satijnAlpha).toBe(0.04);
     expect(dictator.stralen).toBe(true);
     expect(dictator.stralenKleur).toMatch(/240, 199, 102/);
     expect(dictator.textuur).toBe("brokaat");
@@ -179,7 +180,7 @@ describe("kaartSkin", () => {
     // houden die ook onder een editie — editie-blokken raken ::after niet aan.
     expect(kaartSkin("legende", null).kleuren.stralen).toBe(false);
     expect(kaartSkin("legende", "kampioen").kleuren.stralen).toBe(false);
-    expect(kaartSkin("legende", "kampioen").kleuren.satijnAlpha).toBe(0.035);
+    expect(kaartSkin("legende", "kampioen").kleuren.satijnAlpha).toBe(0.04);
     expect(kaartSkin("dictator", "kampioen").kleuren.stralen).toBe(false);
     expect(kaartSkin("dictator", "kampioen").kleuren.textuur).toBe("brokaat");
     // Maar wie zijn eigen weefsel meebrengt — pias, Piet en, sinds #710,
@@ -543,6 +544,55 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     )?.[1];
     expect(kleuren.keyline).toBe(keyline);
   });
+
+  it("GOAT: diagonale binnenstructuur en de twee ornamentlagen (#772)", () => {
+    const { kleuren } = kaartSkin("legende", null);
+    const after =
+      /\.fut-kaart--legende \.fut-kaart__vlak::after\s*\{[^}]*\}/
+        .exec(FUT_CSS)?.[0]
+        ?.replace(/\s+/g, " ") ?? "";
+    // Twee diagonale banen (#772): het fijne witte satijn plus een bredere
+    // getinte baan eronder. De canvas-tabel moet dezelfde tint dragen, anders
+    // mist de poster de binnenstructuur van de referentie.
+    expect(after.match(/repeating-linear-gradient/g)).toHaveLength(2);
+    const [tint] = kleuren.satijnBaan!;
+    expect(after).toContain(tint);
+    // Beide banen lopen in de sheen-richting; de canvas-hatch rekent met
+    // dezelfde ~1,4-schaal (CSS 4/11 px → canvas 5,6/15,4).
+    expect(after.match(/115deg/g)).toHaveLength(2);
+    expect(kleuren.satijnBaan![1]).toBeCloseTo(4 * 1.4, 5);
+    expect(kleuren.satijnBaan![2]).toBeCloseTo(11 * 1.4, 5);
+
+    // Twee ornamentlagen sinds #772: hoorns erachter, baardfiligraan ervóór.
+    expect(kleuren.ornament).toBe("goat");
+    expect(kleuren.ornamentVoor).toBe("goat");
+    expect(FUT_TSX).toContain('id="fut-orn-goat-achter"');
+    expect(FUT_TSX).toContain('id="fut-orn-goat-voor"');
+    // Beide lagen tekenen één helft en spiegelen die om x=50 — dát is wat de
+    // symmetrie garandeert, in de DOM én op canvas.
+    const tsx = FUT_TSX.replace(/\s+/g, " ");
+    for (const helft of ["fut-orn-goat-helft", "fut-orn-goat-baard-helft"]) {
+      expect(FUT_TSX).toContain(`id="${helft}"`);
+      expect(tsx, `${helft} wordt niet gespiegeld gebruikt`).toContain(
+        `href="#${helft}" transform="translate(100,0) scale(-1,1)"`,
+      );
+    }
+
+    // Platina rugband: gradient in de defs, en het materiaal dat ernaar wijst.
+    expect(FUT_TSX).toContain('id="fut-orn-platina"');
+    expect(FUT_TSX).toContain('rugGlans: "url(#fut-orn-platina)"');
+  });
+
+  it("GOAT: het divisie-icoon vervangt de emoji in DOM én poster (#772)", () => {
+    // 🐐 rendert per platform anders, dus de GOAT draagt een eigen SVG-kop.
+    // Beide tekenaars moeten dat weten, anders staat er op de poster alsnog
+    // een emoji naast de DOM-kaart met het icoon.
+    expect(FUT_TSX).toContain('tier.key === "legende" ? <FutGoatIcoon />');
+    expect(GOAT_ICOON.length).toBeGreaterThan(4);
+    // Decoratief: de divisieregel draagt de betekenis.
+    expect(FUT_TSX).toContain('className="fut-kaart__tier-icoon"');
+    expect(FUT_CSS).toContain(".fut-kaart__tier-icoon");
+  });
   it("On Fire: rand-, vignet- en glansregister staan in de CSS én in de tabel (#710)", () => {
     // Zelfde bewaking als bij de GOAT hierboven, nu voor de editie: de
     // On-Fire-overlay leeft op twee plekken (CSS-vars op .fut-kaart--onfire en
@@ -865,10 +915,11 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       expect(FUT_TSX, `${o}: achter-laag mist zijn <g>`).toContain(
         `id="fut-orn-${o}-achter"`,
       );
-      if (o !== "goat")
-        expect(FUT_TSX, `${o}: vóór-laag mist zijn <g>`).toContain(
-          `id="fut-orn-${o}-voor"`,
-        );
+      // Sinds #772 heeft ook de GOAT een vóór-laag: zijn baardfiligraan ligt
+      // over de kaartpunt in plaats van erachter.
+      expect(FUT_TSX, `${o}: vóór-laag mist zijn <g>`).toContain(
+        `id="fut-orn-${o}-voor"`,
+      );
     }
     // En de component bouwt de href precies zo op.
     expect(FUT_TSX).toContain("`#fut-orn-${ornament}-achter`");
