@@ -13,6 +13,7 @@ import { getRecentResults, getPlayerMatches, getTeamsMap } from "@/features/matc
 import { getZwartePiet } from "@/features/groups/zwartePietApi";
 import { getPiasWeeks } from "@/features/standings/piasApi";
 import { getHuidigeDictator } from "@/features/standings/dictatorApi";
+import { getSeizoenskampioen } from "@/features/standings/kampioen";
 import { getMyFriendships } from "@/features/friends/api";
 import { getProfilesMap } from "@/features/profiles/api";
 import { getMyGroups, type GroupSummary } from "@/features/groups/api";
@@ -58,10 +59,28 @@ export function useDashboardData() {
     () => (myId ? getRatingHistory(myId) : Promise.resolve([])),
     [myId],
   );
+  // De gedeelde rating-historie (gecacht) van álle spelers: voor de upset-chips
+  // van de avondkaart (#85) én sinds #760 voor de In-Form- en On-Fire-status van
+  // de hero. De avondsamenvatting kijkt naar de matches van vandaag; die zitten
+  // per definitie in ieders recente venster (#731).
+  //
+  // Stond tot #760 achter `enabled: evening != null` (#736): de avondkaart was
+  // de enige consument en die rendert alleen op een speeldag. Dat kan niet meer.
+  // "Wie won deze week het meest?" is een vergelijking over álle spelers, dus
+  // valt niet uit de eigen historie te rekenen — en een hero die zijn thema
+  // alleen op speeldagen toont, wisselt van kleur om een reden die de speler
+  // nergens kan zien. Vandaar één RPC erbij bij mount; gecacht, dus het
+  // klassement en het profiel halen hem daarna niet opnieuw op.
+  const histories = useAsync(getRecentRatingHistories, []);
   // De zittende dictator (#613): server-side uit de troon-replay (#545). Kleurt
   // de eigen hero keizerlijk als jíj op De Troon zit, en dooft de Big Daddy-
   // styling zodra de troon bezet is — zelfde uitsluiting als het klassement.
   const dictator = useAsync(getHuidigeDictator, []);
+  // Kampioen van het vorige kwartaal (#760): geeft de hero het kampioen-thema
+  // plus crest, uit dezelfde bron als de 🏆-editie op de FUT-kaart. Wisselt
+  // alleen op een kwartaalgrens, dus geen realtime-verversing na een match —
+  // en gecacht per kwartaal, zodat klassement en profiel dezelfde fetch delen.
+  const kampioen = useAsync(getSeizoenskampioen, []);
 
   const club = useClub();
   const today = dateInZone(club.timezone);
@@ -80,18 +99,6 @@ export function useDashboardData() {
   // Speelavond-terugblik: uitslagen van de laatste speeldag (vandaag/gisteren).
   const evening = deriveEvening(completed, club.timezone);
 
-  // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
-  // De avondsamenvatting kijkt naar de matches van vandaag; die zitten per
-  // definitie in ieders recente venster (#731).
-  //
-  // Alleen ophalen als de avondkaart er ook echt is (#736): dat is de enige
-  // consument, en die rendert alleen op een dag dat er gespeeld is. `enabled`
-  // springt één keer van false naar true zodra de uitslagen binnen zijn, en
-  // nooit terug — dus geen herlaadlus.
-  const histories = useAsync(getRecentRatingHistories, [], {
-    enabled: evening != null,
-  });
-
   const onMatches = useCallback(() => {
     standings.reload();
     results.reload();
@@ -99,12 +106,16 @@ export function useDashboardData() {
     teams.reload();
     ratings.reload();
     ratingHistory.reload();
+    // De gedeelde historie draagt de In-Form- en On-Fire-status van de hero
+    // (#760): zonder verversing verspringt het thema pas na een refresh, terwijl
+    // een reeks van vijf juist het moment is waarop je het wil zien.
+    histories.reload();
     zwartePiet.reload();
     // De troon kan wisselen na een match (kroning/afzetting via de replay).
     dictator.reload();
     // reload-functies zijn stabiel; bewust niet de hele async-objecten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload, zwartePiet.reload, dictator.reload]);
+  }, [standings.reload, results.reload, myMatches.reload, teams.reload, ratings.reload, ratingHistory.reload, histories.reload, zwartePiet.reload, dictator.reload]);
   useRealtime("matches", onMatches);
   useRealtime("friendships", friendships.reload);
   useRealtime("play_polls", openPolls.reload);
@@ -147,9 +158,10 @@ export function useDashboardData() {
     ratingHistory: ratingHistory as AsyncState<RatingPoint[]>,
     histories,
     dictator,
+    kampioen,
     availability,
     openPolls,
-    // Afgeleid uit de uitslagen; hier omdat `histories` eraan hangt.
+    // Afgeleid uit de uitslagen.
     completed,
     evening,
     // Foutafhandeling van de kernbronnen.

@@ -320,22 +320,53 @@ describe("<Dashboard />", () => {
     }
   });
 
-  // Hero-thema voor de schande (#644): de Pias van de week en de Zwarte Piet
-  // kleuren de hero net zo goed als de eer dat doet. De crest-chips blijven in
-  // álle gevallen staan — kleur is nooit de enige indicator.
-  describe("schande-thema's op de hero (#644)", () => {
+  // Hero-thema's per status (#644, uitgebreid in #760): de Pias van de week en
+  // de Zwarte Piet kleuren de hero net zo goed als de eer dat doet, en sinds
+  // #760 doen de kampioen, de speler van de week en een lopende reeks dat ook.
+  // De crest-chips blijven in álle gevallen staan — kleur is nooit de enige
+  // indicator.
+  describe("hero-thema's per status (#644/#760)", () => {
     const fromMock = () =>
       supabase.from as unknown as {
         getMockImplementation: () => (table: string) => unknown;
         mockImplementation: (impl: (table: string) => unknown) => void;
       };
+    const rpcMock = () =>
+      supabase.rpc as unknown as {
+        getMockImplementation: () => (naam: string, args?: unknown) => unknown;
+        mockImplementation: (
+          impl: (naam: string, args?: unknown) => unknown,
+        ) => void;
+      };
+
+    /** Eén punt in de gedeelde rating-historie (recent_rating_history). */
+    const histRij = (delta: number, playedAt: string, playerId = "p1") => ({
+      player_id: playerId,
+      match_id: `m-${playedAt}`,
+      rating_before: 1000,
+      rating_after: 1000 + delta,
+      delta,
+      played_at: playedAt,
+    });
 
     /** Rendert met extra/vervangen tabelrijen. `troonBezet` zet Bob op De Troon,
      *  waardoor Alice haar Big Daddy-status kwijt is (#528) — nodig om een
-     *  schande-thema kaal te kunnen zien. */
+     *  lager thema kaal te kunnen zien.
+     *
+     *  De gedeelde historie is standaard leeg en wordt per test gevuld met
+     *  `historie`. Sinds #760 hangen de In-Form- en On-Fire-status daaraan, en
+     *  met de fixture-historie is Alice in de vaste week gewoon In-Form (+12) —
+     *  dat thema verdringt de schande, waardoor de pias-tests hieronder over
+     *  iets anders zouden gaan dan hun naam belooft. Elke test die een
+     *  eer-status wíl, zegt hier dus zelf welke matches dat rechtvaardigen.
+     *  `kampioen` doet hetzelfde voor de seizoensstand. */
     function renderMet(
       rijen: Record<string, unknown[]>,
-      opts: { troonBezet?: boolean } = {},
+      opts: {
+        troonBezet?: boolean;
+        historie?: unknown[];
+        kampioen?: unknown[];
+      } = {},
     ) {
       invalidateAll();
       const mock = fromMock();
@@ -352,10 +383,20 @@ describe("<Dashboard />", () => {
           });
         return orig(table);
       });
+      const rmock = rpcMock();
+      const origRpc = rmock.getMockImplementation();
+      rmock.mockImplementation((naam, args) => {
+        if (naam === "recent_rating_history")
+          return makeQuery({ data: opts.historie ?? [], error: null });
+        if (naam === "season_player_standings")
+          return makeQuery({ data: opts.kampioen ?? [], error: null });
+        return origRpc(naam, args);
+      });
       return {
         ...renderPage(),
         herstel: () => {
           mock.mockImplementation(orig);
+          rmock.mockImplementation(origRpc);
           invalidateAll();
         },
       };
@@ -395,6 +436,99 @@ describe("<Dashboard />", () => {
         vi.useRealTimers();
       }
     }
+
+    it("kleurt de hero platina-lauwer voor de kampioen (#760)", async () => {
+      // Bob op De Troon, dus Alice mist de kroon: het kampioen-thema staat er
+      // kaal. De seizoensstand is de bron van de 🏆-editie op de FUT-kaart.
+      const { container, herstel } = renderMet(
+        {},
+        { troonBezet: true, kampioen: [{ player_id: "p1" }] },
+      );
+      try {
+        expect(
+          await screen.findByRole("button", { name: /kampioen/i }),
+        ).toBeInTheDocument();
+        expect(container.querySelector(".hero")).toHaveClass("hero--kampioen");
+      } finally {
+        herstel();
+      }
+    });
+
+    it("kleurt de hero navy-goud voor de speler van de week (#760)", async () => {
+      await metVasteWeek(async () => {
+        // Twee winsten binnen het weekvenster, samen +48 — meer dan Bob's +10.
+        // De crest-tekst komt uit editieLabel, dus staat er hetzelfde als op de
+        // kaart in het klassement.
+        const { container, herstel } = renderMet(
+          {},
+          {
+            troonBezet: true,
+            historie: [
+              histRij(20, "2026-07-06T10:00:00.000Z"),
+              histRij(28, "2026-07-07T10:00:00.000Z"),
+              histRij(5, "2026-07-06T10:00:00.000Z", "p2"),
+              histRij(5, "2026-07-07T10:00:00.000Z", "p2"),
+            ],
+          },
+        );
+        try {
+          expect(
+            await screen.findByRole("button", { name: /in-form · \+48/i }),
+          ).toBeInTheDocument();
+          expect(container.querySelector(".hero")).toHaveClass("hero--inform");
+        } finally {
+          herstel();
+        }
+      });
+    });
+
+    it("kleurt de hero sintel voor een lopende reeks (#760)", async () => {
+      await metVasteWeek(async () => {
+        // Vijf winsten op rij (ONFIRE_DREMPEL), maar allemaal ouder dan het
+        // In-Form-venster van zeven dagen: zo staat het On-Fire-thema er kaal,
+        // zonder dat de weeklens het verdringt.
+        const { container, herstel } = renderMet(
+          {},
+          {
+            troonBezet: true,
+            historie: [10, 11, 12, 13, 14].map((dag) =>
+              histRij(6, `2026-06-${dag}T10:00:00.000Z`),
+            ),
+          },
+        );
+        try {
+          expect(
+            await screen.findByRole("button", { name: /on fire · 5 op rij/i }),
+          ).toBeInTheDocument();
+          expect(container.querySelector(".hero")).toHaveClass("hero--onfire");
+          expect(screen.queryByRole("button", { name: /in-form/i })).toBeNull();
+        } finally {
+          herstel();
+        }
+      });
+    });
+
+    it("laat de kampioenstitel de schande verdringen, met beide crests (#760)", async () => {
+      await metVasteWeek(async (week) => {
+        const { container, herstel } = renderMet(
+          { pias_of_week: [piasRij(week)] },
+          { troonBezet: true, kampioen: [{ player_id: "p1" }] },
+        );
+        try {
+          expect(
+            await screen.findByRole("button", { name: /kampioen/i }),
+          ).toBeInTheDocument();
+          // Het vlak kiest partij, de chips blijven allebei staan.
+          expect(
+            screen.getByRole("button", { name: /pias van de week/i }),
+          ).toBeInTheDocument();
+          expect(container.querySelector(".hero")).toHaveClass("hero--kampioen");
+          expect(container.querySelector(".hero--pias")).toBeNull();
+        } finally {
+          herstel();
+        }
+      });
+    });
 
     it("kleurt de hero als kraftkarton voor de Pias van de week", async () => {
       await metVasteWeek(async (week) => {

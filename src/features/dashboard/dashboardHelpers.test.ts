@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { heroThema, pickPollBanner } from "./dashboardHelpers";
+import {
+  HERO_THEMA_PRIORITEIT,
+  heroCrestTekst,
+  heroThema,
+  pickPollBanner,
+} from "./dashboardHelpers";
 import type { GroupSummary } from "@/features/groups/api";
 import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
 
@@ -194,10 +199,13 @@ describe("pickPollBanner", () => {
   });
 });
 
-describe("heroThema (#644)", () => {
+describe("heroThema (#644/#760)", () => {
   const geen = {
     dictator: false,
     bigDaddy: false,
+    kampioen: false,
+    inForm: false,
+    onFire: false,
     pias: false,
     piet: false,
     schild: false,
@@ -210,8 +218,53 @@ describe("heroThema (#644)", () => {
   it("geeft elke status zijn eigen thema", () => {
     expect(heroThema({ ...geen, dictator: true })).toBe("dictator");
     expect(heroThema({ ...geen, bigDaddy: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, kampioen: true })).toBe("kampioen");
+    expect(heroThema({ ...geen, inForm: true })).toBe("inform");
+    expect(heroThema({ ...geen, onFire: true })).toBe("onfire");
     expect(heroThema({ ...geen, pias: true })).toBe("pias");
     expect(heroThema({ ...geen, piet: true })).toBe("piet");
+  });
+
+  it("spiegelt de volgorde van EDITIE_PRIORITEIT op de FUT-kaart", () => {
+    // De hele ladder in één keer: bij álles tegelijk wint de troon, en met elke
+    // hogere status uitgeschakeld schuift precies de volgende naar voren.
+    expect(HERO_THEMA_PRIORITEIT).toEqual([
+      "dictator",
+      "bigdaddy",
+      "kampioen",
+      "inform",
+      "onfire",
+      "pias",
+      "piet",
+    ]);
+    const alles = {
+      dictator: true,
+      bigDaddy: true,
+      kampioen: true,
+      inForm: true,
+      onFire: true,
+      pias: true,
+      piet: true,
+      schild: false,
+    };
+    expect(heroThema(alles)).toBe("dictator");
+    expect(heroThema({ ...alles, dictator: false })).toBe("bigdaddy");
+    expect(heroThema({ ...alles, dictator: false, bigDaddy: false })).toBe(
+      "kampioen",
+    );
+    expect(
+      heroThema({ ...alles, dictator: false, bigDaddy: false, kampioen: false }),
+    ).toBe("inform");
+    expect(
+      heroThema({
+        ...alles,
+        dictator: false,
+        bigDaddy: false,
+        kampioen: false,
+        inForm: false,
+      }),
+    ).toBe("onfire");
+    expect(heroThema({ ...geen, pias: true, piet: true })).toBe("pias");
   });
 
   it("laat verdienste de schande verdringen, net als op de FUT-kaart", () => {
@@ -223,6 +276,20 @@ describe("heroThema (#644)", () => {
     expect(heroThema({ ...geen, dictator: true, pias: true, piet: true })).toBe(
       "dictator",
     );
+    // Ook de drie nieuwe eer-statussen verdringen de schande (#760).
+    expect(heroThema({ ...geen, kampioen: true, pias: true })).toBe("kampioen");
+    expect(heroThema({ ...geen, inForm: true, pias: true })).toBe("inform");
+    expect(heroThema({ ...geen, onFire: true, pias: true })).toBe("onfire");
+    expect(heroThema({ ...geen, onFire: true, piet: true })).toBe("onfire");
+  });
+
+  it("laat binnen de eer de zeldzaamste titel voorgaan", () => {
+    // Kroon boven kwartaaltitel, kwartaaltitel boven weeklens, weeklens boven
+    // de reeks — On-Fire is de enige met meerdere dragers tegelijk (#632) en
+    // staat daarom achteraan.
+    expect(heroThema({ ...geen, bigDaddy: true, inForm: true })).toBe("bigdaddy");
+    expect(heroThema({ ...geen, kampioen: true, onFire: true })).toBe("kampioen");
+    expect(heroThema({ ...geen, inForm: true, onFire: true })).toBe("inform");
   });
 
   it("laat binnen de schande de weeklens winnen van het rondgaande token", () => {
@@ -236,5 +303,35 @@ describe("heroThema (#644)", () => {
     // Eer valt niet onder het schild: daar valt niets te beschermen.
     expect(heroThema({ ...geen, bigDaddy: true, schild: true })).toBe("bigdaddy");
     expect(heroThema({ ...geen, dictator: true, schild: true })).toBe("dictator");
+    expect(heroThema({ ...geen, kampioen: true, schild: true })).toBe("kampioen");
+    expect(heroThema({ ...geen, inForm: true, schild: true })).toBe("inform");
+    expect(heroThema({ ...geen, onFire: true, schild: true })).toBe("onfire");
+    // Met schild valt de hero terug op de hoogste eer-status, niet op neutraal.
+    expect(
+      heroThema({ ...geen, kampioen: true, pias: true, schild: true }),
+    ).toBe("kampioen");
+  });
+});
+
+describe("heroCrestTekst (#760)", () => {
+  it("splitst een editie-regel in icoon en label", () => {
+    // Exact de regels die editieLabel (edities.ts) oplevert.
+    expect(heroCrestTekst("⚡ In-Form · +48")).toEqual({
+      emoji: "⚡",
+      label: "In-Form · +48",
+    });
+    expect(heroCrestTekst("🔥 On Fire · 6 op rij")).toEqual({
+      emoji: "🔥",
+      label: "On Fire · 6 op rij",
+    });
+    expect(heroCrestTekst("🏆 Kampioen ☀️ Zomer 2026")).toEqual({
+      emoji: "🏆",
+      label: "Kampioen ☀️ Zomer 2026",
+    });
+  });
+
+  it("laat geen lege chip achter bij een regel zonder ruimte", () => {
+    expect(heroCrestTekst("🏆")).toEqual({ emoji: "🏆", label: "🏆" });
+    expect(heroCrestTekst("")).toEqual({ emoji: "", label: "" });
   });
 });
