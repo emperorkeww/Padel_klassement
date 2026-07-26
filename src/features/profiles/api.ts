@@ -1,18 +1,23 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
-import { warnIfTruncated } from "@/lib/supabase/truncation";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { downscaleImage } from "@/lib/utils/image";
 import type { Profile } from "@/types";
 
 /** Alle profielen (publiek leesbaar); handig als lookup-map. */
 export function getAllProfiles(): Promise<Profile[]> {
   return cached("profiles:all", async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("username", { ascending: true });
-    if (error) throw error;
-    return warnIfTruncated(data ?? [], "profiles");
+    // De namenlijst van de hele app: afkappen op max_rows zou spelers stil in
+    // "Onbekend" veranderen (#731). `id` erachter maakt de paginering
+    // deterministisch, ook bij gelijke of lege usernames.
+    return fetchAllPages((from, to) =>
+      supabase
+        .from("profiles")
+        .select("*")
+        .order("username", { ascending: true })
+        .order("id")
+        .range(from, to),
+    );
   });
 }
 
