@@ -74,6 +74,15 @@
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
 }
+/* Tweede ornamentlaag (#710, Piet): ornamenten die juist vóór de kaart horen —
+   een crest in de bovennotch, gravures op het lakframe en het zegel in de
+   onderpunt liggen ópgelegd op de rand. Achter de kaart zouden ze compleet
+   verdwijnen; geclipt in het vlak zouden ze de rand niet kunnen raken. Zelfde
+   doos als de laag erachter, dus dezelfde ORNAMENT_VIEWBOX en één set
+   coördinaten voor beide lagen. */
+.fut-kaart__ornament--voor {
+  z-index: 2;
+}
 .fut-kaart__zijde--achter {
   position: absolute;
   inset: 0;
@@ -1004,7 +1013,7 @@
     );
 }
 
-/* Zwarte Piet (#645/#705): het rondgaande schande-token, kaartenspel-thema —
+/* Zwarte Piet (#645/#705/#710): het rondgaande schande-token, kaartenspel-thema —
    mat speelkaart-wit met een vlak zwart lakframe en rood/zwarte suit-pips
    (SVG-laag, ♠♥♦♣). De bone liner (#efe7d2) is de witte snijkant van het
    kaartkarton, zichtbaar tussen frame en vlak. Net als de pias geen shimmer
@@ -1013,7 +1022,14 @@
    pixelgrid, dus geen moiré op de kleinste kaartmaat) i.p.v. glansbanen.
    En bewust licht: donkere vlakken zijn hier het prestige-register (In-Form,
    On-Fire, Legende, dictator). Lokale hexen, net als kampioen (geen tweede
-   consument). Contrast: ink op hi ≈ 13:1 (AAA). */
+   consument). Contrast: ink op hi ≈ 13:1 (AAA).
+   Sinds #710 is dit de verzegelde schuldfiche uit de referentie: de enige
+   editie met een éigen ornamentlaag (kettingen met geopende sluiting achter de
+   kaart, pion-crest, randgravures en een gebroken zegel ervóór — zie
+   ornamentenPiet.ts), een watermerk in het vlak, een papierraster met vignette
+   en een gelaagde rand. De metafoor is het mechanisme: de fiche is verzegeld en
+   het zegel is al eens verbroken, de kettingen leggen hem vast en de sluitingen
+   staan open — één overwinning en je bent hem kwijt. */
 .fut-kaart--piet {
   --kaart-hi: #f4eedb;
   --kaart-mid: #e6ddc2;
@@ -1024,6 +1040,61 @@
   --editie-kleur: #a8271b;
   --kaart-frame-hi: #23211d;
   --kaart-frame-lo: #131211;
+  /* Gelaagde rand (#710): het lakframe krijgt een stalen onderplaat die
+     rechtsonder een fractie uitsteekt — dezelfde echo-truc als de GOAT, maar
+     mat en klein: dit moet als materiaaldikte lezen, niet als slagschaduw. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.013) calc(var(--fut-kw) * 0.017) 0 #55514a
+  );
+  /* En binnen het vlak de omgekeerde volgorde: een gunmetal haarlijn tegen het
+     ivoor, met een bleke opstaande rand erachter. Samen met de bone liner en de
+     zandkleurige keyline geeft dat de vier lagen van de referentie
+     (matzwart · zwart staal · gunmetal · geoxideerd zilver). */
+  --kaart-binnenlijn:
+    inset 0 0 0 1.5px rgba(45, 42, 36, 0.5),
+    inset 0 0 0 2.5px rgba(255, 250, 235, 0.5);
+  /* Watermerk (#710): groot en laag in het vlak, achter de gegevens. */
+  --motief-b: 80;
+  --motief-pos: 36%;
+}
+/* Klaversymbool naast de naam (#710): een los teken op de naamplaat, niet in
+   de naamtekst zelf — de naam ellipst en zou het teken dan meesnijden. De
+   padding-right reserveert de ruimte, dus een lange naam kapt eerder af i.p.v.
+   eronder te schuiven. Als achtergrond-SVG en niet als ::after-tekst: zo
+   spreken schermlezers de decoratie niet mee. */
+.fut-kaart--piet .fut-kaart__naam {
+  position: relative;
+  padding-right: 9%;
+}
+.fut-kaart--piet .fut-kaart__naam::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 7%;
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ctext x='6' y='10.5' text-anchor='middle' font-size='12' font-family='serif' fill='%23201d16'%3E%E2%99%A3%3C/text%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+/* De kettingen wiegen heel licht — een hangend gewicht staat nooit helemaal
+   stil. Bewust géén glans-animatie: schande glimt niet (#705), en de laag vóór
+   de kaart (crest, zegel) blijft dus ook stil staan. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--piet .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+    transform-origin: 50% 30%;
+    animation: fut-kaart-piet-wieg 11s ease-in-out infinite;
+  }
+  @keyframes fut-kaart-piet-wieg {
+    0%,
+    100% {
+      transform: rotate(-0.6deg);
+    }
+    50% {
+      transform: rotate(0.6deg);
+    }
+  }
 }
 .fut-kaart--piet .fut-kaart__zijde {
   background: linear-gradient(
@@ -1035,15 +1106,42 @@
 .fut-kaart--piet .fut-kaart__liner {
   background: #efe7d2;
 }
+/* De keyline expliciet terug op de basisformule (#710): de GOAT zet er een
+   rosé lijn voor met een descendant-selector, en die zou een Piet op een
+   GOAT-drager een roze binnenrand geven — terwijl het canvas-register voor
+   élke editie de zandkleurige mix tekent. Dit is precies die mix. */
+.fut-kaart--piet .fut-kaart__keyline {
+  background: color-mix(in srgb, var(--kaart-lijn) 75%, #fff8e8);
+}
 /* Gecoat kaartkarton glanst hooguit breed en diffuus, nooit als een smalle
    baan; hier simpelweg uit — het linnen hieronder draagt de textuur. */
 .fut-kaart--piet .fut-kaart__vlak::before {
   background: none;
 }
+/* Laagvolgorde (boven → onder): vignette, de vier suit-pips, het grove
+   papierraster, het fijne linnen en het ivoorverloop. Het vignette ligt bovenop
+   de textuur maar onder het watermerk (dat is .fut-kaart__motief op z-index −1):
+   licht valt op het papier, het watermerk zít in het papier. Canvas-spiegel:
+   drawSpeelkaart in futKaartCanvas.ts. */
 .fut-kaart--piet .fut-kaart__vlak {
   background:
+    radial-gradient(
+      115% 88% at 50% 42%,
+      transparent 52%,
+      rgba(46, 38, 24, 0.16) 100%
+    ),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 139'%3E%3Cg font-size='13' font-family='serif'%3E%3Ctext x='11' y='28' fill='rgba(32,29,24,0.2)'%3E%E2%99%A0%3C/text%3E%3Ctext x='77' y='42' fill='rgba(168,39,27,0.22)'%3E%E2%99%A5%3C/text%3E%3Ctext x='16' y='100' fill='rgba(168,39,27,0.22)'%3E%E2%99%A6%3C/text%3E%3Ctext x='77' y='90' fill='rgba(32,29,24,0.2)'%3E%E2%99%A3%3C/text%3E%3C/g%3E%3C/svg%3E")
       center / 100% 100% no-repeat,
+    repeating-linear-gradient(
+      0deg,
+      rgba(32, 29, 24, 0.04) 0 1px,
+      transparent 1px 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(32, 29, 24, 0.04) 0 1px,
+      transparent 1px 6px
+    ),
     repeating-linear-gradient(
       0deg,
       rgba(32, 29, 24, 0.045) 0 1px,

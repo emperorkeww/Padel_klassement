@@ -36,6 +36,49 @@ import {
   type OrnamentPad,
   type Streng,
 } from "@/features/rating/components/futKaartOrnamenten";
+import {
+  PIET_BREUK,
+  PIET_BREUK_GLANS,
+  PIET_CREST_DOOS,
+  PIET_CREST_GRAVURE,
+  PIET_CREST_PION,
+  PIET_CREST_PUNT,
+  PIET_CREST_RING,
+  PIET_CREST_SCHIJF,
+  PIET_CREST_VLEUGEL,
+  PIET_GRAVURE,
+  PIET_KETTING,
+  PIET_KETTING_DRAAD,
+  PIET_LAK,
+  PIET_LAK_RAND,
+  PIET_LAUWER,
+  PIET_LAUWER_RUIT,
+  PIET_LOOF,
+  PIET_LOOF_NERF,
+  PIET_RAND_CARTOUCHES,
+  PIET_RAND_RUIT,
+  PIET_RAND_TEKENS,
+  PIET_ROOD,
+  PIET_ROOD_RAND,
+  PIET_SLUITING,
+  PIET_STAAL_CONTOUR,
+  PIET_STAAL_GLANS,
+  PIET_STAAL_RIBBEL,
+  PIET_STAAL_VERLOOP,
+  PIET_WATERMERK,
+  PIET_WATERMERK_BREEDTE,
+  PIET_WATERMERK_KLEUR,
+  PIET_WATERMERK_POSITIE,
+  PIET_ZEGEL_BREUK,
+  PIET_ZEGEL_DOOS,
+  PIET_ZEGEL_DRAAD,
+  PIET_ZEGEL_GRAVURE,
+  PIET_ZEGEL_HELFT_LINKS,
+  PIET_ZEGEL_HELFT_RECHTS,
+  PIET_ZEGEL_SCHIJF,
+  PIET_ZEGEL_STUKKEN,
+  type Doos,
+} from "@/features/rating/components/ornamentenPiet";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 export type SchildVorm = "vlak" | "notch" | "punt" | "kroon";
@@ -221,7 +264,12 @@ export interface FutKaartKleuren {
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart). */
-  ornament?: "goat";
+  ornament?: "goat" | "piet";
+  /** Tweede ornamentlaag (#710): ornamenten die juist óp de kaartrand liggen
+   *  (Piet: crest, randgravures, gebroken zegel) — spiegel van
+   *  .fut-kaart__ornament--voor. Die tekent niet `drawKaartSchild` maar
+   *  `drawKaartOrnamentVoor`, ná de content van de caller. */
+  ornamentVoor?: "piet";
 }
 
 /**
@@ -244,6 +292,7 @@ export function drawKaartSchild(
   // Ornamentlaag (#710): hoorns en andere uitsteeksels éérst — de DOM legt
   // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
+  if (kleuren.ornament === "piet") drawPietAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -538,6 +587,236 @@ function drawGoatOrnament(
   ctx.restore();
 }
 
+/* --------------------------- Piet-ornament (#710) -------------------------- */
+
+/** Het staalverloop over één omhullende, met dezelfde as als de
+ *  objectBoundingBox-gradient in de DOM (x 0 → 0.3, y 0 → 1). */
+function pietStaal(ctx: CanvasRenderingContext2D, doos: Doos): CanvasGradient {
+  const g = ctx.createLinearGradient(
+    doos.x,
+    doos.y,
+    doos.x + doos.w * 0.3,
+    doos.y + doos.h,
+  );
+  for (const [offset, kleur] of PIET_STAAL_VERLOOP) g.addColorStop(offset, kleur);
+  return g;
+}
+
+/** Eén stroke-paar (donkere contour + staal) — de opbouw die élk metalen
+ *  Piet-onderdeel deelt, net als in de DOM-defs. */
+function pietDraad(
+  ctx: CanvasRenderingContext2D,
+  pad: Path2D,
+  doos: Doos,
+  draad: number,
+  extra = 0.8,
+) {
+  ctx.lineWidth = draad + extra;
+  ctx.strokeStyle = PIET_STAAL_CONTOUR;
+  ctx.stroke(pad);
+  ctx.lineWidth = draad;
+  ctx.strokeStyle = pietStaal(ctx, doos);
+  ctx.stroke(pad);
+}
+
+/** Kettingen met hun geopende sluiting (#710): de laag áchter de kaart. Eén
+ *  helft plus de spiegeling om x = 50, zoals de <use transform> in de DOM.
+ *  Schakel per schakel afgemaakt, zodat de volgende erover grijpt. */
+function drawPietAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.lineCap = "butt";
+    for (const schakel of PIET_KETTING) {
+      pietDraad(
+        ctx,
+        new Path2D(schakel.ring),
+        schakel.doos,
+        PIET_KETTING_DRAAD,
+      );
+      ctx.lineWidth = 0.4;
+      ctx.strokeStyle = PIET_STAAL_GLANS;
+      ctx.stroke(new Path2D(schakel.binnen));
+    }
+    ctx.lineCap = "round";
+    pietDraad(
+      ctx,
+      new Path2D(PIET_SLUITING.balk),
+      PIET_SLUITING.doos,
+      PIET_SLUITING.draad - 0.3,
+      1,
+    );
+    ctx.lineCap = "butt";
+    pietDraad(
+      ctx,
+      new Path2D(PIET_SLUITING.beugel),
+      PIET_SLUITING.doos,
+      PIET_SLUITING.draad,
+    );
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/** Crest, randgravures en het gebroken zegel (#710): de laag vóór de kaart.
+ *  Zelfde volgorde als de DOM-groep — eerst de twee gespiegelde helften, dan de
+ *  as-elementen eroverheen. */
+function drawPietVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    // Vleugel langs de bovenrand: vlakke zilvertint met zijn ribbels erin.
+    const vleugel = new Path2D(PIET_CREST_VLEUGEL.omtrek);
+    ctx.fillStyle = PIET_LOOF;
+    ctx.fill(vleugel);
+    ctx.lineWidth = 0.25;
+    ctx.strokeStyle = PIET_STAAL_CONTOUR;
+    ctx.stroke(vleugel);
+    ctx.lineWidth = 0.3;
+    ctx.strokeStyle = PIET_STAAL_RIBBEL;
+    for (const d of PIET_CREST_VLEUGEL.ribbels) ctx.stroke(new Path2D(d));
+    ctx.lineWidth = 0.35;
+    ctx.strokeStyle = PIET_LOOF_NERF;
+    ctx.stroke(new Path2D(PIET_CREST_VLEUGEL.highlight));
+    // Lauwerblaadjes langs de onderrand.
+    for (const blad of PIET_LAUWER) {
+      const p = new Path2D(blad.blad);
+      ctx.fillStyle = PIET_LOOF;
+      ctx.fill(p);
+      ctx.lineWidth = 0.18;
+      ctx.strokeStyle = PIET_STAAL_CONTOUR;
+      ctx.stroke(p);
+      ctx.lineWidth = 0.22;
+      ctx.strokeStyle = PIET_LOOF_NERF;
+      ctx.stroke(new Path2D(blad.nerf));
+    }
+    // Cartouches met hun kaartteken, en de twee rode ruiten.
+    for (const d of PIET_RAND_CARTOUCHES) {
+      const p = new Path2D(d);
+      ctx.fillStyle = PIET_LAK;
+      ctx.fill(p);
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = PIET_LAK_RAND;
+      ctx.stroke(p);
+    }
+    ctx.fillStyle = PIET_GRAVURE;
+    for (const d of PIET_RAND_TEKENS) ctx.fill(new Path2D(d));
+    for (const d of [PIET_RAND_RUIT, PIET_LAUWER_RUIT]) {
+      const p = new Path2D(d);
+      ctx.fillStyle = PIET_ROOD;
+      ctx.fill(p);
+      ctx.lineWidth = 0.3;
+      ctx.strokeStyle = PIET_ROOD_RAND;
+      ctx.stroke(p);
+    }
+    ctx.restore();
+  }
+
+  // Crest op de as: punt, stalen ring, lakschijf met gravure en de pion.
+  const punt = new Path2D(PIET_CREST_PUNT);
+  ctx.fillStyle = PIET_LAK;
+  ctx.fill(punt);
+  ctx.lineWidth = 0.6;
+  ctx.strokeStyle = PIET_LAK_RAND;
+  ctx.stroke(punt);
+  const ring = new Path2D(PIET_CREST_RING);
+  ctx.fillStyle = pietStaal(ctx, PIET_CREST_DOOS);
+  ctx.fill(ring);
+  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = PIET_STAAL_CONTOUR;
+  ctx.stroke(ring);
+  const schijf = new Path2D(PIET_CREST_SCHIJF);
+  ctx.fillStyle = PIET_LAK;
+  ctx.fill(schijf);
+  ctx.lineWidth = 0.4;
+  ctx.strokeStyle = PIET_LAK_RAND;
+  ctx.stroke(schijf);
+  ctx.lineWidth = 0.3;
+  ctx.strokeStyle = PIET_GRAVURE;
+  for (const d of PIET_CREST_GRAVURE) ctx.stroke(new Path2D(d));
+  const pion = new Path2D(PIET_CREST_PION);
+  ctx.fillStyle = "#0d0c0a";
+  ctx.fill(pion);
+  ctx.lineWidth = 0.3;
+  ctx.strokeStyle = PIET_LAK_RAND;
+  ctx.stroke(pion);
+
+  // Gebroken zegel in de onderpunt: contouren, lakschijf, dan de twee stalen
+  // helften eroverheen — zelfde volgorde als PietZegel in de DOM.
+  const helften = [PIET_ZEGEL_HELFT_LINKS, PIET_ZEGEL_HELFT_RECHTS].map(
+    (d) => new Path2D(d),
+  );
+  ctx.lineWidth = PIET_ZEGEL_DRAAD + 0.7;
+  ctx.strokeStyle = PIET_STAAL_CONTOUR;
+  for (const p of helften) ctx.stroke(p);
+  const zegel = new Path2D(PIET_ZEGEL_SCHIJF);
+  ctx.fillStyle = PIET_LAK;
+  ctx.fill(zegel);
+  ctx.lineWidth = 0.4;
+  ctx.strokeStyle = PIET_LAK_RAND;
+  ctx.stroke(zegel);
+  ctx.lineWidth = PIET_ZEGEL_DRAAD;
+  ctx.strokeStyle = pietStaal(ctx, PIET_ZEGEL_DOOS);
+  for (const p of helften) ctx.stroke(p);
+  ctx.lineWidth = 0.35;
+  ctx.strokeStyle = PIET_GRAVURE;
+  for (const d of PIET_ZEGEL_GRAVURE) ctx.stroke(new Path2D(d));
+  ctx.fillStyle = PIET_GRAVURE;
+  for (const d of PIET_ZEGEL_STUKKEN) ctx.fill(new Path2D(d));
+  const breuk = new Path2D(PIET_ZEGEL_BREUK);
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = PIET_BREUK_GLANS;
+  ctx.stroke(breuk);
+  ctx.lineWidth = 0.9;
+  ctx.strokeStyle = PIET_BREUK;
+  ctx.stroke(breuk);
+  ctx.restore();
+}
+
+/**
+ * De ornamenten die vóór de kaart liggen (#710). Aparte functie omdat
+ * `drawKaartSchild` de vlak-clip actief laat staan voor de content van de
+ * caller: deze laag moet er juist bóven én búiten liggen, dus tekent de caller
+ * hem zelf ná zijn `ctx.restore()`. Zonder `ornamentVoor` doet dit niets.
+ */
+export function drawKaartOrnamentVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  kleuren: FutKaartKleuren,
+) {
+  if (kleuren.ornamentVoor === "piet") drawPietVoor(ctx, x, y, w);
+}
+
 /** Deterministische PRNG (mulberry32) voor de vezelkorrel: de poster moet bij
  *  elke export dezelfde pixels geven (en de kaart naast een eerdere export
  *  dezelfde korrel), dus nooit Math.random(). */
@@ -657,10 +936,12 @@ function drawConfetti(
   }
 }
 
-/** Speelkaart-weefsel van de Zwarte Piet (#645/#705): linnen-finish met de
- *  vier suit-pips erop. Het linnen is de spiegel van de twee gekruiste
- *  repeating-linear-gradients (0°/90°, 1px lijn op periode 3) — op de vaste
- *  ~1,4×-kalibratie: lijn 1,5, periode 4. Pip-coördinaten en tekengrootte
+/** Speelkaart-weefsel van de Zwarte Piet (#645/#705/#710): linnen-finish met een
+ *  grover papierraster erover, de vier suit-pips en het vignette. Linnen en
+ *  raster zijn de spiegel van de vier gekruiste repeating-linear-gradients
+ *  (0°/90°, 1px lijn op periode 3 en 6) — op de vaste ~1,4×-kalibratie: lijn
+ *  1,5, periode 4 en 8. De grove periode is een veelvoud van de fijne, dus de
+ *  twee rasters vallen samen i.p.v. te zwemen. Pip-coördinaten en tekengrootte
  *  komen 1-op-1 uit de inline-SVG-laag in FutKaart.css (viewBox 100×139 —
  *  precies de kaartverhouding, dus één schaalfactor volstaat). */
 function drawSpeelkaart(
@@ -670,19 +951,24 @@ function drawSpeelkaart(
   fw: number,
   fh: number,
 ) {
-  ctx.strokeStyle = "rgba(32, 29, 24, 0.045)";
   ctx.lineWidth = 1.5;
-  for (let i = 0; i < fh; i += 4) {
-    ctx.beginPath();
-    ctx.moveTo(fx, fy + i);
-    ctx.lineTo(fx + fw, fy + i);
-    ctx.stroke();
-  }
-  for (let i = 0; i < fw; i += 4) {
-    ctx.beginPath();
-    ctx.moveTo(fx + i, fy);
-    ctx.lineTo(fx + i, fy + fh);
-    ctx.stroke();
+  for (const [periode, kleur] of [
+    [4, "rgba(32, 29, 24, 0.045)"],
+    [8, "rgba(32, 29, 24, 0.04)"],
+  ] as const) {
+    ctx.strokeStyle = kleur;
+    for (let i = 0; i < fh; i += periode) {
+      ctx.beginPath();
+      ctx.moveTo(fx, fy + i);
+      ctx.lineTo(fx + fw, fy + i);
+      ctx.stroke();
+    }
+    for (let i = 0; i < fw; i += periode) {
+      ctx.beginPath();
+      ctx.moveTo(fx + i, fy);
+      ctx.lineTo(fx + i, fy + fh);
+      ctx.stroke();
+    }
   }
   const pips: ReadonlyArray<readonly [number, number, string, string]> = [
     [11, 28, "♠", "rgba(32, 29, 24, 0.2)"],
@@ -699,6 +985,22 @@ function drawSpeelkaart(
     ctx.fillStyle = kleur;
     ctx.fillText(glyph, fx + px * s, fy + py * (fh / 139));
   }
+  ctx.restore();
+
+  // Vignette (#710): het papier vangt licht in het midden en loopt naar de
+  // randen weg — spiegel van de radial-gradient bovenaan de vlak-stack
+  // (115% 88% at 50% 42%, transparant tot 52% van de straal). De ellips wordt
+  // met een scale getekend, zoals drawMottling dat ook doet.
+  const rx = fw * 1.15;
+  const ry = fh * 0.88;
+  ctx.save();
+  ctx.translate(fx + fw / 2, fy + fh * 0.42);
+  ctx.scale(1, ry / rx);
+  const vignette = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+  vignette.addColorStop(0.52, "rgba(46, 38, 24, 0)");
+  vignette.addColorStop(1, "rgba(46, 38, 24, 0.16)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
   ctx.restore();
 }
 
@@ -752,6 +1054,14 @@ interface EditieRegister {
   lijn: string;
   editieKleur: string;
   textuur?: VlakTextuur;
+  /** Rand- en ornamentmechanismen (#710): tot dan alleen van de toptiers, sinds
+   *  de Piet ook van een editie. Zelfde velden als in FutKaartKleuren, zodat de
+   *  editie-tak ze rechtstreeks kan doorgeven. */
+  echo?: FutKaartKleuren["echo"];
+  binnenlijn?: FutKaartKleuren["binnenlijn"];
+  motief?: FutKaartKleuren["motief"];
+  ornament?: FutKaartKleuren["ornament"];
+  ornamentVoor?: FutKaartKleuren["ornamentVoor"];
 }
 
 /** De basis-sheen (.fut-kaart__vlak::before) die élk register erft. Bewust 0.28
@@ -867,8 +1177,10 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     editieKleur: "#8c2a17",
     textuur: "confetti",
   },
-  // Zwarte Piet (#645/#705): speelkaart-wit met vlak mat lakframe; de bone
-  // liner is de witte snijkant van het kaartkarton. Sheen uit.
+  // Zwarte Piet (#645/#705/#710): speelkaart-wit met vlak mat lakframe; de bone
+  // liner is de witte snijkant van het kaartkarton. Sheen uit. Sinds #710 de
+  // enige editie met een eigen ornamentlaag (kettingen achter, crest/zegel voor),
+  // een watermerk en een gelaagde rand — spiegel van .fut-kaart--piet.
   piet: {
     frame: [
       [0, "#23211d"],
@@ -884,6 +1196,19 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#a2977a",
     editieKleur: "#a8271b",
     textuur: "speelkaart",
+    echo: [[0.013, 0.017, "#55514a"]],
+    binnenlijn: [
+      [1.5, "rgba(45, 42, 36, 0.5)"],
+      [2.5, "rgba(255, 250, 235, 0.5)"],
+    ],
+    motief: {
+      paden: PIET_WATERMERK,
+      kleur: PIET_WATERMERK_KLEUR,
+      breedte: PIET_WATERMERK_BREEDTE,
+      positie: PIET_WATERMERK_POSITIE,
+    },
+    ornament: "piet",
+    ornamentVoor: "piet",
   },
 };
 
@@ -962,11 +1287,17 @@ export function kaartSkin(
         // die editie-blokken niet raken); pias en Piet zetten hun eigen
         // weefsel en slaan het satijn sowieso over.
         satijnAlpha: key === "legende" ? 0.035 : undefined,
-        // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
-        // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
-        // vlak-register en verdwijnt wél — het medaillon zou op het
-        // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
-        ornament: key === "legende" ? "goat" : undefined,
+        echo: r.echo,
+        binnenlijn: r.binnenlijn,
+        // Vastgelegd gedrag (#710): het GOAT-ornament hangt aan de tíer, dus
+        // een GOAT met In-Form houdt zijn hoorns; een editie mét eigen
+        // ornament (de Piet) wint. Het mótief hoort bij het vlak-register: het
+        // GOAT-medaillon verdwijnt onder een editie (het zou op het
+        // In-Form-navy vloeken), het Piet-watermerk komt er juist mee.
+        // Spiegel van FutKaart.tsx.
+        motief: r.motief,
+        ornament: r.ornament ?? (key === "legende" ? "goat" : undefined),
+        ornamentVoor: r.ornamentVoor,
       },
       ink: r.ink,
       inkSoft: r.inkSoft,
