@@ -1,0 +1,112 @@
+/* Divisiekaart "Bankvuller" (brons) — 800–899 — koper, gelakt hout en zadelbruin leer.
+
+   Het register van de reservebank uit de referentie (#710): zadelbruin leer als
+   vlak, warm koper in het frame en donker gelooid leer als liner. Waarom het
+   frame níet de generieke metaalladder volgt: die mixt --bronze richting warm
+   wit en levert daarmee een lichte, opgepoetste kaart — terwijl deze divisie
+   juist het doffe, gebruikte meubilair van de zijlijn moet zijn. Het vlak gaat
+   daarom als enige van de instapdivisies naar donker leer met lichte inkt.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): --bronze wisselt
+   per thema (#b45f1d licht, #cc8447 donker) en de deel-poster staat vast op het
+   lichte palet (#125), dus alleen literals houden DOM-kaart en poster in béide
+   thema's gelijk. Tweede lezer: het `register` in brons.ts; de synctest in
+   brons.test.ts leest dít bestand in en houdt de twee gelijk.
+
+   Geen animatie in dit bestand — bewust. Een glansbaan die heen en weer loopt
+   (goud) of een stralenkrans (platina/diamant/meester) maakt van de bank een
+   troon, en de referentie eist juist het tegendeel. Er is dus niets dat achter
+   `prefers-reduced-motion` hoort; de kaart staat in beide voorkeuren stil. */
+.fut-kaart--brons {
+  /* Zadelbruin leer, van de gebruikte zitting bovenaan naar de schaduw in de
+     punt. Contrast (WCAG 2.1, sRGB) op de lichtste plek van het vlak — --kaart-hi
+     mét topgloed én glansbaan erover, samen #7e5836: ink #f9ecd2 = 5,38:1 en
+     inkSoft #f2e3c0 = 4,95:1. Met de satijnlijn er nóg overheen (#835e3d) resp.
+     4,94:1 en 4,55:1 — het slechtste geval blijft dus boven AA (4,5:1) voor
+     kleine tekst. Lager op het vlak, waar de divisieregel staat, loopt dat op
+     tot ruim 14:1. */
+  --kaart-hi: #68401f;
+  --kaart-mid: #4f2d17;
+  --kaart-lo: #301708;
+  --kaart-ink: #f9ecd2;
+  --kaart-ink-soft: #f2e3c0;
+  --kaart-lijn: #c98a4c;
+  /* Donkere leerschaduw recht ónder het schild: geen zijwaartse verschuiving
+     (dx = 0), want een bank staat plat op de grond — hij hangt niet scheef zoals
+     het losgekomen foliehoekje van de Wannabe. Een filter werkt ná de clip, dus
+     de echo volgt het schildsilhouet exact. */
+  --kaart-echo: drop-shadow(0 calc(var(--fut-kw) * 0.012) 0 rgba(35, 18, 7, 0.85));
+  /* Koperen haarlijn met een leerschaduw erachter: de dubbele binnenrand van de
+     referentie, zonder extra DOM-laag (inset-schaduwen worden mee-geclipt). */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(240, 197, 143, 0.5),
+    inset 0 0 0 3px rgba(38, 20, 8, 0.7);
+}
+/* Koperen rand: twee glanspunten op dezelfde ~160°-as als de metaalladder, maar
+   met gepolijst koper i.p.v. warm wit als hoogste stop — koper laat nooit wit
+   licht na, en dát is het verschil met de zilver- en goudrand. */
+.fut-kaart--brons .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #eab884 0%,
+    #a2622f 38%,
+    #f0c391 64%,
+    #5c3115 100%
+  );
+}
+.fut-kaart--brons .fut-kaart__liner {
+  background: #2a1608;
+}
+.fut-kaart--brons .fut-kaart__keyline {
+  background: #e0a86a;
+}
+/* Topgloed: zelfde ellips en stops als de basiskaart, alleen de kleur wisselt
+   van 0,5 wit naar 0,08 warm crème. Leer weerkaatst nauwelijks — een witte
+   gloed op die sterkte maakte de bovenkant van het vlak melkgrijs i.p.v.
+   afgesleten. De geometrie blíjft die van FutKaart.css, want de canvas-glow in
+   drawKaartSchild rekent met precies dat middelpunt en die straal. */
+.fut-kaart--brons .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 226, 178, 0.08),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+/* Glansbaan op dezelfde 115°/42-50-58 als de basiskaart, maar op 0,07 i.p.v.
+   0,32: mat leer geeft een brede, flauwe streep licht terug, geen scherpe
+   reflectie. Dit is meteen de goedkoopste manier om de inkt boven AA te houden —
+   de baan valt precies over de lichtste hoek van het vlak. */
+.fut-kaart--brons .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 236, 200, 0.07) 50%,
+    transparent 58%
+  );
+}
+/* Satijnweefsel gehalveerd (0,07 → 0,035): het leerkorrel zit in het motief en
+   de stiksels zitten in de ornamentlaag, dus een weefsel op volle sterkte legt
+   er een derde structuur overheen en maakt het vlak druk. De canvas-spiegel is
+   `satijnAlpha: 0.03` in brons.ts — dezelfde ~0,875-kalibratie die #664 voor de
+   sheen vaststelde, geen andere waarde. */
+.fut-kaart--brons .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.035) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Warme schaduw onder de vóór-liggende ornamentlaag (crest, tabs, medaillon):
+   de gedeelde regel in FutKaart.css is roze getint (Big Daddy) en dat vloekt op
+   koper. Alleen DOM: de poster tekent de ornamentlaag zonder slagschaduw, net
+   als bij de andere divisies. */
+.fut-kaart--brons .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(30, 15, 5, 0.5));
+}

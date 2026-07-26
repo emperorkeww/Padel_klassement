@@ -1,0 +1,101 @@
+/* Divisiekaart "Eeuwige belofte" (diamant) — 1200–1299 — ijsblauw, kobalt en
+   geborsteld aluminium.
+
+   Het register van het onvoltooide potentieel uit de referentie (#710). Waarom
+   het frame níet de generieke metaalladder volgt: die mixt de tierkleur
+   richting warm wit en levert daarmee een gouden zweem op élke stop — precies
+   het materiaal dat deze divisie niet mag zijn. Hier lopen vier stops van
+   ijswit via geborsteld staalgrijs naar marine, dus het frame leest als
+   aluminium en niet als edelmetaal: de kaart blijft ónder de toptiers hangen.
+
+   Waarom het vlak licht blijft terwijl de referentie van ijs naar diep marine
+   loopt: de referentie wisselt onderweg van donkere naar lichte inkt en de
+   kaart heeft er maar één. Zie de contrastregel hieronder — met een marine
+   onderrand zakt de divisieregel door AA. Het kobalt zit daarom in frame,
+   liner, echo en ornamenten, niet in het vlak.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart
+   en poster in béide thema's gelijk. Tweede lezer: het `register` in
+   diamant.ts; de synctest in diamant.test.ts leest dít bestand in en houdt de
+   twee gelijk. */
+.fut-kaart--diamant {
+  /* IJsblauw emaille. Contrast (WCAG-relatieve luminantie) op de donkerste
+     stop --kaart-lo, het slechtste punt van het vlak: ink 6,83:1 en de zachte
+     inkt van sub-niveau en divisieregel 4,87:1 — allebei boven AA (4,5:1).
+     Hoger in het vlak loopt dat op tot 11,97:1 respectievelijk 8,54:1. */
+  --kaart-hi: #f5f9fe;
+  --kaart-mid: #d4e5f7;
+  --kaart-lo: #a2c1e8;
+  --kaart-ink: #132f6e;
+  --kaart-ink-soft: #274785;
+  --kaart-lijn: #6b93cd;
+  /* Eén krappe kobalt-echo i.p.v. de gedeelde stralenkrans: de referentierand
+     is een tweede, iets verschoven randlaag. Krapper dan de goud-echo (0,012
+     tegen 0,014), want "strakkere en iets lichtere omlijsting dan Forever
+     second" is de acceptatie-eis van deze divisie. Een filter werkt ná de
+     clip, dus de echo volgt het schild exact. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.014) 0
+      rgba(24, 55, 116, 0.7)
+  );
+  /* Aluminium hairline, kobalt spouw, tweede bleke lijn: het gelaagde reliëf
+     van de referentierand in drie inset-schaduwen, zonder extra DOM-laag. De
+     derde lijn is bewust ijl — vier volle lijnen maken de rand bot op de
+     veldmaat, waar de hele band nog geen 5px breed is. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(240, 248, 255, 0.9),
+    inset 0 0 0 2.5px rgba(23, 52, 110, 0.85),
+    inset 0 0 0 3.5px rgba(184, 208, 236, 0.6);
+}
+.fut-kaart--diamant .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f4f8fc 0%,
+    #93a3b8 40%,
+    #e2ebf5 66%,
+    #324a75 100%
+  );
+}
+.fut-kaart--diamant .fut-kaart__liner {
+  background: #152a52;
+}
+/* Geen eigen .fut-kaart__keyline: het register laat `keyline` weg, dus zowel
+   de CSS als kaartSkin() leiden 'm af uit --kaart-lijn (75% op #fff8e8). Eén
+   plek minder waar DOM en poster uiteen kunnen lopen — en op ijsblauw leest
+   die warme lijn al koel genoeg. Om dezelfde reden blijven de vlak-gloed en de
+   sheen-baan van de basiskaart staan: `glow` spiegelt die gloed letterlijk en
+   `sheen` ontbreekt in het register, dus beide kanten houden hun eigen
+   gekalibreerde basiswaarde. */
+
+/* Terug naar het basissatijn: het premium-blok in FutKaart.css zet voor deze
+   tier een conic stralenkrans, maar de blauwdruk ís het motief van deze kaart
+   en een zon eroverheen maakt het vlak druk (en trekt het oog wég van de
+   onvoltooide kroon). Canvas-tegenhanger: `stralen: false` in het register. */
+.fut-kaart--diamant .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.07) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Koele schaduw onder de vóór-liggende ornamentlaag (zandlopercrest en
+   ruitmedaillon): de gedeelde regel in FutKaart.css is roze getint (Big Daddy)
+   en dat vloekt op kobalt-emaille. Zelfde afspraak als goud.css, dus de regel
+   staat er ook al hangt de divisie-vóórlaag pas in de DOM zodra FutKaart.tsx
+   zijn `<use>` erbij krijgt — de defs en de canvas-kant tekenen hem al. */
+.fut-kaart--diamant .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(13, 30, 66, 0.45));
+}
+/* De glansbaan zet steeds opnieuw aan en komt nooit aan: hij loopt één keer
+   over het vlak en begint dan van voren af aan. Dat is het thema van deze
+   divisie in beweging, en tegelijk het enige wat een ijsvlak nodig heeft.
+   Trager dan de folieband van Wannabe (8,5s): daar kantelt iemand de kaart,
+   hier tikt een zandloper. Alleen de baan schuift — de gradient zelf blijft de
+   basis-sheen, zodat het register er niets over hoeft te zeggen en de poster
+   (die stilstaat, zoals bij alle shimmer-varianten) niet afwijkt. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--diamant .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 11s ease-in-out infinite;
+  }
+}

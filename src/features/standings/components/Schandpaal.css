@@ -1,20 +1,29 @@
-/* De Schandpaal (#682): losse kaart ónder de ranglijst — de tegenhanger van De
-   Troon (#528/#609) erboven. Zelfde opbouw (mobiel een verticale poster, vanaf
-   640px portret links en de tekst rechts), maar het omgekeerde materiaal: het
-   matte kraftkarton met confetti-stipjes van de 🤡-FUT-editie (#631) i.p.v. het
-   keizerlijke bordeaux-goud. Geen shimmer, geen metaal, geen gloed — schande
-   glimt niet, en er is dus ook geen animatie die `prefers-reduced-motion` moet
-   dempen.
+/* De Schandpaal (#682, hertekend in #770): losse kaart ónder de ranglijst — de
+   tegenhanger van De Troon (#528/#609) erboven. Sinds #770 is het een verweerd
+   theateraffiche voor een gevallen joker: mobiel een verticale poster, vanaf
+   640px het brede formaat van de referentie (portret links, verhaalpaneel
+   rechts). Het materiaal blijft het matte kraftkarton met confetti-stipjes van
+   de 🤡-FUT-editie (#631/#705/#710) — geen shimmer, geen metaal, geen gloed:
+   schande glimt niet, en er is dus ook geen animatie die
+   `prefers-reduced-motion` moet dempen. De enige uitzondering is het invaden
+   van het gegenereerde portret, en dát staat achter een
+   no-preference-mediaquery.
 
    Lokale hexen (net als .fut-kaart--pias en de kampioen-editie): het karton is
    in beide thema's hetzelfde papier, dus dit blok volgt de thema-tokens niet.
    Wél iets lichter dan de FUT-editie aan de onderkant (--kraft-lo #c39a5f i.p.v.
    #a37e46): dit vlak is een halve pagina hoog i.p.v. een kaartje, dus er staat
-   ook tekst op het donkerste deel van het verloop. Contrast van --kraft-ink:
-   8,0:1 op --kraft-hi en 5,6:1 op de donkerste rand (AA voor gewone tekst);
-   crème-op-stempelrood in het insigne 7,2:1. Om diezelfde reden draagt de
-   weekregel de volle ink-kleur — de hiërarchie komt van grootte en spatiëring,
-   niet van een lichtere tint die onderaan de kaart zou wegvallen. */
+   ook tekst op het donkerste deel van het verloop.
+
+   Contrast (berekend, sRGB):
+   - --kraft-ink #3a250c op --kraft-hi #dcbd85 → 8,0:1; op de donkerste stop
+     --kraft-lo #c39a5f → 5,6:1. Beide ≥ AA, ook voor de kleine weekregel.
+   - crème #fbe9d8 op het stempelrood #8c2a17 van de titelbadge → 7,2:1.
+   - Coach Rudy's naam #8c2a17 op het crèmepapier #f6ecd6 van zijn kaartje →
+     7,3:1; zijn cursieve tekst #4a3a24 op datzelfde papier → 9,3:1.
+   Om die reden draagt de weekregel ook de volle ink-kleur — de hiërarchie komt
+   van grootte en spatiëring, niet van een lichtere tint die onderaan de kaart
+   zou wegvallen. */
 .schandpaal {
   --kraft-hi: #dcbd85;
   --kraft-mid: #d3b177;
@@ -22,15 +31,34 @@
   --kraft-ink: #3a250c;
   --kraft-lijn: #8a6534;
   --kraft-stempel: #8c2a17;
+  /* Randmateriaal, letterlijk de frame-tokens van .fut-kaart--pias: verweerd
+     honinggoud, donker bordeaux en de donkerbruine buitenrand. */
+  --pias-goud: #b08b50;
+  --pias-goud-diep: #6f5026;
+  --pias-snijkant: #d8bc7c;
+  --pias-bordeaux: #5b241c;
+  --pias-hout: #2c1a09;
+  /* Crèmepapier voor de speech-card — het enige vlak op de poster dat lichter
+     is dan het karton, zodat het oordeel als opgeplakt briefje leest. */
+  --pias-papier: #f6ecd6;
+  /* Afficheletter: de kaart is een theateraffiche, en dat is een schreefletter.
+     Systeemschreef, dus geen extra request bovenop de twee huisfonts. */
+  --pias-affiche: Georgia, "Iowan Old Style", "Times New Roman", serif;
 
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   margin-top: var(--sp-5);
-  padding: var(--sp-4) var(--sp-4) var(--sp-5);
+  /* De 46px-ondergrens bovenaan is geen smaak maar rekenwerk: de portretlijst
+     is hooguit 260px breed, de narrenkap 34% daarvan (88px) en die steekt 76%
+     van zijn hoogte boven de lijst uit — 43px. Minder padding en `overflow:
+     hidden` knipt de lobben af op smalle schermen. */
+  padding: clamp(46px, 5.4%, 60px) clamp(14px, 4.4%, 44px)
+    clamp(18px, 3.6%, 36px);
   border-radius: var(--radius-lg);
   color: var(--kraft-ink);
   text-align: center;
-  border: 1px solid var(--kraft-lijn);
+  border: clamp(6px, 1%, 13px) solid var(--pias-hout);
   /* Zelfde stapel als .fut-kaart--pias .fut-kaart__vlak (#705): confetti als
      gedrukte inkt, de vezeltegel (28px-SVG, byte-gelijk aan die in
      FutKaart.css — zelfde papier, de synctest in futKaartCanvas.test.ts
@@ -54,64 +82,111 @@
       var(--kraft-mid) 56%,
       var(--kraft-lo) 100%
     );
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--kraft-ink) 26%, transparent);
+  /* Het perkament hoort bínnen de donkere lijst te zitten, niet eronder door
+     te lopen — vandaar padding-box; het staat ná de shorthand omdat die
+     background-clip terugzet. */
+  background-clip: padding-box;
+  /* Bordeaux band met een gouden bies erbinnen, precies de --kaart-binnenlijn
+     van .fut-kaart--pias, plus de slagschaduw van de poster zelf. */
+  box-shadow:
+    inset 0 0 0 2px rgba(105, 47, 39, 0.72),
+    inset 0 0 0 3px rgba(198, 158, 92, 0.55),
+    0 12px 30px color-mix(in srgb, var(--kraft-ink) 30%, transparent);
 }
 
-/* Insigne-regel: één gecentreerde stempel. Anders dan de troon (#609) hoeft
-   hier niets naast te passen — geen volkslied, geen tweede knop. */
-.schandpaal__topline {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--sp-3);
+/* Laag 2 van de opbouw: verkleuring en vignette in het perkament. Puur
+   verloopwerk, dus geen SVG nodig — en het ligt onder álles, inclusief de
+   ornamentlaag. */
+.schandpaal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 46% at 16% 18%, rgba(255, 246, 222, 0.16), transparent 72%),
+    radial-gradient(52% 42% at 86% 80%, rgba(140, 42, 23, 0.07), transparent 72%),
+    radial-gradient(122% 92% at 50% 50%, transparent 50%, rgba(58, 37, 12, 0.22) 100%);
 }
 
-.schandpaal__insig {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  padding: 4px var(--sp-3);
-  border-radius: 999px;
-  background: var(--kraft-stempel);
-  color: #fbe9d8;
-  border: 2px solid #52170c;
-  font-size: var(--fs-2xs, 0.68rem);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  box-shadow: var(--shadow-sm);
+/* Laag 8: de voorste randhighlight — de gouden keyline die net binnen de
+   houten lijst meeloopt. Staat bovenop alles, want een keyline die achter de
+   inhoud verdwijnt is geen keyline. */
+.schandpaal::after {
+  content: "";
+  position: absolute;
+  inset: clamp(4px, 0.9%, 11px);
+  z-index: 3;
+  pointer-events: none;
+  border: 1px solid rgba(176, 139, 80, 0.6);
+  border-radius: clamp(6px, 1.4%, 14px);
+  box-shadow: inset 0 0 0 1px rgba(255, 246, 222, 0.16);
 }
+
+/* Laag 3/4: harlekijnruiten, barstjes, confettisnippers en de vier
+   hoekbelletjes — één SVG (zie piasOrnamenten.tsx). Decoratief, dus zonder
+   muis- of touchdoel; anders zou de laag de profiel-link eronder blokkeren. */
+.schandpaal__decor {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── Linkerkolom: portret, lijst en plaat ─────────────────────────────────── */
 
 .schandpaal__body {
   position: relative;
+  z-index: 2;
   display: block;
   color: inherit;
   text-decoration: none;
 }
+/* De profiel-link is de enige control op deze kaart, en hij staat niet in de
+   focus-lijst van ui.css: die rekent met --accent, en het app-groen is op
+   kraftkarton een vreemde plastic sticker. Vandaar het stempelrood met een
+   crème halo eromheen — díe combinatie blijft zichtbaar op zowel de lichtste
+   als de donkerste stop van het verloop. */
+.schandpaal__body:focus-visible {
+  outline: 2px solid var(--kraft-stempel);
+  outline-offset: 4px;
+  border-radius: 14px;
+  box-shadow: 0 0 0 6px rgba(255, 246, 222, 0.55);
+}
 
-/* Portret + placard als één blok: de foto in een kartonnen lijst, de naam op
-   een bordje eronder — bewust géén nameplate óver de foto zoals de troon, want
-   een schandpaal draagt z'n tekst op een plaat ervoor. */
+/* Portret + placard als één blok: de foto in een dubbele lijst, de naam op een
+   bordje eronder — bewust géén nameplate óver de foto zoals de troon. De
+   gegenereerde afbeelding is een vervangbare bron met een onbekende compositie;
+   tekst erop is een gok, tekst eronder is altijd leesbaar. */
 .schandpaal__frame {
-  display: flex;
-  flex-direction: column;
-  width: min(240px, 100%);
+  position: relative;
+  display: block;
+  width: min(260px, 100%);
   margin: 0 auto;
 }
 
+/* Vaste verhouding, zodat een portret dat later of nooit binnenkomt de kaart
+   niet laat verspringen (7/8 — de verhouding van de referentie). De dubbele
+   omlijsting zit in de box-shadow-ringen: bleke snijkant, donker bordeaux,
+   verweerd goud en een donkere contour die het geheel van het karton tilt. */
 .schandpaal__portrait {
   position: relative;
-  aspect-ratio: 4 / 5;
-  border-radius: var(--radius-lg);
+  /* Expliciet blok: het beeldvak is een <span> (het zit in een <a>), en
+     `aspect-ratio` doet niets op een inline element. */
+  display: block;
+  aspect-ratio: 7 / 8;
+  border-radius: clamp(8px, 4%, 16px);
   overflow: hidden;
-  /* Matte kartonpassepartout (#705) i.p.v. het 160°-glansverloop van vroeger:
-     één vlakke toon, met de bleke snijkant als binnenring en dan pas de
-     kraftlijst — in lijn met het nieuwe pias-frame. */
   background: #3d2a11;
   box-shadow:
-    0 0 0 1px #e8d5ae,
-    0 0 0 4px var(--kraft-lijn),
-    0 10px 22px color-mix(in srgb, var(--kraft-ink) 32%, transparent);
+    0 0 0 1px var(--pias-goud-diep),
+    0 0 0 4px var(--pias-bordeaux),
+    0 0 0 5px var(--pias-snijkant),
+    0 0 0 11px var(--pias-goud),
+    0 0 0 12px var(--pias-hout),
+    0 12px 24px color-mix(in srgb, var(--kraft-ink) 34%, transparent);
 }
 .schandpaal__img {
   display: block;
@@ -120,8 +195,21 @@
   object-fit: cover;
   object-position: 50% 18%;
 }
-/* Avatar-fallback zolang er nog geen AI-clownportret is (#555: geen skeleton,
-   geen zichtbare swap-flits — het kader is al donker en vult zich gewoon). */
+/* Laadstatus: het kader is al donker karton en vult zich gewoon — geen
+   skeleton, geen shimmer (#555/#705). De afbeelding staat tot `onLoad` op
+   nul en komt daarna in beeld; alleen wíe beweging wil krijgt de fade. */
+.schandpaal__portrait[data-portret="laadt"] .schandpaal__img {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .schandpaal__img {
+    transition: opacity 0.4s ease-out;
+  }
+}
+/* Fallback- en foutstatus vallen op hetzelfde uiterlijk terug: de gewone
+   avatar in hetzelfde kader. Een mislukte generatie is voor de kijker geen
+   ander verhaal dan een generatie die er nog niet is — en een foutmelding op
+   een schandpaal-kaart zou de grap doodslaan. */
 .schandpaal__portrait .avatar {
   position: absolute;
   top: 50%;
@@ -129,12 +217,49 @@
   transform: translate(-50%, -50%);
 }
 
+/* De narrenkap hangt over de bovenrand: de gouden kraag valt ín de lijst (dát
+   maakt hem geïntegreerd i.p.v. erop geplakt), de slappe lobben steken erboven
+   uit — vandaar de royale padding-top op de kaart. */
+.schandpaal__kap {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 2;
+  /* 34% van de lijstbreedte: bij deze viewBox (54 × 35 units, waarvan 76% boven
+     de rand uitsteekt) blijft de kap daarmee net binnen de padding-top van de
+     kaart — breder en hij zou tegen de bovenrand geklipt worden. */
+  width: 34%;
+  height: auto;
+  transform: translate(-50%, -76%);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(40, 24, 8, 0.35));
+}
+
+/* Het gebarsten maskermedaillon zit in de onderhoek, half over de lijst heen —
+   het zegel van de kaart. Naar buiten geschoven, dus het bedekt de afbeelding
+   maar een fractie en de naam eronder niet. */
+.schandpaal__medaillon {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 32%;
+  height: auto;
+  transform: translate(-22%, 24%);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.4));
+}
+
 .schandpaal__plate {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  margin-top: var(--sp-3);
+  gap: var(--sp-1);
+  margin-top: clamp(14px, 3.4%, 26px);
+  /* Blijft gecentreerd onder het portret, ook als de brede poster de rest van
+     de kaart links uitlijnt — een naam van drie regels hoort onder z'n eigen
+     lijst, niet in de kolomrand. */
+  text-align: center;
 }
 .schandpaal__naamrij {
   display: flex;
@@ -149,52 +274,43 @@
 .schandpaal__naamrij .badge {
   flex: none;
 }
-/* Lange namen: max twee gebalanceerde regels i.p.v. een ellipsis (zoals #609). */
+/* Lange namen wikkelen, ze worden niet meer geclamped: sinds #770 mag geen
+   inhoudelijk veld op deze kaart zonder uitweg afgekapt worden, en een naam is
+   het meest inhoudelijke veld dat er staat. De kaart groeit dan gewoon mee. */
 .schandpaal__name {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
   max-width: 100%;
-  font-size: var(--fs-lg);
-  font-weight: 800;
-  line-height: 1.2;
+  font-family: var(--pias-affiche);
+  font-size: clamp(1.2rem, 3.4vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.15;
   letter-spacing: -0.01em;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 /* Welke week — currentPias valt terug op vorige week als deze nog leeg is, dus
-   de kaart zegt eerlijk over welke afgang het gaat. */
+   de kaart zegt eerlijk over welke afgang het gaat. De twee streepjes ernaast
+   zijn pseudo-elementen zonder tekstinhoud: puur affiche-vignet, en ze houden
+   de tekstinhoud van deze regel schoon. */
 .schandpaal__week {
-  font-size: var(--fs-2xs, 0.68rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  font-size: clamp(0.6rem, 1.4vw, 0.72rem);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--kraft-ink);
 }
-
-/* De reden is het enige inhoudelijke veld op de kaart: waar de troon één groot
-   getal draagt (de rating), draagt de schandpaal bewust géén cijfer — de
-   `waarde` uit pias_of_week wisselt van eenheid per reden. */
-.schandpaal__reden {
-  margin: var(--sp-4) auto 0;
-  padding-top: var(--sp-3);
-  max-width: 34ch;
-  border-top: 1px solid color-mix(in srgb, var(--kraft-lijn) 60%, transparent);
-  font-size: var(--fs-base);
-  font-weight: 600;
-  line-height: 1.4;
-  text-wrap: balance;
+.schandpaal__week::before,
+.schandpaal__week::after {
+  content: "";
+  width: clamp(14px, 3vw, 30px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--kraft-lijn));
 }
-
-/* Coach Rudy's sneer erft de kaart-tokens, zodat z'n bubbel crèmepapier op
-   karton wordt i.p.v. een app-surface midden op de poster. */
-.schandpaal .coach-sneer {
-  --surface-2: #f7efe0;
-  --line: #b99a63;
-  --ink-soft: #4a3a24;
-  --coach: #8c2a17;
-  text-align: left;
+.schandpaal__week::after {
+  background: linear-gradient(90deg, var(--kraft-lijn), transparent);
 }
 
 /* "jij"-badge: leesbaar op het lichte karton (de troon doet het omgekeerde). */
@@ -204,57 +320,207 @@
   border: 1px solid color-mix(in srgb, var(--kraft-ink) 30%, transparent);
 }
 
-/* ── Horizontale poster (≥640px) ────────────────────────────────────────────
-   Zelfde spiegeling als de troon: portret links, tekst rechts. De 1fr-buffer-
-   rijen centreren de rechterkolom verticaal t.o.v. het portret. */
+/* ── Rechterkolom: het verhaalpaneel ──────────────────────────────────────── */
+
+.schandpaal__verhaal {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(10px, 1.8%, 18px);
+  min-width: 0;
+  margin-top: clamp(18px, 3%, 30px);
+  text-align: left;
+}
+
+/* Het maskerwatermerk staat áchter de inhoud van dit paneel en is met
+   `max-width` afgebonden, zodat het bij een lang incident of een quote van vier
+   regels niet ineens onder de tekst uit kruipt. */
+.schandpaal__watermerk {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  z-index: -1;
+  height: 92%;
+  width: auto;
+  max-width: 44%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.schandpaal__topline {
+  margin: 0;
+  max-width: 100%;
+}
+
+/* Titelbadge: bordeauxrode emaille met een verweerd gouden randje. Geen
+   `white-space: nowrap` meer (#682): een langere vertaling mag over twee
+   regels, dat is beter dan een badge die uit de kaart loopt. */
+.schandpaal__insig {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  max-width: 100%;
+  padding: clamp(5px, 0.9%, 9px) clamp(12px, 2.2%, 22px);
+  border-radius: 999px;
+  background: linear-gradient(178deg, #9c3020 0%, var(--kraft-stempel) 46%, #6d1f11 100%);
+  color: #fbe9d8;
+  border: 2px solid var(--pias-goud);
+  font-family: var(--pias-affiche);
+  font-size: clamp(0.72rem, 1.7vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  text-wrap: balance;
+  box-shadow:
+    inset 0 0 0 1px rgba(43, 28, 11, 0.5),
+    inset 0 1px 0 rgba(255, 246, 222, 0.16),
+    0 4px 10px color-mix(in srgb, var(--kraft-ink) 28%, transparent);
+}
+/* Het maskertje schaalt met de titel mee (em), zodat de badge bij elke
+   containerbreedte dezelfde verhouding houdt. */
+.schandpaal__insig-icoon {
+  flex: none;
+  width: 1.65em;
+  height: 1.65em;
+}
+
+/* Het incident: waar de troon één groot getal draagt (de rating), draagt de
+   schandpaal bewust géén cijfer — de `waarde` uit pias_of_week wisselt van
+   eenheid per reden. Groeit mee over meerdere regels; niets wordt afgekapt. */
+.schandpaal__reden {
+  margin: 0;
+  max-width: 26ch;
+  font-family: var(--pias-affiche);
+  font-size: clamp(1.1rem, 3.1vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.22;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* Affichelijn met een ruitje in het midden — dezelfde scheiding als tussen de
+   akten van een programmablad. */
+.schandpaal__scheiding {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--kraft-lijn) 12%,
+    var(--kraft-lijn) 88%,
+    transparent
+  );
+}
+.schandpaal__scheiding::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--kraft-stempel);
+  box-shadow: 0 0 0 2px var(--kraft-hi);
+}
+
+/* Coach Rudy's oordeel als verhoogde crème speech-card, met zijn ronde portret
+   half over de kaart heen. Hij erft de kaart-tokens, zodat de bubbel crèmepapier
+   op karton wordt i.p.v. een app-surface midden op de poster. */
+.schandpaal .coach-sneer {
+  --surface-2: var(--pias-papier);
+  --line: #c2a068;
+  --ink-soft: #4a3a24;
+  --coach: var(--kraft-stempel);
+  align-items: center;
+  gap: 0;
+  margin-top: 0;
+  max-width: 100%;
+  text-align: left;
+}
+.schandpaal .coach-sneer__face {
+  position: relative;
+  z-index: 1;
+  margin: 0 -16px 0 0;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 2px var(--pias-bordeaux),
+    0 0 0 5px var(--pias-goud),
+    0 4px 10px color-mix(in srgb, var(--kraft-ink) 34%, transparent);
+}
+.schandpaal .coach-sneer__bubble {
+  gap: 2px;
+  padding: clamp(9px, 1.4%, 14px) clamp(12px, 2%, 20px) clamp(9px, 1.4%, 14px)
+    clamp(26px, 4%, 36px);
+  border-width: 2px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--kraft-ink) 22%, transparent);
+}
+/* Het pijltje wijst naar het midden van zijn portret i.p.v. naar de bovenrand:
+   de avatar staat hier gecentreerd naast de kaart, niet erboven. */
+.schandpaal .coach-sneer__bubble::before {
+  top: 50%;
+  left: -6px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-width: 2px;
+}
+.schandpaal .coach-sneer__name {
+  font-family: var(--pias-affiche);
+  font-size: clamp(0.85rem, 1.9vw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+/* Meerregelige quotes zijn de regel, niet de uitzondering: geen clamp, geen
+   ellipsis — de kaart groeit mee. */
+.schandpaal .coach-sneer__text {
+  font-size: clamp(0.82rem, 1.7vw, 1rem);
+  line-height: 1.5;
+}
+
+/* De neerwaartse chevrons staan in de flow onder het oordeel: zo kunnen ze per
+   constructie niets bedekken en veroorzaken ze geen layout shift. */
+.schandpaal__chevrons {
+  align-self: center;
+  width: clamp(18px, 2.4vw, 26px);
+  height: auto;
+  margin-top: calc(-1 * var(--sp-1));
+  pointer-events: none;
+}
+
+/* ── Brede poster (≥640px) ────────────────────────────────────────────────
+   De verhouding van de referentie: portret links (~32% van de inhoudsbreedte),
+   verhaalpaneel rechts (~61%), met de kier ertussen. `align-items: center`
+   houdt het verhaal verticaal gecentreerd t.o.v. het portret, ook wanneer de
+   quote uitgroeit. */
 @media (min-width: 640px) {
   .schandpaal {
     display: grid;
-    grid-template-columns: 210px minmax(0, 1fr);
-    grid-template-rows: 1fr auto auto auto 1fr;
-    grid-template-areas:
-      "portret ."
-      "portret topline"
-      "portret reden"
-      "portret sneer"
-      "portret .";
+    grid-template-columns: minmax(0, 0.53fr) minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--sp-6);
-    row-gap: var(--sp-2);
-    padding: var(--sp-5);
+    column-gap: clamp(16px, 4.4%, 48px);
     text-align: left;
   }
 
-  .schandpaal__body {
-    grid-area: portret;
-  }
   .schandpaal__frame {
     width: 100%;
-    margin: 0;
   }
 
-  .schandpaal__topline {
-    grid-area: topline;
-    justify-content: flex-start;
-    margin-bottom: 0;
+  .schandpaal__verhaal {
+    margin-top: 0;
+    gap: clamp(12px, 1.8%, 22px);
   }
 
   .schandpaal__reden {
-    grid-area: reden;
-    margin: 0;
-    max-width: 42ch;
-    font-size: var(--fs-lg);
+    max-width: 32ch;
   }
 
-  .schandpaal .coach-sneer {
-    grid-area: sneer;
-    margin-top: 0;
-  }
-
-  .schandpaal__naamrij {
-    justify-content: flex-start;
-  }
-  .schandpaal__name {
-    font-size: var(--fs-xl);
+  .schandpaal__chevrons {
+    margin-left: 0;
   }
 }

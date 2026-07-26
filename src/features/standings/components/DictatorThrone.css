@@ -1,155 +1,267 @@
-/* De Troon (#528 + #530): losse "lof"-kaart bóven het podium — een groot
-   portret als personencultus-poster met minimale randtekst. Keizerlijk verloop
-   (--dictator*), bewust donker in beide thema's zodat de dictator boven het volk
-   uittorent. De propaganda-tekst zelf staat in de Coach Rudy-bubbel eronder.
-   Layout (#609): mobiel een verticale poster; vanaf 640px een horizontale
-   poster — portret links, eregalerij (insigne/rating/slogan) rechts. */
+/* De Troon (#528 + #530 + #769): losse "lof"-kaart bóven het podium, sinds #769
+   getekend als breed commandodossier — staatsportret links, informatiepaneel
+   rechts. De propaganda-tekst zelf staat in de Coach Rudy-bubbel eronder.
+
+   Waarom vaste kleurwaarden i.p.v. de --dictator*-tokens: de troon deelt haar
+   vormtaal met de El Padelissimo-FUT-kaart (#710) en die staat per definitie
+   vast op het lichte palet (posters kunnen geen live tokens lezen, #125). Eén
+   regime dat in elk thema identiek is, is hier meer waard dan een kaart die
+   meekleurt — de troon was al bewust donker in beide thema's.
+
+   Contrast (WCAG, berekend op de eindkleuren hieronder):
+     - roomgoud #f2dda2 op oxblood #4a0f1f ....... 11,3:1  (AAA)
+     - antiekgoud #e6c073 op oxblood #4a0f1f ..... 8,8:1   (AAA)
+     - plaquette-inkt #3a0a16 op goud #d9b661 .... 8,8:1   (AAA)
+     - wit op de nameplate #230812 ............... 18,8:1  (AAA)
+   Alle informatie staat bovendien in tekst; de ornamenten dragen geen
+   betekenis, dus kleur is nergens de enige drager. */
 .dictator-throne {
+  /* Antiekgoud — dezelfde stops als DICTATOR_GOUD_VERLOOP in
+     futKaartOrnamenten.ts, zodat CSS-vlakken en SVG-ornamenten één metaal zijn. */
+  --troon-goud-hi: #f6e6b4;
+  --troon-goud: #d9b661;
+  --troon-goud-lo: #a8802f;
+  --troon-goud-diep: #6b4d18;
+  --troon-goud-ink: #f2dda2;
+  /* Oxblood → zwart-kersenrood, de reeks van het .fut-kaart--dictator-vlak.
+     De bovenste stop staat een tint dieper dan daar (#7d1a33): dit vlak is
+     vele malen groter, en op kaartformaat leest diezelfde wijn als roze. */
+  --troon-wijn: #62152b;
+  --troon-oxblood: #4a0f1f;
+  --troon-kers: #230812;
+  /* Eén maat voor de ornamentrand: de filet, de hoekfiligranen en de randruit
+     hangen er allemaal aan, dus ze schuiven samen mee met de kaartbreedte. */
+  --troon-filet: clamp(9px, 2%, 20px);
+
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 3vw, 26px);
   margin-bottom: var(--sp-5);
-  padding: var(--sp-4) var(--sp-4) var(--sp-5);
+  /* Padding = de filet plus lucht: zo botst de inhoud nooit tegen de gouden
+     binnenrand of de sluitruitjes, ook niet op een smalle telefoon. */
+  padding: calc(var(--troon-filet) + clamp(16px, 4.4%, 50px))
+    calc(var(--troon-filet) + clamp(14px, 6.2%, 70px));
   border-radius: var(--radius-lg);
-  color: #fff;
+  color: var(--troon-goud-ink);
   text-align: center;
+  /* Laag 2 (achtergrond): warme lichtval bovenin over oxblood naar kersenzwart. */
   background:
     radial-gradient(
-      120% 82% at 50% -8%,
-      color-mix(in srgb, var(--dictator-gold) 42%, transparent),
-      transparent 58%
+      84% 56% at 50% -14%,
+      rgba(240, 199, 102, 0.14),
+      transparent 60%
     ),
-    linear-gradient(162deg, var(--dictator-wine), var(--dictator-deep) 92%);
-  border: 1px solid color-mix(in srgb, var(--dictator-gold) 50%, transparent);
-  /* Getemperd t.o.v. vroeger (0 14px 34px @ 55%): zelfde schaduwtaal als de
-     podium-kaarten eronder, zodat de overgang hiërarchie is i.p.v. stijlbreuk. */
-  box-shadow: 0 8px 24px
-    color-mix(in srgb, var(--dictator-deep) 40%, transparent);
+    linear-gradient(
+      180deg,
+      var(--troon-wijn) 0%,
+      var(--troon-oxblood) 34%,
+      var(--troon-kers) 74%,
+      #150409 100%
+    );
+  /* Laag 1 + 8: buitenste schaduw en de gelaagde metalen randen (gouden
+     hairline, zwarte spouw, tweede gouden lijn) — hetzelfde reliëf als
+     --kaart-binnenlijn op de FUT-kaart, zonder extra DOM-laag. */
+  box-shadow:
+    0 10px 28px rgba(20, 4, 10, 0.45),
+    inset 0 0 0 1px rgba(240, 209, 133, 0.85),
+    inset 0 0 0 3px rgba(24, 6, 12, 0.95),
+    inset 0 0 0 4.5px rgba(198, 158, 84, 0.55);
 }
 
-/* Topline (#609): insigne gecentreerd, volkslied-knop (#535) rechts — één
-   grid-regel, dus ze kunnen elkaar per constructie niet overlappen; wordt de
-   knop breed (tap-to-play "🔊 Volkslied"), dan schuift het insigne mee opzij. */
-.dictator-throne__topline {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
-  min-height: 30px;
+/* Laag 3a: brokaat — een fijn gouden ruitraster op 5%, de stof van de
+   troonzaal — met daarbovenop een vignet dat de hoeken dieper wegzet. Beide in
+   één pseudo-element, want ze horen onder de zonnestraal én onder de gouden
+   ornamenten: een vignet dat over de filigranen valt, dooft juist het metaal.
+   Vaste px-stappen voor het brokaat (net als op de FUT-kaart), zodat het van
+   telefoon tot breedbeeld niet in moiré valt. */
+.dictator-throne::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      120% 110% at 50% 40%,
+      transparent 30%,
+      rgba(14, 2, 8, 0.82) 100%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      rgba(240, 199, 102, 0.05) 0 1px,
+      transparent 1px 7px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(240, 199, 102, 0.05) 0 1px,
+      transparent 1px 7px
+    );
 }
 
-.dictator-throne__insig {
-  grid-column: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  padding: 4px var(--sp-3);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #f4d488, var(--dictator-gold));
-  color: var(--dictator-deep);
-  font-size: var(--fs-2xs, 0.68rem);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border: 2px solid var(--dictator-deep);
-  box-shadow: var(--shadow-sm);
+/* De defs-SVG (goudverloop) mag geen ruimte innemen — hij zou anders als
+   grid-item een kolom claimen. */
+.dictator-throne__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
-.dictator-throne__anthem {
-  grid-column: 3;
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  padding: 0.3em 0.6em;
-  border-radius: 999px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: #fff;
-  cursor: pointer;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--dictator-deep) 62%, transparent);
-  border: 1px solid color-mix(in srgb, var(--dictator-gold) 55%, transparent);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
-  transition:
-    background 0.15s ease,
-    transform 0.1s ease;
-}
-.dictator-throne__anthem:hover {
-  background: color-mix(in srgb, var(--dictator-deep) 78%, transparent);
-}
-.dictator-throne__anthem:active {
-  transform: scale(0.96);
-}
-
-/* Draaiende stralenkrans achter de troon — puur decoratief. */
+/* Laag 3b: radiale zonnestralen vanaf de bovenrand — de propaganda-straal.
+   Ademt zachtjes, maar alleen als de bezoeker beweging niet afwijst. */
 .dictator-throne__beam {
   position: absolute;
   left: 50%;
   top: -46%;
   width: 150%;
-  height: 140%;
+  height: 150%;
   transform: translateX(-50%);
   pointer-events: none;
-  background: conic-gradient(
-    from 200deg at 50% 0%,
-    transparent 0deg,
-    rgba(255, 238, 196, 0.16) 26deg,
-    transparent 54deg,
-    transparent 306deg,
-    rgba(255, 238, 196, 0.16) 334deg,
-    transparent 360deg
-  );
-  animation: throne-beam 7s ease-in-out infinite;
+  background:
+    repeating-conic-gradient(
+      from -32deg at 50% 30%,
+      rgba(240, 199, 102, 0.022) 0deg 5deg,
+      transparent 5deg 15deg
+    ),
+    conic-gradient(
+      from 200deg at 50% 0%,
+      transparent 0deg,
+      rgba(255, 238, 196, 0.06) 26deg,
+      transparent 54deg,
+      transparent 306deg,
+      rgba(255, 238, 196, 0.06) 334deg,
+      transparent 360deg
+    );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dictator-throne__beam {
+    animation: throne-beam 7s ease-in-out infinite;
+  }
 }
 @keyframes throne-beam {
   0%,
   100% {
-    opacity: 0.5;
-    transform: translateX(-50%) rotate(-4deg);
+    opacity: 0.55;
+    transform: translateX(-50%) rotate(-3deg);
   }
   50% {
     opacity: 1;
-    transform: translateX(-50%) rotate(4deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dictator-throne__beam {
-    animation: none;
+    transform: translateX(-50%) rotate(3deg);
   }
 }
 
+/* Laag 8: de tweede gouden filet, een stukje binnen de kaartrand — het
+   dossier-kader uit de referentie. */
+.dictator-throne__filet {
+  position: absolute;
+  inset: var(--troon-filet);
+  pointer-events: none;
+  border: 1px solid rgba(226, 194, 122, 0.5);
+  border-radius: calc(var(--radius-lg) - 6px);
+  box-shadow:
+    inset 0 0 0 1px rgba(24, 6, 12, 0.5),
+    0 0 0 1px rgba(24, 6, 12, 0.35);
+}
+
+/* Laag 4: gegraveerde hoekornamenten en de sluitruitjes op de filet. */
+.dictator-throne__ornament {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: rgba(232, 198, 124, 0.4);
+}
+.dictator-throne__filigraan {
+  position: absolute;
+  width: clamp(30px, 6%, 62px);
+  aspect-ratio: 1;
+  inset: calc(var(--troon-filet) + 3px) auto auto calc(var(--troon-filet) + 3px);
+}
+.dictator-throne__filigraan--rb {
+  inset: calc(var(--troon-filet) + 3px) calc(var(--troon-filet) + 3px) auto auto;
+  transform: scaleX(-1);
+}
+.dictator-throne__filigraan--lo {
+  inset: auto auto calc(var(--troon-filet) + 3px) calc(var(--troon-filet) + 3px);
+  transform: scaleY(-1);
+}
+.dictator-throne__filigraan--ro {
+  inset: auto calc(var(--troon-filet) + 3px) calc(var(--troon-filet) + 3px) auto;
+  transform: scale(-1);
+}
+.dictator-throne__ruit {
+  position: absolute;
+  left: 50%;
+  width: clamp(14px, 2.4%, 26px);
+  aspect-ratio: 1;
+}
+.dictator-throne__ruit--boven {
+  top: var(--troon-filet);
+  transform: translate(-50%, -50%);
+}
+.dictator-throne__ruit--onder {
+  bottom: var(--troon-filet);
+  transform: translate(-50%, 50%);
+}
+
+/* ── Linkerkolom: het staatsportret ──────────────────────────────────────── */
+
 .dictator-throne__body {
   position: relative;
+  z-index: 1;
   display: block;
   color: inherit;
   text-decoration: none;
 }
+/* De link om het portret krijgt dezelfde focusring als de rest van de app. */
+.dictator-throne__body:focus-visible {
+  outline: 2px solid var(--troon-goud-hi);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+}
 
-/* Groot portret-kader: de afbeelding domineert de kaart. */
+/* Laag 5: het kader. Vaste aspect-ratio (≈ de referentie, 11:12) zodat een
+   portret van willekeurig formaat de kaarthoogte niet laat verspringen. */
 .dictator-throne__frame {
   position: relative;
   display: block;
   width: min(280px, 100%);
   margin: 0 auto;
-  aspect-ratio: 4 / 5;
-  padding: 4px;
-  border-radius: var(--radius-lg);
+  aspect-ratio: 11 / 12;
+  padding: clamp(7px, 3%, 15px);
+  border-radius: clamp(14px, 5%, 26px);
+  /* Buitenste gouden band; de ::before legt het donkere hart erin, zodat er
+     een echte dubbele omlijsting ontstaat i.p.v. één dikke rand. */
   background: linear-gradient(
-    145deg,
-    var(--dictator-gold),
-    var(--dictator) 30%,
-    var(--dictator-wine) 72%,
-    var(--dictator-gold)
+    150deg,
+    var(--troon-goud-hi) 0%,
+    var(--troon-goud-lo) 34%,
+    var(--troon-goud-hi) 56%,
+    var(--troon-goud-diep) 100%
   );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--dictator-gold) 30%, transparent),
-    0 12px 30px rgba(0, 0, 0, 0.4),
-    0 0 30px color-mix(in srgb, var(--dictator-gold) 18%, transparent);
+    0 0 0 1px rgba(24, 6, 12, 0.7),
+    0 14px 32px rgba(12, 2, 7, 0.55);
+}
+.dictator-throne__frame::before {
+  content: "";
+  position: absolute;
+  inset: clamp(3px, 1.4%, 6px);
+  border-radius: clamp(11px, 4%, 22px);
+  background: linear-gradient(160deg, #2b0a15, #150409);
+  box-shadow: inset 0 0 0 1px rgba(24, 6, 12, 0.9);
+}
+
+/* De krooncrest zit in de bovenrand van het kader — decoratief onderdeel van
+   de framevorm, dus hij hangt aan het kader en niet los over het portret. */
+.dictator-throne__crest {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(66px, 30%, 124px);
+  aspect-ratio: 64 / 41;
+  transform: translate(-50%, -52%);
+  filter: drop-shadow(0 3px 5px rgba(12, 2, 7, 0.6));
 }
 
 .dictator-throne__portrait {
@@ -157,9 +269,14 @@
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius-lg) - 4px);
+  border-radius: clamp(8px, 3.4%, 18px);
   overflow: hidden;
-  background: linear-gradient(160deg, var(--dictator-wine), var(--dictator-deep));
+  background: linear-gradient(160deg, #3a0c1a, #170509);
+  /* Binnenste gouden lijn — bewust vlak: op deze breedte leest een verloop
+     toch als één kleur, en zo blijft het kader één DOM-knoop. */
+  box-shadow:
+    0 0 0 clamp(2px, 0.9%, 4px) var(--troon-goud),
+    0 0 0 calc(clamp(2px, 0.9%, 4px) + 1px) rgba(24, 6, 12, 0.8);
 }
 .dictator-throne__img {
   width: 100%;
@@ -168,16 +285,87 @@
   object-position: 50% 18%;
   display: block;
 }
-/* Avatar-fallback (echt clublid zonder eigen portret): groot en gecentreerd. */
+/* Avatar-fallback (echt clublid zonder eigen portret): gecentreerd medaillon
+   met een gouden rand, zodat het schijfje in het dossier past i.p.v. het
+   kader vol te vullen. */
 .dictator-throne__portrait .avatar {
   position: absolute;
   top: 42%;
   left: 50%;
   transform: translate(-50%, -50%);
+  box-shadow:
+    0 0 0 3px var(--troon-goud),
+    0 0 0 5px rgba(24, 6, 12, 0.75),
+    0 10px 24px rgba(12, 2, 7, 0.55);
 }
 
-/* Nameplate over de onderrand van het portret. Sinds #609 bewust dun: alleen
-   naam + tier-badge/verstek-chip; "regeert sinds" staat bij de rating. */
+/* Fallback zonder foto: een leeg staatsportret met het embleem als reliëf —
+   leest als "kader nog leeg", niet als "plaatje stuk". */
+.dictator-throne__leeg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.dictator-throne__leeg-embleem {
+  width: 46%;
+  aspect-ratio: 1;
+  opacity: 0.3;
+  transform: translateY(-12%);
+}
+
+/* Laadstatus: één trage glans over het (al op maat staande) kader. */
+.dictator-throne__skelet {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 34%,
+    rgba(246, 230, 180, 0.14) 50%,
+    transparent 66%
+  );
+  background-size: 220% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dictator-throne__skelet {
+    animation: throne-skelet 1.6s linear infinite;
+  }
+}
+@keyframes throne-skelet {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+/* Lauwerdetail in de vier hoeken van het kader — één vorm, hier gespiegeld. */
+.dictator-throne__kaderhoek {
+  position: absolute;
+  width: clamp(22px, 13%, 54px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  opacity: 0.92;
+  filter: drop-shadow(0 1px 2px rgba(12, 2, 7, 0.7));
+  inset: clamp(9px, 4%, 20px) auto auto clamp(9px, 4%, 20px);
+}
+.dictator-throne__kaderhoek--rb {
+  inset: clamp(9px, 4%, 20px) clamp(9px, 4%, 20px) auto auto;
+  transform: scaleX(-1);
+}
+.dictator-throne__kaderhoek--lo {
+  inset: auto auto clamp(9px, 4%, 20px) clamp(9px, 4%, 20px);
+  transform: scaleY(-1);
+}
+.dictator-throne__kaderhoek--ro {
+  inset: auto clamp(9px, 4%, 20px) clamp(9px, 4%, 20px) auto;
+  transform: scale(-1);
+}
+
+/* Laag 6: naam en tag als échte tekst over de onderrand van het portret, op
+   een donkere bordeaux-gradient zodat ze op elke foto leesbaar blijven. */
 .dictator-throne__plate {
   position: absolute;
   left: 0;
@@ -187,80 +375,273 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: var(--sp-6) var(--sp-2) var(--sp-3);
+  padding: var(--sp-8) var(--sp-3) var(--sp-3);
   background: linear-gradient(
     180deg,
     transparent,
-    color-mix(in srgb, var(--dictator-deep) 92%, transparent) 62%
+    rgba(35, 8, 18, 0.72) 46%,
+    rgba(20, 4, 10, 0.94) 100%
   );
 }
-/* Naam mag wrappen (#609): lange namen krijgen max twee gebalanceerde regels
-   i.p.v. een ellipsis midden in de naam. */
+/* Naam mag wrappen: lange namen krijgen max twee gebalanceerde regels i.p.v.
+   een ellipsis midden in de naam, en ze mogen nooit over de foto uitlopen. */
 .dictator-throne__name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   max-width: 100%;
+  color: #fff;
   font-weight: 800;
-  font-size: var(--fs-lg);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-size: clamp(1.05rem, 2.5vw, 1.85rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
   text-wrap: balance;
   overflow-wrap: anywhere;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
 }
 .dictator-throne__name .badge {
   margin-left: var(--sp-2);
   vertical-align: middle;
 }
 
-/* Rating als eerbetoon onder het portret, met de ambtstermijn (#545) als
-   meta ernaast — samen één rustige regel i.p.v. een stapel op de foto. */
+/* ── Rechterkolom: het informatiepaneel ──────────────────────────────────── */
+
+.dictator-throne__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.6vw, 18px);
+  min-width: 0;
+}
+
+/* Laag 4: lauwerkrans + commandoster als watermerk, gecentreerd achter het
+   paneel. Bewust laag in dekking (10%): de krans loopt onder de omschrijving
+   door en die moet leesbaar blijven — het watermerk draagt geen informatie. */
+.dictator-throne__watermerk {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  /* Diameter ≈ 70% van de kaarthoogte, net als in de referentie. De krans mag
+     de paneelrand raken maar niet buiten de kaart vallen. */
+  width: clamp(210px, 34vw, 420px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  color: rgba(240, 199, 102, 0.1);
+}
+
+/* Laag 7: titelplaquette links, actie-/statusknop rechts — één rij, dus ze
+   kunnen elkaar per constructie niet overlappen (ook niet als de knop de
+   brede tap-to-play-variant is). */
+.dictator-throne__topline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-width: 0;
+}
+
+/* Brede gouden emailleplaquette. De maten hangen aan de titelgrootte (em), dus
+   een langere gelokaliseerde titel schaalt het hele plaatje netjes mee. */
+.dictator-throne__plaquette {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.5em;
+  font-size: clamp(0.95rem, 2.2vw, 1.55rem);
+  padding: 0.34em 1.5em 0.34em 0.62em;
+  margin-right: 0.55em; /* ruimte voor het uitstekende lakzegel */
+  filter: drop-shadow(0 3px 8px rgba(12, 2, 7, 0.5));
+}
+/* Het metaal van de plaat … */
+.dictator-throne__plaquette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0.55em;
+  background: linear-gradient(
+    180deg,
+    #f7e9bd 0%,
+    #dcb867 22%,
+    #a8802f 52%,
+    #e2c37c 74%,
+    #f3e0a8 100%
+  );
+  box-shadow: 0 0 0 1px rgba(60, 42, 12, 0.85);
+}
+/* … en het emaillevlak erin, één trapje lichter met een gegraveerde rand. */
+.dictator-throne__plaquette::after {
+  content: "";
+  position: absolute;
+  inset: 0.17em;
+  border-radius: 0.35em;
+  background: linear-gradient(
+    180deg,
+    #f2dda2 0%,
+    #e3c47c 46%,
+    #d3ab55 56%,
+    #eed99e 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(60, 42, 12, 0.5);
+}
+.dictator-throne__embleem,
+.dictator-throne__insig,
+.dictator-throne__lakzegel {
+  position: relative;
+  z-index: 1;
+}
+.dictator-throne__embleem {
+  flex: none;
+  width: 1.72em;
+  aspect-ratio: 1;
+}
+/* De titel: hoofdletters, donkere oxblood-inkt op het goud (8,8:1). Mag over
+   twee regels breken als een vertaling langer is dan GENERALISSIMO. */
+.dictator-throne__insig {
+  min-width: 0;
+  color: #3a0a16;
+  font-size: 1em;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 0 rgba(255, 246, 214, 0.45);
+}
+/* Lakzegel op de rechterrand van de plaquette, half erbuiten. */
+.dictator-throne__lakzegel {
+  flex: none;
+  width: 2.15em;
+  aspect-ratio: 1;
+  margin-right: -1.25em;
+  filter: drop-shadow(0 2px 4px rgba(12, 2, 7, 0.55));
+}
+
+/* Actie-/statusknop (volkslied, #535) als rond medaillon rechts op de rij. */
+.dictator-throne__anthem {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  width: 2.6em;
+  height: 2.6em;
+  padding: 0;
+  border-radius: 999px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--troon-goud-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  background: radial-gradient(circle at 50% 30%, #6b1329, #2a0810);
+  border: 2px solid var(--troon-goud-lo);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 214, 0.25),
+    0 3px 8px rgba(12, 2, 7, 0.5);
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+/* Tap-to-play draagt tekst en mag daarom een pil worden i.p.v. een medaillon. */
+.dictator-throne__anthem--breed {
+  width: auto;
+  height: auto;
+  padding: 0.4em 0.9em;
+}
+.dictator-throne__anthem:hover {
+  background: radial-gradient(circle at 50% 30%, #8a1a36, #380b16);
+}
+.dictator-throne__anthem:active {
+  transform: scale(0.96);
+}
+.dictator-throne__anthem:focus-visible {
+  outline: 2px solid var(--troon-goud-hi);
+  outline-offset: 3px;
+}
+
+/* Statusomschrijving — bewust kort ("lof"-kaart, minimale randtekst); de volle
+   propaganda staat in de Coach Rudy-bubbel eronder. */
+.dictator-throne__prop {
+  position: relative;
+  margin: 0;
+  max-width: 40ch;
+  font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+  font-style: italic;
+  line-height: 1.35;
+  text-wrap: balance;
+  color: var(--troon-goud-ink);
+  text-shadow: 0 1px 6px rgba(20, 4, 10, 0.8);
+}
+
+/* Gouden haarlijn met sluitruit onder de omschrijving. Loopt aan beide kanten
+   uit in niets, zodat hij niet als tweede kaartrand gaat lezen. */
+.dictator-throne__scheiding {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(226, 194, 122, 0.45) 12%,
+    rgba(226, 194, 122, 0.45) 88%,
+    transparent
+  );
+}
+/* Zonder ratingblok eronder (waarnemend dictator) is de haarlijn het laatste
+   element: op een smalle kaart botst hij dan met de sluitruit op de onderrand.
+   Daar laten we hem weg; vanaf tablet is er ruimte zat. */
+.dictator-throne--waarnemend .dictator-throne__scheiding {
+  display: none;
+}
+.dictator-throne__scheiding-ruit {
+  width: clamp(11px, 1.4vw, 16px);
+  aspect-ratio: 1;
+}
+
+/* Rating als eerbetoon, met de ambtstermijn (#545) als meta ernaast — samen
+   één rustige regel. */
 .dictator-throne__rate {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--sp-2) var(--sp-4);
-  margin-top: var(--sp-4);
+  width: 100%;
 }
 .dictator-throne__score {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
+  gap: var(--sp-2);
 }
 .dictator-throne__rating {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
   font-weight: 800;
-  font-size: var(--fs-2xl);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
   line-height: 1;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 2px 20px color-mix(in srgb, var(--dictator-gold) 40%, transparent);
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(240, 199, 102, 0.45);
 }
 .dictator-throne__rate-label {
-  margin-top: 2px;
   font-size: var(--fs-2xs, 0.68rem);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--dictator-gold) 80%, #fff);
-}
-
-/* Eén korte slogan onder het portret — bewust kort ("lof"-kaart, minimale
-   randtekst); de volle propaganda staat in de Coach Rudy-bubbel eronder. */
-.dictator-throne__prop {
-  position: relative;
-  margin: var(--sp-3) auto 0;
-  max-width: 32ch;
-  font-size: var(--fs-sm);
-  font-style: italic;
-  line-height: 1.35;
-  text-wrap: balance;
-  color: color-mix(in srgb, var(--dictator-gold) 60%, #fff);
+  color: var(--troon-goud-ink);
 }
 
 /* Waarnemend dictator (#530): "regeert bij verstek"-chip i.p.v. een tierbadge. */
@@ -268,14 +649,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
-  padding: 2px var(--sp-2);
+  padding: 2px var(--sp-3);
   border-radius: 999px;
-  border: 1px dashed color-mix(in srgb, var(--dictator-gold) 60%, transparent);
-  background: rgba(0, 0, 0, 0.28);
-  color: color-mix(in srgb, var(--dictator-gold) 82%, #fff);
+  border: 1px dashed rgba(232, 198, 124, 0.65);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--troon-goud-ink);
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 /* "regeert sinds …" — ambtstermijn van de echte dictator (#545), fluistertoon
@@ -284,7 +665,7 @@
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: color-mix(in srgb, var(--dictator-gold) 72%, #fff);
+  color: var(--troon-goud-ink);
   opacity: 0.85;
 }
 
@@ -308,81 +689,38 @@
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-/* ── Horizontale poster (#609, ≥640px) ─────────────────────────────────────
-   Portret links, eregalerij rechts: insigne/volkslied bovenaan, rating met
-   ambtstermijn onder een gouden haarlijn, slogan onderaan. De 1fr-bufferrijen
-   centreren de rechterkolom verticaal t.o.v. het portret; bij de waarnemend-
-   variant (geen rating-blok) valt die rij gewoon op 0. */
+/* ── Twee kolommen (≥640px) ───────────────────────────────────────────────
+   Vanaf tablet staat het portret links en het paneel rechts, in de verhouding
+   van de referentie (portret ≈ 29% van de kaartbreedte). Onder 640px valt de
+   flex-kolom terug op portret-boven-informatie; de DOM-volgorde is in beide
+   gevallen dezelfde, dus de leesvolgorde blijft portret → titel → omschrijving
+   → actie. */
 @media (min-width: 640px) {
   .dictator-throne {
     display: grid;
-    grid-template-columns: 250px minmax(0, 1fr);
-    grid-template-rows: 1fr auto auto auto 1fr;
-    grid-template-areas:
-      "portret ."
-      "portret topline"
-      "portret rate"
-      "portret prop"
-      "portret .";
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr);
     align-items: center;
-    column-gap: var(--sp-7);
-    row-gap: var(--sp-3);
-    padding: var(--sp-6);
+    column-gap: clamp(18px, 4.4%, 46px);
     text-align: left;
-  }
-
-  .dictator-throne__body {
-    grid-area: portret;
   }
   .dictator-throne__frame {
     width: 100%;
-    margin: 0;
   }
-
+  .dictator-throne__panel {
+    align-items: flex-start;
+  }
+  /* Actieknop naar de buitenrand van het paneel, zoals in de referentie: hij
+     hoort bij de kaart, niet bij de plaquette. */
   .dictator-throne__topline {
-    grid-area: topline;
-    grid-template-columns: auto 1fr;
-    margin-bottom: 0;
+    justify-content: space-between;
   }
-  .dictator-throne__insig {
-    grid-column: 1;
-    justify-self: start;
-  }
-  .dictator-throne__anthem {
-    grid-column: 2;
-  }
-
   .dictator-throne__rate {
-    grid-area: rate;
     justify-content: flex-start;
-    align-items: baseline;
-    padding-top: var(--sp-3);
-    border-top: 1px solid
-      color-mix(in srgb, var(--dictator-gold) 30%, transparent);
   }
-  .dictator-throne__score {
-    flex-direction: row;
-    align-items: baseline;
-    gap: var(--sp-2);
+  .dictator-throne--waarnemend .dictator-throne__scheiding {
+    display: flex;
   }
-  .dictator-throne__rating {
-    font-size: 2.4rem;
-  }
-
-  .dictator-throne__prop {
-    grid-area: prop;
-    margin: 0;
-    max-width: 44ch;
-    font-size: var(--fs-base);
-  }
-
-  /* Naam op de nameplate mag groter nu de plate verder niets hoeft te dragen. */
-  .dictator-throne__name {
-    font-size: var(--fs-xl);
-  }
-
-  /* Stralenkrans boven het portret laten pieken i.p.v. midden op de kaart. */
-  .dictator-throne__beam {
-    left: 24%;
+  .dictator-throne__watermerk {
+    left: 52%;
   }
 }

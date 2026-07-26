@@ -47,6 +47,9 @@ export function KaartRaster({
             <FutKaart
               tier={tier}
               editie={editie}
+              // Stabiel zaad (#773): de premium glans van een wand vol kaarten
+              // mag niet synchroon starten.
+              glansZaad={r.key}
               voorOverlay={
                 <button
                   type="button"
