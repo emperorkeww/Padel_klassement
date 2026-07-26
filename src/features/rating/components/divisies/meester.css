@@ -1,0 +1,101 @@
+/* Divisiekaart "Forever second" (meester) — 1300–1399 — amethist emaille, koel platina en zilver.
+
+   De hoogste divisie ónder GOAT: ceremonieel genoeg om als toptier te lezen,
+   maar zonder één gouden of nummer-één-signaal. Daarom kleurloos metaal in de
+   rand en amethist in het vlak — waar El Padelissimo antiekgoud draagt en de
+   GOAT rosé, zit het verschil tussen eerste en tweede hier in de tint, niet in
+   de hoeveelheid ornament.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vastgepind op het lichte palet (#125), dus alleen literals houden
+   DOM-kaart en poster in béide thema's gelijk. Tweede lezer: het `register` in
+   meester.ts; de synctest in meester.test.ts leest dít bestand in en houdt de
+   twee gelijk — lopen ze uiteen, dan wijkt de export af van wat de speler ziet.
+
+   Niet hier, en met opzet:
+   - `--schild` (fut-schild-punt) en de stralenkrans (het premium-::after-blok)
+     staan al in FutKaart.css; meester hoort in beide selectorlijsten. Ze hier
+     herhalen zou de canvas-spiegel (`stralen: true`) twee bronnen geven.
+   - De gloed bovenin het vlak is de gedeelde radial-gradient van
+     .fut-kaart__vlak op rgba(255, 255, 255, 0.5). Deze kaart wil precies die
+     waarde — het `glow`-veld in meester.ts neemt hem letterlijk over, dus een
+     eigen declaratie zou alleen een tweede plek zijn om hem te laten verlopen.
+
+   De divisieregel wordt hier "Forever second III" (18 tekens) en blijft
+   daarmee onder de "Eeuwige belofte III" waar de compact-zetting van
+   .fut-kaart__divisie in FutKaart.css op is uitgemeten (#664) — de veldmaat
+   (116px) heeft dus per constructie genoeg ruimte. */
+.fut-kaart--meester {
+  /* Amethist emaille. Contrast van de inkt (WCAG 2.1, srgb): --kaart-ink
+     10,39:1 op --kaart-hi, 7,72:1 op --kaart-mid en 5,82:1 op de donkerste
+     stop --kaart-lo — overal ruim boven AA (4,5:1), op het grootste deel van
+     het vlak zelfs AAA. De zachte inkt zit op subniveau en divisieregel, en
+     die staan laag in het vlak waar --kaart-lo domineert: 4,68:1, dus ook daar
+     nog AA. Dieper paars kan dus niet zonder de onderste regels te verliezen. */
+  --kaart-hi: #ece4f7;
+  --kaart-mid: #d2c2e9;
+  --kaart-lo: #b9a6d9;
+  --kaart-ink: #35266a;
+  --kaart-ink-soft: #453578;
+  --kaart-lijn: #6f5aa8;
+  /* Koel lila echo rechtsonder: platina is een spiegelend metaal, en een
+     tweede, lichtere silhouetrand vangt precies dat weerkaatste licht. Een
+     filter werkt ná de clip, dus de echo volgt het schild exact. Zachter dan
+     de GOAT-echo (0,019/0,024) — deze kaart mag niet vóór het monument
+     springen. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.016) 0
+      rgba(214, 205, 236, 0.7)
+  );
+  /* Drie binnenlijnen i.p.v. twee: licht — donker — licht leest als geslepen
+     platina dat om de rand heen buigt, en dat is de laag die het zilverwerk in
+     de ornamenten met de rand verbindt. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(250, 247, 255, 0.8),
+    inset 0 0 0 2.5px rgba(61, 50, 96, 0.75),
+    inset 0 0 0 4px rgba(206, 195, 232, 0.55);
+}
+/* Platina met twee glanspunten: de tweede (68%) ligt bewust dichter bij de
+   donkere voet dan bij de kop, zodat de rand onderaan nog één keer opflitst —
+   koel metaal breekt het licht scherper dan goud, dat vloeiender verloopt. */
+.fut-kaart--meester .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #f4f1fa 0%,
+    #8477ad 42%,
+    #e7e2f3 68%,
+    #3d3260 100%
+  );
+}
+.fut-kaart--meester .fut-kaart__liner {
+  background: #2b2049;
+}
+.fut-kaart--meester .fut-kaart__keyline {
+  background: #ded4ef;
+}
+/* Bredere glansbaan dan de basiskaart (40/50/60 i.p.v. 42/50/58) en neutraal
+   wit: de gedeelde sheen is op de warme metaalladder afgestemd en trekt op
+   amethist naar geel. Breder mag hier omdat het emaille onder de baan licht
+   is — een smalle, felle baan zou als kras lezen i.p.v. als glazuur. */
+.fut-kaart--meester .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 60%
+  );
+}
+/* De baan glijdt langzaam heen en weer, zoals licht over geslepen glazuur.
+   Trager dan de GOAT (7,5s): daar is de beweging een aankondiging, hier hoort
+   ze bij een kaart die eeuwig tweede staat — ze komt langs en blijft nooit. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--meester .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 9.5s ease-in-out infinite;
+  }
+}
+/* Koele schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel in
+   FutKaart.css is roze getint (Big Daddy) en maakt van zilver op amethist een
+   vuile rand. */
+.fut-kaart--meester .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(35, 24, 62, 0.5));
+}

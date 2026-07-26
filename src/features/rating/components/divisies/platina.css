@@ -1,0 +1,102 @@
+/* Divisiekaart "Glazenwasser" (platina) — 1100–1199 — frosted aqua glas en geoxideerd aluminium.
+
+   Het register van de glas-en-staalkaart uit de referentie (#710): de glazen
+   achterwand van een padelbaan, in geoxideerde aluminium paneelklemmen gevat.
+   Waarom het frame níet de generieke metaalladder volgt: die mixt de tierkleur
+   richting warm wit en levert daarmee een zilverkaart met een gouden zweem —
+   glas is koud. De vier framestops zetten daarom twee frosted glanspunten
+   tussen twee diepe zeegroene stops; het aluminium blijft zo herkenbaar
+   geoxideerd in plaats van gepoetst, precies het verschil met de zilverdivisie
+   erónder en de diamantdivisie eróver.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in platina.ts;
+   de synctest in platina.test.ts leest dít bestand in en houdt de twee gelijk. */
+.fut-kaart--platina {
+  /* Frosted aqua glas. Contrast (sRGB, berekend over de vlak-gradient):
+     ink 10,13:1 op --kaart-hi en 5,89:1 op --kaart-lo, inkSoft 7,47:1 op
+     --kaart-hi. De laagste regel die de kaart ooit zet (divisie- of
+     editie-regel, ~87% hoogte) staat op #aec9ca: ink 6,44:1, inkSoft 4,75:1 —
+     ook daar boven de 4,5:1 van AA voor kleine tekst. De --kaart-lo-stop zelf
+     ligt in de lege schildpunt, waar geen inkt komt. */
+  --kaart-hi: #eaf5f5;
+  --kaart-mid: #c8dedf;
+  --kaart-lo: #a4c1c2;
+  --kaart-ink: #15404a;
+  --kaart-ink-soft: #2a545e;
+  --kaart-lijn: #7ba5ab;
+  /* Transparantie-illusie: het schildsilhouet nog eens, een fractie verschoven
+     in ijl aqua — de tweede glaslaag áchter de eerste. Een filter werkt ná de
+     clip, dus de echo volgt het schild exact. Ruimer verschoven dan de andere
+     registers (0,018/0,022 tegen goud 0,014/0,018): glas moet je door kúnnen
+     kijken, en dat leest pas als de tweede rand echt naast de eerste ligt. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.018) calc(var(--fut-kw) * 0.022) 0
+      rgba(163, 214, 219, 0.6)
+  );
+  /* Dezelfde gelaagdheid langs de binnenrand: witte glasrand, donkere sponning,
+     lichte tweede ruit. Drie lijnen i.p.v. twee omdat een glaspaneel in een
+     sponning altijd twéé randen toont — de ruit en de ruit erachter. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 0 0 3px rgba(30, 74, 84, 0.45),
+    inset 0 0 0 4.5px rgba(206, 235, 238, 0.35);
+}
+.fut-kaart--platina .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #eef8f9 0%,
+    #2c5a64 42%,
+    #d6ecee 68%,
+    #1b414a 100%
+  );
+}
+.fut-kaart--platina .fut-kaart__liner {
+  background: #123840;
+}
+/* Lichter dan de afgeleide keyline (75% van --kaart-lijn richting warm wit):
+   die trekt het randje crème, en dat vloekt op koud glas. */
+.fut-kaart--platina .fut-kaart__keyline {
+  background: #cfe8ea;
+}
+/* Brede, zachte glansbaan i.p.v. de smalle metaalstreep van de basiskaart
+   (38/50/62 tegen 42/50/58): over frosted glas loopt licht uit, het spiegelt
+   niet in één baan. Zelfde witwaarde als de basis-sheen, alleen uitgesmeerd —
+   op de poster is dat het `sheenSpreiding`-veld in platina.ts. */
+.fut-kaart--platina .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 62%
+  );
+}
+/* De baan schuift traag over de ruit, zoals daglicht over een glaswand. Trager
+   dan In-Form (2,6s) en zelfs dan GOAT (7,5s): dit is de achtergrond van de
+   kaart, geen aankondiging. De poster bevriest hem op zijn ongetransformeerde
+   stand — dezelfde afspraak als de shimmer-edities. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--platina .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 9s ease-in-out infinite;
+  }
+}
+/* Geen stralenkrans: het gedeelde premium-blok in FutKaart.css zet die wél voor
+   platina/diamant/meester, maar een zonnestraal hoort bij edelmetaal, niet bij
+   een glaswand — het paneelraster in het motief ís hier de textuur. Wat
+   overblijft is het satijn, ijler dan de basis (0,05 tegen 0,07): het weefsel
+   mag het raster niet beconcurreren. Canvas-spiegel: `satijnAlpha` (0,044) en
+   `stralen: false` in platina.ts — dezelfde ~0,875-kalibratie als de sheen. */
+.fut-kaart--platina .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.05) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Koele schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel in
+   FutKaart.css is roze getint (Big Daddy), en roze onder aluminium leest als
+   vuil glas. */
+.fut-kaart--platina .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(12, 40, 46, 0.45));
+}

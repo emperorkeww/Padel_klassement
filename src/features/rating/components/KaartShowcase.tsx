@@ -113,7 +113,10 @@ function Kaart({
  *  als op de poster (kaart 560px breed op de donkere court-gloed), alleen
  *  teruggeschaald naar de weergavebreedte ernaast. */
 const POSTER_KAART_W = 560;
-const POSTER_MARGE = 48; // ruimte voor de slagschaduw van het frame
+// Ruimte voor de slagschaduw én voor de ornamentlaag (#710): die reikt tot 30
+// kaart-units naast en 38 boven het schild, dus met de oude 48px sneed het
+// canvas de hoorns en linten er stil af.
+const POSTER_MARGE = 180;
 
 function PosterKaart({
   tier,
@@ -199,6 +202,584 @@ export function KaartShowcase() {
         Synthetische kaarten voor visuele review (#664): tiers, edities,
         contextmaten en achterkant. Deze route bestaat alleen in development.
       </p>
+
+      {/* GOAT-variant (#710, hertekend in #772): de kaart met bokhoorns,
+          baardfiligraan, geitenwatermerk en het eigen divisie-icoon, op de
+          maten waar het ornament het meest te lijden heeft — veldmaat, wand,
+          hero — plus de canvas-spiegel ernaast. Bewust bovenaan: dit is de
+          variant die je bij elke wijziging aan de ornamentlaag wilt zien. */}
+      <Sectie titel="GOAT (#772): hoorns + baardfiligraan — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1450)} naam="Senne" elo={1487} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1450)} editie={null} editieLabel={null} breedte={210} />
+        {/* Onder een editie-skin: de hoorns blijven (ornament hangt aan de
+            tier), het geitenwatermerk wijkt voor het editie-vlak. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1450)}
+            editie="inform"
+            editieLabel="⚡ In-Form · +48"
+            naam="Senne"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">GOAT + In-Form</span>
+        </div>
+      </Sectie>
+
+      {/* De drie subniveaus plus de stress-cases uit #772: één kaartvariant,
+          verschillende ratings, subLabels en naamlengtes. Hier moet zichtbaar
+          zijn dat het baardfiligraan de divisieregel nooit raakt — die staat
+          bij GOAT I op "GOAT I" en bij GOAT III op "GOAT III". */}
+      <Sectie titel="GOAT × subniveau en naamlengte (#772): III · II · I, lange naam, 96px">
+        {[1420, 1490, 1560].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart kw={150} tier={tierFor(r)} naam="Senne" elo={r} />
+            <span className="kaart-showcase__maatlabel">
+              {tierFor(r)?.label} · {r}
+            </span>
+          </div>
+        ))}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1490)}
+            naam="Wolfgang Vandenbroucke"
+            elo={1490}
+          />
+          <span className="kaart-showcase__maatlabel">Lange naam</span>
+        </div>
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "96px" }}
+        >
+          <Kaart kw={96} tier={tierFor(1490)} naam="Senne" elo={1490} />
+          <span className="kaart-showcase__maatlabel">96px (veldmaat)</span>
+        </div>
+      </Sectie>
+
+      {/* Bankvuller (#710): de basisdivisie met houten latten achter de kaart en
+          stiksels, leren tabs, stoelcrest en zitplaatsmedaillon ervóór. Op deze
+          drie maten omdat de tab door de taille naar buiten hangt: precies de
+          plek waar de acceptatie-eis ("geen uitstekende tabs afsnijden") op de
+          veldmaat sneuvelt als de ornamentdoos niet klopt. */}
+      <Sectie titel="Bankvuller (#710): latten + stiksels + stoelcrest + bankmedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            {/* 812 → "Bankvuller III": het langste sublabel van de band, dus
+                meteen de zetting-stresscase op de veldmaat. */}
+            <Kaart kw={kw} tier={tierFor(812)} naam="Joris" elo={812} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(812)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
+      {/* El Padelissimo (#710): troon-crest, kroon en epauletten achter de
+          kaart, lauwerkransen en lakzegel ervóór. Zelfde opzet als de
+          GOAT-sectie hierboven, inclusief de canvas-spiegel. */}
+      <Sectie titel="El Padelissimo (#710): kroon, epauletten, lauwerkrans, lakzegel — poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1650)} naam="Remco" elo={1642} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1650)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
+      {/* Forever second (#710): de basisdivisie ónder de twee toptiers —
+          amethist emaille met zilverwerk. Meteen ná GOAT en El Padelissimo,
+          want dát is de vergelijking die telt: deze kaart moet ceremonieel
+          lezen zonder één gouden of nummer-één-signaal. Rating 1387 geeft
+          subniveau I; de langste regel ("Forever second III") staat op 1310. */}
+      <Sectie titel="Forever second (#710): II-crest, kolommen, lauwertakken, tweedemedaille — poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1387)} naam="Sofie" elo={1387} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1387)} editie={null} editieLabel={null} breedte={210} />
+        {/* Veldmaat met de langste divisieregel: die moet daar passen zonder
+            te ellipsen, en de kolommen mogen de naamplaat niet raken. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "116px" }}
+        >
+          <Kaart kw={116} tier={tierFor(1310)} naam="Sofie" elo={1310} />
+          <span className="kaart-showcase__maatlabel">116px · III</span>
+        </div>
+      </Sectie>
+
+      {/* Big Daddy-variant (#710): kroon, linten, ballonnen, confetti en het
+          edelsteen-ornament in de punt. Twee tiers omdat de schildvorm van de
+          divísie komt: 1387 geeft de spitse vleugels, 1487 de kroon-crest — de
+          kroon-in-de-inkeping moet op beide sluitend zitten. */}
+      <Sectie titel="Big Daddy (#710): kroon + linten + ballonnen — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1387)}
+              editie="icon"
+              editieLabel="👑 Big Daddy"
+              naam="Bjorn"
+              elo={1387}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1387)}
+          editie="icon"
+          editieLabel="👑 Big Daddy"
+          naam="Bjorn"
+          breedte={210}
+        />
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1487)}
+            editie="icon"
+            editieLabel="👑 Big Daddy"
+            naam="Bjorn"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">
+            Big Daddy + GOAT (kroon-crest)
+          </span>
+        </div>
+      </Sectie>
+
+      {/* Kampioen-variant (#710): lauwerkrans + medaillelinten achter de kaart
+          en de diamantcrest ervóór, op de maten waar de ornamentlaag het
+          zwaarst te lijden heeft — plus de canvas-spiegel ernaast. Twee
+          schildvormen erbij: het ornament hangt aan de editie, de bovenrand aan
+          de divisie, dus de crest moet in élke inkeping landen. */}
+      <Sectie titel="Kampioen (#710): lauwerkrans + linten + crest — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1043)}
+              editie="kampioen"
+              editieLabel="🏆 Kampioen Q2 2026"
+              naam="Tim"
+              elo={1043}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1043)}
+          editie="kampioen"
+          editieLabel="🏆 Kampioen Q2 2026"
+          naam="Tim"
+          breedte={210}
+        />
+        {[750, 1450].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(r)}
+              editie="kampioen"
+              editieLabel="🏆 Kampioen Q2 2026"
+              naam="Tim"
+            />
+            <span className="kaart-showcase__maatlabel">
+              {r === 750 ? "vlakke bovenrand" : "kroon-crest"}
+            </span>
+          </div>
+        ))}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1043)}
+            editie="kampioen"
+            editieLabel="🏆 Kampioen Q2 2026"
+            naam="Tim"
+            omgedraaid
+          />
+          <span className="kaart-showcase__maatlabel">omgedraaid (geen crest)</span>
+        </div>
+      </Sectie>
+
+      {/* Pias-variant (#710): de gevallen joker — narrenkap met asymmetrische
+          belletjes, twee jokerlinten en het maskermedaillon op de punt, plus de
+          harlekijn-/maskerlaag ín het vlak. Zelfde maten als de GOAT hierboven
+          (veld, wand, hero) en de canvas-spiegel ernaast; de kap en de linten
+          steken buiten het schild uit, dus dit is de rij waarin je een
+          scrollbar of layout shift zou zien. */}
+      <Sectie titel="Pias (#710): narrenkap + linten + maskermedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="pias"
+              editieLabel="🤡 Pias · −12 games"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="pias"
+          editieLabel="🤡 Pias · −12 games"
+          naam="Remco"
+          breedte={210}
+        />
+        {/* Op een GOAT-drager: het editie-ornament wint van de tier-hoorns, en
+            op de kroon-crest zit de kap in een ándere bovenrand. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1450)}
+            editie="pias"
+            editieLabel="🤡 Pias · −12 games"
+            naam="Senne"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">GOAT + Pias</span>
+        </div>
+        {/* Alle vier de schildvormen: de kraag moet op elke bovenrand sluiten. */}
+        {[750, 1050, 1350, 1450].map((r) => (
+          <Kaart
+            key={r}
+            kw={130}
+            tier={tierFor(r)}
+            editie="pias"
+            editieLabel="🤡 Pias · −12 games"
+            chips={CHIPS}
+          />
+        ))}
+      </Sectie>
+
+      {/* Zwarte Piet (#710): de kaart met kettingen, geopende sluitingen,
+          pion-crest en gebroken zegel. Twee ornamentlagen (achter én voor de
+          kaart), dus dit is de variant die je bij elke wijziging aan die lagen
+          wilt zien — mét de canvas-spiegel ernaast, want de poster tekent de
+          voor-laag pas ná de content. De schildvorm wisselt met de divisie: de
+          Piet gaat door de hele club rond, dus crest en zegel moeten op alle
+          vier de bovenranden werken. */}
+      <Sectie titel="Zwarte Piet (#710): kettingen + gebroken zegel — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/6"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="piet"
+          editieLabel="🃏 Piet · 28/6"
+          naam="Remco"
+          breedte={210}
+        />
+        {schildTiers.map((t, i) => (
+          <div
+            key={`piet-vorm-${i}`}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "130px" }}
+          >
+            <Kaart
+              kw={130}
+              tier={t}
+              editie="piet"
+              editieLabel="🃏 Piet · 28/12"
+              naam="Bartholomeus van Wijngaarden"
+              chips={CHIPS}
+            />
+            <span className="kaart-showcase__maatlabel">{t?.key}</span>
+          </div>
+        ))}
+      </Sectie>
+
+      {/* In-Form (#710): de enige editie met een eigen ornamentlaag, dus de
+          enige plek waar de overlay-eigenschap te zien is. Bewust op twee
+          tiers met een ánder schild (kroon-notch en troon-crest): de crest,
+          de vinnen en het medaillon moeten op élke bovenrand kloppen, en op de
+          GOAT/dictator-tiers moet zichtbaar zijn dat het editie-ornament van
+          het tier-ornament wint (geen hoorns, geen kroon). */}
+      <Sectie titel="In-Form (#710): titanium-overlay op twee tiers — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Remco"
+          breedte={210}
+        />
+        {[
+          { r: 1350, label: "punt-schild" },
+          { r: 1450, label: "GOAT: editie wint" },
+          { r: 1650, label: "dictator: editie wint" },
+        ].map((v) => (
+          <div
+            key={v.r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(v.r)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Senne"
+            />
+            <span className="kaart-showcase__maatlabel">{v.label}</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1650)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Senne"
+          breedte={150}
+        />
+      </Sectie>
+
+      {/* On Fire (#710): de enige editie met een eigen ornamentlaag, en dus de
+          enige plek waar de overlay-eigenschap te zien is — dezelfde crest,
+          vinnen en medaillon liggen op een brons-schild (vlakke bovenrand) én
+          op een GOAT (kroon-crest, waar de vlamvinnen de bokhoorns vervangen).
+          Kijk hier bij elke wijziging aan de editie-vs-tier-regel. */}
+      <Sectie titel="On Fire (#710): vlamcrest, vinnen, medaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="onfire"
+              editieLabel="🔥 On Fire · 6 op rij"
+              naam="Jelle"
+              elo={1063}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="onfire"
+          editieLabel="🔥 On Fire · 6 op rij"
+          naam="Jelle"
+          breedte={210}
+        />
+      </Sectie>
+      <Sectie titel="On Fire × schildvorm (#710): brons · goud · meester · GOAT · El Padelissimo (150px)">
+        {[750, 1050, 1350, 1450, 1650].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(r)}
+              editie="onfire"
+              editieLabel="🔥 On Fire · 12 op rij"
+              naam="Jelle"
+            />
+            <span className="kaart-showcase__maatlabel">
+              {tierFor(r)?.label ?? "—"}
+            </span>
+          </div>
+        ))}
+      </Sectie>
+
+      {/* Glazenwasser (#710): de platina-divisiekaart — raamcrest in de
+          bovenste inkeping, paneelklemmen in de zijranden, veegbogen van achter
+          de onderste zijkant en een glasmedaillon onder de punt. Op de veldmaat
+          staat de crest het krapst (hij hangt tussen de vleugels van
+          fut-schild-punt door), op de heromaat moet het paneelraster in het vlak
+          nog steeds ónder de inkt blijven. De poster ernaast is de enige manier
+          om te zien dat platina.css en het register in platina.ts hetzelfde
+          tekenen — een divisie zonder editie is precies het geval waarin de
+          divisiekaart zelf aan zet is. */}
+      <Sectie titel="Glazenwasser (#710): raamcrest, paneelklemmen, veegbogen, glasmedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1150)} naam="Ilse" elo={1163} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1150)}
+          editie={null}
+          editieLabel={null}
+          naam="Ilse"
+          breedte={210}
+        />
+      </Sectie>
+      {/* Blaaskaak (#710): de basisdivisie zonder editie — holle buisprofielen
+          langs de flanken, wind-/spraakcrest in de bovenrand, resonatormedaillon
+          in de punt en de tactische pijlen als watermerk. Op 116px is de test of
+          de buismonden en het medaillon nog uit elkaar te houden zijn; de poster
+          ernaast bewaakt dat CSS-register en canvas-register hetzelfde
+          aluminium tekenen (de synctest doet dat in getallen, dit met het oog). */}
+      <Sectie titel="Blaaskaak (#710): buisprofielen + windcrest + resonator — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(950)} naam="Wouter" elo={950} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(950)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
+      {/* Eeuwige belofte (#710): de divisiekaart met de zandlopercrest, de
+          open zijrails en het blauwdruk-watermerk. Zelfde opzet als de
+          GOAT-sectie bovenaan — DOM naast de canvas-spiegel, want alleen zo
+          zie je of het register en diamant.css hetzelfde tekenen. De vierde
+          kaart draait op 1210: dat is sub-niveau III, en "Eeuwige belofte III"
+          is de langste divisietitel van de hele ladder — op de veldmaat de
+          strengste test van de divisieregel. */}
+      <Sectie titel="Eeuwige belofte (#710): zandlopercrest + open rails + blauwdruk — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1250)} naam="Bram" elo={1250} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1250)} editie={null} editieLabel={null} breedte={210} />
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "116px" }}
+        >
+          <Kaart kw={116} tier={tierFor(1210)} naam="Bram" elo={1210} />
+          <span className="kaart-showcase__maatlabel">
+            {tierFor(1210)?.label ?? "—"}
+          </span>
+        </div>
+      </Sectie>
+
+      {/* Stofzuiger (#710): de basisdivisie met de bezemcrest die de bovenrand
+          doorsnijdt, zuiggroeven in beide zijranden en het aanzuigrooster in de
+          punt — plus het watermerk waarin alle baltrajecten op één punt
+          samenkomen. Zelfde opzet als de GOAT-sectie bovenaan, inclusief de
+          canvas-spiegel. Bewust op rating 690: dat geeft "Stofzuiger III", de
+          langste titel van deze divisie, dus de veldmaat (116px) links laat
+          meteen zien of de divisieregel nog past. */}
+      <Sectie titel="Stofzuiger (#710): bezemcrest + zuiggroeven + aanzuigrooster — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(690)} naam="Wouter" elo={690} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(690)}
+          editie={null}
+          editieLabel={null}
+          naam="Wouter"
+          breedte={210}
+        />
+      </Sectie>
 
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (

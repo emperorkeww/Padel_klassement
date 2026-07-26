@@ -1,0 +1,152 @@
+/* Divisiekaart "Ballenraper" (hout) — 700–799 — walnoot, versleten leer en netmateriaal.
+
+   Het register van de clubinventaris uit de referentie (#710): een geschuurde
+   walnoten plank als vlak, donker umber in de rand en leer met touw langs de
+   flanken. Waarom dit blok de generieke metaalladder opzij zet: die mixt de
+   tierkleur richting warm wit en levert twee witte glanspunten in het frame —
+   precies wat massief hout níet doet. Hier lopen vier houttonen zonder één witte
+   stop (donker umber met twee geschuurde ruggen), vangt het vlak het licht als
+   een warme waas i.p.v. een smalle specular streep, en staat er geen
+   stralenkrans en geen bewegende glansbaan op.
+
+   Waar de divisie in de ladder staat, en waaraan je dat ziet: de Stofzuiger
+   eronder is een gestanste vezelplaat met ornamenten ín de plaat; hier is het
+   massief hout waar het netwerk dóór de rand heen komt; de Bankvuller erboven
+   heeft kóper — een tweede, duur materiaal. Robuuster dan de plaat eronder,
+   duidelijk goedkoper dan de bank erboven.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in hout.ts; de
+   synctest in hout.test.ts leest dít bestand in en houdt de twee gelijk.
+
+   Geen animatie in dit bestand — bewust. Een glansbaan die heen en weer loopt
+   (goud) of een stralenkrans (platina/diamant/meester) maakt van gereedschap een
+   trofee, en de referentie eist juist een permanente, praktische kaart. Er is
+   dus niets dat achter `prefers-reduced-motion` hoort; de kaart staat in beide
+   voorkeuren stil, en dát is precies de stand die de deel-poster tekent. */
+.fut-kaart--hout {
+  /* Geschuurde walnoot. Contrast (WCAG 2.1, sRGB), gemeten tegen de dónkerste
+     vlak-stop --kaart-lo #b59870 — de ongunstigste plek op het vlak, want de
+     inkt is hier donker en de gradient loopt naar beneden weg:
+
+       --kaart-ink      #241606   6,45:1 op --kaart-lo   (AA, AAA vanaf --kaart-mid)
+       --kaart-ink-soft #3d2712   5,14:1 op --kaart-lo   (AA)
+
+     Op --kaart-mid #cdaf85 lopen die op naar 8,44:1 en 6,72:1, op --kaart-hi
+     #e2cba8 naar 11,19:1 en 8,91:1. Op de hoogtes waar de inkt écht staat zit
+     het daartussen: naamplaat 7,69:1 / 6,12:1 en divisieregel 7,28:1 / 5,80:1.
+     Dít is de reden dat deze divisie aan de beurt was: op de generieke ladder
+     mixte --wood naar warm wit en werd de divisietitel grijs-op-grijs.
+
+     Het slechtste punt van de kaart is de donkerste stop mét het geëtste motief
+     eroverheen: een balbaan op --kaart-lo geeft 5,97:1 / 4,76:1, en een baan die
+     ook nog over een slijtplek valt 5,68:1 / 4,53:1 — nog steeds boven AA
+     (4,5:1) voor kleine tekst. Daarom staat de motief-alpha in hout.ts op 0,05
+     en de slijtplekken op ≤0,55: dat is geen smaakkeuze maar deze grens.
+
+     De hairlines (--kaart-lijn #6a461f) halen 4,01:1 op --kaart-mid en 3,07:1 op
+     de donkerste stop. Waar ze écht staan — de streep onder het eloblok en de
+     twee randen van de naamplaat — zit de gradient tussen hi en mid, en dan
+     blijft er zelfs mét motief én slijtplek eronder 3,13:1 over: boven de 3:1
+     die WCAG voor niet-tekstuele elementen vraagt. De 3,07:1 hoort bij de
+     donkerste stop en die raakt alleen de lege schildpunt, waar geen lijn en
+     geen tekst komt (het vlak heeft 24% bodempadding).
+
+     De langste titel is "BALLENRAPER III" — 15 tekens tegen de 19 van
+     "EEUWIGE BELOFTE III", waar de zetting van .fut-kaart__divisie op is
+     afgesteld — dus ook op de veldmaat (116px) hoeft de regel niets af te
+     kappen. */
+  --kaart-hi: #e2cba8;
+  --kaart-mid: #cdaf85;
+  --kaart-lo: #b59870;
+  --kaart-ink: #241606;
+  --kaart-ink-soft: #3d2712;
+  --kaart-lijn: #6a461f;
+  /* Donkere echo recht ónder het schild (dx = 0): dit is de dikte van een plank
+     die plat op de ondergrond ligt, niet de scheve slagschaduw van het
+     losgekomen foliehoekje van de Wannabe. Korter dan die van Bankvuller
+     (0,009 tegen 0,012), want een plank is dunner dan een gestoffeerde bank. Een
+     filter werkt ná de clip, dus de echo volgt het schildsilhouet exact. */
+  --kaart-echo: drop-shadow(0 calc(var(--fut-kw) * 0.009) 0 rgba(30, 18, 8, 0.8));
+  /* Geschuurde kant met een groef erachter: de dubbele binnenrand van de
+     referentie, zonder extra DOM-laag (inset-schaduwen worden mee-geclipt en
+     volgen dus het schild). */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(236, 213, 178, 0.5),
+    inset 0 0 0 3px rgba(34, 20, 9, 0.6);
+}
+/* Vier houttonen op de gedeelde frame-as (160°), met de geschuurde ruggen op 0%
+   en 66%. Twee lichte kanten zoals de metaalladder, maar geen enkele witte stop:
+   hout laat nooit wit licht na, en dát is het verschil met de koperrand van
+   Bankvuller en het chroom van Blaaskaak. */
+.fut-kaart--hout .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #a97c47 0%,
+    #472c14 38%,
+    #8d6737 66%,
+    #22140a 100%
+  );
+}
+/* Zelfde diepe umber als de contour van elk stuk hout in de ornamentlaag
+   (HOUT_CONTOUR in hout.ts): rand en netstroken komen uit hetzelfde blok. */
+.fut-kaart--hout .fut-kaart__liner {
+  background: #1e1208;
+}
+/* Eigen keyline i.p.v. de gedeelde mix van --kaart-lijn naar warm wit: die zou
+   hier een bleke crèmelijn geven, terwijl dit de gezaagde kant van de plank is —
+   licht, maar onmiskenbaar hout. */
+.fut-kaart--hout .fut-kaart__keyline {
+  background: #b58a58;
+}
+/* Hout reflecteert diffuus: de topgloed is een warme waas op 22% i.p.v. het
+   koele wit op 50% van de basiskaart. Dát is de enige reden dat dit blok de
+   vlak-achtergrond overschrijft — de linear-gradient eronder is letterlijk die
+   van FutKaart.css, inclusief de 56%-middenstop. Canvas-spiegel: `glow` in
+   hout.ts. */
+.fut-kaart--hout .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 240, 214, 0.22),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+/* Brede, flauwe glansbaan (30/50/70 i.p.v. de 42/50/58 van de basiskaart) op
+   12%: geschuurd hout geeft licht over een strook terug, nooit als
+   puntreflectie. Canvas-spiegel: `sheen` met sheenSpreiding 0,2 in hout.ts —
+   0,5 ± 0,2 is exact de 30%/70% die hier staat. */
+.fut-kaart--hout .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 245, 224, 0.12) 50%,
+    transparent 70%
+  );
+}
+/* Satijn op 5% i.p.v. de 7% van de basiskaart: de houtnerf zit in het motief en
+   de baangrond ook, dus een weefsel op volle sterkte legt daar een derde
+   structuur overheen en maakt het vlak druk. Canvas-spiegel: satijnAlpha 0.05 en
+   stralen: false in hout.ts. */
+.fut-kaart--hout .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.05) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Warme, korte schaduw onder de vóór-liggende ornamentlaag (crest en mand): de
+   gedeelde regel in FutKaart.css is roze getint (Big Daddy) en dat maakt van
+   walnoot meteen roséhout. Kort gehouden omdat crest en mand ín de kaartrand
+   zitten — ze zweven er niet boven. Alleen DOM: de poster tekent de
+   ornamentlaag zonder slagschaduw, net als bij de andere divisies. */
+.fut-kaart--hout .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 1.5px rgba(30, 18, 8, 0.45));
+}

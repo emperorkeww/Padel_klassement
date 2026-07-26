@@ -1,0 +1,108 @@
+/* Divisiekaart "Blaaskaak" (zilver) — 900–999 — geborsteld aluminium en blauwgrijs.
+
+   Het register van het holle aluminium uit de referentie (#710): koel, licht
+   metaal met blauwgrijze schaduwen en dunne panellijnen. Waarom het frame níet
+   de generieke metaalladder volgt: die mixt --silver richting warm wit en levert
+   daarmee een crème-zilver dat naast Wannabe (de divisie erboven) juist rijker
+   oogt. Hier gaat het de andere kant op — de framestops staan op wit-chroom en
+   leigrijs, zonder één warme toon, zodat de kaart licht en goedkoop leest.
+   Dat is precies de acceptatie-eis van de referentie: zichtbaar lichter dan
+   Wannabe, en het duurste dat deze kaart doet is licht vangen.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in zilver.ts; de
+   synctest in zilver.test.ts leest dít bestand in en houdt de twee gelijk. */
+.fut-kaart--zilver {
+  /* Koel aluminium. Contrast tegen de dónkerste vlak-stop (--kaart-lo), dus de
+     ongunstigste plek op het vlak: ink 7,07:1 (AAA), ink-soft 4,59:1 (AA). Op
+     --kaart-hi lopen die op naar 11,90:1 en 7,73:1. De hairlines zitten in het
+     midden van het vlak en halen daar 3,21:1 — boven de 3:1 die WCAG voor
+     niet-tekstuele elementen vraagt. */
+  --kaart-hi: #f7f9fb;
+  --kaart-mid: #dfe4ea;
+  --kaart-lo: #bcc3cc;
+  --kaart-ink: #2c3440;
+  --kaart-ink-soft: #46505f;
+  --kaart-lijn: #6f7f91;
+  /* Bleke echo rechtsonder, en bewust véél korter dan die van Wannabe
+     (0,008/0,011 tegen 0,014/0,018): dit is de lichtrand van een dunne plaat,
+     niet de tweede materiaallaag van verguld messing. Een filter werkt ná de
+     clip, dus de echo volgt het schild exact. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.008) calc(var(--fut-kw) * 0.011) 0
+      rgba(190, 202, 214, 0.75)
+  );
+  /* Gestapelde panellijnen: lichte kern, donkere spouw, tweede lichte lijn.
+     Dat is hoe gezet blik langs een kant leest — twee randen met een schaduw
+     ertussen — en het kost geen extra DOM-laag omdat inset-schaduwen mee
+     geclipt worden door de schildvorm. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(250, 252, 254, 0.8),
+    inset 0 0 0 2.5px rgba(91, 102, 114, 0.45),
+    inset 0 0 0 4px rgba(222, 230, 238, 0.5);
+}
+.fut-kaart--zilver .fut-kaart__zijde {
+  background: linear-gradient(
+    160deg,
+    #fdfefe 0%,
+    #a6b0bc 40%,
+    #eef1f5 66%,
+    #6d7783 100%
+  );
+}
+.fut-kaart--zilver .fut-kaart__liner {
+  background: #414b57;
+}
+.fut-kaart--zilver .fut-kaart__keyline {
+  background: #dde4ec;
+}
+/* Vlak: dezelfde opbouw als de basiskaart, maar met een ietsje sterkere
+   topgloed (0,58 tegen 0,50). Een aluminium plaat heeft een hardere lichtvang
+   dan emaille; zonder die extra stap zag de bovenrand er dof uit naast het
+   witte chroom van het frame. De hele regel staat hier opnieuw omdat de gloed
+   in de achtergrond-shorthand zit — er is geen los token voor. De
+   canvas-tegenhanger is het `glow`-veld in zilver.ts. */
+.fut-kaart--zilver .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 255, 255, 0.58),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+/* Bredere, koelere glansbaan dan de basis-sheen (38/50/62 i.p.v. 42/50/58):
+   geborsteld aluminium vangt licht over een strook, niet in een lijn. Bewust
+   ijl blauwwit i.p.v. de gekleurde folie van Wannabe — kleurbreking zou de
+   plaat duur maken. Op de poster is dit één stop (`sheen` in zilver.ts, op de
+   ~0,875-kalibratie van #664: het canvas leest een kortere as en dus feller). */
+.fut-kaart--zilver .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(240, 247, 255, 0.4) 50%,
+    transparent 62%
+  );
+}
+/* De baan kruipt traag over de plaat: precies het "veel lawaai, weinig
+   resultaat" van deze divisie — de kaart blijft aandacht vragen zonder dat er
+   iets gebeurt. Trager dan Wannabe (8,5s), want daar hoort de beweging bij de
+   folie; hier is het alleen het kantelen van blik. De poster staat stil, zoals
+   bij elke bewegende laag sinds #664. */
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--zilver .fut-kaart__vlak::before {
+    animation: fut-kaart-shimmer 9.5s ease-in-out infinite;
+  }
+}
+/* Koele schaduw onder de vóór-liggende ornamentlaag (crest en medaillon): de
+   gedeelde regel in FutKaart.css is roze getint (Big Daddy) en dat maakt van
+   aluminium meteen roségoud. */
+.fut-kaart--zilver .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(40, 48, 60, 0.45));
+}
