@@ -15,6 +15,7 @@
 
 import { canvasPalette, ellipsize } from "@/lib/utils/shareImage";
 import {
+  drawKaartOrnamentVoor,
   drawKaartSchild,
   kaartSkin,
   rgba,
@@ -212,6 +213,12 @@ export function drawKaart(
     );
   }
   ctx.restore();
+
+  // Ornamenten die óver de kaart liggen (#710, pias: de kraag van de narrenkap
+  // en het maskermedaillon) kunnen pas hierna: ze moeten bóven de inkt komen én
+  // buiten de vlak-clip kunnen tekenen, en die clip stond hierboven nog aan.
+  // Spiegel van .fut-kaart__ornament--voor, dat in de DOM ná de flipper staat.
+  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren);
 }
 
 /** De hele poster: court-gloed, kop, de kaart als blikvanger en de

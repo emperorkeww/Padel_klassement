@@ -234,6 +234,66 @@ export function KaartShowcase() {
         </div>
       </Sectie>
 
+      {/* Pias-variant (#710): de gevallen joker — narrenkap met asymmetrische
+          belletjes, twee jokerlinten en het maskermedaillon op de punt, plus de
+          harlekijn-/maskerlaag ín het vlak. Zelfde maten als de GOAT hierboven
+          (veld, wand, hero) en de canvas-spiegel ernaast; de kap en de linten
+          steken buiten het schild uit, dus dit is de rij waarin je een
+          scrollbar of layout shift zou zien. */}
+      <Sectie titel="Pias (#710): narrenkap + linten + maskermedaillon — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="pias"
+              editieLabel="🤡 Pias · −12 games"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="pias"
+          editieLabel="🤡 Pias · −12 games"
+          naam="Remco"
+          breedte={210}
+        />
+        {/* Op een GOAT-drager: het editie-ornament wint van de tier-hoorns, en
+            op de kroon-crest zit de kap in een ándere bovenrand. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1450)}
+            editie="pias"
+            editieLabel="🤡 Pias · −12 games"
+            naam="Senne"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">GOAT + Pias</span>
+        </div>
+        {/* Alle vier de schildvormen: de kraag moet op elke bovenrand sluiten. */}
+        {[750, 1050, 1350, 1450].map((r) => (
+          <Kaart
+            key={r}
+            kw={130}
+            tier={tierFor(r)}
+            editie="pias"
+            editieLabel="🤡 Pias · −12 games"
+            chips={CHIPS}
+          />
+        ))}
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

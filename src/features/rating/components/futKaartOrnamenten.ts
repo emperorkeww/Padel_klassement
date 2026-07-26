@@ -35,6 +35,10 @@ export interface OrnamentPad {
   breedte?: number;
   /** Vermenigvuldiger op de laag-alpha (bv. 0.7 voor de ijlere ringbogen). */
   alpha?: number;
+  /** Eigen kleur i.p.v. de laag-inkt (#710, pias): het GOAT-medaillon is één
+   *  gravure in één tint, maar een motief dat harlekijnruiten, barstjes én
+   *  bordeauxrode chevrons in dezelfde laag legt heeft er meer dan één nodig. */
+  kleur?: string;
 }
 
 /* ------------------------- strenggenerator (#710) ------------------------- */
