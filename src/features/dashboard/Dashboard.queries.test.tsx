@@ -102,9 +102,9 @@ describe("Dashboard: queries bij mount (#736)", () => {
       player_standings: 1,
       player_ratings: 1,
       rating_history: 1, // mijn eigen grafiek
-      // De gedeelde historie voor de avondkaart loopt sinds #731 via een RPC
-      // met een venster per speler i.p.v. een select op de hele tabel.
-      "rpc:recent_rating_history": 1,
+      // NB: de gedeelde historie (rpc recent_rating_history) staat hier
+      // bewust níét — die hoort bij de speelavond-kaart en wordt alleen op een
+      // speeldag opgehaald (#736). Zie de test hieronder.
       // Matches: de recente uitslagen en mijn eigen wedstrijden (die eerst
       // mijn teams opzoekt — vandaar twee keer teams).
       matches: 2,
@@ -125,7 +125,20 @@ describe("Dashboard: queries bij mount (#736)", () => {
       // Baanbeschikbaarheid van vandaag uit de cron-snapshot.
       court_availability_snapshots: 1,
     });
-    expect(som(per)).toBe(18);
+    expect(som(per)).toBe(17);
+  });
+
+  it("haalt de gedeelde rating-historie er alleen bij op een speeldag", async () => {
+    // De fixture-match is gespeeld op 2026-07-02; met de klok op die dag toont
+    // het overzicht de speelavond-terugblik, en pas dán is de historie nodig.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-07-02T18:00:00.000Z") });
+    try {
+      const per = await tellQueries();
+      expect(per["rpc:recent_rating_history"]).toBe(1);
+      expect(som(per)).toBe(18);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("schaalt niet mee met het aantal groepen", async () => {
@@ -141,6 +154,6 @@ describe("Dashboard: queries bij mount (#736)", () => {
     expect(per.play_polls).toBe(1);
     expect(per.play_poll_options).toBe(1);
     expect(per.play_poll_votes).toBe(1);
-    expect(som(per)).toBe(18);
+    expect(som(per)).toBe(17);
   });
 });
