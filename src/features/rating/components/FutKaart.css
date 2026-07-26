@@ -74,6 +74,27 @@
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
 }
+/* Voorste ornamentlaag (#710): dezelfde doos, maar bóven de flipper — nodig
+   voor een ornament dat over de bovenrand hangt en dus achter het schild half
+   zou verdwijnen (de diamantcrest van de Kampioen, laagvolgorde 8 van #710).
+   Zachtere schaduw dan de achterste laag: dit ligt vóór het licht, niet erin.
+   Bij een omgedraaide kaart verdwijnt hij: de achterkant heeft geen crest. */
+.fut-kaart__ornament--voor {
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(8, 24, 16, 0.4));
+}
+.fut-kaart.is-omgedraaid .fut-kaart__ornament--voor {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart__ornament--voor {
+    /* Vroeg in de flip weg, laat terug: de crest hoort bij de voorkant. */
+    transition: opacity 0.22s ease 0.16s;
+  }
+  .fut-kaart.is-omgedraaid .fut-kaart__ornament--voor {
+    transition: opacity 0.14s ease;
+  }
+}
 .fut-kaart__zijde--achter {
   position: absolute;
   inset: 0;
@@ -850,11 +871,17 @@
   }
 }
 
-/* Kampioen (winnaar van het vorige kwartaal, #625): platina-wit met
-   lauwergroen — bewust wég van goud (dat is In-Form/dictator-territorium)
-   en van het roze van Big Daddy. Lokale hexen: er is (nog) geen tweede
-   consument, dus geen index.css-tokens zoals bij --bigdaddy-kaart-*.
-   Contrast: ink op hi ≈ 7,7:1 (AAA). */
+/* Kampioen (winnaar van het vorige kwartaal, #625, hertekend in #710): een
+   eremedaille, geen ranking-kaart — platina-wit met lauwergroen, bewust wég
+   van goud (dat is In-Form/dictator-territorium) en van het roze van Big
+   Daddy. Sinds #710 draagt de editie ook een lauwerkrans met medaillelinten
+   achter het schild, een diamantcrest ervóór, een legacy-zegel als watermerk
+   en de gelaagde platina/smaragd-randen die de referentie kenmerken.
+   Lokale hexen: er is (nog) geen tweede consument, dus geen index.css-tokens
+   zoals bij --bigdaddy-kaart-*. Contrast: ink op hi ≈ 7,7:1 (AAA).
+   De hero-skin op het dashboard (.hero--kampioen) kopieert deze materiaal-
+   waarden; de synctest in futKaartCanvas.test.ts bewaakt dat.
+   Canvas-spiegel: het kampioen-register in EDITIE_REGISTERS. */
 .fut-kaart--kampioen {
   --kaart-hi: #fbfdfc;
   --kaart-mid: #e9f2ee;
@@ -863,6 +890,24 @@
   --kaart-ink-soft: #48745e;
   --kaart-lijn: #9dbfab;
   --editie-kleur: #2e7050;
+  /* Legacy-zegel bijna vlakvullend en hoog geplaatst: zo landt het hart van
+     de seizoensringen tussen de twee scheidingslijnen, waar de referentie hem
+     heeft. Canvas-spiegel: KAMPIOEN_ZEGEL_BREEDTE/_POSITIE. */
+  --motief-b: 98;
+  --motief-pos: 12%;
+  /* Echo-contour: een diep smaragden plaat een fractie onder het schild — de
+     "zachte diepteschaduw" van de referentie, maar als silhouet, zodat hij op
+     een licht én een donker vlak hetzelfde leest. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018) 0 rgba(34, 60, 47, 0.5)
+  );
+  /* Gelaagde binnenrand: platina hairline, diep smaragd, saliegroen — de drie
+     randlagen van de referentie, als inset-schaduwen die de schildclip volgen
+     (een echte border kan dat niet). */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+    inset 0 0 0 2.5px rgba(34, 60, 47, 0.5),
+    inset 0 0 0 4px rgba(157, 191, 171, 0.45);
 }
 .fut-kaart--kampioen .fut-kaart__zijde {
   background: linear-gradient(

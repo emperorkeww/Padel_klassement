@@ -441,6 +441,62 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     expect(kleuren.keyline).toBe(keyline);
   });
 
+  it("Kampioen: rand-register, motiefmaat en ornamenten staan op beide plekken (#710)", () => {
+    // Zelfde bewaking als voor de GOAT hieronder, nu voor de editie die sinds
+    // #710 een eremedaille is: echo, binnenlijnen en de motiefmaat leven als
+    // CSS-vars op .fut-kaart--kampioen én als velden in kaartSkin(). Zonder
+    // deze check kan de een herijkt worden zonder de ander.
+    const blok = editieBlok("kampioen");
+    const { kleuren } = kaartSkin("goud", "kampioen");
+
+    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
+    const [dx, dy, kleur] = kleuren.echo![0];
+    expect(echo).toContain(`* ${dx})`);
+    expect(echo).toContain(`* ${dy})`);
+    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
+
+    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
+    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!) {
+      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
+        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
+      );
+    }
+
+    // Motiefmaat: --motief-b is een percentage van het vlak (98 ≡ 0.98) en
+    // --motief-pos de background-position-fractie waarmee drawMotief rekent.
+    expect(kleuren.motief!.breedte * 100).toBe(
+      Number(/--motief-b:\s*([\d.]+);/.exec(blok)![1]),
+    );
+    expect(kleuren.motief!.positie * 100).toBe(
+      Number(/--motief-pos:\s*([\d.]+)%;/.exec(blok)![1]),
+    );
+    expect(kleuren.motief!.paden.length).toBeGreaterThan(10);
+
+    // De twee ornamentlagen: krans + linten achter de kaart, crest ervóór.
+    expect(kleuren.ornament).toBe("kampioen");
+    expect(kleuren.ornamentVoor).toBe("kampioen");
+  });
+
+  it("de Kampioen-editie wint van het tier-ornament (#710)", () => {
+    // Vastgelegde cascade: het ornament hangt aan de tier, tenzij de editie er
+    // zelf een meebrengt. Een GOAT die kampioen wordt, ruilt zijn bokhoorns
+    // dus in voor de lauwerkrans — spiegel van FutKaart.tsx.
+    expect(kaartSkin("legende", "kampioen").kleuren.ornament).toBe("kampioen");
+    expect(kaartSkin("legende", "inform").kleuren.ornament).toBe("goat");
+    // En het motief komt mét de editie: het GOAT-medaillon verdwijnt onder een
+    // In-Form-skin, het legacy-zegel verschijnt onder een kampioen-skin.
+    expect(kaartSkin("goud", "inform").kleuren.motief).toBeUndefined();
+    expect(kaartSkin("goud", "kampioen").kleuren.motief).toBeDefined();
+    // Geen andere editie draagt een ornament of een randregister.
+    for (const editie of EDITIES.filter((e) => e !== "kampioen")) {
+      const k = kaartSkin("goud", editie).kleuren;
+      expect(k.ornament, editie).toBeUndefined();
+      expect(k.ornamentVoor, editie).toBeUndefined();
+      expect(k.echo, editie).toBeUndefined();
+      expect(k.binnenlijn, editie).toBeUndefined();
+    }
+  });
+
   it("de toptiers draaien allebei op vaste hexen (#710)", () => {
     // Eén regime: geen var(--dictator-*) meer in de kaartregisters, anders
     // wijkt de DOM-kaart in dark mode weer af van de vastgepinde poster.

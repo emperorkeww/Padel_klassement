@@ -15,6 +15,7 @@
 
 import { canvasPalette, ellipsize } from "@/lib/utils/shareImage";
 import {
+  drawKaartOrnamentVoor,
   drawKaartSchild,
   kaartSkin,
   rgba,
@@ -212,6 +213,11 @@ export function drawKaart(
     );
   }
   ctx.restore();
+
+  // Voorste ornamentlaag (#710): het enige ornament dat vóór de kaartinhoud
+  // hoort (de diamantcrest van de Kampioen). Moet ná de restore hierboven:
+  // binnen de vlak-clip zou de punt die bóven de bovenrand hangt wegvallen.
+  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren);
 }
 
 /** De hele poster: court-gloed, kop, de kaart als blikvanger en de
