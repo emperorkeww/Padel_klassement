@@ -112,6 +112,39 @@ import {
   KAMPIOEN_ZETTING_AS,
   type Lint,
 } from "./ornamentenKampioen";
+import {
+  belPaden,
+  PIAS_GOUD_CONTOUR,
+  PIAS_GOUD_GLANS,
+  PIAS_GOUD_GRAVURE,
+  PIAS_GOUD_SCHADUW,
+  PIAS_GOUD_VERLOOP,
+  PIAS_KAP_BAND,
+  PIAS_KAP_BELLEN,
+  PIAS_KAP_MIDDENLOB,
+  PIAS_KAP_NERVEN,
+  PIAS_KAP_ZIJLOB,
+  PIAS_KAP_ZOOM,
+  PIAS_LINT,
+  PIAS_LINT_BEL,
+  PIAS_LINT_HALS,
+  PIAS_MED_BARST,
+  PIAS_MED_HAARLIJN,
+  PIAS_MED_MASKER,
+  PIAS_MED_RING,
+  PIAS_MED_TRAAN,
+  PIAS_MED_TREKKEN,
+  PIAS_MED_VLAK,
+  PIAS_MED_VOLUTE,
+  PIAS_MOTIEF,
+  PIAS_MOTIEF_INK,
+  PIAS_MOTIEF_VIEWBOX,
+  PIAS_STOF_BIES,
+  PIAS_STOF_GLANS,
+  PIAS_STOF_SCHADUW,
+  PIAS_STOF_VERLOOP,
+  type PiasBel,
+} from "./ornamentenPias";
 import "./FutKaart.css";
 // Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
 // metaalladder daar.
@@ -155,6 +188,19 @@ const KAMPIOEN_LOOF_MATERIAAL: StrengMateriaal = {
   schaduw: KAMPIOEN_LOOF_SCHADUW,
   ribbel: KAMPIOEN_LOOF_NERF,
   ribbelGlans: KAMPIOEN_LOOF_GLANS,
+};
+
+/** Stof met gouden bies (#710, pias): de contour is hier geen donkere lijn maar
+ *  de piping zelf, dus dikker en licht. */
+const PIAS_STOF_MATERIAAL: StrengMateriaal = {
+  vulling: "url(#fut-orn-pias-stof)",
+  verloop: PIAS_STOF_VERLOOP,
+  contour: PIAS_STOF_BIES,
+  contourBreedte: 1.1,
+  glans: PIAS_STOF_GLANS,
+  schaduw: PIAS_STOF_SCHADUW,
+  ribbel: PIAS_STOF_SCHADUW,
+  ribbelGlans: PIAS_STOF_GLANS,
 };
 
 /** Eén getaperde streng (#710): gevulde omtrek met contour, dwarsribbels en
@@ -391,6 +437,37 @@ function FutDivisieDefs() {
           )}
         </g>
       ))}
+    </>
+  );
+}
+
+/** Eén narrenbelletje (#710, pias): bol, naad, klepelgat en glans. De vier
+ *  paden komen uit `belPaden`, dus DOM en canvas tekenen dezelfde bel. */
+function PiasBelletje({ bel }: { bel: PiasBel }) {
+  const p = belPaden(bel);
+  return (
+    <>
+      <path
+        d={p.bol}
+        fill="url(#fut-orn-pias-goud)"
+        stroke={PIAS_GOUD_CONTOUR}
+        strokeWidth="0.5"
+      />
+      <path
+        d={p.naad}
+        fill="none"
+        stroke={PIAS_GOUD_GRAVURE}
+        strokeWidth="0.4"
+        strokeLinecap="round"
+      />
+      <path d={p.gat} fill={PIAS_GOUD_CONTOUR} />
+      <path
+        d={p.glans}
+        fill="none"
+        stroke={PIAS_GOUD_GLANS}
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
     </>
   );
 }
@@ -894,6 +971,149 @@ export function FutKaartDefs() {
           ))}
           <path d={KAMPIOEN_CREST_GLANS} fill={KAMPIOEN_STEEN_GLANS} />
         </g>
+        {/* Pias (#710): de gevallen joker. Twee groepen i.p.v. één, want dit
+            ornament ligt aan twee kanten van de kaart — kap-lobben en linten
+            komen áchter het schild vandaan, de kraag en het maskermedaillon
+            liggen erover (anders zou de kap "erop geplakt" lezen i.p.v.
+            geïntegreerd in de bovenrand). Elke laag heeft zijn eigen
+            linkerhelft plus gespiegelde <use>. */}
+        {/* Recht van boven naar onder (x1 = x2 = 0), niet diagonaal als het
+            GOAT-metaal. Dat is geen smaakkeuze maar een pariteits-eis: de
+            pias-ornamenten liggen ver van de kaartas (belletjes op u≈34 en
+            u≈67, het medaillon op v≈127), en canvas kent geen
+            objectBoundingBox — een schuine as zou daar per vorm een ándere
+            anker-x nodig hebben. Verticaal is de y-strook het enige wat de
+            canvas-spiegel hoeft te weten. */}
+        <linearGradient
+          id="fut-orn-pias-goud"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {PIAS_GOUD_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-pias-stof"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {PIAS_STOF_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <g id="fut-orn-pias-helft">
+          <FutStreng streng={PIAS_LINT} materiaal={PIAS_STOF_MATERIAAL} />
+          <path
+            d={PIAS_LINT_HALS}
+            fill="url(#fut-orn-pias-goud)"
+            stroke={PIAS_GOUD_CONTOUR}
+            strokeWidth="0.4"
+          />
+          <PiasBelletje bel={PIAS_LINT_BEL} />
+          <FutStreng streng={PIAS_KAP_ZIJLOB} materiaal={PIAS_STOF_MATERIAAL} />
+        </g>
+        <g id="fut-orn-pias">
+          <use href="#fut-orn-pias-helft" />
+          <use href="#fut-orn-pias-helft" transform="translate(100,0) scale(-1,1)" />
+          {/* De middenlob leunt bewust scheef en staat dus niet op de as: geen
+              spiegeling, zoals het GOAT-baardblad. */}
+          <FutStreng streng={PIAS_KAP_MIDDENLOB} materiaal={PIAS_STOF_MATERIAAL} />
+        </g>
+        <g id="fut-orn-pias-voor-helft">
+          {PIAS_MED_VOLUTE.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke="url(#fut-orn-pias-goud)"
+              strokeWidth="1.1"
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+        <g id="fut-orn-pias-voor">
+          {/* Kraag over de bovenrand, met de zoom eronder en twee nerven erin. */}
+          {[PIAS_KAP_ZOOM, PIAS_KAP_BAND].map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="url(#fut-orn-pias-goud)"
+              stroke={PIAS_GOUD_CONTOUR}
+              strokeWidth="0.5"
+              strokeLinejoin="round"
+            />
+          ))}
+          {PIAS_KAP_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={PIAS_GOUD_GRAVURE}
+              strokeWidth="0.4"
+              strokeLinecap="round"
+            />
+          ))}
+          {PIAS_KAP_BELLEN.map((bel) => (
+            <PiasBelletje key={`${bel.cx}-${bel.cy}`} bel={bel} />
+          ))}
+          <use href="#fut-orn-pias-voor-helft" />
+          <use
+            href="#fut-orn-pias-voor-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          {/* Maskermedaillon op de schildpunt: ring, bordeaux binnenvlak,
+              haarlijn, en daarin het gebarsten masker. */}
+          <path
+            d={PIAS_MED_RING}
+            fill="url(#fut-orn-pias-goud)"
+            stroke={PIAS_GOUD_CONTOUR}
+            strokeWidth="0.6"
+          />
+          <path
+            d={PIAS_MED_VLAK}
+            fill="url(#fut-orn-pias-stof)"
+            stroke={PIAS_GOUD_CONTOUR}
+            strokeWidth="0.4"
+          />
+          <path
+            d={PIAS_MED_HAARLIJN}
+            fill="none"
+            stroke={PIAS_GOUD_GLANS}
+            strokeWidth="0.3"
+          />
+          <path
+            d={PIAS_MED_MASKER}
+            fill="url(#fut-orn-pias-goud)"
+            stroke={PIAS_GOUD_CONTOUR}
+            strokeWidth="0.4"
+            strokeLinejoin="round"
+          />
+          {PIAS_MED_TREKKEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={PIAS_GOUD_GRAVURE}
+              strokeWidth="0.55"
+              strokeLinecap="round"
+            />
+          ))}
+          <path d={PIAS_MED_TRAAN} fill={PIAS_GOUD_SCHADUW} />
+          <path
+            d={PIAS_MED_BARST}
+            fill="none"
+            stroke={PIAS_GOUD_CONTOUR}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+        </g>
       </defs>
     </svg>
   );
@@ -909,6 +1129,8 @@ function FutKaartMotief({
   breedte,
   positie,
   className,
+  viewBox = "0 0 100 100",
+  vullend = false,
 }: {
   paden: readonly OrnamentPad[];
   kleur: string;
@@ -919,11 +1141,21 @@ function FutKaartMotief({
   /** Extra klasse wanneer een register zijn maten liever in de CSS zet dan
    *  via de twee variabelen hierboven (zoals het Big Daddy-kroonwatermerk). */
   className?: string;
+  /** Eigen viewBox (#710, pias): een motief dat tot in de schildpunt doorloopt
+   *  rekent in kaart-units (100 × 139) i.p.v. de vierkante doos van de GOAT. */
+  viewBox?: string;
+  /** Vult het hele vlak i.p.v. te passen: dan mág de laag opzij afgesneden
+   *  worden (het ruitpatroon bloedt bewust door de schildrand heen) en volgt
+   *  de canvas-spiegel met dezelfde niet-uniforme schaal. */
+  vullend?: boolean;
 }) {
   return (
     <svg
-      className={`fut-kaart__motief${className ? ` ${className}` : ""}`}
-      viewBox="0 0 100 100"
+      className={`fut-kaart__motief${vullend ? " fut-kaart__motief--vol" : ""}${
+        className ? ` ${className}` : ""
+      }`}
+      viewBox={viewBox}
+      preserveAspectRatio={vullend ? "none" : undefined}
       aria-hidden="true"
       style={{
         ...(breedte != null ? { ["--motief-b" as string]: breedte * 100 } : {}),
@@ -934,13 +1166,13 @@ function FutKaartMotief({
     >
       {paden.map((p) =>
         p.soort === "vlak" ? (
-          <path key={p.d} d={p.d} fill={kleur} opacity={p.alpha} />
+          <path key={p.d} d={p.d} fill={p.kleur ?? kleur} opacity={p.alpha} />
         ) : (
           <path
             key={p.d}
             d={p.d}
             fill="none"
-            stroke={kleur}
+            stroke={p.kleur ?? kleur}
             strokeWidth={p.breedte}
             opacity={p.alpha}
             strokeLinecap="round"
@@ -1002,16 +1234,22 @@ export function FutKaart({
       ? "bigdaddy"
       : editie === "kampioen"
         ? "kampioen"
-        : tier?.key === "legende"
-          ? "goat"
-          : tier?.key === "dictator"
-            ? "dictator"
-            : null;
+        : editie === "pias"
+          ? "pias"
+          : tier?.key === "legende"
+            ? "goat"
+            : tier?.key === "dictator"
+              ? "dictator"
+              : null;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
   // verdwijnen — de kroon en punt-edelsteen van Big Daddy, de lauwerkrans en
-  // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen.
+  // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen, de kraag
+  // en het maskermedaillon van de pias.
   const ornamentVoor =
-    ornament === "bigdaddy" || ornament === "dictator" || ornament === "kampioen"
+    ornament === "bigdaddy" ||
+    ornament === "dictator" ||
+    ornament === "kampioen" ||
+    ornament === "pias"
       ? ornament
       : null;
   // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
@@ -1031,6 +1269,13 @@ export function FutKaart({
       />
     ) : editie === "kampioen" ? (
       <FutKaartMotief paden={KAMPIOEN_ZEGEL} kleur={KAMPIOEN_ZEGEL_KLEUR} />
+    ) : editie === "pias" ? (
+      <FutKaartMotief
+        paden={PIAS_MOTIEF}
+        kleur={PIAS_MOTIEF_INK}
+        className="fut-kaart__motief--vol"
+        viewBox={PIAS_MOTIEF_VIEWBOX}
+      />
     ) : divisie?.motief ? (
       <FutKaartMotief
         paden={divisie.motief.paden}

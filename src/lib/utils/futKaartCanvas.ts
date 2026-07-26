@@ -131,6 +131,39 @@ import {
   KAMPIOEN_ZETTING_VERLOOP,
   type Lint,
 } from "@/features/rating/components/ornamentenKampioen";
+import {
+  belPaden,
+  PIAS_GOUD_CONTOUR,
+  PIAS_GOUD_GLANS,
+  PIAS_GOUD_GRAVURE,
+  PIAS_GOUD_SCHADUW,
+  PIAS_GOUD_VERLOOP,
+  PIAS_KAP_BAND,
+  PIAS_KAP_BELLEN,
+  PIAS_KAP_MIDDENLOB,
+  PIAS_KAP_NERVEN,
+  PIAS_KAP_ZIJLOB,
+  PIAS_KAP_ZOOM,
+  PIAS_LINT,
+  PIAS_LINT_BEL,
+  PIAS_LINT_HALS,
+  PIAS_MED_BARST,
+  PIAS_MED_HAARLIJN,
+  PIAS_MED_MASKER,
+  PIAS_MED_RING,
+  PIAS_MED_TRAAN,
+  PIAS_MED_TREKKEN,
+  PIAS_MED_VLAK,
+  PIAS_MED_VOLUTE,
+  PIAS_MOTIEF,
+  PIAS_MOTIEF_INK,
+  PIAS_STOF_BIES,
+  PIAS_STOF_GLANS,
+  PIAS_STOF_SCHADUW,
+  PIAS_STOF_VERLOOP,
+  PIAS_STROOK,
+  type PiasBel,
+} from "@/features/rating/components/ornamentenPias";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 /** Materiaal van de GOAT-strengen — spiegel van GOAT_MATERIAAL in
@@ -345,19 +378,23 @@ export interface FutKaartKleuren {
     breedte: number;
     /** Verticale positie als background-position-fractie (--motief-pos). */
     positie: number;
+    /** Vullend (#710, pias): de paden rekenen in kaart-units (100 × 139) en
+     *  vullen het hele vlak — spiegel van .fut-kaart__motief--vol met
+     *  preserveAspectRatio="none". `breedte`/`positie` doen dan niets. */
+    vullend?: boolean;
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
    *  Dictator en Big Daddy hebben daarnaast een vóór-liggende laag
    *  (lauwerkrans + lakzegel, respectievelijk kroon + punt-ornament) die
    *  onderaan `drawKaartSchild` volgt — zie .fut-kaart__ornament--voor. */
-  ornament?: "goat" | "dictator" | "bigdaddy" | "kampioen";
+  ornament?: "goat" | "dictator" | "bigdaddy" | "kampioen" | "pias";
   /** Voorste ornamentlaag (#710): het ornament dat vóór de kaartinhoud hoort,
    *  dus ná het vlak. `drawKaartSchild` kan die niet tekenen — de vlak-clip
    *  staat daar nog open voor de caller — dus doet `drawKaartOrnamentVoor` dat,
    *  en roept de caller die aan na zijn `ctx.restore()`. Zo blijft de inkt
    *  bóven het ornament liggen, precies zoals in de DOM. */
-  ornamentVoor?: "dictator" | "bigdaddy" | "kampioen";
+  ornamentVoor?: "dictator" | "bigdaddy" | "kampioen" | "pias";
   /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
    *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
    *  of een toptier — zie de keuze in FutKaart.tsx. */
@@ -387,6 +424,7 @@ export function drawKaartSchild(
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
   if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
   if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);  if (kleuren.ornament === "kampioen") drawKampioenOrnament(ctx, x, y, w);
+  if (kleuren.ornament === "pias") drawPiasAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -723,24 +761,30 @@ function drawMotief(
   fh: number,
   motief: NonNullable<FutKaartKleuren["motief"]>,
 ) {
-  const maat = motief.breedte * fw;
-  const schaal = maat / 100;
   ctx.save();
-  ctx.translate(
-    fx + (fw - maat) / 2,
-    fy + motief.positie * (fh - maat),
-  );
-  ctx.scale(schaal, schaal);
+  if (motief.vullend) {
+    // Vullend (#710, pias): kaart-units over het hele vlak, niet-uniform
+    // geschaald — net als preserveAspectRatio="none" in de DOM. Het vlak is
+    // ~100:139, dus de vertekening is verwaarloosbaar; wat wél telt is dat de
+    // ruiten precies zo door de schildrand bloeden als in de browser.
+    ctx.translate(fx, fy);
+    ctx.scale(fw / 100, fh / 139);
+  } else {
+    const maat = motief.breedte * fw;
+    const schaal = maat / 100;
+    ctx.translate(fx + (fw - maat) / 2, fy + motief.positie * (fh - maat));
+    ctx.scale(schaal, schaal);
+  }
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (const pad of motief.paden) {
     const p = new Path2D(pad.d);
     ctx.globalAlpha = pad.alpha ?? 1;
     if (pad.soort === "vlak") {
-      ctx.fillStyle = motief.kleur;
+      ctx.fillStyle = pad.kleur ?? motief.kleur;
       ctx.fill(p);
     } else {
-      ctx.strokeStyle = motief.kleur;
+      ctx.strokeStyle = pad.kleur ?? motief.kleur;
       ctx.lineWidth = pad.breedte ?? 1;
       ctx.stroke(p);
     }
@@ -776,6 +820,18 @@ function asVerloop(
   return g;
 }
 
+/** Stof met gouden bies (#710, pias) — spiegel van het gelijknamige materiaal
+ *  in FutKaart.tsx. */
+const PIAS_STOF_MATERIAAL: StrengMateriaal = {
+  vulling: "url(#fut-orn-pias-stof)",
+  verloop: PIAS_STOF_VERLOOP,
+  contour: PIAS_STOF_BIES,
+  contourBreedte: 1.1,
+  glans: PIAS_STOF_GLANS,
+  schaduw: PIAS_STOF_SCHADUW,
+  ribbel: PIAS_STOF_SCHADUW,
+  ribbelGlans: PIAS_STOF_GLANS,
+};
 /** Eén getaperde streng (#710) op canvas: gevulde omtrek met contour,
  *  dwarsribbels en glanslijn — spiegel van FutStreng in FutKaart.tsx, met
  *  letterlijk dezelfde pad-strings uit de ornamentmodules. */
@@ -1173,6 +1229,82 @@ function drawKampioenOrnament(
  * zou een crest die boven de bovenrand hangt of een medaillon dat onder de
  * punt uitsteekt wegvallen. Spiegel van `.fut-kaart__ornament--voor` in de CSS.
  */
+/** Aangetast-goud-verloop van de pias over een verticale strook — de
+ *  canvas-tegenhanger van de `#fut-orn-pias-goud`-def, die in de DOM per
+ *  gebruiker tegen de bounding box van zijn pad rekent (objectBoundingBox).
+ *  Omdat die def recht van boven naar onder loopt (x1 = x2 = 0), is de y-strook
+ *  van het pad het enige wat hier nodig is: de x-positie doet niet mee. Elke
+ *  aanroep geeft dus de yMin/yMax van zíjn vorm mee. */
+function piasGoud(
+  ctx: CanvasRenderingContext2D,
+  yMin: number,
+  yMax: number,
+): CanvasGradient {
+  const g = ctx.createLinearGradient(0, yMin, 0, yMax);
+  for (const [offset, kleur] of PIAS_GOUD_VERLOOP) g.addColorStop(offset, kleur);
+  return g;
+}
+
+/** Eén narrenbelletje op canvas — spiegel van PiasBelletje in FutKaart.tsx, met
+ *  dezelfde vier paden uit `belPaden`. */
+function drawPiasBel(ctx: CanvasRenderingContext2D, bel: PiasBel) {
+  const p = belPaden(bel);
+  ctx.fillStyle = piasGoud(ctx, bel.cy - bel.r, bel.cy + bel.r);
+  const bol = new Path2D(p.bol);
+  ctx.fill(bol);
+  ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(bol);
+  ctx.strokeStyle = PIAS_GOUD_GRAVURE;
+  ctx.lineWidth = 0.4;
+  ctx.stroke(new Path2D(p.naad));
+  ctx.fillStyle = PIAS_GOUD_CONTOUR;
+  ctx.fill(new Path2D(p.gat));
+  ctx.strokeStyle = PIAS_GOUD_GLANS;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(new Path2D(p.glans));
+}
+
+/** Pias-ornament áchter de kaart (#710): de twee jokerlinten met hun belletjes
+ *  en de drie lobben van de narrenkap. Eén helft plus zijn spiegeling om x=50,
+ *  net als de <use transform> in de DOM-defs; de scheve middenlob staat niet op
+ *  de as en wordt daarom niet gespiegeld. Units zijn kaart-units (100 breed). */
+function drawPiasAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, PIAS_LINT, 0.4, PIAS_STOF_MATERIAAL);
+    const hals = new Path2D(PIAS_LINT_HALS);
+    ctx.fillStyle = piasGoud(ctx, ...PIAS_STROOK.lintHals);
+    ctx.fill(hals);
+    ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+    ctx.lineWidth = 0.4;
+    ctx.stroke(hals);
+    drawPiasBel(ctx, PIAS_LINT_BEL);
+    strokeStreng(ctx, PIAS_KAP_ZIJLOB, 0.4, PIAS_STOF_MATERIAAL);
+    ctx.restore();
+  }
+  strokeStreng(ctx, PIAS_KAP_MIDDENLOB, 0.4, PIAS_STOF_MATERIAAL);
+  ctx.restore();
+}
+
+/** Pias-ornament vóór de kaart (#710): de kraag die de narrenkap in de
+ *  bovenrand vastzet, de drie belletjes en het maskermedaillon op de punt.
+ *  Spiegel van de `.fut-kaart__ornament--voor`-laag in de DOM, dus de caller
+ *  roept dit áls laatste aan — ná de kaartinhoud. */
 export function drawKaartOrnamentVoor(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1183,6 +1315,7 @@ export function drawKaartOrnamentVoor(
   if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "kampioen") drawKampioenCrest(ctx, x, y, w);
+  else if (kleuren.ornamentVoor === "pias") drawPiasVoor(ctx, x, y, w);
   if (kleuren.divisie) drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
 }
 
@@ -1223,6 +1356,94 @@ function drawKampioenCrest(
   for (const d of KAMPIOEN_CREST_KLAUW) ctx.fill(new Path2D(d));
   ctx.fillStyle = KAMPIOEN_STEEN_GLANS;
   ctx.fill(new Path2D(KAMPIOEN_CREST_GLANS));
+  ctx.restore();
+}
+
+/** De kraag en het maskermedaillon van de pias (#710): die kruisen de
+ *  kaartrand, dus ze horen vóór de kaart — achter het schild zou de kap
+ *  "erop geplakt" lezen i.p.v. geïntegreerd in de bovenrand. */
+function drawPiasVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  // Kraag: zoom eerst, band eroverheen — zelfde volgorde als de DOM.
+  for (const [d, strook] of [
+    [PIAS_KAP_ZOOM, PIAS_STROOK.kapZoom],
+    [PIAS_KAP_BAND, PIAS_STROOK.kapBand],
+  ] as const) {
+    const pad = new Path2D(d);
+    ctx.fillStyle = piasGoud(ctx, ...strook);
+    ctx.fill(pad);
+    ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+    ctx.lineWidth = 0.5;
+    ctx.stroke(pad);
+  }
+  ctx.strokeStyle = PIAS_GOUD_GRAVURE;
+  ctx.lineWidth = 0.4;
+  for (const d of PIAS_KAP_NERVEN) ctx.stroke(new Path2D(d));
+  for (const bel of PIAS_KAP_BELLEN) drawPiasBel(ctx, bel);
+
+  // Volutes: één helft plus zijn spiegeling.
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.lineWidth = 1.1;
+    PIAS_MED_VOLUTE.forEach((d, i) => {
+      ctx.strokeStyle = piasGoud(ctx, ...PIAS_STROOK.volute[i]);
+      ctx.stroke(new Path2D(d));
+    });
+    ctx.restore();
+  }
+
+  // Medaillon: ring → bordeaux vlak → haarlijn → gebarsten masker.
+  const ring = new Path2D(PIAS_MED_RING);
+  ctx.fillStyle = piasGoud(ctx, ...PIAS_STROOK.medRing);
+  ctx.fill(ring);
+  ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke(ring);
+  const vlak = new Path2D(PIAS_MED_VLAK);
+  const stof = ctx.createLinearGradient(
+    0,
+    PIAS_STROOK.medVlak[0],
+    0,
+    PIAS_STROOK.medVlak[1],
+  );
+  for (const [offset, kleur] of PIAS_STOF_VERLOOP)
+    stof.addColorStop(offset, kleur);
+  ctx.fillStyle = stof;
+  ctx.fill(vlak);
+  ctx.lineWidth = 0.4;
+  ctx.stroke(vlak);
+  ctx.strokeStyle = PIAS_GOUD_GLANS;
+  ctx.lineWidth = 0.3;
+  ctx.stroke(new Path2D(PIAS_MED_HAARLIJN));
+  const masker = new Path2D(PIAS_MED_MASKER);
+  ctx.fillStyle = piasGoud(ctx, ...PIAS_STROOK.medMasker);
+  ctx.fill(masker);
+  ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+  ctx.lineWidth = 0.4;
+  ctx.stroke(masker);
+  ctx.strokeStyle = PIAS_GOUD_GRAVURE;
+  ctx.lineWidth = 0.55;
+  for (const d of PIAS_MED_TREKKEN) ctx.stroke(new Path2D(d));
+  ctx.fillStyle = PIAS_GOUD_SCHADUW;
+  ctx.fill(new Path2D(PIAS_MED_TRAAN));
+  ctx.strokeStyle = PIAS_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke(new Path2D(PIAS_MED_BARST));
   ctx.restore();
 }
 
@@ -1581,15 +1802,18 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "rgba(255, 160, 92, 0.45)",
     editieKleur: "#ffb35c",
   },
-  // Pias (#631/#705): mat kraftkarton met confetti — vlak frame met bleke
-  // snijkant, warme diffuse waas i.p.v. de witte specular-baan.
+  // Pias (#631/#705/#710): mat kraftkarton met confetti — vlak frame met bleke
+  // snijkant, warme diffuse waas i.p.v. de witte specular-baan. Sinds #710 ook
+  // de gevallen-joker-laag: gelaagde rand (bordeaux binnenlijn met gouden bies),
+  // narrenkap en linten áchter de kaart, kraag en maskermedaillon erover, en het
+  // harlekijn-/maskermotief ín het vlak.
   pias: {
     frame: [
-      [0, "#a8814e"],
-      [1, "#987040"],
+      [0, "#b08b50"],
+      [1, "#6f5026"],
     ],
-    snijkant: "#d9c193",
-    liner: "#4a3315",
+    snijkant: "#d8bc7c",
+    liner: "#362410",
     vlak: ["#dcbd85", "#c9a468", "#a37e46"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
@@ -1600,6 +1824,20 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#8a6534",
     editieKleur: "#8c2a17",
     textuur: "confetti",
+    binnenlijn: [
+      [2, "rgba(105, 47, 39, 0.62)"],
+      [3, "rgba(198, 158, 92, 0.55)"],
+    ],
+    ornament: "pias",
+    ornamentVoor: "pias",
+    motief: {
+      paden: PIAS_MOTIEF,
+      kleur: PIAS_MOTIEF_INK,
+      // Vullend: breedte en positie doen niets, maar het veld is verplicht.
+      breedte: 1,
+      positie: 0,
+      vullend: true,
+    },
   },
   // Zwarte Piet (#645/#705): speelkaart-wit met vlak mat lakframe; de bone
   // liner is de witte snijkant van het kaartkarton. Sheen uit.

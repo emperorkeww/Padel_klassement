@@ -153,6 +153,26 @@ describe("kaartSkin", () => {
     expect(informGoat.vlak[0][1]).toBe("#232c44");
   });
 
+  it("laat de pias zijn eigen ornament en motief meebrengen (#710)", () => {
+    // Andere kant van de #710-regel hierboven: een editie mét eigen ornament
+    // wint van het tier-ornament, en waar de andere edities het tier-motief
+    // wégdrukken zet de pias er zijn harlekijn-/maskerlaag voor terug. Een
+    // GOAT die pias wordt, ruilt dus hoorns voor een narrenkap.
+    const pias = kaartSkin("goud", "pias").kleuren;
+    expect(pias.ornament).toBe("pias");
+    expect(pias.ornamentVoor).toBe("pias");
+    expect(pias.motief?.paden.length).toBeGreaterThan(0);
+    // Vullend: de paden rekenen in kaart-units (100 × 139) i.p.v. de vierkante
+    // GOAT-doos, dus breedte/positie mogen niets doen.
+    expect(pias.motief?.vullend).toBe(true);
+    expect(kaartSkin("legende", "pias").kleuren.ornament).toBe("pias");
+    expect(kaartSkin("legende", "pias").kleuren.motief?.vullend).toBe(true);
+    // En omgekeerd: de GOAT houdt zijn hoorns onder élke andere editie.
+    expect(kaartSkin("legende", "onfire").kleuren.ornament).toBe("goat");
+    expect(kaartSkin("goud", "piet").kleuren.ornament).toBeUndefined();
+    expect(kaartSkin("goud", "piet").kleuren.ornamentVoor).toBeUndefined();
+  });
+
   it("laat de editie de kleuren van de divisie overschrijven", () => {
     // Zelfde cascade als de CSS: het editie-blok staat ná het special-blok.
     const iconGoud = kaartSkin("goud", "icon");
@@ -504,13 +524,41 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     // De edities die (nog) géén eigen ornament of randregister meebrengen,
     // laten het tier-ornament staan en houden de gedeelde rand. Wie een editie
     // hertekent, haalt hem hier uit de lijst — dat is precies de bedoeling.
-    for (const editie of ["inform", "onfire", "pias", "piet"] as const) {
+    for (const editie of ["inform", "onfire", "piet"] as const) {
       const k = kaartSkin("goud", editie).kleuren;
       expect(k.ornament, editie).toBeUndefined();
       expect(k.ornamentVoor, editie).toBeUndefined();
       expect(k.echo, editie).toBeUndefined();
       expect(k.binnenlijn, editie).toBeUndefined();
     }
+  });
+
+  it("pias: de gelaagde rand staat in de CSS én in de canvas-tabel (#710)", () => {
+    // Zelfde bewaking als bij de GOAT hierboven, nu voor de bordeaux binnenlijn
+    // met gouden bies die de pias sinds #710 draagt. Zonder deze check kan de
+    // een herijkt worden zonder de ander.
+    const blok = editieBlok("pias");
+    const { kleuren } = kaartSkin("goud", "pias");
+    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
+    expect(kleuren.binnenlijn).toHaveLength(2);
+    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!) {
+      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
+        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
+      );
+    }
+    // En de donkere brons-liner tussen frame en keyline.
+    const liner = /\.fut-kaart--pias \.fut-kaart__liner\s*\{\s*background:\s*([^;]+);/.exec(
+      FUT_CSS,
+    )?.[1];
+    expect(kleuren.liner).toBe(liner);
+    // Nog steeds mat (#705): geen tweede glanspunt in het frame en geen
+    // shimmer-animatie op het vlak — aangetast goud glimt niet.
+    expect(kleuren.frame).toHaveLength(2);
+    expect(kleuren.frameRibbels).toBeUndefined();
+    const shimmer = new RegExp(
+      "\\.fut-kaart--pias \\.fut-kaart__vlak::before\\s*\\{[^}]*animation",
+    );
+    expect(shimmer.test(FUT_CSS)).toBe(false);
   });
 
   it("de toptiers draaien allebei op vaste hexen (#710)", () => {

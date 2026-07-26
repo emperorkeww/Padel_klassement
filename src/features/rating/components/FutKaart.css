@@ -247,6 +247,15 @@
   --motief-b: 56;
   --motief-pos: 42%;
 }
+/* Vullend motief (#710, pias): rekent in kaart-units (viewBox 100 × 139) en
+   dekt het hele vlak, zodat het harlekijnpatroon tot in de schildpunt
+   doorloopt. De svg staat op preserveAspectRatio="none", dus het vlak wordt
+   exact gevuld — de canvas-spiegel schaalt daarom net zo niet-uniform. */
+.fut-kaart__motief--vol {
+  inset: 0;
+  width: auto;
+  transform: none;
+}
 
 /* Premium-registers (spitse vleugels en kroon-crest): een stralenkrans
    achter het bovenvlak, zoals de special-artworks in FUT — subtiel genoeg
@@ -1076,7 +1085,14 @@
    nauwelijks zichtbare warme waas en het vlak draagt een vezelkorrel i.p.v.
    glansbanen. Lokale hexen, net als kampioen; de vezeltegel wordt wél
    letterlijk gedeeld met De Schandpaal (#682) — zelfde papier, de synctest
-   in futKaartCanvas.test.ts bewaakt dat. Contrast: ink op hi ≈ 9:1 (AAA). */
+   in futKaartCanvas.test.ts bewaakt dat. Contrast: ink op hi ≈ 9:1 (AAA).
+
+   Gevallen joker (#710): het kraftpapier blíjft — de pias mag geen beloning
+   worden — maar de rand wordt gelaagd zoals de referentie: aangetast honinggoud
+   (zijde) → donker brons (liner) → een gouden haarlijn (keyline) → gedempt
+   bordeauxrood (binnenlijn) → perkament. Vijf banden op ~5,5 px, precies de
+   opbouw die de referentie in doorsnede laat zien. Nog steeds mat: geen tweede
+   glanspunt in het frame en geen shimmer — aangetast goud glimt niet. */
 .fut-kaart--pias {
   --kaart-hi: #dcbd85;
   --kaart-mid: #c9a468;
@@ -1085,9 +1101,14 @@
   --kaart-ink-soft: #6b4d24;
   --kaart-lijn: #8a6534;
   --editie-kleur: #8c2a17;
-  --kaart-frame-hi: #a8814e;
-  --kaart-frame-lo: #987040;
-  --kaart-snijkant: #d9c193;
+  --kaart-frame-hi: #b08b50;
+  --kaart-frame-lo: #6f5026;
+  --kaart-snijkant: #d8bc7c;
+  /* Bordeaux-band met een gouden bies erbinnen; de inset-schaduwen worden
+     mee-geclipt en volgen dus het schild. Smalste eerst: die wint. */
+  --kaart-binnenlijn:
+    inset 0 0 0 2px rgba(105, 47, 39, 0.62),
+    inset 0 0 0 3px rgba(198, 158, 92, 0.55);
 }
 .fut-kaart--pias .fut-kaart__zijde {
   background:
@@ -1099,7 +1120,7 @@
     );
 }
 .fut-kaart--pias .fut-kaart__liner {
-  background: #4a3315;
+  background: #362410;
 }
 /* Mat karton reflecteert diffuus: geen witte specular-baan maar een brede,
    warme waas op 6% — canvas-spiegel: sheen + sheenSpreiding 0.2. */

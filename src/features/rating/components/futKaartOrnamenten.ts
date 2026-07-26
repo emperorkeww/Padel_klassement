@@ -35,6 +35,10 @@ export interface OrnamentPad {
   breedte?: number;
   /** Vermenigvuldiger op de laag-alpha (bv. 0.7 voor de ijlere ringbogen). */
   alpha?: number;
+  /** Eigen kleur i.p.v. de laag-inkt (#710, pias): het GOAT-medaillon is één
+   *  gravure in één tint, maar een motief dat harlekijnruiten, barstjes én
+   *  bordeauxrode chevrons in dezelfde laag legt heeft er meer dan één nodig. */
+  kleur?: string;
 }
 
 /** Het materiaal van een streng: één vulling plus de lijnkleuren die hem
@@ -54,6 +58,9 @@ export interface StrengMateriaal {
    *  i.p.v. een doorlopend lint. */
   as?: readonly [number, number];
   contour: string;
+  /** Contourdikte; default 0.7. De pias zet hem hoger: daar ís de contour geen
+   *  donkere lijn maar de gouden bies zelf. */
+  contourBreedte?: number;
   glans: string;
   ribbel: string;
   ribbelGlans: string;
