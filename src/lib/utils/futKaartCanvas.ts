@@ -36,7 +36,56 @@ import {
   type OrnamentPad,
   type Streng,
 } from "@/features/rating/components/futKaartOrnamenten";
+import {
+  BD_BALLONNEN,
+  BD_BALLON_GLANS,
+  BD_BALLON_TOUW,
+  BD_CONFETTI,
+  BD_CONTOUR,
+  BD_KROON,
+  BD_KROON_BAND,
+  BD_KROON_BANDGLANS,
+  BD_KROON_BOLLEN,
+  BD_KROON_DOOS,
+  BD_KROON_MOTIEF,
+  BD_KROON_MOTIEF_BREEDTE,
+  BD_KROON_MOTIEF_KLEUR,
+  BD_KROON_MOTIEF_POSITIE,
+  BD_KROON_STEEN,
+  BD_KROON_STEEN_DOOS,
+  BD_KROON_STEEN_FACETTEN,
+  BD_LINT_BOOG,
+  BD_LINT_MATERIAAL,
+  BD_LINT_STAART,
+  BD_METAAL_MATERIAAL,
+  BD_PUNT_STEEN,
+  BD_PUNT_STEEN_DOOS,
+  BD_PUNT_STEEN_FACETTEN,
+  BD_PUNT_VLEUGEL,
+  BD_PUNT_ZETTING,
+  BD_PUNT_ZETTING_DOOS,
+  BD_RIBBEL,
+  BD_RIBBELGLANS,
+  BD_STEEN_FACET,
+  BD_STEEN_VERLOOP,
+  cirkelPad,
+  type Doos,
+  type StrengMateriaal,
+} from "@/features/rating/components/ornamentenBigDaddy";
 import { canvasPalette } from "@/lib/utils/shareImage";
+
+/** Materiaal van de GOAT-strengen — spiegel van GOAT_MATERIAAL in
+ *  FutKaart.tsx. `gradientId` doet op canvas niets (daar is geen paint server
+ *  om naar te verwijzen), maar hoort bij het materiaal en blijft dus staan. */
+const GOAT_MATERIAAL: StrengMateriaal = {
+  gradientId: "fut-orn-metaal",
+  verloop: GOAT_METAAL_VERLOOP,
+  contour: GOAT_METAAL_CONTOUR,
+  glans: GOAT_METAAL_GLANS,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+};
 
 export type SchildVorm = "vlak" | "notch" | "punt" | "kroon";
 
@@ -220,8 +269,10 @@ export interface FutKaartKleuren {
     positie: number;
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
-   *  het frame getekend (de DOM legt ze als eerste kind achter de kaart). */
-  ornament?: "goat";
+   *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
+   *  Big Daddy heeft daarnaast een vóór-liggende laag (kroon, punt-ornament),
+   *  die onderaan `drawKaartSchild` volgt — zie .fut-kaart__ornament--voor. */
+  ornament?: "goat" | "bigdaddy";
 }
 
 /**
@@ -244,6 +295,7 @@ export function drawKaartSchild(
   // Ornamentlaag (#710): hoorns en andere uitsteeksels éérst — de DOM legt
   // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
+  if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -414,6 +466,20 @@ export function drawKaartSchild(
     }
   }
 
+  // Vóór-liggende ornamentlaag (#710, Big Daddy): kroon en punt-ornament vallen
+  // buiten het schild, dus de vlak-clip moet er even af. Daarna gaat hij weer
+  // aan, want de caller verwacht hem actief. Dat de content van de caller
+  // hierna bóven het ornament komt (de DOM legt de laag over álles) maakt
+  // niets uit: de kroon zit in de lege inkeping en het ornament in de lege
+  // punt — precies waar geen inkt staat.
+  if (kleuren.ornament === "bigdaddy") {
+    ctx.restore();
+    drawBigDaddyVoor(ctx, x, y, w);
+    ctx.save();
+    schildPad(ctx, fx, fy, fw, fh, vorm);
+    ctx.clip();
+  }
+
   return { fx, fy, fw, fh };
 }
 
@@ -462,32 +528,39 @@ function strokeStreng(
   ctx: CanvasRenderingContext2D,
   streng: Streng,
   ribbelBreedte: number,
+  materiaal: StrengMateriaal = GOAT_MATERIAAL,
 ) {
   const omtrek = new Path2D(streng.omtrek);
-  const verloop = ctx.createLinearGradient(
-    0,
-    streng.bbox.yMin,
-    (streng.bbox.yMax - streng.bbox.yMin) * 0.35,
-    streng.bbox.yMax,
-  );
-  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
+  // Vaste as (het lint) of de omhullende van de streng zelf — zelfde keuze als
+  // de gradientUnits in FutKaartDefs. De as staat in ornament-units, en die
+  // gelden hier al door de translate/scale van de ornamentlaag; ook onder de
+  // spiegeling, want een verticale as verandert niet van x-teken.
+  const verloop = materiaal.as
+    ? ctx.createLinearGradient(0, materiaal.as[0], 0, materiaal.as[1])
+    : ctx.createLinearGradient(
+        0,
+        streng.bbox.yMin,
+        (streng.bbox.yMax - streng.bbox.yMin) * 0.35,
+        streng.bbox.yMax,
+      );
+  for (const [offset, kleur] of materiaal.verloop)
     verloop.addColorStop(offset, kleur);
   ctx.fillStyle = verloop;
   ctx.fill(omtrek);
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
+  ctx.strokeStyle = materiaal.contour;
   ctx.lineWidth = 0.7;
   ctx.stroke(omtrek);
   ctx.lineWidth = ribbelBreedte;
-  ctx.strokeStyle = GOAT_METAAL_RIBBELGLANS;
+  ctx.strokeStyle = materiaal.ribbelGlans;
   for (const d of streng.ribbelGlans) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  ctx.strokeStyle = materiaal.ribbel;
   for (const d of streng.ribbels) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_SCHADUW;
+  ctx.strokeStyle = materiaal.schaduw;
   ctx.lineWidth = 1.3;
   ctx.stroke(new Path2D(streng.schaduw));
-  ctx.strokeStyle = GOAT_METAAL_GLANS;
+  ctx.strokeStyle = materiaal.glans;
   ctx.lineWidth = 0.9;
   ctx.stroke(new Path2D(streng.highlight));
 }
@@ -535,6 +608,155 @@ function drawGoatOrnament(
     strokeStreng(ctx, GOAT_BAARD_FLICK, 0.34);
     ctx.restore();
   }
+  ctx.restore();
+}
+
+/** Gradient over een ornamentvorm (#710): de canvas-tegenhanger van
+ *  `gradientUnits="objectBoundingBox"` in FutKaartDefs — dezelfde fracties op
+ *  de doos van de vorm, zodat DOM en poster hetzelfde verloop leggen. */
+function doosVerloop(
+  ctx: CanvasRenderingContext2D,
+  doos: Doos,
+  stops: ReadonlyArray<readonly [number, string]>,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): CanvasGradient {
+  const g = ctx.createLinearGradient(
+    doos.x + x1 * doos.b,
+    doos.y + y1 * doos.h,
+    doos.x + x2 * doos.b,
+    doos.y + y2 * doos.h,
+  );
+  for (const [offset, kleur] of stops) g.addColorStop(offset, kleur);
+  return g;
+}
+
+/** Edelsteen (#710): spiegel van FutSteen in FutKaart.tsx. */
+function drawSteen(
+  ctx: CanvasRenderingContext2D,
+  omtrek: string,
+  doos: Doos,
+  facetten: readonly string[],
+) {
+  const pad = new Path2D(omtrek);
+  ctx.fillStyle = doosVerloop(ctx, doos, BD_STEEN_VERLOOP, 0.2, 0, 0.8, 1);
+  ctx.fill(pad);
+  ctx.strokeStyle = BD_CONTOUR;
+  ctx.lineWidth = 0.35;
+  ctx.stroke(pad);
+  ctx.strokeStyle = BD_STEEN_FACET;
+  ctx.lineWidth = 0.3;
+  for (const d of facetten) ctx.stroke(new Path2D(d));
+}
+
+/** Big Daddy-ornament áchter de kaart (#710): het gespiegelde lint, de twee
+ *  ballonnen rechtsboven en de confetti — spiegel van #fut-orn-bigdaddy in de
+ *  DOM-defs, met letterlijk dezelfde pad-strings. Units zijn kaart-units, dus
+ *  één schaalfactor volstaat. */
+function drawBigDaddyAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, BD_LINT_BOOG, 0.4, BD_LINT_MATERIAAL);
+    strokeStreng(ctx, BD_LINT_STAART, 0.4, BD_LINT_MATERIAAL);
+    ctx.restore();
+  }
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  for (const b of BD_BALLONNEN) {
+    ctx.strokeStyle = BD_BALLON_TOUW;
+    ctx.lineWidth = 0.4;
+    ctx.stroke(new Path2D(b.touw));
+    const verloop = doosVerloop(ctx, b.doos, b.verloop, 0.15, 0.05, 0.85, 1);
+    for (const [d, breedte] of [
+      [b.knoop, 0.3],
+      [b.d, 0.4],
+    ] as const) {
+      const pad = new Path2D(d);
+      ctx.fillStyle = verloop;
+      ctx.fill(pad);
+      ctx.strokeStyle = BD_CONTOUR;
+      ctx.lineWidth = breedte;
+      ctx.stroke(pad);
+    }
+    ctx.fillStyle = BD_BALLON_GLANS;
+    ctx.fill(new Path2D(cirkelPad(b.glans)));
+  }
+  for (const c of BD_CONFETTI) {
+    ctx.fillStyle = c.kleur;
+    ctx.fill(new Path2D(c.d));
+  }
+  ctx.restore();
+}
+
+/** Big Daddy-ornament vóór de kaart (#710): kroon in de inkeping en het
+ *  edelsteen-ornament in de punt — spiegel van #fut-orn-bigdaddy-voor. */
+function drawBigDaddyVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, BD_PUNT_VLEUGEL, 0.3, BD_METAAL_MATERIAAL);
+    ctx.restore();
+  }
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  const metaal = (pad: Path2D, doos: Doos, breedte: number) => {
+    ctx.fillStyle = doosVerloop(
+      ctx,
+      doos,
+      BD_METAAL_MATERIAAL.verloop,
+      0,
+      0,
+      0.35,
+      1,
+    );
+    ctx.fill(pad);
+    ctx.strokeStyle = BD_METAAL_MATERIAAL.contour;
+    ctx.lineWidth = breedte;
+    ctx.stroke(pad);
+  };
+  metaal(new Path2D(BD_PUNT_ZETTING), BD_PUNT_ZETTING_DOOS, 0.6);
+  drawSteen(ctx, BD_PUNT_STEEN, BD_PUNT_STEEN_DOOS, BD_PUNT_STEEN_FACETTEN);
+  metaal(new Path2D(BD_KROON), BD_KROON_DOOS, 0.6);
+  ctx.strokeStyle = BD_RIBBEL;
+  ctx.lineWidth = 0.45;
+  for (const d of BD_KROON_BAND) ctx.stroke(new Path2D(d));
+  ctx.strokeStyle = BD_RIBBELGLANS;
+  ctx.lineWidth = 0.4;
+  for (const d of BD_KROON_BANDGLANS) ctx.stroke(new Path2D(d));
+  for (const b of BD_KROON_BOLLEN)
+    metaal(
+      new Path2D(cirkelPad(b)),
+      { x: b.cx - b.r, y: b.cy - b.r, b: b.r * 2, h: b.r * 2 },
+      0.45,
+    );
+  drawSteen(ctx, BD_KROON_STEEN, BD_KROON_STEEN_DOOS, BD_KROON_STEEN_FACETTEN);
   ctx.restore();
 }
 
@@ -752,6 +974,13 @@ interface EditieRegister {
   lijn: string;
   editieKleur: string;
   textuur?: VlakTextuur;
+  /** Rand- en ornamentmechanismen (#710) die een editie kan meebrengen. Tot
+   *  #710 hing dit alleen aan de tier (de GOAT); Big Daddy heeft ze nu ook, en
+   *  een editie wint van de tier — zoals in de CSS-cascade. */
+  echo?: FutKaartKleuren["echo"];
+  binnenlijn?: FutKaartKleuren["binnenlijn"];
+  motief?: FutKaartKleuren["motief"];
+  ornament?: FutKaartKleuren["ornament"];
 }
 
 /** De basis-sheen (.fut-kaart__vlak::before) die élk register erft. Bewust 0.28
@@ -771,8 +1000,11 @@ const DICTATOR_GLANS = "#e6b34d";
  *  en, voor de Icon, de --bigdaddy-kaart-/--bigdaddy-frame-tokens uit
  *  index.css. Bewaakt door de synctest in futKaartCanvas.test.ts. */
 const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
-  // Icon (Big Daddy, #625): roze vlak, frame dat goud en roze afwisselt — het
-  // enige register met vijf framestops.
+  // Icon (Big Daddy, #625/#710): roze vlak, frame dat goud en roze afwisselt —
+  // het enige register met vijf framestops. Sinds #710 het feestregister met
+  // parelmoeren glansbaan, roségouden echo, drie binnenlijnen, kroon-watermerk
+  // en de ornamentlaag (lint/ballonnen/confetti achter, kroon en
+  // edelsteen-ornament vóór de kaart).
   icon: {
     frame: [
       [0, "#f6d7a0"],
@@ -785,10 +1017,26 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     vlak: ["#fff6fa", "#fbdeed", "#f2bcd7"],
     vlakMid: 0.56,
     glow: "rgba(255, 226, 240, 0.9)",
+    // CSS 0.5 over 40/50/60; hier de vaste ~0,875-kalibratie van de basissheen.
+    sheen: "rgba(255, 255, 255, 0.44)",
+    sheenSpreiding: 0.1,
     ink: "#8c2f5a",
     inkSoft: "#a04a72",
     lijn: "#d989ae",
     editieKleur: "#c2447c",
+    echo: [[0.016, 0.021, "rgba(226, 154, 106, 0.8)"]],
+    binnenlijn: [
+      [1, "rgba(255, 245, 250, 0.85)"],
+      [2.5, "rgba(201, 154, 63, 0.75)"],
+      [4, "rgba(221, 107, 162, 0.55)"],
+    ],
+    motief: {
+      paden: BD_KROON_MOTIEF,
+      kleur: BD_KROON_MOTIEF_KLEUR,
+      breedte: BD_KROON_MOTIEF_BREEDTE,
+      positie: BD_KROON_MOTIEF_POSITIE,
+    },
+    ornament: "bigdaddy",
   },
   // Kampioen (#625): platina-wit met lauwergroen.
   kampioen: {
@@ -962,11 +1210,17 @@ export function kaartSkin(
         // die editie-blokken niet raken); pias en Piet zetten hun eigen
         // weefsel en slaan het satijn sowieso over.
         satijnAlpha: key === "legende" ? 0.035 : undefined,
+        echo: r.echo,
+        binnenlijn: r.binnenlijn,
+        // Het mótief hoort bij het vlak-register: het GOAT-medaillon verdwijnt
+        // dus onder élke editie (het zou op het In-Form-navy vloeken), en de
+        // Icon brengt zijn eigen kroon-watermerk mee.
+        motief: r.motief,
         // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
-        // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
-        // vlak-register en verdwijnt wél — het medaillon zou op het
-        // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
-        ornament: key === "legende" ? "goat" : undefined,
+        // GOAT met In-Form houdt zijn hoorns — tenzij de editie er zelf een
+        // meebrengt, want die wint (zoals de editie-skin het vlak wint).
+        // Spiegel van FutKaart.tsx.
+        ornament: r.ornament ?? (key === "legende" ? "goat" : undefined),
       },
       ink: r.ink,
       inkSoft: r.inkSoft,

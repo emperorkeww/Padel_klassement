@@ -113,7 +113,10 @@ function Kaart({
  *  als op de poster (kaart 560px breed op de donkere court-gloed), alleen
  *  teruggeschaald naar de weergavebreedte ernaast. */
 const POSTER_KAART_W = 560;
-const POSTER_MARGE = 48; // ruimte voor de slagschaduw van het frame
+// Ruimte voor de slagschaduw én voor de ornamentlaag (#710): die reikt tot 30
+// kaart-units naast en 38 boven het schild, dus met de oude 48px sneed het
+// canvas de hoorns en linten er stil af.
+const POSTER_MARGE = 180;
 
 function PosterKaart({
   tier,
@@ -231,6 +234,53 @@ export function KaartShowcase() {
             elo={1487}
           />
           <span className="kaart-showcase__maatlabel">GOAT + In-Form</span>
+        </div>
+      </Sectie>
+
+      {/* Big Daddy-variant (#710): kroon, linten, ballonnen, confetti en het
+          edelsteen-ornament in de punt. Twee tiers omdat de schildvorm van de
+          divísie komt: 1387 geeft de spitse vleugels, 1487 de kroon-crest — de
+          kroon-in-de-inkeping moet op beide sluitend zitten. */}
+      <Sectie titel="Big Daddy (#710): kroon + linten + ballonnen — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1387)}
+              editie="icon"
+              editieLabel="👑 Big Daddy"
+              naam="Bjorn"
+              elo={1387}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1387)}
+          editie="icon"
+          editieLabel="👑 Big Daddy"
+          naam="Bjorn"
+          breedte={210}
+        />
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1487)}
+            editie="icon"
+            editieLabel="👑 Big Daddy"
+            naam="Bjorn"
+            elo={1487}
+          />
+          <span className="kaart-showcase__maatlabel">
+            Big Daddy + GOAT (kroon-crest)
+          </span>
         </div>
       </Sectie>
 

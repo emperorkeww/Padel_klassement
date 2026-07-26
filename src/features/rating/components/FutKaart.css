@@ -74,6 +74,13 @@
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
 }
+/* Vóór-liggende ornamentlaag (#710, Big Daddy): dezelfde doos, maar ná de
+   flipper in de DOM — kroon en punt-ornament horen óver de rand te vallen, en
+   een edelsteen achter het schild is geen edelsteen. Eigen, strakkere schaduw:
+   deze vormen liggen op de kaart, niet erachter. */
+.fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 2px rgba(88, 26, 48, 0.45));
+}
 .fut-kaart__zijde--achter {
   position: absolute;
   inset: 0;
@@ -207,6 +214,14 @@
   width: calc(var(--motief-b, 92) * 1%);
   transform: translateX(-50%);
   pointer-events: none;
+}
+/* Kroon-watermerk van Big Daddy (#710): kleiner en lager dan het
+   GOAT-medaillon — de kroon staat achter trofee en scheidingslijnen, niet
+   achter het eloblok. Deze twee getallen zijn de CSS-kant van
+   BD_KROON_MOTIEF_BREEDTE/-POSITIE; de synctest houdt ze gelijk. */
+.fut-kaart__motief--kroon {
+  --motief-b: 56;
+  --motief-pos: 42%;
 }
 
 /* Premium-registers (spitse vleugels en kroon-crest): een stralenkrans
@@ -759,7 +774,12 @@
    Daddy" — los van de reguliere (goud)tiers en van In-Form; het frame
    wisselt goud en roze af zodat de kroon-associatie blijft. De kleuren
    komen uit de gedeelde --bigdaddy-kaart-tokens (index.css), dezelfde
-   familie als de Big Daddy-badge en straks de dashboard-hero (#613). */
+   familie als de Big Daddy-badge en de dashboard-hero (#613).
+   Sinds #710 het feestregister: roségouden echo, drie gelaagde binnenlijnen,
+   een parelmoeren glansbaan, het kroon-watermerk in het vlak en de
+   ornamentlaag (lint, ballonnen, confetti achter de kaart; kroon en
+   edelsteen-ornament ervóór — zie ornamentenBigDaddy.ts).
+   Canvas-spiegel: het icon-register in EDITIE_REGISTERS (futKaartCanvas.ts). */
 .fut-kaart--icon {
   --kaart-hi: var(--bigdaddy-kaart-hi);
   --kaart-mid: var(--bigdaddy-kaart-mid);
@@ -768,6 +788,18 @@
   --kaart-ink-soft: var(--bigdaddy-kaart-ink-soft);
   --kaart-lijn: var(--bigdaddy-kaart-lijn);
   --editie-kleur: var(--bigdaddy-kaart-editie);
+  /* Roségouden echo achter het silhouet: de gelaagde metaalrand van de
+     referentie zonder een vijfde geclipte laag. */
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.016) calc(var(--fut-kw) * 0.021) 0
+      rgba(226, 154, 106, 0.8)
+  );
+  /* Drie binnenlijnen: parelmoer, champagnegoud, roze metaal — precies de
+     stapeling die je in de referentie langs de binnenrand ziet. */
+  --kaart-binnenlijn:
+    inset 0 0 0 1px rgba(255, 245, 250, 0.85),
+    inset 0 0 0 2.5px rgba(201, 154, 63, 0.75),
+    inset 0 0 0 4px rgba(221, 107, 162, 0.55);
 }
 .fut-kaart--icon .fut-kaart__zijde {
   background: linear-gradient(
@@ -795,6 +827,17 @@
       var(--kaart-mid) 56%,
       var(--kaart-lo) 100%
     );
+}
+/* Parelmoer: een iets bredere, feller witte glansbaan dan de basiskaart — een
+   licht vlak vangt licht als lak, en dít is de laag die de kaart "premium"
+   maakt zonder goud toe te voegen. */
+.fut-kaart--icon .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 60%
+  );
 }
 
 /* In-Form (speler van de week): navy-goud met een lopende shimmer.
