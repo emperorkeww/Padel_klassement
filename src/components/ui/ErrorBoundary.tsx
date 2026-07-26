@@ -9,6 +9,7 @@
 // listeners (window.onerror / unhandledrejection).
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { meldFout } from "@/lib/utils/errorReport";
 import { ErrorFallback, type CrashScope } from "./ErrorFallback";
 
 interface Props {
@@ -43,9 +44,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Voorlopig alleen zichtbaar in de devtools; een vervolg-PR stuurt dit
-    // door zodat crashes in productie niet stil blijven.
     console.error(`[crash:${this.props.scope}]`, error, info.componentStack);
+    meldFout({
+      bron: "render",
+      bericht: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack ?? undefined,
+      scope: this.props.scope,
+    });
   }
 
   reset = () => this.setState({ error: null });

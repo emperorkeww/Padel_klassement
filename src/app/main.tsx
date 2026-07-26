@@ -11,6 +11,7 @@ import { watchSystemTheme } from "@/lib/utils/theme";
 import { initInstallPromptCapture } from "@/lib/utils/pwa";
 import { registerServiceWorker } from "@/lib/utils/swUpdate";
 import { initChunkErrorDetectie } from "@/lib/utils/chunkError";
+import { initFoutrapportage } from "@/lib/utils/errorReport";
 import "./index.css";
 
 // Het inline script in index.html zette het thema al vóór de eerste paint;
@@ -24,6 +25,10 @@ initInstallPromptCapture();
 // Vite meldt een mislukte chunk-preload vóór de import zelf afketst; die
 // wetenschap laat de foutgrens "oude tab" van "echte crash" onderscheiden.
 initChunkErrorDetectie();
+
+// Fouten buiten de render — event-handlers en afgewezen promises — komen niet
+// langs een ErrorBoundary. Zonder deze listeners blijven ze volledig stil.
+initFoutrapportage();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

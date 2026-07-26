@@ -16,6 +16,13 @@
 
 const UPSTREAM = "https://playtomic.com";
 const PREFIX = "/api/playtomic";
+
+// Crashmeldingen uit de browser (#733). Geen database: de melding wordt hier
+// een logregel en is daarmee zichtbaar in Workers Logs (observability staat
+// aan in wrangler.jsonc). Ruim genoeg voor een stack, klein genoeg om nooit
+// zelf een probleem te worden.
+const FOUT_PAD = "/api/client-error";
+const FOUT_MAX_BYTES = 8192;
 // Slug-resolutie loopt via dit host: playtomic.io/clubs/{uuid} stuurt met een
 // nette 308 door naar playtomic.com/clubs/{slug} (zie club-slug-route onder).
 const SLUG_UPSTREAM = "https://playtomic.io";
@@ -154,9 +161,43 @@ async function handleClubSlug(rawUuid, request, env, ctx) {
   return res;
 }
 
+// Neemt een crashmelding van de browser aan en logt hem (#733). Bewust
+// schriel: alleen POST, een harde bovengrens op de body en een eigen per-IP
+// rate-limit, want dit is een publiek endpoint zonder authenticatie. Het
+// antwoord is altijd 204 — de client heeft er niets aan en mag er ook nooit
+// op wachten.
+async function handleClientError(request, env) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+  if (Number(request.headers.get("content-length") ?? 0) > FOUT_MAX_BYTES) {
+    return new Response("Payload Too Large", { status: 413 });
+  }
+
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  if (env.FOUT_RL) {
+    const { success } = await env.FOUT_RL.limit({ key: ip });
+    if (!success) {
+      return new Response("Too Many Requests", {
+        status: 429,
+        headers: { "retry-after": "60" },
+      });
+    }
+  }
+
+  // Ook zónder content-length afkappen: die header is niet gegarandeerd.
+  const melding = (await request.text()).slice(0, FOUT_MAX_BYTES);
+  if (melding) console.error("client-error", melding);
+  return new Response(null, { status: 204 });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    if (url.pathname === FOUT_PAD) {
+      return handleClientError(request, env);
+    }
 
     if (url.pathname.startsWith(PREFIX)) {
       // Alleen leesverzoeken toestaan; dit is een publieke, read-only proxy.

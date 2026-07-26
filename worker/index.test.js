@@ -151,3 +151,68 @@ describe("Worker Playtomic-proxy", () => {
     expect(env.ASSETS.fetch).toHaveBeenCalled();
   });
 });
+
+describe("Worker crashmeldingen (/api/client-error)", () => {
+  const melding = (init) =>
+    new Request("https://app.test/api/client-error", { method: "POST", ...init });
+
+  function foutEnv({ allow = true } = {}) {
+    return { ...makeEnv(), FOUT_RL: { limit: vi.fn(async () => ({ success: allow })) } };
+  }
+
+  it("neemt een melding aan en logt hem", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const body = JSON.stringify({ bron: "render", bericht: "kapot" });
+    const res = await worker.fetch(melding({ body }), foutEnv(), ctx);
+
+    expect(res.status).toBe(204);
+    expect(log).toHaveBeenCalledWith("client-error", body);
+    log.mockRestore();
+  });
+
+  it("weigert niet-POST met 405", async () => {
+    const res = await worker.fetch(
+      new Request("https://app.test/api/client-error"),
+      foutEnv(),
+      ctx,
+    );
+    expect(res.status).toBe(405);
+  });
+
+  it("weigert een te grote body met 413", async () => {
+    const res = await worker.fetch(
+      melding({ body: "x".repeat(9000), headers: { "content-length": "9000" } }),
+      foutEnv(),
+      ctx,
+    );
+    expect(res.status).toBe(413);
+  });
+
+  it("kapt ook af zonder content-length", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    await worker.fetch(melding({ body: "x".repeat(9000) }), foutEnv(), ctx);
+    expect(log.mock.calls[0][1].length).toBe(8192);
+    log.mockRestore();
+  });
+
+  it("geeft 429 als de eigen rate-limiter blokkeert", async () => {
+    const res = await worker.fetch(melding({ body: "{}" }), foutEnv({ allow: false }), ctx);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("60");
+  });
+
+  it("gebruikt een eigen budget, los van de Playtomic-proxy", async () => {
+    const env = foutEnv();
+    await worker.fetch(melding({ body: "{}" }), env, ctx);
+    expect(env.FOUT_RL.limit).toHaveBeenCalled();
+    expect(env.PLAYTOMIC_RL.limit).not.toHaveBeenCalled();
+  });
+
+  it("logt niets bij een lege body", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await worker.fetch(melding({ body: "" }), foutEnv(), ctx);
+    expect(res.status).toBe(204);
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+});
