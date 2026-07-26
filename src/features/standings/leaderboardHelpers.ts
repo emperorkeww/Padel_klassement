@@ -3,21 +3,6 @@ import type { Profile, RatingPoint } from "@/types";
 import { winRate, type Outcome } from "@/features/rating/results";
 import type { Shift } from "@/features/rating/rankShift";
 
-/** Rating van een speler zoals die was op (of vóór) een datum, uit de historie
- *  (rating_after van de laatste match ≤ die dag). Null als er niets is. */
-export function ratingAsOf(
-  history: RatingPoint[] | undefined,
-  isoDate: string,
-): number | null {
-  if (!history || history.length === 0) return null;
-  let best: RatingPoint | null = null;
-  for (const p of history) {
-    if (p.played_at.slice(0, 10) <= isoDate && (!best || p.played_at > best.played_at))
-      best = p;
-  }
-  return best ? best.rating_after : null;
-}
-
 export type Row = {
   key: string;
   isMe: boolean;

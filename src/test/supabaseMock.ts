@@ -55,15 +55,68 @@ function isRpcMap(rpc: unknown): rpc is RpcMap {
   return typeof rpc === "object" && rpc !== null && !Array.isArray(rpc);
 }
 
+/** Rij zoals `tables.rating_history` hem levert. */
+type HistoryRow = {
+  player_id: string;
+  rating_after: number;
+  played_at: string;
+};
+
+/**
+ * RPC's die de mock zelf uit `tables.rating_history` afleidt (#731): de app
+ * leest de rating-historie sinds #731 via `recent_rating_history` en
+ * `ratings_as_of` in plaats van via een select op de tabel. Zonder dit zou elke
+ * bestaande test die gewoon `tables.rating_history` vult stilletjes lege
+ * sparklines krijgen — precies de klasse fout die #731 wilde uitroeien. Een
+ * expliciete `rpc`-map in de test wint hier altijd van.
+ */
+function afgeleideRpc(
+  name: string,
+  args: unknown,
+  tables: Record<string, unknown[]>,
+): unknown | undefined {
+  const rows = (tables.rating_history ?? []) as HistoryRow[];
+  const p = (args ?? {}) as { p_limit?: number; p_date?: string };
+  const perSpeler = new Map<string, HistoryRow[]>();
+  for (const r of rows) {
+    const lijst = perSpeler.get(r.player_id) ?? [];
+    lijst.push(r);
+    perSpeler.set(r.player_id, lijst);
+  }
+  for (const lijst of perSpeler.values())
+    lijst.sort((a, b) => a.played_at.localeCompare(b.played_at));
+
+  if (name === "recent_rating_history") {
+    const limit = p.p_limit ?? 20;
+    return [...perSpeler.values()].flatMap((lijst) => lijst.slice(-limit));
+  }
+  if (name === "ratings_as_of") {
+    const dag = p.p_date ?? "";
+    return [...perSpeler.entries()].flatMap(([player_id, lijst]) => {
+      const laatste = [...lijst]
+        .reverse()
+        .find((r) => r.played_at.slice(0, 10) <= dag);
+      return laatste
+        ? [{ player_id, rating: laatste.rating_after, played_at: laatste.played_at }]
+        : [];
+    });
+  }
+  return undefined;
+}
+
 /** Maakt een nep-`supabase` client voor de tests. */
 export function makeSupabaseMock(opts: MockOptions = {}) {
   const { session = null, tables = {}, rpc = [] } = opts;
   const rpcData = (name: string, args: unknown) => {
+    const expliciet = isRpcMap(rpc) ? rpc[name] : undefined;
+    if (expliciet === undefined) {
+      const afgeleid = afgeleideRpc(name, args, tables);
+      if (afgeleid !== undefined) return afgeleid;
+    }
     if (!isRpcMap(rpc)) return rpc;
-    const entry = rpc[name];
-    return typeof entry === "function"
-      ? (entry as (a: unknown) => unknown)(args)
-      : (entry ?? []);
+    return typeof expliciet === "function"
+      ? (expliciet as (a: unknown) => unknown)(args)
+      : (expliciet ?? []);
   };
   return {
     auth: {

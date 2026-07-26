@@ -42,7 +42,12 @@ import { getMyFriendships } from "@/features/friends/api";
 import { getMyGroups, getGroupMembers } from "@/features/groups/api";
 import { getGroupPollOptions, getGroupPolls } from "@/features/groups/pollsApi";
 import { getPlayerStandings } from "@/features/standings/api";
-import { getAllRatingHistories, getPlayerRatings } from "@/features/standings/ratingsApi";
+import {
+  getPlayerRatings,
+  getRatingHistoriesForMatches,
+  getRecentRatingHistories,
+  mergeRatingHistories,
+} from "@/features/standings/ratingsApi";
 import { getPiasWeeks } from "@/features/standings/piasApi";
 import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
@@ -74,7 +79,27 @@ export function Feed() {
   useRealtime("friendships", friendships.reload);
 
   // Verrijkende bronnen (progressief; buildFeed werkt ook zonder).
-  const histories = useAsync(getAllRatingHistories, []);
+  const histories = useAsync(getRecentRatingHistories, []);
+  // De feed rekent zowel met een venster per speler (rangsprongen, reeksen) als
+  // met de punten van concrete matches (rating-delta's, upsets, avondsamen-
+  // vatting). Dat tweede haalt hij gericht op voor de matches in de feed, want
+  // die vallen niet gegarandeerd binnen het venster (#731).
+  const feedMatchIds = useMemo(
+    () =>
+      (matches.data ?? [])
+        .filter((m) => m.status === "completed")
+        .map((m) => m.id),
+    [matches.data],
+  );
+  const feedMatchKey = feedMatchIds.join(",");
+  const matchHistories = useAsync(
+    () => getRatingHistoriesForMatches(feedMatchIds),
+    [feedMatchKey],
+  );
+  const hmap = useMemo(
+    () => mergeRatingHistories(histories.data ?? {}, matchHistories.data ?? {}),
+    [histories.data, matchHistories.data],
+  );
   const standings = useAsync(getPlayerStandings, []);
   // Rating-snapshot: de rating-leidende rang in de klassementsprongen (#570)
   // gebruikt dezelfde bron als het klassement, niet de historie-benadering.
@@ -95,12 +120,13 @@ export function Feed() {
   const reloadMatchSources = useCallback(() => {
     matches.reload();
     histories.reload();
+    matchHistories.reload();
     standings.reload();
     ratings.reload();
     piasWeeks.reload();
     shame.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, histories.reload, standings.reload, ratings.reload, piasWeeks.reload, shame.reload]);
+  }, [matches.reload, histories.reload, matchHistories.reload, standings.reload, ratings.reload, piasWeeks.reload, shame.reload]);
   useRealtime("matches", reloadMatchSources);
   const groups = useAsync(getMyGroups, []);
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
@@ -204,7 +230,7 @@ export function Feed() {
             friendships: friendships.data ?? [],
             myId,
             limit: Number.MAX_SAFE_INTEGER,
-            histories: histories.data ?? undefined,
+            histories: hmap,
             standings: standings.data ?? undefined,
             ratings: ratings.data ?? undefined,
             groups: groups.data ?? undefined,
@@ -226,7 +252,7 @@ export function Feed() {
       teams.data,
       friendships.data,
       myId,
-      histories.data,
+      hmap,
       standings.data,
       ratings.data,
       groups.data,
@@ -304,7 +330,7 @@ export function Feed() {
     const dagMatches = (matches.data ?? []).filter(
       (m) => m.group_id === ev.groupId && dagVan(m) === ev.day,
     );
-    const summary = eveningSummary(dagMatches, tmap, ev.day, histories.data ?? undefined);
+    const summary = eveningSummary(dagMatches, tmap, ev.day, hmap);
     const coachLines = coachAvond(summary, `${ev.groupId}|${ev.day}`, {
       intensiteit: mijnIntensiteit,
       profiles: pmap,

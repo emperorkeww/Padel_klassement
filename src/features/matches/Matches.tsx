@@ -7,7 +7,7 @@ import { EmptyState } from "@/ui/EmptyState";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
-import { getAllRatingHistories } from "@/features/standings/ratingsApi";
+import { getRatingHistoriesForMatches } from "@/features/standings/ratingsApi";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getAllProfiles } from "@/features/profiles/api";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
@@ -44,7 +44,21 @@ export function Matches() {
   const teams = useAsync(getTeamsMap, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
-  const histories = useAsync(getAllRatingHistories, []);
+  // Upsets rekenen met de échte pre-match ratings van precies deze matches
+  // (#731): het gedeelde historie-venster is per speler en dekt een oudere
+  // match in deze lijst niet gegarandeerd.
+  const matchIds = useMemo(
+    () =>
+      (matches.data ?? [])
+        .filter((m) => m.status === "completed")
+        .map((m) => m.id),
+    [matches.data],
+  );
+  const matchKey = matchIds.join(",");
+  const histories = useAsync(
+    () => getRatingHistoriesForMatches(matchIds),
+    [matchKey],
+  );
 
   const pmap = Object.fromEntries((profiles.data ?? []).map((p) => [p.id, p]));
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
