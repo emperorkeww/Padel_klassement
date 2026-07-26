@@ -274,6 +274,8 @@ export function KaartShowcase() {
           <Kaart kw={96} tier={tierFor(1490)} naam="Senne" elo={1490} />
           <span className="kaart-showcase__maatlabel">96px (veldmaat)</span>
         </div>
+      </Sectie>
+
       {/* Bankvuller (#710): de basisdivisie met houten latten achter de kaart en
           stiksels, leren tabs, stoelcrest en zitplaatsmedaillon ervóór. Op deze
           drie maten omdat de tab door de taille naar buiten hangt: precies de
@@ -721,6 +723,8 @@ export function KaartShowcase() {
           </div>
         ))}
         <PosterKaart tier={tierFor(950)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
       {/* Eeuwige belofte (#710): de divisiekaart met de zandlopercrest, de
           open zijrails en het blauwdruk-watermerk. Zelfde opzet als de
           GOAT-sectie bovenaan — DOM naast de canvas-spiegel, want alleen zo
