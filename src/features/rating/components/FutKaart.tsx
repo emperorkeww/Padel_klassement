@@ -42,6 +42,7 @@ import {
   ORNAMENT_VIEWBOX,
   type OrnamentPad,
   type Streng,
+  type StrengMateriaal,
 } from "./futKaartOrnamenten";
 import {
   BD_BALLONNEN,
@@ -70,7 +71,6 @@ import {
   BD_STEEN_FACET,
   BD_STEEN_VERLOOP,
   cirkelPad,
-  type StrengMateriaal,
 } from "./ornamentenBigDaddy";
 import { DIVISIE_KAARTEN, divisieKaart } from "./divisies";
 import type { DivisieDeel } from "./divisies/divisieKaart";
@@ -83,7 +83,7 @@ import "./divisies/index.css";
  *  zijn eigen metaal meebrengen, dus wat eerst losse constanten waren staat
  *  hier als één materiaal — de canvas-spiegel doet exact hetzelfde. */
 const GOAT_MATERIAAL: StrengMateriaal = {
-  gradientId: "fut-orn-metaal",
+  vulling: "url(#fut-orn-metaal)",
   verloop: GOAT_METAAL_VERLOOP,
   contour: GOAT_METAAL_CONTOUR,
   glans: GOAT_METAAL_GLANS,
@@ -99,6 +99,13 @@ const GOAT_MATERIAAL: StrengMateriaal = {
  *  objectBoundingBox laat de paden meeschalen met elke kaartbreedte.
  *  Eén keer renderen per pagina; dubbel renderen is onschadelijk (identieke
  *  defs), maar onnodig. */
+/** Het id uit een `url(#id)`-paint — de gradient-definitie draagt het kale id,
+ *  de vorm verwijst er met de volledige paint naar. Zo staat de bron van beide
+ *  op één plek in het materiaal. */
+function gradientId(vulling: string): string {
+  return /^url\(#([^)]+)\)$/.exec(vulling)?.[1] ?? vulling;
+}
+
 /** Eén getaperde metaalstreng (#710): gevulde omtrek met contour, dwarsribbels
  *  en glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus
  *  DOM en canvas tekenen letterlijk dezelfde paden. */
@@ -115,7 +122,7 @@ function FutStreng({
     <>
       <path
         d={streng.omtrek}
-        fill={`url(#${materiaal.gradientId})`}
+        fill={materiaal.vulling}
         stroke={materiaal.contour}
         strokeWidth="0.7"
         strokeLinejoin="round"
@@ -319,8 +326,8 @@ export function FutKaartDefs() {
           // van de vorm zelf.
           m.as ? (
             <linearGradient
-              key={m.gradientId}
-              id={m.gradientId}
+              key={m.vulling}
+              id={gradientId(m.vulling)}
               gradientUnits="userSpaceOnUse"
               x1="0"
               y1={m.as[0]}
@@ -333,8 +340,8 @@ export function FutKaartDefs() {
             </linearGradient>
           ) : (
             <linearGradient
-              key={m.gradientId}
-              id={m.gradientId}
+              key={m.vulling}
+              id={gradientId(m.vulling)}
               x1="0"
               y1="0"
               x2="0.35"
@@ -611,7 +618,7 @@ export function FutKaartDefs() {
           />
           <path
             d={BD_PUNT_ZETTING}
-            fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+            fill={BD_METAAL_MATERIAAL.vulling}
             stroke={BD_CONTOUR}
             strokeWidth="0.6"
             strokeLinejoin="round"
@@ -619,7 +626,7 @@ export function FutKaartDefs() {
           <FutSteen omtrek={BD_PUNT_STEEN} facetten={BD_PUNT_STEEN_FACETTEN} />
           <path
             d={BD_KROON}
-            fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+            fill={BD_METAAL_MATERIAAL.vulling}
             stroke={BD_CONTOUR}
             strokeWidth="0.6"
             strokeLinejoin="round"
@@ -648,7 +655,7 @@ export function FutKaartDefs() {
             <path
               key={`${b.cx}-${b.cy}`}
               d={cirkelPad(b)}
-              fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+              fill={BD_METAAL_MATERIAAL.vulling}
               stroke={BD_CONTOUR}
               strokeWidth="0.45"
             />

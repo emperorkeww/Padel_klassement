@@ -19,7 +19,12 @@
 // opgemeten uit de referentie in issue #710 — daar staat de kaart 614 × 854 px
 // met de linkerbovenhoek op (120, 191,5).
 
-import { bouwStreng, type OrnamentPad, type Streng } from "./futKaartOrnamenten";
+import {
+  bouwStreng,
+  type OrnamentPad,
+  type Streng,
+  type StrengMateriaal,
+} from "./futKaartOrnamenten";
 
 const rond = (n: number) => Math.round(n * 100) / 100;
 
@@ -113,23 +118,6 @@ export interface Bol {
 /** Alles wat één getaperde streng aan kleur nodig heeft. De GOAT had deze
  *  waarden nog als losse constanten; met een tweede ornament in huis moeten
  *  FutStreng en strokeStreng kunnen wisselen van materiaal. */
-export interface StrengMateriaal {
-  /** id van de SVG-gradient in FutKaartDefs; canvas bouwt hem uit `verloop`. */
-  gradientId: string;
-  verloop: ReadonlyArray<readonly [number, string]>;
-  /** Vaste verticale gradient-as in kaart-units [v1, v2] i.p.v. de omhullende
-   *  van de streng zelf. Nodig zodra méér dan één streng samen één voorwerp
-   *  vormt: het lint bestaat uit twee bogen, en met een as per boog zou de
-   *  onderste boog integraal de gouden staart van het verloop krijgen — een
-   *  gouden hoorn i.p.v. een doorlopend lint. */
-  as?: readonly [number, number];
-  contour: string;
-  glans: string;
-  ribbel: string;
-  ribbelGlans: string;
-  schaduw: string;
-}
-
 /** Roségoud/champagne: het metaal van kroon, punt-ornament en confetti. Warm
  *  maar niet geel — goud blijft accent, zoals de issue vraagt. */
 export const BD_ROSEGOUD: ReadonlyArray<readonly [number, string]> = [
@@ -160,7 +148,7 @@ export const BD_RIBBEL = "rgba(94, 32, 56, 0.42)";
 export const BD_RIBBELGLANS = "rgba(255, 240, 246, 0.45)";
 
 export const BD_METAAL_MATERIAAL: StrengMateriaal = {
-  gradientId: "fut-orn-bd-metaal",
+  vulling: "url(#fut-orn-bd-metaal)",
   verloop: BD_ROSEGOUD,
   contour: BD_CONTOUR,
   glans: BD_GLANS,
@@ -172,7 +160,7 @@ export const BD_METAAL_MATERIAAL: StrengMateriaal = {
 export const BD_LINT_AS: readonly [number, number] = [50, 142];
 
 export const BD_LINT_MATERIAAL: StrengMateriaal = {
-  gradientId: "fut-orn-bd-lint",
+  vulling: "url(#fut-orn-bd-lint)",
   verloop: BD_LINT_VERLOOP,
   as: BD_LINT_AS,
   contour: BD_CONTOUR,

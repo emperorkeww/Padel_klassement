@@ -52,6 +52,7 @@ import {
   GOAT_METAAL_VERLOOP,
   type OrnamentPad,
   type Streng,
+  type StrengMateriaal,
 } from "@/features/rating/components/futKaartOrnamenten";
 import {
   BD_BALLONNEN,
@@ -87,17 +88,16 @@ import {
   BD_STEEN_VERLOOP,
   cirkelPad,
   type Doos,
-  type StrengMateriaal,
 } from "@/features/rating/components/ornamentenBigDaddy";
 import { divisieKaart } from "@/features/rating/components/divisies";
 import type { DivisieDeel } from "@/features/rating/components/divisies/divisieKaart";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 /** Materiaal van de GOAT-strengen — spiegel van GOAT_MATERIAAL in
- *  FutKaart.tsx. `gradientId` doet op canvas niets (daar is geen paint server
- *  om naar te verwijzen), maar hoort bij het materiaal en blijft dus staan. */
+ *  FutKaart.tsx. `vulling` doet op canvas niets (daar is geen paint server om
+ *  naar te verwijzen), maar hoort bij het materiaal en blijft dus staan. */
 const GOAT_MATERIAAL: StrengMateriaal = {
-  gradientId: "fut-orn-metaal",
+  vulling: "url(#fut-orn-metaal)",
   verloop: GOAT_METAAL_VERLOOP,
   contour: GOAT_METAAL_CONTOUR,
   glans: GOAT_METAAL_GLANS,
@@ -312,6 +312,12 @@ export interface FutKaartKleuren {
    *  (lauwerkrans + lakzegel, respectievelijk kroon + punt-ornament) die
    *  onderaan `drawKaartSchild` volgt — zie .fut-kaart__ornament--voor. */
   ornament?: "goat" | "dictator" | "bigdaddy";
+  /** Voorste ornamentlaag (#710): het ornament dat vóór de kaartinhoud hoort,
+   *  dus ná het vlak. `drawKaartSchild` kan die niet tekenen — de vlak-clip
+   *  staat daar nog open voor de caller — dus doet `drawKaartOrnamentVoor` dat,
+   *  en roept de caller die aan na zijn `ctx.restore()`. Zo blijft de inkt
+   *  bóven het ornament liggen, precies zoals in de DOM. */
+  ornamentVoor?: "dictator" | "bigdaddy";
   /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
    *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
    *  of een toptier — zie de keuze in FutKaart.tsx. */
@@ -526,28 +532,6 @@ export function drawKaartSchild(
       ctx.lineTo(fx + i + helling, fy + fh);
       ctx.stroke();
     }
-  }
-
-  // Vóór-liggende ornamentlaag (#710): de lauwerkransen en het lakzegel van El
-  // Padelissimo, en de kroon en punt-edelsteen van Big Daddy, liggen over de
-  // kaart heen. De vlak-clip moet daarvoor even wijken (die zou alles buiten
-  // het vlak wegsnijden) en daarna weer aan, want de caller tekent zijn
-  // content nog binnen dezelfde clip. Dat die content dan bóven het ornament
-  // komt maakt niets uit: deze ornamenten zitten in de lege inkeping en de
-  // lege punt, precies waar geen inkt staat.
-  if (
-    kleuren.ornament === "dictator" ||
-    kleuren.ornament === "bigdaddy" ||
-    kleuren.divisie
-  ) {
-    ctx.restore();
-    if (kleuren.ornament === "dictator") drawDictatorVoor(ctx, x, y, w);
-    else if (kleuren.ornament === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
-    if (kleuren.divisie)
-      drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
-    ctx.save();
-    schildPad(ctx, fx, fy, fw, fh, vorm);
-    ctx.clip();
   }
 
   return { fx, fy, fw, fh };
@@ -1028,6 +1012,24 @@ function drawDivisieOrnament(
   ctx.restore();
 }
 
+/**
+ * De voorste ornamentlaag (#710): alles wat vóór de kaartinhoud hoort. De
+ * caller roept dit aan ná zijn eigen `ctx.restore()`, want binnen de vlak-clip
+ * zou een crest die boven de bovenrand hangt of een medaillon dat onder de
+ * punt uitsteekt wegvallen. Spiegel van `.fut-kaart__ornament--voor` in de CSS.
+ */
+export function drawKaartOrnamentVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  kleuren: FutKaartKleuren,
+) {
+  if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
+  else if (kleuren.ornamentVoor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
+  if (kleuren.divisie) drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
+}
+
 /** Deterministische PRNG (mulberry32) voor de vezelkorrel: de poster moet bij
  *  elke export dezelfde pixels geven (en de kaart naast een eerdere export
  *  dezelfde korrel), dus nooit Math.random(). */
@@ -1249,6 +1251,7 @@ interface EditieRegister {
   binnenlijn?: FutKaartKleuren["binnenlijn"];
   motief?: FutKaartKleuren["motief"];
   ornament?: FutKaartKleuren["ornament"];
+  ornamentVoor?: FutKaartKleuren["ornamentVoor"];
 }
 
 /** De basis-sheen (.fut-kaart__vlak::before) die élk register erft. Bewust 0.28
@@ -1305,6 +1308,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       positie: BD_KROON_MOTIEF_POSITIE,
     },
     ornament: "bigdaddy",
+    ornamentVoor: "bigdaddy",
   },
   // Kampioen (#625): platina-wit met lauwergroen.
   kampioen: {
@@ -1487,6 +1491,8 @@ export function kaartSkin(
         // wint, zoals de editie-skin ook het vlak wint. Het mótief hoort bij
         // het vlak-register en verdwijnt wél: het medaillon zou op het
         // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
+        ornamentVoor:
+          r.ornamentVoor ?? (key === "dictator" ? "dictator" : undefined),
         ornament:
           r.ornament ??
           (key === "legende"
@@ -1600,6 +1606,7 @@ export function kaartSkin(
           positie: DICTATOR_WATERMARK_POSITIE,
         },
         ornament: "dictator",
+        ornamentVoor: "dictator",
       },
       ink: "#f2dda2",
       inkSoft: "#cdae6e",

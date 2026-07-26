@@ -15,6 +15,7 @@
 
 import { canvasPalette, ellipsize } from "@/lib/utils/shareImage";
 import {
+  drawKaartOrnamentVoor,
   drawKaartSchild,
   kaartSkin,
   rgba,
@@ -212,6 +213,11 @@ export function drawKaart(
     );
   }
   ctx.restore();
+
+  // Voorste ornamentlaag (#710): alles wat vóór de kaartinhoud hoort — een
+  // crest in de bovenrand, een medaillon in de punt. Moet ná de restore:
+  // binnen de vlak-clip zou wat buiten het schild hangt wegvallen.
+  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren);
 }
 
 /** De hele poster: court-gloed, kop, de kaart als blikvanger en de

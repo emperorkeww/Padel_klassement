@@ -37,6 +37,29 @@ export interface OrnamentPad {
   alpha?: number;
 }
 
+/** Het materiaal van een streng: één vulling plus de lijnkleuren die hem
+ *  rondte geven. Losgekoppeld van de vorm, want sinds #710 draaien meerdere
+ *  materialen op dezelfde generator (rosé metaal voor de GOAT, roségoud voor
+ *  Big Daddy, smaragden loof voor de Kampioen, koper voor On Fire).
+ *  `vulling` is de SVG-paint — een verwijzing naar een gradient in
+ *  FutKaartDefs; `verloop` zijn dezelfde stops voor canvas, dat geen paint
+ *  server kent. */
+export interface StrengMateriaal {
+  vulling: string;
+  verloop: ReadonlyArray<readonly [number, string]>;
+  /** Vaste verticale gradient-as in kaart-units [v1, v2] i.p.v. de omhullende
+   *  van de streng zelf. Nodig zodra méér dan één streng samen één voorwerp
+   *  vormt: een lint van twee bogen zou met een as per boog in de onderste
+   *  boog integraal de staart van het verloop krijgen — een gouden hoorn
+   *  i.p.v. een doorlopend lint. */
+  as?: readonly [number, number];
+  contour: string;
+  glans: string;
+  ribbel: string;
+  ribbelGlans: string;
+  schaduw: string;
+}
+
 /* ------------------------- strenggenerator (#710) ------------------------- */
 
 type Punt = readonly [number, number];
