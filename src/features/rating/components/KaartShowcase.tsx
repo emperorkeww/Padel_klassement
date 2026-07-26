@@ -234,6 +234,23 @@ export function KaartShowcase() {
         </div>
       </Sectie>
 
+      {/* El Padelissimo (#710): troon-crest, kroon en epauletten achter de
+          kaart, lauwerkransen en lakzegel ervóór. Zelfde opzet als de
+          GOAT-sectie hierboven, inclusief de canvas-spiegel. */}
+      <Sectie titel="El Padelissimo (#710): kroon, epauletten, lauwerkrans, lakzegel — poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1650)} naam="Remco" elo={1642} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1650)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

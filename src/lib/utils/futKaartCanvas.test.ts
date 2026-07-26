@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { kaartSkin, mix, rgba, type KaartEditie } from "./futKaartCanvas";
+import { kaartSkin, mix, rgba, schildVorm, type KaartEditie } from "./futKaartCanvas";
 
 // De stylesheets als tekst, voor de synctest onderaan. Bewust via node:fs en
 // niet via Vite's ?raw: Vitest kortsluit CSS-imports (css: false) op een lege
@@ -9,6 +9,7 @@ import { kaartSkin, mix, rgba, type KaartEditie } from "./futKaartCanvas";
 const lees = (pad: string) =>
   readFileSync(fileURLToPath(new URL(pad, import.meta.url)), "utf8");
 const FUT_CSS = lees("../../features/rating/components/FutKaart.css");
+const FUT_TSX = lees("../../features/rating/components/FutKaart.tsx");
 const INDEX_CSS = lees("../../app/index.css");
 // De Schandpaal (#682) en, sinds #644, de schande-hero op het dashboard delen
 // het kraftpapier van de pias letterlijk — de vezeltegel-pariteitstest onderaan
@@ -95,8 +96,8 @@ describe("kaartSkin", () => {
 
   it("geeft de special-toptiers hun eigen donkere register", () => {
     expect(kaartSkin("legende", null).kleuren.liner).toBe("#140609");
-    expect(kaartSkin("dictator", null).kleuren.liner).toBe("#0c0805");
-    expect(kaartSkin("dictator", null).kleuren.vlak[0][1]).toBe("#a52347");
+    expect(kaartSkin("dictator", null).kleuren.liner).toBe("#140409");
+    expect(kaartSkin("dictator", null).kleuren.vlak[0][1]).toBe("#7d1a33");
   });
 
   it("GOAT en dictator zijn niet langer één skin in twee tinten (#710)", () => {
@@ -108,28 +109,38 @@ describe("kaartSkin", () => {
     expect(goat.liner).not.toBe(dictator.liner);
     expect(goat.keyline).not.toBe(dictator.keyline);
     expect(goat.sheen).not.toBe(dictator.sheen);
-    // GOAT ruilt de gedeelde stralenkrans in voor zijn eigen medaillon en
-    // draagt als enige de hoorns buiten het schild.
+    // Beide hebben een eigen textuur en een eigen ornament: GOAT ruilt de
+    // gedeelde stralenkrans in voor een medaillon met ijl satijn, de dictator
+    // voor brokaat met een gouden propaganda-zonnestraal.
     expect(goat.stralen).toBe(false);
+    expect(goat.textuur).toBeUndefined(); // satijn, maar ijler
+    expect(goat.satijnAlpha).toBe(0.035);
     expect(dictator.stralen).toBe(true);
-    expect(goat.motief?.paden.length).toBeGreaterThan(0);
+    expect(dictator.stralenKleur).toMatch(/240, 199, 102/);
+    expect(dictator.textuur).toBe("brokaat");
     expect(goat.ornament).toBe("goat");
-    expect(dictator.motief).toBeUndefined();
-    expect(dictator.ornament).toBeUndefined();
-    // En de rand-mechanismen (#710 §6) hangen alleen aan de GOAT.
+    expect(dictator.ornament).toBe("dictator");
+    expect(goat.motief?.paden.length).toBeGreaterThan(0);
+    expect(dictator.motief?.paden.length).toBeGreaterThan(0);
+    expect(goat.motief?.paden).not.toBe(dictator.motief?.paden);
+    // De rand-mechanismen (#710 §6) staan bij beide, maar met een eigen
+    // recept: één zachte offset-echo bij de GOAT, een gesloten donkere ring
+    // bij de dictator.
     expect(goat.frameRibbels).toBe(true);
+    expect(dictator.frameRibbels).toBeUndefined();
     expect(goat.echo).toHaveLength(1);
+    expect(dictator.echo).toHaveLength(3);
     expect(goat.binnenlijn).toHaveLength(3);
-    expect(dictator.echo).toBeUndefined();
+    expect(dictator.binnenlijn).toHaveLength(3);
   });
 
   it("houdt de toptier-glans in één regime: beide vast (#710)", () => {
     // Tot #710 draaide de dictator op --dictator-gold (thema-afhankelijk) en
     // de GOAT op een vaste hex, waardoor alleen de dictator-poster in dark
-    // mode afweek. Beide staan nu vast op de lichte troonwaarden, dus de
-    // canvas-inkt moet exact de CSS-mix van die hexen zijn.
-    expect(kaartSkin("dictator", null).ink).toBe(mix("#e6b34d", "#ffffff", 0.8));
+    // mode afweek. Beide registers staan nu op vaste waarden: de GOAT nog via
+    // de glans-mix, de dictator op eigen antiekgouden hexen.
     expect(kaartSkin("legende", null).ink).toBe(mix("#f7869f", "#ffffff", 0.8));
+    expect(kaartSkin("dictator", null).ink).toBe("#f2dda2");
   });
 
   it("laat een editie het GOAT-motief winnen maar de hoorns staan (#710)", () => {
@@ -156,13 +167,16 @@ describe("kaartSkin", () => {
     expect(kaartSkin("diamant", null).kleuren.stralen).toBe(true);
     expect(kaartSkin("diamant", "icon").kleuren.stralen).toBe(true);
     expect(kaartSkin("brons", "icon").kleuren.stralen).toBe(false);
-    expect(kaartSkin("dictator", "inform").kleuren.stralen).toBe(true);
-    // De GOAT viel sinds #710 uit het premium-blok: hij heeft een eigen
-    // ::after met ijl satijn i.p.v. de gedeelde krans, ook onder een editie
-    // (editie-blokken raken ::after niet aan).
+    // GOAT en dictator vielen met #710 uit het premium-blok: ze hebben een
+    // eigen ::after (ijl satijn met medaillon, respectievelijk brokaat) en
+    // houden die ook onder een editie — editie-blokken raken ::after niet aan.
     expect(kaartSkin("legende", null).kleuren.stralen).toBe(false);
     expect(kaartSkin("legende", "inform").kleuren.stralen).toBe(false);
     expect(kaartSkin("legende", "inform").kleuren.satijnAlpha).toBe(0.035);
+    expect(kaartSkin("dictator", "inform").kleuren.stralen).toBe(false);
+    expect(kaartSkin("dictator", "inform").kleuren.textuur).toBe("brokaat");
+    // Maar de pias en de Piet zetten hun eigen weefsel en winnen wél.
+    expect(kaartSkin("dictator", "pias").kleuren.textuur).toBe("confetti");
   });
 
   it("zet bij de schand-edities stralen én satijn uit voor hun eigen weefsel", () => {
@@ -443,7 +457,8 @@ describe("editie-registers spiegelen FutKaart.css", () => {
 
   it("de toptiers draaien allebei op vaste hexen (#710)", () => {
     // Eén regime: geen var(--dictator-*) meer in de kaartregisters, anders
-    // wijkt de DOM-kaart in dark mode weer af van de vastgepinde poster.
+    // wijkt de DOM-kaart in dark mode weer af van de vastgepinde poster. De
+    // inkt van elk register moet gelijk zijn aan zijn eigen CSS-token.
     for (const tier of ["legende", "dictator"] as const) {
       const blok = tierBlok(tier, "--sp-glans");
       const glans = /--sp-glans:\s*([^;]+);/.exec(blok)?.[1];
@@ -451,9 +466,60 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       expect(glans, `${tier}: --sp-glans moet een vaste hex zijn`).toMatch(
         /^#[0-9a-f]{6}$/,
       );
-      // De canvas-inkt is color-mix(--sp-glans 80%, #fff), zoals in de CSS.
-      expect(kaartSkin(tier, null).ink).toBe(mix(glans!, "#ffffff", 0.8));
+      const skin = kaartSkin(tier, null);
+      const ink = token(blok, "--kaart-ink")!;
+      // De GOAT mixt zijn inkt uit de glans (color-mix in de CSS), de dictator
+      // zet antiekgouden hexen rechtstreeks.
+      expect(skin.ink).toBe(
+        ink.startsWith("#") ? ink : mix(glans!, "#ffffff", 0.8),
+      );
+      expect(skin.inkSoft).toBe(
+        (token(blok, "--kaart-ink-soft") ?? "").startsWith("#")
+          ? token(blok, "--kaart-ink-soft")
+          : mix(glans!, "#b7a98c", 0.65),
+      );
     }
+  });
+
+  it("het dictator-register spiegelt zijn CSS-waarden (#710)", () => {
+    const blok = tierBlok("dictator", "--kaart-echo");
+    const { kleuren } = kaartSkin("dictator", null);
+    // Liner, keyline en de drie binnenlijnen komen uit de CSS.
+    const liner = /\.fut-kaart--dictator \.fut-kaart__liner\s*\{\s*background:\s*([^;]+);/.exec(
+      FUT_CSS,
+    )?.[1];
+    expect(kleuren.liner).toBe(liner);
+    const keyline = /\.fut-kaart--dictator \.fut-kaart__keyline\s*\{\s*background:\s*([^;]+);/.exec(
+      FUT_CSS,
+    )?.[1];
+    expect(kleuren.keyline).toBe(keyline);
+    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
+    for (const [spreiding, kleur] of kleuren.binnenlijn!)
+      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
+        `inset 0 0 0 ${spreiding}px ${kleur}`,
+      );
+    // Brokaat en zonnestraal staan in het eigen ::after/vlak-blok, niet in het
+    // gedeelde premium-blok.
+    const premium = /\.fut-kaart--platina \.fut-kaart__vlak::after[^{]*\{/.exec(
+      FUT_CSS,
+    )?.[0];
+    expect(premium).not.toContain("dictator");
+    const after = /\.fut-kaart--dictator \.fut-kaart__vlak::after\s*\{[^}]*\}/.exec(
+      FUT_CSS,
+    )?.[0];
+    expect(after).toContain("45deg");
+    expect(kleuren.textuur).toBe("brokaat");
+  });
+
+  it("de dictator heeft een eigen schildvorm, de GOAT houdt de kroon-crest (#710)", () => {
+    // De allerhoogste tier verschilt nu ook in silhouet — dat is het
+    // grijswaarden-criterium uit de issue. De clipPath moet in FutKaart.tsx
+    // bestaan, want de CSS verwijst ernaar.
+    expect(schildVorm("legende")).toBe("kroon");
+    expect(schildVorm("dictator")).toBe("troon");
+    const blok = tierBlok("dictator", "--schild");
+    expect(blok).toContain("url(#fut-schild-troon)");
+    expect(FUT_TSX).toContain('id="fut-schild-troon"');
   });
 
   it("dekt élke editie die FutKaart.css kleurt", () => {

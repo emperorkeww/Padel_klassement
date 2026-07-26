@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   bouwStreng,
+  DICTATOR_EPAULET,
+  DICTATOR_EPAULET_FRANJE,
+  DICTATOR_GEMS,
+  DICTATOR_KROON,
+  DICTATOR_KROON_BAND,
+  DICTATOR_LAUWER_BLADEN,
+  DICTATOR_LAUWER_STENGEL,
+  DICTATOR_ZEGEL,
   GOAT_BAARD_BLAD,
   GOAT_BAARD_FLICK,
   GOAT_BAARD_NERVEN,
@@ -29,6 +37,18 @@ function grenzen(paden: readonly string[]) {
     yMin: Math.min(...p.map((q) => q[1])),
     yMax: Math.max(...p.map((q) => q[1])),
   };
+}
+
+/** De linkerrand van het schild op hoogte `v`, in kaart-units. Volgt de
+ *  gedeelde onderkant uit FutKaartDefs: rechte zijkant tot de taille op
+ *  v=0.60·139, dan naar (0.135, 0.838) en zo naar de punt op (0.5, 1). Een
+ *  ornament is "buiten de kaart" wanneer het links van deze rand ligt. */
+function schildLinkerrand(v: number): number {
+  const t = v / 139;
+  if (t <= 0.6) return 0;
+  if (t <= 0.838) return ((t - 0.6) / 0.238) * 13.5;
+  if (t <= 0.972) return 13.5 + ((t - 0.838) / 0.134) * 30;
+  return 43.5 + ((t - 0.972) / 0.028) * 6.5;
 }
 
 const alleStrengPaden = (s: Streng) => [
@@ -136,14 +156,57 @@ describe("GOAT-ornament (#710)", () => {
     // schildrand blijft, is onzichtbaar. Op zijn hoogte (v≈132–140) loopt het
     // schild van de taille naar de punt; de flick moet daar links van blijven.
     const g = grenzen(alleStrengPaden(GOAT_BAARD_FLICK));
-    const schildRandBij = (v: number) => {
-      // Onderkant van het schildpad: (0.135, 0.838) → (0.435, 0.972) → punt.
-      const t = v / 139;
-      if (t <= 0.838) return 13.5;
-      if (t <= 0.972) return (13.5 + ((t - 0.838) / 0.134) * 30) as number;
-      return 43.5 + ((t - 0.972) / 0.028) * 6.5;
-    };
-    expect(g.xMin).toBeLessThan(schildRandBij(g.yMin) - 1);
+    expect(g.xMin).toBeLessThan(schildLinkerrand(g.yMin) - 1);
+  });
+
+  it("de dictator-ornamenten passen in de viewBox en zijn symmetrisch", () => {
+    const [vx, vy, vw, vh] = ORNAMENT_VIEWBOX.split(" ").map(Number);
+    const alles = [
+      DICTATOR_KROON,
+      DICTATOR_KROON_BAND,
+      DICTATOR_EPAULET,
+      ...DICTATOR_EPAULET_FRANJE,
+      ...DICTATOR_GEMS,
+      DICTATOR_LAUWER_STENGEL.omtrek,
+      ...DICTATOR_LAUWER_BLADEN,
+      DICTATOR_ZEGEL.ster,
+    ];
+    const g = grenzen(alles);
+    expect(Math.min(g.xMin, 100 - g.xMax)).toBeGreaterThan(vx);
+    expect(Math.max(g.xMax, 100 - g.xMin)).toBeLessThan(vx + vw);
+    expect(g.yMin).toBeGreaterThan(vy);
+    expect(g.yMax).toBeLessThan(vy + vh);
+    // Kroon en zegelster staan op de as en moeten dus zélf symmetrisch zijn
+    // (ze worden niet gespiegeld gerenderd).
+    for (const pad of [DICTATOR_KROON, DICTATOR_KROON_BAND, DICTATOR_ZEGEL.ster]) {
+      const p = punten(pad);
+      for (const [x, y] of p) {
+        const spiegel = p.some(
+          (q) => Math.abs(q[0] - (100 - x)) < 0.25 && Math.abs(q[1] - y) < 0.25,
+        );
+        expect(spiegel, `${pad.slice(0, 24)}…: (${x}, ${y}) mist spiegelbeeld`).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("de kroon steekt bóven de kaart uit en de lauwerkrans erbuiten", () => {
+    // De kroon moet echt boven de bovenrand komen en de lauwerkrans over de
+    // zijrand heen — anders slokt de kaart ze op, want beide liggen onder het
+    // schild. De kroon meten we tegen v=0, de krans tegen de échte schildrand:
+    // onder de taille buigt die naar binnen, dus daar is "buiten de kaart"
+    // iets anders dan u<0.
+    const kroon = grenzen([DICTATOR_KROON, DICTATOR_KROON_BAND]);
+    expect(kroon.yMin).toBeLessThan(-20);
+
+    const bladen = DICTATOR_LAUWER_BLADEN.flatMap((d) => punten(d));
+    const buiten = bladen.filter(([x, y]) => x < schildLinkerrand(y));
+    // Een handvol punten volstaat: het gaat erom dát de krans over de rand
+    // valt, niet hoeveel blad er precies buiten hangt.
+    expect(buiten.length).toBeGreaterThan(8);
+    // En het lakzegel zit in de punt, onder de naamplaat.
+    expect(DICTATOR_ZEGEL.midden[1]).toBeGreaterThan(115);
   });
 
   it("het medaillon blijft binnen zijn 100×100-viewBox", () => {

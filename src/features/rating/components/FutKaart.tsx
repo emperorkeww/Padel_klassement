@@ -9,6 +9,24 @@
 import type { ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
 import {
+  DICTATOR_EPAULET,
+  DICTATOR_EPAULET_FRANJE,
+  DICTATOR_GEM,
+  DICTATOR_GEMS,
+  DICTATOR_GEM_GLANS,
+  DICTATOR_GOUD_CONTOUR,
+  DICTATOR_GOUD_GLANS,
+  DICTATOR_GOUD_VERLOOP,
+  DICTATOR_KROON,
+  DICTATOR_KROON_BAND,
+  DICTATOR_KROON_BOLLEN,
+  DICTATOR_LAUWER_BLADEN,
+  DICTATOR_LAUWER_STENGEL,
+  DICTATOR_WATERMARK,
+  DICTATOR_WATERMARK_BREEDTE,
+  DICTATOR_WATERMARK_KLEUR,
+  DICTATOR_WATERMARK_POSITIE,
+  DICTATOR_ZEGEL,
   GOAT_BAARD_BLAD,
   GOAT_BAARD_FLICK,
   GOAT_BAARD_NERVEN,
@@ -91,6 +109,30 @@ function FutStreng({
   );
 }
 
+/** Eén gouden ornamentvlak (#710): vulling met verloop, donkere contour en
+ *  een lichte binnenrand — het reliëf van de referentie zonder extra lagen. */
+function FutGoud({ d }: { d: string }) {
+  return (
+    <>
+      <path
+        d={d}
+        fill="url(#fut-orn-goud)"
+        stroke={DICTATOR_GOUD_CONTOUR}
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke={DICTATOR_GOUD_GLANS}
+        strokeWidth="0.35"
+        strokeLinejoin="round"
+        opacity="0.7"
+      />
+    </>
+  );
+}
+
 export function FutKaartDefs() {
   return (
     <svg width="0" height="0" className="fut-kaart__defs" aria-hidden="true">
@@ -106,6 +148,13 @@ export function FutKaartDefs() {
         </clipPath>
         <clipPath id="fut-schild-kroon" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
+        </clipPath>
+        {/* Troon-crest (#710): de ceremoniële schildvorm van El Padelissimo —
+            gekantelde bovenhoeken en een V-inkeping in het midden waar de
+            kroon in valt. De onderkant is identiek aan de andere vormen (de
+            punt op 50%/100% blijft het chemielijn-anker in de Opstelling). */}
+        <clipPath id="fut-schild-troon" clipPathUnits="objectBoundingBox">
+          <path d="M 0.16 0.012 L 0.40 0.012 L 0.5 0.058 L 0.60 0.012 L 0.84 0.012 L 1 0.085 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.085 Z" />
         </clipPath>
         {/* Ornamenten (#710): de laag die búiten het schild uitsteekt. Eén
             linkerhelft; de tweede <use> spiegelt om x=50 — links en rechts
@@ -127,6 +176,144 @@ export function FutKaartDefs() {
         <g id="fut-orn-goat-helft">
           <FutStreng streng={GOAT_HOORN} ribbelBreedte={0.62} />
           <FutStreng streng={GOAT_BAARD_FLICK} ribbelBreedte={0.34} />
+        </g>
+        <linearGradient
+          id="fut-orn-goud"
+          x1="0"
+          y1="0"
+          x2="0.3"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {DICTATOR_GOUD_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        {/* El Padelissimo (#710) — áchter de kaart: kroon en epauletten. De
+            kroon staat op de as en wordt niet gespiegeld; de epaulet wel. */}
+        <g id="fut-orn-dictator-achter-helft">
+          <FutGoud d={DICTATOR_EPAULET} />
+          {DICTATOR_EPAULET_FRANJE.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke="url(#fut-orn-goud)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+        <g id="fut-orn-dictator-achter">
+          <use href="#fut-orn-dictator-achter-helft" />
+          <use
+            href="#fut-orn-dictator-achter-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          <FutGoud d={DICTATOR_KROON_BAND} />
+          <FutGoud d={DICTATOR_KROON} />
+          {DICTATOR_KROON_BOLLEN.map(([cx, cy, r]) => (
+            <g key={`${cx}-${cy}`}>
+              <circle
+                cx={cx}
+                cy={cy}
+                r={r}
+                fill="url(#fut-orn-goud)"
+                stroke={DICTATOR_GOUD_CONTOUR}
+                strokeWidth="0.5"
+              />
+              {cx !== 50 && (
+                <circle
+                  cx={100 - cx}
+                  cy={cy}
+                  r={r}
+                  fill="url(#fut-orn-goud)"
+                  stroke={DICTATOR_GOUD_CONTOUR}
+                  strokeWidth="0.5"
+                />
+              )}
+            </g>
+          ))}
+          {DICTATOR_GEMS.map((d) => (
+            <g key={d}>
+              <path d={d} fill={DICTATOR_GEM} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+              <path
+                d={d}
+                fill="none"
+                stroke={DICTATOR_GEM_GLANS}
+                strokeWidth="0.3"
+                transform="translate(100,0) scale(-1,1)"
+              />
+            </g>
+          ))}
+          <g transform="translate(100,0) scale(-1,1)">
+            {DICTATOR_GEMS.map((d) => (
+              <path key={d} d={d} fill={DICTATOR_GEM} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+            ))}
+          </g>
+        </g>
+        {/* En vóór de kaart: lauwerkransen langs de onderste zijkanten en het
+            lakzegel in de punt (laagvolgorde uit de referentie-instructies).
+            Beide liggen in de marge, dus ze dekken geen tekst af. */}
+        <g id="fut-orn-dictator-voor-helft">
+          <path
+            d={DICTATOR_LAUWER_STENGEL.omtrek}
+            fill="url(#fut-orn-goud)"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          {DICTATOR_LAUWER_BLADEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="url(#fut-orn-goud)"
+              stroke={DICTATOR_GOUD_CONTOUR}
+              strokeWidth="0.4"
+              strokeLinejoin="round"
+            />
+          ))}
+        </g>
+        <g id="fut-orn-dictator-voor">
+          <use href="#fut-orn-dictator-voor-helft" />
+          <use
+            href="#fut-orn-dictator-voor-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          <circle
+            cx={DICTATOR_ZEGEL.midden[0]}
+            cy={DICTATOR_ZEGEL.midden[1]}
+            r={DICTATOR_ZEGEL.ring}
+            fill="url(#fut-orn-goud)"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.6"
+          />
+          <circle
+            cx={DICTATOR_ZEGEL.midden[0]}
+            cy={DICTATOR_ZEGEL.midden[1]}
+            r={DICTATOR_ZEGEL.vlak}
+            fill="#7d1a33"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.4"
+          />
+          <path
+            d={DICTATOR_ZEGEL.ster}
+            fill="url(#fut-orn-goud)"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.35"
+            strokeLinejoin="round"
+          />
+          {DICTATOR_ZEGEL.bollen.map(([cx, cy, r]) => (
+            <circle
+              key={`${cx}-${cy}`}
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="url(#fut-orn-goud)"
+              stroke={DICTATOR_GOUD_CONTOUR}
+              strokeWidth="0.4"
+            />
+          ))}
         </g>
         <g id="fut-orn-goat">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
@@ -163,17 +350,27 @@ export function FutKaartDefs() {
 function FutKaartMotief({
   paden,
   kleur,
-  className,
+  breedte,
+  positie,
 }: {
   paden: readonly OrnamentPad[];
   kleur: string;
-  className?: string;
+  /** Breedte als fractie van het vlak (CSS --motief-b, default 0.92). */
+  breedte?: number;
+  /** Verticale plaatsing als background-position-fractie (--motief-pos). */
+  positie?: number;
 }) {
   return (
     <svg
-      className={`fut-kaart__motief${className ? ` ${className}` : ""}`}
+      className="fut-kaart__motief"
       viewBox="0 0 100 100"
       aria-hidden="true"
+      style={{
+        ...(breedte != null ? { ["--motief-b" as string]: breedte * 100 } : {}),
+        ...(positie != null
+          ? { ["--motief-pos" as string]: `${positie * 100}%` }
+          : {}),
+      }}
     >
       {paden.map((p) =>
         p.soort === "vlak" ? (
@@ -240,14 +437,29 @@ export function FutKaart({
   // tíer — een GOAT met In-Form houdt zijn hoorns. Zodra een editie een
   // eigen ornament heeft (#710 PR 3), wint dat van het tier-ornament, zoals
   // de editie-skin ook het vlak wint.
-  const ornament = tier?.key === "legende" ? "goat" : null;
+  const ornament =
+    tier?.key === "legende"
+      ? "goat"
+      : tier?.key === "dictator"
+        ? "dictator"
+        : null;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register en
   // verdwijnt dus wél onder een editie-skin (het medaillon zou op het
   // In-Form-navy vloeken); alleen de voorkant draagt het.
-  const motief =
-    !editie && tier?.key === "legende" ? (
-      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
-    ) : null;
+  const motief = editie
+    ? null
+    : tier?.key === "legende"
+      ? <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+      : tier?.key === "dictator"
+        ? (
+            <FutKaartMotief
+              paden={DICTATOR_WATERMARK}
+              kleur={DICTATOR_WATERMARK_KLEUR}
+              breedte={DICTATOR_WATERMARK_BREEDTE}
+              positie={DICTATOR_WATERMARK_POSITIE}
+            />
+          )
+        : null;
   return (
     <div className={klassen}>
       {ornament && (
@@ -256,7 +468,11 @@ export function FutKaart({
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use href={`#fut-orn-${ornament}`} />
+          <use
+            href={`#fut-orn-${
+              ornament === "dictator" ? "dictator-achter" : ornament
+            }`}
+          />
         </svg>
       )}
       <div className="fut-kaart__flipper">
@@ -285,6 +501,20 @@ export function FutKaart({
           </span>
         </div>
       </div>
+      {/* Vóór-laag (#710): alleen El Padelissimo heeft ornamenten die over de
+          kaart heen liggen (lauwerkransen langs de zijkanten, lakzegel in de
+          punt) — de laagvolgorde uit de referentie-instructies. Ze staan in
+          de marge van het vlak, dus ze dekken geen tekst af, en de laag is
+          pointer-events: none zodat de flip-knop bereikbaar blijft. */}
+      {ornament === "dictator" && (
+        <svg
+          className="fut-kaart__ornament fut-kaart__ornament--voor"
+          viewBox={ORNAMENT_VIEWBOX}
+          aria-hidden="true"
+        >
+          <use href="#fut-orn-dictator-voor" />
+        </svg>
+      )}
     </div>
   );
 }

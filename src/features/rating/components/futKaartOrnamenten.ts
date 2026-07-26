@@ -389,3 +389,204 @@ export const GOAT_MEDAILLON_KLEUR = "rgba(249, 163, 183, 0.16)";
  *  background-position-percentage (0.2 ≡ `center 20%`). */
 export const GOAT_MEDAILLON_BREEDTE = 0.92;
 export const GOAT_MEDAILLON_POSITIE = 0.2;
+
+/* --------------------------- El Padelissimo (#710) --------------------------- */
+
+/** Antiekgoud: warm champagne naar diep brons — bewust geen fel plastic goud
+ *  (stijlbeperking uit de referentie-instructies). */
+export const DICTATOR_GOUD_VERLOOP: readonly (readonly [number, string])[] = [
+  [0, "#f6e6b4"],
+  [0.34, "#d9b661"],
+  [0.68, "#a8802f"],
+  [1, "#6b4d18"],
+] as const;
+export const DICTATOR_GOUD_CONTOUR = "#3c2a0c";
+export const DICTATOR_GOUD_GLANS = "rgba(255, 246, 214, 0.7)";
+export const DICTATOR_GOUD_SCHADUW = "rgba(52, 36, 10, 0.5)";
+/** Donkerrode edelsteenaccenten in de gouden omlijsting. */
+export const DICTATOR_GEM = "#7e1228";
+export const DICTATOR_GEM_GLANS = "rgba(255, 170, 190, 0.55)";
+
+/** Spiegelhulp voor de handgeschreven ornamenten: een polyline-helft (alleen
+ *  L-commando's) omgekeerd en gespiegeld om x=50, zodat de tweede helft per
+ *  constructie gelijk is aan de eerste. */
+function spiegelPolyline(punten: readonly Punt[]): string {
+  return [...punten]
+    .reverse()
+    .map((p) => `L ${rond(100 - p[0])} ${rond(p[1])}`)
+    .join(" ");
+}
+
+/** Vijfpuntige ceremoniële kroon die in de bovenrand van het schild zit: band
+ *  onderaan, vijf punten met bolknoppen, de middelste het hoogst. Alleen de
+ *  linkerhelft plus de as staat hier; `spiegelPolyline` maakt de rechterhelft. */
+const KROON_HELFT: readonly Punt[] = [
+  [23, 1.5],
+  [23, -5.5],
+  [29.5, -16.5],
+  [34.5, -5.5],
+  [40, -22.5],
+  [45, -7.5],
+  [50, -28.5],
+];
+export const DICTATOR_KROON = `M ${KROON_HELFT.map(
+  (p) => `${p[0]} ${p[1]}`,
+).join(" L ")} ${spiegelPolyline(KROON_HELFT.slice(0, -1))} Z`;
+
+/** De band onder de kroonpunten — één doorlopend beslag over de bovenrand. */
+export const DICTATOR_KROON_BAND =
+  "M 21 -1 L 79 -1 L 79 4.5 L 76 6 L 24 6 L 21 4.5 Z";
+
+/** Bolknoppen op de kroonpunten (links + as; rechts wordt gespiegeld). */
+export const DICTATOR_KROON_BOLLEN: readonly (readonly [
+  number,
+  number,
+  number,
+])[] = [
+  [29.5, -18.6, 2],
+  [40, -24.6, 2.2],
+  [50, -30.8, 2.6],
+] as const;
+
+/** Edelstenen: twee in de band, één in elke kroonvallei. Ruitvormig, zoals de
+ *  referentie — links + as, rechts gespiegeld. */
+export const DICTATOR_GEMS: readonly string[] = [
+  "M 34.5 -3.4 L 36 -1.6 L 34.5 0.2 L 33 -1.6 Z",
+  "M 45 -5.4 L 46.5 -3.6 L 45 -1.8 L 43.5 -3.6 Z",
+  "M 50 -1.4 L 52 1 L 50 3.4 L 48 1 Z",
+] as const;
+
+/** Epaulet: het schouderstuk dat achter de bovenste zijkant uitsteekt. Eén
+ *  gebogen band met een franjerand eronder — links; rechts gespiegeld. */
+export const DICTATOR_EPAULET =
+  "M 6 32 C -1 32.5, -7.5 34.5, -11.5 38.2 C -12.4 39.1, -12.2 40.4, -11 41 " +
+  "C -6.6 43.2, -1 44.4, 6 44.6 Z";
+/** Franjekwasten onder de epaulet: korte, iets waaierende strengen. */
+export const DICTATOR_EPAULET_FRANJE: readonly string[] = [
+  -10.2, -7.6, -5, -2.4, 0.2, 2.8,
+].map((u, i) => {
+  const lengte = 11 - Math.abs(i - 2.5) * 1.1;
+  return `M ${rond(u)} 43.6 C ${rond(u - 0.6)} ${rond(43.6 + lengte * 0.5)}, ${rond(
+    u - 0.9,
+  )} ${rond(43.6 + lengte * 0.8)}, ${rond(u - 1.1)} ${rond(43.6 + lengte)}`;
+});
+
+/** Lauwerkrans: de tak loopt vanaf de kaartpunt langs de zijkant omhoog. De
+ *  stengel komt uit `bouwStreng` (zelfde generator als de GOAT-hoorn), de
+ *  blaadjes staan er als losse spitse vormen langs. */
+export const DICTATOR_LAUWER_STENGEL = bouwStreng({
+  // De tak hugt de schildrand: op v≈84 loopt de kaart tot u=0, dus een stengel
+  // op u≈4 laat de buitenste blaadjes er nét overheen steken — precies wat de
+  // referentie doet. Verder naar binnen leest de krans als los ornament.
+  start: [47, 141],
+  segmenten: [
+    [
+      [37, 138],
+      [25, 131],
+      [16, 120],
+    ],
+    [
+      [9, 110],
+      [4, 97],
+      [4, 83],
+    ],
+    [
+      [4, 75],
+      [5, 68],
+      [6.5, 62],
+    ],
+  ],
+  dikte: 1.6,
+  taper: 2.2,
+  punt: 0.35,
+  stappen: 60,
+});
+
+/** Eén lauwerblad: spitse ovaal met een nerf, geplaatst en gedraaid langs de
+ *  tak. `[u, v, hoek, lengte]` — hoek in graden, 0 = naar rechts. */
+const LAUWER_BLADEN: readonly (readonly [number, number, number, number])[] = [
+  // Buitenste rij: elk blad staat ~40° van de takrichting af en steekt zo over
+  // de schildrand heen — een krans, geen rij blaadjes langs een lijn.
+  [42.5, 139.5, 200, 9],
+  [34, 135.5, 205, 9.6],
+  [26, 130.5, 212, 10.4],
+  [19, 124, 220, 10.6],
+  [12.5, 115.5, 228, 10.8],
+  [7.5, 106, 234, 10.8],
+  [4, 96, 238, 10.6],
+  [2.5, 85.5, 242, 10.2],
+  [2.5, 75.5, 246, 9.6],
+  [4, 66.5, 250, 9],
+  // Binnenste rij: korter, tegen de tak aan, over de kaart.
+  [32, 132, 160, 6.4],
+  [23, 126.5, 172, 6.6],
+  [15, 118.5, 186, 6.6],
+  [10, 108.5, 198, 6.4],
+  [7.5, 97.5, 208, 6],
+  [7, 86.5, 214, 5.6],
+] as const;
+
+/** Bouwt één blad als gesloten pad met twee bogen (spitse ovaal). */
+function lauwerBlad(u: number, v: number, hoek: number, lengte: number): string {
+  const r = (hoek * Math.PI) / 180;
+  const cos = Math.cos(r);
+  const sin = Math.sin(r);
+  const breed = lengte * 0.34;
+  const P = (langs: number, dwars: number) =>
+    `${rond(u + langs * cos - dwars * sin)} ${rond(v + langs * sin + dwars * cos)}`;
+  return `M ${P(0, 0)} C ${P(lengte * 0.3, breed)} ${P(lengte * 0.72, breed * 0.8)} ${P(
+    lengte,
+    0,
+  )} C ${P(lengte * 0.72, -breed * 0.8)} ${P(lengte * 0.3, -breed)} ${P(0, 0)} Z`;
+}
+
+export const DICTATOR_LAUWER_BLADEN: readonly string[] = LAUWER_BLADEN.map(
+  ([u, v, hoek, lengte]) => lauwerBlad(u, v, hoek, lengte),
+);
+
+/** Lakzegel-medaillon in de kaartpunt: ring, zegelvlak en een ster. */
+export const DICTATOR_ZEGEL = {
+  midden: [50, 124] as const,
+  ring: 9.4,
+  vlak: 7.2,
+  /** Vijfpuntige ster, gecentreerd op het zegel. */
+  ster: (() => {
+    const punten: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? 4.4 : 1.9;
+      const hoek = (-90 + i * 36) * (Math.PI / 180);
+      punten.push(
+        `${rond(50 + Math.cos(hoek) * r)} ${rond(124 + Math.sin(hoek) * r)}`,
+      );
+    }
+    return `M ${punten.join(" L ")} Z`;
+  })(),
+  /** Drie kleine bollen onder het zegel, in de punt van het schild. */
+  bollen: [
+    [50, 135.5, 2.1],
+    [44.6, 133, 1.5],
+    [55.4, 133, 1.5],
+  ] as const,
+} as const;
+
+/** Watermark achter de spelerinformatie: een nauwelijks zichtbare kroon met
+ *  lauwertakken — de "troon-crest" uit de referentie. ViewBox 0 0 100 100. */
+export const DICTATOR_WATERMARK: readonly OrnamentPad[] = [
+  // Kroonsilhouet.
+  {
+    d: "M 30 62 L 30 44 L 39 55 L 50 36 L 61 55 L 70 44 L 70 62 Z",
+    soort: "lijn",
+    breedte: 1.6,
+  },
+  { d: "M 31 67 L 69 67 L 68 73 L 32 73 Z", soort: "lijn", breedte: 1.6 },
+  { d: "M 28 41 A 2.6 2.6 0 1 1 33.2 41 A 2.6 2.6 0 1 1 28 41", soort: "vlak" },
+  { d: "M 47.4 32 A 2.8 2.8 0 1 1 53 32 A 2.8 2.8 0 1 1 47.4 32", soort: "vlak" },
+  { d: "M 66.8 41 A 2.6 2.6 0 1 1 72 41 A 2.6 2.6 0 1 1 66.8 41", soort: "vlak" },
+  // Lauwertakken eromheen.
+  { d: "M 50 92 C 30 86 17 70 18 50", soort: "lijn", breedte: 1.2 },
+  { d: "M 50 92 C 70 86 83 70 82 50", soort: "lijn", breedte: 1.2 },
+] as const;
+
+export const DICTATOR_WATERMARK_KLEUR = "rgba(240, 199, 102, 0.09)";
+export const DICTATOR_WATERMARK_BREEDTE = 0.78;
+export const DICTATOR_WATERMARK_POSITIE = 0.42;

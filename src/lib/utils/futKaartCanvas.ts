@@ -19,6 +19,23 @@
 
 import type { TierKey } from "@/features/rating/tiers";
 import {
+  DICTATOR_EPAULET,
+  DICTATOR_EPAULET_FRANJE,
+  DICTATOR_GEM,
+  DICTATOR_GEMS,
+  DICTATOR_GOUD_CONTOUR,
+  DICTATOR_GOUD_GLANS,
+  DICTATOR_GOUD_VERLOOP,
+  DICTATOR_KROON,
+  DICTATOR_KROON_BAND,
+  DICTATOR_KROON_BOLLEN,
+  DICTATOR_LAUWER_BLADEN,
+  DICTATOR_LAUWER_STENGEL,
+  DICTATOR_WATERMARK,
+  DICTATOR_WATERMARK_BREEDTE,
+  DICTATOR_WATERMARK_KLEUR,
+  DICTATOR_WATERMARK_POSITIE,
+  DICTATOR_ZEGEL,
   GOAT_BAARD_BLAD,
   GOAT_BAARD_FLICK,
   GOAT_BAARD_NERVEN,
@@ -38,14 +55,17 @@ import {
 } from "@/features/rating/components/futKaartOrnamenten";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
-export type SchildVorm = "vlak" | "notch" | "punt" | "kroon";
+export type SchildVorm = "vlak" | "notch" | "punt" | "kroon" | "troon";
 
 /** Bovenrand per divisiegroep — zelfde mapping als FutKaart.css. */
 export function schildVorm(key: TierKey | undefined): SchildVorm {
   if (key === "slof" || key === "karton" || key === "hout") return "vlak";
   if (key === "platina" || key === "diamant" || key === "meester")
     return "punt";
-  if (key === "legende" || key === "dictator") return "kroon";
+  // #710: de twee toptiers verschillen nu ook in silhouet — GOAT houdt de
+  // kroon-crest, El Padelissimo krijgt de hoge, ceremoniële troon-crest.
+  if (key === "legende") return "kroon";
+  if (key === "dictator") return "troon";
   return "notch";
 }
 
@@ -127,6 +147,13 @@ export function schildPad(
     C(0.52, 0.058, 0.53, 0.042, 0.56, 0.04);
     L(0.965, 0.01);
     L(1, 0.075);
+  } else if (vorm === "troon") {
+    ctx.moveTo(X(0.16), Y(0.012));
+    L(0.4, 0.012);
+    L(0.5, 0.058);
+    L(0.6, 0.012);
+    L(0.84, 0.012);
+    L(1, 0.085);
   } else {
     ctx.moveTo(X(0.085), Y(0.035));
     L(0.38, 0.035);
@@ -149,7 +176,10 @@ export function schildPad(
     L(0, 0.062);
     C(0, 0.028, 0.038, 0, 0.085, 0);
   } else if (vorm === "punt") L(0, 0.075);
-  else {
+  else if (vorm === "troon") {
+    L(0, 0.085);
+    L(0.16, 0.012);
+  } else {
     L(0, 0.095);
     C(0, 0.062, 0.038, 0.035, 0.085, 0.035);
   }
@@ -161,7 +191,7 @@ export function schildPad(
  *  (kraftkarton met confetti) en de Piet (speelkaart met suit-pips) een eigen
  *  weefsel meebrengen en het satijn juist uitzetten — dubbel weefsel wordt
  *  druk (de `background: none`-regel in de CSS). */
-export type VlakTextuur = "satijn" | "confetti" | "speelkaart";
+export type VlakTextuur = "satijn" | "confetti" | "speelkaart" | "brokaat";
 
 /** Resolved themakleuren voor één laag-opbouw. De offsets die niet per thema
  *  wisselen (glow op 0/1, sheen rond 0.5) liggen vast in `drawKaartSchild`;
@@ -188,10 +218,16 @@ export interface FutKaartKleuren {
   /** Keyline (#664): dunne lichte lijn tussen liner en vlak — spiegel van
    *  .fut-kaart__keyline. Weglaten = geen keyline (oude opbouw). */
   keyline?: string;
-  /** Stralenkrans (#664): premium-registers (platina/diamant/meester en de
-   *  dictator; GOAT draagt sinds #710 zijn eigen medaillon) — spiegel van de
-   *  ::after-stralen in FutKaart.css. */
+  /** Stralenkrans (#664): de premium-registers (platina/diamant/meester) —
+   *  spiegel van de ::after-stralen in FutKaart.css. De dictator zet hem
+   *  sinds #710 in goud als propaganda-zonnestraal (zie stralenKleur). */
   stralen?: boolean;
+  /** Kleur van de stralenkrans; default het ijle wit van het premium-blok. */
+  stralenKleur?: string;
+  /** Hoekmaat van één straal en van de periode, in graden (default 5/13 —
+   *  de repeating-conic van het premium-blok). */
+  stralenStraal?: number;
+  stralenPeriode?: number;
   /** Vlak-textuur; default "satijn". */
   textuur?: VlakTextuur;
   /** Satijn-alpha (#710): GOAT zet zijn weefsel ijler (CSS 0.04 → hier
@@ -220,8 +256,10 @@ export interface FutKaartKleuren {
     positie: number;
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
-   *  het frame getekend (de DOM legt ze als eerste kind achter de kaart). */
-  ornament?: "goat";
+   *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
+   *  "dictator" tekent bovendien een vóór-laag (lauwerkrans, lakzegel) ná het
+   *  vlak — dezelfde laagvolgorde als .fut-kaart__ornament--voor in de CSS. */
+  ornament?: "goat" | "dictator";
 }
 
 /**
@@ -244,6 +282,7 @@ export function drawKaartSchild(
   // Ornamentlaag (#710): hoorns en andere uitsteeksels éérst — de DOM legt
   // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
+  if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -387,10 +426,12 @@ export function drawKaartSchild(
     const cx = fx + fw / 2;
     const cy = fy + fh * 0.1;
     const R = fh * 1.3;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.09)";
-    for (let a = -100; a < 260; a += 13) {
+    ctx.fillStyle = kleuren.stralenKleur ?? "rgba(255, 255, 255, 0.09)";
+    const straal = kleuren.stralenStraal ?? 5;
+    const periode = kleuren.stralenPeriode ?? 13;
+    for (let a = -100; a < 260; a += periode) {
       const a1 = (a * Math.PI) / 180;
-      const a2 = ((a + 5) * Math.PI) / 180;
+      const a2 = ((a + straal) * Math.PI) / 180;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, R, a1, a2);
@@ -402,6 +443,22 @@ export function drawKaartSchild(
   // Satijn-weefsel (#664): fijne diagonale banen in de sheen-richting,
   // spiegel van de ::after-textuur in FutKaart.css. De kaarten met een eigen
   // weefsel slaan dit over (#666, zoals de `background: none`-regel daar).
+  // Brokaat (#710, dictator): twee gekruiste gouden rasters op 45° — de stof
+  // van de troonzaal, spiegel van de twee repeating-linear-gradients in de
+  // CSS (periode 7 CSS-px → 10 canvas-px op de vaste ~1,4×-kalibratie).
+  if (kleuren.textuur === "brokaat") {
+    ctx.strokeStyle = "rgba(240, 199, 102, 0.05)";
+    ctx.lineWidth = 1.4;
+    for (const richting of [1, -1]) {
+      for (let i = -fh; i < fw + fh; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(fx + i, fy);
+        ctx.lineTo(fx + i + richting * fh, fy + fh);
+        ctx.stroke();
+      }
+    }
+  }
+
   if ((kleuren.textuur ?? "satijn") === "satijn") {
     ctx.strokeStyle = `rgba(255, 255, 255, ${kleuren.satijnAlpha ?? 0.06})`;
     ctx.lineWidth = 2;
@@ -414,7 +471,151 @@ export function drawKaartSchild(
     }
   }
 
+  // Vóór-laag (#710): de lauwerkransen en het lakzegel van El Padelissimo
+  // liggen over de kaart heen. De vlak-clip moet daarvoor even wijken (die
+  // zou alles buiten het vlak wegsnijden) en daarna weer aan, want de caller
+  // tekent zijn content nog binnen dezelfde clip.
+  if (kleuren.ornament === "dictator") {
+    ctx.restore();
+    drawDictatorVoor(ctx, x, y, w);
+    ctx.save();
+    schildPad(ctx, fx, fy, fw, fh, vorm);
+    ctx.clip();
+  }
+
   return { fx, fy, fw, fh };
+}
+
+/** Gouden ornamentvlak: verloop-vulling, donkere contour en een lichte
+ *  binnenrand — spiegel van FutGoud in FutKaart.tsx. */
+function goudPad(ctx: CanvasRenderingContext2D, d: string, yTop = -32, yBot = 60) {
+  const pad = new Path2D(d);
+  const verloop = ctx.createLinearGradient(0, yTop, (yBot - yTop) * 0.3, yBot);
+  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP)
+    verloop.addColorStop(offset, kleur);
+  ctx.fillStyle = verloop;
+  ctx.fill(pad);
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke(pad);
+  ctx.save();
+  ctx.globalAlpha = 0.7;
+  ctx.strokeStyle = DICTATOR_GOUD_GLANS;
+  ctx.lineWidth = 0.35;
+  ctx.stroke(pad);
+  ctx.restore();
+}
+
+/** El Padelissimo, áchter de kaart (#710): epauletten met franje en de
+ *  vijfpuntige kroon met bolknoppen en edelstenen. Eén helft plus zijn
+ *  spiegeling om x=50, net als de <use transform> in de DOM-defs. */
+function drawDictatorAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    goudPad(ctx, DICTATOR_EPAULET, 30, 58);
+    ctx.strokeStyle = DICTATOR_GOUD_VERLOOP[1][1];
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    for (const d of DICTATOR_EPAULET_FRANJE) ctx.stroke(new Path2D(d));
+    ctx.restore();
+  }
+  goudPad(ctx, DICTATOR_KROON_BAND, -2, 7);
+  goudPad(ctx, DICTATOR_KROON, -32, 2);
+  for (const [cx, cy, r] of DICTATOR_KROON_BOLLEN) {
+    for (const bx of cx === 50 ? [cx] : [cx, 100 - cx]) {
+      ctx.beginPath();
+      ctx.arc(bx, cy, r, 0, Math.PI * 2);
+      const bol = ctx.createLinearGradient(0, cy - r, 0, cy + r);
+      for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP)
+        bol.addColorStop(offset, kleur);
+      ctx.fillStyle = bol;
+      ctx.fill();
+      ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  }
+  for (const d of DICTATOR_GEMS) {
+    for (const spiegel of [false, true]) {
+      ctx.save();
+      if (spiegel) {
+        ctx.translate(100, 0);
+        ctx.scale(-1, 1);
+      }
+      const gem = new Path2D(d);
+      ctx.fillStyle = DICTATOR_GEM;
+      ctx.fill(gem);
+      ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+      ctx.lineWidth = 0.4;
+      ctx.stroke(gem);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/** El Padelissimo, vóór de kaart (#710): de twee lauwerkransen en het
+ *  lakzegel in de punt. */
+function drawDictatorVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    goudPad(ctx, DICTATOR_LAUWER_STENGEL.omtrek, 60, 142);
+    for (const d of DICTATOR_LAUWER_BLADEN) goudPad(ctx, d, 60, 142);
+    ctx.restore();
+  }
+  const [zx, zy] = DICTATOR_ZEGEL.midden;
+  const ring = ctx.createLinearGradient(0, zy - DICTATOR_ZEGEL.ring, 0, zy + DICTATOR_ZEGEL.ring);
+  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP) ring.addColorStop(offset, kleur);
+  ctx.beginPath();
+  ctx.arc(zx, zy, DICTATOR_ZEGEL.ring, 0, Math.PI * 2);
+  ctx.fillStyle = ring;
+  ctx.fill();
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(zx, zy, DICTATOR_ZEGEL.vlak, 0, Math.PI * 2);
+  ctx.fillStyle = "#7d1a33";
+  ctx.fill();
+  ctx.lineWidth = 0.4;
+  ctx.stroke();
+  goudPad(ctx, DICTATOR_ZEGEL.ster, zy - 5, zy + 5);
+  for (const [bx, by, r] of DICTATOR_ZEGEL.bollen) {
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.fillStyle = ring;
+    ctx.fill();
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /** Vlak-motief (#710): de geëtste watermerkpaden uit futKaartOrnamenten.ts —
@@ -760,12 +961,12 @@ interface EditieRegister {
  *  die kalibratie houden we aan, ook voor de edities. */
 const BASIS_SHEEN = "rgba(255, 255, 255, 0.28)";
 
-/** Glanskleuren van de twee toptiers (#710). Beide vast: de poster staat op
- *  het lichte palet vastgepind (#125), dus alleen vaste hexen garanderen dat
- *  DOM-kaart en deel-poster in béide thema's gelijk zijn — de dictator draaide
- *  tot #710 op --dictator-gold en week in dark mode dus af van zijn poster. */
+/** Glanskleur van de GOAT (#710). Vast, net als de dictator-tinten hieronder:
+ *  de poster staat op het lichte palet vastgepind (#125), dus alleen vaste
+ *  hexen garanderen dat DOM-kaart en deel-poster in béide thema's gelijk zijn —
+ *  de dictator draaide tot #710 op --dictator-gold en week in dark mode dus af
+ *  van zijn eigen poster. */
 const GOAT_GLANS = "#f7869f";
-const DICTATOR_GLANS = "#e6b34d";
 
 /** De zes editie-registers — waarden spiegelen FutKaart.css (regels 637-951)
  *  en, voor de Icon, de --bigdaddy-kaart-/--bigdaddy-frame-tokens uit
@@ -907,16 +1108,12 @@ function tierKleur(key: TierKey | undefined): string {
 }
 
 /** Draagt deze divisiegroep de stralenkrans? Spiegel van het premium-blok in
- *  FutKaart.css: de spitse vleugels en de dictator-crest. De GOAT stond hier
- *  tot #710 ook bij, maar heeft nu een eigen ::after met ijl satijn — ook
- *  onder een editie-skin, want editie-blokken raken ::after niet aan. */
+ *  FutKaart.css: alleen nog de spitse vleugels. GOAT en dictator stonden hier
+ *  tot #710 ook bij; die hebben nu een eigen ::after (ijl satijn met medaillon,
+ *  respectievelijk brokaat) — ook onder een editie-skin, want editie-blokken
+ *  raken ::after niet aan. */
 function premiumTier(key: TierKey | undefined): boolean {
-  return (
-    key === "platina" ||
-    key === "diamant" ||
-    key === "meester" ||
-    key === "dictator"
-  );
+  return key === "platina" || key === "diamant" || key === "meester";
 }
 
 /**
@@ -957,16 +1154,22 @@ export function kaartSkin(
         sheenSpreiding: r.sheenSpreiding,
         keyline: mix(r.lijn, "#fff8e8", 0.75),
         stralen,
-        textuur: r.textuur,
-        // Het ijle GOAT-satijn overleeft de editie (eigen ::after-regel,
-        // die editie-blokken niet raken); pias en Piet zetten hun eigen
-        // weefsel en slaan het satijn sowieso over.
+        // Eigen ::after-textuur overleeft de editie (editie-blokken raken
+        // ::after niet aan): het ijle GOAT-satijn en het dictator-brokaat
+        // blijven staan. Pias en Piet brengen hun eigen weefsel mee en winnen
+        // wél — hun `background: none` staat ná het toptier-blok in de CSS.
+        textuur: r.textuur ?? (key === "dictator" ? "brokaat" : undefined),
         satijnAlpha: key === "legende" ? 0.035 : undefined,
         // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
         // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
         // vlak-register en verdwijnt wél — het medaillon zou op het
         // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
-        ornament: key === "legende" ? "goat" : undefined,
+        ornament:
+          key === "legende"
+            ? "goat"
+            : key === "dictator"
+              ? "dictator"
+              : undefined,
       },
       ink: r.ink,
       inkSoft: r.inkSoft,
@@ -1031,30 +1234,53 @@ export function kaartSkin(
   // met de GOAT; de tinten staan nu vast op de troonwaarden van het lichte
   // thema, precies wat deze tabel altijd al tekende.
   if (key === "dictator") {
-    const glans = DICTATOR_GLANS;
     return {
       kleuren: {
         frame: [
-          [0, mix(glans, "#ffffff", 0.85)],
-          [0.42, mix(glans, "#201505", 0.55)],
-          [0.68, mix(glans, "#fff8e0", 0.92)],
-          [1, mix(glans, "#140d02", 0.45)],
+          [0, "#f6e6b4"],
+          [0.34, "#a8802f"],
+          [0.58, "#f2d98f"],
+          [0.82, "#6b4d18"],
+          [1, "#2e1f08"],
         ],
-        liner: "#0c0805",
+        liner: "#140409",
         vlak: [
-          [0, "#a52347"],
-          [0.6, "#5e1228"],
-          [1, "#120a10"],
+          [0, "#7d1a33"],
+          [0.58, "#4a0f1f"],
+          [1, "#230812"],
         ],
-        glow: rgba(glans, 0.4),
-        sheen: "rgba(255, 240, 200, 0.14)",
-        keyline: mix(glans, "#fff8e8", 0.55),
-        stralen,
+        glow: "rgba(240, 199, 102, 0.34)",
+        sheen: "rgba(250, 226, 160, 0.18)",
+        keyline: "#d9b661",
+        // Propaganda-zonnestraal i.p.v. de gedeelde ijl-witte krans: goud op
+        // wijn, met de hoekmaten van de repeating-conic in de CSS (6°/16°).
+        stralen: true,
+        stralenKleur: "rgba(240, 199, 102, 0.1)",
+        stralenStraal: 6,
+        stralenPeriode: 16,
+        textuur: "brokaat",
+        echo: [
+          [0.012, 0, "rgba(58, 10, 22, 0.9)"],
+          [-0.012, 0, "rgba(58, 10, 22, 0.9)"],
+          [0, 0.012, "rgba(58, 10, 22, 0.9)"],
+        ],
+        binnenlijn: [
+          [1, "rgba(240, 209, 133, 0.85)"],
+          [3, "rgba(24, 6, 12, 0.95)"],
+          [4.5, "rgba(198, 158, 84, 0.6)"],
+        ],
+        motief: {
+          paden: DICTATOR_WATERMARK,
+          kleur: DICTATOR_WATERMARK_KLEUR,
+          breedte: DICTATOR_WATERMARK_BREEDTE,
+          positie: DICTATOR_WATERMARK_POSITIE,
+        },
+        ornament: "dictator",
       },
-      ink: mix(glans, "#ffffff", 0.8),
-      inkSoft: mix(glans, "#b7a98c", 0.65),
-      lijn: rgba(glans, 0.55),
-      editieKleur: mix(glans, "#ffffff", 0.8),
+      ink: "#f2dda2",
+      inkSoft: "#cdae6e",
+      lijn: "rgba(226, 194, 122, 0.5)",
+      editieKleur: "#f2dda2",
     };
   }
 
