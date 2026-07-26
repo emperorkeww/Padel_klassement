@@ -522,6 +522,63 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     expect(FUT_TSX).toContain('id="fut-schild-troon"');
   });
 
+  it("Big Daddy: rand-register en watermerk staan in de CSS én in de tabel (#710)", () => {
+    // Zelfde bewaking als bij de GOAT hierboven, nu voor het icon-register:
+    // echo, binnenlijnen en de twee motiefmaten leven op twee plekken.
+    const blok = editieBlok("icon");
+    const { kleuren } = kaartSkin("goud", "icon");
+
+    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
+    const [dx, dy, kleur] = kleuren.echo![0];
+    expect(echo).toContain(`* ${dx})`);
+    expect(echo).toContain(`* ${dy})`);
+    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
+
+    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
+    expect(kleuren.binnenlijn).toHaveLength(3);
+    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!) {
+      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
+        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
+      );
+    }
+
+    // Motiefmaat: de CSS-klasse van het kroon-watermerk draagt dezelfde
+    // breedte en positie als het canvas-register.
+    const motiefBlok = /\.fut-kaart__motief--kroon\s*\{([^}]*)\}/.exec(FUT_CSS);
+    expect(motiefBlok, ".fut-kaart__motief--kroon ontbreekt").not.toBeNull();
+    expect(Number(token(motiefBlok![1], "--motief-b"))).toBeCloseTo(
+      kleuren.motief!.breedte * 100,
+      6,
+    );
+    expect(
+      Number(token(motiefBlok![1], "--motief-pos")!.replace("%", "")),
+    ).toBeCloseTo(kleuren.motief!.positie * 100, 6);
+    expect(kleuren.motief!.paden.length).toBeGreaterThan(0);
+
+    // Parelmoeren glansbaan: de CSS overschrijft de ::before, de tabel zet een
+    // eigen sheen mét spreiding (40/50/60 daar ≡ 0.1 hier).
+    const before = /\.fut-kaart--icon \.fut-kaart__vlak::before\s*\{[^}]*\}/.exec(
+      FUT_CSS,
+    )?.[0];
+    expect(before, "Big Daddy mist zijn eigen glansbaan").toBeDefined();
+    expect(kleuren.sheenSpreiding).toBe(0.1);
+  });
+
+  it("het editie-ornament wint van het tier-ornament (#710)", () => {
+    // Vastgelegd gedrag: het ornament hangt normaal aan de tíer (een GOAT houdt
+    // zijn hoorns onder In-Form), maar een editie met eigen ornament wint —
+    // een Big Daddy die óók GOAT is, draagt kroon en linten, geen bokhoorns.
+    expect(kaartSkin("goud", "icon").kleuren.ornament).toBe("bigdaddy");
+    expect(kaartSkin("legende", "icon").kleuren.ornament).toBe("bigdaddy");
+    expect(kaartSkin("legende", "inform").kleuren.ornament).toBe("goat");
+    expect(kaartSkin("goud", "kampioen").kleuren.ornament).toBeUndefined();
+    // En het GOAT-medaillon wijkt voor het kroon-watermerk.
+    expect(kaartSkin("legende", "icon").kleuren.motief).toBe(
+      kaartSkin("goud", "icon").kleuren.motief,
+    );
+    expect(kaartSkin("legende", "inform").kleuren.motief).toBeUndefined();
+  });
+
   it("dekt élke editie die FutKaart.css kleurt", () => {
     // Vangnet voor een zévende editie: als de CSS er een bijkrijgt zonder dat
     // de canvas-tabel meegroeit, valt dat hier op i.p.v. op de poster.

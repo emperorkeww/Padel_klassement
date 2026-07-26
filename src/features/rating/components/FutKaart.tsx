@@ -43,7 +43,49 @@ import {
   type OrnamentPad,
   type Streng,
 } from "./futKaartOrnamenten";
+import {
+  BD_BALLONNEN,
+  BD_BALLON_GLANS,
+  BD_BALLON_TOUW,
+  BD_CONFETTI,
+  BD_CONTOUR,
+  BD_KROON,
+  BD_KROON_BAND,
+  BD_KROON_BANDGLANS,
+  BD_KROON_BOLLEN,
+  BD_KROON_MOTIEF,
+  BD_KROON_MOTIEF_KLEUR,
+  BD_KROON_STEEN,
+  BD_KROON_STEEN_FACETTEN,
+  BD_LINT_BOOG,
+  BD_LINT_MATERIAAL,
+  BD_LINT_STAART,
+  BD_METAAL_MATERIAAL,
+  BD_PUNT_STEEN,
+  BD_PUNT_STEEN_FACETTEN,
+  BD_PUNT_VLEUGEL,
+  BD_PUNT_ZETTING,
+  BD_RIBBEL,
+  BD_RIBBELGLANS,
+  BD_STEEN_FACET,
+  BD_STEEN_VERLOOP,
+  cirkelPad,
+  type StrengMateriaal,
+} from "./ornamentenBigDaddy";
 import "./FutKaart.css";
+
+/** Materiaal van de GOAT-strengen. Sinds #710 (Big Daddy) kan een ornament
+ *  zijn eigen metaal meebrengen, dus wat eerst losse constanten waren staat
+ *  hier als één materiaal — de canvas-spiegel doet exact hetzelfde. */
+const GOAT_MATERIAAL: StrengMateriaal = {
+  gradientId: "fut-orn-metaal",
+  verloop: GOAT_METAAL_VERLOOP,
+  contour: GOAT_METAAL_CONTOUR,
+  glans: GOAT_METAAL_GLANS,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+};
 
 /** Schildvormen: vier clipPaths met exact dezelfde onderkant (de punt op
  *  50%/100% blijft het chemielijn-anker in de Opstelling) en een bovenrand
@@ -57,17 +99,19 @@ import "./FutKaart.css";
  *  DOM en canvas tekenen letterlijk dezelfde paden. */
 function FutStreng({
   streng,
+  materiaal = GOAT_MATERIAAL,
   ribbelBreedte = 0.4,
 }: {
   streng: Streng;
+  materiaal?: StrengMateriaal;
   ribbelBreedte?: number;
 }) {
   return (
     <>
       <path
         d={streng.omtrek}
-        fill="url(#fut-orn-metaal)"
-        stroke={GOAT_METAAL_CONTOUR}
+        fill={`url(#${materiaal.gradientId})`}
+        stroke={materiaal.contour}
         strokeWidth="0.7"
         strokeLinejoin="round"
       />
@@ -76,7 +120,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBELGLANS}
+          stroke={materiaal.ribbelGlans}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -86,7 +130,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBEL}
+          stroke={materiaal.ribbel}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -94,14 +138,14 @@ function FutStreng({
       <path
         d={streng.schaduw}
         fill="none"
-        stroke={GOAT_METAAL_SCHADUW}
+        stroke={materiaal.schaduw}
         strokeWidth="1.3"
         strokeLinecap="round"
       />
       <path
         d={streng.highlight}
         fill="none"
-        stroke={GOAT_METAAL_GLANS}
+        stroke={materiaal.glans}
         strokeWidth="0.9"
         strokeLinecap="round"
       />
@@ -129,6 +173,39 @@ function FutGoud({ d }: { d: string }) {
         strokeLinejoin="round"
         opacity="0.7"
       />
+    </>
+  );
+}
+
+/** Edelsteen (#710): omtrek in de steen-gradient met lichte facetlijnen — de
+ *  kroon bovenaan en het ornament in de punt dragen dezelfde steen, zodat de
+ *  twee bij elkaar horen. */
+function FutSteen({
+  omtrek,
+  facetten,
+}: {
+  omtrek: string;
+  facetten: readonly string[];
+}) {
+  return (
+    <>
+      <path
+        d={omtrek}
+        fill="url(#fut-orn-bd-steen)"
+        stroke={BD_CONTOUR}
+        strokeWidth="0.35"
+        strokeLinejoin="round"
+      />
+      {facetten.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={BD_STEEN_FACET}
+          strokeWidth="0.3"
+          strokeLinecap="round"
+        />
+      ))}
     </>
   );
 }
@@ -161,18 +238,68 @@ export function FutKaartDefs() {
             zijn per constructie gelijk, zoals de canvas-spiegel dat met
             scale(-1,1) doet. Kaarten verwijzen met <use> naar deze groep,
             dus de paden staan één keer per pagina. */}
+        {[GOAT_MATERIAAL, BD_METAAL_MATERIAAL, BD_LINT_MATERIAAL].map((m) =>
+          // Een materiaal met vaste as (het lint) krijgt zijn gradient in
+          // ornament-units: twee lintbogen samen vormen één voorwerp, dus de
+          // as mag niet per streng meeschalen. De rest volgt de omhullende
+          // van de vorm zelf.
+          m.as ? (
+            <linearGradient
+              key={m.gradientId}
+              id={m.gradientId}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1={m.as[0]}
+              x2="0"
+              y2={m.as[1]}
+            >
+              {m.verloop.map(([offset, kleur]) => (
+                <stop key={offset} offset={offset} stopColor={kleur} />
+              ))}
+            </linearGradient>
+          ) : (
+            <linearGradient
+              key={m.gradientId}
+              id={m.gradientId}
+              x1="0"
+              y1="0"
+              x2="0.35"
+              y2="1"
+              gradientUnits="objectBoundingBox"
+            >
+              {m.verloop.map(([offset, kleur]) => (
+                <stop key={offset} offset={offset} stopColor={kleur} />
+              ))}
+            </linearGradient>
+          ),
+        )}
         <linearGradient
-          id="fut-orn-metaal"
-          x1="0"
+          id="fut-orn-bd-steen"
+          x1="0.2"
           y1="0"
-          x2="0.35"
+          x2="0.8"
           y2="1"
           gradientUnits="objectBoundingBox"
         >
-          {GOAT_METAAL_VERLOOP.map(([offset, kleur]) => (
+          {BD_STEEN_VERLOOP.map(([offset, kleur]) => (
             <stop key={offset} offset={offset} stopColor={kleur} />
           ))}
         </linearGradient>
+        {BD_BALLONNEN.map((b) => (
+          <linearGradient
+            key={b.id}
+            id={`fut-orn-bd-ballon-${b.id}`}
+            x1="0.15"
+            y1="0.05"
+            x2="0.85"
+            y2="1"
+            gradientUnits="objectBoundingBox"
+          >
+            {b.verloop.map(([offset, kleur]) => (
+              <stop key={offset} offset={offset} stopColor={kleur} />
+            ))}
+          </linearGradient>
+        ))}
         <g id="fut-orn-goat-helft">
           <FutStreng streng={GOAT_HOORN} ribbelBreedte={0.62} />
           <FutStreng streng={GOAT_BAARD_FLICK} ribbelBreedte={0.34} />
@@ -338,6 +465,124 @@ export function FutKaartDefs() {
           <use href="#fut-orn-goat-helft" />
           <use href="#fut-orn-goat-helft" transform="translate(100,0) scale(-1,1)" />
         </g>
+        {/* Big Daddy (#710): twee groepen i.p.v. één. Het feestwerk (lint,
+            ballonnen, confetti) hoort áchter de kaart, maar kroon en
+            punt-ornament liggen in de referentie duidelijk óver de rand — een
+            steen die achter het schild valt is geen steen meer. Vandaar een
+            tweede, vóór-liggende laag; zie .fut-kaart__ornament--voor. */}
+        <g id="fut-orn-bigdaddy-helft">
+          <FutStreng
+            streng={BD_LINT_BOOG}
+            materiaal={BD_LINT_MATERIAAL}
+            ribbelBreedte={0.4}
+          />
+          <FutStreng
+            streng={BD_LINT_STAART}
+            materiaal={BD_LINT_MATERIAAL}
+            ribbelBreedte={0.4}
+          />
+        </g>
+        <g id="fut-orn-bigdaddy">
+          <use href="#fut-orn-bigdaddy-helft" />
+          <use
+            href="#fut-orn-bigdaddy-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          {/* Ballonnen: bewust twee en alleen rechtsboven, met het touwtje dat
+              achter de schouder verdwijnt. Niet gespiegeld — een symmetrisch
+              paar zou als logo lezen i.p.v. als feestaccent. */}
+          {BD_BALLONNEN.map((b) => (
+            <g key={b.id}>
+              <path
+                d={b.touw}
+                fill="none"
+                stroke={BD_BALLON_TOUW}
+                strokeWidth="0.4"
+                strokeLinecap="round"
+              />
+              <path
+                d={b.knoop}
+                fill={`url(#fut-orn-bd-ballon-${b.id})`}
+                stroke={BD_CONTOUR}
+                strokeWidth="0.3"
+                strokeLinejoin="round"
+              />
+              <path
+                d={b.d}
+                fill={`url(#fut-orn-bd-ballon-${b.id})`}
+                stroke={BD_CONTOUR}
+                strokeWidth="0.4"
+                strokeLinejoin="round"
+              />
+              <path d={cirkelPad(b.glans)} fill={BD_BALLON_GLANS} />
+            </g>
+          ))}
+          {BD_CONFETTI.map((c) => (
+            <path key={c.d} d={c.d} fill={c.kleur} />
+          ))}
+        </g>
+        <g id="fut-orn-bigdaddy-voor-helft">
+          <FutStreng
+            streng={BD_PUNT_VLEUGEL}
+            materiaal={BD_METAAL_MATERIAAL}
+            ribbelBreedte={0.3}
+          />
+        </g>
+        <g id="fut-orn-bigdaddy-voor">
+          <use href="#fut-orn-bigdaddy-voor-helft" />
+          <use
+            href="#fut-orn-bigdaddy-voor-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          <path
+            d={BD_PUNT_ZETTING}
+            fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+            stroke={BD_CONTOUR}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          <FutSteen omtrek={BD_PUNT_STEEN} facetten={BD_PUNT_STEEN_FACETTEN} />
+          <path
+            d={BD_KROON}
+            fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+            stroke={BD_CONTOUR}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          {BD_KROON_BAND.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={BD_RIBBEL}
+              strokeWidth="0.45"
+              strokeLinecap="round"
+            />
+          ))}
+          {BD_KROON_BANDGLANS.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={BD_RIBBELGLANS}
+              strokeWidth="0.4"
+              strokeLinecap="round"
+            />
+          ))}
+          {BD_KROON_BOLLEN.map((b) => (
+            <path
+              key={`${b.cx}-${b.cy}`}
+              d={cirkelPad(b)}
+              fill={`url(#${BD_METAAL_MATERIAAL.gradientId})`}
+              stroke={BD_CONTOUR}
+              strokeWidth="0.45"
+            />
+          ))}
+          <FutSteen
+            omtrek={BD_KROON_STEEN}
+            facetten={BD_KROON_STEEN_FACETTEN}
+          />
+        </g>
       </defs>
     </svg>
   );
@@ -352,6 +597,7 @@ function FutKaartMotief({
   kleur,
   breedte,
   positie,
+  className,
 }: {
   paden: readonly OrnamentPad[];
   kleur: string;
@@ -359,10 +605,13 @@ function FutKaartMotief({
   breedte?: number;
   /** Verticale plaatsing als background-position-fractie (--motief-pos). */
   positie?: number;
+  /** Extra klasse wanneer een register zijn maten liever in de CSS zet dan
+   *  via de twee variabelen hierboven (zoals het Big Daddy-kroonwatermerk). */
+  className?: string;
 }) {
   return (
     <svg
-      className="fut-kaart__motief"
+      className={`fut-kaart__motief${className ? ` ${className}` : ""}`}
       viewBox="0 0 100 100"
       aria-hidden="true"
       style={{
@@ -433,33 +682,38 @@ export function FutKaart({
   ]
     .filter(Boolean)
     .join(" ");
-  // Ornament (#710): de laag die buiten het schild uitsteekt, hangt aan de
-  // tíer — een GOAT met In-Form houdt zijn hoorns. Zodra een editie een
-  // eigen ornament heeft (#710 PR 3), wint dat van het tier-ornament, zoals
-  // de editie-skin ook het vlak wint.
+  // Ornament (#710): de laag die buiten het schild uitsteekt. Een editie met
+  // eigen ornament wint van het tier-ornament — net zoals de editie-skin het
+  // vlak wint; zonder zo'n editie hangt het ornament aan de tíer, dus een
+  // GOAT met In-Form houdt zijn hoorns.
   const ornament =
-    tier?.key === "legende"
-      ? "goat"
-      : tier?.key === "dictator"
-        ? "dictator"
-        : null;
-  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register en
-  // verdwijnt dus wél onder een editie-skin (het medaillon zou op het
-  // In-Form-navy vloeken); alleen de voorkant draagt het.
-  const motief = editie
-    ? null
-    : tier?.key === "legende"
-      ? <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
-      : tier?.key === "dictator"
-        ? (
-            <FutKaartMotief
-              paden={DICTATOR_WATERMARK}
-              kleur={DICTATOR_WATERMARK_KLEUR}
-              breedte={DICTATOR_WATERMARK_BREEDTE}
-              positie={DICTATOR_WATERMARK_POSITIE}
-            />
-          )
-        : null;
+    editie === "icon"
+      ? "bigdaddy"
+      : tier?.key === "legende"
+        ? "goat"
+        : tier?.key === "dictator"
+          ? "dictator"
+          : null;
+  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register.
+  // Onder een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op
+  // het In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
+  const motief =
+    editie === "icon" ? (
+      <FutKaartMotief
+        paden={BD_KROON_MOTIEF}
+        kleur={BD_KROON_MOTIEF_KLEUR}
+        className="fut-kaart__motief--kroon"
+      />
+    ) : editie ? null : tier?.key === "legende" ? (
+      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+    ) : tier?.key === "dictator" ? (
+      <FutKaartMotief
+        paden={DICTATOR_WATERMARK}
+        kleur={DICTATOR_WATERMARK_KLEUR}
+        breedte={DICTATOR_WATERMARK_BREEDTE}
+        positie={DICTATOR_WATERMARK_POSITIE}
+      />
+    ) : null;
   return (
     <div className={klassen}>
       {ornament && (
@@ -501,18 +755,21 @@ export function FutKaart({
           </span>
         </div>
       </div>
-      {/* Vóór-laag (#710): alleen El Padelissimo heeft ornamenten die over de
-          kaart heen liggen (lauwerkransen langs de zijkanten, lakzegel in de
-          punt) — de laagvolgorde uit de referentie-instructies. Ze staan in
-          de marge van het vlak, dus ze dekken geen tekst af, en de laag is
-          pointer-events: none zodat de flip-knop bereikbaar blijft. */}
-      {ornament === "dictator" && (
+      {/* Vóór-laag (#710): sommige ornamenten liggen óver de kaart heen i.p.v.
+          erachter — de lauwerkransen en het lakzegel van El Padelissimo, de
+          kroon en de punt-edelsteen van Big Daddy. Dat is de laagvolgorde uit
+          de referentie-instructies. Ze staan in de marge van het vlak, dus ze
+          dekken geen tekst af; de laag komt ná de flipper (tekent dus
+          eroverheen), blijft staan bij een omgedraaide kaart — het schild
+          houdt zijn kroon ook van achteren — en is pointer-events: none,
+          zodat de flip-knop bereikbaar blijft. */}
+      {(ornament === "dictator" || ornament === "bigdaddy") && (
         <svg
           className="fut-kaart__ornament fut-kaart__ornament--voor"
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use href="#fut-orn-dictator-voor" />
+          <use href={`#fut-orn-${ornament}-voor`} />
         </svg>
       )}
     </div>
