@@ -1,5 +1,140 @@
 /* Divisiekaart "Sletje van de baan" (slof) — tot 599 — betongrijs, taupe, dof zink; de eenvoudigste kaart van de ladder.
-   Nog niet uitgewerkt (#710): zolang dit bestand leeg is, houdt de divisie de
-   generieke metaalladder uit FutKaart.css. Zet hier het
-   `.fut-kaart--slof`-register, en spiegel dezelfde waarden in slof.ts
-   zodat de deel-poster hetzelfde tekent (de synctest bewaakt dat). */
+
+   Het register van de laagste basisdivisie (#710): warm betongrijs als vlak, dof
+   zink als rand. Waarom dit blok de generieke metaalladder opzij zet: die mixt
+   de tierkleur richting warm wit en levert een frame met twee glanspunten — een
+   glimmend kaartje, precies wat de bodem van de ladder níet is. Hier staan twee
+   vlakke zinktonen in één richting, en verder is élk middel dat "zeldzaam" leest
+   weggelaten: geen glanspunt, geen eigen keyline, geen binnenlijn, geen
+   echo-contour, geen stralenkrans en geen beweging. Zichtbaar de eenvoudigste
+   kaart van de negen, en dat is de acceptatie-eis van de referentie.
+
+   Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
+   staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
+   poster in béide thema's gelijk. Tweede lezer: het `register` in slof.ts; de
+   synctest in slof.test.ts leest dít bestand in en houdt de twee gelijk. */
+.fut-kaart--slof {
+  /* Warm betongrijs met taupe schaduw. Contrast (WCAG, gerekend op de
+     vlak-gradient) — de reden dat deze kaart nog aan de beurt was, is dat de
+     divisietitel op de generieke ladder grijs-op-grijs stond:
+     — tegen de dónkerste vlak-stop (--kaart-lo #c0baac), dus de ongunstigste
+       plek op het vlak: ink #2b2823 → 7,59:1 (AAA), ink-soft #4a453e → 4,91:1
+       (AA). Die stop raakt alleen de lege schildpunt (het vlak heeft 24%
+       bodempadding), maar hij is wél de bodem van de meting.
+     — op de hoogtes waar de inkt écht staat: eloblok 11,51:1 / 7,45:1,
+       naamplaat 9,14:1 / 5,91:1 en de divisieregel (die ink-soft draagt)
+       8,62:1 / 5,58:1. Alles dus ruim boven AA, de divisieregel zelfs boven
+       AAA voor kleine tekst.
+     — de haarlijnen (--kaart-lijn, 1,5px onder het eloblok en om de naamplaat)
+       halen 4,23:1 respectievelijk 3,36:1 en blijven daarmee boven de 3:1 die
+       WCAG voor niet-tekstuele elementen vraagt.
+     Het watermerk in slof.ts blijft bewust boven v≈89 en komt dus niet
+     ónder de naamplaat of de divisieregel; die getallen hierboven gelden dus
+     voor de kale vlak-gradient. Verhuist het watermerk lager, dan is dit de
+     plek om opnieuw te meten.
+     Zie ook de zetting van de divisieregel onderaan dit bestand: "SLETJE VAN DE
+     BAAN III" is de langste titel van de negen en past niet in de gedeelde
+     zetting. */
+  --kaart-hi: #ece9e2;
+  --kaart-mid: #dad6cb;
+  --kaart-lo: #c0baac;
+  --kaart-ink: #2b2823;
+  --kaart-ink-soft: #4a453e;
+  --kaart-lijn: #6f6a5c;
+  /* Bewust géén --kaart-echo en géén --kaart-binnenlijn: een tweede, verschoven
+     silhouet en gestapelde binnenlijnen zijn het randwerk van de prestige-
+     kaarten. Zelfs de Stofzuiger één trede hoger houdt nog één haarlijn; deze
+     kaart heeft er nul. Dát is "de dunste en eenvoudigste omlijsting". */
+}
+/* Twee vlakke zinktonen op de gedeelde frame-as (160°), licht → dof. Geen enkel
+   glanspunt: de metaalladder heeft er twee en de Stofzuiger nog één, dus dit is
+   het simpelste frame van de ladder. Canvas-spiegel: `frame` in slof.ts. */
+.fut-kaart--slof .fut-kaart__zijde {
+  background: linear-gradient(160deg, #c5bfb1 0%, #7c766a 100%);
+}
+/* Liner dicht op de donkere framestop (#7c766a): frame en liner lezen samen als
+   één vlakke zinkstrip i.p.v. als een gelaagde metaalrand — de rand oogt daardoor
+   dunner dan hij is, zonder dat de padding-stapel (die het canvas hardcodeert)
+   wordt aangeraakt. */
+.fut-kaart--slof .fut-kaart__liner {
+  background: #6b6559;
+}
+/* Géén eigen keyline: de gedeelde regel mixt --kaart-lijn naar warm wit en
+   levert daarmee de bleke zinklijn die deze plaat nodig heeft — één plek minder
+   waar DOM en poster uiteen kunnen lopen. Het `register` in slof.ts laat
+   `keyline` daarom ook weg. */
+
+/* Beton reflecteert diffuus: de topgloed is een warme waas op 24% i.p.v. het
+   koele wit op 50% van de basiskaart, en zwakker dan het composiet van de
+   Stofzuiger (34%). Dát is de enige reden dat dit blok de vlak-achtergrond
+   overschrijft — de linear-gradient eronder is letterlijk die van FutKaart.css,
+   inclusief de 56%-middenstop. Canvas-spiegel: `glow` in slof.ts. */
+.fut-kaart--slof .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      120% 55% at 50% -6%,
+      rgba(255, 252, 244, 0.24),
+      transparent 60%
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+}
+/* De breedste en zwakste glansbaan van de ladder: 26/50/74 op 6% (de basiskaart
+   doet 42/50/58 op 32%, de Stofzuiger 28/50/72 op 8%). Ruw beton geeft nooit een
+   puntreflectie — hoe breder en ijler de baan, hoe matter het materiaal.
+   Canvas-spiegel: `sheen` met sheenSpreiding 0,24 in slof.ts — 0,5 ± 0,24 is
+   exact de 26%/74% die hier staat. */
+.fut-kaart--slof .fut-kaart__vlak::before {
+  background: linear-gradient(
+    115deg,
+    transparent 26%,
+    rgba(255, 252, 244, 0.06) 50%,
+    transparent 74%
+  );
+}
+/* Satijn op 3% i.p.v. de 7% van de basiskaart (en de 4,5% van de Stofzuiger):
+   het weefsel mag de korrel van beton suggereren, niet de plaat laten glimmen.
+   En geen stralenkrans eroverheen — die hoort bij de premium-divisies, vier
+   treden hoger. Canvas-spiegel: satijnAlpha 0.03 en stralen: false in slof.ts. */
+.fut-kaart--slof .fut-kaart__vlak::after {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.03) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+/* Géén animatie in dit bestand, en dat is een keuze: elke andere divisie laat
+   zijn glansbaan of waas bewegen, maar beton en rubber doen niets. Meteen ook de
+   goedkoopste manier om de kaart en de stilstaande deel-poster gelijk te houden.
+
+   Koele, korte schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel in
+   FutKaart.css is roze getint (Big Daddy) en dat maakt van zink meteen roségoud.
+   Kort gehouden omdat kegelcrest, stootstrips en oefendoel op de plaat liggen —
+   ze zweven er niet boven. */
+.fut-kaart--slof .fut-kaart__ornament--voor {
+  filter: drop-shadow(0 1px 1px rgba(38, 35, 30, 0.38));
+}
+/* Divisieregel: "SLETJE VAN DE BAAN III" is met 22 tekens de langste titel van
+   de negen, en in de gedeelde zetting (#664: 0.063 × --fut-kw met 0,05em
+   tracking) past hij op géén enkele maat. Gemeten in Outfit 800, tegen de
+   beschikbare vlakbreedte (kaart − 11px randstapel − 2 × 9% padding):
+     veldmaat 96px  79,3 px in 69,7 px   → ellipst
+     wandmaat 132px 109,0 px in 99,2 px  → ellipst
+     heromaat 210px 173,7 px in 163,2 px → ellipst
+   Vandaar hier één stap strakker: 0.058 × --fut-kw en de tracking eraf. Dat
+   levert 66,8 / 92,0 / 146,5 px en dus op élke maat 4 tot 10% ruimte over — ook
+   wanneer Outfit nog niet geladen is en de bredere systeemletter inspringt.
+   De tracking eraf is bovendien wat de deel-poster al deed: canvas kent geen
+   letter-spacing (`fillText` in profielPoster.ts), dus de regel op de poster
+   staat er altijd zónder. Die haalt zijn budget van fw × 0,7 en kapt deze titel
+   níet af; DOM en poster tonen nu dezelfde volledige regel.
+   Alleen deze regel, alleen op deze divisie: de andere acht titels passen in de
+   gedeelde zetting en horen die te houden. */
+.fut-kaart--slof .fut-kaart__divisie {
+  font-size: calc(var(--fut-kw) * 0.058);
+  letter-spacing: 0;
+}
