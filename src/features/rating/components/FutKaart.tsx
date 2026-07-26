@@ -43,6 +43,28 @@ import {
   type OrnamentPad,
   type Streng,
 } from "./futKaartOrnamenten";
+import {
+  kiesOrnament,
+  ONFIRE_CREST_BAND,
+  ONFIRE_CREST_NERVEN,
+  ONFIRE_CREST_PLAAT,
+  ONFIRE_CREST_VLAM,
+  ONFIRE_GLOED_VERLOOP,
+  ONFIRE_KOPER,
+  ONFIRE_MEDAILLON,
+  ONFIRE_MEDAILLON_DIEP,
+  ONFIRE_MEDAILLON_NERVEN,
+  ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_SINTELS,
+  ONFIRE_SINTEL_GLOED,
+  ONFIRE_SINTEL_KERN,
+  ONFIRE_STAAL_VERLOOP,
+  ONFIRE_VINNEN,
+  ONFIRE_WATERMARK,
+  ONFIRE_WATERMARK_BREEDTE,
+  ONFIRE_WATERMARK_KLEUR,
+  ONFIRE_WATERMARK_POSITIE,
+} from "./ornamentenOnfire";
 import "./FutKaart.css";
 
 /** Schildvormen: vier clipPaths met exact dezelfde onderkant (de punt op
@@ -52,22 +74,55 @@ import "./FutKaart.css";
  *  objectBoundingBox laat de paden meeschalen met elke kaartbreedte.
  *  Eén keer renderen per pagina; dubbel renderen is onschadelijk (identieke
  *  defs), maar onnodig. */
+/** De kleuren waarmee `FutStreng` één streng tekent: welk verloop de vulling
+ *  krijgt en welke contour-, glans-, ribbel- en schaduwtint erbij horen. Sinds
+ *  #710 twee stuks — de rosé GOAT-hoorns en de koperen On Fire-vinnen — zodat
+ *  het strenggereedschap zelf kleurloos blijft. */
+interface StrengPalet {
+  verloop: string;
+  contour: string;
+  glans: string;
+  ribbel: string;
+  ribbelGlans: string;
+  schaduw: string;
+}
+
+const GOAT_PALET: StrengPalet = {
+  verloop: "url(#fut-orn-metaal)",
+  contour: GOAT_METAAL_CONTOUR,
+  glans: GOAT_METAAL_GLANS,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+};
+
+const ONFIRE_PALET: StrengPalet = {
+  verloop: "url(#fut-orn-koper)",
+  contour: ONFIRE_KOPER.contour,
+  glans: ONFIRE_KOPER.glans,
+  ribbel: ONFIRE_KOPER.ribbel,
+  ribbelGlans: ONFIRE_KOPER.ribbelGlans,
+  schaduw: ONFIRE_KOPER.schaduw,
+};
+
 /** Eén getaperde metaalstreng (#710): gevulde omtrek met contour, dwarsribbels
  *  en glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus
  *  DOM en canvas tekenen letterlijk dezelfde paden. */
 function FutStreng({
   streng,
   ribbelBreedte = 0.4,
+  palet = GOAT_PALET,
 }: {
   streng: Streng;
   ribbelBreedte?: number;
+  palet?: StrengPalet;
 }) {
   return (
     <>
       <path
         d={streng.omtrek}
-        fill="url(#fut-orn-metaal)"
-        stroke={GOAT_METAAL_CONTOUR}
+        fill={palet.verloop}
+        stroke={palet.contour}
         strokeWidth="0.7"
         strokeLinejoin="round"
       />
@@ -76,7 +131,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBELGLANS}
+          stroke={palet.ribbelGlans}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -86,7 +141,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBEL}
+          stroke={palet.ribbel}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -94,18 +149,32 @@ function FutStreng({
       <path
         d={streng.schaduw}
         fill="none"
-        stroke={GOAT_METAAL_SCHADUW}
+        stroke={palet.schaduw}
         strokeWidth="1.3"
         strokeLinecap="round"
       />
       <path
         d={streng.highlight}
         fill="none"
-        stroke={GOAT_METAAL_GLANS}
+        stroke={palet.glans}
         strokeWidth="0.9"
         strokeLinecap="round"
       />
     </>
+  );
+}
+
+/** Eén koperen ornamentvlak van de On Fire-editie: verloop-vulling met een
+ *  donkere contour — dezelfde opbouw als `FutGoud`, andere legering. */
+function FutKoper({ d, contour = ONFIRE_KOPER.contour }: { d: string; contour?: string }) {
+  return (
+    <path
+      d={d}
+      fill="url(#fut-orn-koper)"
+      stroke={contour}
+      strokeWidth="0.5"
+      strokeLinejoin="round"
+    />
   );
 }
 
@@ -315,6 +384,126 @@ export function FutKaartDefs() {
             />
           ))}
         </g>
+        {/* On Fire (#710) — de editie-ornamentlaag. Verhit koper voor de
+            vinnen, crest en het medaillon; verkoold staal voor de crest-plaat;
+            een gloeikern voor de vlam in het medaillon. */}
+        <linearGradient
+          id="fut-orn-koper"
+          x1="0"
+          y1="0"
+          x2="0.35"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_KOPER.verloop.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-staal"
+          x1="0"
+          y1="0"
+          x2="0.2"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_STAAL_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-gloed"
+          x1="0"
+          y1="1"
+          x2="0"
+          y2="0"
+          gradientUnits="objectBoundingBox"
+        >
+          {ONFIRE_GLOED_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        {/* Áchter de kaart: de drie vlamvinnen per kant. Eén helft plus zijn
+            spiegeling om x=50, dus links en rechts zijn per constructie gelijk. */}
+        <g id="fut-orn-onfire-achter-helft">
+          {ONFIRE_VINNEN.map((vin) => (
+            <FutStreng key={vin.omtrek} streng={vin} palet={ONFIRE_PALET} />
+          ))}
+        </g>
+        <g id="fut-orn-onfire-achter">
+          <use href="#fut-orn-onfire-achter-helft" />
+          <use
+            href="#fut-orn-onfire-achter-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
+        {/* En vóór de kaart: de vlamcrest op de bovenrand, het gloeiende
+            medaillon over de punt en de sintelaccenten. De crest móet vóór
+            liggen — hij dekt de bovenrand af en werkt zo op élke schildvorm
+            (zie ornamentenOnfire.ts); het medaillon verbergt bovendien de
+            wortels van de vinnen. Alles staat op de as of komt uit de
+            gespiegelde sintel-helft. */}
+        <g id="fut-orn-onfire-sintels-helft">
+          {ONFIRE_SINTELS.map(([u, v, r]) => (
+            <g key={`${u}-${v}`}>
+              <circle cx={u} cy={v} r={r * 2.6} fill={ONFIRE_SINTEL_GLOED} opacity="0.35" />
+              <circle cx={u} cy={v} r={r} fill={ONFIRE_SINTEL_KERN} />
+            </g>
+          ))}
+        </g>
+        <g id="fut-orn-onfire-voor">
+          <path
+            d={ONFIRE_CREST_PLAAT}
+            fill="url(#fut-orn-staal)"
+            stroke="url(#fut-orn-koper)"
+            strokeWidth="0.55"
+            strokeLinejoin="round"
+          />
+          <FutKoper d={ONFIRE_CREST_BAND} />
+          <FutKoper d={ONFIRE_CREST_VLAM} />
+          {ONFIRE_CREST_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={ONFIRE_KOPER.ribbel}
+              strokeWidth="0.32"
+              strokeLinecap="round"
+            />
+          ))}
+          <circle
+            cx={ONFIRE_MEDAILLON.midden[0]}
+            cy={ONFIRE_MEDAILLON.midden[1]}
+            r={ONFIRE_MEDAILLON.ring}
+            fill="url(#fut-orn-koper)"
+            stroke={ONFIRE_KOPER.contour}
+            strokeWidth="0.55"
+          />
+          <circle
+            cx={ONFIRE_MEDAILLON.midden[0]}
+            cy={ONFIRE_MEDAILLON.midden[1]}
+            r={ONFIRE_MEDAILLON.vlak}
+            fill={ONFIRE_MEDAILLON_DIEP}
+            stroke={ONFIRE_KOPER.contour}
+            strokeWidth="0.35"
+          />
+          <path d={ONFIRE_MEDAILLON_VLAM} fill="url(#fut-orn-gloed)" />
+          {ONFIRE_MEDAILLON_NERVEN.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke="rgba(120, 40, 10, 0.5)"
+              strokeWidth="0.3"
+              strokeLinecap="round"
+            />
+          ))}
+          <use href="#fut-orn-onfire-sintels-helft" />
+          <use
+            href="#fut-orn-onfire-sintels-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
         <g id="fut-orn-goat">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
               nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
@@ -433,33 +622,37 @@ export function FutKaart({
   ]
     .filter(Boolean)
     .join(" ");
-  // Ornament (#710): de laag die buiten het schild uitsteekt, hangt aan de
-  // tíer — een GOAT met In-Form houdt zijn hoorns. Zodra een editie een
-  // eigen ornament heeft (#710 PR 3), wint dat van het tier-ornament, zoals
-  // de editie-skin ook het vlak wint.
-  const ornament =
-    tier?.key === "legende"
-      ? "goat"
-      : tier?.key === "dictator"
-        ? "dictator"
-        : null;
-  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register en
-  // verdwijnt dus wél onder een editie-skin (het medaillon zou op het
-  // In-Form-navy vloeken); alleen de voorkant draagt het.
-  const motief = editie
-    ? null
-    : tier?.key === "legende"
-      ? <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
-      : tier?.key === "dictator"
-        ? (
-            <FutKaartMotief
-              paden={DICTATOR_WATERMARK}
-              kleur={DICTATOR_WATERMARK_KLEUR}
-              breedte={DICTATOR_WATERMARK_BREEDTE}
-              positie={DICTATOR_WATERMARK_POSITIE}
-            />
-          )
-        : null;
+  // Ornament (#710): de laag die buiten het schild uitsteekt. De regel staat in
+  // `kiesOrnament` (ornamentenOnfire.ts), zodat de canvas-spiegel in
+  // kaartSkin() letterlijk dezelfde beslissing neemt: de editie wint van de
+  // tier (On Fire vervangt de bokhoorns door vlamvinnen — twee volledige
+  // metaaloverlays stapelen mag niet van #710), en een editie zónder eigen
+  // ornament laat dat van de tier staan.
+  const ornament = kiesOrnament(tier?.key, editie);
+  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register.
+  // Vandaar een ándere regel dan bij het ornament: een editie met een eigen
+  // motief (On Fire: vlamsilhouet met thermische ringen) zet dat neer, en een
+  // editie zonder eigen motief láát het tier-watermerk vallen in plaats van het
+  // te erven — het GOAT-medaillon zou op het In-Form-navy vloeken. Alleen de
+  // voorkant draagt het.
+  const motief =
+    editie === "onfire" ? (
+      <FutKaartMotief
+        paden={ONFIRE_WATERMARK}
+        kleur={ONFIRE_WATERMARK_KLEUR}
+        breedte={ONFIRE_WATERMARK_BREEDTE}
+        positie={ONFIRE_WATERMARK_POSITIE}
+      />
+    ) : editie ? null : tier?.key === "legende" ? (
+      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+    ) : tier?.key === "dictator" ? (
+      <FutKaartMotief
+        paden={DICTATOR_WATERMARK}
+        kleur={DICTATOR_WATERMARK_KLEUR}
+        breedte={DICTATOR_WATERMARK_BREEDTE}
+        positie={DICTATOR_WATERMARK_POSITIE}
+      />
+    ) : null;
   return (
     <div className={klassen}>
       {ornament && (
@@ -470,7 +663,7 @@ export function FutKaart({
         >
           <use
             href={`#fut-orn-${
-              ornament === "dictator" ? "dictator-achter" : ornament
+              ornament === "goat" ? "goat" : `${ornament}-achter`
             }`}
           />
         </svg>
@@ -501,18 +694,19 @@ export function FutKaart({
           </span>
         </div>
       </div>
-      {/* Vóór-laag (#710): alleen El Padelissimo heeft ornamenten die over de
-          kaart heen liggen (lauwerkransen langs de zijkanten, lakzegel in de
-          punt) — de laagvolgorde uit de referentie-instructies. Ze staan in
-          de marge van het vlak, dus ze dekken geen tekst af, en de laag is
+      {/* Vóór-laag (#710): El Padelissimo (lauwerkransen langs de zijkanten,
+          lakzegel in de punt) en On Fire (vlamcrest op de bovenrand, gloeiend
+          medaillon over de punt, sintels) hebben ornamenten die over de kaart
+          heen liggen — de laagvolgorde uit de referentie-instructies. Ze staan
+          in de marge van het vlak, dus ze dekken geen tekst af, en de laag is
           pointer-events: none zodat de flip-knop bereikbaar blijft. */}
-      {ornament === "dictator" && (
+      {(ornament === "dictator" || ornament === "onfire") && (
         <svg
           className="fut-kaart__ornament fut-kaart__ornament--voor"
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use href="#fut-orn-dictator-voor" />
+          <use href={`#fut-orn-${ornament}-voor`} />
         </svg>
       )}
     </div>

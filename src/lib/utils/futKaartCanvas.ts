@@ -53,6 +53,30 @@ import {
   type OrnamentPad,
   type Streng,
 } from "@/features/rating/components/futKaartOrnamenten";
+import {
+  kiesOrnament,
+  ONFIRE_CREST_BAND,
+  ONFIRE_CREST_NERVEN,
+  ONFIRE_CREST_PLAAT,
+  ONFIRE_CREST_VLAM,
+  ONFIRE_GLOED_VERLOOP,
+  ONFIRE_KOPER,
+  ONFIRE_MEDAILLON,
+  ONFIRE_MEDAILLON_DIEP,
+  ONFIRE_MEDAILLON_NERVEN,
+  ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_SINTELS,
+  ONFIRE_SINTEL_GLOED,
+  ONFIRE_SINTEL_KERN,
+  ONFIRE_STAAL_VERLOOP,
+  ONFIRE_VINNEN,
+  ONFIRE_WATERMARK,
+  ONFIRE_WATERMARK_BREEDTE,
+  ONFIRE_WATERMARK_KLEUR,
+  ONFIRE_WATERMARK_POSITIE,
+  type MetaalPalet,
+  type OrnamentSoort,
+} from "@/features/rating/components/ornamentenOnfire";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 export type SchildVorm = "vlak" | "notch" | "punt" | "kroon" | "troon";
@@ -191,7 +215,12 @@ export function schildPad(
  *  (kraftkarton met confetti) en de Piet (speelkaart met suit-pips) een eigen
  *  weefsel meebrengen en het satijn juist uitzetten — dubbel weefsel wordt
  *  druk (de `background: none`-regel in de CSS). */
-export type VlakTextuur = "satijn" | "confetti" | "speelkaart" | "brokaat";
+export type VlakTextuur =
+  | "satijn"
+  | "confetti"
+  | "speelkaart"
+  | "brokaat"
+  | "groeven";
 
 /** Resolved themakleuren voor één laag-opbouw. De offsets die niet per thema
  *  wisselen (glow op 0/1, sheen rond 0.5) liggen vast in `drawKaartSchild`;
@@ -215,6 +244,15 @@ export interface FutKaartKleuren {
   /** Halve breedte van de sheen-baan: stops op 0.5 ± dit. Default 0.08 (de
    *  42/50/58 van de basis-::before); de shimmer-edities zetten 0.12. */
   sheenSpreiding?: number;
+  /** Volledige stoplijst van de sheen (#710), voor een baan die niet met één
+   *  piek te beschrijven is: de On Fire-hitteglans heeft zeven stops. Wint van
+   *  `sheen`/`sheenSpreiding`. */
+  sheenStops?: ReadonlyArray<readonly [number, string]>;
+  /** Vignet (#710): elliptische verdieping over het vlak, ná de topgloed —
+   *  spiegel van de eerste radial-gradient-laag in .fut-kaart--onfire
+   *  .fut-kaart__vlak. Alleen de stops; de geometrie (118% × 88% op 50%/32%)
+   *  staat vast in `drawKaartSchild`, net als bij de stralenkrans. */
+  vignet?: ReadonlyArray<readonly [number, string]>;
   /** Keyline (#664): dunne lichte lijn tussen liner en vlak — spiegel van
    *  .fut-kaart__keyline. Weglaten = geen keyline (oude opbouw). */
   keyline?: string;
@@ -257,9 +295,10 @@ export interface FutKaartKleuren {
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
-   *  "dictator" tekent bovendien een vóór-laag (lauwerkrans, lakzegel) ná het
-   *  vlak — dezelfde laagvolgorde als .fut-kaart__ornament--voor in de CSS. */
-  ornament?: "goat" | "dictator";
+   *  "dictator" en "onfire" tekenen bovendien een vóór-laag (lauwerkrans en
+   *  lakzegel, respectievelijk vlamcrest, medaillon en sintels) ná het vlak —
+   *  dezelfde laagvolgorde als .fut-kaart__ornament--voor in de CSS. */
+  ornament?: OrnamentSoort;
 }
 
 /**
@@ -283,6 +322,7 @@ export function drawKaartSchild(
   // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
   if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
+  if (kleuren.ornament === "onfire") drawOnfireAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -389,6 +429,22 @@ export function drawKaartSchild(
   ctx.fillStyle = glow;
   ctx.fillRect(fx, fy, fw, fh);
 
+  // Vignet (#710): ellips van 118% × 88% op 50%/32% van het vlak, transparant
+  // in het midden en diep aan de randen — spiegel van de bovenste
+  // radial-gradient-laag van het On-Fire-vlak. Zelfde ellips-truc als de
+  // mottling: een cirkelverloop in een geschaald assenstelsel.
+  if (kleuren.vignet) {
+    const straal = 1.18 * fw;
+    ctx.save();
+    ctx.translate(fx + fw / 2, fy + fh * 0.32);
+    ctx.scale(1, (0.88 * fh) / straal);
+    const vlek = ctx.createRadialGradient(0, 0, 0, 0, 0, straal);
+    for (const [offset, kleur] of kleuren.vignet) vlek.addColorStop(offset, kleur);
+    ctx.fillStyle = vlek;
+    ctx.fillRect(-straal, -straal, straal * 2, straal * 2);
+    ctx.restore();
+  }
+
   // Binnenlijnen (#710): geclipte ringen langs het vlak — spiegel van de
   // inset-schaduwen in --kaart-binnenlijn. Breedste eerst (de CSS somt
   // smal → breed op en de eerste schaduw wint); door de actieve clip blijft
@@ -413,10 +469,15 @@ export function drawKaartSchild(
     fx + fw,
     fy + fh * 0.62,
   );
-  const spreiding = kleuren.sheenSpreiding ?? 0.08;
-  sheen.addColorStop(0.5 - spreiding, "rgba(255, 255, 255, 0)");
-  sheen.addColorStop(0.5, kleuren.sheen);
-  sheen.addColorStop(0.5 + spreiding, "rgba(255, 255, 255, 0)");
+  if (kleuren.sheenStops) {
+    for (const [offset, kleur] of kleuren.sheenStops)
+      sheen.addColorStop(offset, kleur);
+  } else {
+    const spreiding = kleuren.sheenSpreiding ?? 0.08;
+    sheen.addColorStop(0.5 - spreiding, "rgba(255, 255, 255, 0)");
+    sheen.addColorStop(0.5, kleuren.sheen);
+    sheen.addColorStop(0.5 + spreiding, "rgba(255, 255, 255, 0)");
+  }
   ctx.fillStyle = sheen;
   ctx.fillRect(fx, fy, fw, fh);
 
@@ -459,6 +520,23 @@ export function drawKaartSchild(
     }
   }
 
+  // Geborstelde metaalgroeven (#710, On Fire): concentrische bogen om een punt
+  // onder de kaartpunt — spiegel van de repeating-radial-gradient in de CSS
+  // (periode 4,5 CSS-px → 6,3 canvas-px op de vaste ~1,4×-kalibratie). De
+  // actieve vlak-clip snijdt de bogen op de schildvorm, dus dit werkt op elke
+  // tier. Tot ~2 × de kaarthoogte: verder weg raakt geen enkele boog het vlak.
+  if (kleuren.textuur === "groeven") {
+    const cx = fx + fw / 2;
+    const cy = fy + fh * 1.32;
+    ctx.strokeStyle = "rgba(255, 178, 116, 0.085)";
+    ctx.lineWidth = 1.4;
+    for (let r = 6.3; r < fh * 2; r += 6.3) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, Math.PI, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
   if ((kleuren.textuur ?? "satijn") === "satijn") {
     ctx.strokeStyle = `rgba(255, 255, 255, ${kleuren.satijnAlpha ?? 0.06})`;
     ctx.lineWidth = 2;
@@ -475,9 +553,10 @@ export function drawKaartSchild(
   // liggen over de kaart heen. De vlak-clip moet daarvoor even wijken (die
   // zou alles buiten het vlak wegsnijden) en daarna weer aan, want de caller
   // tekent zijn content nog binnen dezelfde clip.
-  if (kleuren.ornament === "dictator") {
+  if (kleuren.ornament === "dictator" || kleuren.ornament === "onfire") {
     ctx.restore();
-    drawDictatorVoor(ctx, x, y, w);
+    if (kleuren.ornament === "dictator") drawDictatorVoor(ctx, x, y, w);
+    else drawOnfireVoor(ctx, x, y, w);
     ctx.save();
     schildPad(ctx, fx, fy, fw, fh, vorm);
     ctx.clip();
@@ -656,13 +735,25 @@ function drawMotief(
   ctx.restore();
 }
 
+/** Het rosé GOAT-metaal als palet, zodat `strokeStreng` de losse GOAT_METAAL_*
+ *  constanten en het koper van On Fire op dezelfde manier kan lezen. */
+const GOAT_PALET: MetaalPalet = {
+  verloop: GOAT_METAAL_VERLOOP,
+  contour: GOAT_METAAL_CONTOUR,
+  glans: GOAT_METAAL_GLANS,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+};
+
 /** Eén getaperde metaalstreng (#710) op canvas: gevulde omtrek met contour,
  *  dwarsribbels en glanslijn — spiegel van FutStreng in FutKaart.tsx, met
- *  letterlijk dezelfde pad-strings uit futKaartOrnamenten.ts. */
+ *  letterlijk dezelfde pad-strings uit de ornamentmodules. */
 function strokeStreng(
   ctx: CanvasRenderingContext2D,
   streng: Streng,
   ribbelBreedte: number,
+  palet: MetaalPalet = GOAT_PALET,
 ) {
   const omtrek = new Path2D(streng.omtrek);
   const verloop = ctx.createLinearGradient(
@@ -671,26 +762,157 @@ function strokeStreng(
     (streng.bbox.yMax - streng.bbox.yMin) * 0.35,
     streng.bbox.yMax,
   );
-  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
+  for (const [offset, kleur] of palet.verloop)
     verloop.addColorStop(offset, kleur);
   ctx.fillStyle = verloop;
   ctx.fill(omtrek);
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
+  ctx.strokeStyle = palet.contour;
   ctx.lineWidth = 0.7;
   ctx.stroke(omtrek);
   ctx.lineWidth = ribbelBreedte;
-  ctx.strokeStyle = GOAT_METAAL_RIBBELGLANS;
+  ctx.strokeStyle = palet.ribbelGlans;
   for (const d of streng.ribbelGlans) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  ctx.strokeStyle = palet.ribbel;
   for (const d of streng.ribbels) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_SCHADUW;
+  ctx.strokeStyle = palet.schaduw;
   ctx.lineWidth = 1.3;
   ctx.stroke(new Path2D(streng.schaduw));
-  ctx.strokeStyle = GOAT_METAAL_GLANS;
+  ctx.strokeStyle = palet.glans;
   ctx.lineWidth = 0.9;
   ctx.stroke(new Path2D(streng.highlight));
+}
+
+/** Eén gevuld ornamentvlak met een verticaal verloop over zijn eigen
+ *  hoogtebereik — de canvas-tegenhanger van een objectBoundingBox-gradient in
+ *  de DOM-defs. `[yTop, yBot]` zijn de grenzen van het pad in kaart-units. */
+function vulPad(
+  ctx: CanvasRenderingContext2D,
+  d: string,
+  verloop: readonly (readonly [number, string])[],
+  contour: string,
+  yTop: number,
+  yBot: number,
+  lijnBreedte = 0.5,
+) {
+  const pad = new Path2D(d);
+  const g = ctx.createLinearGradient(0, yTop, (yBot - yTop) * 0.35, yBot);
+  for (const [offset, kleur] of verloop) g.addColorStop(offset, kleur);
+  ctx.fillStyle = g;
+  ctx.fill(pad);
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = contour;
+  ctx.lineWidth = lijnBreedte;
+  ctx.stroke(pad);
+}
+
+/** On Fire, áchter de kaart (#710): de drie vlamvinnen per kant. Eén helft plus
+ *  zijn spiegeling om x=50, net als de <use transform> in de DOM-defs. */
+function drawOnfireAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    for (const vin of ONFIRE_VINNEN) strokeStreng(ctx, vin, 0.4, ONFIRE_KOPER);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/** On Fire, vóór de kaart (#710): de vlamcrest op de bovenrand, het gloeiende
+ *  medaillon over de kaartpunt en de sintelaccenten langs de buitenrand. */
+function drawOnfireVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+
+  // Crest: verkoolde stalen plaat met koperen rand, de chevron eronder en de
+  // gesmede vlam erin. De koperen rand van de plaat is in de DOM een
+  // gradient-stroke; op canvas volstaat de middenkleur van het verloop.
+  vulPad(
+    ctx,
+    ONFIRE_CREST_PLAAT,
+    ONFIRE_STAAL_VERLOOP,
+    ONFIRE_KOPER.verloop[1][1],
+    -1.5,
+    12,
+    0.55,
+  );
+  vulPad(ctx, ONFIRE_CREST_BAND, ONFIRE_KOPER.verloop, ONFIRE_KOPER.contour, 2, 14);
+  vulPad(ctx, ONFIRE_CREST_VLAM, ONFIRE_KOPER.verloop, ONFIRE_KOPER.contour, -7, 10, 0.35);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = ONFIRE_KOPER.ribbel;
+  ctx.lineWidth = 0.32;
+  for (const d of ONFIRE_CREST_NERVEN) ctx.stroke(new Path2D(d));
+
+  // Medaillon: koperen ring, donkere schijf, gloeiende vlam.
+  const [mx, my] = ONFIRE_MEDAILLON.midden;
+  const ring = ctx.createLinearGradient(
+    0,
+    my - ONFIRE_MEDAILLON.ring,
+    ONFIRE_MEDAILLON.ring * 0.7,
+    my + ONFIRE_MEDAILLON.ring,
+  );
+  for (const [offset, kleur] of ONFIRE_KOPER.verloop)
+    ring.addColorStop(offset, kleur);
+  ctx.beginPath();
+  ctx.arc(mx, my, ONFIRE_MEDAILLON.ring, 0, Math.PI * 2);
+  ctx.fillStyle = ring;
+  ctx.fill();
+  ctx.strokeStyle = ONFIRE_KOPER.contour;
+  ctx.lineWidth = 0.55;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(mx, my, ONFIRE_MEDAILLON.vlak, 0, Math.PI * 2);
+  ctx.fillStyle = ONFIRE_MEDAILLON_DIEP;
+  ctx.fill();
+  ctx.lineWidth = 0.35;
+  ctx.stroke();
+  // De gloedkern loopt van onder (heet) naar boven (bleek), dus het verloop
+  // gaat hier omgekeerd — zoals de y1/y2 van #fut-orn-gloed in de DOM-defs.
+  const gloed = ctx.createLinearGradient(0, my + 7, 0, my - 7);
+  for (const [offset, kleur] of ONFIRE_GLOED_VERLOOP)
+    gloed.addColorStop(offset, kleur);
+  ctx.fillStyle = gloed;
+  ctx.fill(new Path2D(ONFIRE_MEDAILLON_VLAM));
+  ctx.strokeStyle = "rgba(120, 40, 10, 0.5)";
+  ctx.lineWidth = 0.3;
+  for (const d of ONFIRE_MEDAILLON_NERVEN) ctx.stroke(new Path2D(d));
+
+  // Sintels: kern met een halo, links plus de spiegeling om x=50.
+  for (const [u, v, r] of ONFIRE_SINTELS) {
+    for (const cx of [u, 100 - u]) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = ONFIRE_SINTEL_GLOED;
+      ctx.beginPath();
+      ctx.arc(cx, v, r * 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = ONFIRE_SINTEL_KERN;
+      ctx.beginPath();
+      ctx.arc(cx, v, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 /** GOAT-ornament (#710): de bokhoorns en het baardornament die buiten het
@@ -948,11 +1170,19 @@ interface EditieRegister {
   /** Alleen gezet waar de editie de ::before-sheen overschrijft. */
   sheen?: string;
   sheenSpreiding?: number;
+  sheenStops?: ReadonlyArray<readonly [number, string]>;
   ink: string;
   inkSoft: string;
   lijn: string;
   editieKleur: string;
   textuur?: VlakTextuur;
+  /** Rand- en dieptelagen (#710): dezelfde velden als bij de toptiers, nu ook
+   *  voor een editie — On Fire is de eerste met een eigen rand-register. */
+  echo?: ReadonlyArray<readonly [number, number, string]>;
+  binnenlijn?: ReadonlyArray<readonly [number, string]>;
+  vignet?: ReadonlyArray<readonly [number, string]>;
+  /** Eigen vlak-motief van de editie (#710); wint van dat van de tier. */
+  motief?: FutKaartKleuren["motief"];
 }
 
 /** De basis-sheen (.fut-kaart__vlak::before) die élk register erft. Bewust 0.28
@@ -1029,24 +1259,58 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "rgba(240, 199, 102, 0.45)",
     editieKleur: "#f2cf7d",
   },
-  // On-Fire (#632): sintel-donker met ember-frame, zelfde stille shimmer.
+  // On-Fire (#632, herzien in #710): verhit koper en rosébrons op donker
+  // mahonie. De hitteglans uit de CSS staat op de poster stil — een PNG heeft
+  // geen animatie — maar wel op zijn breedste stand (de volle zeven stops van
+  // de referentie-gradient), zodat de baan net zo present is als live. Idem
+  // voor de thermische ringen: het motief staat hier op zijn neutrale schaal,
+  // precies waar de `fut-kaart-thermiek`-keyframe hem heen en terug beweegt.
   onfire: {
     frame: [
-      [0, "#ffd9a0"],
-      [0.42, "#b3411a"],
-      [0.68, "#ffc07a"],
-      [1, "#591107"],
+      [0, "#f6ddc4"],
+      [0.42, "#b06537"],
+      [0.68, "#e8b48d"],
+      [1, "#4b1e0d"],
     ],
     liner: "#180a05",
     vlak: ["#3a180c", "#241009", "#140704"],
     vlakMid: 0.6,
     glow: "rgba(255, 140, 66, 0.34)",
-    sheen: "rgba(255, 170, 92, 0.3)",
-    sheenSpreiding: 0.12,
+    sheen: "rgba(255, 190, 112, 0.27)",
+    sheenStops: [
+      [0.16, "rgba(255, 190, 112, 0)"],
+      [0.32, "rgba(137, 48, 17, 0.05)"],
+      [0.43, "rgba(255, 111, 35, 0.14)"],
+      [0.5, "rgba(255, 190, 112, 0.27)"],
+      [0.57, "rgba(255, 118, 38, 0.16)"],
+      [0.68, "rgba(113, 35, 12, 0.05)"],
+      [0.84, "rgba(255, 190, 112, 0)"],
+    ],
+    vignet: [
+      [0.42, "rgba(22, 8, 3, 0)"],
+      [1, "rgba(22, 8, 3, 0.52)"],
+    ],
+    echo: [
+      [0.009, 0, "rgba(198, 104, 52, 0.6)"],
+      [-0.009, 0, "rgba(198, 104, 52, 0.6)"],
+      [0, 0.011, "rgba(122, 48, 20, 0.85)"],
+    ],
+    binnenlijn: [
+      [1, "rgba(255, 176, 108, 0.55)"],
+      [3, "rgba(22, 8, 4, 0.92)"],
+      [4.5, "rgba(214, 122, 66, 0.34)"],
+    ],
+    motief: {
+      paden: ONFIRE_WATERMARK,
+      kleur: ONFIRE_WATERMARK_KLEUR,
+      breedte: ONFIRE_WATERMARK_BREEDTE,
+      positie: ONFIRE_WATERMARK_POSITIE,
+    },
     ink: "#ffc98a",
     inkSoft: "#d1915b",
     lijn: "rgba(255, 160, 92, 0.45)",
     editieKleur: "#ffb35c",
+    textuur: "groeven",
   },
   // Pias (#631/#705): mat kraftkarton met confetti — vlak frame met bleke
   // snijkant, warme diffuse waas i.p.v. de witte specular-baan.
@@ -1123,7 +1387,11 @@ function premiumTier(key: TierKey | undefined): boolean {
  *   special-register);
  * — een editie overschrijft dáárbovenop frame, liner, vlak en inkt — ook op een
  *   GOAT-kaart, want in de CSS staat het editie-blok ná het special-blok met
- *   gelijke specificiteit;
+ *   gelijke specificiteit; sinds #710 brengt On Fire ook zijn eigen rand-,
+ *   vignet-, textuur- en ornamentlagen mee;
+ * — het ornament komt uit `kiesOrnament`: de editie wint van de tier (On Fire
+ *   vervangt de bokhoorns door vlamvinnen), en een editie zonder eigen ornament
+ *   laat dat van de tier staan;
  * — de stralenkrans blijft van de divisie (de editie-blokken raken ::after
  *   niet), behalve bij de pias en de Piet: die zetten hem uit, ook op een
  *   premium-tier, want hun eigen weefsel verdraagt geen tweede laag.
@@ -1152,24 +1420,26 @@ export function kaartSkin(
         glow: r.glow,
         sheen: r.sheen ?? BASIS_SHEEN,
         sheenSpreiding: r.sheenSpreiding,
+        sheenStops: r.sheenStops,
+        vignet: r.vignet,
+        echo: r.echo,
+        binnenlijn: r.binnenlijn,
         keyline: mix(r.lijn, "#fff8e8", 0.75),
         stralen,
         // Eigen ::after-textuur overleeft de editie (editie-blokken raken
         // ::after niet aan): het ijle GOAT-satijn en het dictator-brokaat
-        // blijven staan. Pias en Piet brengen hun eigen weefsel mee en winnen
-        // wél — hun `background: none` staat ná het toptier-blok in de CSS.
+        // blijven staan. Pias, Piet en On Fire brengen hun eigen weefsel mee en
+        // winnen wél — hun eigen ::after-regel staat ná het toptier-blok in de
+        // CSS.
         textuur: r.textuur ?? (key === "dictator" ? "brokaat" : undefined),
         satijnAlpha: key === "legende" ? 0.035 : undefined,
-        // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
-        // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
-        // vlak-register en verdwijnt wél — het medaillon zou op het
-        // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
-        ornament:
-          key === "legende"
-            ? "goat"
-            : key === "dictator"
-              ? "dictator"
-              : undefined,
+        // Vastgelegd gedrag (#710): het mótief hoort bij het vlak-register, dus
+        // een editie met een eigen watermerk (On Fire) zet dat neer en een
+        // editie zonder láát het watermerk van de tier vallen — het
+        // GOAT-medaillon zou op het In-Form-navy vloeken. Het ornament volgt de
+        // andere regel: zie `kiesOrnament`. Spiegel van FutKaart.tsx.
+        motief: r.motief,
+        ornament: kiesOrnament(key, editie) ?? undefined,
       },
       ink: r.ink,
       inkSoft: r.inkSoft,

@@ -199,8 +199,14 @@ describe("kaartSkin", () => {
 
   it("geeft de shimmer-edities hun bredere sheen-baan", () => {
     expect(kaartSkin("goud", "inform").kleuren.sheenSpreiding).toBe(0.12);
-    expect(kaartSkin("goud", "onfire").kleuren.sheenSpreiding).toBe(0.12);
     expect(kaartSkin("goud", "kampioen").kleuren.sheenSpreiding).toBeUndefined();
+    // On Fire is sinds #710 niet meer met één piek te beschrijven: zijn
+    // hitteglans draagt de volle zeven stops van de referentie-gradient, en dan
+    // wint `sheenStops` van de spreiding.
+    const onfire = kaartSkin("goud", "onfire").kleuren;
+    expect(onfire.sheenStops).toHaveLength(7);
+    expect(onfire.sheenStops?.[0][0]).toBe(0.16);
+    expect(onfire.sheenStops?.at(-1)?.[0]).toBe(0.84);
   });
 });
 
@@ -453,6 +459,86 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       FUT_CSS,
     )?.[1];
     expect(kleuren.keyline).toBe(keyline);
+  });
+
+  it("On Fire: rand-, vignet- en glansregister staan in de CSS én in de tabel (#710)", () => {
+    // Zelfde bewaking als bij de GOAT hierboven, nu voor de editie: de
+    // On-Fire-overlay leeft op twee plekken (CSS-vars op .fut-kaart--onfire en
+    // velden in EDITIE_REGISTERS) en mag niet stil uit elkaar lopen.
+    const blok = editieBlok("onfire");
+    const { kleuren } = kaartSkin("goud", "onfire");
+
+    // Randgloed: drie verschoven silhouetten, met de fracties uit de CSS-calc
+    // op --fut-kw en dezelfde kleuren.
+    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1]?.replace(/\s+/g, " ") ?? "";
+    expect(kleuren.echo).toHaveLength(3);
+    for (const [dx, dy, kleur] of kleuren.echo!) {
+      if (dx !== 0) expect(echo).toContain(`* ${dx})`);
+      if (dy !== 0) expect(echo).toContain(`* ${dy})`);
+      expect(echo).toContain(kleur);
+    }
+
+    // Binnenlijnen: elke inset-schaduw komt als [spreiding, kleur] terug, in
+    // dezelfde volgorde (smal → breed).
+    const binnenlijn =
+      /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1]?.replace(/\s+/g, " ") ?? "";
+    for (const [spreiding, kleur] of kleuren.binnenlijn!)
+      expect(binnenlijn).toContain(`inset 0 0 0 ${spreiding}px ${kleur}`);
+
+    // Vignet en hitteglans: de stops van de twee gradients uit het vlak-blok en
+    // het ::before-blok, in dezelfde alfa's. De poster bevriest de baan op deze
+    // stand, dus dit is precies waar hij op moet uitkomen.
+    const vlakBlok =
+      /\.fut-kaart--onfire \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0] ?? "";
+    for (const [, kleur] of kleuren.vignet!)
+      if (!kleur.endsWith(" 0)")) expect(vlakBlok.replace(/\s+/g, " ")).toContain(kleur);
+    const glans =
+      /\.fut-kaart--onfire \.fut-kaart__vlak::before\s*\{[^}]*\}/
+        .exec(FUT_CSS)?.[0]
+        ?.replace(/\s+/g, " ") ?? "";
+    for (const [offset, kleur] of kleuren.sheenStops!)
+      if (!kleur.endsWith(" 0)"))
+        expect(glans).toContain(`${kleur} ${Math.round(offset * 100)}%`);
+    // De piek blijft op 0,27: fellere baan = slechter contrast onder de glans,
+    // en dat mocht van #710 niet zakken t.o.v. #632.
+    expect(kleuren.sheen).toBe("rgba(255, 190, 112, 0.27)");
+
+    // Groeven i.p.v. satijn, in een eigen ::after-regel (niet in het gedeelde
+    // premium-blok), plus de ornament- en motiefkeuze.
+    const after =
+      /\.fut-kaart--onfire \.fut-kaart__vlak::after\s*\{[^}]*\}/.exec(FUT_CSS)?.[0] ??
+      "";
+    expect(after).toContain("repeating-radial-gradient");
+    expect(kleuren.textuur).toBe("groeven");
+    expect(kleuren.ornament).toBe("onfire");
+    expect(kleuren.motief?.paden).toHaveLength(4);
+
+    // En de ornamentgroepen waar de DOM-laag naar verwijst, bestaan echt.
+    expect(FUT_TSX).toContain('id="fut-orn-onfire-achter"');
+    expect(FUT_TSX).toContain('id="fut-orn-onfire-voor"');
+  });
+
+  it("On Fire beweegt alleen mét bewegingsvoorkeur, op transform (#710)", () => {
+    // De twee animaties (hitteglans, thermische ringen) moeten binnen de
+    // prefers-reduced-motion-blokken staan en alleen transform/opacity
+    // aanspreken — anders kost de kaart layout-werk per frame, en het
+    // klassement toont er tientallen naast elkaar.
+    const media = FUT_CSS.slice(
+      FUT_CSS.indexOf(".fut-kaart--onfire {"),
+    ).match(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/);
+    expect(media, "On Fire mist zijn reduced-motion-blok").not.toBeNull();
+    const blok = media![0];
+    expect(blok).toContain("fut-kaart-hitteglans");
+    expect(blok).toContain("fut-kaart-thermiek");
+    expect(blok).toContain("translate3d");
+    // Geen animatie op een eigenschap die layout of paint forceert.
+    expect(blok).not.toMatch(/animation:[^;]*\b(width|height|top|left|filter)\b/);
+    // 4–6s uit de referentie-instructies: zwaarder dan In-Forms 2,6s.
+    const duur = Number(
+      /animation: fut-kaart-hitteglans ([\d.]+)s/.exec(blok)?.[1] ?? "0",
+    );
+    expect(duur).toBeGreaterThanOrEqual(4);
+    expect(duur).toBeLessThanOrEqual(6);
   });
 
   it("de toptiers draaien allebei op vaste hexen (#710)", () => {
