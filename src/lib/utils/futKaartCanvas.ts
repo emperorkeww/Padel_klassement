@@ -36,20 +36,24 @@ import {
   DICTATOR_WATERMARK_KLEUR,
   DICTATOR_WATERMARK_POSITIE,
   DICTATOR_ZEGEL,
-  GOAT_BAARD_BLAD,
-  GOAT_BAARD_FLICK,
+  GOAT_BAARD_ARM,
+  GOAT_BAARD_BLADEN,
+  GOAT_BAARD_KRUL,
   GOAT_BAARD_NERVEN,
+  GOAT_BAARD_SPEER,
   GOAT_HOORN,
-  GOAT_MEDAILLON,
-  GOAT_MEDAILLON_BREEDTE,
-  GOAT_MEDAILLON_KLEUR,
-  GOAT_MEDAILLON_POSITIE,
+  GOAT_ICOON,
   GOAT_METAAL_CONTOUR,
   GOAT_METAAL_GLANS,
   GOAT_METAAL_RIBBEL,
   GOAT_METAAL_RIBBELGLANS,
   GOAT_METAAL_SCHADUW,
   GOAT_METAAL_VERLOOP,
+  GOAT_PLATINA_VERLOOP,
+  GOAT_WATERMERK,
+  GOAT_WATERMERK_BREEDTE,
+  GOAT_WATERMERK_KLEUR,
+  GOAT_WATERMERK_POSITIE,
   type OrnamentPad,
   type Streng,
   type StrengMateriaal,
@@ -256,7 +260,15 @@ const GOAT_MATERIAAL: StrengMateriaal = {
   ribbel: GOAT_METAAL_RIBBEL,
   ribbelGlans: GOAT_METAAL_RIBBELGLANS,
   schaduw: GOAT_METAAL_SCHADUW,
+  // Platina op de bovenste ribben (#772). De DOM verwijst hier naar
+  // #fut-orn-platina; op canvas bouwt `strokeStreng` dezelfde stops als
+  // gradient over de doos van de rugband zelf.
+  rugGlans: "url(#fut-orn-platina)",
 };
+
+/** Zelfde rosé metaal zonder platina rugband, voor het baardfiligraan —
+ *  spiegel van GOAT_FILIGRAAN in FutKaart.tsx. */
+const GOAT_FILIGRAAN: StrengMateriaal = { ...GOAT_MATERIAAL, rugGlans: undefined };
 
 /** Champagnegoud voor de vinnen van In-Form — spiegel van het gelijknamige
  *  materiaal in FutKaart.tsx. */
@@ -460,9 +472,15 @@ export interface FutKaartKleuren {
   stralenPeriode?: number;
   /** Vlak-textuur; default "satijn". */
   textuur?: VlakTextuur;
-  /** Satijn-alpha (#710): GOAT zet zijn weefsel ijler (CSS 0.04 → hier
-   *  0.035, dezelfde ~0.875-kalibratie als de sheen). Default 0.06. */
+  /** Satijn-alpha (#710): GOAT zet zijn weefsel ijler (CSS 0.045 → hier
+   *  0.04, dezelfde ~0.875-kalibratie als de sheen). Default 0.06. */
   satijnAlpha?: number;
+  /** Tweede, bredere diagonale baan ónder het satijn (#772, GOAT): de
+   *  getinte binnenstructuur van de referentie. Spiegel van de tweede
+   *  repeating-linear-gradient in het ::after-blok, als
+   *  `[kleur, streepbreedte, periode]` in canvas-px (dezelfde ~1,4-schaal
+   *  als het satijn erboven: CSS 1,5/5 px ↔ canvas 2/7). */
+  satijnBaan?: readonly [string, number, number];
   /** Geborsteld frame (#710): conic-ribbels die uit het kaartmidden stralen
    *  en dus rondom loodrecht op de rand staan — spiegel van de
    *  repeating-conic-laag op .fut-kaart__zijde. */
@@ -504,7 +522,7 @@ export interface FutKaartKleuren {
    *  midden laat oplichten — spiegel van de radial-gradient in de CSS, als
    *  [offset, kleur]-stops. */
   vignet?: ReadonlyArray<readonly [number, string]>;
-  ornamentVoor?: "dictator" | "bigdaddy" | "kampioen" | "pias" | "piet" | "inform" | "onfire";
+  ornamentVoor?: "goat" | "dictator" | "bigdaddy" | "kampioen" | "pias" | "piet" | "inform" | "onfire";
   /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
    *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
    *  of een toptier — zie de keuze in FutKaart.tsx. */
@@ -784,9 +802,22 @@ export function drawKaartSchild(
   }
 
   if ((kleuren.textuur ?? "satijn") === "satijn") {
+    const helling = fh * 0.47; // ~115° t.o.v. de kaart, zoals de CSS
+    // Onderlaag eerst: de bredere getinte baan (#772). Zelfde richting, andere
+    // periode — samen leest dat als geweven diagonaal i.p.v. als één streep.
+    if (kleuren.satijnBaan) {
+      const [kleur, breedte, periode] = kleuren.satijnBaan;
+      ctx.strokeStyle = kleur;
+      ctx.lineWidth = breedte;
+      for (let i = -helling; i < fw; i += periode) {
+        ctx.beginPath();
+        ctx.moveTo(fx + i, fy);
+        ctx.lineTo(fx + i + helling, fy + fh);
+        ctx.stroke();
+      }
+    }
     ctx.strokeStyle = `rgba(255, 255, 255, ${kleuren.satijnAlpha ?? 0.06})`;
     ctx.lineWidth = 2;
-    const helling = fh * 0.47; // ~115° t.o.v. de kaart, zoals de CSS
     for (let i = -helling; i < fw; i += 7) {
       ctx.beginPath();
       ctx.moveTo(fx + i, fy);
@@ -1152,6 +1183,23 @@ function strokeStreng(
   ctx.strokeStyle = materiaal.contour;
   ctx.lineWidth = 0.7;
   ctx.stroke(omtrek);
+  // Rugband (#772): het tweede metaal over de bolle flank, vóór de groeven —
+  // die lopen er dus overheen, net als in de DOM. De DOM legt hier
+  // #fut-orn-platina als objectBoundingBox-gradient (0,0 → 0.85,0.6) over de
+  // doos van de band; canvas rekent diezelfde fracties uit op `rugDoos`.
+  if (materiaal.rugGlans) {
+    const { xMin, xMax, yMin, yMax } = streng.rugDoos;
+    const platina = ctx.createLinearGradient(
+      xMin,
+      yMin,
+      xMin + (xMax - xMin) * 0.85,
+      yMin + (yMax - yMin) * 0.6,
+    );
+    for (const [offset, kleur] of GOAT_PLATINA_VERLOOP)
+      platina.addColorStop(offset, kleur);
+    ctx.fillStyle = platina;
+    ctx.fill(new Path2D(streng.rug));
+  }
   ctx.lineWidth = ribbelBreedte;
   ctx.strokeStyle = materiaal.ribbelGlans;
   for (const d of streng.ribbelGlans) ctx.stroke(new Path2D(d));
@@ -1296,11 +1344,9 @@ function drawOnfireVoor(
   ctx.restore();
 }
 
-/** GOAT-ornament (#710): de bokhoorns en het baardornament die buiten het
- *  schild uitsteken. Eén helft plus zijn spiegeling om x=50, net als de
- *  <use transform> in de DOM-defs; de asstreng van de baard staat op x=50 en
- *  wordt daarom niet gespiegeld. Units zijn kaart-units (100 breed), dus één
- *  schaalfactor volstaat. */
+/** GOAT áchter de kaart (#710, #772): de twee bokhoorns. Eén helft plus zijn
+ *  spiegeling om x=50, net als de <use transform> in de DOM-defs. Units zijn
+ *  kaart-units (100 breed), dus één schaalfactor volstaat. */
 function drawGoatOrnament(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1311,24 +1357,6 @@ function drawGoatOrnament(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
-
-  // Baardblad: staat op de as, dus niet gespiegeld — met zijn nerven erin.
-  const blad = new Path2D(GOAT_BAARD_BLAD);
-  const bladVerloop = ctx.createLinearGradient(0, 132, 6, 158);
-  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
-    bladVerloop.addColorStop(offset, kleur);
-  ctx.fillStyle = bladVerloop;
-  ctx.fill(blad);
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
-  ctx.lineWidth = 0.7;
-  ctx.stroke(blad);
-  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
-  ctx.lineWidth = 0.42;
-  for (const d of GOAT_BAARD_NERVEN) ctx.stroke(new Path2D(d));
-
-  // Hoorn en baard-flick: één helft plus zijn spiegeling om x=50.
   for (const gespiegeld of [false, true]) {
     ctx.save();
     if (gespiegeld) {
@@ -1336,9 +1364,55 @@ function drawGoatOrnament(
       ctx.scale(-1, 1);
     }
     strokeStreng(ctx, GOAT_HOORN, 0.62);
-    strokeStreng(ctx, GOAT_BAARD_FLICK, 0.34);
     ctx.restore();
   }
+  ctx.restore();
+}
+
+/** GOAT vóór de kaart (#772): het baardfiligraan in de onderste kaartpunt —
+ *  twee opkrullende bovenarmen met hun haarwaaier, twee kleinere onderkrullen
+ *  en de speerpunt op de as. Ligt vóór de kaart omdat het ornament in de
+ *  referentie óver het schild en zijn omlijsting valt; achter het schild zou
+ *  er niets van te zien zijn. Spiegel van #fut-orn-goat-voor. */
+function drawGoatVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    for (const d of GOAT_BAARD_BLADEN)
+      vulPad(ctx, d, GOAT_METAAL_VERLOOP, GOAT_METAAL_CONTOUR, 118, 136, 0.35);
+    strokeStreng(ctx, GOAT_BAARD_ARM, 0.4, GOAT_FILIGRAAN);
+    strokeStreng(ctx, GOAT_BAARD_KRUL, 0.4, GOAT_FILIGRAAN);
+    ctx.restore();
+  }
+
+  // Speerpunt: staat op de as en is uit zichzelf symmetrisch, dus één keer.
+  vulPad(
+    ctx,
+    GOAT_BAARD_SPEER,
+    GOAT_METAAL_VERLOOP,
+    GOAT_METAAL_CONTOUR,
+    119.6,
+    146.9,
+    0.5,
+  );
+  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  ctx.lineWidth = 0.3;
+  for (const d of GOAT_BAARD_NERVEN) ctx.stroke(new Path2D(d));
   ctx.restore();
 }
 
@@ -1945,6 +2019,45 @@ function drawPietVoor(
  * caller: deze laag moet er juist bóven én búiten liggen, dus tekent de caller
  * hem zelf ná zijn `ctx.restore()`. Zonder `ornamentVoor` doet dit niets.
  */
+/**
+ * Divisie-icoon in het eloblok (#772): tekent het eigen SVG-icoon van een
+ * divisie op `(cx, baseline)` met `maat` als hoogte, en meldt met `true` dat
+ * het gelukt is. Alleen de GOAT heeft er een — spiegel van `FutGoatIcoon` in
+ * FutKaart.tsx, dat daar om dezelfde reden bestaat: 🐐 rendert op iOS, Android
+ * en desktop als drie verschillende beestjes. Levert `false` voor elke andere
+ * divisie, zodat de caller op de emoji terugvalt.
+ */
+export function drawDivisieIcoon(
+  ctx: CanvasRenderingContext2D,
+  key: TierKey | undefined,
+  cx: number,
+  baseline: number,
+  maat: number,
+  kleur: string,
+): boolean {
+  if (key !== "legende") return false;
+  const s = maat / 24;
+  ctx.save();
+  // De emoji hangt met zijn onderkant net onder de baseline; het icoon doet
+  // hetzelfde, zodat de regelafstand in het eloblok niet verspringt.
+  ctx.translate(cx - maat / 2, baseline + maat * 0.12 - maat);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.fillStyle = kleur;
+  ctx.strokeStyle = kleur;
+  for (const p of GOAT_ICOON) {
+    const pad = new Path2D(p.d);
+    if (p.soort === "vlak") ctx.fill(pad);
+    else {
+      ctx.lineWidth = p.breedte ?? 1;
+      ctx.stroke(pad);
+    }
+  }
+  ctx.restore();
+  return true;
+}
+
 export function drawKaartOrnamentVoor(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1952,7 +2065,8 @@ export function drawKaartOrnamentVoor(
   w: number,
   kleuren: FutKaartKleuren,
 ) {
-  if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
+  if (kleuren.ornamentVoor === "goat") drawGoatVoor(ctx, x, y, w);
+  else if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "kampioen") drawKampioenCrest(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "pias") drawPiasVoor(ctx, x, y, w);
@@ -2763,7 +2877,11 @@ export function kaartSkin(
         // weefsel mee en winnen wél — hun ::after staat ná het toptier-blok
         // in de CSS.
         textuur: r.textuur ?? (key === "dictator" ? "brokaat" : undefined),
-        satijnAlpha: key === "legende" ? 0.035 : undefined,
+        satijnAlpha: key === "legende" ? 0.04 : undefined,
+        satijnBaan:
+          key === "legende"
+            ? (["rgba(247, 134, 159, 0.055)", 5.6, 15.4] as const)
+            : undefined,
         // Het mótief hoort bij het vlak-register: een editie overschrijft het
         // vlak en daarmee ook het tier-motief (het GOAT-medaillon zou op het
         // In-Form-navy vloeken). Sinds #710 mág een editie er zélf een
@@ -2814,20 +2932,22 @@ export function kaartSkin(
         // Geen stralenkrans: het medaillon ís de textuur (de CSS geeft
         // .fut-kaart--legende een eigen, ijler satijn).
         stralen: false,
-        satijnAlpha: 0.035,
+        satijnAlpha: 0.04,
+        satijnBaan: ["rgba(247, 134, 159, 0.055)", 5.6, 15.4],
         echo: [[0.019, 0.024, "rgba(226, 133, 158, 0.75)"]],
         binnenlijn: [
-          [1, "rgba(249, 163, 183, 0.5)"],
-          [3.5, "rgba(20, 6, 9, 0.9)"],
-          [4.5, "rgba(249, 163, 183, 0.28)"],
+          [1, "rgba(255, 214, 226, 0.72)"],
+          [3.5, "rgba(20, 6, 9, 0.92)"],
+          [5, "rgba(226, 133, 158, 0.45)"],
         ],
         motief: {
-          paden: GOAT_MEDAILLON,
-          kleur: GOAT_MEDAILLON_KLEUR,
-          breedte: GOAT_MEDAILLON_BREEDTE,
-          positie: GOAT_MEDAILLON_POSITIE,
+          paden: GOAT_WATERMERK,
+          kleur: GOAT_WATERMERK_KLEUR,
+          breedte: GOAT_WATERMERK_BREEDTE,
+          positie: GOAT_WATERMERK_POSITIE,
         },
         ornament: "goat",
+        ornamentVoor: "goat",
       },
       ink: mix(glans, "#ffffff", 0.8),
       inkSoft: mix(glans, "#b7a98c", 0.65),

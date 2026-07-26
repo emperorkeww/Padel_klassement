@@ -15,6 +15,7 @@
 
 import { canvasPalette, ellipsize } from "@/lib/utils/shareImage";
 import {
+  drawDivisieIcoon,
   drawKaartOrnamentVoor,
   drawKaartSchild,
   kaartSkin,
@@ -117,8 +118,14 @@ export function drawKaart(
     ctx.fillText(d.tier.subLabel, ex, fy + fh * 0.26);
   }
   if (d.tier) {
-    ctx.font = `${Math.round(w * 0.1)}px system-ui, sans-serif`;
-    ctx.fillText(d.tier.emoji, ex, fy + fh * 0.36);
+    // Eigen SVG-icoon waar de divisie er een heeft (#772: de geitenkop van de
+    // GOAT), anders de emoji. Zelfde volgorde als .fut-kaart__tier in de DOM.
+    if (
+      !drawDivisieIcoon(ctx, d.tier.key, ex, fy + fh * 0.36, w * 0.115, inkSoft)
+    ) {
+      ctx.font = `${Math.round(w * 0.1)}px system-ui, sans-serif`;
+      ctx.fillText(d.tier.emoji, ex, fy + fh * 0.36);
+    }
   }
   ctx.strokeStyle = lijn;
   ctx.lineWidth = 3;

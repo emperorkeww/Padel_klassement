@@ -203,11 +203,12 @@ export function KaartShowcase() {
         contextmaten en achterkant. Deze route bestaat alleen in development.
       </p>
 
-      {/* GOAT-variant (#710): de kaart met bokhoorns en baardornament op de
+      {/* GOAT-variant (#710, hertekend in #772): de kaart met bokhoorns,
+          baardfiligraan, geitenwatermerk en het eigen divisie-icoon, op de
           maten waar het ornament het meest te lijden heeft — veldmaat, wand,
           hero — plus de canvas-spiegel ernaast. Bewust bovenaan: dit is de
           variant die je bij elke wijziging aan de ornamentlaag wilt zien. */}
-      <Sectie titel="GOAT (#710): hoorns + baardornament — DOM op 116/150/210px, poster rechts">
+      <Sectie titel="GOAT (#772): hoorns + baardfiligraan — DOM op 116/150/210px, poster rechts">
         {[116, 150, 210].map((kw) => (
           <div
             key={kw}
@@ -220,7 +221,7 @@ export function KaartShowcase() {
         ))}
         <PosterKaart tier={tierFor(1450)} editie={null} editieLabel={null} breedte={210} />
         {/* Onder een editie-skin: de hoorns blijven (ornament hangt aan de
-            tier), het medaillon-motief wijkt voor het editie-vlak. */}
+            tier), het geitenwatermerk wijkt voor het editie-vlak. */}
         <div
           className="kaart-showcase__maat"
           style={{ ["--maat" as string]: "150px" }}
@@ -234,6 +235,44 @@ export function KaartShowcase() {
             elo={1487}
           />
           <span className="kaart-showcase__maatlabel">GOAT + In-Form</span>
+        </div>
+      </Sectie>
+
+      {/* De drie subniveaus plus de stress-cases uit #772: één kaartvariant,
+          verschillende ratings, subLabels en naamlengtes. Hier moet zichtbaar
+          zijn dat het baardfiligraan de divisieregel nooit raakt — die staat
+          bij GOAT I op "GOAT I" en bij GOAT III op "GOAT III". */}
+      <Sectie titel="GOAT × subniveau en naamlengte (#772): III · II · I, lange naam, 96px">
+        {[1420, 1490, 1560].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart kw={150} tier={tierFor(r)} naam="Senne" elo={r} />
+            <span className="kaart-showcase__maatlabel">
+              {tierFor(r)?.label} · {r}
+            </span>
+          </div>
+        ))}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1490)}
+            naam="Wolfgang Vandenbroucke"
+            elo={1490}
+          />
+          <span className="kaart-showcase__maatlabel">Lange naam</span>
+        </div>
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "96px" }}
+        >
+          <Kaart kw={96} tier={tierFor(1490)} naam="Senne" elo={1490} />
+          <span className="kaart-showcase__maatlabel">96px (veldmaat)</span>
         </div>
       </Sectie>
 
