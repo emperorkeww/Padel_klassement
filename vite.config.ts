@@ -24,8 +24,13 @@ function serviceWorkerVersion(): Plugin {
       } catch {
         return; // geen SW in deze build-output: niets te doen
       }
+      // De sw-bron gaat mee in de hash (nog mét placeholder, dus
+      // deterministisch): anders houdt een wijziging in de cachestrategie
+      // dezelfde cachenamen en blijven bestaande installaties op hun oude,
+      // opgeblazen caches zitten tot er toevallig een asset wijzigt (#730).
       const hash = createHash("sha256")
         .update(readFileSync(r("./dist/.vite/manifest.json")))
+        .update(source)
         .digest("hex")
         .slice(0, 12);
       writeFileSync(r("./dist/sw.js"), source.replace(/__SW_VERSION__/g, hash));
