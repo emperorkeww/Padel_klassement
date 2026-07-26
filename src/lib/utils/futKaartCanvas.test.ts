@@ -91,12 +91,16 @@ describe("kaartSkin", () => {
   it("kleurt de generieke divisieladder uit de tierkleur", () => {
     // De ladderformule geldt nog voor élke divisie zonder eigen register. Wie
     // er wél een heeft (#710) valt hieronder, in de test daarna — daarom hier
-    // een tier die nog op de formule draait.
-    const hout = kaartSkin("hout", null);
-    expect(hout.kleuren.vlak[0][1]).toBe(mix("#77441d", "#fdfbf6", 0.2));
-    expect(hout.ink).toBe(mix("#77441d", "#1d1508", 0.52));
+    // een tier die nog op de formule draait. Dat was tot de Ballenraper-kaart
+    // `hout`; nu is Sletje van de baan de laatste divisie zonder register. Krijgt
+    // ook die er een, dan heeft deze test geen onderwerp meer en hoort hij te
+    // verdwijnen (de ladder is dan alleen nog de fallback voor een tier die niet
+    // in het divisieregister staat).
+    const slof = kaartSkin("slof", null);
+    expect(slof.kleuren.vlak[0][1]).toBe(mix("#7f7a6f", "#fdfbf6", 0.2));
+    expect(slof.ink).toBe(mix("#7f7a6f", "#1d1508", 0.52));
     // Zonder editie valt --editie-kleur terug op --kaart-ink.
-    expect(hout.editieKleur).toBe(hout.ink);
+    expect(slof.editieKleur).toBe(slof.ink);
   });
 
   it("laat een divisie met eigen register de ladderformule overrulen (#710)", () => {
