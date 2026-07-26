@@ -101,7 +101,10 @@ describe("Dashboard: queries bij mount (#736)", () => {
       // Klassement, rating en de eigen historie.
       player_standings: 1,
       player_ratings: 1,
-      rating_history: 2, // eigen grafiek + alle historieën (avondkaart)
+      rating_history: 1, // mijn eigen grafiek
+      // De gedeelde historie voor de avondkaart loopt sinds #731 via een RPC
+      // met een venster per speler i.p.v. een select op de hele tabel.
+      "rpc:recent_rating_history": 1,
       // Matches: de recente uitslagen en mijn eigen wedstrijden (die eerst
       // mijn teams opzoekt — vandaar twee keer teams).
       matches: 2,
