@@ -3,9 +3,9 @@ import { dateInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
 import { type GroupSummary } from "@/features/groups/api";
 import {
-  getGroupPolls,
-  getGroupPollOptions,
-  getGroupPollVotes,
+  getPollsForGroups,
+  getPollOptionsForGroups,
+  getPollVotesForGroups,
   type PlayPoll,
   type PollOption,
   type PollVote,
@@ -116,23 +116,27 @@ export function matchWhen(m: Match, groupName?: string | null): string {
   return parts.join(" · ");
 }
 
-/** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
+/** Aanwezigheid van vandaag per eigen groep.
+ *
+ *  Drie queries in totaal, niet drie per groep (#736): dit draait bij elke
+ *  dashboard-mount, en met vier groepen waren dat twaalf requests voor data die
+ *  in één `in(group_id, …)` past. */
 export async function loadOpenPolls(
   groups: GroupSummary[],
-): Promise<
-  { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
-> {
+): Promise<OpenPollBundle[]> {
   if (groups.length === 0) return [];
-  return Promise.all(
-    groups.map(async (group) => {
-      const [polls, options, votes] = await Promise.all([
-        getGroupPolls(group.id),
-        getGroupPollOptions(group.id),
-        getGroupPollVotes(group.id),
-      ]);
-      return { group, polls, options, votes };
-    }),
-  );
+  const ids = groups.map((g) => g.id);
+  const [polls, options, votes] = await Promise.all([
+    getPollsForGroups(ids),
+    getPollOptionsForGroups(ids),
+    getPollVotesForGroups(ids),
+  ]);
+  return groups.map((group) => ({
+    group,
+    polls: polls[group.id] ?? [],
+    options: options[group.id] ?? [],
+    votes: votes[group.id] ?? [],
+  }));
 }
 
 export type PollPick =
@@ -168,13 +172,16 @@ export function pollDay(date: string): string {
  * Wat het overzicht over speeldagen moet melden: een lopende (open) poll om
  * op te stemmen, of anders een vastgelegd/geboekt moment als reminder.
  */
+/** Eén groep met zijn polls, opties en stemmen — wat loadOpenPolls teruggeeft. */
+export type OpenPollBundle = {
+  group: GroupSummary;
+  polls: PlayPoll[];
+  options: PollOption[];
+  votes: PollVote[];
+};
+
 export function pickPollBanner(
-  rows: {
-    group: GroupSummary;
-    polls: PlayPoll[];
-    options: PollOption[];
-    votes: PollVote[];
-  }[],
+  rows: OpenPollBundle[],
   myId: string,
   nowMs: number,
 ): PollPick | null {
@@ -231,12 +238,15 @@ export function pickPollBanner(
 export type RivalRec = { won: number; drawn: number; lost: number; played: number };
 
 /** Tegenstander met de meeste onderlinge duels (min. 3), of null. */
+/** De vaste tegenstander plus de onderlinge balans. */
+export type Rival = { oppId: string; rec: RivalRec };
+
 export function pickRival(
   matches: Match[],
   teams: Record<string, Team>,
   myId: string,
-): { oppId: string; rec: RivalRec } | null {
-  let best: { oppId: string; rec: RivalRec } | null = null;
+): Rival | null {
+  let best: Rival | null = null;
   for (const [oppId, rec] of headToHead(matches, teams, myId)) {
     if (rec.played < 3) continue;
     if (!best || rec.played > best.rec.played) best = { oppId, rec };

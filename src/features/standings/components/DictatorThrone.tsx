@@ -67,9 +67,11 @@ export function DictatorThrone({
     <span className="dictator-throne__frame">
       <span className="dictator-throne__portrait">
         {image ? (
-          <img className="dictator-throne__img" src={image} alt="" />
+          // Geen loading="lazy": de troon staat bovenaan het klassement, dus
+          // uitstellen maakt 'm juist later zichtbaar (#732).
+          <img className="dictator-throne__img" src={image} alt="" decoding="async" />
         ) : waarnemend ? (
-          // Waarnemend Mbappé (#530): z'n portret laadt lui (~2 MB, #536), dus bij
+          // Waarnemend Mbappé (#530): z'n portret laadt lui (~70 KB, #536), dus bij
           // een refresh is `image` er nog niet. NIET terugvallen op de Avatar —
           // die zou de grote "KM"-initialenbadge tonen tot de foto binnen is en
           // dan zichtbaar naar het portret swappen (#555). Het portret-kader heeft

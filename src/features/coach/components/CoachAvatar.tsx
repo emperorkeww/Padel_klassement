@@ -16,7 +16,10 @@ export type { CoachMood };
 //
 // Vite pakt ze allemaal op via import.meta.glob en bundelt ze (gehashte URL's),
 // dus zodra je een bestand toevoegt/hernoemt volgens de conventie doet het
-// automatisch mee — geen code aanpassen nodig.
+// automatisch mee — geen code aanpassen nodig. Haal een nieuwe illustratie wél
+// eerst door `node scripts/optimize-assets.mjs <bestand>`: de originelen waren
+// PNG's van ~2 MB op 1254px voor een koppie dat maximaal 66px groot wordt
+// getoond (#732).
 const modules = import.meta.glob("./rudi_avatars/*.{png,jpg,jpeg,webp}", {
   eager: true,
   import: "default",

@@ -20,6 +20,9 @@
   "vars": {
     "PLAYTOMIC_EGRESS": "https://fuxjxorbbebbxxgsnyon.supabase.co/functions/v1/playtomic-availability"
   },
+  // Crashmeldingen (#733) komen als logregel binnen via /api/client-error;
+  // zonder observability zou die regel nergens naartoe gaan.
+  "observability": { "enabled": true },
   // Per-IP rate limiting voor de publieke Playtomic-proxy: max 20 verzoeken
   // per 10 seconden per IP. period mag alleen 10 of 60 zijn.
   "unsafe": {
@@ -29,6 +32,15 @@
         "type": "ratelimit",
         "namespace_id": "1001",
         "simple": { "limit": 20, "period": 10 }
+      },
+      // Eigen budget voor de crashmeldingen: dat endpoint is publiek en
+      // ongeauthenticeerd, en mag de proxy niet in de weg zitten. Vijf per
+      // minuut per IP is ruim — de client stopt zelf al na vijf per sessie.
+      {
+        "name": "FOUT_RL",
+        "type": "ratelimit",
+        "namespace_id": "1002",
+        "simple": { "limit": 5, "period": 60 }
       }
     ]
   }

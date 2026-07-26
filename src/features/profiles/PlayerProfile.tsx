@@ -8,7 +8,8 @@ import { getPlayerStanding, getPlayerStandings } from "@/features/standings/api"
 import {
   getPlayerRatings,
   getRatingHistory,
-  getAllRatingHistories,
+  getRatingHistoriesForMatches,
+  getRecentRatingHistories,
 } from "@/features/standings/ratingsApi";
 import {
   getHuidigeDictator,
@@ -119,8 +120,24 @@ export function PlayerProfile() {
   const globalePias = useAsync(getGlobalePias, []);
   // Piet-editie (#645): de globale Zwarte Piet over alle groepen heen.
   const globaleZwartePiet = useAsync(getGlobaleZwartePiet, []);
-  // Volledige historie (gecacht, app-breed gedeeld) voor upset-chips (#85).
-  const allHistories = useAsync(getAllRatingHistories, []);
+  // Recente historie (gecacht, app-breed gedeeld) voor de In-Form- en
+  // On-Fire-editie.
+  const allHistories = useAsync(getRecentRatingHistories, []);
+  // Upset-chips (#85) hebben de pre-match ratings van precies deze matches
+  // nodig — ook van tegenstanders die sindsdien veel vaker speelden en dus
+  // buiten het gedeelde venster vallen (#731).
+  const upsetIds = useMemo(
+    () =>
+      (matches.data ?? [])
+        .filter((m) => m.status === "completed")
+        .map((m) => m.id),
+    [matches.data],
+  );
+  const upsetKey = upsetIds.join(",");
+  const upsetHistories = useAsync(
+    () => getRatingHistoriesForMatches(upsetIds),
+    [upsetKey],
+  );
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
   const vendettas = useAsync(() => getPlayerVendettas(id), [id]);
   // Rang-verloop (all-time sparkline) staat sinds #461 tijdelijk uit: het werd
@@ -141,8 +158,9 @@ export function PlayerProfile() {
   );
   // Upsets per match-id (#85) — hook vóór eventuele vroege returns.
   const upsets = useMemo(
-    () => upsetsByMatch(matches.data ?? [], teams.data ?? {}, allHistories.data ?? {}),
-    [matches.data, teams.data, allHistories.data],
+    () =>
+      upsetsByMatch(matches.data ?? [], teams.data ?? {}, upsetHistories.data ?? {}),
+    [matches.data, teams.data, upsetHistories.data],
   );
   // Speler van de week (#497) óók op het profiel (#621): dezelfde bron als
   // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.

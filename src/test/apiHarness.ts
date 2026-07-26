@@ -40,7 +40,7 @@ function makeQuery(table: string) {
   const r = take();
   const q: Record<string, unknown> = {};
   for (const m of [
-    "select", "order", "eq", "neq", "ilike", "limit", "or", "match",
+    "select", "order", "eq", "neq", "ilike", "in", "limit", "range", "or", "match",
     "insert", "update", "upsert", "delete",
   ]) {
     q[m] = (...args: unknown[]) => {

@@ -2067,6 +2067,25 @@ export type Database = {
         Args: { p_match: string; p_team: string }
         Returns: number
       }
+      ratings_as_of: {
+        Args: { p_date: string }
+        Returns: {
+          played_at: string
+          player_id: string
+          rating: number
+        }[]
+      }
+      recent_rating_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          delta: number
+          match_id: string
+          played_at: string
+          player_id: string
+          rating_after: number
+          rating_before: number
+        }[]
+      }
       recompute_dictator_termijnen: { Args: never; Returns: undefined }
       recompute_pias: { Args: never; Returns: undefined }
       recompute_rank_state: { Args: never; Returns: undefined }

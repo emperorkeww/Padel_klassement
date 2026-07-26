@@ -6,3 +6,9 @@ create table public.group_members (
   joined_at timestamptz not null default now(),
   primary key (group_id, player_id)
 );
+
+-- De PK dekt is_group_member(group_id, uid), maar niet een lookup op alleen
+-- player_id (#737). Die loopt via shares_group(), dat de
+-- friendships-select-policy per rij aanroept. group_id staat erbij zodat de
+-- zelf-join in shares_group() een index-only scan wordt.
+create index group_members_player_idx on public.group_members (player_id, group_id);

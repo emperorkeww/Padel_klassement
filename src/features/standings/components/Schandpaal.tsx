@@ -46,7 +46,8 @@ export function Schandpaal({
     <span className="schandpaal__frame">
       <span className="schandpaal__portrait">
         {image ? (
-          <img className="schandpaal__img" src={image} alt="" />
+          // Net als de troon boven de vouw: wel async decoderen, niet uitstellen.
+          <img className="schandpaal__img" src={image} alt="" decoding="async" />
         ) : (
           <Avatar profile={profile} name={name} size={148} />
         )}

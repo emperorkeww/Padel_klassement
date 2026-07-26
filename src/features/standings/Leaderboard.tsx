@@ -24,7 +24,11 @@ import {
   getSeasonTeamStandings,
 } from "./api";
 import { getMyGroups } from "@/features/groups/api";
-import { getPlayerRatings, getAllRatingHistories } from "./ratingsApi";
+import {
+  getPlayerRatings,
+  getRatingsAsOf,
+  getRecentRatingHistories,
+} from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
 import { magDictatorPortretGenereren } from "./dictatorPortret";
 import {
@@ -64,11 +68,7 @@ import {
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { searchDiscoverableProfiles } from "@/features/friends/api";
 import { ShareChampion } from "@/features/standings/components/ShareChampion";
-import {
-  ratingAsOf,
-  splitDictatorThrone,
-  type Row,
-} from "./leaderboardHelpers";
+import { splitDictatorThrone, type Row } from "./leaderboardHelpers";
 import { spelerVanDeWeek } from "./spelerVanDeWeek";
 import { onFireSpelers } from "./onFire";
 import { getSeizoenskampioen } from "./kampioen";
@@ -181,8 +181,15 @@ export function Leaderboard() {
   // Voor de vorm-kolom: recente matches client-side per speler samengevat.
   const recent = useAsync(() => getRecentMatches(250), []);
   const ratings = useAsync(getPlayerRatings, []);
-  // Voor de sparkline-kolom: historie van alle spelers in één batch.
-  const histories = useAsync(getAllRatingHistories, []);
+  // Voor de sparkline-kolom: de recente historie van alle spelers in één batch.
+  const histories = useAsync(getRecentRatingHistories, []);
+  // Tijdmachine (#731): de rating van tóén komt van de server, één rij per
+  // speler. Uit de gedeelde historie plukken kan niet meer — dat is een venster
+  // van de laatste matches, geen archief.
+  const asofRatings = useAsync(
+    () => (asof ? getRatingsAsOf(asof) : Promise.resolve(null)),
+    [asof],
+  );
   // De zittende dictator (#545): server-side bepaald via de troon-replay, niet
   // meer de toevallige 1600+-#1. Bepaalt wie op De Troon komt.
   const dictator = useAsync(getHuidigeDictator, []);
@@ -413,10 +420,10 @@ export function Leaderboard() {
     lost: p.lost,
     points: p.points,
     goalDiff: p.goal_diff ?? 0,
-    // Bij "stand op datum" de rating zoals die tóén was (uit de historie),
+    // Bij "stand op datum" de rating zoals die tóén was (van de server),
     // anders de huidige rating.
     rating: asof
-      ? ratingAsOf(hmap[p.player_id], asof)
+      ? (asofRatings.data?.[p.player_id] ?? null)
       : (rmap[p.player_id]?.rating ?? null),
     // Voor de tier-dimming (#127); bij "stand op datum" is dit de huidige
     // teller — kleine bekende onzuiverheid, de tier volgt wel de toenmalige rating.

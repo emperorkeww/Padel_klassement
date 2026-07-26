@@ -11,4 +11,8 @@ create table public.slot_availability (
   primary key (group_id, player_id, date, start_time)
 );
 
+-- Zelfde reden als bij attendance (#756): player_id is niet de eerste
+-- PK-kolom, dus een zoektocht op alleen die kolom scant de hele tabel.
+create index slot_availability_player_idx on public.slot_availability (player_id);
+
 alter table public.slot_availability enable row level security;

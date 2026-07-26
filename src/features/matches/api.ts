@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
-import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { cached, cachedMany, invalidate } from "@/lib/supabase/queryCache";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import type { CourtType, Match, Profile, Team } from "@/types";
 import { displayName } from "@/features/profiles/api";
@@ -81,21 +82,26 @@ export function getMatch(id: string): Promise<Match | null> {
 
 export function getTeamsMap(): Promise<Record<string, Team>> {
   return cached("teams:all", async () => {
-    const { data, error } = await supabase.from("teams").select("*");
-    if (error) throw error;
-    return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
+    // Deze map moet compleet zijn: een afgekapte teams-map betekent stil
+    // "Onbekend team" bij oudere matches, dus pagineren i.p.v. hopen dat het
+    // onder max_rows blijft (#731). Sortering op de sleutel houdt de pagina's
+    // sluitend.
+    const rows = await fetchAllPages((from, to) =>
+      supabase.from("teams").select("*").order("id").range(from, to),
+    );
+    return Object.fromEntries(rows.map((t) => [t.id, t]));
   });
 }
 
-/** Alleen de opgegeven teams — voor pagina's die er maar enkele nodig hebben. */
+/** Alleen de opgegeven teams — voor pagina's die er maar enkele nodig hebben.
+ *  Cachet per team-id (#738), zodat wedstrijden met overlappende teams elkaars
+ *  entries hergebruiken in plaats van per combinatie een eigen entry te maken. */
 export function getTeamsByIds(ids: string[]): Promise<Record<string, Team>> {
-  const wanted = [...new Set(ids)].sort();
-  if (wanted.length === 0) return Promise.resolve({});
-  return cached(`teams:ids:${wanted.join(",")}`, async () => {
+  return cachedMany<Team>("teams:one:", ids, async (missing) => {
     const { data, error } = await supabase
       .from("teams")
       .select("*")
-      .in("id", wanted);
+      .in("id", missing);
     if (error) throw error;
     return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
   });
@@ -103,14 +109,19 @@ export function getTeamsByIds(ids: string[]): Promise<Record<string, Team>> {
 
 export function getGroupMatches(groupId: string): Promise<Match[]> {
   return cached(`matches:group:${groupId}`, async () => {
-    const { data, error } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("group_id", groupId)
-      .order("round_number", { ascending: false })
-      .order("created_at", { ascending: true });
-    if (error) throw error;
-    return data ?? [];
+    // De stand van een groep telt élke match mee, dus deze lijst mag niet
+    // stilletjes op max_rows eindigen (#731). `id` als laatste sorteersleutel
+    // maakt de paginering deterministisch.
+    return fetchAllPages((from, to) =>
+      supabase
+        .from("matches")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("round_number", { ascending: false })
+        .order("created_at", { ascending: true })
+        .order("id")
+        .range(from, to),
+    );
   });
 }
 
@@ -146,14 +157,17 @@ export function getCompletedMatchesBetween(
   endIso: string,
 ): Promise<Match[]> {
   return cached(`matches:between:${startIso}:${endIso}`, async () => {
-    const { data, error } = await supabase
-      .from("matches")
-      .select("*")
-      .eq("status", "completed")
-      .gte("played_at", startIso)
-      .lt("played_at", endIso);
-    if (error) throw error;
-    return data ?? [];
+    // Een kwartaalstand mag geen matches missen (#731).
+    return fetchAllPages((from, to) =>
+      supabase
+        .from("matches")
+        .select("*")
+        .eq("status", "completed")
+        .gte("played_at", startIso)
+        .lt("played_at", endIso)
+        .order("id")
+        .range(from, to),
+    );
   });
 }
 

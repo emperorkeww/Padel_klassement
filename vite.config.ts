@@ -24,8 +24,13 @@ function serviceWorkerVersion(): Plugin {
       } catch {
         return; // geen SW in deze build-output: niets te doen
       }
+      // De sw-bron gaat mee in de hash (nog mét placeholder, dus
+      // deterministisch): anders houdt een wijziging in de cachestrategie
+      // dezelfde cachenamen en blijven bestaande installaties op hun oude,
+      // opgeblazen caches zitten tot er toevallig een asset wijzigt (#730).
       const hash = createHash("sha256")
         .update(readFileSync(r("./dist/.vite/manifest.json")))
+        .update(source)
         .digest("hex")
         .slice(0, 12);
       writeFileSync(r("./dist/sw.js"), source.replace(/__SW_VERSION__/g, hash));
@@ -70,6 +75,11 @@ function playtomicClubSlug(): Plugin {
 // https://vite.dev + https://vitest.dev
 export default defineConfig({
   plugins: [playtomicClubSlug(), react(), serviceWorkerVersion()],
+  // Build-aanduiding voor de foutrapportage (#733): zonder dit weet je bij een
+  // melding niet wélke versie crashte. In CI is GITHUB_SHA gezet, lokaal niet.
+  define: {
+    __BUILD__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? "dev"),
+  },
   // Path-aliases — houd in sync met tsconfig.app.json "paths" (zie docs/architecture.md §5).
   // Langste sleutels eerst zodat "@/lib" vóór "@/" matcht.
   resolve: {

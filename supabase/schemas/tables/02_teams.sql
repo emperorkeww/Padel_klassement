@@ -16,3 +16,10 @@ create table public.teams (
 -- met een dubbelpaar en dedupt singles-teams per speler.
 create unique index teams_unique_pair
   on public.teams (least(player1_id, player2_id), greatest(player1_id, player2_id));
+
+-- "In welke teams speelt deze speler?" (#737). teams_unique_pair helpt daar
+-- niet bij: die expressie-index vereist een compleet paar. Zonder deze twee
+-- scant getPlayerMatches() de hele tabel, en cascadeert een profiel-
+-- verwijdering via een seq scan.
+create index teams_player1_idx on public.teams (player1_id);
+create index teams_player2_idx on public.teams (player2_id);

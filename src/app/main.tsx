@@ -4,11 +4,14 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { SwUpdatePrompt } from "./SwUpdatePrompt.tsx";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { SmoesPromptProvider } from "@/features/matches/SmoesPromptProvider";
 import { watchSystemTheme } from "@/lib/utils/theme";
 import { initInstallPromptCapture } from "@/lib/utils/pwa";
 import { registerServiceWorker } from "@/lib/utils/swUpdate";
+import { initChunkErrorDetectie } from "@/lib/utils/chunkError";
+import { initFoutrapportage } from "@/lib/utils/errorReport";
 import "./index.css";
 
 // Het inline script in index.html zette het thema al vóór de eerste paint;
@@ -19,18 +22,32 @@ watchSystemTheme();
 // geladen is — dus hier eager afvangen; InstallPrompt leest het later uit.
 initInstallPromptCapture();
 
+// Vite meldt een mislukte chunk-preload vóór de import zelf afketst; die
+// wetenschap laat de foutgrens "oude tab" van "echte crash" onderscheiden.
+initChunkErrorDetectie();
+
+// Fouten buiten de render — event-handlers en afgewezen promises — komen niet
+// langs een ErrorBoundary. Zonder deze listeners blijven ze volledig stil.
+initFoutrapportage();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <SwUpdatePrompt />
-          <SmoesPromptProvider>
-            <App />
-          </SmoesPromptProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    {/* Buitenste vangnet (#733): staat bewust bóven de providers, zodat ook
+        een crash in AuthProvider/ToastProvider zelf nog een scherm oplevert
+        in plaats van een witte pagina. De fallback gebruikt daarom geen
+        context. */}
+    <ErrorBoundary scope="root">
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <SwUpdatePrompt />
+            <SmoesPromptProvider>
+              <App />
+            </SmoesPromptProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );
 

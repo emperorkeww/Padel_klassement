@@ -1,17 +1,23 @@
 import { supabase } from "@/lib/supabase/client";
-import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { cached, cachedMany, invalidate } from "@/lib/supabase/queryCache";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { downscaleImage } from "@/lib/utils/image";
 import type { Profile } from "@/types";
 
 /** Alle profielen (publiek leesbaar); handig als lookup-map. */
 export function getAllProfiles(): Promise<Profile[]> {
   return cached("profiles:all", async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("username", { ascending: true });
-    if (error) throw error;
-    return data ?? [];
+    // De namenlijst van de hele app: afkappen op max_rows zou spelers stil in
+    // "Onbekend" veranderen (#731). `id` erachter maakt de paginering
+    // deterministisch, ook bij gelijke of lege usernames.
+    return fetchAllPages((from, to) =>
+      supabase
+        .from("profiles")
+        .select("*")
+        .order("username", { ascending: true })
+        .order("id")
+        .range(from, to),
+    );
   });
 }
 
@@ -27,17 +33,17 @@ export function getProfile(id: string): Promise<Profile | null> {
   });
 }
 
-/** Alleen de opgegeven profielen — voor pagina's met een handvol spelers. */
+/** Alleen de opgegeven profielen — voor pagina's met een handvol spelers.
+ *  Cachet per profiel-id (#738) onder dezelfde sleutel als `getProfile()`, dus
+ *  overlappende spelerssets delen hun entries. */
 export function getProfilesByIds(
   ids: string[],
 ): Promise<Record<string, Profile>> {
-  const wanted = [...new Set(ids)].sort();
-  if (wanted.length === 0) return Promise.resolve({});
-  return cached(`profiles:ids:${wanted.join(",")}`, async () => {
+  return cachedMany<Profile>("profiles:one:", ids, async (missing) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .in("id", wanted);
+      .in("id", missing);
     if (error) throw error;
     return Object.fromEntries((data ?? []).map((p) => [p.id, p]));
   });
