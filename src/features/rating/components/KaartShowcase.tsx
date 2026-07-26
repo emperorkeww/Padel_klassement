@@ -588,6 +588,33 @@ export function KaartShowcase() {
         ))}
       </Sectie>
 
+      {/* Stofzuiger (#710): de basisdivisie met de bezemcrest die de bovenrand
+          doorsnijdt, zuiggroeven in beide zijranden en het aanzuigrooster in de
+          punt — plus het watermerk waarin alle baltrajecten op één punt
+          samenkomen. Zelfde opzet als de GOAT-sectie bovenaan, inclusief de
+          canvas-spiegel. Bewust op rating 690: dat geeft "Stofzuiger III", de
+          langste titel van deze divisie, dus de veldmaat (116px) links laat
+          meteen zien of de divisieregel nog past. */}
+      <Sectie titel="Stofzuiger (#710): bezemcrest + zuiggroeven + aanzuigrooster — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(690)} naam="Wouter" elo={690} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(690)}
+          editie={null}
+          editieLabel={null}
+          naam="Wouter"
+          breedte={210}
+        />
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />
