@@ -18,6 +18,7 @@ export function makeQuery(result: { data: unknown; error: unknown }) {
     "or",
     "ilike",
     "limit",
+    "range",
     "insert",
     "update",
     "upsert",
