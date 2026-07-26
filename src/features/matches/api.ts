@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { cached, invalidate } from "@/lib/supabase/queryCache";
+import { cached, cachedMany, invalidate } from "@/lib/supabase/queryCache";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import type { TablesUpdate } from "@/lib/supabase/database.types";
 import type { CourtType, Match, Profile, Team } from "@/types";
@@ -93,15 +93,15 @@ export function getTeamsMap(): Promise<Record<string, Team>> {
   });
 }
 
-/** Alleen de opgegeven teams — voor pagina's die er maar enkele nodig hebben. */
+/** Alleen de opgegeven teams — voor pagina's die er maar enkele nodig hebben.
+ *  Cachet per team-id (#738), zodat wedstrijden met overlappende teams elkaars
+ *  entries hergebruiken in plaats van per combinatie een eigen entry te maken. */
 export function getTeamsByIds(ids: string[]): Promise<Record<string, Team>> {
-  const wanted = [...new Set(ids)].sort();
-  if (wanted.length === 0) return Promise.resolve({});
-  return cached(`teams:ids:${wanted.join(",")}`, async () => {
+  return cachedMany<Team>("teams:one:", ids, async (missing) => {
     const { data, error } = await supabase
       .from("teams")
       .select("*")
-      .in("id", wanted);
+      .in("id", missing);
     if (error) throw error;
     return Object.fromEntries((data ?? []).map((t) => [t.id, t]));
   });
