@@ -4,6 +4,7 @@ import {
   editieLabel,
   editieUitleg,
   editieVoor,
+  editieVoorwaarde,
   iconKeyVoor,
   type EditieContext,
 } from "./edities";
@@ -250,6 +251,17 @@ describe("editieUitleg (#655/#665)", () => {
     for (const editie of ["icon", "kampioen", "inform", "onfire", null] as const) {
       expect(editieUitleg(editie)).toBeNull();
     }
+  });
+});
+
+describe("editieVoorwaarde (#763) — hoe verdien je hem?", () => {
+  it("geeft elke editie een zin, en null voor geen editie", () => {
+    // De legenda loopt over EDITIE_PRIORITEIT: komt er ooit een editie bij,
+    // dan mag die niet stil zonder uitleg in het paneel belanden.
+    for (const editie of EDITIE_PRIORITEIT) {
+      expect(editieVoorwaarde(editie), editie).toBeTruthy();
+    }
+    expect(editieVoorwaarde(null)).toBeNull();
   });
 });
 

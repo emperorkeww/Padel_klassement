@@ -216,6 +216,33 @@ export function editieUitleg(editie: Editie): string | null {
   return null;
 }
 
+/** Hoe verdien je deze editie? Eén zin per editie, voor de kaartenlegenda op de
+ *  Kaarten-tab (#763).
+ *
+ *  Bewust náást `editieUitleg` en niet erin: die is de korte disambiguatie op de
+ *  kaart zelf ("wat betekent dít label hier?") en bestaat alleen waar het label
+ *  verwarring wekt. De legenda beantwoordt de andere vraag — "wat moet ik doen
+ *  om hem te krijgen?" — en heeft die voor alle zes nodig. Eén bron per vraag,
+ *  in plaats van één functie die twee dingen half doet. */
+export function editieVoorwaarde(editie: Editie): string | null {
+  switch (editie) {
+    case "icon":
+      return "De nummer 1 van het klassement. Zolang er een dictator op de troon zit, blijft de kroon leeg.";
+    case "kampioen":
+      return "Winnaar van het vorige kwartaal — je draagt hem het hele lopende kwartaal.";
+    case "inform":
+      return "Speler van de week: de grootste ratingwinst van de afgelopen zeven dagen.";
+    case "onfire":
+      return "Een lopende winstreak. De enige editie die meerdere dragers tegelijk kan hebben.";
+    case "pias":
+      return "De gênantste afgang van de héle club deze week: een bagel, een afdroging, een zwarte reeks of een choke.";
+    case "piet":
+      return "Het rondgaande schande-token van de club. Je draagt hem tot je je vrijspeelt met een overwinning.";
+    case null:
+      return null;
+  }
+}
+
 /** Speeldatum van de overname-match, kort als d/m (#645): het reden-specifieke
  *  getal van de Piet is hoe lang hij 'm al meedraagt.
  *

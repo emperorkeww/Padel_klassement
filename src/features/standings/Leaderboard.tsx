@@ -74,6 +74,7 @@ import { onFireSpelers } from "./onFire";
 import { getSeizoenskampioen } from "./kampioen";
 import type { EditieContext } from "./edities";
 import { KaartRaster } from "./components/KaartRaster";
+import { KaartLegenda } from "./components/KaartLegenda";
 import { KaartPreview } from "./components/KaartPreview";
 import { FutKaartDefs } from "@/features/rating/components/FutKaart";
 import { TierProgressBanner } from "./components/TierProgressBanner";
@@ -1031,6 +1032,15 @@ export function Leaderboard() {
           )}
           <TierLegend pias={groupPias} />
         </>
+      )}
+
+      {/* Wat de frames, schilden en editie-regels op de wand betekenen (#763) —
+          zelfde plek en zelfde uitklap-patroon als de divisie-legenda hierboven. */}
+      {tab === "kaarten" && (
+        <KaartLegenda
+          naam={pmap[myId] ? displayName(pmap[myId]) : "Jij"}
+          profile={pmap[myId]}
+        />
       )}
 
       <div className="card">
