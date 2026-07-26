@@ -53,6 +53,21 @@ import {
   type OrnamentPad,
   type Streng,
 } from "@/features/rating/components/futKaartOrnamenten";
+import {
+  INFORM_CREST,
+  INFORM_GOUD_CONTOUR,
+  INFORM_GOUD_GLANS,
+  INFORM_GOUD_GROEF,
+  INFORM_GOUD_SCHADUW,
+  INFORM_GOUD_VERLOOP,
+  INFORM_MEDAILLON,
+  INFORM_MOTIEF,
+  INFORM_MOTIEF_BREEDTE,
+  INFORM_MOTIEF_KLEUR,
+  INFORM_MOTIEF_POSITIE,
+  INFORM_TITAAN,
+  INFORM_VIN,
+} from "@/features/rating/components/ornamentenInform";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 export type SchildVorm = "vlak" | "notch" | "punt" | "kroon" | "troon";
@@ -191,7 +206,12 @@ export function schildPad(
  *  (kraftkarton met confetti) en de Piet (speelkaart met suit-pips) een eigen
  *  weefsel meebrengen en het satijn juist uitzetten — dubbel weefsel wordt
  *  druk (de `background: none`-regel in de CSS). */
-export type VlakTextuur = "satijn" | "confetti" | "speelkaart" | "brokaat";
+export type VlakTextuur =
+  | "satijn"
+  | "confetti"
+  | "speelkaart"
+  | "brokaat"
+  | "titanium";
 
 /** Resolved themakleuren voor één laag-opbouw. De offsets die niet per thema
  *  wisselen (glow op 0/1, sheen rond 0.5) liggen vast in `drawKaartSchild`;
@@ -208,6 +228,10 @@ export interface FutKaartKleuren {
   liner: string;
   /** Vlakgradient — de stops van de linear-gradient in .fut-kaart__vlak. */
   vlak: ReadonlyArray<readonly [number, string]>;
+  /** Titanium-tint (#710, In-Form): een half-transparante diagonale laag over
+   *  het vlakverloop, spiegel van de tussenlaag in de CSS-`background` van
+   *  .fut-kaart--inform .fut-kaart__vlak. Zelfde as als het frame (~160°). */
+  tint?: ReadonlyArray<readonly [number, string]>;
   /** Topgloed-kleur op offset 0 (offset 1 is altijd transparant wit). */
   glow: string;
   /** Sheen-kleur op offset 0.5. */
@@ -215,6 +239,11 @@ export interface FutKaartKleuren {
   /** Halve breedte van de sheen-baan: stops op 0.5 ± dit. Default 0.08 (de
    *  42/50/58 van de basis-::before); de shimmer-edities zetten 0.12. */
   sheenSpreiding?: number;
+  /** Volledige sheen-stops (#710): wie een baan met méér dan drie stops heeft —
+   *  In-Form heeft een zachte aanloop, een gouden piek en een witte kern —
+   *  geeft ze hier letterlijk mee; `sheen`/`sheenSpreiding` worden dan
+   *  genegeerd. Offsets als fractie, dezelfde volgorde als de CSS. */
+  sheenStops?: ReadonlyArray<readonly [number, string]>;
   /** Keyline (#664): dunne lichte lijn tussen liner en vlak — spiegel van
    *  .fut-kaart__keyline. Weglaten = geen keyline (oude opbouw). */
   keyline?: string;
@@ -257,10 +286,18 @@ export interface FutKaartKleuren {
   };
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
-   *  "dictator" tekent bovendien een vóór-laag (lauwerkrans, lakzegel) ná het
-   *  vlak — dezelfde laagvolgorde als .fut-kaart__ornament--voor in de CSS. */
-  ornament?: "goat" | "dictator";
+   *  "dictator" (lauwerkrans, lakzegel) en "inform" (bliksemmedaillon) tekenen
+   *  bovendien een vóór-laag ná het vlak — dezelfde laagvolgorde als
+   *  .fut-kaart__ornament--voor in de CSS. */
+  ornament?: Ornament;
 }
+
+/** De drie ornamentfamilies (#710) — spiegel van `FutOrnament` in
+ *  FutKaart.tsx. */
+export type Ornament = "goat" | "dictator" | "inform";
+
+/** Ornamenten met óók een laag vóór de kaart. */
+const VOOR_ORNAMENTEN: readonly Ornament[] = ["dictator", "inform"];
 
 /**
  * Tekent frame → liner → geclipt vlak (metaal/diepte + topgloed + sheen)
@@ -283,6 +320,7 @@ export function drawKaartSchild(
   // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
   if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
+  if (kleuren.ornament === "inform") drawInformAchter(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -369,12 +407,27 @@ export function drawKaartSchild(
   ctx.fillStyle = vlak;
   ctx.fillRect(fx, fy, fw, fh);
 
+  // Titanium-tint (#710): de half-transparante donkere laag die in de CSS
+  // tússen het vlakverloop en de topgloed staat, op de frame-as (~160°).
+  if (kleuren.tint) {
+    const tint = ctx.createLinearGradient(
+      fx,
+      fy,
+      fx + fw * 0.34,
+      fy + fh * 0.94,
+    );
+    for (const [offset, kleur] of kleuren.tint) tint.addColorStop(offset, kleur);
+    ctx.fillStyle = tint;
+    ctx.fillRect(fx, fy, fw, fh);
+  }
+
   // Eigen weefsel (#666: kraftkarton/speelkaart) ligt in de CSS tússen de
   // vlakgradient en de sheen — het zijn achtergrondlagen, de sheen is een
   // ::before erbovenop. Het satijn hoort juist bij de ::after-laag en komt
   // daarom pas ná de stralenkrans, onderaan deze functie.
   if (kleuren.textuur === "confetti") drawConfetti(ctx, fx, fy, fw, fh);
   if (kleuren.textuur === "speelkaart") drawSpeelkaart(ctx, fx, fy, fw, fh);
+  if (kleuren.textuur === "titanium") drawTitanium(ctx, fx, fy, fw, fh);
 
   const glow = ctx.createRadialGradient(
     fx + fw / 2,
@@ -413,10 +466,18 @@ export function drawKaartSchild(
     fx + fw,
     fy + fh * 0.62,
   );
-  const spreiding = kleuren.sheenSpreiding ?? 0.08;
-  sheen.addColorStop(0.5 - spreiding, "rgba(255, 255, 255, 0)");
-  sheen.addColorStop(0.5, kleuren.sheen);
-  sheen.addColorStop(0.5 + spreiding, "rgba(255, 255, 255, 0)");
+  if (kleuren.sheenStops) {
+    // Baan met een eigen stoplijst (#710, In-Form): letterlijk de CSS-stops.
+    // De animatie staat op de poster stil op zijn breedste stand — dat is
+    // precies de ongetransformeerde baan, die van hoek tot hoek loopt.
+    for (const [offset, kleur] of kleuren.sheenStops)
+      sheen.addColorStop(offset, kleur);
+  } else {
+    const spreiding = kleuren.sheenSpreiding ?? 0.08;
+    sheen.addColorStop(0.5 - spreiding, "rgba(255, 255, 255, 0)");
+    sheen.addColorStop(0.5, kleuren.sheen);
+    sheen.addColorStop(0.5 + spreiding, "rgba(255, 255, 255, 0)");
+  }
   ctx.fillStyle = sheen;
   ctx.fillRect(fx, fy, fw, fh);
 
@@ -471,13 +532,15 @@ export function drawKaartSchild(
     }
   }
 
-  // Vóór-laag (#710): de lauwerkransen en het lakzegel van El Padelissimo
-  // liggen over de kaart heen. De vlak-clip moet daarvoor even wijken (die
-  // zou alles buiten het vlak wegsnijden) en daarna weer aan, want de caller
-  // tekent zijn content nog binnen dezelfde clip.
-  if (kleuren.ornament === "dictator") {
+  // Vóór-laag (#710): de lauwerkransen en het lakzegel van El Padelissimo en
+  // het bliksemmedaillon van In-Form liggen over de kaart heen. De vlak-clip
+  // moet daarvoor even wijken (die zou alles buiten het vlak wegsnijden) en
+  // daarna weer aan, want de caller tekent zijn content nog binnen dezelfde
+  // clip.
+  if (kleuren.ornament && VOOR_ORNAMENTEN.includes(kleuren.ornament)) {
     ctx.restore();
-    drawDictatorVoor(ctx, x, y, w);
+    if (kleuren.ornament === "dictator") drawDictatorVoor(ctx, x, y, w);
+    else drawInformVoor(ctx, x, y, w);
     ctx.save();
     schildPad(ctx, fx, fy, fw, fh, vorm);
     ctx.clip();
@@ -486,24 +549,143 @@ export function drawKaartSchild(
   return { fx, fy, fw, fh };
 }
 
+/** Eén metaalpalet: het verloop van een ornamentfamilie plus de lijnkleuren
+ *  die het reliëf maken. Spiegel van `StrengPalet` in FutKaart.tsx, waar het
+ *  verloop een gradient-def-id is i.p.v. een stoplijst. */
+interface StrengPalet {
+  verloop: ReadonlyArray<readonly [number, string]>;
+  contour: string;
+  ribbel: string;
+  ribbelGlans: string;
+  schaduw: string;
+  glans: string;
+}
+const GOAT_PALET: StrengPalet = {
+  verloop: GOAT_METAAL_VERLOOP,
+  contour: GOAT_METAAL_CONTOUR,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+  glans: GOAT_METAAL_GLANS,
+};
+const INFORM_PALET: StrengPalet = {
+  verloop: INFORM_GOUD_VERLOOP,
+  contour: INFORM_GOUD_CONTOUR,
+  ribbel: INFORM_GOUD_GROEF,
+  ribbelGlans: INFORM_GOUD_GLANS,
+  schaduw: INFORM_GOUD_SCHADUW,
+  glans: INFORM_GOUD_GLANS,
+};
+
 /** Gouden ornamentvlak: verloop-vulling, donkere contour en een lichte
- *  binnenrand — spiegel van FutGoud in FutKaart.tsx. */
-function goudPad(ctx: CanvasRenderingContext2D, d: string, yTop = -32, yBot = 60) {
+ *  binnenrand — spiegel van FutGoud in FutKaart.tsx. Standaard het antiekgoud
+ *  van El Padelissimo; In-Form geeft zijn champagnepalet mee. */
+function goudPad(
+  ctx: CanvasRenderingContext2D,
+  d: string,
+  yTop = -32,
+  yBot = 60,
+  verloopStops: ReadonlyArray<readonly [number, string]> = DICTATOR_GOUD_VERLOOP,
+  contour = DICTATOR_GOUD_CONTOUR,
+  glans = DICTATOR_GOUD_GLANS,
+) {
   const pad = new Path2D(d);
   const verloop = ctx.createLinearGradient(0, yTop, (yBot - yTop) * 0.3, yBot);
-  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP)
+  for (const [offset, kleur] of verloopStops)
     verloop.addColorStop(offset, kleur);
   ctx.fillStyle = verloop;
   ctx.fill(pad);
   ctx.lineJoin = "round";
-  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.strokeStyle = contour;
   ctx.lineWidth = 0.6;
   ctx.stroke(pad);
   ctx.save();
   ctx.globalAlpha = 0.7;
-  ctx.strokeStyle = DICTATOR_GOUD_GLANS;
+  ctx.strokeStyle = glans;
   ctx.lineWidth = 0.35;
   ctx.stroke(pad);
+  ctx.restore();
+}
+
+/** In-Form, áchter de kaart (#710): de twee slanke vinnen langs de onderste
+ *  zijranden plus de bliksemcrest op de as. Eén helft plus zijn spiegeling om
+ *  x=50, net als de <use transform> in de DOM-defs; de crest staat op de as en
+ *  wordt dus niet gespiegeld. Units zijn kaart-units (100 breed). */
+function drawInformAchter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, INFORM_VIN, 0.62, INFORM_PALET);
+    ctx.restore();
+  }
+  goudPad(
+    ctx,
+    INFORM_CREST,
+    -15,
+    4,
+    INFORM_GOUD_VERLOOP,
+    INFORM_GOUD_CONTOUR,
+    INFORM_GOUD_GLANS,
+  );
+  ctx.restore();
+}
+
+/** In-Form, vóór de kaart (#710): het bliksemmedaillon in de kaartpunt — ring,
+ *  spouw, tweede ring, titaniumvlak en de bliksem. */
+function drawInformVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  const [mx, my] = INFORM_MEDAILLON.midden;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  const goud = ctx.createLinearGradient(
+    0,
+    my - INFORM_MEDAILLON.ring,
+    INFORM_MEDAILLON.ring * 0.6,
+    my + INFORM_MEDAILLON.ring,
+  );
+  for (const [offset, kleur] of INFORM_GOUD_VERLOOP)
+    goud.addColorStop(offset, kleur);
+  ctx.strokeStyle = INFORM_GOUD_CONTOUR;
+  ctx.lineWidth = 0.35;
+  for (const [r, vulling] of [
+    [INFORM_MEDAILLON.ring, goud],
+    [INFORM_MEDAILLON.spouw, INFORM_TITAAN],
+    [INFORM_MEDAILLON.binnenring, goud],
+    [INFORM_MEDAILLON.vlak, INFORM_TITAAN],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(mx, my, r, 0, Math.PI * 2);
+    ctx.fillStyle = vulling;
+    ctx.fill();
+    ctx.stroke();
+  }
+  goudPad(
+    ctx,
+    INFORM_MEDAILLON.bliksem,
+    my - 5,
+    my + 5,
+    INFORM_GOUD_VERLOOP,
+    INFORM_GOUD_CONTOUR,
+    INFORM_GOUD_GLANS,
+  );
   ctx.restore();
 }
 
@@ -663,6 +845,7 @@ function strokeStreng(
   ctx: CanvasRenderingContext2D,
   streng: Streng,
   ribbelBreedte: number,
+  palet: StrengPalet = GOAT_PALET,
 ) {
   const omtrek = new Path2D(streng.omtrek);
   const verloop = ctx.createLinearGradient(
@@ -671,24 +854,24 @@ function strokeStreng(
     (streng.bbox.yMax - streng.bbox.yMin) * 0.35,
     streng.bbox.yMax,
   );
-  for (const [offset, kleur] of GOAT_METAAL_VERLOOP)
+  for (const [offset, kleur] of palet.verloop)
     verloop.addColorStop(offset, kleur);
   ctx.fillStyle = verloop;
   ctx.fill(omtrek);
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.strokeStyle = GOAT_METAAL_CONTOUR;
+  ctx.strokeStyle = palet.contour;
   ctx.lineWidth = 0.7;
   ctx.stroke(omtrek);
   ctx.lineWidth = ribbelBreedte;
-  ctx.strokeStyle = GOAT_METAAL_RIBBELGLANS;
+  ctx.strokeStyle = palet.ribbelGlans;
   for (const d of streng.ribbelGlans) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
+  ctx.strokeStyle = palet.ribbel;
   for (const d of streng.ribbels) ctx.stroke(new Path2D(d));
-  ctx.strokeStyle = GOAT_METAAL_SCHADUW;
+  ctx.strokeStyle = palet.schaduw;
   ctx.lineWidth = 1.3;
   ctx.stroke(new Path2D(streng.schaduw));
-  ctx.strokeStyle = GOAT_METAAL_GLANS;
+  ctx.strokeStyle = palet.glans;
   ctx.lineWidth = 0.9;
   ctx.stroke(new Path2D(streng.highlight));
 }
@@ -858,6 +1041,44 @@ function drawConfetti(
   }
 }
 
+/** Geborsteld titanium van In-Form (#710): twee frequenties in de
+ *  sheen-richting, spiegel van de twee repeating-linear-gradients in de
+ *  vlak-achtergrond van .fut-kaart--inform. De fijne laag is een lichte rug
+ *  náást een donkere groef (dát paar maakt geborsteld metaal), de grove laag
+ *  legt er één streek over. Net als het kraft van de pias en het linnen van de
+ *  Piet staat dit weefsel in de achtergrondlaag — dus ónder de inkt, precies
+ *  de laagvolgorde die de referentie-instructies vragen. Periodes op de vaste
+ *  ~1,4×-kalibratie: CSS 4px → 5,6 en CSS 11px → 15,4. */
+function drawTitanium(
+  ctx: CanvasRenderingContext2D,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+) {
+  const helling = fh * 0.47; // ~115° t.o.v. de kaart, zoals de CSS
+  ctx.lineWidth = 1.4;
+  for (let i = -helling; i < fw; i += 5.6) {
+    for (const [dx, kleur] of [
+      [0, "rgba(255, 255, 255, 0.055)"],
+      [2.1, "rgba(0, 0, 0, 0.14)"],
+    ] as const) {
+      ctx.strokeStyle = kleur;
+      ctx.beginPath();
+      ctx.moveTo(fx + i + dx, fy);
+      ctx.lineTo(fx + i + dx + helling, fy + fh);
+      ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = "rgba(255, 240, 200, 0.05)";
+  for (let i = -helling; i < fw; i += 15.4) {
+    ctx.beginPath();
+    ctx.moveTo(fx + i, fy);
+    ctx.lineTo(fx + i + helling, fy + fh);
+    ctx.stroke();
+  }
+}
+
 /** Speelkaart-weefsel van de Zwarte Piet (#645/#705): linnen-finish met de
  *  vier suit-pips erop. Het linnen is de spiegel van de twee gekruiste
  *  repeating-linear-gradients (0°/90°, 1px lijn op periode 3) — op de vaste
@@ -943,16 +1164,24 @@ interface EditieRegister {
   liner: string;
   vlak: readonly [string, string, string];
   vlakMid: number;
+  /** Titanium-tint (#710): de laag tússen vlakverloop en topgloed. */
+  tint?: ReadonlyArray<readonly [number, string]>;
   /** Radiale topgloed; de pias en de Piet hebben er in de CSS geen. */
   glow: string;
   /** Alleen gezet waar de editie de ::before-sheen overschrijft. */
   sheen?: string;
   sheenSpreiding?: number;
+  /** Volledige stoplijst voor een baan met meer dan drie stops (#710). */
+  sheenStops?: ReadonlyArray<readonly [number, string]>;
   ink: string;
   inkSoft: string;
   lijn: string;
   editieKleur: string;
   textuur?: VlakTextuur;
+  /** Binnenlijnen (#710): de inset-schaduwen uit --kaart-binnenlijn. */
+  binnenlijn?: ReadonlyArray<readonly [number, string]>;
+  /** Vlak-motief (#710): het geëtste watermerk dat de editie zélf meebrengt. */
+  motief?: FutKaartKleuren["motief"];
 }
 
 /** De basis-sheen (.fut-kaart__vlak::before) die élk register erft. Bewust 0.28
@@ -1008,9 +1237,17 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#9dbfab",
     editieKleur: "#2e7050",
   },
-  // In-Form (#497): navy-goud. De lopende shimmer uit de CSS staat op de
-  // poster stil — een PNG heeft geen animatie — maar wel op zijn breedste
-  // stand (38/50/62), zodat de gouden baan net zo present is als live.
+  // In-Form (#497, herzien bij #710): zwart-titanium met champagnegoud. De
+  // materiaalwaarden (frame, liner, vlak, inkt) staan onveranderd — de
+  // eer-hero op het dashboard kopieert ze (#760) — en de nieuwe uitstraling
+  // komt uit de lagen erbij: titanium-tint, geborstelde groeven, een brede
+  // glansbaan met eigen stops, de dubbele gouden binnenlijn, het geëtste
+  // pulse-ring-motief en de ornamentlaag (crest, vinnen, medaillon).
+  //
+  // Twee dingen bevriezen op de poster, want een PNG heeft geen animatie:
+  // de glansbaan staat op zijn breedste stand (dat is precies de
+  // ongetransformeerde gradient, van hoek tot hoek) en de pulse-ring op volle
+  // sterkte (de CSS laat hem tussen 0.5 en 1 ademen).
   inform: {
     frame: [
       [0, "#f7dfa0"],
@@ -1021,13 +1258,39 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     liner: "#0a0c14",
     vlak: ["#232c44", "#141826", "#0a0c14"],
     vlakMid: 0.6,
+    tint: [
+      [0, "rgba(5, 7, 12, 0.6)"],
+      [0.46, "rgba(5, 7, 12, 0)"],
+      [1, "rgba(5, 7, 12, 0.55)"],
+    ],
     glow: "rgba(240, 199, 102, 0.28)",
-    sheen: "rgba(255, 222, 140, 0.28)",
-    sheenSpreiding: 0.12,
+    // De ~0,875-kalibratie van #664 (de canvas-baan loopt over een kortere as
+    // en leest daardoor feller): CSS 0.05/0.22/0.14 → 0.045/0.19/0.12.
+    sheenStops: [
+      [0.2, "rgba(255, 228, 160, 0)"],
+      [0.38, "rgba(255, 228, 160, 0.045)"],
+      [0.48, "rgba(255, 236, 185, 0.19)"],
+      [0.52, "rgba(255, 255, 255, 0.12)"],
+      [0.62, "rgba(255, 228, 160, 0.045)"],
+      [0.8, "rgba(255, 228, 160, 0)"],
+    ],
+    sheen: "rgba(255, 236, 185, 0.19)",
     ink: "#f2cf7d",
     inkSoft: "#c9a95e",
     lijn: "rgba(240, 199, 102, 0.45)",
     editieKleur: "#f2cf7d",
+    textuur: "titanium",
+    binnenlijn: [
+      [1, "rgba(255, 226, 150, 0.7)"],
+      [2.5, "rgba(6, 8, 14, 0.95)"],
+      [3.5, "rgba(240, 199, 102, 0.35)"],
+    ],
+    motief: {
+      paden: INFORM_MOTIEF,
+      kleur: INFORM_MOTIEF_KLEUR,
+      breedte: INFORM_MOTIEF_BREEDTE,
+      positie: INFORM_MOTIEF_POSITIE,
+    },
   },
   // On-Fire (#632): sintel-donker met ember-frame, zelfde stille shimmer.
   onfire: {
@@ -1116,6 +1379,18 @@ function premiumTier(key: TierKey | undefined): boolean {
   return key === "platina" || key === "diamant" || key === "meester";
 }
 
+/** Ornamentlaag per tier en per editie (#710) — spiegel van EDITIE_ORNAMENT /
+ *  TIER_ORNAMENT in FutKaart.tsx. De regel staat daar uitgeschreven: een
+ *  editie mét eigen ornament wint van de tier, want in de CSS staat het
+ *  editie-blok ná het toptier-blok met gelijke specificiteit. */
+const EDITIE_ORNAMENT: Partial<Record<KaartEditie, Ornament>> = {
+  inform: "inform",
+};
+const TIER_ORNAMENT: Partial<Record<TierKey, Ornament>> = {
+  legende: "goat",
+  dictator: "dictator",
+};
+
 /**
  * Alle kleuren van één kaart, in dezelfde cascade als FutKaart.css (#666):
  *
@@ -1125,8 +1400,11 @@ function premiumTier(key: TierKey | undefined): boolean {
  *   GOAT-kaart, want in de CSS staat het editie-blok ná het special-blok met
  *   gelijke specificiteit;
  * — de stralenkrans blijft van de divisie (de editie-blokken raken ::after
- *   niet), behalve bij de pias en de Piet: die zetten hem uit, ook op een
- *   premium-tier, want hun eigen weefsel verdraagt geen tweede laag.
+ *   niet), behalve bij de edities die een eigen weefsel meebrengen — pias, Piet
+ *   en, sinds #710, In-Form: hun ::after staat ná het premium-blok in de CSS en
+ *   vervangt de krans, ook op een premium-tier;
+ * — het ornament komt van de tier, tenzij de editie er zélf een heeft: dan
+ *   wint de editie (zie EDITIE_ORNAMENT / TIER_ORNAMENT hierboven).
  *
  * De schildvorm staat hier bewust buiten: die komt van `schildVorm(key)` en
  * wisselt nooit met de editie.
@@ -1135,7 +1413,14 @@ export function kaartSkin(
   key: TierKey | undefined,
   editie: KaartEditie | null,
 ): KaartSkin {
-  const stralen = premiumTier(key) && editie !== "pias" && editie !== "piet";
+  // Wie zijn eigen weefsel meebrengt, zet de stralenkrans uit: twee weefsels
+  // over elkaar wordt druk, en in de CSS overschrijft het editie-::after de
+  // premium-::after gewoon. Afgeleid uit het register i.p.v. een lijstje
+  // edities, zodat een zévende editie met eigen textuur de krans niet stil
+  // erbij krijgt.
+  const eigenWeefsel =
+    editie != null && EDITIE_REGISTERS[editie].textuur != null;
+  const stralen = premiumTier(key) && !eigenWeefsel;
 
   if (editie) {
     const r = EDITIE_REGISTERS[editie];
@@ -1149,27 +1434,31 @@ export function kaartSkin(
           [r.vlakMid, r.vlak[1]],
           [1, r.vlak[2]],
         ],
+        tint: r.tint,
         glow: r.glow,
         sheen: r.sheen ?? BASIS_SHEEN,
         sheenSpreiding: r.sheenSpreiding,
+        sheenStops: r.sheenStops,
         keyline: mix(r.lijn, "#fff8e8", 0.75),
         stralen,
         // Eigen ::after-textuur overleeft de editie (editie-blokken raken
         // ::after niet aan): het ijle GOAT-satijn en het dictator-brokaat
-        // blijven staan. Pias en Piet brengen hun eigen weefsel mee en winnen
-        // wél — hun `background: none` staat ná het toptier-blok in de CSS.
+        // blijven staan. Pias, Piet en In-Form brengen hun eigen weefsel mee en
+        // winnen wél — hun ::after staat ná het toptier-blok in de CSS.
         textuur: r.textuur ?? (key === "dictator" ? "brokaat" : undefined),
         satijnAlpha: key === "legende" ? 0.035 : undefined,
-        // Vastgelegd gedrag (#710): het ornament hangt aan de tíer, dus een
-        // GOAT met In-Form houdt zijn hoorns. Het mótief hoort bij het
-        // vlak-register en verdwijnt wél — het medaillon zou op het
-        // In-Form-navy vloeken. Spiegel van FutKaart.tsx.
+        binnenlijn: r.binnenlijn,
+        // Het mótief hoort bij het vlak-register: een editie overschrijft het
+        // vlak en daarmee ook het tier-motief (het GOAT-medaillon zou op het
+        // In-Form-navy vloeken). Sinds #710 mág een editie een eigen motief
+        // meebrengen — In-Form doet dat met zijn pulse-ring en
+        // snelheidslijnen. Spiegel van FutKaart.tsx.
+        motief: r.motief,
+        // Het ornament: editie boven tier. Een GOAT-in-vorm draagt dus de
+        // In-Form-bliksem i.p.v. zijn hoorns — de editie is het nieuws van de
+        // week, het monument is de constante. Spiegel van FutKaart.tsx.
         ornament:
-          key === "legende"
-            ? "goat"
-            : key === "dictator"
-              ? "dictator"
-              : undefined,
+          EDITIE_ORNAMENT[editie] ?? (key ? TIER_ORNAMENT[key] : undefined),
       },
       ink: r.ink,
       inkSoft: r.inkSoft,

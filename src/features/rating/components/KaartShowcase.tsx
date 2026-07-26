@@ -216,8 +216,10 @@ export function KaartShowcase() {
           </div>
         ))}
         <PosterKaart tier={tierFor(1450)} editie={null} editieLabel={null} breedte={210} />
-        {/* Onder een editie-skin: de hoorns blijven (ornament hangt aan de
-            tier), het medaillon-motief wijkt voor het editie-vlak. */}
+        {/* Onder een editie-skin zónder eigen ornament blijven de hoorns staan
+            en wijkt alleen het medaillon-motief voor het editie-vlak. (Bij
+            In-Form is dat anders — die editie brengt wél een ornament mee en
+            wint dan van de hoorns; zie de In-Form-sectie hieronder.) */}
         <div
           className="kaart-showcase__maat"
           style={{ ["--maat" as string]: "150px" }}
@@ -225,12 +227,12 @@ export function KaartShowcase() {
           <Kaart
             kw={150}
             tier={tierFor(1450)}
-            editie="inform"
-            editieLabel="⚡ In-Form · +48"
+            editie="kampioen"
+            editieLabel="🏆 Kampioen Q2 2026"
             naam="Senne"
             elo={1487}
           />
-          <span className="kaart-showcase__maatlabel">GOAT + In-Form</span>
+          <span className="kaart-showcase__maatlabel">GOAT + Kampioen</span>
         </div>
       </Sectie>
 
@@ -249,6 +251,66 @@ export function KaartShowcase() {
           </div>
         ))}
         <PosterKaart tier={tierFor(1650)} editie={null} editieLabel={null} breedte={210} />
+      </Sectie>
+
+      {/* In-Form (#710): de enige editie met een eigen ornamentlaag, dus de
+          enige plek waar de overlay-eigenschap te zien is. Bewust op twee
+          tiers met een ánder schild (kroon-notch en troon-crest): de crest,
+          de vinnen en het medaillon moeten op élke bovenrand kloppen, en op de
+          GOAT/dictator-tiers moet zichtbaar zijn dat het editie-ornament van
+          het tier-ornament wint (geen hoorns, geen kroon). */}
+      <Sectie titel="In-Form (#710): titanium-overlay op twee tiers — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1050)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Remco"
+              elo={1050}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1050)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Remco"
+          breedte={210}
+        />
+        {[
+          { r: 1350, label: "punt-schild" },
+          { r: 1450, label: "GOAT: editie wint" },
+          { r: 1650, label: "dictator: editie wint" },
+        ].map((v) => (
+          <div
+            key={v.r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(v.r)}
+              editie="inform"
+              editieLabel="⚡ In-Form · +48"
+              naam="Senne"
+            />
+            <span className="kaart-showcase__maatlabel">{v.label}</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1650)}
+          editie="inform"
+          editieLabel="⚡ In-Form · +48"
+          naam="Senne"
+          breedte={150}
+        />
       </Sectie>
 
       <Sectie titel="Alle tiers (116px, geen editie)">

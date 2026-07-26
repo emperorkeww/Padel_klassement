@@ -43,6 +43,21 @@ import {
   type OrnamentPad,
   type Streng,
 } from "./futKaartOrnamenten";
+import {
+  INFORM_CREST,
+  INFORM_GOUD_CONTOUR,
+  INFORM_GOUD_GLANS,
+  INFORM_GOUD_GROEF,
+  INFORM_GOUD_SCHADUW,
+  INFORM_GOUD_VERLOOP,
+  INFORM_MEDAILLON,
+  INFORM_MOTIEF,
+  INFORM_MOTIEF_BREEDTE,
+  INFORM_MOTIEF_KLEUR,
+  INFORM_MOTIEF_POSITIE,
+  INFORM_TITAAN,
+  INFORM_VIN,
+} from "./ornamentenInform";
 import "./FutKaart.css";
 
 /** Schildvormen: vier clipPaths met exact dezelfde onderkant (de punt op
@@ -52,22 +67,53 @@ import "./FutKaart.css";
  *  objectBoundingBox laat de paden meeschalen met elke kaartbreedte.
  *  Eén keer renderen per pagina; dubbel renderen is onschadelijk (identieke
  *  defs), maar onnodig. */
+/** Metaalpalet van één ornamentfamilie: welke gradient-def de vulling levert en
+ *  welke lijnkleuren het reliëf maken. Zo delen de rosé GOAT-hoorns en de
+ *  champagne In-Form-vinnen (#710) één renderer i.p.v. twee bijna-gelijke
+ *  copieën. Canvas-spiegel: het `StrengPalet` in futKaartCanvas.ts. */
+interface StrengPalet {
+  verloop: string;
+  contour: string;
+  ribbel: string;
+  ribbelGlans: string;
+  schaduw: string;
+  glans: string;
+}
+const GOAT_PALET: StrengPalet = {
+  verloop: "url(#fut-orn-metaal)",
+  contour: GOAT_METAAL_CONTOUR,
+  ribbel: GOAT_METAAL_RIBBEL,
+  ribbelGlans: GOAT_METAAL_RIBBELGLANS,
+  schaduw: GOAT_METAAL_SCHADUW,
+  glans: GOAT_METAAL_GLANS,
+};
+const INFORM_PALET: StrengPalet = {
+  verloop: "url(#fut-orn-inform-goud)",
+  contour: INFORM_GOUD_CONTOUR,
+  ribbel: INFORM_GOUD_GROEF,
+  ribbelGlans: INFORM_GOUD_GLANS,
+  schaduw: INFORM_GOUD_SCHADUW,
+  glans: INFORM_GOUD_GLANS,
+};
+
 /** Eén getaperde metaalstreng (#710): gevulde omtrek met contour, dwarsribbels
  *  en glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus
  *  DOM en canvas tekenen letterlijk dezelfde paden. */
 function FutStreng({
   streng,
   ribbelBreedte = 0.4,
+  palet = GOAT_PALET,
 }: {
   streng: Streng;
   ribbelBreedte?: number;
+  palet?: StrengPalet;
 }) {
   return (
     <>
       <path
         d={streng.omtrek}
-        fill="url(#fut-orn-metaal)"
-        stroke={GOAT_METAAL_CONTOUR}
+        fill={palet.verloop}
+        stroke={palet.contour}
         strokeWidth="0.7"
         strokeLinejoin="round"
       />
@@ -76,7 +122,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBELGLANS}
+          stroke={palet.ribbelGlans}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -86,7 +132,7 @@ function FutStreng({
           key={d}
           d={d}
           fill="none"
-          stroke={GOAT_METAAL_RIBBEL}
+          stroke={palet.ribbel}
           strokeWidth={ribbelBreedte}
           strokeLinecap="round"
         />
@@ -94,14 +140,14 @@ function FutStreng({
       <path
         d={streng.schaduw}
         fill="none"
-        stroke={GOAT_METAAL_SCHADUW}
+        stroke={palet.schaduw}
         strokeWidth="1.3"
         strokeLinecap="round"
       />
       <path
         d={streng.highlight}
         fill="none"
-        stroke={GOAT_METAAL_GLANS}
+        stroke={palet.glans}
         strokeWidth="0.9"
         strokeLinecap="round"
       />
@@ -110,21 +156,32 @@ function FutStreng({
 }
 
 /** Eén gouden ornamentvlak (#710): vulling met verloop, donkere contour en
- *  een lichte binnenrand — het reliëf van de referentie zonder extra lagen. */
-function FutGoud({ d }: { d: string }) {
+ *  een lichte binnenrand — het reliëf van de referentie zonder extra lagen.
+ *  Standaard het antiekgoud van El Padelissimo; In-Form geeft champagne mee. */
+function FutGoud({
+  d,
+  vulling = "url(#fut-orn-goud)",
+  contour = DICTATOR_GOUD_CONTOUR,
+  glans = DICTATOR_GOUD_GLANS,
+}: {
+  d: string;
+  vulling?: string;
+  contour?: string;
+  glans?: string;
+}) {
   return (
     <>
       <path
         d={d}
-        fill="url(#fut-orn-goud)"
-        stroke={DICTATOR_GOUD_CONTOUR}
+        fill={vulling}
+        stroke={contour}
         strokeWidth="0.6"
         strokeLinejoin="round"
       />
       <path
         d={d}
         fill="none"
-        stroke={DICTATOR_GOUD_GLANS}
+        stroke={glans}
         strokeWidth="0.35"
         strokeLinejoin="round"
         opacity="0.7"
@@ -315,6 +372,70 @@ export function FutKaartDefs() {
             />
           ))}
         </g>
+        {/* In-Form (#710) — het énige editie-ornament: champagnegouden
+            bliksemcrest en twee slanke vinnen áchter de kaart, een
+            bliksemmedaillon ervóór. Alles zit op de as of langs de ónderrand,
+            die bij alle vijf de schildvormen identiek is; de crest staat
+            bewust bóven v=0 i.p.v. ín de notch, want die notch is per vorm
+            anders diep (zie het commentaar bij INFORM_CREST). */}
+        <linearGradient
+          id="fut-orn-inform-goud"
+          x1="0"
+          y1="0"
+          x2="0.3"
+          y2="1"
+          gradientUnits="objectBoundingBox"
+        >
+          {INFORM_GOUD_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <g id="fut-orn-inform-achter-helft">
+          <FutStreng streng={INFORM_VIN} ribbelBreedte={0.62} palet={INFORM_PALET} />
+        </g>
+        <g id="fut-orn-inform-achter">
+          <use href="#fut-orn-inform-achter-helft" />
+          <use
+            href="#fut-orn-inform-achter-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          {/* De crest staat op de as en wordt dus niet gespiegeld. */}
+          <FutGoud
+            d={INFORM_CREST}
+            vulling="url(#fut-orn-inform-goud)"
+            contour={INFORM_GOUD_CONTOUR}
+            glans={INFORM_GOUD_GLANS}
+          />
+        </g>
+        <g id="fut-orn-inform-voor">
+          {/* Medaillon in de punt: ring — spouw — ring — titaniumvlak —
+              bliksem. Vier concentrische cirkels i.p.v. één brede stroke,
+              zodat het reliëf van de referentie ook op de veldmaat leest. */}
+          {(
+            [
+              [INFORM_MEDAILLON.ring, "url(#fut-orn-inform-goud)"],
+              [INFORM_MEDAILLON.spouw, INFORM_TITAAN],
+              [INFORM_MEDAILLON.binnenring, "url(#fut-orn-inform-goud)"],
+              [INFORM_MEDAILLON.vlak, INFORM_TITAAN],
+            ] as const
+          ).map(([r, vulling]) => (
+            <circle
+              key={r}
+              cx={INFORM_MEDAILLON.midden[0]}
+              cy={INFORM_MEDAILLON.midden[1]}
+              r={r}
+              fill={vulling}
+              stroke={INFORM_GOUD_CONTOUR}
+              strokeWidth="0.35"
+            />
+          ))}
+          <FutGoud
+            d={INFORM_MEDAILLON.bliksem}
+            vulling="url(#fut-orn-inform-goud)"
+            contour={INFORM_GOUD_CONTOUR}
+            glans={INFORM_GOUD_GLANS}
+          />
+        </g>
         <g id="fut-orn-goat">
           {/* Het baardblad staat op de as en wordt dus niet gespiegeld; de
               nerven liggen erin, de flicks komen uit de gespiegelde helft. */}
@@ -392,6 +513,51 @@ function FutKaartMotief({
   );
 }
 
+/** De zes speciale edities zoals de kaart ze als prop kent (#497/#625/#631/
+ *  #632/#645). Canvas-spiegel: `KaartEditie` in lib/utils/futKaartCanvas.ts. */
+export type FutEditie =
+  | "icon"
+  | "kampioen"
+  | "inform"
+  | "onfire"
+  | "pias"
+  | "piet";
+
+/** De drie ornamentfamilies die búiten het schild uitsteken (#710). */
+export type FutOrnament = "goat" | "dictator" | "inform";
+
+/** Ornamentlaag per kaart. **De regel** (vastgelegd bij #710): een editie mét
+ *  eigen ornament wint van het tier-ornament, precies zoals de editie-skin het
+ *  vlak van de tier wint — in de CSS staat het editie-blok ná het toptier-blok
+ *  met gelijke specificiteit. Een GOAT-in-vorm draagt dus de In-Form-bliksem
+ *  en niet zijn hoorns: de editie is het nieuws van deze week, het monument is
+ *  de constante. Edities zónder eigen ornament (icon, kampioen, onfire, pias,
+ *  piet) laten de hoorns of de kroon juist staan; dáár is de editie alleen een
+ *  hertinting.
+ *
+ *  Canvas-spiegel: dezelfde tabellen in kaartSkin() (futKaartCanvas.ts). */
+const EDITIE_ORNAMENT: Partial<Record<FutEditie, FutOrnament>> = {
+  inform: "inform",
+};
+const TIER_ORNAMENT: Partial<Record<string, FutOrnament>> = {
+  legende: "goat",
+  dictator: "dictator",
+};
+/** Ornamenten met óók een laag vóór de kaart (lauwerkrans/lakzegel bij El
+ *  Padelissimo, bliksemmedaillon bij In-Form). */
+const VOOR_ORNAMENTEN: readonly FutOrnament[] = ["dictator", "inform"];
+
+function ornamentVoor(
+  tierKey: string | undefined,
+  editie: FutEditie | null,
+): FutOrnament | null {
+  return (
+    (editie ? EDITIE_ORNAMENT[editie] : undefined) ??
+    (tierKey ? TIER_ORNAMENT[tierKey] : undefined) ??
+    null
+  );
+}
+
 /** De kaart zelf: tier-modifier + flip-structuur (voor/achter), met de
  *  liner- en vlak-lagen als vaste boilerplate. `voorOverlay`/`achterOverlay`
  *  zijn de interactielagen van de caller (flip-knop, lightbox-knop) en
@@ -413,7 +579,7 @@ export function FutKaart({
    *  anti-MVP van de week, piet = drager van de Zwarte Piet); de schildvorm
    *  blijft die van de divisie. Elke waarde heeft zijn eigen skin in
    *  FutKaart.css. */
-  editie?: "icon" | "kampioen" | "inform" | "onfire" | "pias" | "piet" | null;
+  editie?: FutEditie | null;
   omgedraaid?: boolean;
   /** Extra klasse op de wrapper (bv. "lineup-kaart" voor de veld-maat). */
   className?: string;
@@ -433,33 +599,31 @@ export function FutKaart({
   ]
     .filter(Boolean)
     .join(" ");
-  // Ornament (#710): de laag die buiten het schild uitsteekt, hangt aan de
-  // tíer — een GOAT met In-Form houdt zijn hoorns. Zodra een editie een
-  // eigen ornament heeft (#710 PR 3), wint dat van het tier-ornament, zoals
-  // de editie-skin ook het vlak wint.
-  const ornament =
-    tier?.key === "legende"
-      ? "goat"
-      : tier?.key === "dictator"
-        ? "dictator"
-        : null;
-  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register en
-  // verdwijnt dus wél onder een editie-skin (het medaillon zou op het
-  // In-Form-navy vloeken); alleen de voorkant draagt het.
-  const motief = editie
-    ? null
-    : tier?.key === "legende"
-      ? <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
-      : tier?.key === "dictator"
-        ? (
-            <FutKaartMotief
-              paden={DICTATOR_WATERMARK}
-              kleur={DICTATOR_WATERMARK_KLEUR}
-              breedte={DICTATOR_WATERMARK_BREEDTE}
-              positie={DICTATOR_WATERMARK_POSITIE}
-            />
-          )
-        : null;
+  const ornament = ornamentVoor(tier?.key, editie);
+  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register, dus
+  // het volgt de skin — een editie overschrijft het vlak en daarmee ook het
+  // tier-motief (het GOAT-medaillon zou op het In-Form-navy vloeken). Nieuw
+  // sinds deze PR: een editie mág een eigen motief meebrengen. In-Form doet
+  // dat met zijn pulse-ring en snelheidslijnen; de andere vijf edities laten
+  // het vlak leeg. Alleen de voorkant draagt het motief.
+  const motief =
+    editie === "inform" ? (
+      <FutKaartMotief
+        paden={INFORM_MOTIEF}
+        kleur={INFORM_MOTIEF_KLEUR}
+        breedte={INFORM_MOTIEF_BREEDTE}
+        positie={INFORM_MOTIEF_POSITIE}
+      />
+    ) : editie ? null : tier?.key === "legende" ? (
+      <FutKaartMotief paden={GOAT_MEDAILLON} kleur={GOAT_MEDAILLON_KLEUR} />
+    ) : tier?.key === "dictator" ? (
+      <FutKaartMotief
+        paden={DICTATOR_WATERMARK}
+        kleur={DICTATOR_WATERMARK_KLEUR}
+        breedte={DICTATOR_WATERMARK_BREEDTE}
+        positie={DICTATOR_WATERMARK_POSITIE}
+      />
+    ) : null;
   return (
     <div className={klassen}>
       {ornament && (
@@ -470,7 +634,9 @@ export function FutKaart({
         >
           <use
             href={`#fut-orn-${
-              ornament === "dictator" ? "dictator-achter" : ornament
+              VOOR_ORNAMENTEN.includes(ornament)
+                ? `${ornament}-achter`
+                : ornament
             }`}
           />
         </svg>
@@ -501,18 +667,19 @@ export function FutKaart({
           </span>
         </div>
       </div>
-      {/* Vóór-laag (#710): alleen El Padelissimo heeft ornamenten die over de
-          kaart heen liggen (lauwerkransen langs de zijkanten, lakzegel in de
-          punt) — de laagvolgorde uit de referentie-instructies. Ze staan in
-          de marge van het vlak, dus ze dekken geen tekst af, en de laag is
-          pointer-events: none zodat de flip-knop bereikbaar blijft. */}
-      {ornament === "dictator" && (
+      {/* Vóór-laag (#710): El Padelissimo (lauwerkransen langs de zijkanten,
+          lakzegel in de punt) en In-Form (bliksemmedaillon in de punt) hebben
+          ornamenten die over de kaart heen liggen — de laagvolgorde uit de
+          referentie-instructies. Ze staan in de lege punt en de marge van het
+          vlak, dus ze dekken geen tekst af, en de laag is pointer-events: none
+          zodat de flip-knop bereikbaar blijft. */}
+      {ornament && VOOR_ORNAMENTEN.includes(ornament) && (
         <svg
           className="fut-kaart__ornament fut-kaart__ornament--voor"
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use href="#fut-orn-dictator-voor" />
+          <use href={`#fut-orn-${ornament}-voor`} />
         </svg>
       )}
     </div>
