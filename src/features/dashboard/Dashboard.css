@@ -112,6 +112,279 @@
   border-color: var(--dictator-gold);
 }
 
+/* ---- Verdiende thema's, vervolg (#760) ----
+   De hero kende alleen de kroon en de troon; sinds #760 draagt hij álle zes
+   kaart-edities. Deze drie nemen de materiaalwaarden van hun FUT-editie over
+   (FutKaart.css) in plaats van er een derde palet bij te verzinnen — de
+   synctest in futKaartCanvas.test.ts bewaakt dat kaart en hero niet stil uit
+   elkaar drijven.
+
+   Twee recepten, om dezelfde reden als bij de schande-thema's hieronder:
+   In-Form en On-Fire zijn donkere vlakken en pinnen dus element voor element,
+   net als .hero--dictator. De kampioen is licht in beide thema's en
+   herdefinieert daarom de neutrale tokens naar zijn eigen papier — anders komt
+   elk genest onderdeel (knoppen, chips, vormbolletjes) in donkere smaak op een
+   licht vlak binnen. Zie de kop bij .hero--pias voor die afweging. */
+
+/* Kampioen: het platina-wit met lauwergroen van de 🏆-editie. Bewust géén
+   materiaalmotief zoals de pias (confetti) en de Piet (pips): die twee zíjn een
+   materiaal (karton, speelkaart), platina is een glad vlak. Wat er wél bij komt
+   is de dubbele lijn van een oorkonde — een haarfijne diepgroene binnenring
+   binnen de lauwerrand.
+
+   Contrast: --lauwer-ink 7,7:1 op de lichtste stop en 6,4:1 op de donkerste,
+   --lauwer-ink-soft 5,2:1 resp. 4,6:1, het lauwergroen van de eyebrow 5,8:1
+   resp. 5,1:1, Rudy's oker 5,8:1 resp. 5,1:1. Allemaal ≥ AA.
+
+   Let op de --lauwer-lo: die is lichter dan de --kaart-lo van de kaart
+   (#cfe0d6). Op een kaartje staat onder de gradient niets meer, op een hero
+   staat er tekst tot de laatste regel — en daar zakte de kaartwaarde naar
+   3,9:1. Precies dezelfde afwijking als bij .hero--pias, die om die reden de
+   lichtere --kraft-lo van De Schandpaal volgt in plaats van die van de kaart. */
+.hero--kampioen {
+  --lauwer-hi: #fbfdfc;
+  --lauwer-mid: #e9f2ee;
+  --lauwer-lo: #e4f0e8;
+  --lauwer-ink: #1f5c40;
+  --lauwer-ink-soft: #48745e;
+  --lauwer-lijn: #9dbfab;
+  --lauwer-groen: #2e7050;
+  --lauwer-diep: #223c2f;
+  /* De platina snijkant: het vlak van knoppen en chips die erop liggen. */
+  --lauwer-bone: #f6fbf8;
+
+  /* Token-eiland: alles binnen de hero rekent met platina. */
+  --surface: var(--lauwer-hi);
+  --surface-2: var(--lauwer-mid);
+  --ink: var(--lauwer-ink);
+  --ink-soft: var(--lauwer-ink-soft);
+  --ink-soft-strong: var(--lauwer-ink-soft);
+  --line: var(--lauwer-lijn);
+  --line-strong: var(--lauwer-lijn);
+  --accent: var(--lauwer-groen);
+  --accent-hover: var(--lauwer-diep);
+  --accent-ink: var(--lauwer-bone);
+  /* Winst/verlies blijven onderscheidbaar, maar in de tinten van dit vlak: het
+     app-groen en -rood zijn hier vreemde plastic stickers. */
+  --success: var(--lauwer-ink);
+  --success-soft: #dcebe2;
+  --success-line: var(--lauwer-lijn);
+  --danger: #8e2117;
+  --danger-soft: #efe2df;
+  --danger-line: var(--lauwer-lijn);
+  --warn: #6b4a12;
+  --warn-soft: #eae7d6;
+  --warn-line: var(--lauwer-lijn);
+  --skeleton-hi: #eef5f1;
+
+  color: var(--lauwer-ink);
+  border-color: var(--lauwer-lijn);
+  background:
+    radial-gradient(120% 55% at 50% -6%, rgba(236, 250, 242, 0.9), transparent 62%),
+    linear-gradient(
+      172deg,
+      var(--lauwer-hi) 0%,
+      var(--lauwer-mid) 56%,
+      var(--lauwer-lo) 100%
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--lauwer-diep) 18%, transparent),
+    0 8px 24px color-mix(in srgb, var(--lauwer-diep) 22%, transparent);
+}
+.hero--kampioen .hero__eyebrow,
+.hero--kampioen .hero__me-label {
+  color: var(--lauwer-groen);
+}
+/* Rudy houdt zijn eigen kleur, maar als oker op platina i.p.v. het app-amber. */
+.hero--kampioen .hero__coach-name {
+  color: #8a5a06;
+}
+.hero--kampioen .hero__divide {
+  background: color-mix(in srgb, var(--lauwer-lijn) 75%, transparent);
+}
+
+/* In-Form: het navy-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
+   als .hero--dictator een donker vlak in beide thema's, dus wit voor de kop en
+   goud voor wat een eigen kleurbetekenis heeft — de kaart zet álle inkt op goud,
+   maar dat is een vlak van 96px met vier regels, geen hero met een
+   coachbriefing erin.
+
+   Navy naast het bordeaux van de troon: allebei donker met goud, maar de troon
+   is warm en draagt propaganda-copy plus zijn eigen insigne — hetzelfde
+   onderscheid dat de kaart al maakt (#625). Contrast: wit 13,9:1 op de lichtste
+   stop, de gouden eyebrow 10,6:1, de zachte gold-white-mix daartussen. */
+.hero--inform {
+  --inform-goud: #f2cf7d;
+  --inform-goud-soft: #c9a95e;
+  --inform-lijn: rgba(240, 199, 102, 0.45);
+  --inform-navy: #232c44;
+  --inform-navy-mid: #141826;
+  --inform-navy-diep: #0a0c14;
+
+  /* Eigen stacking context, zodat de glansbaan hieronder tússen het vlak en de
+     tekst kan liggen (z-index:-1) i.p.v. eroverheen. */
+  isolation: isolate;
+  color: #fff;
+  border-color: var(--inform-lijn);
+  background:
+    radial-gradient(130% 60% at 50% -8%, rgba(240, 199, 102, 0.28), transparent 62%),
+    linear-gradient(
+      172deg,
+      var(--inform-navy) 0%,
+      var(--inform-navy-mid) 60%,
+      var(--inform-navy-diep) 100%
+    );
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
+}
+.hero--inform .hero__eyebrow {
+  color: #f7dfa0;
+}
+.hero--inform .hero__name {
+  color: #fff;
+}
+.hero--inform .hero__sub,
+.hero--inform .hero__coach,
+.hero--inform .hero__me-label,
+.hero--inform .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--inform-goud));
+}
+.hero--inform .hero__coach-name {
+  color: var(--inform-goud);
+}
+.hero--inform .hero__divide {
+  background: color-mix(in srgb, var(--inform-goud) 40%, transparent);
+}
+.hero--inform .hero__actions .btn {
+  background: color-mix(in srgb, var(--inform-navy-diep) 62%, transparent);
+  border-color: var(--inform-lijn);
+  color: #fff;
+}
+.hero--inform .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--inform-navy-diep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--inform-goud) 70%, transparent);
+}
+.hero--inform .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
+  border-color: #d8ae4e;
+  color: var(--inform-navy-diep);
+}
+.hero--inform .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fbeac0, #e5be5c);
+  border-color: #e5be5c;
+}
+
+/* On-Fire: het sintel-donker met ember-frame van de 🔥-editie. Zelfde recept als
+   In-Form hierboven, alleen warm — de gloed van vuur i.p.v. goud. Contrast: wit
+   16,0:1 op de lichtste stop, de ember-eyebrow 11,9:1. */
+.hero--onfire {
+  --onfire-ember: #ffc98a;
+  --onfire-ember-soft: #d1915b;
+  --onfire-lijn: rgba(255, 160, 92, 0.45);
+  --onfire-sintel: #3a180c;
+  --onfire-sintel-mid: #241009;
+  --onfire-sintel-diep: #140704;
+
+  isolation: isolate;
+  color: #fff;
+  border-color: var(--onfire-lijn);
+  background:
+    radial-gradient(130% 60% at 50% -8%, rgba(255, 140, 66, 0.34), transparent 62%),
+    linear-gradient(
+      172deg,
+      var(--onfire-sintel) 0%,
+      var(--onfire-sintel-mid) 60%,
+      var(--onfire-sintel-diep) 100%
+    );
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--onfire-sintel-diep) 45%, transparent);
+}
+.hero--onfire .hero__eyebrow {
+  color: #ffd9a0;
+}
+.hero--onfire .hero__name {
+  color: #fff;
+}
+.hero--onfire .hero__sub,
+.hero--onfire .hero__coach,
+.hero--onfire .hero__me-label,
+.hero--onfire .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--onfire-ember));
+}
+.hero--onfire .hero__coach-name {
+  color: var(--onfire-ember);
+}
+.hero--onfire .hero__divide {
+  background: color-mix(in srgb, var(--onfire-ember) 40%, transparent);
+}
+.hero--onfire .hero__actions .btn {
+  background: color-mix(in srgb, var(--onfire-sintel-diep) 62%, transparent);
+  border-color: var(--onfire-lijn);
+  color: #fff;
+}
+.hero--onfire .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--onfire-sintel-diep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--onfire-ember) 70%, transparent);
+}
+.hero--onfire .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #ffcf94, #e07a35);
+  border-color: #b3411a;
+  color: var(--onfire-sintel-diep);
+}
+.hero--onfire .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffdcae, #ec8a45);
+  border-color: #c94f22;
+}
+
+/* De glansbaan van de twee shimmer-edities. Op de kaart schuift die met een
+   transform; hier verschuift de achtergrondpositie, zodat de baan binnen de
+   afgeronde hoeken blijft zonder `overflow: hidden` op de hero — dat zou de
+   tooltip van een HeroCrest afkappen. Alpha lager dan op de kaart (0,28 → 0,16):
+   een kaartje kijk je even aan, dit vlak staat de hele dag boven je overzicht.
+   Zonder `prefers-reduced-motion` staat de baan stil op zijn breedste stand,
+   precies zoals op de deel-poster (futKaartCanvas). */
+.hero--inform::after,
+.hero--onfire::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-repeat: no-repeat;
+  background-size: 260% 100%;
+  background-position: -80% 0;
+}
+.hero--inform::after {
+  background-image: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 222, 140, 0.16) 50%,
+    transparent 62%
+  );
+}
+.hero--onfire::after {
+  background-image: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 170, 92, 0.18) 50%,
+    transparent 62%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero--inform::after,
+  .hero--onfire::after {
+    animation: hero-sheen 2.6s ease-in-out infinite;
+  }
+  @keyframes hero-sheen {
+    0% {
+      background-position: -80% 0;
+    }
+    55%,
+    100% {
+      background-position: 180% 0;
+    }
+  }
+}
+
 /* ---- Schande-thema's (#644) ----
    De twee schand-statussen krijgen hetzelfde materiaal dat ze op de FUT-kaart
    en De Schandpaal al dragen: kraftkarton voor de pias (#631/#682/#705), de
@@ -404,6 +677,29 @@
   border-color: var(--warn-line);
   color: var(--warn);
 }
+/* De drie club-brede edities (#760). Bewust zélf hun materiaal, niet de
+   app-tokens zoals de pias- en Piet-chip: een editie-crest kan náást een
+   winnend thema staan (kampioen-vlak mét een pias-chip, of omgekeerd), en dan
+   moet hij op elk van de zeven vlakken leesbaar zijn. Vulling en tekst zijn dus
+   vaste paren, precies zoals .hero-crest--dictator dat al deed. Contrast: bot op
+   lauwer 5,7:1, navy op goud 9,4:1, sintel op ember 6,5:1 — op de donkerste
+   gradiëntstop van elke chip. */
+.hero-crest--kampioen {
+  background: linear-gradient(180deg, #2e7050, #223c2f);
+  border-color: #182b21;
+  color: #f6fbf8;
+}
+.hero-crest--inform {
+  background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
+  border-color: #8a6a1c;
+  color: #0a0c14;
+}
+.hero-crest--onfire {
+  background: linear-gradient(180deg, #ffcf94, #e07a35);
+  border-color: #b3411a;
+  color: #180a05;
+}
+
 /* Dictator-crest (#613): het gouden troon-insigne als chip, leesbaar op het
    donkere dictator-hero-vlak (zelfde paar als .dictator-throne__insig). */
 .hero-crest--dictator {
