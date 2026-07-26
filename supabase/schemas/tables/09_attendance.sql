@@ -8,4 +8,9 @@ create table public.attendance (
   primary key (group_id, date, player_id)
 );
 
+-- player_id staat achteraan in de PK, dus een lookup op alleen die kolom kan er
+-- niet op (#756). claim_guest() hangt aanwezigheid per speler om, en de
+-- FK-cascade vanaf profiles loopt langs hetzelfde pad.
+create index attendance_player_idx on public.attendance (player_id);
+
 alter table public.attendance enable row level security;

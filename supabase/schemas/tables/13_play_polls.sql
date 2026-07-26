@@ -80,4 +80,8 @@ create table public.play_poll_votes (
   primary key (option_id, player_id)
 );
 
+-- "Alle stemmen van deze speler" kan niet op de PK (option_id staat vooraan),
+-- terwijl claim_guest() precies dat doet bij het omhangen van een gast (#756).
+create index play_poll_votes_player_idx on public.play_poll_votes (player_id);
+
 alter table public.play_poll_votes enable row level security;
