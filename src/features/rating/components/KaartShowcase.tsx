@@ -702,6 +702,34 @@ export function KaartShowcase() {
           </div>
         ))}
         <PosterKaart tier={tierFor(950)} editie={null} editieLabel={null} breedte={210} />
+      {/* Eeuwige belofte (#710): de divisiekaart met de zandlopercrest, de
+          open zijrails en het blauwdruk-watermerk. Zelfde opzet als de
+          GOAT-sectie bovenaan — DOM naast de canvas-spiegel, want alleen zo
+          zie je of het register en diamant.css hetzelfde tekenen. De vierde
+          kaart draait op 1210: dat is sub-niveau III, en "Eeuwige belofte III"
+          is de langste divisietitel van de hele ladder — op de veldmaat de
+          strengste test van de divisieregel. */}
+      <Sectie titel="Eeuwige belofte (#710): zandlopercrest + open rails + blauwdruk — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1250)} naam="Bram" elo={1250} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1250)} editie={null} editieLabel={null} breedte={210} />
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "116px" }}
+        >
+          <Kaart kw={116} tier={tierFor(1210)} naam="Bram" elo={1210} />
+          <span className="kaart-showcase__maatlabel">
+            {tierFor(1210)?.label ?? "—"}
+          </span>
+        </div>
       </Sectie>
 
       <Sectie titel="Alle tiers (116px, geen editie)">
