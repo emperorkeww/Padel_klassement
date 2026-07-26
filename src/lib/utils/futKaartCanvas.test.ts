@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { kaartSkin, mix, rgba, schildVorm, type KaartEditie } from "./futKaartCanvas";
 import { GOAT_ICOON } from "@/features/rating/components/futKaartOrnamenten";
+import { DIVISIE_KAARTEN } from "@/features/rating/components/divisies";
 
 // De stylesheets als tekst, voor de synctest onderaan. Bewust via node:fs en
 // niet via Vite's ?raw: Vitest kortsluit CSS-imports (css: false) op een lege
@@ -88,19 +89,32 @@ function helderheid(kleur: string): number {
 }
 
 describe("kaartSkin", () => {
-  it("kleurt de generieke divisieladder uit de tierkleur", () => {
-    // De ladderformule geldt nog voor élke divisie zonder eigen register. Wie
-    // er wél een heeft (#710) valt hieronder, in de test daarna — daarom hier
-    // een tier die nog op de formule draait. Dat was tot de Ballenraper-kaart
-    // `hout`; nu is Sletje van de baan de laatste divisie zonder register. Krijgt
-    // ook die er een, dan heeft deze test geen onderwerp meer en hoort hij te
-    // verdwijnen (de ladder is dan alleen nog de fallback voor een tier die niet
-    // in het divisieregister staat).
-    const slof = kaartSkin("slof", null);
-    expect(slof.kleuren.vlak[0][1]).toBe(mix("#7f7a6f", "#fdfbf6", 0.2));
-    expect(slof.ink).toBe(mix("#7f7a6f", "#1d1508", 0.52));
-    // Zonder editie valt --editie-kleur terug op --kaart-ink.
-    expect(slof.editieKleur).toBe(slof.ink);
+  it("alle negen basisdivisies dragen nu een eigen register (#710)", () => {
+    // Hier stond een test op de generieke ladderformule, met de laatste divisie
+    // zónder register als onderwerp — eerst `hout`, daarna `slof`. Met de
+    // Ballenraper- en Sletje-kaarten erbij hebben alle negen er een, dus die test
+    // had geen onderwerp meer. Dit is de invariant die er in de plaats voor komt:
+    // geen divisie valt nog terug op de formule. De formule zélf blijft staan als
+    // vangnet voor een tier die niet in het register staat, en de test hieronder
+    // bewaakt dat een register de formule echt overrulet.
+    expect(DIVISIE_KAARTEN.map((d) => d.key).sort()).toEqual(
+      [
+        "brons",
+        "diamant",
+        "goud",
+        "hout",
+        "karton",
+        "meester",
+        "platina",
+        "slof",
+        "zilver",
+      ].sort(),
+    );
+    for (const divisie of DIVISIE_KAARTEN) {
+      expect(divisie.register, `${divisie.key} mist zijn register`).toBeTruthy();
+      // En het register moet ook echt bij de kaart aankomen.
+      expect(kaartSkin(divisie.key, null).kleuren.divisie).toBe(divisie.key);
+    }
   });
 
   it("laat een divisie met eigen register de ladderformule overrulen (#710)", () => {
