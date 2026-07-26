@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 // #674 A3 — de landingstab. Zonder ?tab kwam je altijd op Vandaag, ook op een
 // dag zonder plan: een lege staat die je meteen weer doorstuurde. journeyFor()
@@ -53,6 +54,11 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   beforeEach(() => {
     // Schone call-historie: de C2-test kijkt naar welke tabellen zijn bevraagd.
     vi.clearAllMocks();
+    // …en een koude querycache. De globale setup leegt hem in afterEach, maar
+    // een nog lopende keten uit de vorige test kan daarná nog een entry
+    // wegschrijven; die zou de C2-test een query laten missen die hij juist
+    // verwacht.
+    invalidateAll();
     stubPlaytomic();
     // De fixture-matches liggen in het verleden → vandaag staat er niets.
     for (const [k, v] of Object.entries(TABLES)) tables[k] = [...v];
@@ -112,6 +118,14 @@ describe("<GroupDetail /> landingstab (#674)", () => {
       (supabase.from as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
         (c) => c[0],
       );
+    // De rating-historie blijft wél eager: die voedt de upsets en het
+    // dagoverzicht op Vandaag/Historie. Eerst hierop wachten, dan pas de
+    // negatieve asserties: die query hangt aan de match-lijst
+    // (getRatingHistoriesForMatches) en valt dus ná de tabbalk — hoe lang
+    // erná hangt af van hoe de mock-promises interleaven. Zonder wachten
+    // slaagde de test alleen bij een gunstige volgorde, en dan zeggen de
+    // "nog niet opgehaald"-asserties eronder ook niets.
+    await waitFor(() => expect(tabellen()).toContain("rating_history"));
     for (const t of [
       "group_player_standings",
       "player_ratings",
@@ -120,9 +134,6 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ]) {
       expect(tabellen()).not.toContain(t);
     }
-    // De rating-historie blijft wél eager: die voedt de upsets en het
-    // dagoverzicht op Vandaag/Historie.
-    expect(tabellen()).toContain("rating_history");
 
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
     await screen.findByRole("heading", { name: /groepsklassement/i });
