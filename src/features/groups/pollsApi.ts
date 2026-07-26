@@ -116,6 +116,76 @@ export function getGroupPollVotes(groupId: string): Promise<PollVote[]> {
   });
 }
 
+// Gebundelde varianten voor het dashboard (#736). Dat scherm heeft de polls van
+// ál mijn groepen tegelijk nodig; per groep drie losse queries betekende 3×G
+// requests bij elke mount. Eén query met `in(group_id, …)` doet hetzelfde werk.
+// De sleutels houden dezelfde prefixen als de per-groep-varianten, zodat
+// CACHE_PREFIXES ("play-poll", "play-poll-options", "play-poll-votes") ze
+// blijft invalideren bij realtime-events en mutaties.
+//
+// Bewust náást getGroupPolls c.s.: GroupDetail werkt met één groep en deelt die
+// per-groep-sleutel met de rest van het scherm.
+
+/** Stabiele cache-sleutel voor een set groep-id's (volgorde-onafhankelijk). */
+function groupsKey(prefix: string, groupIds: string[]): string {
+  return `${prefix}:groups:${[...new Set(groupIds)].sort().join(",")}`;
+}
+
+/** Groepeert rijen met een group_id op groep; groepen zonder rijen ontbreken. */
+function perGroup<T extends { group_id: string }>(rows: T[]): Record<string, T[]> {
+  const out: Record<string, T[]> = {};
+  for (const row of rows) (out[row.group_id] ??= []).push(row);
+  return out;
+}
+
+/** Polls van meerdere groepen in één query, nieuwste eerst, per groep. */
+export function getPollsForGroups(
+  groupIds: string[],
+): Promise<Record<string, PlayPoll[]>> {
+  if (groupIds.length === 0) return Promise.resolve({});
+  return cached(groupsKey("play-polls", groupIds), async () => {
+    const { data, error } = await supabase
+      .from("play_polls")
+      .select("*")
+      .in("group_id", groupIds)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return perGroup((data ?? []) as PlayPoll[]);
+  });
+}
+
+/** Poll-opties van meerdere groepen in één query, per groep. */
+export function getPollOptionsForGroups(
+  groupIds: string[],
+): Promise<Record<string, PollOption[]>> {
+  if (groupIds.length === 0) return Promise.resolve({});
+  return cached(groupsKey("play-poll-options", groupIds), async () => {
+    const { data, error } = await supabase
+      .from("play_poll_options")
+      .select("*")
+      .in("group_id", groupIds)
+      .order("date")
+      .order("start_time");
+    if (error) throw error;
+    return perGroup((data ?? []) as PollOption[]);
+  });
+}
+
+/** Poll-stemmen van meerdere groepen in één query, per groep. */
+export function getPollVotesForGroups(
+  groupIds: string[],
+): Promise<Record<string, PollVote[]>> {
+  if (groupIds.length === 0) return Promise.resolve({});
+  return cached(groupsKey("play-poll-votes", groupIds), async () => {
+    const { data, error } = await supabase
+      .from("play_poll_votes")
+      .select("*")
+      .in("group_id", groupIds);
+    if (error) throw error;
+    return perGroup((data ?? []) as PollVote[]);
+  });
+}
+
 export type NewPollOption = {
   date: string;
   startTime: string;
