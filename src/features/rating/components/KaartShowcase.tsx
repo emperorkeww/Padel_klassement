@@ -301,6 +301,70 @@ export function KaartShowcase() {
         </div>
       </Sectie>
 
+      {/* Kampioen-variant (#710): lauwerkrans + medaillelinten achter de kaart
+          en de diamantcrest ervóór, op de maten waar de ornamentlaag het
+          zwaarst te lijden heeft — plus de canvas-spiegel ernaast. Twee
+          schildvormen erbij: het ornament hangt aan de editie, de bovenrand aan
+          de divisie, dus de crest moet in élke inkeping landen. */}
+      <Sectie titel="Kampioen (#710): lauwerkrans + linten + crest — DOM op 116/150/210px, poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart
+              kw={kw}
+              tier={tierFor(1043)}
+              editie="kampioen"
+              editieLabel="🏆 Kampioen Q2 2026"
+              naam="Tim"
+              elo={1043}
+            />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart
+          tier={tierFor(1043)}
+          editie="kampioen"
+          editieLabel="🏆 Kampioen Q2 2026"
+          naam="Tim"
+          breedte={210}
+        />
+        {[750, 1450].map((r) => (
+          <div
+            key={r}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: "150px" }}
+          >
+            <Kaart
+              kw={150}
+              tier={tierFor(r)}
+              editie="kampioen"
+              editieLabel="🏆 Kampioen Q2 2026"
+              naam="Tim"
+            />
+            <span className="kaart-showcase__maatlabel">
+              {r === 750 ? "vlakke bovenrand" : "kroon-crest"}
+            </span>
+          </div>
+        ))}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "150px" }}
+        >
+          <Kaart
+            kw={150}
+            tier={tierFor(1043)}
+            editie="kampioen"
+            editieLabel="🏆 Kampioen Q2 2026"
+            naam="Tim"
+            omgedraaid
+          />
+          <span className="kaart-showcase__maatlabel">omgedraaid (geen crest)</span>
+        </div>
+      </Sectie>
+
       <Sectie titel="Alle tiers (116px, geen editie)">
         {tiers.map((t, i) => (
           <Kaart key={i} kw={116} tier={t} chips={CHIPS} />

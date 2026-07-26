@@ -74,6 +74,44 @@ import {
 } from "./ornamentenBigDaddy";
 import { DIVISIE_KAARTEN, divisieKaart } from "./divisies";
 import type { DivisieDeel } from "./divisies/divisieKaart";
+import {
+  KAMPIOEN_CREST_FACET,
+  KAMPIOEN_CREST_GLANS,
+  KAMPIOEN_CREST_KLAUW,
+  KAMPIOEN_CREST_KRUIS,
+  KAMPIOEN_CREST_RING,
+  KAMPIOEN_CREST_RING_KLEUR,
+  KAMPIOEN_CREST_STEEN,
+  KAMPIOEN_CREST_ZETTING,
+  KAMPIOEN_KRANS_BLAD,
+  KAMPIOEN_KRANS_STAM,
+  KAMPIOEN_LINT_AS,
+  KAMPIOEN_LINT_AS_VERLOOP,
+  KAMPIOEN_LINT_BUITEN,
+  KAMPIOEN_LINT_CONTOUR,
+  KAMPIOEN_LINT_EMBLEEM,
+  KAMPIOEN_LINT_GROEN_VERLOOP,
+  KAMPIOEN_LINT_LIJN,
+  KAMPIOEN_LINT_PLATINA,
+  KAMPIOEN_LINT_PLATINA_VERLOOP,
+  KAMPIOEN_LOOF_AS,
+  KAMPIOEN_LOOF_CONTOUR,
+  KAMPIOEN_LOOF_GLANS,
+  KAMPIOEN_LOOF_NERF,
+  KAMPIOEN_LOOF_SCHADUW,
+  KAMPIOEN_LOOF_VERLOOP,
+  KAMPIOEN_STEEN_CONTOUR,
+  KAMPIOEN_STEEN_FACET,
+  KAMPIOEN_STEEN_FACETTEN,
+  KAMPIOEN_STEEN_GLANS,
+  KAMPIOEN_STEEN_KLAUW,
+  KAMPIOEN_ZEGEL,
+  KAMPIOEN_ZEGEL_KLEUR,
+  KAMPIOEN_ZETTING_CONTOUR,
+  KAMPIOEN_ZETTING_VERLOOP,
+  KAMPIOEN_ZETTING_AS,
+  type Lint,
+} from "./ornamentenKampioen";
 import "./FutKaart.css";
 // Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
 // metaalladder daar.
@@ -106,9 +144,22 @@ function gradientId(vulling: string): string {
   return /^url\(#([^)]+)\)$/.exec(vulling)?.[1] ?? vulling;
 }
 
-/** Eén getaperde metaalstreng (#710): gevulde omtrek met contour, dwarsribbels
- *  en glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus
- *  DOM en canvas tekenen letterlijk dezelfde paden. */
+/** Smaragden loof voor de lauwerkrans van de Kampioen — zelfde generator
+ *  als het rosé metaal van de GOAT, ander materiaal. */
+const KAMPIOEN_LOOF_MATERIAAL: StrengMateriaal = {
+  vulling: "url(#fut-orn-kampioen-loof)",
+  verloop: KAMPIOEN_LOOF_VERLOOP,
+  as: [KAMPIOEN_LOOF_AS[1], KAMPIOEN_LOOF_AS[3]],
+  contour: KAMPIOEN_LOOF_CONTOUR,
+  glans: KAMPIOEN_LOOF_GLANS,
+  schaduw: KAMPIOEN_LOOF_SCHADUW,
+  ribbel: KAMPIOEN_LOOF_NERF,
+  ribbelGlans: KAMPIOEN_LOOF_GLANS,
+};
+
+/** Eén getaperde streng (#710): gevulde omtrek met contour, dwarsribbels en
+ *  glanslijn. De vorm komt uit `bouwStreng` in futKaartOrnamenten.ts, dus DOM
+ *  en canvas tekenen letterlijk dezelfde paden. */
 function FutStreng({
   streng,
   materiaal = GOAT_MATERIAAL,
@@ -215,6 +266,59 @@ function FutSteen({
           fill="none"
           stroke={BD_STEEN_FACET}
           strokeWidth="0.3"
+          strokeLinecap="round"
+        />
+      ))}
+    </>
+  );
+}
+
+/** Verloop van een ornamentmateriaal, in kaart-units (userSpaceOnUse). Zo
+ *  kantelt het licht mee met de `<use transform>` van de gespiegelde helft —
+ *  precies wat de canvas-spiegel met `ctx.scale(-1, 1)` doet. */
+function FutOrnamentVerloop({
+  id,
+  as,
+  stops,
+}: {
+  id: string;
+  as: readonly [number, number, number, number];
+  stops: readonly (readonly [number, string])[];
+}) {
+  return (
+    <linearGradient
+      id={id}
+      gradientUnits="userSpaceOnUse"
+      x1={as[0]}
+      y1={as[1]}
+      x2={as[2]}
+      y2={as[3]}
+    >
+      {stops.map(([offset, kleur]) => (
+        <stop key={offset} offset={offset} stopColor={kleur} />
+      ))}
+    </linearGradient>
+  );
+}
+
+/** Eén medaillelint: de band in zijn eigen materiaal, met de vouwlijnen erin. */
+function FutLint({ lint, vulling }: { lint: Lint; vulling: string }) {
+  return (
+    <>
+      <path
+        d={lint.d}
+        fill={vulling}
+        stroke={KAMPIOEN_LINT_CONTOUR}
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      {lint.lijnen.map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill="none"
+          stroke={KAMPIOEN_LINT_LIJN}
+          strokeWidth="0.4"
           strokeLinecap="round"
         />
       ))}
@@ -665,6 +769,131 @@ export function FutKaartDefs() {
             facetten={BD_KROON_STEEN_FACETTEN}
           />
         </g>
+        {/* Kampioen (#710): lauwerkrans en medaillelinten achter de kaart, en
+            de diamantcrest als aparte groep vóór de kaart. */}
+        <FutOrnamentVerloop
+          id="fut-orn-kampioen-loof"
+          as={KAMPIOEN_LOOF_AS}
+          stops={KAMPIOEN_LOOF_VERLOOP}
+        />
+        <FutOrnamentVerloop
+          id="fut-orn-kampioen-lint-groen"
+          as={KAMPIOEN_LINT_AS_VERLOOP}
+          stops={KAMPIOEN_LINT_GROEN_VERLOOP}
+        />
+        <FutOrnamentVerloop
+          id="fut-orn-kampioen-lint-platina"
+          as={KAMPIOEN_LINT_AS_VERLOOP}
+          stops={KAMPIOEN_LINT_PLATINA_VERLOOP}
+        />
+        <FutOrnamentVerloop
+          id="fut-orn-kampioen-zetting"
+          as={KAMPIOEN_ZETTING_AS}
+          stops={KAMPIOEN_ZETTING_VERLOOP}
+        />
+        <g id="fut-orn-kampioen-lint-helft">
+          <FutLint
+            lint={KAMPIOEN_LINT_BUITEN}
+            vulling="url(#fut-orn-kampioen-lint-groen)"
+          />
+          <FutLint
+            lint={KAMPIOEN_LINT_PLATINA}
+            vulling="url(#fut-orn-kampioen-lint-platina)"
+          />
+        </g>
+        <g id="fut-orn-kampioen-krans-helft">
+          <FutStreng
+            streng={KAMPIOEN_KRANS_STAM}
+            materiaal={KAMPIOEN_LOOF_MATERIAAL}
+          />
+          {KAMPIOEN_KRANS_BLAD.map((b) => (
+            <g key={b.d}>
+              <path
+                d={b.d}
+                fill="url(#fut-orn-kampioen-loof)"
+                stroke={KAMPIOEN_LOOF_CONTOUR}
+                strokeWidth="0.35"
+                strokeLinejoin="round"
+              />
+              {/* Zilverrand op de bolle flank plus de gegraveerde nerf: samen
+                  geven ze elk blad reliëf zonder een tweede vulling. */}
+              <path
+                d={b.rand}
+                fill="none"
+                stroke={KAMPIOEN_LOOF_GLANS}
+                strokeWidth="0.45"
+                strokeLinecap="round"
+              />
+              <path
+                d={b.nerf}
+                fill="none"
+                stroke={KAMPIOEN_LOOF_NERF}
+                strokeWidth="0.35"
+                strokeLinecap="round"
+              />
+            </g>
+          ))}
+        </g>
+        <g id="fut-orn-kampioen">
+          {/* Linten eerst: de onderste bladeren van de krans vallen eróver,
+              net als op de referentie. Het middenlint staat op de as en wordt
+              dus niet gespiegeld — het ís de spiegelas. */}
+          <use href="#fut-orn-kampioen-lint-helft" />
+          <use
+            href="#fut-orn-kampioen-lint-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+          <FutLint
+            lint={KAMPIOEN_LINT_AS}
+            vulling="url(#fut-orn-kampioen-lint-groen)"
+          />
+          {KAMPIOEN_LINT_EMBLEEM.map((d) => (
+            <path
+              key={d}
+              d={d}
+              fill="none"
+              stroke={KAMPIOEN_LINT_LIJN}
+              strokeWidth="0.35"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          <use href="#fut-orn-kampioen-krans-helft" />
+          <use
+            href="#fut-orn-kampioen-krans-helft"
+            transform="translate(100,0) scale(-1,1)"
+          />
+        </g>
+        <g id="fut-orn-kampioen-crest">
+          <path
+            d={KAMPIOEN_CREST_ZETTING}
+            fill="url(#fut-orn-kampioen-zetting)"
+            stroke={KAMPIOEN_ZETTING_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          <path d={KAMPIOEN_CREST_RING} fill={KAMPIOEN_CREST_RING_KLEUR} />
+          {KAMPIOEN_CREST_FACET.map((d, i) => (
+            <path key={d} d={d} fill={KAMPIOEN_STEEN_FACETTEN[i]} />
+          ))}
+          <path
+            d={KAMPIOEN_CREST_KRUIS}
+            fill="none"
+            stroke={KAMPIOEN_STEEN_FACET}
+            strokeWidth="0.3"
+          />
+          <path
+            d={KAMPIOEN_CREST_STEEN}
+            fill="none"
+            stroke={KAMPIOEN_STEEN_CONTOUR}
+            strokeWidth="0.4"
+            strokeLinejoin="round"
+          />
+          {KAMPIOEN_CREST_KLAUW.map((d) => (
+            <path key={d} d={d} fill={KAMPIOEN_STEEN_KLAUW} />
+          ))}
+          <path d={KAMPIOEN_CREST_GLANS} fill={KAMPIOEN_STEEN_GLANS} />
+        </g>
       </defs>
     </svg>
   );
@@ -771,20 +1000,28 @@ export function FutKaart({
   const ornament =
     editie === "icon"
       ? "bigdaddy"
-      : tier?.key === "legende"
-        ? "goat"
-        : tier?.key === "dictator"
-          ? "dictator"
-          : null;
+      : editie === "kampioen"
+        ? "kampioen"
+        : tier?.key === "legende"
+          ? "goat"
+          : tier?.key === "dictator"
+            ? "dictator"
+            : null;
+  // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
+  // verdwijnen — de kroon en punt-edelsteen van Big Daddy, de lauwerkrans en
+  // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen.
+  const ornamentVoor =
+    ornament === "bigdaddy" || ornament === "dictator" || ornament === "kampioen"
+      ? ornament
+      : null;
   // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
   // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
-  // deze speler dan zijn divisie. Zonder editie én zonder toptier tekent de
-  // divisie dus zijn eigen ornamentlaag.
+  // deze speler dan zijn divisie.
   const divisie = !editie && !ornament ? divisieKaart(tier?.key) : undefined;
-  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register.
-  // Onder een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op
-  // het In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
+  // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register. Onder
+  // een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op het
+  // In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
   const motief =
     editie === "icon" ? (
       <FutKaartMotief
@@ -792,6 +1029,8 @@ export function FutKaart({
         kleur={BD_KROON_MOTIEF_KLEUR}
         className="fut-kaart__motief--kroon"
       />
+    ) : editie === "kampioen" ? (
+      <FutKaartMotief paden={KAMPIOEN_ZEGEL} kleur={KAMPIOEN_ZEGEL_KLEUR} />
     ) : divisie?.motief ? (
       <FutKaartMotief
         paden={divisie.motief.paden}
@@ -859,30 +1098,19 @@ export function FutKaart({
           </span>
         </div>
       </div>
-      {/* Vóór-laag (#710): sommige ornamenten liggen óver de kaart heen i.p.v.
-          erachter — de lauwerkransen en het lakzegel van El Padelissimo, de
-          kroon en de punt-edelsteen van Big Daddy. Dat is de laagvolgorde uit
-          de referentie-instructies. Ze staan in de marge van het vlak, dus ze
-          dekken geen tekst af; de laag komt ná de flipper (tekent dus
-          eroverheen), blijft staan bij een omgedraaide kaart — het schild
-          houdt zijn kroon ook van achteren — en is pointer-events: none,
-          zodat de flip-knop bereikbaar blijft. */}
-      {(divisie?.voor?.length ?? 0) > 0 && (
+      {ornamentVoor && (
         <svg
           className="fut-kaart__ornament fut-kaart__ornament--voor"
           viewBox={ORNAMENT_VIEWBOX}
           aria-hidden="true"
         >
-          <use href={`#fut-div-${divisie!.key}-voor`} />
-        </svg>
-      )}
-      {(ornament === "dictator" || ornament === "bigdaddy") && (
-        <svg
-          className="fut-kaart__ornament fut-kaart__ornament--voor"
-          viewBox={ORNAMENT_VIEWBOX}
-          aria-hidden="true"
-        >
-          <use href={`#fut-orn-${ornament}-voor`} />
+          <use
+            href={
+              ornamentVoor === "kampioen"
+                ? "#fut-orn-kampioen-crest"
+                : `#fut-orn-${ornamentVoor}-voor`
+            }
+          />
         </svg>
       )}
     </div>

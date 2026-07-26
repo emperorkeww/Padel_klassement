@@ -91,6 +91,46 @@ import {
 } from "@/features/rating/components/ornamentenBigDaddy";
 import { divisieKaart } from "@/features/rating/components/divisies";
 import type { DivisieDeel } from "@/features/rating/components/divisies/divisieKaart";
+import {
+  KAMPIOEN_CREST_FACET,
+  KAMPIOEN_CREST_GLANS,
+  KAMPIOEN_CREST_KLAUW,
+  KAMPIOEN_CREST_KRUIS,
+  KAMPIOEN_CREST_RING,
+  KAMPIOEN_CREST_RING_KLEUR,
+  KAMPIOEN_CREST_STEEN,
+  KAMPIOEN_CREST_ZETTING,
+  KAMPIOEN_KRANS_BLAD,
+  KAMPIOEN_KRANS_STAM,
+  KAMPIOEN_LINT_AS,
+  KAMPIOEN_LINT_AS_VERLOOP,
+  KAMPIOEN_LINT_BUITEN,
+  KAMPIOEN_LINT_CONTOUR,
+  KAMPIOEN_LINT_EMBLEEM,
+  KAMPIOEN_LINT_GROEN_VERLOOP,
+  KAMPIOEN_LINT_LIJN,
+  KAMPIOEN_LINT_PLATINA,
+  KAMPIOEN_LINT_PLATINA_VERLOOP,
+  KAMPIOEN_LOOF_AS,
+  KAMPIOEN_LOOF_CONTOUR,
+  KAMPIOEN_LOOF_GLANS,
+  KAMPIOEN_LOOF_NERF,
+  KAMPIOEN_LOOF_SCHADUW,
+  KAMPIOEN_LOOF_VERLOOP,
+  KAMPIOEN_STEEN_CONTOUR,
+  KAMPIOEN_STEEN_FACET,
+  KAMPIOEN_STEEN_FACETTEN,
+  KAMPIOEN_STEEN_GLANS,
+  KAMPIOEN_STEEN_KLAUW,
+  KAMPIOEN_ZEGEL,
+  KAMPIOEN_ZEGEL_BREEDTE,
+  KAMPIOEN_ZEGEL_KLEUR,
+  KAMPIOEN_ZEGEL_POSITIE,
+  KAMPIOEN_ZETTING_AS,
+  KAMPIOEN_ZETTING_CONTOUR,
+  KAMPIOEN_ZETTING_VERLOOP,
+  type Lint,
+} from "@/features/rating/components/ornamentenKampioen";
 import { canvasPalette } from "@/lib/utils/shareImage";
 
 /** Materiaal van de GOAT-strengen — spiegel van GOAT_MATERIAAL in
@@ -311,13 +351,13 @@ export interface FutKaartKleuren {
    *  Dictator en Big Daddy hebben daarnaast een vóór-liggende laag
    *  (lauwerkrans + lakzegel, respectievelijk kroon + punt-ornament) die
    *  onderaan `drawKaartSchild` volgt — zie .fut-kaart__ornament--voor. */
-  ornament?: "goat" | "dictator" | "bigdaddy";
+  ornament?: "goat" | "dictator" | "bigdaddy" | "kampioen";
   /** Voorste ornamentlaag (#710): het ornament dat vóór de kaartinhoud hoort,
    *  dus ná het vlak. `drawKaartSchild` kan die niet tekenen — de vlak-clip
    *  staat daar nog open voor de caller — dus doet `drawKaartOrnamentVoor` dat,
    *  en roept de caller die aan na zijn `ctx.restore()`. Zo blijft de inkt
    *  bóven het ornament liggen, precies zoals in de DOM. */
-  ornamentVoor?: "dictator" | "bigdaddy";
+  ornamentVoor?: "dictator" | "bigdaddy" | "kampioen";
   /** Divisiekaart (#710): welke basisdivisie zijn eigen ornamentlaag tekent.
    *  Staat los van `ornament`, want een divisie-ornament wijkt voor een editie
    *  of een toptier — zie de keuze in FutKaart.tsx. */
@@ -341,11 +381,12 @@ export function drawKaartSchild(
   vorm: SchildVorm,
   kleuren: FutKaartKleuren,
 ): { fx: number; fy: number; fw: number; fh: number } {
-  // Ornamentlaag (#710): hoorns en andere uitsteeksels éérst — de DOM legt
-  // ze als eerste kind achter de kaart, dus alles hierna tekent eroverheen.
+  // Ornamentlaag (#710): hoorns, lauwertakken en andere uitsteeksels éérst —
+  // de DOM legt ze als eerste kind achter de kaart, dus alles hierna tekent
+  // eroverheen.
   if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
   if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
-  if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);
+  if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);  if (kleuren.ornament === "kampioen") drawKampioenOrnament(ctx, x, y, w);
 
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
@@ -707,9 +748,37 @@ function drawMotief(
   ctx.restore();
 }
 
-/** Eén getaperde metaalstreng (#710) op canvas: gevulde omtrek met contour,
+/** Smaragden loof voor de lauwerkrans van de Kampioen — spiegel van het
+ *  gelijknamige materiaal in FutKaart.tsx. */
+
+const KAMPIOEN_LOOF_MATERIAAL: StrengMateriaal = {
+  vulling: "url(#fut-orn-kampioen-loof)",
+  verloop: KAMPIOEN_LOOF_VERLOOP,
+  as: [KAMPIOEN_LOOF_AS[1], KAMPIOEN_LOOF_AS[3]],
+  contour: KAMPIOEN_LOOF_CONTOUR,
+  glans: KAMPIOEN_LOOF_GLANS,
+  schaduw: KAMPIOEN_LOOF_SCHADUW,
+  ribbel: KAMPIOEN_LOOF_NERF,
+  ribbelGlans: KAMPIOEN_LOOF_GLANS,
+};
+
+/** Kleurverloop over een vaste as in kaart-units — spiegel van een
+ *  userSpaceOnUse-gradient in de DOM. Moet ín de actieve transform gemaakt
+ *  worden: canvas legt de CTM vast op het moment van aanmaken, dus op de
+ *  gespiegelde helft kantelt het licht automatisch mee. */
+function asVerloop(
+  ctx: CanvasRenderingContext2D,
+  as: readonly [number, number, number, number],
+  stops: readonly (readonly [number, string])[],
+): CanvasGradient {
+  const g = ctx.createLinearGradient(as[0], as[1], as[2], as[3]);
+  for (const [offset, kleur] of stops) g.addColorStop(offset, kleur);
+  return g;
+}
+
+/** Eén getaperde streng (#710) op canvas: gevulde omtrek met contour,
  *  dwarsribbels en glanslijn — spiegel van FutStreng in FutKaart.tsx, met
- *  letterlijk dezelfde pad-strings uit futKaartOrnamenten.ts. */
+ *  letterlijk dezelfde pad-strings uit de ornamentmodules. */
 function strokeStreng(
   ctx: CanvasRenderingContext2D,
   streng: Streng,
@@ -1012,6 +1081,92 @@ function drawDivisieOrnament(
   ctx.restore();
 }
 
+/** Eén medaillelint (#710): de band met contour en vouwlijnen — spiegel van
+ *  FutLint in FutKaart.tsx. */
+function strokeLint(ctx: CanvasRenderingContext2D, l: Lint, vulling: CanvasGradient) {
+  const band = new Path2D(l.d);
+  ctx.fillStyle = vulling;
+  ctx.fill(band);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = KAMPIOEN_LINT_CONTOUR;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(band);
+  ctx.strokeStyle = KAMPIOEN_LINT_LIJN;
+  ctx.lineWidth = 0.4;
+  for (const d of l.lijnen) ctx.stroke(new Path2D(d));
+}
+
+/** Kampioen-ornament (#710): de medaillelinten onder de kaartpunt en de
+ *  lauwerkrans die achter de zijkanten omhoog loopt. Eén helft plus zijn
+ *  spiegeling om x=50, net als de <use transform> in de DOM-defs; het
+ *  middenlint staat op x=50 en wordt daarom niet gespiegeld. Units zijn
+ *  kaart-units (100 breed), dus één schaalfactor volstaat. */
+function drawKampioenOrnament(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+
+  // Linten eerst, krans erover: de onderste bladeren vallen over de linttoppen,
+  // net als op de referentie — en dezelfde volgorde als de DOM-groep.
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    const groen = asVerloop(ctx, KAMPIOEN_LINT_AS_VERLOOP, KAMPIOEN_LINT_GROEN_VERLOOP);
+    const platina = asVerloop(
+      ctx,
+      KAMPIOEN_LINT_AS_VERLOOP,
+      KAMPIOEN_LINT_PLATINA_VERLOOP,
+    );
+    strokeLint(ctx, KAMPIOEN_LINT_BUITEN, groen);
+    strokeLint(ctx, KAMPIOEN_LINT_PLATINA, platina);
+    ctx.restore();
+  }
+  strokeLint(
+    ctx,
+    KAMPIOEN_LINT_AS,
+    asVerloop(ctx, KAMPIOEN_LINT_AS_VERLOOP, KAMPIOEN_LINT_GROEN_VERLOOP),
+  );
+  ctx.strokeStyle = KAMPIOEN_LINT_LIJN;
+  ctx.lineWidth = 0.35;
+  for (const d of KAMPIOEN_LINT_EMBLEEM) ctx.stroke(new Path2D(d));
+
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    strokeStreng(ctx, KAMPIOEN_KRANS_STAM, 0.35, KAMPIOEN_LOOF_MATERIAAL);
+    const loof = asVerloop(ctx, KAMPIOEN_LOOF_AS, KAMPIOEN_LOOF_VERLOOP);
+    for (const b of KAMPIOEN_KRANS_BLAD) {
+      const vlak = new Path2D(b.d);
+      ctx.fillStyle = loof;
+      ctx.fill(vlak);
+      ctx.strokeStyle = KAMPIOEN_LOOF_CONTOUR;
+      ctx.lineWidth = 0.35;
+      ctx.stroke(vlak);
+      ctx.strokeStyle = KAMPIOEN_LOOF_GLANS;
+      ctx.lineWidth = 0.45;
+      ctx.stroke(new Path2D(b.rand));
+      ctx.strokeStyle = KAMPIOEN_LOOF_NERF;
+      ctx.lineWidth = 0.35;
+      ctx.stroke(new Path2D(b.nerf));
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 /**
  * De voorste ornamentlaag (#710): alles wat vóór de kaartinhoud hoort. De
  * caller roept dit aan ná zijn eigen `ctx.restore()`, want binnen de vlak-clip
@@ -1027,7 +1182,48 @@ export function drawKaartOrnamentVoor(
 ) {
   if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
   else if (kleuren.ornamentVoor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
+  else if (kleuren.ornamentVoor === "kampioen") drawKampioenCrest(ctx, x, y, w);
   if (kleuren.divisie) drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
+}
+
+/** De diamantcrest van de Kampioen (#710): hangt met zijn punt bóven de
+ *  bovenrand en zakt met zijn onderpunt in de inkeping, dus hij hoort vóór de
+ *  kaart — achter het schild zou hij half verdwijnen. */
+function drawKampioenCrest(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "butt";
+  const zetting = new Path2D(KAMPIOEN_CREST_ZETTING);
+  ctx.fillStyle = asVerloop(ctx, KAMPIOEN_ZETTING_AS, KAMPIOEN_ZETTING_VERLOOP);
+  ctx.fill(zetting);
+  ctx.strokeStyle = KAMPIOEN_ZETTING_CONTOUR;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(zetting);
+  ctx.fillStyle = KAMPIOEN_CREST_RING_KLEUR;
+  ctx.fill(new Path2D(KAMPIOEN_CREST_RING));
+  KAMPIOEN_CREST_FACET.forEach((d, i) => {
+    ctx.fillStyle = KAMPIOEN_STEEN_FACETTEN[i];
+    ctx.fill(new Path2D(d));
+  });
+  ctx.strokeStyle = KAMPIOEN_STEEN_FACET;
+  ctx.lineWidth = 0.3;
+  ctx.stroke(new Path2D(KAMPIOEN_CREST_KRUIS));
+  ctx.strokeStyle = KAMPIOEN_STEEN_CONTOUR;
+  ctx.lineWidth = 0.4;
+  ctx.stroke(new Path2D(KAMPIOEN_CREST_STEEN));
+  ctx.fillStyle = KAMPIOEN_STEEN_KLAUW;
+  for (const d of KAMPIOEN_CREST_KLAUW) ctx.fill(new Path2D(d));
+  ctx.fillStyle = KAMPIOEN_STEEN_GLANS;
+  ctx.fill(new Path2D(KAMPIOEN_CREST_GLANS));
+  ctx.restore();
 }
 
 /** Deterministische PRNG (mulberry32) voor de vezelkorrel: de poster moet bij
@@ -1245,8 +1441,9 @@ interface EditieRegister {
   editieKleur: string;
   textuur?: VlakTextuur;
   /** Rand- en ornamentmechanismen (#710) die een editie kan meebrengen. Tot
-   *  #710 hing dit alleen aan de tier (de GOAT); Big Daddy heeft ze nu ook, en
-   *  een editie wint van de tier — zoals in de CSS-cascade. */
+   *  #710 hing dit alleen aan de tier (de GOAT); de editie-registers hebben ze
+   *  nu ook, en een editie wint van de tier — zoals in de CSS-cascade. De
+   *  velden zijn letterlijk die van `FutKaartKleuren`. */
   echo?: FutKaartKleuren["echo"];
   binnenlijn?: FutKaartKleuren["binnenlijn"];
   motief?: FutKaartKleuren["motief"];
@@ -1310,7 +1507,10 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     ornament: "bigdaddy",
     ornamentVoor: "bigdaddy",
   },
-  // Kampioen (#625): platina-wit met lauwergroen.
+  // Kampioen (#625, hertekend in #710): platina-wit met lauwergroen, plus het
+  // eremedaille-register — lauwerkrans en linten achter het schild, de
+  // diamantcrest ervóór, het legacy-zegel als watermerk en de gelaagde
+  // platina/smaragd-randen. Spiegel van .fut-kaart--kampioen in FutKaart.css.
   kampioen: {
     frame: [
       [0, "#eef6f1"],
@@ -1326,6 +1526,20 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     inkSoft: "#48745e",
     lijn: "#9dbfab",
     editieKleur: "#2e7050",
+    echo: [[0.012, 0.018, "rgba(34, 60, 47, 0.5)"]],
+    binnenlijn: [
+      [1, "rgba(255, 255, 255, 0.8)"],
+      [2.5, "rgba(34, 60, 47, 0.5)"],
+      [4, "rgba(157, 191, 171, 0.45)"],
+    ],
+    motief: {
+      paden: KAMPIOEN_ZEGEL,
+      kleur: KAMPIOEN_ZEGEL_KLEUR,
+      breedte: KAMPIOEN_ZEGEL_BREEDTE,
+      positie: KAMPIOEN_ZEGEL_POSITIE,
+    },
+    ornament: "kampioen",
+    ornamentVoor: "kampioen",
   },
   // In-Form (#497): navy-goud. De lopende shimmer uit de CSS staat op de
   // poster stil — een PNG heeft geen animatie — maar wel op zijn breedste
