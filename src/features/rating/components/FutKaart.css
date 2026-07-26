@@ -769,11 +769,10 @@
     transparent 64%
   );
 }
-@media (prefers-reduced-motion: no-preference) {
-  .fut-kaart--legende .fut-kaart__vlak::before {
-    animation: fut-kaart-shimmer 7.5s ease-in-out infinite;
-  }
-}
+/* De shimmer die hier stond is vervallen (#773): de GOAT-glans hoort nu bij de
+   premium-glanslaag onderaan dit bestand, die één sweep per kaart garandeert.
+   De gradient hierboven blíjft — dat is de statische sheen die de deel-poster
+   spiegelt (sheenStops in kaartSkin). */
 
 /* El Padelissimo (#710): het regime — de ceremoniële kaart uit de referentie
    in de issue. Bordeauxrood emaille met zwarte schaduwen en antiekgoud: een
@@ -1364,4 +1363,224 @@
       var(--kaart-mid) 56%,
       var(--kaart-lo) 100%
     );
+}
+
+/* ─── Premium glans (#773) ────────────────────────────────────────────────────
+
+   Big Daddy, Kampioen, El Padelissimo en de GOAT zijn permanente kaarten met een
+   ingebouwde glans — geen tijdelijke statusoverlay zoals In-Form en On Fire.
+   Eén infrastructuur, vier modi: alle vier delen deze laag en dezelfde twee
+   keyframes, en verschillen enkel in tokens (baan, hoek, duur, kracht, hart).
+   Dat is bewust géén vier losse animatiesystemen — de issue vraagt er expliciet
+   om, en het houdt de timing per kaart op één plek instelbaar.
+
+   Waarom een eigen laag en niet `vlak::before`: die pseudo draagt al de statische
+   sheen die de deel-poster spiegelt (sheenStops in kaartSkin). Zou de animatie
+   die gradient overnemen, dan liepen DOM-kaart en poster uiteen zodra de timing
+   verandert. Nu is de laag puur additief en blijft de parity-test intact.
+
+   Stapeling: het vlak is door zijn clip-path een stacking context, dus z-index −1
+   legt de glans bóven de vlak-achtergrond en bóven het motief (dat eerder in de
+   DOM staat op dezelfde z-index), maar ónder de sheen, de satijntextuur en álle
+   inkt. Tekst, avatar en badges blijven dus op elk moment van de animatie
+   leesbaar — dat is de reden voor deze plek in de stapel, niet een detail. */
+.fut-kaart__glans {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* Buiten de media-query staat de státische weergave: dit is wat een bezoeker
+   met `prefers-reduced-motion: reduce` ziet — een vaste materiaalhighlight op
+   halve sterkte. De kaart blijft premium zónder beweging (eis 9), en we hoeven
+   nergens `animation: none` terug te draaien: het huis-patroon in dit bestand is
+   overal opt-in via `no-preference`. */
+.fut-kaart__glans::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background: var(--glans-baan);
+  transform: rotate(var(--glans-hoek, 0deg));
+  opacity: calc(var(--glans-kracht, 0.3) * 0.55);
+}
+/* Tweede modus: een radiale puls uit een anker in de kaart — het legacy-zegel
+   bij de Kampioen, het lakzegel bij de dictator, het watermerk bij de GOAT.
+   Staat stil zonder bewegingsvoorkeur. */
+.fut-kaart__glans::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--glans-hart, 50% 32%),
+    var(--glans-hart-kleur, transparent) 0%,
+    transparent var(--glans-hart-straal, 42%)
+  );
+  opacity: calc(var(--glans-hart-kracht, 0) * 0.4);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart__glans::before {
+    animation: fut-glans-baan var(--glans-duur, 8s)
+      var(--glans-easing, cubic-bezier(0.4, 0, 0.5, 1))
+      var(--glans-vertraging, 0ms) infinite;
+    will-change: transform, opacity;
+  }
+  .fut-kaart__glans::after {
+    animation: fut-glans-hart var(--glans-duur, 8s) ease-in-out
+      var(--glans-vertraging, 0ms) infinite;
+    will-change: opacity;
+  }
+  /* Gedempt (#773): een permanente kaart die tijdelijk In-Form of On Fire is.
+     De tijdelijke overlay heeft visuele voorrang, dus hier valt de beweging weg
+     en houdt de kaart enkel zijn statische highlight — twee zware animaties
+     over elkaar is precies wat de issue wil voorkomen. De laag blijft staan
+     zodat het materiaal niet plat wordt. */
+  .fut-kaart__glans--gedempt::before,
+  .fut-kaart__glans--gedempt::after {
+    animation: none;
+  }
+  /* Buiten beeld pauzeren (#773): een raster met tientallen kaarten hoeft niet
+     te animeren wat niemand ziet. `paused` i.p.v. `none` houdt de fase vast,
+     dus een kaart die terugscrollt pikt de baan op waar hij was in plaats van
+     opnieuw te flitsen. FutKaart.tsx zet de klasse via een IntersectionObserver. */
+  .fut-kaart.is-buiten-beeld .fut-kaart__glans::before,
+  .fut-kaart.is-buiten-beeld .fut-kaart__glans::after {
+    animation-play-state: paused;
+  }
+}
+/* De baan: een sweep in de eerste ~35% van de cyclus, daarna een lange rust.
+   Alleen `transform` en `opacity` — geen box-shadow, filter of blur die per
+   frame hertekent. De rotatie zit in de keyframe zelf, want een transform in de
+   animatie overschrijft de rotate uit de statische regel volledig. */
+@keyframes fut-glans-baan {
+  0% {
+    transform: translate3d(-62%, 0, 0) rotate(var(--glans-hoek, 0deg));
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--glans-kracht, 0.3);
+  }
+  30% {
+    opacity: var(--glans-kracht, 0.3);
+  }
+  38%,
+  100% {
+    transform: translate3d(62%, 0, 0) rotate(var(--glans-hoek, 0deg));
+    opacity: 0;
+  }
+}
+/* Het hart pulseert ná de sweep, niet gelijktijdig: zo licht een kaart nooit
+   in zijn geheel op en blijft er één duidelijke beweging per cyclus. */
+@keyframes fut-glans-hart {
+  0%,
+  44% {
+    opacity: 0;
+  }
+  56% {
+    opacity: var(--glans-hart-kracht, 0);
+  }
+  72%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 1. Big Daddy — parelmoer en roségoud. Het lichtste en meest feestelijke van
+   de vier: een brede, zachte baan die van blush via parelwit naar champagne
+   verschuift, traag diagonaal over het roze vlak. Geen regenboogholografie en
+   geen witte kern die de tekst tijdelijk wegvaagt — de piek staat op 0.34 wit,
+   ruim onder de 0.5 waarbij de naamplaat begint te verdwijnen. */
+.fut-kaart.fut-kaart--icon .fut-kaart__glans {
+  --glans-duur: 7s;
+  --glans-hoek: 0deg;
+  --glans-kracht: 0.9;
+  /* Een dónkere aanloop vóór de witte kern: op een licht roze vlak is wit alleen
+     onzichtbaar — pas het contrast tussen de blush-schaduw en de parelkern maakt
+     dat het oog een lichtbaan ziet in plaats van een egale wolk. De intensiteit
+     zit daarom in de alpha's van deze stops en niet in --glans-kracht; die is
+     enkel de piek van de animatie. */
+  --glans-baan: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(196, 120, 150, 0.18) 42%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 214, 170, 0.3) 57%,
+    transparent 70%
+  );
+  /* Kort lichtpunt op de krooncrest: hoog en centraal, waar de kroon in de
+     bovenste inkeping valt. Champagne, geen wit. */
+  --glans-hart: 50% 8%;
+  --glans-hart-kleur: rgba(255, 232, 205, 0.5);
+  --glans-hart-straal: 30%;
+  --glans-hart-kracht: 0.5;
+}
+/* 2. Kampioen — koel platina en seizoensringen. Smaller en scherper dan Big
+   Daddy, en langzamer: plechtige timing. Daarna een zeer subtiele radiale puls
+   uit het legacy-zegel, die de concentrische seizoensringen van binnen naar
+   buiten kort laat oplichten. Geen goud, geen confetti. */
+.fut-kaart.fut-kaart--kampioen .fut-kaart__glans {
+  --glans-duur: 9s;
+  --glans-hoek: 0deg;
+  --glans-kracht: 0.85;
+  /* Smaller en scherper dan Big Daddy — een platina-reflectie, geen parelwolk —
+     met dezelfde donkere aanloop die de baan op een licht vlak zichtbaar maakt. */
+  --glans-baan: linear-gradient(
+    112deg,
+    transparent 34%,
+    rgba(90, 130, 112, 0.16) 44%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(190, 220, 206, 0.22) 56%,
+    transparent 66%
+  );
+  /* Het hart staat op het zegel (--motief-pos: 12%, --motief-b: 98), dus de
+     puls komt daar vandaan en niet uit het midden van het vlak. */
+  --glans-hart: 50% 26%;
+  --glans-hart-kleur: rgba(214, 236, 226, 0.55);
+  --glans-hart-straal: 52%;
+  --glans-hart-kracht: 0.42;
+}
+/* 3. El Padelissimo — statige commandogloed. De donkerste en meest beheerste:
+   een smalle antiekgouden lichtbaan, bijna horizontaal, over de wijnrode kaart.
+   Traagst van de vier (11s) met de langste rust — de kaart blijft dominant, het
+   licht is te gast. Daarna een zachte warme puls in het lakzegel. */
+.fut-kaart--dictator .fut-kaart__glans {
+  --glans-duur: 11s;
+  --glans-hoek: -8deg;
+  --glans-kracht: 0.95;
+  --glans-baan: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(230, 179, 77, 0.12) 47%,
+    rgba(246, 222, 160, 0.3) 50%,
+    rgba(230, 179, 77, 0.1) 53%,
+    transparent 60%
+  );
+  /* Het lakzegel hangt onder in de punt (ornamentlaag), dus het hart zit laag. */
+  --glans-hart: 50% 76%;
+  --glans-hart-kleur: rgba(236, 176, 96, 0.45);
+  --glans-hart-straal: 26%;
+  --glans-hart-kracht: 0.45;
+}
+/* 4. GOAT — roségoud op bordeaux. De hoorn- en filigraanhighlights lopen langs
+   de ornamentpaden en zitten daarom in de SVG-laag, niet hier; dit is de
+   secundaire diagonale reflectie over het binnenvlak, bewust de zwakste van de
+   vier (0.22) zodat het metaal de hoofdrol houdt. Het geitenwatermerk krijgt
+   een ademende gloed via het hart, met een ruime straal en lage kracht. */
+.fut-kaart--legende .fut-kaart__glans {
+  --glans-duur: 8s;
+  --glans-hoek: 0deg;
+  /* Op een donker bordeauxvlak leest een lichte baan meteen, dus hier hoeft geen
+     donkere aanloop; de stops blijven zwak zodat het metaal de hoofdrol houdt. */
+  --glans-kracht: 0.8;
+  --glans-baan: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgba(255, 187, 204, 0.14) 46%,
+    rgba(255, 226, 224, 0.22) 50%,
+    rgba(226, 154, 122, 0.1) 55%,
+    transparent 66%
+  );
+  --glans-hart: 50% 44%;
+  --glans-hart-kleur: rgba(255, 198, 186, 0.34);
+  --glans-hart-straal: 58%;
+  --glans-hart-kracht: 0.3;
 }

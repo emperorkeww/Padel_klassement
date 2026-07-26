@@ -6,7 +6,9 @@
 // knoppen (de .fut-kaart__flip-overlays) blijven bij de caller, zodat elke
 // plek zijn eigen aria-labels en interacties houdt.
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { glansVertraging, premiumGlans } from "./premiumGlans";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
 import {
   DICTATOR_EPAULET,
@@ -1909,6 +1911,29 @@ const TIER_ORNAMENT: Record<string, OrnamentNaam | undefined> = {
   dictator: "dictator",
 };
 
+/** Houdt bij of een element in beeld staat, zodat de glans buiten de viewport
+ *  pauzeert (#773). Start op `true`: een kaart die al zichtbaar is bij de eerste
+ *  render mag niet één frame stilstaan, en waar IntersectionObserver ontbreekt
+ *  (jsdom in de tests, oudere webviews) valt de hook stil terug op "altijd
+ *  animeren" in plaats van op "nooit". */
+function useInBeeld(actief: boolean) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [inBeeld, setInBeeld] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!actief || !el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInBeeld(entry.isIntersecting),
+      // Ruime marge: de kaart draait al voordat hij in beeld schuift, zodat een
+      // sweep niet halverwege begint terwijl de gebruiker ernaar kijkt.
+      { rootMargin: "120px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [actief]);
+  return { ref, inBeeld };
+}
+
 /** De kaart zelf: tier-modifier + flip-structuur (voor/achter), met de
  *  liner- en vlak-lagen als vaste boilerplate. `voorOverlay`/`achterOverlay`
  *  zijn de interactielagen van de caller (flip-knop, lightbox-knop) en
@@ -1922,6 +1947,7 @@ export function FutKaart({
   achter,
   voorOverlay,
   achterOverlay,
+  glansZaad,
 }: {
   tier: Tier | null;
   /** Speciale editie (#497/#625/#631/#632/#645): kleurt frame en vlak bóvenop
@@ -1940,12 +1966,26 @@ export function FutKaart({
   achter?: ReactNode;
   voorOverlay?: ReactNode;
   achterOverlay?: ReactNode;
+  /** Stabiel zaad (speler-key) voor de startvertraging van de premium glans
+   *  (#773). Zonder dit starten alle kaarten in een raster synchroon. */
+  glansZaad?: string;
 }) {
+  // Premium glans (#773): een editie met eigen glans wint van de tier-glans —
+  // dezelfde cascade als bij het ornament. Is er een tijdelijke overlay actief
+  // (In-Form, On Fire), dan houdt die de visuele voorrang en valt de permanente
+  // glans terug op zijn statische highlight; twee zware animaties over elkaar is
+  // precies wat de issue wil vermijden.
+  const { variant: glans, gedempt: glansGedempt } = premiumGlans(
+    editie,
+    tier?.key,
+  );
+  const { ref: kaartRef, inBeeld } = useInBeeld(glans !== null && !glansGedempt);
   const klassen = [
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
     omgedraaid ? "is-omgedraaid" : "",
+    glans && !inBeeld ? "is-buiten-beeld" : "",
     className ?? "",
   ]
     .filter(Boolean)
@@ -2032,8 +2072,22 @@ export function FutKaart({
         positie={DICTATOR_WATERMARK_POSITIE}
       />
     ) : null;
+  // De glanslaag draagt geen kaartgegevens en is puur decoratief, dus
+  // aria-hidden; de startvertraging gaat als custom property mee zodat één
+  // keyframe-set alle kaarten uit de fase van elkaar houdt.
+  const glansLaag = glans ? (
+    <span
+      className={`fut-kaart__glans${glansGedempt ? " fut-kaart__glans--gedempt" : ""}`}
+      aria-hidden="true"
+      style={
+        {
+          "--glans-vertraging": `${glansVertraging(glansZaad)}ms`,
+        } as CSSProperties
+      }
+    />
+  ) : null;
   return (
-    <div className={klassen}>
+    <div className={klassen} ref={kaartRef}>
       {(divisie?.achter?.length ?? 0) > 0 && (
         <svg
           className="fut-kaart__ornament"
@@ -2059,6 +2113,7 @@ export function FutKaart({
             <span className="fut-kaart__keyline">
               <span className="fut-kaart__vlak">
                 {motief}
+                {glansLaag}
                 {voor}
               </span>
             </span>
