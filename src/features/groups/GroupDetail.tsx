@@ -13,7 +13,12 @@ import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
 import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "@/features/availability/club";
 import { getGroupPlayerStandings } from "@/features/standings/api";
-import { getPlayerRatings, getAllRatingHistories } from "@/features/standings/ratingsApi";
+import {
+  getPlayerRatings,
+  getRatingHistoriesForMatches,
+  getRecentRatingHistories,
+  mergeRatingHistories,
+} from "@/features/standings/ratingsApi";
 import { getProfilesMap } from "@/features/profiles/api";
 import { getZwartePiet } from "./zwartePietApi";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
@@ -105,7 +110,26 @@ export function GroupDetail() {
 
   // Voor het rating-klassement op de Stand-tab (#52).
   const ratings = useAsync(getPlayerRatings, [], { enabled: standSeen });
-  const histories = useAsync(getAllRatingHistories, []);
+  const histories = useAsync(getRecentRatingHistories, []);
+  // Upsets (#85) en de choke-detectie van de pias rekenen met de échte
+  // pre-match ratings van de matches van deze groep — ook de oudere, die buiten
+  // het gedeelde venster vallen (#731). Gericht ophalen, per blok gecachet.
+  const historieIds = useMemo(
+    () =>
+      (matches.data ?? [])
+        .filter((m) => m.status === "completed")
+        .map((m) => m.id),
+    [matches.data],
+  );
+  const historieKey = historieIds.join(",");
+  const matchHistories = useAsync(
+    () => getRatingHistoriesForMatches(historieIds),
+    [historieKey],
+  );
+  const hmap = useMemo(
+    () => mergeRatingHistories(histories.data ?? {}, matchHistories.data ?? {}),
+    [histories.data, matchHistories.data],
+  );
 
   // Toto (#116): tips + voorspellersklassement van deze groep.
   const predictions = useAsync(() => getGroupPredictions(id), [id], {
@@ -137,12 +161,13 @@ export function GroupDetail() {
     teams.reload();
     ratings.reload();
     histories.reload();
+    matchHistories.reload();
     // De Zwarte Piet verhuist ook bij een uitslag/correctie (#185).
     piet.reload();
     // Een uitslag of correctie beoordeelt ook de tips (grading-trigger).
     onPredictions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, piet.reload, onPredictions]);
+  }, [matches.reload, standings.reload, teams.reload, ratings.reload, histories.reload, matchHistories.reload, piet.reload, onPredictions]);
   // Alleen reageren op wijzigingen binnen déze groep, niet op elke match
   // die ergens anders wordt gelogd.
   useRealtime("matches", onMatches, `group_id=eq.${id}`);
@@ -167,8 +192,8 @@ export function GroupDetail() {
   const myProfile = pmap[myId];
   // Upsets per match-id (#85) uit de al geladen rating-historie.
   const upsets = useMemo(
-    () => upsetsByMatch(matches.data ?? [], tmap, histories.data ?? {}),
-    [matches.data, tmap, histories.data],
+    () => upsetsByMatch(matches.data ?? [], tmap, hmap),
+    [matches.data, tmap, hmap],
   );
   const memberList = members.data ?? [];
   // De huidige Zwarte Piet-drager van déze groep (#185), of null als de Piet vrij is.
@@ -203,8 +228,8 @@ export function GroupDetail() {
   };
   // Pre-match ratings voor de choke-detectie van de pias van de maand.
   const piasRatings = useMemo(
-    () => buildMatchRatings(histories.data ?? {}),
-    [histories.data],
+    () => buildMatchRatings(hmap),
+    [hmap],
   );
   const firstMatchDate = completedMatches.reduce<string | null>((min, m) => {
     const d = m.played_at ?? m.created_at;
@@ -430,7 +455,7 @@ export function GroupDetail() {
             today={today}
             teams={tmap}
             profiles={pmap}
-            histories={histories.data ?? {}}
+            histories={hmap}
             upsets={upsets}
             zwartePiet={zwartePiet}
             busy={busy}
@@ -493,7 +518,7 @@ export function GroupDetail() {
             teams={tmap}
             profiles={pmap}
             ratings={ratings.data ?? {}}
-            histories={histories.data ?? {}}
+            histories={hmap}
             memberList={memberList}
             myId={myId}
             season={season}
@@ -514,7 +539,7 @@ export function GroupDetail() {
             teams={tmap}
             profiles={pmap}
             ratingsByMatch={piasRatings}
-            histories={histories.data ?? {}}
+            histories={hmap}
             groepsnaam={group.data!.name}
             myId={myId}
           />

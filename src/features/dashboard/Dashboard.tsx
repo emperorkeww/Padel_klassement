@@ -23,7 +23,7 @@ import { getPlayerStandings } from "@/features/standings/api";
 import {
   getPlayerRatings,
   getRatingHistory,
-  getAllRatingHistories,
+  getRecentRatingHistories,
 } from "@/features/standings/ratingsApi";
 import {
   getRecentResults,
@@ -114,7 +114,9 @@ export function Dashboard() {
     [myId],
   );
   // Volledige rating-historie (gecacht) voor upset-chips + grootste-upset (#85).
-  const histories = useAsync(getAllRatingHistories, []);
+  // De avondsamenvatting kijkt naar de matches van vandaag; die zitten per
+  // definitie in ieders recente venster (#731).
+  const histories = useAsync(getRecentRatingHistories, []);
   // De zittende dictator (#613): server-side uit de troon-replay (#545). Kleurt
   // de eigen hero keizerlijk als jíj op De Troon zit, en dooft de Big Daddy-
   // styling zodra de troon bezet is — zelfde uitsluiting als het klassement.

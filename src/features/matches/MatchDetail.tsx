@@ -36,7 +36,9 @@ import { outcomeFor } from "@/features/rating/results";
 import { roastCtx } from "@/features/coach/roastTone";
 import { errorMessage } from "@/lib/utils/errors";
 import {
-  getAllRatingHistories,
+  getRatingHistoriesForMatches,
+  getRecentRatingHistories,
+  mergeRatingHistories,
   getPlayerRatings,
 } from "@/features/standings/ratingsApi";
 import { getHuidigeDictator } from "@/features/standings/dictatorApi";
@@ -71,9 +73,9 @@ export function MatchDetail() {
   const playerIds = teamIds.flatMap((tid) => playersOf(teams.data?.[tid]));
   const playerKey = playerIds.join(",");
   const profiles = useAsync(() => getProfilesByIds(playerIds), [playerKey]);
-  // Rating-historie (gecacht, app-breed gedeeld) om de pre-match winkans en dus
-  // een eventuele upset te bepalen (#85).
-  const histories = useAsync(getAllRatingHistories, []);
+  // Rating-historie (gecacht, app-breed gedeeld) voor de In-Form/On-Fire-editie
+  // en de sparkline-achtige cijfers op de kaart.
+  const recentHistories = useAsync(getRecentRatingHistories, []);
   // Chemie van de duo's (#427): recente matches van één speler per team — de
   // gezamenlijke duo-matches zijn daar een subset van — plus de huidige
   // ratings als terugval voor de kaart-Elo bij een geplande match.
@@ -90,6 +92,28 @@ export function MatchDetail() {
       spelerB ? getPlayerMatches(spelerB, CHEMIE_MATCH_LIMIT) : Promise.resolve([]),
     [spelerB],
   );
+  // Voor de pre-match winkans (#85) en de duo-chemie (#427) tellen de échte
+  // punten van precies déze matches. Die kunnen ouder zijn dan het gedeelde
+  // venster (#731), dus haal ze gericht op en leg ze over de recente historie.
+  const puntIds = useMemo(
+    () => [
+      id,
+      ...(matchesA.data ?? []).map((x) => x.id),
+      ...(matchesB.data ?? []).map((x) => x.id),
+    ],
+    [id, matchesA.data, matchesB.data],
+  );
+  const puntKey = puntIds.join(",");
+  const matchHistories = useAsync(
+    () => getRatingHistoriesForMatches(puntIds),
+    [puntKey],
+  );
+  const hmap = useMemo(
+    () =>
+      mergeRatingHistories(recentHistories.data ?? {}, matchHistories.data ?? {}),
+    [recentHistories.data, matchHistories.data],
+  );
+
   // Groepstoon (roast-intensiteit) voor Coach Rudy's stem in de smoesjesmachine.
   const groupId = match.data?.group_id ?? null;
   const group = useAsync(
@@ -109,13 +133,13 @@ export function MatchDetail() {
   // Piet-editie (#645): de globale Zwarte Piet over alle groepen heen.
   const globaleZwartePiet = useAsync(getGlobaleZwartePiet, []);
   const inForm = useMemo(
-    () => spelerVanDeWeek(histories.data ?? {}),
-    [histories.data],
+    () => spelerVanDeWeek(hmap),
+    [hmap],
   );
   // On-Fire (#632): actieve winstreaks uit dezelfde gedeelde histories.
   const onFire = useMemo(
-    () => onFireSpelers(histories.data ?? {}),
-    [histories.data],
+    () => onFireSpelers(hmap),
+    [hmap],
   );
   const editieCtx: EditieContext = {
     dictatorId: dictator.data?.profileId ?? null,
@@ -167,7 +191,7 @@ export function MatchDetail() {
   const bWon = m.winner_team_id === m.team_b_id;
   const isDraw = done && m.winner_team_id === null;
   // Upset: won de underdog? (winkans vooraf < 35%, uit de echte pre-match ratings)
-  const prePoints = done ? preMatchPoints(histories.data ?? {}, m.id) : null;
+  const prePoints = done ? preMatchPoints(hmap, m.id) : null;
   const upset = done && !isDraw ? matchUpset(m, tmap, prePoints ?? undefined) : null;
   const scoreHi = done ? scoreHighlight(m) : null;
   // Derby (#169): alle spelers in dezelfde hoofddivisie. Afgerond meet aan de
@@ -248,7 +272,7 @@ export function MatchDetail() {
               label={teamLabel(teamA, pmap)}
               profiles={pmap}
               won={done && aWon}
-              histories={histories.data ?? undefined}
+              histories={hmap}
               matchId={m.id}
             />
             <div className="md-score">
@@ -272,7 +296,7 @@ export function MatchDetail() {
               label={teamLabel(teamB, pmap)}
               profiles={pmap}
               won={done && bWon}
-              histories={histories.data ?? undefined}
+              histories={hmap}
               matchId={m.id}
             />
           </div>
@@ -351,7 +375,7 @@ export function MatchDetail() {
         match={m}
         teams={tmap}
         profiles={pmap}
-        histories={histories.data ?? {}}
+        histories={hmap}
         ratings={ratings.data ?? {}}
         matchesA={matchesA.data ?? []}
         matchesB={matchesB.data ?? []}

@@ -1,4 +1,4 @@
-import { getAllRatingHistories, getPlayerRatings } from "./ratingsApi";
+import { getPlayerRatings, getRecentRatingHistories } from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
 import { getPlayerStandings } from "./api";
 import { getSeizoenskampioen } from "./kampioen";
@@ -26,7 +26,7 @@ import { iconKeyVoor, type EditieContext } from "./edities";
 export async function laadEditieContext(): Promise<EditieContext> {
   const [histories, ratings, dictator, standings, kampioen, pias, piet] =
     await Promise.all([
-      getAllRatingHistories(),
+      getRecentRatingHistories(),
       getPlayerRatings(),
       getHuidigeDictator(),
       getPlayerStandings(),
