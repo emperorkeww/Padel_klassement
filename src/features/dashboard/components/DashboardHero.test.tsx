@@ -38,14 +38,19 @@ const LEGE_STATUS: HeroStatus = {
   },
 };
 
-function renderKaart(status: Partial<HeroStatus> = {}, naam = "Remco") {
+function renderKaart(
+  status: Partial<HeroStatus> = {},
+  naam = "Remco",
+  /** Rating 994 = Blaaskaak (zilver), de divisie uit de referentieontwerpen. */
+  rating: number | null = 994,
+) {
   const { container } = render(
     <MemoryRouter>
       <DashboardHero
         myId="p1"
         profile={undefined}
         naam={naam}
-        rating={994}
+        rating={rating}
         ratingGames={12}
         rank={6}
         heeftStand
@@ -197,9 +202,29 @@ describe("<DashboardHero /> — statusbadge", () => {
 });
 
 describe("<DashboardHero /> — decoratielagen", () => {
-  it("tekent geen lagen op een kaart zonder thema of overlay", () => {
-    const hero = renderKaart();
+  it("tekent geen lagen zonder rating, thema én overlay", () => {
+    // Wie nog nooit gespeeld heeft, heeft ook geen divisie: dan blijft de kaart
+    // neutraal en staat er geen lege decoratielaag in de DOM.
+    const hero = renderKaart({}, "Remco", null);
     expect(hero.querySelector(".hero__lagen")).toBeNull();
+    expect(hero.className).toBe("hero");
+  });
+
+  it("geeft een kaart zonder thema het materiaal van zijn divisie (#771)", () => {
+    const hero = renderKaart();
+    expect(hero).toHaveClass("hero--divisie", "hero--div-zilver");
+    expect(hero.querySelector(".hero__materiaal")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__watermerk")).toBeInTheDocument();
+    // De kleuren komen als custom properties uit het register (heroDivisie.ts).
+    expect(hero.style.getPropertyValue("--hero-div-lijn")).not.toBe("");
+  });
+
+  it("laat een permanent thema het divisiemateriaal overnemen", () => {
+    // Anders liggen er twee materialen over elkaar; het thema wint (stap 4 boven
+    // stap 3 in de laagvolgorde).
+    const hero = renderKaart({ pias: true, thema: "pias" });
+    expect(hero).not.toHaveClass("hero--divisie");
+    expect(hero.querySelector(".hero__materiaal")).toBeNull();
   });
 
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {

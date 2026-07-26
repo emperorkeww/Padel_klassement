@@ -11,6 +11,7 @@ import { DICTATOR_EMOJI, dictatorPropaganda } from "../dictator";
 import type { Badge } from "@/features/profiles/badges";
 import type { Profile } from "@/types";
 import { heroKlassen, type HeroOverlay, type HeroPermanent } from "../heroThema";
+import { heroBasis, heroBasisKlassen } from "../heroDivisie";
 import { HeroCrest } from "./HeroCrest";
 import { HeroLagen } from "./HeroLagen";
 import { BadgeStrip } from "./BadgeStrip";
@@ -174,10 +175,17 @@ export function DashboardHero({
   const badgeVariant = overlay ?? thema;
   const badge = crests.find((c) => c.variant === badgeVariant) ?? null;
   const chips = crests.filter((c) => c !== badge);
+  // Draagt de speler geen permanent thema, dan is de kaart die van zijn divisie
+  // (#771). Dezelfde tier als de badge in de kop, dus kaart en badge kunnen niet
+  // uit elkaar lopen.
+  const basis = heroBasis(rating, { permanent: thema, isDictator: status.dictator });
 
   return (
-    <section className={heroKlassen(thema, overlay)}>
-      <HeroLagen permanent={thema} overlay={overlay} />
+    <section
+      className={[heroKlassen(thema, overlay), ...heroBasisKlassen(basis)].join(" ")}
+      style={basis?.stijl}
+    >
+      <HeroLagen permanent={thema} overlay={overlay} basis={basis} />
       <div className="hero__main">
         {/* Primaire ingang naar de profielweergave (#706). De avatar is de
             conventionele gesture, maar een klikbare avatar alleen is niet

@@ -533,6 +533,37 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     }
   });
 
+  it("de toptier-basis van de dashboardkaart deelt de glansbaan met de kaart (#771)", () => {
+    // GOAT en El Padelissimo hebben geen divisieregister; hun basis op het
+    // dashboard is de státische stand van de premium glans (#773). De baan komt
+    // letterlijk van de kaart — alleen de kracht verschilt (de hero draagt hem
+    // op het gewone kaartoppervlak, niet op donker materiaal), en dát is dan ook
+    // het enige wat hier mag afwijken.
+    for (const [tier, klasse] of [
+      ["legende", "goat"],
+      ["dictator", "dictator"],
+    ] as const) {
+      const kaart = new RegExp(
+        `\\.fut-kaart--${tier} \\.fut-kaart__glans\\s*\\{([\\s\\S]*?)\\n\\}`,
+      ).exec(FUT_CSS);
+      expect(kaart, `glansblok van ${tier} niet gevonden`).not.toBeNull();
+      const hero = new RegExp(`\\.hero--glans-${klasse}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(
+        HERO_CSS,
+      );
+      expect(hero, `glansblok van ${klasse} niet gevonden in de hero`).not.toBeNull();
+
+      const baan = (blok: string, prefix: string) =>
+        new RegExp(`--${prefix}-baan:([\\s\\S]*?);`)
+          .exec(blok)?.[1]
+          .replace(/\s+/g, " ")
+          .trim();
+      expect(baan(hero![1], "hero-glans")).toBe(baan(kaart![1], "glans"));
+      expect(/--hero-glans-hoek:\s*([^;]+);/.exec(hero![1])?.[1]).toBe(
+        /--glans-hoek:\s*([^;]+);/.exec(kaart![1])?.[1],
+      );
+    }
+  });
+
   it("GOAT: het rand-register staat in de CSS én in de canvas-tabel (#710)", () => {
     // De vier rand-mechanismen van #710 leven op twee plekken: als CSS-vars
     // op .fut-kaart--legende en als velden in kaartSkin(). Zonder deze check
