@@ -293,6 +293,34 @@ export function KaartShowcase() {
         <PosterKaart tier={tierFor(1650)} editie={null} editieLabel={null} breedte={210} />
       </Sectie>
 
+      {/* Forever second (#710): de basisdivisie ónder de twee toptiers —
+          amethist emaille met zilverwerk. Meteen ná GOAT en El Padelissimo,
+          want dát is de vergelijking die telt: deze kaart moet ceremonieel
+          lezen zonder één gouden of nummer-één-signaal. Rating 1387 geeft
+          subniveau I; de langste regel ("Forever second III") staat op 1310. */}
+      <Sectie titel="Forever second (#710): II-crest, kolommen, lauwertakken, tweedemedaille — poster rechts">
+        {[116, 150, 210].map((kw) => (
+          <div
+            key={kw}
+            className="kaart-showcase__maat"
+            style={{ ["--maat" as string]: `${kw}px` }}
+          >
+            <Kaart kw={kw} tier={tierFor(1387)} naam="Sofie" elo={1387} />
+            <span className="kaart-showcase__maatlabel">{kw}px</span>
+          </div>
+        ))}
+        <PosterKaart tier={tierFor(1387)} editie={null} editieLabel={null} breedte={210} />
+        {/* Veldmaat met de langste divisieregel: die moet daar passen zonder
+            te ellipsen, en de kolommen mogen de naamplaat niet raken. */}
+        <div
+          className="kaart-showcase__maat"
+          style={{ ["--maat" as string]: "116px" }}
+        >
+          <Kaart kw={116} tier={tierFor(1310)} naam="Sofie" elo={1310} />
+          <span className="kaart-showcase__maatlabel">116px · III</span>
+        </div>
+      </Sectie>
+
       {/* Big Daddy-variant (#710): kroon, linten, ballonnen, confetti en het
           edelsteen-ornament in de punt. Twee tiers omdat de schildvorm van de
           divísie komt: 1387 geeft de spitse vleugels, 1487 de kroon-crest — de
