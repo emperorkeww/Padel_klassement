@@ -3,9 +3,9 @@ import { dateInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
 import { type GroupSummary } from "@/features/groups/api";
 import {
-  getGroupPolls,
-  getGroupPollOptions,
-  getGroupPollVotes,
+  getPollsForGroups,
+  getPollOptionsForGroups,
+  getPollVotesForGroups,
   type PlayPoll,
   type PollOption,
   type PollVote,
@@ -116,23 +116,29 @@ export function matchWhen(m: Match, groupName?: string | null): string {
   return parts.join(" · ");
 }
 
-/** Aanwezigheid van vandaag per eigen groep, parallel opgehaald. */
+/** Aanwezigheid van vandaag per eigen groep.
+ *
+ *  Drie queries in totaal, niet drie per groep (#736): dit draait bij elke
+ *  dashboard-mount, en met vier groepen waren dat twaalf requests voor data die
+ *  in één `in(group_id, …)` past. */
 export async function loadOpenPolls(
   groups: GroupSummary[],
 ): Promise<
   { group: GroupSummary; polls: PlayPoll[]; options: PollOption[]; votes: PollVote[] }[]
 > {
   if (groups.length === 0) return [];
-  return Promise.all(
-    groups.map(async (group) => {
-      const [polls, options, votes] = await Promise.all([
-        getGroupPolls(group.id),
-        getGroupPollOptions(group.id),
-        getGroupPollVotes(group.id),
-      ]);
-      return { group, polls, options, votes };
-    }),
-  );
+  const ids = groups.map((g) => g.id);
+  const [polls, options, votes] = await Promise.all([
+    getPollsForGroups(ids),
+    getPollOptionsForGroups(ids),
+    getPollVotesForGroups(ids),
+  ]);
+  return groups.map((group) => ({
+    group,
+    polls: polls[group.id] ?? [],
+    options: options[group.id] ?? [],
+    votes: votes[group.id] ?? [],
+  }));
 }
 
 export type PollPick =
