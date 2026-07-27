@@ -632,51 +632,41 @@ export const DICTATOR_GEM_GLANS = "rgba(255, 170, 190, 0.55)";
 /** Spiegelhulp voor de handgeschreven ornamenten: een polyline-helft (alleen
  *  L-commando's) omgekeerd en gespiegeld om x=50, zodat de tweede helft per
  *  constructie gelijk is aan de eerste. */
-function spiegelPolyline(punten: readonly Punt[]): string {
-  return [...punten]
-    .reverse()
-    .map((p) => `L ${rond(100 - p[0])} ${rond(p[1])}`)
-    .join(" ");
-}
+/** Dictator militair gepeakte pet die in de bovenrand van het schild zit. */
+export const DICTATOR_KROON =
+  "M 50 -25 C 38 -24, 25 -22, 20 -18 C 17 -16, 21 -10, 24 -2 L 76 -2 C 79 -10, 83 -16, 80 -18 C 75 -22, 62 -24, 50 -25 Z";
 
-/** Vijfpuntige ceremoniële kroon die in de bovenrand van het schild zit: band
- *  onderaan, vijf punten met bolknoppen, de middelste het hoogst. Alleen de
- *  linkerhelft plus de as staat hier; `spiegelPolyline` maakt de rechterhelft. */
-const KROON_HELFT: readonly Punt[] = [
-  [23, 1.5],
-  [23, -5.5],
-  [29.5, -16.5],
-  [34.5, -5.5],
-  [40, -22.5],
-  [45, -7.5],
-  [50, -28.5],
-];
-export const DICTATOR_KROON = `M ${KROON_HELFT.map(
-  (p) => `${p[0]} ${p[1]}`,
-).join(" L ")} ${spiegelPolyline(KROON_HELFT.slice(0, -1))} Z`;
-
-/** De band onder de kroonpunten — één doorlopend beslag over de bovenrand. */
+/** De rode band onder de pet. */
 export const DICTATOR_KROON_BAND =
-  "M 21 -1 L 79 -1 L 79 4.5 L 76 6 L 24 6 L 21 4.5 Z";
+  "M 24 -2.5 L 76 -2.5 L 75.2 2.5 L 24.8 2.5 Z";
 
-/** Bolknoppen op de kroonpunten (links + as; rechts wordt gespiegeld). */
+/** Geen bolknoppen meer op de pet. */
 export const DICTATOR_KROON_BOLLEN: readonly (readonly [
   number,
   number,
   number,
-])[] = [
-  [29.5, -18.6, 2],
-  [40, -24.6, 2.2],
-  [50, -30.8, 2.6],
-] as const;
+])[] = [];
 
-/** Edelstenen: twee in de band, één in elke kroonvallei. Ruitvormig, zoals de
- *  referentie — links + as, rechts gespiegeld. */
-export const DICTATOR_GEMS: readonly string[] = [
-  "M 34.5 -3.4 L 36 -1.6 L 34.5 0.2 L 33 -1.6 Z",
-  "M 45 -5.4 L 46.5 -3.6 L 45 -1.8 L 43.5 -3.6 Z",
-  "M 50 -1.4 L 52 1 L 50 3.4 L 48 1 Z",
-] as const;
+/** Geen edelstenen meer op de pet. */
+export const DICTATOR_GEMS: readonly string[] = [];
+
+/** Pet klep (visor). */
+export const DICTATOR_PET_KLEP =
+  "M 26 2.5 C 34 10, 66 10, 74 2.5 C 65 5.5, 35 5.5, 26 2.5 Z";
+
+/** Pet klep glans. */
+export const DICTATOR_PET_KLEP_GLANS =
+  "M 32 4 C 38 6.7, 62 6.7, 68 4 C 62 5.4, 38 5.4, 32 4 Z";
+
+/** Pet stormband. */
+export const DICTATOR_PET_STORM =
+  "M 26.5 1.5 C 36 5.5, 64 5.5, 73.5 1.5";
+
+/** Pet cocarde gouden ster. */
+export const DICTATOR_PET_COCARDE_STER =
+  "M 50 -13.5 L 51.2 -10.5 L 54.4 -10.5 L 51.8 -8.5 L 52.8 -5.5 L 50 -7.4 L 47.2 -5.5 L 48.2 -8.5 L 45.6 -10.5 L 48.8 -10.5 Z";
+
+
 
 /** Epaulet: het schouderstuk dat achter de bovenste zijkant uitsteekt. Eén
  *  gebogen band met een franjerand eronder — links; rechts gespiegeld. */

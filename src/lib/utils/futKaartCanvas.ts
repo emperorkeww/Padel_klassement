@@ -21,14 +21,11 @@ import type { TierKey } from "@/features/rating/tiers";
 import {
   DICTATOR_EPAULET,
   DICTATOR_EPAULET_FRANJE,
-  DICTATOR_GEM,
-  DICTATOR_GEMS,
   DICTATOR_GOUD_CONTOUR,
   DICTATOR_GOUD_GLANS,
   DICTATOR_GOUD_VERLOOP,
   DICTATOR_KROON,
   DICTATOR_KROON_BAND,
-  DICTATOR_KROON_BOLLEN,
   DICTATOR_LAUWER_BLADEN,
   DICTATOR_LAUWER_STENGEL,
   DICTATOR_WATERMARK,
@@ -36,6 +33,10 @@ import {
   DICTATOR_WATERMARK_KLEUR,
   DICTATOR_WATERMARK_POSITIE,
   DICTATOR_ZEGEL,
+  DICTATOR_PET_KLEP,
+  DICTATOR_PET_KLEP_GLANS,
+  DICTATOR_PET_STORM,
+  DICTATOR_PET_COCARDE_STER,
   GOAT_BAARD_ARM,
   GOAT_BAARD_BLADEN,
   GOAT_BAARD_KRUL,
@@ -973,38 +974,86 @@ function drawDictatorAchter(
     for (const d of DICTATOR_EPAULET_FRANJE) ctx.stroke(new Path2D(d));
     ctx.restore();
   }
-  goudPad(ctx, DICTATOR_KROON_BAND, -2, 7);
-  goudPad(ctx, DICTATOR_KROON, -32, 2);
-  for (const [cx, cy, r] of DICTATOR_KROON_BOLLEN) {
-    for (const bx of cx === 50 ? [cx] : [cx, 100 - cx]) {
-      ctx.beginPath();
-      ctx.arc(bx, cy, r, 0, Math.PI * 2);
-      const bol = ctx.createLinearGradient(0, cy - r, 0, cy + r);
-      for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP)
-        bol.addColorStop(offset, kleur);
-      ctx.fillStyle = bol;
-      ctx.fill();
-      ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
+  // Peaked cap body
+  ctx.save();
+  const body = new Path2D(DICTATOR_KROON);
+  ctx.fillStyle = "#1d1e20";
+  ctx.fill(body);
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke(body);
+  ctx.restore();
+
+  // Cap band (red)
+  ctx.save();
+  const band = new Path2D(DICTATOR_KROON_BAND);
+  ctx.fillStyle = "#9c1a2e";
+  ctx.fill(band);
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(band);
+  ctx.restore();
+
+  // Cap visor (black)
+  ctx.save();
+  const klep = new Path2D(DICTATOR_PET_KLEP);
+  ctx.fillStyle = "#0c0c0c";
+  ctx.fill(klep);
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.5;
+  ctx.stroke(klep);
+  ctx.restore();
+
+  // Visor shine
+  ctx.save();
+  const klepGlans = new Path2D(DICTATOR_PET_KLEP_GLANS);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.fill(klepGlans);
+  ctx.restore();
+
+  // Gold verloop for stormband and star
+  const goudVerloop = ctx.createLinearGradient(0, -15, 0, 5);
+  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP) {
+    goudVerloop.addColorStop(offset, kleur);
   }
-  for (const d of DICTATOR_GEMS) {
-    for (const spiegel of [false, true]) {
-      ctx.save();
-      if (spiegel) {
-        ctx.translate(100, 0);
-        ctx.scale(-1, 1);
-      }
-      const gem = new Path2D(d);
-      ctx.fillStyle = DICTATOR_GEM;
-      ctx.fill(gem);
-      ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
-      ctx.lineWidth = 0.4;
-      ctx.stroke(gem);
-      ctx.restore();
-    }
+
+  // Stormband
+  ctx.save();
+  const storm = new Path2D(DICTATOR_PET_STORM);
+  ctx.strokeStyle = goudVerloop;
+  ctx.lineWidth = 0.8;
+  ctx.lineCap = "round";
+  ctx.stroke(storm);
+
+  // Left and right buttons
+  for (const cx of [26.5, 73.5]) {
+    ctx.beginPath();
+    ctx.arc(cx, 1.5, 1.3, 0, Math.PI * 2);
+    ctx.fillStyle = goudVerloop;
+    ctx.fill();
+    ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
   }
+  ctx.restore();
+
+  // Cocarde (red circle + gold star)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(50, -9.5, 3.8, 0, Math.PI * 2);
+  ctx.fillStyle = "#7e1228";
+  ctx.fill();
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.4;
+  ctx.stroke();
+
+  const star = new Path2D(DICTATOR_PET_COCARDE_STER);
+  ctx.fillStyle = goudVerloop;
+  ctx.fill(star);
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.3;
+  ctx.stroke(star);
+  ctx.restore();
   ctx.restore();
 }
 
@@ -1416,6 +1465,21 @@ function drawGoatVoor(
   ctx.strokeStyle = GOAT_METAAL_RIBBEL;
   ctx.lineWidth = 0.3;
   for (const d of GOAT_BAARD_NERVEN) ctx.stroke(new Path2D(d));
+
+  // Edelsteen op de speerpunt
+  ctx.save();
+  const gem = new Path2D("M 50 120.5 L 52.2 124 L 50 127.5 L 47.8 124 Z");
+  ctx.fillStyle = "#ff4d80";
+  ctx.fill(gem);
+  ctx.strokeStyle = "#ffe2ea";
+  ctx.lineWidth = 0.35;
+  ctx.stroke(gem);
+
+  const gemGlans = new Path2D("M 49.3 121.5 L 50.7 121.5 L 50 124 Z");
+  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+  ctx.fill(gemGlans);
+  ctx.restore();
+
   ctx.restore();
 }
 

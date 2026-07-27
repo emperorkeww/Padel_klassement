@@ -735,15 +735,17 @@
   background:
     repeating-conic-gradient(
       from 0deg at 50% 50%,
-      rgba(255, 255, 255, 0.12) 0deg 0.7deg,
-      transparent 0.7deg 2.2deg
+      rgba(255, 255, 255, 0.18) 0deg 0.5deg,
+      transparent 0.5deg 1.5deg
     ),
     linear-gradient(
-      160deg,
-      #ffd3de 0%,
-      #c25573 40%,
-      #fff0f4 66%,
-      #4a1526 100%
+      135deg,
+      #ffe2ea 0%,
+      #b03a55 25%,
+      #ffd0db 45%,
+      #ffedf2 55%,
+      #5c162b 75%,
+      #ffdbe5 100%
     );
 }
 .fut-kaart--legende .fut-kaart__liner {

@@ -19,7 +19,10 @@ import {
   DICTATOR_GEM,
   DICTATOR_KROON,
   DICTATOR_KROON_BAND,
-  DICTATOR_KROON_BOLLEN,
+  DICTATOR_PET_KLEP,
+  DICTATOR_PET_KLEP_GLANS,
+  DICTATOR_PET_STORM,
+  DICTATOR_PET_COCARDE_STER,
 } from "@/features/rating/components/futKaartOrnamenten";
 
 /** Id van het gedeelde goudverloop. De troon staat één keer per pagina, dus
@@ -334,22 +337,53 @@ export function DictatorKroonCrest({ className }: { className?: string }) {
     >
       {vleugel}
       <g transform="translate(100,0) scale(-1,1)">{vleugel}</g>
-      <path d={DICTATOR_KROON_BAND} fill={GOUD_URL} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.6" />
-      <path d={DICTATOR_KROON} fill={GOUD_URL} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.6" />
-      {DICTATOR_KROON_BOLLEN.flatMap(([cx, cy, r]) =>
-        (cx === 50 ? [cx] : [cx, 100 - cx]).map((x) => (
-          <circle
-            key={`${x}-${cy}`}
-            cx={x}
-            cy={cy}
-            r={r}
-            fill={GOUD_URL}
-            stroke={DICTATOR_GOUD_CONTOUR}
-            strokeWidth="0.5"
-          />
-        )),
-      )}
-      <circle cx="50" cy="2.5" r="2.2" fill={DICTATOR_GEM} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+      {/* Peaked cap body */}
+      <path
+        d={DICTATOR_KROON}
+        fill="#1d1e20"
+        stroke={DICTATOR_GOUD_CONTOUR}
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      {/* Cap band (red) */}
+      <path
+        d={DICTATOR_KROON_BAND}
+        fill="#9c1a2e"
+        stroke={DICTATOR_GOUD_CONTOUR}
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      {/* Cap visor (black) */}
+      <path
+        d={DICTATOR_PET_KLEP}
+        fill="#0c0c0c"
+        stroke={DICTATOR_GOUD_CONTOUR}
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d={DICTATOR_PET_KLEP_GLANS}
+        fill="rgba(255, 255, 255, 0.15)"
+      />
+      {/* Stormband (gold) */}
+      <path
+        d={DICTATOR_PET_STORM}
+        fill="none"
+        stroke={GOUD_URL}
+        strokeWidth="0.8"
+        strokeLinecap="round"
+      />
+      <circle cx={26.5} cy={1.5} r={1.3} fill={GOUD_URL} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+      <circle cx={73.5} cy={1.5} r={1.3} fill={GOUD_URL} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+      {/* Cocarde (red star with gold badge) */}
+      <circle cx={50} cy={-9.5} r={3.8} fill="#7e1228" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+      <path
+        d={DICTATOR_PET_COCARDE_STER}
+        fill={GOUD_URL}
+        stroke={DICTATOR_GOUD_CONTOUR}
+        strokeWidth="0.3"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
