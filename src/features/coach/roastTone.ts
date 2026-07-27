@@ -216,7 +216,7 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Met deze mobiliteit had je bij Al-Nassr de bidons nog niet eens mogen vullen.",
     "De tegenstander bedankte me zojuist voor deze trainingspartij op verplaatsing.",
     "Was dit een poging tot padel of zocht je gewoon een originele manier om je conditie te verbergen?",
-    "Met deze sprintsnelheid had je bij Napoli nog niet eens the ballen uit de bosjes mogen vissen.",
+    "Met deze sprintsnelheid had je bij Napoli nog niet eens de ballen uit de bosjes mogen vissen.",
     "Het leek wel een mislukte parodie op padel. Zelfs de tegenstander wist zich geen houding te geven.",
     "Je sloeg die bal zo hard out dat de luchtverkeersleiding er een radarwaarschuwing voor uitstuurde.",
     "Was die smash een poging tot vandalisme of ben je gewoon blind voor de bal?",

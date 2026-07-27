@@ -265,7 +265,7 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "Rode lantaarn. Blijf trainen, de ommekeer begint vanaf de bodem.",
     "Onderin de lijst. Zie het als een tactische aanloop voor een grote sprong.",
     "De rode lantaarn is in jouw handen. Hopelijk is de batterij snel leeg.",
-    "Degradatiezone. Tijd om die basisslagen nog eens kritisch door te neem.",
+    "Degradatiezone. Tijd om die basisslagen nog eens kritisch door te nemen.",
     "Laag geklasseerd. Gelukkig is het seizoen nog lang genoeg voor een comeback.",
     "Onderin de tabel. Blijf gefocust, de klim omhoog begint vandaag.",
 ],
@@ -389,7 +389,7 @@ export const KELDER_NEUTRAAL = [
     "Kelderpositie van dit moment. Richt je blik op de komende duels.",
     "Hekkensluiter stand. Speel meer matches om je Elo te verbeteren.",
     "Laag in de stand. Focus op de basisslagen en stabiele looplijnen.",
-    "Onderaan the tabel. Blijf gefocust op je eigen spel vandaag.",
+    "Onderaan de tabel. Blijf gefocust op je eigen spel vandaag.",
     "Bodem van de lijst. De weg omhoog begint met de volgende service.",
     "Onderin het klassement genoteerd. Volgende week nieuwe kansen op de baan.",
 ] as const;
