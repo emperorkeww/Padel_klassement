@@ -13,15 +13,11 @@ import { tierTitle, type Tier } from "@/features/rating/tiers";
 import {
   DICTATOR_EPAULET,
   DICTATOR_EPAULET_FRANJE,
-  DICTATOR_GEM,
-  DICTATOR_GEMS,
-  DICTATOR_GEM_GLANS,
   DICTATOR_GOUD_CONTOUR,
   DICTATOR_GOUD_GLANS,
   DICTATOR_GOUD_VERLOOP,
   DICTATOR_KROON,
   DICTATOR_KROON_BAND,
-  DICTATOR_KROON_BOLLEN,
   DICTATOR_LAUWER_BLADEN,
   DICTATOR_LAUWER_STENGEL,
   DICTATOR_WATERMARK,
@@ -29,6 +25,10 @@ import {
   DICTATOR_WATERMARK_KLEUR,
   DICTATOR_WATERMARK_POSITIE,
   DICTATOR_ZEGEL,
+  DICTATOR_PET_KLEP,
+  DICTATOR_PET_KLEP_GLANS,
+  DICTATOR_PET_STORM,
+  DICTATOR_PET_COCARDE_STER,
   GOAT_BAARD_ARM,
   GOAT_BAARD_BLADEN,
   GOAT_BAARD_KRUL,
@@ -995,47 +995,6 @@ export function FutKaartDefs() {
             href="#fut-orn-dictator-achter-helft"
             transform="translate(100,0) scale(-1,1)"
           />
-          <FutGoud d={DICTATOR_KROON_BAND} />
-          <FutGoud d={DICTATOR_KROON} />
-          {DICTATOR_KROON_BOLLEN.map(([cx, cy, r]) => (
-            <g key={`${cx}-${cy}`}>
-              <circle
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill="url(#fut-orn-goud)"
-                stroke={DICTATOR_GOUD_CONTOUR}
-                strokeWidth="0.5"
-              />
-              {cx !== 50 && (
-                <circle
-                  cx={100 - cx}
-                  cy={cy}
-                  r={r}
-                  fill="url(#fut-orn-goud)"
-                  stroke={DICTATOR_GOUD_CONTOUR}
-                  strokeWidth="0.5"
-                />
-              )}
-            </g>
-          ))}
-          {DICTATOR_GEMS.map((d) => (
-            <g key={d}>
-              <path d={d} fill={DICTATOR_GEM} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
-              <path
-                d={d}
-                fill="none"
-                stroke={DICTATOR_GEM_GLANS}
-                strokeWidth="0.3"
-                transform="translate(100,0) scale(-1,1)"
-              />
-            </g>
-          ))}
-          <g transform="translate(100,0) scale(-1,1)">
-            {DICTATOR_GEMS.map((d) => (
-              <path key={d} d={d} fill={DICTATOR_GEM} stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
-            ))}
-          </g>
         </g>
         {/* En vóór de kaart: lauwerkransen langs de onderste zijkanten en het
             lakzegel in de punt (laagvolgorde uit de referentie-instructies).
@@ -1099,6 +1058,53 @@ export function FutKaartDefs() {
               strokeWidth="0.4"
             />
           ))}
+          {/* Peaked cap body */}
+          <path
+            d={DICTATOR_KROON}
+            fill="#1d1e20"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          {/* Cap band (red) */}
+          <path
+            d={DICTATOR_KROON_BAND}
+            fill="#9c1a2e"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          {/* Cap visor (black) */}
+          <path
+            d={DICTATOR_PET_KLEP}
+            fill="#0c0c0c"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          <path
+            d={DICTATOR_PET_KLEP_GLANS}
+            fill="rgba(255, 255, 255, 0.15)"
+          />
+          {/* Stormband (gold) */}
+          <path
+            d={DICTATOR_PET_STORM}
+            fill="none"
+            stroke="url(#fut-orn-goud)"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+          />
+          <circle cx={26.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+          <circle cx={73.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+          {/* Cocarde (red star with gold badge) */}
+          <circle cx={50} cy={-9.5} r={3.8} fill="#7e1228" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+          <path
+            d={DICTATOR_PET_COCARDE_STER}
+            fill="url(#fut-orn-goud)"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.3"
+            strokeLinejoin="round"
+          />
         </g>
         <FutDivisieDefs />
         {/* In-Form (#710) — het énige editie-ornament: champagnegouden
@@ -1313,12 +1319,24 @@ export function FutKaartDefs() {
             <path
               key={d}
               d={d}
-              fill="none"
-              stroke={GOAT_METAAL_RIBBEL}
-              strokeWidth="0.3"
-              strokeLinecap="round"
+              fill="url(#fut-orn-metaal)"
+              stroke={GOAT_METAAL_CONTOUR}
+              strokeWidth="0.45"
+              strokeLinejoin="round"
             />
           ))}
+          {/* Glowing pink gem on spear point */}
+          <path
+            d="M 50 120.5 L 52.2 124 L 50 127.5 L 47.8 124 Z"
+            fill="#ff4d80"
+            stroke="#ffe2ea"
+            strokeWidth="0.35"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 49.3 121.5 L 50.7 121.5 L 50 124 Z"
+            fill="rgba(255, 255, 255, 0.45)"
+          />
         </g>
         {/* Big Daddy (#710): twee groepen i.p.v. één. Het feestwerk (lint,
             ballonnen, confetti) hoort áchter de kaart, maar kroon en
@@ -2139,6 +2157,15 @@ export function FutKaart({
             aria-hidden="true"
           >
             <use href={`#fut-orn-${ornamentVoor}-voor`} />
+          </svg>
+        )}
+        {divisie?.voor && divisie.voor.length > 0 && (
+          <svg
+            className="fut-kaart__ornament fut-kaart__ornament--voor"
+            viewBox={ORNAMENT_VIEWBOX}
+            aria-hidden="true"
+          >
+            <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
       </div>

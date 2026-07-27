@@ -420,78 +420,42 @@ export const GOAT_BAARD_NERVEN: readonly string[] = [-1, 0, 1].map((k) => {
  *  het vlak heeft 24% bodempadding, dus de divisieregel GOAT eindigt op v≈115
  *  en het ornament mag daar niet overheen. */
 export const GOAT_BAARD_ARM = bouwStreng({
-  start: [46.2, 130.2],
+  start: [46.2, 120.2],
   segmenten: [
     [
-      [42, 128.8],
-      [37, 126.8],
-      [33.4, 123.8],
-    ],
-    [
-      [31.2, 122.2],
-      [30, 119.2],
-      [32.4, 117.7],
-    ],
-    [
-      [34.9, 116.1],
-      [37.8, 118],
-      [37.2, 120.6],
-    ],
-    [
-      [36.9, 122.1],
-      [35.7, 123.1],
-      [34.2, 123.3],
+      [41.0, 122.0],
+      [36.8, 125.0],
+      [32.6, 129.0],
     ],
   ],
-  dikte: 2,
+  dikte: 0.8,
   punt: 0.1,
-  taper: 1.5,
-  stappen: 60,
+  taper: 1.2,
+  stappen: 30,
 });
 
-/** Baardornament, deel 3 — de onderkrul (#772). Kleiner dan de bovenarm en
- *  andersom gedraaid: naar buiten-onder en dan terug omhoog. Steekt met zijn
- *  buitenste boog nét over de schildrand (op v≈135 loopt die op u≈43), zodat
- *  het filigraan "uit de kaartomlijsting groeit" i.p.v. erop te liggen. */
+/** Baardornament, deel 3 — de onderkrul (#772). */
 export const GOAT_BAARD_KRUL = bouwStreng({
-  start: [47.8, 136.4],
+  start: [47.8, 122.4],
   segmenten: [
     [
-      [45.4, 137.4],
-      [42.4, 137.2],
-      [40.6, 135.4],
-    ],
-    [
-      [39, 133.8],
-      [39.5, 131.2],
-      [41.8, 130.9],
-    ],
-    [
-      [43.7, 130.7],
-      [44.8, 132.5],
-      [43.8, 133.9],
+      [45.5, 126.0],
+      [43.0, 131.0],
+      [41.5, 137.0],
     ],
   ],
-  dikte: 1.4,
+  dikte: 0.6,
   punt: 0.08,
-  taper: 1.4,
-  stappen: 44,
+  taper: 1.2,
+  stappen: 25,
 });
 
-/** Baardornament, deel 4 — de gelaagde haarbladen (#772). Drie spitse bladen
- *  per kant die onder de bovenarm vandaan naar buiten waaieren: de "gelaagde
- *  gegraveerde blad- of haarvormen" uit de issue. Ze doen het silhouetwerk —
- *  zonder die waaier leest het ornament als een fleur-de-lis, mét als een sik.
- *  Eén helft; rechts is de spiegeling. `[u, v, hoek, lengte]`. */
-const BAARD_BLADEN: readonly (readonly [number, number, number, number])[] = [
-  [41.2, 126.2, 192, 11.5],
-  [42.8, 130.2, 202, 10.2],
-  [44.4, 133.6, 213, 8.2],
-] as const;
-
-export const GOAT_BAARD_BLADEN: readonly string[] = BAARD_BLADEN.map(
-  ([u, v, hoek, lengte]) => bladVorm(u, v, hoek, lengte),
-);
+/** Baardornament, deel 4 — de gelaagde haarbladen (#772). */
+export const GOAT_BAARD_BLADEN: readonly string[] = [
+  "M 49 116 C 48.2 125, 47.5 133, 49 140 C 49.8 133, 50.2 125, 49 116 Z",
+  "M 46.5 116 C 44.5 124, 43.8 131, 45 137 C 46 131, 47 124, 46.5 116 Z",
+  "M 44 117 C 41.5 125, 40.8 131, 42 135 C 43 131, 44.2 125, 44 117 Z",
+];
 
 /** Rosé-metaal: verloop van boven naar onder, donkere contour, lichte glans.
  *  Gedeeld door hoorns en baard, en door DOM en canvas. */
@@ -539,20 +503,39 @@ export const GOAT_WATERMERK: readonly OrnamentPad[] = [
     soort: "lijn",
     breedte: 2,
   },
-  // Oren.
-  { d: "M 41.5 37 C 35 39, 29 43, 25 48", soort: "lijn", breedte: 1.4 },
-  { d: "M 58.5 37 C 65 39, 71 43, 75 48", soort: "lijn", breedte: 1.4 },
-  // Kop met snuit, en de sik eronder — de kaart heeft er een van metaal.
+  // Hoorn-ribbels (textures).
+  { d: "M 38 25 C 33 21, 28 21, 24 25", soort: "lijn", breedte: 0.8 },
+  { d: "M 34 32 C 27 28, 20 28, 16 32", soort: "lijn", breedte: 0.8 },
+  { d: "M 28 41 C 18 38, 13 38, 10 43", soort: "lijn", breedte: 0.8 },
+  { d: "M 22 49 C 13 46, 8 49, 7 54", soort: "lijn", breedte: 0.8 },
+  { d: "M 62 25 C 67 21, 72 21, 76 25", soort: "lijn", breedte: 0.8 },
+  { d: "M 66 32 C 73 28, 80 28, 84 32", soort: "lijn", breedte: 0.8 },
+  { d: "M 72 41 C 82 38, 87 38, 90 43", soort: "lijn", breedte: 0.8 },
+  { d: "M 78 49 C 87 46, 92 49, 93 54", soort: "lijn", breedte: 0.8 },
+  // Oren (drooping en realistischer).
+  { d: "M 40 36 C 33 36, 25 42, 23 52 C 25 54, 30 50, 39 42 Z", soort: "lijn", breedte: 1.4 },
+  { d: "M 60 36 C 67 36, 75 42, 77 52 C 75 54, 70 50, 61 42 Z", soort: "lijn", breedte: 1.4 },
+  // Kop contour.
   {
-    d: "M 41 33 C 37.5 47, 38.5 60, 44 71 L 48 84 C 49 87.5, 51 87.5, 52 84 L 56 71 C 61.5 60, 62.5 47, 59 33 C 52.5 28, 47.5 28, 41 33 Z",
+    d: "M 43 32 C 40 37, 43 55, 45 68 L 47 77 L 50 78 L 53 77 L 55 68 C 57 55, 60 37, 57 32 Z",
     soort: "lijn",
     breedte: 2,
   },
-  { d: "M 44.5 71 C 47.5 73, 52.5 73, 55.5 71", soort: "lijn", breedte: 1 },
-  { d: "M 50 87 C 48.5 91, 48.5 94, 50 97 C 51.5 94, 51.5 91, 50 87 Z", soort: "vlak" },
-  // Ogen: twee kleine vlakjes — het enige dat de kop echt laat kijken.
-  { d: "M 43.6 47 A 1.6 1.6 0 1 1 46.8 47 A 1.6 1.6 0 1 1 43.6 47", soort: "vlak" },
-  { d: "M 53.2 47 A 1.6 1.6 0 1 1 56.4 47 A 1.6 1.6 0 1 1 53.2 47", soort: "vlak" },
+  // Kaken en snuit-lijnen.
+  { d: "M 44 48 C 45.5 54, 46 62, 47.5 68", soort: "lijn", breedte: 1 },
+  { d: "M 56 48 C 54.5 54, 54 62, 52.5 68", soort: "lijn", breedte: 1 },
+  // Neusbrug en neusgaten.
+  { d: "M 47.5 68 L 47.5 73 L 52.5 73 L 52.5 68", soort: "lijn", breedte: 0.8 },
+  { d: "M 47 75 C 48 78, 52 78, 53 75", soort: "lijn", breedte: 1 },
+  // Realistische ogen met horizontale pupilspleten.
+  { d: "M 41.5 45 C 43 44, 45 44, 46.5 45 C 45 47, 43 47, 41.5 45 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 42.5 45.5 L 45.5 45.5", soort: "lijn", breedte: 1.2 },
+  { d: "M 58.5 45 C 57 44, 55 44, 53.5 45 C 55 47, 57 47, 58.5 45 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 54.5 45.5 L 57.5 45.5", soort: "lijn", breedte: 1.2 },
+  // Geitenbaard (realistisch wispy).
+  { d: "M 50 78 C 49 86, 49 92, 50 97 C 51 92, 51 86, 50 78 Z", soort: "lijn", breedte: 1 },
+  { d: "M 48 77 C 46 84, 45 90, 46 95 C 47.5 90, 48 84, 48 77 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 52 77 C 54 84, 55 90, 54 95 C 52.5 90, 52 84, 52 77 Z", soort: "lijn", breedte: 0.8 },
 ] as const;
 
 /** Etskleur van het watermerk: de GOAT-inkt op lage alpha. Bewust net iets
@@ -632,51 +615,41 @@ export const DICTATOR_GEM_GLANS = "rgba(255, 170, 190, 0.55)";
 /** Spiegelhulp voor de handgeschreven ornamenten: een polyline-helft (alleen
  *  L-commando's) omgekeerd en gespiegeld om x=50, zodat de tweede helft per
  *  constructie gelijk is aan de eerste. */
-function spiegelPolyline(punten: readonly Punt[]): string {
-  return [...punten]
-    .reverse()
-    .map((p) => `L ${rond(100 - p[0])} ${rond(p[1])}`)
-    .join(" ");
-}
+/** Dictator militair gepeakte pet die in de bovenrand van het schild zit. */
+export const DICTATOR_KROON =
+  "M 50 -25 C 38 -24, 25 -22, 20 -18 C 17 -16, 21 -10, 24 -2 L 76 -2 C 79 -10, 83 -16, 80 -18 C 75 -22, 62 -24, 50 -25 Z";
 
-/** Vijfpuntige ceremoniële kroon die in de bovenrand van het schild zit: band
- *  onderaan, vijf punten met bolknoppen, de middelste het hoogst. Alleen de
- *  linkerhelft plus de as staat hier; `spiegelPolyline` maakt de rechterhelft. */
-const KROON_HELFT: readonly Punt[] = [
-  [23, 1.5],
-  [23, -5.5],
-  [29.5, -16.5],
-  [34.5, -5.5],
-  [40, -22.5],
-  [45, -7.5],
-  [50, -28.5],
-];
-export const DICTATOR_KROON = `M ${KROON_HELFT.map(
-  (p) => `${p[0]} ${p[1]}`,
-).join(" L ")} ${spiegelPolyline(KROON_HELFT.slice(0, -1))} Z`;
-
-/** De band onder de kroonpunten — één doorlopend beslag over de bovenrand. */
+/** De rode band onder de pet. */
 export const DICTATOR_KROON_BAND =
-  "M 21 -1 L 79 -1 L 79 4.5 L 76 6 L 24 6 L 21 4.5 Z";
+  "M 24 -2.5 L 76 -2.5 L 75.2 2.5 L 24.8 2.5 Z";
 
-/** Bolknoppen op de kroonpunten (links + as; rechts wordt gespiegeld). */
+/** Geen bolknoppen meer op de pet. */
 export const DICTATOR_KROON_BOLLEN: readonly (readonly [
   number,
   number,
   number,
-])[] = [
-  [29.5, -18.6, 2],
-  [40, -24.6, 2.2],
-  [50, -30.8, 2.6],
-] as const;
+])[] = [];
 
-/** Edelstenen: twee in de band, één in elke kroonvallei. Ruitvormig, zoals de
- *  referentie — links + as, rechts gespiegeld. */
-export const DICTATOR_GEMS: readonly string[] = [
-  "M 34.5 -3.4 L 36 -1.6 L 34.5 0.2 L 33 -1.6 Z",
-  "M 45 -5.4 L 46.5 -3.6 L 45 -1.8 L 43.5 -3.6 Z",
-  "M 50 -1.4 L 52 1 L 50 3.4 L 48 1 Z",
-] as const;
+/** Geen edelstenen meer op de pet. */
+export const DICTATOR_GEMS: readonly string[] = [];
+
+/** Pet klep (visor). */
+export const DICTATOR_PET_KLEP =
+  "M 26 2.5 C 34 10, 66 10, 74 2.5 C 65 5.5, 35 5.5, 26 2.5 Z";
+
+/** Pet klep glans. */
+export const DICTATOR_PET_KLEP_GLANS =
+  "M 32 4 C 38 6.7, 62 6.7, 68 4 C 62 5.4, 38 5.4, 32 4 Z";
+
+/** Pet stormband. */
+export const DICTATOR_PET_STORM =
+  "M 26.5 1.5 C 36 5.5, 64 5.5, 73.5 1.5";
+
+/** Pet cocarde gouden ster. */
+export const DICTATOR_PET_COCARDE_STER =
+  "M 50 -13.5 L 51.2 -10.5 L 54.4 -10.5 L 51.8 -8.5 L 52.8 -5.5 L 50 -7.4 L 47.2 -5.5 L 48.2 -8.5 L 45.6 -10.5 L 48.8 -10.5 Z";
+
+
 
 /** Epaulet: het schouderstuk dat achter de bovenste zijkant uitsteekt. Eén
  *  gebogen band met een franjerand eronder — links; rechts gespiegeld. */
@@ -777,22 +750,24 @@ export const DICTATOR_ZEGEL = {
   ] as const,
 } as const;
 
-/** Watermark achter de spelerinformatie: een nauwelijks zichtbare kroon met
- *  lauwertakken — de "troon-crest" uit de referentie. ViewBox 0 0 100 100. */
+/** Watermark achter de spelerinformatie: een gevechtsster met
+ *  lauwertakken — het militaire embleem. ViewBox 0 0 100 100. */
 export const DICTATOR_WATERMARK: readonly OrnamentPad[] = [
-  // Kroonsilhouet.
+  // Grote gevechtsster.
   {
-    d: "M 30 62 L 30 44 L 39 55 L 50 36 L 61 55 L 70 44 L 70 62 Z",
+    d: "M 50 25 L 56 41 L 73 41 L 59 50 L 64 66 L 50 56 L 36 66 L 41 50 L 27 41 L 44 41 Z",
     soort: "lijn",
-    breedte: 1.6,
+    breedte: 2,
   },
-  { d: "M 31 67 L 69 67 L 68 73 L 32 73 Z", soort: "lijn", breedte: 1.6 },
-  { d: "M 28 41 A 2.6 2.6 0 1 1 33.2 41 A 2.6 2.6 0 1 1 28 41", soort: "vlak" },
-  { d: "M 47.4 32 A 2.8 2.8 0 1 1 53 32 A 2.8 2.8 0 1 1 47.4 32", soort: "vlak" },
-  { d: "M 66.8 41 A 2.6 2.6 0 1 1 72 41 A 2.6 2.6 0 1 1 66.8 41", soort: "vlak" },
+  // Extra binnenste gevechtsster-lijnen.
+  {
+    d: "M 50 32 L 54 44 L 66 44 L 56 51 L 60 62 L 50 55 L 40 62 L 44 51 L 34 44 L 46 44 Z",
+    soort: "lijn",
+    breedte: 1,
+  },
   // Lauwertakken eromheen.
-  { d: "M 50 92 C 30 86 17 70 18 50", soort: "lijn", breedte: 1.2 },
-  { d: "M 50 92 C 70 86 83 70 82 50", soort: "lijn", breedte: 1.2 },
+  { d: "M 50 82 C 25 76 13 60 14 38", soort: "lijn", breedte: 1.5 },
+  { d: "M 50 82 C 75 76 87 60 86 38", soort: "lijn", breedte: 1.5 },
 ] as const;
 
 export const DICTATOR_WATERMARK_KLEUR = "rgba(240, 199, 102, 0.09)";

@@ -161,7 +161,8 @@
   .fut-kaart:has(.fut-kaart__flip:hover),
   .fut-kaart:has(.fut-kaart__flip:focus-visible) {
     transform: translateY(-4px) scale(1.05);
-    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4));
+    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4))
+            drop-shadow(0 0 12px var(--kaart-lijn));
   }
   .fut-kaart:has(.fut-kaart__flip:active) {
     transform: translateY(-1px) scale(1.01);
@@ -424,7 +425,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 4px 0 3px;
+  padding: 4.5px 0 3.5px;
+  background: color-mix(in srgb, var(--kaart-lijn) 7%, transparent);
   border-top: 1.5px solid var(--kaart-lijn);
   border-bottom: 1px solid
     color-mix(in srgb, var(--kaart-lijn) 55%, transparent);
@@ -733,15 +735,17 @@
   background:
     repeating-conic-gradient(
       from 0deg at 50% 50%,
-      rgba(255, 255, 255, 0.12) 0deg 0.7deg,
-      transparent 0.7deg 2.2deg
+      rgba(255, 255, 255, 0.18) 0deg 0.5deg,
+      transparent 0.5deg 1.5deg
     ),
     linear-gradient(
-      160deg,
-      #ffd3de 0%,
-      #c25573 40%,
-      #fff0f4 66%,
-      #4a1526 100%
+      135deg,
+      #ffe2ea 0%,
+      #b03a55 25%,
+      #ffd0db 45%,
+      #ffedf2 55%,
+      #5c162b 75%,
+      #ffdbe5 100%
     );
 }
 .fut-kaart--legende .fut-kaart__liner {
@@ -793,7 +797,7 @@
      referentie vraagt (geen fel plastic goud). */
   --kaart-ink: #f2dda2;
   --kaart-ink-soft: #cdae6e;
-  --kaart-lijn: rgba(226, 194, 122, 0.5);
+  --kaart-lijn: #cf152d;
   --kaart-echo: drop-shadow(
       calc(var(--fut-kw) * 0.012) 0 0 rgba(58, 10, 22, 0.9)
     )
@@ -822,21 +826,31 @@
 .fut-kaart--dictator .fut-kaart__keyline {
   background: #d9b661;
 }
-/* Vlak (boven → onder): ruit-brokaat op lage dekking, radiale zonnestraal
+/* Vlak (boven → onder): carbon mesh texture, ruit-brokaat op lage dekking, radiale zonnestraal
    vanaf de crest, en het bordeauxrode emaille eronder. */
 .fut-kaart--dictator .fut-kaart__vlak {
   background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.25) 0px 2px,
+      transparent 2px 4px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.035) 0px 1px,
+      transparent 1px 3px
+    ),
     repeating-conic-gradient(
       from -32deg at 50% 6%,
-      rgba(240, 199, 102, 0.11) 0deg 6deg,
-      transparent 6deg 16deg
+      rgba(240, 199, 102, 0.12) 0deg 5deg,
+      transparent 5deg 18deg
     ),
     radial-gradient(
       130% 62% at 50% -6%,
-      rgba(240, 199, 102, 0.34),
+      rgba(240, 199, 102, 0.38),
       transparent 62%
     ),
-    linear-gradient(172deg, #7d1a33 0%, #4a0f1f 58%, #230812 100%);
+    linear-gradient(172deg, #570014 0%, #2e0009 50%, #0d0104 100%);
 }
 .fut-kaart--dictator .fut-kaart__vlak::before {
   background: linear-gradient(
