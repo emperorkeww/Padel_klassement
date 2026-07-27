@@ -2380,10 +2380,10 @@ function drawConfetti(
   const stippen: ReadonlyArray<
     readonly [number, number, number, string]
   > = [
-    [0.24, 0.16, 0.045, "rgba(140, 42, 23, 0.24)"],
-    [0.76, 0.28, 0.035, "rgba(31, 92, 64, 0.21)"],
-    [0.38, 0.76, 0.034, "rgba(31, 74, 128, 0.19)"],
-    [0.84, 0.64, 0.029, "rgba(140, 42, 23, 0.19)"],
+    [0.24, 0.16, 0.045, "rgba(235, 64, 52, 0.45)"],
+    [0.76, 0.28, 0.035, "rgba(46, 204, 113, 0.42)"],
+    [0.38, 0.76, 0.034, "rgba(52, 152, 219, 0.38)"],
+    [0.84, 0.64, 0.029, "rgba(241, 196, 15, 0.38)"],
   ];
   for (const [u, v, r, kleur] of stippen) {
     const cx = fx + u * fw;
@@ -2788,14 +2788,14 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     ],
     snijkant: "#d8bc7c",
     liner: "#362410",
-    vlak: ["#dcbd85", "#c9a468", "#a37e46"],
+    vlak: ["#e6c895", "#cfa76e", "#ae8448"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
     sheen: "rgba(255, 240, 214, 0.06)",
     sheenSpreiding: 0.2,
     ink: "#3a250c",
     inkSoft: "#6b4d24",
-    lijn: "#8a6534",
+    lijn: "#a82e1c",
     editieKleur: "#8c2a17",
     textuur: "confetti",
     binnenlijn: [

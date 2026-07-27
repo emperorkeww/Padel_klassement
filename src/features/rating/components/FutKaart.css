@@ -1218,12 +1218,12 @@
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 .fut-kaart.fut-kaart--pias {
-  --kaart-hi: #dcbd85;
-  --kaart-mid: #c9a468;
-  --kaart-lo: #a37e46;
+  --kaart-hi: #e6c895;
+  --kaart-mid: #cfa76e;
+  --kaart-lo: #ae8448;
   --kaart-ink: #3a250c;
   --kaart-ink-soft: #6b4d24;
-  --kaart-lijn: #8a6534;
+  --kaart-lijn: #a82e1c;
   --editie-kleur: #8c2a17;
   --kaart-frame-hi: #b08b50;
   --kaart-frame-lo: #6f5026;
@@ -1258,10 +1258,10 @@
                                                                                                                                                                                                                                                                                                                                                                             
 .fut-kaart.fut-kaart--pias .fut-kaart__vlak {
   background:
-    radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 4.2%),
-    radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.21) 0 2.1%, transparent 3.8%),
-    radial-gradient(circle at 38% 76%, rgba(31, 74, 128, 0.19) 0 2.1%, transparent 3.8%),
-    radial-gradient(circle at 84% 64%, rgba(140, 42, 23, 0.19) 0 1.8%, transparent 3.4%),
+    radial-gradient(circle at 24% 16%, rgba(235, 64, 52, 0.45) 0 2.4%, transparent 4.2%),
+    radial-gradient(circle at 76% 28%, rgba(46, 204, 113, 0.42) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 38% 76%, rgba(52, 152, 219, 0.38) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 84% 64%, rgba(241, 196, 15, 0.38) 0 1.8%, transparent 3.4%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
       0 0 / 28px 28px repeat,
     radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),

@@ -25,11 +25,11 @@
    van grootte en spatiëring, niet van een lichtere tint die onderaan de kaart
    zou wegvallen. */
 .schandpaal {
-  --kraft-hi: #dcbd85;
-  --kraft-mid: #d3b177;
-  --kraft-lo: #c39a5f;
+  --kraft-hi: #e6c895;
+  --kraft-mid: #cfa76e;
+  --kraft-lo: #ae8448;
   --kraft-ink: #3a250c;
-  --kraft-lijn: #8a6534;
+  --kraft-lijn: #a82e1c;
   --kraft-stempel: #8c2a17;
   /* Randmateriaal, letterlijk de frame-tokens van .fut-kaart--pias: verweerd
      honinggoud, donker bordeaux en de donkerbruine buitenrand. */

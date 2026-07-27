@@ -655,12 +655,12 @@
    stempelrood van de eyebrow staat op de lichtste stop (5,6:1), crème op
    stempel 7,2:1. Allemaal ≥ AA. */
 .hero--pias {
-  --kraft-hi: #dcbd85;
-  --kraft-mid: #d3b177;
-  --kraft-lo: #c39a5f;
+  --kraft-hi: #e6c895;
+  --kraft-mid: #cfa76e;
+  --kraft-lo: #ae8448;
   --kraft-ink: #3a250c;
   --kraft-ink-soft: #4d3212;
-  --kraft-lijn: #8a6534;
+  --kraft-lijn: #a82e1c;
   --kraft-stempel: #8c2a17;
   --kraft-stempel-diep: #7a2413;
   /* Papier op karton: het vlak van de knoppen en chips die erop liggen. */
