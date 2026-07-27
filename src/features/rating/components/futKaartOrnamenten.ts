@@ -420,78 +420,42 @@ export const GOAT_BAARD_NERVEN: readonly string[] = [-1, 0, 1].map((k) => {
  *  het vlak heeft 24% bodempadding, dus de divisieregel GOAT eindigt op v≈115
  *  en het ornament mag daar niet overheen. */
 export const GOAT_BAARD_ARM = bouwStreng({
-  start: [46.2, 130.2],
+  start: [46.2, 120.2],
   segmenten: [
     [
-      [42, 128.8],
-      [37, 126.8],
-      [33.4, 123.8],
-    ],
-    [
-      [31.2, 122.2],
-      [30, 119.2],
-      [32.4, 117.7],
-    ],
-    [
-      [34.9, 116.1],
-      [37.8, 118],
-      [37.2, 120.6],
-    ],
-    [
-      [36.9, 122.1],
-      [35.7, 123.1],
-      [34.2, 123.3],
+      [41.0, 122.0],
+      [36.8, 125.0],
+      [32.6, 129.0],
     ],
   ],
-  dikte: 2,
+  dikte: 0.8,
   punt: 0.1,
-  taper: 1.5,
-  stappen: 60,
+  taper: 1.2,
+  stappen: 30,
 });
 
-/** Baardornament, deel 3 — de onderkrul (#772). Kleiner dan de bovenarm en
- *  andersom gedraaid: naar buiten-onder en dan terug omhoog. Steekt met zijn
- *  buitenste boog nét over de schildrand (op v≈135 loopt die op u≈43), zodat
- *  het filigraan "uit de kaartomlijsting groeit" i.p.v. erop te liggen. */
+/** Baardornament, deel 3 — de onderkrul (#772). */
 export const GOAT_BAARD_KRUL = bouwStreng({
-  start: [47.8, 136.4],
+  start: [47.8, 122.4],
   segmenten: [
     [
-      [45.4, 137.4],
-      [42.4, 137.2],
-      [40.6, 135.4],
-    ],
-    [
-      [39, 133.8],
-      [39.5, 131.2],
-      [41.8, 130.9],
-    ],
-    [
-      [43.7, 130.7],
-      [44.8, 132.5],
-      [43.8, 133.9],
+      [45.5, 126.0],
+      [43.0, 131.0],
+      [41.5, 137.0],
     ],
   ],
-  dikte: 1.4,
+  dikte: 0.6,
   punt: 0.08,
-  taper: 1.4,
-  stappen: 44,
+  taper: 1.2,
+  stappen: 25,
 });
 
-/** Baardornament, deel 4 — de gelaagde haarbladen (#772). Drie spitse bladen
- *  per kant die onder de bovenarm vandaan naar buiten waaieren: de "gelaagde
- *  gegraveerde blad- of haarvormen" uit de issue. Ze doen het silhouetwerk —
- *  zonder die waaier leest het ornament als een fleur-de-lis, mét als een sik.
- *  Eén helft; rechts is de spiegeling. `[u, v, hoek, lengte]`. */
-const BAARD_BLADEN: readonly (readonly [number, number, number, number])[] = [
-  [41.2, 126.2, 192, 11.5],
-  [42.8, 130.2, 202, 10.2],
-  [44.4, 133.6, 213, 8.2],
-] as const;
-
-export const GOAT_BAARD_BLADEN: readonly string[] = BAARD_BLADEN.map(
-  ([u, v, hoek, lengte]) => bladVorm(u, v, hoek, lengte),
-);
+/** Baardornament, deel 4 — de gelaagde haarbladen (#772). */
+export const GOAT_BAARD_BLADEN: readonly string[] = [
+  "M 49 116 C 48.2 125, 47.5 133, 49 140 C 49.8 133, 50.2 125, 49 116 Z",
+  "M 46.5 116 C 44.5 124, 43.8 131, 45 137 C 46 131, 47 124, 46.5 116 Z",
+  "M 44 117 C 41.5 125, 40.8 131, 42 135 C 43 131, 44.2 125, 44 117 Z",
+];
 
 /** Rosé-metaal: verloop van boven naar onder, donkere contour, lichte glans.
  *  Gedeeld door hoorns en baard, en door DOM en canvas. */
