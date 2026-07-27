@@ -121,7 +121,16 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Tactisch gezien was het vooral heel creatief verzonnen. Helaas onspeelbaar.",
     "Ik heb slakken sneller zien omschakelen naar de forehand.",
     "Morgen is er weer een dag om de ballen in het net te jagen.",
-  ],
+  
+    "Je hield de tegenstander in ieder geval niet al te lang bezig vandaag.",
+    "De tegenstander bedankte me voor de makkelijke training.",
+    "Hopelijk was de opwarming leuker dan de wedstrijd zelf.",
+    "Zorg dat je de volgende keer je sportschoenen wél goed vastknoopt.",
+    "Tactisch gezien was het vooral heel dapper geprobeerd.",
+    "Je sloeg die bal met de finesse van een houten plank.",
+    "Een uiterst milieuvriendelijke prestatie: heel weinig energie verbruikt.",
+    "Zat er een afstandsbediening bij dat racket? Je leek hem niet zelf te besturen.",
+],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
     "Was dit padel of een wanhopige poging tot moderne dans?",
@@ -217,7 +226,18 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Was dat een lob of wilde je de satellietverbinding van de kantine testen?",
     "Je backhand heeft de elegantie van een omvallende koelkast op een grindpad.",
     "Ik heb bidons met meer tactisch inzicht gezien dan deze wanvertoning.",
-  ],
+  
+    "Zelfs m'n spiekbriefjes bij Lille hadden meer diepgang dan jouw tactische visie.",
+    "Ik heb watersproeiers met meer gevoel voor richting en timing zien functioneren.",
+    "Je voetenwerk deed me pijnlijk sterk denken aan een rammelende droogtrommel.",
+    "Was dit padel of een wanhopige poging om de kooiwanden te inspecteren?",
+    "Zelfs Aurelio De Laurentiis had je na deze vertoning met de postkoets weggestuurd.",
+    "Je bandeja leek op een slap stuk Belgische wafel in de stromende regen.",
+    "Met deze startsnelheid had je bij Napoli nog niet eens de ballen mogen oppakken.",
+    "Dit tactische debacle deed me erg denken aan mijn kortste persconferenties: pijnlijk kort en vol excuses.",
+    "Je partner verdient na vandaag een standbeeld en een fikse schadevergoeding.",
+    "Ik noteer deze wanprestatie in m'n boekje onder de pagina 'volledig mislukte experimenten'.",
+],
   radioactief: [
     "Ik keek uit pure plaatsvervangende schaamte maar een andere kant op.",
     "Heb je na vandaag al eens serieus aan curling gedacht?",
@@ -309,7 +329,18 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Zelfs een blinde mol met een houten pollepel raakt die bal nog vaker op het zoete punt.",
     "Dit was geen padel, dit was een geopolitieke vernedering. Ik ga de VN-veiligheidsraad bellen.",
     "Je liep erbij alsof je zojuist uit een narcose bent ontwaakt en per ongeluk een racket in je hand gedrukt kreeg.",
-  ],
+  
+    "Dit was geen padel, dit was een geopolitieke vernedering van historisch niveau.",
+    "Ik overweeg serieus m'n coachlicentie in de Noordzee te gooien om dit drama te vergeten.",
+    "Zelfs Gianni Infantino kan deze cijfers niet corrupt genoeg herrekenen om je te redden.",
+    "Je bewoog als een gecrashte Windows 95 computer in een zandstorm. Volkomen hopeloos.",
+    "Dit deed zo ontiegelijk veel pijn aan de ogen dat ik spontaan m'n sportpet wil verbranden.",
+    "De marine weigert zo diep te duiken om jouw Elo nog ergens uit de afgrond te bergen.",
+    "Zelfs Trump zou deze nederlaag niet meer kunnen spinnen als een glansrijke overwinning.",
+    "Dit tactische moeras slokt al je Elo-punten op. Excuses aan de hele vereniging zijn op z'n plaats.",
+    "We gaan de beelden ritueel verbranden en het resultaat uit de database wissen om de eer te redden.",
+    "Je sloeg die bal zo ver out dat we de luchtverkeersleiding moesten waarschuwen.",
+],
 };
 
 /** Coach Rudy's lof bij een prestatie, per niveau (#199). De tegenhanger van
@@ -370,7 +401,16 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Acceptabel niveau. Hier kan ik als coach voorlopig mee leven.",
     "Keurige pot. Geen onnodige fouten gemaakt vandaag.",
     "Prima overwinning. Snel vergeten en op naar de volgende.",
-  ],
+  
+    "Gefeliciteerd. De wonderen zijn de wereld nog niet uit.",
+    "Gewonnen, al had de tegenstander ook wel erg veel haast naar de kantine.",
+    "De ballen vlogen vandaag zowaar een keer binnen de kooi. Netjes.",
+    "Winst genoteerd. Ik zet een heel klein vinkje in m'n boekje.",
+    "Gewonnen! De statistieken kloppen dus gelukkig nog niet helemaal.",
+    "Punten binnen. Toevallig, maar ze tellen net zo hard.",
+    "Nette zege. Volgende keer graag met iets meer overtuiging, maar voor nu oké.",
+    "Winst. Geniet ervan voordat de realiteit morgen weer toeslaat.",
+],
   gemeen: [
     "Fenomenaal! Ik heb er al twee pagina's over volgeschreven in m'n notitieboekje, allemaal met uitroeptekens.",
     "Dit was van WK-niveau. En dan bedoel ik de kant die wél kon spelen.",
@@ -424,7 +464,17 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Formidabel gespeeld. De looplijnen stonden strakker dan m'n chique pak.",
     "Wat een vertoning. De kooi was vandaag jullie persoonlijke koninkrijk.",
     "Briljant! Ik sta hier langs de lijn luidkeels te applaudisseren.",
-  ],
+  
+    "Meesterlijk gedaan. De tegenstander kreeg een gratis lesje in 'hoe word ik weggespeeld'.",
+    "Winst! Snel een krabbel in het notitieboekje voordat iemand het resultaat betwist.",
+    "Je speelde alsof je er verstand van had. Een zeldzaam maar prachtig gezicht.",
+    "Overtuigende zege. Zelfs m'n chique sportpet zit er vandaag extra strak bij door jouw vorm.",
+    "Tactisch gezien een masterclass. Ik noteer 'm met m'n beste gouden pen.",
+    "Winst! Je partner was geweldig, en jij stond gelukkig niet al te erg in de weg.",
+    "Drie punten erbij. De tegenstander droop af met de staart tussen de benen.",
+    "Gewonnen. Je mag vanavond in de kantine zowaar een beetje opscheppen.",
+    "Winst! De persconferentie van vanavond zal zowaar een keer louter positief zijn.",
+],
   radioactief: [
     "Ik laat je naam op m'n onderarm zetten. Definitief.",
     "Ik bel Infantino persoonlijk op: dit moet op de Werelderfgoedlijst.",
@@ -476,7 +526,16 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Ik heb m'n legendarische notitieboekje zojuist geschonken aan het museum voor moderne kunst.",
     "Dit overtreft al mijn tactische masterplans ooit. Pure, onversneden genialiteit.",
     "Magistrale pot. Ik laat ter plekke een standbeeld van je forehand gieten in brons.",
-  ],
+  
+    "Buitenaardse klasse! Ik laat je rating per direct in goud graveren op de clubmuur.",
+    "De tegenstander is volledig gedecimeerd. Dit was een slachting met een gouden randje.",
+    "Absoluut historisch! Gianni Infantino heeft zojuist persoonlijk gebeld om je te feliciteren.",
+    "Een zege zo magnifiek dat Trump er jaloers op zou zijn. The greatest game ever played!",
+    "Je hebt de wetten van de fysica en de padelsport vandaag eigenhandig herschreven. Ongelofelijk.",
+    "De tegenstander wist niet eens waar de kooi was. Complete en totale dominantie.",
+    "M'n legendarische spiekbriefjes mogen in de prullenbak: jij bent vanaf vandaag m'n nieuwe handleiding.",
+    "Groots spel! Zelfs de watersproeiers op veld 2 sproeien vandaag met champagne.",
+],
 };
 
 /** Deterministische, positieve start-index in een pool op basis van de seed. */
@@ -585,6 +644,16 @@ export const BUIGING: readonly string[] = [
   "Geen roast voor de koning. Ik kniel en bied m'n pet aan als eerbetoon. 🙇🫡",
   "De leider op de troon duldt geen tegenspraak. Wij buigen nederig en zwijgen. 🙇",
   "Eerbied voor de troon! Ik buig zo diep dat m'n pet de grond raakt. 🙇🫡",
+    "Eerbied voor de absolute heerser! Ik buig zo diep dat m'n pet de grond raakt. 🙇",
+    "De troon spreekt, de coach zwijgt en buigt nederig. Wat een autoriteit! 🙇",
+    "Wie ben ik om de dictator tegen te spreken? Ik poets met plezier uw schoenen. 🙇",
+    "Absolute heerschappij op veld 1. Ik buig nederig voor de dictator van de kooi. 🙇",
+    "Mijn notitieboekje is vanaf vandaag van u, o grote dictator. Ik zeg geen woord. 🙇",
+    "Tegen de dictator zeg ik niks. Snel buigen en hopen op genade langs de lijn. 🙇",
+    "De dictator regeert en wij gehoorzamen met gebogen hoofd en gesloten mond. 🙇",
+    "Voor de dictator van de ranking doen we een diepe knieval. Wat een macht! 🙇",
+    "Geen roast voor de dictator. Ik zwijg in alle talen en bied m'n ontzag aan. 🙇",
+    "De wil van de dictator geschiede. Wij buigen en aanbidden de heerser! 🙇",
 ] as const;
 
 /** Kruiperige buig-regel voor de troon; deterministisch per (seed, rotatie).

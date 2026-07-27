@@ -53,6 +53,16 @@ export const TROON = [
   "Bovenaan de voedselketen. De rest van de club kijkt omhoog met knikkende knieën.",
   "Nummer één. De spotlights staan volledig op jou gericht vandaag.",
   "Koning van de ranking. Laat ze maar komen, die jagers.",
+    "De koning zit op de troon. Geniet ervan voordat de haaien je eraf sleuren.",
+    "Bovenaan de ladder. Zorg dat de watersproeiers je er niet afspoelen vandaag.",
+    "Nummer één. Zelfs ik begin nu bijna te geloven dat je daadwerkelijk kunt padellen.",
+    "De troon is heet vandaag. Verdedig hem alsof je leven ervan afhangt.",
+    "Bovenaan de lijst. Heel legaal en heel cool, zoals een bekend president zou zeggen.",
+    "Heerser van het complex. Zelfs de kantinebaas groet je vandaag met extra egards.",
+    "De nummer één positie. Een meesterwerk van tactisch vernuft, al zeg ik het zelf.",
+    "Bovenaan de tabel. De jagers zijn al onderweg, dus houd je racket scherp.",
+    "De troon staat stevig, zolang je die forehand tenminste niet verleert.",
+    "Koning van het klassement. Iedereen wil je vandaag van je troon stoten.",
 ] as const;
 
 export const JAGER = [
@@ -81,6 +91,16 @@ export const JAGER = [
   "De top-3 is binnen handbereik, nu die koppositie nog opeisen.",
   "Je loert op de eerste plek. Focus op die zwakke forehand van de leider.",
   "Bijna de koning. Blijf rennen, de troon is dichtbij.",
+    "Goedemorgen jager. De koploper zit momenteel met trillende handjes aan de koffie.",
+    "Je staat vlak achter de leider. Vandaag is een uitstekende dag voor een tactische machtsgreep.",
+    "De troon is binnen handbereik. Eén goeie match en we onttronen die prutser daarboven.",
+    "Tweede viool spelen staat je niet. Tijd om de koploper genadeloos aan te vallen.",
+    "De achtervolging is ingezet. De nummer één hoort je al hijgen in z'n nek.",
+    "Bijna bovenaan. Eén tactische zet — van mij uiteraard — en het klassement kantelt.",
+    "Vandaag geen genade: de koploper is oud nieuws zodra jij de kooi in stapt.",
+    "Zo hoog in de lijst en toch nog niet eerste. Laat die frustratie vandaag spreken.",
+    "De top-3 is je uitvalsbasis. Vandaag bestormen we de absolute koppositie.",
+    "Vlak achter de leider. M'n notitieboekje staat al in de aanslag voor de machtswisseling.",
 ] as const;
 
 export const MIDDENMOOT = [
@@ -109,6 +129,16 @@ export const MIDDENMOOT = [
   "Stabiel in het grijze midden. Tijd om die spieren te spannen en te stijgen.",
   "Niet goed genoeg voor lof, niet slecht genoeg voor een roast. Grijs.",
   "In het hart van de tabel. Veilig en anoniem.",
+    "Netjes in de middenmoot. Grijs, saai, maar tenminste veilig voor de pers.",
+    "Middenmoot. De ideale plek voor spelers die bang zijn om te winnen én te lui om te verliezen.",
+    "Stabiel in het midden. Het doet me pijnlijk denken aan m'n saaiste gelijke spelen.",
+    "Nog steeds in het midden. Een uiterst twijfelachtig systeem, we eisen een hertelling!",
+    "Grijs in de middenmoot. Precies de plek waar kleurloze spelers thuishoren.",
+    "De middenmoot is comfortabel, maar we zijn hier niet gekomen voor comfort.",
+    "Stabiel op je positie. Maar stabiliteit is voor ambtenaren, niet voor padellers.",
+    "Tijd om het grijze midden te verlaten. De top is nog ver, dus maak wat meters.",
+    "Middenmoot. Ideale uitvalsbasis om onopgemerkt te blijven voor de persconferentie.",
+    "Stabiel in het midden. Hopelijk zit er vandaag wat meer pit en tactiek in je spel.",
 ] as const;
 
 export const MIDDENMOOT_NEUTRAAL = [
@@ -127,6 +157,16 @@ export const MIDDENMOOT_NEUTRAAL = [
   "Netjes in het midden. Focus op de looplijnen voor een sprong omhoog.",
   "Middenmoot. Blijf stijgen door consistent je matches te winnen.",
   "Een rustige, stabiele plek in het klassement. De weg ligt open.",
+    "Middenmoot positie. Stabiel en rustig in het klassement.",
+    "Keurig in het midden. Een prima uitgangspositie voor de rest van de week.",
+    "Grijze middenmoot. Geen gekke sprongen, gewoon stabiel presteren.",
+    "In het midden van het klassement. De baan wacht op je volgende stap.",
+    "Stabiele positie. Geen paniek, we houden de koers vast.",
+    "Middenmoot stand. Tijd om rustig de volgende matchen voor te bereiden.",
+    "De stand in het midden. Blijf focussen op de basisslagen vandaag.",
+    "Rustig in de middenmoot. Geen gekkigheid langs de lijn vandaag.",
+    "Middenmoot positie genoteerd. De competitie blijft uiterst spannend.",
+    "Stabiel in de middenmoot. Focus op de basistechniek en looplijnen.",
 ] as const;
 
 export const NIEUW = [
@@ -160,6 +200,16 @@ export const NIEUW = [
   "Met een blanke lei beginnen in de ranking. Speel de kooi in!",
   "Nieuw gezicht in de tabel. De concurrentie houdt je in de gaten.",
   "Net binnen. Tijd om te laten zien dat je niet gekomen bent voor de reservebank.",
+    "Nieuw in het klassement. Vandaag een mooie dag om je Elo een richting te geven.",
+    "Te weinig matchen voor een oordeel. Dat lossen we vandaag snel op.",
+    "Verse naam op de lijst. Ik heb een nieuwe pagina in m'n boekje aangebroken.",
+    "Je rating is nog aan het indraaien. Een paar potten en we weten wat je waard bent.",
+    "Nieuweling. Laat de concurrentie meteen trillen bij de eerste service.",
+    "Blanco reputatie. Sommigen noemen dat eng, ik noem het een tactische kans.",
+    "Nieuw op de ranglijst. Zelfs ik heb nog geen mening, en dat is zeldzaam.",
+    "Elo-rating in de opwarmfase. We zijn uiterst benieuwd naar je eerste statement.",
+    "Net geregistreerd. Tijd om direct je stempel op de ranglijst te drukken.",
+    "De teller staat bijna op nul. Perfecte dag om de eerste punten te harken.",
 ] as const;
 
 /** De kelder is de enige echte roast op deze pagina, dus de enige pool die per
@@ -209,7 +259,16 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "Laag in de tabel. Focus op de basisslagen en klim langzaam omhoog.",
     "Onderin. Ideaal om zonder druk van buitenaf te oefenen.",
     "De onderste plek. Zie het als een tactische aanloop voor een grote sprong.",
-  ],
+  
+    "Degradatiezone. M'n viool staat alvast gestemd in mineur voor je.",
+    "Onderaan het klassement. De weg omhoog is gelukkig de enige optie.",
+    "Rode lantaarn. Blijf trainen, de ommekeer begint vanaf de bodem.",
+    "Onderin de lijst. Zie het als een tactische aanloop voor een grote sprong.",
+    "De rode lantaarn is in jouw handen. Hopelijk is de batterij snel leeg.",
+    "Degradatiezone. Tijd om die basisslagen nog eens kritisch door te neem.",
+    "Laag geklasseerd. Gelukkig is het seizoen nog lang genoeg voor een comeback.",
+    "Onderin de tabel. Blijf gefocust, de klim omhoog begint vandaag.",
+],
   gemeen: [
     "De kelder van het klassement. Ik heb er een aparte pagina voor in m'n notitieboekje: 'zorgenkindjes'.",
     "Onderaan. Het klassement is genadeloos eerlijk, en vandaag wijst het naar jou.",
@@ -254,7 +313,12 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "Kelderklasse. Mijn legendarische Lille-spiekbriefjes hebben spontaan de moed opgegeven.",
     "Hekkensluiter. Je partner verdient een standbeeld, en jij een verplichte cursus motoriek.",
     "Onderin het klassement. Zelfs de kantinebaas vraagt of je de volgende keer wel de goede kant op slaat.",
-  ],
+  
+    "Hekkensluiter. Je partner verdient een standbeeld en jij een verplichte cursus motoriek.",
+    "Onderaan het klassement. De tegenstander stuurt je vanavond een bedankkaartje.",
+    "Hekkensluiter. Zelfs met Gianni Infantino aan de lijn is hier geen redden aan.",
+    "De kelder van de lijst. Statistieken liggen er slap bij, en dit is een horrorverhaal.",
+],
   radioactief: [
     "De allerlaatste regionen van het klassement. Ik heb m'n pet diep over m'n ogen getrokken.",
     "De kelder is te chic verwoord: dit is de kruipruimte van het klassement.",
@@ -299,7 +363,9 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De kruipruimte van de kelder. Ik ga Infantino bellen voor een voorwaardelijke degradatie-opschorting.",
     "Bodem van de lijst. Zelfs een standbeeld van Aurelio De Laurentiis had met z'n armen over elkaar nog meer punten gesprokkeld.",
     "Allerlaatste. Ik adviseer je om je racket te verbranden en te beginnen met synchroonzwemmen.",
-  ],
+  
+
+],
 } as const;
 
 export const KELDER_NEUTRAAL = [
@@ -316,6 +382,16 @@ export const KELDER_NEUTRAAL = [
   "Een plek onderin de lijst. De weg omhoog ligt helemaal open.",
   "Hekkensluiter voor nu. Blijf trainen en de punten volgen.",
   "Onderin de tabel. Nieuwe match, nieuwe kansen.",
+    "Onderaan het klassement. De baan wacht op je volgende wedstrijd.",
+    "Rode lantaarn voor nu. Tijd om te focussen op de weg omhoog.",
+    "Degradatiezone stand. De competitie is nog lang niet beslist.",
+    "Onderin de stand. Blijf rustig trainen en matchervaring opbouwen.",
+    "Kelderpositie van dit moment. Richt je blik op de komende duels.",
+    "Hekkensluiter stand. Speel meer matches om je Elo te verbeteren.",
+    "Laag in de stand. Focus op de basisslagen en stabiele looplijnen.",
+    "Onderaan the tabel. Blijf gefocust op je eigen spel vandaag.",
+    "Bodem van de lijst. De weg omhoog begint met de volgende service.",
+    "Onderin het klassement genoteerd. Volgende week nieuwe kansen op de baan.",
 ] as const;
 
 /** Zelfde contract als kiesFeit in coachFeed.ts: deterministisch één feit-lijn,
