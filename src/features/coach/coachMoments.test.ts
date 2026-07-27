@@ -12,6 +12,7 @@ import {
   OCHTEND_NIEUW,
   RIVAAL_REEKS_MIN,
   DAGDELTA_DREMPEL,
+  MATCH_NEUTRAAL,
 } from "@/features/coach/coachMoments";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import type { KlassementFeiten, PositieTier } from "@/features/coach/klassementFeiten";
@@ -39,18 +40,18 @@ describe("coachBriefing", () => {
 
   it("kiest een verliesreeks-toon bij losing >= 3", () => {
     const dip = coachBriefing({ rank: 20, streak: 0, losing: 4, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels|notitieboekje|wissels|Trump|Infantino|opschorting|genie|nederlaag|marine/i);
+    expect(dip).toMatch(/karakter|omhoog|grip|spiegel|Rode Duivels|notitieboekje|wissels|wissel|Trump|Infantino|opschorting|genie|nederlaag|nederlagen|marine|Aurelio|Laurentiis|afgrond|crisis| excuses|dromedaris/i);
   });
 
   it("met roast-schild een neutrale, niet-spottende regel", () => {
     const line = coachBriefing({ rank: 20, streak: 0, losing: 5, heeftMatch: false, seed: "p1", ctx: schild });
-    expect(line).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten/i);
+    expect(line).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten|spieren|bal|pet|racket|scherp|tactiek|wind|warming|boekje/i);
   });
 
   it("kiest per klassement-tier de bijbehorende pool (#411)", () => {
     const basis = { rank: 5, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast };
     const troon = coachBriefing({ ...basis, klassement: klassement("troon") });
-    expect(troon).toMatch(/één|Bovenaan/i);
+    expect(troon).toMatch(/één|Bovenaan|troon|heerser|nummer/i);
     expect(coachBriefing({ ...basis, klassement: klassement("jager") })).toSatisfy((r: string) =>
       (OCHTEND_JAGER as readonly string[]).includes(r),
     );
@@ -74,14 +75,14 @@ describe("coachBriefing", () => {
     const dip = coachBriefing({ rank: 9, streak: 0, losing: 4, heeftMatch: false, klassement: kelder, seed: "p1", ctx: roast });
     expect((OCHTEND_KELDER as readonly string[]).includes(dip)).toBe(false);
     const beschermd = coachBriefing({ rank: 9, streak: 0, losing: 0, heeftMatch: false, klassement: kelder, seed: "p1", ctx: schild });
-    expect(beschermd).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten/i);
+    expect(beschermd).toMatch(/kans|balletje|succes|dweil|kooi|looplijnen|experimenten|spieren|bal|pet|racket|scherp|tactiek|wind|warming|boekje/i);
   });
 
   it("gedraagt zich zonder klassement-veld zoals vroeger (rank 1 → top-regel)", () => {
     const top = coachBriefing({ rank: 1, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(top).toMatch(/één|Bovenaan/i);
+    expect(top).toMatch(/één|Bovenaan|troon|heerser|nummer/i);
     const rest = coachBriefing({ rank: 7, streak: 0, losing: 0, heeftMatch: false, seed: "p1", ctx: roast });
-    expect(rest).toMatch(/middenmoot|midden|klassement|voetstuk|stabiel/i);
+    expect(rest).toMatch(/middenmoot|midden|klassement|voetstuk|stabiel|pet|held/i);
   });
 
   // ── Persoonlijke briefing-verrijkingen (#579) ─────────────────────────────
@@ -176,8 +177,8 @@ describe("coachMatchQuip", () => {
   });
 
   it("schild → kale bevestiging", () => {
-    expect(coachMatchQuip({ uitkomst: "L", bagel: true, seed: "m1", ctx: schild })).toBe(
-      "Match toegevoegd.",
+    expect(MATCH_NEUTRAAL).toContain(
+      coachMatchQuip({ uitkomst: "L", bagel: true, seed: "m1", ctx: schild })
     );
   });
 });

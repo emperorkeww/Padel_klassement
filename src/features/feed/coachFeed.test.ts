@@ -231,7 +231,7 @@ describe("coachOpmerking — hype-modus (#199)", () => {
     // meteen de pariteit van kiesUniek's index (`seed % pool.length`) vast en
     // bleef bij een pool van even lengte de helft van de regels onbereikbaar.
     const gezien = new Set<string>();
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 5000; i++) {
       const e: FeedEvent = {
         kind: "season-champion",
         at: "2026-07-01T12:00:00Z",
