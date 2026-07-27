@@ -5,11 +5,13 @@ import { eveningSummary } from "@/features/feed/eveningSummary";
 import { teamLabel } from "@/features/matches/api";
 import { displayName } from "@/features/profiles/api";
 import { dayMovers } from "@/features/groups/dayOverview";
+import { dayInZone } from "@/lib/utils/time";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 import type { Match, Profile, RatingPoint, Team } from "@/types";
 import "./DayStats.css";
 
-const dayOf = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+const dayOf = (m: Match, timezone: string) =>
+  dayInZone(m.played_at ?? m.created_at, timezone);
 
 /** Dagoverzicht bovenaan de Vandaag-tab (#342): telling gespeeld/gepland plus
  *  de highlights van vandaag (MVP, ELO-bewegers, beste duo, Zwarte Piet).
@@ -21,6 +23,7 @@ export function DayStats({
   histories,
   zwartePiet,
   today,
+  timezone,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -28,16 +31,18 @@ export function DayStats({
   histories: Record<string, RatingPoint[]>;
   zwartePiet: ZwartePiet | null;
   today: string;
+  timezone: string;
 }) {
   const sum = useMemo(
-    () => eveningSummary(matches, teams, today, histories),
-    [matches, teams, today, histories],
+    () => eveningSummary(matches, teams, today, timezone, histories),
+    [matches, teams, today, timezone, histories],
   );
   const plannedCount = useMemo(
     () =>
-      matches.filter((m) => dayOf(m) === today && m.status !== "completed")
-        .length,
-    [matches, today],
+      matches.filter(
+        (m) => dayOf(m, timezone) === today && m.status !== "completed",
+      ).length,
+    [matches, today, timezone],
   );
   const movers = useMemo(
     () => dayMovers(histories, new Set(sum.matches.map((m) => m.id))),

@@ -27,6 +27,12 @@ const KaartShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/KaartShowcase"))
   : null;
 
+// Dev-showcase (#771): alle varianten van de dashboard player card naast elkaar,
+// om dezelfde reden en op dezelfde voorwaarden als de kaart-showcase hierboven.
+const HeroShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/dashboard/components/HeroShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -70,6 +76,7 @@ function App() {
           {KaartShowcase && (
             <Route path="/dev/kaarten" element={<KaartShowcase />} />
           )}
+          {HeroShowcase && <Route path="/dev/hero" element={<HeroShowcase />} />}
 
           {/* Onbekende paden terug naar de start. */}
           <Route path="*" element={<Navigate to="/" replace />} />

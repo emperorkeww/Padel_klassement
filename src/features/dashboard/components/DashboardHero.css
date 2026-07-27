@@ -1,0 +1,1714 @@
+/* De dashboard player card — tot #771 "de hero" en nog steeds die klasse.
+ *
+ * Dit bestand is in #771 uit Dashboard.css gehaald: de kaart draagt vijf
+ * permanente thema's plus twee tijdelijke overlays, en dat past niet meer als
+ * bijzaak in de stylesheet van de hele pagina. De synctest in
+ * futKaartCanvas.test.ts leest dít bestand nu voor de materiaalwaarden die de
+ * kaart met de FUT-editie deelt.
+ *
+ * Opbouw, in leesrichting:
+ *   1. basisvlak (.hero) en de lagen-container (.hero__lagen)
+ *   2. de vijf permanente thema's: Big Daddy, Dictator, Kampioen, Pias, Piet
+ *   3. de twee tijdelijke overlays: tint, glans en de inkt daarop
+ *   4. de onderdelen: crests en statusbadge, tekst, vorm, badges, voetregel
+ *
+ * De volgorde van 2 en 3 is functioneel: gelijke specificiteit, dus de overlay
+ * moet ná de permanente thema's staan om de inkt te kunnen zetten. */
+
+/* Hero-begroeting bovenaan het overzicht: licht, met een zachte lime-gloed. */
+.hero {
+  position: relative;
+  /* Eigen stacking context, zodat de decoratielagen tússen het vlak en de tekst
+     kunnen liggen (#771). Vóór #771 deden alleen de twee shimmer-edities dit,
+     voor hun ::after; nu heeft élk thema die ruimte nodig. */
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-6) var(--sp-7);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--lime-soft) 0%, transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, var(--accent-soft) 0%, transparent 55%),
+    var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+/* De decoratieve lagen (HeroLagen). Geklipt op de kaartvorm zodat materiaal en
+   glans binnen de afgeronde hoeken blijven, en volledig doorlatend: geen enkele
+   ornamentlaag mag een knop of link afvangen (#771, AC10). Het klippen kan hier
+   omdat de tooltips van de crests in de inhoud zitten, niet in deze laag. */
+.hero__lagen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* Stap 9: dezelfde doos, maar niét geklipt en bóven de inhoud — voor crests,
+   ballonnen en hoekornamenten die bewust over de rand steken. Alles erin is
+   decoratie, dus de aanwijzer gaat er dwars doorheen naar de knop eronder. */
+.hero__lagen--voor {
+  z-index: 2;
+  overflow: visible;
+}
+/* De inhoud staat boven élke decoratielaag — inclusief de bewegende glans, want
+   leesbaarheid gaat voor effect. */
+.hero__main,
+.hero__divide,
+.hero__foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Basisthema: je divisie (#771) ----
+   Draagt een speler geen permanent thema, dan is de kaart die van zijn divisie.
+   De kleuren komen als custom properties binnen uit het register van #710
+   (heroDivisie.ts), dus hier staan alleen de dekkingen — die zijn gedeeld door
+   alle negen divisies en door beide thema's, en dat is precies de bedoeling:
+   één zuinig recept dat per divisie ander materiaal krijgt, geen negen skins.
+
+   De lime/accent-was van de neutrale kaart valt weg zodra er een divisie is; de
+   materiaallaag neemt hem over. Alleen wie geen rating heeft (nog nooit
+   gespeeld) houdt de oude neutrale kaart. */
+.hero--divisie {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--hero-div-lijn) 45%, var(--line));
+  /* De keyline van de kaart als dunne binnenring, plus de gewone kaartschaduw. */
+  box-shadow:
+    inset 0 0 0 1px
+      color-mix(in srgb, var(--hero-div-keyline, var(--hero-div-hoog)) 35%, transparent),
+    var(--shadow-sm);
+}
+/* Stap 3 van de laagvolgorde: het materiaal. Dekkingen bewust laag — de kaart
+   moet leesbaar blijven met een coachbriefing, drie knoppen en een vormreeks
+   erop. De gloed staat rechtsboven zoals op de neutrale kaart, zodat het licht
+   in de app uit dezelfde hoek blijft komen. */
+.hero__materiaal {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 140% at 100% 0%,
+      color-mix(in srgb, var(--hero-div-gloed) 20%, transparent) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      172deg,
+      color-mix(in srgb, var(--hero-div-was) 12%, transparent) 0%,
+      transparent 64%
+    );
+}
+/* Het divisiemotief als watermerk: groot, rechts, en ruim buiten de kaart
+   doorlopend — de lagen-container klipt het op de kaartvorm. `aspect-ratio` in
+   plaats van een breedte in procenten: het motief is een vierkante doos
+   (viewBox 0 0 100 100) en mag op een breed vlak niet uitrekken. */
+.hero__watermerk {
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  height: 190%;
+  aspect-ratio: 1;
+  width: auto;
+  max-width: var(--hero-watermerk-b, 92%);
+  transform: translateY(-50%);
+  opacity: 0.34;
+  /* Naar links uitdoven. Zonder deze mask stopt het motief in een rechte lijn
+     op de rand van zijn eigen doos — dan leest het als een ingeplakt plaatje in
+     plaats van een watermerk, en op smalle schermen zou het bovendien tot achter
+     de tekst komen. Ontbreekt mask-image (oude browser), dan blijft het motief
+     gewoon staan; het is decoratie, dus dat is een acceptabele terugval. */
+  mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+  -webkit-mask-image: linear-gradient(to left, #000 30%, transparent 88%);
+}
+/* In het donkere thema keert de gravure om: de inkt van het register is
+   afgestemd op het lichte kaartmateriaal, en donker op donker is geen
+   watermerk maar een vlek. Invert houdt de tekening identiek — alleen de
+   helderheid draait. */
+:root[data-theme="dark"] .hero__watermerk {
+  filter: invert(1);
+  opacity: 0.16;
+}
+/* De twee toptiers (#773): GOAT en El Padelissimo hebben geen divisieregister
+   maar wél een premium glans. De hero toont daarvan de státische stand — exact
+   wat de kaart aan `prefers-reduced-motion` geeft. Bewust niet de lopende baan:
+   die duurt 8–11 seconden per cyclus, wat past bij een kaartje in een raster en
+   niet bij de kop van je startpagina. Er valt hier dus ook niets te dempen. */
+.hero__glans {
+  position: absolute;
+  inset: -35%;
+  background: var(--hero-glans-baan);
+  transform: rotate(var(--hero-glans-hoek, 0deg));
+  opacity: var(--hero-glans-kracht, 0.3);
+}
+/* GOAT — roségoud op bordeaux; de zwakste van de vier op de kaart, en hier nog
+   eens zwakker dan zijn statische kaartstand (0,8 × 0,55 = 0,44 → 0,3): de
+   kaart draagt die baan op zijn eigen donkere materiaal, de hero op het gewone
+   kaartoppervlak. De stops zijn byte-gelijk aan die van de kaart; de synctest in
+   futKaartCanvas.test.ts bewaakt dat. */
+.hero--glans-goat {
+  --hero-glans-hoek: 0deg;
+  --hero-glans-kracht: 0.3;
+  --hero-glans-baan: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgba(255, 187, 204, 0.14) 46%,
+    rgba(255, 226, 224, 0.22) 50%,
+    rgba(226, 154, 122, 0.1) 55%,
+    transparent 66%
+  );
+}
+/* El Padelissimo — statige commandogloed, smal en bijna horizontaal. Ook deze
+   stops zijn byte-gelijk aan de kaart. In de praktijk zie je deze basis zelden:
+   de El-Padelissimo-tier is voorbehouden aan de troonhouder (#545), en die
+   draagt het dictator-thema, dat het materiaal overneemt. */
+.hero--glans-dictator {
+  --hero-glans-hoek: -8deg;
+  --hero-glans-kracht: 0.26;
+  --hero-glans-baan: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(230, 179, 77, 0.12) 47%,
+    rgba(246, 222, 160, 0.3) 50%,
+    rgba(230, 179, 77, 0.1) 53%,
+    transparent 60%
+  );
+}
+
+/* Hero-thema's (#613): de kaart zelf verschiet van kleur voor de Big Daddy of
+   de zittende dictator — bestaande tokens, geen derde palet. Kleur is nooit de
+   enige indicator: de HeroCrest-chips blijven ernaast staan. */
+
+/* Big Daddy: de lime/smaragd-was wordt de roze Big Daddy-was. De tokens zijn
+   thema-bewust (index.css), dus het donkere thema kleurt vanzelf mee.
+
+   Sinds #771 draagt de kaart ook het ornamentregister van de 👑-FUT-kaart: de
+   kroon in de bovenrand en als watermerk, de linten in de onderhoeken, twee
+   ballonnen en een handvol confetti (heroOrnamentenBigDaddy.tsx). De dubbele
+   roségouden rand hieronder is wat die ornamenten aan elkaar knoopt — zonder
+   binnenring hangen ze aan een gewone kaartrand. */
+.hero--bigdaddy {
+  --bd-rose: #c98da6;
+  --bd-champagne: #e8c9a0;
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--bigdaddy-soft) 0%, transparent 58%),
+    radial-gradient(
+      90% 120% at 0% 100%,
+      color-mix(in srgb, var(--bigdaddy-soft) 55%, var(--surface)) 0%,
+      transparent 55%
+    ),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--bigdaddy) 45%, var(--line));
+  /* Twee ringen: champagne tegen de rand aan, roségoud een haar naar binnen —
+     de dubbele omlijsting uit de referentie, in inset-schaduwen zodat ze de
+     afgeronde hoeken volgen zonder extra element. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bd-champagne) 55%, transparent),
+    inset 0 0 0 4px color-mix(in srgb, var(--bd-rose) 22%, transparent),
+    var(--shadow-sm);
+}
+.hero--bigdaddy .hero__eyebrow,
+.hero--bigdaddy .hero__me-label {
+  color: var(--bigdaddy-text);
+}
+.hero--bigdaddy .hero__divide {
+  background: color-mix(in srgb, var(--bigdaddy) 35%, var(--line));
+}
+/* Knoppen in de smaak van de kaart (#771): de secundaire twee lichten op tot
+   het kaartwit met een rozé rand, de primaire wordt framboos i.p.v. app-groen —
+   zoals de Dictator zijn goud krijgt. `color-mix` op --surface i.p.v. wit, zodat
+   het donkere thema meekleurt in plaats van twee witte blokken op donkerroze te
+   zetten. Contrast van de primaire knoptekst (#fff6fa op --bigdaddy-ink): 9,1:1
+   in het lichte thema, 15,8:1 in het donkere. */
+.hero--bigdaddy .hero__actions .btn {
+  background: color-mix(in srgb, var(--surface) 88%, var(--bigdaddy-soft));
+  border-color: color-mix(in srgb, var(--bigdaddy) 40%, var(--line));
+}
+.hero--bigdaddy .hero__actions .btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bigdaddy) 70%, var(--line));
+}
+.hero--bigdaddy .hero__actions .btn--primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bigdaddy) 70%, var(--bigdaddy-ink)),
+    var(--bigdaddy-ink)
+  );
+  border-color: var(--bigdaddy-ink);
+  color: #fff6fa;
+}
+.hero--bigdaddy .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bigdaddy) 85%, var(--bigdaddy-ink)),
+    color-mix(in srgb, var(--bigdaddy) 25%, var(--bigdaddy-ink))
+  );
+  border-color: var(--bigdaddy-ink);
+}
+
+/* De kroon in de bovenrand: half boven de kaart uit, zoals op de FUT-kaart in
+   de bovenste inkeping. De schaduw eronder maakt het verschil tussen "ligt op
+   de rand" en "is erop geplakt". */
+.hero__crest--kroon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(48px, 7%, 76px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -54%);
+  filter: drop-shadow(0 2px 4px rgba(94, 32, 56, 0.35));
+}
+/* Het kroonwatermerk staat op de kaart hoog en centraal; hier rechts, waar de
+   tekstkolom ophoudt. Groter en bleker dan het divisiemotief: het is één vorm
+   in plaats van een patroon, en die mag niet als een tweede kroon-icoon lezen. */
+.hero__watermerk--kroon {
+  right: 4%;
+  /* Kleiner dan het divisiemotief: dit is één silhouet met hoge punten, en groot
+     uitgeschaald lezen die punten als lichtbanen over de hele kaart in plaats
+     van als een kroon. */
+  height: 112%;
+  right: 7%;
+  opacity: 0.16;
+}
+:root[data-theme="dark"] .hero__watermerk--kroon {
+  /* Het roségoud van de kroon blijft op donker gewoon leesbaar — invert zou er
+     een groene vlek van maken. Alleen wat sterker, want het vlak is donkerder. */
+  filter: none;
+  opacity: 0.22;
+}
+/* De twee ballonnen komen rechtsboven uit de rand, precies zoals op de kaart. */
+.hero__ballonnen {
+  position: absolute;
+  right: clamp(0.5rem, 3%, 2.5rem);
+  top: 0;
+  width: clamp(46px, 8%, 82px);
+  aspect-ratio: 1;
+  transform: translateY(-38%);
+  filter: drop-shadow(0 3px 5px rgba(94, 32, 56, 0.25));
+}
+/* Lintkrullen in de onderhoeken. Eén tekening, gespiegeld voor links: zo kunnen
+   de twee hoeken per constructie niet uit elkaar lopen. */
+.hero__lint {
+  position: absolute;
+  bottom: 0;
+  width: clamp(40px, 7%, 74px);
+  aspect-ratio: 1;
+}
+.hero__lint--rechts {
+  right: 0;
+  transform: translate(18%, 26%);
+}
+.hero__lint--links {
+  left: 0;
+  transform: translate(-18%, 26%) scaleX(-1);
+}
+/* De confetti: een enkele cluster rechtsboven, niet over het hele vlak. Op de
+   kaart dwarrelt hij langs de naamplaat; een hero is vier keer zo breed, en
+   uitgesmeerd zou dezelfde handvol snippers als vuil lezen. */
+.hero__confetti {
+  position: absolute;
+  right: 6%;
+  top: 4%;
+  width: clamp(80px, 22%, 220px);
+  aspect-ratio: 1;
+  opacity: 0.75;
+}
+
+/* Dictator: hetzelfde keizerlijke verloop als De Troon (DictatorThrone.css) —
+   bewust donker in beide thema's, want de troon torent boven het volk uit.
+   Tekst en knoppen schakelen naar wit/goud voor leesbaarheid op het donkere
+   vlak; de goud-op-bordeaux-paren komen 1-op-1 van de troon. */
+.hero--dictator {
+  color: #fff;
+  background:
+    /* Commandostralen (#771): een smalle waaier vanuit de bovenrand, zoals de
+       referentie hem toont. Repeating-conic i.p.v. losse lagen, zodat de stralen
+       één voorwerp blijven; heel laag in dekking, want ze lopen achter de
+       begroeting door. */
+    repeating-conic-gradient(
+      from 200deg at 50% -12%,
+      rgba(240, 199, 102, 0.035) 0deg 3deg,
+      transparent 3deg 9deg
+    ),
+    /* Brokaat: een fijne ruitweefsel-textuur in het wijnrood. Twee diagonale
+       strepenlagen kruisen elkaar — dat leest als geweven stof en kost geen
+       afbeelding. */
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 235, 200, 0.022) 0 2px,
+        transparent 2px 7px
+      ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(10, 2, 6, 0.05) 0 2px,
+      transparent 2px 7px
+    ),
+    radial-gradient(
+      120% 82% at 50% -8%,
+      color-mix(in srgb, var(--dictator-gold) 42%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(162deg, var(--dictator-wine), var(--dictator-deep) 92%);
+  border-color: color-mix(in srgb, var(--dictator-gold) 50%, transparent);
+  /* Antiekgouden dubbele rand: een haarlijn tegen de rand en een filet naar
+     binnen, met de donkere spouw ertussen — dezelfde opbouw als het kader van
+     De Troon. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--dictator-gold) 40%, transparent),
+    inset 0 0 0 5px rgba(12, 2, 7, 0.35),
+    inset 0 0 0 6px color-mix(in srgb, var(--dictator-gold) 26%, transparent),
+    0 8px 24px rgba(12, 2, 7, 0.45);
+}
+/* De lauwerkrans met commandoster als watermerk. Zelfde plek en dekking als op
+   De Troon: achter het informatieblok, in lijn getekend en zo bleek dat de
+   rankingzin eroverheen leesbaar blijft. */
+.hero__watermerk--lauwer {
+  position: absolute;
+  right: 2%;
+  top: 50%;
+  height: 190%;
+  aspect-ratio: 1;
+  width: auto;
+  transform: translateY(-50%);
+  color: rgba(240, 199, 102, 0.12);
+}
+/* Randruiten midden op de boven- en onderrand, zoals op De Troon. */
+.hero__ruit {
+  position: absolute;
+  left: 50%;
+  width: clamp(12px, 2%, 22px);
+  aspect-ratio: 1;
+  color: rgba(232, 198, 124, 0.5);
+}
+.hero__ruit--boven {
+  top: 3px;
+  transform: translate(-50%, -50%);
+}
+.hero__ruit--onder {
+  bottom: 3px;
+  transform: translate(-50%, 50%);
+}
+/* Gegraveerde lauwerhoekjes op de vier hoeken van het kader; één tekening,
+   drie keer gespiegeld. */
+.hero__hoek {
+  position: absolute;
+  width: clamp(26px, 4%, 52px);
+  aspect-ratio: 1;
+  color: rgba(232, 198, 124, 0.45);
+}
+.hero__hoek--lb {
+  left: 7px;
+  top: 7px;
+}
+.hero__hoek--rb {
+  right: 7px;
+  top: 7px;
+  transform: scaleX(-1);
+}
+.hero__hoek--lo {
+  left: 7px;
+  bottom: 7px;
+  transform: scaleY(-1);
+}
+.hero__hoek--ro {
+  right: 7px;
+  bottom: 7px;
+  transform: scale(-1);
+}
+/* De ceremoniële kroon in de bovenrand. Breder dan de Big Daddy-kroon omdat de
+   lauwervleugels meetellen — vandaar de eigen verhouding uit De Troon. */
+.hero__crest--troon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(58px, 9%, 104px);
+  aspect-ratio: 64 / 41;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 5px rgba(12, 2, 7, 0.6));
+}
+.hero--dictator .hero__eyebrow {
+  color: var(--dictator-gold);
+}
+.hero--dictator .hero__name {
+  color: #fff;
+}
+.hero--dictator .hero__sub,
+.hero--dictator .hero__coach,
+.hero--dictator .hero__me-label,
+.hero--dictator .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--dictator-gold));
+}
+.hero--dictator .hero__coach-name {
+  color: var(--dictator-gold);
+}
+.hero--dictator .hero__divide {
+  background: color-mix(in srgb, var(--dictator-gold) 40%, transparent);
+}
+/* Knoppen in de glas-op-donker-stijl van de troon; de primaire actie wordt
+   goud, zodat "Match loggen" ook hier de blikvanger blijft. */
+.hero--dictator .hero__actions .btn {
+  background: color-mix(in srgb, var(--dictator-deep) 62%, transparent);
+  border-color: color-mix(in srgb, var(--dictator-gold) 45%, transparent);
+  color: #fff;
+}
+.hero--dictator .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--dictator-deep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--dictator-gold) 70%, transparent);
+}
+.hero--dictator .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #f4d488, var(--dictator-gold));
+  border-color: var(--dictator-gold);
+  color: var(--dictator-deep);
+}
+.hero--dictator .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f8dfa2, var(--dictator-gold));
+  border-color: var(--dictator-gold);
+}
+
+/* ---- Verdiende thema's, vervolg (#760) ----
+   De hero kende alleen de kroon en de troon; sinds #760 draagt hij álle zes
+   kaart-edities. Deze drie nemen de materiaalwaarden van hun FUT-editie over
+   (FutKaart.css) in plaats van er een derde palet bij te verzinnen — de
+   synctest in futKaartCanvas.test.ts bewaakt dat kaart en hero niet stil uit
+   elkaar drijven.
+
+   Twee recepten, om dezelfde reden als bij de schande-thema's hieronder:
+   In-Form en On-Fire zijn donkere vlakken en pinnen dus element voor element,
+   net als .hero--dictator. De kampioen is licht in beide thema's en
+   herdefinieert daarom de neutrale tokens naar zijn eigen papier — anders komt
+   elk genest onderdeel (knoppen, chips, vormbolletjes) in donkere smaak op een
+   licht vlak binnen. Zie de kop bij .hero--pias voor die afweging. */
+
+/* Kampioen: het platina-wit met lauwergroen van de 🏆-editie. Bewust géén
+   materiaalmotief zoals de pias (confetti) en de Piet (pips): die twee zíjn een
+   materiaal (karton, speelkaart), platina is een glad vlak. Wat er wél bij komt
+   is de dubbele lijn van een oorkonde — een haarfijne diepgroene binnenring
+   binnen de lauwerrand.
+
+   Contrast: --lauwer-ink 7,7:1 op de lichtste stop en 6,4:1 op de donkerste,
+   --lauwer-ink-soft 5,2:1 resp. 4,6:1, het lauwergroen van de eyebrow 5,8:1
+   resp. 5,1:1, Rudy's oker 5,8:1 resp. 5,1:1. Allemaal ≥ AA.
+
+   Let op de --lauwer-lo: die is lichter dan de --kaart-lo van de kaart
+   (#cfe0d6). Op een kaartje staat onder de gradient niets meer, op een hero
+   staat er tekst tot de laatste regel — en daar zakte de kaartwaarde naar
+   3,9:1. Precies dezelfde afwijking als bij .hero--pias, die om die reden de
+   lichtere --kraft-lo van De Schandpaal volgt in plaats van die van de kaart. */
+.hero--kampioen {
+  --lauwer-hi: #fbfdfc;
+  --lauwer-mid: #e9f2ee;
+  --lauwer-lo: #e4f0e8;
+  --lauwer-ink: #1f5c40;
+  --lauwer-ink-soft: #48745e;
+  --lauwer-lijn: #9dbfab;
+  --lauwer-groen: #2e7050;
+  --lauwer-diep: #223c2f;
+  /* De platina snijkant: het vlak van knoppen en chips die erop liggen. */
+  --lauwer-bone: #f6fbf8;
+
+  /* Token-eiland: alles binnen de hero rekent met platina. */
+  --surface: var(--lauwer-hi);
+  --surface-2: var(--lauwer-mid);
+  --ink: var(--lauwer-ink);
+  --ink-soft: var(--lauwer-ink-soft);
+  --ink-soft-strong: var(--lauwer-ink-soft);
+  --line: var(--lauwer-lijn);
+  --line-strong: var(--lauwer-lijn);
+  --accent: var(--lauwer-groen);
+  --accent-hover: var(--lauwer-diep);
+  --accent-ink: var(--lauwer-bone);
+  /* Winst/verlies blijven onderscheidbaar, maar in de tinten van dit vlak: het
+     app-groen en -rood zijn hier vreemde plastic stickers. */
+  --success: var(--lauwer-ink);
+  --success-soft: #dcebe2;
+  --success-line: var(--lauwer-lijn);
+  --danger: #8e2117;
+  --danger-soft: #efe2df;
+  --danger-line: var(--lauwer-lijn);
+  --warn: #6b4a12;
+  --warn-soft: #eae7d6;
+  --warn-line: var(--lauwer-lijn);
+  --skeleton-hi: #eef5f1;
+
+  color: var(--lauwer-ink);
+  border-color: var(--lauwer-lijn);
+  background:
+    radial-gradient(120% 55% at 50% -6%, rgba(236, 250, 242, 0.9), transparent 62%),
+    linear-gradient(
+      172deg,
+      var(--lauwer-hi) 0%,
+      var(--lauwer-mid) 56%,
+      var(--lauwer-lo) 100%
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--lauwer-diep) 18%, transparent),
+    0 8px 24px color-mix(in srgb, var(--lauwer-diep) 22%, transparent);
+}
+.hero--kampioen .hero__eyebrow,
+.hero--kampioen .hero__me-label {
+  color: var(--lauwer-groen);
+}
+/* Rudy houdt zijn eigen kleur, maar als oker op platina i.p.v. het app-amber. */
+.hero--kampioen .hero__coach-name {
+  color: #8a5a06;
+}
+.hero--kampioen .hero__divide {
+  background: color-mix(in srgb, var(--lauwer-lijn) 75%, transparent);
+}
+
+
+/* ---- Schande-thema's (#644) ----
+   De twee schand-statussen krijgen hetzelfde materiaal dat ze op de FUT-kaart
+   en De Schandpaal al dragen: kraftkarton voor de pias (#631/#682/#705), de
+   speelkaart voor de Zwarte Piet (#645/#705). Geen shimmer, geen metaal,
+   geen animatie — schande glimt niet, dus er is ook niets dat
+   `prefers-reduced-motion` moet dempen.
+
+   Allebei bewust licht in beide thema's, net als hun kaarten: papier is papier,
+   ook 's nachts. Dat vraagt een andere aanpak dan .hero--dictator hierboven,
+   die element voor element pint. Die kán dat, want hij is in beide thema's
+   dónker en genest wit blijft daar leesbaar. Een licht vlak in de donkere app
+   is het omgekeerde geval: elk genest onderdeel (knoppen, crests, vormbolletjes,
+   skeletonregel) komt dan in donkere smaak op licht papier binnen. Daarom
+   herdefiniëren deze twee blokken de neutrale tokens naar hun eigen papier —
+   een token-eiland, hetzelfde recept als de --kaart-*-locals van FutKaart.css —
+   en volgt de rest van de hero vanzelf. Alleen wat een eigen kleurbetekenis
+   heeft (eyebrow, coach, de crest van het winnende thema) staat er los onder. */
+
+/* Pias van de week: het matte kraftkarton met confetti-stipjes. De waarden
+   komen van De Schandpaal (#682) en niet van de FUT-editie — dat is de variant
+   die al is afgestemd op een groot vlak waar tekst tot onderaan op staat
+   (--kraft-lo #c39a5f i.p.v. #a37e46). De vezeltegel is byte-gelijk aan die in
+   FutKaart.css en Schandpaal.css; de synctest in futKaartCanvas.test.ts bewaakt
+   dat. Net als daar staan de confetti-stipjes in px i.p.v. procenten: dit vlak
+   is vele malen groter dan een kaartje, en procent-radii zouden er vlekken van
+   maken. Contrast op de donkerste stop van het verloop (de ongunstigste plek,
+   onderaan): --kraft-ink 5,6:1, --kraft-ink-soft 4,6:1; bovenaan 8,0:1. Het
+   stempelrood van de eyebrow staat op de lichtste stop (5,6:1), crème op
+   stempel 7,2:1. Allemaal ≥ AA. */
+.hero--pias {
+  --kraft-hi: #dcbd85;
+  --kraft-mid: #d3b177;
+  --kraft-lo: #c39a5f;
+  --kraft-ink: #3a250c;
+  --kraft-ink-soft: #4d3212;
+  --kraft-lijn: #8a6534;
+  --kraft-stempel: #8c2a17;
+  --kraft-stempel-diep: #7a2413;
+  /* Papier op karton: het vlak van de knoppen en chips die erop liggen. */
+  --kraft-papier: #f3e4c9;
+
+  /* Token-eiland: alles binnen de hero rekent met papier. */
+  --surface: var(--kraft-papier);
+  --surface-2: #e8d3ab;
+  --ink: var(--kraft-ink);
+  --ink-soft: var(--kraft-ink-soft);
+  --ink-soft-strong: var(--kraft-ink-soft);
+  --line: var(--kraft-lijn);
+  --line-strong: var(--kraft-lijn);
+  --accent: var(--kraft-stempel);
+  --accent-hover: var(--kraft-stempel-diep);
+  --accent-ink: #fbe9d8;
+  /* Winst/verlies blijven onderscheidbaar, maar als inkt op dit papier: het
+     app-groen en -rood zijn hier vreemde plastic stickers. */
+  --success: #1f5c40;
+  --success-soft: #e9dcbb;
+  --success-line: #a98a55;
+  --danger: var(--kraft-stempel);
+  --danger-soft: #edd8b7;
+  --danger-line: #a98a55;
+  --warn: var(--kraft-stempel-diep);
+  --warn-soft: #edd8b7;
+  --warn-line: #a98a55;
+  --skeleton-hi: #e6cf9f;
+
+  color: var(--kraft-ink);
+  border-color: var(--kraft-lijn);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(140, 42, 23, 0.2) 0 4px, transparent 7px),
+    radial-gradient(circle at 88% 22%, rgba(31, 92, 64, 0.18) 0 3px, transparent 6px),
+    radial-gradient(circle at 22% 88%, rgba(31, 74, 128, 0.16) 0 3px, transparent 6px),
+    radial-gradient(circle at 92% 78%, rgba(140, 42, 23, 0.16) 0 2px, transparent 5px),
+    radial-gradient(circle at 68% 8%, rgba(31, 74, 128, 0.13) 0 2px, transparent 5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 28px 28px repeat,
+    radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),
+    radial-gradient(100% 80% at 78% 74%, rgba(255, 246, 222, 0.05), transparent 60%),
+    linear-gradient(
+      172deg,
+      var(--kraft-hi) 0%,
+      var(--kraft-mid) 56%,
+      var(--kraft-lo) 100%
+    );
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--kraft-ink) 26%, transparent);
+}
+.hero--pias .hero__eyebrow,
+.hero--pias .hero__me-label,
+.hero--pias .hero__coach-name {
+  color: var(--kraft-stempel-diep);
+}
+.hero--pias .hero__divide {
+  background: color-mix(in srgb, var(--kraft-lijn) 55%, transparent);
+}
+/* De crest van het wínnende thema wordt de stempel (hetzelfde crème-op-rood als
+   het schandpaal-insigne); een eventuele tweede schande-crest ernaast blijft
+   gewone inkt op papier, zodat de hiërarchie ook in de chips zichtbaar is. */
+.hero--pias .hero-crest--pias {
+  background: var(--kraft-stempel);
+  border-color: #52170c;
+  color: #fbe9d8;
+}
+
+/* Zwarte Piet: de speelkaart van de 🃏-editie — mat kaartwit met linnen-finish,
+   een vlak zwart lakframe en de bleke snijkant van het kaartkarton ertussen,
+   met ♠♥♦♣ op de vier hoeken zoals op een kaartgezicht. Op de FUT-kaart passen
+   de pips in één uitgerekte SVG-laag; een hero is veel breder dan hoog, dus
+   staan ze hier als vier losse hoeklagen op vaste maat — anders trekt de tekening
+   scheef. Contrast: --kaart-ink 14,5:1 bovenaan en 9,7:1 op de donkerste stop,
+   --kaart-ink-soft 5,2:1 daar, kaartrood 5,1:1, bot-op-lak 13,9:1. */
+.hero--piet {
+  --kaart-hi: #f4eedb;
+  --kaart-mid: #e6ddc2;
+  --kaart-lo: #cfc4a4;
+  --kaart-ink: #201d16;
+  --kaart-ink-soft: #4f483a;
+  --kaart-lijn: #a2977a;
+  --kaart-lak: #23211d;
+  --kaart-lak-diep: #131211;
+  /* Iets dieper dan de --editie-kleur van de kaart (#a8271b): hier moet het
+     rood ook onderaan het verloop nog AA halen. */
+  --kaart-rood: #8e2117;
+  --kaart-bone: #efe7d2;
+
+  /* Token-eiland, zie de kop hierboven. */
+  --surface: #faf6ea;
+  --surface-2: var(--kaart-mid);
+  --ink: var(--kaart-ink);
+  --ink-soft: var(--kaart-ink-soft);
+  --ink-soft-strong: var(--kaart-ink-soft);
+  --line: var(--kaart-lijn);
+  --line-strong: var(--kaart-lijn);
+  --accent: var(--kaart-lak);
+  --accent-hover: var(--kaart-lak-diep);
+  --accent-ink: var(--kaart-hi);
+  --success: #1f5c40;
+  --success-soft: #e6e0cb;
+  --success-line: var(--kaart-lijn);
+  --danger: var(--kaart-rood);
+  --danger-soft: #eee3d0;
+  --danger-line: var(--kaart-lijn);
+  --warn: #7a5a1d;
+  --warn-soft: #eee3d0;
+  --warn-line: var(--kaart-lijn);
+  --skeleton-hi: #f0e9d6;
+
+  color: var(--kaart-ink);
+  border-color: var(--kaart-lak);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A0%3C/text%3E%3C/svg%3E")
+      left 14px top 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A5%3C/text%3E%3C/svg%3E")
+      right 14px top 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A6%3C/text%3E%3C/svg%3E")
+      left 14px bottom 12px / 30px 30px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A3%3C/text%3E%3C/svg%3E")
+      right 14px bottom 12px / 30px 30px no-repeat,
+    repeating-linear-gradient(
+      0deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(32, 29, 24, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(
+      172deg,
+      var(--kaart-hi) 0%,
+      var(--kaart-mid) 56%,
+      var(--kaart-lo) 100%
+    );
+  /* De bone liner als binnenring: precies de opbouw van de kaart, waar de
+     witte kern van het karton tussen lakframe en vlak zichtbaar is. */
+  box-shadow:
+    inset 0 0 0 4px var(--kaart-bone),
+    0 8px 24px color-mix(in srgb, var(--kaart-lak) 30%, transparent);
+}
+.hero--piet .hero__eyebrow,
+.hero--piet .hero__me-label,
+.hero--piet .hero__coach-name {
+  color: var(--kaart-rood);
+}
+.hero--piet .hero__divide {
+  background: color-mix(in srgb, var(--kaart-lijn) 70%, transparent);
+}
+/* Zelfde regel als bij de pias: de winnende crest wordt het materiaal zelf —
+   hier de zwarte rugzijde van de kaart die je doorgeeft. */
+.hero--piet .hero-crest--piet {
+  background: var(--kaart-lak);
+  border-color: var(--kaart-lak-diep);
+  color: var(--kaart-hi);
+}
+
+/* ---- Ornamenten van de twee schande-thema's (#771) ----
+   Alles hieronder plaatst tekeningen die uit het register van de FUT-kaart en
+   De Schandpaal komen (piasOrnamenten.tsx, heroOrnamentenPiet.tsx). Geen
+   beweging: schande glimt niet. */
+
+/* De narrenkap hangt over de bovenrand, met de kraag ín de rand — dát maakt hem
+   geïntegreerd i.p.v. erop geplakt (zelfde plaatsing als op De Schandpaal). */
+.hero__crest--kap {
+  position: absolute;
+  left: clamp(2.5rem, 12%, 9rem);
+  top: 0;
+  width: clamp(54px, 8%, 86px);
+  aspect-ratio: 54 / 35;
+  transform: translate(-50%, -58%);
+  filter: drop-shadow(0 3px 4px rgba(58, 37, 12, 0.35));
+}
+/* Het gebarsten maskermedaillon in de onderhoek, als een zegel dat de kaart
+   dichtplakt. */
+.hero__medaillon {
+  position: absolute;
+  left: clamp(2rem, 9%, 7rem);
+  bottom: 0;
+  width: clamp(34px, 5%, 56px);
+  aspect-ratio: 25.2 / 21;
+  transform: translate(-50%, 42%);
+}
+/* De twee tragikomische maskers als watermerk in het rechterpaneel: de enige
+   plek op deze breedte waar zo'n vlak past zonder onder tekst te verdwijnen. */
+.hero__watermerk--maskers {
+  position: absolute;
+  right: 3%;
+  top: 50%;
+  height: 165%;
+  aspect-ratio: 1;
+  width: auto;
+  transform: translateY(-50%);
+  opacity: 0.5;
+}
+/* Harlekijnruiten en confettisnippers vullen de hele kaart; de tekening regelt
+   zelf waar ze landen (langs de randen, nooit midden op de tekst). */
+.hero__decor {
+  position: absolute;
+  inset: 0;
+}
+
+/* Schande-token: de pioncrest in de bovenrand, het gebroken zegel ernaast in de
+   hoek, en aan weerszijden een stuk ketting met open sluiting. */
+.hero__crest--pion {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(46px, 6%, 68px);
+  aspect-ratio: 1;
+  /* Bewust maar een derde boven de rand: dit is een zwarte pion op ivoor
+     papier, en in het donkere thema is de pagina eromheen bijna zwart. Het deel
+     dat over de kaart valt houdt hem leesbaar. */
+  transform: translate(-50%, -32%);
+  filter: drop-shadow(0 2px 4px rgba(19, 18, 17, 0.45));
+}
+.hero__zegel-breuk {
+  position: absolute;
+  /* Linksonder en niet rechtsonder: rechts staan de drie actieknoppen, en
+     decoratie hoort daar niet overheen te vallen — ook niet als ze de klik
+     doorlaat. Zelfde plek als het maskermedaillon van de pias. */
+  left: clamp(2rem, 9%, 7rem);
+  bottom: 0;
+  width: clamp(44px, 6%, 66px);
+  aspect-ratio: 1;
+  /* Ver genoeg over de rand dat het zegel onder de vormreeks door valt en niet
+     over de bolletjes heen; de breuk blijft op het papier liggen. */
+  transform: translate(-50%, 42%);
+}
+/* Eén tekening, gespiegeld voor de andere kant: de twee uiteinden van dezelfde
+   ketting kunnen per constructie niet uit elkaar lopen. */
+.hero__ketting {
+  position: absolute;
+  top: 50%;
+  width: clamp(28px, 3.6%, 44px);
+  aspect-ratio: 1 / 3;
+  opacity: 0.9;
+}
+.hero__ketting--links {
+  left: 0;
+  transform: translate(-42%, -50%);
+}
+.hero__ketting--rechts {
+  right: 0;
+  transform: translate(42%, -50%) scaleX(-1);
+}
+/* De concentrische doorgeefringen achter het rechterpaneel: het token gaat
+   rond. Lichte inkt op het kaartkarton, dus laag in dekking. */
+.hero__ringen {
+  position: absolute;
+  right: -2%;
+  top: 50%;
+  height: 210%;
+  aspect-ratio: 1;
+  width: auto;
+  transform: translateY(-50%);
+  color: color-mix(in srgb, var(--kaart-ink) 22%, transparent);
+  mask-image: linear-gradient(to left, #000 35%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 90%);
+}
+
+/* De twee SVG-badge-iconen (#771): even groot als de emoji die ze vervangen,
+   zodat de badge niet van hoogte verspringt tussen de varianten. `currentColor`
+   in de tekening pakt de kleur van de chip op. */
+.hero-crest__icon--svg {
+  display: inline-flex;
+  width: 1em;
+  height: 1.15em;
+}
+.hero-crest--badge .hero-crest__icon--svg {
+  width: 1.15em;
+  height: 1.3em;
+}
+.hero-crest__masker,
+.hero-crest__pion {
+  width: 100%;
+  height: 100%;
+}
+/* De pion is smal en hoog (48 × 95 in het register), dus zijn doos mag hoger
+   dan die van het maskertje — anders krimpt het silhouet tot een streepje. */
+.hero-crest__icon--svg:has(.hero-crest__pion) {
+  width: 0.85em;
+  height: 1.45em;
+}
+.hero-crest--badge .hero-crest__icon--svg:has(.hero-crest__pion) {
+  width: 1em;
+  height: 1.7em;
+}
+
+/* ---- Tijdelijke statusoverlays (#760, herzien #771) ----
+   In-Form en On Fire zijn géén kaartvarianten maar een laag over de kaart die je
+   permanent draagt. Tot #771 namen ze het hele vlak over, waardoor een pias die
+   in vorm raakte plots een In-Form-kaart zag en zijn schande verdween. Nu blijft
+   het materiaal eronder staan en komen er drie dingen bij: een half doorlatende
+   tint (.hero__tint), de bewegende glans (.hero__sheen) en deze klasse, die de
+   inkt en de knoppen op dat donker zet.
+
+   Deze twee blokken staan bewust ná de vijf permanente thema's: gelijke
+   specificiteit, dus de laatste regel wint — en over een schande- of
+   kampioensvlak moet de overlay de tekstkleur bepalen, niet omgekeerd.
+
+   De tint dekt 88% (In-Form) resp. 90% (On Fire) en is dus praktisch donker: de
+   contrastwaarden hieronder gelden daarom nog steeds t.o.v. de donkerste stop van
+   de tint. Wat de kaart eronder bijdraagt is het randmateriaal, de ornamenten en
+   een zweem kleur — genoeg om de divisie of de titel te herkennen, te weinig om
+   de leesbaarheid van witte inkt te raken. */
+
+/* In-Form: het navy-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
+   als .hero--dictator een donker vlak in beide thema's, dus wit voor de kop en
+   goud voor wat een eigen kleurbetekenis heeft — de kaart zet álle inkt op goud,
+   maar dat is een vlak van 96px met vier regels, geen hero met een
+   coachbriefing erin.
+
+   Navy naast het bordeaux van de troon: allebei donker met goud, maar de troon
+   is warm en draagt propaganda-copy plus zijn eigen insigne — hetzelfde
+   onderscheid dat de kaart al maakt (#625). Contrast: wit 13,9:1 op de lichtste
+   stop, de gouden eyebrow 10,6:1, de zachte gold-white-mix daartussen. */
+.hero--overlay-inform {
+  --inform-goud: #f2cf7d;
+  --inform-goud-soft: #c9a95e;
+  --inform-lijn: rgba(240, 199, 102, 0.45);
+  --inform-navy: #232c44;
+  --inform-navy-mid: #141826;
+  --inform-navy-diep: #0a0c14;
+
+  color: #fff;
+  border-color: var(--inform-lijn);
+  /* Dunne champagnegouden binnenrand: die maakt van de tint een laag mét een
+     kader in plaats van een wolk over de kaart. */
+  box-shadow:
+    inset 0 0 0 1px rgba(247, 223, 160, 0.28),
+    0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
+}
+.hero--overlay-inform .hero__eyebrow {
+  color: #f7dfa0;
+}
+.hero--overlay-inform .hero__name {
+  color: #fff;
+}
+.hero--overlay-inform .hero__sub,
+.hero--overlay-inform .hero__coach,
+.hero--overlay-inform .hero__me-label,
+.hero--overlay-inform .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--inform-goud));
+}
+.hero--overlay-inform .hero__coach-name {
+  color: var(--inform-goud);
+}
+.hero--overlay-inform .hero__divide {
+  background: color-mix(in srgb, var(--inform-goud) 40%, transparent);
+}
+.hero--overlay-inform .hero__actions .btn {
+  background: color-mix(in srgb, var(--inform-navy-diep) 62%, transparent);
+  border-color: var(--inform-lijn);
+  color: #fff;
+}
+.hero--overlay-inform .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--inform-navy-diep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--inform-goud) 70%, transparent);
+}
+.hero--overlay-inform .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
+  border-color: #d8ae4e;
+  color: var(--inform-navy-diep);
+}
+.hero--overlay-inform .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fbeac0, #e5be5c);
+  border-color: #e5be5c;
+}
+
+/* On-Fire: het sintel-donker met ember-frame van de 🔥-editie. Zelfde recept als
+   In-Form hierboven, alleen warm — de gloed van vuur i.p.v. goud. Contrast: wit
+   16,0:1 op de lichtste stop, de ember-eyebrow 11,9:1. */
+.hero--overlay-onfire {
+  --onfire-ember: #ffc98a;
+  --onfire-ember-soft: #d1915b;
+  --onfire-lijn: rgba(255, 160, 92, 0.45);
+  --onfire-sintel: #3a180c;
+  --onfire-sintel-mid: #241009;
+  --onfire-sintel-diep: #140704;
+
+  color: #fff;
+  border-color: var(--onfire-lijn);
+  /* Zelfde kader als bij In-Form, in gebrand koper. */
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 138, 84, 0.32),
+    0 8px 24px color-mix(in srgb, var(--onfire-sintel-diep) 45%, transparent);
+}
+.hero--overlay-onfire .hero__eyebrow {
+  color: #ffd9a0;
+}
+.hero--overlay-onfire .hero__name {
+  color: #fff;
+}
+.hero--overlay-onfire .hero__sub,
+.hero--overlay-onfire .hero__coach,
+.hero--overlay-onfire .hero__me-label,
+.hero--overlay-onfire .hero__form-label {
+  color: color-mix(in srgb, #fff 80%, var(--onfire-ember));
+}
+.hero--overlay-onfire .hero__coach-name {
+  color: var(--onfire-ember);
+}
+.hero--overlay-onfire .hero__divide {
+  background: color-mix(in srgb, var(--onfire-ember) 40%, transparent);
+}
+.hero--overlay-onfire .hero__actions .btn {
+  background: color-mix(in srgb, var(--onfire-sintel-diep) 62%, transparent);
+  border-color: var(--onfire-lijn);
+  color: #fff;
+}
+.hero--overlay-onfire .hero__actions .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--onfire-sintel-diep) 80%, transparent);
+  border-color: color-mix(in srgb, var(--onfire-ember) 70%, transparent);
+}
+.hero--overlay-onfire .hero__actions .btn--primary {
+  background: linear-gradient(180deg, #ffcf94, #e07a35);
+  border-color: #b3411a;
+  color: var(--onfire-sintel-diep);
+}
+.hero--overlay-onfire .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffdcae, #ec8a45);
+  border-color: #c94f22;
+}
+
+/* De tint zelf: hetzelfde verloop dat vóór #771 de achtergrond van de hero wás,
+   nu als laag met een alpha eronder. 0,88/0,90 en niet 1: de kaart eronder mag
+   doorschemeren (AC4), maar witte inkt moet er ook op de lichtste stop nog
+   ruimschoots AA halen. */
+.hero__tint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.hero__tint--inform {
+  background:
+    radial-gradient(130% 60% at 50% -8%, rgba(240, 199, 102, 0.28), transparent 62%),
+    linear-gradient(
+      172deg,
+      rgba(35, 44, 68, 0.88) 0%,
+      rgba(20, 24, 38, 0.88) 60%,
+      rgba(10, 12, 20, 0.88) 100%
+    );
+}
+.hero__tint--onfire {
+  background:
+    radial-gradient(130% 60% at 50% -8%, rgba(255, 140, 66, 0.34), transparent 62%),
+    linear-gradient(
+      172deg,
+      rgba(58, 24, 12, 0.9) 0%,
+      rgba(36, 16, 9, 0.9) 60%,
+      rgba(20, 7, 4, 0.9) 100%
+    );
+}
+
+/* ---- Ornamenten van de twee overlays (#771) ----
+   Dun en langs de randen. Een overlay ligt bóven het permanente thema, dus alles
+   wat hij toevoegt moet de kaart eronder herkenbaar laten en de tekst met rust
+   laten. Vandaar lijnen en crests in plaats van vlakken, en geen enkel ornament
+   over de tekstkolom. */
+
+/* Fijne diagonale groeven in het metaal. Twee strepenlagen die elkaar net niet
+   kruisen — dat leest als geborsteld metaal en kost geen afbeelding. */
+.hero__groeven {
+  position: absolute;
+  inset: 0;
+}
+.hero__groeven--inform {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 240, 210, 0.035) 0 1px,
+    transparent 1px 6px
+  );
+}
+.hero__groeven--onfire {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 200, 150, 0.04) 0 1px,
+    transparent 1px 5px
+  );
+}
+/* De watermerken van de twee edities: de bliksem met zijn halo, en het
+   vlamsilhouet dat in dit register de thermische ringen al meebrengt. Rechts,
+   waar de tekstkolom ophoudt, en zo bleek dat de rankingzin er dwars doorheen
+   leesbaar blijft. */
+.hero__watermerk--bliksem,
+.hero__watermerk--vlam {
+  right: 5%;
+  height: 150%;
+  opacity: 0.3;
+  filter: none;
+}
+:root[data-theme="dark"] .hero__watermerk--bliksem,
+:root[data-theme="dark"] .hero__watermerk--vlam {
+  /* Deze twee liggen op de donkere tint, niet op licht kaartmateriaal: de
+     inversie van het basiswatermerk zou ze juist wegpoetsen. */
+  filter: none;
+  opacity: 0.32;
+}
+/* De elektrische pulsering van In-Form: één ring die traag uitdijt vanuit de
+   crest. Alleen `transform` en `opacity`, en volledig weg zonder
+   bewegingsvoorkeur — een stilstaande ring zou als een vlek lezen. */
+.hero__puls {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(90px, 14%, 190px);
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(247, 223, 160, 0.5);
+  transform: translate(-50%, -50%) scale(0.35);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero__puls {
+    animation: hero-puls 4.2s ease-out infinite;
+  }
+  @keyframes hero-puls {
+    0% {
+      transform: translate(-50%, -50%) scale(0.35);
+      opacity: 0.55;
+    }
+    45%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+  }
+}
+/* De snelheidslijnen van In-Form en de hittevinnen van On Fire: langs de
+   onderrand, waar geen inkt staat. Eén tekening, gespiegeld voor de andere
+   kant. */
+.hero__snelheid {
+  position: absolute;
+  bottom: 0;
+  width: clamp(70px, 12%, 150px);
+  aspect-ratio: 2 / 1;
+  opacity: 0.75;
+}
+.hero__snelheid--links {
+  left: 0;
+}
+.hero__snelheid--rechts {
+  right: 0;
+  transform: scaleX(-1);
+}
+.hero__vinnen {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: clamp(90px, 15%, 190px);
+  aspect-ratio: 2 / 1;
+  opacity: 0.7;
+}
+/* Sintels langs de zijranden — een handvol, zoals op de kaart. */
+.hero__sintels {
+  position: absolute;
+  top: 50%;
+  width: clamp(20px, 3%, 34px);
+  aspect-ratio: 24 / 60;
+  transform: translateY(-50%);
+  opacity: 0.8;
+}
+.hero__sintels--links {
+  left: 2%;
+}
+.hero__sintels--rechts {
+  right: 2%;
+  transform: translateY(-50%) scaleX(-1);
+}
+/* De twee overlay-crests in de bovenrand. */
+.hero__crest--bliksem,
+.hero__crest--vlam {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(34px, 5%, 54px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -46%);
+}
+.hero__crest--bliksem {
+  filter: drop-shadow(0 2px 4px rgba(10, 12, 20, 0.55));
+}
+.hero__crest--vlam {
+  filter: drop-shadow(0 2px 4px rgba(20, 7, 4, 0.6));
+}
+/* Loopt er een overlay, dan claimt díens crest het midden van de bovenrand en
+   schuift die van het permanente thema opzij. Twee crests op dezelfde plek zou
+   een kluwen geven, en de tijdelijke status is het nieuws van deze week. */
+.hero__lagen--voor.is-overlay .hero__crest--kroon,
+.hero__lagen--voor.is-overlay .hero__crest--troon,
+.hero__lagen--voor.is-overlay .hero__crest--pion {
+  left: 26%;
+}
+
+/* De bewegende glansbaan (HeroSheen). Op de kaart schuift die met een transform;
+   hier verschuift de achtergrondpositie, zodat de baan binnen de afgeronde hoeken
+   blijft zonder `overflow: hidden` op de hero — dat zou de tooltip van een
+   HeroCrest afkappen. Alpha lager dan op de kaart (0,28 → 0,16): een kaartje kijk
+   je even aan, dit vlak staat de hele dag boven je overzicht. Zonder
+   `prefers-reduced-motion` staat de baan stil op zijn breedste stand, precies
+   zoals op de deel-poster (futKaartCanvas).
+
+   Eén regelset voor beide overlays, met alleen de kleur als verschil (#771): twee
+   kopieën van dezelfde animatie is precies hoe zulke lagen uit elkaar gaan lopen. */
+.hero__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-repeat: no-repeat;
+  background-size: 260% 100%;
+  background-position: -80% 0;
+  background-image: linear-gradient(
+    115deg,
+    transparent 38%,
+    var(--hero-sheen-kleur) 50%,
+    transparent 62%
+  );
+}
+.hero__sheen--inform {
+  --hero-sheen-kleur: rgba(255, 222, 140, 0.16);
+}
+.hero__sheen--onfire {
+  --hero-sheen-kleur: rgba(255, 170, 92, 0.18);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero__sheen {
+    animation: hero-sheen 2.6s ease-in-out infinite;
+  }
+  @keyframes hero-sheen {
+    0% {
+      background-position: -80% 0;
+    }
+    55%,
+    100% {
+      background-position: 180% 0;
+    }
+  }
+}
+
+.hero__main {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+/* Ook het tekstblok naast de avatar mag krimpen, anders steekt een lange
+   begroeting op 320px net buiten de hero. */
+.hero__text {
+  min-width: 0;
+}
+
+/* Profielingang (#706): avatar met label eronder, als één kolom. De kolom blijft
+   exact zo breed als de avatar (het label wrapt binnen 56px) — zo kost de
+   ingang geen breedte aan het tekstblok op 320px. De hero wordt er ook niet
+   hoger van: `hero__main` centreert en het tekstblok ernaast is hoger. */
+.hero__me {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: 0 0 auto;
+  width: 56px;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: opacity 0.15s;
+}
+.hero__me:hover {
+  opacity: 0.75;
+}
+.hero__me-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--accent);
+}
+
+/* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
+   onder de samenvatting, niet meer zwevend in de rechterbovenhoek. */
+.hero__titles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+}
+/* De badge-rij deelt de titel-rij en heeft daar geen eigen bovenmarge nodig. */
+.hero__titles .hero__badges-wrap {
+  margin: 0;
+}
+.hero-crest {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 1.75rem;
+  /* Onzichtbaar groter tapvlak (richtlijn ~44px, #374) — zie ::after. */
+  padding: 0 var(--sp-3) 0 var(--sp-2);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-soft-strong);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: help;
+}
+.hero-crest::after {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+.hero-crest__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.hero-crest__label {
+  white-space: nowrap;
+}
+
+/* De statusbadge (#771): dezelfde chip als hierboven, maar als aanvoerder van de
+   rij. Hij draagt de status die de kaart ook in zijn materiaal toont, dus hij mag
+   groter en luider — de referentieontwerpen zetten hem als eerste element naast de
+   rankingzin. Alleen maat, gewicht en letterspatiëring verschillen; kleur komt van
+   de bestaande `.hero-crest--<variant>`, zodat een nieuw thema niets extra hoeft
+   te definiëren.
+
+   `clamp()` op de tekst: een langere titel ("Kampioen Q2 2026", een vertaling)
+   krimpt mee in plaats van de rij te laten wrappen op smalle schermen. */
+.hero-crest--badge {
+  height: 2.125rem;
+  padding: 0 var(--sp-4) 0 var(--sp-3);
+  gap: 8px;
+  font-size: clamp(0.75rem, 0.68rem + 0.35vw, 0.9rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+}
+.hero-crest--badge .hero-crest__icon {
+  font-size: 1.15rem;
+}
+/* De badge en zijn eventuele sieraad vormen samen één blokje in de titelrij,
+   zodat het zegel meeschuift als de rij wrapt. */
+.hero__badge-slot {
+  display: inline-flex;
+  align-items: center;
+}
+/* Het lakzegel van de Dictator, half achter de badge geschoven zoals op De
+   Troon. Decoratie: het vangt geen aanwijzer af, dus de tooltip van de badge
+   blijft bereikbaar. */
+.hero__zegel {
+  flex: none;
+  width: 2.15em;
+  aspect-ratio: 1;
+  margin-left: -0.9em;
+  pointer-events: none;
+}
+.hero-crest--bigdaddy {
+  background: var(--bigdaddy-soft);
+  border-color: var(--bigdaddy);
+  color: var(--bigdaddy-text);
+}
+.hero-crest--piet {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+.hero-crest--pias {
+  background: var(--warn-soft);
+  border-color: var(--warn-line);
+  color: var(--warn);
+}
+/* De drie club-brede edities (#760). Bewust zélf hun materiaal, niet de
+   app-tokens zoals de pias- en Piet-chip: een editie-crest kan náást een
+   winnend thema staan (kampioen-vlak mét een pias-chip, of omgekeerd), en dan
+   moet hij op elk van de zeven vlakken leesbaar zijn. Vulling en tekst zijn dus
+   vaste paren, precies zoals .hero-crest--dictator dat al deed. Contrast: bot op
+   lauwer 5,7:1, navy op goud 9,4:1, sintel op ember 6,5:1 — op de donkerste
+   gradiëntstop van elke chip. */
+.hero-crest--kampioen {
+  background: linear-gradient(180deg, #2e7050, #223c2f);
+  border-color: #182b21;
+  color: #f6fbf8;
+}
+.hero-crest--inform {
+  background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
+  border-color: #8a6a1c;
+  color: #0a0c14;
+}
+.hero-crest--onfire {
+  background: linear-gradient(180deg, #ffcf94, #e07a35);
+  border-color: #b3411a;
+  color: #180a05;
+}
+
+/* Dictator-crest (#613): het gouden troon-insigne als chip, leesbaar op het
+   donkere dictator-hero-vlak (zelfde paar als .dictator-throne__insig). */
+.hero-crest--dictator {
+  background: linear-gradient(180deg, #f4d488, var(--dictator-gold));
+  border-color: var(--dictator-deep);
+  color: var(--dictator-deep);
+}
+
+/* Tooltip: verborgen tot hover/focus (tap = focus op mobiel). Verankerd
+   linksonder het chip en naar rechts uitklappend. */
+.hero-crest__tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  max-width: 15rem;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s;
+  pointer-events: none;
+}
+.hero-crest:hover .hero-crest__tip,
+.hero-crest:focus-visible .hero-crest__tip,
+.hero-crest:focus .hero-crest__tip {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.hero-crest__tip-label {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--ink);
+}
+.hero-crest__tip-text {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  white-space: normal;
+}
+
+.hero__eyebrow {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Naam + tier-pil op één regel: flexrij (net als .profile-hero__name) zodat de
+   pil netjes verticaal centreert t.o.v. de grote kop i.p.v. op de baseline te
+   zakken, met een vaste tussenruimte en nette afbreek naar een eigen regel. */
+.hero__name {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.hero__sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+}
+
+/* Coach Rudy's ochtendbriefing (#213): gezicht + regel onder de subtitel. */
+.hero__coach {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.hero__coach-face {
+  margin-top: 1px;
+}
+.hero__coach-name {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--coach);
+}
+
+/* Laadstatus van de subregel: één shimmerlijn op tekstbreedte. */
+.hero__sub-sk {
+  width: min(320px, 60vw);
+  height: 14px;
+  margin-top: var(--sp-1);
+}
+
+.hero__form {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 999px;
+  transition: opacity 0.15s;
+}
+/* Onzichtbaar groter tapvlak rond de vormregel (richtlijn ~44px, #374). */
+.hero__form::after {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
+}
+.hero__form:hover {
+  opacity: 0.75;
+}
+.hero__form-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+/* Behaalde prestatiebadges als emoji-rij; linkt naar het eigen profiel.
+   De wrap ankert de gedeelde hover-tooltip (position: relative). */
+.hero__badges-wrap {
+  position: relative;
+  display: block;
+  margin-top: var(--sp-2);
+}
+.hero__badges {
+  display: inline-flex;
+  align-items: center;
+  /* Op heel smalle telefoons lopen de badges door op een tweede regel
+     i.p.v. uit de hero te steken. */
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  text-decoration: none;
+}
+.hero__badge {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+/* Link naar de volledige badge-collectie, achteraan de rij. */
+.hero__badges-more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+.hero__badges-more:hover,
+.hero__badges-more:focus-visible {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.hero__badge:hover,
+.hero__badge.is-active {
+  transform: translateY(-1px);
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-md);
+}
+.hero__badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Eén gedeelde tooltip boven de rij: naam + uitleg van de gehoverde badge.
+   Links verankerd (left: 0) en boven de rij (bottom: 100%) zodat hij binnen
+   de hero blijft ondanks diens overflow: hidden. */
+.hero__badge-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  animation: badge-tip-in 0.12s ease-out;
+}
+.hero__badge-tip-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+.hero__badge-tip-desc {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+@keyframes badge-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__badge-tip {
+    animation: none;
+  }
+}
+
+/* Dunne scheidslijn tussen het begroetingsblok en de voetregel (#317). */
+.hero__divide {
+  height: 1px;
+  background: var(--line);
+}
+/* Voetregel: vorm links, acties rechts. */
+.hero__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.hero__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */
+@media (max-width: 640px) {
+  .hero {
+    gap: var(--sp-4);
+    padding: var(--sp-5);
+    margin-bottom: var(--sp-5);
+  }
+  .hero__name {
+    font-size: var(--fs-xl);
+  }
+  .hero__sub {
+    font-size: var(--fs-md);
+  }
+  /* Voetregel gestapeld: vorm boven de knoppen. */
+  .hero__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-4);
+  }
+  /* Primaire actie op volle breedte, de twee secundaire naast elkaar:
+     scheelt een knophoogte boven de vouw. */
+  .hero__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2);
+  }
+  .hero__actions .btn--primary {
+    grid-column: 1 / -1;
+  }
+  /* Badge-emoji op touch-formaat: iets groter en verder uit elkaar, met een
+     klein onzichtbaar extra tapvlak (#374). */
+  .hero__badges {
+    gap: var(--sp-2);
+  }
+  .hero__badge,
+  .hero__badges-more {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .hero__badges-more {
+    width: auto;
+    min-width: 32px;
+  }
+  .hero__badge::after,
+  .hero__badges-more::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}

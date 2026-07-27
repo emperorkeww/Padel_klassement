@@ -26,6 +26,7 @@ export function EveningCard({
   profiles,
   histories,
   intensiteit,
+  timezone,
 }: {
   evening: NonNullable<ReturnType<typeof deriveEvening>>;
   groups: GroupSummary[];
@@ -35,10 +36,11 @@ export function EveningCard({
   profiles: Record<string, Profile>;
   histories: Record<string, RatingPoint[]> | undefined;
   intensiteit: RoastIntensiteit;
+  timezone: string;
 }) {
   const group = groups.find((g) => g.id === evening.groupId);
   const matches = completed.filter((m) => m.group_id === evening.groupId);
-  const summary = eveningSummary(matches, teams, evening.day, histories);
+  const summary = eveningSummary(matches, teams, evening.day, timezone, histories);
   if (!group || !summary) return null;
 
   return (
@@ -118,6 +120,7 @@ export function EveningCard({
             profiles={profiles}
             histories={histories}
             intensiteit={intensiteit}
+            timezone={timezone}
           />
         </div>
       )}

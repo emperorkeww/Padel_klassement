@@ -10,7 +10,7 @@ import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getGroup, getGroupMembers } from "./api";
 import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
-import { dateInZone } from "@/lib/utils/time";
+import { dateInZone, dayInZone } from "@/lib/utils/time";
 import { useClub } from "@/features/availability/club";
 import { getGroupPlayerStandings } from "@/features/standings/api";
 import {
@@ -286,7 +286,7 @@ export function GroupDetail() {
   const club = useClub();
   const today = dateInZone(club.timezone);
   const todaysMatches = (matches.data ?? []).filter(
-    (m) => (m.played_at ?? m.created_at).slice(0, 10) === today,
+    (m) => dayInZone(m.played_at ?? m.created_at, club.timezone) === today,
   );
   const dayDone =
     todaysMatches.length > 0 &&
@@ -450,6 +450,7 @@ export function GroupDetail() {
             openRound={openRound ?? null}
             dayDone={dayDone}
             today={today}
+            timezone={club.timezone}
             teams={tmap}
             profiles={pmap}
             histories={hmap}

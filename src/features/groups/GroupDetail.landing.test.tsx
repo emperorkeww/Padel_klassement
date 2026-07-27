@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { invalidateAll } from "@/lib/supabase/queryCache";
+import { dateInZone } from "@/lib/utils/time";
 
 // #674 A3 — de landingstab. Zonder ?tab kwam je altijd op Vandaag, ook op een
 // dag zonder plan: een lege staat die je meteen weer doorstuurde. journeyFor()
@@ -142,7 +143,10 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   });
 
   it("landt op Vandaag zodra er vandaag wedstrijden staan", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Clubtijdzone (Europe/Brussels, zie stubPlaytomic), niet de kale
+    // UTC-dag — anders faalt de test rond lokale middernacht net zoals de
+    // gefixte bug in GroupDetail zelf (#783).
+    const today = dateInZone("Europe/Brussels");
     tables.matches = (TABLES.matches as { id: string }[]).map((m) => ({
       ...m,
       played_at: `${today}T12:00:00.000Z`,

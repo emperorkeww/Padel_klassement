@@ -1,12 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-  HERO_THEMA_PRIORITEIT,
-  heroCrestTekst,
-  heroThema,
-  pickPollBanner,
-} from "./dashboardHelpers";
+import { deriveEvening, heroCrestTekst, pickPollBanner } from "./dashboardHelpers";
+import { clubEpoch, dateInZone } from "@/lib/utils/time";
 import type { GroupSummary } from "@/features/groups/api";
 import type { PlayPoll, PollOption, PollVote } from "@/features/groups/pollsApi";
+import type { Match } from "@/types";
 
 function group(id = "g1"): GroupSummary {
   return { id, name: `Groep ${id}` } as unknown as GroupSummary;
@@ -199,117 +196,39 @@ describe("pickPollBanner", () => {
   });
 });
 
-describe("heroThema (#644/#760)", () => {
-  const geen = {
-    dictator: false,
-    bigDaddy: false,
-    kampioen: false,
-    inForm: false,
-    onFire: false,
-    pias: false,
-    piet: false,
-    schild: false,
+function match(over: Partial<Match>): Match {
+  return {
+    id: "m",
+    team_a_id: "ta",
+    team_b_id: "tb",
+    status: "completed",
+    winner_team_id: "ta",
+    score_a: 6,
+    score_b: 3,
+    played_at: "2026-07-14T18:00:00Z",
+    created_at: "2026-07-14T18:00:00Z",
+    created_by: null,
+    group_id: "g1",
+    round_number: null,
+    format: "2v2",
+    ...over,
   };
+}
 
-  it("laat de hero neutraal zonder enige status", () => {
-    expect(heroThema(geen)).toBeNull();
-  });
-
-  it("geeft elke status zijn eigen thema", () => {
-    expect(heroThema({ ...geen, dictator: true })).toBe("dictator");
-    expect(heroThema({ ...geen, bigDaddy: true })).toBe("bigdaddy");
-    expect(heroThema({ ...geen, kampioen: true })).toBe("kampioen");
-    expect(heroThema({ ...geen, inForm: true })).toBe("inform");
-    expect(heroThema({ ...geen, onFire: true })).toBe("onfire");
-    expect(heroThema({ ...geen, pias: true })).toBe("pias");
-    expect(heroThema({ ...geen, piet: true })).toBe("piet");
-  });
-
-  it("spiegelt de volgorde van EDITIE_PRIORITEIT op de FUT-kaart", () => {
-    // De hele ladder in één keer: bij álles tegelijk wint de troon, en met elke
-    // hogere status uitgeschakeld schuift precies de volgende naar voren.
-    expect(HERO_THEMA_PRIORITEIT).toEqual([
-      "dictator",
-      "bigdaddy",
-      "kampioen",
-      "inform",
-      "onfire",
-      "pias",
-      "piet",
-    ]);
-    const alles = {
-      dictator: true,
-      bigDaddy: true,
-      kampioen: true,
-      inForm: true,
-      onFire: true,
-      pias: true,
-      piet: true,
-      schild: false,
-    };
-    expect(heroThema(alles)).toBe("dictator");
-    expect(heroThema({ ...alles, dictator: false })).toBe("bigdaddy");
-    expect(heroThema({ ...alles, dictator: false, bigDaddy: false })).toBe(
-      "kampioen",
+describe("deriveEvening (#783)", () => {
+  it("telt een match van net ná lokale middernacht nog als 'vandaag'", () => {
+    // 00:30 lokale tijd in Europe/Brussels valt in UTC vaak nog op de
+    // vorige kalenderdag (zomertijd: 2 uur eerder) — toch is het lokaal
+    // vandaag.
+    const today = dateInZone("Europe/Brussels");
+    const iso = new Date(
+      clubEpoch(today, "00:30", "Europe/Brussels"),
+    ).toISOString();
+    const evening = deriveEvening(
+      [match({ played_at: iso, created_at: iso })],
+      "Europe/Brussels",
     );
-    expect(
-      heroThema({ ...alles, dictator: false, bigDaddy: false, kampioen: false }),
-    ).toBe("inform");
-    expect(
-      heroThema({
-        ...alles,
-        dictator: false,
-        bigDaddy: false,
-        kampioen: false,
-        inForm: false,
-      }),
-    ).toBe("onfire");
-    expect(heroThema({ ...geen, pias: true, piet: true })).toBe("pias");
-  });
-
-  it("laat verdienste de schande verdringen, net als op de FUT-kaart", () => {
-    // Andere assen: het klassement kent geen groepen, de schande-tokens wel.
-    // Wie tegelijk #1 en schande-drager is, krijgt het thema van de eer — de
-    // schande-crest blijft ernaast staan (Dashboard.tsx).
-    expect(heroThema({ ...geen, bigDaddy: true, piet: true })).toBe("bigdaddy");
-    expect(heroThema({ ...geen, bigDaddy: true, pias: true })).toBe("bigdaddy");
-    expect(heroThema({ ...geen, dictator: true, pias: true, piet: true })).toBe(
-      "dictator",
-    );
-    // Ook de drie nieuwe eer-statussen verdringen de schande (#760).
-    expect(heroThema({ ...geen, kampioen: true, pias: true })).toBe("kampioen");
-    expect(heroThema({ ...geen, inForm: true, pias: true })).toBe("inform");
-    expect(heroThema({ ...geen, onFire: true, pias: true })).toBe("onfire");
-    expect(heroThema({ ...geen, onFire: true, piet: true })).toBe("onfire");
-  });
-
-  it("laat binnen de eer de zeldzaamste titel voorgaan", () => {
-    // Kroon boven kwartaaltitel, kwartaaltitel boven weeklens, weeklens boven
-    // de reeks — On-Fire is de enige met meerdere dragers tegelijk (#632) en
-    // staat daarom achteraan.
-    expect(heroThema({ ...geen, bigDaddy: true, inForm: true })).toBe("bigdaddy");
-    expect(heroThema({ ...geen, kampioen: true, onFire: true })).toBe("kampioen");
-    expect(heroThema({ ...geen, inForm: true, onFire: true })).toBe("inform");
-  });
-
-  it("laat binnen de schande de weeklens winnen van het rondgaande token", () => {
-    expect(heroThema({ ...geen, pias: true, piet: true })).toBe("pias");
-  });
-
-  it("dooft met een roast-schild alleen de schande-thema's", () => {
-    expect(heroThema({ ...geen, pias: true, schild: true })).toBeNull();
-    expect(heroThema({ ...geen, piet: true, schild: true })).toBeNull();
-    expect(heroThema({ ...geen, pias: true, piet: true, schild: true })).toBeNull();
-    // Eer valt niet onder het schild: daar valt niets te beschermen.
-    expect(heroThema({ ...geen, bigDaddy: true, schild: true })).toBe("bigdaddy");
-    expect(heroThema({ ...geen, dictator: true, schild: true })).toBe("dictator");
-    expect(heroThema({ ...geen, kampioen: true, schild: true })).toBe("kampioen");
-    expect(heroThema({ ...geen, inForm: true, schild: true })).toBe("inform");
-    expect(heroThema({ ...geen, onFire: true, schild: true })).toBe("onfire");
-    // Met schild valt de hero terug op de hoogste eer-status, niet op neutraal.
-    expect(
-      heroThema({ ...geen, kampioen: true, pias: true, schild: true }),
-    ).toBe("kampioen");
+    expect(evening).toMatchObject({ groupId: "g1", count: 1, isToday: true, day: today });
   });
 });
 

@@ -77,7 +77,7 @@ describe("groupByDay", () => {
     const a = match({ id: "a", played_at: "2026-07-14T18:00:00Z" });
     const b = match({ id: "b", played_at: "2026-07-14T20:00:00Z" });
     const c = match({ id: "c", played_at: "2026-07-10T20:00:00Z" });
-    const out = groupByDay([a, b, c]);
+    const out = groupByDay([a, b, c], "UTC");
     expect(out).toHaveLength(2);
     expect(out[0].list.map((m) => m.id)).toEqual(["a", "b"]);
     expect(out[1].list.map((m) => m.id)).toEqual(["c"]);
@@ -85,7 +85,7 @@ describe("groupByDay", () => {
 
   it("valt terug op created_at als played_at ontbreekt", () => {
     const a = match({ id: "a", played_at: null, created_at: "2026-07-14T18:00:00Z" });
-    expect(groupByDay([a])).toHaveLength(1);
+    expect(groupByDay([a], "UTC")).toHaveLength(1);
   });
 });
 
@@ -94,8 +94,20 @@ describe("dayLabel", () => {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
-    expect(dayLabel(today.toISOString())).toBe("Vandaag");
-    expect(dayLabel(yesterday.toISOString())).toBe("Gisteren");
+    expect(dayLabel(today.toISOString(), "UTC")).toBe("Vandaag");
+    expect(dayLabel(yesterday.toISOString(), "UTC")).toBe("Gisteren");
+  });
+
+  it("rekent in de opgegeven tijdzone, niet in UTC (#783)", async () => {
+    // Een match om 00:30 lokale tijd (net ná clubmiddernacht) valt in UTC
+    // vaak nog op de vórige kalenderdag (zomertijd: 2 uur eerder). Toch is
+    // het lokaal nog steeds "vandaag".
+    const { dateInZone, clubEpoch } = await import("@/lib/utils/time");
+    const brusselsToday = dateInZone("Europe/Brussels");
+    const iso = new Date(
+      clubEpoch(brusselsToday, "00:30", "Europe/Brussels"),
+    ).toISOString();
+    expect(dayLabel(iso, "Europe/Brussels")).toBe("Vandaag");
   });
 });
 

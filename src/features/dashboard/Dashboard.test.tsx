@@ -454,7 +454,7 @@ describe("<Dashboard />", () => {
       }
     });
 
-    it("kleurt de hero navy-goud voor de speler van de week (#760)", async () => {
+    it("legt de In-Form-overlay over de kaart voor de speler van de week (#760/#771)", async () => {
       await metVasteWeek(async () => {
         // Twee winsten binnen het weekvenster, samen +48 — meer dan Bob's +10.
         // De crest-tekst komt uit editieLabel, dus staat er hetzelfde als op de
@@ -475,14 +475,20 @@ describe("<Dashboard />", () => {
           expect(
             await screen.findByRole("button", { name: /in-form · \+48/i }),
           ).toBeInTheDocument();
-          expect(container.querySelector(".hero")).toHaveClass("hero--inform");
+          // Sinds #771 een overlay: de kaart houdt zijn eigen basis (hier geen
+          // permanent thema) en krijgt de glans erover, met een tint-laag die de
+          // kaart eronder laat doorschemeren.
+          const hero = container.querySelector(".hero");
+          expect(hero).toHaveClass("hero--overlay-inform");
+          expect(hero).not.toHaveClass("hero--inform");
+          expect(container.querySelector(".hero__sheen--inform")).toBeInTheDocument();
         } finally {
           herstel();
         }
       });
     });
 
-    it("kleurt de hero sintel voor een lopende reeks (#760)", async () => {
+    it("legt de On Fire-overlay over de kaart voor een lopende reeks (#760/#771)", async () => {
       await metVasteWeek(async () => {
         // Vijf winsten op rij (ONFIRE_DREMPEL), maar allemaal ouder dan het
         // In-Form-venster van zeven dagen: zo staat het On-Fire-thema er kaal,
@@ -500,7 +506,9 @@ describe("<Dashboard />", () => {
           expect(
             await screen.findByRole("button", { name: /on fire · 5 op rij/i }),
           ).toBeInTheDocument();
-          expect(container.querySelector(".hero")).toHaveClass("hero--onfire");
+          expect(container.querySelector(".hero")).toHaveClass(
+            "hero--overlay-onfire",
+          );
           expect(screen.queryByRole("button", { name: /in-form/i })).toBeNull();
         } finally {
           herstel();
@@ -542,6 +550,42 @@ describe("<Dashboard />", () => {
           ).toBeInTheDocument();
           expect(container.querySelector(".hero")).toHaveClass("hero--pias");
           expect(container.querySelector(".hero--piet")).toBeNull();
+        } finally {
+          herstel();
+        }
+      });
+    });
+
+    it("laat de In-Form-overlay de piaskaart niet vervangen (#771)", async () => {
+      await metVasteWeek(async (week) => {
+        // De kern van #771: Alice is deze week de pias van haar groep én de
+        // speler van de week van de club. Vóór #771 nam In-Form de hele kaart
+        // over en verdween de schande; nu blijft het kraftkarton staan met de
+        // glans erover, en is de tijdelijke status de badge vooraan.
+        const { container, herstel } = renderMet(
+          { pias_of_week: [piasRij(week)] },
+          {
+            troonBezet: true,
+            historie: [
+              histRij(20, "2026-07-06T10:00:00.000Z"),
+              histRij(28, "2026-07-07T10:00:00.000Z"),
+              histRij(5, "2026-07-06T10:00:00.000Z", "p2"),
+              histRij(5, "2026-07-07T10:00:00.000Z", "p2"),
+            ],
+          },
+        );
+        try {
+          const inform = await screen.findByRole("button", {
+            name: /in-form · \+48/i,
+          });
+          const hero = container.querySelector(".hero");
+          expect(hero).toHaveClass("hero--pias");
+          expect(hero).toHaveClass("hero--overlay-inform");
+          // Beide titels blijven leesbaar; de overlay is de badge, de pias een chip.
+          expect(inform).toHaveClass("hero-crest--badge");
+          expect(
+            screen.getByRole("button", { name: /pias van de week/i }),
+          ).not.toHaveClass("hero-crest--badge");
         } finally {
           herstel();
         }

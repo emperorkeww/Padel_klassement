@@ -38,6 +38,13 @@ jobs:
       - name: Test
         run: npm test
 
+      # Contrast (#125, uitgebreid in #771): de token-paren van het donkere thema
+      # en de token-eilanden van de dashboardkaart. Faalt hard zodra een paar
+      # onder AA zakt — met de hand nagerekende waarden in CSS-commentaar
+      # verouderen, deze check niet.
+      - name: Contrast (WCAG AA)
+        run: npm run contrast
+
   # pgTAP-databasetests (RLS-policies, RPC's) tegen een lokale Supabase-stack.
   db-tests:
     runs-on: ubuntu-latest

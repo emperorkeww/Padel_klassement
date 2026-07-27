@@ -1,5 +1,5 @@
 import { headToHead } from "@/features/rating/results";
-import { dateInZone } from "@/lib/utils/time";
+import { dateInZone, dayInZone } from "@/lib/utils/time";
 import type { Match, Team } from "@/types";
 import { type GroupSummary } from "@/features/groups/api";
 import {
@@ -32,95 +32,10 @@ export function rememberName(userId: string, name: string) {
 
 /* ----------------------------- Hero-thema -------------------------------- */
 
-/** Statussen die de dashboard-hero een eigen skin geven (#613/#644/#760). */
-export type HeroThema =
-  | "dictator"
-  | "bigdaddy"
-  | "kampioen"
-  | "inform"
-  | "onfire"
-  | "pias"
-  | "piet"
-  | null;
-
-/** Prioriteit: het eerste thema dat de speler draagt wint. Bewust dezelfde
- *  volgorde als EDITIE_PRIORITEIT op de FUT-kaart (edities.ts) — verdienste
- *  verdringt schande, en binnen de schande wint de weeklens (de pias van déze
- *  week) van het rondgaande token (de Piet), net als inform › onfire daar.
- *
- *  Sinds #760 draagt de hero álle zes kaart-edities (plus de troon): een
- *  kampioenschap duurt een kwartaal, In-Form wisselt wekelijks en On-Fire hangt
- *  aan een lopende reeks — vandaar die volgorde onder de kroon. On-Fire staat
- *  ná In-Form omdat het de enige status is die meerdere dragers tegelijk kan
- *  hebben (#632): een gedeelde eer mag geen zeldzamere verdringen.
- *
- *  De assen zijn onafhankelijk: dictator, Big Daddy, kampioen, In-Form en
- *  On-Fire komen club-breed uit het klassement, pias/Piet uit een gróep
- *  (#655/#645). Je kunt dus tegelijk #1 én schande-token-drager zijn; dan
- *  kleurt de hero naar de eer en blijft de schande-crest ernaast staan. Kleur
- *  is nooit de enige indicator (#613), dus het verliezende thema verdwijnt
- *  alleen als vlak, niet als chip.
- *
- *  Dictator staat vóór Big Daddy zoals de hero dat al deed sinds #613 (en
- *  Podium.tsx op het klassement): in de praktijk sluiten ze elkaar al uit —
- *  een bezette troon dooft de kroon — maar de volgorde legt vast wat er zou
- *  gebeuren als dat ooit verandert. Op de FUT-kaart draagt de dictator juist
- *  géén editie (troonkaart); hier is de hero zélf zijn troonvlak. */
-export const HERO_THEMA_PRIORITEIT = [
-  "dictator",
-  "bigdaddy",
-  "kampioen",
-  "inform",
-  "onfire",
-  "pias",
-  "piet",
-] as const;
-
-/** Welk thema draagt de hero? `schild` is het roast-schild (#183) van de
- *  speler zelf: dat dooft de twee schande-thema's volledig — de hero valt terug
- *  op neutraal, precies zoals de FUT-kaart bij een schild z'n mond houdt. De
- *  crest-chip blijft wél staan (met de neutrale 📊-variant, zie Dashboard.tsx):
- *  het feit blijft, de spot verdwijnt. Halfslachtig dempen — kartonnen vlak met
- *  een neutraal woordje erop — zou geen schild zijn maar een zachtere sneer.
- *  Op eer heeft het schild geen invloed: er valt niets te beschermen, dus de
- *  vijf verdiende thema's (troon t/m On-Fire) trekken zich er niets van aan. */
-export function heroThema(s: {
-  dictator: boolean;
-  bigDaddy: boolean;
-  kampioen: boolean;
-  inForm: boolean;
-  onFire: boolean;
-  pias: boolean;
-  piet: boolean;
-  schild: boolean;
-}): HeroThema {
-  for (const thema of HERO_THEMA_PRIORITEIT) {
-    switch (thema) {
-      case "dictator":
-        if (s.dictator) return "dictator";
-        break;
-      case "bigdaddy":
-        if (s.bigDaddy) return "bigdaddy";
-        break;
-      case "kampioen":
-        if (s.kampioen) return "kampioen";
-        break;
-      case "inform":
-        if (s.inForm) return "inform";
-        break;
-      case "onfire":
-        if (s.onFire) return "onfire";
-        break;
-      case "pias":
-        if (s.pias && !s.schild) return "pias";
-        break;
-      case "piet":
-        if (s.piet && !s.schild) return "piet";
-        break;
-    }
-  }
-  return null;
-}
+/* De thema-keuze van de dashboard player card staat sinds #771 in heroThema.ts:
+   permanent materiaal en tijdelijke overlay zijn daar twee assen i.p.v. één
+   ladder. Alleen heroCrestTekst bleef hier staan, want dat is tekstopmaak voor
+   de crest-chips en geen thema-keuze. */
 
 /** Splitst een editie-regel van de FUT-kaart ("⚡ In-Form · +48") in het icoon
  *  en de rest, zodat de HeroCrest hem in zíjn vorm kan zetten — chip met een
@@ -318,7 +233,7 @@ export function deriveEvening(
 ): { groupId: string; count: number; isToday: boolean; day: string } | null {
   const withGroup = completed.filter((m) => m.group_id);
   if (withGroup.length === 0) return null;
-  const day = (m: Match) => (m.played_at ?? m.created_at).slice(0, 10);
+  const day = (m: Match) => dayInZone(m.played_at ?? m.created_at, timezone);
   const latest = withGroup.map(day).sort().at(-1)!;
   const todayStr = dateInZone(timezone);
   const yesterdayStr = dateInZone(timezone, -1);
