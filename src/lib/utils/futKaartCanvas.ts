@@ -2686,7 +2686,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       [1, "#4c390a"],
     ],
     liner: "#0a0c14",
-    vlak: ["#232c44", "#141826", "#0a0c14"],
+    vlak: ["#1b2235", "#0f121d", "#05060a"],
     vlakMid: 0.6,
     tint: [
       [0, "rgba(5, 7, 12, 0.6)"],
@@ -2707,7 +2707,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     sheen: "rgba(255, 236, 185, 0.19)",
     ink: "#f2cf7d",
     inkSoft: "#c9a95e",
-    lijn: "rgba(240, 199, 102, 0.45)",
+    lijn: "#ffd56b",
     editieKleur: "#f2cf7d",
     textuur: "titanium",
     binnenlijn: [
@@ -2731,14 +2731,15 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   onfire: {
     frame: [
       [0, "#f6ddc4"],
-      [0.42, "#b06537"],
-      [0.68, "#e8b48d"],
-      [1, "#4b1e0d"],
+      [0.30, "#cf743b"],
+      [0.55, "#e8b48d"],
+      [0.80, "#8c4217"],
+      [1, "#3e1608"],
     ],
     liner: "#180a05",
-    vlak: ["#3a180c", "#241009", "#140704"],
+    vlak: ["#300f05", "#170702", "#080200"],
     vlakMid: 0.6,
-    glow: "rgba(255, 140, 66, 0.34)",
+    glow: "rgba(255, 120, 30, 0.44)",
     sheen: "rgba(255, 190, 112, 0.27)",
     sheenStops: [
       [0.16, "rgba(255, 190, 112, 0)"],
@@ -2771,7 +2772,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     },
     ink: "#ffc98a",
     inkSoft: "#d1915b",
-    lijn: "rgba(255, 160, 92, 0.45)",
+    lijn: "#ff5500",
     editieKleur: "#ffb35c",
     textuur: "groeven",
   },

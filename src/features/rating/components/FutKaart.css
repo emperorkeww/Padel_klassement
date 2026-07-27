@@ -953,7 +953,7 @@
 .fut-kaart.fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
-  --kaart-lijn: rgba(240, 199, 102, 0.45);
+  --kaart-lijn: #ffd56b;
   --editie-kleur: #f2cf7d;
   /* Gouden hairline, zwarte spouw, tweede gouden lijn: de gelaagde metalen
      binnenrand uit de referentie, zonder extra DOM-laag (inset-schaduwen
@@ -967,9 +967,10 @@
   background: linear-gradient(
     160deg,
     #f7dfa0 0%,
-    #8a6a1c 45%,
-    #ffe9ac 70%,
-    #4c390a 100%
+    #c59f48 30%,
+    #ffe9ac 55%,
+    #8a6a1c 80%,
+    #3e2e07 100%
   );
 }
 .fut-kaart.fut-kaart--inform .fut-kaart__liner {
@@ -980,7 +981,7 @@
   background:
     radial-gradient(
       130% 60% at 50% -8%,
-      rgba(240, 199, 102, 0.28),
+      rgba(255, 226, 150, 0.38),
       transparent 62%
     ),
     repeating-linear-gradient(
@@ -1000,7 +1001,7 @@
       rgba(5, 7, 12, 0) 46%,
       rgba(5, 7, 12, 0.55) 100%
     ),
-    linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
+    linear-gradient(172deg, #1b2235 0%, #0f121d 60%, #05060a 100%);
 }
                                                                                                                                                                                                                                                                                                                                                         
 .fut-kaart.fut-kaart--inform .fut-kaart__vlak::after {
@@ -1113,11 +1114,11 @@
     );
 }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 .fut-kaart.fut-kaart--onfire {
   --kaart-ink: #ffc98a;
   --kaart-ink-soft: #d1915b;
-  --kaart-lijn: rgba(255, 160, 92, 0.45);
+  --kaart-lijn: #ff5500;
   --editie-kleur: #ffb35c;
   /* Randgloed (#710): een warme koperen echo langs de zijkanten en onderrand.
      Een filter werkt ná de clip, dus de echo volgt het schildsilhouet exact —
@@ -1139,9 +1140,10 @@
   background: linear-gradient(
     160deg,
     #f6ddc4 0%,
-    #b06537 42%,
-    #e8b48d 68%,
-    #4b1e0d 100%
+    #cf743b 30%,
+    #e8b48d 55%,
+    #8c4217 80%,
+    #3e1608 100%
   );
 }
 .fut-kaart.fut-kaart--onfire .fut-kaart__liner {
@@ -1157,10 +1159,10 @@
     ),
     radial-gradient(
       130% 60% at 50% -8%,
-      rgba(255, 140, 66, 0.34),
+      rgba(255, 120, 30, 0.44),
       transparent 62%
     ),
-    linear-gradient(172deg, #3a180c 0%, #241009 60%, #140704 100%);
+    linear-gradient(172deg, #300f05 0%, #170702 60%, #080200 100%);
 }
                                                                                                                                                                                                                                                                                  
 .fut-kaart.fut-kaart--onfire .fut-kaart__vlak::before {

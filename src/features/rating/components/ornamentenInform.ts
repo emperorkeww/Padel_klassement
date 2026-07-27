@@ -49,11 +49,17 @@ export const INFORM_TITAAN = "#0d1018";
  *  de twee bliksems op één kaart zijn per constructie hetzelfde teken. */
 const BLIKSEM: readonly (readonly [number, number])[] = [
   [0.58, 0],
-  [0, 0.54],
-  [0.4, 0.54],
+  [0.35, 0.22],
+  [0.16, 0.42],
+  [0.0, 0.54],
+  [0.42, 0.54],
+  [0.36, 0.78],
   [0.42, 1],
-  [1, 0.44],
+  [0.65, 0.72],
+  [0.84, 0.56],
+  [1.0, 0.44],
   [0.55, 0.44],
+  [0.66, 0.18],
 ] as const;
 
 /** De bliksemglyph als gesloten pad, gecentreerd op (cx, cy). */
@@ -75,7 +81,7 @@ export function bliksem(
 /** Compacte bliksemcrest op de as, in de bovenste inkeping.
  *
  *  Overlay-gedrag (de reden dat dit een editie is en geen tier): de crest zit
- *  bijna volledig bóven v=0, niet ín de notch. De vijf schildvormen hebben
+ *  bijna volledig bóven v=0, niet ín de notch. De Siliconen-vormen hebben
  *  namelijk een heel verschillende bovenrand op de as — `vlak` en `kroon`
  *  lopen daar tot v=0, `notch` duikt tot v≈3, `punt` en `troon` tot v≈8. Een
  *  crest die de notch opvult zou op `vlak` halverwege afgesneden worden. Zo
@@ -101,29 +107,27 @@ export const INFORM_VIN: Streng = bouwStreng({
   // u=0 aan blijft liggen dan je zou denken (v=83→u=0, v=96→u=0,8, v=105→u=3,4,
   // v=111→u=7). Een vin die met een rechte schuinte meeloopt verdwijnt daardoor
   // vanaf v≈95 achter het frame — precies wat een eerdere opzet deed. Deze
-  // centerlijn hugt de bezier van net buiten: wortel op (3,4 · 111), punt op
-  // (−6,6 · 75), en overal daartussen ligt de buitenste flank vrij.
-  start: [3.4, 111],
+  // centerlijn hugt de bezier van net buiten: wortel op (3,6 · 111), punt op
+  // (−7,8 · 74), en overal daartussen ligt de buitenste flank vrij.
+  start: [3.6, 111],
   segmenten: [
     [
-      [2.4, 104],
-      [0.6, 96],
-      [-1.4, 89],
+      [2.8, 102],
+      [0.8, 93],
+      [-1.8, 86],
     ],
     [
-      [-3, 84],
-      [-4.8, 79.5],
-      [-6.6, 75],
+      [-3.8, 81],
+      [-5.8, 77.5],
+      [-7.8, 74],
     ],
   ],
-  // Bijna gelijke dikte over de hele lengte (3,6 → 2,3): een sterke taper maakt
-  // van de vin een dolk, terwijl de referentie een slank blad met een schuine
-  // kop toont. De drie `ribbels` zijn de dwarssneden die dat blad in vier
-  // plaatjes verdelen.
+  // Aerodynamische en vloeiende taper (3.6 -> 2.2 -> 1.0) voor een snel en
+  // bliksemachtig effect.
   dikte: 3.6,
   ribbels: 3,
-  taper: 2.4,
-  punt: 2.3,
+  taper: 2.2,
+  punt: 1.0,
   stappen: 40,
 });
 

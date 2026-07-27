@@ -982,10 +982,10 @@
 .hero--overlay-inform {
   --inform-goud: #f2cf7d;
   --inform-goud-soft: #c9a95e;
-  --inform-lijn: rgba(240, 199, 102, 0.45);
-  --inform-navy: #232c44;
-  --inform-navy-mid: #141826;
-  --inform-navy-diep: #0a0c14;
+  --inform-lijn: #ffd56b;
+  --inform-navy: #1b2235;
+  --inform-navy-mid: #0f121d;
+  --inform-navy-diep: #05060a;
 
   color: #fff;
   border-color: var(--inform-lijn);
@@ -1038,10 +1038,10 @@
 .hero--overlay-onfire {
   --onfire-ember: #ffc98a;
   --onfire-ember-soft: #d1915b;
-  --onfire-lijn: rgba(255, 160, 92, 0.45);
-  --onfire-sintel: #3a180c;
-  --onfire-sintel-mid: #241009;
-  --onfire-sintel-diep: #140704;
+  --onfire-lijn: #ff5500;
+  --onfire-sintel: #300f05;
+  --onfire-sintel-mid: #170702;
+  --onfire-sintel-diep: #080200;
 
   color: #fff;
   border-color: var(--onfire-lijn);
