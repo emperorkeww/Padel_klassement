@@ -316,6 +316,19 @@ describe("<DashboardHero /> — decoratielagen", () => {
       expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
   });
 
+  it("geeft de Kampioen zijn diamantcrest, lauwerkrans en linten (#781)", () => {
+    const hero = renderKaart({ kampioen: true, thema: "kampioen" });
+    for (const klasse of [
+      ".hero__crest--kampioen",
+      ".hero__krans--links",
+      ".hero__krans--rechts",
+      ".hero__lint-kam--links",
+      ".hero__lint-kam--rechts",
+      ".hero__watermerk--zegel",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
   it("tekent de twee schande-iconen als SVG i.p.v. een emoji (#771)", () => {
     // 🤡 rendert op sommige toestellen als horrorclown en 🃏 lijkt op geen enkel
     // platform op een spelstuk; de badge draagt daarom het maskertje en de pion

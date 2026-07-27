@@ -141,7 +141,7 @@ export function HeroShowcase() {
       />
       <Kaart
         titel="4 · Kampioen"
-        uitleg="Kwartaaltitel van de hele club (premium ontwerp volgt in #781)."
+        uitleg="Kwartaaltitel van de hele club (premium ontwerp met diamantcrest, lauwerkrans en linten)."
         status={status("kampioen")}
       />
       <Kaart
@@ -167,9 +167,19 @@ export function HeroShowcase() {
 
       <h2 className="hero-showcase__sectie">Overlay boven een permanent thema</h2>
       <Kaart
+        titel="In-Form over de Kampioen-kaart"
+        uitleg="Het platina-wit en de lauwertakken blijven staan; de diamantcrest schuift naar 26%."
+        status={status("kampioen", "inform")}
+      />
+      <Kaart
         titel="In-Form over de piaskaart"
         uitleg="Het kraftkarton blijft staan; de badge vertelt het nieuws van deze week."
         status={status("pias", "inform")}
+      />
+      <Kaart
+        titel="In-Form over de Big Daddy-kaart"
+        uitleg="Kroon blijft de kaart, de bliksemcrest van de In-Form overlay ligt erover."
+        status={status("bigdaddy", "inform")}
       />
       <Kaart
         titel="On Fire over de Big Daddy-kaart"
