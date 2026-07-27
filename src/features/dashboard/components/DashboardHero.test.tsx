@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { BD_KROON } from "@/features/rating/components/ornamentenBigDaddy";
 import { DashboardHero, type HeroStatus } from "./DashboardHero";
 import type { HeroOverlay, HeroPermanent } from "../heroThema";
 
@@ -225,6 +226,68 @@ describe("<DashboardHero /> — decoratielagen", () => {
     const hero = renderKaart({ pias: true, thema: "pias" });
     expect(hero).not.toHaveClass("hero--divisie");
     expect(hero.querySelector(".hero__materiaal")).toBeNull();
+  });
+
+  it("geeft Big Daddy de ornamenten van zijn FUT-kaart (#771)", () => {
+    const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
+    // Kroon in de bovenrand, ballonnen, twee lintkrullen en confetti — precies de
+    // opsomming uit de issue, en geen ervan verzonnen: de paden komen uit het
+    // register van de 👑-kaart.
+    for (const klasse of [
+      ".hero__crest--kroon",
+      ".hero__ballonnen",
+      ".hero__lint--links",
+      ".hero__lint--rechts",
+      ".hero__confetti",
+      ".hero__watermerk--kroon",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+    // De kroon is letterlijk het pad van de kaart; zou dit bestand een eigen
+    // silhouet tekenen, dan drijven kaart en dashboard uit elkaar.
+    expect(
+      hero.querySelector(`.hero__crest--kroon path[d="${BD_KROON}"]`),
+    ).toBeInTheDocument();
+  });
+
+  it("geeft de Dictator zijn commandoster, hoeken en lakzegel (#771)", () => {
+    const hero = renderKaart({ dictator: true, thema: "dictator" });
+    for (const klasse of [
+      ".hero__crest--troon",
+      ".hero__watermerk--lauwer",
+      ".hero__ruit--boven",
+      ".hero__ruit--onder",
+      ".hero__hoek--lb",
+      ".hero__hoek--ro",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+    // Het zegel hoort naast de badge en niet in de decoratielaag: de titelrij
+    // wrapt met de inhoud mee, dus alleen daar staat het altijd goed.
+    const slot = hero.querySelector(".hero__badge-slot");
+    expect(slot?.querySelector(".hero-crest--badge")).toBeInTheDocument();
+    expect(slot?.querySelector(".hero__zegel")).toBeInTheDocument();
+  });
+
+  it("zet ornamenten die over de rand steken in een eigen, ongeklipte laag", () => {
+    const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
+    const voor = hero.querySelector(".hero__lagen--voor");
+    expect(voor).toHaveAttribute("aria-hidden", "true");
+    // De kroon steekt boven de kaart uit en mag dus niet geklipt worden; het
+    // materiaal eronder juist wél.
+    expect(voor?.querySelector(".hero__crest--kroon")).toBeInTheDocument();
+    expect(HERO_CSS).toMatch(
+      /\.hero__lagen--voor\s*\{[^}]*overflow:\s*visible/,
+    );
+    // Beide lagen laten de aanwijzer door naar de knoppen eronder (AC10).
+    expect(HERO_CSS).toMatch(/\.hero__lagen\s*\{[^}]*pointer-events:\s*none/);
+  });
+
+  it("laat een thema zonder eigen ornamenten de voorste laag weg", () => {
+    // Pias en het schande-token krijgen hun ornamenten in een volgende PR; tot
+    // dan staat er geen lege span in hun DOM.
+    for (const thema of ["pias", "piet"] as const) {
+      const hero = renderKaart({ [thema]: true, thema });
+      expect(hero.querySelector(".hero__lagen--voor")).toBeNull();
+    }
   });
 
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {

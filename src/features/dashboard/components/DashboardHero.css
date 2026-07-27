@@ -48,6 +48,13 @@
   border-radius: inherit;
   pointer-events: none;
 }
+/* Stap 9: dezelfde doos, maar niét geklipt en bóven de inhoud — voor crests,
+   ballonnen en hoekornamenten die bewust over de rand steken. Alles erin is
+   decoratie, dus de aanwijzer gaat er dwars doorheen naar de knop eronder. */
+.hero__lagen--voor {
+  z-index: 2;
+  overflow: visible;
+}
 /* De inhoud staat boven élke decoratielaag — inclusief de bewegende glans, want
    leesbaarheid gaat voor effect. */
 .hero__main,
@@ -176,8 +183,16 @@
    enige indicator: de HeroCrest-chips blijven ernaast staan. */
 
 /* Big Daddy: de lime/smaragd-was wordt de roze Big Daddy-was. De tokens zijn
-   thema-bewust (index.css), dus het donkere thema kleurt vanzelf mee. */
+   thema-bewust (index.css), dus het donkere thema kleurt vanzelf mee.
+
+   Sinds #771 draagt de kaart ook het ornamentregister van de 👑-FUT-kaart: de
+   kroon in de bovenrand en als watermerk, de linten in de onderhoeken, twee
+   ballonnen en een handvol confetti (heroOrnamentenBigDaddy.tsx). De dubbele
+   roségouden rand hieronder is wat die ornamenten aan elkaar knoopt — zonder
+   binnenring hangen ze aan een gewone kaartrand. */
 .hero--bigdaddy {
+  --bd-rose: #c98da6;
+  --bd-champagne: #e8c9a0;
   background:
     radial-gradient(120% 140% at 100% 0%, var(--bigdaddy-soft) 0%, transparent 58%),
     radial-gradient(
@@ -187,6 +202,13 @@
     ),
     var(--surface);
   border-color: color-mix(in srgb, var(--bigdaddy) 45%, var(--line));
+  /* Twee ringen: champagne tegen de rand aan, roségoud een haar naar binnen —
+     de dubbele omlijsting uit de referentie, in inset-schaduwen zodat ze de
+     afgeronde hoeken volgen zonder extra element. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bd-champagne) 55%, transparent),
+    inset 0 0 0 4px color-mix(in srgb, var(--bd-rose) 22%, transparent),
+    var(--shadow-sm);
 }
 .hero--bigdaddy .hero__eyebrow,
 .hero--bigdaddy .hero__me-label {
@@ -194,6 +216,104 @@
 }
 .hero--bigdaddy .hero__divide {
   background: color-mix(in srgb, var(--bigdaddy) 35%, var(--line));
+}
+/* Knoppen in de smaak van de kaart (#771): de secundaire twee lichten op tot
+   het kaartwit met een rozé rand, de primaire wordt framboos i.p.v. app-groen —
+   zoals de Dictator zijn goud krijgt. `color-mix` op --surface i.p.v. wit, zodat
+   het donkere thema meekleurt in plaats van twee witte blokken op donkerroze te
+   zetten. Contrast van de primaire knoptekst (#fff6fa op --bigdaddy-ink): 9,1:1
+   in het lichte thema, 15,8:1 in het donkere. */
+.hero--bigdaddy .hero__actions .btn {
+  background: color-mix(in srgb, var(--surface) 88%, var(--bigdaddy-soft));
+  border-color: color-mix(in srgb, var(--bigdaddy) 40%, var(--line));
+}
+.hero--bigdaddy .hero__actions .btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bigdaddy) 70%, var(--line));
+}
+.hero--bigdaddy .hero__actions .btn--primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bigdaddy) 70%, var(--bigdaddy-ink)),
+    var(--bigdaddy-ink)
+  );
+  border-color: var(--bigdaddy-ink);
+  color: #fff6fa;
+}
+.hero--bigdaddy .hero__actions .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bigdaddy) 85%, var(--bigdaddy-ink)),
+    color-mix(in srgb, var(--bigdaddy) 25%, var(--bigdaddy-ink))
+  );
+  border-color: var(--bigdaddy-ink);
+}
+
+/* De kroon in de bovenrand: half boven de kaart uit, zoals op de FUT-kaart in
+   de bovenste inkeping. De schaduw eronder maakt het verschil tussen "ligt op
+   de rand" en "is erop geplakt". */
+.hero__crest--kroon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(48px, 7%, 76px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -54%);
+  filter: drop-shadow(0 2px 4px rgba(94, 32, 56, 0.35));
+}
+/* Het kroonwatermerk staat op de kaart hoog en centraal; hier rechts, waar de
+   tekstkolom ophoudt. Groter en bleker dan het divisiemotief: het is één vorm
+   in plaats van een patroon, en die mag niet als een tweede kroon-icoon lezen. */
+.hero__watermerk--kroon {
+  right: 4%;
+  /* Kleiner dan het divisiemotief: dit is één silhouet met hoge punten, en groot
+     uitgeschaald lezen die punten als lichtbanen over de hele kaart in plaats
+     van als een kroon. */
+  height: 112%;
+  right: 7%;
+  opacity: 0.16;
+}
+:root[data-theme="dark"] .hero__watermerk--kroon {
+  /* Het roségoud van de kroon blijft op donker gewoon leesbaar — invert zou er
+     een groene vlek van maken. Alleen wat sterker, want het vlak is donkerder. */
+  filter: none;
+  opacity: 0.22;
+}
+/* De twee ballonnen komen rechtsboven uit de rand, precies zoals op de kaart. */
+.hero__ballonnen {
+  position: absolute;
+  right: clamp(0.5rem, 3%, 2.5rem);
+  top: 0;
+  width: clamp(46px, 8%, 82px);
+  aspect-ratio: 1;
+  transform: translateY(-38%);
+  filter: drop-shadow(0 3px 5px rgba(94, 32, 56, 0.25));
+}
+/* Lintkrullen in de onderhoeken. Eén tekening, gespiegeld voor links: zo kunnen
+   de twee hoeken per constructie niet uit elkaar lopen. */
+.hero__lint {
+  position: absolute;
+  bottom: 0;
+  width: clamp(40px, 7%, 74px);
+  aspect-ratio: 1;
+}
+.hero__lint--rechts {
+  right: 0;
+  transform: translate(18%, 26%);
+}
+.hero__lint--links {
+  left: 0;
+  transform: translate(-18%, 26%) scaleX(-1);
+}
+/* De confetti: een enkele cluster rechtsboven, niet over het hele vlak. Op de
+   kaart dwarrelt hij langs de naamplaat; een hero is vier keer zo breed, en
+   uitgesmeerd zou dezelfde handvol snippers als vuil lezen. */
+.hero__confetti {
+  position: absolute;
+  right: 6%;
+  top: 4%;
+  width: clamp(80px, 22%, 220px);
+  aspect-ratio: 1;
+  opacity: 0.75;
 }
 
 /* Dictator: hetzelfde keizerlijke verloop als De Troon (DictatorThrone.css) —
@@ -203,6 +323,28 @@
 .hero--dictator {
   color: #fff;
   background:
+    /* Commandostralen (#771): een smalle waaier vanuit de bovenrand, zoals de
+       referentie hem toont. Repeating-conic i.p.v. losse lagen, zodat de stralen
+       één voorwerp blijven; heel laag in dekking, want ze lopen achter de
+       begroeting door. */
+    repeating-conic-gradient(
+      from 200deg at 50% -12%,
+      rgba(240, 199, 102, 0.035) 0deg 3deg,
+      transparent 3deg 9deg
+    ),
+    /* Brokaat: een fijne ruitweefsel-textuur in het wijnrood. Twee diagonale
+       strepenlagen kruisen elkaar — dat leest als geweven stof en kost geen
+       afbeelding. */
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 235, 200, 0.022) 0 2px,
+        transparent 2px 7px
+      ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(10, 2, 6, 0.05) 0 2px,
+      transparent 2px 7px
+    ),
     radial-gradient(
       120% 82% at 50% -8%,
       color-mix(in srgb, var(--dictator-gold) 42%, transparent),
@@ -210,6 +352,81 @@
     ),
     linear-gradient(162deg, var(--dictator-wine), var(--dictator-deep) 92%);
   border-color: color-mix(in srgb, var(--dictator-gold) 50%, transparent);
+  /* Antiekgouden dubbele rand: een haarlijn tegen de rand en een filet naar
+     binnen, met de donkere spouw ertussen — dezelfde opbouw als het kader van
+     De Troon. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--dictator-gold) 40%, transparent),
+    inset 0 0 0 5px rgba(12, 2, 7, 0.35),
+    inset 0 0 0 6px color-mix(in srgb, var(--dictator-gold) 26%, transparent),
+    0 8px 24px rgba(12, 2, 7, 0.45);
+}
+/* De lauwerkrans met commandoster als watermerk. Zelfde plek en dekking als op
+   De Troon: achter het informatieblok, in lijn getekend en zo bleek dat de
+   rankingzin eroverheen leesbaar blijft. */
+.hero__watermerk--lauwer {
+  position: absolute;
+  right: 2%;
+  top: 50%;
+  height: 190%;
+  aspect-ratio: 1;
+  width: auto;
+  transform: translateY(-50%);
+  color: rgba(240, 199, 102, 0.12);
+}
+/* Randruiten midden op de boven- en onderrand, zoals op De Troon. */
+.hero__ruit {
+  position: absolute;
+  left: 50%;
+  width: clamp(12px, 2%, 22px);
+  aspect-ratio: 1;
+  color: rgba(232, 198, 124, 0.5);
+}
+.hero__ruit--boven {
+  top: 3px;
+  transform: translate(-50%, -50%);
+}
+.hero__ruit--onder {
+  bottom: 3px;
+  transform: translate(-50%, 50%);
+}
+/* Gegraveerde lauwerhoekjes op de vier hoeken van het kader; één tekening,
+   drie keer gespiegeld. */
+.hero__hoek {
+  position: absolute;
+  width: clamp(26px, 4%, 52px);
+  aspect-ratio: 1;
+  color: rgba(232, 198, 124, 0.45);
+}
+.hero__hoek--lb {
+  left: 7px;
+  top: 7px;
+}
+.hero__hoek--rb {
+  right: 7px;
+  top: 7px;
+  transform: scaleX(-1);
+}
+.hero__hoek--lo {
+  left: 7px;
+  bottom: 7px;
+  transform: scaleY(-1);
+}
+.hero__hoek--ro {
+  right: 7px;
+  bottom: 7px;
+  transform: scale(-1);
+}
+/* De ceremoniële kroon in de bovenrand. Breder dan de Big Daddy-kroon omdat de
+   lauwervleugels meetellen — vandaar de eigen verhouding uit De Troon. */
+.hero__crest--troon {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(58px, 9%, 104px);
+  aspect-ratio: 64 / 41;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 5px rgba(12, 2, 7, 0.6));
 }
 .hero--dictator .hero__eyebrow {
   color: var(--dictator-gold);
@@ -844,6 +1061,22 @@
 }
 .hero-crest--badge .hero-crest__icon {
   font-size: 1.15rem;
+}
+/* De badge en zijn eventuele sieraad vormen samen één blokje in de titelrij,
+   zodat het zegel meeschuift als de rij wrapt. */
+.hero__badge-slot {
+  display: inline-flex;
+  align-items: center;
+}
+/* Het lakzegel van de Dictator, half achter de badge geschoven zoals op De
+   Troon. Decoratie: het vangt geen aanwijzer af, dus de tooltip van de badge
+   blijft bereikbaar. */
+.hero__zegel {
+  flex: none;
+  width: 2.15em;
+  aspect-ratio: 1;
+  margin-left: -0.9em;
+  pointer-events: none;
 }
 .hero-crest--bigdaddy {
   background: var(--bigdaddy-soft);
