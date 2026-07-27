@@ -2788,7 +2788,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     ],
     snijkant: "#d8bc7c",
     liner: "#362410",
-    vlak: ["#e6c895", "#cfa76e", "#ae8448"],
+    vlak: ["#e6c895", "#cfa76e", "#c29c5f"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
     sheen: "rgba(255, 240, 214, 0.06)",
