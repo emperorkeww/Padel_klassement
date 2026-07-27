@@ -559,7 +559,7 @@ export function coachBriefing(f: BriefingFeiten): string {
 }
 
 // ── Na het loggen: match-toast ──────────────────────────────────────────────
-const MATCH_NEUTRAAL = [
+export const MATCH_NEUTRAAL = [
   "Match toegevoegd.",
   "Resultaat ingevoerd. De data liegt niet.",
     "Match toegevoegd aan het systeem.",

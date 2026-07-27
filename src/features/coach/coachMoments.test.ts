@@ -12,6 +12,7 @@ import {
   OCHTEND_NIEUW,
   RIVAAL_REEKS_MIN,
   DAGDELTA_DREMPEL,
+  MATCH_NEUTRAAL,
 } from "@/features/coach/coachMoments";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import type { KlassementFeiten, PositieTier } from "@/features/coach/klassementFeiten";
@@ -176,18 +177,7 @@ describe("coachMatchQuip", () => {
   });
 
   it("schild → kale bevestiging", () => {
-    expect([
-      "Match toegevoegd.",
-      "Resultaat ingevoerd. De data liegt niet.",
-      "Match geregistreerd. De database is bijgewerkt.",
-      "Resultaat genoteerd in het klassement.",
-      "De data is verwerkt. Op naar de volgende match.",
-      "Matchgegevens opgeslagen in de database.",
-      "Resultaat ingevoerd. De Elo-berekeningen lopen.",
-      "Nieuwe match geregistreerd op het dashboard.",
-      "Resultaten zijn succesvol toegevoegd.",
-      "De data is verwerkt. Bekijk je nieuwe rating."
-    ]).toContain(
+    expect(MATCH_NEUTRAAL).toContain(
       coachMatchQuip({ uitkomst: "L", bagel: true, seed: "m1", ctx: schild })
     );
   });
