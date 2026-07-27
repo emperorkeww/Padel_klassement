@@ -126,10 +126,18 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Tryhard van Baan 2 🥵", past: (s) => s.winrate >= 0.7 && s.gespeeld >= 12 },
   { naam: "Wannabe-Prof 🤡", past: (s) => s.winrate >= 0.65 && s.gespeeld >= 20 },
   { naam: "Zweetdief 💦", past: (s) => s.winrate >= 0.6 && s.gespeeld >= 15 },
+  { naam: "Zweetband-Slijter 🧼", past: (s) => s.winrate >= 0.62 && s.gespeeld >= 16 },
+  { naam: "Kantine-Opschepper 🗣️", past: (s) => s.winrate >= 0.68 && s.gespeeld >= 11 },
+  { naam: "Racket-Polijster 🏓", past: (s) => s.winrate >= 0.65 && s.gespeeld >= 14 },
+  { naam: "Baan 1 Kolonist 🏰", past: (s) => s.winrate >= 0.72 && s.gespeeld >= 13 },
 
   // Nachtbrakers
   { naam: "De Nachtbraker 🌙", past: (s) => s.nachtmatches >= 3 },
   { naam: "Nachtbrakende Kneus 🌙", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.3 },
+  { naam: "Vleermuis zonder Sonar 🦇", past: (s) => s.nachtmatches >= 4 && s.nachtwinrate < 0.25 },
+  { naam: "Lantaarnpaal-Fluisteraar 💡", past: (s) => s.nachtmatches >= 6 },
+  { naam: "Schemerlamp-Klant 🏮", past: (s) => s.nachtmatches >= 4 },
+  { naam: "Uil met een Houten Racket 🦉", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.35 },
 
   // Middelmaat & Meubilair
   { naam: "De Grijze Muis 🐭", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.45 && s.winrate <= 0.55 },
@@ -137,6 +145,10 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "De Eeuwige Middelmaat ⚖️", past: (s) => s.gespeeld >= 15 && s.winrate >= 0.47 && s.winrate <= 0.53 },
   { naam: "Het Meubilair 🛋️", past: (s) => s.gespeeld >= 100 },
   { naam: "De Baanplakker 🧗", past: (s) => s.gespeeld >= 50 },
+  { naam: "Baan-Opvulling 🧱", past: (s) => s.gespeeld >= 25 && s.winrate >= 0.46 && s.winrate <= 0.54 },
+  { naam: "Statisch Object op het Veld 🗿", past: (s) => s.gespeeld >= 45 && s.winrate >= 0.44 && s.winrate <= 0.56 },
+  { naam: "Opwarmertje voor de Rest 🥵", past: (s) => s.gespeeld >= 12 && s.winrate >= 0.42 && s.winrate <= 0.52 },
+  { naam: "De Grijze Eenduidigheid 🦤", past: (s) => s.gespeeld >= 20 && s.winrate >= 0.48 && s.winrate <= 0.52 },
 
   // Harde roasts (voor verliezers)
   { naam: "Lopende Bye op het Schema 🚶", past: (s) => s.gespeeld >= 12 && s.winrate < 0.20 },
@@ -150,6 +162,10 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Bagel-Magneet 🥯", past: (s) => s.bagelsGeïncasseerd >= 1 },
   { naam: "Toerist met Racket 🎒", past: (s) => s.gespeeld >= 3 && s.winrate === 0 },
   { naam: "Gevaar voor de Eigen Ruiten 🪟", past: (s) => s.gespeeld >= 5 && s.winrate < 0.35 && s.grootsteMargeVerlies >= 5 },
+  { naam: "Racket-Decoratie 🪵", past: (s) => s.gespeeld >= 8 && s.winrate < 0.3 },
+  { naam: "Automatische Winst-Magneet (voor de ander) 🧲", past: (s) => s.gespeeld >= 15 && s.winrate < 0.18 },
+  { naam: "Klapzand van de Padelwereld 🏜️", past: (s) => s.gespeeld >= 6 && s.winrate < 0.33 && s.grootsteMargeVerlies >= 5 },
+  { naam: "Kanovaren zonder Peddel 🛶", past: (s) => s.verliesreeks >= 4 },
 
   // Nieuwelingen
   { naam: "De Groene Banaan 🍌", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
