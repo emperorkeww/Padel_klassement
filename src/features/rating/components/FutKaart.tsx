@@ -995,53 +995,6 @@ export function FutKaartDefs() {
             href="#fut-orn-dictator-achter-helft"
             transform="translate(100,0) scale(-1,1)"
           />
-          {/* Peaked cap body */}
-          <path
-            d={DICTATOR_KROON}
-            fill="#1d1e20"
-            stroke={DICTATOR_GOUD_CONTOUR}
-            strokeWidth="0.6"
-            strokeLinejoin="round"
-          />
-          {/* Cap band (red) */}
-          <path
-            d={DICTATOR_KROON_BAND}
-            fill="#9c1a2e"
-            stroke={DICTATOR_GOUD_CONTOUR}
-            strokeWidth="0.5"
-            strokeLinejoin="round"
-          />
-          {/* Cap visor (black) */}
-          <path
-            d={DICTATOR_PET_KLEP}
-            fill="#0c0c0c"
-            stroke={DICTATOR_GOUD_CONTOUR}
-            strokeWidth="0.5"
-            strokeLinejoin="round"
-          />
-          <path
-            d={DICTATOR_PET_KLEP_GLANS}
-            fill="rgba(255, 255, 255, 0.15)"
-          />
-          {/* Stormband (gold) */}
-          <path
-            d={DICTATOR_PET_STORM}
-            fill="none"
-            stroke="url(#fut-orn-goud)"
-            strokeWidth="0.8"
-            strokeLinecap="round"
-          />
-          <circle cx={26.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
-          <circle cx={73.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
-          {/* Cocarde (red star with gold badge) */}
-          <circle cx={50} cy={-9.5} r={3.8} fill="#7e1228" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
-          <path
-            d={DICTATOR_PET_COCARDE_STER}
-            fill="url(#fut-orn-goud)"
-            stroke={DICTATOR_GOUD_CONTOUR}
-            strokeWidth="0.3"
-            strokeLinejoin="round"
-          />
         </g>
         {/* En vóór de kaart: lauwerkransen langs de onderste zijkanten en het
             lakzegel in de punt (laagvolgorde uit de referentie-instructies).
@@ -1105,6 +1058,53 @@ export function FutKaartDefs() {
               strokeWidth="0.4"
             />
           ))}
+          {/* Peaked cap body */}
+          <path
+            d={DICTATOR_KROON}
+            fill="#1d1e20"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.6"
+            strokeLinejoin="round"
+          />
+          {/* Cap band (red) */}
+          <path
+            d={DICTATOR_KROON_BAND}
+            fill="#9c1a2e"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          {/* Cap visor (black) */}
+          <path
+            d={DICTATOR_PET_KLEP}
+            fill="#0c0c0c"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          <path
+            d={DICTATOR_PET_KLEP_GLANS}
+            fill="rgba(255, 255, 255, 0.15)"
+          />
+          {/* Stormband (gold) */}
+          <path
+            d={DICTATOR_PET_STORM}
+            fill="none"
+            stroke="url(#fut-orn-goud)"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+          />
+          <circle cx={26.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+          <circle cx={73.5} cy={1.5} r={1.3} fill="url(#fut-orn-goud)" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.3" />
+          {/* Cocarde (red star with gold badge) */}
+          <circle cx={50} cy={-9.5} r={3.8} fill="#7e1228" stroke={DICTATOR_GOUD_CONTOUR} strokeWidth="0.4" />
+          <path
+            d={DICTATOR_PET_COCARDE_STER}
+            fill="url(#fut-orn-goud)"
+            stroke={DICTATOR_GOUD_CONTOUR}
+            strokeWidth="0.3"
+            strokeLinejoin="round"
+          />
         </g>
         <FutDivisieDefs />
         {/* In-Form (#710) — het énige editie-ornament: champagnegouden

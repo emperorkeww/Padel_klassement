@@ -767,22 +767,24 @@ export const DICTATOR_ZEGEL = {
   ] as const,
 } as const;
 
-/** Watermark achter de spelerinformatie: een nauwelijks zichtbare kroon met
- *  lauwertakken — de "troon-crest" uit de referentie. ViewBox 0 0 100 100. */
+/** Watermark achter de spelerinformatie: een gevechtsster met
+ *  lauwertakken — het militaire embleem. ViewBox 0 0 100 100. */
 export const DICTATOR_WATERMARK: readonly OrnamentPad[] = [
-  // Kroonsilhouet.
+  // Grote gevechtsster.
   {
-    d: "M 30 62 L 30 44 L 39 55 L 50 36 L 61 55 L 70 44 L 70 62 Z",
+    d: "M 50 25 L 56 41 L 73 41 L 59 50 L 64 66 L 50 56 L 36 66 L 41 50 L 27 41 L 44 41 Z",
     soort: "lijn",
-    breedte: 1.6,
+    breedte: 2,
   },
-  { d: "M 31 67 L 69 67 L 68 73 L 32 73 Z", soort: "lijn", breedte: 1.6 },
-  { d: "M 28 41 A 2.6 2.6 0 1 1 33.2 41 A 2.6 2.6 0 1 1 28 41", soort: "vlak" },
-  { d: "M 47.4 32 A 2.8 2.8 0 1 1 53 32 A 2.8 2.8 0 1 1 47.4 32", soort: "vlak" },
-  { d: "M 66.8 41 A 2.6 2.6 0 1 1 72 41 A 2.6 2.6 0 1 1 66.8 41", soort: "vlak" },
+  // Extra binnenste gevechtsster-lijnen.
+  {
+    d: "M 50 32 L 54 44 L 66 44 L 56 51 L 60 62 L 50 55 L 40 62 L 44 51 L 34 44 L 46 44 Z",
+    soort: "lijn",
+    breedte: 1,
+  },
   // Lauwertakken eromheen.
-  { d: "M 50 92 C 30 86 17 70 18 50", soort: "lijn", breedte: 1.2 },
-  { d: "M 50 92 C 70 86 83 70 82 50", soort: "lijn", breedte: 1.2 },
+  { d: "M 50 82 C 25 76 13 60 14 38", soort: "lijn", breedte: 1.5 },
+  { d: "M 50 82 C 75 76 87 60 86 38", soort: "lijn", breedte: 1.5 },
 ] as const;
 
 export const DICTATOR_WATERMARK_KLEUR = "rgba(240, 199, 102, 0.09)";

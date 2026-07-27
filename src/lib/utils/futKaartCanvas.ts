@@ -974,6 +974,57 @@ function drawDictatorAchter(
     for (const d of DICTATOR_EPAULET_FRANJE) ctx.stroke(new Path2D(d));
     ctx.restore();
   }
+  ctx.restore();
+}
+
+/** El Padelissimo, vóór de kaart (#710): de twee lauwerkransen en het
+ *  lakzegel in de punt. */
+function drawDictatorVoor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+) {
+  const s = w / 100;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  for (const gespiegeld of [false, true]) {
+    ctx.save();
+    if (gespiegeld) {
+      ctx.translate(100, 0);
+      ctx.scale(-1, 1);
+    }
+    goudPad(ctx, DICTATOR_LAUWER_STENGEL.omtrek, 60, 142);
+    for (const d of DICTATOR_LAUWER_BLADEN) goudPad(ctx, d, 60, 142);
+    ctx.restore();
+  }
+  const [zx, zy] = DICTATOR_ZEGEL.midden;
+  const ring = ctx.createLinearGradient(0, zy - DICTATOR_ZEGEL.ring, 0, zy + DICTATOR_ZEGEL.ring);
+  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP) ring.addColorStop(offset, kleur);
+  ctx.beginPath();
+  ctx.arc(zx, zy, DICTATOR_ZEGEL.ring, 0, Math.PI * 2);
+  ctx.fillStyle = ring;
+  ctx.fill();
+  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
+  ctx.lineWidth = 0.6;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(zx, zy, DICTATOR_ZEGEL.vlak, 0, Math.PI * 2);
+  ctx.fillStyle = "#7d1a33";
+  ctx.fill();
+  ctx.lineWidth = 0.4;
+  ctx.stroke();
+  goudPad(ctx, DICTATOR_ZEGEL.ster, zy - 5, zy + 5);
+  for (const [bx, by, r] of DICTATOR_ZEGEL.bollen) {
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.fillStyle = ring;
+    ctx.fill();
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+  }
+
   // Peaked cap body
   ctx.save();
   const body = new Path2D(DICTATOR_KROON);
@@ -1054,56 +1105,7 @@ function drawDictatorAchter(
   ctx.lineWidth = 0.3;
   ctx.stroke(star);
   ctx.restore();
-  ctx.restore();
-}
 
-/** El Padelissimo, vóór de kaart (#710): de twee lauwerkransen en het
- *  lakzegel in de punt. */
-function drawDictatorVoor(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-) {
-  const s = w / 100;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  for (const gespiegeld of [false, true]) {
-    ctx.save();
-    if (gespiegeld) {
-      ctx.translate(100, 0);
-      ctx.scale(-1, 1);
-    }
-    goudPad(ctx, DICTATOR_LAUWER_STENGEL.omtrek, 60, 142);
-    for (const d of DICTATOR_LAUWER_BLADEN) goudPad(ctx, d, 60, 142);
-    ctx.restore();
-  }
-  const [zx, zy] = DICTATOR_ZEGEL.midden;
-  const ring = ctx.createLinearGradient(0, zy - DICTATOR_ZEGEL.ring, 0, zy + DICTATOR_ZEGEL.ring);
-  for (const [offset, kleur] of DICTATOR_GOUD_VERLOOP) ring.addColorStop(offset, kleur);
-  ctx.beginPath();
-  ctx.arc(zx, zy, DICTATOR_ZEGEL.ring, 0, Math.PI * 2);
-  ctx.fillStyle = ring;
-  ctx.fill();
-  ctx.strokeStyle = DICTATOR_GOUD_CONTOUR;
-  ctx.lineWidth = 0.6;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(zx, zy, DICTATOR_ZEGEL.vlak, 0, Math.PI * 2);
-  ctx.fillStyle = "#7d1a33";
-  ctx.fill();
-  ctx.lineWidth = 0.4;
-  ctx.stroke();
-  goudPad(ctx, DICTATOR_ZEGEL.ster, zy - 5, zy + 5);
-  for (const [bx, by, r] of DICTATOR_ZEGEL.bollen) {
-    ctx.beginPath();
-    ctx.arc(bx, by, r, 0, Math.PI * 2);
-    ctx.fillStyle = ring;
-    ctx.fill();
-    ctx.lineWidth = 0.4;
-    ctx.stroke();
-  }
   ctx.restore();
 }
 
