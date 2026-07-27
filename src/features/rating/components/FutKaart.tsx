@@ -1319,10 +1319,10 @@ export function FutKaartDefs() {
             <path
               key={d}
               d={d}
-              fill="none"
-              stroke={GOAT_METAAL_RIBBEL}
-              strokeWidth="0.3"
-              strokeLinecap="round"
+              fill="url(#fut-orn-metaal)"
+              stroke={GOAT_METAAL_CONTOUR}
+              strokeWidth="0.45"
+              strokeLinejoin="round"
             />
           ))}
           {/* Glowing pink gem on spear point */}

@@ -539,20 +539,39 @@ export const GOAT_WATERMERK: readonly OrnamentPad[] = [
     soort: "lijn",
     breedte: 2,
   },
-  // Oren.
-  { d: "M 41.5 37 C 35 39, 29 43, 25 48", soort: "lijn", breedte: 1.4 },
-  { d: "M 58.5 37 C 65 39, 71 43, 75 48", soort: "lijn", breedte: 1.4 },
-  // Kop met snuit, en de sik eronder — de kaart heeft er een van metaal.
+  // Hoorn-ribbels (textures).
+  { d: "M 38 25 C 33 21, 28 21, 24 25", soort: "lijn", breedte: 0.8 },
+  { d: "M 34 32 C 27 28, 20 28, 16 32", soort: "lijn", breedte: 0.8 },
+  { d: "M 28 41 C 18 38, 13 38, 10 43", soort: "lijn", breedte: 0.8 },
+  { d: "M 22 49 C 13 46, 8 49, 7 54", soort: "lijn", breedte: 0.8 },
+  { d: "M 62 25 C 67 21, 72 21, 76 25", soort: "lijn", breedte: 0.8 },
+  { d: "M 66 32 C 73 28, 80 28, 84 32", soort: "lijn", breedte: 0.8 },
+  { d: "M 72 41 C 82 38, 87 38, 90 43", soort: "lijn", breedte: 0.8 },
+  { d: "M 78 49 C 87 46, 92 49, 93 54", soort: "lijn", breedte: 0.8 },
+  // Oren (drooping en realistischer).
+  { d: "M 40 36 C 33 36, 25 42, 23 52 C 25 54, 30 50, 39 42 Z", soort: "lijn", breedte: 1.4 },
+  { d: "M 60 36 C 67 36, 75 42, 77 52 C 75 54, 70 50, 61 42 Z", soort: "lijn", breedte: 1.4 },
+  // Kop contour.
   {
-    d: "M 41 33 C 37.5 47, 38.5 60, 44 71 L 48 84 C 49 87.5, 51 87.5, 52 84 L 56 71 C 61.5 60, 62.5 47, 59 33 C 52.5 28, 47.5 28, 41 33 Z",
+    d: "M 43 32 C 40 37, 43 55, 45 68 L 47 77 L 50 78 L 53 77 L 55 68 C 57 55, 60 37, 57 32 Z",
     soort: "lijn",
     breedte: 2,
   },
-  { d: "M 44.5 71 C 47.5 73, 52.5 73, 55.5 71", soort: "lijn", breedte: 1 },
-  { d: "M 50 87 C 48.5 91, 48.5 94, 50 97 C 51.5 94, 51.5 91, 50 87 Z", soort: "vlak" },
-  // Ogen: twee kleine vlakjes — het enige dat de kop echt laat kijken.
-  { d: "M 43.6 47 A 1.6 1.6 0 1 1 46.8 47 A 1.6 1.6 0 1 1 43.6 47", soort: "vlak" },
-  { d: "M 53.2 47 A 1.6 1.6 0 1 1 56.4 47 A 1.6 1.6 0 1 1 53.2 47", soort: "vlak" },
+  // Kaken en snuit-lijnen.
+  { d: "M 44 48 C 45.5 54, 46 62, 47.5 68", soort: "lijn", breedte: 1 },
+  { d: "M 56 48 C 54.5 54, 54 62, 52.5 68", soort: "lijn", breedte: 1 },
+  // Neusbrug en neusgaten.
+  { d: "M 47.5 68 L 47.5 73 L 52.5 73 L 52.5 68", soort: "lijn", breedte: 0.8 },
+  { d: "M 47 75 C 48 78, 52 78, 53 75", soort: "lijn", breedte: 1 },
+  // Realistische ogen met horizontale pupilspleten.
+  { d: "M 41.5 45 C 43 44, 45 44, 46.5 45 C 45 47, 43 47, 41.5 45 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 42.5 45.5 L 45.5 45.5", soort: "lijn", breedte: 1.2 },
+  { d: "M 58.5 45 C 57 44, 55 44, 53.5 45 C 55 47, 57 47, 58.5 45 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 54.5 45.5 L 57.5 45.5", soort: "lijn", breedte: 1.2 },
+  // Geitenbaard (realistisch wispy).
+  { d: "M 50 78 C 49 86, 49 92, 50 97 C 51 92, 51 86, 50 78 Z", soort: "lijn", breedte: 1 },
+  { d: "M 48 77 C 46 84, 45 90, 46 95 C 47.5 90, 48 84, 48 77 Z", soort: "lijn", breedte: 0.8 },
+  { d: "M 52 77 C 54 84, 55 90, 54 95 C 52.5 90, 52 84, 52 77 Z", soort: "lijn", breedte: 0.8 },
 ] as const;
 
 /** Etskleur van het watermerk: de GOAT-inkt op lage alpha. Bewust net iets

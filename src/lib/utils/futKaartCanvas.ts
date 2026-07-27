@@ -1460,13 +1460,21 @@ function drawGoatVoor(
     GOAT_BAARD_SPEER,
     GOAT_METAAL_VERLOOP,
     GOAT_METAAL_CONTOUR,
-    119.6,
-    146.9,
+    116,
+    144,
     0.5,
   );
-  ctx.strokeStyle = GOAT_METAAL_RIBBEL;
-  ctx.lineWidth = 0.3;
-  for (const d of GOAT_BAARD_NERVEN) ctx.stroke(new Path2D(d));
+  for (const d of GOAT_BAARD_NERVEN) {
+    vulPad(
+      ctx,
+      d,
+      GOAT_METAAL_VERLOOP,
+      GOAT_METAAL_CONTOUR,
+      116,
+      144,
+      0.45,
+    );
+  }
 
   // Edelsteen op de speerpunt
   ctx.save();
