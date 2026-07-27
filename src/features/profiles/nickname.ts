@@ -49,7 +49,7 @@ function statsVoor(
   // Sorteren op datum om reeksen (streaks) te kunnen berekenen
   const sorted = [...matches]
     .filter((m) => outcomeFor(m, teams, playerId) !== null)
-    .sort((a, b) => (a.played_at ?? a.created_at).localeCompare(a.played_at ?? a.created_at));
+    .sort((a, b) => (a.played_at ?? a.created_at).localeCompare(b.played_at ?? b.created_at));
 
   let winstreeks = 0;
   let verliesreeks = 0;
