@@ -2141,6 +2141,15 @@ export function FutKaart({
             <use href={`#fut-orn-${ornamentVoor}-voor`} />
           </svg>
         )}
+        {divisie?.voor && divisie.voor.length > 0 && (
+          <svg
+            className="fut-kaart__ornament fut-kaart__ornament--voor"
+            viewBox={ORNAMENT_VIEWBOX}
+            aria-hidden="true"
+          >
+            <use href={`#fut-div-${divisie.key}-voor`} />
+          </svg>
+        )}
       </div>
     </div>
   );

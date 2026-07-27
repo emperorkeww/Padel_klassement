@@ -161,7 +161,8 @@
   .fut-kaart:has(.fut-kaart__flip:hover),
   .fut-kaart:has(.fut-kaart__flip:focus-visible) {
     transform: translateY(-4px) scale(1.05);
-    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4));
+    filter: drop-shadow(0 10px 16px rgba(10, 25, 18, 0.4))
+            drop-shadow(0 0 12px var(--kaart-lijn));
   }
   .fut-kaart:has(.fut-kaart__flip:active) {
     transform: translateY(-1px) scale(1.01);
@@ -424,7 +425,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 4px 0 3px;
+  padding: 4.5px 0 3.5px;
+  background: color-mix(in srgb, var(--kaart-lijn) 7%, transparent);
   border-top: 1.5px solid var(--kaart-lijn);
   border-bottom: 1px solid
     color-mix(in srgb, var(--kaart-lijn) 55%, transparent);
