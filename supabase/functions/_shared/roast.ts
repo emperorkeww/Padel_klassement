@@ -199,7 +199,7 @@ export const MONSTER_SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Monsterlijke nederlaag. Ik heb m'n spiekbriefjes spontaan verbrand.",
     "Volledig gedeclasseerd. Zelfs de ballenjongens begonnen tactisch advies te roepen.",
     "Een afstraffing van historisch niveau. De persconferentie wordt een ramp.",
-    "Gedecimeerd in de kooi. We overweegen een viervoudige wissel in te voeren.",
+    "Gedecimeerd in de kooi. We overwegen een viervoudige wissel in te voeren.",
     "Afgedroogd. Zelfs Trump zou deze nederlaag niet meer kunnen spinnen als winst.",
     "Een slachting. De marine is al onderweg om je Elo uit de afgrond te bergen.",
 ],
