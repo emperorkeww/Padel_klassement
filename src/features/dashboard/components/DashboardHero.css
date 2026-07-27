@@ -923,7 +923,11 @@
 
   color: #fff;
   border-color: var(--inform-lijn);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
+  /* Dunne champagnegouden binnenrand: die maakt van de tint een laag mét een
+     kader in plaats van een wolk over de kaart. */
+  box-shadow:
+    inset 0 0 0 1px rgba(247, 223, 160, 0.28),
+    0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
 }
 .hero--overlay-inform .hero__eyebrow {
   color: #f7dfa0;
@@ -975,7 +979,10 @@
 
   color: #fff;
   border-color: var(--onfire-lijn);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--onfire-sintel-diep) 45%, transparent);
+  /* Zelfde kader als bij In-Form, in gebrand koper. */
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 138, 84, 0.32),
+    0 8px 24px color-mix(in srgb, var(--onfire-sintel-diep) 45%, transparent);
 }
 .hero--overlay-onfire .hero__eyebrow {
   color: #ffd9a0;
@@ -1042,6 +1049,147 @@
       rgba(36, 16, 9, 0.9) 60%,
       rgba(20, 7, 4, 0.9) 100%
     );
+}
+
+/* ---- Ornamenten van de twee overlays (#771) ----
+   Dun en langs de randen. Een overlay ligt bóven het permanente thema, dus alles
+   wat hij toevoegt moet de kaart eronder herkenbaar laten en de tekst met rust
+   laten. Vandaar lijnen en crests in plaats van vlakken, en geen enkel ornament
+   over de tekstkolom. */
+
+/* Fijne diagonale groeven in het metaal. Twee strepenlagen die elkaar net niet
+   kruisen — dat leest als geborsteld metaal en kost geen afbeelding. */
+.hero__groeven {
+  position: absolute;
+  inset: 0;
+}
+.hero__groeven--inform {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 240, 210, 0.035) 0 1px,
+    transparent 1px 6px
+  );
+}
+.hero__groeven--onfire {
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 200, 150, 0.04) 0 1px,
+    transparent 1px 5px
+  );
+}
+/* De watermerken van de twee edities: de bliksem met zijn halo, en het
+   vlamsilhouet dat in dit register de thermische ringen al meebrengt. Rechts,
+   waar de tekstkolom ophoudt, en zo bleek dat de rankingzin er dwars doorheen
+   leesbaar blijft. */
+.hero__watermerk--bliksem,
+.hero__watermerk--vlam {
+  right: 5%;
+  height: 150%;
+  opacity: 0.3;
+  filter: none;
+}
+:root[data-theme="dark"] .hero__watermerk--bliksem,
+:root[data-theme="dark"] .hero__watermerk--vlam {
+  /* Deze twee liggen op de donkere tint, niet op licht kaartmateriaal: de
+     inversie van het basiswatermerk zou ze juist wegpoetsen. */
+  filter: none;
+  opacity: 0.32;
+}
+/* De elektrische pulsering van In-Form: één ring die traag uitdijt vanuit de
+   crest. Alleen `transform` en `opacity`, en volledig weg zonder
+   bewegingsvoorkeur — een stilstaande ring zou als een vlek lezen. */
+.hero__puls {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(90px, 14%, 190px);
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(247, 223, 160, 0.5);
+  transform: translate(-50%, -50%) scale(0.35);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero__puls {
+    animation: hero-puls 4.2s ease-out infinite;
+  }
+  @keyframes hero-puls {
+    0% {
+      transform: translate(-50%, -50%) scale(0.35);
+      opacity: 0.55;
+    }
+    45%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+  }
+}
+/* De snelheidslijnen van In-Form en de hittevinnen van On Fire: langs de
+   onderrand, waar geen inkt staat. Eén tekening, gespiegeld voor de andere
+   kant. */
+.hero__snelheid {
+  position: absolute;
+  bottom: 0;
+  width: clamp(70px, 12%, 150px);
+  aspect-ratio: 2 / 1;
+  opacity: 0.75;
+}
+.hero__snelheid--links {
+  left: 0;
+}
+.hero__snelheid--rechts {
+  right: 0;
+  transform: scaleX(-1);
+}
+.hero__vinnen {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: clamp(90px, 15%, 190px);
+  aspect-ratio: 2 / 1;
+  opacity: 0.7;
+}
+/* Sintels langs de zijranden — een handvol, zoals op de kaart. */
+.hero__sintels {
+  position: absolute;
+  top: 50%;
+  width: clamp(20px, 3%, 34px);
+  aspect-ratio: 24 / 60;
+  transform: translateY(-50%);
+  opacity: 0.8;
+}
+.hero__sintels--links {
+  left: 2%;
+}
+.hero__sintels--rechts {
+  right: 2%;
+  transform: translateY(-50%) scaleX(-1);
+}
+/* De twee overlay-crests in de bovenrand. */
+.hero__crest--bliksem,
+.hero__crest--vlam {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(34px, 5%, 54px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -46%);
+}
+.hero__crest--bliksem {
+  filter: drop-shadow(0 2px 4px rgba(10, 12, 20, 0.55));
+}
+.hero__crest--vlam {
+  filter: drop-shadow(0 2px 4px rgba(20, 7, 4, 0.6));
+}
+/* Loopt er een overlay, dan claimt díens crest het midden van de bovenrand en
+   schuift die van het permanente thema opzij. Twee crests op dezelfde plek zou
+   een kluwen geven, en de tijdelijke status is het nieuws van deze week. */
+.hero__lagen--voor.is-overlay .hero__crest--kroon,
+.hero__lagen--voor.is-overlay .hero__crest--troon,
+.hero__lagen--voor.is-overlay .hero__crest--pion {
+  left: 26%;
 }
 
 /* De bewegende glansbaan (HeroSheen). Op de kaart schuift die met een transform;

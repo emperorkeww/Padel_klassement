@@ -20,6 +20,17 @@ const HERO_CSS = readFileSync(
   "utf8",
 );
 
+/** Het `no-preference`-blok waarin deze animatie staat. Er zijn er meerdere in
+ *  het bestand (de glansbaan, de pulse-ring), dus zoeken op naam i.p.v. op het
+ *  eerste blok. */
+function bewegingsblok(animatie: string): string {
+  for (const m of HERO_CSS.matchAll(
+    /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/g,
+  ))
+    if (m[0].includes(animatie)) return m[0];
+  throw new Error(`geen no-preference-blok gevonden voor ${animatie}`);
+}
+
 const LEGE_STATUS: HeroStatus = {
   dictator: false,
   bigDaddy: false,
@@ -329,6 +340,74 @@ describe("<DashboardHero /> — decoratielagen", () => {
     ).toContain("📊");
   });
 
+  it("geeft In-Form zijn bliksem, groeven en snelheidslijnen (#771)", () => {
+    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    for (const klasse of [
+      ".hero__crest--bliksem",
+      ".hero__groeven--inform",
+      ".hero__watermerk--bliksem",
+      ".hero__puls",
+      ".hero__snelheid--links",
+      ".hero__snelheid--rechts",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
+  it("geeft On Fire zijn vlamcrest, vinnen en sintels (#771)", () => {
+    const hero = renderKaart({ onFire: true, overlay: "onfire" });
+    for (const klasse of [
+      ".hero__crest--vlam",
+      ".hero__groeven--onfire",
+      ".hero__watermerk--vlam",
+      ".hero__vinnen",
+      ".hero__sintels--links",
+      ".hero__sintels--rechts",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
+  it("laat de overlay-ornamenten bovenop die van het thema liggen (AC4)", () => {
+    // De kern van #771: een pias die in vorm raakt houdt zijn narrenkap en zijn
+    // maskers; de bliksem komt erbij, niet in de plaats.
+    const hero = renderKaart({
+      pias: true,
+      inForm: true,
+      thema: "pias",
+      overlay: "inform",
+    });
+    for (const klasse of [
+      ".hero__crest--kap",
+      ".hero__medaillon",
+      ".hero__decor",
+      ".hero__crest--bliksem",
+      ".hero__tint--inform",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
+  it("schuift de crest van het thema opzij zodra een overlay er een neerzet", () => {
+    // Twee crests op dezelfde plek in de bovenrand zou een kluwen geven.
+    const hero = renderKaart({
+      bigDaddy: true,
+      onFire: true,
+      thema: "bigdaddy",
+      overlay: "onfire",
+    });
+    expect(hero.querySelector(".hero__lagen--voor")).toHaveClass("is-overlay");
+    expect(HERO_CSS).toMatch(
+      /\.hero__lagen--voor\.is-overlay[^{]*\{\s*left:\s*26%/,
+    );
+  });
+
+  it("beweegt de pulse-ring alleen zonder bewegingsvoorkeur (AC11)", () => {
+    // Anders dan de glansbaan heeft de ring géén zinnige stilstaande vorm: een
+    // halfdoorzichtige cirkel midden op de kaart leest als een vlek. Hij blijft
+    // dus onzichtbaar bij `reduce`.
+    const blok = bewegingsblok("hero-puls");
+    expect(blok).toMatch(/animation: hero-puls/);
+    expect(HERO_CSS.replace(blok, "")).not.toMatch(/animation:\s*hero-puls/);
+  });
+
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {
     const hero = renderKaart({ inForm: true, overlay: "inform" });
     const lagen = hero.querySelector(".hero__lagen");
@@ -354,13 +433,11 @@ describe("<DashboardHero /> — decoratielagen", () => {
   it("beweegt alleen zonder bewegingsvoorkeur, met een statische baan als terugval", () => {
     // De animatie hangt achter `no-preference`, dus wie beweging afwijst houdt de
     // stilstaande glans in plaats van geen glans (AC11).
-    const beweging = HERO_CSS.match(
-      /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/,
-    );
-    expect(beweging?.[0]).toMatch(/animation: hero-sheen/);
-    expect(beweging?.[0]).toMatch(/@keyframes hero-sheen/);
+    const blok = bewegingsblok("hero-sheen");
+    expect(blok).toMatch(/animation: hero-sheen/);
+    expect(blok).toMatch(/@keyframes hero-sheen/);
     // Buiten dat blok staat geen tweede animatie op de baan.
-    expect(HERO_CSS.replace(beweging![0], "")).not.toMatch(/animation:\s*hero-sheen/);
+    expect(HERO_CSS.replace(blok, "")).not.toMatch(/animation:\s*hero-sheen/);
   });
 
   it("houdt de inhoud boven de decoratie", () => {

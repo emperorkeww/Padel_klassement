@@ -45,6 +45,21 @@ import {
   PiasWatermerk,
 } from "@/features/standings/components/piasOrnamenten";
 import {
+  INFORM_MOTIEF,
+  INFORM_MOTIEF_KLEUR,
+} from "@/features/rating/components/ornamentenInform";
+import {
+  ONFIRE_WATERMARK,
+  ONFIRE_WATERMARK_KLEUR,
+} from "@/features/rating/components/ornamentenOnfire";
+import {
+  InformBliksemCrest,
+  InformSnelheidslijn,
+  OnfireSintels,
+  OnfireVinnen,
+  OnfireVlamCrest,
+} from "./heroOrnamentenOverlay";
+import {
   PietDoorgeefringen,
   PietGebrokenZegel,
   PietPionCrest,
@@ -156,6 +171,57 @@ function OrnamentenVoor({ permanent }: { permanent: HeroPermanent }) {
   }
 }
 
+/** Wat een tijdelijke overlay ín de geklipte laag legt: groeven, watermerk en
+ *  de lijnen langs de rand. Alles dun en langs de randen — de kaart eronder moet
+ *  herkenbaar blijven en de tekst leesbaar. */
+function OverlayAchter({ overlay }: { overlay: HeroOverlay }) {
+  switch (overlay) {
+    case "inform":
+      return (
+        <>
+          <span className="hero__groeven hero__groeven--inform" />
+          <HeroWatermerk
+            paden={INFORM_MOTIEF}
+            kleur={INFORM_MOTIEF_KLEUR}
+            className="hero__watermerk--bliksem"
+          />
+          <span className="hero__puls" />
+          <InformSnelheidslijn className="hero__snelheid hero__snelheid--links" />
+          <InformSnelheidslijn className="hero__snelheid hero__snelheid--rechts" />
+        </>
+      );
+    case "onfire":
+      return (
+        <>
+          <span className="hero__groeven hero__groeven--onfire" />
+          {/* Het vlamwatermerk draagt in dit register óók de thermische ringen. */}
+          <HeroWatermerk
+            paden={ONFIRE_WATERMARK}
+            kleur={ONFIRE_WATERMARK_KLEUR}
+            className="hero__watermerk--vlam"
+          />
+          <OnfireVinnen className="hero__vinnen" />
+          <OnfireSintels className="hero__sintels hero__sintels--links" />
+          <OnfireSintels className="hero__sintels hero__sintels--rechts" />
+        </>
+      );
+    default:
+      return null;
+  }
+}
+
+/** De crest van de overlay: het enige dat over de rand steekt. */
+function OverlayVoor({ overlay }: { overlay: HeroOverlay }) {
+  switch (overlay) {
+    case "inform":
+      return <InformBliksemCrest className="hero__crest hero__crest--bliksem" />;
+    case "onfire":
+      return <OnfireVlamCrest className="hero__crest hero__crest--vlam" />;
+    default:
+      return null;
+  }
+}
+
 export function HeroLagen({
   permanent,
   overlay,
@@ -177,7 +243,8 @@ export function HeroLagen({
     permanent === "bigdaddy" ||
     permanent === "dictator" ||
     permanent === "pias" ||
-    permanent === "piet";
+    permanent === "piet" ||
+    overlay != null;
 
   return (
     <>
@@ -209,14 +276,25 @@ export function HeroLagen({
             #771 rechtzet. Half doorlatend, zodat de kaart eronder herkenbaar
             blijft. */}
         {overlay && <span className={`hero__tint hero__tint--${overlay}`} />}
+        <OverlayAchter overlay={overlay} />
         {/* Stap 8: de bewegende glans, gedeeld door beide overlays. */}
         {overlay && <HeroSheen overlay={overlay} />}
       </span>
       {/* Stap 9: alles wat over de rand heen steekt. Alleen renderen als er iets
           in staat — een lege span in de DOM van elke kaart is nergens goed voor. */}
       {heeftVoor && (
-        <span className="hero__lagen hero__lagen--voor" aria-hidden="true">
+        <span
+          className={`hero__lagen hero__lagen--voor${
+            overlay ? " is-overlay" : ""
+          }`}
+          aria-hidden="true"
+        >
+          {/* Loopt er een overlay, dan claimt díens crest het midden van de
+              bovenrand en schuift die van het permanente thema opzij (CSS). Twee
+              crests op dezelfde plek zou een kluwen geven, en de tijdelijke
+              status is het nieuws van deze week. */}
           <OrnamentenVoor permanent={permanent} />
+          <OverlayVoor overlay={overlay} />
         </span>
       )}
     </>
