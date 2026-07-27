@@ -16,15 +16,18 @@ export function HeroWatermerk({
   paden,
   kleur,
   breedte,
+  className,
 }: {
   paden: readonly OrnamentPad[];
   kleur: string;
   /** Breedte als fractie van de doos (uit het register); default 0.92. */
   breedte?: number;
+  /** Extra klasse wanneer een thema zijn eigen plaatsing of dekking wil. */
+  className?: string;
 }) {
   return (
     <svg
-      className="hero__watermerk"
+      className={`hero__watermerk${className ? ` ${className}` : ""}`}
       viewBox="0 0 100 100"
       aria-hidden="true"
       style={{ ["--hero-watermerk-b" as string]: `${(breedte ?? 0.92) * 100}%` }}

@@ -12,6 +12,7 @@ import type { Badge } from "@/features/profiles/badges";
 import type { Profile } from "@/types";
 import { heroKlassen, type HeroOverlay, type HeroPermanent } from "../heroThema";
 import { heroBasis, heroBasisKlassen } from "../heroDivisie";
+import { HeroBadgeSieraad } from "./HeroBadgeSieraad";
 import { HeroCrest } from "./HeroCrest";
 import { HeroLagen } from "./HeroLagen";
 import { BadgeStrip } from "./BadgeStrip";
@@ -229,13 +230,18 @@ export function DashboardHero({
           {(crests.length > 0 || earnedBadges.length > 0) && (
             <div className="hero__titles" aria-label="Jouw titels en badges">
               {badge && (
-                <HeroCrest
-                  variant={badge.variant}
-                  emoji={badge.emoji}
-                  label={badge.label}
-                  uitleg={badge.uitleg}
-                  prominent
-                />
+                <span className="hero__badge-slot">
+                  <HeroCrest
+                    variant={badge.variant}
+                    emoji={badge.emoji}
+                    label={badge.label}
+                    uitleg={badge.uitleg}
+                    prominent
+                  />
+                  {/* Het lakzegel van de Dictator hoort naast zijn badge, niet in
+                      de decoratielaag — die weet niet waar de rij afbreekt. */}
+                  <HeroBadgeSieraad permanent={thema} />
+                </span>
               )}
               {chips.map((c) => (
                 <HeroCrest
