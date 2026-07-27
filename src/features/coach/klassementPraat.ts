@@ -194,6 +194,11 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De rode lantaarn is tijdelijk. Pak dat racket en klim eruit.",
     "Laag in de tabel. Alle kansen liggen open voor een flinke inhaalslag.",
     "Onderin. Ideaal om zonder druk aan je techniek te schaven.",
+    "De hekkensluiter. Zie het positief: vanaf hier is elke richting vooruitgang.",
+    "Kelderklasse. Een prima plek om in alle rust en zonder druk aan je basistechniek te schaven.",
+    "Laag geklasseerd. Maar drie goede potten en je bent er weer helemaal uit.",
+    "De rode lantaarn is momenteel voor jou. Geef hem snel weer door aan de volgende.",
+    "Onderaan het klassement. De sproeiers staan daar gelukkig wat minder hard.",
   ],
   gemeen: [
     "De kelder van het klassement. Ik heb er een aparte pagina voor in m'n notitieboekje: 'zorgenkindjes'.",
@@ -224,6 +229,11 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "De kelder is koud en tochtig, maar jouw vorm is vandaag nog een flink stuk onder het vriespunt gezakt.",
     "Rode lantaarn. Mijn spiekbriefjes en tactische notities bieden helaas geen EHBO voor deze treurige stand.",
     "Laag in het klassement. Ik overweeg serieus je rackets in beslag te nemen en ze te schenken aan de minigolf.",
+    "De degradatiezone hangt als een donkere wolk boven je rating. Tijd voor actie.",
+    "Hekkensluiter. Zelfs met een driedubbele wissel in de 89e minuut is hier geen eer aan te behalen.",
+    "Onderaan de lijst. Zelfs de Romeinse pers had vandaag weinig goeds over voor dit spel.",
+    "De rode lantaarn brandt fel. M'n denkbeeldige viool speelt een droevig deuntje voor je.",
+    "Kelderbewoner. Ik adviseer je dringend om de trainingen te verdubbelen.",
   ],
   radioactief: [
     "De allerlaatste regionen van het klassement. Ik heb m'n pet diep over m'n ogen getrokken.",
@@ -254,6 +264,11 @@ export const KELDER: Record<RoastIntensiteit, readonly string[]> = {
     "Kruipruimte van de kelder. Ik heb de marine al gebeld, maar ze weigeren zo diep te duiken voor jouw Elo.",
     "Absoluut dieptepunt. M'n tactische notitieboekje weigert spontaan dienst om deze rating te registreren.",
     "Helemaal onderaan. Zelfs m'n chique pak kreukt van pure plaatsvervangende schaamte als ik hiernaar kijk.",
+    "De diepste krochten van het klassement. Zelfs de aardkern voelt warmer aan dan jouw vorm.",
+    "Een prestatie zo gitzwart dat we de verlichting op baan 1 moeten verdubbelen om je ranking te zien.",
+    "Allerlaatste. Ik heb een abonnement op een gravendierentijdschrift genomen om je niveau te begrijpen.",
+    "De absolute kelder. Zelfs m'n legendarische Napoli-notities bieden geen troost voor deze treurnis.",
+    "Helemaal onderaan. Ik adviseer je om je padel-outfit in te ruilen voor een duikerspak.",
   ],
 } as const;
 

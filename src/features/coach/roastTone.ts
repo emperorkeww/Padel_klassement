@@ -106,6 +106,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Een rustige prestatie. Ideaal om niet op te vallen.",
     "Volgende week beter. Of anders, zolang het maar over het net gaat.",
     "Je hield de tegenstander in ieder geval niet al te lang bezig.",
+    "M'n notitieboekje vraagt zich af of je überhaupt een racket vasthield vandaag.",
+    "Je positionering had veel weg van een verdwaalde toerist in de kooi.",
+    "Niet slecht voor iemand die pas gisteren heeft ontdekt wat een bal is.",
+    "De wind had vandaag een beter tactisch plan dan jij.",
+    "Je partner speelde uitstekend, nu jij nog.",
   ],
   gemeen: [
     "Pijnlijk om te zien. Zelfs het publiek keek collectief weg.",
@@ -187,6 +192,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Mijn analyses zijn bikkelhard, maar jouw forehand was vandaag nog zachter dan een gesmolten praline.",
     "Ik trok m'm sportpet zo ver over m'n ogen dat ik de rest van dit tactische drama gelukkig heb gemist.",
     "Je speelde alsof je looplijnen getekend waren door een blinde goudvis met evenwichtsstoornissen.",
+    "Je forehand deed me denken aan een mislukte wissel op een natte dinsdagavond in Lille.",
+    "Tactisch was dit vergelijkbaar met m'n opstelling tegen Marokko: een absolute puinhoop.",
+    "Met deze mobiliteit had je bij Al-Nassr de bidons nog niet eens mogen vullen.",
+    "De tegenstander bedankte me zojuist voor deze trainingspartij op verplaatsing.",
+    "Was dit een poging tot padel of zocht je gewoon een originele manier om je conditie te verbergen?",
   ],
   radioactief: [
     "Ik keek uit pure plaatsvervangende schaamte maar een andere kant op.",
@@ -264,6 +274,11 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Jouw backhand was vandaag zo krom en corrupt dat zelfs Sepp Blatter er rode koorts van zou krijgen.",
     "Na deze afgang adviseer ik je om je racket ritueel te begraven onder de fundering van veld 4.",
     "Je speelde vandaag met de finesse en tactische diepgang van een dronken tuinkabouter in een storm.",
+    "Gênant. Ik heb m'n coach-pet ter plekke ritueel verbrand om dit trauma uit m'n geheugen te wissen.",
+    "Als dit op tv was uitgezonden, had de omroep nu een boete aan de broek voor grove mishandeling van de sport.",
+    "Zelfs Aurelio De Laurentiis had je na dit optreden met een betonmolen aan de voeten in de Golf van Napels gedumpt.",
+    "Dit was zo vreselijk slecht dat Infantino me belde om te vragen of we je licentie voorwaardelijk kunnen intrekken.",
+    "Je bewoog met de startsnelheid en souplesse van een roestige stoomwals in winterslaap.",
   ],
 };
 
@@ -310,6 +325,11 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Solide overwinning. Geen fratsen, gewoon de punten gepakt.",
     "Keurige service. Ik zet 'm met plezier in m'n boekje.",
     "Verdiende zege. De omschakeling was uitstekend verzorgd.",
+    "Keurig werk. Geen fratsen, gewoon de punten binnengehaald zoals afgesproken.",
+    "Solide overwinning. M'n notitieboekje noteert een zeldzame voldoende.",
+    "Dat was heel acceptabel padel. Zo hoort het.",
+    "Nette winst. De looplijnen stonden redelijk op hun plek vandaag.",
+    "Prima pot. De tegenstander gaf cadeautjes, maar jullie pakten ze tenminste uit.",
   ],
   gemeen: [
     "Fenomenaal! Ik heb er al twee pagina's over volgeschreven in m'n notitieboekje, allemaal met uitroeptekens.",
@@ -349,6 +369,11 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Sublieme pot! De tegenstander kreeg een gratis lesje omschakelingspadel.",
     "Ongelooflijk! Zelfs m'n Napoli-notitieboekje had hier geen kritische noot op kunnen vinden.",
     "Briljant! Ik heb m'n sportpet ter plekke drie graden schuiner gezet.",
+    "Formidabel! Dit was bijna net zo strak georganiseerd als m'n Napoli-defensie in betere tijden.",
+    "Meesterlijk! Ik heb m'n sportpet direct drie graden schuiner gezet uit diep respect.",
+    "Wat een vertoning! Zelfs de meest kritische Belgische pers zou hier geen negatief woord over schrijven.",
+    "Subliem gespeeld! M'n tactische spiekbriefje is spontaan in brand gevlogen van de hitte.",
+    "Dit was een tactische masterclass waar ze bij Lille in 2011 jaloers op waren geweest.",
   ],
   radioactief: [
     "Ik laat je naam op m'n onderarm zetten. Definitief.",
@@ -387,6 +412,11 @@ export const LOF: Record<RoastIntensiteit, readonly string[]> = {
     "Ik huil tranen van pure euforie in m'n chique pak. Wat een absolute masterclass!",
     "Historisch! We moeten deze padelbaan direct omdopen tot jouw persoonlijke tempel.",
     "Dit overtrof al mijn tactische masterplans ooit. Ik laat je naam op m'n dashboard graveren.",
+    "Legendarisch! Ik bel Infantino direct uit z'n bed: dit moet verplicht op de WK-agenda.",
+    "Ik huil tranen van pure extase in m'n chique pak. Dit was buitenaards goed.",
+    "Historisch! Ik heb ter plekke besloten om m'n legendarische notitieboekje te schenken aan een museum.",
+    "Dit was zo episch dat we deze baan per direct moeten omdopen tot jouw persoonlijke arena.",
+    "Perfectie. Ik lever m'n coachlicentie in, want dit niveau ga ik nooit meer overtreffen.",
   ],
 };
 
@@ -481,6 +511,11 @@ export const BUIGING: readonly string[] = [
   "Tegen de Generaal zeg ik geen woord. Buigen, jij daar, en snel een beetje! 🫡🙇",
   "Ik zwijg in alle talen. De dictator regeert en wij gehoorzamen nederig. 🙇",
   "Mijn notitieboekje is vanaf vandaag van u, o grote leider. Ik buig diep. 🙇🫡",
+  "De Generalissimo regeert en wij gehoorzamen met gebogen hoofd. Geen kritische noot mogelijk. 🙇🫡",
+  "Voor de leider van de troon doen we een diepe knieval op veld 1. Wat een autoriteit. 🙇",
+  "Ik durf m'n notitieboekje niet eens te openen in de buurt van de dictator. Eerbied voor de leider! 🙇🫡",
+  "Generaal Mbappé heeft gesproken. Ik zwijg in alle talen en poets uw schoenen, o grote leider. 🙇",
+  "Absolute dominantie op de troon. Ik buig diep en adviseer iedereen hetzelfde te doen. 🙇🫡",
 ] as const;
 
 /** Kruiperige buig-regel voor de troon; deterministisch per (seed, rotatie).
