@@ -2088,25 +2088,25 @@ export function FutKaart({
   ) : null;
   return (
     <div className={klassen} ref={kaartRef}>
-      {(divisie?.achter?.length ?? 0) > 0 && (
-        <svg
-          className="fut-kaart__ornament"
-          viewBox={ORNAMENT_VIEWBOX}
-          aria-hidden="true"
-        >
-          <use href={`#fut-div-${divisie!.key}-achter`} />
-        </svg>
-      )}
-      {ornament && (
-        <svg
-          className="fut-kaart__ornament"
-          viewBox={ORNAMENT_VIEWBOX}
-          aria-hidden="true"
-        >
-          <use href={`#fut-orn-${ornament}-achter`} />
-        </svg>
-      )}
       <div className="fut-kaart__flipper">
+        {(divisie?.achter?.length ?? 0) > 0 && (
+          <svg
+            className="fut-kaart__ornament"
+            viewBox={ORNAMENT_VIEWBOX}
+            aria-hidden="true"
+          >
+            <use href={`#fut-div-${divisie!.key}-achter`} />
+          </svg>
+        )}
+        {ornament && (
+          <svg
+            className="fut-kaart__ornament"
+            viewBox={ORNAMENT_VIEWBOX}
+            aria-hidden="true"
+          >
+            <use href={`#fut-orn-${ornament}-achter`} />
+          </svg>
+        )}
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
@@ -2132,16 +2132,16 @@ export function FutKaart({
             </span>
           </span>
         </div>
+        {ornamentVoor && (
+          <svg
+            className="fut-kaart__ornament fut-kaart__ornament--voor"
+            viewBox={ORNAMENT_VIEWBOX}
+            aria-hidden="true"
+          >
+            <use href={`#fut-orn-${ornamentVoor}-voor`} />
+          </svg>
+        )}
       </div>
-      {ornamentVoor && (
-        <svg
-          className="fut-kaart__ornament fut-kaart__ornament--voor"
-          viewBox={ORNAMENT_VIEWBOX}
-          aria-hidden="true"
-        >
-          <use href={`#fut-orn-${ornamentVoor}-voor`} />
-        </svg>
-      )}
     </div>
   );
 }
