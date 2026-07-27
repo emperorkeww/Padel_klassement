@@ -75,6 +75,15 @@ import {
   BigDaddyKroonCrest,
   BigDaddyLint,
 } from "./heroOrnamentenBigDaddy";
+import {
+  KAMPIOEN_ZEGEL,
+  KAMPIOEN_ZEGEL_KLEUR,
+} from "@/features/rating/components/ornamentenKampioen";
+import {
+  KampioenKransCrest,
+  KampioenKrans,
+  KampioenLint,
+} from "./heroOrnamentenKampioen";
 
 /** Wat een permanent thema in de geklipte laag legt: materiaaltextuur en het
  *  watermerk. Alles wat half buiten de kaart hangt staat in `OrnamentenVoor`. */
@@ -114,6 +123,14 @@ function OrnamentenAchter({ permanent }: { permanent: HeroPermanent }) {
           <PiasKaartDecor className="hero__decor" />
           <PiasWatermerk className="hero__watermerk--maskers" />
         </>
+      );
+    case "kampioen":
+      return (
+        <HeroWatermerk
+          paden={KAMPIOEN_ZEGEL}
+          kleur={KAMPIOEN_ZEGEL_KLEUR}
+          className="hero__watermerk--zegel"
+        />
       );
     case "piet":
       return <PietDoorgeefringen className="hero__ringen" />;
@@ -155,6 +172,16 @@ function OrnamentenVoor({ permanent }: { permanent: HeroPermanent }) {
               op De Schandpaal de portretlijst vastzetten. */}
           <PiasNarrenkap className="hero__crest hero__crest--kap" />
           <PiasMaskerMedaillon className="hero__medaillon" />
+        </>
+      );
+    case "kampioen":
+      return (
+        <>
+          <KampioenKransCrest className="hero__crest hero__crest--kampioen" />
+          <KampioenKrans className="hero__krans hero__krans--links" />
+          <KampioenKrans className="hero__krans hero__krans--rechts" />
+          <KampioenLint className="hero__lint-kam hero__lint-kam--links" />
+          <KampioenLint className="hero__lint-kam hero__lint-kam--rechts" />
         </>
       );
     case "piet":
@@ -244,6 +271,7 @@ export function HeroLagen({
     permanent === "dictator" ||
     permanent === "pias" ||
     permanent === "piet" ||
+    permanent === "kampioen" ||
     overlay != null;
 
   return (
