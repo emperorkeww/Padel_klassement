@@ -38,6 +38,18 @@ import {
   BD_KROON_MOTIEF,
   BD_KROON_MOTIEF_KLEUR,
 } from "@/features/rating/components/ornamentenBigDaddy";
+import {
+  PiasKaartDecor,
+  PiasMaskerMedaillon,
+  PiasNarrenkap,
+  PiasWatermerk,
+} from "@/features/standings/components/piasOrnamenten";
+import {
+  PietDoorgeefringen,
+  PietGebrokenZegel,
+  PietPionCrest,
+  PietSluiting,
+} from "./heroOrnamentenPiet";
 import type { HeroBasis } from "../heroDivisie";
 import type { HeroOverlay, HeroPermanent } from "../heroThema";
 import { HeroSheen } from "./HeroSheen";
@@ -78,6 +90,18 @@ function OrnamentenAchter({ permanent }: { permanent: HeroPermanent }) {
           <DictatorRandRuit className="hero__ruit hero__ruit--onder" />
         </>
       );
+    case "pias":
+      return (
+        <>
+          {/* Harlekijnruiten en de handvol confettisnippers, precies zoals De
+              Schandpaal ze legt: patroon in px, niet in procenten, zodat ze op
+              een brede kaart even schaars blijven. */}
+          <PiasKaartDecor className="hero__decor" />
+          <PiasWatermerk className="hero__watermerk--maskers" />
+        </>
+      );
+    case "piet":
+      return <PietDoorgeefringen className="hero__ringen" />;
     default:
       return null;
   }
@@ -108,6 +132,25 @@ function OrnamentenVoor({ permanent }: { permanent: HeroPermanent }) {
           <DictatorKaderHoek className="hero__hoek hero__hoek--ro" />
         </>
       );
+    case "pias":
+      return (
+        <>
+          {/* De narrenkap hangt over de bovenrand en het gebarsten
+              maskermedaillon zit in de onderhoek — dezelfde twee ornamenten die
+              op De Schandpaal de portretlijst vastzetten. */}
+          <PiasNarrenkap className="hero__crest hero__crest--kap" />
+          <PiasMaskerMedaillon className="hero__medaillon" />
+        </>
+      );
+    case "piet":
+      return (
+        <>
+          <PietPionCrest className="hero__crest hero__crest--pion" />
+          <PietGebrokenZegel className="hero__zegel-breuk" />
+          <PietSluiting className="hero__ketting hero__ketting--links" />
+          <PietSluiting className="hero__ketting hero__ketting--rechts" />
+        </>
+      );
     default:
       return null;
   }
@@ -130,7 +173,11 @@ export function HeroLagen({
 
   // Niet elk thema heeft iets dat over de rand steekt; zonder inhoud blijft de
   // tweede container weg.
-  const heeftVoor = permanent === "bigdaddy" || permanent === "dictator";
+  const heeftVoor =
+    permanent === "bigdaddy" ||
+    permanent === "dictator" ||
+    permanent === "pias" ||
+    permanent === "piet";
 
   return (
     <>
