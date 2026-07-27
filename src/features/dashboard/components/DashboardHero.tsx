@@ -237,7 +237,7 @@ export function DashboardHero({
                       type: "dashboard",
                       seed: `${myId}-empty-dashboard`,
                       ctx: {
-                        intensiteit: profile.roast_intensiteit ?? "gemeen",
+                        intensiteit: profile.roast_intensiteit ?? "radioactief",
                         schild: profile.roast_schild ?? false,
                       },
                     })

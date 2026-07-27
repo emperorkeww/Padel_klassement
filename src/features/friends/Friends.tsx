@@ -73,7 +73,7 @@ export function Friends() {
 
   // /vrienden is een persoonlijk oppervlak (niet groep-gescoped), dus Coach Rudy
   // volgt — net als het dashboard — mijn eigen roast-intensiteit en -schild.
-  const myIntensiteit = pmap[myId]?.roast_intensiteit ?? "gemeen";
+  const myIntensiteit = pmap[myId]?.roast_intensiteit ?? "radioactief";
   const mySchild = pmap[myId]?.roast_schild ?? false;
   const myCtx: RoastCtx = { intensiteit: myIntensiteit, schild: mySchild };
 

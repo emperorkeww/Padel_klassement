@@ -284,7 +284,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     if (!profiel || profiel.roast_schild) return [];
 
     const seed = roastSeed(rec.player_id, `${rec.iso_year}-W${rec.iso_week}`);
-    const intensiteit = (profiel.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
+    const intensiteit = (profiel.roast_intensiteit ?? "radioactief") as RoastIntensiteit;
     return [{
       recipients: [rec.player_id],
       title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
@@ -331,7 +331,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
 
     // Degradatie: schild aan → neutraal-feitelijk, anders een intensiteit-sneer.
     const intensiteit =
-      (profiel.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
+      (profiel.roast_intensiteit ?? "radioactief") as RoastIntensiteit;
     const body = profiel.roast_schild
       ? kiesUit(RANK_DEGRADATIE_NEUTRAAL[overgang.event], seed)
       : kiesUit(RANK_DEGRADATIE[overgang.event][intensiteit], seed);
@@ -377,7 +377,7 @@ async function personalMessages(opts: {
     // Schild aan of profiel onbekend → neutraal (fail-safe, geen plaag).
     const body = !p || p.roast_schild
       ? kiesUit(neutraal, seed)
-      : kiesUit(pool[(p.roast_intensiteit ?? "gemeen") as RoastIntensiteit], seed);
+      : kiesUit(pool[(p.roast_intensiteit ?? "radioactief") as RoastIntensiteit], seed);
     return { recipients: [pid], title, body, url, kind };
   });
 }
@@ -443,7 +443,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
       neutraleVerliezers.push(pid);
       continue;
     }
-    const intensiteit = (p.roast_intensiteit ?? "gemeen") as RoastIntensiteit;
+    const intensiteit = (p.roast_intensiteit ?? "radioactief") as RoastIntensiteit;
     messages.push({
       recipients: [pid],
       title: "🎙️ Coach Rudy heeft iets over je te zeggen…",

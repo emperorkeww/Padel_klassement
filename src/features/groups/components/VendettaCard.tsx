@@ -332,7 +332,7 @@ function VendettaItem({
       winnaar: naam(winnaar),
       verliezer: naam(verliezer),
       stand: `${w}–${l}`,
-      intensiteit: group.roast_intensiteit ?? "gemeen",
+      intensiteit: group.roast_intensiteit ?? "radioactief",
       seed: roastSeed(v.id, laatste.match.id),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

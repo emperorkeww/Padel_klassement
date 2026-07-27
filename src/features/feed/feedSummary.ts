@@ -32,7 +32,7 @@ export interface FeedSummaryCtx {
 /** Roast-context voor een pias-item: groeps-intensiteit + schild van het doelwit. */
 function piasCtx(ctx: FeedSummaryCtx, groupId: string, playerId: string) {
   return roastCtx(
-    { roast_intensiteit: ctx.intensiteitVoor?.(groupId) ?? "gemeen" },
+    { roast_intensiteit: ctx.intensiteitVoor?.(groupId) ?? "radioactief" },
     ctx.profiles[playerId],
   );
 }

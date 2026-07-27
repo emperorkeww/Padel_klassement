@@ -398,7 +398,7 @@ export function GroupLedenTab({
                 className="select"
                 aria-label="Roast-intensiteit"
                 disabled={busy}
-                value={group.roast_intensiteit ?? "gemeen"}
+                value={group.roast_intensiteit ?? "radioactief"}
                 onChange={(e) => {
                   const val = e.target.value as RoastIntensiteit;
                   act(async () => {

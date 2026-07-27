@@ -682,7 +682,7 @@ export function roastCtx(
   target: Pick<Profile, "roast_schild"> | null | undefined,
 ): RoastCtx {
   return {
-    intensiteit: group?.roast_intensiteit ?? "gemeen",
+    intensiteit: group?.roast_intensiteit ?? "radioactief",
     schild: target?.roast_schild ?? false,
   };
 }

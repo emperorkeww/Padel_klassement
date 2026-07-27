@@ -100,7 +100,7 @@ export function VandaagTab({
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
 
-  const intensiteit = group.roast_intensiteit ?? "gemeen";
+  const intensiteit = group.roast_intensiteit ?? "radioactief";
   // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
   const groupPlayers = members
     .map((m) => profiles[m.player_id])
