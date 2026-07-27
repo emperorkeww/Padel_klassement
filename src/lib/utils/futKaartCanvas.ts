@@ -2380,10 +2380,10 @@ function drawConfetti(
   const stippen: ReadonlyArray<
     readonly [number, number, number, string]
   > = [
-    [0.24, 0.16, 0.045, "rgba(140, 42, 23, 0.24)"],
-    [0.76, 0.28, 0.035, "rgba(31, 92, 64, 0.21)"],
-    [0.38, 0.76, 0.034, "rgba(31, 74, 128, 0.19)"],
-    [0.84, 0.64, 0.029, "rgba(140, 42, 23, 0.19)"],
+    [0.24, 0.16, 0.045, "rgba(235, 64, 52, 0.45)"],
+    [0.76, 0.28, 0.035, "rgba(46, 204, 113, 0.42)"],
+    [0.38, 0.76, 0.034, "rgba(52, 152, 219, 0.38)"],
+    [0.84, 0.64, 0.029, "rgba(241, 196, 15, 0.38)"],
   ];
   for (const [u, v, r, kleur] of stippen) {
     const cx = fx + u * fw;
@@ -2601,9 +2601,10 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   icon: {
     frame: [
       [0, "#f6d7a0"],
-      [0.38, "#dd6ba2"],
-      [0.62, "#ffeef6"],
-      [0.82, "#c99a3f"],
+      [0.22, "#dd6ba2"],
+      [0.44, "#ffeef6"],
+      [0.66, "#c99a3f"],
+      [0.80, "#f2a9cf"],
       [1, "#8f3560"],
     ],
     liner: "#54203a",
@@ -2615,7 +2616,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     sheenSpreiding: 0.1,
     ink: "#8c2f5a",
     inkSoft: "#a04a72",
-    lijn: "#d989ae",
+    lijn: "#ff3377",
     editieKleur: "#c2447c",
     echo: [[0.016, 0.021, "rgba(226, 154, 106, 0.8)"]],
     binnenlijn: [
@@ -2685,7 +2686,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       [1, "#4c390a"],
     ],
     liner: "#0a0c14",
-    vlak: ["#232c44", "#141826", "#0a0c14"],
+    vlak: ["#1b2235", "#0f121d", "#05060a"],
     vlakMid: 0.6,
     tint: [
       [0, "rgba(5, 7, 12, 0.6)"],
@@ -2706,7 +2707,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     sheen: "rgba(255, 236, 185, 0.19)",
     ink: "#f2cf7d",
     inkSoft: "#c9a95e",
-    lijn: "rgba(240, 199, 102, 0.45)",
+    lijn: "#ffd56b",
     editieKleur: "#f2cf7d",
     textuur: "titanium",
     binnenlijn: [
@@ -2730,14 +2731,15 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   onfire: {
     frame: [
       [0, "#f6ddc4"],
-      [0.42, "#b06537"],
-      [0.68, "#e8b48d"],
-      [1, "#4b1e0d"],
+      [0.30, "#cf743b"],
+      [0.55, "#e8b48d"],
+      [0.80, "#8c4217"],
+      [1, "#3e1608"],
     ],
     liner: "#180a05",
-    vlak: ["#3a180c", "#241009", "#140704"],
+    vlak: ["#300f05", "#170702", "#080200"],
     vlakMid: 0.6,
-    glow: "rgba(255, 140, 66, 0.34)",
+    glow: "rgba(255, 120, 30, 0.44)",
     sheen: "rgba(255, 190, 112, 0.27)",
     sheenStops: [
       [0.16, "rgba(255, 190, 112, 0)"],
@@ -2770,7 +2772,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     },
     ink: "#ffc98a",
     inkSoft: "#d1915b",
-    lijn: "rgba(255, 160, 92, 0.45)",
+    lijn: "#ff5500",
     editieKleur: "#ffb35c",
     textuur: "groeven",
   },
@@ -2786,14 +2788,14 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     ],
     snijkant: "#d8bc7c",
     liner: "#362410",
-    vlak: ["#dcbd85", "#c9a468", "#a37e46"],
+    vlak: ["#e6c895", "#cfa76e", "#c29c5f"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
     sheen: "rgba(255, 240, 214, 0.06)",
     sheenSpreiding: 0.2,
     ink: "#3a250c",
     inkSoft: "#6b4d24",
-    lijn: "#8a6534",
+    lijn: "#a82e1c",
     editieKleur: "#8c2a17",
     textuur: "confetti",
     binnenlijn: [

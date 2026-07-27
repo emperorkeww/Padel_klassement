@@ -617,11 +617,11 @@ export const DICTATOR_GEM_GLANS = "rgba(255, 170, 190, 0.55)";
  *  constructie gelijk is aan de eerste. */
 /** Dictator militair gepeakte pet die in de bovenrand van het schild zit. */
 export const DICTATOR_KROON =
-  "M 50 -25 C 38 -24, 25 -22, 20 -18 C 17 -16, 21 -10, 24 -2 L 76 -2 C 79 -10, 83 -16, 80 -18 C 75 -22, 62 -24, 50 -25 Z";
+  "M 50 -18 C 36 -23, 20 -23, 15 -18 C 12 -15, 17 -8, 24 -2.5 L 76 -2.5 C 83 -8, 88 -15, 85 -18 C 80 -23, 64 -23, 50 -18 Z";
 
 /** De rode band onder de pet. */
 export const DICTATOR_KROON_BAND =
-  "M 24 -2.5 L 76 -2.5 L 75.2 2.5 L 24.8 2.5 Z";
+  "M 24 -2.5 L 76 -2.5 L 75 3 L 25 3 Z";
 
 /** Geen bolknoppen meer op de pet. */
 export const DICTATOR_KROON_BOLLEN: readonly (readonly [
@@ -635,15 +635,15 @@ export const DICTATOR_GEMS: readonly string[] = [];
 
 /** Pet klep (visor). */
 export const DICTATOR_PET_KLEP =
-  "M 26 2.5 C 34 10, 66 10, 74 2.5 C 65 5.5, 35 5.5, 26 2.5 Z";
+  "M 25 3 C 33 11, 67 11, 75 3 C 65 6.5, 35 6.5, 25 3 Z";
 
 /** Pet klep glans. */
 export const DICTATOR_PET_KLEP_GLANS =
-  "M 32 4 C 38 6.7, 62 6.7, 68 4 C 62 5.4, 38 5.4, 32 4 Z";
+  "M 31 4.5 C 37 7.5, 63 7.5, 69 4.5 C 63 6.0, 37 6.0, 31 4.5 Z";
 
 /** Pet stormband. */
 export const DICTATOR_PET_STORM =
-  "M 26.5 1.5 C 36 5.5, 64 5.5, 73.5 1.5";
+  "M 26.5 1.5 C 36 6, 64 6, 73.5 1.5";
 
 /** Pet cocarde gouden ster. */
 export const DICTATOR_PET_COCARDE_STER =

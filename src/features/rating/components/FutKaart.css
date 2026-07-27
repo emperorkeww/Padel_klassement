@@ -905,9 +905,10 @@
   background: linear-gradient(
     160deg,
     #f6d7a0 0%,
-    var(--bigdaddy-frame-roze) 38%,
-    #ffeef6 62%,
-    var(--bigdaddy-frame-goud) 82%,
+    var(--bigdaddy-frame-roze) 22%,
+    #ffeef6 44%,
+    var(--bigdaddy-frame-goud) 66%,
+    #f2a9cf 80%,
     #8f3560 100%
   );
 }
@@ -916,6 +917,16 @@
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.05) 0px 2px,
+      transparent 2px 10px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      rgba(221, 107, 162, 0.06) 0px 1px,
+      transparent 1px 4px
+    ),
     radial-gradient(
       120% 55% at 50% -6%,
       rgba(255, 226, 240, 0.9),
@@ -942,7 +953,7 @@
 .fut-kaart.fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
-  --kaart-lijn: rgba(240, 199, 102, 0.45);
+  --kaart-lijn: #ffd56b;
   --editie-kleur: #f2cf7d;
   /* Gouden hairline, zwarte spouw, tweede gouden lijn: de gelaagde metalen
      binnenrand uit de referentie, zonder extra DOM-laag (inset-schaduwen
@@ -956,9 +967,10 @@
   background: linear-gradient(
     160deg,
     #f7dfa0 0%,
-    #8a6a1c 45%,
-    #ffe9ac 70%,
-    #4c390a 100%
+    #c59f48 30%,
+    #ffe9ac 55%,
+    #8a6a1c 80%,
+    #3e2e07 100%
   );
 }
 .fut-kaart.fut-kaart--inform .fut-kaart__liner {
@@ -969,7 +981,7 @@
   background:
     radial-gradient(
       130% 60% at 50% -8%,
-      rgba(240, 199, 102, 0.28),
+      rgba(255, 226, 150, 0.38),
       transparent 62%
     ),
     repeating-linear-gradient(
@@ -989,7 +1001,7 @@
       rgba(5, 7, 12, 0) 46%,
       rgba(5, 7, 12, 0.55) 100%
     ),
-    linear-gradient(172deg, #232c44 0%, #141826 60%, #0a0c14 100%);
+    linear-gradient(172deg, #1b2235 0%, #0f121d 60%, #05060a 100%);
 }
                                                                                                                                                                                                                                                                                                                                                         
 .fut-kaart.fut-kaart--inform .fut-kaart__vlak::after {
@@ -1102,11 +1114,11 @@
     );
 }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 .fut-kaart.fut-kaart--onfire {
   --kaart-ink: #ffc98a;
   --kaart-ink-soft: #d1915b;
-  --kaart-lijn: rgba(255, 160, 92, 0.45);
+  --kaart-lijn: #ff5500;
   --editie-kleur: #ffb35c;
   /* Randgloed (#710): een warme koperen echo langs de zijkanten en onderrand.
      Een filter werkt ná de clip, dus de echo volgt het schildsilhouet exact —
@@ -1128,9 +1140,10 @@
   background: linear-gradient(
     160deg,
     #f6ddc4 0%,
-    #b06537 42%,
-    #e8b48d 68%,
-    #4b1e0d 100%
+    #cf743b 30%,
+    #e8b48d 55%,
+    #8c4217 80%,
+    #3e1608 100%
   );
 }
 .fut-kaart.fut-kaart--onfire .fut-kaart__liner {
@@ -1146,10 +1159,10 @@
     ),
     radial-gradient(
       130% 60% at 50% -8%,
-      rgba(255, 140, 66, 0.34),
+      rgba(255, 120, 30, 0.44),
       transparent 62%
     ),
-    linear-gradient(172deg, #3a180c 0%, #241009 60%, #140704 100%);
+    linear-gradient(172deg, #300f05 0%, #170702 60%, #080200 100%);
 }
                                                                                                                                                                                                                                                                                  
 .fut-kaart.fut-kaart--onfire .fut-kaart__vlak::before {
@@ -1205,12 +1218,12 @@
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 .fut-kaart.fut-kaart--pias {
-  --kaart-hi: #dcbd85;
-  --kaart-mid: #c9a468;
-  --kaart-lo: #a37e46;
+  --kaart-hi: #e6c895;
+  --kaart-mid: #cfa76e;
+  --kaart-lo: #c29c5f;
   --kaart-ink: #3a250c;
   --kaart-ink-soft: #6b4d24;
-  --kaart-lijn: #8a6534;
+  --kaart-lijn: #a82e1c;
   --editie-kleur: #8c2a17;
   --kaart-frame-hi: #b08b50;
   --kaart-frame-lo: #6f5026;
@@ -1245,10 +1258,10 @@
                                                                                                                                                                                                                                                                                                                                                                             
 .fut-kaart.fut-kaart--pias .fut-kaart__vlak {
   background:
-    radial-gradient(circle at 24% 16%, rgba(140, 42, 23, 0.24) 0 2.4%, transparent 4.2%),
-    radial-gradient(circle at 76% 28%, rgba(31, 92, 64, 0.21) 0 2.1%, transparent 3.8%),
-    radial-gradient(circle at 38% 76%, rgba(31, 74, 128, 0.19) 0 2.1%, transparent 3.8%),
-    radial-gradient(circle at 84% 64%, rgba(140, 42, 23, 0.19) 0 1.8%, transparent 3.4%),
+    radial-gradient(circle at 24% 16%, rgba(235, 64, 52, 0.45) 0 2.4%, transparent 4.2%),
+    radial-gradient(circle at 76% 28%, rgba(46, 204, 113, 0.42) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 38% 76%, rgba(52, 152, 219, 0.38) 0 2.1%, transparent 3.8%),
+    radial-gradient(circle at 84% 64%, rgba(241, 196, 15, 0.38) 0 1.8%, transparent 3.4%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg stroke='rgba(58,37,12,0.1)' stroke-width='.8' stroke-linecap='round'%3E%3Cpath d='M2.5 4.2l2.6 1'/%3E%3Cpath d='M10.2 2.6l2.8-.5'/%3E%3Cpath d='M19 5.4l2.3 1.3'/%3E%3Cpath d='M5.6 13.8l2.9.4'/%3E%3Cpath d='M15.3 16.9l2.4-1.2'/%3E%3Cpath d='M22.6 21.5l2.5.9'/%3E%3Cpath d='M8.4 23.8l2.7-.8'/%3E%3C/g%3E%3Cg fill='rgba(255,246,222,0.35)'%3E%3Ccircle cx='6.8' cy='8.7' r='.7'/%3E%3Ccircle cx='14.4' cy='6.1' r='.7'/%3E%3Ccircle cx='23.7' cy='9.9' r='.7'/%3E%3Ccircle cx='3.9' cy='18.2' r='.7'/%3E%3Ccircle cx='12.1' cy='20.6' r='.7'/%3E%3Ccircle cx='19.8' cy='14.2' r='.7'/%3E%3Ccircle cx='25.1' cy='24.9' r='.7'/%3E%3C/g%3E%3C/svg%3E")
       0 0 / 28px 28px repeat,
     radial-gradient(120% 90% at 28% 22%, rgba(58, 37, 12, 0.05), transparent 60%),
