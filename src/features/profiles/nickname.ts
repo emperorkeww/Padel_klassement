@@ -67,26 +67,30 @@ function statsVoor(
       if (o === "W") nachtwinst++;
     }
 
-    if (m.score_a != null && m.score_b != null) {
-      const inA = inTeam(teams[m.team_a_id], playerId);
-      const mij = inA ? m.score_a : m.score_b;
-      const hen = inA ? m.score_b : m.score_a;
+    if (o === "W") {
+      gewonnen++;
+      huidigeWinstreeks++;
+      huidigeVerliesreeks = 0;
+      winstreeks = Math.max(winstreeks, huidigeWinstreeks);
 
-      if (o === "W") {
-        gewonnen++;
+      if (m.score_a != null && m.score_b != null) {
+        const inA = inTeam(teams[m.team_a_id], playerId);
+        const mij = inA ? m.score_a : m.score_b;
+        const hen = inA ? m.score_b : m.score_a;
         grootsteZege = Math.max(grootsteZege, mij - hen);
         if (hen === 0 && mij > 0) bagelsUitgedeeld++;
+      }
+    } else if (o === "L") {
+      huidigeVerliesreeks++;
+      huidigeWinstreeks = 0;
+      verliesreeks = Math.max(verliesreeks, huidigeVerliesreeks);
 
-        huidigeWinstreeks++;
-        huidigeVerliesreeks = 0;
-        winstreeks = Math.max(winstreeks, huidigeWinstreeks);
-      } else if (o === "L") {
+      if (m.score_a != null && m.score_b != null) {
+        const inA = inTeam(teams[m.team_a_id], playerId);
+        const mij = inA ? m.score_a : m.score_b;
+        const hen = inA ? m.score_b : m.score_a;
         grootsteMargeVerlies = Math.max(grootsteMargeVerlies, hen - mij);
         if (mij === 0 && hen > 0) bagelsGeïncasseerd++;
-
-        huidigeVerliesreeks++;
-        huidigeWinstreeks = 0;
-        verliesreeks = Math.max(verliesreeks, huidigeVerliesreeks);
       }
     }
   }
