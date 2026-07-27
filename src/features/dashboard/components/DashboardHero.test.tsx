@@ -281,13 +281,52 @@ describe("<DashboardHero /> — decoratielagen", () => {
     expect(HERO_CSS).toMatch(/\.hero__lagen\s*\{[^}]*pointer-events:\s*none/);
   });
 
-  it("laat een thema zonder eigen ornamenten de voorste laag weg", () => {
-    // Pias en het schande-token krijgen hun ornamenten in een volgende PR; tot
-    // dan staat er geen lege span in hun DOM.
-    for (const thema of ["pias", "piet"] as const) {
-      const hero = renderKaart({ [thema]: true, thema });
-      expect(hero.querySelector(".hero__lagen--voor")).toBeNull();
-    }
+  it("geeft de pias zijn narrenkap, maskers en harlekijndecor (#771)", () => {
+    const hero = renderKaart({ pias: true, thema: "pias" });
+    for (const klasse of [
+      ".hero__crest--kap",
+      ".hero__medaillon",
+      ".hero__watermerk--maskers",
+      ".hero__decor",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
+  it("houdt het schande-token abstract: pion, ringen, zegel en ketting (#771)", () => {
+    // Geen menselijke uitbeelding — alleen spelstukken, kaarttekens en zegels.
+    const hero = renderKaart({ piet: true, thema: "piet" });
+    for (const klasse of [
+      ".hero__crest--pion",
+      ".hero__ringen",
+      ".hero__zegel-breuk",
+      ".hero__ketting--links",
+      ".hero__ketting--rechts",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+  });
+
+  it("tekent de twee schande-iconen als SVG i.p.v. een emoji (#771)", () => {
+    // 🤡 rendert op sommige toestellen als horrorclown en 🃏 lijkt op geen enkel
+    // platform op een spelstuk; de badge draagt daarom het maskertje en de pion
+    // uit het register.
+    const pias = renderKaart({ pias: true, thema: "pias" });
+    expect(pias.querySelector(".hero-crest__masker")).toBeInTheDocument();
+    expect(
+      pias.querySelector(".hero-crest--badge .hero-crest__icon")?.textContent,
+    ).toBe("");
+
+    const piet = renderKaart({ piet: true, thema: "piet" });
+    expect(piet.querySelector(".hero-crest__pion")).toBeInTheDocument();
+  });
+
+  it("houdt de emoji bij een roast-schild: geen spot, dus ook geen maskertje", () => {
+    // Met een schild staat er de neutrale 📊-chip; die hoort geen clownsmasker
+    // te krijgen (#183).
+    const hero = renderKaart({ pias: true, schild: true, thema: null });
+    expect(hero.querySelector(".hero-crest__masker")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /opvallende week/i }).textContent,
+    ).toContain("📊");
   });
 
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {

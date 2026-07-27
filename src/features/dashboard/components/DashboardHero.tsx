@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
@@ -12,6 +13,8 @@ import type { Badge } from "@/features/profiles/badges";
 import type { Profile } from "@/types";
 import { heroKlassen, type HeroOverlay, type HeroPermanent } from "../heroThema";
 import { heroBasis, heroBasisKlassen } from "../heroDivisie";
+import { PiasBadgeIcoon } from "@/features/standings/components/piasOrnamenten";
+import { PietBadgeIcoon } from "./heroOrnamentenPiet";
 import { HeroBadgeSieraad } from "./HeroBadgeSieraad";
 import { HeroCrest } from "./HeroCrest";
 import { HeroLagen } from "./HeroLagen";
@@ -50,6 +53,9 @@ type Crest = {
   emoji: string;
   label: string;
   uitleg: string;
+  /** Eigen SVG in plaats van de emoji, voor tekens die per platform anders
+   *  uitvallen (#771). */
+  icoon?: ReactNode;
 };
 
 export type HeroStatus = {
@@ -122,6 +128,12 @@ function crestsVan(status: HeroStatus, myId: string): Crest[] {
     uit.push({
       variant: "piet",
       emoji: status.schild ? "📊" : "🃏",
+      // Met een schild valt de spot weg en blijft het neutrale 📊 staan; zonder
+      // schild tekent de pion het token, want 🃏 lijkt op geen enkel platform op
+      // een spelstuk.
+      icoon: status.schild ? undefined : (
+        <PietBadgeIcoon className="hero-crest__pion" />
+      ),
       label: status.schild ? "Schande-token" : "Zwarte Piet",
       uitleg:
         "Jij draagt het rondgaande schande-token van de groep — tot je wint en het doorschuift.",
@@ -130,6 +142,11 @@ function crestsVan(status: HeroStatus, myId: string): Crest[] {
     uit.push({
       variant: "pias",
       emoji: status.schild ? "📊" : "🤡",
+      // Zie de Piet hierboven: 🤡 rendert op sommige toestellen als horrorclown,
+      // en dat is precies wat de issue níet wil.
+      icoon: status.schild ? undefined : (
+        <PiasBadgeIcoon className="hero-crest__masker" />
+      ),
       label: status.schild ? "Opvallende week" : "Pias van de week",
       uitleg: `De grootste afgang van deze week ${status.piasWaar}. De 🤡-editie op de FUT-kaart is voor de Pias van de club — de ergste van álle groepen samen.`,
     });
@@ -234,6 +251,7 @@ export function DashboardHero({
                   <HeroCrest
                     variant={badge.variant}
                     emoji={badge.emoji}
+                    icoon={badge.icoon}
                     label={badge.label}
                     uitleg={badge.uitleg}
                     prominent
@@ -248,6 +266,7 @@ export function DashboardHero({
                   key={c.variant}
                   variant={c.variant}
                   emoji={c.emoji}
+                  icoon={c.icoon}
                   label={c.label}
                   uitleg={c.uitleg}
                 />
