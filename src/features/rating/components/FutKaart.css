@@ -905,9 +905,10 @@
   background: linear-gradient(
     160deg,
     #f6d7a0 0%,
-    var(--bigdaddy-frame-roze) 38%,
-    #ffeef6 62%,
-    var(--bigdaddy-frame-goud) 82%,
+    var(--bigdaddy-frame-roze) 22%,
+    #ffeef6 44%,
+    var(--bigdaddy-frame-goud) 66%,
+    #f2a9cf 80%,
     #8f3560 100%
   );
 }
@@ -916,6 +917,16 @@
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.05) 0px 2px,
+      transparent 2px 10px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      rgba(221, 107, 162, 0.06) 0px 1px,
+      transparent 1px 4px
+    ),
     radial-gradient(
       120% 55% at 50% -6%,
       rgba(255, 226, 240, 0.9),

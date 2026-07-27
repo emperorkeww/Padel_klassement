@@ -2601,9 +2601,10 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   icon: {
     frame: [
       [0, "#f6d7a0"],
-      [0.38, "#dd6ba2"],
-      [0.62, "#ffeef6"],
-      [0.82, "#c99a3f"],
+      [0.22, "#dd6ba2"],
+      [0.44, "#ffeef6"],
+      [0.66, "#c99a3f"],
+      [0.80, "#f2a9cf"],
       [1, "#8f3560"],
     ],
     liner: "#54203a",
@@ -2615,7 +2616,7 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     sheenSpreiding: 0.1,
     ink: "#8c2f5a",
     inkSoft: "#a04a72",
-    lijn: "#d989ae",
+    lijn: "#ff3377",
     editieKleur: "#c2447c",
     echo: [[0.016, 0.021, "rgba(226, 154, 106, 0.8)"]],
     binnenlijn: [
