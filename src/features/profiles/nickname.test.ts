@@ -59,6 +59,12 @@ describe("bijnaam", () => {
       "Baan 1 Sadist 😈",
       "Zweet-Tsunami 🌊",
       "Baan 2 Ego-Tripper 🤡",
+      "De Beul van Baan 2 🔪",
+      "Eerzuchtige Beuker 💥",
+      "De Genadeloze Slachter 🪓",
+      "Elo-Monopolist 💸",
+      "Koning der Afdrogingen 👑",
+      "Racket-Knuppelaar 🤡",
     ]).toContain(naam);
     expect(naam).not.toBe("Sponsor van de Tegenstander 💸");
     expect(naam).not.toBe("De Groene Banaan 🍌");

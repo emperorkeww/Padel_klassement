@@ -121,6 +121,16 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "De Bagelbakker 🥯", past: (s) => s.bagelsUitgedeeld >= 1 },
   { naam: "De Sloopkogel 💥", past: (s) => s.grootsteZege >= 6 },
   { naam: "De Glazen Wand 🛡️", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.6 },
+  { naam: "De Dictator van Baan 1 👑", past: (s) => s.bagelsUitgedeeld >= 3 },
+  { naam: "Ego-Streler van het Complex 🦚", past: (s) => s.bagelsUitgedeeld >= 1 && s.winrate >= 0.7 },
+  { naam: "Meedogenloze Elo-Dief 🥷", past: (s) => s.grootsteZege >= 6 && s.winrate >= 0.65 },
+  { naam: "Aurelio's Troetelkind 👑", past: (s) => s.winrate >= 0.75 && s.gespeeld >= 8 },
+  { naam: "Baan 1 Sadist 😈", past: (s) => s.bagelsUitgedeeld >= 2 },
+  { naam: "De Beul van Baan 2 🔪", past: (s) => s.bagelsUitgedeeld >= 2 },
+  { naam: "Eerzuchtige Beuker 💥", past: (s) => s.grootsteZege >= 6 && s.winrate >= 0.6 },
+  { naam: "De Genadeloze Slachter 🪓", past: (s) => s.bagelsUitgedeeld >= 2 && s.grootsteZege >= 6 },
+  { naam: "Elo-Monopolist 💸", past: (s) => s.winrate >= 0.7 && s.gespeeld >= 10 },
+  { naam: "Koning der Afdrogingen 👑", past: (s) => s.bagelsUitgedeeld >= 2 },
 
   // Tryhards & Wannabe-Profs (sarcasme voor winnaars)
   { naam: "Tryhard van Baan 2 🥵", past: (s) => s.winrate >= 0.7 && s.gespeeld >= 12 },
@@ -130,6 +140,16 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Kantine-Opschepper 🗣️", past: (s) => s.winrate >= 0.68 && s.gespeeld >= 11 },
   { naam: "Racket-Polijster 🏓", past: (s) => s.winrate >= 0.65 && s.gespeeld >= 14 },
   { naam: "Baan 1 Kolonist 🏰", past: (s) => s.winrate >= 0.72 && s.gespeeld >= 13 },
+  { naam: "Zweet-Tsunami 🌊", past: (s) => s.winrate >= 0.6 && s.gespeeld >= 10 },
+  { naam: "Trumpiaanse Opschepper 🗣️", past: (s) => s.winrate >= 0.65 && s.gespeeld >= 11 },
+  { naam: "Baan 2 Ego-Tripper 🤡", past: (s) => s.winrate >= 0.7 && s.gespeeld >= 10 },
+  { naam: "Lille-Spiekbriefjes-Dief 📝", past: (s) => s.winrate >= 0.62 && s.gespeeld >= 12 },
+  { naam: "Forehand-Fetisjist 🏓", past: (s) => s.winrate >= 0.64 && s.gespeeld >= 15 },
+  { naam: "Overspannen Tryhard 🥵", past: (s) => s.winrate >= 0.65 && s.gespeeld >= 12 },
+  { naam: "Racket-Knuppelaar 🤡", past: (s) => s.winrate >= 0.6 && s.gespeeld >= 10 },
+  { naam: "Cynische Baan-Terrorist 👿", past: (s) => s.winrate >= 0.72 && s.gespeeld >= 11 },
+  { naam: "De Zweetband-Sponsor 🧼", past: (s) => s.winrate >= 0.6 && s.gespeeld >= 14 },
+  { naam: "Kantine-Wereldkampioen 🏆", past: (s) => s.winrate >= 0.66 && s.gespeeld >= 13 },
 
   // Nachtbrakers
   { naam: "De Nachtbraker 🌙", past: (s) => s.nachtmatches >= 3 },
@@ -138,6 +158,16 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Lantaarnpaal-Fluisteraar 💡", past: (s) => s.nachtmatches >= 6 },
   { naam: "Schemerlamp-Klant 🏮", past: (s) => s.nachtmatches >= 4 },
   { naam: "Uil met een Houten Racket 🦉", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.35 },
+  { naam: "Nachtelijke Blindganger 🦇", past: (s) => s.nachtmatches >= 4 && s.nachtwinrate < 0.25 },
+  { naam: "Nachtwacht-Vulling 🧱", past: (s) => s.nachtmatches >= 5 },
+  { naam: "Lantaarnpaal-Hinder 💡", past: (s) => s.nachtmatches >= 3 && s.nachtwinrate < 0.4 },
+  { naam: "Schemer-Pias 🤡", past: (s) => s.nachtmatches >= 4 && s.nachtwinrate < 0.3 },
+  { naam: "Vleermuis met Gripverlies 🦇", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.2 },
+  { naam: "Nachtbrakende Dromedaris 🐫", past: (s) => s.nachtmatches >= 3 },
+  { naam: "Vleermuis met Sterretjes 🦇", past: (s) => s.nachtmatches >= 4 && s.nachtwinrate < 0.3 },
+  { naam: "Nachtelijke Ballenwerper 🌙", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.28 },
+  { naam: "Uil zonder Nachtzicht 🦉", past: (s) => s.nachtmatches >= 4 && s.nachtwinrate < 0.25 },
+  { naam: "Middernacht-Zorgenkind 🏮", past: (s) => s.nachtmatches >= 5 && s.nachtwinrate < 0.22 },
 
   // Middelmaat & Meubilair
   { naam: "De Grijze Muis 🐭", past: (s) => s.gespeeld >= 10 && s.winrate >= 0.45 && s.winrate <= 0.55 },
@@ -149,6 +179,16 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Statisch Object op het Veld 🗿", past: (s) => s.gespeeld >= 45 && s.winrate >= 0.44 && s.winrate <= 0.56 },
   { naam: "Opwarmertje voor de Rest 🥵", past: (s) => s.gespeeld >= 12 && s.winrate >= 0.42 && s.winrate <= 0.52 },
   { naam: "De Grijze Eenduidigheid 🦤", past: (s) => s.gespeeld >= 20 && s.winrate >= 0.48 && s.winrate <= 0.52 },
+  { naam: "Statisch Meubelstuk 🛋️", past: (s) => s.gespeeld >= 35 && s.winrate >= 0.45 && s.winrate <= 0.55 },
+  { naam: "Baanopvulling Zonder Finesse 🧱", past: (s) => s.gespeeld >= 15 && s.winrate >= 0.46 && s.winrate <= 0.54 },
+  { naam: "Grijze Middenmoot-Parasiet 🪱", past: (s) => s.gespeeld >= 20 && s.winrate >= 0.48 && s.winrate <= 0.52 },
+  { naam: "De Baan-Inventaris 🗄️", past: (s) => s.gespeeld >= 60 },
+  { naam: "Eeuwige Nummer Midden ⚖️", past: (s) => s.gespeeld >= 22 && s.winrate >= 0.47 && s.winrate <= 0.53 },
+  { naam: "Grijze Tapijttegel 🐭", past: (s) => s.gespeeld >= 15 && s.winrate >= 0.46 && s.winrate <= 0.54 },
+  { naam: "Vaste Baan-Vulling 🧱", past: (s) => s.gespeeld >= 20 && s.winrate >= 0.45 && s.winrate <= 0.55 },
+  { naam: "Baan-Plint 🪵", past: (s) => s.gespeeld >= 35 && s.winrate >= 0.44 && s.winrate <= 0.56 },
+  { naam: "Blijvend Kantoormeubilair 🗄️", past: (s) => s.gespeeld >= 45 },
+  { naam: "Levende Hek-Decoratie 🪵", past: (s) => s.gespeeld >= 25 && s.winrate >= 0.47 && s.winrate <= 0.53 },
 
   // Harde roasts (voor verliezers)
   { naam: "Lopende Bye op het Schema 🚶", past: (s) => s.gespeeld >= 12 && s.winrate < 0.20 },
@@ -166,13 +206,47 @@ const KANDIDATEN: BijnaamDef[] = [
   { naam: "Automatische Winst-Magneet (voor de ander) 🧲", past: (s) => s.gespeeld >= 15 && s.winrate < 0.18 },
   { naam: "Klapzand van de Padelwereld 🏜️", past: (s) => s.gespeeld >= 6 && s.winrate < 0.33 && s.grootsteMargeVerlies >= 5 },
   { naam: "Kanovaren zonder Peddel 🛶", past: (s) => s.verliesreeks >= 4 },
+  { naam: "Chronische Elo-Kraan 🚰", past: (s) => s.gespeeld >= 10 && s.winrate < 0.2 },
+  { naam: "Bagel-Magazijn 🥯", past: (s) => s.bagelsGeïncasseerd >= 2 },
+  { naam: "Zandzak van Veld 3 ⏳", past: (s) => s.verliesreeks >= 4 },
+  { naam: "Lopende Walkover 🚶", past: (s) => s.gespeeld >= 12 && s.winrate < 0.22 },
+  { naam: "Racket-Dragende Toerist 🎒", past: (s) => s.gespeeld >= 6 && s.winrate < 0.25 },
+  { naam: "Lopende Degradant 🚶", past: (s) => s.gespeeld >= 10 && s.winrate < 0.25 },
+  { naam: "Rode Lantaarn-Drager 🏮", past: (s) => s.actueleVerliesreeks >= 3 },
+  { naam: "Racket-Vasthoudende Toerist 🎒", past: (s) => s.gespeeld >= 8 && s.winrate < 0.3 },
+  { naam: "Elo-Restafval 🗑️", past: (s) => s.gespeeld >= 12 && s.winrate < 0.18 },
+  { naam: "Baan 3 Zandzak ⏳", past: (s) => s.verliesreeks >= 4 },
 
   // Nieuwelingen
   { naam: "De Groene Banaan 🍌", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
+  { naam: "Onbeschreven Pias 🤡", past: (s) => s.gespeeld > 0 && s.gespeeld < 8 },
+  { naam: "Elo-Maagd 🍼", past: (s) => s.gespeeld > 0 && s.gespeeld < 6 },
+  { naam: "De Groene Dromedaris 🐫", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
+  { naam: "Baan-Toerist in Opleiding 🎒", past: (s) => s.gespeeld > 0 && s.gespeeld < 9 },
+  { naam: "Onbekend Slachtoffer 🩸", past: (s) => s.gespeeld > 0 && s.gespeeld < 7 },
+  { naam: "Onbeschreven Groentje 🍼", past: (s) => s.gespeeld > 0 && s.gespeeld < 6 },
+  { naam: "Groene Bananenschil 🍌", past: (s) => s.gespeeld > 0 && s.gespeeld < 8 },
+  { naam: "Rookie-Zorgenkindje 👶", past: (s) => s.gespeeld > 0 && s.gespeeld < 9 },
+  { naam: "Onbekende Pias in de Kooi 🤡", past: (s) => s.gespeeld > 0 && s.gespeeld < 7 },
+  { naam: "Kersverse Elo-Donateur 🎁", past: (s) => s.gespeeld > 0 && s.gespeeld < 10 },
 ];
 
 /** Neutrale terugval als geen enkele kandidaat past (bv. 0 matches). */
-const NEUTRAAL = ["De Racketzwaaier 🏸", "De Baanbewoner 🏕️", "De Puntenzoeker 🔎"];
+const NEUTRAAL = [
+  "De Racketzwaaier 🏸",
+  "De Baanbewoner 🏕️",
+  "De Puntenzoeker 🔎",
+  "De Plakker van Veld 4 🧗",
+  "Kantine-Zwever 🍺",
+  "De Ballenzoeker 🔎",
+  "De Ballenjongen in Spe 👶",
+  "Sierobject op de Baan 🗿",
+  "De Baanzwever 🏕️",
+  "Racket-Zwaaiende Toerist 🏸",
+  "De Ballenraper 🔎",
+  "Kantine-Meubilair-Gebruiker 🍺",
+  "Passief Veldobject 🗿",
+];
 
 /** Alleen een neutrale bijnaam (#183): voor spelers met een roast-schild aan,
  *  die geen plagende bijnaam willen. Deterministisch op het speler-id. */
