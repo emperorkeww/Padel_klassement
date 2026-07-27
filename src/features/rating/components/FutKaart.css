@@ -79,6 +79,7 @@
   height: 152.518%;
   pointer-events: none;
   filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
+  backface-visibility: hidden;
 }
 /* Vóór-liggende ornamentlaag (#710): dezelfde doos, maar ná de flipper in de
    DOM — voor ornamenten die óver de rand horen te vallen i.p.v. erachter (de
