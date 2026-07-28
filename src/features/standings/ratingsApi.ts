@@ -93,7 +93,9 @@ function fetchMatchHistories(
   return cached(`ratings:history:matches:${ids.join(",")}`, async () => {
     const { data, error } = await supabase
       .from("rating_history")
-      .select("player_id, match_id, rating_before, rating_after, delta, played_at")
+      .select(
+        "player_id, match_id, rating_before, rating_after, delta, played_at, stake_factor",
+      )
       .in("match_id", ids);
     if (error) throw error;
     const rows = warnIfTruncated(

@@ -169,4 +169,8 @@ export interface RatingPoint {
   rating_after: number;
   delta: number;
   played_at: string;
+  /** Lef-tip-multiplier (#804), al in `delta` verwerkt: 2 = dubbel gespeeld.
+   *  Optioneel omdat oudere/afgeleide bronnen (testfixtures, samengevoegde
+   *  historie) hem niet altijd meeleveren. */
+  stake_factor?: number;
 }

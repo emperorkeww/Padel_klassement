@@ -61,8 +61,17 @@ function renderPage() {
 describe("<MatchDetail /> — gast vervangen (#681)", () => {
   it("vervangt de gast door de speler die er echt stond", async () => {
     renderPage();
+    // De sectie verschijnt pas als de profielen geladen zijn en er een gast
+    // tussen blijkt te zitten. De standaard 1s van findBy was daarvoor krap:
+    // met het lef-blok erbij (#804) laadt de detailpagina één bron meer, en
+    // onder parallelle testbelasting viel dat er regelmatig buiten. De
+    // assertie gaat over gedrag, niet over snelheid (zie ook #753).
     expect(
-      await screen.findByRole("heading", { name: /gast vervangen/i }),
+      await screen.findByRole(
+        "heading",
+        { name: /gast vervangen/i },
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument();
 
     const select = await screen.findByLabelText(/vervangen door/i);
