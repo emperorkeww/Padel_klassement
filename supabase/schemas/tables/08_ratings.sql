@@ -21,7 +21,11 @@ create table public.rating_history (
   rating_before int not null,
   rating_after int not null,
   delta int not null,
-  played_at timestamptz not null
+  played_at timestamptz not null,
+  -- Lef-tip-multiplier (#804) die al in delta verwerkt zit: 2.00 als deze
+  -- speler op deze match had ingezet, anders 1.00. Puur voor uitleg achteraf
+  -- ("+24, lef ×2"); de rating zelf zit al in delta.
+  stake_factor numeric(3, 2) not null default 1.0
 );
 
 create index rating_history_player_idx on public.rating_history (player_id, played_at);

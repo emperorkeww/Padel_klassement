@@ -10,6 +10,7 @@ grant select on table
   public.guest_claims,
   public.match_predictions,
   public.match_smoesjes,
+  public.match_stakes,
   public.matches,
   public.pias_of_week,
   public.play_poll_options,
