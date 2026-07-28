@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/lib/utils/errors";
 
 /** Wat useAsync teruggeeft. Geëxporteerd zodat een parent zijn geladen data
  *  als geheel kan doorgeven (bv. GroupDetail → PlanTab, #674). */
@@ -52,7 +53,7 @@ export function useAsync<T>(
         // de Zwarte Piet-editie verdween geluidloos toen get_global_zwarte_piet
         // op hosted ontbrak).
         console.warn("useAsync:", e);
-        if (active) setError(e instanceof Error ? e.message : String(e));
+        if (active) setError(errorMessage(e));
       })
       .finally(() => {
         if (active) setLoading(false);

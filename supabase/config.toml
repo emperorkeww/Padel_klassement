@@ -361,6 +361,34 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# Functies met een cron-/webhook-geheim of een eigen user-JWT-validatie doen
+# hun authenticatie in de handler. Leg dit hier vast zodat CI-deploys hun
+# productiegedrag niet stilzwijgend veranderen. remind-group gebruikt juist
+# de platform-JWT-gate en houdt daarom de standaardwaarde `true`.
+[functions.club-page]
+verify_jwt = false
+
+[functions.generate-dictator-avatar]
+verify_jwt = false
+
+[functions.generate-pias-avatar]
+verify_jwt = false
+
+[functions.match-reminders]
+verify_jwt = false
+
+[functions.playtomic-availability]
+verify_jwt = false
+
+[functions.poll-deadline]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.snapshot-availability]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

@@ -267,7 +267,8 @@ Volg deze workflow voor schema-wijzigingen:
 
 ### Productiedatabase Bijwerken
 
-Migraties worden **niet** automatisch toegepast tijdens een release. Pas de migraties handmatig toe op de live-omgeving via de CLI:
+De release-workflow past migraties automatisch toe nadat CI op de gemergede
+`main`-commit slaagt. Voor een uitzonderlijke handmatige productie-update:
 
 ```bash
 supabase link --project-ref <project-ref-id>
@@ -312,7 +313,7 @@ De configuratie is vastgelegd in [`wrangler.jsonc`](wrangler.jsonc), inclusief e
 
 ### CI/CD Pipeline
 
-De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). Bij een push naar de `main` branch wordt de code getest, gebouwd en gedeployed naar Cloudflare. 
+De deployment is volledig geautomatiseerd via GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). Na een geslaagde CI-run op een merge naar `main` worden eerst de Supabase-migraties en Edge Functions gedeployed, daarna de frontend naar Cloudflare. Pull requests ontvangen geen productie-secrets en kunnen dus niet deployen.
 
 Daarnaast draait wekelijks [`known-courts.yml`](.github/workflows/known-courts.yml): die regenereert `knownCourts.ts` vanaf de live Playtomic-clubpagina en opent bij drift automatisch een PR naar `develop` (Refs #392). Handmatig bijwerken kan altijd met `npm run gen:courts`.
 
@@ -320,6 +321,8 @@ Hiervoor dienen de volgende secrets in de GitHub Repository geconfigureerd te zi
 *   `VITE_SUPABASE_URL`
 *   `VITE_SUPABASE_ANON_KEY`
 *   `VITE_VAPID_PUBLIC_KEY`
+*   `SUPABASE_ACCESS_TOKEN` (Supabase personal access token met deployrechten)
+*   `SUPABASE_PROJECT_REF` (de productie project-ref)
 *   `CLOUDFLARE_API_TOKEN` (met Workers-edit rechten)
 *   `CLOUDFLARE_ACCOUNT_ID`
 

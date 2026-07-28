@@ -40,3 +40,6 @@ join public.profiles p on p.id = pt.player_id
 -- player_standings en de client-mirror computePlayerStandings (#468).
 where not p.is_guest
 group by tr.group_id, p.id, p.username, p.full_name;
+
+-- De security-invoker-view blijft via de onderliggende RLS afgeschermd.
+grant select on public.group_player_standings to authenticated, anon;
