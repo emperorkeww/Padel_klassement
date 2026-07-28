@@ -1118,6 +1118,7 @@ export type Database = {
           club_id: string
           club_name: string
           club_timezone: string
+          courts: string | null
           created_at: string
           created_by: string
           dayof_notified_at: string | null
@@ -1135,6 +1136,7 @@ export type Database = {
           club_id?: string
           club_name?: string
           club_timezone?: string
+          courts?: string | null
           created_at?: string
           created_by: string
           dayof_notified_at?: string | null
@@ -1152,6 +1154,7 @@ export type Database = {
           club_id?: string
           club_name?: string
           club_timezone?: string
+          courts?: string | null
           created_at?: string
           created_by?: string
           dayof_notified_at?: string | null

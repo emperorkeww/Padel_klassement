@@ -5,15 +5,15 @@ import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
 import type { Profile } from "@/types";
 
-// De toegangscode-flow (#675) draait om twee API-calls; die mocken we, zodat
+// De boek-flow (#675, #802) draait om twee API-calls; die mocken we, zodat
 // deze test over het gedrag van de kaart gaat en niet over de netwerklaag.
 const markPollBooked = vi.hoisted(() => vi.fn(async () => {}));
-const setPollAccessCode = vi.hoisted(() => vi.fn(async () => {}));
+const setPollBookingDetails = vi.hoisted(() => vi.fn(async () => {}));
 
 vi.mock("@/features/groups/pollsApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/groups/pollsApi")>()),
   markPollBooked,
-  setPollAccessCode,
+  setPollBookingDetails,
 }));
 
 // Rondes klaarzetten (#727) raakt twee endpoints; de indeling zelf komt uit
@@ -56,6 +56,7 @@ const POLL: PlayPoll = {
   club_city: "Beveren",
   club_timezone: "Europe/Brussels",
   access_code: null,
+  courts: null,
 };
 
 const OPTION: PollOption = {
@@ -109,45 +110,63 @@ function renderCard(
 
 const originalCreateElement = document.createElement;
 
-describe("<WinnerCard /> toegangscode (#675)", () => {
+describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
   beforeEach(() => {
     markPollBooked.mockClear();
-    setPollAccessCode.mockClear();
+    setPollBookingDetails.mockClear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("'Baan geboekt ✓' vraagt eerst om de code i.p.v. meteen te boeken", async () => {
+  it("'Baan geboekt ✓' vraagt eerst om baan en code i.p.v. meteen te boeken", async () => {
     renderCard();
     await userEvent.click(screen.getByRole("button", { name: /baan geboekt/i }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^banen$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/toegangscode velden/i)).toBeInTheDocument();
     // Nog niets geboekt zolang de sheet openstaat.
     expect(markPollBooked).not.toHaveBeenCalled();
   });
 
-  it("leeg bevestigen boekt zonder code — overslaan blijft één tik", async () => {
+  it("leeg bevestigen boekt zonder baan of code — overslaan blijft één tik", async () => {
     renderCard();
     await userEvent.click(screen.getByRole("button", { name: /baan geboekt/i }));
     await userEvent.click(
       screen.getByRole("button", { name: /markeer als geboekt/i }),
     );
 
-    expect(markPollBooked).toHaveBeenCalledWith("poll-1", null);
+    expect(markPollBooked).toHaveBeenCalledWith("poll-1", {
+      courts: null,
+      accessCode: null,
+    });
   });
 
-  it("Enter in het veld bevestigt, met de genormaliseerde code", async () => {
+  it("Enter in het veld bevestigt, met genormaliseerde banen en code", async () => {
     renderCard();
     await userEvent.click(screen.getByRole("button", { name: /baan geboekt/i }));
+    await userEvent.type(screen.getByLabelText(/^banen$/i), "  3 &  4  ");
     await userEvent.type(
       screen.getByLabelText(/toegangscode velden/i),
       "  b3: 1234  {Enter}",
     );
 
-    expect(markPollBooked).toHaveBeenCalledWith("poll-1", "b3: 1234");
+    expect(markPollBooked).toHaveBeenCalledWith("poll-1", {
+      courts: "3 & 4",
+      accessCode: "b3: 1234",
+    });
+  });
+
+  it("toont de geboekte banen in de geboekte staat", async () => {
+    renderCard({
+      status: "booked",
+      booked_at: "2026-07-08T12:00:00Z",
+      courts: "3 & 4",
+    });
+
+    expect(screen.getByText("Baan 3 & 4")).toBeInTheDocument();
   });
 
   it("toont de code in de geboekte staat en kopieert 'm bij een tik", async () => {
@@ -165,7 +184,12 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     const share = vi.fn<(data: ShareData) => Promise<void>>(async () => {});
     Object.assign(navigator, { share });
 
-    renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "1234" });
+    renderCard({
+      status: "booked",
+      booked_at: "2026-07-08T12:00:00Z",
+      access_code: "1234",
+      courts: "3 & 4",
+    });
     await userEvent.click(screen.getByRole("button", { name: /↗ tekst/i }));
 
     const arg = share.mock.calls[0][0];
@@ -174,6 +198,8 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     );
     // De code staat in de tekst zelf — die lees je vóór je verstuurt.
     expect(arg.text).toContain("🔑 Code velden: 1234");
+    // En de baan staat in de geboekt-regel: dat is wat er nu nagevraagd wordt.
+    expect(arg.text).toContain("✅ Geboekt — Baan 3 & 4 — tot dan!");
   });
 
   it("zet de code in de description van het agenda-item", async () => {
@@ -187,24 +213,36 @@ describe("<WinnerCard /> toegangscode (#675)", () => {
     const createObjectURL = vi.fn<(blob: Blob) => string>(() => "blob:test");
     Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
 
-    renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "b3: 1234" });
+    renderCard({
+      status: "booked",
+      booked_at: "2026-07-08T12:00:00Z",
+      access_code: "b3: 1234",
+      courts: "3 & 4",
+    });
     await userEvent.click(screen.getByRole("button", { name: /zet in agenda/i }));
 
     expect(click).toHaveBeenCalled();
     const ics = await createObjectURL.mock.calls[0][0].text();
     // RFC 5545 escapet de newline tot \n binnen DESCRIPTION.
     expect(ics).toContain("Toegangscode: b3: 1234");
+    expect(ics).toContain("Baan 3 & 4");
+    // De baan hoort ook bij de locatie: die staat in de agendamelding zelf.
+    expect(ics).toContain("LOCATION:Sporthal De Kaai · Baan 3 & 4");
   });
 
-  it("laat de beheerder de code ook ná het boeken nog toevoegen", async () => {
+  it("laat de beheerder baan en code ook ná het boeken nog toevoegen", async () => {
     renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z" });
 
-    // Zonder code heet de knop "＋ Code" — de poll hoeft niet heropend te worden.
-    await userEvent.click(screen.getByRole("button", { name: /＋ code/i }));
+    // Nog niets ingevuld: "＋ Baan & code" — de poll hoeft niet heropend.
+    await userEvent.click(screen.getByRole("button", { name: /＋ baan & code/i }));
+    await userEvent.type(screen.getByLabelText(/^banen$/i), "Center Court");
     await userEvent.type(screen.getByLabelText(/toegangscode velden/i), "A12");
     await userEvent.click(screen.getByRole("button", { name: /opslaan/i }));
 
-    expect(setPollAccessCode).toHaveBeenCalledWith("poll-1", "A12");
+    expect(setPollBookingDetails).toHaveBeenCalledWith("poll-1", {
+      courts: "Center Court",
+      accessCode: "A12",
+    });
     expect(markPollBooked).not.toHaveBeenCalled();
   });
 });

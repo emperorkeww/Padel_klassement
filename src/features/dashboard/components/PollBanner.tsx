@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { courtsLabel } from "@/features/groups/planPollHelpers";
 import { pickPollBanner, pollDay, type OpenPollBundle } from "../dashboardHelpers";
 
 // Speeldag op het overzicht: een lopende poll om op te stemmen, of de
@@ -56,11 +57,25 @@ export function PollBanner({
         Jullie spelen {pollDay(pick.date)} om {pick.startTime}
         {pick.booked ? " — baan geboekt ✓" : " — baan nog te boeken."}
       </p>
-      {/* Toegangscode (#675) alleen op de speeldag zelf: dan open je het
-          overzicht juist hiervoor. pickPollBanner bewaakt die dagkeuze. */}
-      {pick.accessCode != null && (
+      {/* Banen (#802) en toegangscode (#675) alleen op de speeldag zelf: dan
+          open je het overzicht juist hiervoor. pickPollBanner bewaakt die
+          dagkeuze. */}
+      {(pick.courts != null || pick.accessCode != null) && (
         <p className="poll-banner__code">
-          🔑 Toegangscode velden: <strong>{pick.accessCode}</strong>
+          {pick.courts != null && (
+            <>
+              🎾{" "}
+              <strong className="poll-banner__court">
+                {courtsLabel(pick.courts)}
+              </strong>
+            </>
+          )}
+          {pick.courts != null && pick.accessCode != null && " · "}
+          {pick.accessCode != null && (
+            <>
+              🔑 Toegangscode velden: <strong>{pick.accessCode}</strong>
+            </>
+          )}
         </p>
       )}
       <Link

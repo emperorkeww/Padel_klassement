@@ -37,6 +37,13 @@ create table public.play_polls (
   -- dat kan zonder policy-wijziging. Alleen groepsleden zien 'm
   -- (play_polls_select_member) — een clubcode hoort niet op een publieke pagina.
   access_code text check (access_code is null or length(access_code) <= 60),
+  -- Welke baan/banen geboekt zijn (#802): tot nu toe stond alleen "geboekt ✓"
+  -- in de app en moest je in de groepschat zoeken op welk veld je moest zijn.
+  -- Vrije tekst zoals access_code — een boeking is soms één baan ("Baan 3"),
+  -- soms een reeks ("3 & 4") of een naam ("Center Court"), en de club bepaalt
+  -- de notatie. Mag ook ná het boeken nog gezet worden, en volgt dezelfde
+  -- policies: alleen groepsleden lezen 'm, maker/eigenaar schrijft.
+  courts text check (courts is null or length(courts) <= 60),
   created_at timestamptz not null default now()
 );
 

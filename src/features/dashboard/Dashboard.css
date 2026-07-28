@@ -41,6 +41,12 @@
   letter-spacing: 0.06em;
   color: var(--ink);
 }
+/* De baan (#802) staat in dezelfde regel, maar is gewone tekst — monospace
+   suggereert "overtikken", en dat hoeft hier niet. */
+.poll-banner__code .poll-banner__court {
+  font-family: inherit;
+  letter-spacing: normal;
+}
 .poll-banner .btn {
   justify-self: start;
 }

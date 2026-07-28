@@ -24,6 +24,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_city: "Beveren",
     club_timezone: "Europe/Brussels",
     access_code: null,
+    courts: null,
     ...overrides,
   };
 }
@@ -192,6 +193,27 @@ describe("pickPollBanner", () => {
         at("2026-07-10T12:00:00Z"),
       );
       expect(pick).toMatchObject({ accessCode: null });
+    });
+
+    // Banen (#802) volgen exact dezelfde regel als de code: op de speeldag
+    // zelf, en alleen als er ook echt geboekt is.
+    it("toont de banen op de speeldag zelf, maar niet de dag ervoor", () => {
+      const rows = metCode({ courts: "3 & 4" });
+      expect(pickPollBanner(rows, "p1", at("2026-07-10T12:00:00Z"))).toMatchObject(
+        { courts: "3 & 4" },
+      );
+      expect(pickPollBanner(rows, "p1", at("2026-07-09T12:00:00Z"))).toMatchObject(
+        { courts: null },
+      );
+    });
+
+    it("zwijgt over de banen zolang er niet geboekt is", () => {
+      const pick = pickPollBanner(
+        metCode({ courts: "3 & 4", status: "locked" }),
+        "p1",
+        at("2026-07-10T12:00:00Z"),
+      );
+      expect(pick).toMatchObject({ booked: false, courts: null });
     });
   });
 });
