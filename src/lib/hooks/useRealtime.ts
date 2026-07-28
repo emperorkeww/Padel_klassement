@@ -24,6 +24,9 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
   friendships: ["friendships"],
   group_members: ["members", "groups"],
   match_predictions: ["match-predictions", "prediction-standings"],
+  // Lef-tips (#804): de kaart beheert zijn eigen inzet-state, dus geen
+  // subscriber; de mapping staat klaar en focus-refetch + TTL doen het werk.
+  match_stakes: ["match-stakes"],
   slot_availability: ["slot-availability"],
   // Baanbeschikbaarheids-snapshots van de cron (#405); geen subscriber nu,
   // maar de mapping staat klaar (focus-refetch + korte TTL doen het werk).
