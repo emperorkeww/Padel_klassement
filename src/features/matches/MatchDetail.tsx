@@ -19,6 +19,7 @@ import {
 } from "./api";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
+import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { getMatchPredictions } from "./predictionsApi";
 import { getGroup, getGroupMembers, getMyGroups } from "@/features/groups/api";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
@@ -415,6 +416,25 @@ export function MatchDetail() {
 
       {m.group_id != null && (
         <TotoSection match={m} teams={tmap} teamProfiles={pmap} />
+      )}
+
+      {/* Lef-tip (#804): op een gespeelde match blijft alleen de onthulling
+          over — wie er dubbel of niets speelde. Op een nog te spelen match
+          zit het inzetblok in de PlannedMatchCard hieronder. */}
+      {m.group_id != null && done && (
+        <LefTipBlock
+          match={m}
+          profiles={pmap}
+          myId={user?.id ?? null}
+          isDeelnemer={
+            !!user?.id &&
+            [teamA, teamB].some(
+              (t) => t && (t.player1_id === user.id || t.player2_id === user.id),
+            )
+          }
+          mijnKans={null}
+          games={0}
+        />
       )}
 
       {showPlanned && (

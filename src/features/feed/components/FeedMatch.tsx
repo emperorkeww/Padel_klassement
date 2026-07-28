@@ -32,6 +32,9 @@ export function FeedMatch({
         {event.myDelta != null && event.myDelta !== 0 && (
           <span className={`badge ${event.myDelta > 0 ? "badge--win" : "badge--loss"}`}>
             {event.myDelta > 0 ? "▲" : "▼"} {Math.abs(event.myDelta)} rating
+            {/* Lef-tip (#804): zonder dit staat er een getal dat twee keer zo
+                groot is als dat van je ploegmaat, zonder enige uitleg. */}
+            {(event.myStakeFactor ?? 1) > 1 && ` · lef ×${event.myStakeFactor}`}
           </span>
         )}
         {event.highlights.map((h, i) => (

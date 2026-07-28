@@ -80,7 +80,16 @@ export type Highlight =
     };
 
 export type FeedEvent =
-  | { kind: "match"; at: string; match: Match; highlights: Highlight[]; myDelta: number | null }
+  | {
+      kind: "match";
+      at: string;
+      match: Match;
+      highlights: Highlight[];
+      myDelta: number | null;
+      /** Lef-tip (#804): 2 als je eigen mutatie verdubbeld is. Zonder dit zou
+       *  jouw getal onverklaarbaar afwijken van dat van je ploegmaat. */
+      myStakeFactor?: number;
+    }
   | { kind: "friendship"; at: string; a: string; b: string }
   | { kind: "planned"; at: string; match: Match }
   | { kind: "group-created"; at: string; groupId: string; groupName: string; playerId: string | null }
@@ -443,6 +452,7 @@ export function buildFeed(input: {
         match: m,
         highlights,
         myDelta: points?.get(myId)?.delta ?? null,
+        myStakeFactor: points?.get(myId)?.stake_factor,
       });
     } else if (m.status !== "cancelled" && m.played_at != null) {
       // Nieuw gepland mét geprikte speeltijd: het event is het moment van

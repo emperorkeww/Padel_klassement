@@ -35,17 +35,21 @@ returns table (
   rating_before int,
   rating_after int,
   delta int,
-  played_at timestamptz
+  played_at timestamptz,
+  -- Lef-tip-multiplier (#804): 2.00 als deze speler op deze match ingezet had.
+  -- Zit al in delta verwerkt; de feed gebruikt hem alleen om een verdubbelde
+  -- mutatie uit te leggen.
+  stake_factor numeric
 )
 language sql
 stable
 set search_path = ''
 as $$
   select h.player_id, h.match_id, h.rating_before, h.rating_after, h.delta,
-    h.played_at
+    h.played_at, h.stake_factor
   from (
     select r.player_id, r.match_id, r.rating_before, r.rating_after, r.delta,
-      r.played_at,
+      r.played_at, r.stake_factor,
       row_number() over (
         partition by r.player_id
         order by r.played_at desc, r.id desc
