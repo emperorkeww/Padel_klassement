@@ -9,16 +9,19 @@
 import type { Team } from "@/types";
 import { playersOf } from "@/features/rating/results";
 
-/** Waarde van een verse bounty, zonder zegereeks. */
-export const BOUNTY_BASIS = 15;
+/** Waarde van een verse bounty, zonder zegereeks: een schrammetje. */
+export const BOUNTY_BASIS = 2;
 /** Wat elke opeenvolgende zege van de drager erbij legt. */
-export const BOUNTY_STAP = 3;
-/** Plafond: één claim mag nooit zwaarder wegen dan twee normale matches. */
+export const BOUNTY_STAP = 5;
+/** Plafond: één claim mag nooit zwaarder wegen dan twee normale matches.
+ *  Wordt na zes zeges bereikt — 2 · 7 · 12 · 17 · 22 · 27 · 30. */
 export const BOUNTY_MAX = 30;
 /** Rating vanaf wanneer je overal een bounty draagt (El Padelissimo, tiers.ts). */
 export const BOUNTY_DICTATOR_RATING = 1600;
-/** Het tekentje naast de naam van een drager. */
-export const BOUNTY_EMOJI = "🎯";
+/** Het tekentje naast de naam van een drager. Bewust 💰 en niet 🎯: dat laatste
+ *  staat in de feed al voor een upset (feedHelpers.highlightText), en één
+ *  tekentje voor twee dingen leest als een fout. */
+export const BOUNTY_EMOJI = "💰";
 
 /** Waarom deze speler een bounty draagt: de troon (overal) of de kroon van
  *  één groep. */

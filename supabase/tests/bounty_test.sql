@@ -13,16 +13,17 @@
 -- dus weg.
 begin;
 
-select plan(37);
+select plan(40);
 
 ------------------------------------------------------------------------
--- 0. De pool-formule zelf: basis 15, +3 per zege, afgetopt op 30.
+-- 0. De pool-formule zelf: basis 2, +5 per zege, afgetopt op 30.
 ------------------------------------------------------------------------
-select is(public.bounty_value(0), 15, 'zonder reeks is de bounty de basiswaarde 15');
-select is(public.bounty_value(1), 18, 'elke opeenvolgende zege legt er 3 bij');
-select is(public.bounty_value(5), 30, 'vijf zeges brengt de pool precies op het plafond');
+select is(public.bounty_value(0), 2, 'zonder reeks is de bounty de basiswaarde 2');
+select is(public.bounty_value(1), 7, 'elke opeenvolgende zege legt er 5 bij');
+select is(public.bounty_value(5), 27, 'vijf zeges brengen de pool op 27');
+select is(public.bounty_value(6), 30, 'de zesde zege zet de pool op het plafond');
 select is(public.bounty_value(9), 30, 'daarboven blijft de pool op 30 staan');
-select is(public.bounty_value(null), 15, 'geen reeks bekend telt als geen zeges');
+select is(public.bounty_value(null), 2, 'geen reeks bekend telt als geen zeges');
 
 ------------------------------------------------------------------------
 -- Fixtures. Profielen mogen rechtstreeks (handle_new_user is er alleen voor
@@ -130,7 +131,7 @@ insert into public.player_ratings (player_id, rating, games) values
 
 ------------------------------------------------------------------------
 -- 1. Basispool: de kroondrager van de groep verliest zijn eerste match.
---    Pool 15, oneven verdeeld: speler 1 van het winnende team krijgt 8.
+--    Pool 2, gelijk verdeeld over de twee winnaars.
 ------------------------------------------------------------------------
 insert into public.matches (id, team_a_id, team_b_id, group_id, status, winner_team_id, played_at)
 values ('bb000000-0000-0000-0000-000000000201',
@@ -141,15 +142,15 @@ values ('bb000000-0000-0000-0000-000000000201',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000201'
       and player_id = 'bb000000-0000-0000-0000-000000000a01'),
-  -15, 'de verslagen kroondrager betaalt de basispool van 15');
+  -2, 'de verslagen kroondrager betaalt de basispool van 2');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000201'
       and player_id = 'bb000000-0000-0000-0000-000000000a03'),
-  8, 'speler 1 van het winnende team krijgt de helft, naar boven afgerond');
+  1, 'speler 1 van het winnende team krijgt de helft');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000201'
       and player_id = 'bb000000-0000-0000-0000-000000000a04'),
-  7, 'speler 2 van het winnende team krijgt de andere helft');
+  1, 'speler 2 van het winnende team krijgt de andere helft');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000201'
       and player_id = 'bb000000-0000-0000-0000-000000000a02'),
@@ -159,7 +160,7 @@ select is((select sum(bounty_delta)::int from public.rating_history
   0, 'de bounty is zero-sum: er wordt geen Elo bijgemaakt');
 
 ------------------------------------------------------------------------
--- 2. Reeks: de drager wint twee keer, dan verliest hij. 15 + 2 × 3 = 21.
+-- 2. Reeks: de drager wint twee keer, dan verliest hij. 2 + 2 × 5 = 12.
 ------------------------------------------------------------------------
 insert into public.matches (id, team_a_id, team_b_id, group_id, status, winner_team_id, played_at)
 values ('bb000000-0000-0000-0000-000000000202',
@@ -186,17 +187,17 @@ values ('bb000000-0000-0000-0000-000000000204',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000204'
       and player_id = 'bb000000-0000-0000-0000-000000000a01'),
-  -21, 'twee opeenvolgende zeges brengen de pool op 21');
+  -12, 'twee opeenvolgende zeges brengen de pool op 12');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000204'
       and player_id = 'bb000000-0000-0000-0000-000000000a03'),
-  11, 'de winnaars delen ook een oneven pool exact');
+  6, 'de winnaars delen de opgebouwde pool exact');
 select is((select sum(bounty_delta)::int from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000204'),
   0, 'ook een opgebouwde pool blijft zero-sum');
 
 ------------------------------------------------------------------------
--- 3. Plafond: zes zeges zouden 33 opleveren, maar de pool stopt op 30.
+-- 3. Plafond: zes zeges brengen de pool precies tot het plafond van 30.
 ------------------------------------------------------------------------
 insert into public.matches (id, team_a_id, team_b_id, group_id, status, winner_team_id, played_at)
 select ('bb000000-0000-0000-0000-00000000021' || i)::uuid,
@@ -215,7 +216,7 @@ values ('bb000000-0000-0000-0000-000000000220',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000220'
       and player_id = 'bb000000-0000-0000-0000-000000000a01'),
-  -30, 'zes zeges lopen tegen het plafond van 30 aan');
+  -30, 'zes zeges brengen de pool op het plafond van 30');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000220'
       and player_id = 'bb000000-0000-0000-0000-000000000a03'),
@@ -252,7 +253,7 @@ values ('bb000000-0000-0000-0000-000000000301',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000301'
       and player_id = 'bb000000-0000-0000-0000-000000000d01'),
-  -15, 'de dictator betaalt ook in een match zonder groep');
+  -2, 'de dictator betaalt ook in een match zonder groep');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000301'
       and player_id = 'bb000000-0000-0000-0000-000000000d02'),
@@ -270,11 +271,11 @@ values ('bb000000-0000-0000-0000-000000000302',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000302'
       and player_id = 'bb000000-0000-0000-0000-000000000d03'),
-  15, 'bij singles gaat de hele pot naar de ene winnaar');
+  2, 'bij singles gaat de hele pot naar de ene winnaar');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000302'
       and player_id = 'bb000000-0000-0000-0000-000000000d01'),
-  -15, 'de dictator betaalt ook in een singles-match');
+  -2, 'de dictator betaalt ook in een singles-match');
 
 ------------------------------------------------------------------------
 -- 6. Gasten dragen geen kroon; de hoogste níet-gast van de groep wel.
@@ -293,7 +294,7 @@ select is((select bounty_delta from public.rating_history
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000401'
       and player_id = 'bb000000-0000-0000-0000-000000000e02'),
-  -15, 'de hoogste níet-gast draagt de kroon en betaalt');
+  -2, 'de hoogste níet-gast draagt de kroon en betaalt');
 
 insert into public.matches (id, team_a_id, team_b_id, group_id, status, winner_team_id, played_at)
 values ('bb000000-0000-0000-0000-000000000501',
@@ -367,11 +368,19 @@ values ('bb000000-0000-0000-0000-000000000610',
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000610'
       and player_id = 'bb000000-0000-0000-0000-000000000c01'),
-  -24, 'bij een gelijke stand draagt het langst aangesloten lid de kroon (3 zeges → 24)');
+  -17, 'bij een gelijke stand draagt het langst aangesloten lid de kroon (3 zeges → 17)');
 select is((select bounty_delta from public.rating_history
     where match_id = 'bb000000-0000-0000-0000-000000000610'
       and player_id = 'bb000000-0000-0000-0000-000000000c02'),
   0, 'de gelijk gerate partner draagt hem niet');
+select is((select bounty_delta from public.rating_history
+    where match_id = 'bb000000-0000-0000-0000-000000000610'
+      and player_id = 'bb000000-0000-0000-0000-000000000c03'),
+  9, 'bij een oneven pool krijgt speler 1 van het winnende team de extra Elo');
+select is((select bounty_delta from public.rating_history
+    where match_id = 'bb000000-0000-0000-0000-000000000610'
+      and player_id = 'bb000000-0000-0000-0000-000000000c04'),
+  8, 'speler 2 krijgt de rest, samen exact de pool');
 
 create temp table replay_snap as
   select player_id, match_id, delta, bounty_delta, rating_before, rating_after

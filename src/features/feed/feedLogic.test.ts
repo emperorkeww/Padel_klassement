@@ -932,3 +932,123 @@ describe("buildFeed — derby-chip (#169)", () => {
     expect(matchEvent.highlights.some((h) => h.type === "derby")).toBe(false);
   });
 });
+
+describe("buildFeed — bounty (#805)", () => {
+  /** rating_history-punt mét speeldatum; bountyDefences sorteert daarop. */
+  const punt = (
+    matchId: string,
+    at: string,
+    before: number,
+    after: number,
+    bounty?: number,
+  ): RatingPoint =>
+    ({
+      match_id: matchId,
+      rating_before: before,
+      rating_after: after,
+      delta: after - before,
+      played_at: at,
+      ...(bounty == null ? {} : { bounty_delta: bounty }),
+    }) as RatingPoint;
+
+  const drager = (playerId: string, streak: number, pool: number) => ({
+    playerId,
+    groupId: null,
+    reden: "dictator" as const,
+    streak,
+    pool,
+  });
+
+  it("wijst de verslagen drager aan uit de negatieve bounty_delta", () => {
+    const at = "2026-07-30T18:00:00Z";
+    const m = match(at);
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: {
+        // Winnaars delen 17: p1 krijgt er 9, p2 8.
+        p1: [punt(m.id, at, 1000, 1020, 9)],
+        p2: [punt(m.id, at, 1000, 1019, 8)],
+        // p3 droeg de bounty en betaalt hem.
+        p3: [punt(m.id, at, 1200, 1172, -17)],
+        p4: [punt(m.id, at, 1000, 989)],
+      },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights).toContainEqual({
+      type: "bounty",
+      carrierId: "p3",
+      amount: 17,
+    });
+    // Je eigen deel staat er los bij, net als de lef-factor: het verklaart een
+    // getal dat anders afwijkt van dat van je tegenstanders.
+    expect(matchEvent.myBounty).toBe(9);
+  });
+
+  it("zwijgt over de bounty als er niets verschoven is", () => {
+    const at = "2026-07-30T18:00:00Z";
+    const m = match(at);
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [punt(m.id, at, 1000, 1012)] },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights.some((h) => h.type === "bounty")).toBe(false);
+    expect(matchEvent.myBounty).toBeUndefined();
+  });
+
+  it("meldt een verdedigde bounty alleen op de recentste match van de drager", () => {
+    const oud = "2026-07-28T18:00:00Z";
+    const nieuw = "2026-07-30T18:00:00Z";
+    const m1 = match(oud);
+    const m2 = match(nieuw);
+    const feed = buildFeed({
+      matches: [m1, m2],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: {
+        p1: [punt(m1.id, oud, 1000, 1012), punt(m2.id, nieuw, 1012, 1024)],
+      },
+      bounties: [drager("p1", 2, 12)],
+    });
+    const events = feed.filter((e) => e.kind === "match");
+    const opNieuw = events.find((e) => e.match.id === m2.id);
+    const opOud = events.find((e) => e.match.id === m1.id);
+    expect(opNieuw?.highlights).toContainEqual({
+      type: "bounty-verdedigd",
+      carrierId: "p1",
+      pool: 12,
+    });
+    // De pool die we tonen is de huidige; die op een oudere partij plakken zou
+    // een verkeerd bedrag zijn.
+    expect(opOud?.highlights.some((h) => h.type === "bounty-verdedigd")).toBe(
+      false,
+    );
+  });
+
+  it("meldt niets als de drager zijn laatste match niet won", () => {
+    const at = "2026-07-30T18:00:00Z";
+    const m = match(at);
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [punt(m.id, at, 1000, 988)] },
+      // Reeks 0 = zijn laatste match was geen zege, dus valt er niets te vieren.
+      bounties: [drager("p1", 0, 2)],
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    expect(
+      matchEvent?.highlights.some((h) => h.type === "bounty-verdedigd"),
+    ).toBe(false);
+  });
+});

@@ -35,6 +35,10 @@ export function FeedMatch({
             {/* Lef-tip (#804): zonder dit staat er een getal dat twee keer zo
                 groot is als dat van je ploegmaat, zonder enige uitleg. */}
             {(event.myStakeFactor ?? 1) > 1 && ` · lef ×${event.myStakeFactor}`}
+            {/* Bounty (#805): om dezelfde reden. Je deel van de verschuiving
+                zit al in het getal ernaast; dit vertelt waar het vandaan kwam. */}
+            {!!event.myBounty &&
+              ` · bounty ${event.myBounty > 0 ? "+" : "−"}${Math.abs(event.myBounty)}`}
           </span>
         )}
         {event.highlights.map((h, i) => (

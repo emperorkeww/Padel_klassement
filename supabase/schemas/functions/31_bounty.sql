@@ -25,17 +25,20 @@
 -- en de dictator-drempel (1600) is absoluut — inflatie maakt de troon
 -- structureel goedkoper. Zie ook de motivatie in tables/21_match_stakes.sql.
 
--- Waarde van de pool bij een gegeven zegereeks. Basis 15, +3 per opeenvolgende
--- zege, afgetopt op 30. Het plafond is er omdat K = 24 is: zonder aftopping
--- weegt één claim al snel zwaarder dan twee normale matches. Immutable en
--- publiek uitvoerbaar — de client spiegelt deze formule (rating/bounty.ts).
+-- Waarde van de pool bij een gegeven zegereeks: 2 · 7 · 12 · 17 · 22 · 27 · 30.
+-- Basis 2, +5 per opeenvolgende zege, na zes zeges op het plafond van 30 (de
+-- laatste sprong is +3, want daar knipt het plafond). Een verse bounty is dus
+-- een schrammetje: het jagen begint pas te lonen als de leider écht ongeslagen
+-- doorstoomt. Het plafond is er omdat K = 24 is: zonder aftopping weegt één
+-- claim al snel zwaarder dan twee normale matches. Immutable en publiek
+-- uitvoerbaar — de client spiegelt deze formule (rating/bounty.ts).
 create or replace function public.bounty_value(p_streak int)
 returns int
 language sql
 immutable
 set search_path = ''
 as $$
-  select least(15 + 3 * greatest(coalesce(p_streak, 0), 0), 30);
+  select least(2 + 5 * greatest(coalesce(p_streak, 0), 0), 30);
 $$;
 
 -- Actieve zegereeks van een speler vlak vóór een bepaald punt in de historie.

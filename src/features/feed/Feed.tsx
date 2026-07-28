@@ -37,6 +37,7 @@ import { formatRelativeDay } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
 import { getMySmoesjes } from "@/features/matches/smoesjesApi";
 import { getMyVendettas } from "@/features/groups/vendettaApi";
+import { getActiveBounties } from "@/features/standings/bountyApi";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import { getMyFriendships } from "@/features/friends/api";
 import { getMyGroups, getGroupMembers } from "@/features/groups/api";
@@ -114,6 +115,9 @@ export function Feed() {
   useRealtime("match_smoesjes", smoesjes.reload);
   // Vendetta-contracten in je groepen (#169), voor de verhaallijn-items.
   const vendettas = useAsync(getMyVendettas, []);
+  // Actieve bounty's (#805): nodig voor de "verdedigd"-chip. Een geclaimde
+  // bounty staat al in de rating-historie en heeft deze bron niet nodig.
+  const bounties = useAsync(getActiveBounties, []);
   useRealtime("vendettas", vendettas.reload);
   // Een nieuwe uitslag verandert ook ratings, klassement, de pias-aanduiding én
   // de Zwarte Piet: al die bronnen verversen, anders lopen ze achter.
@@ -241,6 +245,7 @@ export function Feed() {
             shameTransfers: Object.values(shame.data ?? {}),
             smoesjes: smoesjes.data ?? [],
             vendettas: vendettas.data ?? [],
+            bounties: bounties.data ?? [],
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
             // vindbare spelers (#59). Soortfilter blijft de losse chip-logica.
@@ -262,6 +267,7 @@ export function Feed() {
       shame.data,
       smoesjes.data,
       vendettas.data,
+      bounties.data,
       profiles.data,
     ],
   );

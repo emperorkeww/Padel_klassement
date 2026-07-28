@@ -53,3 +53,20 @@ describe("<FeedMatch /> rating-badge", () => {
     expect(screen.queryByText(/lef ×/)).not.toBeInTheDocument();
   });
 });
+
+describe("<FeedMatch /> bounty (#805)", () => {
+  it("verklaart een geclaimde bounty naast de rating-badge", () => {
+    renderMatch({ myDelta: 20, myBounty: 9 });
+    expect(screen.getByText(/20 rating · bounty \+9/)).toBeInTheDocument();
+  });
+
+  it("toont ook wat de verslagen drager betaalde", () => {
+    renderMatch({ myDelta: -28, myBounty: -17 });
+    expect(screen.getByText(/28 rating · bounty −17/)).toBeInTheDocument();
+  });
+
+  it("laat de badge met rust zonder bounty", () => {
+    renderMatch({ myDelta: 12 });
+    expect(screen.queryByText(/bounty/)).not.toBeInTheDocument();
+  });
+});
