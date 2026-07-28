@@ -1526,6 +1526,7 @@ export type Database = {
       }
       rating_history: {
         Row: {
+          bounty_delta: number
           delta: number
           id: string
           match_id: string
@@ -1536,6 +1537,7 @@ export type Database = {
           stake_factor: number
         }
         Insert: {
+          bounty_delta?: number
           delta: number
           id?: string
           match_id: string
@@ -1546,6 +1548,7 @@ export type Database = {
           stake_factor?: number
         }
         Update: {
+          bounty_delta?: number
           delta?: number
           id?: string
           match_id?: string
@@ -1943,6 +1946,16 @@ export type Database = {
       }
     }
     Views: {
+      active_bounties: {
+        Row: {
+          group_id: string | null
+          player_id: string | null
+          pool: number | null
+          reden: string | null
+          streak: number | null
+        }
+        Relationships: []
+      }
       group_player_standings: {
         Row: {
           drawn: number | null
@@ -2010,6 +2023,7 @@ export type Database = {
       _apply_match_rating: { Args: { p_match: string }; Returns: undefined }
       _apply_rating: {
         Args: {
+          p_bounty: number
           p_delta: number
           p_factor: number
           p_match: string
@@ -2018,12 +2032,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      _bounty_deltas: {
+        Args: { p_match: string }
+        Returns: {
+          bounty: number
+          player_id: string
+        }[]
+      }
       _can_add_player: {
         Args: { p_group_id: string; p_player: string; p_uid: string }
         Returns: boolean
       }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
+      _group_leader: {
+        Args: { p_group: string; p_min_games: number }
+        Returns: string
+      }
       _guest_claim_conflict: {
         Args: { p_guest: string; p_player: string }
         Returns: string
@@ -2033,6 +2058,16 @@ export type Database = {
         Returns: number
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
+      bounty_streak: {
+        Args: {
+          p_created?: string
+          p_match?: string
+          p_player: string
+          p_ts?: string
+        }
+        Returns: number
+      }
+      bounty_value: { Args: { p_streak: number }; Returns: number }
       cancel_guest_claim: { Args: { p_claim_id: string }; Returns: undefined }
       claim_guest_player: {
         Args: { p_guest_id: string; p_player_id: string }

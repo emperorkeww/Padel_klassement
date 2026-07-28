@@ -25,7 +25,12 @@ create table public.rating_history (
   -- Lef-tip-multiplier (#804) die al in delta verwerkt zit: 2.00 als deze
   -- speler op deze match had ingezet, anders 1.00. Puur voor uitleg achteraf
   -- ("+24, lef ×2"); de rating zelf zit al in delta.
-  stake_factor numeric(3, 2) not null default 1.0
+  stake_factor numeric(3, 2) not null default 1.0,
+  -- Bounty-verschuiving (#805) die eveneens al in delta verwerkt zit: positief
+  -- voor wie een bounty claimde, negatief voor de verslagen drager, 0 voor
+  -- iedereen anders. Ook dit is enkel uitleg achteraf ("+31, waarvan +18
+  -- bounty") — en tegelijk de bron waaruit de feed de claim-kaart opbouwt.
+  bounty_delta int not null default 0
 );
 
 create index rating_history_player_idx on public.rating_history (player_id, played_at);
