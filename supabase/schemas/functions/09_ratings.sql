@@ -8,14 +8,16 @@
 
 -- Past het rating-verschil van één match toe op één speler: werkt
 -- player_ratings bij en logt een rij in rating_history. p_factor is de
--- lef-tip-multiplier (#804) die al in p_delta verwerkt zit; hij wordt
--- meegelogd zodat een verdubbelde mutatie achteraf uitlegbaar blijft.
+-- lef-tip-multiplier (#804) en p_bounty de bounty-verschuiving (#805); allebei
+-- zitten ze al in p_delta verwerkt en worden ze meegelogd, zodat een
+-- verdubbelde of geclaimde mutatie achteraf uitlegbaar blijft.
 create or replace function public._apply_rating(
   p_player uuid,
   p_match uuid,
   p_delta int,
   p_ts timestamptz,
-  p_factor numeric
+  p_factor numeric,
+  p_bounty int
 )
 returns void
 language plpgsql
@@ -39,12 +41,15 @@ begin
         games = public.player_ratings.games + 1,
         updated_at = now();
 
-  insert into public.rating_history (player_id, match_id, rating_before, rating_after, delta, played_at, stake_factor)
-  values (p_player, p_match, v_before, v_after, p_delta, p_ts, p_factor);
+  insert into public.rating_history (
+    player_id, match_id, rating_before, rating_after, delta, played_at,
+    stake_factor, bounty_delta
+  )
+  values (p_player, p_match, v_before, v_after, p_delta, p_ts, p_factor, p_bounty);
 end;
 $$;
 
-revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz, numeric) from public;
+revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz, numeric, int) from public;
 
 -- Rekenkern: berekent de ELO-delta's van één match op basis van de huidige
 -- player_ratings en past ze toe op de vier betrokken spelers. Wordt door
@@ -66,6 +71,8 @@ declare
   da numeric; db numeric;        -- ongeronde rating-delta per team
   winnaar boolean;               -- geen winnaar = gelijkspel (#804)
   f numeric;                     -- lef-tip-multiplier van de speler in kwestie
+  bounties jsonb;                -- bounty-verschuiving per speler (#805)
+  bo int;                        -- bounty van de speler in kwestie
 begin
   select mt.id, mt.team_a_id, mt.team_b_id, mt.winner_team_id,
          coalesce(mt.played_at, mt.created_at) as ts
@@ -122,17 +129,31 @@ begin
   -- hun normale mutatie, waardoor een match met inzet niet langer zero-sum is.
   winnaar := m.winner_team_id is not null;
 
+  -- Bounty (#805): de verslagen leider betaalt de pool op zijn hoofd en de
+  -- winnaars delen die. Moet vóór de eerste _apply_rating opgehaald worden —
+  -- daarna staat player_ratings al op de ná-match-stand en zou de drager-check
+  -- de verkeerde ratings zien. De verschuiving komt bovenop de (eventueel
+  -- verdubbelde) mutatie: de lef-tip gaat over je eigen zenuwen, een
+  -- overgedragen pool verdubbelen zou de boekhouding uit balans trekken.
+  select coalesce(jsonb_object_agg(x.player_id::text, x.bounty), '{}'::jsonb)
+    into bounties
+    from public._bounty_deltas(m.id) x;
+
   f := public._stake_factor(a1, m.id, winnaar);
-  perform public._apply_rating(a1, m.id, round(da * f)::int, m.ts, f);
+  bo := coalesce((bounties ->> a1::text)::int, 0);
+  perform public._apply_rating(a1, m.id, round(da * f)::int + bo, m.ts, f, bo);
   if a2 is not null then
     f := public._stake_factor(a2, m.id, winnaar);
-    perform public._apply_rating(a2, m.id, round(da * f)::int, m.ts, f);
+    bo := coalesce((bounties ->> a2::text)::int, 0);
+    perform public._apply_rating(a2, m.id, round(da * f)::int + bo, m.ts, f, bo);
   end if;
   f := public._stake_factor(b1, m.id, winnaar);
-  perform public._apply_rating(b1, m.id, round(db * f)::int, m.ts, f);
+  bo := coalesce((bounties ->> b1::text)::int, 0);
+  perform public._apply_rating(b1, m.id, round(db * f)::int + bo, m.ts, f, bo);
   if b2 is not null then
     f := public._stake_factor(b2, m.id, winnaar);
-    perform public._apply_rating(b2, m.id, round(db * f)::int, m.ts, f);
+    bo := coalesce((bounties ->> b2::text)::int, 0);
+    perform public._apply_rating(b2, m.id, round(db * f)::int + bo, m.ts, f, bo);
   end if;
 end;
 $$;
