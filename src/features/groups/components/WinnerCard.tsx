@@ -12,18 +12,19 @@ import { displayName } from "@/features/profiles/api";
 import {
   markPollBooked,
   pollShareUrl,
-  setPollAccessCode,
+  setPollBookingDetails,
+  type BookingDetails,
   type PlayPoll,
   type PollOption,
 } from "@/features/groups/pollsApi";
-import { AccessCodeSheet } from "./AccessCodeSheet";
+import { BookingSheet } from "./BookingSheet";
 import { ShareSpeeldag } from "./ShareSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { createFairRound } from "@/features/groups/api";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import type { Profile } from "@/types";
-import { longDay, shortDay } from "../planPollHelpers";
+import { courtsLabel, longDay, shortDay } from "../planPollHelpers";
 
 /* ------------------------------------------------------------------ */
 /* Winner-card: het gekozen/geboekte moment met boeken, agenda, delen  */
@@ -78,22 +79,25 @@ export function WinnerCard({
   /** Volle banen bij de huidige bevestigingen — één match per baan per ronde. */
   const banen = Math.floor(t.yes.length / 4);
 
-  // Toegangscode-sheet (#675). "boeken" hangt de code aan de boekstap vast,
-  // "wijzigen" zet 'm los achteraf — de code komt vaak pas met de
-  // bevestigingsmail. null = sheet dicht.
-  const [codeSheet, setCodeSheet] = useState<"boeken" | "wijzigen" | null>(null);
+  // Boekgegevens-sheet (#675, #802). "boeken" hangt banen en code aan de
+  // boekstap vast, "wijzigen" zet ze los achteraf — die gegevens komen vaak pas
+  // met de bevestigingsmail. null = sheet dicht.
+  const [boekSheet, setBoekSheet] = useState<"boeken" | "wijzigen" | null>(null);
   const code = poll.access_code;
+  const banenGeboekt = poll.courts;
 
-  function submitCode(value: string | null) {
-    const mode = codeSheet;
-    setCodeSheet(null);
+  function submitBooking(details: BookingDetails) {
+    const mode = boekSheet;
+    setBoekSheet(null);
     if (mode === "boeken") {
-      void run(() => markPollBooked(poll.id, value), "Speeldag geboekt ✓");
+      void run(() => markPollBooked(poll.id, details), "Speeldag geboekt ✓");
       return;
     }
     void run(
-      () => setPollAccessCode(poll.id, value),
-      value ? "Code opgeslagen." : "Code gewist.",
+      () => setPollBookingDetails(poll.id, details),
+      details.courts || details.accessCode
+        ? "Boekgegevens opgeslagen."
+        : "Boekgegevens gewist.",
     );
   }
 
@@ -109,11 +113,13 @@ export function WinnerCard({
   }
 
   function exportIcs() {
-    // De toegangscode (#675) hoort juist hier: op het moment dat je hem nodig
-    // hebt staat hij al in je agenda, zonder de app te openen. Een ICS is een
-    // persoonlijke download, geen deelbare poster — dus geen opt-in nodig.
+    // De banen (#802) en de toegangscode (#675) horen juist hier: op het moment
+    // dat je ze nodig hebt staan ze al in je agenda, zonder de app te openen.
+    // Een ICS is een persoonlijke download, geen deelbare poster — dus geen
+    // opt-in nodig.
     const beschrijving = [
       `Deelnemers: ${t.yes.map(name).join(", ") || "nog onbekend"}`,
+      ...(banenGeboekt != null ? [courtsLabel(banenGeboekt)] : []),
       ...(code != null ? [`Toegangscode: ${code}`] : []),
     ].join("\n");
     downloadIcs(
@@ -121,7 +127,12 @@ export function WinnerCard({
       icsEvent({
         title: `Padel — ${club.name}`,
         description: beschrijving,
-        location: club.name,
+        // De baan hoort bij de plek: zo zie je 'm in de agenda-melding zelf
+        // staan, niet pas na het openen van het item.
+        location:
+          banenGeboekt != null
+            ? `${club.name} · ${courtsLabel(banenGeboekt)}`
+            : club.name,
         date: o.date,
         startTime: o.start_time,
         durationMin: o.duration,
@@ -140,7 +151,11 @@ export function WinnerCard({
         ? `👥 Doet mee: ${t.yes.map(name).join(", ")}`
         : "👥 Nog geen bevestigde deelnemers — stem mee in de app!",
       poll.status === "booked"
-        ? "✅ Baan geboekt — tot dan!"
+        ? // Staat de baan erbij (#802)? Dan meteen in dezelfde regel: dat is
+          // precies wat er nu in de groepschat nagevraagd wordt.
+          banenGeboekt != null
+          ? `✅ Geboekt — ${courtsLabel(banenGeboekt)} — tot dan!`
+          : "✅ Baan geboekt — tot dan!"
         : canBook
           ? `⏳ Baan nog boeken: ${await bookingUrl(club, o.date)}`
           : "⏳ Baan nog boeken.",
@@ -251,7 +266,7 @@ export function WinnerCard({
                 <button
                   className="btn btn--sm"
                   disabled={busy}
-                  onClick={() => setCodeSheet("boeken")}
+                  onClick={() => setBoekSheet("boeken")}
                 >
                   Baan geboekt ✓
                 </button>
@@ -265,9 +280,15 @@ export function WinnerCard({
               <p className="winner-card__section-done">
                 Geboekt ✓ · {club.name}
               </p>
-              {/* Toegangscode (#675): de plek waar je 'm zoekt als je voor de
-                  deur staat — tik = klembord. Alleen groepsleden zien dit. */}
+              {/* Banen (#802) en toegangscode (#675): de plek waar je ze zoekt
+                  als je voor de deur staat — tik op de code = klembord. Alleen
+                  groepsleden zien dit. */}
               <div className="winner-card__code-row">
+                {banenGeboekt != null && (
+                  <span className="winner-card__code winner-card__code--static">
+                    🎾 <strong>{courtsLabel(banenGeboekt)}</strong>
+                  </span>
+                )}
                 {code != null && (
                   <button
                     type="button"
@@ -283,9 +304,11 @@ export function WinnerCard({
                     type="button"
                     className="btn btn--sm winner-card__code-edit"
                     disabled={busy}
-                    onClick={() => setCodeSheet("wijzigen")}
+                    onClick={() => setBoekSheet("wijzigen")}
                   >
-                    {code == null ? "＋ Code" : "Wijzig code"}
+                    {banenGeboekt == null && code == null
+                      ? "＋ Baan & code"
+                      : "Wijzig baan & code"}
                   </button>
                 )}
               </div>
@@ -309,7 +332,13 @@ export function WinnerCard({
             <ShareSpeeldag
               groupName={groupName}
               moment={`${longDay(o.date)} · ${o.start_time}`}
-              club={`${club.name} · ${o.duration} min`}
+              // De baan hoort bij de plek en mag gewoon op de poster (#802):
+              // anders dan de toegangscode opent een baannummer geen deur, dus
+              // daar hoeft geen opt-in voor. Bij een lange clubnaam kapt de
+              // header-regel zichzelf af.
+              club={`${club.name} · ${o.duration} min${
+                banenGeboekt != null ? ` · ${courtsLabel(banenGeboekt)}` : ""
+              }`}
               deelnemers={t.yes}
               profiles={profiles}
               bestand={`padel-${o.date}.png`}
@@ -388,23 +417,27 @@ export function WinnerCard({
         </section>
       </div>
 
-      {codeSheet !== null && (
-        <AccessCodeSheet
+      {boekSheet !== null && (
+        <BookingSheet
           open
           busy={busy}
-          initial={codeSheet === "wijzigen" ? code : null}
+          initial={
+            boekSheet === "wijzigen"
+              ? { courts: banenGeboekt, accessCode: code }
+              : {}
+          }
           title={
-            codeSheet === "boeken"
+            boekSheet === "boeken"
               ? "Baan geboekt ✓"
-              : code == null
-                ? "Code toevoegen"
-                : "Code wijzigen"
+              : banenGeboekt == null && code == null
+                ? "Baan & code toevoegen"
+                : "Baan & code wijzigen"
           }
           confirmLabel={
-            codeSheet === "boeken" ? "Markeer als geboekt" : "Opslaan"
+            boekSheet === "boeken" ? "Markeer als geboekt" : "Opslaan"
           }
-          onClose={() => setCodeSheet(null)}
-          onSubmit={submitCode}
+          onClose={() => setBoekSheet(null)}
+          onSubmit={submitBooking}
         />
       )}
     </li>

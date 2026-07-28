@@ -846,6 +846,18 @@
 .winner-card__code:hover {
   border-color: var(--accent);
 }
+/* De banen (#802) delen de vorm van de code-chip, maar zijn niets om te
+   kopiëren: geen cursor, geen hover-accent. */
+.winner-card__code--static {
+  cursor: default;
+}
+.winner-card__code--static:hover {
+  border-color: var(--line);
+}
+.winner-card__code--static strong {
+  font-family: inherit;
+  letter-spacing: normal;
+}
 
 /* Deelblok van een geboekte speeldag (#675): tekst/afbeelding + de opt-in
    voor de code op de poster. */

@@ -39,14 +39,44 @@ export const optKey = (o: { date: string; startTime: string }) => `${o.date}|${o
 /** Maximale lengte van de toegangscode (#675); spiegelt de CHECK in de DB. */
 export const MAX_ACCESS_CODE = 60;
 
+/** Maximale lengte van de banen-tekst (#802); spiegelt de CHECK in de DB. */
+export const MAX_COURTS = 60;
+
 /**
- * Toegangscode van de velden (#675) klaarmaken voor opslag: trimmen, witruimte
- * inklappen en afkappen op MAX_ACCESS_CODE. Leeg → null, zodat "geen code" één
- * representatie heeft en het lege veld gewoon overslaan blijft. Bewust géén
- * cijfer-validatie: clubs gebruiken ook letters of een code per baan.
+ * Vrij tekstveld van een boeking klaarmaken voor opslag: trimmen, witruimte
+ * inklappen en afkappen. Leeg → null, zodat "niet ingevuld" één representatie
+ * heeft en het lege veld gewoon overslaan blijft.
+ */
+function normalizeBookingText(raw: string | null | undefined, max: number): string | null {
+  if (raw == null) return null;
+  const tekst = raw.replace(/\s+/g, " ").trim().slice(0, max);
+  return tekst === "" ? null : tekst;
+}
+
+/**
+ * Toegangscode van de velden (#675). Bewust géén cijfer-validatie: clubs
+ * gebruiken ook letters of een code per baan.
  */
 export function normalizeAccessCode(raw: string | null | undefined): string | null {
-  if (raw == null) return null;
-  const code = raw.replace(/\s+/g, " ").trim().slice(0, MAX_ACCESS_CODE);
-  return code === "" ? null : code;
+  return normalizeBookingText(raw, MAX_ACCESS_CODE);
+}
+
+/**
+ * Banen van de boeking (#802). Net als de code vrije tekst: "3", "Baan 3 & 4"
+ * en "Center Court" zijn allemaal geldig — de club bepaalt de notatie, wij
+ * tonen 'm gewoon terug.
+ */
+export function normalizeCourts(raw: string | null | undefined): string | null {
+  return normalizeBookingText(raw, MAX_COURTS);
+}
+
+/**
+ * De banen-tekst als leesbaar label (#802). Het veld is vrije tekst, dus wie
+ * "3 & 4" invulde krijgt er "Baan" voor; wie zelf al "Baan 3" of "Center Court"
+ * schreef, houdt precies dat — anders lees je "Baan Baan 3".
+ */
+export function courtsLabel(courts: string): string {
+  return /^(baan|banen|court|center|centre|terrein|veld)/i.test(courts)
+    ? courts
+    : `Baan ${courts}`;
 }

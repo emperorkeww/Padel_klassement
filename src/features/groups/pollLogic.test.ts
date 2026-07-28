@@ -31,6 +31,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_city: "Beveren",
     club_timezone: "Europe/Brussels",
     access_code: null,
+    courts: null,
     ...overrides,
   };
 }
