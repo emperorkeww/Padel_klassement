@@ -34,6 +34,9 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      # `db push` praat rechtstreeks met Postgres, niet met de Management API:
+      # zonder wachtwoord blijft de CLI om invoer vragen en hangt de job.
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,8 +57,24 @@ jobs:
         with:
           version: 2.75.0
 
+      # Vroege, leesbare stop: zonder deze secrets faalt de CLI verderop met een
+      # cryptische usage-melding, en dat kostte een halve release om te zien.
+      - name: Controleer Supabase-secrets
+        run: |
+          for naam in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD; do
+            if [ -z "${!naam}" ]; then
+              echo "::error::$naam ontbreekt in de repository-secrets — zie README §Deployment."
+              exit 1
+            fi
+          done
+
+      # `db push` kent geen --project-ref: het commando werkt op het gelinkte
+      # project. Linken is dus een eigen stap, niet een vlag.
+      - name: Link productieproject
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
       - name: Apply database migrations
-        run: supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase db push
 
       - name: Deploy Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"

@@ -323,6 +323,7 @@ Hiervoor dienen de volgende secrets in de GitHub Repository geconfigureerd te zi
 *   `VITE_VAPID_PUBLIC_KEY`
 *   `SUPABASE_ACCESS_TOKEN` (Supabase personal access token met deployrechten)
 *   `SUPABASE_PROJECT_REF` (de productie project-ref)
+*   `SUPABASE_DB_PASSWORD` (het databasewachtwoord van dat project; `supabase db push` verbindt rechtstreeks met Postgres)
 *   `CLOUDFLARE_API_TOKEN` (met Workers-edit rechten)
 *   `CLOUDFLARE_ACCOUNT_ID`
 
