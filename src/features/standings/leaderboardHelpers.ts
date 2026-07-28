@@ -28,6 +28,10 @@ export type Row = {
   /** Echte positie in het klassement, meegegeven zodat een naam-filter (#282)
    *  de rangnummers niet hernummert. Valt terug op de index als hij ontbreekt. */
   rank?: number;
+  /** Wat er op het hoofd van deze speler staat (#805); null/undefined = niets.
+   *  Alleen op de live stand: op een stand-op-datum zou de huidige bounty een
+   *  getal bij een oude rating zetten. */
+  bounty?: number | null;
 };
 
 /** De Troon (#528 + machtsbehoud #545): tilt de zittende dictator uit de

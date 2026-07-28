@@ -17,6 +17,8 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
     "pias",
     // De Zwarte Piet verhuist ook bij elke uitslag/correctie (#185).
     "shame",
+    // Een uitslag verschuift de kroon én de zegereeks eronder (#805).
+    "bounties",
   ],
   pias_of_week: ["pias"],
   zwarte_piet: ["shame"],

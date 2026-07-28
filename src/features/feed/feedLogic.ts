@@ -19,6 +19,7 @@ import { tierChange } from "@/features/rating/tiers";
 import { bepaalPias, type PiasReden } from "@/features/groups/maandpias";
 import { vendettaStand } from "@/features/groups/vendetta";
 import { matchDerby } from "@/features/matches/derby";
+import type { ActiveBounty } from "@/features/rating/bounty";
 import type { TierNaam } from "@/features/rating/tiers";
 import type { PiasWeek } from "@/features/standings/pias";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
@@ -77,6 +78,24 @@ export type Highlight =
       type: "derby";
       tierNaam: TierNaam;
       emoji: string;
+    }
+  | {
+      /** Bounty geclaimd (#805): de leider ging onderuit en betaalde de pool op
+       *  z'n hoofd. Volledig uit rating_history afgeleid — de negatieve
+       *  bounty_delta wíjst de drager aan, dus dit is geen gok. */
+      type: "bounty";
+      carrierId: string;
+      /** Wat de winnaars samen opstreken, ofwel wat de drager betaalde. */
+      amount: number;
+    }
+  | {
+      /** Bounty verdedigd (#805): de drager won en z'n reeks — en dus de prijs
+       *  op z'n hoofd — groeide door. Alleen op zijn meest recente match: de
+       *  huidige pool zegt niets over een partij van twee weken terug. */
+      type: "bounty-verdedigd";
+      carrierId: string;
+      /** Wat er ná deze zege op z'n hoofd staat. */
+      pool: number;
     };
 
 export type FeedEvent =
@@ -89,6 +108,10 @@ export type FeedEvent =
       /** Lef-tip (#804): 2 als je eigen mutatie verdubbeld is. Zonder dit zou
        *  jouw getal onverklaarbaar afwijken van dat van je ploegmaat. */
       myStakeFactor?: number;
+      /** Bounty (#805): jouw deel van de verschuiving, positief of negatief.
+       *  Zit al in myDelta; het staat er los bij om hetzelfde te doen als de
+       *  lef-factor — een afwijkend getal verklaren. */
+      myBounty?: number;
     }
   | { kind: "friendship"; at: string; a: string; b: string }
   | { kind: "planned"; at: string; match: Match }
@@ -183,6 +206,59 @@ function pointsByMatch(
   return byMatch;
 }
 
+/**
+ * Bounty geclaimd (#805): wie in deze match z'n pool betaalde, en hoeveel. De
+ * negatieve bounty_delta staat in de historie van de drager zelf, dus dit is
+ * exact wat de databank verrekend heeft — geen reconstructie uit de uitslag.
+ */
+export function bountyHighlights(
+  points: Map<string, RatingPoint> | undefined,
+): Highlight[] {
+  if (!points) return [];
+  const uit: Highlight[] = [];
+  for (const [playerId, p] of points) {
+    const b = p.bounty_delta ?? 0;
+    if (b < 0) uit.push({ type: "bounty", carrierId: playerId, amount: -b });
+  }
+  return uit;
+}
+
+/**
+ * Bounty verdedigd (#805): match → dragers die 'm daar overeind hielden.
+ *
+ * Alleen de méést recente match van elke drager telt. Een reeks van drie zegt
+ * dat z'n laatste drie matches gewonnen zijn, maar de pool die we tonen is de
+ * huidige — die op een oudere partij plakken zou een verkeerd bedrag zijn. Dat
+ * de laatste match een zege wás volgt uit streak ≥ 1: de reeks telt terug vanaf
+ * de recentste match.
+ */
+export function bountyDefences(
+  bounties: ActiveBounty[],
+  histories: Record<string, RatingPoint[]>,
+): Map<string, Highlight[]> {
+  const perMatch = new Map<string, Highlight[]>();
+  // Eén rij per drager: dezelfde speler kan zowel de troon als een kroon
+  // dragen, maar de pool hangt aan zijn reeks en telt dus één keer.
+  const pools = new Map<string, number>();
+  for (const b of bounties) {
+    if (b.streak < 1) continue;
+    pools.set(b.playerId, Math.max(pools.get(b.playerId) ?? 0, b.pool));
+  }
+  for (const [playerId, pool] of pools) {
+    const punten = histories[playerId];
+    if (!punten?.length) continue;
+    // De histories komen chronologisch binnen (oud → nieuw), maar daar rekent
+    // deze helper niet op: zoek zelf de recentste, net als onFire.ts.
+    const laatste = punten.reduce((a, b) =>
+      b.played_at.localeCompare(a.played_at) > 0 ? b : a,
+    );
+    const lijst = perMatch.get(laatste.match_id) ?? [];
+    lijst.push({ type: "bounty-verdedigd", carrierId: playerId, pool });
+    perMatch.set(laatste.match_id, lijst);
+  }
+  return perMatch;
+}
+
 /** Emoji + korte tekst per highlight; de UI plakt er namen bij. */
 export function scoreHighlight(m: Match): Highlight | null {
   if (m.score_a == null || m.score_b == null || m.winner_team_id == null) {
@@ -239,6 +315,10 @@ export function buildFeed(input: {
   piasWeeks?: PiasWeek[];
   /** Huidige Zwarte Piet-drager per groep (#185) → overdracht-items. */
   shameTransfers?: Array<ZwartePiet & { groupId: string }>;
+  /** Actieve bounty's (#805) → "kroon verdedigd"-chip op de recentste match van
+   *  een drager. Een geclaimde bounty heeft dit niet nodig: die staat in de
+   *  historie zelf. */
+  bounties?: ActiveBounty[];
   /** Geplaatste smoezen in je groepen (#296) → smoes-items op de feed. */
   smoesjes?: FeedSmoes[];
   /** Vendetta-contracten in je groepen (#169) → verhaallijn-items + chips. */
@@ -276,6 +356,9 @@ export function buildFeed(input: {
     for (const m of members) network.add(m.player_id);
   }
   const byMatch = pointsByMatch(histories);
+  // Verdedigde bounty's (#805): per match de dragers die 'm daar overeind
+  // hielden. Buiten de lus, want het is één pas over de dragers.
+  const verdedigd = bountyDefences(input.bounties ?? [], histories);
   const events: FeedEvent[] = [];
 
   // ── Matches (afgerond, met highlights) en geplande matches ──
@@ -393,6 +476,10 @@ export function buildFeed(input: {
       const points = byMatch.get(m.id);
       const highlights: Highlight[] = [];
 
+      // Bounty (#805) bovenaan: dat de leider z'n prijs betaalde is het
+      // grootste nieuws van zo'n match, groter dan een bagel of een upset.
+      highlights.push(...bountyHighlights(points));
+      highlights.push(...(verdedigd.get(m.id) ?? []));
       const upset = upsetHighlight(m, teams, points);
       if (upset) highlights.push(upset);
       const score = scoreHighlight(m);
@@ -453,6 +540,7 @@ export function buildFeed(input: {
         highlights,
         myDelta: points?.get(myId)?.delta ?? null,
         myStakeFactor: points?.get(myId)?.stake_factor,
+        myBounty: points?.get(myId)?.bounty_delta || undefined,
       });
     } else if (m.status !== "cancelled" && m.played_at != null) {
       // Nieuw gepland mét geprikte speeltijd: het event is het moment van

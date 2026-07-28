@@ -173,4 +173,8 @@ export interface RatingPoint {
    *  Optioneel omdat oudere/afgeleide bronnen (testfixtures, samengevoegde
    *  historie) hem niet altijd meeleveren. */
   stake_factor?: number;
+  /** Bounty-verschuiving (#805), al in `delta` verwerkt: positief als je een
+   *  bounty claimde, negatief als je er een betaalde. Optioneel om dezelfde
+   *  reden als `stake_factor`. */
+  bounty_delta?: number;
 }

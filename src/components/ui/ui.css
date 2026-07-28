@@ -277,6 +277,23 @@ textarea {
   font-size: 0.9em;
   line-height: 1;
 }
+/* Bounty-tekentje (#805): hetzelfde formaat als de schande-tokens, maar met de
+   actuele waarde erin — je moet vooraf kunnen zien wat er te halen valt. */
+.bounty-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  padding: 1px 5px 1px 3px;
+  border: 1px solid var(--coach-line);
+  border-radius: 99px;
+  background: var(--coach-soft);
+  color: var(--coach-ink);
+}
+.bounty-mark__waarde {
+  font-size: 0.85em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
 .person-sub {
   font-size: var(--fs-xs);
   color: var(--ink-soft);

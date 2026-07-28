@@ -37,6 +37,7 @@ import {
   type SetPair,
 } from "@/features/matches/api";
 import { serveerTeam } from "@/features/matches/serve";
+import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
@@ -552,6 +553,10 @@ export function PlannedMatchCard({
           )}
         </div>
       )}
+
+      {/* Bounty (#805): staat er een leider op het veld, dan hoort iedereen
+          vóór de aftrap te weten wat er te halen valt. */}
+      <BountyBanner match={m} teams={teams} profiles={profiles} />
 
       {/* Lef-tip (#804): dubbel-of-niets voor de spelers zelf, naast de toto
           voor de toeschouwers. */}
