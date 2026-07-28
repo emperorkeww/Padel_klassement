@@ -2162,6 +2162,7 @@ export type Database = {
           player_id: string
           rating_after: number
           rating_before: number
+          stake_factor: number
         }[]
       }
       recompute_dictator_termijnen: { Args: never; Returns: undefined }

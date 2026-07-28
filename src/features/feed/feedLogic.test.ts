@@ -167,6 +167,39 @@ describe("buildFeed — highlights op het match-item (dedup)", () => {
     expect(matchEvent.myDelta).toBe(9);
   });
 
+  it("geeft de lef-multiplier door zodat een verdubbelde mutatie uitlegbaar is", () => {
+    const m = match("2026-07-10T18:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: {
+        p1: [{ ...point(m.id, 1000, 1024), stake_factor: 2 }],
+        // Ploegmaat zonder inzet: half zoveel, zonder multiplier.
+        p2: [point(m.id, 1000, 1012)],
+      },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.myDelta).toBe(24);
+    expect(matchEvent.myStakeFactor).toBe(2);
+  });
+
+  it("laat de multiplier weg als er niet ingezet is", () => {
+    const m = match("2026-07-10T18:00:00Z");
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [{ ...point(m.id, 1000, 1012), stake_factor: 1 }] },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.myStakeFactor).toBe(1);
+  });
+
   it("ranking-wissel: promotie naar een nieuwe divisie komt in de feed", () => {
     const m = match("2026-07-10T18:00:00Z");
     const feed = buildFeed({
