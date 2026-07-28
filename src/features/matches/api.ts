@@ -22,7 +22,7 @@ function invalidateMatchData() {
     "prediction-standings",
     "pias",
     "shame",
-    // De bounty volgt de kroon en de zegereeks, dus ook die kantelt (#805).
+    // Dragerschap en de verdedigd-feedstatus kunnen na een uitslag wijzigen.
     "bounties",
   );
 }

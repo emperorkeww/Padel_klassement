@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  BOUNTY_BASIS,
-  BOUNTY_MAX,
+  BOUNTY_POOL,
   bountiesVoor,
-  bountyPool,
   matchBounties,
   type ActiveBounty,
 } from "./bounty";
@@ -23,24 +21,9 @@ const bounty = (
 const team = (id: string, p1: string, p2: string | null): Team =>
   ({ id, player1_id: p1, player2_id: p2 }) as Team;
 
-describe("bountyPool", () => {
-  it("start op de basiswaarde zonder zegereeks", () => {
-    expect(bountyPool(0)).toBe(BOUNTY_BASIS);
-  });
-
-  it("legt er per opeenvolgende zege vijf bij", () => {
-    expect(bountyPool(1)).toBe(7);
-    expect(bountyPool(3)).toBe(17);
-  });
-
-  it("stopt op het plafond na zes zeges", () => {
-    expect(bountyPool(5)).toBe(27);
-    expect(bountyPool(6)).toBe(BOUNTY_MAX);
-    expect(bountyPool(20)).toBe(BOUNTY_MAX);
-  });
-
-  it("behandelt een negatieve reeks als geen reeks", () => {
-    expect(bountyPool(-3)).toBe(BOUNTY_BASIS);
+describe("BOUNTY_POOL", () => {
+  it("spiegelt de vaste databasewaarde", () => {
+    expect(BOUNTY_POOL).toBe(16);
   });
 });
 

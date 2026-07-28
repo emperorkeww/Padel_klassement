@@ -238,7 +238,7 @@ export function bountyDefences(
 ): Map<string, Highlight[]> {
   const perMatch = new Map<string, Highlight[]>();
   // Eén rij per drager: dezelfde speler kan zowel de troon als een kroon
-  // dragen, maar de pool hangt aan zijn reeks en telt dus één keer.
+  // dragen, maar de vaste pool telt per speler maar één keer.
   const pools = new Map<string, number>();
   for (const b of bounties) {
     if (b.streak < 1) continue;

@@ -1,6 +1,6 @@
 // Bounty op de leider (#805): client-side evenknie van de databank-logica.
-// BOUNTY_BASIS/STAP/MAX spiegelen public.bounty_value, de drempels spiegelen
-// _bounty_deltas (supabase/schemas/functions/31_bounty.sql).
+// BOUNTY_POOL spiegelt public.bounty_value, de drempels spiegelen _bounty_deltas
+// (supabase/schemas/functions/31_bounty.sql).
 //
 // De databank blijft de enige die uitkeert; dit bestand bestaat zodat het
 // klassement en de matchkaart vooraf kunnen tonen wat er op iemands hoofd
@@ -9,13 +9,8 @@
 import type { Team } from "@/types";
 import { playersOf } from "@/features/rating/results";
 
-/** Waarde van een verse bounty, zonder zegereeks: een schrammetje. */
-export const BOUNTY_BASIS = 2;
-/** Wat elke opeenvolgende zege van de drager erbij legt. */
-export const BOUNTY_STAP = 5;
-/** Plafond: één claim mag nooit zwaarder wegen dan twee normale matches.
- *  Wordt na zes zeges bereikt — 2 · 7 · 12 · 17 · 22 · 27 · 30. */
-export const BOUNTY_MAX = 30;
+/** Vaste waarde van één bounty, ongeacht de zegereeks van de drager (#823). */
+export const BOUNTY_POOL = 16;
 /** Rating vanaf wanneer je overal een bounty draagt (El Padelissimo, tiers.ts). */
 export const BOUNTY_DICTATOR_RATING = 1600;
 /** Het tekentje naast de naam van een drager. Bewust 💰 en niet 🎯: dat laatste
@@ -37,17 +32,11 @@ export interface ActiveBounty {
   pool: number;
 }
 
-/** Wat er op iemands hoofd staat bij een gegeven zegereeks — spiegel van
- *  public.bounty_value. */
-export function bountyPool(streak: number): number {
-  return Math.min(BOUNTY_BASIS + BOUNTY_STAP * Math.max(streak, 0), BOUNTY_MAX);
-}
-
 /**
  * Pool per speler binnen één context: de dictator-bounty's (die gelden overal)
  * plus, als je een groep meegeeft, de kroon van díé groep. Een speler die
- * allebei draagt telt één keer — de pool hangt aan zijn zegereeks, niet aan de
- * reden, en wordt bij een claim ook maar één keer uitgekeerd.
+ * allebei draagt telt één keer — de pool is per drager, niet per reden, en
+ * wordt bij een claim ook maar één keer uitgekeerd.
  */
 export function bountiesVoor(
   bounties: ActiveBounty[],
