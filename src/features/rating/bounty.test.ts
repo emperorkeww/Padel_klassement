@@ -28,13 +28,14 @@ describe("bountyPool", () => {
     expect(bountyPool(0)).toBe(BOUNTY_BASIS);
   });
 
-  it("legt er per opeenvolgende zege drie bij", () => {
-    expect(bountyPool(1)).toBe(18);
-    expect(bountyPool(3)).toBe(24);
+  it("legt er per opeenvolgende zege vijf bij", () => {
+    expect(bountyPool(1)).toBe(7);
+    expect(bountyPool(3)).toBe(17);
   });
 
-  it("stopt op het plafond", () => {
-    expect(bountyPool(5)).toBe(BOUNTY_MAX);
+  it("stopt op het plafond na zes zeges", () => {
+    expect(bountyPool(5)).toBe(27);
+    expect(bountyPool(6)).toBe(BOUNTY_MAX);
     expect(bountyPool(20)).toBe(BOUNTY_MAX);
   });
 
