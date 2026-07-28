@@ -5,8 +5,7 @@
 -- Eén rij per drager-per-reden: een dictator (rating ≥ 1600) draagt zijn bounty
 -- overal en heeft group_id null; een Big Daddy draagt hem alleen in matches van
 -- díé groep. Dezelfde speler kan dus meerdere rijen hebben — de pool is per
--- speler (hij hangt alleen aan zijn zegereeks), niet per rij, en wordt bij een
--- claim ook maar één keer uitgekeerd.
+-- speler, niet per rij, en wordt bij een claim ook maar één keer uitgekeerd.
 --
 -- security_invoker: group_members valt onder RLS, dus je ziet alleen de kroon
 -- van je eigen groepen. player_ratings en profiles zijn al clubbreed leesbaar,

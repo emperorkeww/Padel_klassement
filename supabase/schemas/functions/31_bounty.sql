@@ -1,5 +1,5 @@
 -- Bounty op de kop van de leider (#805): wie bovenaan staat draagt een prijs op
--- z'n hoofd. Verslaat een team hem, dan verhuist de opgebouwde pool als extra
+-- z'n hoofd. Verslaat een team hem, dan verhuist de vaste pool als extra
 -- Elo naar de winnaars. Twee soorten dragers, allebei uit de rating afgeleid:
 --   * Dictator — rating ≥ 1600 (de El Padelissimo-drempel uit tiers.ts). Geldt
 --     in élke match, ook buiten een groep. Bewust de tier-drempel en niet de
@@ -25,20 +25,17 @@
 -- en de dictator-drempel (1600) is absoluut — inflatie maakt de troon
 -- structureel goedkoper. Zie ook de motivatie in tables/21_match_stakes.sql.
 
--- Waarde van de pool bij een gegeven zegereeks: 2 · 7 · 12 · 17 · 22 · 27 · 30.
--- Basis 2, +5 per opeenvolgende zege, na zes zeges op het plafond van 30 (de
--- laatste sprong is +3, want daar knipt het plafond). Een verse bounty is dus
--- een schrammetje: het jagen begint pas te lonen als de leider écht ongeslagen
--- doorstoomt. Het plafond is er omdat K = 24 is: zonder aftopping weegt één
--- claim al snel zwaarder dan twee normale matches. Immutable en publiek
--- uitvoerbaar — de client spiegelt deze formule (rating/bounty.ts).
+-- Vaste pool van 16, ongeacht de zegereeks van de drager (#823). De parameter
+-- blijft bestaan voor call-compatibiliteit met active_bounties en
+-- _bounty_deltas. Immutable en publiek uitvoerbaar — de client spiegelt deze
+-- waarde (rating/bounty.ts).
 create or replace function public.bounty_value(p_streak int)
 returns int
 language sql
 immutable
 set search_path = ''
 as $$
-  select least(2 + 5 * greatest(coalesce(p_streak, 0), 0), 30);
+  select 16;
 $$;
 
 -- Actieve zegereeks van een speler vlak vóór een bepaald punt in de historie.
