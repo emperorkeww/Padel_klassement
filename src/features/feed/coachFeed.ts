@@ -184,6 +184,37 @@ const REEKS = [
   "Winst op winst. M'n notitieboekje raakt oververhit door je vorm.",
 ] as const;
 
+// Bounty geclaimd (#805): de leider betaalde de prijs op z'n hoofd. Spot met
+// hém, dus alleen als de verliezers geen roast-schild dragen.
+const BOUNTY_GECLAIMD = [
+  "De prijs op zijn hoofd is geïnd. Iemand moest het doen.",
+  "Kroon af, kassa open. Zo werkt dat hier.",
+  "De koning betaalt. Contant, in Elo.",
+  "Dat is het probleem met bovenaan staan: iedereen weet waar je woont.",
+  "Premie geïnd. De jacht was geopend en de jacht is geslaagd.",
+  "Zijn ongeslagen reeks ligt in de kooi. Naast zijn waardigheid.",
+  "De bounty is uitbetaald. Zijn ego staat nog in de min.",
+  "Wie bovenaan staat wordt bejaagd. Vandaag was het raak.",
+  "Daar gaat de buit. Hij mag 'm zelf overhandigen.",
+  "De leider is afgerekend. Letterlijk.",
+  "Het hoofd van de klas krijgt een rekening gepresenteerd.",
+  "Een reeks opbouwen duurt weken. Hem verliezen duurde één set.",
+] as const;
+
+// Bounty verdedigd (#805): niemand kreeg 'm te pakken, dus de pot stapelt door.
+const BOUNTY_VERDEDIGD = [
+  "Bounty overleefd. Het bedrag op z'n hoofd wordt alleen maar groter.",
+  "Weer niemand die 'm pakt. De pot stapelt vrolijk door.",
+  "De jacht is geopend en de jacht is mislukt. Volgende.",
+  "Premiejagers afgeslagen. Ze mogen het volgende week opnieuw proberen.",
+  "Nog steeds de baas, nog steeds duurder om te verslaan.",
+  "De troonopvolger blijft opvolger. Al weken.",
+  "Hij loopt er rustig mee weg, met die prijs op z'n hoofd.",
+  "Iedereen wist wat er te halen viel. Niemand haalde het.",
+  "De bounty groeit. Op een dag is dat iemands beste week ooit.",
+  "Aanval afgeslagen. De koning slaapt vannacht prima.",
+] as const;
+
 const UPSET = [
   "Daar gaan de favorieten. Héérlijk om te zien.",
   "Papieren favorieten, opgelet: het papier scheurt.",
@@ -623,6 +654,20 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
       // is meegegeven; anders blijft alles op de generieke pools.
       const vf = ctx.matches ? verliesFeiten(event.match, ctx.matches, teams, ctx.naamVoor) : null;
 
+      // Bounty (#805) gaat vóór: dat de leider z'n prijs betaalde — of 'm nét
+      // overeind hield — is het grootste verhaal van zo'n match. Draagt de
+      // verliezer een schild, dan wordt het lof voor de winnaars in plaats van
+      // spot met hem.
+      if (h.some((x) => x.type === "bounty")) {
+        if (!magRoasten) return coachLof(matchLofCtx(event, ctx), seed, g);
+        return kiesUniek(BOUNTY_GECLAIMD, seed, g);
+      }
+      if (h.some((x) => x.type === "bounty-verdedigd")) {
+        // De spot geldt de mislukte premiejagers, dus ook hier telt hun schild.
+        if (!magRoasten) return coachLof(matchLofCtx(event, ctx), seed, g);
+        return kiesUniek(BOUNTY_VERDEDIGD, seed, g);
+      }
+
       // Winreeks en upset zijn prestaties: Coach Rudy juicht of prikt (#199). Het
       // schild van de gevierde speler tempert de hype tot mild; dat van de
       // verliezer sluit de jab helemaal uit, want die spot met hém.
@@ -689,6 +734,10 @@ export function coachStemming(
         : "portret";
     case "match": {
       const h = event.highlights;
+      // Een geïnde bounty is leedvermaak, een verdedigde is een sneer naar de
+      // jagers — allebei de gemene mood (#805).
+      if (h.some((x) => x.type === "bounty" || x.type === "bounty-verdedigd"))
+        return "gemeen";
       if (h.some((x) => x.type === "streak" || x.type === "duo")) return "trots";
       if (h.some((x) => x.type === "upset")) return "trots";
       if (h.some((x) => x.type === "score" && x.label === "monsterzege")) return "trots";

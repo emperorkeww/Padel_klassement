@@ -535,3 +535,40 @@ describe("coachOpmerking — anti-herhaling (#201)", () => {
     expect(run()).toEqual(run());
   });
 });
+
+describe("Coach Rudy over de bounty (#805)", () => {
+  const bountyEvent = (highlights: Highlight[]): FeedEvent => ({
+    kind: "match",
+    at: "2026-07-30T18:00:00Z",
+    match: matchStub,
+    highlights,
+    myDelta: null,
+  });
+
+  const geclaimd = bountyEvent([{ type: "bounty", carrierId: "p3", amount: 17 }]);
+  const verdedigd = bountyEvent([
+    { type: "bounty-verdedigd", carrierId: "p1", pool: 12 },
+  ]);
+
+  it("reageert op een geïnde bounty", () => {
+    expect(coachOpmerking(geclaimd, ctx)).toBeTruthy();
+  });
+
+  it("reageert ook als de drager 'm overeind hield", () => {
+    expect(coachOpmerking(verdedigd, ctx)).toBeTruthy();
+  });
+
+  it("geeft de bounty voorrang op een gewone score-highlight", () => {
+    const gemengd = bountyEvent([
+      { type: "score", label: "bagel" },
+      { type: "bounty", carrierId: "p3", amount: 17 },
+    ]);
+    // Zelfde seed, dus het verschil zit in de gekozen pool, niet in toeval.
+    expect(coachOpmerking(gemengd, ctx)).toBe(coachOpmerking(geclaimd, ctx));
+  });
+
+  it("kiest de gemene mood — leedvermaak, geen hype", () => {
+    expect(coachStemming(geclaimd, () => "gemeen")).toBe("gemeen");
+    expect(coachStemming(verdedigd, () => "gemeen")).toBe("gemeen");
+  });
+});

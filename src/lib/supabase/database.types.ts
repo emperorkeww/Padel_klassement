@@ -2191,6 +2191,7 @@ export type Database = {
       recent_rating_history: {
         Args: { p_limit?: number }
         Returns: {
+          bounty_delta: number
           delta: number
           match_id: string
           played_at: string

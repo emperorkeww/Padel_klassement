@@ -1,3 +1,4 @@
+import { BOUNTY_EMOJI } from "@/features/rating/bounty";
 import type { FeedEvent, Highlight } from "./feedLogic";
 
 /** Ruim venster aan recente uitslagen om de feed uit te filteren. */
@@ -97,5 +98,9 @@ export function highlightText(
       return `⚔️ Vendetta ${name(h.challengerId)} ${h.winsChallenger}–${h.winsRival} ${name(h.rivalId)}`;
     case "derby":
       return `🏟️ Derby · ${h.emoji} ${h.tierNaam}`;
+    case "bounty":
+      return `${BOUNTY_EMOJI} Bounty geclaimd op ${name(h.carrierId)} · +${h.amount}`;
+    case "bounty-verdedigd":
+      return `${BOUNTY_EMOJI} ${name(h.carrierId)} verdedigt z'n bounty · nu ${h.pool}`;
   }
 }

@@ -39,17 +39,21 @@ returns table (
   -- Lef-tip-multiplier (#804): 2.00 als deze speler op deze match ingezet had.
   -- Zit al in delta verwerkt; de feed gebruikt hem alleen om een verdubbelde
   -- mutatie uit te leggen.
-  stake_factor numeric
+  stake_factor numeric,
+  -- Bounty-verschuiving (#805): positief voor wie een bounty claimde, negatief
+  -- voor de verslagen drager. Zit eveneens al in delta verwerkt; hieruit
+  -- reconstrueert de feed wie de reeks brak en voor hoeveel.
+  bounty_delta int
 )
 language sql
 stable
 set search_path = ''
 as $$
   select h.player_id, h.match_id, h.rating_before, h.rating_after, h.delta,
-    h.played_at, h.stake_factor
+    h.played_at, h.stake_factor, h.bounty_delta
   from (
     select r.player_id, r.match_id, r.rating_before, r.rating_after, r.delta,
-      r.played_at, r.stake_factor,
+      r.played_at, r.stake_factor, r.bounty_delta,
       row_number() over (
         partition by r.player_id
         order by r.played_at desc, r.id desc
