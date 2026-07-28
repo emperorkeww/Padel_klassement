@@ -92,7 +92,7 @@ describe("schandpaalUit (#682)", () => {
   it("zwijgt via Coach Rudy's schild-context i.p.v. een eigen sneer-tekst", () => {
     const data = schandpaalUit([pias()], profielen(profiel()), "ik", NU);
     // Club-brede scope: geen groeps-intensiteit, dus de standaardtoon.
-    expect(data?.ctx).toEqual({ intensiteit: "gemeen", schild: false });
+    expect(data?.ctx).toEqual({ intensiteit: "radioactief", schild: false });
   });
 
   it("geeft dezelfde seed voor dezelfde week — de burn wisselt niet per render", () => {

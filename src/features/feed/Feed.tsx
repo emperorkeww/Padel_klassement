@@ -310,7 +310,7 @@ export function Feed() {
   // (groupId) => toon-vorm aan die coachFeed/coachStemming verwachten, maar
   // negeren de groep bewust.
   const mijnIntensiteit: RoastIntensiteit =
-    pmap[myId]?.roast_intensiteit ?? "gemeen";
+    pmap[myId]?.roast_intensiteit ?? "radioactief";
   const intensiteitVoor = (): RoastIntensiteit => mijnIntensiteit;
 
   // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli".

@@ -176,7 +176,7 @@ export function Matches() {
                     type: "matches",
                     seed: `${myId}-matches-empty`,
                     ctx: {
-                      intensiteit: pmap[myId]?.roast_intensiteit ?? "gemeen",
+                      intensiteit: pmap[myId]?.roast_intensiteit ?? "radioactief",
                       schild: pmap[myId]?.roast_schild ?? false,
                     },
                   })

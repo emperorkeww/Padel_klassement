@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
       const quip = !p || p.roast_schild
         ? kiesUit(JOUW_BEURT_NEUTRAAL, seed)
         : kiesUit(
-          JOUW_BEURT[(p.roast_intensiteit ?? "gemeen") as RoastIntensiteit],
+          JOUW_BEURT[(p.roast_intensiteit ?? "radioactief") as RoastIntensiteit],
           seed,
         );
       sent += await pushTo([pid], {

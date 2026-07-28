@@ -326,7 +326,7 @@ export function Leaderboard() {
     const profile = (profilesMap.data ?? {})[pias.playerId];
     const groep = (groups.data ?? []).find((g) => g.id === groupId);
     const ctx = roastCtx(
-      { roast_intensiteit: groep?.roast_intensiteit ?? "gemeen" },
+      { roast_intensiteit: groep?.roast_intensiteit ?? "radioactief" },
       profile,
     );
     return {
@@ -565,8 +565,8 @@ export function Leaderboard() {
         seed: `${myId}|${groupId || "globaal"}|${new Date().toISOString().slice(0, 10)}`,
         ctx: {
           intensiteit: groupId
-            ? (groep?.roast_intensiteit ?? "gemeen")
-            : (pmap[myId]?.roast_intensiteit ?? "gemeen"),
+            ? (groep?.roast_intensiteit ?? "radioactief")
+            : (pmap[myId]?.roast_intensiteit ?? "radioactief"),
           schild: pmap[myId]?.roast_schild ?? false,
         },
       };

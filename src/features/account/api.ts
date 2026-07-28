@@ -30,7 +30,7 @@ export async function getPrivacy(userId: string): Promise<Privacy> {
     discoverable: data?.discoverable ?? true,
     allow_friend_requests: data?.allow_friend_requests ?? true,
     roast_schild: data?.roast_schild ?? false,
-    roast_intensiteit: data?.roast_intensiteit ?? "gemeen",
+    roast_intensiteit: data?.roast_intensiteit ?? "radioactief",
   };
 }
 

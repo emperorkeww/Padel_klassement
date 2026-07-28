@@ -418,7 +418,7 @@ export function GroupStandTab({
         teams={teams}
         profiles={profiles}
         ratingsByMatch={piasRatings}
-        intensiteit={group.roast_intensiteit ?? "gemeen"}
+        intensiteit={group.roast_intensiteit ?? "radioactief"}
       />
       <ZwartePietCard piet={zwartePiet} group={group} profiles={profiles} />
     </>

@@ -113,7 +113,7 @@ export function dashboardBriefing(input: BriefingInput): string | null {
     ),
     seed: `${myId}-${vandaag}`,
     ctx: {
-      intensiteit: profile?.roast_intensiteit ?? "gemeen",
+      intensiteit: profile?.roast_intensiteit ?? "radioactief",
       schild: profile?.roast_schild ?? false,
     },
   });

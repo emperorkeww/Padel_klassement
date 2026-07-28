@@ -57,7 +57,7 @@ export function OnboardCard({
                 type: "dashboard",
                 seed: `${myId}-onboard`,
                 ctx: {
-                  intensiteit: profile.roast_intensiteit ?? "gemeen",
+                  intensiteit: profile.roast_intensiteit ?? "radioactief",
                   schild: profile.roast_schild ?? false,
                 },
               })}

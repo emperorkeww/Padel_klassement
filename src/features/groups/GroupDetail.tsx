@@ -401,7 +401,7 @@ export function GroupDetail() {
                 type: "group",
                 seed: `${group.data.id}-empty`,
                 ctx: {
-                  intensiteit: group.data.roast_intensiteit ?? "gemeen",
+                  intensiteit: group.data.roast_intensiteit ?? "radioactief",
                   schild: myProfile.roast_schild ?? false,
                 },
               })}

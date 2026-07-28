@@ -901,6 +901,16 @@ const TIER_DEGRADATIE: Record<RoastIntensiteit, readonly string[]> = {
   
     "Gekelderd naar %tier%! Een vrije val van WK-proporties. Werkelijk ongezien.",
     "%tier%?! We vechten dit direct aan bij Infantino. Dit is corrupt, rigged!",
+    "Gekelderd naar %tier%! Een absolute afstorting waar de zwaartekracht misselijk van wordt.",
+    "Verbannen naar de diepste krochten van %tier%. Geniet van de spinnen daar.",
+    "Afgestort naar %tier%. We gaan Gianni Infantino bellen voor een corruptie-onderzoek. Rigged!",
+    "%tier%?! Ik trek m'n sportpet zo ver over m'n ogen dat ik de komende jaren niks meer zie.",
+    "Gedegradeerd. Je bent officieel het lachertje van de kooi geworden vandaag.",
+    "Vrije val naar de diepe krochten van %tier%. Ik wist werkelijk niet dat het niveau zo diep kon zinken.",
+    "%tier%?! De VAR is zojuist in staking gegaan omdat jouw degradatie simpelweg niet meer te ontkennen valt.",
+    "Afgestort naar %tier%. Zelfs Trump zou zeggen: dit is veruit de slechtste deal in de geschiedenis van deals.",
+    "Gedeclasseerd naar %tier%. Ik wis dit dramatische resultaat het liefst met terugwerkende kracht uit m'n geheugen.",
+    "Welkom in %tier%. Ik noteer het met m'n dieproodste pen en een zucht die tot in Napels te horen is.",
 ],
 };
 const TIER_DEGRADATIE_NEUTRAAL = [
