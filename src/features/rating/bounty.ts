@@ -18,8 +18,10 @@ export const BOUNTY_STAP = 5;
 export const BOUNTY_MAX = 30;
 /** Rating vanaf wanneer je overal een bounty draagt (El Padelissimo, tiers.ts). */
 export const BOUNTY_DICTATOR_RATING = 1600;
-/** Het tekentje naast de naam van een drager. */
-export const BOUNTY_EMOJI = "🎯";
+/** Het tekentje naast de naam van een drager. Bewust 💰 en niet 🎯: dat laatste
+ *  staat in de feed al voor een upset (feedHelpers.highlightText), en één
+ *  tekentje voor twee dingen leest als een fout. */
+export const BOUNTY_EMOJI = "💰";
 
 /** Waarom deze speler een bounty draagt: de troon (overal) of de kroon van
  *  één groep. */
