@@ -201,17 +201,17 @@ const BOUNTY_GECLAIMD = [
   "Een reeks opbouwen duurt weken. Hem verliezen duurde één set.",
 ] as const;
 
-// Bounty verdedigd (#805): niemand kreeg 'm te pakken, dus de pot stapelt door.
+// Bounty verdedigd (#805): niemand kreeg de vaste pool te pakken.
 const BOUNTY_VERDEDIGD = [
-  "Bounty overleefd. Het bedrag op z'n hoofd wordt alleen maar groter.",
-  "Weer niemand die 'm pakt. De pot stapelt vrolijk door.",
+  "Bounty overleefd. Het bedrag op z'n hoofd blijft staan.",
+  "Weer niemand die 'm pakt. De premie blijft liggen.",
   "De jacht is geopend en de jacht is mislukt. Volgende.",
   "Premiejagers afgeslagen. Ze mogen het volgende week opnieuw proberen.",
-  "Nog steeds de baas, nog steeds duurder om te verslaan.",
+  "Nog steeds de baas, nog steeds een premie waard.",
   "De troonopvolger blijft opvolger. Al weken.",
   "Hij loopt er rustig mee weg, met die prijs op z'n hoofd.",
   "Iedereen wist wat er te halen viel. Niemand haalde het.",
-  "De bounty groeit. Op een dag is dat iemands beste week ooit.",
+  "De bounty blijft staan. Op een dag pakt iemand die premie.",
   "Aanval afgeslagen. De koning slaapt vannacht prima.",
 ] as const;
 
