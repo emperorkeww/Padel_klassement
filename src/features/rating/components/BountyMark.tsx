@@ -1,6 +1,6 @@
 import { BOUNTY_EMOJI } from "@/features/rating/bounty";
 
-/** 🎯 met de actuele waarde naast de naam van een bounty-drager (#805).
+/** 💰 met de actuele waarde naast de naam van een bounty-drager (#805).
  *  Zelfde formaat als de schande-tokens ernaast (StandMarks, #523): klein,
  *  niet meegeknipt door een ellipsis-naam, betekenis in het `title`. */
 export function BountyMark({ pool }: { pool: number | null | undefined }) {
