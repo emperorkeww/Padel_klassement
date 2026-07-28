@@ -1,0 +1,90 @@
+/* Lef-tip (#804): zelfde ingeklapte vorm als de toto ernaast, zodat de kaart
+   niet twee concurrerende blikvangers krijgt. De inzet is een extra naast de
+   score-invoer, geen hoofdactie. */
+.lef {
+  margin-top: var(--sp-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.lef__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lef__title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.lef__state {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.lef__chevron {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+}
+.lef__summary[aria-expanded="true"] .lef__chevron {
+  transform: rotate(180deg);
+}
+.lef__body {
+  display: grid;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+/* Eén brede knop: inzetten is een ja/nee-keuze, geen keuze tussen opties. */
+.lef__toggle {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lef__toggle:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+.lef__toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.lef__toggle--on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.lef__swing {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.lef__win {
+  color: var(--success);
+}
+.lef__loss {
+  color: var(--danger);
+}
+.lef__legend,
+.lef__reveal {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

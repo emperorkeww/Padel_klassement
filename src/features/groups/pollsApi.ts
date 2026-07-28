@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
-import { normalizeAccessCode } from "@/features/groups/planPollHelpers";
+import {
+  normalizeAccessCode,
+  normalizeCourts,
+} from "@/features/groups/planPollHelpers";
 import type { Club } from "@/features/availability/club";
 
 // Speeldag-polls: een doodle met 1-5 kandidaat-momenten en banen als harde
@@ -29,7 +32,32 @@ export type PlayPoll = {
   /** Toegangscode van de velden (#675); null als de club er geen heeft of hij
    *  nog niet bekend is. Alleen groepsleden krijgen 'm (RLS). */
   access_code: string | null;
+  /** Geboekte baan/banen (#802), vrije tekst zoals de code; null zolang de
+   *  boeker ze niet invulde. Ook member-only. */
+  courts: string | null;
 };
+
+/**
+ * Wat er bij een boeking naast "geboekt ✓" hoort: waar sta je (banen, #802) en
+ * hoe raak je binnen (code, #675). Beide optioneel en los van elkaar — een veld
+ * weglaten laat de kolom ongemoeid, expliciet null wist 'm.
+ */
+export type BookingDetails = {
+  accessCode?: string | null;
+  courts?: string | null;
+};
+
+/** De ingevulde velden als kolom-update; ontbrekende velden blijven weg. */
+function bookingPatch(details: BookingDetails) {
+  return {
+    ...(details.accessCode !== undefined
+      ? { access_code: normalizeAccessCode(details.accessCode) }
+      : {}),
+    ...(details.courts !== undefined
+      ? { courts: normalizeCourts(details.courts) }
+      : {}),
+  };
+}
 
 /**
  * Absolute deep-link naar één speeldag (#675) — spiegel van slotShareUrl. Tot
@@ -342,23 +370,21 @@ export async function lockPoll(pollId: string, optionId: string): Promise<void> 
 }
 
 /**
- * Markeert de gelockte poll als geboekt op Playtomic. `accessCode` is optioneel
- * (#675): laat 'm weg en de kolom blijft ongemoeid — boeken zonder code is nog
- * altijd één actie. Meegeven (ook als lege string of null) zet de code, zodat
- * hetzelfde invoerveld ook "geen code" kan betekenen.
+ * Markeert de gelockte poll als geboekt op Playtomic. `details` is optioneel
+ * (#675, #802): laat een veld weg en die kolom blijft ongemoeid — boeken zonder
+ * banen of code is nog altijd één actie. Meegeven (ook als lege string of null)
+ * zet de waarde, zodat hetzelfde invoerveld ook "niet ingevuld" kan betekenen.
  */
 export async function markPollBooked(
   pollId: string,
-  accessCode?: string | null,
+  details: BookingDetails = {},
 ): Promise<void> {
   const { error } = await supabase
     .from("play_polls")
     .update({
       status: "booked",
       booked_at: new Date().toISOString(),
-      ...(accessCode !== undefined
-        ? { access_code: normalizeAccessCode(accessCode) }
-        : {}),
+      ...bookingPatch(details),
     })
     .eq("id", pollId);
   if (error) throw error;
@@ -366,18 +392,19 @@ export async function markPollBooked(
 }
 
 /**
- * Zet, wijzigt of wist de toegangscode van de velden (#675). Apart van
- * markPollBooked omdat de code in de praktijk vaak pas ná het boeken binnenkomt
- * (bevestigingsmail) — zonder dit zou je de poll moeten heropenen. RLS:
- * play_polls_update_manager (maker of groepseigenaar), zonder statusfilter.
+ * Zet, wijzigt of wist de banen en/of de toegangscode van de boeking
+ * (#675, #802). Apart van markPollBooked omdat die gegevens in de praktijk vaak
+ * pas ná het boeken binnenkomen (bevestigingsmail) — zonder dit zou je de poll
+ * moeten heropenen. RLS: play_polls_update_manager (maker of groepseigenaar),
+ * zonder statusfilter.
  */
-export async function setPollAccessCode(
+export async function setPollBookingDetails(
   pollId: string,
-  code: string | null,
+  details: BookingDetails,
 ): Promise<void> {
   const { error } = await supabase
     .from("play_polls")
-    .update({ access_code: normalizeAccessCode(code) })
+    .update(bookingPatch(details))
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");
@@ -392,9 +419,11 @@ export async function reopenPoll(pollId: string): Promise<void> {
       locked_option_id: null,
       locked_at: null,
       booked_at: null,
-      // De boeking vervalt, dus de code van díé boeking ook (#675) — anders
-      // blijft een oude clubcode achter op een poll die opnieuw open staat.
+      // De boeking vervalt, dus de code (#675) en de banen (#802) van díé
+      // boeking ook — anders blijft een oude clubcode of baannummer achter op
+      // een poll die opnieuw open staat.
       access_code: null,
+      courts: null,
     })
     .eq("id", pollId);
   if (error) throw error;

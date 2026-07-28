@@ -7,12 +7,15 @@
 -- delen dezelfde rekenkern (_apply_match_rating), zodat ze niet kunnen driften.
 
 -- Past het rating-verschil van één match toe op één speler: werkt
--- player_ratings bij en logt een rij in rating_history.
+-- player_ratings bij en logt een rij in rating_history. p_factor is de
+-- lef-tip-multiplier (#804) die al in p_delta verwerkt zit; hij wordt
+-- meegelogd zodat een verdubbelde mutatie achteraf uitlegbaar blijft.
 create or replace function public._apply_rating(
   p_player uuid,
   p_match uuid,
   p_delta int,
-  p_ts timestamptz
+  p_ts timestamptz,
+  p_factor numeric
 )
 returns void
 language plpgsql
@@ -36,12 +39,12 @@ begin
         games = public.player_ratings.games + 1,
         updated_at = now();
 
-  insert into public.rating_history (player_id, match_id, rating_before, rating_after, delta, played_at)
-  values (p_player, p_match, v_before, v_after, p_delta, p_ts);
+  insert into public.rating_history (player_id, match_id, rating_before, rating_after, delta, played_at, stake_factor)
+  values (p_player, p_match, v_before, v_after, p_delta, p_ts, p_factor);
 end;
 $$;
 
-revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz) from public;
+revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz, numeric) from public;
 
 -- Rekenkern: berekent de ELO-delta's van één match op basis van de huidige
 -- player_ratings en past ze toe op de vier betrokken spelers. Wordt door
@@ -60,7 +63,9 @@ declare
   ra numeric; rb numeric;        -- teamratings (gemiddelde van de aanwezige spelers)
   ea numeric;                    -- verwachte score team A
   sa numeric;                    -- werkelijke score team A (1/0.5/0)
-  da int; db int;                -- rating-delta per team
+  da numeric; db numeric;        -- ongeronde rating-delta per team
+  winnaar boolean;               -- geen winnaar = gelijkspel (#804)
+  f numeric;                     -- lef-tip-multiplier van de speler in kwestie
 begin
   select mt.id, mt.team_a_id, mt.team_b_id, mt.winner_team_id,
          coalesce(mt.played_at, mt.created_at) as ts
@@ -106,16 +111,28 @@ begin
           else 0.5
         end;
 
-  da := round(k * (sa - ea));
-  db := round(k * ((1.0 - sa) - (1.0 - ea)));
+  da := k * (sa - ea);
+  db := k * ((1.0 - sa) - (1.0 - ea));
 
-  perform public._apply_rating(a1, m.id, da, m.ts);
+  -- Lef-tip (#804): wie ingezet heeft krijgt zijn eigen mutatie ×2, in beide
+  -- richtingen — dubbel of niets. De factor gaat op de ONGERONDE delta en er
+  -- wordt daarna één keer afgerond; round() op de al afgeronde int zou een
+  -- ander getal geven en het incrementele pad van recompute_ratings laten
+  -- driften. De factor is strikt individueel: partner en tegenstanders houden
+  -- hun normale mutatie, waardoor een match met inzet niet langer zero-sum is.
+  winnaar := m.winner_team_id is not null;
+
+  f := public._stake_factor(a1, m.id, winnaar);
+  perform public._apply_rating(a1, m.id, round(da * f)::int, m.ts, f);
   if a2 is not null then
-    perform public._apply_rating(a2, m.id, da, m.ts);
+    f := public._stake_factor(a2, m.id, winnaar);
+    perform public._apply_rating(a2, m.id, round(da * f)::int, m.ts, f);
   end if;
-  perform public._apply_rating(b1, m.id, db, m.ts);
+  f := public._stake_factor(b1, m.id, winnaar);
+  perform public._apply_rating(b1, m.id, round(db * f)::int, m.ts, f);
   if b2 is not null then
-    perform public._apply_rating(b2, m.id, db, m.ts);
+    f := public._stake_factor(b2, m.id, winnaar);
+    perform public._apply_rating(b2, m.id, round(db * f)::int, m.ts, f);
   end if;
 end;
 $$;

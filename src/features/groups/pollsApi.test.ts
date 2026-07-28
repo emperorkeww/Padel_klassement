@@ -15,7 +15,7 @@ import {
   removePollOption,
   pollShareUrl,
   markPollBooked,
-  setPollAccessCode,
+  setPollBookingDetails,
   reopenPoll,
   type PlayPoll,
   type NewPollOption,
@@ -39,6 +39,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_city: "Gent",
     club_timezone: "Europe/Brussels",
     access_code: null,
+    courts: null,
     ...overrides,
   };
 }
@@ -230,35 +231,48 @@ describe("removePollOption", () => {
   });
 });
 
-// Toegangscode van de velden (#675): optioneel bij het boeken, los te zetten of
-// te wissen achteraf, en weg zodra de boeking vervalt.
+// Boekgegevens: banen (#802) en toegangscode (#675) — optioneel bij het boeken,
+// los te zetten of te wissen achteraf, en weg zodra de boeking vervalt.
 describe("markPollBooked", () => {
   beforeEach(() => reset());
 
-  it("laat access_code ongemoeid zonder argument", async () => {
+  it("laat de boekgegevens ongemoeid zonder argument", async () => {
     enqueue({ error: null });
     await markPollBooked("poll1");
     const upd = calls.find((c) => c.method === "update");
     expect(upd?.table).toBe("play_polls");
     expect(upd?.args[0]).toMatchObject({ status: "booked" });
     expect(upd?.args[0]).not.toHaveProperty("access_code");
+    expect(upd?.args[0]).not.toHaveProperty("courts");
   });
 
-  it("zet de genormaliseerde code mee", async () => {
+  it("zet de genormaliseerde banen en code mee", async () => {
     enqueue({ error: null });
-    await markPollBooked("poll1", "  b3:  1234 ");
+    await markPollBooked("poll1", {
+      courts: "  3  &  4 ",
+      accessCode: "  b3:  1234 ",
+    });
     const upd = calls.find((c) => c.method === "update");
     expect(upd?.args[0]).toMatchObject({
       status: "booked",
+      courts: "3 & 4",
       access_code: "b3: 1234",
     });
   });
 
-  it("een leeg veld betekent expliciet 'geen code'", async () => {
+  it("een leeg veld betekent expliciet 'niet ingevuld'", async () => {
     enqueue({ error: null });
-    await markPollBooked("poll1", "   ");
+    await markPollBooked("poll1", { courts: "  ", accessCode: "   " });
     const upd = calls.find((c) => c.method === "update");
-    expect(upd?.args[0]).toMatchObject({ access_code: null });
+    expect(upd?.args[0]).toMatchObject({ courts: null, access_code: null });
+  });
+
+  it("raakt alleen het meegegeven veld aan", async () => {
+    enqueue({ error: null });
+    await markPollBooked("poll1", { courts: "3" });
+    const upd = calls.find((c) => c.method === "update");
+    expect(upd?.args[0]).toMatchObject({ courts: "3" });
+    expect(upd?.args[0]).not.toHaveProperty("access_code");
   });
 
   it("gooit bij een fout", async () => {
@@ -267,36 +281,38 @@ describe("markPollBooked", () => {
   });
 });
 
-describe("setPollAccessCode", () => {
+describe("setPollBookingDetails", () => {
   beforeEach(() => reset());
 
-  it("zet de code op de poll", async () => {
+  it("zet banen en code op de poll", async () => {
     enqueue({ error: null });
-    await setPollAccessCode("poll1", "A12");
+    await setPollBookingDetails("poll1", { courts: "Baan 3", accessCode: "A12" });
     const upd = calls.find((c) => c.method === "update");
     expect(upd?.table).toBe("play_polls");
-    expect(upd?.args[0]).toEqual({ access_code: "A12" });
+    expect(upd?.args[0]).toEqual({ courts: "Baan 3", access_code: "A12" });
     const eq = calls.find((c) => c.method === "eq");
     expect(eq?.args).toEqual(["id", "poll1"]);
   });
 
-  it("wist de code met null", async () => {
+  it("wist ze met null", async () => {
     enqueue({ error: null });
-    await setPollAccessCode("poll1", null);
+    await setPollBookingDetails("poll1", { courts: null, accessCode: null });
     const upd = calls.find((c) => c.method === "update");
-    expect(upd?.args[0]).toEqual({ access_code: null });
+    expect(upd?.args[0]).toEqual({ courts: null, access_code: null });
   });
 
   it("raakt de status niet aan", async () => {
     enqueue({ error: null });
-    await setPollAccessCode("poll1", "1234");
+    await setPollBookingDetails("poll1", { accessCode: "1234" });
     const upd = calls.find((c) => c.method === "update");
     expect(upd?.args[0]).not.toHaveProperty("status");
   });
 
   it("gooit bij een fout", async () => {
     enqueue({ error: { message: "stuk" } });
-    await expect(setPollAccessCode("poll1", "1234")).rejects.toEqual({
+    await expect(
+      setPollBookingDetails("poll1", { accessCode: "1234" }),
+    ).rejects.toEqual({
       message: "stuk",
     });
   });
@@ -305,7 +321,7 @@ describe("setPollAccessCode", () => {
 describe("reopenPoll", () => {
   beforeEach(() => reset());
 
-  it("wist de code samen met de boeking", async () => {
+  it("wist de banen en de code samen met de boeking", async () => {
     enqueue({ error: null });
     await reopenPoll("poll1");
     const upd = calls.find((c) => c.method === "update");
@@ -315,6 +331,7 @@ describe("reopenPoll", () => {
       locked_at: null,
       booked_at: null,
       access_code: null,
+      courts: null,
     });
   });
 });

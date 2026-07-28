@@ -37,6 +37,7 @@ import {
   type SetPair,
 } from "@/features/matches/api";
 import { serveerTeam } from "@/features/matches/serve";
+import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { TeamSide } from "@/features/matches/components/MatchList";
@@ -551,6 +552,17 @@ export function PlannedMatchCard({
           )}
         </div>
       )}
+
+      {/* Lef-tip (#804): dubbel-of-niets voor de spelers zelf, naast de toto
+          voor de toeschouwers. */}
+      <LefTipBlock
+        match={m}
+        profiles={profiles}
+        myId={myId}
+        isDeelnemer={mijnTeam != null}
+        mijnKans={mijnKans}
+        games={(myId && ratings.data?.[myId]?.games) || 0}
+      />
 
       {canManage && editingTime && (
         <div className="planned-card__time">

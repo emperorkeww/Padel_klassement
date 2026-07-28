@@ -775,6 +775,73 @@ export type Database = {
           },
         ]
       }
+      match_stakes: {
+        Row: {
+          created_at: string
+          group_id: string
+          match_id: string
+          play_date: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          match_id: string
+          play_date: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          match_id?: string
+          play_date?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_stakes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_stakes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_stakes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_stakes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_stakes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_stakes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           client_token: string | null
@@ -1118,6 +1185,7 @@ export type Database = {
           club_id: string
           club_name: string
           club_timezone: string
+          courts: string | null
           created_at: string
           created_by: string
           dayof_notified_at: string | null
@@ -1135,6 +1203,7 @@ export type Database = {
           club_id?: string
           club_name?: string
           club_timezone?: string
+          courts?: string | null
           created_at?: string
           created_by: string
           dayof_notified_at?: string | null
@@ -1152,6 +1221,7 @@ export type Database = {
           club_id?: string
           club_name?: string
           club_timezone?: string
+          courts?: string | null
           created_at?: string
           created_by?: string
           dayof_notified_at?: string | null
@@ -1463,6 +1533,7 @@ export type Database = {
           player_id: string
           rating_after: number
           rating_before: number
+          stake_factor: number
         }
         Insert: {
           delta: number
@@ -1472,6 +1543,7 @@ export type Database = {
           player_id: string
           rating_after: number
           rating_before: number
+          stake_factor?: number
         }
         Update: {
           delta?: number
@@ -1481,6 +1553,7 @@ export type Database = {
           player_id?: string
           rating_after?: number
           rating_before?: number
+          stake_factor?: number
         }
         Relationships: [
           {
@@ -1938,6 +2011,7 @@ export type Database = {
       _apply_rating: {
         Args: {
           p_delta: number
+          p_factor: number
           p_match: string
           p_player: string
           p_ts: string
@@ -1953,6 +2027,10 @@ export type Database = {
       _guest_claim_conflict: {
         Args: { p_guest: string; p_player: string }
         Returns: string
+      }
+      _stake_factor: {
+        Args: { p_has_winner: boolean; p_match: string; p_player: string }
+        Returns: number
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
       cancel_guest_claim: { Args: { p_claim_id: string }; Returns: undefined }

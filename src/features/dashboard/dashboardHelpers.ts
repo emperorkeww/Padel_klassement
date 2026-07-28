@@ -118,6 +118,8 @@ export type PollPick =
        *  daarbuiten is het ruis op een overzichtsscherm. Null zonder code,
        *  vóór de dag, of als de baan nog niet geboekt is. */
       accessCode: string | null;
+      /** Geboekte banen (#802); zelfde dag-van-de-speeldag-regel als de code. */
+      courts: string | null;
     };
 
 /** "2026-07-10" → "vr 10 jul"; middag-truc tegen DST-kanteling. */
@@ -189,6 +191,7 @@ export function pickPollBanner(
           startTime: opt.start_time,
           accessCode:
             fixed.status === "booked" && isVandaag ? fixed.access_code : null,
+          courts: fixed.status === "booked" && isVandaag ? fixed.courts : null,
         };
       }
     }

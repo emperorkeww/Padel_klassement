@@ -1,0 +1,124 @@
+// Lef-tip (#804): client-side evenknie van de databank-logica rond
+// match_stakes. STAKE_FACTOR spiegelt public._stake_factor en de Elo-kern
+// (supabase/schemas/functions/30_match_stakes.sql en 09_ratings.sql),
+// MIN_GAMES en het speeldag-tegoed spiegelen match_stakes_guard en de unieke
+// index match_stakes_one_per_day.
+//
+// De guard blijft de enige echte poort; dit bestand bestaat zodat de kaart
+// meteen kan tonen wat er op het spel staat en waarom je (nog) niet mag
+// inzetten, zonder eerst een servererror te moeten uitlokken.
+
+import { DEFAULT_CLUB } from "@/features/availability/club";
+import { K_FACTOR } from "@/features/rating/elo";
+import { dayInZone } from "@/lib/utils/time";
+import type { Match } from "@/types";
+
+export interface MatchStake {
+  match_id: string;
+  player_id: string;
+  group_id: string;
+  /** Speeldag in clubtijd (YYYY-MM-DD), serverside gezet door de guard. */
+  play_date: string;
+  created_at: string;
+}
+
+/** Multiplier op je eigen mutatie als je ingezet hebt — in beide richtingen. */
+export const STAKE_FACTOR = 2;
+
+/** Aantal gespeelde matches voordat je mag inzetten (match_stakes_guard). */
+export const MIN_GAMES = 10;
+
+/** Waarom inzetten (nog) niet kan; null = het mag. */
+export type StakeBlokkade =
+  | "geen-groepsmatch"
+  | "geen-deelnemer"
+  | "gesloten"
+  | "geen-starttijd"
+  | "te-weinig-matches"
+  | "dag-bezet";
+
+/** Speeldag van een match in clubtijd — de sleutel van het lef-tegoed. */
+export function playDay(playedAt: string): string {
+  return dayInZone(playedAt, DEFAULT_CLUB.timezone);
+}
+
+/**
+ * Multiplier van één speler op één match. Een gelijkspel telt niet mee: de
+ * mutatie is dan K · (0,5 − E), wat voor een underdog positief is en geen
+ * beloning voor een mislukte inzet mag worden.
+ */
+export function stakeFactor(staked: boolean, hasWinner: boolean): number {
+  return staked && hasWinner ? STAKE_FACTOR : 1;
+}
+
+/**
+ * Wat er op het spel staat bij de huidige winkans van jóuw team: de mutatie
+ * bij winst en bij verlies, met de multiplier erin verwerkt. Spiegelt
+ * `round(k * (sa - ea) * f)` uit _apply_match_rating — één keer afronden, ná
+ * de vermenigvuldiging.
+ */
+export function stakeSwing(
+  mijnKans: number,
+  staked: boolean,
+): { winst: number; verlies: number } {
+  const f = staked ? STAKE_FACTOR : 1;
+  return {
+    winst: Math.round(K_FACTOR * (1 - mijnKans) * f),
+    verlies: Math.round(K_FACTOR * -mijnKans * f),
+  };
+}
+
+/**
+ * Heeft deze speler op die speeldag al ergens anders ingezet? Dat is het
+ * tegoed: één lef-tip per speeldag, in de databank afgedwongen door de unieke
+ * index op (player_id, play_date).
+ */
+export function dagBezet(
+  eigenStakes: MatchStake[],
+  matchId: string,
+  playedAt: string,
+): boolean {
+  const dag = playDay(playedAt);
+  return eigenStakes.some((s) => s.match_id !== matchId && s.play_date === dag);
+}
+
+/**
+ * Spiegel van match_stakes_guard: mag deze speler nú inzetten op deze match?
+ * Geeft de reden terug als het niet mag, zodat de kaart het kan uitleggen.
+ */
+export function stakeBlokkade(opts: {
+  match: Match;
+  isDeelnemer: boolean;
+  games: number;
+  eigenStakes: MatchStake[];
+  now?: number;
+}): StakeBlokkade | null {
+  const { match, isDeelnemer, games, eigenStakes } = opts;
+  const now = opts.now ?? Date.now();
+  if (!match.group_id) return "geen-groepsmatch";
+  if (!isDeelnemer) return "geen-deelnemer";
+  if (!match.played_at) return "geen-starttijd";
+  if (match.status !== "scheduled") return "gesloten";
+  if (new Date(match.played_at).getTime() <= now) return "gesloten";
+  if (games < MIN_GAMES) return "te-weinig-matches";
+  if (dagBezet(eigenStakes, match.id, match.played_at)) return "dag-bezet";
+  return null;
+}
+
+/** Uitleg bij een blokkade, voor de tekst onder de knop. */
+export function blokkadeUitleg(reden: StakeBlokkade, games: number): string {
+  switch (reden) {
+    case "te-weinig-matches":
+      return `Nog ${MIN_GAMES - games} ${
+        MIN_GAMES - games === 1 ? "match" : "matches"
+      } te gaan: inzetten kan zodra je rating ingelopen is.`;
+    case "dag-bezet":
+      return "Je lef is vandaag al vergeven — één inzet per speeldag.";
+    case "gesloten":
+      return "De match is begonnen: je inzet ligt vast.";
+    case "geen-starttijd":
+      return "Zonder starttijd valt er niets in te zetten.";
+    default:
+      return "";
+  }
+}
