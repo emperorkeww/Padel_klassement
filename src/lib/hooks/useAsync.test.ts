@@ -20,6 +20,15 @@ describe("useAsync", () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it("toont de message van een Supabase-foutobject", async () => {
+    const { result } = renderHook(() =>
+      useAsync(() => Promise.reject({ message: "relation profiles does not exist" }), []),
+    );
+    await waitFor(() =>
+      expect(result.current.error).toBe("relation profiles does not exist"),
+    );
+  });
+
   it("draait de functie opnieuw bij reload()", async () => {
     const fn = vi.fn().mockResolvedValue("ok");
     const { result } = renderHook(() => useAsync(fn, []));

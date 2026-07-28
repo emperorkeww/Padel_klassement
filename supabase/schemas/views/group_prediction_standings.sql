@@ -15,3 +15,6 @@ select
 from public.match_predictions mp
 join public.profiles p on p.id = mp.player_id
 group by mp.group_id, p.id, p.username, p.full_name;
+
+-- Toegang tot de onderliggende rijen blijft door RLS beperkt.
+grant select on public.group_prediction_standings to authenticated, anon;

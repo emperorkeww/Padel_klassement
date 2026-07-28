@@ -33,3 +33,5 @@ select
 from results r
 join public.teams t on t.id = r.team_id
 group by t.id, t.name;
+
+grant select on public.standings to authenticated, anon;
