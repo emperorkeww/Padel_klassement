@@ -30,6 +30,8 @@ import {
   getRecentRatingHistories,
 } from "./ratingsApi";
 import { getHuidigeDictator } from "./dictatorApi";
+import { getActiveBounties } from "./bountyApi";
+import { bountiesVoor } from "@/features/rating/bounty";
 import { magDictatorPortretGenereren } from "./dictatorPortret";
 import {
   GEEN_AVATAR_BRON,
@@ -194,6 +196,9 @@ export function Leaderboard() {
   // De zittende dictator (#545): server-side bepaald via de troon-replay, niet
   // meer de toevallige 1600+-#1. Bepaalt wie op De Troon komt.
   const dictator = useAsync(getHuidigeDictator, []);
+  // Bounty's (#805): server-side berekend, zodat het getal naast de naam
+  // hetzelfde is als wat een claim straks oplevert.
+  const bounties = useAsync(getActiveBounties, []);
   // Kampioen-editie (#625): winnaar van het vorige kwartaal (gecacht).
   const kampioen = useAsync(getSeizoenskampioen, []);
   // Pias van de week per groep (serverside aangeduid); de banner + voetnoot
@@ -278,6 +283,14 @@ export function Leaderboard() {
   // Stabiele referenties: rmap/hmap voeden de useMemo van de rangverschuivingen.
   const rmap = useMemo(() => ratings.data ?? {}, [ratings.data]);
   const hmap = useMemo(() => histories.data ?? {}, [histories.data]);
+  // Dragers binnen dit klassement: de troon (overal) plus de kroon van de
+  // groep waarop gescopet is. Zonder groepsscope blijft alleen de troon over —
+  // een kroon van een groep waar je toevallig lid van bent zegt niets over het
+  // globale klassement.
+  const bountyPools = useMemo(
+    () => bountiesVoor(bounties.data ?? [], groupId || null),
+    [bounties.data, groupId],
+  );
 
   // AI dictator-portret (#554): pre-warm het eigen portret zodra ik in range kom
   // om dictator te worden (of het al ben), zodat De Troon meteen een vers portret
@@ -432,6 +445,10 @@ export function Leaderboard() {
     history: hmap[p.player_id] ?? [],
     form: formFor(p.player_id),
     shift: usingScope ? undefined : shifts.get(p.player_id)?.shift,
+    // Bounty (#805): de troon draagt er overal een, de kroon alleen binnen de
+    // groep waarop het klassement gescopet staat. Niet op een stand-op-datum:
+    // een huidige bounty naast een oude rating klopt niet.
+    bounty: asof ? null : (bountyPools[p.player_id] ?? null),
   }));
 
   const teamRows = teamStandings.map((t) => ({
@@ -979,6 +996,7 @@ export function Leaderboard() {
                 : undefined
             }
             sinds={throneRow ? (dictator.data?.begonOp ?? null) : null}
+            bounty={throneRow ? (bountyPools[throneRow.key] ?? null) : null}
           />
           {/* Coach Rudy buigt voor de dictator (#531): kijker-gerichte knieval
               in de buiging-mood i.p.v. z'n gebruikelijke roast — voor een echte

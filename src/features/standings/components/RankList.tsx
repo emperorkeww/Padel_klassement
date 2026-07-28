@@ -3,6 +3,7 @@ import { Avatar } from "@/ui/Avatar";
 import { CountUp } from "@/ui/CountUp";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { TierBadge } from "@/features/rating/components/TierBadge";
+import { BountyMark } from "@/features/rating/components/BountyMark";
 import { useFlip } from "@/lib/hooks/useFlip";
 import { THIN_GAMES } from "@/features/groups/groupRating";
 import { ShiftBadge } from "./ShiftBadge";
@@ -57,6 +58,7 @@ export function RankList({
               <span className="ranklist__name">
                 {naam}
                 {r.isMe && <span className="badge badge--accent">jij</span>}
+                <BountyMark pool={r.bounty} />
               </span>
               <span className="ranklist__meta">
                 <TierBadge

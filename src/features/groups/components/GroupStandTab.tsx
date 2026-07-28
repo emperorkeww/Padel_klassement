@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
+import { useAsync } from "@/lib/hooks/useAsync";
 import { Sparkline } from "@/features/rating/components/Sparkline";
+import { BountyMark } from "@/features/rating/components/BountyMark";
+import { bountiesVoor } from "@/features/rating/bounty";
+import { getActiveBounties } from "@/features/standings/bountyApi";
 import { Podium } from "@/features/standings/components/Podium";
 import { deltaToday } from "@/features/standings/ratingDelta";
 import { useClub } from "@/features/availability/club";
@@ -81,11 +85,21 @@ export function GroupStandTab({
     [completedMatches, teams, piasRatings],
   );
 
-  // Schande-tokens naast de naam (#523): enkel de emoji, betekenis via `title`.
+  // Bounty's (#805): de kroon van déze groep plus de troon (die geldt overal).
+  // De waarde komt uit dezelfde view die de databank straks uitkeert, zodat het
+  // getal naast de naam klopt met wat een claim oplevert.
+  const bounties = useAsync(getActiveBounties, []);
+  const bountyPools = useMemo(
+    () => bountiesVoor(bounties.data ?? [], group.id),
+    [bounties.data, group.id],
+  );
+
+  // Tekentjes naast de naam (#523, #805): enkel de emoji, betekenis via `title`.
   const marksFor = (playerId: string) => (
     <StandMarks
       piet={zwartePiet?.holderId === playerId}
       pias={pias?.playerId === playerId}
+      bounty={bountyPools[playerId] ?? null}
     />
   );
 
@@ -425,12 +439,22 @@ export function GroupStandTab({
   );
 }
 
-/** 🃏 Zwarte Piet-drager en/of 🤡 Pias naast een naam (#523). Enkel de emoji;
- *  de betekenis zit in het `title`, de emoji zelf is `aria-hidden`. */
-function StandMarks({ piet, pias }: { piet: boolean; pias: boolean }) {
-  if (!piet && !pias) return null;
+/** 🃏 Zwarte Piet-drager, 🤡 Pias en/of 🎯 bounty naast een naam (#523, #805).
+ *  Enkel het tekentje; de betekenis zit in het `title`. */
+function StandMarks({
+  piet,
+  pias,
+  bounty,
+}: {
+  piet: boolean;
+  pias: boolean;
+  /** Wat er op het hoofd van deze speler staat; null = geen bounty. */
+  bounty: number | null;
+}) {
+  if (!piet && !pias && bounty == null) return null;
   return (
     <>
+      <BountyMark pool={bounty} />
       {piet && (
         <span className="stand-mark" title="Draagt de Zwarte Piet" aria-hidden="true">
           🃏

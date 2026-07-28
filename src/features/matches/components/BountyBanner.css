@@ -1,0 +1,22 @@
+/* Bounty-banner (#805) op de geplande matchkaart. Warm amber, dezelfde tint
+   als Coach Rudy: het is een aankondiging, geen actie — en het mag opvallen
+   zonder met de score-invoer of het lef-blok te concurreren. */
+.bounty-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-1) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--coach-line);
+  border-left: 3px solid var(--coach);
+  border-radius: var(--radius-sm);
+  background: var(--coach-soft);
+  color: var(--coach-ink);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+}
+.bounty-banner__tok {
+  flex: none;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}

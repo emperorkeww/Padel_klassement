@@ -5,6 +5,7 @@ import { CountUp } from "@/ui/CountUp";
 import { FormChips } from "@/features/rating/components/FormChips";
 import { Sparkline } from "@/features/rating/components/Sparkline";
 import { TierBadge } from "@/features/rating/components/TierBadge";
+import { BountyMark } from "@/features/rating/components/BountyMark";
 import { useFlip } from "@/lib/hooks/useFlip";
 import { winRate } from "@/features/rating/results";
 import { byRank } from "@/features/rating/standings";
@@ -163,6 +164,7 @@ export function StandingsTable({
                       r.name
                     )}
                     {r.isMe && <span className="badge badge--accent">jij</span>}
+                    <BountyMark pool={r.bounty} />
                   </span>
                 </td>
                 {showForm && (

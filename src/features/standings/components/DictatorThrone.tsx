@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, type AvatarSource } from "@/components/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
+import { BountyMark } from "@/features/rating/components/BountyMark";
 import { formatDate } from "@/lib/utils/format";
 import {
   DICTATOR_INSIGNE,
@@ -63,6 +64,9 @@ export interface DictatorThroneProps {
   /** Begin van de lopende ambtstermijn (ISO) — voedt "regeert sinds …" (#545).
    *  Alleen voor een echte dictator; null bij de waarnemend variant. */
   sinds?: string | null;
+  /** Wat er op zijn hoofd staat (#805); null = geen bounty. Een waarnemend
+   *  dictator speelt niet mee en draagt er dus nooit een. */
+  bounty?: number | null;
 }
 
 export function DictatorThrone({
@@ -77,6 +81,7 @@ export function DictatorThrone({
   image,
   anthem,
   sinds,
+  bounty,
 }: DictatorThroneProps) {
   // Waarnemend (#530): Mbappé is geen clublid — geen rating-hoofdgetal, geen
   // ambtstermijn en géén link naar een spelerprofiel; wel een eigen label.
@@ -145,6 +150,7 @@ export function DictatorThrone({
             {isMe && !waarnemend && (
               <span className="badge badge--accent">jij</span>
             )}
+            {!waarnemend && <BountyMark pool={bounty} />}
           </span>
           {waarnemend ? (
             <span className="dictator-throne__verstek">
