@@ -7,6 +7,9 @@ import type { PlayerRating, Team } from "@/types";
 
 export const BASE_RATING = 1000;
 
+/** K-factor van de rating-trigger: schaal van de mutatie per match. */
+export const K_FACTOR = 24;
+
 /** Verwachte score (0..1) van rating a tegen rating b — de kern-Elo-formule. */
 export function expected(ra: number, rb: number): number {
   return 1 / (1 + Math.pow(10, (rb - ra) / 400));
