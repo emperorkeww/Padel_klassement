@@ -340,6 +340,16 @@ export const SNEER: Record<RoastIntensiteit, readonly string[]> = {
     "Dit tactische moeras slokt al je Elo-punten op. Excuses aan de hele vereniging zijn op z'n plaats.",
     "We gaan de beelden ritueel verbranden en het resultaat uit de database wissen om de eer te redden.",
     "Je sloeg die bal zo ver out dat we de luchtverkeersleiding moesten waarschuwen.",
+    "Je bent een wandelende tactische aids-uitbraak op de kooi. Een verschrikking voor de ogen van de supporter.",
+    "Als ik je zie spelen, wil ik m'n coachlicentie en m'n eigen gezicht direct verbranden.",
+    "Je bent zo ongelooflijk traag dat een standbeeld van Aurelio De Laurentiis je nog voorbij sprint.",
+    "Met deze vertoning hoor je thuis in een gesticht voor mensen zonder enige vorm van motoriek.",
+    "Je sloeg die bal zo hard out dat we de VN-veiligheidsraad moesten inschakelen voor grensoverschrijding.",
+    "Een blinde, dronken slak met reuma zou nog actiever reageren op een diepe lob dan jij.",
+    "Je speelde vandaag met de tactische visie en loopsnelheid van een omgevallen vuilnisbak.",
+    "Zelfs de ramen van de kooi trilden van pure plaatsvervangende schaamte bij jouw smashes.",
+    "Jouw backhand leek vandaag op een uiterst mislukte poging tot acrobatiek in een diepe modderpoel.",
+    "Met deze sprintsnelheid had je bij Napoli de bidons nog niet eens van de dop mogen voorzien.",
 ],
 };
 

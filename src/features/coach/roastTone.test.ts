@@ -50,8 +50,8 @@ describe("kleurRoast", () => {
 });
 
 describe("roastCtx", () => {
-  it("valt terug op de DB-defaults (gemeen / schild neer)", () => {
-    expect(roastCtx(null, null)).toEqual({ intensiteit: "gemeen", schild: false });
+  it("valt terug op de DB-defaults (radioactief / schild neer)", () => {
+    expect(roastCtx(null, null)).toEqual({ intensiteit: "radioactief", schild: false });
   });
 
   it("neemt de groeps-intensiteit en het speler-schild over", () => {
