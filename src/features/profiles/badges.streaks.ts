@@ -22,20 +22,24 @@ function teamRating(
 }
 
 /**
- * Won de speler ooit van een team dat gemiddeld minstens REUZENDODER_DREMPEL
- * rating hoger stond dan zijn eigen team?
+ * Won de speler ooit van een team dat gemiddeld minstens `drempel` rating
+ * hoger stond dan zijn eigen team?
  *
  * Bewuste benadering: we vergelijken met de HUIDIGE ratings, niet met de
  * ratings op het moment van de match. De historische rating per speler per
  * match zou vier extra rating_history-opzoekingen per match vragen; de
  * huidige stand is ruim goed genoeg voor een verzamelbadge. Ontbreekt een
  * rating (of zijn er geen ratings), dan telt die match gewoon niet mee.
+ *
+ * De drempel is instelbaar (#809): naast de Reuzendoder (50) staat de veel
+ * zwaardere Reuzenmoordenaar (150) op dezelfde doorloop.
  */
 export function isReuzendoder(
   matches: Match[],
   teams: Record<string, Team>,
   playerId: string,
   ratings: Record<string, PlayerRating>,
+  drempel: number = REUZENDODER_DREMPEL,
 ): boolean {
   for (const m of matches) {
     if (outcomeFor(m, teams, playerId) !== "W") continue;
@@ -43,7 +47,7 @@ export function isReuzendoder(
     const mine = teamRating(teams[mineIsA ? m.team_a_id : m.team_b_id], ratings);
     const theirs = teamRating(teams[mineIsA ? m.team_b_id : m.team_a_id], ratings);
     if (mine == null || theirs == null) continue;
-    if (theirs - mine >= REUZENDODER_DREMPEL) return true;
+    if (theirs - mine >= drempel) return true;
   }
   return false;
 }

@@ -1,6 +1,6 @@
 // Verzamelt in één doorloop alle feiten uit de matches voor de badges.
 import { BACK_TO_BACK_MINUTEN, DUBBELE_CIJFERS_DREMPEL, MARATHON_DOEL, MONSTERZEGE_DREMPEL } from "./badges.constants";
-import { matchDate, weekIndex } from "@/features/dashboard/missions";
+import { matchDate, monthIndex, weekIndex } from "@/features/dashboard/missions";
 import { inTeam, outcomeFor } from "@/features/rating/results";
 import type { Match, Team } from "@/types";
 
@@ -12,6 +12,8 @@ export interface MatchFeiten {
   vroeg: boolean;
   /** Meeste afgewerkte matches op één kalenderdag. */
   maxPerDag: number;
+  /** Meeste afgewerkte matches in één kalendermaand (#809). */
+  maxPerMaand: number;
   /** Won ooit met exact 1 punt verschil (scores nodig). */
   nagelbijter: boolean;
   /** Won ooit zonder de tegenstander een game te gunnen. */
@@ -136,6 +138,10 @@ export function verzamelFeiten(
   const perPartner = new Map<string, number>();
   const perTegenstander = new Map<string, number>();
   const maanden = new Set<number>();
+  // Los van `maanden` (dat maanden-van-het-jaar verzamelt voor de
+  // Kalenderslokker): dit telt matches per CONCRETE kalendermaand, zodat
+  // januari 2025 en januari 2026 niet op één hoop belanden (#809).
+  const perMaand = new Map<number, number>();
   const weken = new Set<number>();
   const perStarttijd = new Map<string, number>();
   const perVerschilWinst = new Map<number, number>();
@@ -164,6 +170,8 @@ export function verzamelFeiten(
       const maand = d.getMonth();
       const datum = d.getDate();
       maanden.add(maand);
+      const maandKey = monthIndex(d);
+      perMaand.set(maandKey, (perMaand.get(maandKey) ?? 0) + 1);
       if (maand >= 5 && maand <= 7) zomer = true; // juni, juli, augustus
       if (maand === 0 && datum === 1) nieuwjaar = true;
       if (maand === 11 && datum === 25) kerst = true;
@@ -270,6 +278,7 @@ export function verzamelFeiten(
     nacht,
     vroeg,
     maxPerDag: Math.max(0, ...[...perDag.values()].map((r) => r.gespeeld)),
+    maxPerMaand: Math.max(0, ...perMaand.values()),
     nagelbijter,
     broodje,
     monsterzege,
