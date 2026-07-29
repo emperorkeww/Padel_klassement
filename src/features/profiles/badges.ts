@@ -8,6 +8,8 @@
 
 import type { Match, PlayerRating, Team } from "@/types";
 import type { MatchRatings } from "@/features/groups/maandpias";
+import type { MatchPrediction } from "@/features/matches/predictions";
+import { valseProfeetReeks } from "./badges.toto";
 import { longestLossStreak, longestStreak, outcomeFor } from "@/features/rating/results";
 import { verzamelFeiten } from "./badges.facts";
 import {
@@ -38,6 +40,8 @@ export interface BadgeExtras {
   /** rating_history per match (rating_before per speler), zoals
    *  buildMatchRatings die levert — voedt de Choke-koning. */
   matchRatings?: Map<string, MatchRatings>;
+  /** Toto-tips van deze speler — voedt de Valse profeet. */
+  predictions?: readonly MatchPrediction[];
 }
 
 export interface Badge {
@@ -81,6 +85,7 @@ export function deriveBadges(
   const rust = rustFeiten(matches, teams, playerId);
   const tweeling = tweelingReeks(matches, teams, playerId);
   const choke = chokeAantal(matches, teams, playerId, extras?.matchRatings);
+  const misgetipt = valseProfeetReeks(matches, extras?.predictions);
 
   const ctx: BadgeContext = {
     matches,
@@ -99,6 +104,7 @@ export function deriveBadges(
     rust,
     tweeling,
     choke,
+    misgetipt,
   };
   return buildBadges(ctx);
 }

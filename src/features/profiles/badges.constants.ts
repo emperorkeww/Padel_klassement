@@ -100,6 +100,9 @@ export const VASTE_GAST_DOEL = 5;
 /** Verliezen als favoriet (pias-definitie van "choke") voor de Choke-koning (#809). */
 export const CHOKE_KONING_DOEL = 5;
 
+/** Opeenvolgend fout getipte toto-matches voor de Valse profeet (#809). */
+export const VALSE_PROFEET_DOEL = 5;
+
 export const WINSTEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 25, naam: "Winnaarstype", emoji: "🏅" },
   { doel: 50, naam: "Halve eeuw zeges", emoji: "🏆" },
