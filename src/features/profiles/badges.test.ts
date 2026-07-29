@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  CHOKE_KONING_DOEL,
   deriveBadges,
   featuredPlaystyles,
   REUZENDODER_DREMPEL,
@@ -8,7 +9,8 @@ import {
   ZELDZAME_BADGES,
 } from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
-import type { Match, PlayerRating, Team } from "@/types";
+import type { MatchRatings } from "@/features/groups/maandpias";
+import type { Match, PlayerRating, RatingPoint, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
 const teams: Record<string, Team> = {
@@ -60,7 +62,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(88);
+    expect(badges).toHaveLength(89);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -218,6 +220,81 @@ describe("deriveBadges — reuzenmoordenaar (#809)", () => {
 
   it("staat in de curated zeldzame set", () => {
     expect(ZELDZAME_BADGES.has("reuzendoder-zwaar")).toBe(true);
+  });
+});
+
+describe("deriveBadges — choke-koning (#809)", () => {
+  // Pre-match ratings per match, zoals buildMatchRatings ze levert. p1/p2 staan
+  // ver boven p3/p4, dus team A is telkens duidelijk favoriet.
+  function chokeRatings(
+    ms: Match[],
+    perPlayer: Record<string, number>,
+  ): Map<string, MatchRatings> {
+    return new Map(
+      ms.map((m) => [
+        m.id,
+        new Map(
+          Object.entries(perPlayer).map(([pid, rating]) => [
+            pid,
+            {
+              player_id: pid,
+              match_id: m.id,
+              rating_before: rating,
+              rating_after: rating,
+              delta: 0,
+              played_at: m.played_at ?? m.created_at,
+            } as RatingPoint,
+          ]),
+        ),
+      ]),
+    );
+  }
+  // 1200 vs 1000 ⇒ winkans ≈ 0.76, ruim boven FAVORIET_DREMPEL (0.6).
+  const favoriet = { p1: 1200, p2: 1200, p3: 1000, p4: 1000 };
+
+  it("wordt behaald na vijf verliezen als favoriet, met voortgang", () => {
+    const ms = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const c = badge(
+      deriveBadges(ms, teams, "p1", undefined, { matchRatings: chokeRatings(ms, favoriet) }),
+      "choke-koning",
+    );
+    expect(c.behaald).toBe(true);
+    expect(c.voortgang).toEqual({ nu: CHOKE_KONING_DOEL, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("telt winsten en verliezen als underdog niet mee", () => {
+    const gewonnen = Array.from({ length: CHOKE_KONING_DOEL }, win);
+    expect(
+      badge(
+        deriveBadges(gewonnen, teams, "p1", undefined, {
+          matchRatings: chokeRatings(gewonnen, favoriet),
+        }),
+        "choke-koning",
+      ).voortgang,
+    ).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+
+    // Omgedraaid: p1 is nu de underdog, verliezen is dan geen choke.
+    const verloren = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const underdog = { p1: 1000, p2: 1000, p3: 1200, p4: 1200 };
+    expect(
+      badge(
+        deriveBadges(verloren, teams, "p1", undefined, {
+          matchRatings: chokeRatings(verloren, underdog),
+        }),
+        "choke-koning",
+      ).voortgang,
+    ).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("blijft op nul zonder pre-match ratings (zoals in useBadgeAnnouncement)", () => {
+    const ms = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const c = badge(deriveBadges(ms, teams, "p1"), "choke-koning");
+    expect(c.behaald).toBe(false);
+    expect(c.voortgang).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge — pech viert niet", () => {
+    expect(ZELDZAME_BADGES.has("choke-koning")).toBe(false);
   });
 });
 

@@ -2,7 +2,37 @@
 import { ANGSTGEGNER_DREMPEL, COMEBACK_DREMPEL, REUZENDODER_DREMPEL, ROESTVRIJ_DAGEN } from "./badges.constants";
 import { matchDate } from "@/features/dashboard/missions";
 import { inTeam, outcomeFor, playersOf } from "@/features/rating/results";
+import { FAVORIET_DREMPEL, favorietKans } from "@/features/groups/maandpias";
+import type { MatchRatings } from "@/features/groups/maandpias";
 import type { Match, PlayerRating, Team } from "@/types";
+
+/**
+ * Aantal matches waarin de speler "gechoket" heeft: verloren terwijl hij
+ * favoriet was met een pre-match winkans van minstens FAVORIET_DREMPEL (0.6).
+ *
+ * Bewust dezelfde definitie als de pias (recompute_pias in de DB en bepaalPias
+ * hier ernaast), zodat de feed, de Pias en de badge dezelfde matches "choke"
+ * noemen (#809). De issue vroeg om "verliezen na een 5-1-voorsprong", maar
+ * punt-voor-punt-data bestaat niet: match_points heeft geen enkele schrijver
+ * (zie ook de toelichting in features/seizoen/awards.ts).
+ *
+ * Zonder pre-match ratings (bv. in useBadgeAnnouncement, dat rating_history
+ * niet laadt) is het antwoord 0 — de badge blijft dan gewoon niet-behaald.
+ */
+export function chokeAantal(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+  ratingsByMatch: Map<string, MatchRatings> | undefined,
+): number {
+  if (!ratingsByMatch) return 0;
+  let n = 0;
+  for (const m of matches) {
+    const kans = favorietKans(m, teams, playerId, ratingsByMatch.get(m.id));
+    if (kans != null && kans >= FAVORIET_DREMPEL) n++;
+  }
+  return n;
+}
 
 /** Gemiddelde huidige rating van een team (bij singles: die ene rating), of
  *  null zodra één rating ontbreekt. */

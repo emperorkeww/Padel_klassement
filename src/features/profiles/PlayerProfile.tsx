@@ -45,6 +45,7 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
+import { buildMatchRatings } from "@/features/groups/maandpias";
 import {
   afgeslotenSeizoenen,
   listSeasons,
@@ -162,6 +163,13 @@ export function PlayerProfile() {
       upsetsByMatch(matches.data ?? [], teams.data ?? {}, upsetHistories.data ?? {}),
     [matches.data, teams.data, upsetHistories.data],
   );
+  // Pre-match ratings per match (#809): voedt de Choke-koning-badge. Dezelfde
+  // bron als de upset-chips hierboven — die dekt precies alle afgewerkte
+  // matches van deze speler, dus er komt geen extra query bij.
+  const matchRatings = useMemo(
+    () => buildMatchRatings(upsetHistories.data ?? {}),
+    [upsetHistories.data],
+  );
   // Speler van de week (#497) óók op het profiel (#621): dezelfde bron als
   // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.
   const inForm = useMemo(
@@ -255,7 +263,8 @@ export function PlayerProfile() {
   const ratingDelta = deltaToday(rhist, club.timezone);
   const hasRating = rhist.length >= 2;
   const hasRank = rankPoints.length >= 2;
-  const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
+  const badgeExtras = { matchRatings };
+  const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined, badgeExtras);
   // Eerstvolgende (niet-behaalde) badge met telbare voortgang, het verst
   // gevorderd — voedt de "volgende badge"-highlight op Overzicht.
   const nextBadge =
@@ -285,7 +294,7 @@ export function PlayerProfile() {
   // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
   // profielniveau — dus resolven we ze tegen de volledige historie.
   const badgesAllTime = season
-    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined)
+    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined, badgeExtras)
     : badges;
   const earnedAllTime = new Set(
     badgesAllTime.filter((b) => b.behaald).map((b) => b.id),
