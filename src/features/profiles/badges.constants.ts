@@ -97,6 +97,9 @@ export const BACK_TO_BACK_MINUTEN = 90;
 /** Matches in één kalendermaand voor de Vaste gast (#809). */
 export const VASTE_GAST_DOEL = 5;
 
+/** Verliezen als favoriet (pias-definitie van "choke") voor de Choke-koning (#809). */
+export const CHOKE_KONING_DOEL = 5;
+
 export const WINSTEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 25, naam: "Winnaarstype", emoji: "🏅" },
   { doel: 50, naam: "Halve eeuw zeges", emoji: "🏆" },

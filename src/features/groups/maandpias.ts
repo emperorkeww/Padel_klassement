@@ -179,8 +179,11 @@ function ergsteRedenVoor(
  * Winkans van het verliezende team van de speler vóór de match (échte
  * pre-match ratings). Alleen een getal als de speler verloor én favoriet was
  * (kans ≥ 0.5); anders null. Zonder ratings voor alle vier de spelers: null.
+ *
+ * Geëxporteerd omdat de Choke-koning-badge (#809) dezelfde definitie van
+ * "gechoket" hanteert als de pias — één implementatie, één waarheid.
  */
-function favorietKans(
+export function favorietKans(
   m: Match,
   teams: Record<string, Team>,
   playerId: string,
