@@ -30,11 +30,24 @@ export function lockedOptionOf(
  * onschuldig, want de boodschap ("wedstrijden staan klaar") blijft waar.
  */
 export function roundsExistFor(poll: PlayPoll, matches: Match[]): boolean {
-  if (poll.status !== "booked" || !poll.booked_at) return false;
+  return roundsMadeFor(poll, matches) > 0;
+}
+
+/**
+ * Hoeveel rondes er voor deze speeldag al klaarstaan — zelfde afleiding als
+ * {@link roundsExistFor}, maar geteld. Het vertrekpunt voor de starttijden van
+ * de volgende rondes (#827): ronde N begint tien minuten na ronde N-1.
+ */
+export function roundsMadeFor(poll: PlayPoll, matches: Match[]): number {
+  if (poll.status !== "booked" || !poll.booked_at) return 0;
   const bookedAt = poll.booked_at;
-  return matches.some(
-    (m) => (m.round_number ?? 0) > 0 && m.created_at >= bookedAt,
-  );
+  const rondes = new Set<number>();
+  for (const m of matches) {
+    if ((m.round_number ?? 0) > 0 && m.created_at >= bookedAt) {
+      rondes.add(m.round_number as number);
+    }
+  }
+  return rondes.size;
 }
 
 /** Fase van één poll; `roundsExist` komt uit roundsExistFor (of lokale staat). */

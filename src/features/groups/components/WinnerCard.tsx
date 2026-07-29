@@ -21,6 +21,7 @@ import { BookingSheet } from "./BookingSheet";
 import { ShareSpeeldag } from "./ShareSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { createFairRound } from "@/features/groups/api";
+import { rondeStart } from "@/features/groups/speeldagRondes";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import type { Profile } from "@/types";
@@ -47,6 +48,7 @@ export function WinnerCard({
   busy,
   run,
   roundsExist = false,
+  rondesVandaag = 0,
   onRoundsMade,
 }: {
   poll: PlayPoll;
@@ -61,6 +63,9 @@ export function WinnerCard({
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
   /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
   roundsExist?: boolean;
+  /** Rondes die op de dag van dit moment al klaarstaan: het vertrekpunt voor
+   *  de starttijden van de volgende rondes (#827). */
+  rondesVandaag?: number;
   /** Rondes klaargezet — laat de tab-fasebalk meteen naar Klaar springen. */
   onRoundsMade?: () => void;
 }) {
@@ -202,7 +207,15 @@ export function WinnerCard({
           if (total === 0) throw new Error("Geen volledige banen te vullen.");
           break;
         }
-        const ids = await createFairRound(poll.group_id, courts);
+        // Elke ronde krijgt de echte starttijd van de speeldag mee, tien
+        // minuten per ronde opschuivend (#827) — anders staan alle rondes op
+        // hetzelfde moment en valt de app terug op created_at.
+        const playedAt = rondeStart(
+          o,
+          poll.club_timezone ?? club.timezone,
+          rondesVandaag + roundsMade + i,
+        );
+        const ids = await createFairRound(poll.group_id, courts, playedAt);
         total += ids.length;
       }
       setRoundsMade((n) => n + rondes);

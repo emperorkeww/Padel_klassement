@@ -43,6 +43,31 @@ describe("createFairRound", () => {
     });
   });
 
+  it("geeft de starttijd van de speeldag mee (#827)", async () => {
+    enqueue({ data: ["m1"] });
+    await createFairRound("g1", courts, "2026-07-29T17:30:00.000Z");
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "create_fair_round",
+      args: [
+        {
+          p_group_id: "g1",
+          p_players: ["a1", "a2", "b1", "b2", "c1", "c2", "d1", "d2"],
+          p_played_at: "2026-07-29T17:30:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("laat p_played_at weg zonder speeldag, zodat de match geen tijdstip krijgt", async () => {
+    enqueue({ data: ["m1"] });
+    await createFairRound("g1", courts, null);
+    const call = calls.find(
+      (c) => c.method === "rpc" && c.name === "create_fair_round",
+    );
+    expect(call?.args[0].p_played_at).toBeUndefined();
+  });
+
   it("gooit bij een fout", async () => {
     enqueue({ error: new Error("kapot") });
     await expect(createFairRound("g1", courts)).rejects.toThrow("kapot");
@@ -58,6 +83,18 @@ describe("generateMexicanoRound", () => {
       method: "rpc",
       name: "generate_mexicano_round",
       args: [{ p_group_id: "g1" }],
+    });
+  });
+
+  it("geeft de starttijd van de speeldag mee (#827)", async () => {
+    enqueue({ data: ["m3"] });
+    await generateMexicanoRound("g1", "2026-07-29T17:30:00.000Z");
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "generate_mexicano_round",
+      args: [
+        { p_group_id: "g1", p_played_at: "2026-07-29T17:30:00.000Z" },
+      ],
     });
   });
 

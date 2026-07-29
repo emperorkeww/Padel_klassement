@@ -2090,7 +2090,12 @@ export type Database = {
         Returns: string
       }
       create_fair_round: {
-        Args: { p_group_id: string; p_players: string[] }
+        Args: {
+          p_created_by?: string
+          p_group_id: string
+          p_played_at?: string
+          p_players: string[]
+        }
         Returns: string[]
       }
       create_group_invite: {
@@ -2115,11 +2120,11 @@ export type Database = {
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
       first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
-        Args: { p_group_id: string }
+        Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
       }
       generate_mexicano_round: {
-        Args: { p_group_id: string }
+        Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
       }
       get_friend_suggestions: {

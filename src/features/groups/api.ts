@@ -158,16 +158,20 @@ export interface FairCourt {
 
 /**
  * Schrijft een "Eerlijke teams"-voorstel weg als geplande matches (één ronde).
- * Geeft de nieuwe match-ids terug.
+ * Geeft de nieuwe match-ids terug. `playedAt` (ISO) is de starttijd van de
+ * ronde (#827); zonder gelockte speeldag blijft die weg en heeft de match
+ * geen tijdstip, zoals voorheen.
  */
 export async function createFairRound(
   groupId: string,
   courts: FairCourt[],
+  playedAt?: string | null,
 ): Promise<string[]> {
   const players = courts.flatMap((c) => [...c.teamA, ...c.teamB]);
   const { data, error } = await supabase.rpc("create_fair_round", {
     p_group_id: groupId,
     p_players: players,
+    p_played_at: playedAt ?? undefined,
   });
   if (error) throw error;
   invalidate("matches", "teams");
@@ -193,9 +197,11 @@ export async function removeGroupMember(
  */
 export async function generateMexicanoRound(
   groupId: string,
+  playedAt?: string | null,
 ): Promise<string[]> {
   const { data, error } = await supabase.rpc("generate_mexicano_round", {
     p_group_id: groupId,
+    p_played_at: playedAt ?? undefined,
   });
   if (error) throw error;
   invalidate("matches", "teams");
