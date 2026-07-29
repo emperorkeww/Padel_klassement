@@ -22,6 +22,21 @@ export function getGroupPredictions(
   });
 }
 
+/** Alle tips van één speler, over al zijn groepen (RLS: alleen groepen die je
+ *  deelt). Voedt de Valse profeet-badge (#809). */
+export function getPlayerPredictions(
+  playerId: string,
+): Promise<MatchPrediction[]> {
+  return cached(`match-predictions:player:${playerId}`, async () => {
+    const { data, error } = await supabase
+      .from("match_predictions")
+      .select("*")
+      .eq("player_id", playerId);
+    if (error) throw error;
+    return data ?? [];
+  });
+}
+
 /** Alle tips op één match. */
 export function getMatchPredictions(
   matchId: string,

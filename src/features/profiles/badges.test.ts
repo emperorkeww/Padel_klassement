@@ -5,11 +5,13 @@ import {
   featuredPlaystyles,
   REUZENDODER_DREMPEL,
   REUZENDODER_ZWAAR_DREMPEL,
+  VALSE_PROFEET_DOEL,
   VASTE_GAST_DOEL,
   ZELDZAME_BADGES,
 } from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
 import type { MatchRatings } from "@/features/groups/maandpias";
+import type { MatchPrediction } from "@/features/matches/predictions";
 import type { Match, PlayerRating, RatingPoint, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
@@ -62,7 +64,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(89);
+    expect(badges).toHaveLength(90);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -295,6 +297,67 @@ describe("deriveBadges — choke-koning (#809)", () => {
 
   it("is bewust géén zeldzame badge — pech viert niet", () => {
     expect(ZELDZAME_BADGES.has("choke-koning")).toBe(false);
+  });
+});
+
+describe("deriveBadges — valse profeet (#809)", () => {
+  /** Tip op één match; `op` is het getipte team. */
+  function tip(m: Match, op: string, punten: number | null = 0): MatchPrediction {
+    return {
+      match_id: m.id,
+      player_id: "p1",
+      group_id: "g1",
+      predicted_team_id: op,
+      win_chance: 0.5,
+      points: punten,
+      created_at: m.created_at,
+      updated_at: m.created_at,
+    };
+  }
+  const profeet = (ms: Match[], ps: MatchPrediction[]) =>
+    badge(deriveBadges(ms, teams, "p1", undefined, { predictions: ps }), "valse-profeet");
+
+  it("wordt behaald na vijf fout getipte matches op rij, met voortgang", () => {
+    // tB wint telkens, p1 tipt telkens tA.
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    const v = profeet(ms, ms.map((m) => tip(m, "tA")));
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VALSE_PROFEET_DOEL, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("een juiste tip breekt de reeks", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    // De derde tip is juist (tB won ook echt) → langste foute reeks is 2.
+    const ps = ms.map((m, i) => (i === 2 ? tip(m, "tB", 3) : tip(m, "tA")));
+    expect(profeet(ms, ps).voortgang).toEqual({ nu: 2, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("slaat gelijkspelen over: ze breken de reeks niet en tellen niet mee", () => {
+    const voor = Array.from({ length: 3 }, loss);
+    const gelijk = match({ winner_team_id: null });
+    const na = Array.from({ length: 2 }, loss);
+    const ms = [...voor, gelijk, ...na];
+    const ps = ms.map((m) => tip(m, "tA"));
+    const v = profeet(ms, ps);
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VALSE_PROFEET_DOEL, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("negeert nog niet beoordeelde tips (points null)", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    const ps = ms.map((m, i) => tip(m, "tA", i === 1 ? null : 0));
+    // De ongescoorde match telt niet mee, maar breekt de reeks ook niet: 4.
+    expect(profeet(ms, ps).voortgang).toEqual({ nu: 4, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("blijft op nul zonder tips", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    expect(badge(deriveBadges(ms, teams, "p1"), "valse-profeet").voortgang)
+      .toEqual({ nu: 0, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge", () => {
+    expect(ZELDZAME_BADGES.has("valse-profeet")).toBe(false);
   });
 });
 

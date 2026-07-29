@@ -46,6 +46,7 @@ import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
 import { buildMatchRatings } from "@/features/groups/maandpias";
+import { getPlayerPredictions } from "@/features/matches/predictionsApi";
 import {
   afgeslotenSeizoenen,
   listSeasons,
@@ -141,6 +142,9 @@ export function PlayerProfile() {
   );
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
   const vendettas = useAsync(() => getPlayerVendettas(id), [id]);
+  // Toto-tips van deze speler (#809): voedt de Valse profeet-badge. RLS levert
+  // alleen tips uit groepen die je met de kijker deelt — genoeg voor de badge.
+  const predictions = useAsync(() => getPlayerPredictions(id), [id]);
   // Rang-verloop (all-time sparkline) staat sinds #461 tijdelijk uit: het werd
   // client-side uit álle ruwe matchrijen berekend, maar die zijn niet meer
   // publiek leesbaar, dus de rang zou per-kijker en dus misleidend worden. Wordt
@@ -263,7 +267,7 @@ export function PlayerProfile() {
   const ratingDelta = deltaToday(rhist, club.timezone);
   const hasRating = rhist.length >= 2;
   const hasRank = rankPoints.length >= 2;
-  const badgeExtras = { matchRatings };
+  const badgeExtras = { matchRatings, predictions: predictions.data ?? undefined };
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined, badgeExtras);
   // Eerstvolgende (niet-behaalde) badge met telbare voortgang, het verst
   // gevorderd — voedt de "volgende badge"-highlight op Overzicht.
