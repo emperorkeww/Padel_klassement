@@ -169,9 +169,9 @@ export async function portretHandler(
     if (!avatar) return json({ error: "avatar-unreachable" }, 502);
     // Volgorde telt: FIRST = gelijkenis, SECOND = stijl.
     form.append("image[]", avatar, "avatar.png");
-    form.append("image[]", referentie, "referentie.png");
+    form.append("image[]", referentie, "referentie_in_form.png");
   } else {
-    form.append("image[]", referentie, "referentie.png");
+    form.append("image[]", referentie, "referentie_in_form.png");
   }
   form.append("prompt", promptVoor(stijl, avatarUrl != null));
 

@@ -1,99 +1,131 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560">
-  <!-- Placeholder voor storm-cloud-back-right.webp (#834): de grote achterste
-       cumulonimbus rechts van de kaart. Licht (goud) komt van links, waar de
-       hoofdbliksem loopt. Vervang door een fotorealistische webp met alpha;
-       zie ../MANIFEST.md voor de exacte inhoudseisen. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 680">
+  <!-- Eén doorlopende cumulonimbus voor achter het rechterframe. De massa is
+       bewust als organisch silhouet getekend; losse rijen cirkels zouden op
+       veldmaat als kralen lezen. -->
   <defs>
-    <radialGradient id="bol" cx="32%" cy="26%" r="80%">
-      <stop offset="0%" stop-color="#414e6e"/>
-      <stop offset="42%" stop-color="#252d41"/>
-      <stop offset="100%" stop-color="#0e1220"/>
+    <linearGradient id="back-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#35415b"/>
+      <stop offset=".3" stop-color="#1a2132"/>
+      <stop offset=".7" stop-color="#0b0f1b"/>
+      <stop offset="1" stop-color="#03050a"/>
+    </linearGradient>
+    <radialGradient id="back-top" cx=".28" cy=".18" r=".8">
+      <stop offset="0" stop-color="#52617f"/>
+      <stop offset=".3" stop-color="#2b354c"/>
+      <stop offset=".72" stop-color="#101521"/>
+      <stop offset="1" stop-color="#06080e"/>
     </radialGradient>
-    <radialGradient id="bolLicht" cx="26%" cy="22%" r="78%">
-      <stop offset="0%" stop-color="#5b6890"/>
-      <stop offset="45%" stop-color="#2e3752"/>
-      <stop offset="100%" stop-color="#121627"/>
+    <radialGradient id="back-gold" cx=".05" cy=".42" r=".72">
+      <stop offset="0" stop-color="#ffd878" stop-opacity=".62"/>
+      <stop offset=".16" stop-color="#d79a32" stop-opacity=".28"/>
+      <stop offset=".48" stop-color="#7e5517" stop-opacity=".09"/>
+      <stop offset="1" stop-color="#7e5517" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="goudRand" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffd97a" stop-opacity=".5"/>
-      <stop offset="55%" stop-color="#f0b84e" stop-opacity=".18"/>
-      <stop offset="100%" stop-color="#f0b84e" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="b12" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
-    <filter id="b6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="b3" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="3"/></filter>
-    <filter id="b1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter>
+    <filter id="back-edge" x="-20%" y="-14%" width="140%" height="128%">
+      <feTurbulence type="fractalNoise" baseFrequency=".011 .018" numOctaves="3" seed="17" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="18" xChannelSelector="R" yChannelSelector="B"/>
+    </filter>
+    <filter id="back-soft" x="-25%" y="-20%" width="150%" height="140%">
+      <feGaussianBlur stdDeviation="15"/>
+    </filter>
+    <filter id="back-volume" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency=".018" numOctaves="4" seed="31" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="1.8" result="soft-noise"/>
+      <feDiffuseLighting in="soft-noise" surfaceScale="4.5" diffuseConstant=".72"
+        lighting-color="#8793aa" result="volume-light">
+        <feDistantLight azimuth="218" elevation="42"/>
+      </feDiffuseLighting>
+      <feComposite in="volume-light" in2="SourceAlpha" operator="in" result="clipped-light"/>
+      <feBlend in="SourceGraphic" in2="clipped-light" mode="soft-light" result="lit-cloud"/>
+      <feDisplacementMap in="lit-cloud" in2="noise" scale="16"
+        xChannelSelector="R" yChannelSelector="B"/>
+    </filter>
+    <clipPath id="back-clip">
+      <path d="M89 31
+        C134 4 202 8 235 38
+        C278 10 349 22 367 61
+        C421 53 471 89 462 132
+        C510 160 511 218 479 245
+        C523 288 505 349 473 371
+        C509 421 483 478 447 491
+        C471 548 423 590 381 586
+        C362 635 304 657 264 625
+        C221 658 157 633 155 588
+        C98 580 74 530 97 491
+        C47 456 58 393 91 370
+        C50 324 71 268 104 248
+        C63 213 66 157 103 137
+        C65 102 63 57 89 31 Z"/>
+    </clipPath>
   </defs>
 
-  <!-- Zacht silhouet van de hele massa -->
-  <g filter="url(#b12)" fill="#0a0e18" opacity=".95">
-    <ellipse cx="215" cy="95" rx="150" ry="82"/>
-    <ellipse cx="120" cy="150" rx="95" ry="62"/>
-    <ellipse cx="265" cy="205" rx="125" ry="88"/>
-    <ellipse cx="225" cy="330" rx="118" ry="86"/>
-    <ellipse cx="255" cy="445" rx="105" ry="72"/>
-    <ellipse cx="205" cy="510" rx="80" ry="46"/>
+  <path d="M82 42
+    C133 0 205 7 239 37
+    C285 4 353 17 377 57
+    C433 45 486 86 476 134
+    C521 159 526 218 490 251
+    C527 295 513 354 479 379
+    C514 425 493 482 450 500
+    C474 552 431 605 383 599
+    C355 647 304 664 261 633
+    C215 661 154 636 146 592
+    C92 579 69 529 91 487
+    C41 452 51 390 86 365
+    C46 319 62 263 98 239
+    C60 201 62 150 96 127
+    C62 94 59 59 82 42 Z"
+    fill="#05070d" opacity=".96" filter="url(#back-soft)"/>
+
+  <g filter="url(#back-edge)">
+    <path d="M89 31
+      C134 4 202 8 235 38
+      C278 10 349 22 367 61
+      C421 53 471 89 462 132
+      C510 160 511 218 479 245
+      C523 288 505 349 473 371
+      C509 421 483 478 447 491
+      C471 548 423 590 381 586
+      C362 635 304 657 264 625
+      C221 658 157 633 155 588
+      C98 580 74 530 97 491
+      C47 456 58 393 91 370
+      C50 324 71 268 104 248
+      C63 213 66 157 103 137
+      C65 102 63 57 89 31 Z"
+      fill="url(#back-body)"/>
   </g>
 
-  <!-- Middenvolume -->
-  <g filter="url(#b6)" fill="#161c2b">
-    <ellipse cx="210" cy="100" rx="128" ry="66"/>
-    <ellipse cx="122" cy="148" rx="76" ry="48"/>
-    <ellipse cx="262" cy="208" rx="104" ry="70"/>
-    <ellipse cx="228" cy="332" rx="98" ry="70"/>
-    <ellipse cx="252" cy="446" rx="86" ry="58"/>
-    <ellipse cx="206" cy="508" rx="62" ry="36"/>
+  <g clip-path="url(#back-clip)" filter="url(#back-volume)">
+    <path d="M58 139 C90 69 162 31 230 61 C264 99 251 156 196 178 C146 199 88 182 58 139 Z"
+      fill="url(#back-top)" opacity=".95"/>
+    <path d="M210 34 C290 7 382 44 401 108 C412 157 365 191 310 179 C258 168 225 115 210 34 Z"
+      fill="url(#back-top)" opacity=".82"/>
+    <path d="M79 237 C122 177 207 166 259 211 C285 262 239 309 177 310 C121 307 88 282 79 237 Z"
+      fill="#20283a" opacity=".77"/>
+    <path d="M246 170 C332 134 438 180 466 257 C468 318 399 344 337 319 C289 297 263 245 246 170 Z"
+      fill="#151b28" opacity=".9"/>
+    <path d="M91 365 C129 300 221 289 281 340 C310 394 258 448 191 444 C132 436 101 412 91 365 Z"
+      fill="#171e2c" opacity=".86"/>
+    <path d="M258 322 C343 292 442 341 465 418 C458 473 397 501 337 478 C289 455 268 402 258 322 Z"
+      fill="#0d121d" opacity=".95"/>
+    <path d="M105 505 C150 443 240 445 286 503 C299 555 249 595 193 585 C141 573 114 548 105 505 Z"
+      fill="#121824" opacity=".9"/>
+    <path d="M273 470 C342 451 421 491 435 547 C422 599 355 623 307 588 C278 557 272 519 273 470 Z"
+      fill="#080b12" opacity=".98"/>
+
+    <path d="M18 4 H296 V676 H5 Z" fill="url(#back-gold)"/>
+    <path d="M104 50 C78 143 118 209 91 284 C70 348 123 412 93 482 C79 519 97 563 139 610"
+      fill="none" stroke="#f2bb50" stroke-opacity=".18" stroke-width="18" filter="url(#back-soft)"/>
   </g>
 
-  <!-- Donkere kernen rechtsonder in elke cluster -->
-  <g filter="url(#b6)" fill="#05070d" opacity=".78">
-    <ellipse cx="252" cy="122" rx="92" ry="54"/>
-    <ellipse cx="292" cy="240" rx="84" ry="60"/>
-    <ellipse cx="262" cy="368" rx="80" ry="58"/>
-    <ellipse cx="282" cy="470" rx="68" ry="46"/>
-  </g>
-
-  <!-- Bloemkoollobben op de randen -->
-  <g filter="url(#b1)">
-    <circle cx="150" cy="70" r="30" fill="url(#bolLicht)"/>
-    <circle cx="185" cy="52" r="33" fill="url(#bolLicht)"/>
-    <circle cx="225" cy="48" r="34" fill="url(#bol)"/>
-    <circle cx="265" cy="60" r="30" fill="url(#bol)"/>
-    <circle cx="300" cy="85" r="27" fill="url(#bol)"/>
-    <circle cx="322" cy="115" r="23" fill="url(#bol)"/>
-    <circle cx="135" cy="95" r="22" fill="url(#bolLicht)"/>
-    <circle cx="75" cy="135" r="21" fill="url(#bolLicht)"/>
-    <circle cx="100" cy="115" r="25" fill="url(#bolLicht)"/>
-    <circle cx="135" cy="122" r="24" fill="url(#bol)"/>
-    <circle cx="215" cy="170" r="26" fill="url(#bolLicht)"/>
-    <circle cx="255" cy="160" r="29" fill="url(#bol)"/>
-    <circle cx="295" cy="175" r="26" fill="url(#bol)"/>
-    <circle cx="330" cy="205" r="23" fill="url(#bol)"/>
-    <circle cx="342" cy="242" r="20" fill="url(#bol)"/>
-    <circle cx="170" cy="305" r="24" fill="url(#bolLicht)"/>
-    <circle cx="205" cy="285" r="28" fill="url(#bolLicht)"/>
-    <circle cx="245" cy="290" r="29" fill="url(#bol)"/>
-    <circle cx="285" cy="310" r="25" fill="url(#bol)"/>
-    <circle cx="312" cy="345" r="22" fill="url(#bol)"/>
-    <circle cx="210" cy="420" r="23" fill="url(#bolLicht)"/>
-    <circle cx="245" cy="405" r="26" fill="url(#bol)"/>
-    <circle cx="285" cy="420" r="24" fill="url(#bol)"/>
-    <circle cx="316" cy="450" r="20" fill="url(#bol)"/>
-    <circle cx="175" cy="495" r="17" fill="url(#bolLicht)"/>
-    <circle cx="215" cy="485" r="19" fill="url(#bol)"/>
-    <circle cx="246" cy="500" r="17" fill="url(#bol)"/>
-  </g>
-
-  <!-- Goudlicht op de linkerflank (bliksemzijde) en enkele lobtoppen -->
-  <g filter="url(#b6)">
-    <ellipse cx="95" cy="190" rx="52" ry="92" fill="url(#goudRand)"/>
-    <ellipse cx="150" cy="300" rx="42" ry="82" fill="url(#goudRand)"/>
-    <ellipse cx="185" cy="420" rx="38" ry="66" fill="url(#goudRand)"/>
-  </g>
-  <g filter="url(#b3)" opacity=".55">
-    <ellipse cx="185" cy="44" rx="42" ry="13" fill="#ffd97a" opacity=".5"/>
-    <ellipse cx="205" cy="278" rx="36" ry="11" fill="#ffd97a" opacity=".45"/>
-    <ellipse cx="208" cy="414" rx="32" ry="10" fill="#ffd97a" opacity=".4"/>
-    <ellipse cx="98" cy="112" rx="30" ry="10" fill="#ffd97a" opacity=".4"/>
-  </g>
+  <!-- Lokale gouden randen, uitsluitend aan de bliksemzijde. -->
+  <path d="M106 35 C139 13 193 13 225 39 M101 137 C74 171 76 211 105 239
+    M103 248 C72 282 73 335 96 365 M98 491 C78 531 104 568 150 585"
+    fill="none" stroke="#ffd878" stroke-opacity=".34" stroke-width="4" stroke-linecap="round"
+    filter="url(#back-soft)"/>
+  <path d="M111 38 C144 17 190 17 219 40
+    M106 141 C86 168 84 205 105 229
+    M108 253 C87 285 89 326 103 353"
+    fill="none" stroke="#ffe9af" stroke-opacity=".32" stroke-width="1.8"
+    stroke-linecap="round"/>
 </svg>

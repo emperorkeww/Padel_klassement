@@ -2202,9 +2202,8 @@ export function FutKaart({
             <use href={`#fut-orn-${ornament}-achter`} />
           </svg>
         )}
-        {/* Storm-achterlaag (#834): de grote wolkenmassa met hoofdbliksem die
-            van achter het frame naar buiten breekt — vóór de zijden in de
-            DOM, dus achter de kaart. */}
+        {/* Storm-achterlaag (#834): de volledige master vóór de zijden in de
+            DOM, dus achter kaart en frame. */}
         {editie === "inform" && <InformStormAchter />}
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
@@ -2214,10 +2213,9 @@ export function FutKaart({
                 <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
-                {/* Storm-binnenlaag (#834): de wolk die ín het rechterdeel
-                    van het kaartvlak begint. Het vlak draagt de schildclip,
-                    dus deze laag is gemaskeerd met de exacte kaartvorm; de
-                    inhoud ({voor}) rendert erná en blijft dus leesbaar. */}
+                {/* Storm-binnenlaag (#834): dezelfde master, door de bestaande
+                    schildclip van dit kaartvlak gemaskeerd. De inhoud ({voor})
+                    rendert erná en blijft dus leesbaar. */}
                 {editie === "inform" && <InformStormBinnen />}
                 {voor}
               </span>
@@ -2256,9 +2254,9 @@ export function FutKaart({
             <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
-        {/* Storm-voorlaag (#834): wolkendelen, bliksemsegmenten, debris en
-            vonken die plaatselijk óver het gouden frame liggen, plus de
-            frameglow die de rechterrand door de bliksem laat oplichten. */}
+        {/* Storm-voorlaag (#834): dezelfde master door een klein frontmasker,
+            zodat alleen geselecteerde wolk- en bliksemstukken het frame
+            plaatselijk overlappen. */}
         {editie === "inform" && <InformStormVoor />}
       </div>
     </div>

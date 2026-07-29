@@ -26,6 +26,9 @@
      uitsteekt, positioneert tegen de kaart zelf. */
   position: relative;
   overflow: visible;
+  /* Elke kaart begrenst zijn eigen z-indexregister. Speciale editie-effecten
+     kunnen zo nooit onder of boven decoratie van een naburige kaart schuiven. */
+  isolation: isolate;
   perspective: 600px;
   /* De kaart is zijn eigen inline-size-container (#625): zo kan de
      compact-zetting hieronder op de échte kaartbreedte reageren, waar die

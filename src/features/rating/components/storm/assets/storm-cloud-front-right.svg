@@ -1,57 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 420">
-  <!-- Placeholder voor storm-cloud-front-right.webp (#834): drie kleinere,
-       scherpere wolkendelen die vóór het rechterframe hangen. Crisper dan de
-       achterlaag (dichter bij de kijker) en met het sterkste goudlicht — dit
-       zijn de delen naast de bliksem. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 620">
+  <!-- Drie geselecteerde voorgrondocclusies. De vormen bezetten slechts het
+       linkerkwart van deze hoge transparante stage: zo kunnen ze over de
+       volledige framehoogte verdeeld worden zonder breder dan 10–15% van de
+       kaart te worden. -->
   <defs>
-    <radialGradient id="fbol" cx="30%" cy="24%" r="78%">
-      <stop offset="0%" stop-color="#485578"/>
-      <stop offset="45%" stop-color="#272f45"/>
-      <stop offset="100%" stop-color="#0e1220"/>
+    <linearGradient id="front-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#515e7b"/>
+      <stop offset=".28" stop-color="#283147"/>
+      <stop offset=".7" stop-color="#0d121d"/>
+      <stop offset="1" stop-color="#03050a"/>
+    </linearGradient>
+    <radialGradient id="front-gold" cx=".08" cy=".42" r=".8">
+      <stop offset="0" stop-color="#fff0b0" stop-opacity=".78"/>
+      <stop offset=".18" stop-color="#e4aa40" stop-opacity=".35"/>
+      <stop offset=".58" stop-color="#8a5a17" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#8a5a17" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="fgoud" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffd97a" stop-opacity=".6"/>
-      <stop offset="55%" stop-color="#f0b84e" stop-opacity=".22"/>
-      <stop offset="100%" stop-color="#f0b84e" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="fb6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="fb1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1"/></filter>
+    <filter id="front-edge" x="-45%" y="-35%" width="190%" height="170%">
+      <feTurbulence type="fractalNoise" baseFrequency=".025 .04" numOctaves="3" seed="41" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10"/>
+      <feDropShadow dx="-2" dy="0" stdDeviation="3" flood-color="#f3b943" flood-opacity=".25"/>
+      <feDropShadow dx="4" dy="7" stdDeviation="8" flood-color="#02040a" flood-opacity=".8"/>
+    </filter>
+    <filter id="front-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
   </defs>
 
-  <!-- Puf 1 (boven) -->
-  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="120" cy="85" rx="80" ry="52"/></g>
-  <g filter="url(#fb1)">
-    <circle cx="72" cy="78" r="22" fill="url(#fbol)"/>
-    <circle cx="102" cy="58" r="27" fill="url(#fbol)"/>
-    <circle cx="138" cy="56" r="26" fill="url(#fbol)"/>
-    <circle cx="168" cy="74" r="22" fill="url(#fbol)"/>
-    <circle cx="120" cy="98" r="30" fill="#10141f"/>
-    <circle cx="158" cy="102" r="24" fill="#0b0e17"/>
-  </g>
-  <ellipse cx="100" cy="52" rx="34" ry="10" fill="#ffd97a" opacity=".4" filter="url(#fb6)"/>
-  <ellipse cx="80" cy="90" rx="26" ry="34" fill="url(#fgoud)" filter="url(#fb6)"/>
+  <!-- Klein deel over de rechterbovenrand. -->
+  <g filter="url(#front-edge)">
+    <path d="M-8 48
+      C18 19 64 14 108 37
+      C87 47 94 61 124 77
+      C91 78 61 101 27 89
+      C8 83 -4 68 -8 48 Z"
+      fill="url(#front-body)"/>
 
-  <!-- Puf 2 (midden) -->
-  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="128" cy="225" rx="72" ry="46"/></g>
-  <g filter="url(#fb1)">
-    <circle cx="86" cy="216" r="20" fill="url(#fbol)"/>
-    <circle cx="116" cy="198" r="25" fill="url(#fbol)"/>
-    <circle cx="150" cy="200" r="23" fill="url(#fbol)"/>
-    <circle cx="176" cy="218" r="19" fill="url(#fbol)"/>
-    <circle cx="130" cy="240" r="27" fill="#10141f"/>
-    <circle cx="164" cy="244" r="20" fill="#0b0e17"/>
-  </g>
-  <ellipse cx="112" cy="194" rx="30" ry="9" fill="#ffd97a" opacity=".42" filter="url(#fb6)"/>
-  <ellipse cx="92" cy="228" rx="22" ry="30" fill="url(#fgoud)" filter="url(#fb6)"/>
+    <!-- Middendeel: scherpere onderrand, rond 35–55% kaarthoogte. -->
+    <path d="M-10 255
+      C21 224 75 217 118 242
+      C94 258 103 278 137 296
+      C101 303 62 333 25 313
+      C3 301 -5 279 -10 255 Z"
+      fill="url(#front-body)"/>
 
-  <!-- Puf 3 (onder, kleinst) -->
-  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="112" cy="352" rx="60" ry="38"/></g>
-  <g filter="url(#fb1)">
-    <circle cx="76" cy="346" r="17" fill="url(#fbol)"/>
-    <circle cx="102" cy="330" r="21" fill="url(#fbol)"/>
-    <circle cx="132" cy="332" r="19" fill="url(#fbol)"/>
-    <circle cx="154" cy="348" r="16" fill="url(#fbol)"/>
-    <circle cx="114" cy="364" r="22" fill="#10141f"/>
   </g>
-  <ellipse cx="100" cy="326" rx="24" ry="8" fill="#ffd97a" opacity=".4" filter="url(#fb6)"/>
+
+  <path d="M0 0 H108 V600 H0 Z" fill="url(#front-gold)" opacity=".78"/>
+  <path d="M5 44 C-2 60 8 80 27 88
+    M4 251 C-3 272 8 296 29 308"
+    fill="none" stroke="#ffe7a0" stroke-opacity=".58" stroke-width="3.5"
+    stroke-linecap="round" filter="url(#front-glow)"/>
 </svg>
