@@ -29,6 +29,11 @@
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-2);
   box-sizing: border-box;
+  /* Elke carousel-cell is een eigen paint-stage. Breakout-effecten blijven
+     hierdoor bij de actieve slide en leiden niet af op de buurkaart. */
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
 }
 
 /* De kaart zelf: 4:5 zoals de poster, in de lichte huisstijl. */

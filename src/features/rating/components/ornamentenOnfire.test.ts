@@ -11,6 +11,11 @@ import {
   ONFIRE_MEDAILLON,
   ONFIRE_MEDAILLON_NERVEN,
   ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_PLUIMEN,
+  ONFIRE_PLUIM_VERLOOP,
+  ONFIRE_RANDVLAMMEN,
+  ONFIRE_RANDVLAM_HARTEN,
+  ONFIRE_RANDVLAM_VERLOOP,
   ONFIRE_SINTELS,
   ONFIRE_VINNEN,
   ONFIRE_WATERMARK,
@@ -234,6 +239,36 @@ describe("On Fire-ornamenten (#710)", () => {
       const [wortelX, wortelY] = punten(vin.omtrek)[0];
       expect(wortelX).toBeGreaterThan(46);
       expect(wortelY).toBeGreaterThan(139 - ONFIRE_MEDAILLON.ring);
+    }
+  });
+
+  it("de achtergrondpluimen groeien achter beide kaartflanken vandaan (#834)", () => {
+    expect(ONFIRE_PLUIMEN).toHaveLength(4);
+    expect(ONFIRE_PLUIM_VERLOOP.at(-1)?.[1]).toContain(", 0)");
+    for (const d of ONFIRE_PLUIMEN) {
+      const p = punten(d);
+      const xs = p.map(([x]) => x);
+      expect(Math.min(...xs) < 0 || Math.max(...xs) > 100).toBe(true);
+      expect(p[0][0]).toBeGreaterThan(0);
+      expect(p[0][0]).toBeLessThan(100);
+      expect(Math.min(...p.map(([, y]) => y))).toBeGreaterThanOrEqual(17);
+      expect(Math.max(...p.map(([, y]) => y))).toBeLessThan(121);
+    }
+  });
+
+  it("de voorste vlammen kruisen de rand van binnen naar buiten (#834)", () => {
+    expect(ONFIRE_RANDVLAMMEN).toHaveLength(4);
+    expect(ONFIRE_RANDVLAM_HARTEN).toHaveLength(4);
+    expect(ONFIRE_RANDVLAM_VERLOOP).toHaveLength(4);
+    for (const d of ONFIRE_RANDVLAMMEN) {
+      const p = punten(d);
+      const xs = p.map(([x]) => x);
+      expect(Math.min(...xs) < 0 || Math.max(...xs) > 100).toBe(true);
+      // Begin- en eindpunt liggen binnen de kaart; de cubic-buik gaat buiten.
+      expect(p[0][0]).toBeGreaterThan(0);
+      expect(p[0][0]).toBeLessThan(100);
+      expect(p.at(-1)?.[0]).toBeGreaterThan(0);
+      expect(p.at(-1)?.[0]).toBeLessThan(100);
     }
   });
 

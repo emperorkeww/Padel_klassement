@@ -224,8 +224,11 @@ import {
   INFORM_MOTIEF_BREEDTE,
   INFORM_MOTIEF_KLEUR,
   INFORM_MOTIEF_POSITIE,
+  INFORM_STORM_ACHTER,
+  INFORM_STORM_BINNEN,
+  INFORM_STORM_VOOR,
   INFORM_TITAAN,
-  INFORM_VIN,
+  INFORM_VINNEN,
 } from "@/features/rating/components/ornamentenInform";
 import {
   ONFIRE_CREST_BAND,
@@ -238,6 +241,11 @@ import {
   ONFIRE_MEDAILLON_DIEP,
   ONFIRE_MEDAILLON_NERVEN,
   ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_PLUIMEN,
+  ONFIRE_PLUIM_VERLOOP,
+  ONFIRE_RANDVLAMMEN,
+  ONFIRE_RANDVLAM_HARTEN,
+  ONFIRE_RANDVLAM_VERLOOP,
   ONFIRE_SINTELS,
   ONFIRE_SINTEL_GLOED,
   ONFIRE_SINTEL_KERN,
@@ -283,7 +291,13 @@ const INFORM_MATERIAAL: StrengMateriaal = {
   glans: INFORM_GOUD_GLANS,
 };
 
-export type SchildVorm = "vlak" | "notch" | "punt" | "kroon" | "troon";
+export type SchildVorm =
+  | "vlak"
+  | "notch"
+  | "punt"
+  | "kroon"
+  | "goat"
+  | "troon";
 
 /** Bovenrand per divisiegroep — zelfde mapping als FutKaart.css. */
 export function schildVorm(key: TierKey | undefined): SchildVorm {
@@ -292,7 +306,7 @@ export function schildVorm(key: TierKey | undefined): SchildVorm {
     return "punt";
   // #710: de twee toptiers verschillen nu ook in silhouet — GOAT houdt de
   // kroon-crest, El Padelissimo krijgt de hoge, ceremoniële troon-crest.
-  if (key === "legende") return "kroon";
+  if (key === "legende") return "goat";
   if (key === "dictator") return "troon";
   return "notch";
 }
@@ -375,6 +389,17 @@ export function schildPad(
     C(0.52, 0.058, 0.53, 0.042, 0.56, 0.04);
     L(0.965, 0.01);
     L(1, 0.075);
+  } else if (vorm === "goat") {
+    ctx.moveTo(X(0.075), Y(0.045));
+    C(0.16, 0.014, 0.26, 0.018, 0.35, 0.022);
+    C(0.38, 0.022, 0.395, 0.006, 0.42, 0.006);
+    C(0.445, 0.01, 0.46, 0.032, 0.475, 0.032);
+    C(0.486, 0.018, 0.494, 0, 0.5, 0);
+    C(0.506, 0, 0.514, 0.018, 0.525, 0.032);
+    C(0.54, 0.032, 0.555, 0.01, 0.58, 0.006);
+    C(0.605, 0.006, 0.62, 0.022, 0.65, 0.022);
+    C(0.74, 0.018, 0.84, 0.014, 0.925, 0.045);
+    C(0.972, 0.061, 1, 0.078, 1, 0.108);
   } else if (vorm === "troon") {
     ctx.moveTo(X(0.16), Y(0.012));
     L(0.4, 0.012);
@@ -404,7 +429,10 @@ export function schildPad(
     L(0, 0.062);
     C(0, 0.028, 0.038, 0, 0.085, 0);
   } else if (vorm === "punt") L(0, 0.075);
-  else if (vorm === "troon") {
+  else if (vorm === "goat") {
+    L(0, 0.108);
+    C(0, 0.078, 0.028, 0.061, 0.075, 0.045);
+  } else if (vorm === "troon") {
     L(0, 0.085);
     L(0.16, 0.012);
   } else {
@@ -486,6 +514,37 @@ export interface FutKaartKleuren {
    *  en dus rondom loodrecht op de rand staan — spiegel van de
    *  repeating-conic-laag op .fut-kaart__zijde. */
   frameRibbels?: boolean;
+  /** Dikte van frame, liner en keyline als fracties van de kaartbreedte
+   *  (#834). De basiswaarden spiegelen 3/1,5/1 CSS-px op een kaart van 210px;
+   *  specials kunnen zo een zwaardere, fysieke lijst krijgen zonder vaste
+   *  posterpixels. */
+  randDiktes?: readonly [frame: number, liner: number, keyline: number];
+  /** Zachte halo buiten het schild (#834), als `[blurfractie, kleur]`. De
+   *  fractie rekent tegen de kaartbreedte, gelijk aan de CSS-calc op
+   *  --fut-kw in --kaart-randgloed. */
+  randGloed?: readonly [number, string];
+  /** Kleurwaas die vanuit de vier framezijden het vlak in oplost (#834).
+   *  De geometrie is gedeeld met .fut-kaart__randwaas; registers geven alleen
+   *  hun eigen materiaalalpha's door. */
+  randWaas?: {
+    links?: string;
+    rechts?: string;
+    boven?: string;
+    onder?: string;
+  };
+  /** Thematische concentrische achtergrondbogen (#834), als fracties van het
+   *  vlak. Ze leggen visuele massa naast het portret zonder de tekstband te
+   *  vullen; spiegel van de extra radial-gradients op GOAT. */
+  achtergrondRingen?: {
+    cx: number;
+    cy: number;
+    kleur: string;
+    stralen: readonly number[];
+  };
+  /** Asymmetrische kleurclusters en glasfacetten van Big Daddy (#834).
+   *  Staat los van `textuur`, zodat een premium divisie zijn stralenkrans
+   *  onder de editie behoudt — dezelfde cascade als in CSS. */
+  feestFacetten?: boolean;
   /** Echo-contour (#710): het schildpad nog eens, verschoven gevuld achter
    *  het frame — spiegel van de --kaart-echo drop-shadow(dx dy 0 kleur).
    *  Offsets als fractie van de kaartbreedte, zoals de CSS-calc op --fut-kw. */
@@ -508,6 +567,10 @@ export interface FutKaartKleuren {
      *  preserveAspectRatio="none". `breedte`/`positie` doen dan niets. */
     vullend?: boolean;
   };
+  /** Tweede vlak-motief (#834, In-Form): de storm-binnenlaag óver het
+   *  gewone motief — spiegel van de tweede FutKaartMotief in FutKaart.tsx.
+   *  Zelfde vorm als `motief`, getekend direct erna. */
+  motief2?: FutKaartKleuren["motief"];
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
    *  Dictator en Big Daddy hebben daarnaast een vóór-liggende laag
@@ -574,6 +637,20 @@ export function drawKaartSchild(
   if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);  if (kleuren.ornament === "kampioen") drawKampioenOrnament(ctx, x, y, w);
   if (kleuren.ornament === "pias") drawPiasAchter(ctx, x, y, w);  if (kleuren.ornament === "piet") drawPietAchter(ctx, x, y, w);  if (kleuren.ornament === "inform") drawInformAchter(ctx, x, y, w);  if (kleuren.ornament === "onfire") drawOnfireAchter(ctx, x, y, w);
 
+  // Zachte randhalo (#834): dezelfde schildvulling als het frame, maar alleen
+  // zijn schaduw blijft zichtbaar nadat het echte frame eroverheen is gezet.
+  // Zo volgt de gloed elk schildsilhouet zonder een rechthoekige blur.
+  if (kleuren.randGloed) {
+    const [blur, kleur] = kleuren.randGloed;
+    ctx.save();
+    ctx.shadowColor = kleur;
+    ctx.shadowBlur = blur * w;
+    schildPad(ctx, x, y, w, h, vorm);
+    ctx.fillStyle = kleur;
+    ctx.fill();
+    ctx.restore();
+  }
+
   // Echo-contour (#710): het silhouet nog eens, verschoven — spiegel van de
   // --kaart-echo drop-shadow, die in de DOM ná de clip werkt en dus exact
   // het schild volgt.
@@ -632,8 +709,24 @@ export function drawKaartSchild(
     ctx.restore();
   }
 
+  // De laagdiktes schalen met de kaart. De defaults reconstrueren de oude
+  // 6 → 7,5 → 9 canvas-px op de 420px-poster; #834 maakt de zes specials
+  // bewust iets zwaarder, zoals de meervoudige lijsten in de referenties.
+  const [frameDikte, linerDikte, keylineDikte] =
+    kleuren.randDiktes ?? [1 / 70, 1 / 280, 1 / 280];
+  const linerInset = frameDikte * w;
+  const keylineInset = linerInset + linerDikte * w;
+  const vlakInset = keylineInset + keylineDikte * w;
+
   // Liner (donkere binnenrand).
-  schildPad(ctx, x + 6, y + 6, w - 12, h - 12, vorm);
+  schildPad(
+    ctx,
+    x + linerInset,
+    y + linerInset,
+    w - linerInset * 2,
+    h - linerInset * 2,
+    vorm,
+  );
   ctx.fillStyle = kleuren.liner;
   ctx.fill();
 
@@ -641,16 +734,23 @@ export function drawKaartSchild(
   // .fut-kaart__keyline (de vlak-inset van 9px hieronder maakt de lijn
   // ~1.5px dik).
   if (kleuren.keyline) {
-    schildPad(ctx, x + 7.5, y + 7.5, w - 15, h - 15, vorm);
+    schildPad(
+      ctx,
+      x + keylineInset,
+      y + keylineInset,
+      w - keylineInset * 2,
+      h - keylineInset * 2,
+      vorm,
+    );
     ctx.fillStyle = kleuren.keyline;
     ctx.fill();
   }
 
   // Vlak, geclipt: metaal (of special-diepte) + topglans + sheen.
-  const fx = x + 9;
-  const fy = y + 9;
-  const fw = w - 18;
-  const fh = h - 18;
+  const fx = x + vlakInset;
+  const fy = y + vlakInset;
+  const fw = w - vlakInset * 2;
+  const fh = h - vlakInset * 2;
   ctx.save();
   schildPad(ctx, fx, fy, fw, fh, vorm);
   ctx.clip();
@@ -710,6 +810,46 @@ export function drawKaartSchild(
     ctx.restore();
   }
 
+  // Randwaas (#834): vier elliptische verlopen trekken de framekleur het vlak
+  // in. Dit staat boven achtergrond/textuur en onder motief, sheen en inkt —
+  // dezelfde laagvolgorde als .fut-kaart__randwaas in de DOM.
+  if (kleuren.randWaas) {
+    const ellips = (
+      cx: number,
+      cy: number,
+      rx: number,
+      ry: number,
+      kleur: string | undefined,
+    ) => {
+      if (!kleur) return;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(rx, ry);
+      const waas = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+      waas.addColorStop(0, kleur);
+      waas.addColorStop(1, rgba(kleur, 0));
+      ctx.fillStyle = waas;
+      ctx.fillRect(-1, -1, 2, 2);
+      ctx.restore();
+    };
+    ellips(fx, fy + fh * 0.48, fw * 0.42, fh * 0.76, kleuren.randWaas.links);
+    ellips(
+      fx + fw,
+      fy + fh * 0.52,
+      fw * 0.42,
+      fh * 0.76,
+      kleuren.randWaas.rechts,
+    );
+    ellips(fx + fw * 0.5, fy, fw * 0.78, fh * 0.3, kleuren.randWaas.boven);
+    ellips(
+      fx + fw * 0.5,
+      fy + fh,
+      fw * 0.76,
+      fh * 0.34,
+      kleuren.randWaas.onder,
+    );
+  }
+
   // Binnenlijnen (#710): geclipte ringen langs het vlak — spiegel van de
   // inset-schaduwen in --kaart-binnenlijn. Breedste eerst (de CSS somt
   // smal → breed op en de eerste schaduw wint); door de actieve clip blijft
@@ -727,6 +867,7 @@ export function drawKaartSchild(
   // Vlak-motief (#710): het geëtste watermerk, exact de DOM-laagvolgorde —
   // boven achtergrond, gloed en binnenlijnen, onder sheen en textuur.
   if (kleuren.motief) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief);
+  if (kleuren.motief2) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief2);
 
   const sheen = ctx.createLinearGradient(
     fx,
@@ -766,6 +907,51 @@ export function drawKaartSchild(
       ctx.arc(cx, cy, R, a1, a2);
       ctx.closePath();
       ctx.fill();
+    }
+  }
+
+  // Feestfacetten (#834, Big Daddy): asymmetrische kleurclusters en hoekige
+  // glasvlakken langs de flanken. De lage alpha en het open midden spiegelen
+  // de CSS-laag en houden rating, avatar en naamplaat rustig.
+  if (kleuren.feestFacetten) {
+    const stippen = [
+      [0.08, 0.28, 0.03, "rgba(221, 107, 162, 0.16)"],
+      [0.92, 0.42, 0.024, "rgba(201, 154, 63, 0.13)"],
+    ] as const;
+    for (const [cx, cy, r, kleur] of stippen) {
+      ctx.beginPath();
+      ctx.arc(fx + fw * cx, fy + fh * cy, fw * r, 0, Math.PI * 2);
+      ctx.fillStyle = kleur;
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(221, 107, 162, 0.07)";
+    for (let i = 0; i < 5; i++) {
+      const cy = fy + fh * (0.12 + i * 0.105);
+      ctx.beginPath();
+      ctx.moveTo(fx + fw * 0.78, cy);
+      ctx.lineTo(fx + fw, cy + fh * 0.045);
+      ctx.lineTo(fx + fw, cy + fh * 0.105);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const flank = ctx.createLinearGradient(fx, fy, fx + fw, fy + fh);
+    flank.addColorStop(0, "rgba(221, 107, 162, 0.09)");
+    flank.addColorStop(0.2, "rgba(221, 107, 162, 0)");
+    flank.addColorStop(0.72, "rgba(201, 154, 63, 0)");
+    flank.addColorStop(1, "rgba(201, 154, 63, 0.07)");
+    ctx.fillStyle = flank;
+    ctx.fillRect(fx, fy, fw, fh);
+  }
+
+  if (kleuren.achtergrondRingen) {
+    const { cx, cy, kleur, stralen: ringStralen } =
+      kleuren.achtergrondRingen;
+    ctx.strokeStyle = kleur;
+    ctx.lineWidth = Math.max(1, fw * 0.006);
+    for (const straal of ringStralen) {
+      ctx.beginPath();
+      ctx.arc(fx + fw * cx, fy + fh * cy, fw * straal, 0, Math.PI * 2);
+      ctx.stroke();
     }
   }
 
@@ -866,10 +1052,37 @@ function goudPad(
   ctx.restore();
 }
 
-/** In-Form, áchter de kaart (#710): de twee slanke vinnen langs de onderste
- *  zijranden plus de bliksemcrest op de as. Eén helft plus zijn spiegeling om
- *  x=50, net als de <use transform> in de DOM-defs; de crest staat op de as en
- *  wordt dus niet gespiegeld. Units zijn kaart-units (100 breed). */
+/** Losse ornamentpaden met eigen kleur per pad (#834): de stormwolken en
+ *  bliksems van In-Form — spiegel van `StormPaden` in FutKaart.tsx. Verwacht
+ *  een reeds naar kaart-units geschaalde context. */
+function tekenStormPaden(
+  ctx: CanvasRenderingContext2D,
+  paden: readonly OrnamentPad[],
+) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const pad of paden) {
+    const p = new Path2D(pad.d);
+    ctx.globalAlpha = pad.alpha ?? 1;
+    if (pad.soort === "vlak") {
+      ctx.fillStyle = pad.kleur ?? "#000";
+      ctx.fill(p);
+    } else {
+      ctx.strokeStyle = pad.kleur ?? "#000";
+      ctx.lineWidth = pad.breedte ?? 1;
+      ctx.stroke(p);
+    }
+  }
+  ctx.restore();
+}
+
+/** In-Form, áchter de kaart (#710, storm sinds #834): eerst de stormwolken
+ *  met de hoofdbliksem (asymmetrisch, massa rechts — bewust niet gespiegeld),
+ *  dan de twee slanke vinnen langs de onderste zijranden plus de bliksemcrest
+ *  op de as. Eén helft plus zijn spiegeling om x=50, net als de
+ *  <use transform> in de DOM-defs; de crest staat op de as en wordt dus niet
+ *  gespiegeld. Units zijn kaart-units (100 breed). */
 function drawInformAchter(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -880,13 +1093,16 @@ function drawInformAchter(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
+  tekenStormPaden(ctx, INFORM_STORM_ACHTER);
   for (const gespiegeld of [false, true]) {
     ctx.save();
     if (gespiegeld) {
       ctx.translate(100, 0);
       ctx.scale(-1, 1);
     }
-    strokeStreng(ctx, INFORM_VIN, 0.62, INFORM_MATERIAAL);
+    INFORM_VINNEN.forEach((vin, index) =>
+      strokeStreng(ctx, vin, index === 0 ? 0.62 : 0.46, INFORM_MATERIAAL),
+    );
     ctx.restore();
   }
   goudPad(
@@ -945,6 +1161,9 @@ function drawInformVoor(
     INFORM_GOUD_CONTOUR,
     INFORM_GOUD_GLANS,
   );
+  // Storm-voorlaag (#834): de wolkendelen en bliksemsegmenten die óver het
+  // frame lopen — dezelfde paden als de DOM-voorlaag.
+  tekenStormPaden(ctx, INFORM_STORM_VOOR);
   ctx.restore();
 }
 
@@ -1302,6 +1521,15 @@ function drawOnfireAchter(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
+  const pluim = ctx.createLinearGradient(0, 15, 0, 120);
+  for (const [offset, kleur] of ONFIRE_PLUIM_VERLOOP)
+    pluim.addColorStop(offset, kleur);
+  ONFIRE_PLUIMEN.forEach((d, index) => {
+    ctx.globalAlpha = index % 2 === 0 ? 0.96 : 0.82;
+    ctx.fillStyle = pluim;
+    ctx.fill(new Path2D(d));
+  });
+  ctx.globalAlpha = 1;
   for (const gespiegeld of [false, true]) {
     ctx.save();
     if (gespiegeld) {
@@ -1326,6 +1554,29 @@ function drawOnfireVoor(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
+
+  // Voorste randvlammen (#834): wortel en staart liggen binnen het schild,
+  // de buik erbuiten. Omdat drawKaartOrnamentVoor ná de vlakclip komt, lopen
+  // ze in de poster net als in de DOM daadwerkelijk over alle randlagen heen.
+  const randVlam = ctx.createLinearGradient(0, 26, 0.35, 106);
+  for (const [offset, kleur] of ONFIRE_RANDVLAM_VERLOOP)
+    randVlam.addColorStop(offset, kleur);
+  ONFIRE_RANDVLAMMEN.forEach((d, index) => {
+    ctx.globalAlpha = index % 2 === 0 ? 0.96 : 0.84;
+    ctx.fillStyle = randVlam;
+    const pad = new Path2D(d);
+    ctx.fill(pad);
+    ctx.strokeStyle = ONFIRE_KOPER.contour;
+    ctx.lineWidth = 0.32;
+    ctx.stroke(pad);
+  });
+  const hart = ctx.createLinearGradient(0, 106, 0, 26);
+  for (const [offset, kleur] of ONFIRE_GLOED_VERLOOP)
+    hart.addColorStop(offset, kleur);
+  ctx.globalAlpha = 0.88;
+  ctx.fillStyle = hart;
+  for (const d of ONFIRE_RANDVLAM_HARTEN) ctx.fill(new Path2D(d));
+  ctx.globalAlpha = 1;
 
   // Crest: verkoolde stalen plaat met koperen rand, de chevron eronder en de
   // gesmede vlam erin. De koperen rand van de plaat is in de DOM een
@@ -2537,6 +2788,8 @@ export interface KaartSkin {
   lijn: string;
   /** --editie-kleur: de editie-regel; valt in de CSS terug op --kaart-ink. */
   editieKleur: string;
+  /** Horizontaal verloop achter de naam, spiegel van --kaart-naamplaat. */
+  naamplaat?: ReadonlyArray<readonly [number, string]>;
 }
 
 /** Eén editie-register uit FutKaart.css, in dezelfde volgorde als daar
@@ -2563,14 +2816,20 @@ interface EditieRegister {
   inkSoft: string;
   lijn: string;
   editieKleur: string;
+  naamplaat?: KaartSkin["naamplaat"];
   textuur?: VlakTextuur;
+  feestFacetten?: FutKaartKleuren["feestFacetten"];
   /** Rand- en ornamentmechanismen (#710) die een editie kan meebrengen. Tot
    *  #710 hing dit alleen aan de tier (de GOAT); de editie-registers hebben ze
    *  nu ook, en een editie wint van de tier — zoals in de CSS-cascade. De
    *  velden zijn letterlijk die van `FutKaartKleuren`. */
   echo?: FutKaartKleuren["echo"];
+  randGloed?: FutKaartKleuren["randGloed"];
+  randWaas?: FutKaartKleuren["randWaas"];
+  randDiktes?: FutKaartKleuren["randDiktes"];
   binnenlijn?: FutKaartKleuren["binnenlijn"];
   motief?: FutKaartKleuren["motief"];
+  motief2?: FutKaartKleuren["motief2"];
   ornament?: FutKaartKleuren["ornament"];
   ornamentVoor?: FutKaartKleuren["ornamentVoor"];
   vignet?: FutKaartKleuren["vignet"];
@@ -2618,6 +2877,15 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     inkSoft: "#a04a72",
     lijn: "#ff3377",
     editieKleur: "#c2447c",
+    feestFacetten: true,
+    randGloed: [0.02, "rgba(221, 107, 162, 0.3)"],
+    randWaas: {
+      links: "rgba(221, 107, 162, 0.2)",
+      rechts: "rgba(201, 154, 63, 0.14)",
+      boven: "rgba(255, 238, 246, 0.42)",
+      onder: "rgba(143, 53, 96, 0.18)",
+    },
+    randDiktes: [0.02, 0.01, 0.005],
     echo: [[0.016, 0.021, "rgba(226, 154, 106, 0.8)"]],
     binnenlijn: [
       [1, "rgba(255, 245, 250, 0.85)"],
@@ -2632,6 +2900,13 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     },
     ornament: "bigdaddy",
     ornamentVoor: "bigdaddy",
+    naamplaat: [
+      [0, "rgba(221, 107, 162, 0)"],
+      [0.14, "rgba(221, 107, 162, 0.12)"],
+      [0.5, "rgba(255, 255, 255, 0.42)"],
+      [0.86, "rgba(201, 154, 63, 0.12)"],
+      [1, "rgba(201, 154, 63, 0)"],
+    ],
   },
   // Kampioen (#625, hertekend in #710): platina-wit met lauwergroen, plus het
   // eremedaille-register — lauwerkrans en linten achter het schild, de
@@ -2681,9 +2956,12 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   inform: {
     frame: [
       [0, "#f7dfa0"],
-      [0.45, "#8a6a1c"],
-      [0.7, "#ffe9ac"],
-      [1, "#4c390a"],
+      [0.14, "#708899"],
+      [0.32, "#c59f48"],
+      [0.55, "#ffe9ac"],
+      [0.72, "#68507b"],
+      [0.84, "#8a6a1c"],
+      [1, "#3e2e07"],
     ],
     liner: "#0a0c14",
     vlak: ["#1b2235", "#0f121d", "#05060a"],
@@ -2710,6 +2988,19 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#ffd56b",
     editieKleur: "#f2cf7d",
     textuur: "titanium",
+    randGloed: [0.018, "rgba(255, 213, 107, 0.3)"],
+    randWaas: {
+      links: "rgba(240, 199, 102, 0.16)",
+      rechts: "rgba(255, 213, 107, 0.13)",
+      boven: "rgba(255, 226, 150, 0.19)",
+      onder: "rgba(138, 106, 28, 0.14)",
+    },
+    randDiktes: [0.02, 0.01, 0.005],
+    echo: [
+      [0.009, 0, "rgba(138, 106, 28, 0.62)"],
+      [-0.009, 0, "rgba(138, 106, 28, 0.62)"],
+      [0, 0.012, "rgba(6, 8, 14, 0.9)"],
+    ],
     binnenlijn: [
       [1, "rgba(255, 226, 150, 0.7)"],
       [2.5, "rgba(6, 8, 14, 0.95)"],
@@ -2721,6 +3012,24 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       breedte: INFORM_MOTIEF_BREEDTE,
       positie: INFORM_MOTIEF_POSITIE,
     },
+    // Storm-binnenlaag (#834): vullend in kaart-units, zoals het pias-motief;
+    // breedte en positie doen niets, maar het veld is verplicht.
+    motief2: {
+      paden: INFORM_STORM_BINNEN,
+      kleur: INFORM_MOTIEF_KLEUR,
+      breedte: 1,
+      positie: 0,
+      vullend: true,
+    },
+    ornament: "inform",
+    ornamentVoor: "inform",
+    naamplaat: [
+      [0, "rgba(6, 8, 14, 0)"],
+      [0.14, "rgba(6, 8, 14, 0.72)"],
+      [0.5, "rgba(64, 54, 26, 0.48)"],
+      [0.86, "rgba(6, 8, 14, 0.72)"],
+      [1, "rgba(6, 8, 14, 0)"],
+    ],
   },
   // On-Fire (#632, herzien in #710): verhit koper en rosébrons op donker
   // mahonie. De hitteglans uit de CSS staat op de poster stil — een PNG heeft
@@ -2733,7 +3042,8 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       [0, "#f6ddc4"],
       [0.30, "#cf743b"],
       [0.55, "#e8b48d"],
-      [0.80, "#8c4217"],
+      [0.76, "#8c4217"],
+      [0.89, "#6e3143"],
       [1, "#3e1608"],
     ],
     liner: "#180a05",
@@ -2775,6 +3085,21 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#ff5500",
     editieKleur: "#ffb35c",
     textuur: "groeven",
+    randGloed: [0.024, "rgba(255, 104, 28, 0.38)"],
+    randWaas: {
+      links: "rgba(255, 111, 35, 0.2)",
+      rechts: "rgba(255, 143, 62, 0.22)",
+      boven: "rgba(255, 190, 112, 0.16)",
+      onder: "rgba(255, 85, 0, 0.3)",
+    },
+    randDiktes: [0.02, 0.01, 0.005],
+    naamplaat: [
+      [0, "rgba(20, 5, 1, 0)"],
+      [0.13, "rgba(20, 5, 1, 0.72)"],
+      [0.5, "rgba(105, 30, 7, 0.56)"],
+      [0.87, "rgba(20, 5, 1, 0.72)"],
+      [1, "rgba(20, 5, 1, 0)"],
+    ],
   },
   // Pias (#631/#705/#710): mat kraftkarton met confetti — vlak frame met bleke
   // snijkant, warme diffuse waas i.p.v. de witte specular-baan. Sinds #710 ook
@@ -2798,6 +3123,15 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#a82e1c",
     editieKleur: "#8c2a17",
     textuur: "confetti",
+    randGloed: [0.014, "rgba(140, 42, 23, 0.22)"],
+    randWaas: {
+      links: "rgba(140, 42, 23, 0.14)",
+      rechts: "rgba(198, 158, 92, 0.12)",
+      boven: "rgba(216, 188, 124, 0.14)",
+      onder: "rgba(105, 47, 39, 0.19)",
+    },
+    randDiktes: [0.02, 0.01, 0.005],
+    echo: [[0.011, 0.014, "rgba(105, 47, 39, 0.58)"]],
     binnenlijn: [
       [2, "rgba(105, 47, 39, 0.62)"],
       [3, "rgba(198, 158, 92, 0.55)"],
@@ -2812,6 +3146,13 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       positie: 0,
       vullend: true,
     },
+    naamplaat: [
+      [0, "rgba(105, 47, 39, 0)"],
+      [0.14, "rgba(105, 47, 39, 0.12)"],
+      [0.5, "rgba(255, 246, 222, 0.2)"],
+      [0.86, "rgba(105, 47, 39, 0.12)"],
+      [1, "rgba(105, 47, 39, 0)"],
+    ],
   },
   // Zwarte Piet (#645/#705/#710): speelkaart-wit met vlak mat lakframe; de bone
   // liner is de witte snijkant van het kaartkarton. Sheen uit. Sinds #710 de
@@ -2832,6 +3173,14 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     lijn: "#a2977a",
     editieKleur: "#a8271b",
     textuur: "speelkaart",
+    randGloed: [0.012, "rgba(85, 81, 74, 0.24)"],
+    randWaas: {
+      links: "rgba(45, 42, 36, 0.12)",
+      rechts: "rgba(85, 81, 74, 0.1)",
+      boven: "rgba(255, 250, 235, 0.24)",
+      onder: "rgba(168, 39, 27, 0.1)",
+    },
+    randDiktes: [0.02, 0.01, 0.005],
     echo: [[0.013, 0.017, "#55514a"]],
     binnenlijn: [
       [1.5, "rgba(45, 42, 36, 0.5)"],
@@ -2845,6 +3194,13 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     },
     ornament: "piet",
     ornamentVoor: "piet",
+    naamplaat: [
+      [0, "rgba(45, 42, 36, 0)"],
+      [0.14, "rgba(45, 42, 36, 0.1)"],
+      [0.5, "rgba(255, 250, 235, 0.28)"],
+      [0.86, "rgba(168, 39, 27, 0.08)"],
+      [1, "rgba(168, 39, 27, 0)"],
+    ],
   },
 };
 
@@ -2953,6 +3309,10 @@ export function kaartSkin(
         sheenStops: r.sheenStops,
         vignet: r.vignet,
         echo: r.echo,
+        randGloed: r.randGloed,
+        randWaas: r.randWaas,
+        randDiktes: r.randDiktes,
+        feestFacetten: r.feestFacetten,
         binnenlijn: r.binnenlijn,
         keyline: mix(r.lijn, "#fff8e8", 0.75),
         stralen,
@@ -2972,6 +3332,7 @@ export function kaartSkin(
         // In-Form-navy vloeken). Sinds #710 mág een editie er zélf een
         // meebrengen. Spiegel van FutKaart.tsx.
         motief: r.motief,
+        motief2: r.motief2,
         // Het ornament volgt de andere regel: editie boven tier. Een
         // GOAT-in-vorm draagt dus de In-Form-bliksem i.p.v. zijn hoorns — de
         // editie is het nieuws van deze week, het monument is de constante.
@@ -2988,6 +3349,7 @@ export function kaartSkin(
       inkSoft: r.inkSoft,
       lijn: r.lijn,
       editieKleur: r.editieKleur,
+      naamplaat: r.naamplaat,
     };
   }
 
@@ -2999,9 +3361,13 @@ export function kaartSkin(
     return {
       kleuren: {
         frame: [
-          [0, "#ffd3de"],
-          [0.4, "#c25573"],
-          [0.66, "#fff0f4"],
+          [0, "#ffe2ea"],
+          [0.14, "#c9b9e8"],
+          [0.29, "#b03a55"],
+          [0.45, "#ffd0db"],
+          [0.56, "#ffedf2"],
+          [0.68, "#b895c8"],
+          [0.82, "#5c162b"],
           [1, "#4a1526"],
         ],
         frameRibbels: true,
@@ -3023,6 +3389,20 @@ export function kaartSkin(
         stralen: false,
         satijnAlpha: 0.04,
         satijnBaan: ["rgba(247, 134, 159, 0.055)", 5.6, 15.4],
+        randDiktes: [0.02, 0.01, 0.005],
+        randGloed: [0.02, "rgba(226, 133, 158, 0.32)"],
+        randWaas: {
+          links: "rgba(226, 133, 158, 0.16)",
+          rechts: "rgba(201, 185, 232, 0.13)",
+          boven: "rgba(255, 187, 204, 0.2)",
+          onder: "rgba(112, 35, 61, 0.25)",
+        },
+        achtergrondRingen: {
+          cx: 0.68,
+          cy: 0.27,
+          kleur: "rgba(255, 187, 204, 0.1)",
+          stralen: [0.21, 0.3],
+        },
         echo: [[0.019, 0.024, "rgba(226, 133, 158, 0.75)"]],
         binnenlijn: [
           [1, "rgba(255, 214, 226, 0.72)"],
@@ -3042,6 +3422,13 @@ export function kaartSkin(
       inkSoft: mix(glans, "#b7a98c", 0.65),
       lijn: rgba(glans, 0.55),
       editieKleur: mix(glans, "#ffffff", 0.8),
+      naamplaat: [
+        [0, "rgba(20, 6, 9, 0)"],
+        [0.13, "rgba(20, 6, 9, 0.68)"],
+        [0.5, "rgba(112, 35, 61, 0.48)"],
+        [0.87, "rgba(20, 6, 9, 0.68)"],
+        [1, "rgba(20, 6, 9, 0)"],
+      ],
     };
   }
 
@@ -3074,6 +3461,14 @@ export function kaartSkin(
         stralenStraal: 6,
         stralenPeriode: 16,
         textuur: "brokaat",
+        randGloed: [0.018, "rgba(226, 185, 91, 0.28)"],
+        randWaas: {
+          links: "rgba(240, 199, 102, 0.12)",
+          rechts: "rgba(240, 199, 102, 0.1)",
+          boven: "rgba(242, 217, 143, 0.14)",
+          onder: "rgba(165, 35, 71, 0.24)",
+        },
+        randDiktes: [0.02, 0.01, 0.005],
         echo: [
           [0.012, 0, "rgba(58, 10, 22, 0.9)"],
           [-0.012, 0, "rgba(58, 10, 22, 0.9)"],
@@ -3097,6 +3492,13 @@ export function kaartSkin(
       inkSoft: "#cdae6e",
       lijn: "rgba(226, 194, 122, 0.5)",
       editieKleur: "#f2dda2",
+      naamplaat: [
+        [0, "rgba(20, 4, 9, 0)"],
+        [0.16, "rgba(20, 4, 9, 0.58)"],
+        [0.5, "rgba(91, 9, 28, 0.52)"],
+        [0.84, "rgba(20, 4, 9, 0.58)"],
+        [1, "rgba(20, 4, 9, 0)"],
+      ],
     };
   }
 

@@ -86,7 +86,7 @@ describe("premium glans: de laag zelf (#773)", () => {
     expect(glansVan(kaart(984, null))).toBeNull();
   });
 
-  it("de laag zit ín het vlak, ná het motief en vóór de inhoud", () => {
+  it("de laag zit ín het vlak, ná randwaas en motief en vóór de inhoud", () => {
     // Deze plek in de DOM is wat de stapeling waarmaakt: het vlak is door zijn
     // clip-path een stacking context, dus de glans (z-index −1) ligt bóven het
     // motief dat eerder staat, en ónder alle inkt. Verschuift de laag naar
@@ -97,6 +97,7 @@ describe("premium glans: de laag zelf (#773)", () => {
     // className een SVGAnimatedString in plaats van een string.
     const kinderen = [...vlak.children].map((k) => k.getAttribute("class"));
     expect(kinderen).toEqual([
+      "fut-kaart__randwaas",
       expect.stringContaining("fut-kaart__motief"),
       "fut-kaart__glans",
       "fut-kaart__naam",

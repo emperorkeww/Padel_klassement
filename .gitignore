@@ -39,3 +39,6 @@ supabase/.temp/
 # Tijdelijke scratch-bestanden en artifacts
 scratch-artifacts/
 
+
+# Storm-screenshotscript output (#834)
+screenshots/

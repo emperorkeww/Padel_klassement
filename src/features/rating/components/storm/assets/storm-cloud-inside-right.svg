@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 620">
+  <!-- Geclipte binnenmassa: dicht langs rechts, met rooktongen naar links.
+       De vorm deelt dezelfde grote volumes als de achterwolk zodat de
+       kaartrand als een doorsnede door één storm leest. -->
+  <defs>
+    <linearGradient id="inside-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#303b54"/>
+      <stop offset=".38" stop-color="#171e2d"/>
+      <stop offset=".78" stop-color="#090d16"/>
+      <stop offset="1" stop-color="#03050a"/>
+    </linearGradient>
+    <radialGradient id="inside-gold" cx=".68" cy=".34" r=".56">
+      <stop offset="0" stop-color="#ffd878" stop-opacity=".52"/>
+      <stop offset=".2" stop-color="#d39a37" stop-opacity=".2"/>
+      <stop offset=".58" stop-color="#795016" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#795016" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="inside-edge" x="-25%" y="-15%" width="150%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency=".012 .02" numOctaves="3" seed="23" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="15"/>
+    </filter>
+    <filter id="inside-soft" x="-30%" y="-25%" width="160%" height="150%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <filter id="inside-volume" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency=".021" numOctaves="4" seed="7" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="1.5" result="soft-noise"/>
+      <feDiffuseLighting in="soft-noise" surfaceScale="4" diffuseConstant=".78"
+        lighting-color="#7e8ba5" result="volume-light">
+        <feDistantLight azimuth="220" elevation="44"/>
+      </feDiffuseLighting>
+      <feComposite in="volume-light" in2="SourceAlpha" operator="in" result="clipped-light"/>
+      <feBlend in="SourceGraphic" in2="clipped-light" mode="soft-light" result="lit-cloud"/>
+      <feDisplacementMap in="lit-cloud" in2="noise" scale="13"
+        xChannelSelector="R" yChannelSelector="B"/>
+    </filter>
+    <clipPath id="inside-clip">
+      <path d="M118 12
+        C172 -10 250 8 271 43
+        C327 18 392 54 389 102
+        C432 136 421 191 389 213
+        C426 261 414 321 380 343
+        C419 391 402 451 365 470
+        C393 525 352 576 304 568
+        C270 619 194 618 166 574
+        C107 588 60 548 77 503
+        C26 476 29 417 63 390
+        C18 353 29 294 66 271
+        C22 229 38 173 77 152
+        C48 105 70 48 118 12 Z"/>
+    </clipPath>
+  </defs>
+
+  <path d="M119 11
+    C173 -10 250 8 271 43
+    C327 18 392 54 389 102
+    C432 136 421 191 389 213
+    C426 261 414 321 380 343
+    C419 391 402 451 365 470
+    C393 525 352 576 304 568
+    C270 619 194 618 166 574
+    C107 588 60 548 77 503
+    C26 476 29 417 63 390
+    C18 353 29 294 66 271
+    C22 229 38 173 77 152
+    C48 105 70 48 119 11 Z"
+    fill="url(#inside-body)" filter="url(#inside-edge)"/>
+
+  <g clip-path="url(#inside-clip)" filter="url(#inside-volume)">
+    <path d="M56 70 C119 15 214 19 258 77 C271 127 215 163 152 149 C101 139 72 110 56 70 Z"
+      fill="#35415b" opacity=".86"/>
+    <path d="M186 43 C269 12 366 47 401 113 C410 170 350 201 289 179 C236 160 207 111 186 43 Z"
+      fill="#1b2232" opacity=".92"/>
+    <path d="M40 212 C97 158 189 165 235 221 C244 270 190 301 132 286 C86 275 55 247 40 212 Z"
+      fill="#20283a" opacity=".78"/>
+    <path d="M193 177 C279 151 382 201 407 273 C401 328 338 348 280 322 C231 299 207 249 193 177 Z"
+      fill="#111722" opacity=".94"/>
+    <path d="M43 363 C102 307 193 322 230 382 C229 429 171 457 117 436 C76 420 53 393 43 363 Z"
+      fill="#171e2c" opacity=".8"/>
+    <path d="M183 328 C273 303 377 358 393 431 C382 483 317 501 262 472 C216 447 195 399 183 328 Z"
+      fill="#0d111b" opacity=".96"/>
+    <path d="M74 502 C127 453 213 468 246 527 C239 574 184 594 135 568 C102 551 82 528 74 502 Z"
+      fill="#101621" opacity=".86"/>
+    <path d="M205 458 C277 448 354 494 362 549 C339 592 275 598 236 560 C213 532 207 499 205 458 Z"
+      fill="#070a11"/>
+
+    <rect width="420" height="620" fill="url(#inside-gold)"/>
+    <path d="M275 2 C247 91 293 154 264 229 C238 298 287 359 258 431 C239 478 260 539 298 608"
+      fill="none" stroke="#f3b943" stroke-opacity=".22" stroke-width="22" filter="url(#inside-soft)"/>
+  </g>
+
+  <!-- Uitrafelende rook, zachter dan het dichte silhouet. -->
+  <path d="M106 119 C54 113 28 138 7 175 C53 161 88 175 119 205"
+    fill="none" stroke="#1a2130" stroke-opacity=".72" stroke-width="30" stroke-linecap="round" filter="url(#inside-soft)"/>
+  <path d="M89 345 C43 338 19 361 2 394 C43 384 75 398 103 423"
+    fill="none" stroke="#0f1520" stroke-opacity=".65" stroke-width="25" stroke-linecap="round" filter="url(#inside-soft)"/>
+  <path d="M278 22 C251 75 269 133 251 180
+    M283 196 C254 246 269 301 251 348"
+    fill="none" stroke="#ffe8a7" stroke-opacity=".3" stroke-width="2.4"
+    stroke-linecap="round"/>
+</svg>

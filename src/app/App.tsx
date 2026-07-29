@@ -33,6 +33,12 @@ const HeroShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/dashboard/components/HeroShowcase"))
   : null;
 
+// Dev-stage (#834): de In-Form stormkaart op vaste maat, als vast doelwit van
+// scripts/storm-screenshot.sh en de ?debugStorm=1-weergave.
+const StormShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/StormShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -77,6 +83,9 @@ function App() {
             <Route path="/dev/kaarten" element={<KaartShowcase />} />
           )}
           {HeroShowcase && <Route path="/dev/hero" element={<HeroShowcase />} />}
+          {StormShowcase && (
+            <Route path="/dev/storm" element={<StormShowcase />} />
+          )}
 
           {/* Onbekende paden terug naar de start. */}
           <Route path="*" element={<Navigate to="/" replace />} />

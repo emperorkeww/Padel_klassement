@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 400">
+  <!-- Placeholder voor storm-debris.webp (#834): een paar kleine, door de
+       storm opgetilde brokstukken — detail, nadrukkelijk géén hoofdonderwerp.
+       De naar de bliksem gekeerde rand licht goud op. -->
+  <g stroke-linejoin="round">
+    <path d="M60 58 L84 46 L92 66 L70 78 Z" fill="#12161f"/>
+    <path d="M60 58 L84 46" stroke="#d9a94e" stroke-width="2.4" fill="none" opacity=".8"/>
+    <path d="M160 120 L182 114 L188 132 L166 140 Z" fill="#0e121b"/>
+    <path d="M160 120 L182 114" stroke="#d9a94e" stroke-width="2" fill="none" opacity=".7"/>
+    <path d="M96 208 L114 198 L122 214 L104 226 Z" fill="#12161f"/>
+    <path d="M96 208 L114 198" stroke="#d9a94e" stroke-width="2" fill="none" opacity=".75"/>
+    <path d="M178 268 L194 262 L199 276 L184 283 Z" fill="#0e121b"/>
+    <path d="M178 268 L194 262" stroke="#c8974a" stroke-width="1.7" fill="none" opacity=".65"/>
+    <path d="M70 320 L86 312 L92 326 L77 335 Z" fill="#10141d"/>
+    <path d="M70 320 L86 312" stroke="#c8974a" stroke-width="1.7" fill="none" opacity=".6"/>
+    <path d="M148 356 L160 350 L165 362 L152 368 Z" fill="#0e121b"/>
+  </g>
+</svg>

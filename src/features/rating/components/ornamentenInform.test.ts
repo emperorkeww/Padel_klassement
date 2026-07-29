@@ -6,7 +6,12 @@ import {
   INFORM_CREST,
   INFORM_MEDAILLON,
   INFORM_MOTIEF,
+  INFORM_STORM_ACHTER,
+  INFORM_STORM_BINNEN,
+  INFORM_STORM_VOOR,
   INFORM_VIN,
+  INFORM_VINNEN,
+  wolk,
 } from "./ornamentenInform";
 
 /** Alle coördinaten uit een pad-string, als [x, y]-paren. Deze module schrijft
@@ -157,6 +162,9 @@ describe("In-Form-ornament (#710)", () => {
     // Vier plaatjes: drie dwarssneden, met evenveel lichte ruggen.
     expect(INFORM_VIN.ribbels).toHaveLength(3);
     expect(INFORM_VIN.ribbelGlans).toHaveLength(INFORM_VIN.ribbels.length);
+    expect(INFORM_VINNEN).toHaveLength(2);
+    expect(INFORM_VINNEN[1].ribbels).toHaveLength(2);
+    expect(INFORM_VINNEN[1].bbox.yMin).toBeGreaterThan(INFORM_VIN.bbox.yMin);
   });
 
   it("het medaillon zit in de lege kaartpunt, onder de editie-regel", () => {
@@ -205,6 +213,9 @@ describe("In-Form-ornament (#710)", () => {
   });
 
   it("is deterministisch: geen toeval in de ornamentpaden", () => {
+    expect(wolk({ cx: 50, cy: 50, rx: 10, ry: 8, fase: 1 })).toBe(
+      wolk({ cx: 50, cy: 50, rx: 10, ry: 8, fase: 1 }),
+    );
     // De onregelmatige straal van de pulse-ring komt uit sinussen, niet uit
     // Math.random — anders zouden DOM-kaart, deel-poster en deze test elk een
     // andere boog krijgen. Dezelfde eis als bij de vezelkorrel van de pias
@@ -220,5 +231,116 @@ describe("In-Form-ornament (#710)", () => {
     const code = bron.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
     expect(code).not.toMatch(/Math\.random/);
     expect(bliksem(50, 20, 10, 16)).toBe(bliksem(50, 20, 10, 16));
+  });
+});
+
+describe("stormlagen (#834)", () => {
+  const vlakken = (paden: typeof INFORM_STORM_ACHTER) =>
+    paden.filter((p) => p.soort === "vlak");
+  const lijnen = (paden: typeof INFORM_STORM_ACHTER) =>
+    paden.filter((p) => p.soort === "lijn");
+  const zwaartepunt = (d: string) => {
+    const p = punten(d);
+    return p.reduce((som, [x]) => som + x, 0) / p.length;
+  };
+
+  it("wolk() sluit glad: een gesloten pad rond het gevraagde middelpunt", () => {
+    const d = wolk({ cx: 40, cy: 60, rx: 10, ry: 8, fase: 2 });
+    expect(d.startsWith("M ")).toBe(true);
+    expect(d.endsWith("Z")).toBe(true);
+    const g = grenzen([d]);
+    // De harmonischen golven de straal maximaal factor 1,32 op en neer.
+    expect(g.xMin).toBeGreaterThan(40 - 10 * 1.32);
+    expect(g.xMax).toBeLessThan(40 + 10 * 1.32);
+    expect(g.yMin).toBeGreaterThan(60 - 8 * 1.32);
+    expect(g.yMax).toBeLessThan(60 + 8 * 1.32);
+  });
+
+  it("de achterlaag past in de ornament-viewBox en breekt rechts uit", () => {
+    const [vx, vy, vw, vh] = ORNAMENT_VIEWBOX.split(" ").map(Number);
+    const g = grenzen(INFORM_STORM_ACHTER.map((p) => p.d));
+    expect(g.xMin).toBeGreaterThan(vx);
+    expect(g.xMax).toBeLessThan(vx + vw);
+    expect(g.yMin).toBeGreaterThan(vy);
+    expect(g.yMax).toBeLessThan(vy + vh);
+    // De massa breekt duidelijk buiten de rechterkaartrand (x=100) uit.
+    expect(g.xMax).toBeGreaterThan(115);
+    for (const p of INFORM_STORM_ACHTER)
+      expect(p.d, `NaN in ${p.d.slice(0, 40)}…`).not.toMatch(/NaN/);
+  });
+
+  it("de compositie is asymmetrisch met de massa rechts", () => {
+    // Compositie-eis uit de referentie: rechts dominant, links hooguit een
+    // subtiel secundair effect. Gemeten aan de zwaartepunten van de
+    // wolkenvlakken: ruim de meeste horen rechts van de kaart thuis.
+    const zwaartepunten = vlakken(INFORM_STORM_ACHTER).map((p) =>
+      zwaartepunt(p.d),
+    );
+    const rechts = zwaartepunten.filter((x) => x > 100).length;
+    const links = zwaartepunten.filter((x) => x < 50).length;
+    expect(links).toBeGreaterThan(0);
+    expect(rechts).toBeGreaterThan(links * 3);
+  });
+
+  it("de hoofdwolk kruist de rechterrand i.p.v. ernaast te staan", () => {
+    // Dé eis uit de instructies: geen losse wolk náást de kaart, maar een
+    // massa die de rand kruist — deels achter het frame (x < 100, achter de
+    // kaart dus onzichtbaar), deels erbuiten.
+    const kruisend = vlakken(INFORM_STORM_ACHTER).filter((p) => {
+      const g = grenzen([p.d]);
+      return g.xMin < 95 && g.xMax > 105;
+    });
+    expect(kruisend.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("bliksems verbinden het kaartvlak met de uitgebroken wolk", () => {
+    // Achterlaag: de hoofdbliksem weeft om x=100 heen.
+    const achterKruisend = lijnen(INFORM_STORM_ACHTER).filter((p) => {
+      const g = grenzen([p.d]);
+      return g.xMin < 100 && g.xMax > 100;
+    });
+    expect(achterKruisend.length).toBeGreaterThan(0);
+    // Voorlaag: minstens één segment loopt plaatselijk óver het frame.
+    const voorKruisend = lijnen(INFORM_STORM_VOOR).filter((p) => {
+      const g = grenzen([p.d]);
+      return g.xMin < 100 && g.xMax > 100;
+    });
+    expect(voorKruisend.length).toBeGreaterThan(0);
+    // En de binnenlaag heeft eigen filamenten die naar de rechterrand trekken.
+    expect(lijnen(INFORM_STORM_BINNEN).length).toBeGreaterThan(0);
+  });
+
+  it("de voorlaag dekt de kaartinformatie niet af", () => {
+    // De tekstband (naamplaat, divisieregel, editie-regel) leeft grofweg op
+    // x 18–82 × v 74–112; de voorste wolkendelen horen in de framezone langs
+    // de rechterrand plus één pufje over de linkeronderrand.
+    const inTekstband = INFORM_STORM_VOOR.flatMap((p) => punten(p.d)).filter(
+      ([x, y]) => x > 18 && x < 82 && y > 74 && y < 112,
+    );
+    expect(inTekstband).toHaveLength(0);
+    // En de viewBox-grens geldt ook hier.
+    const [vx, vy, vw, vh] = ORNAMENT_VIEWBOX.split(" ").map(Number);
+    const g = grenzen(INFORM_STORM_VOOR.map((p) => p.d));
+    expect(g.xMin).toBeGreaterThan(vx);
+    expect(g.xMax).toBeLessThan(vx + vw);
+    expect(g.yMin).toBeGreaterThan(vy);
+    expect(g.yMax).toBeLessThan(vy + vh);
+  });
+
+  it("de binnenlaag begint ín het kaartvlak en loopt naar de rand", () => {
+    // De wolk moet zichtbaar ín de rechterbovenhoek van het vlak beginnen:
+    // een flink deel van de punten ligt binnen x<100, en de puffen mogen door
+    // x=100 heen (schildclip en canvas-clip snijden identiek af).
+    const alle = INFORM_STORM_BINNEN.flatMap((p) => punten(p.d));
+    const binnen = alle.filter(([x]) => x < 100).length;
+    expect(binnen / alle.length).toBeGreaterThan(0.4);
+    // Bovenste helft van het vlak: de storm komt uit de rechterbovenkant.
+    const g = grenzen(INFORM_STORM_BINNEN.map((p) => p.d));
+    expect(g.yMin).toBeLessThan(10);
+    expect(g.yMax).toBeLessThan(75);
+    // En hij blijft uit de linkerhelft, waar het eloblok leeft.
+    expect(g.xMin).toBeGreaterThan(55);
+    for (const p of INFORM_STORM_BINNEN)
+      expect(p.d, `NaN in ${p.d.slice(0, 40)}…`).not.toMatch(/NaN/);
   });
 });

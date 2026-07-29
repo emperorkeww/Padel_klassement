@@ -25,6 +25,9 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-1);
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
 }
 .kaart-showcase__maat .fut-kaart {
   --fut-kw: var(--maat, 116px);

@@ -1,0 +1,167 @@
+/* In-Form stormeffect (#834).
+   Elke laag rendert exact hetzelfde transparante master-artwork. Alle
+   geometrie komt uit deze vijf gedeelde custom properties; back, inside en
+   front mogen hier bewust géén eigen positionering of schaal krijgen. */
+
+.fut-kaart.fut-kaart--inform {
+  isolation: isolate;
+  --storm-master-left: 25%;
+  --storm-master-top: -16%;
+  --storm-master-width: 110%;
+  --storm-master-scale: 1;
+  --storm-master-rotate: 0deg;
+  --storm-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.inform-storm {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+/* Expliciet register binnen de preserve-3d flipper. Zonder eigen register
+   kon de gefilterde kaartzijde als één compositielaag alsnog boven de
+   frontuitsneden belanden. */
+.fut-kaart.fut-kaart--inform .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 1;
+}
+
+.inform-storm__master {
+  position: absolute;
+  left: var(--storm-master-left);
+  top: var(--storm-master-top);
+  width: var(--storm-master-width);
+  transform: rotate(var(--storm-master-rotate))
+    scale(var(--storm-master-scale));
+  transform-origin: 0 0;
+}
+
+.inform-storm__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.01) rgba(255, 246, 213, 0.3)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.028) rgba(237, 177, 74, 0.18)
+    );
+}
+
+/* Laag 1 — volledige master achter de kaart. Het schild zelf maskeert het
+   midden af, waardoor de brede massa alleen boven en rechts uitsteekt. */
+.inform-storm--achter {
+  z-index: 0;
+}
+.inform-storm--achter .inform-storm__master {
+  opacity: 1;
+}
+
+/* Laag 2 — gemonteerd in .fut-kaart__vlak. Het negatieve register heft
+   uitsluitend de drie bestaande fram-insets op: hierdoor heeft de master
+   exact dezelfde 100×139 kaartstage als de back/front-instanties. De
+   bovenliggende .fut-kaart__vlak behoudt zijn bestaande clip-path:
+   var(--schild), dus dit is het exacte, responsieve kaartmasker. */
+.inform-storm--binnen {
+  inset: calc(-1 * var(--storm-master-inset));
+  z-index: -1;
+}
+.inform-storm--binnen .inform-storm__master {
+  opacity: 0.97;
+}
+
+/* Laag 3 — dezelfde master en transform, maar alleen twee organische
+   uitsneden uit storm-front-mask.svg schilderen vóór het frame. Zo ontstaat
+   een leesbare back/inside/front-occlusie zonder een losse voorgrondwolk. */
+.inform-storm--voor {
+  z-index: 5;
+}
+.inform-storm--voor .inform-storm__master {
+  opacity: 1;
+  -webkit-mask: url("./assets/in-form/storm-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/in-form/storm-front-mask.svg") center / 100% 100%
+    no-repeat;
+  filter: drop-shadow(
+    calc(var(--fut-kw) * -0.014) calc(var(--fut-kw) * 0.008)
+      calc(var(--fut-kw) * 0.012) rgba(2, 4, 10, 0.78)
+  );
+}
+.inform-storm--voor .inform-storm__master img {
+  /* Verdicht uitsluitend de geselecteerde masterpixels aan weerszijden van
+     het frame. De wolk blijft dezelfde bron en transform, maar halftransparante
+     rookranden laten de gouden lijst niet meer door de kern heen schijnen. */
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.005) rgba(3, 6, 13, 0.92)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.022) rgba(237, 177, 74, 0.16)
+    );
+}
+
+/* Debug (?debugStorm=1, alleen development): toon de drie registraties,
+   het gezamenlijke artworkkader en het anker. */
+.inform-storm--debug {
+  outline: 1px dashed;
+}
+.inform-storm--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 99;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+.inform-storm--achter.inform-storm--debug {
+  outline-color: #ff5566;
+}
+.inform-storm--achter.inform-storm--debug::after {
+  background: #ff5566;
+}
+.inform-storm--binnen.inform-storm--debug {
+  outline-color: #33ff99;
+  box-shadow: inset 0 0 0 1px #33ff99;
+}
+.inform-storm--binnen.inform-storm--debug::after {
+  background: #33ff99;
+}
+.inform-storm--voor.inform-storm--debug {
+  outline-color: #33ddff;
+}
+.inform-storm--voor.inform-storm--debug::after {
+  background: #33ddff;
+}
+.inform-storm--debug .inform-storm__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.7);
+}
+.inform-storm--debug .inform-storm__master::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px #000;
+}
+.inform-storm--debug .inform-storm__master::after {
+  content: attr(data-naam);
+  position: absolute;
+  left: 0;
+  top: -12px;
+  padding: 1px 2px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
+  font: 600 8px/1 monospace;
+  white-space: nowrap;
+}
