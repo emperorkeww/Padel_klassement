@@ -65,7 +65,8 @@ describe("createFairRound", () => {
     const call = calls.find(
       (c) => c.method === "rpc" && c.name === "create_fair_round",
     );
-    expect(call?.args[0].p_played_at).toBeUndefined();
+    const args = call?.args[0] as { p_played_at?: string } | undefined;
+    expect(args?.p_played_at).toBeUndefined();
   });
 
   it("gooit bij een fout", async () => {

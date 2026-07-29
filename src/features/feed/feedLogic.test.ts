@@ -293,6 +293,25 @@ describe("buildFeed — geplande matches", () => {
     expect(kinds(feed)).toEqual(["planned"]);
     expect(feed[0].at).toBe("2026-07-10T09:00:00Z"); // moment van plannen
   });
+
+  it("houdt gegenereerde rondes uit de feed, ook nu ze een starttijd hebben (#827)", () => {
+    // Eén generatie levert tien matches op; die horen niet als tien losse
+    // "gepland"-items in de feed te belanden.
+    const ronde = [1, 2, 3].map((n) =>
+      match("2026-07-12T20:00:00Z", "t-ab", "t-cd", "scheduled", {
+        id: `r${n}`,
+        created_at: "2026-07-10T09:00:00Z",
+        round_number: n,
+      }),
+    );
+    const feed = buildFeed({
+      matches: ronde,
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+    });
+    expect(kinds(feed)).toEqual([]);
+  });
 });
 
 describe("buildFeed — groepen en polls", () => {

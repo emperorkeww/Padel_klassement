@@ -1,7 +1,9 @@
 // Edge Function: stuurt X uur vóór een geplande match een push naar de 4 spelers.
 // Bedoeld om periodiek door pg_cron aangeroepen te worden (zie
-// ../../snippets/match_reminder_cron.sql). Elke match krijgt hooguit één
-// herinnering: verzonden matches worden in public.match_reminders bijgehouden.
+// ../../snippets/match_reminder_cron.sql). Per groep en speeldag gaat er
+// hooguit één herinnering de deur uit — die van de vroegste match (#827) —
+// en wordt de rest van die avond stil afgevinkt. Afgehandelde matches worden
+// in public.match_reminders bijgehouden.
 //
 // Deploy ZONDER JWT-verificatie:
 //   supabase functions deploy match-reminders --no-verify-jwt
@@ -23,6 +25,7 @@ import {
   roastSeed,
 } from "../_shared/roast.ts";
 import { cronGuard } from "../_shared/cronAuth.ts";
+import { bundelPerSpeeldag } from "../_shared/reminderBundel.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -37,6 +40,8 @@ webpush.setVapidDetails(
 
 const REMINDER_HOURS = Number(Deno.env.get("REMINDER_HOURS") ?? "3");
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
+// Clubtijd, dezelfde constante als poll-deadline en dayInZone in de client.
+const TIME_ZONE = "Europe/Brussels";
 
 type MatchRow = {
   id: string;
@@ -118,13 +123,25 @@ Deno.serve(async (req) => {
   const { data: already } = await admin.from("match_reminders").select("match_id");
   const done = new Set((already ?? []).map((r) => r.match_id));
 
+  // Eén herinnering per groepsdag (#827): sinds gegenereerde rondes een echte
+  // starttijd hebben, valt een hele avond in het venster en zou elke ronde een
+  // eigen push sturen. De rest van de avond wordt stil afgevinkt.
+  const bundels = bundelPerSpeeldag(
+    ((matches ?? []) as MatchRow[]).filter((m) => !done.has(m.id)),
+    TIME_ZONE,
+  );
+
   let reminded = 0;
   let sent = 0;
-  for (const m of (matches ?? []) as MatchRow[]) {
-    if (done.has(m.id)) continue;
+  let onderdrukt = 0;
+  for (const bundel of bundels) {
+    const m = bundel.herinner;
     const players = await withReminderPref(await playersOf(m));
     const when = new Date(m.played_at);
+    // Zonder tijdzone rekent Deno in UTC en meldt een match van 20:00 als
+    // "18:00" (#795).
     const time = when.toLocaleTimeString("nl-NL", {
+      timeZone: TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -152,11 +169,16 @@ Deno.serve(async (req) => {
         url,
       });
     }
-    await admin.from("match_reminders").insert({ match_id: m.id });
+    // De herinnerde match én de rest van die avond ineens afvinken, zodat een
+    // latere cron-tik ze niet alsnog oppikt.
+    await admin
+      .from("match_reminders")
+      .insert([m, ...bundel.onderdruk].map((x) => ({ match_id: x.id })));
     reminded += 1;
+    onderdrukt += bundel.onderdruk.length;
   }
 
-  return new Response(JSON.stringify({ reminded, sent }), {
+  return new Response(JSON.stringify({ reminded, sent, onderdrukt }), {
     headers: { "content-type": "application/json" },
   });
 });
