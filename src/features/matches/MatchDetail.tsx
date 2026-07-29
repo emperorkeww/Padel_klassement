@@ -21,6 +21,7 @@ import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { getMatchPredictions } from "./predictionsApi";
+import { getMatchNetTouches, setNetTouches } from "./netTouchesApi";
 import { getGroup, getGroupMembers, getMyGroups } from "@/features/groups/api";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { getProfilesByIds, displayName } from "@/features/profiles/api";
@@ -206,6 +207,10 @@ export function MatchDetail() {
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
   const canEdit = done && !!user && m.created_by === user.id;
+  // Netrollers (#809): alleen wie zelf meespeelde vult ze in.
+  const speeltMee =
+    !!user &&
+    [teamA, teamB].some((t) => playersOf(t).includes(user.id));
   // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
   const setPairs = readSetScores(m);
   // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
@@ -382,6 +387,11 @@ export function MatchDetail() {
         matchesB={matchesB.data ?? []}
         edities={editieCtx}
       />
+
+      {/* Netrollers (#809): alleen de speler zelf weet er zijn aantal van, dus
+          invoer achteraf op de matchpagina in plaats van in de invoerwizard —
+          die wordt vaak door iemand anders ingevuld. */}
+      <NetTouchesSection match={m} profiles={pmap} magInvoeren={speeltMee} />
 
       {/* #648: losse match achteraf aan een groep koppelen (of verhangen/
           loskoppelen). key reset de lokale select-state na een geslaagde
@@ -696,6 +706,99 @@ function TotoSection({
  * (losse match: iedereen met minstens één eigen groep; groepsmatch: alleen
  * leden van de huidige groep). De RPC set_match_group dwingt dit ook af.
  */
+// Netrollers (#809): per speler één teller op een afgeronde match. Iedereen
+// die de match mag zien, ziet de tellers; invullen doet alleen wie meespeelde,
+// en alleen voor zichzelf. De guard-trigger borgt dat serverside.
+function NetTouchesSection({
+  match: m,
+  profiles,
+  magInvoeren,
+}: {
+  match: Match;
+  profiles: Record<string, Profile>;
+  magInvoeren: boolean;
+}) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const touches = useAsync(
+    () => (m.status === "completed" ? getMatchNetTouches(m.id) : Promise.resolve([])),
+    [m.id, m.status],
+  );
+  const [busy, setBusy] = useState(false);
+  // null = nog niets aangeraakt; dan volgen we de geladen waarde. ScoreStepper
+  // werkt met strings ("" = leeg), vandaar de conversie.
+  const [concept, setConcept] = useState<string | null>(null);
+
+  if (m.status !== "completed" || touches.loading) return null;
+
+  const rijen = touches.data ?? [];
+  const mijn = rijen.find((t) => t.player_id === user?.id)?.aantal ?? 0;
+  const getoond = concept ?? String(mijn);
+  const aantal = getoond === "" ? 0 : Number(getoond);
+  const gewijzigd = aantal !== mijn;
+  const gescoord = rijen.filter((t) => t.aantal > 0);
+
+  // Niets te zien én niets in te vullen: laat de kaart weg.
+  if (gescoord.length === 0 && !magInvoeren) return null;
+
+  async function bewaar() {
+    if (!user) return;
+    setBusy(true);
+    try {
+      await setNetTouches(m.id, user.id, aantal);
+      tap();
+      toast.success("Netrollers bewaard.");
+      setConcept(null);
+      touches.reload();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <div className="card__head">
+        <h2 className="card__title">🕸️ Netrollers</h2>
+      </div>
+      {gescoord.length > 0 ? (
+        <ul className="md-toto">
+          {gescoord.map((t) => (
+            <li key={t.player_id} className="md-toto__row">
+              <Avatar profile={profiles[t.player_id]} size={24} />
+              <Link className="profile-link" to={`/spelers/${t.player_id}`}>
+                {displayName(profiles[t.player_id])}
+              </Link>
+              <span className="badge">{t.aantal}×</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="md-toto__note">
+          Ging er een bal via de netband alsnog binnen? Tel hem hier.
+        </p>
+      )}
+      {magInvoeren && (
+        <>
+          <ScoreStepper
+            value={getoond}
+            onChange={setConcept}
+            label="Mijn netrollers"
+          />
+          <button
+            className="btn btn--sm btn--primary"
+            disabled={busy || !gewijzigd}
+            onClick={bewaar}
+          >
+            Bewaren
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
 function GroupLinkSection({
   match: m,
   onSaved,

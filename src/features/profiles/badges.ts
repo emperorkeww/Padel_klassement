@@ -42,6 +42,8 @@ export interface BadgeExtras {
   matchRatings?: Map<string, MatchRatings>;
   /** Toto-tips van deze speler — voedt de Valse profeet. */
   predictions?: readonly MatchPrediction[];
+  /** Netrollers van deze speler per match-id — voedt de Netroller. */
+  netrollers?: Readonly<Record<string, number>>;
 }
 
 export interface Badge {
@@ -86,6 +88,8 @@ export function deriveBadges(
   const tweeling = tweelingReeks(matches, teams, playerId);
   const choke = chokeAantal(matches, teams, playerId, extras?.matchRatings);
   const misgetipt = valseProfeetReeks(matches, extras?.predictions);
+  // Beste enkele match; 0 zonder netroller-data.
+  const netrollers = Math.max(0, ...Object.values(extras?.netrollers ?? {}));
 
   const ctx: BadgeContext = {
     matches,
@@ -105,6 +109,7 @@ export function deriveBadges(
     tweeling,
     choke,
     misgetipt,
+    netrollers,
   };
   return buildBadges(ctx);
 }

@@ -537,6 +537,66 @@ export type Database = {
           },
         ]
       }
+      match_net_touches: {
+        Row: {
+          aantal: number
+          created_at: string
+          match_id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          aantal: number
+          created_at?: string
+          match_id: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          aantal?: number
+          created_at?: string
+          match_id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_net_touches_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_points: {
         Row: {
           created_at: string
