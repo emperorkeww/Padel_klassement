@@ -5,9 +5,9 @@
 
 .fut-kaart.fut-kaart--inform {
   isolation: isolate;
-  --storm-master-left: 25%;
+  --storm-master-left: -20%;
   --storm-master-top: -16%;
-  --storm-master-width: 110%;
+  --storm-master-width: 155%;
   --storm-master-scale: 1;
   --storm-master-rotate: 0deg;
   --storm-master-inset: calc(

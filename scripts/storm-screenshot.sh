@@ -13,6 +13,7 @@ set -euo pipefail
 
 LABEL="${1:-storm-$(date +%Y%m%d-%H%M%S)}"
 BASIS="${2:-http://localhost:5173}"
+MODUS="${3:-desktop}"
 URL="$BASIS"
 case "$URL" in
   *"/dev/storm"*) ;;
@@ -25,13 +26,18 @@ PROFIEL="$(mktemp -d)"
 trap 'rm -rf "$PROFIEL"' EXIT
 
 CHROMIUM="${CHROMIUM:-chromium}"
+if [ "$MODUS" = "mobile" ]; then
+  VENSTER="390,844"
+else
+  VENSTER="700,900"
+fi
 "$CHROMIUM" \
   --headless=new \
   --disable-gpu \
   --no-first-run \
   --hide-scrollbars \
   --user-data-dir="$PROFIEL" \
-  --window-size=700,900 \
+  --window-size="$VENSTER" \
   --force-device-scale-factor=2 \
   --virtual-time-budget=8000 \
   --screenshot="$UIT/$LABEL.png" \

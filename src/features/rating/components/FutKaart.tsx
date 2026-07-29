@@ -215,6 +215,11 @@ import {
   InformStormVoor,
 } from "./storm/InformStorm";
 import {
+  OnfireEffectAchter,
+  OnfireEffectBinnen,
+  OnfireEffectVoor,
+} from "./onfire/OnfireEffect";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -225,11 +230,6 @@ import {
   ONFIRE_MEDAILLON_DIEP,
   ONFIRE_MEDAILLON_NERVEN,
   ONFIRE_MEDAILLON_VLAM,
-  ONFIRE_PLUIMEN,
-  ONFIRE_PLUIM_VERLOOP,
-  ONFIRE_RANDVLAMMEN,
-  ONFIRE_RANDVLAM_HARTEN,
-  ONFIRE_RANDVLAM_VERLOOP,
   ONFIRE_SINTELS,
   ONFIRE_SINTEL_GLOED,
   ONFIRE_SINTEL_KERN,
@@ -1233,47 +1233,14 @@ export function FutKaartDefs() {
             <stop key={offset} offset={offset} stopColor={kleur} />
           ))}
         </linearGradient>
-        <linearGradient
-          id="fut-orn-onfire-pluim"
-          x1="0"
-          y1="15"
-          x2="0"
-          y2="120"
-          gradientUnits="userSpaceOnUse"
-        >
-          {ONFIRE_PLUIM_VERLOOP.map(([offset, kleur]) => (
-            <stop key={offset} offset={offset} stopColor={kleur} />
-          ))}
-        </linearGradient>
-        <linearGradient
-          id="fut-orn-onfire-randvlam"
-          x1="0"
-          y1="26"
-          x2="0.35"
-          y2="106"
-          gradientUnits="userSpaceOnUse"
-        >
-          {ONFIRE_RANDVLAM_VERLOOP.map(([offset, kleur]) => (
-            <stop key={offset} offset={offset} stopColor={kleur} />
-          ))}
-        </linearGradient>
-        {/* Achterlaag (#834): vier asymmetrische vuur-/rookmassa's over de
-            volle kaart, plus alleen voor de metalen V-rails een gespiegelde
-            helft. Het frame tekent hierna over de wortels heen. */}
+        {/* De metalen V-rails blijven vectorieel en liggen achter de kaart.
+            Vuur, lava en rook komen uit de gedeelde masterlaag. */}
         <g id="fut-orn-onfire-vinnen-helft">
           {ONFIRE_VINNEN.map((vin) => (
             <FutStreng key={vin.omtrek} streng={vin} materiaal={ONFIRE_MATERIAAL} />
           ))}
         </g>
         <g id="fut-orn-onfire-achter">
-          {ONFIRE_PLUIMEN.map((d, index) => (
-            <path
-              key={d}
-              d={d}
-              fill="url(#fut-orn-onfire-pluim)"
-              opacity={index % 2 === 0 ? 0.96 : 0.82}
-            />
-          ))}
           <use href="#fut-orn-onfire-vinnen-helft" />
           <use
             href="#fut-orn-onfire-vinnen-helft"
@@ -1294,23 +1261,7 @@ export function FutKaartDefs() {
             </g>
           ))}
         </g>
-        <g id="fut-orn-onfire-randvlammen">
-          {ONFIRE_RANDVLAMMEN.map((d, index) => (
-            <path
-              key={d}
-              d={d}
-              fill="url(#fut-orn-onfire-randvlam)"
-              stroke={ONFIRE_KOPER.contour}
-              strokeWidth="0.32"
-              opacity={index % 2 === 0 ? 0.96 : 0.84}
-            />
-          ))}
-          {ONFIRE_RANDVLAM_HARTEN.map((d) => (
-            <path key={d} d={d} fill="url(#fut-orn-gloed)" opacity="0.88" />
-          ))}
-        </g>
         <g id="fut-orn-onfire-voor">
-          <use href="#fut-orn-onfire-randvlammen" />
           <path
             d={ONFIRE_CREST_PLAAT}
             fill="url(#fut-orn-onfire-staal)"
@@ -2202,6 +2153,9 @@ export function FutKaart({
             <use href={`#fut-orn-${ornament}-achter`} />
           </svg>
         )}
+        {/* On Fire-backlaag: één coherent vulkaanartwork achter kaart en
+            frame. De metalen vinnen hierboven blijven als eigen ornament. */}
+        {editie === "onfire" && <OnfireEffectAchter />}
         {/* Storm-achterlaag (#834): de volledige master vóór de zijden in de
             DOM, dus achter kaart en frame. */}
         {editie === "inform" && <InformStormAchter />}
@@ -2213,6 +2167,9 @@ export function FutKaart({
                 <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
+                {/* Dezelfde On Fire-master in het echte kaartvlak. De inhoud
+                    rendert erna en behoudt dus zijn contrast en interactie. */}
+                {editie === "onfire" && <OnfireEffectBinnen />}
                 {/* Storm-binnenlaag (#834): dezelfde master, door de bestaande
                     schildclip van dit kaartvlak gemaskeerd. De inhoud ({voor})
                     rendert erná en blijft dus leesbaar. */}
@@ -2254,6 +2211,9 @@ export function FutKaart({
             <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
+        {/* Beperkte basalt- en eruptiedelen vóór het frame; crest en
+            puntmedaillon blijven via hun hogere z-index leesbaar. */}
+        {editie === "onfire" && <OnfireEffectVoor />}
         {/* Storm-voorlaag (#834): dezelfde master door een klein frontmasker,
             zodat alleen geselecteerde wolk- en bliksemstukken het frame
             plaatselijk overlappen. */}

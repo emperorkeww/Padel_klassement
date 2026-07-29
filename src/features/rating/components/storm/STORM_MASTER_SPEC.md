@@ -3,8 +3,8 @@
 ## Technisch
 
 - Bestand: `assets/in-form/storm-master.webp`
-- Canvasverhouding: 2:3 (huidige bron: 1024 × 1536 px)
-- Aanbevolen productieformaat: minimaal 1600 × 2400 px
+- Canvasverhouding: 361:384 (huidige bron: 1444 × 1536 px)
+- Aanbevolen productieformaat: minimaal 2166 × 2304 px
 - Achtergrond: volledig transparant alpha-kanaal; geen rechthoekige matte
 - Kleurruimte: sRGB
 - WebP: alpha behouden, bij voorkeur lossless of visueel lossless
@@ -22,6 +22,8 @@
 - Goud-wit lokaal randlicht rond de ontlading; de rest blijft donker en
   contrastrijk.
 - Transparante rookranden moeten geleidelijk naar alpha 0 uitlopen.
+- De extra transparante breedte links draagt een lage secundaire wolkmassa
+  en dun vertakte bliksem; de oorspronkelijke rechterkolom begint op x=420.
 
 Bij de huidige browsertransform vult het dichte interne deel circa 35–45%
 van de kaartbreedte, loopt de kolom circa 110% van de kaarthoogte door en
@@ -40,7 +42,7 @@ hooguit zeer subtiel.
 
 ## Maskers en registratie
 
-`storm-front-mask.svg` gebruikt dezelfde 1024 × 1536-viewBox als het
+`storm-front-mask.svg` gebruikt dezelfde 1444 × 1536-viewBox als het
 master-artwork. Het selecteert alleen een bovenste en een middelste lob voor
 lokale frame-occlusie. De back-, inside- en front-instanties mogen geen eigen
 `left`, `top`, `width`, `scale` of `rotate` krijgen.
