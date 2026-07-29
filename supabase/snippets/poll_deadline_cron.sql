@@ -1,11 +1,13 @@
 -- pg_cron-planning voor de speeldag-poll-automatiek (laatste-kans-push,
--- auto-sluiten en speeldag-herinnering). Eén keer uitvoeren in de SQL-editor
--- van je GEHOSTE project. Zelfde patroon en secrets als match_reminder_cron.sql.
+-- auto-sluiten, speeldag-herinnering en het automatisch klaarzetten van de
+-- Americano-rondes). Eén keer uitvoeren in de SQL-editor van je GEHOSTE
+-- project. Zelfde patroon en secrets als match_reminder_cron.sql.
 --
 -- Vooraf, in de terminal:
 --   supabase functions deploy poll-deadline --no-verify-jwt
 --   (CRON_SECRET en VAPID_* staan er al voor match-reminders; optioneel:
---    POLL_LAST_CALL_HOURS=24, POLL_AUTO_LOCK_HOURS=12, POLL_DAY_OF_HOURS=5)
+--    POLL_LAST_CALL_HOURS=24, POLL_AUTO_LOCK_HOURS=12, POLL_DAY_OF_HOURS=5,
+--    POLL_ROUNDS_LEAD_MIN=90)
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;

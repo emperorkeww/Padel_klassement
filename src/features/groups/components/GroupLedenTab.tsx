@@ -11,6 +11,7 @@ import {
   addGroupMembers,
   removeGroupMember,
   renameGroup,
+  setAutoRondes,
   setRoastIntensiteit,
   deleteGroup,
   leaveGroup,
@@ -415,6 +416,32 @@ export function GroupLedenTab({
             <p className="field-hint">
               Hoe hard het systeem de leden van deze groep roast. Spelers met
               een roast-schild blijven altijd gespaard.
+            </p>
+          </div>
+          <div className="stack">
+            <div className="row-between">
+              <label htmlFor="auto-rondes">Rondes automatisch klaarzetten 🎾</label>
+              <input
+                id="auto-rondes"
+                type="checkbox"
+                disabled={busy}
+                checked={group.auto_rondes ?? true}
+                onChange={(e) => {
+                  const aan = e.target.checked;
+                  act(async () => {
+                    await setAutoRondes(groupId, aan);
+                    reloadGroup();
+                  }, aan
+                    ? "Rondes worden voortaan automatisch klaargezet."
+                    : "Rondes klaarzetten doen jullie voortaan zelf.");
+                }}
+              />
+            </div>
+            <p className="field-hint">
+              Staat er kort vóór de start van een vastgelegde speeldag nog geen
+              enkele ronde, dan zet het systeem er zelf een reeks eerlijke
+              rondes klaar met de spelers die “ja” zeiden. Zet dit uit als
+              jullie liever alles zelf indelen.
             </p>
           </div>
           <div>

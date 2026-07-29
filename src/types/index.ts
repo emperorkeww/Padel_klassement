@@ -114,6 +114,9 @@ export interface Group {
   created_by: string | null;
   /** Roast-toon van de groep (#183); ontbreekt = 'gemeen' (de DB-default). */
   roast_intensiteit?: RoastIntensiteit;
+  /** Zet de cron zelf rondes klaar bij de start van een speeldag (#827)?
+   *  Ontbreekt = true (de DB-default). */
+  auto_rondes?: boolean;
   created_at: string;
 }
 

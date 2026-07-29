@@ -371,6 +371,7 @@ export type Database = {
       }
       groups: {
         Row: {
+          auto_rondes: boolean
           created_at: string
           created_by: string | null
           id: string
@@ -378,6 +379,7 @@ export type Database = {
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
         }
         Insert: {
+          auto_rondes?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -385,6 +387,7 @@ export type Database = {
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
         }
         Update: {
+          auto_rondes?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1254,6 +1257,7 @@ export type Database = {
           id: string
           locked_at: string | null
           locked_option_id: string | null
+          rounds_generated_at: string | null
           status: string
         }
         Insert: {
@@ -1272,6 +1276,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          rounds_generated_at?: string | null
           status?: string
         }
         Update: {
@@ -1290,6 +1295,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          rounds_generated_at?: string | null
           status?: string
         }
         Relationships: [
