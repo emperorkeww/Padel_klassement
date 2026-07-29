@@ -3,6 +3,7 @@ import {
   CHOKE_KONING_DOEL,
   deriveBadges,
   featuredPlaystyles,
+  NETROLLER_DOEL,
   REUZENDODER_DREMPEL,
   REUZENDODER_ZWAAR_DREMPEL,
   VALSE_PROFEET_DOEL,
@@ -64,7 +65,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(90);
+    expect(badges).toHaveLength(91);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -358,6 +359,36 @@ describe("deriveBadges — valse profeet (#809)", () => {
 
   it("is bewust géén zeldzame badge", () => {
     expect(ZELDZAME_BADGES.has("valse-profeet")).toBe(false);
+  });
+});
+
+describe("deriveBadges — netroller (#809)", () => {
+  const netroller = (ms: Match[], per: Record<string, number>) =>
+    badge(deriveBadges(ms, teams, "p1", undefined, { netrollers: per }), "netroller");
+
+  it("wordt behaald bij drie netrollers in één match, met voortgang", () => {
+    const m = win();
+    const n = netroller([m], { [m.id]: NETROLLER_DOEL });
+    expect(n.behaald).toBe(true);
+    expect(n.voortgang).toEqual({ nu: NETROLLER_DOEL, doel: NETROLLER_DOEL });
+  });
+
+  it("telt per match, niet over matches heen", () => {
+    // Twee matches met elk 2 netrollers: samen 4, maar nooit 3 in één match.
+    const a = win();
+    const b = win();
+    const n = netroller([a, b], { [a.id]: 2, [b.id]: 2 });
+    expect(n.behaald).toBe(false);
+    expect(n.voortgang).toEqual({ nu: 2, doel: NETROLLER_DOEL });
+  });
+
+  it("blijft op nul zonder netroller-data", () => {
+    expect(badge(deriveBadges([win()], teams, "p1"), "netroller").voortgang)
+      .toEqual({ nu: 0, doel: NETROLLER_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge — de announcement-hook laadt de tellers niet", () => {
+    expect(ZELDZAME_BADGES.has("netroller")).toBe(false);
   });
 });
 

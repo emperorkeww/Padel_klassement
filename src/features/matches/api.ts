@@ -24,6 +24,8 @@ function invalidateMatchData() {
     "shame",
     // Dragerschap en de verdedigd-feedstatus kunnen na een uitslag wijzigen.
     "bounties",
+    // Netrollers hangen aan de match: een verwijdering cascadeert ze weg (#809).
+    "net-touches",
   );
 }
 
