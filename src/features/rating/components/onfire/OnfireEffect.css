@@ -1,0 +1,146 @@
+/* Eén gedeeld register voor de drie instanties. Een laag mag nooit een eigen
+   positie of schaal krijgen: maskers bepalen zichtbaarheid, niet geometrie. */
+
+.fut-kaart.fut-kaart--onfire {
+  --onfire-master-left: -16%;
+  --onfire-master-top: -24%;
+  --onfire-master-width: 132%;
+  --onfire-master-scale: 1;
+  --onfire-master-rotate: 0deg;
+  --onfire-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.onfire-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.onfire-effect__master {
+  position: absolute;
+  left: var(--onfire-master-left);
+  top: var(--onfire-master-top);
+  width: var(--onfire-master-width);
+  transform: rotate(var(--onfire-master-rotate))
+    scale(var(--onfire-master-scale));
+  transform-origin: 0 0;
+}
+
+.onfire-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.008) rgba(255, 224, 176, 0.28)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.026) rgba(255, 76, 8, 0.2)
+    );
+}
+
+/* Expliciet paintregister rond preserve-3d. De metalen achtervinnen blijven
+   boven de back-master, de kaart boven beide. */
+.fut-kaart.fut-kaart--onfire
+  .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  z-index: 1;
+}
+
+.fut-kaart.fut-kaart--onfire .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.fut-kaart.fut-kaart--onfire .fut-kaart__ornament--voor {
+  z-index: 4;
+}
+
+/* Volledige vulkaan- en lavamassa achter kaart en frame. */
+.onfire-effect--achter {
+  z-index: 0;
+}
+
+/* Exacte kaartclip via .fut-kaart__vlak. De negatieve inset herstelt het
+   coördinatenstelsel van de volledige 100×139-kaartstage. */
+.onfire-effect--binnen {
+  inset: calc(-1 * var(--onfire-master-inset));
+  z-index: -1;
+}
+
+.onfire-effect--binnen .onfire-effect__master {
+  opacity: 0.78;
+}
+
+/* Alleen geselecteerde basalt- en eruptiedelen schilderen vóór het frame.
+   Crest en puntmedaillon blijven daar weer boven liggen. */
+.onfire-effect--voor {
+  z-index: 3;
+}
+
+.onfire-effect--voor .onfire-effect__master {
+  -webkit-mask: url("./assets/onfire-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/onfire-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.008)
+      calc(var(--fut-kw) * 0.014) rgba(6, 2, 1, 0.88)
+  );
+}
+
+.onfire-effect--voor .onfire-effect__master img {
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.006) rgba(8, 2, 1, 0.92)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.02) rgba(255, 86, 10, 0.28)
+    );
+}
+
+/* Registratiedebug: /dev/onfire?debugOnfire=1. */
+.onfire-effect--debug {
+  outline: 1px dashed;
+}
+
+.onfire-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.onfire-effect--achter.onfire-effect--debug {
+  outline-color: #ff5a36;
+}
+
+.onfire-effect--achter.onfire-effect--debug::after {
+  background: #ff5a36;
+}
+
+.onfire-effect--binnen.onfire-effect--debug {
+  outline-color: #7dff7d;
+}
+
+.onfire-effect--binnen.onfire-effect--debug::after {
+  background: #7dff7d;
+}
+
+.onfire-effect--voor.onfire-effect--debug {
+  outline-color: #48d9ff;
+}
+
+.onfire-effect--voor.onfire-effect--debug::after {
+  background: #48d9ff;
+}
+
+.onfire-effect--debug .onfire-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.75);
+}

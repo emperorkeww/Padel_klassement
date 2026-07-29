@@ -1,7 +1,8 @@
 # Special Card Visual Effects Architecture
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
-het In-Form-stormeffect. Het is tegelijk een technische naslag en een
+het In-Form-stormeffect en de daarop gebaseerde On Fire-vulkaanbreakout. Het
+is tegelijk een technische naslag en een
 herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
 kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
 komt.
@@ -26,6 +27,11 @@ Belangrijkste implementatiebestanden:
 - [`STORM_MASTER_SPEC.md`](../src/features/rating/components/storm/STORM_MASTER_SPEC.md)
   en [`MANIFEST.md`](../src/features/rating/components/storm/MANIFEST.md) —
   het assetcontract en de actuele registratie.
+- [`OnfireEffect.tsx`](../src/features/rating/components/onfire/OnfireEffect.tsx)
+  en [`OnfireEffect.css`](../src/features/rating/components/onfire/OnfireEffect.css)
+  — dezelfde architectuur toegepast op lava, vulkaan en rook.
+- [`ASSET_SPEC.md`](../src/features/rating/components/onfire/ASSET_SPEC.md) —
+  het actuele On Fire-assetcontract.
 
 ## 1. Context en visueel doel
 
@@ -301,9 +307,9 @@ Alle stormgeometrie komt uit vijf custom properties op de In-Form-kaart:
 
 ```css
 .fut-kaart.fut-kaart--inform {
-  --storm-master-left: 25%;
+  --storm-master-left: -20%;
   --storm-master-top: -16%;
-  --storm-master-width: 110%;
+  --storm-master-width: 155%;
   --storm-master-scale: 1;
   --storm-master-rotate: 0deg;
 }
@@ -325,10 +331,11 @@ als een versprongen bliksem, dubbele wolkrand of lichtnaad ter hoogte van het
 frame.
 
 De percentages worden berekend ten opzichte van dezelfde kaartstage. De
-master is 1024 × 1536 pixels (2:3), maar wordt met `height: auto` vanuit zijn
-relatieve breedte geschaald. De huidige registratie laat de storm ongeveer
-110% van de kaarthoogte beslaan en ongeveer 26% van de kaartbreedte buiten de
-rechterrand doorlopen.
+master is 1444 × 1536 pixels en bevat 420 pixels extra compositieruimte links.
+De oorspronkelijke rechterstorm begint daar op x=420 en behoudt daardoor bij
+`width: 155%` dezelfde visuele schaal en positie als de vroegere
+1024px-master. De extra ruimte draagt alleen de secundaire lage wolk en dunne
+bliksemvertakkingen aan de linkerzijde.
 
 ### Compensatie van de interne insets
 
@@ -360,8 +367,8 @@ Het productie-artwork staat in
 `src/features/rating/components/storm/assets/in-form/storm-master.webp`.
 De actuele eigenschappen zijn:
 
-- 1024 × 1536 pixels;
-- 2:3-verhouding;
+- 1444 × 1536 pixels;
+- transparante compositieruimte links naast de oorspronkelijke 2:3-storm;
 - sRGB WebP met transparant alpha-kanaal;
 - één samenhangende verticale stormkolom;
 - bijna zwarte en donkergrijze kernen met beperkt koelblauw;
@@ -382,7 +389,7 @@ afgewerkte WebP.
 
 ### 6.2 Frontmask
 
-`storm-front-mask.svg` gebruikt dezelfde `viewBox="0 0 1024 1536"` als de
+`storm-front-mask.svg` gebruikt dezelfde `viewBox="0 0 1444 1536"` als de
 master. Het bevat twee organische, licht vervaagde witte paden:
 
 - een brede bovenlob rond de gebogen rechterbovenrand;
@@ -782,11 +789,28 @@ leesbaarheid.
 
 **On Fire**
 
-De huidige On-Fire-kaart heeft eigen CSS- en vectorornamenten en gebruikt
-niet automatisch de drie-masterstructuur. Pas dit patroon alleen toe wanneer
-een toekomstige vuurversie één vlam-/rookvolume werkelijk door het frame
-moet laten lopen. Een coherent vuurmasterwerk kan dan back, inside en
-geselecteerde frontvlammen leveren.
+De On-Fire-kaart gebruikt inmiddels dezelfde drie-masterstructuur via
+`OnfireEffect.tsx`. `onfire-master.webp` combineert lavabrokken links, een
+verbonden lavabed onderaan, de vulkaan rechtsmidden en de rookkolom
+rechtsboven. `onfire-front-mask.svg` selecteert twee basaltzones links en een
+beperkte eruptiezone rechts. De bestaande metalen crest, V-vinnen,
+puntmedaillon, skin, watermerk en content zijn behouden als afzonderlijke
+vector-/kaartlagen.
+
+De gedeelde On Fire-transform staat uitsluitend op `.fut-kaart--onfire`:
+
+```css
+--onfire-master-left: -16%;
+--onfire-master-top: -24%;
+--onfire-master-width: 132%;
+--onfire-master-scale: 1;
+--onfire-master-rotate: 0deg;
+```
+
+De vaste controle gebeurt via `/dev/onfire`,
+`scripts/onfire-screenshot.sh` en `?debugOnfire=1`. De finale beelden staan
+in `screenshots/onfire/final-desktop.png` en
+`screenshots/onfire/final-mobile.png`.
 
 **Big Daddy**
 
@@ -821,10 +845,11 @@ registraties nodig.
 
 ### DOM en canvas/poster zijn niet dezelfde renderer
 
-De live React-kaart gebruikt `storm-master.webp`. De canvas/posterroute in
-`futKaartCanvas.ts` tekent nog
+De live React-kaart gebruikt voor In-Form `storm-master.webp` en voor On Fire
+`onfire-master.webp`. De canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
-`ornamentenInform.ts`.
+`ornamentenInform.ts`, plus de oudere On Fire-pluimen en randvlammen uit
+`ornamentenOnfire.ts`.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:
@@ -835,7 +860,7 @@ niet gegarandeerd. Een toekomstige verbetering kan:
   en expliciete tolerantie testen.
 
 Tot die keuze is gemaakt, mogen de vectortests niet als bewijs voor de
-live-storm worden gebruikt.
+live WebP-composities worden gebruikt.
 
 ### Legacy-SVG's zijn nog aanwezig
 

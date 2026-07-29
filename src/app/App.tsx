@@ -39,6 +39,11 @@ const StormShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/StormShowcase"))
   : null;
 
+// Dev-stage voor de On Fire-breakout, met dezelfde vaste screenshotworkflow.
+const OnfireShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/OnfireShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -85,6 +90,9 @@ function App() {
           {HeroShowcase && <Route path="/dev/hero" element={<HeroShowcase />} />}
           {StormShowcase && (
             <Route path="/dev/storm" element={<StormShowcase />} />
+          )}
+          {OnfireShowcase && (
+            <Route path="/dev/onfire" element={<OnfireShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

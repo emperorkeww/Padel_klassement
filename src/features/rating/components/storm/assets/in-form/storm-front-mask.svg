@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1444 1536">
   <defs>
     <filter id="soft-edge" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="5"/>
     </filter>
   </defs>
-  <g fill="#fff" filter="url(#soft-edge)">
+  <g fill="#fff" filter="url(#soft-edge)" transform="translate(420 0)">
     <path d="M552 148C631 93 765 82 846 130C919 174 949 258 917 330C890 391 825 421 768 397C720 377 687 393 663 438C638 485 591 486 561 446C515 384 490 192 552 148Z"/>
     <path d="M660 665C720 621 810 627 869 674C929 722 948 813 912 884C883 942 822 970 767 946C724 927 691 943 665 986C637 1033 610 1023 602 976C590 902 608 703 660 665Z"/>
   </g>
