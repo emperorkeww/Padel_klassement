@@ -245,6 +245,19 @@ describe("kaartSkin", () => {
     expect(piet.kleuren.sheen).toBe("rgba(255, 255, 255, 0)");
   });
 
+  it("tekent de storm-binnenlaag van In-Form als tweede, vullend motief (#834)", () => {
+    // De storm-binnenlaag rijdt als motief2 mee: vullend in kaart-units, net
+    // als het pias-motief, en bóvenop het gewone pulse-ring-motief. Zonder dit
+    // veld zou de poster de wolk uit het kaartvlak missen die de DOM wél
+    // tekent — de uitbraak begint dan nergens.
+    const skin = kaartSkin("goud", "inform").kleuren;
+    expect(skin.motief2?.vullend).toBe(true);
+    expect(skin.motief2?.paden.length).toBeGreaterThan(0);
+    // Alleen In-Form heeft een tweede motieflaag.
+    expect(kaartSkin("goud", "onfire").kleuren.motief2).toBeUndefined();
+    expect(kaartSkin("goud", "pias").kleuren.motief2).toBeUndefined();
+  });
+
   it("geeft de shimmer-edities hun bredere sheen-baan", () => {
     expect(kaartSkin("goud", "kampioen").kleuren.sheenSpreiding).toBeUndefined();
     // In-Form én On Fire ruilden bij #710 de drie-stops-baan in voor een eigen

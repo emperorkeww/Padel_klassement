@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 480">
+  <!-- Placeholder voor storm-cloud-inside-right.webp (#834): de wolkenmassa
+       ín het rechterdeel van het kaartvlak. De dichte kant zit rechts (loopt
+       daar tegen/achter het frame aan, de schildclip snijdt hem af); naar
+       links rafelt hij uit in rook, zodat de kaartinhoud vrij blijft. Het
+       goudlicht zit centraal — daar loopt de interne bliksem. -->
+  <defs>
+    <radialGradient id="ibol" cx="34%" cy="26%" r="80%">
+      <stop offset="0%" stop-color="#3d4a68"/>
+      <stop offset="45%" stop-color="#222a3e"/>
+      <stop offset="100%" stop-color="#0d111d"/>
+    </radialGradient>
+    <radialGradient id="ibolLicht" cx="30%" cy="22%" r="78%">
+      <stop offset="0%" stop-color="#57648a"/>
+      <stop offset="45%" stop-color="#2b3450"/>
+      <stop offset="100%" stop-color="#111526"/>
+    </radialGradient>
+    <radialGradient id="igoud" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd97a" stop-opacity=".45"/>
+      <stop offset="55%" stop-color="#f0b84e" stop-opacity=".16"/>
+      <stop offset="100%" stop-color="#f0b84e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ib12" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
+    <filter id="ib6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="ib1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.3"/></filter>
+  </defs>
+
+  <!-- Uitrafelende rook naar links -->
+  <g filter="url(#ib12)" fill="#0b0f1a" opacity=".8">
+    <ellipse cx="120" cy="120" rx="95" ry="52"/>
+    <ellipse cx="105" cy="255" rx="85" ry="48"/>
+    <ellipse cx="130" cy="380" rx="80" ry="44"/>
+  </g>
+
+  <!-- Dichte massa rechts -->
+  <g filter="url(#ib12)" fill="#0a0e18" opacity=".96">
+    <ellipse cx="225" cy="95" rx="115" ry="80"/>
+    <ellipse cx="245" cy="235" rx="105" ry="90"/>
+    <ellipse cx="235" cy="380" rx="100" ry="80"/>
+  </g>
+  <g filter="url(#ib6)" fill="#151b29">
+    <ellipse cx="228" cy="100" rx="96" ry="64"/>
+    <ellipse cx="248" cy="238" rx="88" ry="72"/>
+    <ellipse cx="238" cy="378" rx="84" ry="64"/>
+  </g>
+  <g filter="url(#ib6)" fill="#05070d" opacity=".72">
+    <ellipse cx="262" cy="128" rx="72" ry="48"/>
+    <ellipse cx="272" cy="270" rx="66" ry="52"/>
+    <ellipse cx="262" cy="404" rx="62" ry="46"/>
+  </g>
+
+  <!-- Lobben, verlicht vanaf het bliksemkanaal (midden) -->
+  <g filter="url(#ib1)">
+    <circle cx="150" cy="62" r="26" fill="url(#ibolLicht)"/>
+    <circle cx="188" cy="46" r="30" fill="url(#ibolLicht)"/>
+    <circle cx="228" cy="42" r="31" fill="url(#ibol)"/>
+    <circle cx="266" cy="56" r="27" fill="url(#ibol)"/>
+    <circle cx="296" cy="82" r="23" fill="url(#ibol)"/>
+    <circle cx="128" cy="92" r="20" fill="url(#ibolLicht)"/>
+    <circle cx="168" cy="176" r="24" fill="url(#ibolLicht)"/>
+    <circle cx="206" cy="162" r="27" fill="url(#ibolLicht)"/>
+    <circle cx="246" cy="166" r="28" fill="url(#ibol)"/>
+    <circle cx="284" cy="184" r="24" fill="url(#ibol)"/>
+    <circle cx="306" cy="216" r="20" fill="url(#ibol)"/>
+    <circle cx="152" cy="318" r="22" fill="url(#ibolLicht)"/>
+    <circle cx="190" cy="300" r="26" fill="url(#ibolLicht)"/>
+    <circle cx="230" cy="304" r="27" fill="url(#ibol)"/>
+    <circle cx="268" cy="322" r="23" fill="url(#ibol)"/>
+    <circle cx="296" cy="352" r="19" fill="url(#ibol)"/>
+    <circle cx="168" cy="432" r="19" fill="url(#ibolLicht)"/>
+    <circle cx="206" cy="420" r="22" fill="url(#ibol)"/>
+    <circle cx="244" cy="430" r="20" fill="url(#ibol)"/>
+  </g>
+
+  <!-- Goudlicht in het bliksemkanaal -->
+  <g filter="url(#ib6)">
+    <ellipse cx="172" cy="150" rx="46" ry="96" fill="url(#igoud)"/>
+    <ellipse cx="182" cy="330" rx="40" ry="90" fill="url(#igoud)"/>
+  </g>
+  <g filter="url(#ib1)" opacity=".5">
+    <ellipse cx="188" cy="40" rx="36" ry="11" fill="#ffd97a" opacity=".45"/>
+    <ellipse cx="190" cy="294" rx="30" ry="9" fill="#ffd97a" opacity=".4"/>
+  </g>
+</svg>

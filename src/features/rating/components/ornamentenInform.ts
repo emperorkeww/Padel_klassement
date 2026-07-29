@@ -313,6 +313,271 @@ export const INFORM_MOTIEF: readonly OrnamentPad[] = [
   })),
 ] as const;
 
+/* ------------------------------- storm (#834) ------------------------------- */
+
+/** Rooktinten van de donderwolken: bijna-zwart met een blauwe ondertoon uit
+ *  dezelfde familie als het titaniumvlak (#141826), zodat de wolken bíj de
+ *  kaart horen en niet als grijze stickers ernaast staan. Drie tonen per puf
+ *  (licht → mid → kern) geven het volume; het licht komt van de bliksem, dus
+ *  de lichte laag ligt boven-rechts. */
+export const STORM_ROOK_LICHT = "#2c3448";
+export const STORM_ROOK_MID = "#181d2b";
+export const STORM_ROOK_KERN = "#07080d";
+/** Gouden randlicht op de wolktoppen — zonder dit verdwijnen de bijna-zwarte
+ *  puffen in een donkere omgeving (dashboard, wand). */
+export const STORM_ROOK_RAND = "rgba(255, 220, 140, 0.22)";
+/** Goudschijnsel achter de wolkenmassa — de ambient gloed van de ontlading. */
+export const STORM_ROOK_GLOED = "rgba(255, 216, 130, 0.14)";
+/** De drie bliksemlagen: brede gloed, champagnegouden band, witgouden kern —
+ *  dezelfde familie als INFORM_GOUD_VERLOOP, geen nieuw metaal. */
+export const STORM_BLIKSEM_GLOED = "rgba(255, 213, 107, 0.3)";
+export const STORM_BLIKSEM_MID = "#f2cf7d";
+export const STORM_BLIKSEM_KERN = "#fff6d9";
+
+/** Eén wolkenblob: een dichte polyline rond (cx, cy) waarvan de straal met
+ *  drie harmonischen golft — periodiek in de hoek, dus de omtrek sluit glad
+ *  en blijft deterministisch (geen Math.random, net als de pulse-ring).
+ *  Harmonischen 3/5/9: grote bollen met kleinere kartels erop, het silhouet
+ *  van een cumulus i.p.v. een kartelrand. Maximale uitslag van de straal is
+ *  factor 1,32 — daar rekenen de plaatsingsgrenzen hieronder mee. */
+export function wolk({
+  cx,
+  cy,
+  rx,
+  ry,
+  fase,
+  stappen = 56,
+}: {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  fase: number;
+  stappen?: number;
+}): string {
+  const punten: string[] = [];
+  for (let i = 0; i < stappen; i++) {
+    const hoek = (Math.PI * 2 * i) / stappen;
+    const lob =
+      1 +
+      0.16 * Math.sin(3 * hoek + fase) +
+      0.1 * Math.sin(5 * hoek + fase * 1.7) +
+      0.06 * Math.sin(9 * hoek + fase * 2.3);
+    punten.push(
+      `${rond(cx + Math.cos(hoek) * rx * lob)} ${rond(cy + Math.sin(hoek) * ry * lob)}`,
+    );
+  }
+  return `M ${punten.join(" L ")} Z`;
+}
+
+/** Open randboog over de bovenkant van een blob: hetzelfde straalrecept als
+ *  `wolk`, maar bemonsterd over een hoekbereik i.p.v. rond — het gouden
+ *  randlicht hugt zo exact de lobben van de toplaag. Hoeken in graden,
+ *  0° = rechts, kloksgewijs (y naar onder); de bovenkant is 180°–360°. */
+function wolkRand({
+  cx,
+  cy,
+  rx,
+  ry,
+  fase,
+  van,
+  tot,
+  stappen = 26,
+}: {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  fase: number;
+  van: number;
+  tot: number;
+  stappen?: number;
+}): string {
+  const punten: string[] = [];
+  for (let i = 0; i <= stappen; i++) {
+    const hoek = ((van + ((tot - van) * i) / stappen) * Math.PI) / 180;
+    const lob =
+      1 +
+      0.16 * Math.sin(3 * hoek + fase) +
+      0.1 * Math.sin(5 * hoek + fase * 1.7) +
+      0.06 * Math.sin(9 * hoek + fase * 2.3);
+    punten.push(
+      `${rond(cx + Math.cos(hoek) * rx * lob)} ${rond(cy + Math.sin(hoek) * ry * lob)}`,
+    );
+  }
+  return `M ${punten.join(" L ")}`;
+}
+
+/** Eén puf als drie gestapelde blobs plus een gouden randlicht op de top:
+ *  lichte rug boven-rechts (naar de bliksem toe), middenlaag, donkere kern
+ *  onder-links. De faseverschuiving per laag voorkomt dat de omtrekken
+ *  parallel lopen; het randlicht deelt de parameters van de toplaag en hugt
+ *  hem dus exact. Grootste uitslag: cx ± 1,44·rx (schuif + lob). */
+function puf(
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  fase: number,
+): OrnamentPad[] {
+  const licht = { cx: cx + rx * 0.12, cy: cy - ry * 0.2, rx, ry, fase };
+  return [
+    { d: wolk(licht), soort: "vlak", kleur: STORM_ROOK_LICHT },
+    {
+      d: wolk({ cx, cy, rx: rx * 0.9, ry: ry * 0.9, fase: fase + 2.1 }),
+      soort: "vlak",
+      kleur: STORM_ROOK_MID,
+    },
+    {
+      d: wolk({
+        cx: cx - rx * 0.08,
+        cy: cy + ry * 0.14,
+        rx: rx * 0.72,
+        ry: ry * 0.7,
+        fase: fase + 4.4,
+      }),
+      soort: "vlak",
+      kleur: STORM_ROOK_KERN,
+    },
+    {
+      d: wolkRand({ ...licht, van: 195, tot: 345 }),
+      soort: "lijn",
+      breedte: 0.6,
+      kleur: STORM_ROOK_RAND,
+    },
+  ];
+}
+
+/** Hoekige bliksembaan door een reeks punten. */
+function zigzag(punten: readonly (readonly [number, number])[]): string {
+  return `M ${punten.map(([x, y]) => `${rond(x)} ${rond(y)}`).join(" L ")}`;
+}
+
+/** De drie strokes van één bliksem: gloed, band, kern — over hetzelfde pad,
+ *  zodat DOM en canvas dezelfde ontlading tekenen. */
+function bliksemLagen(d: string, dikte = 1, alpha = 1): OrnamentPad[] {
+  return [
+    {
+      d,
+      soort: "lijn",
+      breedte: 3.2 * dikte,
+      kleur: STORM_BLIKSEM_GLOED,
+      alpha: 0.85 * alpha,
+    },
+    { d, soort: "lijn", breedte: 1.4 * dikte, kleur: STORM_BLIKSEM_MID, alpha },
+    {
+      d,
+      soort: "lijn",
+      breedte: 0.55 * dikte,
+      kleur: STORM_BLIKSEM_KERN,
+      alpha,
+    },
+  ];
+}
+
+/** De hoofdbliksem: van boven de kaart, wevend om de rechterrand (x=100)
+ *  naar beneden. De stukken mét x < 100 verdwijnen in de achterlaag achter de
+ *  kaart en in de voorlaag komen ze juist óver het frame — dat weven is wat
+ *  de storm aan de kaart verankert. */
+const STORM_HOOFDBLIKSEM = zigzag([
+  [88, -16],
+  [97, -2],
+  [91, 9],
+  [104, 21],
+  [96, 33],
+  [110, 47],
+  [102, 58],
+  [112, 73],
+  [105, 85],
+  [110, 95],
+]);
+const STORM_TAKKEN: readonly (readonly [string, number, number])[] = [
+  [zigzag([[104, 21], [116, 27], [112, 38]]), 0.7, 1],
+  [zigzag([[102, 58], [115, 63], [120, 71]]), 0.7, 1],
+  [zigzag([[97, -2], [108, -9], [116, -5]]), 0.6, 0.9],
+  // Klein knettertje in het secundaire wolkje linksonder.
+  [zigzag([[-14, 96], [-6, 104], [-10, 112]]), 0.55, 0.9],
+] as const;
+
+/** Storm-achterlaag (#834): de grote wolkenmassa rechtsboven/rechtsmidden die
+ *  achter het frame doorloopt en buiten de kaart uitbreekt, een kleinere
+ *  massa rechtsonder en een subtiel secundair wolkje linksonder — bewust
+ *  asymmetrisch, zoals de referentie. Laagvolgorde weeft de bliksem door de
+ *  massa: eerst het goudschijnsel en de achterste puffen, dan de ontlading,
+ *  dan de voorste puffen eroverheen.
+ *
+ *  Plaatsingsgrens: cx ± 1,42·rx moet binnen de ornament-viewBox (−30…130)
+ *  blijven, anders snijdt de browser stil af (zie de viewBox-test). */
+export const INFORM_STORM_ACHTER: readonly OrnamentPad[] = [
+  { d: wolk({ cx: 106, cy: 28, rx: 15, ry: 16, fase: 0.7 }), soort: "vlak", kleur: STORM_ROOK_GLOED },
+  ...puf(86, 2, 16, 11, 0.4),
+  ...puf(104, 8, 15, 11, 1.9),
+  ...puf(115, 22, 9, 8, 3.1),
+  ...puf(114, 50, 9, 8, 4.6),
+  ...puf(113, 84, 10, 7, 5.8),
+  ...puf(-9, 99, 10, 7, 2.4),
+  ...puf(-3, 111, 8, 6, 5.2),
+  ...bliksemLagen(STORM_HOOFDBLIKSEM),
+  ...STORM_TAKKEN.flatMap(([d, dikte, alpha]) => bliksemLagen(d, dikte, alpha)),
+  ...puf(111, 36, 11, 9, 0.9),
+  ...puf(107, 63, 11, 8, 2.8),
+  ...puf(106, 95, 11, 7, 4.1),
+  ...puf(114, 103, 7, 5, 1.3),
+] as const;
+
+/** Storm-voorlaag (#834): alleen geselecteerde voorste wolkendelen en een
+ *  paar bliksemsegmenten die plaatselijk óver het gouden frame lopen — dit
+ *  is de laag die de uitbraak verkoopt. Alles blijft in de framezone langs
+ *  de rechterrand (x ≳ 88) plus één pufje over de linkeronderrand; de
+ *  tekstband (naamplaat/editie-regel, x 18–82 · v 78–112) blijft vrij. */
+export const INFORM_STORM_VOOR: readonly OrnamentPad[] = [
+  ...bliksemLagen(
+    zigzag([
+      [94, 20],
+      [102, 31],
+      [97, 43],
+      [105, 53],
+    ]),
+    0.8,
+  ),
+  ...puf(97, 26, 8, 6, 1.1),
+  ...puf(103, 41, 9, 6.5, 3.7),
+  ...bliksemLagen(zigzag([[98, 74], [104, 83]]), 0.6, 0.9),
+  ...puf(95, 68, 7, 5, 5.5),
+  ...puf(102, 88, 8, 5.5, 0.2),
+  ...puf(-2, 116, 7, 5, 2.9),
+] as const;
+
+/** Storm-binnenlaag (#834): het deel van de hoofdwolk dat ín het kaartvlak
+ *  begint, plus de filamenten die naar de rechterrand trekken. Rekent in
+ *  kaart-units (viewBox 0 0 100 139, vullend zoals het pias-motief) en ligt
+ *  als motieflaag ónder de inkt — de kaartinformatie blijft dus vrij. Puffen
+ *  mogen door x=100 heen: DOM (schildclip op het vlak) en canvas (actieve
+ *  clip in drawKaartSchild) snijden identiek af, en precies die afsnede laat
+ *  de wolk achter het frame verdwijnen. */
+export const INFORM_STORM_BINNEN: readonly OrnamentPad[] = [
+  {
+    d: wolk({ cx: 92, cy: 28, rx: 13, ry: 17, fase: 5.9 }),
+    soort: "vlak",
+    kleur: "rgba(255, 213, 107, 0.1)",
+  },
+  ...puf(92, 8, 11, 7, 0.8).map((p) => ({ ...p, alpha: 0.85 })),
+  ...puf(97, 25, 10, 7, 2.6).map((p) => ({ ...p, alpha: 0.9 })),
+  ...puf(94, 42, 8, 6, 4.9).map((p) => ({ ...p, alpha: 0.8 })),
+  ...bliksemLagen(
+    zigzag([
+      [78, 6],
+      [88, 16],
+      [84, 26],
+      [93, 34],
+    ]),
+    0.6,
+    0.8,
+  ),
+  ...bliksemLagen(zigzag([[86, 40], [95, 50], [91, 60]]), 0.5, 0.6),
+] as const;
+export const INFORM_STORM_BINNEN_VIEWBOX = "0 0 100 139";
+
 /** Etskleur van het motief. Bewust laag: het motief ligt ónder de inkt, dus
  *  elke oplichting van het vlak knabbelt aan het contrast van de champagne
  *  inkt (#f2cf7d, L≈0,652). Op 0.12 tilt de zwaarste lijn het navy (#141826,

@@ -224,6 +224,9 @@ import {
   INFORM_MOTIEF_BREEDTE,
   INFORM_MOTIEF_KLEUR,
   INFORM_MOTIEF_POSITIE,
+  INFORM_STORM_ACHTER,
+  INFORM_STORM_BINNEN,
+  INFORM_STORM_VOOR,
   INFORM_TITAAN,
   INFORM_VINNEN,
 } from "@/features/rating/components/ornamentenInform";
@@ -564,6 +567,10 @@ export interface FutKaartKleuren {
      *  preserveAspectRatio="none". `breedte`/`positie` doen dan niets. */
     vullend?: boolean;
   };
+  /** Tweede vlak-motief (#834, In-Form): de storm-binnenlaag óver het
+   *  gewone motief — spiegel van de tweede FutKaartMotief in FutKaart.tsx.
+   *  Zelfde vorm als `motief`, getekend direct erna. */
+  motief2?: FutKaartKleuren["motief"];
   /** Ornamentlaag (#710): de vormen die búiten het schild uitsteken, vóór
    *  het frame getekend (de DOM legt ze als eerste kind achter de kaart).
    *  Dictator en Big Daddy hebben daarnaast een vóór-liggende laag
@@ -860,6 +867,7 @@ export function drawKaartSchild(
   // Vlak-motief (#710): het geëtste watermerk, exact de DOM-laagvolgorde —
   // boven achtergrond, gloed en binnenlijnen, onder sheen en textuur.
   if (kleuren.motief) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief);
+  if (kleuren.motief2) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief2);
 
   const sheen = ctx.createLinearGradient(
     fx,
@@ -1044,10 +1052,37 @@ function goudPad(
   ctx.restore();
 }
 
-/** In-Form, áchter de kaart (#710): de twee slanke vinnen langs de onderste
- *  zijranden plus de bliksemcrest op de as. Eén helft plus zijn spiegeling om
- *  x=50, net als de <use transform> in de DOM-defs; de crest staat op de as en
- *  wordt dus niet gespiegeld. Units zijn kaart-units (100 breed). */
+/** Losse ornamentpaden met eigen kleur per pad (#834): de stormwolken en
+ *  bliksems van In-Form — spiegel van `StormPaden` in FutKaart.tsx. Verwacht
+ *  een reeds naar kaart-units geschaalde context. */
+function tekenStormPaden(
+  ctx: CanvasRenderingContext2D,
+  paden: readonly OrnamentPad[],
+) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const pad of paden) {
+    const p = new Path2D(pad.d);
+    ctx.globalAlpha = pad.alpha ?? 1;
+    if (pad.soort === "vlak") {
+      ctx.fillStyle = pad.kleur ?? "#000";
+      ctx.fill(p);
+    } else {
+      ctx.strokeStyle = pad.kleur ?? "#000";
+      ctx.lineWidth = pad.breedte ?? 1;
+      ctx.stroke(p);
+    }
+  }
+  ctx.restore();
+}
+
+/** In-Form, áchter de kaart (#710, storm sinds #834): eerst de stormwolken
+ *  met de hoofdbliksem (asymmetrisch, massa rechts — bewust niet gespiegeld),
+ *  dan de twee slanke vinnen langs de onderste zijranden plus de bliksemcrest
+ *  op de as. Eén helft plus zijn spiegeling om x=50, net als de
+ *  <use transform> in de DOM-defs; de crest staat op de as en wordt dus niet
+ *  gespiegeld. Units zijn kaart-units (100 breed). */
 function drawInformAchter(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1058,6 +1093,7 @@ function drawInformAchter(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
+  tekenStormPaden(ctx, INFORM_STORM_ACHTER);
   for (const gespiegeld of [false, true]) {
     ctx.save();
     if (gespiegeld) {
@@ -1125,6 +1161,9 @@ function drawInformVoor(
     INFORM_GOUD_CONTOUR,
     INFORM_GOUD_GLANS,
   );
+  // Storm-voorlaag (#834): de wolkendelen en bliksemsegmenten die óver het
+  // frame lopen — dezelfde paden als de DOM-voorlaag.
+  tekenStormPaden(ctx, INFORM_STORM_VOOR);
   ctx.restore();
 }
 
@@ -2790,6 +2829,7 @@ interface EditieRegister {
   randDiktes?: FutKaartKleuren["randDiktes"];
   binnenlijn?: FutKaartKleuren["binnenlijn"];
   motief?: FutKaartKleuren["motief"];
+  motief2?: FutKaartKleuren["motief2"];
   ornament?: FutKaartKleuren["ornament"];
   ornamentVoor?: FutKaartKleuren["ornamentVoor"];
   vignet?: FutKaartKleuren["vignet"];
@@ -2971,6 +3011,15 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       kleur: INFORM_MOTIEF_KLEUR,
       breedte: INFORM_MOTIEF_BREEDTE,
       positie: INFORM_MOTIEF_POSITIE,
+    },
+    // Storm-binnenlaag (#834): vullend in kaart-units, zoals het pias-motief;
+    // breedte en positie doen niets, maar het veld is verplicht.
+    motief2: {
+      paden: INFORM_STORM_BINNEN,
+      kleur: INFORM_MOTIEF_KLEUR,
+      breedte: 1,
+      positie: 0,
+      vullend: true,
     },
     ornament: "inform",
     ornamentVoor: "inform",
@@ -3283,6 +3332,7 @@ export function kaartSkin(
         // In-Form-navy vloeken). Sinds #710 mág een editie er zélf een
         // meebrengen. Spiegel van FutKaart.tsx.
         motief: r.motief,
+        motief2: r.motief2,
         // Het ornament volgt de andere regel: editie boven tier. Een
         // GOAT-in-vorm draagt dus de In-Form-bliksem i.p.v. zijn hoorns — de
         // editie is het nieuws van deze week, het monument is de constante.

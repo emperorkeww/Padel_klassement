@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 420">
+  <!-- Placeholder voor storm-cloud-front-right.webp (#834): drie kleinere,
+       scherpere wolkendelen die vóór het rechterframe hangen. Crisper dan de
+       achterlaag (dichter bij de kijker) en met het sterkste goudlicht — dit
+       zijn de delen naast de bliksem. -->
+  <defs>
+    <radialGradient id="fbol" cx="30%" cy="24%" r="78%">
+      <stop offset="0%" stop-color="#485578"/>
+      <stop offset="45%" stop-color="#272f45"/>
+      <stop offset="100%" stop-color="#0e1220"/>
+    </radialGradient>
+    <radialGradient id="fgoud" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd97a" stop-opacity=".6"/>
+      <stop offset="55%" stop-color="#f0b84e" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#f0b84e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="fb6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="fb1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1"/></filter>
+  </defs>
+
+  <!-- Puf 1 (boven) -->
+  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="120" cy="85" rx="80" ry="52"/></g>
+  <g filter="url(#fb1)">
+    <circle cx="72" cy="78" r="22" fill="url(#fbol)"/>
+    <circle cx="102" cy="58" r="27" fill="url(#fbol)"/>
+    <circle cx="138" cy="56" r="26" fill="url(#fbol)"/>
+    <circle cx="168" cy="74" r="22" fill="url(#fbol)"/>
+    <circle cx="120" cy="98" r="30" fill="#10141f"/>
+    <circle cx="158" cy="102" r="24" fill="#0b0e17"/>
+  </g>
+  <ellipse cx="100" cy="52" rx="34" ry="10" fill="#ffd97a" opacity=".4" filter="url(#fb6)"/>
+  <ellipse cx="80" cy="90" rx="26" ry="34" fill="url(#fgoud)" filter="url(#fb6)"/>
+
+  <!-- Puf 2 (midden) -->
+  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="128" cy="225" rx="72" ry="46"/></g>
+  <g filter="url(#fb1)">
+    <circle cx="86" cy="216" r="20" fill="url(#fbol)"/>
+    <circle cx="116" cy="198" r="25" fill="url(#fbol)"/>
+    <circle cx="150" cy="200" r="23" fill="url(#fbol)"/>
+    <circle cx="176" cy="218" r="19" fill="url(#fbol)"/>
+    <circle cx="130" cy="240" r="27" fill="#10141f"/>
+    <circle cx="164" cy="244" r="20" fill="#0b0e17"/>
+  </g>
+  <ellipse cx="112" cy="194" rx="30" ry="9" fill="#ffd97a" opacity=".42" filter="url(#fb6)"/>
+  <ellipse cx="92" cy="228" rx="22" ry="30" fill="url(#fgoud)" filter="url(#fb6)"/>
+
+  <!-- Puf 3 (onder, kleinst) -->
+  <g filter="url(#fb6)" fill="#0a0e18" opacity=".95"><ellipse cx="112" cy="352" rx="60" ry="38"/></g>
+  <g filter="url(#fb1)">
+    <circle cx="76" cy="346" r="17" fill="url(#fbol)"/>
+    <circle cx="102" cy="330" r="21" fill="url(#fbol)"/>
+    <circle cx="132" cy="332" r="19" fill="url(#fbol)"/>
+    <circle cx="154" cy="348" r="16" fill="url(#fbol)"/>
+    <circle cx="114" cy="364" r="22" fill="#10141f"/>
+  </g>
+  <ellipse cx="100" cy="326" rx="24" ry="8" fill="#ffd97a" opacity=".4" filter="url(#fb6)"/>
+</svg>

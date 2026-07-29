@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 360">
+  <!-- lightning-front-right.svg (#834): de kortere bliksemsegmenten die vóór
+       het frame langs lopen. Zelfde vierlaagse strokerecept als de
+       achterbliksem. Definitief SVG-asset. -->
+  <defs>
+    <filter id="fgb8" x="-60%" y="-25%" width="220%" height="150%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="fgb3" x="-40%" y="-18%" width="180%" height="136%"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <g filter="url(#fgb8)" stroke="#f7b93e" opacity=".5">
+      <path d="M84 8 L64 92 L98 116 L72 204 L100 228 L84 300 L96 348" stroke-width="18"/>
+      <path d="M98 116 L132 150" stroke-width="10"/>
+    </g>
+    <g filter="url(#fgb3)" stroke="#ffd469" opacity=".9">
+      <path d="M84 8 L64 92 L98 116 L72 204 L100 228 L84 300 L96 348" stroke-width="8"/>
+      <path d="M98 116 L132 150" stroke-width="5"/>
+    </g>
+    <g stroke="#ffe9a8">
+      <path d="M84 8 L64 92 L98 116 L72 204 L100 228 L84 300 L96 348" stroke-width="3.4"/>
+      <path d="M98 116 L132 150" stroke-width="2.2"/>
+    </g>
+    <path d="M84 8 L64 92 L98 116 L72 204 L100 228 L84 300 L96 348" stroke="#fffdf3" stroke-width="1.4"/>
+  </g>
+</svg>

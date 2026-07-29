@@ -210,6 +210,11 @@ import {
   INFORM_VINNEN,
 } from "./ornamentenInform";
 import {
+  InformStormAchter,
+  InformStormBinnen,
+  InformStormVoor,
+} from "./storm/InformStorm";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -2197,6 +2202,10 @@ export function FutKaart({
             <use href={`#fut-orn-${ornament}-achter`} />
           </svg>
         )}
+        {/* Storm-achterlaag (#834): de grote wolkenmassa met hoofdbliksem die
+            van achter het frame naar buiten breekt — vóór de zijden in de
+            DOM, dus achter de kaart. */}
+        {editie === "inform" && <InformStormAchter />}
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
@@ -2205,6 +2214,11 @@ export function FutKaart({
                 <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
+                {/* Storm-binnenlaag (#834): de wolk die ín het rechterdeel
+                    van het kaartvlak begint. Het vlak draagt de schildclip,
+                    dus deze laag is gemaskeerd met de exacte kaartvorm; de
+                    inhoud ({voor}) rendert erná en blijft dus leesbaar. */}
+                {editie === "inform" && <InformStormBinnen />}
                 {voor}
               </span>
             </span>
@@ -2242,6 +2256,10 @@ export function FutKaart({
             <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
+        {/* Storm-voorlaag (#834): wolkendelen, bliksemsegmenten, debris en
+            vonken die plaatselijk óver het gouden frame liggen, plus de
+            frameglow die de rechterrand door de bliksem laat oplichten. */}
+        {editie === "inform" && <InformStormVoor />}
       </div>
     </div>
   );
