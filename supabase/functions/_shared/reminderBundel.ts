@@ -6,6 +6,8 @@
 //
 // Pure logica, zonder Deno-globals: getest in reminderBundel.test.ts.
 
+import { dagInZone } from "./klok.ts";
+
 /** Het minimum dat deze module van een match nodig heeft. */
 export interface BundelbareMatch {
   id: string;
@@ -18,18 +20,6 @@ export interface Speeldagbundel<T> {
   herinner: T;
   /** De rest van die groepsdag: stil afvinken, geen push. */
   onderdruk: T[];
-}
-
-/** Kalenderdag (YYYY-MM-DD) van een ISO-timestamp in de opgegeven tijdzone.
- *  Spiegel van dayInZone in src/lib/utils/time.ts. */
-export function dagInZone(iso: string, timeZone: string): string {
-  // en-CA formatteert als YYYY-MM-DD.
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
 }
 
 /**

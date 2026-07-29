@@ -6,5 +6,8 @@ create table public.groups (
   -- Toon van de roast in deze groep; default 'gemeen' = meteen levendig, de
   -- owner draait naar 'mild' of 'radioactief'.
   roast_intensiteit public.roast_intensiteit not null default 'gemeen',
+  -- Zet de cron rondes klaar als er bij de start van de speeldag nog geen zijn
+  -- (#827)? Aan by default; groepen die liever zelf indelen zetten hem uit.
+  auto_rondes boolean not null default true,
   created_at timestamptz not null default now()
 );

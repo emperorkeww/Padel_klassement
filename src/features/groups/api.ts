@@ -110,6 +110,19 @@ export async function setRoastIntensiteit(
   invalidate(`groups:one:${groupId}`, "groups");
 }
 
+/** Zet automatisch rondes klaarzetten aan of uit (#827; eigenaar-only, RLS). */
+export async function setAutoRondes(
+  groupId: string,
+  aan: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("groups")
+    .update({ auto_rondes: aan })
+    .eq("id", groupId);
+  if (error) throw error;
+  invalidate(`groups:one:${groupId}`, "groups");
+}
+
 /** Verwijdert een groep volledig (alleen de eigenaar, afgedwongen door RLS). */
 export async function deleteGroup(groupId: string): Promise<void> {
   const { error } = await supabase.from("groups").delete().eq("id", groupId);

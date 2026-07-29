@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bundelPerSpeeldag, dagInZone } from "./reminderBundel.ts";
+import { bundelPerSpeeldag } from "./reminderBundel.ts";
+import { dagInZone } from "./klok.ts";
 
 const TZ = "Europe/Brussels";
 
