@@ -243,6 +243,13 @@ export function WinnerCard({
               : "Nog geen deelnemers bevestigd."}
           </span>
         </div>
+        {/* Twijfelaars (#803): juist hier telt het — met "nog 1 speler nodig"
+            wil je weten wie je nog kunt porren. */}
+        {t.maybe.length > 0 && (
+          <p className="winner-card__maybe">
+            Misschien: {t.maybe.map(name).join(", ")}
+          </p>
+        )}
 
         {/* Fase-secties (#349): kiezen → boeken → klaarzetten; alleen de
             actuele stap springt eruit, de rest blijft compact. */}

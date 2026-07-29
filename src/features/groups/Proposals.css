@@ -108,10 +108,6 @@
   align-items: center;
   gap: var(--sp-2);
 }
-.proposal__maybe {
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-}
 .proposal__free {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
@@ -124,6 +120,11 @@
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft);
+}
+/* Twijfelaars staan onder de zekere spelers en lezen als bijzaak (#803). */
+.proposal__names--maybe {
+  font-size: var(--fs-xs);
+  color: var(--gold);
 }
 .proposal__actions {
   display: flex;
@@ -531,11 +532,18 @@
 .poll-row__people {
   display: inline-flex;
   align-items: center;
+  gap: var(--sp-1);
 }
-.poll-row__people > * {
+/* De overlappende stapel blijft binnen de avatars; de misschien-badge staat
+   ernaast en mag dus niet mee-overlappen (#803). */
+.poll-row__avatars {
+  display: inline-flex;
+  align-items: center;
+}
+.poll-row__avatars > * {
   margin-left: -6px;
 }
-.poll-row__people > :first-child {
+.poll-row__avatars > :first-child {
   margin-left: 0;
 }
 .poll-row__more {
@@ -544,10 +552,14 @@
   margin-left: 2px !important;
 }
 .poll-row__maybe {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: none;
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--gold);
-  margin-left: 4px !important;
+  cursor: pointer;
 }
 .poll-waiting {
   margin: 0 0 var(--sp-3);
@@ -655,6 +667,10 @@
   }
   .poll-row__people {
     grid-area: people;
+  }
+  .poll-row__maybe {
+    min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
+    padding-inline: var(--sp-3);
   }
   .seg,
   .poll-row__alt {
@@ -782,6 +798,11 @@
   margin-left: var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--ink);
+}
+.winner-card__maybe {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--gold);
 }
 .winner-card__actions {
   display: flex;
