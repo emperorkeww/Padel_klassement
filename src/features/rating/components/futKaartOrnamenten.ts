@@ -420,18 +420,18 @@ export const GOAT_BAARD_NERVEN: readonly string[] = [-1, 0, 1].map((k) => {
  *  het vlak heeft 24% bodempadding, dus de divisieregel GOAT eindigt op v≈115
  *  en het ornament mag daar niet overheen. */
 export const GOAT_BAARD_ARM = bouwStreng({
-  start: [46.2, 120.2],
+  start: [45.8, 119.8],
   segmenten: [
     [
-      [41.0, 122.0],
-      [36.8, 125.0],
-      [32.6, 129.0],
+      [40.2, 121.4],
+      [34.6, 125.2],
+      [29.4, 130.8],
     ],
   ],
-  dikte: 0.8,
+  dikte: 1.05,
   punt: 0.1,
-  taper: 1.2,
-  stappen: 30,
+  taper: 1.35,
+  stappen: 36,
 });
 
 /** Baardornament, deel 3 — de onderkrul (#772). */

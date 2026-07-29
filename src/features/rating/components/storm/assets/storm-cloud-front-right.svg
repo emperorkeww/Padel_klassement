@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 620">
+  <!-- Drie geselecteerde voorgrondocclusies. De vormen bezetten slechts het
+       linkerkwart van deze hoge transparante stage: zo kunnen ze over de
+       volledige framehoogte verdeeld worden zonder breder dan 10–15% van de
+       kaart te worden. -->
+  <defs>
+    <linearGradient id="front-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#515e7b"/>
+      <stop offset=".28" stop-color="#283147"/>
+      <stop offset=".7" stop-color="#0d121d"/>
+      <stop offset="1" stop-color="#03050a"/>
+    </linearGradient>
+    <radialGradient id="front-gold" cx=".08" cy=".42" r=".8">
+      <stop offset="0" stop-color="#fff0b0" stop-opacity=".78"/>
+      <stop offset=".18" stop-color="#e4aa40" stop-opacity=".35"/>
+      <stop offset=".58" stop-color="#8a5a17" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#8a5a17" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="front-edge" x="-45%" y="-35%" width="190%" height="170%">
+      <feTurbulence type="fractalNoise" baseFrequency=".025 .04" numOctaves="3" seed="41" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="10"/>
+      <feDropShadow dx="-2" dy="0" stdDeviation="3" flood-color="#f3b943" flood-opacity=".25"/>
+      <feDropShadow dx="4" dy="7" stdDeviation="8" flood-color="#02040a" flood-opacity=".8"/>
+    </filter>
+    <filter id="front-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <!-- Klein deel over de rechterbovenrand. -->
+  <g filter="url(#front-edge)">
+    <path d="M-8 48
+      C18 19 64 14 108 37
+      C87 47 94 61 124 77
+      C91 78 61 101 27 89
+      C8 83 -4 68 -8 48 Z"
+      fill="url(#front-body)"/>
+
+    <!-- Middendeel: scherpere onderrand, rond 35–55% kaarthoogte. -->
+    <path d="M-10 255
+      C21 224 75 217 118 242
+      C94 258 103 278 137 296
+      C101 303 62 333 25 313
+      C3 301 -5 279 -10 255 Z"
+      fill="url(#front-body)"/>
+
+  </g>
+
+  <path d="M0 0 H108 V600 H0 Z" fill="url(#front-gold)" opacity=".78"/>
+  <path d="M5 44 C-2 60 8 80 27 88
+    M4 251 C-3 272 8 296 29 308"
+    fill="none" stroke="#ffe7a0" stroke-opacity=".58" stroke-width="3.5"
+    stroke-linecap="round" filter="url(#front-glow)"/>
+</svg>

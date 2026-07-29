@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 720">
+  <!-- Eén hoofdontlading over de volledige stormhoogte. De baan slingert
+       rond de rechterframerand; vertakkingen lopen naar de buitenmassa. -->
+  <defs>
+    <filter id="lightning-glow-wide" x="-80%" y="-15%" width="260%" height="130%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <filter id="lightning-glow" x="-45%" y="-10%" width="190%" height="120%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <g stroke="#e9a72e" opacity=".48" filter="url(#lightning-glow-wide)">
+      <path d="M107 5 L88 86 L126 118 L96 204 L137 239 L105 326 L151 360 L119 449 L153 486 L126 572 L148 603 L134 711" stroke-width="27"/>
+      <path d="M126 118 L190 151 L174 216" stroke-width="17"/>
+      <path d="M137 239 L205 276 L186 337" stroke-width="15"/>
+      <path d="M105 326 L48 375 L62 429" stroke-width="13"/>
+      <path d="M153 486 L210 524 L193 579" stroke-width="12"/>
+      <path d="M88 86 L42 119" stroke-width="11"/>
+    </g>
+    <g stroke="#ffd469" opacity=".92" filter="url(#lightning-glow)">
+      <path d="M107 5 L88 86 L126 118 L96 204 L137 239 L105 326 L151 360 L119 449 L153 486 L126 572 L148 603 L134 711" stroke-width="11"/>
+      <path d="M126 118 L190 151 L174 216" stroke-width="7"/>
+      <path d="M137 239 L205 276 L186 337" stroke-width="6"/>
+      <path d="M105 326 L48 375 L62 429" stroke-width="5.5"/>
+      <path d="M153 486 L210 524 L193 579" stroke-width="5"/>
+      <path d="M88 86 L42 119" stroke-width="4.8"/>
+    </g>
+    <g stroke="#ffe9a8">
+      <path d="M107 5 L88 86 L126 118 L96 204 L137 239 L105 326 L151 360 L119 449 L153 486 L126 572 L148 603 L134 711" stroke-width="4.6"/>
+      <path d="M126 118 L190 151 L174 216" stroke-width="3"/>
+      <path d="M137 239 L205 276 L186 337" stroke-width="2.6"/>
+      <path d="M105 326 L48 375 L62 429" stroke-width="2.4"/>
+      <path d="M153 486 L210 524 L193 579" stroke-width="2.2"/>
+      <path d="M88 86 L42 119" stroke-width="2.1"/>
+    </g>
+    <g stroke="#fffdf3">
+      <path d="M107 5 L88 86 L126 118 L96 204 L137 239 L105 326 L151 360 L119 449 L153 486 L126 572 L148 603 L134 711" stroke-width="1.8"/>
+      <path d="M126 118 L190 151 L174 216" stroke-width="1.2"/>
+      <path d="M105 326 L48 375" stroke-width="1.1"/>
+    </g>
+  </g>
+</svg>

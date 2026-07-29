@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 180">
+  <!-- Eén subtiele rookpluim linksonder; geen ketting van cirkelvormige
+       wolken. Het goudlicht komt van rechts, vanuit de hoofdstorm. -->
+  <defs>
+    <linearGradient id="left-smoke" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#05070d" stop-opacity=".1"/>
+      <stop offset=".42" stop-color="#111725" stop-opacity=".82"/>
+      <stop offset=".75" stop-color="#28334b" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#4e5e7e" stop-opacity=".18"/>
+    </linearGradient>
+    <radialGradient id="left-gold" cx=".92" cy=".34" r=".5">
+      <stop offset="0" stop-color="#ffe39a" stop-opacity=".44"/>
+      <stop offset=".35" stop-color="#c88b2d" stop-opacity=".13"/>
+      <stop offset="1" stop-color="#c88b2d" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="left-wisp" x="-20%" y="-45%" width="140%" height="190%">
+      <feTurbulence type="fractalNoise" baseFrequency=".018 .045" numOctaves="3" seed="53" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="12"/>
+      <feGaussianBlur stdDeviation="2.4"/>
+    </filter>
+  </defs>
+  <path d="M5 131
+    C45 112 56 77 98 84
+    C129 51 185 51 207 79
+    C247 62 286 82 294 113
+    C254 104 236 132 196 126
+    C160 151 108 141 83 130
+    C50 146 22 145 5 131 Z"
+    fill="url(#left-smoke)" filter="url(#left-wisp)"/>
+  <rect x="166" y="35" width="134" height="120" fill="url(#left-gold)" opacity=".72"/>
+</svg>

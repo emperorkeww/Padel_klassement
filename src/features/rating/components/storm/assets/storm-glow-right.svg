@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560">
+  <!-- Placeholder voor storm-glow-right.webp (#834): de goudgele lichtbron
+       rond de rechterbliksem. Wordt met mix-blend-mode: screen over de
+       wolken en het frame gelegd — puur licht, geen vorm. -->
+  <defs>
+    <radialGradient id="gloed" cx="42%" cy="36%" r="58%">
+      <stop offset="0%" stop-color="#ffd97a" stop-opacity=".55"/>
+      <stop offset="38%" stop-color="#e8a93c" stop-opacity=".26"/>
+      <stop offset="70%" stop-color="#8a5f14" stop-opacity=".1"/>
+      <stop offset="100%" stop-color="#8a5f14" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="180" cy="230" rx="180" ry="270" fill="url(#gloed)"/>
+</svg>

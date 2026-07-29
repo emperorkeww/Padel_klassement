@@ -1,0 +1,61 @@
+/* Stage van de storm-showcase (#834): donkere neutrale achtergrond (zoals de
+   referentie), kaart op vaste grote maat, titel en uitleg eronder. De stage
+   is precies wat het screenshotscript fotografeert. */
+
+.storm-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #101218;
+  padding: 70px 0 32px;
+  overflow-x: clip;
+}
+.storm-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.storm-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+.storm-showcase__titel {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  color: #f4f5f7;
+}
+.storm-showcase__uitleg {
+  margin: 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: 19px;
+  line-height: 1.45;
+  color: #b6bac4;
+}
+
+@media (max-width: 640px) {
+  .storm-showcase {
+    padding-top: 14vw;
+  }
+
+  .storm-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .storm-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .storm-showcase__titel {
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .storm-showcase__uitleg {
+    max-width: min(420px, 88vw);
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}
