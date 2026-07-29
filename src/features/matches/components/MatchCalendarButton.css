@@ -1,16 +1,8 @@
-/* "Zet in agenda" met kiesbare duur ernaast. */
-.agenda-control {
-  display: inline-flex;
-  align-items: center;
+/* Duurkeuze in de agenda-sheet: één knop per duur, ruim tapbaar. */
+.agenda-durations {
+  display: grid;
   gap: var(--sp-2);
 }
-.agenda-duration {
-  display: inline-flex;
-}
-.agenda-duration__select {
-  padding: 2px var(--sp-2);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  width: auto;
-  min-width: 0;
+.agenda-durations .btn {
+  min-height: 44px;
 }

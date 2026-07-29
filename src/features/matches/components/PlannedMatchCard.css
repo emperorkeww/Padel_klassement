@@ -1,7 +1,90 @@
-/* Extra's op de geplande-match-kaart (sets, context, toto, beheer/undo).
-   De basis-.planned-card-stijlen staan in components/ui.css. */
+/* Extra's op de geplande-match-kaart (kop, winkansbalk, sets, inzet-tegels,
+   context, beheer/undo). De basis-.planned-card-stijlen staan in
+   components/ui/ui.css. */
 
-/* Compacte actiebalk onder de kaart. */
+/* Kop: wanneer & waar links, agenda en ⋯ als icoonknoppen rechts. */
+.planned-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+.planned-card__when {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.planned-card__when-day {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-size: var(--fs-lg);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.planned-card__when-tbd {
+  color: var(--ink-soft);
+  font-weight: 650;
+}
+.planned-card__where {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Countdown naar de tipdeadline; kleurt rood zodra het laatste uur ingaat. */
+.planned-card__deadline {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.planned-card__deadline--closing {
+  border-color: currentColor;
+  background: transparent;
+  color: var(--danger);
+}
+
+/* Gedeelde winkansbalk tussen de twee teamrijen: één feit, één balk. */
+.planned-card__prob {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.planned-card__prob-pct {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.planned-card__prob-pct.is-fav {
+  color: var(--accent);
+}
+.planned-card__prob-track {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.planned-card__prob-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* Compacte actiebalk onder de kaart: meta + één primaire actie. */
 .planned-card__actions {
   display: flex;
   flex-wrap: wrap;
@@ -11,39 +94,78 @@
 .planned-card__actions .planned-card__save {
   margin-left: auto;
 }
-/* ⋯-knop naar de beheer-sheet: comfortabel tapdoel. */
-.planned-card__more {
+
+/* Icoonknoppen in de kop (agenda, ⋯): comfortabel vierkant tapdoel. */
+.iconbtn {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
   min-width: 44px;
   min-height: 44px;
-}
-
-/* Toto (#116, #362): ingeklapt tot één samenvattingsregel onderaan de kaart;
-   klapt uit naar de tip-opties. Tippen is secundair aan de score-invoer. */
-.toto {
-  margin-top: var(--sp-1);
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
-}
-.toto__summary {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  width: 100%;
-  min-height: 44px;
-  padding: var(--sp-2) var(--sp-3);
-  background: none;
-  border: none;
+  color: var(--ink-soft);
   font: inherit;
-  text-align: left;
+  font-size: var(--fs-lg);
+  line-height: 1;
   cursor: pointer;
 }
-.toto__title {
-  font-size: var(--fs-sm);
-  font-weight: 700;
+.iconbtn:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
-.toto__state {
-  margin-left: auto;
+
+/* Inzetten (toto + lef) als open tegels naast elkaar; op smal onder elkaar.
+   :empty vangt het geval waarin geen van beide tegels rendert. */
+.planned-card__bets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--sp-2);
+  align-items: stretch;
+}
+.planned-card__bets:empty {
+  display: none;
+}
+
+/* Gemeenschappelijke tegelvorm; de kleur maakt het spel herkenbaar:
+   toto in het smaragd van het klassement, lef in violet. */
+.bet-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-radius: var(--radius-sm);
+}
+.bet-tile--toto {
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+}
+.bet-tile--lef {
+  border: 1px solid var(--lef-line);
+  background: var(--lef-soft);
+}
+.bet-tile__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 24px;
+}
+.bet-tile__name {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.bet-tile--toto .bet-tile__name {
+  color: var(--accent);
+}
+.bet-tile--lef .bet-tile__name {
+  color: var(--lef);
+}
+.bet-tile__stat {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -51,37 +173,33 @@
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
-.toto__chevron {
-  flex-shrink: 0;
+.bet-tile__options {
+  display: grid;
+  gap: var(--sp-2);
+}
+.bet-tile__foot {
+  margin: 0;
+  margin-top: auto;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
-  transition: transform 0.15s ease;
-}
-.toto__summary[aria-expanded="true"] .toto__chevron {
-  transform: rotate(180deg);
-}
-.toto__body {
-  display: grid;
-  gap: var(--sp-2);
-  padding: 0 var(--sp-3) var(--sp-3);
-}
-.toto__options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-2);
 }
 
 /* Grote tapbare tip-keuze per team. */
 .toto-opt {
   display: grid;
   gap: var(--sp-1);
+  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--accent-line);
   border-radius: var(--radius-sm);
   background: var(--surface);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease,
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
     box-shadow 0.15s ease;
 }
 .toto-opt:hover:not(:disabled) {
@@ -94,7 +212,7 @@
 }
 .toto-opt--mine {
   border-color: var(--accent);
-  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .toto-opt__top {
   display: flex;
@@ -141,17 +259,12 @@
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-.toto__legend {
-  margin: 0;
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-}
 
-/* Smal scherm: de twee keuzes onder elkaar zodat teamnamen niet knellen. */
-@media (max-width: 520px) {
-  .toto__options {
-    grid-template-columns: 1fr;
-  }
+/* Uitleg voor wie niet mag scoren, in plaats van een stilletjes lege kaart. */
+.planned-card__noscore {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
 }
 
 /* Coach + rivaliteit gegroepeerd als rustig tussenblok (#362). */
@@ -179,7 +292,9 @@
 
 /* Uitklapbare optionele set-invoer, direct onder de score-rijen. */
 .planned-card__sets {
-  margin-top: var(--sp-1);
+  display: grid;
+  justify-items: start;
+  gap: var(--sp-1);
 }
 .planned-card__sets-toggle {
   display: inline-flex;
@@ -243,4 +358,46 @@
 }
 .planned-card__coach-face {
   flex-shrink: 0;
+}
+
+/* Zojuist opgeslagen: de uitslag plus wat je toto-tip en lef-inzet deden. */
+.planned-saved {
+  display: grid;
+  gap: var(--sp-2);
+}
+.planned-saved__bets {
+  display: grid;
+  gap: var(--sp-1);
+}
+.planned-saved__line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+}
+.planned-saved__line--toto {
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+}
+.planned-saved__line--lef {
+  border: 1px solid var(--lef-line);
+  background: var(--lef-soft);
+}
+.planned-saved__what {
+  min-width: 0;
+}
+.planned-saved__amount {
+  margin-left: auto;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.planned-saved__amount.is-up {
+  color: var(--success);
+}
+.planned-saved__amount.is-down {
+  color: var(--danger);
 }

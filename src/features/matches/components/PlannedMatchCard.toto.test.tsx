@@ -37,27 +37,10 @@ function renderCard(match: Match) {
   );
 }
 
-/** Klapt de (standaard ingeklapte) toto-sectie uit via de samenvattingsregel. */
-async function expandToto() {
-  const summary = await screen.findByRole("button", { name: /toto/i });
-  await userEvent.click(summary);
-  return summary;
-}
-
 describe("<PlannedMatchCard /> toto", () => {
-  it("toont tip-chips per team met de tips van de groep", async () => {
+  it("toont de tip-chips direct in de open toto-tegel", async () => {
     renderCard(MATCH_PLANNED as Match);
-    // Ingeklapt (#362): alleen de samenvattingsregel, nog geen chips.
-    const summary = await screen.findByRole("button", { name: /toto/i });
-    expect(summary).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByRole("button", { name: /^tip / }),
-    ).not.toBeInTheDocument();
-    // Alice (ingelogd) heeft nog niet getipt → de uitnodiging in de samenvatting.
-    expect(screen.getByText(/tip de winnaar/i)).toBeInTheDocument();
-
-    // Uitgeklapt: beide teams krijgen een tapbare tip-chip.
-    await userEvent.click(summary);
+    // Open tegel (geen accordeon meer): beide teams direct tapbaar.
     const chipA = await screen.findByRole("button", {
       name: /^tip alice anders & bob boers$/i,
     });
@@ -65,13 +48,14 @@ describe("<PlannedMatchCard /> toto", () => {
     expect(
       screen.getByRole("button", { name: /^tip carol claes & dave de vos$/i }),
     ).toBeInTheDocument();
+    // Alice (ingelogd) heeft nog niet getipt → de uitnodiging in de voetregel.
+    expect(screen.getByText(/tip de winnaar/i)).toBeInTheDocument();
     // Carol tipte team A (fixture): haar naam in de tooltip.
     expect(chipA).toHaveAttribute("title", expect.stringMatching(/carol/i));
   });
 
   it("plaatst een tip via de chip", async () => {
     renderCard(MATCH_PLANNED as Match);
-    await expandToto();
     await userEvent.click(
       await screen.findByRole("button", {
         name: /^tip carol claes & dave de vos$/i,
@@ -85,11 +69,9 @@ describe("<PlannedMatchCard /> toto", () => {
 
   it("toont geen tip-chips op een match zonder groep", async () => {
     renderCard({ ...MATCH_PLANNED, group_id: null } as Match);
-    // De kaart is er wel (score-invoer), maar zonder toto-sectie.
+    // De kaart is er wel (score-invoer), maar zonder toto-tegel.
     await screen.findByLabelText(/^score alice anders & bob boers$/i);
-    expect(
-      screen.queryByRole("button", { name: /toto/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/🎯 toto/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /^tip / }),
     ).not.toBeInTheDocument();
@@ -100,16 +82,17 @@ describe("<PlannedMatchCard /> toto", () => {
       ...MATCH_PLANNED,
       played_at: "2026-07-01T18:00:00.000Z",
     } as Match);
-    // Ingeklapte samenvatting: gesloten + teller (Carol's fixture-tip).
+    // Kopregel van de tegel: gesloten + teller (Carol's fixture-tip).
     expect(
       await screen.findByText(/tippen gesloten · 1 tip/i),
     ).toBeInTheDocument();
-    await expandToto();
     const chipA = await screen.findByRole("button", {
       name: /^tip alice anders & bob boers$/i,
     });
     expect(chipA).toBeDisabled();
     // Geen tip-uitnodiging meer als tippen dicht is.
-    expect(screen.queryByText(/tippen kan tot de starttijd/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/tippen kan tot de starttijd/i),
+    ).not.toBeInTheDocument();
   });
 });

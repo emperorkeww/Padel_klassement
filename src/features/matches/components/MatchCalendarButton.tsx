@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Sheet } from "@/ui/Sheet";
 import { tap } from "@/lib/utils/haptics";
 import {
   downloadIcs,
@@ -13,8 +14,11 @@ import type { Match, Profile, Team } from "@/types";
 import { teamLabel } from "@/features/matches/api";
 import "./MatchCalendarButton.css";
 
-/** "Zet in agenda" voor een (geplande) match, met kiesbare duur (60/90/120 min).
- *  Getimed als er een tijdstip gepland is, anders een event voor de hele dag. */
+/** "Zet in agenda" als icoonknop in de kop van de geplande-match-kaart. De
+ *  duurkeuze (60/90/120 min) hoort bij het agenderen zelf en zit daarom in
+ *  een compacte sheet achter de knop, niet permanent op de kaart. Zonder
+ *  gepland tijdstip is de duur niet relevant (event voor de hele dag) en
+ *  downloadt de knop direct. */
 export function MatchCalendarButton({
   match: m,
   teams,
@@ -25,9 +29,9 @@ export function MatchCalendarButton({
   profiles: Record<string, Profile>;
 }) {
   const club = useClub();
-  const [duration, setDuration] = useState<MatchDuration>(90);
+  const [open, setOpen] = useState(false);
 
-  function addToCalendar() {
+  function addToCalendar(duration: MatchDuration) {
     const when = new Date(m.played_at ?? m.created_at);
     const date = localDate(when);
     downloadIcs(
@@ -44,32 +48,38 @@ export function MatchCalendarButton({
       }),
     );
     tap();
+    setOpen(false);
   }
 
   return (
-    <span className="agenda-control">
-      <button className="agenda-btn" onClick={addToCalendar}>
-        Zet in agenda
+    <>
+      <button
+        type="button"
+        className="iconbtn"
+        aria-label="Zet in agenda"
+        title="Zet in agenda"
+        aria-haspopup={m.played_at ? "dialog" : undefined}
+        onClick={() => (m.played_at ? setOpen(true) : addToCalendar(90))}
+      >
+        <span aria-hidden="true">📅</span>
       </button>
-      {/* Duur alleen relevant voor een getimed event. */}
       {m.played_at && (
-        <label className="agenda-duration">
-          <span className="sr-only">Duur</span>
-          <select
-            className="input agenda-duration__select"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value) as MatchDuration)}
-            aria-label="Duur van de match"
-          >
+        <Sheet
+          open={open}
+          onClose={() => setOpen(false)}
+          title="Zet in agenda"
+          compact
+        >
+          <div className="agenda-durations">
             {MATCH_DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {d} min
-              </option>
+              <button key={d} className="btn" onClick={() => addToCalendar(d)}>
+                {d} minuten
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </Sheet>
       )}
-    </span>
+    </>
   );
 }
 
