@@ -131,6 +131,38 @@ export const INFORM_VIN: Streng = bouwStreng({
   stappen: 40,
 });
 
+/** Tweede, kortere rail binnen de hoofdvin (#834). In de FUT-referenties is
+ *  een zijornament zelden één los blad: twee geneste metaalcontouren groeien
+ *  vanuit dezelfde schildtaille en verdwijnen op verschillende hoogtes onder
+ *  het frame. Dat maakt de aansluiting vloeiender en de flank gelaagder,
+ *  zonder van In-Form een monumentkaart te maken. */
+export const INFORM_VIN_BINNEN: Streng = bouwStreng({
+  start: [6.2, 116.5],
+  segmenten: [
+    [
+      [4.8, 107],
+      [2.8, 98],
+      [0.4, 90],
+    ],
+    [
+      [-1.1, 85],
+      [-2.6, 81],
+      [-4.2, 77.5],
+    ],
+  ],
+  dikte: 2.45,
+  ribbels: 2,
+  taper: 1.5,
+  punt: 0.72,
+  stappen: 36,
+});
+
+/** Van buiten naar binnen; DOM en canvas itereren exact dezelfde set. */
+export const INFORM_VINNEN: readonly Streng[] = [
+  INFORM_VIN,
+  INFORM_VIN_BINNEN,
+] as const;
+
 /* -------------------------- medaillon (vóór) -------------------------- */
 
 /** Bliksemmedaillon in de kaartpunt: gouden ring, donkere spouw, tweede ring,

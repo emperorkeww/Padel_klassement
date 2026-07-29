@@ -207,7 +207,7 @@ import {
   INFORM_MOTIEF_KLEUR,
   INFORM_MOTIEF_POSITIE,
   INFORM_TITAAN,
-  INFORM_VIN,
+  INFORM_VINNEN,
 } from "./ornamentenInform";
 import {
   ONFIRE_CREST_BAND,
@@ -220,6 +220,11 @@ import {
   ONFIRE_MEDAILLON_DIEP,
   ONFIRE_MEDAILLON_NERVEN,
   ONFIRE_MEDAILLON_VLAM,
+  ONFIRE_PLUIMEN,
+  ONFIRE_PLUIM_VERLOOP,
+  ONFIRE_RANDVLAMMEN,
+  ONFIRE_RANDVLAM_HARTEN,
+  ONFIRE_RANDVLAM_VERLOOP,
   ONFIRE_SINTELS,
   ONFIRE_SINTEL_GLOED,
   ONFIRE_SINTEL_KERN,
@@ -849,6 +854,12 @@ export function FutKaartDefs() {
         <clipPath id="fut-schild-kroon" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
         </clipPath>
+        {/* GOAT (#834): een vloeiende drievoudige crest i.p.v. de oude ene
+            ronde bobbel. Twee zijpunten leiden via zachte dalen naar de hogere
+            middenpunt; de brede schouders lopen onder de hoornwortels door. */}
+        <clipPath id="fut-schild-goat" clipPathUnits="objectBoundingBox">
+          <path d="M 0.075 0.045 C 0.16 0.014 0.26 0.018 0.35 0.022 C 0.38 0.022 0.395 0.006 0.42 0.006 C 0.445 0.01 0.46 0.032 0.475 0.032 C 0.486 0.018 0.494 0 0.5 0 C 0.506 0 0.514 0.018 0.525 0.032 C 0.54 0.032 0.555 0.01 0.58 0.006 C 0.605 0.006 0.62 0.022 0.65 0.022 C 0.74 0.018 0.84 0.014 0.925 0.045 C 0.972 0.061 1 0.078 1 0.108 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.108 C 0 0.078 0.028 0.061 0.075 0.045 Z" />
+        </clipPath>
         {/* Troon-crest (#710): de ceremoniële schildvorm van El Padelissimo —
             gekantelde bovenhoeken en een V-inkeping in het midden waar de
             kroon in valt. De onderkant is identiek aan de andere vormen (de
@@ -1126,7 +1137,14 @@ export function FutKaartDefs() {
           ))}
         </linearGradient>
         <g id="fut-orn-inform-achter-helft">
-          <FutStreng streng={INFORM_VIN} ribbelBreedte={0.62} materiaal={INFORM_MATERIAAL} />
+          {INFORM_VINNEN.map((vin, index) => (
+            <FutStreng
+              key={vin.omtrek}
+              streng={vin}
+              ribbelBreedte={index === 0 ? 0.62 : 0.46}
+              materiaal={INFORM_MATERIAAL}
+            />
+          ))}
         </g>
         <g id="fut-orn-inform-achter">
           <use href="#fut-orn-inform-achter-helft" />
@@ -1210,17 +1228,50 @@ export function FutKaartDefs() {
             <stop key={offset} offset={offset} stopColor={kleur} />
           ))}
         </linearGradient>
-        {/* Áchter de kaart: de drie vlamvinnen per kant. Eén helft plus zijn
-            spiegeling om x=50, dus links en rechts zijn per constructie gelijk. */}
-        <g id="fut-orn-onfire-achter-helft">
+        <linearGradient
+          id="fut-orn-onfire-pluim"
+          x1="0"
+          y1="15"
+          x2="0"
+          y2="120"
+          gradientUnits="userSpaceOnUse"
+        >
+          {ONFIRE_PLUIM_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id="fut-orn-onfire-randvlam"
+          x1="0"
+          y1="26"
+          x2="0.35"
+          y2="106"
+          gradientUnits="userSpaceOnUse"
+        >
+          {ONFIRE_RANDVLAM_VERLOOP.map(([offset, kleur]) => (
+            <stop key={offset} offset={offset} stopColor={kleur} />
+          ))}
+        </linearGradient>
+        {/* Achterlaag (#834): vier asymmetrische vuur-/rookmassa's over de
+            volle kaart, plus alleen voor de metalen V-rails een gespiegelde
+            helft. Het frame tekent hierna over de wortels heen. */}
+        <g id="fut-orn-onfire-vinnen-helft">
           {ONFIRE_VINNEN.map((vin) => (
             <FutStreng key={vin.omtrek} streng={vin} materiaal={ONFIRE_MATERIAAL} />
           ))}
         </g>
         <g id="fut-orn-onfire-achter">
-          <use href="#fut-orn-onfire-achter-helft" />
+          {ONFIRE_PLUIMEN.map((d, index) => (
+            <path
+              key={d}
+              d={d}
+              fill="url(#fut-orn-onfire-pluim)"
+              opacity={index % 2 === 0 ? 0.96 : 0.82}
+            />
+          ))}
+          <use href="#fut-orn-onfire-vinnen-helft" />
           <use
-            href="#fut-orn-onfire-achter-helft"
+            href="#fut-orn-onfire-vinnen-helft"
             transform="translate(100,0) scale(-1,1)"
           />
         </g>
@@ -1238,7 +1289,23 @@ export function FutKaartDefs() {
             </g>
           ))}
         </g>
+        <g id="fut-orn-onfire-randvlammen">
+          {ONFIRE_RANDVLAMMEN.map((d, index) => (
+            <path
+              key={d}
+              d={d}
+              fill="url(#fut-orn-onfire-randvlam)"
+              stroke={ONFIRE_KOPER.contour}
+              strokeWidth="0.32"
+              opacity={index % 2 === 0 ? 0.96 : 0.84}
+            />
+          ))}
+          {ONFIRE_RANDVLAM_HARTEN.map((d) => (
+            <path key={d} d={d} fill="url(#fut-orn-gloed)" opacity="0.88" />
+          ))}
+        </g>
         <g id="fut-orn-onfire-voor">
+          <use href="#fut-orn-onfire-randvlammen" />
           <path
             d={ONFIRE_CREST_PLAAT}
             fill="url(#fut-orn-onfire-staal)"
@@ -1849,12 +1916,17 @@ function FutKaartMotief({
           : {}),
       }}
     >
-      {paden.map((p) =>
+      {paden.map((p, index) =>
         p.soort === "vlak" ? (
-          <path key={p.d} d={p.d} fill={p.kleur ?? kleur} opacity={p.alpha} />
+          <path
+            key={`${index}-${p.soort}-${p.d}`}
+            d={p.d}
+            fill={p.kleur ?? kleur}
+            opacity={p.alpha}
+          />
         ) : (
           <path
-            key={p.d}
+            key={`${index}-${p.soort}-${p.d}`}
             d={p.d}
             fill="none"
             stroke={p.kleur ?? kleur}
@@ -2130,6 +2202,7 @@ export function FutKaart({
           <span className="fut-kaart__liner">
             <span className="fut-kaart__keyline">
               <span className="fut-kaart__vlak">
+                <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
                 {voor}
@@ -2145,6 +2218,7 @@ export function FutKaart({
           <span className="fut-kaart__liner">
             <span className="fut-kaart__keyline">
               <span className="fut-kaart__vlak fut-kaart__vlak--stats">
+                <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {achter}
               </span>
             </span>

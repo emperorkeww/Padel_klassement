@@ -190,6 +190,64 @@ export const ONFIRE_GLOED_VERLOOP: readonly (readonly [number, string])[] = [
  *  koperen schijf te zijn. */
 export const ONFIRE_MEDAILLON_DIEP = "#26100a";
 
+/* ---------------------- achtergrond buiten het schild --------------------- */
+
+/** Hitte-/rookverloop achter de flanken (#834). Bovenin begint het als gedempt
+ *  pruim (de secundaire kleur uit het nieuwe frame), via koper naar amber bij
+ *  de wortel. De laatste stop is transparant: de massa lijkt uit het frame te
+ *  groeien en eindigt niet als een los gekleurd vlak. */
+export const ONFIRE_PLUIM_VERLOOP: readonly (readonly [number, string])[] = [
+  [0, "rgba(110, 49, 67, 0.1)"],
+  [0.42, "rgba(181, 106, 63, 0.18)"],
+  [0.76, "rgba(255, 143, 62, 0.14)"],
+  [1, "rgba(46, 16, 6, 0)"],
+] as const;
+
+/** Vier organisch verdeelde achtervlammen over de volle kaart (#834). Bewust
+ *  géén spiegelset: links zit de grootste pluim hoger, rechts groeit de brede
+ *  massa lager uit het frame. De wortels liggen binnen de kaart (0 < x < 100)
+ *  en worden door frame/vlak bedekt; alleen de onregelmatige buiken blijven
+ *  buiten de contour zichtbaar. */
+export const ONFIRE_PLUIMEN: readonly string[] = [
+  "M 14 87 C 7 80 -6 78 -10 68 C -14 58 -11 47 -5 37 C -1 30 1 25 0 19 C 7 31 5 42 1 51 C -2 58 2 63 6 58 C 9 54 10 49 9 44 C 15 55 11 66 8 72 C 6 77 11 82 16 83 Z",
+  "M 11 120 C 5 117 -4 112 -5 104 C -6 95 -2 87 4 79 C 2 89 7 94 5 101 C 3 107 6 113 13 118 Z",
+  "M 91 70 C 98 64 105 59 104 50 C 104 43 101 37 98 31 C 98 27 99 24 101 21 C 104 34 109 42 106 51 C 104 58 99 64 91 68 Z",
+  "M 87 114 C 96 108 111 103 114 91 C 117 80 111 70 104 63 C 101 59 100 55 101 51 C 108 60 112 69 108 77 C 106 82 108 87 112 84 C 112 97 102 105 91 111 Z",
+] as const;
+
+/** Verzadigder vuur voor de laag die daadwerkelijk óver de kaartrand loopt.
+ *  Anders dan de zachte pluim is deze laag bijna opaak: koper aan de wortel,
+ *  een heet amberhart en een pruimkleurige rookpunt die het nieuwe frame-accent
+ *  oppikt. */
+export const ONFIRE_RANDVLAM_VERLOOP: readonly (
+  readonly [number, string]
+)[] = [
+  [0, "rgba(110, 49, 67, 0.82)"],
+  [0.34, "rgba(207, 86, 34, 0.9)"],
+  [0.68, "rgba(255, 171, 72, 0.92)"],
+  [1, "rgba(107, 47, 20, 0.78)"],
+] as const;
+
+/** Vier kleinere voorvlammen op verschillende hoogtes. Ook deze zijn
+ *  asymmetrisch en full-card-coördinaten: ze kruisen lokaal frame/liner/
+ *  keyline, maar vormen nergens een doorlopende verticale vuurkolom. */
+export const ONFIRE_RANDVLAMMEN: readonly string[] = [
+  "M 9 81 C 6 77 0 74 -3 69 C -6 64 -5 58 -2 53 C 1 49 4 45 5 39 C 8 48 5 55 3 60 C 1 65 4 68 7 64 C 10 61 10 56 9 52 C 14 61 10 69 8 73 C 7 76 9 78 11 79 Z",
+  "M 11 118 C 7 115 1 112 -1 107 C -3 101 -1 95 3 90 C 5 87 6 84 6 81 C 10 89 7 96 6 100 C 5 104 8 108 11 110 C 13 113 13 116 11 118 Z",
+  "M 91 69 C 95 66 101 62 103 57 C 105 52 103 47 100 43 C 98 40 97 37 98 34 C 93 42 95 48 97 52 C 99 56 97 60 94 57 C 92 61 92 65 91 69 Z",
+  "M 90 113 C 96 109 105 105 108 98 C 111 91 107 84 102 79 C 99 76 98 73 99 70 C 93 78 95 85 98 89 C 101 94 98 99 94 96 C 91 101 91 107 90 113 Z",
+] as const;
+
+/** Hete binnenkernen: smallere vlammen die dezelfde rand nogmaals kruisen.
+ *  Ze gebruiken het geel-oranje gloedverloop van het medaillon en voorkomen
+ *  dat de brede koperen omtrekken als bladeren of linten lezen. */
+export const ONFIRE_RANDVLAM_HARTEN: readonly string[] = [
+  "M 7 72 C 3.5 69 0 65 1 60 C 2 55 4.5 52 5 47 C 7 54 5 59 4 62 C 3 66 5.5 68 7 66 C 8 68 8 70 7 72 Z",
+  "M 8 109 C 4.5 106 2 102 3 98 C 4 94 5.5 91 6 87 C 8 93 6.5 98 6 101 C 5.5 104 7 106 8 109 Z",
+  "M 94 61 C 98 58 101 54 100 50 C 99 46 98 43 98.5 40 C 96 45 96 49 97.5 52 C 99 55 96.5 58 94 56 C 93 58 93 60 94 61 Z",
+  "M 95 102 C 100 99 104 95 104 90 C 104 86 101 82 99.5 78 C 98 84 99 88 100 91 C 101 95 98 98 95 96 C 94 98 94 100 95 102 Z",
+] as const;
+
 /* ---------------------------------- crest ---------------------------------- */
 
 /** Vlamcrest bij de bovenrand — de "compacte metalen vlamcrest bij de bovenste

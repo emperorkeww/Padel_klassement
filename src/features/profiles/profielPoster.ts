@@ -162,10 +162,17 @@ export function drawKaart(
     ctx.font = `800 ${Math.round(ar * 0.75)}px Outfit, system-ui, sans-serif`;
     ctx.fillText(initials(d.name), ax, ay + ar * 0.27);
   }
-  // Witte rand rondom beide varianten.
+  // Dubbele metalen avatarring (#834): eerst de kaartkleur als buitenrand,
+  // daarbinnen een dunne lichtvangende lijn. Dit zet het portret echt ín de
+  // kaart i.p.v. als een losse cirkel erop.
   ctx.beginPath();
   ctx.arc(ax, ay, ar, 0, Math.PI * 2);
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = lijn;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(ax, ay, ar, 0, Math.PI * 2);
+  ctx.lineWidth = 4;
   ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
   ctx.stroke();
 
@@ -174,6 +181,18 @@ export function drawKaart(
   // blijven, dus schuift het hele blok dan wat op: dezelfde ruil als de
   // `padding-bottom: 20%` die de CSS op een vlak mét editie-regel zet (#661).
   const nY = fy + fh * (d.editieTekst ? 0.57 : 0.6);
+  if (skin.naamplaat) {
+    const naamPlaat = ctx.createLinearGradient(
+      fx + fw * 0.06,
+      nY,
+      fx + fw * 0.94,
+      nY,
+    );
+    for (const [offset, kleur] of skin.naamplaat)
+      naamPlaat.addColorStop(offset, kleur);
+    ctx.fillStyle = naamPlaat;
+    ctx.fillRect(fx + fw * 0.06, nY, fw * 0.88, fh * 0.105);
+  }
   ctx.strokeStyle = lijn;
   ctx.lineWidth = 3;
   ctx.beginPath();

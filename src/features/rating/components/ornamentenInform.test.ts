@@ -7,6 +7,7 @@ import {
   INFORM_MEDAILLON,
   INFORM_MOTIEF,
   INFORM_VIN,
+  INFORM_VINNEN,
 } from "./ornamentenInform";
 
 /** Alle coördinaten uit een pad-string, als [x, y]-paren. Deze module schrijft
@@ -157,6 +158,9 @@ describe("In-Form-ornament (#710)", () => {
     // Vier plaatjes: drie dwarssneden, met evenveel lichte ruggen.
     expect(INFORM_VIN.ribbels).toHaveLength(3);
     expect(INFORM_VIN.ribbelGlans).toHaveLength(INFORM_VIN.ribbels.length);
+    expect(INFORM_VINNEN).toHaveLength(2);
+    expect(INFORM_VINNEN[1].ribbels).toHaveLength(2);
+    expect(INFORM_VINNEN[1].bbox.yMin).toBeGreaterThan(INFORM_VIN.bbox.yMin);
   });
 
   it("het medaillon zit in de lege kaartpunt, onder de editie-regel", () => {

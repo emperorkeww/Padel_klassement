@@ -25,6 +25,7 @@
   /* Anker voor de ornamentlaag (#710): de svg die buiten het schild
      uitsteekt, positioneert tegen de kaart zelf. */
   position: relative;
+  overflow: visible;
   perspective: 600px;
   /* De kaart is zijn eigen inline-size-container (#625): zo kan de
      compact-zetting hieronder op de échte kaartbreedte reageren, waar die
@@ -43,7 +44,7 @@
 }
 .fut-kaart__zijde {
   height: 100%;
-  padding: 3px;
+  padding: var(--kaart-frame-dikte, 3px);
   clip-path: var(--schild);
   background: linear-gradient(
     160deg,
@@ -56,7 +57,8 @@
      drop-shadow(dx dy 0 kleur) zetten — een filter werkt ná de clip, dus de
      echo volgt het schildsilhouet exact. De lege fallback laat de gewone
      kaarten ongemoeid. Canvas-spiegel: het echo-veld in drawKaartSchild. */
-  filter: var(--kaart-echo, ) drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
+  filter: var(--kaart-echo, ) var(--kaart-randgloed, )
+    drop-shadow(0 3px 6px rgba(10, 25, 18, 0.28));
   backface-visibility: hidden;
 }
 /* Ornamentlaag (#710): de énige laag die búiten de schildclip valt — hoorns,
@@ -78,7 +80,10 @@
   top: -27.338%;
   height: 152.518%;
   pointer-events: none;
-  filter: drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45));
+  filter: var(
+    --kaart-ornament-schaduw,
+    drop-shadow(0 2px 4px rgba(6, 4, 2, 0.45))
+  );
   backface-visibility: hidden;
 }
 /* Vóór-liggende ornamentlaag (#710): dezelfde doos, maar ná de flipper in de
@@ -89,7 +94,10 @@
    kaart, niet erachter. */
 .fut-kaart__ornament--voor {
   z-index: 2;
-  filter: drop-shadow(0 1px 2px rgba(88, 26, 48, 0.45));
+  filter: var(
+    --kaart-ornament-voor-schaduw,
+    drop-shadow(0 1px 2px rgba(88, 26, 48, 0.45))
+  );
 }
                                                                                                                                                                               
 .fut-kaart.fut-kaart--kampioen.is-omgedraaid .fut-kaart__ornament--voor {
@@ -113,7 +121,7 @@
   display: block;
   height: 100%;
   clip-path: var(--schild);
-  padding: 1.5px;
+  padding: var(--kaart-liner-dikte, 1.5px);
   background: color-mix(in srgb, var(--tier) 70%, #211806);
 }
 /* Keyline (#664, naar de FUT-voorbeelden): een dunne lichte lijn tussen de
@@ -123,7 +131,7 @@
   display: block;
   height: 100%;
   clip-path: var(--schild);
-  padding: 1px;
+  padding: var(--kaart-keyline-dikte, 1px);
   background: color-mix(in srgb, var(--kaart-lijn) 75%, #fff8e8);
 }
 /* Onzichtbare interactieknop over het hele vlak; links of andere knoppen op
@@ -195,6 +203,38 @@
      tegen de kaartbreedte, dus dit schaalt mee. */
   padding: 12% 9% 24%;
   color: var(--kaart-ink);
+}
+/* Randwaas (#834): echte FUT-specials laten hun framekleur niet abrupt aan de
+   liner stoppen. Deze decoratieve laag trekt vier zachte, elliptische kleur-
+   overgangen vanuit de rand het kaartvlak in. De alpha zit per register in de
+   tokens; de gedeelde geometrie houdt de zes specials familie. De laag staat
+   net als motief en premium glans onder alle inkt en blijft meegeclipt. */
+.fut-kaart__randwaas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 42% 76% at 0% 48%,
+      var(--kaart-randwaas-links, transparent),
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 42% 76% at 100% 52%,
+      var(--kaart-randwaas-rechts, transparent),
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 78% 30% at 50% 0%,
+      var(--kaart-randwaas-boven, transparent),
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 76% 34% at 50% 100%,
+      var(--kaart-randwaas-onder, transparent),
+      transparent 100%
+    );
 }
 /* Sheen: één diagonale lichtbaan over het vlak, zoals op echte kaarten. */
 .fut-kaart__vlak::before {
@@ -295,6 +335,24 @@
    ook op een GOAT-drager blijven winnen. */
 .fut-kaart--legende .fut-kaart__vlak::after {
   background:
+    radial-gradient(
+      circle at 68% 27%,
+      transparent 0 20%,
+      rgba(255, 187, 204, 0.12) 20.5% 21.2%,
+      transparent 21.8% 29%,
+      rgba(226, 133, 158, 0.08) 29.5% 30.2%,
+      transparent 31%
+    ),
+    radial-gradient(
+      ellipse 46% 72% at 0% 54%,
+      rgba(226, 133, 158, 0.1),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 46% 72% at 100% 48%,
+      rgba(201, 185, 232, 0.09),
+      transparent 70%
+    ),
     repeating-linear-gradient(
       115deg,
       rgba(255, 255, 255, 0.045) 0 1.5px,
@@ -365,6 +423,13 @@
   width: calc(var(--fut-kw) * var(--fut-avatar)) !important;
   height: calc(var(--fut-kw) * var(--fut-avatar)) !important;
   font-size: calc(var(--fut-kw) * var(--fut-avatar) * 0.38) !important;
+  box-shadow:
+    0 0 0 max(1px, calc(var(--fut-kw) * 0.007))
+      var(--kaart-avatar-ring, var(--kaart-lijn)),
+    0 0 0 max(2px, calc(var(--fut-kw) * 0.014))
+      var(--kaart-avatar-ring-buiten, rgba(255, 255, 255, 0.48)),
+    0 calc(var(--fut-kw) * 0.025) calc(var(--fut-kw) * 0.065)
+      var(--kaart-avatar-schaduw, rgba(12, 8, 5, 0.32));
 }
 /* PlayStyles (#500): de ★-uitgelichte badges als kleine hex-chips vlak boven
    de naamplaat — chemie-stijl icoontjes zoals in FC. De buitenlaag maakt de
@@ -426,10 +491,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 4.5px 0 3.5px;
-  background: color-mix(in srgb, var(--kaart-lijn) 7%, transparent);
+  background: var(
+    --kaart-naamplaat,
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--kaart-lijn) 12%, transparent) 22%,
+      color-mix(in srgb, var(--kaart-lijn) 12%, transparent) 78%,
+      transparent
+    )
+  );
   border-top: 1.5px solid var(--kaart-lijn);
   border-bottom: 1px solid
     color-mix(in srgb, var(--kaart-lijn) 55%, transparent);
+  border-radius: 2px;
+  box-shadow: var(
+    --kaart-naamplaat-reliëf,
+    inset 0 1px rgba(255, 255, 255, 0.12)
+  );
 }
 .fut-kaart__divisie {
   margin-top: 3px;
@@ -699,13 +778,42 @@
    7,97:1 — ruim boven AA, en de zachtere inkt (#e09298) haalt 6,95:1.
    Canvas-spiegel: de legende-tak in kaartSkin() (futKaartCanvas.ts). */
 .fut-kaart--legende {
-  --schild: url(#fut-schild-kroon);
+  --schild: url(#fut-schild-goat);
   --sp-glans: #f7869f;
   --sp-diep-hi: #3c1524;
   --sp-diep: #24101a;
   --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
   --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
   --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #f2b7c5;
+  --kaart-avatar-ring-buiten: rgba(20, 6, 9, 0.9);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(20, 6, 9, 0.68) 13%,
+    rgba(112, 35, 61, 0.48) 50%,
+    rgba(20, 6, 9, 0.68) 87%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 214, 226, 0.16),
+    inset 0 -1px rgba(8, 2, 4, 0.7);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 4px 3px rgba(20, 6, 9, 0.7))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.022) rgba(226, 133, 158, 0.28));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 2px 1px rgba(20, 6, 9, 0.78))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.014) rgba(255, 187, 204, 0.34));
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.02) rgba(226, 133, 158, 0.32)
+  );
+  --kaart-randwaas-links: rgba(226, 133, 158, 0.16);
+  --kaart-randwaas-rechts: rgba(201, 185, 232, 0.13);
+  --kaart-randwaas-boven: rgba(255, 187, 204, 0.2);
+  --kaart-randwaas-onder: rgba(112, 35, 61, 0.25);
   --kaart-echo: drop-shadow(
     calc(var(--fut-kw) * 0.019) calc(var(--fut-kw) * 0.024) 0
       rgba(226, 133, 158, 0.75)
@@ -741,11 +849,13 @@
     linear-gradient(
       135deg,
       #ffe2ea 0%,
-      #b03a55 25%,
+      #c9b9e8 14%,
+      #b03a55 29%,
       #ffd0db 45%,
-      #ffedf2 55%,
-      #5c162b 75%,
-      #ffdbe5 100%
+      #ffedf2 56%,
+      #b895c8 68%,
+      #5c162b 82%,
+      #4a1526 100%
     );
 }
 .fut-kaart--legende .fut-kaart__liner {
@@ -798,6 +908,37 @@
   --kaart-ink: #f2dda2;
   --kaart-ink-soft: #cdae6e;
   --kaart-lijn: #cf152d;
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #d9b661;
+  --kaart-avatar-ring-buiten: rgba(53, 7, 17, 0.8);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(20, 4, 9, 0.58) 16%,
+    rgba(91, 9, 28, 0.52) 50%,
+    rgba(20, 4, 9, 0.58) 84%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 226, 150, 0.12),
+    inset 0 -1px rgba(9, 0, 3, 0.55);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 3px rgba(16, 1, 5, 0.72))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.018) rgba(230, 179, 77, 0.22));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(18, 2, 7, 0.78))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.012) rgba(242, 217, 143, 0.28));
+  /* #834: antiekgoud gloeit heel licht buiten het emaille frame; dezelfde
+     tint lost vanuit de flanken en de troonvoet op in het wijnrode vlak. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.018) rgba(226, 185, 91, 0.28)
+  );
+  --kaart-randwaas-links: rgba(240, 199, 102, 0.12);
+  --kaart-randwaas-rechts: rgba(240, 199, 102, 0.1);
+  --kaart-randwaas-boven: rgba(242, 217, 143, 0.14);
+  --kaart-randwaas-onder: rgba(165, 35, 71, 0.24);
   --kaart-echo: drop-shadow(
       calc(var(--fut-kw) * 0.012) 0 0 rgba(58, 10, 22, 0.9)
     )
@@ -888,6 +1029,37 @@
   --kaart-ink-soft: var(--bigdaddy-kaart-ink-soft);
   --kaart-lijn: var(--bigdaddy-kaart-lijn);
   --editie-kleur: var(--bigdaddy-kaart-editie);
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: var(--bigdaddy-frame-goud);
+  --kaart-avatar-ring-buiten: rgba(255, 238, 246, 0.72);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(221, 107, 162, 0.12) 14%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(201, 154, 63, 0.12) 86%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 255, 255, 0.52),
+    inset 0 -1px rgba(143, 53, 96, 0.12);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 3px rgba(92, 24, 57, 0.38))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.02) rgba(221, 107, 162, 0.24));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(112, 46, 61, 0.5))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.014) rgba(255, 235, 187, 0.48));
+  /* #834: parelroze/champagne uit het frame vloeit zacht naar buiten én het
+     lichte vlak in, zoals de rozepaarse referentiekaart zonder neonrand. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.02) rgba(221, 107, 162, 0.3)
+  );
+  --kaart-randwaas-links: rgba(221, 107, 162, 0.2);
+  --kaart-randwaas-rechts: rgba(201, 154, 63, 0.14);
+  --kaart-randwaas-boven: rgba(255, 238, 246, 0.42);
+  --kaart-randwaas-onder: rgba(143, 53, 96, 0.18);
   /* Roségouden echo achter het silhouet: de gelaagde metaalrand van de
      referentie zonder een vijfde geclipte laag. */
   --kaart-echo: drop-shadow(
@@ -917,6 +1089,27 @@
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
+    radial-gradient(
+      circle at 8% 28%,
+      rgba(221, 107, 162, 0.16) 0 3%,
+      transparent 3.8%
+    ),
+    radial-gradient(
+      circle at 92% 42%,
+      rgba(201, 154, 63, 0.13) 0 2.4%,
+      transparent 3.2%
+    ),
+    repeating-conic-gradient(
+      from 8deg at 78% 24%,
+      rgba(221, 107, 162, 0.075) 0deg 7deg,
+      transparent 7deg 21deg
+    ),
+    linear-gradient(
+      132deg,
+      rgba(221, 107, 162, 0.09) 0 18%,
+      transparent 18% 72%,
+      rgba(201, 154, 63, 0.07) 72% 100%
+    ),
     repeating-linear-gradient(
       -45deg,
       rgba(255, 255, 255, 0.05) 0px 2px,
@@ -949,12 +1142,49 @@
   );
 }
 
+
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 .fut-kaart.fut-kaart--inform {
   --kaart-ink: #f2cf7d;
   --kaart-ink-soft: #c9a95e;
   --kaart-lijn: #ffd56b;
   --editie-kleur: #f2cf7d;
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #ffd56b;
+  --kaart-avatar-ring-buiten: rgba(6, 8, 14, 0.88);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(6, 8, 14, 0.72) 14%,
+    rgba(64, 54, 26, 0.48) 50%,
+    rgba(6, 8, 14, 0.72) 86%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 226, 150, 0.14),
+    inset 0 -1px rgba(0, 0, 0, 0.66);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 3px rgba(2, 3, 7, 0.72))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.016) rgba(255, 213, 107, 0.24));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(2, 3, 7, 0.82))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.012) rgba(255, 226, 150, 0.32));
+  /* #834: champagnegoud verzacht de overgang van de metalen lijst naar het
+     titanium, met een beheerste halo rond het silhouet. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.018) rgba(255, 213, 107, 0.3)
+  );
+  --kaart-randwaas-links: rgba(240, 199, 102, 0.16);
+  --kaart-randwaas-rechts: rgba(255, 213, 107, 0.13);
+  --kaart-randwaas-boven: rgba(255, 226, 150, 0.19);
+  --kaart-randwaas-onder: rgba(138, 106, 28, 0.14);
+  --kaart-echo: drop-shadow(
+      calc(var(--fut-kw) * 0.009) 0 0 rgba(138, 106, 28, 0.62)
+    )
+    drop-shadow(calc(var(--fut-kw) * -0.009) 0 0 rgba(138, 106, 28, 0.62))
+    drop-shadow(0 calc(var(--fut-kw) * 0.012) 0 rgba(6, 8, 14, 0.9));
   /* Gouden hairline, zwarte spouw, tweede gouden lijn: de gelaagde metalen
      binnenrand uit de referentie, zonder extra DOM-laag (inset-schaduwen
      worden mee-geclipt en volgen dus élke schildvorm). */
@@ -967,9 +1197,11 @@
   background: linear-gradient(
     160deg,
     #f7dfa0 0%,
-    #c59f48 30%,
+    #708899 14%,
+    #c59f48 32%,
     #ffe9ac 55%,
-    #8a6a1c 80%,
+    #68507b 72%,
+    #8a6a1c 84%,
     #3e2e07 100%
   );
 }
@@ -1120,6 +1352,37 @@
   --kaart-ink-soft: #d1915b;
   --kaart-lijn: #ff5500;
   --editie-kleur: #ffb35c;
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #ff8f3e;
+  --kaart-avatar-ring-buiten: rgba(32, 9, 3, 0.86);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(20, 5, 1, 0.72) 13%,
+    rgba(105, 30, 7, 0.56) 50%,
+    rgba(20, 5, 1, 0.72) 87%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 190, 112, 0.16),
+    inset 0 -1px rgba(0, 0, 0, 0.72);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 3px rgba(20, 4, 0, 0.72))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.022) rgba(255, 91, 12, 0.3));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(24, 5, 0, 0.82))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.014) rgba(255, 143, 62, 0.38));
+  /* #834: hitte verlaat de koperlijst als een zachte amberhalo en trekt bij
+     de punt iets verder het verkoolde vlak in. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.024) rgba(255, 104, 28, 0.38)
+  );
+  --kaart-randwaas-links: rgba(255, 111, 35, 0.2);
+  --kaart-randwaas-rechts: rgba(255, 143, 62, 0.22);
+  --kaart-randwaas-boven: rgba(255, 190, 112, 0.16);
+  --kaart-randwaas-onder: rgba(255, 85, 0, 0.3);
   /* Randgloed (#710): een warme koperen echo langs de zijkanten en onderrand.
      Een filter werkt ná de clip, dus de echo volgt het schildsilhouet exact —
      ook bij een tier met een afwijkende bovenrand. Canvas-spiegel: het
@@ -1142,7 +1405,8 @@
     #f6ddc4 0%,
     #cf743b 30%,
     #e8b48d 55%,
-    #8c4217 80%,
+    #8c4217 76%,
+    #6e3143 89%,
     #3e1608 100%
   );
 }
@@ -1228,6 +1492,41 @@
   --kaart-frame-hi: #b08b50;
   --kaart-frame-lo: #6f5026;
   --kaart-snijkant: #d8bc7c;
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #8c2a17;
+  --kaart-avatar-ring-buiten: rgba(216, 188, 124, 0.72);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(105, 47, 39, 0.12) 14%,
+    rgba(255, 246, 222, 0.2) 50%,
+    rgba(105, 47, 39, 0.12) 86%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 246, 222, 0.28),
+    inset 0 -1px rgba(105, 47, 39, 0.16);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 2px rgba(54, 31, 12, 0.5))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.012) rgba(140, 42, 23, 0.2));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(54, 31, 12, 0.62))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.009) rgba(216, 188, 124, 0.25));
+  /* #834: mat materiaal houdt de overgang klein en diffuus — bordeaux aan
+     de jokerlinten, oud goud langs de tegenoverliggende snijkant. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.014) rgba(140, 42, 23, 0.22)
+  );
+  --kaart-randwaas-links: rgba(140, 42, 23, 0.14);
+  --kaart-randwaas-rechts: rgba(198, 158, 92, 0.12);
+  --kaart-randwaas-boven: rgba(216, 188, 124, 0.14);
+  --kaart-randwaas-onder: rgba(105, 47, 39, 0.19);
+  --kaart-echo: drop-shadow(
+    calc(var(--fut-kw) * 0.011) calc(var(--fut-kw) * 0.014) 0
+      rgba(105, 47, 39, 0.58)
+  );
   /* Bordeaux-band met een gouden bies erbinnen; de inset-schaduwen worden
      mee-geclipt en volgen dus het schild. Smalste eerst: die wint. */
   --kaart-binnenlijn:
@@ -1285,6 +1584,37 @@
   --editie-kleur: #a8271b;
   --kaart-frame-hi: #23211d;
   --kaart-frame-lo: #131211;
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  --kaart-avatar-ring: #23211d;
+  --kaart-avatar-ring-buiten: rgba(255, 250, 235, 0.78);
+  --kaart-naamplaat: linear-gradient(
+    90deg,
+    transparent,
+    rgba(45, 42, 36, 0.1) 14%,
+    rgba(255, 250, 235, 0.28) 50%,
+    rgba(168, 39, 27, 0.08) 86%,
+    transparent
+  );
+  --kaart-naamplaat-reliëf:
+    inset 0 1px rgba(255, 255, 255, 0.38),
+    inset 0 -1px rgba(45, 42, 36, 0.14);
+  --kaart-ornament-schaduw:
+    drop-shadow(0 3px 2px rgba(15, 14, 12, 0.62))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.01) rgba(85, 81, 74, 0.24));
+  --kaart-ornament-voor-schaduw:
+    drop-shadow(0 1px 1px rgba(15, 14, 12, 0.72))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.008) rgba(168, 39, 27, 0.16));
+  /* #834: een koele gunmetal-waas maakt van zwart frame naar ivoor een
+     materiaalovergang; onderaan blijft een heel klein lakrood accent. */
+  --kaart-randgloed: drop-shadow(
+    0 0 calc(var(--fut-kw) * 0.012) rgba(85, 81, 74, 0.24)
+  );
+  --kaart-randwaas-links: rgba(45, 42, 36, 0.12);
+  --kaart-randwaas-rechts: rgba(85, 81, 74, 0.1);
+  --kaart-randwaas-boven: rgba(255, 250, 235, 0.24);
+  --kaart-randwaas-onder: rgba(168, 39, 27, 0.1);
   /* Gelaagde rand (#710): het lakframe krijgt een stalen onderplaat die
      rechtsonder een fractie uitsteekt — dezelfde echo-truc als de GOAT, maar
      mat en klein: dit moet als materiaaldikte lezen, niet als slagschaduw. */

@@ -350,6 +350,69 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     },
   );
 
+  it("de zeven specials delen hun frame-overgangen en layout met de canvas-poster (#834)", () => {
+    const gevallen = [
+      {
+        naam: "Big Daddy",
+        blok: editieBlok("icon"),
+        skin: kaartSkin("goud", "icon"),
+      },
+      {
+        naam: "GOAT",
+        blok: tierBlok("legende", "--kaart-randgloed"),
+        skin: kaartSkin("legende", null),
+      },
+      {
+        naam: "El Padelissimo",
+        blok: tierBlok("dictator", "--kaart-randgloed"),
+        skin: kaartSkin("dictator", null),
+      },
+      ...(["pias", "piet", "inform", "onfire"] as const).map((editie) => ({
+        naam: editie,
+        blok: editieBlok(editie),
+        skin: kaartSkin("goud", editie),
+      })),
+    ];
+
+    expect(
+      FUT_TSX.match(/className="fut-kaart__randwaas"/g),
+      "voor- en achterkant missen hun randwaaslaag",
+    ).toHaveLength(2);
+    const laag =
+      /\.fut-kaart__randwaas\s*\{[\s\S]*?\n\}/.exec(FUT_CSS)?.[0] ?? "";
+    expect(laag.match(/radial-gradient/g)).toHaveLength(4);
+
+    for (const { naam, blok, skin } of gevallen) {
+      const { kleuren } = skin;
+      expect(kleuren.randGloed, `${naam}: canvas-randgloed ontbreekt`).toBeDefined();
+      expect(kleuren.randWaas, `${naam}: canvas-randwaas ontbreekt`).toBeDefined();
+      expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual([
+        0.02, 0.01, 0.005,
+      ]);
+      expect(skin.naamplaat, `${naam}: naamplaatverloop ontbreekt`).toHaveLength(5);
+      expect(token(blok, "--kaart-frame-dikte"), `${naam}: DOM-frame`).toContain(
+        "* 0.02",
+      );
+
+      const [blur, gloed] = kleuren.randGloed!;
+      const cssGloed = token(blok, "--kaart-randgloed")?.replace(/\s+/g, " ") ?? "";
+      expect(cssGloed, `${naam}: blurfractie`).toContain(`* ${blur})`);
+      expect(cssGloed, `${naam}: gloedkleur`).toContain(gloed);
+
+      for (const zijde of ["links", "rechts", "boven", "onder"] as const) {
+        expect(
+          token(blok, `--kaart-randwaas-${zijde}`),
+          `${naam}: ${zijde}`,
+        ).toBe(kleuren.randWaas![zijde]);
+      }
+    }
+
+    expect(kaartSkin("goud", "icon").kleuren.feestFacetten).toBe(true);
+    expect(kaartSkin("legende", null).kleuren.achtergrondRingen?.stralen).toEqual([
+      0.21, 0.3,
+    ]);
+  });
+
   it("pias-kaart, Schandpaal en hero delen letterlijk dezelfde vezeltegel (#705/#644)", () => {
     // Zelfde papier op kaart, klassement en dashboard-hero: de 28px-SVG-tegel
     // moet in alle drie de stylesheets byte-gelijk zijn, anders lopen de
@@ -796,12 +859,14 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     expect(kleuren.textuur).toBe("brokaat");
   });
 
-  it("de dictator heeft een eigen schildvorm, de GOAT houdt de kroon-crest (#710)", () => {
-    // De allerhoogste tier verschilt nu ook in silhouet — dat is het
-    // grijswaarden-criterium uit de issue. De clipPath moet in FutKaart.tsx
-    // bestaan, want de CSS verwijst ernaar.
-    expect(schildVorm("legende")).toBe("kroon");
+  it("dictator en GOAT hebben elk een eigen topsilhouet (#710/#834)", () => {
+    // GOAT vervangt de ene ronde kroonbobbel door een vloeiende drievoudige
+    // crest; de dictator behoudt zijn hoekige troonprofiel.
+    expect(schildVorm("legende")).toBe("goat");
     expect(schildVorm("dictator")).toBe("troon");
+    const goatBlok = tierBlok("legende", "--schild");
+    expect(goatBlok).toContain("url(#fut-schild-goat)");
+    expect(FUT_TSX).toContain('id="fut-schild-goat"');
     const blok = tierBlok("dictator", "--schild");
     expect(blok).toContain("url(#fut-schild-troon)");
     expect(FUT_TSX).toContain('id="fut-schild-troon"');
