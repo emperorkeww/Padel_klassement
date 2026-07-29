@@ -1,0 +1,64 @@
+/* Vaste visuele teststage voor de On Fire-breakout. */
+
+.onfire-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 70px 0 36px;
+  overflow-x: clip;
+  background: #050403;
+}
+
+.onfire-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.onfire-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+
+.onfire-showcase__titel {
+  margin: 76px 0 0;
+  color: #f5f2ed;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.onfire-showcase__uitleg {
+  max-width: 430px;
+  margin: 0;
+  color: #aeb1ac;
+  font-size: 19px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .onfire-showcase {
+    padding-top: 14vw;
+  }
+
+  .onfire-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .onfire-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .onfire-showcase__titel {
+    margin-top: 14vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .onfire-showcase__uitleg {
+    max-width: min(430px, 88vw);
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}

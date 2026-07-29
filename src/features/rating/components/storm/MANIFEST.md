@@ -18,9 +18,9 @@ Alle geometrie komt uitsluitend uit deze gedeelde properties op
 `.fut-kaart--inform`:
 
 ```css
---storm-master-left: 25%;
+--storm-master-left: -20%;
 --storm-master-top: -16%;
---storm-master-width: 110%;
+--storm-master-width: 155%;
 --storm-master-scale: 1;
 --storm-master-rotate: 0deg;
 ```
