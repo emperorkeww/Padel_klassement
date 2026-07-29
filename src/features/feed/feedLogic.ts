@@ -542,11 +542,16 @@ export function buildFeed(input: {
         myStakeFactor: points?.get(myId)?.stake_factor,
         myBounty: points?.get(myId)?.bounty_delta || undefined,
       });
-    } else if (m.status !== "cancelled" && m.played_at != null) {
+    } else if (
+      m.status !== "cancelled" &&
+      m.played_at != null &&
+      m.round_number == null
+    ) {
       // Nieuw gepland mét geprikte speeltijd: het event is het moment van
-      // plannen; de kaart toont de speeldatum zelf. Matches zonder tijd (bv.
-      // een hele gegenereerde ronde) blijven weg — anders vloedt één
-      // Americano-generatie de feed vol.
+      // plannen; de kaart toont de speeldatum zelf. Gegenereerde rondes
+      // (round_number gezet) blijven weg — dat is één handeling die tien
+      // matches oplevert, en die zou de feed volvloeien. Vóór #827 viel dat
+      // vanzelf weg omdat zo'n ronde geen played_at had; nu is het expliciet.
       events.push({ kind: "planned", at: m.created_at, match: m });
     }
   }

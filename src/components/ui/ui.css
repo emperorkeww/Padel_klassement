@@ -929,23 +929,6 @@ textarea {
 .profile-link:hover {
   text-decoration: underline;
 }
-/* "Zet in agenda": onopvallende tekstknop die de ICS-download start
-   (geplande matches en de aanwezigheidskaart). */
-.agenda-btn {
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  padding: 0;
-  background: none;
-  font-family: inherit;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--accent);
-  cursor: pointer;
-}
-.agenda-btn:hover {
-  text-decoration: underline;
-}
 
 /* ---------- Tabs ---------- */
 .tabs {
@@ -1277,39 +1260,6 @@ textarea {
   margin-left: auto;
   min-width: 110px;
 }
-/* Verwachte winstkans als pil per teamrij: het percentage staat naast het
-   team waar het bij hoort (de favoriet kleurt mee met het accent). */
-.winchip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  flex-shrink: 0;
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-2);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-.winchip--fav {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.winchip__label {
-  font-size: 0.85em;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-/* Smal scherm: alleen het percentage, het woord verdwijnt. */
-@media (max-width: 480px) {
-  .winchip__label {
-    display: none;
-  }
-}
 /* Eerste opslag als pil in de teamrij (#435) — lime als knipoog naar de
    padelbal, zelfde combinatie als de speelavond-chip op het dashboard. */
 .servechip {
@@ -1433,9 +1383,6 @@ textarea {
   .btn--sm {
     min-height: 40px;
   }
-  .agenda-btn {
-    min-height: 44px;
-  }
 
   .page-title {
     font-size: var(--fs-xl);
@@ -1552,7 +1499,7 @@ textarea {
 .tab:focus-visible,
 .explainer > summary:focus-visible,
 .profile-link:focus-visible,
-.agenda-btn:focus-visible,
+.iconbtn:focus-visible,
 .mutual-toggle:focus-visible,
 .badge--link:focus-visible,
 .hero__me:focus-visible,

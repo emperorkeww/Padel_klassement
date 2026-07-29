@@ -45,6 +45,9 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
+import { buildMatchRatings } from "@/features/groups/maandpias";
+import { getPlayerPredictions } from "@/features/matches/predictionsApi";
+import { getPlayerNetTouches } from "@/features/matches/netTouchesApi";
 import {
   afgeslotenSeizoenen,
   listSeasons,
@@ -140,6 +143,18 @@ export function PlayerProfile() {
   );
   // Actieve vendetta's van deze speler: ⚔️-badge in de onderlinge stand (#169).
   const vendettas = useAsync(() => getPlayerVendettas(id), [id]);
+  // Toto-tips van deze speler (#809): voedt de Valse profeet-badge. RLS levert
+  // alleen tips uit groepen die je met de kijker deelt — genoeg voor de badge.
+  const predictions = useAsync(() => getPlayerPredictions(id), [id]);
+  // Netrollers van deze speler (#809): voedt de Netroller-badge.
+  const netTouches = useAsync(() => getPlayerNetTouches(id), [id]);
+  const netrollers = useMemo(
+    () =>
+      Object.fromEntries(
+        (netTouches.data ?? []).map((n) => [n.match_id, n.aantal]),
+      ),
+    [netTouches.data],
+  );
   // Rang-verloop (all-time sparkline) staat sinds #461 tijdelijk uit: het werd
   // client-side uit álle ruwe matchrijen berekend, maar die zijn niet meer
   // publiek leesbaar, dus de rang zou per-kijker en dus misleidend worden. Wordt
@@ -161,6 +176,13 @@ export function PlayerProfile() {
     () =>
       upsetsByMatch(matches.data ?? [], teams.data ?? {}, upsetHistories.data ?? {}),
     [matches.data, teams.data, upsetHistories.data],
+  );
+  // Pre-match ratings per match (#809): voedt de Choke-koning-badge. Dezelfde
+  // bron als de upset-chips hierboven — die dekt precies alle afgewerkte
+  // matches van deze speler, dus er komt geen extra query bij.
+  const matchRatings = useMemo(
+    () => buildMatchRatings(upsetHistories.data ?? {}),
+    [upsetHistories.data],
   );
   // Speler van de week (#497) óók op het profiel (#621): dezelfde bron als
   // het klassement (de gedeelde rating-histories). Hook vóór de vroege returns.
@@ -255,7 +277,12 @@ export function PlayerProfile() {
   const ratingDelta = deltaToday(rhist, club.timezone);
   const hasRating = rhist.length >= 2;
   const hasRank = rankPoints.length >= 2;
-  const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined);
+  const badgeExtras = {
+    matchRatings,
+    predictions: predictions.data ?? undefined,
+    netrollers,
+  };
+  const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined, badgeExtras);
   // Eerstvolgende (niet-behaalde) badge met telbare voortgang, het verst
   // gevorderd — voedt de "volgende badge"-highlight op Overzicht.
   const nextBadge =
@@ -285,7 +312,7 @@ export function PlayerProfile() {
   // Uitgelichte badges staan los van het seizoensfilter — het is een keuze op
   // profielniveau — dus resolven we ze tegen de volledige historie.
   const badgesAllTime = season
-    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined)
+    ? deriveBadges(mlist, tmap, id, ratings.data ?? undefined, badgeExtras)
     : badges;
   const earnedAllTime = new Set(
     badgesAllTime.filter((b) => b.behaald).map((b) => b.id),

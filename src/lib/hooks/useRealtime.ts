@@ -19,6 +19,8 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
     "shame",
     // Een uitslag verschuift de kroon én de zegereeks eronder (#805).
     "bounties",
+    // Netrollers hangen aan de match en cascaderen mee (#809).
+    "net-touches",
   ],
   pias_of_week: ["pias"],
   zwarte_piet: ["shame"],

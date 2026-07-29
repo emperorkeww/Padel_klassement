@@ -19,12 +19,15 @@ export function FairTeamsCard({
   groupId,
   playerIds,
   profiles,
+  playedAt,
 }: {
   /** Groep waarbinnen de matches gepland worden. */
   groupId: string;
   /** Spelers die "ja" zeiden voor de gekozen speeldag. */
   playerIds: string[];
   profiles: Record<string, Profile>;
+  /** Starttijd (ISO) van deze ronde (#827); null zonder speeldag-poll. */
+  playedAt?: string | null;
 }) {
   const toast = useToast();
   const ratings = useAsync(getPlayerRatings, []);
@@ -65,7 +68,7 @@ export function FairTeamsCard({
         teamA: c.teamA.playerIds,
         teamB: c.teamB.playerIds,
       }));
-      const ids = await createFairRound(groupId, courts);
+      const ids = await createFairRound(groupId, courts, playedAt);
       if (ids.length === 0) throw new Error("Geen matches aangemaakt.");
       tap();
       toast.success(

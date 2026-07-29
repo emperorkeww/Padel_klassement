@@ -20,6 +20,7 @@ import {
   type PollOption,
 } from "@/features/groups/pollsApi";
 import { tallyOption } from "@/features/groups/pollLogic";
+import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
 import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
@@ -73,9 +74,11 @@ export function MakeTeams({
   const votes = useAsync(() => getGroupPollVotes(groupId), [groupId]);
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
-  // Deelnemers van vandaag: het gekozen/meest gesteunde poll-moment van
-  // vandaag; zonder poll vandaag zijn alle leden het vertrekpunt.
-  const tonightYes = useMemo(() => {
+  // Het gekozen/meest gesteunde poll-moment van vandaag: de deelnemers, plus
+  // de optie en poll zelf — die dragen de starttijd die de gegenereerde
+  // matches meekrijgen (#827). Zonder poll vandaag zijn alle leden het
+  // vertrekpunt en blijft de match zonder tijdstip, zoals voorheen.
+  const vanavond = useMemo(() => {
     const live = (polls.data ?? []).filter((p) => p.status !== "cancelled");
     const todays = (options.data ?? []).filter(
       (o) => o.date === today && live.some((p) => p.id === o.poll_id),
@@ -98,8 +101,28 @@ export function MakeTeams({
         }
       }
     }
-    return best ? tallyOption(best, votes.data ?? []).yes : null;
+    if (!best) return null;
+    const poll = live.find((p) => p.id === best.poll_id) ?? null;
+    return {
+      yes: tallyOption(best, votes.data ?? []).yes,
+      option: best,
+      poll,
+    };
   }, [polls.data, options.data, votes.data, today]);
+
+  const tonightYes = vanavond?.yes ?? null;
+
+  // Starttijd van de eerstvolgende ronde: tien minuten per al klaargezette
+  // ronde opschuivend vanaf het gekozen moment.
+  const startVanRonde = (index: number): string | null => {
+    if (!vanavond) return null;
+    const tz = vanavond.poll?.club_timezone ?? club.timezone;
+    return rondeStart(
+      vanavond.option,
+      tz,
+      rondesOpDag(matches, club.timezone, today) + index,
+    );
+  };
 
   // Handmatig bij te sturen selectie; nieuwe stemmen zijn de bron van
   // waarheid, de toggles een last-minute correctie.
@@ -132,12 +155,12 @@ export function MakeTeams({
         for (let i = 0; i < roundsToGen; i++) {
           const { courts } = americanoRound(selectedIds, history);
           if (courts.length === 0) break;
-          const ids = await createFairRound(groupId, courts);
+          const ids = await createFairRound(groupId, courts, startVanRonde(i));
           total += ids.length;
           applyRound(history, courts);
         }
       } else {
-        const ids = await generateMexicanoRound(groupId);
+        const ids = await generateMexicanoRound(groupId, startVanRonde(0));
         total = ids.length;
       }
       if (total === 0) throw new Error("Geen wedstrijden gegenereerd.");
@@ -260,6 +283,7 @@ export function MakeTeams({
           groupId={groupId}
           playerIds={selectedIds}
           profiles={profiles}
+          playedAt={startVanRonde(0)}
         />
       )}
     </>

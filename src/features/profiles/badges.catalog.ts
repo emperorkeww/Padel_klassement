@@ -1,7 +1,7 @@
 // De volledige badge-catalogus: één (bewust lange) lijst badge-definities in
 // vaste volgorde. Puur data + behaald-checks op de vooraf berekende context.
 import type { Badge } from "./badges";
-import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
+import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, CHOKE_KONING_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, NETROLLER_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, REUZENDODER_ZWAAR_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VALSE_PROFEET_DOEL, VASTE_GAST_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
 import type { MatchFeiten } from "./badges.facts";
 import { angstgegnerVerslagen, hadComeback, hadRevanche, isGestruikeld, isReuzendoder } from "./badges.streaks";
 import { perfecteWeken } from "@/features/dashboard/missions";
@@ -23,13 +23,19 @@ export interface BadgeContext {
   jojo: number;
   rust: { maxKloofDagen: number; winstNaRust: boolean };
   tweeling: number;
+  /** Verliezen als favoriet (#809); 0 zonder pre-match ratings. */
+  choke: number;
+  /** Langste reeks fout getipte toto-matches (#809); 0 zonder tips. */
+  misgetipt: number;
+  /** Meeste netrollers in één match (#809); 0 zonder netroller-data. */
+  netrollers: number;
 }
 
 export function buildBadges(ctx: BadgeContext): Badge[] {
   const {
     matches, teams, playerId, ratings,
     gespeeld, gewonnen, verloren, reeks, pech, eigenRating,
-    feiten, dejaVu, jojo, rust, tweeling,
+    feiten, dejaVu, jojo, rust, tweeling, choke, misgetipt, netrollers,
   } = ctx;
 
   const badges: Badge[] = [
@@ -124,6 +130,14 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       voortgang: { nu: feiten.maxPerDag, doel: MARATHON_DOEL },
     },
     {
+      id: "vaste-gast",
+      naam: "Vaste gast",
+      emoji: "🍺",
+      omschrijving: `Speel ${VASTE_GAST_DOEL} matches in één kalendermaand.`,
+      behaald: feiten.maxPerMaand >= VASTE_GAST_DOEL,
+      voortgang: { nu: feiten.maxPerMaand, doel: VASTE_GAST_DOEL },
+    },
+    {
       id: "pechvogel",
       naam: "Pechvogel",
       emoji: "☔",
@@ -212,6 +226,22 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       omschrijving: `Verlies ${ZWARTE_REEKS_DREMPEL} matches op rij — dieper kan bijna niet.`,
       behaald: pech >= ZWARTE_REEKS_DREMPEL,
       voortgang: { nu: pech, doel: ZWARTE_REEKS_DREMPEL },
+    },
+    {
+      id: "valse-profeet",
+      naam: "Valse profeet",
+      emoji: "🔮",
+      omschrijving: `Tip ${VALSE_PROFEET_DOEL} toto-matches op rij fout.`,
+      behaald: misgetipt >= VALSE_PROFEET_DOEL,
+      voortgang: { nu: misgetipt, doel: VALSE_PROFEET_DOEL },
+    },
+    {
+      id: "choke-koning",
+      naam: "Choke-koning",
+      emoji: "👑",
+      omschrijving: `Verlies ${CHOKE_KONING_DOEL} matches waarin je vooraf de favoriet was.`,
+      behaald: choke >= CHOKE_KONING_DOEL,
+      voortgang: { nu: choke, doel: CHOKE_KONING_DOEL },
     },
   );
 
@@ -582,6 +612,23 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       emoji: "😈",
       omschrijving: `Versla een team waarvan je eerst ${ANGSTGEGNER_DREMPEL} keer op rij verloor.`,
       behaald: angstgegnerVerslagen(matches, teams, playerId),
+    },
+    {
+      id: "reuzendoder-zwaar",
+      naam: "Reuzenmoordenaar",
+      emoji: "🦖",
+      omschrijving: `Klop een team met een gemiddelde rating die minstens ${REUZENDODER_ZWAAR_DREMPEL} punten hoger ligt — de zware broer van de Reuzendoder.`,
+      behaald: ratings
+        ? isReuzendoder(matches, teams, playerId, ratings, REUZENDODER_ZWAAR_DREMPEL)
+        : false,
+    },
+    {
+      id: "netroller",
+      naam: "Netroller",
+      emoji: "🕸️",
+      omschrijving: `Scoor ${NETROLLER_DOEL} netrollers in één match — puur talent, uiteraard.`,
+      behaald: netrollers >= NETROLLER_DOEL,
+      voortgang: { nu: netrollers, doel: NETROLLER_DOEL },
     },
   );
 

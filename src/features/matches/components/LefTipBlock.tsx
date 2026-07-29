@@ -19,8 +19,10 @@ import {
 import type { Match, Profile } from "@/types";
 import "./LefTipBlock.css";
 
-/** Lef-tip (#804): dubbel-of-niets op je eigen Elo-mutatie. Ingeklapt tot één
- *  regel, net als de toto ernaast — het is een extra, geen hoofdactie.
+/** Lef-tip (#804): dubbel-of-niets op je eigen Elo-mutatie. Een open tegel
+ *  naast de toto — in het eigen lef-violet, zodat het risicospel van de
+ *  spelers zich onderscheidt van het kijkersspel ernaast. De afweging
+ *  (verdubbelde vs. normale mutatie) staat er meteen bij, vóór je beslist.
  *
  *  Vóór de aftrap zie je alleen je eigen inzet: wie er lef had wordt pas
  *  onthuld zodra de match begonnen is, zodat niemand op andermans keuze kan
@@ -45,7 +47,6 @@ export function LefTipBlock({
   games: number;
 }) {
   const toast = useToast();
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const stakes = useAsync(
@@ -124,51 +125,39 @@ export function LefTipBlock({
   }
 
   return (
-    <div className="lef">
-      <button
-        type="button"
-        className="lef__summary"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="lef__title">🎲 Lef</span>
-        <span className="lef__state">{samenvatting}</span>
-        <span className="lef__chevron" aria-hidden="true">
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className="lef__body">
-          {isDeelnemer && !afgelopen && (
-            <>
-              <button
-                type="button"
-                className={`lef__toggle ${mijnInzet ? "lef__toggle--on" : ""}`}
-                disabled={!openVoorMij || busy}
-                onClick={schakel}
-              >
-                {mijnInzet ? "Inzet intrekken" : "Zet je lef in"}
-              </button>
-              {swing && normaal && (
-                <p className="lef__swing">
-                  Met lef <strong className="lef__win">+{swing.winst}</strong> bij
-                  winst, <strong className="lef__loss">{swing.verlies}</strong>{" "}
-                  bij verlies — zonder inzet +{normaal.winst} / {normaal.verlies}
-                  .
-                </p>
-              )}
-              <p className="lef__legend">
-                {blokkade
-                  ? blokkadeUitleg(blokkade, games)
-                  : "Dubbel of niets: win je, dan telt jouw winst dubbel — verlies je, dan telt je verlies net zo hard. Alleen jouw rating, niet die van je partner. Eén inzet per speeldag, tot de starttijd."}
-              </p>
-            </>
+    <section className="bet-tile bet-tile--lef" aria-label="Lef">
+      <header className="bet-tile__head">
+        <span className="bet-tile__name">🎲 Lef</span>
+        <span className="bet-tile__stat">{samenvatting}</span>
+      </header>
+      {isDeelnemer && !afgelopen && (
+        <>
+          {swing && normaal && (
+            <p className="lef__swing">
+              Met lef <strong className="lef__win">+{swing.winst}</strong> bij
+              winst, <strong className="lef__loss">{swing.verlies}</strong>{" "}
+              bij verlies — zonder inzet +{normaal.winst} / {normaal.verlies}
+              .
+            </p>
           )}
-          {onthuld && (
-            <p className="lef__reveal">Lef getoond door {inzetters.join(", ")}.</p>
-          )}
-        </div>
+          <button
+            type="button"
+            className={`lef__toggle ${mijnInzet ? "lef__toggle--on" : ""}`}
+            disabled={!openVoorMij || busy}
+            onClick={schakel}
+          >
+            {mijnInzet ? "Inzet intrekken" : "Zet je lef in"}
+          </button>
+          <p className="bet-tile__foot">
+            {blokkade
+              ? blokkadeUitleg(blokkade, games)
+              : "Dubbel of niets: win je, dan telt jouw winst dubbel — verlies je, dan telt je verlies net zo hard. Alleen jouw rating, niet die van je partner. Eén inzet per speeldag, tot de starttijd."}
+          </p>
+        </>
       )}
-    </div>
+      {onthuld && (
+        <p className="lef__reveal">Lef getoond door {inzetters.join(", ")}.</p>
+      )}
+    </section>
   );
 }

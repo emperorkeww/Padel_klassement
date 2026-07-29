@@ -110,6 +110,19 @@ export async function setRoastIntensiteit(
   invalidate(`groups:one:${groupId}`, "groups");
 }
 
+/** Zet automatisch rondes klaarzetten aan of uit (#827; eigenaar-only, RLS). */
+export async function setAutoRondes(
+  groupId: string,
+  aan: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("groups")
+    .update({ auto_rondes: aan })
+    .eq("id", groupId);
+  if (error) throw error;
+  invalidate(`groups:one:${groupId}`, "groups");
+}
+
 /** Verwijdert een groep volledig (alleen de eigenaar, afgedwongen door RLS). */
 export async function deleteGroup(groupId: string): Promise<void> {
   const { error } = await supabase.from("groups").delete().eq("id", groupId);
@@ -158,16 +171,20 @@ export interface FairCourt {
 
 /**
  * Schrijft een "Eerlijke teams"-voorstel weg als geplande matches (één ronde).
- * Geeft de nieuwe match-ids terug.
+ * Geeft de nieuwe match-ids terug. `playedAt` (ISO) is de starttijd van de
+ * ronde (#827); zonder gelockte speeldag blijft die weg en heeft de match
+ * geen tijdstip, zoals voorheen.
  */
 export async function createFairRound(
   groupId: string,
   courts: FairCourt[],
+  playedAt?: string | null,
 ): Promise<string[]> {
   const players = courts.flatMap((c) => [...c.teamA, ...c.teamB]);
   const { data, error } = await supabase.rpc("create_fair_round", {
     p_group_id: groupId,
     p_players: players,
+    p_played_at: playedAt ?? undefined,
   });
   if (error) throw error;
   invalidate("matches", "teams");
@@ -193,9 +210,11 @@ export async function removeGroupMember(
  */
 export async function generateMexicanoRound(
   groupId: string,
+  playedAt?: string | null,
 ): Promise<string[]> {
   const { data, error } = await supabase.rpc("generate_mexicano_round", {
     p_group_id: groupId,
+    p_played_at: playedAt ?? undefined,
   });
   if (error) throw error;
   invalidate("matches", "teams");

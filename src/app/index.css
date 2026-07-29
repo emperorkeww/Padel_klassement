@@ -61,6 +61,13 @@
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
   --lime-soft: #f4fadb;
 
+  /* Lef (#804) — eigen violet, los van het groene toto/accent: het risicospel
+     van de spelers naast het kijkersspel van de toto. */
+  --lef: #6f56a8;
+  --lef-soft: #efeaf8;
+  --lef-line: #d4c9ec;
+  --lef-ink: #ffffff; /* tekst op violet (ingezette lef-knop) */
+
   /* Padelveld van de opstelling (#427). Puur decoratieve achtergrond (er staat
      geen lopende tekst direct op het veld), dus buiten de contrast-CI. */
   --court: #0d7a55;
@@ -268,6 +275,12 @@
   --lime: #a9bd55;
   --lime-deep: #93a848;
   --lime-soft: #252e14;
+
+  /* Lef-violet, lichter gezet voor leesbare tekst op donkere vlakken. */
+  --lef: #a48fd4;
+  --lef-soft: #241d33;
+  --lef-line: #3d3357;
+  --lef-ink: #14101e;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
   --court: #1b4636;

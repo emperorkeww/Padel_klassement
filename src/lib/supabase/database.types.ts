@@ -371,6 +371,7 @@ export type Database = {
       }
       groups: {
         Row: {
+          auto_rondes: boolean
           created_at: string
           created_by: string | null
           id: string
@@ -378,6 +379,7 @@ export type Database = {
           roast_intensiteit: Database["public"]["Enums"]["roast_intensiteit"]
         }
         Insert: {
+          auto_rondes?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -385,6 +387,7 @@ export type Database = {
           roast_intensiteit?: Database["public"]["Enums"]["roast_intensiteit"]
         }
         Update: {
+          auto_rondes?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -531,6 +534,66 @@ export type Database = {
           {
             foreignKeyName: "guest_claims_requested_by_fkey"
             columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_net_touches: {
+        Row: {
+          aantal: number
+          created_at: string
+          match_id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          aantal: number
+          created_at?: string
+          match_id: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          aantal?: number
+          created_at?: string
+          match_id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_net_touches_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_net_touches_player_id_fkey"
+            columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1194,6 +1257,7 @@ export type Database = {
           id: string
           locked_at: string | null
           locked_option_id: string | null
+          rounds_generated_at: string | null
           status: string
         }
         Insert: {
@@ -1212,6 +1276,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          rounds_generated_at?: string | null
           status?: string
         }
         Update: {
@@ -1230,6 +1295,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           locked_option_id?: string | null
+          rounds_generated_at?: string | null
           status?: string
         }
         Relationships: [
@@ -2090,7 +2156,12 @@ export type Database = {
         Returns: string
       }
       create_fair_round: {
-        Args: { p_group_id: string; p_players: string[] }
+        Args: {
+          p_created_by?: string
+          p_group_id: string
+          p_played_at?: string
+          p_players: string[]
+        }
         Returns: string[]
       }
       create_group_invite: {
@@ -2115,11 +2186,11 @@ export type Database = {
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
       first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
-        Args: { p_group_id: string }
+        Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
       }
       generate_mexicano_round: {
-        Args: { p_group_id: string }
+        Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
       }
       get_friend_suggestions: {

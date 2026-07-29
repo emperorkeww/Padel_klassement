@@ -7,9 +7,13 @@
 //   - badges.catalog    de volledige badge-catalogus (buildBadges)
 
 import type { Match, PlayerRating, Team } from "@/types";
+import type { MatchRatings } from "@/features/groups/maandpias";
+import type { MatchPrediction } from "@/features/matches/predictions";
+import { valseProfeetReeks } from "./badges.toto";
 import { longestLossStreak, longestStreak, outcomeFor } from "@/features/rating/results";
 import { verzamelFeiten } from "./badges.facts";
 import {
+  chokeAantal,
   dejaVuReeks,
   jojoReeks,
   rustFeiten,
@@ -23,6 +27,23 @@ export * from "./badges.constants";
 export interface BadgeVoortgang {
   nu: number;
   doel: number;
+}
+
+/**
+ * Optionele extra databronnen voor badges die niet uit matches/teams/ratings
+ * alleen af te leiden zijn (#809). Bewust optioneel: featuredPlaystyles roept
+ * deriveBadges met een lege context aan, en useBadgeAnnouncement laadt deze
+ * bronnen niet. Zonder extras blijven die badges simpelweg niet-behaald — nooit
+ * een valse viering, hooguit een badge die alleen op het profiel omslaat.
+ */
+export interface BadgeExtras {
+  /** rating_history per match (rating_before per speler), zoals
+   *  buildMatchRatings die levert — voedt de Choke-koning. */
+  matchRatings?: Map<string, MatchRatings>;
+  /** Toto-tips van deze speler — voedt de Valse profeet. */
+  predictions?: readonly MatchPrediction[];
+  /** Netrollers van deze speler per match-id — voedt de Netroller. */
+  netrollers?: Readonly<Record<string, number>>;
 }
 
 export interface Badge {
@@ -46,6 +67,7 @@ export function deriveBadges(
   teams: Record<string, Team>,
   playerId: string,
   ratings?: Record<string, PlayerRating>,
+  extras?: BadgeExtras,
 ): Badge[] {
   let gespeeld = 0;
   let gewonnen = 0;
@@ -64,6 +86,10 @@ export function deriveBadges(
   const jojo = jojoReeks(matches, teams, playerId);
   const rust = rustFeiten(matches, teams, playerId);
   const tweeling = tweelingReeks(matches, teams, playerId);
+  const choke = chokeAantal(matches, teams, playerId, extras?.matchRatings);
+  const misgetipt = valseProfeetReeks(matches, extras?.predictions);
+  // Beste enkele match; 0 zonder netroller-data.
+  const netrollers = Math.max(0, ...Object.values(extras?.netrollers ?? {}));
 
   const ctx: BadgeContext = {
     matches,
@@ -81,6 +107,9 @@ export function deriveBadges(
     jojo,
     rust,
     tweeling,
+    choke,
+    misgetipt,
+    netrollers,
   };
   return buildBadges(ctx);
 }

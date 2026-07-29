@@ -2,7 +2,37 @@
 import { ANGSTGEGNER_DREMPEL, COMEBACK_DREMPEL, REUZENDODER_DREMPEL, ROESTVRIJ_DAGEN } from "./badges.constants";
 import { matchDate } from "@/features/dashboard/missions";
 import { inTeam, outcomeFor, playersOf } from "@/features/rating/results";
+import { FAVORIET_DREMPEL, favorietKans } from "@/features/groups/maandpias";
+import type { MatchRatings } from "@/features/groups/maandpias";
 import type { Match, PlayerRating, Team } from "@/types";
+
+/**
+ * Aantal matches waarin de speler "gechoket" heeft: verloren terwijl hij
+ * favoriet was met een pre-match winkans van minstens FAVORIET_DREMPEL (0.6).
+ *
+ * Bewust dezelfde definitie als de pias (recompute_pias in de DB en bepaalPias
+ * hier ernaast), zodat de feed, de Pias en de badge dezelfde matches "choke"
+ * noemen (#809). De issue vroeg om "verliezen na een 5-1-voorsprong", maar
+ * punt-voor-punt-data bestaat niet: match_points heeft geen enkele schrijver
+ * (zie ook de toelichting in features/seizoen/awards.ts).
+ *
+ * Zonder pre-match ratings (bv. in useBadgeAnnouncement, dat rating_history
+ * niet laadt) is het antwoord 0 — de badge blijft dan gewoon niet-behaald.
+ */
+export function chokeAantal(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+  ratingsByMatch: Map<string, MatchRatings> | undefined,
+): number {
+  if (!ratingsByMatch) return 0;
+  let n = 0;
+  for (const m of matches) {
+    const kans = favorietKans(m, teams, playerId, ratingsByMatch.get(m.id));
+    if (kans != null && kans >= FAVORIET_DREMPEL) n++;
+  }
+  return n;
+}
 
 /** Gemiddelde huidige rating van een team (bij singles: die ene rating), of
  *  null zodra één rating ontbreekt. */
@@ -22,20 +52,24 @@ function teamRating(
 }
 
 /**
- * Won de speler ooit van een team dat gemiddeld minstens REUZENDODER_DREMPEL
- * rating hoger stond dan zijn eigen team?
+ * Won de speler ooit van een team dat gemiddeld minstens `drempel` rating
+ * hoger stond dan zijn eigen team?
  *
  * Bewuste benadering: we vergelijken met de HUIDIGE ratings, niet met de
  * ratings op het moment van de match. De historische rating per speler per
  * match zou vier extra rating_history-opzoekingen per match vragen; de
  * huidige stand is ruim goed genoeg voor een verzamelbadge. Ontbreekt een
  * rating (of zijn er geen ratings), dan telt die match gewoon niet mee.
+ *
+ * De drempel is instelbaar (#809): naast de Reuzendoder (50) staat de veel
+ * zwaardere Reuzenmoordenaar (150) op dezelfde doorloop.
  */
 export function isReuzendoder(
   matches: Match[],
   teams: Record<string, Team>,
   playerId: string,
   ratings: Record<string, PlayerRating>,
+  drempel: number = REUZENDODER_DREMPEL,
 ): boolean {
   for (const m of matches) {
     if (outcomeFor(m, teams, playerId) !== "W") continue;
@@ -43,7 +77,7 @@ export function isReuzendoder(
     const mine = teamRating(teams[mineIsA ? m.team_a_id : m.team_b_id], ratings);
     const theirs = teamRating(teams[mineIsA ? m.team_b_id : m.team_a_id], ratings);
     if (mine == null || theirs == null) continue;
-    if (theirs - mine >= REUZENDODER_DREMPEL) return true;
+    if (theirs - mine >= drempel) return true;
   }
   return false;
 }

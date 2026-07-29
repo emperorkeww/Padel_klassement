@@ -5,6 +5,7 @@ import {
   lockedOptionOf,
   pollPhase,
   roundsExistFor,
+  roundsMadeFor,
   splitPolls,
 } from "./planFlowLogic";
 import type { PlayPoll, PollOption, PollVote } from "./pollsApi";
@@ -111,6 +112,36 @@ describe("roundsExistFor", () => {
     expect(
       roundsExistFor(poll({ status: "booked", booked_at: null }), [match()]),
     ).toBe(false);
+  });
+});
+
+describe("roundsMadeFor", () => {
+  const booked = poll({
+    status: "booked",
+    booked_at: "2026-07-09T08:00:00Z",
+  });
+
+  it("telt unieke rondes, niet de matches erin", () => {
+    expect(
+      roundsMadeFor(booked, [
+        match({ id: "m1", round_number: 3 }),
+        match({ id: "m2", round_number: 3 }),
+        match({ id: "m3", round_number: 4 }),
+      ]),
+    ).toBe(2);
+  });
+
+  it("negeert rondes van vóór het boeken en losse matches", () => {
+    expect(
+      roundsMadeFor(booked, [
+        match({ created_at: "2026-07-08T10:00:00Z", round_number: 2 }),
+        match({ round_number: null }),
+      ]),
+    ).toBe(0);
+  });
+
+  it("is nul zolang de speeldag niet geboekt is", () => {
+    expect(roundsMadeFor(poll({ status: "locked" }), [match()])).toBe(0);
   });
 });
 

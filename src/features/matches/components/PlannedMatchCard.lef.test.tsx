@@ -85,13 +85,6 @@ function renderCard(match: Match = GEPLAND) {
   );
 }
 
-/** Klapt de (standaard ingeklapte) lef-sectie uit via de samenvattingsregel. */
-async function expandLef() {
-  const summary = await screen.findByRole("button", { name: /^🎲 lef/i });
-  await userEvent.click(summary);
-  return summary;
-}
-
 beforeEach(() => {
   setTables();
   vi.clearAllMocks();
@@ -100,10 +93,9 @@ beforeEach(() => {
 describe("<PlannedMatchCard /> lef-tip", () => {
   it("toont wat er op het spel staat en zet de inzet weg", async () => {
     renderCard();
-    const summary = await expandLef();
-    expect(summary).toHaveAttribute("aria-expanded", "true");
+    // Open tegel (geen accordeon meer): de uitleg staat er direct.
     expect(
-      screen.getByText(/verlies je, dan telt je verlies net zo hard/i),
+      await screen.findByText(/verlies je, dan telt je verlies net zo hard/i),
     ).toBeInTheDocument();
     // Beide kanten worden getoond: verdubbeld én de normale mutatie.
     expect(screen.getByText(/zonder inzet/i)).toBeInTheDocument();
@@ -115,10 +107,11 @@ describe("<PlannedMatchCard /> lef-tip", () => {
   it("trekt een bestaande inzet weer in", async () => {
     setTables({ match_stakes: [stakeRij(GEPLAND.id, "p1")] });
     renderCard();
-    // De samenvatting verraadt de eigen inzet al vóór het uitklappen.
+    // De kopregel van de tegel verraadt de eigen inzet meteen.
     expect(await screen.findByText(/jouw lef staat ingezet/i)).toBeInTheDocument();
-    await expandLef();
-    await userEvent.click(screen.getByRole("button", { name: /inzet intrekken/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /inzet intrekken/i }),
+    );
     expect(supabase.from).toHaveBeenCalledWith("match_stakes");
   });
 
@@ -129,9 +122,10 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       ),
     });
     renderCard();
-    await expandLef();
+    expect(
+      await screen.findByText(/nog 6 matches te gaan/i),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /zet je lef in/i })).toBeDisabled();
-    expect(screen.getByText(/nog 6 matches te gaan/i)).toBeInTheDocument();
   });
 
   it("onthult pas na de aftrap wie er lef had", async () => {
@@ -144,8 +138,9 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       match_stakes: [stakeRij(begonnen.id, "p2")],
     });
     renderCard(begonnen);
-    await expandLef();
-    expect(screen.getByText(/lef getoond door bob/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/lef getoond door bob/i),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /zet je lef in/i })).toBeDisabled();
   });
 
@@ -158,10 +153,8 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     } as Match;
     setTables({ matches: [anderen] });
     renderCard(anderen);
-    // De toto-regel hoort er wel te staan (het blijft een groepsmatch).
-    await screen.findByRole("button", { name: /toto/i });
-    expect(
-      screen.queryByRole("button", { name: /^🎲 lef/i }),
-    ).not.toBeInTheDocument();
+    // De toto-tegel hoort er wel te staan (het blijft een groepsmatch).
+    await screen.findByText(/🎯 toto/i);
+    expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
   });
 });

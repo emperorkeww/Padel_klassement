@@ -1,12 +1,19 @@
 import { describe, it, expect } from "vitest";
 import {
+  CHOKE_KONING_DOEL,
   deriveBadges,
   featuredPlaystyles,
+  NETROLLER_DOEL,
   REUZENDODER_DREMPEL,
+  REUZENDODER_ZWAAR_DREMPEL,
+  VALSE_PROFEET_DOEL,
+  VASTE_GAST_DOEL,
   ZELDZAME_BADGES,
 } from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
-import type { Match, PlayerRating, Team } from "@/types";
+import type { MatchRatings } from "@/features/groups/maandpias";
+import type { MatchPrediction } from "@/features/matches/predictions";
+import type { Match, PlayerRating, RatingPoint, Team } from "@/types";
 
 // Vier spelers, twee vaste teams: A = {p1,p2}, B = {p3,p4}.
 const teams: Record<string, Team> = {
@@ -58,7 +65,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(86);
+    expect(badges).toHaveLength(91);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -186,6 +193,205 @@ describe("deriveBadges — reuzendoder", () => {
   });
 });
 
+describe("deriveBadges — reuzenmoordenaar (#809)", () => {
+  const winst = [win()];
+  const tegen = (verschil: number) =>
+    ratingsFor({
+      p1: 1000,
+      p2: 1000,
+      p3: 1000 + verschil,
+      p4: 1000 + verschil,
+    });
+
+  it("wordt behaald op exact de zware drempel", () => {
+    const badges = deriveBadges(winst, teams, "p1", tegen(REUZENDODER_ZWAAR_DREMPEL));
+    expect(badge(badges, "reuzendoder-zwaar").behaald).toBe(true);
+  });
+
+  it("blijft niet-behaald nét onder de zware drempel, terwijl de gewone wél omslaat", () => {
+    const badges = deriveBadges(winst, teams, "p1", tegen(REUZENDODER_ZWAAR_DREMPEL - 1));
+    expect(badge(badges, "reuzendoder-zwaar").behaald).toBe(false);
+    expect(badge(badges, "reuzendoder").behaald).toBe(true);
+  });
+
+  it("telt verliezen tegen reuzen niet mee en blijft leeg zonder ratings", () => {
+    const ratings = tegen(REUZENDODER_ZWAAR_DREMPEL);
+    expect(badge(deriveBadges([loss()], teams, "p1", ratings), "reuzendoder-zwaar").behaald)
+      .toBe(false);
+    expect(badge(deriveBadges(winst, teams, "p1"), "reuzendoder-zwaar").behaald).toBe(false);
+  });
+
+  it("staat in de curated zeldzame set", () => {
+    expect(ZELDZAME_BADGES.has("reuzendoder-zwaar")).toBe(true);
+  });
+});
+
+describe("deriveBadges — choke-koning (#809)", () => {
+  // Pre-match ratings per match, zoals buildMatchRatings ze levert. p1/p2 staan
+  // ver boven p3/p4, dus team A is telkens duidelijk favoriet.
+  function chokeRatings(
+    ms: Match[],
+    perPlayer: Record<string, number>,
+  ): Map<string, MatchRatings> {
+    return new Map(
+      ms.map((m) => [
+        m.id,
+        new Map(
+          Object.entries(perPlayer).map(([pid, rating]) => [
+            pid,
+            {
+              player_id: pid,
+              match_id: m.id,
+              rating_before: rating,
+              rating_after: rating,
+              delta: 0,
+              played_at: m.played_at ?? m.created_at,
+            } as RatingPoint,
+          ]),
+        ),
+      ]),
+    );
+  }
+  // 1200 vs 1000 ⇒ winkans ≈ 0.76, ruim boven FAVORIET_DREMPEL (0.6).
+  const favoriet = { p1: 1200, p2: 1200, p3: 1000, p4: 1000 };
+
+  it("wordt behaald na vijf verliezen als favoriet, met voortgang", () => {
+    const ms = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const c = badge(
+      deriveBadges(ms, teams, "p1", undefined, { matchRatings: chokeRatings(ms, favoriet) }),
+      "choke-koning",
+    );
+    expect(c.behaald).toBe(true);
+    expect(c.voortgang).toEqual({ nu: CHOKE_KONING_DOEL, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("telt winsten en verliezen als underdog niet mee", () => {
+    const gewonnen = Array.from({ length: CHOKE_KONING_DOEL }, win);
+    expect(
+      badge(
+        deriveBadges(gewonnen, teams, "p1", undefined, {
+          matchRatings: chokeRatings(gewonnen, favoriet),
+        }),
+        "choke-koning",
+      ).voortgang,
+    ).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+
+    // Omgedraaid: p1 is nu de underdog, verliezen is dan geen choke.
+    const verloren = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const underdog = { p1: 1000, p2: 1000, p3: 1200, p4: 1200 };
+    expect(
+      badge(
+        deriveBadges(verloren, teams, "p1", undefined, {
+          matchRatings: chokeRatings(verloren, underdog),
+        }),
+        "choke-koning",
+      ).voortgang,
+    ).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("blijft op nul zonder pre-match ratings (zoals in useBadgeAnnouncement)", () => {
+    const ms = Array.from({ length: CHOKE_KONING_DOEL }, loss);
+    const c = badge(deriveBadges(ms, teams, "p1"), "choke-koning");
+    expect(c.behaald).toBe(false);
+    expect(c.voortgang).toEqual({ nu: 0, doel: CHOKE_KONING_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge — pech viert niet", () => {
+    expect(ZELDZAME_BADGES.has("choke-koning")).toBe(false);
+  });
+});
+
+describe("deriveBadges — valse profeet (#809)", () => {
+  /** Tip op één match; `op` is het getipte team. */
+  function tip(m: Match, op: string, punten: number | null = 0): MatchPrediction {
+    return {
+      match_id: m.id,
+      player_id: "p1",
+      group_id: "g1",
+      predicted_team_id: op,
+      win_chance: 0.5,
+      points: punten,
+      created_at: m.created_at,
+      updated_at: m.created_at,
+    };
+  }
+  const profeet = (ms: Match[], ps: MatchPrediction[]) =>
+    badge(deriveBadges(ms, teams, "p1", undefined, { predictions: ps }), "valse-profeet");
+
+  it("wordt behaald na vijf fout getipte matches op rij, met voortgang", () => {
+    // tB wint telkens, p1 tipt telkens tA.
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    const v = profeet(ms, ms.map((m) => tip(m, "tA")));
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VALSE_PROFEET_DOEL, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("een juiste tip breekt de reeks", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    // De derde tip is juist (tB won ook echt) → langste foute reeks is 2.
+    const ps = ms.map((m, i) => (i === 2 ? tip(m, "tB", 3) : tip(m, "tA")));
+    expect(profeet(ms, ps).voortgang).toEqual({ nu: 2, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("slaat gelijkspelen over: ze breken de reeks niet en tellen niet mee", () => {
+    const voor = Array.from({ length: 3 }, loss);
+    const gelijk = match({ winner_team_id: null });
+    const na = Array.from({ length: 2 }, loss);
+    const ms = [...voor, gelijk, ...na];
+    const ps = ms.map((m) => tip(m, "tA"));
+    const v = profeet(ms, ps);
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VALSE_PROFEET_DOEL, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("negeert nog niet beoordeelde tips (points null)", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    const ps = ms.map((m, i) => tip(m, "tA", i === 1 ? null : 0));
+    // De ongescoorde match telt niet mee, maar breekt de reeks ook niet: 4.
+    expect(profeet(ms, ps).voortgang).toEqual({ nu: 4, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("blijft op nul zonder tips", () => {
+    const ms = Array.from({ length: VALSE_PROFEET_DOEL }, loss);
+    expect(badge(deriveBadges(ms, teams, "p1"), "valse-profeet").voortgang)
+      .toEqual({ nu: 0, doel: VALSE_PROFEET_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge", () => {
+    expect(ZELDZAME_BADGES.has("valse-profeet")).toBe(false);
+  });
+});
+
+describe("deriveBadges — netroller (#809)", () => {
+  const netroller = (ms: Match[], per: Record<string, number>) =>
+    badge(deriveBadges(ms, teams, "p1", undefined, { netrollers: per }), "netroller");
+
+  it("wordt behaald bij drie netrollers in één match, met voortgang", () => {
+    const m = win();
+    const n = netroller([m], { [m.id]: NETROLLER_DOEL });
+    expect(n.behaald).toBe(true);
+    expect(n.voortgang).toEqual({ nu: NETROLLER_DOEL, doel: NETROLLER_DOEL });
+  });
+
+  it("telt per match, niet over matches heen", () => {
+    // Twee matches met elk 2 netrollers: samen 4, maar nooit 3 in één match.
+    const a = win();
+    const b = win();
+    const n = netroller([a, b], { [a.id]: 2, [b.id]: 2 });
+    expect(n.behaald).toBe(false);
+    expect(n.voortgang).toEqual({ nu: 2, doel: NETROLLER_DOEL });
+  });
+
+  it("blijft op nul zonder netroller-data", () => {
+    expect(badge(deriveBadges([win()], teams, "p1"), "netroller").voortgang)
+      .toEqual({ nu: 0, doel: NETROLLER_DOEL });
+  });
+
+  it("is bewust géén zeldzame badge — de announcement-hook laadt de tellers niet", () => {
+    expect(ZELDZAME_BADGES.has("netroller")).toBe(false);
+  });
+});
+
 describe("deriveBadges — extra badges", () => {
   // Lokale Date → ISO, zodat getDay()/getHours() deterministisch zijn los van TZ.
   const at = (y: number, mo: number, d: number, h: number) =>
@@ -227,6 +433,28 @@ describe("deriveBadges — extra badges", () => {
       match({ played_at: at(2026, 0, 5, h), winner_team_id: "tA" }),
     );
     expect(badge(deriveBadges(twee, teams, "p1"), "marathonspeler").behaald).toBe(false);
+  });
+
+  it("Vaste gast: behaald bij vijf matches in één kalendermaand, met voortgang (#809)", () => {
+    // Vijf losse dagen in maart 2026 — bewust niet op één dag, zodat dit los
+    // staat van de Marathonspeler.
+    const maart = [2, 6, 11, 17, 23].map((d) =>
+      match({ played_at: at(2026, 2, d, 20), winner_team_id: "tA" }),
+    );
+    const v = badge(deriveBadges(maart, teams, "p1"), "vaste-gast");
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VASTE_GAST_DOEL, doel: VASTE_GAST_DOEL });
+  });
+
+  it("Vaste gast: telt per concrete maand, niet per maand-van-het-jaar (#809)", () => {
+    // Vier in maart 2026 + één in maart 2025 = nergens vijf in één maand.
+    const verspreid = [
+      ...[2, 6, 11, 17].map((d) => match({ played_at: at(2026, 2, d, 20), winner_team_id: "tA" })),
+      match({ played_at: at(2025, 2, 9, 20), winner_team_id: "tA" }),
+    ];
+    const v = badge(deriveBadges(verspreid, teams, "p1"), "vaste-gast");
+    expect(v.behaald).toBe(false);
+    expect(v.voortgang).toEqual({ nu: 4, doel: VASTE_GAST_DOEL });
   });
 
   it("Pechvogel: behaald bij vijf verliezen op rij", () => {

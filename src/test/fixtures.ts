@@ -231,6 +231,8 @@ export const TABLES = {
   play_poll_options: PLAY_POLL_OPTIONS,
   play_poll_votes: PLAY_POLL_VOTES,
   match_predictions: MATCH_PREDICTIONS,
+  // Netrollers (#809): p2 telde er twee op de afgeronde match.
+  match_net_touches: [{ match_id: "m-done", player_id: "p2", aantal: 2 }],
   group_prediction_standings: PREDICTION_STANDINGS,
 };
 
