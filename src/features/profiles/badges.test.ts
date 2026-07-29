@@ -3,6 +3,8 @@ import {
   deriveBadges,
   featuredPlaystyles,
   REUZENDODER_DREMPEL,
+  REUZENDODER_ZWAAR_DREMPEL,
+  VASTE_GAST_DOEL,
   ZELDZAME_BADGES,
 } from "@/features/profiles/badges";
 import type { Badge } from "@/features/profiles/badges";
@@ -58,7 +60,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(86);
+    expect(badges).toHaveLength(88);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -186,6 +188,39 @@ describe("deriveBadges — reuzendoder", () => {
   });
 });
 
+describe("deriveBadges — reuzenmoordenaar (#809)", () => {
+  const winst = [win()];
+  const tegen = (verschil: number) =>
+    ratingsFor({
+      p1: 1000,
+      p2: 1000,
+      p3: 1000 + verschil,
+      p4: 1000 + verschil,
+    });
+
+  it("wordt behaald op exact de zware drempel", () => {
+    const badges = deriveBadges(winst, teams, "p1", tegen(REUZENDODER_ZWAAR_DREMPEL));
+    expect(badge(badges, "reuzendoder-zwaar").behaald).toBe(true);
+  });
+
+  it("blijft niet-behaald nét onder de zware drempel, terwijl de gewone wél omslaat", () => {
+    const badges = deriveBadges(winst, teams, "p1", tegen(REUZENDODER_ZWAAR_DREMPEL - 1));
+    expect(badge(badges, "reuzendoder-zwaar").behaald).toBe(false);
+    expect(badge(badges, "reuzendoder").behaald).toBe(true);
+  });
+
+  it("telt verliezen tegen reuzen niet mee en blijft leeg zonder ratings", () => {
+    const ratings = tegen(REUZENDODER_ZWAAR_DREMPEL);
+    expect(badge(deriveBadges([loss()], teams, "p1", ratings), "reuzendoder-zwaar").behaald)
+      .toBe(false);
+    expect(badge(deriveBadges(winst, teams, "p1"), "reuzendoder-zwaar").behaald).toBe(false);
+  });
+
+  it("staat in de curated zeldzame set", () => {
+    expect(ZELDZAME_BADGES.has("reuzendoder-zwaar")).toBe(true);
+  });
+});
+
 describe("deriveBadges — extra badges", () => {
   // Lokale Date → ISO, zodat getDay()/getHours() deterministisch zijn los van TZ.
   const at = (y: number, mo: number, d: number, h: number) =>
@@ -227,6 +262,28 @@ describe("deriveBadges — extra badges", () => {
       match({ played_at: at(2026, 0, 5, h), winner_team_id: "tA" }),
     );
     expect(badge(deriveBadges(twee, teams, "p1"), "marathonspeler").behaald).toBe(false);
+  });
+
+  it("Vaste gast: behaald bij vijf matches in één kalendermaand, met voortgang (#809)", () => {
+    // Vijf losse dagen in maart 2026 — bewust niet op één dag, zodat dit los
+    // staat van de Marathonspeler.
+    const maart = [2, 6, 11, 17, 23].map((d) =>
+      match({ played_at: at(2026, 2, d, 20), winner_team_id: "tA" }),
+    );
+    const v = badge(deriveBadges(maart, teams, "p1"), "vaste-gast");
+    expect(v.behaald).toBe(true);
+    expect(v.voortgang).toEqual({ nu: VASTE_GAST_DOEL, doel: VASTE_GAST_DOEL });
+  });
+
+  it("Vaste gast: telt per concrete maand, niet per maand-van-het-jaar (#809)", () => {
+    // Vier in maart 2026 + één in maart 2025 = nergens vijf in één maand.
+    const verspreid = [
+      ...[2, 6, 11, 17].map((d) => match({ played_at: at(2026, 2, d, 20), winner_team_id: "tA" })),
+      match({ played_at: at(2025, 2, 9, 20), winner_team_id: "tA" }),
+    ];
+    const v = badge(deriveBadges(verspreid, teams, "p1"), "vaste-gast");
+    expect(v.behaald).toBe(false);
+    expect(v.voortgang).toEqual({ nu: 4, doel: VASTE_GAST_DOEL });
   });
 
   it("Pechvogel: behaald bij vijf verliezen op rij", () => {

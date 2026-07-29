@@ -1,7 +1,7 @@
 // De volledige badge-catalogus: één (bewust lange) lijst badge-definities in
 // vaste volgorde. Puur data + behaald-checks op de vooraf berekende context.
 import type { Badge } from "./badges";
-import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
+import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, REUZENDODER_ZWAAR_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VASTE_GAST_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
 import type { MatchFeiten } from "./badges.facts";
 import { angstgegnerVerslagen, hadComeback, hadRevanche, isGestruikeld, isReuzendoder } from "./badges.streaks";
 import { perfecteWeken } from "@/features/dashboard/missions";
@@ -122,6 +122,14 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       omschrijving: `Speel ${MARATHON_DOEL} matches op één dag.`,
       behaald: feiten.maxPerDag >= MARATHON_DOEL,
       voortgang: { nu: feiten.maxPerDag, doel: MARATHON_DOEL },
+    },
+    {
+      id: "vaste-gast",
+      naam: "Vaste gast",
+      emoji: "🍺",
+      omschrijving: `Speel ${VASTE_GAST_DOEL} matches in één kalendermaand.`,
+      behaald: feiten.maxPerMaand >= VASTE_GAST_DOEL,
+      voortgang: { nu: feiten.maxPerMaand, doel: VASTE_GAST_DOEL },
     },
     {
       id: "pechvogel",
@@ -582,6 +590,15 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       emoji: "😈",
       omschrijving: `Versla een team waarvan je eerst ${ANGSTGEGNER_DREMPEL} keer op rij verloor.`,
       behaald: angstgegnerVerslagen(matches, teams, playerId),
+    },
+    {
+      id: "reuzendoder-zwaar",
+      naam: "Reuzenmoordenaar",
+      emoji: "🦖",
+      omschrijving: `Klop een team met een gemiddelde rating die minstens ${REUZENDODER_ZWAAR_DREMPEL} punten hoger ligt — de zware broer van de Reuzendoder.`,
+      behaald: ratings
+        ? isReuzendoder(matches, teams, playerId, ratings, REUZENDODER_ZWAAR_DREMPEL)
+        : false,
     },
   );
 

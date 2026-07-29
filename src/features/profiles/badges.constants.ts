@@ -3,6 +3,9 @@
 /** Rating-voorsprong die een tegenstanderteam tot "reus" maakt. */
 export const REUZENDODER_DREMPEL = 50;
 
+/** Rating-voorsprong voor de veel zwaardere Reuzenmoordenaar (#809). */
+export const REUZENDODER_ZWAAR_DREMPEL = 150;
+
 /** Puntenverschil vanaf wanneer een winst een "monsterzege" is. Bewust lager
  *  dan een volledige 6-0 (dat is al Broodje bal): 6-2 / 6-1 telt ook. */
 export const MONSTERZEGE_DREMPEL = 4;
@@ -91,6 +94,9 @@ export const WEEKRITME_DOEL = 5;
 /** Maximale minuten tussen twee matchstarts voor Back-to-back. */
 export const BACK_TO_BACK_MINUTEN = 90;
 
+/** Matches in één kalendermaand voor de Vaste gast (#809). */
+export const VASTE_GAST_DOEL = 5;
+
 export const WINSTEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 25, naam: "Winnaarstype", emoji: "🏅" },
   { doel: 50, naam: "Halve eeuw zeges", emoji: "🏆" },
@@ -144,4 +150,5 @@ export const ZELDZAME_BADGES: ReadonlySet<string> = new Set([
   "winsten-100", // 🏛️ Honderd zeges
   "perfecte-weken-10", // 🦸 Weekheld: 10 perfecte missieweken
   "rating-1300", // 👑 Levende legende
+  "reuzendoder-zwaar", // 🦖 Reuzenmoordenaar: winst tegen 150+ hoger team
 ]);
