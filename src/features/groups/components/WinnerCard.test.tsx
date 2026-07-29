@@ -81,7 +81,11 @@ const PROFILES: Record<string, Profile> = {};
 
 function renderCard(
   poll: Partial<PlayPoll> = {},
-  extra: { tally?: OptionTally; roundsExist?: boolean } = {},
+  extra: {
+    tally?: OptionTally;
+    roundsExist?: boolean;
+    profiles?: Record<string, Profile>;
+  } = {},
 ) {
   return render(
     <MemoryRouter>
@@ -95,7 +99,7 @@ function renderCard(
             perPerson={null}
             club={CLUB}
             groupName="Vrijdagavond padel"
-            profiles={PROFILES}
+            profiles={extra.profiles ?? PROFILES}
             isManager
             busy={false}
             run={async (fn) => {
@@ -304,5 +308,40 @@ describe("<WinnerCard /> wedstrijden klaarzetten (#727)", () => {
       screen.getByRole("button", { name: /genereer wedstrijden/i }),
     );
     expect(createFairRound).toHaveBeenCalledTimes(1);
+  });
+});
+
+// De gekozen speeldag toonde enkel de zekere spelers, terwijl "nog 1 speler
+// nodig" juist vraagt: wie twijfelt er nog?
+describe("<WinnerCard /> misschien-stemmers (#803)", () => {
+  const profiel = (id: string, naam: string): Profile => ({
+    id,
+    username: naam.toLowerCase(),
+    full_name: naam,
+    avatar_url: null,
+    created_at: "2026-01-01T00:00:00Z",
+  });
+  const PROFIELEN = {
+    p1: profiel("p1", "Ann"),
+    p3: profiel("p3", "Bert"),
+    p4: profiel("p4", "Cis"),
+  };
+
+  it("noemt de twijfelaars bij naam onder de deelnemers", () => {
+    renderCard(
+      {},
+      {
+        tally: { ...TALLY, yes: ["p1"], maybe: ["p3", "p4"] },
+        profiles: PROFIELEN,
+      },
+    );
+
+    expect(screen.getByText(/misschien: bert, cis/i)).toBeInTheDocument();
+  });
+
+  it("zwijgt zodra niemand twijfelt", () => {
+    renderCard({}, { tally: { ...TALLY, yes: ["p1"] }, profiles: PROFIELEN });
+
+    expect(screen.queryByText(/misschien:/i)).not.toBeInTheDocument();
   });
 });

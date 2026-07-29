@@ -39,6 +39,7 @@ export function PollOptionRow({
   profiles: Record<string, Profile>;
 }) {
   const name = (id: string) => displayName(profiles[id]);
+  const maybeNames = t.maybe.map(name).join(", ");
 
   return (
     <li className="poll-row-wrap">
@@ -46,20 +47,29 @@ export function PollOptionRow({
         <span className="poll-row__when">
           {shortDay(o.date)} · {o.start_time}
         </span>
-        <span className="poll-row__people" aria-hidden="true">
-          {t.yes.slice(0, 4).map((pid) => (
-            <Avatar key={pid} profile={profiles[pid]} size={22} />
-          ))}
-          {t.yes.length > 4 && (
-            <span className="poll-row__more">+{t.yes.length - 4}</span>
-          )}
+        <span className="poll-row__people">
+          <span className="poll-row__avatars" aria-hidden="true">
+            {t.yes.slice(0, 4).map((pid) => (
+              <Avatar key={pid} profile={profiles[pid]} size={22} />
+            ))}
+            {t.yes.length > 4 && (
+              <span className="poll-row__more">+{t.yes.length - 4}</span>
+            )}
+          </span>
+          {/* De "+N?"-badge was hover-only (#803): op touch kwam je nooit te
+              weten wíe er twijfelt. Nu opent hij hetzelfde detail als de
+              haalbaarheidsknop, waar de namen staan. */}
           {t.maybe.length > 0 && (
-            <span
+            <button
+              type="button"
               className="poll-row__maybe"
-              title={`${t.maybe.length} misschien`}
+              title={maybeNames}
+              aria-label={`${t.maybe.length} misschien: ${maybeNames} — uitleg`}
+              aria-expanded={detailOpen}
+              onClick={onToggleDetail}
             >
               +{t.maybe.length}?
-            </span>
+            </button>
           )}
         </span>
         <button
@@ -87,7 +97,9 @@ export function PollOptionRow({
           </span>
         ) : (
           <span className="proposal__meta">
-            {past ? "voorbij" : `${t.yes.length} mee`}
+            {past
+              ? "voorbij"
+              : `${t.yes.length} mee${t.maybe.length > 0 ? ` · ${t.maybe.length}?` : ""}`}
           </span>
         )}
       </div>
@@ -104,6 +116,11 @@ export function PollOptionRow({
           {t.yes.length > 0 && (
             <p className="proposal__names">
               Kan: {t.yes.map(name).join(", ")}
+            </p>
+          )}
+          {t.maybe.length > 0 && (
+            <p className="proposal__names proposal__names--maybe">
+              Misschien: {maybeNames}
             </p>
           )}
         </div>
