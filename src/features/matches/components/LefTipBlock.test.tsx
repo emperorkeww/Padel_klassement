@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 const { tables } = vi.hoisted(() => ({
@@ -56,14 +55,16 @@ describe("<LefTipBlock /> op een afgeronde match", () => {
   it("onthult wie er dubbel of niets speelde", async () => {
     setStakes([STAKE]);
     renderBlok();
-    await userEvent.click(await screen.findByRole("button", { name: /🎲 lef/i }));
-    expect(screen.getByText(/lef getoond door bob/i)).toBeInTheDocument();
+    // Open tegel (geen accordeon meer): de onthulling staat er direct.
+    expect(
+      await screen.findByText(/lef getoond door bob/i),
+    ).toBeInTheDocument();
   });
 
   it("toont geen knop meer om in te zetten", async () => {
     setStakes([STAKE]);
     renderBlok();
-    await userEvent.click(await screen.findByRole("button", { name: /🎲 lef/i }));
+    await screen.findByText(/lef getoond door bob/i);
     // Uitgegrijsde knop zou suggereren dat het nog kan; die hoort weg te zijn.
     expect(
       screen.queryByRole("button", { name: /zet je lef in/i }),
@@ -75,8 +76,6 @@ describe("<LefTipBlock /> op een afgeronde match", () => {
     // Even wachten tot de (lege) inzetten geladen zijn, anders bewijst de
     // assertie alleen dat het blok nog niet gerenderd wás.
     await new Promise((r) => setTimeout(r, 0));
-    expect(
-      screen.queryByRole("button", { name: /🎲 lef/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
   });
 });

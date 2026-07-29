@@ -46,3 +46,19 @@ export function formatRelativeDay(
   if (diff === 2) return "eergisteren";
   return formatDate(iso);
 }
+
+/**
+ * Vooruitkijkende variant voor geplande matches: "vandaag", "morgen",
+ * "overmorgen" of een korte datum. `now` is injecteerbaar voor tests.
+ */
+export function formatPlannedDay(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!iso) return "";
+  const diff = calendarDayDiff(new Date(iso), now);
+  if (diff === 0) return "vandaag";
+  if (diff === 1) return "morgen";
+  if (diff === 2) return "overmorgen";
+  return formatDate(iso);
+}
