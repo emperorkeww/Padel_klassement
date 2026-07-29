@@ -7,7 +7,13 @@
 --
 -- Blokkade: er mag geen onafgeronde match meer openstaan in de groep. Anders
 -- zou de volgende ronde op een halve (onvolledige) stand gepaird worden.
-create or replace function public.generate_mexicano_round(p_group_id uuid)
+--
+-- p_played_at is het (optionele) starttijdstip van de ronde (#827): bij een
+-- gelockte speeldag-poll is dat de echte starttijd, anders null zoals voorheen.
+create or replace function public.generate_mexicano_round(
+  p_group_id uuid,
+  p_played_at timestamptz default null
+)
 returns setof uuid
 language plpgsql
 security definer
@@ -85,8 +91,8 @@ begin
     v_team_a := public._ensure_team(v_players[v_i], v_players[v_i + 3]);
     v_team_b := public._ensure_team(v_players[v_i + 1], v_players[v_i + 2]);
 
-    insert into public.matches (team_a_id, team_b_id, status, group_id, round_number, created_by)
-    values (v_team_a, v_team_b, 'scheduled', p_group_id, v_round, v_uid)
+    insert into public.matches (team_a_id, team_b_id, status, group_id, round_number, created_by, played_at)
+    values (v_team_a, v_team_b, 'scheduled', p_group_id, v_round, v_uid, p_played_at)
     returning id into v_match_id;
 
     return next v_match_id;
@@ -97,4 +103,4 @@ begin
 end;
 $$;
 
-grant execute on function public.generate_mexicano_round(uuid) to authenticated;
+grant execute on function public.generate_mexicano_round(uuid, timestamptz) to authenticated;

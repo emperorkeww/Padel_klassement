@@ -46,6 +46,8 @@ export type PlanSectionProps = {
   wachtOpJou?: Set<string>;
   /** Er staan al rondes klaar voor deze geboekte speeldag (#349). */
   roundsExist?: (poll: PlayPoll) => boolean;
+  /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
+  rondesVandaag?: (poll: PlayPoll) => number;
   onRoundsMade?: (poll: PlayPoll) => void;
 };
 
@@ -63,6 +65,7 @@ export function PlanSection({
   openId,
   wachtOpJou,
   roundsExist,
+  rondesVandaag,
   onRoundsMade,
 }: PlanSectionProps) {
   // null = volg de standaardkeuze (de gedeelde link of de eerste rij); een
@@ -87,6 +90,7 @@ export function PlanSection({
       isOwner={isOwner}
       onChanged={onChanged}
       roundsExist={roundsExist?.(p)}
+      rondesVandaag={rondesVandaag?.(p)}
       onRoundsMade={onRoundsMade ? () => onRoundsMade(p) : undefined}
     />
   );

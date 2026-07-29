@@ -2,9 +2,17 @@
 -- p_players is een platte lijst, per baan vier op een rij (team A = eerste twee,
 -- team B = laatste twee). Zelfde vorm als generate_americano_round, maar met de
 -- door FairTeams gekozen vaste teams.
+-- p_played_at is het (optionele) starttijdstip van de ronde (#827): bij een
+-- gelockte speeldag-poll is dat de echte starttijd, anders null zoals voorheen.
+-- p_created_by is er enkel voor de cron (poll-deadline): die draait met de
+-- service-role en heeft dus geen auth.uid(). Voor een ingelogde gebruiker wint
+-- auth.uid() altijd, dus de parameter is niet te misbruiken om een match op
+-- naam van iemand anders te zetten.
 create or replace function public.create_fair_round(
   p_group_id uuid,
-  p_players uuid[]
+  p_players uuid[],
+  p_played_at timestamptz default null,
+  p_created_by uuid default null
 )
 returns setof uuid
 language plpgsql
@@ -12,7 +20,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_uid uuid := (select auth.uid());
+  v_uid uuid := coalesce((select auth.uid()), p_created_by);
   v_round smallint;
   v_n int := coalesce(array_length(p_players, 1), 0);
   v_i int;
@@ -52,8 +60,8 @@ begin
     v_team_a := public._ensure_team(p_players[v_i], p_players[v_i + 1]);
     v_team_b := public._ensure_team(p_players[v_i + 2], p_players[v_i + 3]);
 
-    insert into public.matches (team_a_id, team_b_id, status, group_id, round_number, created_by)
-    values (v_team_a, v_team_b, 'scheduled', p_group_id, v_round, v_uid)
+    insert into public.matches (team_a_id, team_b_id, status, group_id, round_number, created_by, played_at)
+    values (v_team_a, v_team_b, 'scheduled', p_group_id, v_round, v_uid, p_played_at)
     returning id into v_match_id;
 
     return next v_match_id;
@@ -64,4 +72,4 @@ begin
 end;
 $$;
 
-grant execute on function public.create_fair_round(uuid, uuid[]) to authenticated;
+grant execute on function public.create_fair_round(uuid, uuid[], timestamptz, uuid) to authenticated;

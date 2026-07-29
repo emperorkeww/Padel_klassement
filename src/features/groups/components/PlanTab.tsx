@@ -29,6 +29,7 @@ import {
   lockedOptionOf,
   pollPhase,
   roundsExistFor,
+  roundsMadeFor,
   splitPolls,
 } from "@/features/groups/planFlowLogic";
 import type { GroupMember, Match, Profile } from "@/types";
@@ -146,6 +147,8 @@ export function PlanTab({
   const chosen = focus ? lockedOptionOf(focus, allOptions) : null;
   const rondesVoor = (p: PlayPoll) =>
     roundsExistFor(p, matches) || locallyRounded.has(p.id);
+  // Vertrekpunt voor de starttijden van de volgende rondes (#827).
+  const rondesGemaakt = (p: PlayPoll) => roundsMadeFor(p, matches);
   const roundsExist = focus ? rondesVoor(focus) : false;
   const phase = focus ? pollPhase(focus, roundsExist) : null;
 
@@ -254,6 +257,7 @@ export function PlanTab({
         onChanged={reloadAll}
         openId={focus?.id}
         roundsExist={rondesVoor}
+        rondesVandaag={rondesGemaakt}
         onRoundsMade={(p) =>
           setLocallyRounded((cur) => new Set(cur).add(p.id))
         }

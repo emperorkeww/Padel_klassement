@@ -62,6 +62,7 @@ export function PollCard({
   isOwner,
   onChanged,
   roundsExist,
+  rondesVandaag,
   onRoundsMade,
 }: {
   poll: PlayPoll;
@@ -75,6 +76,8 @@ export function PollCard({
   onChanged: () => void;
   /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
   roundsExist?: boolean;
+  /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
+  rondesVandaag?: number;
   /** Rondes klaargezet vanuit deze kaart — voedt de Klaar-fase (#349). */
   onRoundsMade?: () => void;
 }) {
@@ -345,6 +348,7 @@ export function PollCard({
                 busy={busy}
                 run={run}
                 roundsExist={roundsExist}
+                rondesVandaag={rondesVandaag}
                 onRoundsMade={onRoundsMade}
               />
             );
