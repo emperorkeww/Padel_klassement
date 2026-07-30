@@ -30,6 +30,17 @@ Werking, in twee keyings:
 De kaartuitsnede (POLY) volgt de buitenrand van het frame in de referentie. Het
 resultaat is een transparante ornamentring van 1024 × 1365 met een leeg midden;
 de registratie ervan staat in PiasEffect.css.
+
+Daarna volgt de stap die de props aan de kaart vastzet. De referentiekaart houdt
+rechte flanken tot ~88% hoogte en knijpt pas daaronder naar zijn punt; het
+app-schild (`#fut-schild-notch`) loopt al vanaf 60% hoogte naar binnen. Alles wat
+in de referentie de kaartrand markeert — narrenkop, speelkaarten, de twee
+lintbogen — staat daardoor in de app náást de kaart in de lucht in plaats van
+tegen de rand aan. De onderste helft van de ring wordt daarom horizontaal
+meegetrokken met de schuine rand van het écht gebruikte schild (§"Vormverschil
+tussen referentie en app-schild" in docs/special-card-visual-effects-architecture.md).
+Dezelfde schuif bepaalt het frontmasker, dat dit script daarom meeschrijft: mask
+en master kunnen niet los van elkaar verlopen.
 """
 
 from __future__ import annotations
@@ -42,12 +53,109 @@ from PIL import Image, ImageDraw, ImageFilter
 
 WORTEL = Path(__file__).resolve().parent.parent
 REFERENTIE = WORTEL / "docs" / "referentie_pias.png"
-DOEL = (
-    WORTEL
-    / "src/features/rating/components/pias/assets/pias-master.webp"
-)
-BREEDTE = 768
-KWALITEIT = 78
+ASSETS = WORTEL / "src/features/rating/components/pias/assets"
+DOEL = ASSETS / "pias-master.webp"
+MASKER = ASSETS / "pias-front-mask.svg"
+# Werkcanvas: hierin staan FRONT_GROEPEN en de viewBox van het frontmasker. Het
+# masker is vector, dus deze maat kost niets en blijft de leesbare rekenruimte.
+BREEDTE = 1024
+# Uitvoermaat van het WebP. Bewust kleiner dan het werkcanvas: het ingecheckte
+# artwork stond al op 768 en de bundel zit met ~9,8 MB dicht tegen de grens van
+# 10 MB uit assetBudget.test.ts. Het register is percentagegebaseerd, dus alleen
+# de scherpte hangt hieraan — de compositie niet. Dat het script tot nu toe 1024
+# schreef terwijl er 768 was ingecheckt, was een stille afwijking; die staat hier
+# nu expliciet.
+RASTER_BREEDTE = 768
+KWALITEIT = 86
+
+# De kaartbox van de app in referentiecoördinaten. Dit is geen smaakinstelling
+# maar de terugrekening van de drie registratiewaarden in PiasEffect.css: het
+# kaartvak ligt in het master-canvas (1024 × 1365) op x 116…908 en y 109…1210, en
+# 1086/1024 zet die terug in referentiepixels. De hoogte volgt daarmee de
+# 100 × 139-verhouding van het schild (840 × 1,39 = 1167,6) en niet de iets
+# langere kaart van de referentie zelf.
+KAART_X0, KAART_B = 123.0, 840.0
+KAART_Y0, KAART_H = 115.6, 1167.6
+
+# #fut-schild-notch uit FutKaart.tsx, in objectBoundingBox-eenheden. De pias
+# draagt de default-schildvorm; dit pad is dus letterlijk de rand waar de props
+# tegenaan moeten liggen.
+NOTCH = [
+    ("M", (0.085, 0.0)),
+    ("L", (0.40, 0.0)),
+    ("C", (0.44, 0.0), (0.46, 0.022), (0.5, 0.022)),
+    ("C", (0.54, 0.022), (0.56, 0.0), (0.60, 0.0)),
+    ("L", (0.915, 0.0)),
+    ("C", (0.962, 0.0), (1.0, 0.028), (1.0, 0.062)),
+    ("L", (1.0, 0.60)),
+    ("C", (1.0, 0.74), (0.955, 0.795), (0.865, 0.838)),
+    ("L", (0.565, 0.972)),
+    ("C", (0.545, 0.982), (0.523, 1.0), (0.5, 1.0)),
+    ("C", (0.477, 1.0), (0.455, 0.982), (0.435, 0.972)),
+    ("L", (0.135, 0.838)),
+    ("C", (0.045, 0.795), (0.0, 0.74), (0.0, 0.60)),
+    ("L", (0.0, 0.062)),
+    ("C", (0.0, 0.028), (0.038, 0.0), (0.085, 0.0)),
+]
+
+# Hoever een rij maximaal mee mag schuiven. De volle afstand tot de schildrand
+# loopt onderaan op tot ~145 px; over de verticale ramp geeft dat een helling van
+# ~0,8 en dan smeren de lintlussen uit tot vegen. Op 120 kantelen ze mee zonder
+# hun vorm te verliezen — dezelfde grens als bij de kettingen van de Piet.
+SCHUIF_MAX = 120.0
+# Verticaal venster van de schuif, in referentiepixels. Het staat opzettelijk
+# ruim bóven de hoogte waar de schuif inzet (y ≈ 955): de zachte aanloop komt al
+# uit de meetkunde, want daar lopen schild en referentierand nog samen. Een ramp
+# die pas dáár opent, telt zijn eigen helling bij de meetkundige op — de schuif
+# klom dan 1,2 px per rij en dat scheert de lintlussen zichtbaar schuin. Zo blijft
+# de helling die van de kaartvorm zelf, ~0,6.
+RAMP0, RAMP1 = 820.0, 1000.0
+# Het centrale medaillon met zijn rozet schuift niet mee: het hoort op de
+# onderas van de kaart te blijven staan. Deze zone dekt bovendien de plek waar de
+# schuif van teken wisselt, zodat de doorlopende lintboog daar geen naad krijgt.
+ROZET_ZONE = (543.0, 1288.0, 232.0, 140.0)
+# Ruim: de zone gaat van volle schuif naar nul, en over 18 px knikt de gouden bies
+# van het lint zichtbaar. Over ~140 px leest dezelfde overgang als de natuurlijke
+# torsie van een lint dat om het medaillon draait.
+ROZET_ZACHT = 48.0
+# De rozet van de referentie staat 5 px rechts van de kaartas; op de kaart leest
+# dat als een medaillon dat niet in het midden hangt. Binnen de rozetzone — waar
+# de rand-schuif juist nul is — schuift het medaillon die 5 px terug naar de as.
+# Het verschil is klein genoeg om over de zachte zonerand te verlopen zonder de
+# aansluitende lintboog te vervormen.
+ROZET_AS = 5.0
+# Na de schuif komt materiaal dat búiten de referentiekaart lag binnen het schild
+# terecht. Voor de props is dat precies de bedoeling; voor los kolengruis niet —
+# de sliert onder de narrenkop kwam zo tot ~200 px in het kaartvlak en eindigde
+# tegen de editieregel. Het assetcontract houdt gruis binnen 132 px van de
+# kaartrand; deze grens handhaaft dat ná de schuif. Alleen onderaan, want daar is
+# de schuif actief. Hij meet horizontaal: dat is de richting waarin de schuif
+# werkt, en de schildpunt is daar zo smal dat het medaillon er niet onder valt.
+VUIL_DIEPTE = 132.0
+VUIL_Y0 = 960.0
+
+# De negen objectgroepen die vóór het kaartframe mogen komen. Voorheen stonden
+# deze ellipsen met de hand in pias-front-mask.svg; sinds de props met de
+# schildrand meeschuiven kan dat niet meer — een mask dat blijft staan laat de
+# verschoven prop half achter het frame vallen. De coördinaten zijn
+# master-pixels (1024 × 1365); het script legt de schuif er zelf op.
+FRONT_GROEPEN = [
+    ("kroon", 514, 150, 196, 128, 0),
+    ("klaver", 890, 200, 108, 98, 0),
+    ("pion", 952, 552, 92, 140, 0),
+    ("kaarten", 906, 872, 128, 142, 0),
+    # Krapper dan de andere groepen, en dat is bewust: onder de narrenkop loopt
+    # een sliert kolengruis door tot in de schildpunt. Dat is geen object maar
+    # vuil, en sinds de kop met de rand mee naar binnen schuift, valt die sliert
+    # binnen het kaartvlak — met een ruimer venster kwam hij vóór het frame en
+    # dus óver de editieregel te liggen. Het venster dekt nu kap, bellen en
+    # plooikraag, en stopt boven het gruis.
+    ("nar", 104, 866, 124, 150, 0),
+    ("bagel", 110, 566, 122, 120, 0),
+    ("rozet", 516, 1192, 172, 96, 0),
+    ("lint-links", 262, 1172, 152, 86, -14),
+    ("lint-rechts", 782, 1172, 152, 86, 14),
+]
 
 # Buitenrand van het kaartframe in de referentie (1086 × 1448).
 KAART = [
@@ -218,7 +326,123 @@ def ontkorrel(mask: np.ndarray, r: int = 2) -> np.ndarray:
     return dilate(erode(mask, r), r)
 
 
-def bouw() -> Image.Image:
+def smoothstep(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    t = np.clip((x - lo) / (hi - lo), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def schildpunten() -> list[tuple[float, float]]:
+    """Het app-schild als polygoon in referentiepixels."""
+
+    def naar_ref(p):
+        return (KAART_X0 + p[0] * KAART_B, KAART_Y0 + p[1] * KAART_H)
+
+    punten: list[tuple[float, float]] = []
+    huidig = None
+    for seg in NOTCH:
+        if seg[0] in ("M", "L"):
+            huidig = seg[1]
+            punten.append(naar_ref(huidig))
+            continue
+        p0, (c1, c2, p3) = huidig, seg[1:]
+        for i in range(1, 25):
+            t = i / 24.0
+            m = 1.0 - t
+            x = (m ** 3 * p0[0] + 3 * m * m * t * c1[0]
+                 + 3 * m * t * t * c2[0] + t ** 3 * p3[0])
+            y = (m ** 3 * p0[1] + 3 * m * m * t * c1[1]
+                 + 3 * m * t * t * c2[1] + t ** 3 * p3[1])
+            punten.append(naar_ref((x, y)))
+        huidig = p3
+    return punten
+
+
+def randen(masker: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Linker- en rechterrand per rij; NaN op rijen zonder masker."""
+    H = masker.shape[0]
+    links = np.full(H, np.nan, np.float32)
+    rechts = np.full(H, np.nan, np.float32)
+    for y in range(H):
+        kol = np.nonzero(masker[y])[0]
+        if len(kol):
+            links[y] = kol[0]
+            rechts[y] = kol[-1]
+    return links, rechts
+
+
+def houd_vast(reeks: np.ndarray) -> np.ndarray:
+    """Gaten in een rijtabel dichten door de laatste bekende waarde vast te houden.
+
+    Nodig onder de kaartpunt: daar bestaat geen schildrand meer, terwijl de
+    lintstaarten van de referentie nog 40 px doorlopen. Zonder vasthouden valt de
+    schuif daar in één rij naar nul terug en knakt het lint precies op de punt.
+    """
+    uit = reeks.copy()
+    laatst = 0.0
+    for i in range(len(uit)):
+        if np.isfinite(uit[i]):
+            laatst = float(uit[i])
+        else:
+            uit[i] = laatst
+    return uit
+
+
+def schuifveld(kaart_rand: np.ndarray, app_schild: np.ndarray) -> np.ndarray:
+    """Horizontale verschuiving per pixel die de props op de schildrand zet.
+
+    De verschuiving mag alléén van y afhangen. Loopt ze ook met x mee, dan rékt
+    ze de lintlussen en de plooikraag van de narrenkop uit tot vegen; een schuif
+    die enkel van y afhangt kantelt ze, en kantelen is precies wat een prop langs
+    een schuine rand doet.
+
+    Anders dan bij de kettingen van de Piet mag de schuif hier *niet* op de
+    schildrand worden uitgezet. De pias-props liggen met opzet half óver de kaart
+    — de speelkaarten rechts en de plooikraag linksonder steken allebei het
+    kaartvlak in — dus een schuif die binnen het schild op nul valt, scheurt zo'n
+    prop precies op die rand in twee. Het kaartvlak is in de master toch
+    transparant, dus binnen het schild valt er niets te beschermen: elke prop
+    schuift als één geheel.
+    """
+    H, W = app_schild.shape
+    ref_l, ref_r = randen(kaart_rand)
+    app_l, app_r = randen(app_schild)
+    schuif_l = houd_vast(np.clip(app_l - ref_l, 0.0, SCHUIF_MAX))
+    schuif_r = houd_vast(np.clip(ref_r - app_r, 0.0, SCHUIF_MAX))
+
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    ramp = smoothstep(yy, RAMP0, RAMP1)
+    cx, cy, rx, ry = ROZET_ZONE
+    rozet = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(rozet).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=255)
+    rozet = np.asarray(
+        rozet.filter(ImageFilter.GaussianBlur(ROZET_ZACHT))
+    ).astype(np.float32) / 255.0
+
+    gewicht = ramp * (1.0 - rozet)
+    as_x = KAART_X0 + KAART_B / 2.0
+    rand = np.where(xx < as_x, schuif_l[:, None], -schuif_r[:, None]) * gewicht
+    return rand - ROZET_AS * rozet
+
+
+def herbemonster(alpha: np.ndarray, premul: np.ndarray, sx: np.ndarray,
+                 sy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Alfa en voorgemultipliceerde kleur op (sx, sy) — bilineair."""
+    H, W = alpha.shape
+    x0 = np.clip(np.floor(sx), 0, W - 2).astype(np.int32)
+    y0 = np.clip(np.floor(sy), 0, H - 2).astype(np.int32)
+    fx = np.clip(sx - x0, 0.0, 1.0)[:, :, None]
+    fy = np.clip(sy - y0, 0.0, 1.0)[:, :, None]
+    x1, y1 = x0 + 1, y0 + 1
+
+    def mix(v):
+        boven = v[y0, x0] * (1 - fx) + v[y0, x1] * fx
+        onder = v[y1, x0] * (1 - fx) + v[y1, x1] * fx
+        return boven * (1 - fy) + onder * fy
+
+    return mix(alpha[:, :, None])[:, :, 0], mix(premul)
+
+
+def bouw() -> tuple[Image.Image, np.ndarray]:
     bron = Image.open(REFERENTIE).convert("RGB")
     a = np.asarray(bron).astype(np.int16)
     H, W = a.shape[:2]
@@ -235,7 +459,8 @@ def bouw() -> Image.Image:
         m[y0:y1, x0:x1] = True
         return m
 
-    kaart = dilate(contour(KAART), 14)
+    kaartvorm = contour(KAART)
+    kaart = dilate(kaartvorm, 14)
 
     # --- buiten de kaart: zwartkey plus dichtgezette donkere objecten
     alpha = np.clip((luma - 6) / 34.0, 0, 1)
@@ -302,26 +527,112 @@ def bouw() -> Image.Image:
     # De ratingbalk onder de referentiekaart hoort niet bij het ornament.
     alpha[vak(200, 1348, 900, H)] = 0
 
+    # --- de props op de rand van het écht gebruikte schild zetten
+    # Tot hier volgt alles de kaartrand van de referentie. Die rand houdt rechte
+    # flanken tot ~88% hoogte; het app-schild knijpt al vanaf 60%. Narrenkop,
+    # speelkaarten en de twee lintbogen staan daardoor onderaan náást de kaart in
+    # plaats van tegen de rand. De schuif trekt ze mee naar binnen, per rij, en
+    # laat het centrale medaillon op de onderas staan.
+    app_schild = contour(schildpunten())
+    schuif = schuifveld(kaartvorm, app_schild)
+    ys2, xs2 = np.mgrid[0:H, 0:W].astype(np.float32)
+    premul = np.clip(A, 0.0, 255.0) * alpha[:, :, None]
+    alpha, premul = herbemonster(alpha, premul, xs2 - schuif, ys2)
+    kleur = np.where(
+        alpha[:, :, None] > 1.0 / 255.0,
+        premul / np.maximum(alpha, 1.0 / 255.0)[:, :, None],
+        0.0,
+    )
+
+    # Gruis dat door de schuif te diep het kaartvlak in is gekomen, weer weg. Ná
+    # het terugdelen van de kleur: de poort verlaagt alleen de alfa en mag de
+    # tint van wat overblijft niet oplichten.
+    links = houd_vast(randen(app_schild)[0])[:, None]
+    rechts = houd_vast(randen(app_schild)[1])[:, None]
+    diepte = np.minimum(xs2 - links, rechts - xs2)
+    alpha = alpha * (
+        1.0
+        - smoothstep(diepte, VUIL_DIEPTE - 12.0, VUIL_DIEPTE + 38.0)
+        * smoothstep(ys2, VUIL_Y0, VUIL_Y0 + 80.0)
+    )
+
     rgba = np.zeros((H, W, 4), np.uint8)
-    rgba[..., :3] = np.clip(a, 0, 255).astype(np.uint8)
+    rgba[..., :3] = np.clip(kleur, 0, 255).astype(np.uint8)
     rgba[..., 3] = np.clip(alpha * 255, 0, 255).astype(np.uint8)
     beeld = Image.fromarray(rgba, "RGBA")
-    return beeld.resize((BREEDTE, round(H * BREEDTE / W)), Image.LANCZOS)
+    beeld = beeld.resize(
+        (RASTER_BREEDTE, round(H * RASTER_BREEDTE / W)), Image.LANCZOS
+    )
+    return beeld, schuif
+
+
+def schrijf_masker(schuif: np.ndarray) -> None:
+    """Frontmasker met dezelfde schuif als de master.
+
+    Het masker selecteert de objectgroepen die vóór het kaartframe mogen komen.
+    Zodra een groep met de schildrand meeschuift, moet zijn venster mee: een
+    masker dat blijft staan laat de verschoven prop half achter het frame vallen
+    en snijdt hem op de framerand af. Daarom staat het hier en niet met de hand in
+    de SVG.
+    """
+    H, W = schuif.shape
+    naar_master = BREEDTE / W          # referentiepixels → masterpixels
+    vormen = []
+    for naam, cx, cy, rx, ry, rot in FRONT_GROEPEN:
+        y_ref = min(int(round(cy / naar_master)), H - 1)
+        x_ref = min(int(round(cx / naar_master)), W - 1)
+        dx = float(schuif[y_ref, x_ref]) * naar_master
+        cx_nieuw = round(cx + dx, 1)
+        draai = (f' transform="rotate({rot} {cx_nieuw} {cy})"' if rot else "")
+        vormen.append(
+            f'    <ellipse cx="{cx_nieuw}" cy="{cy}" rx="{rx}" ry="{ry}"'
+            f'{draai} />  <!-- {naam} -->'
+        )
+    hoogte = round(H * naar_master)
+    MASKER.write_text(
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BREEDTE} {hoogte}">\n'
+        "  <!-- GEGENEREERD door scripts/pias-master.py — niet met de hand\n"
+        "       bijwerken. Selecteert de complete objectgroepen die in de\n"
+        "       referentie vóór het kaartframe liggen: kroon, klaver, pion,\n"
+        "       speelkaarten, narrenkop, bagel, rozet en de twee lintbogen.\n"
+        "       De onderste groepen dragen dezelfde horizontale schuif als de\n"
+        "       master, zodat mask en artwork niet uit elkaar lopen. Tussen de\n"
+        "       groepen blijft het frame zichtbaar; de blur houdt de randen\n"
+        "       organisch. -->\n"
+        '  <filter id="pias-front-blur" x="-20%" y="-20%" width="140%" height="140%">\n'
+        '    <feGaussianBlur stdDeviation="16" />\n'
+        "  </filter>\n"
+        f'  <rect width="{BREEDTE}" height="{hoogte}" fill="#000" />\n'
+        '  <g fill="#fff" filter="url(#pias-front-blur)">\n'
+        + "\n".join(vormen)
+        + "\n  </g>\n</svg>\n",
+        encoding="utf-8",
+    )
+    print(f"{MASKER.relative_to(WORTEL)}: {len(FRONT_GROEPEN)} groepen")
 
 
 def main() -> int:
-    beeld = bouw()
+    beeld, schuif = bouw()
     DOEL.parent.mkdir(parents=True, exist_ok=True)
     beeld.save(DOEL, "WEBP", quality=KWALITEIT, method=6)
     print(f"{DOEL.relative_to(WORTEL)}: {beeld.size[0]}×{beeld.size[1]}, "
           f"{DOEL.stat().st_size // 1024} kB")
+    schrijf_masker(schuif)
     if "--preview" in sys.argv:
+        uit = WORTEL / "screenshots" / "pias"
+        uit.mkdir(parents=True, exist_ok=True)
         plaat = Image.new("RGB", beeld.size, (26, 28, 34))
         plaat.paste(beeld, (0, 0), beeld)
-        pad = WORTEL / "screenshots" / "pias" / "master-preview.png"
-        pad.parent.mkdir(parents=True, exist_ok=True)
-        plaat.save(pad)
-        print(f"{pad.relative_to(WORTEL)}")
+        plaat.save(uit / "master-preview.png")
+        print(f"{(uit / 'master-preview.png').relative_to(WORTEL)}")
+        # Dezelfde plaat met de rand van het app-schild erover: dít is het beeld
+        # waarop te controleren valt of de props de kaartvorm echt raken in plaats
+        # van die van de referentie.
+        schaal = beeld.size[0] / 1086.0
+        rand = [(x * schaal, y * schaal) for x, y in schildpunten()]
+        ImageDraw.Draw(plaat).line(rand + [rand[0]], fill=(80, 220, 150), width=2)
+        plaat.save(uit / "master-contouren.png")
+        print(f"{(uit / 'master-contouren.png').relative_to(WORTEL)}")
     return 0
 
 
