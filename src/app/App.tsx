@@ -44,6 +44,11 @@ const OnfireShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/OnfireShowcase"))
   : null;
 
+// Dev-stage voor de Dictator-kaart en haar referentiegestuurde breakout.
+const DictatorShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/DictatorShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -93,6 +98,9 @@ function App() {
           )}
           {OnfireShowcase && (
             <Route path="/dev/onfire" element={<OnfireShowcase />} />
+          )}
+          {DictatorShowcase && (
+            <Route path="/dev/dictator" element={<DictatorShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

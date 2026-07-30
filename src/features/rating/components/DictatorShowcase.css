@@ -1,0 +1,65 @@
+/* Reproduceerbare visuele teststage voor de Dictator-breakout. */
+
+.dictator-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 110px 0 40px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(99, 7, 17, 0.18), transparent 44%),
+    #080504;
+}
+
+.dictator-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dictator-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+
+.dictator-showcase__titel {
+  margin: 165px 0 0;
+  color: #f2dda2;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.dictator-showcase__uitleg {
+  margin: 0;
+  color: #bcae94;
+  font-size: 19px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .dictator-showcase {
+    padding-top: 22vw;
+  }
+
+  .dictator-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .dictator-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .dictator-showcase__titel {
+    margin-top: 25vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .dictator-showcase__uitleg {
+    max-width: 88vw;
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}
