@@ -8,7 +8,7 @@
 // ziet; roast-quips respecteren de groepsintensiteit en het roast-schild.
 // Pure functie, getest in coachFeed.test.ts.
 
-import type { FeedEvent } from "@/features/feed/feedLogic";
+import type { FeedEvent, Highlight } from "@/features/feed/feedLogic";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import type { CoachMood, RoastCtx } from "@/features/coach/roastTone";
 import {
