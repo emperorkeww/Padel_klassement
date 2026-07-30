@@ -59,6 +59,11 @@ const PietShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/PietShowcase"))
   : null;
 
+// Dev-stage voor de pias-kaart en haar referentiegestuurde breakout.
+const PiasShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/PiasShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -117,6 +122,9 @@ function App() {
           )}
           {PietShowcase && (
             <Route path="/dev/piet" element={<PietShowcase />} />
+          )}
+          {PiasShowcase && (
+            <Route path="/dev/pias" element={<PiasShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}
