@@ -145,15 +145,18 @@
      en roze afwisselt. Bewust gelijk in beide thema's, net als de andere
      editie-kaarten (zie --dictator-gold hierboven). Gedeelde bron voor de
      FUT-Icon-editie én straks de dashboard-hero (#613).
-     Contrast: kaart-ink op kaart-hi ≈ 7,5:1 (AAA), kaart-ink-soft op
-     kaart-mid ≈ 4,5:1 (AA). */
-  --bigdaddy-kaart-hi: #fff6fa;
-  --bigdaddy-kaart-mid: #fbdeed;
-  --bigdaddy-kaart-lo: #f2bcd7;
-  --bigdaddy-kaart-ink: #8c2f5a;
-  --bigdaddy-kaart-ink-soft: #a04a72;
+     Sinds #834 staat het vlak op het verzadigde roze van
+     docs/referentie_big_daddy.png in plaats van bijna-wit: die kaart leest als
+     roze satijn met donkermagenta letters, niet als een lichtroze waas.
+     Contrast: kaart-ink op kaart-mid ≈ 9,0:1 (AAA), kaart-ink-soft op
+     kaart-mid ≈ 4,8:1 (AA). */
+  --bigdaddy-kaart-hi: #f9ccdf;
+  --bigdaddy-kaart-mid: #f2aacd;
+  --bigdaddy-kaart-lo: #e788b6;
+  --bigdaddy-kaart-ink: #8b0f4c;
+  --bigdaddy-kaart-ink-soft: #9e2c62;
   --bigdaddy-kaart-lijn: #ff3377;
-  --bigdaddy-kaart-editie: #c2447c;
+  --bigdaddy-kaart-editie: #b81263;
   --bigdaddy-frame-goud: #c99a3f;
   --bigdaddy-frame-roze: #dd6ba2;
 
