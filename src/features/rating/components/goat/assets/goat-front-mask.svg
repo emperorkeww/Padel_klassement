@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1664">
+  <!-- Voorselectie: alleen complete objectgroepen die het frame werkelijk
+       bedekken — de kristalpunten die op de referentie over de flankranden heen
+       groeien en de edelsteen-chevron in de schildpunt. Tussen die zones blijft
+       het frame zichtbaar, zodat de volgorde achter → voor → achter leesbaar
+       is. Elk pad blijft binnen de bijbehorende uitsnede op het mastercanvas
+       (kristal links x 138..182 / y 911..1065, kristal rechts x 842..886 /
+       y 1029..1117, edelsteen x 393..631 / y 1368..1564). -->
+  <defs>
+    <filter id="soft" x="-12%" y="-12%" width="124%" height="124%">
+      <feGaussianBlur stdDeviation="11" />
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#soft)">
+    <!-- Kristalpunten linkerflank. -->
+    <path d="M104 946 C134 926 164 942 172 982 C178 1014 172 1036 156 1046 C132 1060 106 1046 98 1014 C92 986 92 958 104 946 Z" />
+    <!-- Kristalpunten rechterflank. -->
+    <path d="M918 1054 C890 1036 862 1050 854 1082 C848 1104 856 1120 872 1126 C896 1134 918 1120 926 1096 C932 1076 930 1062 918 1054 Z" />
+    <!-- Edelsteen-chevron in de schildpunt. -->
+    <path d="M412 1396 C456 1380 570 1380 612 1396 C626 1428 616 1472 584 1504 C556 1532 536 1554 512 1554 C488 1554 468 1532 440 1504 C408 1472 398 1428 412 1396 Z" />
+  </g>
+</svg>

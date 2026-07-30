@@ -402,10 +402,11 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       const { kleuren } = skin;
       expect(kleuren.randGloed, `${naam}: canvas-randgloed ontbreekt`).toBeDefined();
       expect(kleuren.randWaas, `${naam}: canvas-randwaas ontbreekt`).toBeDefined();
-      // De fracties hoeven niet bij alle specials gelijk te zijn — Big Daddy
-      // draagt sinds #834 een zwaardere goud-magenta lijst dan de rest — maar
-      // CSS en canvas moeten wél dezelfde fracties van de kaartbreedte
-      // gebruiken, anders wijkt de deel-poster van de kaart af.
+      // De diktes hoeven niet bij alle specials gelijk te zijn — de GOAT draagt
+      // sinds zijn breakout een zwaardere lijst dan de rest, en Big Daddy sinds
+      // #834 een zwaardere goud-magenta lijst — maar CSS en canvas moeten wél
+      // dezelfde fracties van de kaartbreedte gebruiken, anders wijkt de
+      // deel-poster van de kaart af.
       const cssDiktes = (
         [
           "--kaart-frame-dikte",

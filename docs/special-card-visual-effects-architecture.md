@@ -2,7 +2,7 @@
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
 het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator-, Big
-Daddy- en Piet-breakouts. Het is tegelijk een technische naslag en een
+Daddy-, Piet-, pias- en GOAT-breakouts. Het is tegelijk een technische naslag en een
 herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
 kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
 komt.
@@ -43,6 +43,16 @@ Belangrijkste implementatiebestanden:
 - [`bigdaddy-master-compose.mjs`](../scripts/bigdaddy-master-compose.mjs) — de
   eerste editie waarvan master én beide maskers uit één reproduceerbaar script
   komen, gemeten aan de referentie.
+- [`PiasEffect.tsx`](../src/features/rating/components/pias/PiasEffect.tsx),
+  [`PiasEffect.css`](../src/features/rating/components/pias/PiasEffect.css) en
+  [`scripts/pias-master.py`](../scripts/pias-master.py) — dezelfde architectuur
+  toegepast op narrenkroon, speelkaarten, lint, rozet, narrenkop en bagel, met
+  een master die uit de referentie zelf wordt gesneden.
+- [`GoatEffect.tsx`](../src/features/rating/components/goat/GoatEffect.tsx),
+  [`GoatEffect.css`](../src/features/rating/components/goat/GoatEffect.css) en
+  [`scripts/goat-master.py`](../scripts/goat-master.py) — dezelfde architectuur
+  toegepast op bokhoorns, geitenmonument, kristalclusters, bergscene en
+  edelsteen-chevron, met een master die uit de referentie zelf wordt gesneden.
 
 ## 1. Context en visueel doel
 
@@ -1012,6 +1022,121 @@ afzonderlijke `pias`-editie wordt niet geraakt. De vaste controle gebeurt via
 beelden staan in `screenshots/piet/final-desktop.png` en
 `screenshots/piet/final-mobile.png`.
 
+**Pias**
+
+De pias-editie gebruikt `PiasEffect.tsx` en `PiasEffect.css` met één
+`pias-master.webp` van 768 × 1024 pixels. Anders dan de andere masters is dit
+artwork niet los aangeleverd maar volledig afgeleid van
+[`referentie_pias.png`](./referentie_pias.png) door
+[`scripts/pias-master.py`](../scripts/pias-master.py). Dat script is daarmee de
+bron van waarheid: het snijdt de kaart, het frame en alle kaartinhoud uit de
+referentie weg en houdt de ornamentring over — narrenkroon met strikken,
+klaverteken, schaakpion, twee speelkaarten, lintboog met rozet en
+clownmedaillon, narrenkop met kap en plooikraag, aangebeten bagel, poederwolken,
+kolengruis en confetti.
+
+Twee keyings maken dat mogelijk. Buiten de kaart staat de referentie op zwart:
+daar levert een luminantiekey zachte randen voor rook en stof, terwijl donkere
+massieve objecten via een floodfill worden dichtgezet (wat binnen hun ROI niet
+vanaf de ROI-rand via bijna-zwart bereikbaar is, hoort bij het object). Binnen de
+kaart wordt per handgetekende objectcontour een lokaal perkamentmodel gefit op de
+ring rond die contour; wat daar ver genoeg vanaf ligt is object. Zo blijven
+kroon, rozet, lint, narrenkop, bagel, speelkaarten, pion en klaver compleet in
+plaats van op de framerand af te breken — precies de fout die
+`bigdaddy-front-mask.svg` bij de halve teddy moest voorkomen.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--pias`:
+
+```css
+--pias-master-left: -14.6%;
+--pias-master-top: -9.9%;
+--pias-master-width: 129.3%;
+--pias-master-scale: 1;
+--pias-master-rotate: 0deg;
+```
+
+Die waarden zetten het kaartvak van de referentie exact op het echte kaartvlak.
+Er is geen inside-mask: het lege midden van het artwork en het echte
+`clip-path: var(--schild)` doen dat werk al. `pias-front-mask.svg` selecteert de
+negen objectgroepen die vóór het frame komen; tussen die groepen blijft de
+gouden rand zichtbaar. Het gruis op het perkament blijft beperkt tot de band
+tussen 26 en 132 pixels binnen de kaartrand en komt nooit over rating, avatar,
+naamplaat, statistiek of badgerij.
+
+De vroegere live pias-SVG's (narrenkap, belletjes, maskermedaillon) worden bij
+`editie === "pias"` niet meer gemonteerd; ze blijven bestaan voor de
+canvas-/posterfallback. De vaste controle gebeurt via `/dev/pias`,
+`scripts/pias-screenshot.sh` en `?debugPias=1`. De finale beelden staan in
+`screenshots/pias/final-desktop.png` en `screenshots/pias/final-mobile.png`; het
+kale artwork staat in `screenshots/pias/master-preview.png`.
+
+**GOAT**
+
+De GOAT is geen editie maar een tier (`tier.key === "legende"`, rating
+1400–1599) en gebruikt dezelfde drie-masterstructuur via `GoatEffect.tsx`.
+`goat-master.webp` is 1024 × 1664 pixels en volledig afgeleid van
+[`referentie_goat.png`](./referentie_goat.png) door
+[`scripts/goat-master.py`](../scripts/goat-master.py). Dat script is daarmee de
+bron van waarheid: het snijdt per element een uitsnede uit de referentie,
+sleutelt de bijna-zwarte achtergrond via luminantie naar alpha, isoleert het
+element met een organisch polygoonmasker en plaatst het op het gedeelde canvas.
+Donkere massieve delen (de rots onder de geit, de bergflank) krijgen daarbij een
+tweede polygoon die hun alpha opaak forceert: een luminantiekey alleen maakt van
+bijna-zwart gesteente een halftransparante vlek.
+
+Het artwork draagt zeven groepen: twee spiraalvormige bokhoorns, het
+geitenmonument op zijn rots, kristalclusters langs beide flanken, de bergscene
+in het kaartvlak en de kristalchevron met edelsteen in de schildpunt. De
+compositie is bewust geen 1:1-overname van de referentie: het schild van de
+referentie is verhoudingsgewijs breder dan de echte kaart (0,77 tegen 0,72), dus
+de hoorns staan iets verder naar buiten en het monument staat op 95% van zijn
+referentieschaal. Alleen zo past de hele groep binnen een breakout van 53%
+kaarthoogte.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--legende`:
+
+```css
+--goat-master-left: -20%;
+--goat-master-top: -53%;
+--goat-master-width: 140%;
+--goat-master-scale: 1;
+--goat-master-rotate: 0deg;
+```
+
+Die eerste drie waarden bepalen het kaartvak in het canvas (x 146..877,
+y 539..1556). `ASSET_SPEC.md` legt per element de canvaspositie vast, want de
+maskers zijn erop gekalibreerd: `goat-inside-mask.svg` laat binnen het schild
+alleen de bergscene door en `goat-front-mask.svg` selecteert de kristalpunten op
+de flanken plus de volledige edelsteen-chevron. Beide maskerranden vallen
+bewust bínnen de bijbehorende uitsnede. Dat is het leerpunt van deze breakout:
+een masker dat rúimer is dan zijn artwork toont juist de rechte uitsnederand,
+terwijl een masker dat er bínnen eindigt die rand verbergt.
+
+Een tweede leerpunt zit in de bovenrand. De topgroep mag geen framepixels uit de
+referentie meenemen: het schild van de echte kaart zakt bij de bovenhoeken 4,5%
+van de kaarthoogte, dus een meegesneden referentieframe komt daar bóven de
+kaartrand uit en leest als een tweede, verschoven lijst. De uitsnedes stoppen
+daarom op referentie-y 566 en de rots wordt zo geplaatst dat zijn snijrand onder
+de diepste framerand van het schild valt.
+
+Twee dingen zijn buiten het artwork aangepast. De hoorn- en
+baardfiligraan-SVG's worden bij `tier.key === "legende"` zonder editie niet meer
+gemonteerd (met een editie erop wint die editie, en dan blijven de vector-hoorns
+staan zoals voorheen). En de lijst van de kaart is zwaarder gezet —
+`--kaart-frame-dikte/-liner-dikte/-keyline-dikte` op 2,8/1,2/0,6% van de
+kaartbreedte, met `randDiktes: [0.028, 0.012, 0.006]` als canvas-spiegel. Op de
+referentie is die rosé metaalband ruim vier keer zo dik als een gewone
+divisiekaart, en juist die massa laat de hoorns er geloofwaardig achter
+verdwijnen. De ondergrens blijft 3/1,5/1 px, zodat een 130px-kaart in het
+klassement niet dichtslibt.
+
+De vaste controle gebeurt via `/dev/goat`, `scripts/goat-screenshot.sh` en
+`?debugGoat=1`. Omdat de breakout hoger is dan bij de andere kaarten gebruikt
+het desktopscript een venster van 700 × 1300 en houdt de dev-stage 330px (mobiel
+62vw) ruimte boven de kaart. De finale beelden staan in
+`screenshots/goat/final-desktop.png` en `screenshots/goat/final-mobile.png`; het
+kale artwork staat in `screenshots/goat/master-preview.png`.
+
 **Andere special editions**
 
 Gebruik het patroon voor effecten met fysieke continuïteit: sneeuwstorm,
@@ -1039,12 +1164,14 @@ registraties nodig.
 
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
 `onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
-`bigdaddy-master.webp` en voor Piet `piet-master.webp`. De
+`bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
+`pias-master.webp` en voor de GOAT `goat-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
 `ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator, Big
-Daddy en Piet.
+Daddy en Piet. Voor de GOAT tekent `drawGoatOrnament()` daar dus nog de
+vector-bokhoorns; alleen de lijstdiktes zijn met `randDiktes` gelijkgetrokken.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:
@@ -1057,6 +1184,21 @@ niet gegarandeerd. Een toekomstige verbetering kan:
 Tot die keuze is gemaakt, mogen de vectortests niet als bewijs voor de
 live WebP-composities worden gebruikt.
 
+### De GOAT-breakout is hoger dan de cellen die hem tonen
+
+Met `--goat-master-top: -53%` staat het monument ruim een halve kaarthoogte
+boven de kaart. In de dev-stage en de kaart-preview is daar ruimte voor, maar
+`.kaart-raster__cel` in het klassement heeft alleen `position: relative` — geen
+`overflow: clip` — en de rijafstand is kleiner dan die 53%. Een GOAT in de
+kaartenwand kan dus over de rij erboven schilderen, net zoals de bestaande
+Dictator- (18%) en Big Daddy-breakouts (34%) dat in mindere mate al doen.
+
+De cel kan niet zonder meer worden geclipt: de rangmunt hangt bewust op
+`top: -10px` buiten de kaart en zou dan wegvallen. Een oplossing hoort dus in de
+cel zelf (bijvoorbeeld een aparte clip-laag rond alleen de kaart, of meer
+rijafstand voor de toptiers), niet in de gedeelde registratie van het effect —
+één transform voor alle drie de lagen blijft de harde regel.
+
 ### Legacy-SVG's zijn nog aanwezig
 
 De losse oudere stormassets zijn niet verwijderd. Ze kunnen verwarring
@@ -1065,11 +1207,14 @@ waarheid voor de huidige browsercompositie.
 
 ### Het master-artwork is een afgeleid rasterasset
 
-Voor Big Daddy geldt dit niet: `scripts/bigdaddy-master-compose.mjs` bouwt
-master en maskers uit het onderdelenblad `bigdaddy-onderdelen.webp`, dus die
-compositie is wél reproduceerbaar. Voor de overige edities bevat de repository
-het productie-WebP en een specificatie, maar geen
-gelaagd bronbestand uit een beeldbewerkingspakket. Grote inhoudelijke
+Voor drie edities geldt dit niet. De pias en de GOAT worden door
+`scripts/pias-master.py` respectievelijk `scripts/goat-master.py` uit hun
+referentie-PNG gesneden; Big Daddy komt uit
+`scripts/bigdaddy-master-compose.mjs`, dat master én beide maskers uit het
+onderdelenblad `bigdaddy-onderdelen.webp` bouwt. Die drie composities zijn dus
+wél reproduceerbaar. Voor de overige edities bevat de repository het
+productie-WebP en een specificatie, maar geen gelaagd bronbestand uit een
+beeldbewerkingspakket. Grote inhoudelijke
 wijzigingen aan wolk of bliksem moeten daarom via een nieuwe
 assetgeneratie/-bewerking gebeuren en vervolgens opnieuw op alpha,
 resolutie, compressie en registratie worden gecontroleerd.
