@@ -1069,12 +1069,58 @@ gouden rand zichtbaar. Het gruis op het perkament blijft beperkt tot de band
 tussen 26 en 132 pixels binnen de kaartrand en komt nooit over rating, avatar,
 naamplaat, statistiek of badgerij.
 
+Ook de pias loopt tegen het vormverschil van hierboven aan, en de oplossing is
+dezelfde soort: de onderste helft van de ring schuift horizontaal mee met de rand
+van het echte schild (per rij het verschil met de referentierand, begrensd op
+120 px, alleen van y afhankelijk). Twee dingen wijken bewust af van de Piet:
+
+- de schuif staat **niet** uit binnen het schild. De kettingen van de Piet hangen
+  volledig naast de kaart, maar de pias-props liggen met opzet half erover —
+  speelkaarten rechts, plooikraag linksonder. Een schuif die op de schildrand op
+  nul valt, scheurt zo'n prop precies daar in twee. Het kaartvlak is in de master
+  toch transparant, dus binnen het schild valt er niets te beschermen;
+- de ramp opent ruim bóven de hoogte waar de schuif inzet. De zachte aanloop komt
+  al uit de meetkunde — daar lopen schild en referentierand nog samen — en een
+  ramp die pas dáár opent, telt zijn eigen helling bij de meetkundige op. De
+  schuif klom dan 1,2 px per rij en dat scheert de lintlussen zichtbaar schuin.
+
+Het centrale medaillon schuift niet mee (het hoort op de onderas) en gaat 5 px
+terug naar die as; die zone dekt tegelijk de plek waar de schuif van teken
+wisselt, zodat de doorlopende lintboog daar geen naad krijgt. Ná de schuif komt
+materiaal dat buiten de referentiekaart lag binnen het schild terecht — voor de
+props de bedoeling, voor los gruis niet — dus een dieptepoort handhaaft de
+132-pixelband ook achteraf. Zonder die poort liep de roetsliert onder de
+narrenkop tot ~200 px in het vlak, tot tegen de editieregel.
+
+`pias-front-mask.svg` is daarom niet langer handwerk: het script schrijft het mee,
+met dezelfde schuif op de vensters van de onderste groepen. Een masker dat blijft
+staan terwijl het artwork schuift, laat de verschoven prop half achter het frame
+vallen en snijdt hem op de framerand af — precies wat de breakout kapotmaakt. Het
+script rekent daarvoor in een werkcanvas van 1024 × 1365 (ook de viewBox van het
+masker) en schrijft het WebP op 768 × 1024; het register is percentagegebaseerd,
+dus aan die rastermaat hangt alleen de scherpte.
+
+De profielfoto volgt hier het artwork in plaats van omgekeerd (zie
+§"Avatarregister" bij de Piet voor de tegenovergestelde keuze). Op de referentie is
+de cirkel 0,429 kaartbreedte en hangt hij op 0,752 / 0,404; de gedeelde kaart zet
+0,36 op 0,747 / 0,453. Horizontaal klopt het dus al, en `PiasEffect.css` corrigeert
+maat en hoogte vanaf de heromaat (≥168 px). Dat staat op `.fut-kaart--pias` en niet
+in de gedeelde kaart om twee redenen: `FutKaart.css` heeft voor die maten al een
+`@container`-blok met 0,44, maar dat staat vóór de basisregel
+`.fut-kaart { --fut-avatar: 0.36 }` en een `@container`-blok voegt geen
+specificiteit toe — dezelfde cascadeval als #654, dus die 0,44 doet niets. Dat
+rechttrekken raakt élke kaart, en de Piet heeft zijn rookkraag in het artwork op de
+huidige 0,36-maat gesneden.
+
 De vroegere live pias-SVG's (narrenkap, belletjes, maskermedaillon) worden bij
 `editie === "pias"` niet meer gemonteerd; ze blijven bestaan voor de
 canvas-/posterfallback. De vaste controle gebeurt via `/dev/pias`,
 `scripts/pias-screenshot.sh` en `?debugPias=1`. De finale beelden staan in
 `screenshots/pias/final-desktop.png` en `screenshots/pias/final-mobile.png`; het
-kale artwork staat in `screenshots/pias/master-preview.png`.
+kale artwork staat in `screenshots/pias/master-preview.png` en dezelfde plaat mét
+de rand van het app-schild erover in `screenshots/pias/master-contouren.png` —
+dát is het beeld waarop te zien is of de props de kaartvorm raken in plaats van
+die van de referentie.
 
 **GOAT**
 

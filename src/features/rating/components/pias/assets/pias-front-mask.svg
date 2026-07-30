@@ -1,21 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1365">
-  <!-- Selecteert de complete objectgroepen die in de referentie vóór het
-       kaartframe liggen: kroon, klaver, pion, speelkaarten, narrenkop, bagel,
-       rozet en de twee lintbogen. Tussen de groepen blijft het frame zichtbaar;
-       de blur houdt de randen organisch. -->
+  <!-- GEGENEREERD door scripts/pias-master.py — niet met de hand
+       bijwerken. Selecteert de complete objectgroepen die in de
+       referentie vóór het kaartframe liggen: kroon, klaver, pion,
+       speelkaarten, narrenkop, bagel, rozet en de twee lintbogen.
+       De onderste groepen dragen dezelfde horizontale schuif als de
+       master, zodat mask en artwork niet uit elkaar lopen. Tussen de
+       groepen blijft het frame zichtbaar; de blur houdt de randen
+       organisch. -->
   <filter id="pias-front-blur" x="-20%" y="-20%" width="140%" height="140%">
     <feGaussianBlur stdDeviation="16" />
   </filter>
   <rect width="1024" height="1365" fill="#000" />
   <g fill="#fff" filter="url(#pias-front-blur)">
-    <ellipse cx="514" cy="150" rx="196" ry="128" />
-    <ellipse cx="890" cy="200" rx="108" ry="98" />
-    <ellipse cx="952" cy="552" rx="92" ry="140" />
-    <ellipse cx="906" cy="872" rx="128" ry="142" />
-    <ellipse cx="104" cy="892" rx="132" ry="186" />
-    <ellipse cx="110" cy="566" rx="122" ry="120" />
-    <ellipse cx="516" cy="1192" rx="172" ry="96" />
-    <ellipse cx="262" cy="1172" rx="152" ry="86" transform="rotate(-14 262 1172)" />
-    <ellipse cx="782" cy="1172" rx="152" ry="86" transform="rotate(14 782 1172)" />
+    <ellipse cx="514.0" cy="150" rx="196" ry="128" />  <!-- kroon -->
+    <ellipse cx="890.0" cy="200" rx="108" ry="98" />  <!-- klaver -->
+    <ellipse cx="952.0" cy="552" rx="92" ry="140" />  <!-- pion -->
+    <ellipse cx="906.0" cy="872" rx="128" ry="142" />  <!-- kaarten -->
+    <ellipse cx="104.0" cy="866" rx="124" ry="150" />  <!-- nar -->
+    <ellipse cx="110.0" cy="566" rx="122" ry="120" />  <!-- bagel -->
+    <ellipse cx="510.9" cy="1192" rx="172" ry="96" />  <!-- rozet -->
+    <ellipse cx="357.1" cy="1172" rx="152" ry="86" transform="rotate(-14 357.1 1172)" />  <!-- lint-links -->
+    <ellipse cx="676.9" cy="1172" rx="152" ry="86" transform="rotate(14 676.9 1172)" />  <!-- lint-rechts -->
   </g>
 </svg>
