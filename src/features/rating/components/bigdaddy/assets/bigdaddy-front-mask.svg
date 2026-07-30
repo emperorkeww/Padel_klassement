@@ -1,19 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1727">
+  <!-- Gegenereerd door scripts/bigdaddy-master-compose.mjs — niet met de hand
+       bijwerken. Elke vorm hoort bij een onderdeel met een `voor`-selectie:
+       complete objecten mogen vóór het frame komen, de wolken en het middenstuk
+       van het rechterlint blijven eronder. -->
   <defs>
-    <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
-      <feGaussianBlur stdDeviation="5" />
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="12" />
     </filter>
   </defs>
   <g fill="#fff" filter="url(#soft)">
-    <!-- Grote kroon: over de gebogen bovenrand, met wolkflarden aan beide zijden. -->
-    <path d="M210 4 C310 -18 714 -18 814 4 L810 438 C704 474 320 474 214 438 C184 314 182 118 210 4 Z" />
-    <!-- Rechter balloncluster en strik: grotendeels buiten, lokaal over het frame. -->
-    <path d="M760 12 C900 -18 1036 28 1052 170 L1050 642 C1000 714 920 724 846 670 C818 568 824 478 800 388 C770 272 730 128 760 12 Z" />
-    <!-- De volledige, lager geplaatste teddy met staf blijft één leesbaar object. -->
-    <path d="M-28 874 C72 842 260 872 350 964 C372 1064 360 1198 378 1320 C356 1416 270 1468 158 1468 L-30 1436 Z" />
-    <!-- Kleine pluchen ster en de aansluitende rechterlinten. -->
-    <path d="M764 836 C872 796 1018 840 1054 948 L1054 1384 C956 1422 826 1372 786 1274 C766 1188 786 1098 758 1014 C736 950 732 884 764 836 Z" />
-    <!-- Hartmedaillon in de kaartpunt plus de dichtste onderste lintplooien. -->
-    <path d="M236 1208 C344 1162 680 1162 788 1208 C832 1292 822 1452 754 1538 L270 1538 C202 1452 192 1292 236 1208 Z" />
+    <!-- ballonnen -->
+    <path d="M949 -28 H1063 Q1149 -28 1149 58 V548 Q1149 634 1063 634 H949 Q863 634 863 548 V58 Q863 -28 949 -28 Z" />
+    <!-- hart-ballon-links -->
+    <path d="M120 597 H209 Q277 597 277 665 V819 Q277 887 209 887 H120 Q52 887 52 819 V665 Q52 597 120 597 Z" />
+    <!-- lint-rechts -->
+    <path d="M1003 416 H1208 Q1294 416 1294 502 V616 Q1294 702 1208 702 H1003 Q917 702 917 616 V502 Q917 416 1003 416 Z" />
+    <!-- lint-rechts -->
+    <path d="M1028 887 H1183 Q1300 887 1300 1004 V1187 Q1300 1304 1183 1304 H1028 Q911 1304 911 1187 V1004 Q911 887 1028 887 Z" />
+    <!-- kroon -->
+    <path d="M528 84 H752 Q849 84 849 181 V309 Q849 406 752 406 H528 Q431 406 431 309 V181 Q431 84 528 84 Z" />
+    <!-- teddy -->
+    <path d="M96 753 H251 Q368 753 368 870 V1263 Q368 1380 251 1380 H96 Q-21 1380 -21 1263 V870 Q-21 753 96 753 Z" />
+    <!-- lint-onder-rechts -->
+    <path d="M829 1368 H1110 Q1206 1368 1206 1464 V1593 Q1206 1689 1110 1689 H829 Q733 1689 733 1593 V1464 Q733 1368 829 1368 Z" />
+    <!-- lint-onder-links -->
+    <path d="M222 1320 H369 Q443 1320 443 1394 V1493 Q443 1567 369 1567 H222 Q148 1567 148 1493 V1394 Q148 1320 222 1320 Z" />
+    <!-- medaillon -->
+    <path d="M497 1370 H701 Q782 1370 782 1451 V1558 Q782 1639 701 1639 H497 Q416 1639 416 1558 V1451 Q416 1370 497 1370 Z" />
   </g>
 </svg>

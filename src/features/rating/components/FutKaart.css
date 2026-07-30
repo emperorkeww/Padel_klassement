@@ -1032,9 +1032,12 @@
   --kaart-ink-soft: var(--bigdaddy-kaart-ink-soft);
   --kaart-lijn: var(--bigdaddy-kaart-lijn);
   --editie-kleur: var(--bigdaddy-kaart-editie);
-  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
-  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
-  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  /* #834: een zwaardere lijst dan de andere edities. De referentiekaart draagt
+     een breed goudprofiel met een verzadigde magenta band erbinnen; op de oude
+     0,02/0,01/0,005 verdween die lijst tussen de ornamenten. */
+  --kaart-frame-dikte: clamp(4px, calc(var(--fut-kw) * 0.026), 7px);
+  --kaart-liner-dikte: clamp(2.5px, calc(var(--fut-kw) * 0.017), 4.6px);
+  --kaart-keyline-dikte: clamp(1.2px, calc(var(--fut-kw) * 0.007), 1.9px);
   --kaart-avatar-ring: var(--bigdaddy-frame-goud);
   --kaart-avatar-ring-buiten: rgba(255, 238, 246, 0.72);
   --kaart-naamplaat: linear-gradient(
@@ -1057,7 +1060,7 @@
   /* #834: parelroze/champagne uit het frame vloeit zacht naar buiten én het
      lichte vlak in, zoals de rozepaarse referentiekaart zonder neonrand. */
   --kaart-randgloed: drop-shadow(
-    0 0 calc(var(--fut-kw) * 0.02) rgba(221, 107, 162, 0.3)
+    0 0 calc(var(--fut-kw) * 0.03) rgba(238, 49, 143, 0.42)
   );
   --kaart-randwaas-links: rgba(221, 107, 162, 0.2);
   --kaart-randwaas-rechts: rgba(201, 154, 63, 0.14);
@@ -1077,24 +1080,35 @@
     inset 0 0 0 4px rgba(221, 107, 162, 0.55);
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__zijde {
+  /* #834: goud-dominant i.p.v. roze-dominant. De referentie draagt een
+     champagnegouden profiel met roze weerschijn; op het oude verloop las de
+     lijst als bleekroze en verdween ze tussen de ornamenten. */
   background: linear-gradient(
     160deg,
-    #f6d7a0 0%,
-    var(--bigdaddy-frame-roze) 22%,
-    #ffeef6 44%,
-    var(--bigdaddy-frame-goud) 66%,
-    #f2a9cf 80%,
+    #fbe6b4 0%,
+    #cd9438 18%,
+    #fff1cf 38%,
+    var(--bigdaddy-frame-roze) 56%,
+    var(--bigdaddy-frame-goud) 74%,
     #8f3560 100%
   );
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__liner {
-  background: #54203a;
+  /* #834: magenta i.p.v. donkerpruim. In de referentie zit tussen het gouden
+     profiel en het vlak één verzadigde roze band; dat is deze liner. Vlak,
+     zodat de canvas/posterroute hem één-op-één kan spiegelen. */
+  background: #b3145e;
+}
+.fut-kaart.fut-kaart--icon .fut-kaart__keyline {
+  /* Goud aan wéérszijden van de magenta liner: precies de goud-magenta-goud-
+     stapeling die de referentie langs de binnenrand laat zien. */
+  background: #e5bd6d;
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
     radial-gradient(
       circle at 8% 28%,
-      rgba(221, 107, 162, 0.16) 0 3%,
+      rgba(255, 255, 255, 0.2) 0 3%,
       transparent 3.8%
     ),
     radial-gradient(
@@ -1102,37 +1116,42 @@
       rgba(201, 154, 63, 0.13) 0 2.4%,
       transparent 3.2%
     ),
-    repeating-conic-gradient(
-      from 8deg at 78% 24%,
-      rgba(221, 107, 162, 0.075) 0deg 7deg,
-      transparent 7deg 21deg
-    ),
-    linear-gradient(
-      132deg,
-      rgba(221, 107, 162, 0.09) 0 18%,
-      transparent 18% 72%,
-      rgba(201, 154, 63, 0.07) 72% 100%
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.05) 0px 2px,
-      transparent 2px 10px
-    ),
-    repeating-linear-gradient(
-      45deg,
-      rgba(221, 107, 162, 0.06) 0px 1px,
-      transparent 1px 4px
-    ),
+    /* Vignet in magenta langs de randen: de referentie is in het midden
+       lichter en verdiept naar de flanken. */
+      radial-gradient(
+        118% 82% at 50% 34%,
+        transparent 52%,
+        rgba(160, 20, 82, 0.24) 100%
+      ),
     radial-gradient(
-      120% 55% at 50% -6%,
-      rgba(255, 226, 240, 0.9),
-      transparent 62%
+      108% 46% at 50% -4%,
+      rgba(255, 232, 244, 0.42),
+      transparent 66%
     ),
     linear-gradient(
       172deg,
       var(--kaart-hi) 0%,
-      var(--kaart-mid) 56%,
+      var(--kaart-mid) 54%,
       var(--kaart-lo) 100%
+    );
+}
+/* Matelas i.p.v. de gedeelde stralenkrans (#834): een gequilt ruitraster met
+   een lichte stiklijn en een magenta schaduwlijn ernaast — het satijnkussen
+   uit de referentie. De periode hangt aan --fut-kw, zodat de ruit van
+   veldmaat tot poster dezelfde verhouding houdt en niet in moiré valt. */
+.fut-kaart.fut-kaart--icon .fut-kaart__vlak::after {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.34) 0 1px,
+      rgba(160, 20, 82, 0.1) 1px 2px,
+      transparent 2px calc(var(--fut-kw) * 0.047)
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.34) 0 1px,
+      rgba(160, 20, 82, 0.1) 1px 2px,
+      transparent 2px calc(var(--fut-kw) * 0.047)
     );
 }
                                                                                                                                                                                                  
@@ -1140,7 +1159,7 @@
   background: linear-gradient(
     115deg,
     transparent 40%,
-    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.32) 50%,
     transparent 60%
   );
 }
