@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import type { Profile, RatingPoint } from "@/types";
 import { winRate, type Outcome } from "@/features/rating/results";
 import type { Shift } from "@/features/rating/rankShift";
+import type { SpelerStatBron } from "@/features/rating/components/layouts/kaartLayout";
 
 export type Row = {
   key: string;
@@ -33,6 +34,20 @@ export type Row = {
    *  getal bij een oude rating zetten. */
   bounty?: number | null;
 };
+
+/** De wedstrijdwaarden die een dynamische divisiekaart in eigen velden mag
+ *  vertalen. Dit blijft één afleiding van de bestaande klassementsrij. */
+export function statBronVoor(row: Row): SpelerStatBron {
+  return {
+    gespeeld: row.played,
+    gewonnen: row.won,
+    gelijk: row.drawn,
+    verloren: row.lost,
+    punten: row.points,
+    doelsaldo: row.goalDiff,
+    vorm: row.form,
+  };
+}
 
 /** De Troon (#528 + machtsbehoud #545): tilt de zittende dictator uit de
  *  ranglijst. Wie de troon houdt is server-side bepaald (`dictator_termijnen`,

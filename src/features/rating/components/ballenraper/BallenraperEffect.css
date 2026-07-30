@@ -1,0 +1,63 @@
+.fut-kaart--ballenraper-layout {
+  --schild: url(#fut-schild-ballenraper);
+  --kaart-echo: drop-shadow(0 0.012em 0 rgba(63, 42, 13, 0.95));
+  --kaart-randgloed: drop-shadow(0 0.035em 0.075em rgba(26, 18, 8, 0.58));
+}
+
+.fut-kaart--ballenraper-layout .fut-kaart__zijde--voor {
+  padding: 0;
+  background: transparent;
+}
+
+.fut-kaart--ballenraper-layout
+  .fut-kaart__zijde--voor
+  > .fut-kaart__liner,
+.fut-kaart--ballenraper-layout
+  .fut-kaart__zijde--voor
+  > .fut-kaart__liner
+  > .fut-kaart__keyline {
+  padding: 0;
+  background: transparent;
+}
+
+.fut-kaart--ballenraper-layout .fut-kaart__zijde--voor .fut-kaart__vlak {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.fut-kaart--ballenraper-layout
+  .fut-kaart__zijde--voor
+  .fut-kaart__vlak::before,
+.fut-kaart--ballenraper-layout
+  .fut-kaart__zijde--voor
+  .fut-kaart__vlak::after,
+.fut-kaart--ballenraper-layout
+  .fut-kaart__zijde--voor
+  .fut-kaart__randwaas {
+  display: none;
+}
+
+/* Het rastermaster bevat echte transparante zones rond de houten vorm. Verberg
+   de omgedraaide zijde daar expliciet, anders schemert haar generieke
+   houtkleur door die alpha heen. */
+.fut-kaart--ballenraper-layout:not(.is-omgedraaid)
+  .fut-kaart__zijde--achter,
+.fut-kaart--ballenraper-layout.is-omgedraaid
+  .fut-kaart__zijde--voor {
+  visibility: hidden;
+}
+
+.fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--voor {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart--ballenraper-layout .kaart-onderdelen--voor {
+    transition: opacity 0.18s ease 0.2s;
+  }
+
+  .fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--voor {
+    transition-delay: 0s;
+  }
+}

@@ -1,0 +1,33 @@
+.kaart-onderdelen {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.kaart-onderdelen--achter {
+  z-index: -1;
+}
+
+.kaart-onderdelen--binnen {
+  z-index: 0;
+}
+
+.kaart-onderdelen--voor {
+  z-index: 3;
+  overflow: visible;
+}
+
+.kaart-onderdelen__beeld {
+  position: absolute;
+  left: calc(var(--onderdeel-x) * 100%);
+  top: calc(var(--onderdeel-y) * 100%);
+  width: calc(var(--onderdeel-breedte) * 100%);
+  height: calc(var(--onderdeel-hoogte) * 100%);
+  display: block;
+  object-fit: fill;
+  max-width: none;
+  transform: rotate(var(--onderdeel-draai));
+  transform-origin: center;
+  user-select: none;
+}

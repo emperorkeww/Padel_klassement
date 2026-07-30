@@ -79,6 +79,11 @@ const BlaaskaakShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BlaaskaakShowcase"))
   : null;
 
+// Dev-stage voor de Ballenraper en zijn blauwdrukgestuurde artwork-register.
+const BallenraperShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/BallenraperShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -149,6 +154,9 @@ function App() {
           )}
           {BlaaskaakShowcase && (
             <Route path="/dev/blaaskaak" element={<BlaaskaakShowcase />} />
+          )}
+          {BallenraperShowcase && (
+            <Route path="/dev/ballenraper" element={<BallenraperShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}
