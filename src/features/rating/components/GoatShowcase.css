@@ -1,0 +1,69 @@
+/* Reproduceerbare visuele teststage voor de GOAT-breakout. De ruimte boven de
+   kaart is bewust groot: de bokhoorns en het geitenmonument breken ver boven
+   de bovenrand uit, precies zoals in docs/referentie_goat.png. */
+
+.goat-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 330px 0 40px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(194, 24, 91, 0.16), transparent 46%),
+    #0b0709;
+}
+
+.goat-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.goat-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+
+.goat-showcase__titel {
+  margin: 150px 0 0;
+  color: #f7c3d1;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.goat-showcase__uitleg {
+  margin: 0;
+  color: #a8919a;
+  font-size: 19px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  /* De breakout is 53% van de kaarthoogte; bij --fut-kw: 72vw is dat ~53vw
+     boven de kaart, dus de stage houdt iets meer marge dan dat. */
+  .goat-showcase {
+    padding-top: 62vw;
+  }
+
+  .goat-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .goat-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .goat-showcase__titel {
+    margin-top: 22vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .goat-showcase__uitleg {
+    max-width: 88vw;
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}

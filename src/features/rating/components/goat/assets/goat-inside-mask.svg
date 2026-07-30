@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1664">
+  <!-- Binnenselectie: alleen de bergscene en haar nevel mogen ín het kaartvlak
+       verschijnen. Hoorns, kristallen en de rots die achter het frame langs
+       lopen blijven hier weg; anders zou het monument als bleke afdruk over
+       rating, avatar en naam liggen.
+       De rand van dit masker valt bewust bínnen de berguitsnede
+       (x 174..867, y 852..1208 op het mastercanvas): de zachte overgang
+       verbergt dan de rechte uitsnederand in plaats van hem te tonen. -->
+  <defs>
+    <filter id="soft" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="22" />
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#soft)">
+    <path d="M200 1152 C200 1030 268 918 356 876 C420 846 620 846 686 876 C776 918 842 1032 842 1154 C842 1178 812 1186 748 1186 L292 1186 C226 1186 200 1178 200 1152 Z" />
+  </g>
+</svg>

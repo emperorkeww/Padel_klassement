@@ -1,0 +1,142 @@
+/* Eén gedeeld register voor back, inside en front. De drie instanties mogen
+   nooit afzonderlijk worden verschoven: alleen clipping en maskers verschillen.
+   De waarden zetten het kaartvak van docs/referentie_pias.png exact op het
+   echte kaartvlak: het master-artwork is 768 × 1024 en draagt dat kaartvak op
+   x 87…681 en y 82…908. */
+
+.fut-kaart.fut-kaart--pias {
+  --pias-master-left: -14.6%;
+  --pias-master-top: -9.9%;
+  --pias-master-width: 129.3%;
+  --pias-master-scale: 1;
+  --pias-master-rotate: 0deg;
+  --pias-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.pias-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.pias-effect__master {
+  position: absolute;
+  left: var(--pias-master-left);
+  top: var(--pias-master-top);
+  width: var(--pias-master-width);
+  transform: rotate(var(--pias-master-rotate)) scale(var(--pias-master-scale));
+  transform-origin: 0 0;
+}
+
+.pias-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
+        rgba(28, 12, 4, 0.72)
+    )
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.022) rgba(216, 188, 124, 0.18));
+}
+
+/* Expliciet paintregister binnen de preserve-3d-flipper. De oude live
+   pias-vectoren zijn niet gemount; ze blijven alleen canvasfallback. */
+.fut-kaart.fut-kaart--pias
+  .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  z-index: 1;
+}
+
+.fut-kaart.fut-kaart--pias .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.fut-kaart.fut-kaart--pias .fut-kaart__ornament--voor {
+  z-index: 4;
+}
+
+/* Volledige stof-, rook-, kaarten- en lintmassa achter kaart en frame. */
+.pias-effect--achter {
+  z-index: 0;
+}
+
+/* De negatieve inset reconstrueert de kaartstage vanuit het echte kaartvlak.
+   Het schildclip van .fut-kaart__vlak is daarmee het exacte binnenmasker. */
+.pias-effect--binnen {
+  inset: calc(-1 * var(--pias-master-inset));
+  z-index: -1;
+}
+
+.pias-effect--binnen .pias-effect__master {
+  opacity: 0.82;
+}
+
+/* Alleen complete objectgroepen komen vóór het frame; tussen die groepen blijft
+   de gouden rand zichtbaar, zodat de laagvolgorde leesbaar blijft. */
+.pias-effect--voor {
+  z-index: 3;
+}
+
+.pias-effect--voor .pias-effect__master {
+  -webkit-mask: url("./assets/pias-front-mask.svg") center / 100% 100% no-repeat;
+  mask: url("./assets/pias-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.014) calc(var(--fut-kw) * 0.014)
+      rgba(24, 10, 3, 0.86)
+  );
+}
+
+.pias-effect--voor .pias-effect__master img {
+  filter:
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.006) rgba(20, 8, 2, 0.9))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.018) rgba(232, 186, 96, 0.24));
+}
+
+/* Registratiedebug: /dev/pias?debugPias=1. */
+.pias-effect--debug {
+  outline: 1px dashed;
+}
+
+.pias-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.pias-effect--achter.pias-effect--debug {
+  outline-color: #f3b33c;
+}
+
+.pias-effect--achter.pias-effect--debug::after {
+  background: #f3b33c;
+}
+
+.pias-effect--binnen.pias-effect--debug {
+  outline-color: #74f79b;
+}
+
+.pias-effect--binnen.pias-effect--debug::after {
+  background: #74f79b;
+}
+
+.pias-effect--voor.pias-effect--debug {
+  outline-color: #5bdcff;
+}
+
+.pias-effect--voor.pias-effect--debug::after {
+  background: #5bdcff;
+}
+
+.pias-effect--debug .pias-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.78);
+}
