@@ -49,6 +49,11 @@ const DictatorShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/DictatorShowcase"))
   : null;
 
+// Dev-stage voor de Big Daddy-kaart en haar referentiegestuurde breakout.
+const BigDaddyShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/BigDaddyShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -101,6 +106,9 @@ function App() {
           )}
           {DictatorShowcase && (
             <Route path="/dev/dictator" element={<DictatorShowcase />} />
+          )}
+          {BigDaddyShowcase && (
+            <Route path="/dev/bigdaddy" element={<BigDaddyShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

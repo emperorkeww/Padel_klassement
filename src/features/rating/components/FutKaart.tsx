@@ -225,6 +225,11 @@ import {
   DictatorEffectVoor,
 } from "./dictator/DictatorEffect";
 import {
+  BigDaddyEffectAchter,
+  BigDaddyEffectBinnen,
+  BigDaddyEffectVoor,
+} from "./bigdaddy/BigDaddyEffect";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -2049,7 +2054,9 @@ export function FutKaart({
   // GOAT met In-Form houdt zijn hoorns.
   const ornament = EDITIE_ORNAMENT[editie ?? ""] ?? TIER_ORNAMENT[tier?.key ?? ""] ?? null;
   const ornamentLive =
-    tier?.key === "dictator" && !editie ? null : ornament;
+    (tier?.key === "dictator" && !editie) || editie === "icon"
+      ? null
+      : ornament;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
   // verdwijnen — de kroon en punt-edelsteen van Big Daddy, de lauwerkrans en
   // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen, de kraag
@@ -2164,6 +2171,7 @@ export function FutKaart({
             <use href={`#fut-orn-${ornament}-achter`} />
           </svg>
         )}
+        {editie === "icon" && <BigDaddyEffectAchter />}
         {tier?.key === "dictator" && !editie && <DictatorEffectAchter />}
         {/* On Fire-backlaag: één coherent vulkaanartwork achter kaart en
             frame. De metalen vinnen hierboven blijven als eigen ornament. */}
@@ -2179,6 +2187,7 @@ export function FutKaart({
                 <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
+                {editie === "icon" && <BigDaddyEffectBinnen />}
                 {tier?.key === "dictator" && !editie && (
                   <DictatorEffectBinnen />
                 )}
@@ -2226,6 +2235,7 @@ export function FutKaart({
             <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
+        {editie === "icon" && <BigDaddyEffectVoor />}
         {tier?.key === "dictator" && !editie && <DictatorEffectVoor />}
         {/* Beperkte basalt- en eruptiedelen vóór het frame; crest en
             puntmedaillon blijven via hun hogere z-index leesbaar. */}
