@@ -788,9 +788,15 @@
   --kaart-ink: color-mix(in srgb, var(--sp-glans) 80%, #fff);
   --kaart-ink-soft: color-mix(in srgb, var(--sp-glans) 65%, #b7a98c);
   --kaart-lijn: color-mix(in srgb, var(--sp-glans) 55%, transparent);
-  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
-  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
-  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
+  /* Zwaardere lijst dan de andere tiers: op de referentie is de rosé
+     metaalband van het monument ruim vier keer zo dik als de haarlijn van een
+     divisiekaart, en juist die massa laat de hoorns er echt achter verdwijnen.
+     De ondergrens blijft 3/1,5/1 px, zodat een 130px-kaart in het klassement
+     niet dichtslibt. Canvas-spiegel: `randDiktes` in de legende-tak van
+     kaartSkin() (futKaartCanvas.ts). */
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.028), 13px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.012), 5.5px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.006), 2.8px);
   --kaart-avatar-ring: #f2b7c5;
   --kaart-avatar-ring-buiten: rgba(20, 6, 9, 0.9);
   --kaart-naamplaat: linear-gradient(

@@ -3389,7 +3389,10 @@ export function kaartSkin(
         stralen: false,
         satijnAlpha: 0.04,
         satijnBaan: ["rgba(247, 134, 159, 0.055)", 5.6, 15.4],
-        randDiktes: [0.02, 0.01, 0.005],
+        // Zwaardere lijst dan de andere specials, gelijk aan de CSS-diktes van
+        // .fut-kaart--legende: de rosé metaalband van het monument is op de
+        // referentie de dikste van alle kaarten.
+        randDiktes: [0.028, 0.012, 0.006],
         randGloed: [0.02, "rgba(226, 133, 158, 0.32)"],
         randWaas: {
           links: "rgba(226, 133, 158, 0.16)",

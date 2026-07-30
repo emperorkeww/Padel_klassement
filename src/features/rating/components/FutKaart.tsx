@@ -240,6 +240,11 @@ import {
   PiasEffectVoor,
 } from "./pias/PiasEffect";
 import {
+  GoatEffectAchter,
+  GoatEffectBinnen,
+  GoatEffectVoor,
+} from "./goat/GoatEffect";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -2065,6 +2070,7 @@ export function FutKaart({
   const ornament = EDITIE_ORNAMENT[editie ?? ""] ?? TIER_ORNAMENT[tier?.key ?? ""] ?? null;
   const ornamentLive =
     (tier?.key === "dictator" && !editie) ||
+    (tier?.key === "legende" && !editie) ||
     editie === "icon" ||
     editie === "piet" ||
     editie === "pias"
@@ -2186,6 +2192,9 @@ export function FutKaart({
         )}
         {editie === "icon" && <BigDaddyEffectAchter />}
         {tier?.key === "dictator" && !editie && <DictatorEffectAchter />}
+        {/* GOAT-achterlaag: hoorns, monument en kristallen komen uit één
+            master en verdwijnen hier achter kaart en frame. */}
+        {tier?.key === "legende" && !editie && <GoatEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
         {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
             achter kaart en frame. */}
@@ -2208,6 +2217,9 @@ export function FutKaart({
                 {tier?.key === "dictator" && !editie && (
                   <DictatorEffectBinnen />
                 )}
+                {/* Dezelfde GOAT-master in het echte kaartvlak; het
+                    binnenmasker laat er alleen de bergscene van door. */}
+                {tier?.key === "legende" && !editie && <GoatEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde pias-master, geclipt door het echte schild; de
                     inhoud rendert erná en blijft dus leesbaar. */}
@@ -2258,6 +2270,9 @@ export function FutKaart({
         )}
         {editie === "icon" && <BigDaddyEffectVoor />}
         {tier?.key === "dictator" && !editie && <DictatorEffectVoor />}
+        {/* Kristalpunten langs de flanken en de edelsteen-chevron in de
+            schildpunt liggen vóór het frame. */}
+        {tier?.key === "legende" && !editie && <GoatEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
             komen via het frontmask vóór het frame. */}

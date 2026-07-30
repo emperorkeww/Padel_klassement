@@ -16,10 +16,10 @@ import { fileURLToPath, URL } from "node:url";
 const pad = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const ASSETS = pad("../../../dist/assets");
 
-// Ruime marge boven de huidige ~8,2 MB: genoeg lucht voor een nieuwe route of
+// Ruime marge boven de huidige ~8,4 MB: genoeg lucht voor een nieuwe route of
 // een handvol avatars, krap genoeg om één ongecomprimeerde 2 MB-PNG te vangen.
-// Verhoogd van 8 naar 9 bij de pias-breakout: de zes kaarteffect-masters zijn
-// samen ~1,8 MB en zijn de enige structurele groei sinds #732. Ze staan al op
+// Verhoogd van 8 naar 9 bij de pias-breakout: de zeven kaarteffect-masters zijn
+// samen ~2,0 MB en zijn de enige structurele groei sinds #732. Ze staan al op
 // hun compressiegrens (WebP met alpha, 600–1024 px breed); zakt er nog meer
 // resolutie af, dan wordt het artwork zichtbaar zacht op een 450px-kaart.
 const TOTAAL_MAX_MB = 9;
