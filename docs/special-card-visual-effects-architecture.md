@@ -1325,6 +1325,51 @@ strook), `v5-raster.png` (de rasterpunten, na de ronde avataruitsparing) en
 artwork staat in `screenshots/wannabe/master-preview.png`, met de
 onderdeelcontouren in `master-contouren.png`.
 
+**Blaaskaak**
+
+De Blaaskaak is de zilverdivisie (`tier.key === "zilver"`, rating 900–999) en
+gebruikt voor de kale divisie dezelfde drie-masterstructuur via
+`BlaaskaakEffect.tsx`. `blaaskaak-master.webp` is een transparant
+1086 × 1538-rasterartwork dat met
+[`referentie_blaaskaak.png`](./referentie_blaaskaak.png) als directe
+compositie-, materiaal- en lichtreferentie is gemaakt. De grotere megafoon,
+geluidsschichten, comic-burst, tekstballon en het mondmedaillon zijn beeldwerk
+in plaats van nagebouwde SVG's. De kaartomranding is juist niet in het
+masterartwork opgenomen. `FutKaartDefs` bevat vier specifieke
+`fut-schild-blaaskaak-*`-clips. Frame en donkerblauwe liner houden een
+doorlopende bovenbrug; de cyaan-keyline en het kaartvlak maken de compacte
+U-uitsparing waaruit de megafoon komt. Alle vier delen de vaste asymmetrische
+rechterschouder: een bijna horizontale bovenrand, twee schuine segmenten en
+dan de verticale flank. Daardoor blijft die hoek zichtbaar wanneer chatballon
+en bliksems wegvallen, terwijl die decoratie het silhouet niet bepaalt. De
+lawaaissymbolen `#!&*` in de burst blijven scherpe decoratieve DOM-tekst.
+Rating, avatar, naam en divisietekst blijven echte DOM-inhoud en zijn in het
+mastercanvas vrijgehouden.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--zilver`:
+
+```css
+--blaaskaak-master-left: -4%;
+--blaaskaak-master-top: -14%;
+--blaaskaak-master-width: 108%;
+--blaaskaak-master-scale: 1;
+--blaaskaak-master-rotate: 0deg;
+```
+
+De alfa van het WebP vormt zelf de organische voorcontour; er is geen los
+masker voor het artwork nodig. De SVG-clips hierboven zijn uitsluitend de
+kaartgeometrie. De bestaande zilvervectoren blijven voor de canvas- en
+posterroute beschikbaar, maar worden in de live DOM niet dubbel gemonteerd.
+De skin krijgt alleen bij `:has(.blaaskaak-effect)` de diepe navy spouw, deels
+onderbroken cyan-keyline en koelere blauwe vlakgloed uit de referentie. Een
+zilveren kaart met een editie houdt daardoor ongewijzigd de skin en
+ornamenten van die editie.
+
+De vaste visuele controle gebeurt via `/dev/blaaskaak`,
+`scripts/blaaskaak-screenshot.sh` en `?debugBlaaskaak=1`. De finale beelden
+staan in `screenshots/blaaskaak/final-desktop.png` en
+`screenshots/blaaskaak/final-mobile.png`.
+
 **Andere special editions**
 
 Gebruik het patroon voor effecten met fysieke continuïteit: sneeuwstorm,
@@ -1354,7 +1399,8 @@ De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
 `onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
 `bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
 `pias-master.webp`, voor de GOAT `goat-master.webp` en voor de Wannabe
-`wannabe-master.webp`. De
+`wannabe-master.webp`. De kale Blaaskaak gebruikt daarnaast
+`blaaskaak-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
@@ -1365,6 +1411,8 @@ Hetzelfde geldt voor de Wannabe: de poster tekent nog de folieranden, de
 racketcrest en het lauwermedaillon uit `divisies/goud.ts`. Het `register`
 daarin — vlakkleuren, lijst, inkt, randdiktes — is wél gelijkgetrokken met de
 CSS, dus kaart en poster delen in ieder geval hun materiaal.
+Voor de Blaaskaak tekent de poster nog de buisprofielen, windcrest en resonator
+uit `divisies/zilver.ts`; de live kaart gebruikt het nieuwe rastermaster.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:
