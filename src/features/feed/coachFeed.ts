@@ -8,7 +8,7 @@
 // ziet; roast-quips respecteren de groepsintensiteit en het roast-schild.
 // Pure functie, getest in coachFeed.test.ts.
 
-import type { FeedEvent } from "@/features/feed/feedLogic";
+import type { FeedEvent, Highlight } from "@/features/feed/feedLogic";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import type { CoachMood, RoastCtx } from "@/features/coach/roastTone";
 import {
@@ -187,32 +187,49 @@ const REEKS = [
 // Bounty geclaimd (#805): de leider betaalde de prijs op z'n hoofd. Spot met
 // hém, dus alleen als de verliezers geen roast-schild dragen.
 const BOUNTY_GECLAIMD = [
-  "De prijs op zijn hoofd is geïnd. Iemand moest het doen.",
-  "Kroon af, kassa open. Zo werkt dat hier.",
-  "De koning betaalt. Contant, in Elo.",
-  "Dat is het probleem met bovenaan staan: iedereen weet waar je woont.",
-  "Premie geïnd. De jacht was geopend en de jacht is geslaagd.",
-  "Zijn ongeslagen reeks ligt in de kooi. Naast zijn waardigheid.",
-  "De bounty is uitbetaald. Zijn ego staat nog in de min.",
-  "Wie bovenaan staat wordt bejaagd. Vandaag was het raak.",
-  "Daar gaat de buit. Hij mag 'm zelf overhandigen.",
-  "De leider is afgerekend. Letterlijk.",
-  "Het hoofd van de klas krijgt een rekening gepresenteerd.",
-  "Een reeks opbouwen duurt weken. Hem verliezen duurde één set.",
+  "De prijs op zijn hoofd is geïnd. Iemand moest die arrogante kop een toontje lager laten zingen.",
+  "Kroon af, kassa open. Het feestje aan de top is voorbij, terug in je hok.",
+  "De koning betaalt. Contant, in Elo en met een flinke deuk in z'n zogenaamde trots.",
+  "Dat is het probleem met bovenaan staan: iedereen weet waar je woont en iedereen wil je slopen.",
+  "Premie geïnd. De jacht was geopend en de jacht is geslaagd. Einde van het neppartijtje.",
+  "Zijn ongeslagen reeks ligt in de kooi. Naast zijn waardigheid en z'n kapotte racket.",
+  "De bounty is uitbetaald. Zijn ego staat nog dieper in de min dan z'n banksaldo.",
+  "Wie bovenaan staat wordt bejaagd. Vandaag was het raak en ging de koning vakkundig met de billen bloot.",
+  "Daar gaat de buit. Hij mag de Elo zelf overhandigen op z'n knieën.",
+  "De leider is afgerekend. Letterlijk. Geen smoesjes over racketspanning vandaag.",
+  "Het hoofd van de klas krijgt een rekening gepresenteerd. En de rente was torenhoog.",
+  "Een reeks opbouwen duurt weken. Hem verliezen duurde één setje vol tactisch geklungel.",
+  "Eindelijk is die nep-koning van z'n troon gepleurd. De premiejagers drinken vanavond gratis bier van zijn geplunderde Elo.",
+  "De bounty is geïnd! Zelfs Gianni Infantino kon deze diefstal niet meer voorwaardelijk opschorten.",
+  "De koploper heeft betaald. Contant, in tranen en in keiharde Elo-punten. Dag status, hallo schaamte.",
+  "Het zat er al weken aan te komen: de leider is vakkundig geslacht. Z'n reeks ligt in gruffels langs de kooi.",
+  "Daar gaat de prijs op z'n hoofd. Nu kan die arrogante kop ook weer gewoon door de deur van de kantine.",
+  "Bounty geclaimd. Hij liep rond met een schietschijf op z'n rug en de tegenstanders hebben 'm met sadistisch genoegen doormidden geknald.",
+  "Z'n kroon ligt in de modder. De jacht is geslaagd en de buit is binnen. Ga je diep schamen op veld 3.",
+  "De leider is afgeschminkt. Die zogenaamde heerschappij was net zo nep als m'n Napoli-contract.",
 ] as const;
 
 // Bounty verdedigd (#805): niemand kreeg de vaste pool te pakken.
 const BOUNTY_VERDEDIGD = [
-  "Bounty overleefd. Het bedrag op z'n hoofd blijft staan.",
-  "Weer niemand die 'm pakt. De premie blijft liggen.",
-  "De jacht is geopend en de jacht is mislukt. Volgende.",
-  "Premiejagers afgeslagen. Ze mogen het volgende week opnieuw proberen.",
-  "Nog steeds de baas, nog steeds een premie waard.",
-  "De troonopvolger blijft opvolger. Al weken.",
-  "Hij loopt er rustig mee weg, met die prijs op z'n hoofd.",
-  "Iedereen wist wat er te halen viel. Niemand haalde het.",
-  "De bounty blijft staan. Op een dag pakt iemand die premie.",
-  "Aanval afgeslagen. De koning slaapt vannacht prima.",
+  "Bounty overleefd. Het bedrag op z'n hoofd blijft staan omdat jullie te laf of te incapabel zijn om 'm te pakken.",
+  "Weer niemand die 'm pakt. De premie blijft liggen. Hebben jullie eigenlijk wel met jullie ogen open gespeeld?",
+  "De jacht is geopend en de jacht is mislukt. Volgende stelletje amateurs graag.",
+  "Premiejagers afgeslagen. Ze mogen het volgende week opnieuw proberen, hopelijk met een betere forehand dan deze ellende.",
+  "Nog steeds de baas, nog steeds een premie waard, en nog steeds omringd door spelers die geen deuk in een pakje boter slaan.",
+  "De troonopvolger blijft opvolger. Al weken. Wat een bende angsthazen hier.",
+  "Hij loopt er rustig mee weg met die prijs op z'n hoofd, terwijl jullie met open mond toekijken.",
+  "Iedereen wist wat er te halen viel. Niemand haalde het. Wat een collectief gebrek aan kwaliteit.",
+  "De bounty blijft staan. Op een dag pakt iemand die premie, maar als jullie zo blijven prutsen duurt dat nog decennia.",
+  "Aanval afgeslagen. De koning slaapt vannacht prima, wetende dat de uitdagers de loopsnelheid van een zwangere slak hebben.",
+  "Weer niks te halen voor de prutsers. De bounty blijft gewoon op z'n hoofd glimmen.",
+  "De zogenaamde premiejagers kwamen met grote praatjes, maar dropen met de staart tussen de benen af. De bounty staat nog steeds.",
+  "De koning lacht jullie vierkant uit. Niemand die dat geld op z'n hoofd durft te pakken. Wat een bende.",
+  "Nog steeds niemand met genoeg ballen om die premie op te eisen? M'n notitieboekje staat vol met jullie mislukte pogingen.",
+  "De bounty groeit en groeit. Blijkbaar heeft de rest van de club de loopsnelheid van een standbeeld.",
+  "Premie overleefd. De koploper veegt z'n schoenen af aan jullie zogenaamde tactische plannen.",
+  "Het bedrag op z'n hoofd stijgt. Jullie durven wel te typen in de groepsapp, maar op de baan zijn jullie zo mak als lammetjes.",
+  "Weer een mislukte staatsgreep. De dictator blijft stevig in het zadel en de premie blijft onaangeraakt.",
+  "Bounty verdedigd. De uitdagers speelden alsof hun rackets van natte kranten waren gemaakt. Kansloos.",
 ] as const;
 
 const UPSET = [
@@ -518,6 +535,47 @@ function reeksFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx
   return l;
 }
 
+/** Feit-lijnen bij een gespeelde match met lef (dubbel-of-niets multiplier). */
+function lefFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx): string[] {
+  const l: string[] = [];
+  const lefHighlights = event.highlights.filter((x) => x.type === "lef") as Extract<
+    Highlight,
+    { type: "lef" }
+  >[];
+
+  for (const h of lefHighlights) {
+    const speler = ctx.naamVoor ? ctx.naamVoor(h.playerId) : h.playerId;
+    const heeftLefSchild = heeftSchild(ctx.profiles[h.playerId]);
+
+    if (h.won) {
+      if (heeftLefSchild) {
+        l.push(`${speler} speelde met lef en won. Keurig gedaan.`);
+        l.push(`${speler} gokte met lef-multiplier en trok de winst over de streep.`);
+      } else {
+        l.push(`${speler} speelde met 'lef' en wint. Gefeliciteerd met je verdubbelde buit, al weet iedereen dat je partner 95% van het zware werk heeft gedaan.`);
+        l.push(`Lef-multiplier succesvol voor ${speler}. Twee keer niks is nog steeds niks, maar de database rekent het toch goed.`);
+        l.push(`Gokken als een bezetene en dan nog beloond worden ook. ${speler} pakt de dubbele winst, puur op geluk en de fouten van de tegenstander.`);
+        l.push(`${speler} drukt op de 'lef'-knop en wint zowaar een keer. Ga nu niet direct een chic pak kopen, dit was pure mazzel.`);
+        l.push(`Dubbel-of-niets uitgekeerd aan ${speler}. Zelfs een blinde goudvis zwemt wel eens per ongeluk tegen een voederkorf aan.`);
+        l.push(`Met de forehand van een dronken tuinkabouter toch dubbele Elo pakken. ${speler} heeft vandaag alle wetten van de logica getart.`);
+      }
+    } else {
+      if (heeftLefSchild) {
+        l.push(`${speler} gokte op dubbel-of-niets maar verloor. Jammer.`);
+        l.push(`${speler} zette zijn lef in maar moest helaas dubbel verlies slikken.`);
+      } else {
+        l.push(`${speler} dacht heel stoer te zijn met 'lef', maar levert nu met liefde dubbele Elo in. Een tactische blunder van historisch niveau.`);
+        l.push(`Grootste mond van de club, de lef-knop indrukken, en dan zó hard afgedroogd worden. ${speler} staat officieel te kijk voor de hele vereniging.`);
+        l.push(`Met lef spelen maar met de finesse van een omvallende koelkast. ${speler} verliest dubbel hard. Geniet van je vrije val in het klassement.`);
+        l.push(`Dubbel verlies voor ${speler}. M'n notitieboekje trilt nog na van het lachen om deze monumentale zelfoverschatting.`);
+        l.push(`${speler} wilde de grote bink uithangen met de multiplier. Nu twee keer zo hard de afgrond in. De ijskrabber voor de kelderklasse ligt klaar.`);
+        l.push(`Lef getoond, maar helaas geen talent aanwezig. ${speler} verliest dubbel en mag de komende weken de ballen uit de bosjes vissen.`);
+      }
+    }
+  }
+  return l;
+}
+
 /**
  * Feit-lijnen bij een rank-event (#411): de plek en de sprong-grootte in plaats
  * van enkel het binaire omhoog/omlaag. `event.rank` kan 0 zijn als de speler
@@ -668,6 +726,11 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         return kiesUniek(BOUNTY_VERDEDIGD, seed, g);
       }
 
+      if (h.some((x) => x.type === "lef")) {
+        const feit = kiesFeit(lefFeiten(event, ctx), seed, g);
+        if (feit) return feit;
+      }
+
       // Winreeks en upset zijn prestaties: Coach Rudy juicht of prikt (#199). Het
       // schild van de gevierde speler tempert de hype tot mild; dat van de
       // verliezer sluit de jab helemaal uit, want die spot met hém.
@@ -738,6 +801,10 @@ export function coachStemming(
       // jagers — allebei de gemene mood (#805).
       if (h.some((x) => x.type === "bounty" || x.type === "bounty-verdedigd"))
         return "gemeen";
+      const lefH = h.find((x) => x.type === "lef");
+      if (lefH && lefH.type === "lef") {
+        return lefH.won ? "trots" : "gemeen";
+      }
       if (h.some((x) => x.type === "streak" || x.type === "duo")) return "trots";
       if (h.some((x) => x.type === "upset")) return "trots";
       if (h.some((x) => x.type === "score" && x.label === "monsterzege")) return "trots";

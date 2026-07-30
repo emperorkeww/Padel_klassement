@@ -102,5 +102,7 @@ export function highlightText(
       return `${BOUNTY_EMOJI} Bounty geclaimd op ${name(h.carrierId)} · +${h.amount}`;
     case "bounty-verdedigd":
       return `${BOUNTY_EMOJI} ${name(h.carrierId)} verdedigt z'n bounty · nu ${h.pool}`;
+    case "lef":
+      return `🎲 ${name(h.playerId)} speelde met lef (x${h.factor}) · ${h.won ? "winst!" : "verlies"}`;
   }
 }
