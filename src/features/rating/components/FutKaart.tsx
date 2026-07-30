@@ -245,6 +245,11 @@ import {
   WannabeEffectVoor,
 } from "./wannabe/WannabeEffect";
 import {
+  BlaaskaakEffectAchter,
+  BlaaskaakEffectBinnen,
+  BlaaskaakEffectVoor,
+} from "./blaaskaak/BlaaskaakEffect";
+import {
   GoatEffectAchter,
   GoatEffectBinnen,
   GoatEffectVoor,
@@ -882,6 +887,35 @@ export function FutKaartDefs() {
         </clipPath>
         <clipPath id="fut-schild-notch" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0 L 0.40 0 C 0.44 0 0.46 0.022 0.5 0.022 C 0.54 0.022 0.56 0 0.60 0 L 0.915 0 C 0.962 0 1 0.028 1 0.062 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.062 C 0 0.028 0.038 0 0.085 0 Z" />
+        </clipPath>
+        {/* Blaaskaak: vier eigen, asymmetrische contouren. Het frame en de
+            donkerblauwe liner houden hun bovenbrug; de cyaan-keyline en het
+            kaartvlak wijken rond de megafoon terug. Rechts volgt na het bijna
+            horizontale dak een vaste, hoekige schouder vóór de verticale
+            flank. De onderhelft behoudt de vertrouwde FUT-tapsheid. */}
+        <clipPath
+          id="fut-schild-blaaskaak-frame"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d="M 0.095 0.05 C 0.062 0.052 0.04 0.09 0.04 0.14 L 0.04 0.60 C 0.04 0.74 0.085 0.795 0.16 0.838 L 0.44 0.972 C 0.465 0.984 0.485 1 0.5 1 C 0.515 1 0.535 0.984 0.56 0.972 L 0.84 0.838 C 0.915 0.795 0.96 0.74 0.96 0.60 L 0.96 0.19 L 0.96 0.15 L 0.88 0.075 L 0.76 0.04 Z" />
+        </clipPath>
+        <clipPath
+          id="fut-schild-blaaskaak-liner"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d="M 0.094 0.049 C 0.063 0.051 0.041 0.089 0.041 0.139 L 0.041 0.60 C 0.041 0.738 0.086 0.793 0.161 0.836 L 0.441 0.97 C 0.466 0.982 0.486 0.998 0.5 0.998 C 0.514 0.998 0.534 0.982 0.559 0.97 L 0.839 0.836 C 0.914 0.793 0.959 0.738 0.959 0.60 L 0.959 0.192 L 0.959 0.152 L 0.878 0.077 L 0.758 0.042 Z" />
+        </clipPath>
+        <clipPath
+          id="fut-schild-blaaskaak-keyline"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d="M 0.093 0.05 C 0.064 0.052 0.042 0.09 0.042 0.14 L 0.042 0.60 C 0.042 0.736 0.087 0.791 0.162 0.834 L 0.442 0.968 C 0.467 0.98 0.487 0.996 0.5 0.996 C 0.513 0.996 0.533 0.98 0.558 0.968 L 0.838 0.834 C 0.913 0.791 0.958 0.736 0.958 0.60 L 0.958 0.194 L 0.958 0.154 L 0.876 0.079 L 0.756 0.044 L 0.598 0.045 C 0.59 0.09 0.553 0.116 0.5 0.116 C 0.447 0.116 0.41 0.09 0.402 0.045 Z" />
+        </clipPath>
+        <clipPath
+          id="fut-schild-blaaskaak-vlak"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d="M 0.092 0.051 C 0.065 0.053 0.043 0.091 0.043 0.141 L 0.043 0.60 C 0.043 0.734 0.088 0.789 0.163 0.832 L 0.443 0.966 C 0.468 0.978 0.488 0.994 0.5 0.994 C 0.512 0.994 0.532 0.978 0.557 0.966 L 0.837 0.832 C 0.912 0.789 0.957 0.734 0.957 0.60 L 0.957 0.196 L 0.957 0.156 L 0.874 0.081 L 0.754 0.046 L 0.602 0.047 C 0.594 0.096 0.555 0.124 0.5 0.124 C 0.445 0.124 0.406 0.096 0.398 0.047 Z" />
         </clipPath>
         <clipPath id="fut-schild-punt" clipPathUnits="objectBoundingBox">
           <path d="M 0.035 0.01 L 0.44 0.04 C 0.47 0.042 0.48 0.058 0.5 0.058 C 0.52 0.058 0.53 0.042 0.56 0.04 L 0.965 0.01 L 1 0.075 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.075 Z" />
@@ -2101,7 +2135,11 @@ export function FutKaart({
   // canvas-/posterroute, maar mogen in de DOM niet dubbel staan — twee
   // watermerken over elkaar leest als vervuiling, precies zoals bij de Piet.
   const wannabeMaster = tier?.key === "goud" && !editie;
-  const divisieLive = wannabeMaster ? undefined : divisie;
+  // Blaaskaak: dezelfde cascade voor het referentiegestuurde rastermaster.
+  // De vectorornamenten blijven beschikbaar voor de canvas-/posterroute.
+  const blaaskaakMaster = tier?.key === "zilver" && !editie;
+  const divisieLive =
+    wannabeMaster || blaaskaakMaster ? undefined : divisie;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register. Onder
   // een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op het
   // In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
@@ -2209,6 +2247,7 @@ export function FutKaart({
         {/* Wannabe-achterlaag: racketcrest, plakstroken, briefjes en de
             megafoon verdwijnen hier achter kaart en frame. */}
         {wannabeMaster && <WannabeEffectAchter />}
+        {blaaskaakMaster && <BlaaskaakEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
         {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
             achter kaart en frame. */}
@@ -2238,6 +2277,7 @@ export function FutKaart({
                     rasterpuntvuil en het getekende tekstballonnetje. Het artwork
                     houdt de tekstzones zelf vrij, dus er is geen binnenmasker. */}
                 {wannabeMaster && <WannabeEffectBinnen />}
+                {blaaskaakMaster && <BlaaskaakEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde pias-master, geclipt door het echte schild; de
                     inhoud rendert erná en blijft dus leesbaar. */}
@@ -2295,6 +2335,7 @@ export function FutKaart({
             pijlen, de splinter, het kroontje met krassen en de inktdruipers
             liggen vóór het frame. */}
         {wannabeMaster && <WannabeEffectVoor />}
+        {blaaskaakMaster && <BlaaskaakEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
             komen via het frontmask vóór het frame. */}
@@ -2354,14 +2395,20 @@ export function FutKaartVoorkant({
   return (
     <>
       <span className="fut-kaart__boven">
-        <span className="fut-kaart__eloblok">
+        <span className="fut-kaart__eloblok fut-kaart__rating-column">
           <span className="fut-kaart__elo">{elo ?? "—"}</span>
           {tier?.subLabel && (
             <span className="fut-kaart__sub">{tier.subLabel}</span>
           )}
           {tier && (
             <span className="fut-kaart__tier" title={tierTitle(tier)}>
-              {tier.key === "legende" ? <FutGoatIcoon /> : tier.emoji}
+              {tier.key === "legende" ? <FutGoatIcoon /> : tier.key === "zilver" ? (
+                <span className="fut-kaart__spreekhoofd" aria-hidden="true">
+                  🗣︎
+                </span>
+              ) : (
+                tier.emoji
+              )}
             </span>
           )}
         </span>
