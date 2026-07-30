@@ -2,7 +2,7 @@
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
 het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator-, Big
-Daddy-, Piet- en GOAT-breakouts. Het is tegelijk een technische naslag en een
+Daddy-, Piet-, pias- en GOAT-breakouts. Het is tegelijk een technische naslag en een
 herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
 kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
 komt.
@@ -40,6 +40,11 @@ Belangrijkste implementatiebestanden:
   en [`BigDaddyEffect.css`](../src/features/rating/components/bigdaddy/BigDaddyEffect.css)
   — dezelfde architectuur toegepast op kroon, wolken, ballonnen, pluchen
   figuren, linten en een gevleugeld hartmedaillon.
+- [`PiasEffect.tsx`](../src/features/rating/components/pias/PiasEffect.tsx),
+  [`PiasEffect.css`](../src/features/rating/components/pias/PiasEffect.css) en
+  [`scripts/pias-master.py`](../scripts/pias-master.py) — dezelfde architectuur
+  toegepast op narrenkroon, speelkaarten, lint, rozet, narrenkop en bagel, met
+  een master die uit de referentie zelf wordt gesneden.
 - [`GoatEffect.tsx`](../src/features/rating/components/goat/GoatEffect.tsx),
   [`GoatEffect.css`](../src/features/rating/components/goat/GoatEffect.css) en
   [`scripts/goat-master.py`](../scripts/goat-master.py) — dezelfde architectuur
@@ -943,6 +948,54 @@ afzonderlijke `pias`-editie wordt niet geraakt. De vaste controle gebeurt via
 beelden staan in `screenshots/piet/final-desktop.png` en
 `screenshots/piet/final-mobile.png`.
 
+**Pias**
+
+De pias-editie gebruikt `PiasEffect.tsx` en `PiasEffect.css` met één
+`pias-master.webp` van 768 × 1024 pixels. Anders dan de andere masters is dit
+artwork niet los aangeleverd maar volledig afgeleid van
+[`referentie_pias.png`](./referentie_pias.png) door
+[`scripts/pias-master.py`](../scripts/pias-master.py). Dat script is daarmee de
+bron van waarheid: het snijdt de kaart, het frame en alle kaartinhoud uit de
+referentie weg en houdt de ornamentring over — narrenkroon met strikken,
+klaverteken, schaakpion, twee speelkaarten, lintboog met rozet en
+clownmedaillon, narrenkop met kap en plooikraag, aangebeten bagel, poederwolken,
+kolengruis en confetti.
+
+Twee keyings maken dat mogelijk. Buiten de kaart staat de referentie op zwart:
+daar levert een luminantiekey zachte randen voor rook en stof, terwijl donkere
+massieve objecten via een floodfill worden dichtgezet (wat binnen hun ROI niet
+vanaf de ROI-rand via bijna-zwart bereikbaar is, hoort bij het object). Binnen de
+kaart wordt per handgetekende objectcontour een lokaal perkamentmodel gefit op de
+ring rond die contour; wat daar ver genoeg vanaf ligt is object. Zo blijven
+kroon, rozet, lint, narrenkop, bagel, speelkaarten, pion en klaver compleet in
+plaats van op de framerand af te breken — precies de fout die
+`bigdaddy-front-mask.svg` bij de halve teddy moest voorkomen.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--pias`:
+
+```css
+--pias-master-left: -14.6%;
+--pias-master-top: -9.9%;
+--pias-master-width: 129.3%;
+--pias-master-scale: 1;
+--pias-master-rotate: 0deg;
+```
+
+Die waarden zetten het kaartvak van de referentie exact op het echte kaartvlak.
+Er is geen inside-mask: het lege midden van het artwork en het echte
+`clip-path: var(--schild)` doen dat werk al. `pias-front-mask.svg` selecteert de
+negen objectgroepen die vóór het frame komen; tussen die groepen blijft de
+gouden rand zichtbaar. Het gruis op het perkament blijft beperkt tot de band
+tussen 26 en 132 pixels binnen de kaartrand en komt nooit over rating, avatar,
+naamplaat, statistiek of badgerij.
+
+De vroegere live pias-SVG's (narrenkap, belletjes, maskermedaillon) worden bij
+`editie === "pias"` niet meer gemonteerd; ze blijven bestaan voor de
+canvas-/posterfallback. De vaste controle gebeurt via `/dev/pias`,
+`scripts/pias-screenshot.sh` en `?debugPias=1`. De finale beelden staan in
+`screenshots/pias/final-desktop.png` en `screenshots/pias/final-mobile.png`; het
+kale artwork staat in `screenshots/pias/master-preview.png`.
+
 **GOAT**
 
 De GOAT is geen editie maar een tier (`tier.key === "legende"`, rating
@@ -1037,8 +1090,8 @@ registraties nodig.
 
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
 `onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
-`bigdaddy-master.webp`, voor Piet `piet-master.webp` en voor de GOAT
-`goat-master.webp`. De
+`bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
+`pias-master.webp` en voor de GOAT `goat-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
@@ -1080,8 +1133,10 @@ waarheid voor de huidige browsercompositie.
 
 ### Het master-artwork is een afgeleid rasterasset
 
-De repository bevat het productie-WebP en een specificatie, maar geen
-gelaagd bronbestand uit een beeldbewerkingspakket. Grote inhoudelijke
+Voor de pias geldt dit niet: dat artwork wordt door `scripts/pias-master.py`
+uit `docs/referentie_pias.png` gegenereerd en is dus wél reproduceerbaar. Voor
+de overige edities bevat de repository het productie-WebP en een specificatie,
+maar geen gelaagd bronbestand uit een beeldbewerkingspakket. Grote inhoudelijke
 wijzigingen aan wolk of bliksem moeten daarom via een nieuwe
 assetgeneratie/-bewerking gebeuren en vervolgens opnieuw op alpha,
 resolutie, compressie en registratie worden gecontroleerd.

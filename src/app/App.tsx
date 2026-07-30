@@ -59,6 +59,11 @@ const PietShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/PietShowcase"))
   : null;
 
+// Dev-stage voor de pias-kaart en haar referentiegestuurde breakout.
+const PiasShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/PiasShowcase"))
+  : null;
+
 // Dev-stage voor de GOAT-tier en haar referentiegestuurde breakout.
 const GoatShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/GoatShowcase"))
@@ -122,6 +127,9 @@ function App() {
           )}
           {PietShowcase && (
             <Route path="/dev/piet" element={<PietShowcase />} />
+          )}
+          {PiasShowcase && (
+            <Route path="/dev/pias" element={<PiasShowcase />} />
           )}
           {GoatShowcase && (
             <Route path="/dev/goat" element={<GoatShowcase />} />

@@ -235,6 +235,11 @@ import {
   PietEffectVoor,
 } from "./piet/PietEffect";
 import {
+  PiasEffectAchter,
+  PiasEffectBinnen,
+  PiasEffectVoor,
+} from "./pias/PiasEffect";
+import {
   GoatEffectAchter,
   GoatEffectBinnen,
   GoatEffectVoor,
@@ -2067,7 +2072,8 @@ export function FutKaart({
     (tier?.key === "dictator" && !editie) ||
     (tier?.key === "legende" && !editie) ||
     editie === "icon" ||
-    editie === "piet"
+    editie === "piet" ||
+    editie === "pias"
       ? null
       : ornament;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
@@ -2190,6 +2196,9 @@ export function FutKaart({
             master en verdwijnen hier achter kaart en frame. */}
         {tier?.key === "legende" && !editie && <GoatEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
+        {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
+            achter kaart en frame. */}
+        {editie === "pias" && <PiasEffectAchter />}
         {/* On Fire-backlaag: één coherent vulkaanartwork achter kaart en
             frame. De metalen vinnen hierboven blijven als eigen ornament. */}
         {editie === "onfire" && <OnfireEffectAchter />}
@@ -2212,6 +2221,9 @@ export function FutKaart({
                     binnenmasker laat er alleen de bergscene van door. */}
                 {tier?.key === "legende" && !editie && <GoatEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
+                {/* Dezelfde pias-master, geclipt door het echte schild; de
+                    inhoud rendert erná en blijft dus leesbaar. */}
+                {editie === "pias" && <PiasEffectBinnen />}
                 {/* Dezelfde On Fire-master in het echte kaartvlak. De inhoud
                     rendert erna en behoudt dus zijn contrast en interactie. */}
                 {editie === "onfire" && <OnfireEffectBinnen />}
@@ -2262,6 +2274,9 @@ export function FutKaart({
             schildpunt liggen vóór het frame. */}
         {tier?.key === "legende" && !editie && <GoatEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
+        {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
+            komen via het frontmask vóór het frame. */}
+        {editie === "pias" && <PiasEffectVoor />}
         {/* Beperkte basalt- en eruptiedelen vóór het frame; crest en
             puntmedaillon blijven via hun hogere z-index leesbaar. */}
         {editie === "onfire" && <OnfireEffectVoor />}
