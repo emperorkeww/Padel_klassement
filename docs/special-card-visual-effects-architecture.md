@@ -875,14 +875,22 @@ De gedeelde registratie staat uitsluitend op `.fut-kaart--icon`:
 --bigdaddy-master-rotate: 0deg;
 ```
 
-`bigdaddy-inside-mask.svg` laat binnen het schild alleen wolken, linten en
+`bigdaddy-inside-mask.webp` laat binnen het schild alleen wolken, linten en
 ondergloed door; daardoor verschijnt de teddy niet als bleke afdruk in het
-kaartvlak. `bigdaddy-front-mask.svg` selecteert de kroon, de volledige maar
+kaartvlak. `bigdaddy-front-mask.webp` selecteert de kroon, de volledige maar
 naar de buitenflank verplaatste teddy, de ballonpartijen, de pluchen ster, het
 onderste medaillon en twee lintpartijen vóór het frame. Dit is een belangrijk
 verschil met een masker dat slechts een halve teddy toont: samengestelde
 herkenbare objecten worden in het artwork zelf responsief veilig geplaatst en
 niet geometrisch doormidden geknipt.
+
+Beide maskers zijn raster in plaats van SVG, omdat hun vorm de **alfa van de
+onderdelen zelf** is. Een eerdere versie tekende SVG-vormen op de bounding box
+van elk onderdeel; daarmee schilderde de frontlaag hele rechthoeken artwork
+(wolk, gloed, naburige onderdelen) over kaart en frame, met rechte randen dwars
+over de lijst — exact de fout die stap 7 hieronder verbiedt. Wie dit patroon
+kopieert: houd de versterkingsfactor op de alfa laag (1,3–1,8), anders wordt de
+geveerde snederand van een onderdeel alsnog een rechte kant in het masker.
 
 **Gegenereerde master en maskers (#834).** Big Daddy is de eerste editie waar
 master én maskers uit één script komen:
@@ -923,6 +931,14 @@ editie terugkomen:
   RGBA-buffer. Sharps `dest-in` liet de gemaskeerde randen in deze pijplijn
   ongemoeid en `modulate` gooide het alfakanaal plat — beide leverden een
   onderdeel dat als dichte rechthoek op de kaart landde.
+
+Twee CSS-details die de aansluiting maken: het matelas-weefsel zit in de
+`background` van `.fut-kaart__vlak` en niet in een `::after`, want een
+pseudo-element schildert ná de kaartinhoud — daar lag de ruit over de avatar en
+de letters. En de icon-editie krijgt een magenta getinte contactschaduw in
+plaats van de gedeelde donkergroene: tegen roze artwork las die als een donkere
+goot tussen kaart en decor, waardoor de ornamenten niet meer op de lijst leken
+aan te sluiten.
 
 **Kaartvlak (#834).** Naast het artwork week ook de skin af: het vlak stond op
 bijna-wit met de gedeelde stralenkrans, terwijl de referentie verzadigd roze

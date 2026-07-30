@@ -81,9 +81,9 @@
 
 .bigdaddy-effect--binnen .bigdaddy-effect__master {
   opacity: 0.16;
-  -webkit-mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100%
+  -webkit-mask: url("./assets/bigdaddy-inside-mask.webp") center / 100% 100%
     no-repeat;
-  mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100% no-repeat;
+  mask: url("./assets/bigdaddy-inside-mask.webp") center / 100% 100% no-repeat;
 }
 
 /* Alleen geselecteerde kroon-, teddy-, ballon-, ster- en medaillondelen
@@ -93,9 +93,9 @@
 }
 
 .bigdaddy-effect--voor .bigdaddy-effect__master {
-  -webkit-mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100%
+  -webkit-mask: url("./assets/bigdaddy-front-mask.webp") center / 100% 100%
     no-repeat;
-  mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100% no-repeat;
+  mask: url("./assets/bigdaddy-front-mask.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(
     0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
       rgba(62, 8, 37, 0.82)

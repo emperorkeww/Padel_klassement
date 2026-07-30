@@ -45,6 +45,11 @@ const CANVAS_H = Math.round(KAART_H * 1.36); // 1727
 const KAART_X = Math.round(KAART_B * MARGE_L); // 183
 const KAART_Y = Math.round(KAART_H * MARGE_T); // 279
 
+// De maskers gaan verkleind de repo in: ze zijn per definitie zacht en de CSS
+// rekt ze naar 100% × 100%. Op volle resolutie kostten ze samen 112 kB en dat
+// duwde het bundelbudget (assetBudget.test.ts) eroverheen.
+const MASKER_DELER = 3;
+
 /** Kaartfractie → canvaspixel. u langs de kaartbreedte, v langs de kaarthoogte. */
 const px = (u) => Math.round(KAART_X + u * KAART_B);
 const py = (v) => Math.round(KAART_Y + v * KAART_H);
@@ -296,18 +301,23 @@ async function bouwOnderdeel(o) {
       .toBuffer();
   }
 
+  // De alfa van het geplaatste onderdeel; hieruit volgen de maskers, zodat een
+  // occlusie de contour van het object krijgt en niet die van zijn kader.
+  const alfa = await sharp(buf).ensureAlpha().extractChannel(3).raw().toBuffer();
+
   return {
     laag: { input: buf, left: px(o.naar.u), top: py(o.naar.v) },
     vak: { x: px(o.naar.u), y: py(o.naar.v), b: doelB, h: doelH },
+    alfa,
   };
 }
 
 const lagen = [];
-const vakken = [];
+const stukken = [];
 for (const o of ONDERDELEN) {
-  const { laag, vak } = await bouwOnderdeel(o);
+  const { laag, vak, alfa } = await bouwOnderdeel(o);
   lagen.push(laag);
-  if (o.voor) vakken.push({ naam: o.naam, vak, voor: o.voor });
+  stukken.push({ naam: o.naam, vak, alfa, voor: o.voor });
 }
 
 const master = await sharp({
@@ -325,70 +335,98 @@ const master = await sharp({
 await sharp(master).webp({ quality: 80, alphaQuality: 90 }).toFile(DOEL);
 console.log(`${DOEL} — ${CANVAS_B}x${CANVAS_H}`);
 
-// ── De twee maskers volgen uit dezelfde geometrie ──────────────────────────────
-// Ze zijn afgeleid, geen handwerk: een frontmasker dat niet met de compositie
-// meeschuift, laat een object halveren of legt juist de kaartinhoud toe.
+// ── De twee maskers volgen de alfa van de onderdelen ──────────────────────────
+// Ze zijn afgeleid, geen handwerk. Belangrijker nog: ze volgen de contour van de
+// objecten en niet hun kader. Een masker op kadervorm liet de frontlaag hele
+// rechthoeken artwork (wolk, gloed, naburige onderdelen) over kaart en frame
+// schilderen — een halftransparant vlak met rechte randen dwars over de lijst,
+// precies wat §12/stap 7 verbiedt.
 
-/** Afgeronde rechthoek als pad; de radius houdt de occlusie organisch. */
-const bolVak = (x, y, b, h) => {
-  const r = Math.round(Math.min(b, h) * 0.3);
-  return `M${x + r} ${y} H${x + b - r} Q${x + b} ${y} ${x + b} ${y + r} V${y + h - r} Q${x + b} ${y + h} ${x + b - r} ${y + h} H${x + r} Q${x} ${y + h} ${x} ${y + h - r} V${y + r} Q${x} ${y} ${x + r} ${y} Z`;
-};
+/** Leeg maskerkanaal ter grootte van het canvas. */
+const leegMasker = () => new Uint8Array(CANVAS_B * CANVAS_H);
 
-const frontPaden = vakken.flatMap(({ naam, vak, voor }) =>
-  voor.map((s) => {
-    const x = Math.round(vak.x + s.x0 * vak.b);
-    const y = Math.round(vak.y + s.y0 * vak.h);
-    const b = Math.round((s.x1 - s.x0) * vak.b);
-    const h = Math.round((s.y1 - s.y0) * vak.h);
-    // Iets ruimer dan het onderdeel: de zachte maskerrand mag de gloed rond het
-    // object niet afknippen, want dan ontstaat er tóch een rechte kant.
-    const marge = Math.round(Math.min(b, h) * 0.06);
-    return `    <!-- ${naam} -->\n    <path d="${bolVak(x - marge, y - marge, b + 2 * marge, h + 2 * marge)}" />`;
-  }),
-);
+/** Zet de alfa van één onderdeel in een maskerkanaal.
+ *  `versterk` tilt de halftransparante gloedrand iets op, maar blijft laag: bij
+ *  een hoge factor wordt de geveerde snederand van een onderdeel weer een rechte
+ *  kant in het masker. Zo dooft het masker exact mee met het artwork.
+ *  `vak` beperkt de selectie tot een deel van het onderdeel, met een zachte
+ *  overgang: het lint duikt daardoor weg achter het frame in plaats van te
+ *  worden afgeknipt. */
+function stempel(masker, stuk, vak, versterk) {
+  const { x: vx, y: vy, b, h } = stuk.vak;
+  const x0 = vak ? vak.x0 * b : 0;
+  const x1 = vak ? vak.x1 * b : b;
+  const y0 = vak ? vak.y0 * h : 0;
+  const y1 = vak ? vak.y1 * h : h;
+  // Overgangsbreedte van de vakrand: ruim genoeg om als "achter het frame
+  // schuiven" te lezen, niet zo ruim dat het object halveert.
+  const ramp = Math.max(24, Math.round(Math.min(b, h) * 0.12));
 
-const frontSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_B} ${CANVAS_H}">
-  <!-- Gegenereerd door scripts/bigdaddy-master-compose.mjs — niet met de hand
-       bijwerken. Elke vorm hoort bij een onderdeel met een \`voor\`-selectie:
-       complete objecten mogen vóór het frame komen, de wolken en het middenstuk
-       van het rechterlint blijven eronder. -->
-  <defs>
-    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="12" />
-    </filter>
-  </defs>
-  <g fill="#fff" filter="url(#soft)">
-${frontPaden.join("\n")}
-  </g>
-</svg>
-`;
-await writeFile(resolve(ASSETS, "bigdaddy-front-mask.svg"), frontSvg);
+  for (let y = 0; y < h; y += 1) {
+    const cy = vy + y;
+    if (cy < 0 || cy >= CANVAS_H) continue;
+    const fy = Math.min(soepel((y - y0) / ramp), soepel((y1 - y) / ramp));
+    if (fy <= 0) continue;
+    for (let x = 0; x < b; x += 1) {
+      const cx = vx + x;
+      if (cx < 0 || cx >= CANVAS_B) continue;
+      const a = stuk.alfa[y * b + x];
+      if (a === 0) continue;
+      const f = fy * Math.min(soepel((x - x0) / ramp), soepel((x1 - x) / ramp));
+      if (f <= 0) continue;
+      const v = Math.min(255, a * versterk) * f;
+      const i = cy * CANVAS_B + cx;
+      if (v > masker[i]) masker[i] = v;
+    }
+  }
+}
 
-// Het binnenmasker is de omgekeerde vorm: alleen de randgebonden feestwaas mag
-// in het schild, het midden blijft vrij voor rating, avatar, naam en editie.
-const holte = {
-  x: px(0.09),
-  y: py(0.1),
-  b: Math.round(0.82 * KAART_B),
-  h: Math.round(0.8 * KAART_H),
-};
-const insideSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CANVAS_B} ${CANVAS_H}">
-  <!-- Gegenereerd door scripts/bigdaddy-master-compose.mjs — niet met de hand
-       bijwerken. Eén pad met fill-rule="evenodd": CSS-maskers lezen de alfa, dus
-       een zwart vlak zou hier niets verbergen. -->
-  <defs>
-    <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
-      <feGaussianBlur stdDeviation="30" />
-    </filter>
-  </defs>
-  <path fill="#fff" fill-rule="evenodd" filter="url(#soft)"
-    d="M${px(-0.06)} ${py(-0.04)} H${px(1.06)} V${py(1.04)} H${px(-0.06)} Z
-       ${bolVak(holte.x, holte.y, holte.b, holte.h)}" />
-</svg>
-`;
-await writeFile(resolve(ASSETS, "bigdaddy-inside-mask.svg"), insideSvg);
-console.log("maskers bijgewerkt");
+/** Maskerkanaal → WebP met wit RGB en de vorm in de alfa. CSS-maskers lezen de
+ *  alfa; een raster is hier het juiste medium, want de vorm komt uit het
+ *  artwork zelf en niet uit een pad. Verkleind met MASKER_DELER: een masker is
+ *  per definitie zacht en de CSS rekt hem toch naar 100% × 100%. */
+async function schrijfMasker(masker, bestand, waas) {
+  const rgba = Buffer.alloc(CANVAS_B * CANVAS_H * 4);
+  for (let i = 0; i < masker.length; i += 1) {
+    rgba[i * 4] = 255;
+    rgba[i * 4 + 1] = 255;
+    rgba[i * 4 + 2] = 255;
+    rgba[i * 4 + 3] = masker[i];
+  }
+  await sharp(rgba, { raw: { width: CANVAS_B, height: CANVAS_H, channels: 4 } })
+    .blur(waas)
+    .resize({ width: Math.round(CANVAS_B / MASKER_DELER) })
+    .webp({ quality: 24, alphaQuality: 82 })
+    .toFile(resolve(ASSETS, bestand));
+}
+
+// Frontmasker: alleen onderdelen met een `voor`-selectie, op hun eigen contour.
+const front = leegMasker();
+for (const stuk of stukken) {
+  if (!stuk.voor) continue;
+  for (const vak of stuk.voor) stempel(front, stuk, vak, 1.8);
+}
+await schrijfMasker(front, "bigdaddy-front-mask.webp", 5);
+
+// Binnenmasker: álle onderdelen, maar gedempt naar het midden toe. De demping is
+// radiaal (geen rechthoek): rating, avatar, naam en editieregel blijven vrij
+// zonder dat er een geometrische rand in het kaartvlak verschijnt.
+const binnen = leegMasker();
+for (const stuk of stukken) stempel(binnen, stuk, null, 1.3);
+const midX = KAART_X + KAART_B / 2;
+const midY = KAART_Y + KAART_H / 2;
+for (let y = 0; y < CANVAS_H; y += 1) {
+  for (let x = 0; x < CANVAS_B; x += 1) {
+    const i = y * CANVAS_B + x;
+    if (binnen[i] === 0) continue;
+    const dx = (x - midX) / (KAART_B * 0.5);
+    const dy = (y - midY) / (KAART_H * 0.5);
+    const r = Math.sqrt(dx * dx + dy * dy);
+    binnen[i] = Math.round(binnen[i] * soepel((r - 0.52) / 0.34));
+  }
+}
+await schrijfMasker(binnen, "bigdaddy-inside-mask.webp", 22);
+console.log("maskers bijgewerkt (front + inside, op objectcontour)");
 
 if (process.argv.includes("--preview")) {
   const uit = process.env.PREVIEW_UIT ?? resolve(here, "../bigdaddy-preview.png");

@@ -55,17 +55,27 @@ respectievelijk de randen ongemoeid en het alfakanaal plat.
 
 ## Maskers
 
-`bigdaddy-front-mask.svg` en `bigdaddy-inside-mask.svg` worden door hetzelfde
-script gegenereerd en zijn dus afgeleid, geen handwerk:
+`bigdaddy-front-mask.webp` en `bigdaddy-inside-mask.webp` worden door hetzelfde
+script gegenereerd en zijn dus afgeleid, geen handwerk. Ze zijn raster en geen
+SVG, omdat hun vorm **de alfa van de onderdelen zelf** is:
 
-- het frontmasker bevat één vorm per onderdeel met een `voor`-selectie.
+- het frontmasker stempelt de alfa van elk onderdeel met een `voor`-selectie.
   Complete objecten mogen vóór het frame komen; de wolken en het middenstuk van
   het rechterlint blijven eronder, waardoor het satijn zichtbaar achter én vóór
   het frame weeft;
-- het binnenmasker is de omgekeerde vorm: alleen de randgebonden feestwaas mag
-  in het schild, het midden blijft vrij. Het is één pad met
-  `fill-rule="evenodd"`, want CSS-maskers lezen de alfa — een zwart vlak zou
-  daar niets verbergen.
+- het binnenmasker stempelt álle onderdelen en dempt die radiaal naar het
+  midden, zodat alleen de randgebonden feestwaas in het schild komt en rating,
+  avatar, naam en editieregel vrij blijven.
+
+Een eerdere versie gebruikte SVG-vormen op de bounding box van elk onderdeel.
+Dat is precies de fout die §12/stap 7 verbiedt: de frontlaag schilderde daardoor
+hele rechthoeken artwork (wolk, gloed, naburige onderdelen) over kaart en frame,
+met rechte randen dwars over de lijst. Een masker op objectcontour kan dat niet.
+
+Twee details die daarbij horen: de versterkingsfactor blijft laag (1,3–1,8), want
+een hoge factor maakt de geveerde snederand van een onderdeel weer een rechte
+kant in het masker; en de maskers staan op halve resolutie, omdat ze per
+definitie zacht zijn en de CSS ze naar 100% × 100% rekt.
 
 Werk ze niet met de hand bij: de volgende scriptrun overschrijft dat.
 

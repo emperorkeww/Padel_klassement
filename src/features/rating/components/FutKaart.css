@@ -1079,6 +1079,13 @@
     inset 0 0 0 2.5px rgba(201, 154, 63, 0.75),
     inset 0 0 0 4px rgba(221, 107, 162, 0.55);
 }
+/* Contactschaduw in magenta i.p.v. het gedeelde donkergroen (#834): tegen het
+   roze artwork las die schaduw als een donkere goot tussen kaart en decor,
+   waardoor de ornamenten niet meer op de lijst leken aan te sluiten. */
+.fut-kaart.fut-kaart--icon .fut-kaart__zijde {
+  filter: var(--kaart-echo, ) var(--kaart-randgloed, )
+    drop-shadow(0 3px 6px rgba(74, 8, 42, 0.3));
+}
 .fut-kaart.fut-kaart--icon .fut-kaart__zijde {
   /* #834: goud-dominant i.p.v. roze-dominant. De referentie draagt een
      champagnegouden profiel met roze weerschijn; op het oude verloop las de
@@ -1106,6 +1113,22 @@
 }
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak {
   background:
+    /* Matelas (#834): een gequilt ruitraster met een lichte stiklijn en een
+       magenta schaduwlijn ernaast — het satijnkussen uit de referentie. De
+       periode hangt aan --fut-kw, zodat de ruit van veldmaat tot poster
+       dezelfde verhouding houdt en niet in moiré valt. */
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.34) 0 1px,
+      rgba(160, 20, 82, 0.1) 1px 2px,
+      transparent 2px calc(var(--fut-kw) * 0.047)
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.34) 0 1px,
+      rgba(160, 20, 82, 0.1) 1px 2px,
+      transparent 2px calc(var(--fut-kw) * 0.047)
+    ),
     radial-gradient(
       circle at 8% 28%,
       rgba(255, 255, 255, 0.2) 0 3%,
@@ -1135,24 +1158,13 @@
       var(--kaart-lo) 100%
     );
 }
-/* Matelas i.p.v. de gedeelde stralenkrans (#834): een gequilt ruitraster met
-   een lichte stiklijn en een magenta schaduwlijn ernaast — het satijnkussen
-   uit de referentie. De periode hangt aan --fut-kw, zodat de ruit van
-   veldmaat tot poster dezelfde verhouding houdt en niet in moiré valt. */
+/* De gedeelde satijn-::after uit: het matelas is dit register zijn weefsel en
+   twee weefsels over elkaar wordt druk (zelfde keuze als pias en Piet). Het
+   raster zit in de vlak-achtergrond hierboven en niet in dit pseudo-element,
+   want ::after schildert ná de kaartinhoud — daar lag de ruit over de avatar
+   en de letters. */
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak::after {
-  background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.34) 0 1px,
-      rgba(160, 20, 82, 0.1) 1px 2px,
-      transparent 2px calc(var(--fut-kw) * 0.047)
-    ),
-    repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.34) 0 1px,
-      rgba(160, 20, 82, 0.1) 1px 2px,
-      transparent 2px calc(var(--fut-kw) * 0.047)
-    );
+  background: none;
 }
                                                                                                                                                                                                  
 .fut-kaart.fut-kaart--icon .fut-kaart__vlak::before {

@@ -7,6 +7,19 @@ import { tierFor } from "@/features/rating/tiers";
 
 const lees = (pad: string) => readFileSync(resolve(process.cwd(), pad), "utf8");
 
+/** Canvasmaat uit de VP8X-chunk van een uitgebreide WebP (breedte-1/hoogte-1 als
+ *  24-bit little-endian). Genoeg om te bewaken dat master en maskers op één
+ *  raster staan, zonder een beeldbibliotheek in de test te trekken. */
+function webpMaat(pad: string): { breedte: number; hoogte: number } {
+  const buf = readFileSync(resolve(process.cwd(), pad));
+  expect(buf.toString("ascii", 0, 4), `${pad} is geen RIFF-bestand`).toBe("RIFF");
+  expect(buf.toString("ascii", 12, 16), `${pad} mist de VP8X-chunk`).toBe("VP8X");
+  return {
+    breedte: buf.readUIntLE(24, 3) + 1,
+    hoogte: buf.readUIntLE(27, 3) + 1,
+  };
+}
+
 describe("Big Daddy-mastereffect", () => {
   it("gebruikt één bron voor achter, binnen en voor", () => {
     const { container } = render(
@@ -92,17 +105,26 @@ describe("Big Daddy-mastereffect", () => {
       canvasBreed,
     );
 
-    // Beide maskers moeten op de viewBox van datzelfde canvas staan.
-    const viewBox = `viewBox="0 0 ${Math.round(kaartB * canvasBreed)} ${Math.round(
-      kaartH * canvasHoog,
-    )}"`;
+    // Master en maskers moeten op hetzelfde raster staan. De maskers gaan
+    // verkleind de repo in (zacht van aard, en de CSS rekt ze naar 100% × 100%),
+    // dus met precies de deler uit het script.
+    const deler = getal(script, /const MASKER_DELER = (\d+);/);
+    const map = "src/features/rating/components/bigdaddy/assets";
+    const master = webpMaat(`${map}/bigdaddy-master.webp`);
+    expect(master.breedte).toBe(Math.round(kaartB * canvasBreed));
+    expect(master.hoogte).toBe(Math.round(kaartH * canvasHoog));
+
     for (const naam of ["front", "inside"]) {
+      const masker = webpMaat(`${map}/bigdaddy-${naam}-mask.webp`);
+      expect(masker.breedte, `${naam}-mask staat op een ander raster`).toBe(
+        Math.round(master.breedte / deler),
+      );
       expect(
-        lees(
-          `src/features/rating/components/bigdaddy/assets/bigdaddy-${naam}-mask.svg`,
+        Math.abs(
+          masker.hoogte / masker.breedte - master.hoogte / master.breedte,
         ),
-        `${naam}-mask staat op een andere viewBox`,
-      ).toContain(viewBox);
+        `${naam}-mask heeft een andere beeldverhouding dan de master`,
+      ).toBeLessThan(0.01);
     }
   });
 
