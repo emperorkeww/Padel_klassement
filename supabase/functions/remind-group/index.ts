@@ -12,6 +12,13 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import {
+  GROEP_HERINNERING,
+  kiesTitel,
+  kiesUit,
+  roastSeed,
+  TITEL_GROEP_HERINNERING,
+} from "../_shared/roast.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -131,10 +138,15 @@ Deno.serve(async (req) => {
   // Herinner iedereen zonder enige stem — behalve de aanroeper zelf.
   const recipients = memberIds.filter((id) => id !== uid && !responded.has(id));
 
+  // Tekst en titel uit een pool (#189). De seed draagt het aantal stemmers mee:
+  // wie de groep een tweede keer aanstoot nadat er iemand gestemd heeft, stuurt
+  // een andere regel de deur uit in plaats van exact dezelfde melding.
+  const seed = roastSeed(pollId, uid, String(responded.size));
   const sent = await pushTo(recipients, {
-    title: "Speel je mee? 🎾",
-    body: "Er loopt een speeldag-poll — laat weten wanneer je kunt.",
+    title: kiesTitel(TITEL_GROEP_HERINNERING, pollId, String(responded.size)),
+    body: kiesUit(GROEP_HERINNERING, seed),
     url: `/groepen/${groupId}?tab=plannen`,
+    tag: `poll-${pollId}`,
   });
 
   return json({ reminded: recipients.length, sent });

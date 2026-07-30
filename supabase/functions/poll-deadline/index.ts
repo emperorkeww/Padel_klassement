@@ -22,6 +22,15 @@ import webpush from "npm:web-push@3.6.7";
 import { cronGuard } from "../_shared/cronAuth.ts";
 import { dagInZone } from "../_shared/klok.ts";
 import {
+  kiesTitel,
+  kiesUit,
+  POLL_LAATSTE_KANS,
+  roastSeed,
+  SPEELDAG_VANDAAG,
+  TITEL_LAATSTE_KANS,
+  TITEL_SPEELDAG,
+} from "../_shared/roast.ts";
+import { RONDE_MIN, rondesVoorDuur } from "../_shared/speeldagRondes.ts";
   magRondesZetten,
   RONDE_MIN,
   rondesVoorDuur,
@@ -296,10 +305,14 @@ Deno.serve(async (req) => {
         const silent = (members ?? [])
           .map((m) => m.player_id)
           .filter((id) => !voted.has(id));
+        // Tekst en titel uit een pool (#189): deze push ging altijd woord voor
+        // woord hetzelfde de deur uit. Geseed op de poll, zodat één poll bij
+        // elke ontvanger dezelfde regel krijgt (het is één groepsmelding).
         result.lastCall += await pushTo(silent, {
-          title: "Laatste kans om te stemmen ⏳",
-          body: "De speeldag-poll sluit binnenkort — laat weten wanneer je kunt.",
+          title: kiesTitel(TITEL_LAATSTE_KANS, poll.id),
+          body: kiesUit(POLL_LAATSTE_KANS, roastSeed(poll.id, "laatste-kans")),
           url: `/groepen/${poll.group_id}?tab=plannen`,
+          tag: `poll-${poll.id}`,
         });
         await admin
           .from("play_polls")
@@ -379,13 +392,14 @@ Deno.serve(async (req) => {
       const geboekt = poll.status === "booked";
       const code = geboekt ? poll.access_code : null;
       result.dayOf += await pushTo(players, {
-        title: "Vandaag padel 🎾",
+        title: kiesTitel(TITEL_SPEELDAG, poll.id),
         body:
           `Jullie spelen om ${locked.start_time}` +
           (geboekt ? " — baan geboekt ✓" : " — vergeet de baan niet te boeken") +
           (code ? ` · code ${code}` : "") +
-          ".",
+          `. ${kiesUit(SPEELDAG_VANDAAG, roastSeed(poll.id, "speeldag"))}`,
         url: `/groepen/${poll.group_id}?tab=plannen`,
+        tag: `poll-${poll.id}`,
       });
       await admin
         .from("play_polls")
