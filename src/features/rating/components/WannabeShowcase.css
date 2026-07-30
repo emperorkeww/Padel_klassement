@@ -1,0 +1,69 @@
+/* Reproduceerbare visuele teststage voor de Wannabe-breakout. De ruimte boven
+   de kaart draagt de racketcrest die boven de bovenrand uitsteekt; links en
+   rechts hangen de plakstroken, de "ALMOST THERE?"-notitie en het
+   "NOT BAD"-briefje over het frame — precies zoals in
+   docs/referentie_wannabe.png. */
+
+.wannabe-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 110px 0 40px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(196, 158, 90, 0.16), transparent 52%),
+    #14100a;
+}
+
+.wannabe-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.wannabe-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+
+.wannabe-showcase__titel {
+  margin: 90px 0 0;
+  color: #f0e2bf;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.wannabe-showcase__uitleg {
+  margin: 0;
+  color: #b39a6b;
+  font-size: 19px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .wannabe-showcase {
+    padding-top: 20vw;
+  }
+
+  .wannabe-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .wannabe-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .wannabe-showcase__titel {
+    margin-top: 20vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .wannabe-showcase__uitleg {
+    max-width: 88vw;
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}

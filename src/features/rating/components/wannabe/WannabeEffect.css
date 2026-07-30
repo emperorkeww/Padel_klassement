@@ -1,0 +1,132 @@
+/* De drie instanties delen bewust één register. Selectie gebeurt met de
+   bestaande schildclip en het frontmasker, nooit met een afwijkende transform.
+   Het canvas van wannabe-master.webp is 1024 × 1440; het kaartvak daarin volgt
+   exact uit deze waarden — ze zijn de uitvoer van scripts/wannabe-master.py
+   (kaartvak x 82..942, y 150..1345) en dus een rekenuitkomst, geen smaak. */
+
+.fut-kaart.fut-kaart--goud {
+  --wannabe-master-left: -9.53%;
+  --wannabe-master-top: -12.55%;
+  --wannabe-master-width: 119.07%;
+  --wannabe-master-scale: 1;
+  --wannabe-master-rotate: 0deg;
+  --wannabe-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.wannabe-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.wannabe-effect__master {
+  position: absolute;
+  left: var(--wannabe-master-left);
+  top: var(--wannabe-master-top);
+  width: var(--wannabe-master-width);
+  transform: rotate(var(--wannabe-master-rotate))
+    scale(var(--wannabe-master-scale));
+  transform-origin: 0 0;
+}
+
+.wannabe-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Expliciete paintvolgorde binnen de preserve-3d-flipper. De Wannabe heeft geen
+   losse divisieornamenten meer: folieranden, crest en medaillon leven in de
+   master. */
+.fut-kaart.fut-kaart--goud .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.wannabe-effect--achter {
+  z-index: 0;
+}
+
+/* De negatieve inset herstelt de volledige 100×139-kaartstage nadat de
+   binnenlaag door frame, liner en keyline naar binnen is genest. */
+.wannabe-effect--binnen {
+  inset: calc(-1 * var(--wannabe-master-inset));
+  z-index: -1;
+}
+
+/* Binnen het schild is er geen masker nodig: het midden van het artwork is
+   content-veilig gesneden (scripts/wannabe-master.py laat de zones van de
+   referentie leeg) en de echte clip-path: var(--schild) doet de rest — precies
+   wat §6.3 van de architectuur aanbeveelt. Alleen iets gedempt, want vuil op een
+   crème vlak mag niet met de rating gaan concurreren. */
+.wannabe-effect--binnen .wannabe-effect__master {
+  opacity: 0.9;
+}
+
+/* Plakstroken, briefjes, medaillons, splinter, kroontje en druipers liggen vóór
+   de lijst. */
+.wannabe-effect--voor {
+  z-index: 3;
+}
+
+.wannabe-effect--voor .wannabe-effect__master {
+  -webkit-mask: url("./assets/wannabe-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/wannabe-front-mask.svg") center / 100% 100% no-repeat;
+  /* Contactschaduw op de gemaskeerde alfa: papier dat op een kaart geplakt zit
+     hoort een schaduw te hebben, en drop-shadow volgt de alfa dus zonder
+     rechthoekige doos. Warmbruin i.p.v. de gedeelde donkergroene: tegen crème
+     karton leest koud grijs als een goot tussen strook en kaart. */
+  filter: drop-shadow(
+    calc(var(--fut-kw) * -0.004) calc(var(--fut-kw) * 0.008)
+      calc(var(--fut-kw) * 0.01) rgba(46, 32, 16, 0.5)
+  );
+}
+
+/* Registratiedebug: /dev/wannabe?debugWannabe=1. */
+.wannabe-effect--debug {
+  outline: 1px dashed;
+}
+
+.wannabe-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.wannabe-effect--achter.wannabe-effect--debug {
+  outline-color: #ff4d5f;
+}
+
+.wannabe-effect--achter.wannabe-effect--debug::after {
+  background: #ff4d5f;
+}
+
+.wannabe-effect--binnen.wannabe-effect--debug {
+  outline-color: #64ff94;
+}
+
+.wannabe-effect--binnen.wannabe-effect--debug::after {
+  background: #64ff94;
+}
+
+.wannabe-effect--voor.wannabe-effect--debug {
+  outline-color: #47dfff;
+}
+
+.wannabe-effect--voor.wannabe-effect--debug::after {
+  background: #47dfff;
+}
+
+.wannabe-effect--debug .wannabe-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.74);
+}

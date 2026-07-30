@@ -1,6 +1,18 @@
-// Divisiekaart "Wannabe" (goud) — 1000–1099 — crème emaille, champagnefolie, imitatiegoud.
+// Divisiekaart "Wannabe" (goud) — 1000–1099.
 //
-// Het thema uit de referentie (#710) is overtuigende imitatie-luxe: op afstand
+// Twee registers in één bestand, en dat is met opzet:
+//
+// * het `register` (vlakkleuren, lijst, inkt) is in #834 omgezet naar verweerd
+//   karton met een walnoten lijst, gelijk met `goud.css` en met de
+//   referentiegestuurde breakout in `wannabe/WannabeEffect.css`. Dát is wat de
+//   live kaart en de poster laten zien;
+// * de ornamenten en het motief hieronder — folieranden, crest, medaillon,
+//   racketwatermerk — worden op de live kaart niet meer gemonteerd
+//   (`divisieLive` in FutKaart.tsx zet ze uit voor de goud-divisie zonder
+//   editie). Ze blijven staan voor de canvas-/posterfallback, precies zoals de
+//   pias-, Piet- en GOAT-vectoren dat doen.
+//
+// Het oude thema van die ornamenten was overtuigende imitatie-luxe: op afstand
 // een dure gouden kaart, van dichtbij verguld messing. Dat vraagt om twéé
 // materialen die net niet bij elkaar horen — lichte champagnefolie over dof
 // mosterdmessing — en om één eerlijk detail dat de illusie verraadt: het hoekje
@@ -587,46 +599,54 @@ const MOTIEF: readonly OrnamentPad[] = [
 export const DIVISIE_GOUD: DivisieKaart = {
   key: "goud",
   naam: "Wannabe",
-  // Spiegel van het `.fut-kaart--goud`-blok in goud.css; de synctest in
-  // goud.test.ts leest dat bestand in en houdt deze waarden eraan gelijk.
+  // Spiegel van het `.fut-kaart--goud`-blok in goud.css. Beide zijn in #834
+  // omgezet van champagnefolie naar verweerd karton met een walnoten lijst; zie
+  // de kop van goud.css voor waarom.
   //
   // Contrast (WCAG, berekend op de lichtste én de donkerste vlak-stop):
-  // ink #5c4310 op #fdf7e6 = 8,66:1 en op #e2cfa6 = 6,05:1; op de hoogte van de
-  // divisieregel (~78% van het vlak, dus ±#eadbb8) 6,76:1. inkSoft #6f5218 haalt
-  // 6,78:1 / 4,73:1 / 5,29:1 — ook de zwakste combinatie blijft dus boven AA
-  // (4,5:1) voor kleine tekst.
+  // ink #3c2b1a op #ece5d7 = 10,79:1 en op #c9bfae = 7,44:1; op de hoogte van de
+  // divisieregel (~78% van het vlak, dus ±#d4cab9) 8,34:1. inkSoft #5a4530 haalt
+  // 7,20:1 / 4,96:1 / 5,56:1 — ook de zwakste combinatie blijft dus boven AA
+  // (4,5:1) voor kleine tekst. De divisieregel zelf staat op zijn tanne strook
+  // (#4a3520 op ±#d8bf99 = 6,50:1); die strook staat in goud.css.
   register: {
     frame: [
-      [0, "#faefc6"],
-      [0.4, "#b3903f"],
-      [0.66, "#f6e7b0"],
-      [1, "#6d5119"],
+      [0, "#6d5539"],
+      [0.32, "#3c2b1c"],
+      [0.6, "#6a5236"],
+      [1, "#241a11"],
     ],
-    liner: "#4a3510",
-    keyline: "#f0dda2",
-    vlak: ["#fdf7e6", "#f3e7c9", "#e2cfa6"],
-    // Ongewijzigde topgloed van de basiskaart: op crème emaille leest dat wit al
-    // warm, dus goud.css laat de vlak-achtergrond met rust en zet alleen de drie
-    // stop-tokens — één plek minder waar DOM en poster uiteen kunnen lopen.
-    glow: "rgba(255, 255, 255, 0.5)",
-    // Iriserende glansbaan: in de CSS een baan met een zweem roze en cyaan, hier
-    // het champagne-gemiddelde ervan. Eén stop kan geen regenboog vangen —
-    // dezelfde afspraak als de shimmer-edities, die op de poster stilstaan.
-    sheen: "rgba(255, 250, 232, 0.3)",
-    sheenSpreiding: 0.12,
-    ink: "#5c4310",
-    inkSoft: "#6f5218",
-    lijn: "#c2a057",
-    // Verguld messing onder de folie: een mosterdgele echo rechtsonder verraadt
-    // de tweede laag zonder dat de kaart slordig wordt.
-    echo: [[0.014, 0.018, "rgba(179, 144, 63, 0.72)"]],
+    liner: "#e8dfce",
+    keyline: "#f2ead8",
+    vlak: ["#ece5d7", "#dfd6c6", "#c9bfae"],
+    // Randdiktes: de walnoten band is op de referentie ±2,9% van de
+    // kaartbreedte met een crème binnenband van 1,7% en een donkere haarlijn van
+    // 0,4%. Spiegel van de drie `--kaart-*-dikte`-clamps in goud.css.
+    randDiktes: [0.029, 0.017, 0.004],
+    // Flauwe lichtkern linksboven i.p.v. de gedeelde topgloed: de referentie
+    // licht op in de hoek waar de plaat in het licht hing.
+    glow: "rgba(255, 253, 244, 0.28)",
+    // Eén brede, bijna kleurloze streep. De iriserende folieband van vóór #834
+    // is weg: karton kantelt niet mee, en de referentie heeft geen glans maar
+    // slijtage.
+    sheen: "rgba(255, 252, 242, 0.16)",
+    sheenSpreiding: 0.2,
+    ink: "#3c2b1a",
+    inkSoft: "#5a4530",
+    lijn: "#8f7752",
+    // De plaat is dik en werpt schaduw op zijn eigen ondergrond.
+    echo: [[0.012, 0.016, "rgba(52, 38, 22, 0.62)"]],
+    // De donkere haarlijn tussen crème band en kaartvlak zit hier en niet in de
+    // keyline: die is per definitie licht (#666) en de canvasrenderer heeft daar
+    // een invariant op.
     binnenlijn: [
-      [1, "rgba(255, 249, 224, 0.8)"],
-      [2.5, "rgba(163, 128, 48, 0.55)"],
+      [2, "rgba(74, 53, 30, 0.58)"],
+      [3, "rgba(255, 250, 236, 0.4)"],
     ],
-    // Zachte zonnestralen achter het bovenvlak — de premium-krans, maar hier op
-    // een crème vlak, dus champagne in plaats van koud wit.
-    stralen: true,
+    // Geen stralenkrans: de referentie is een matte kartonplaat. Het vuil komt
+    // op de live kaart uit wannabe-master.webp; de poster houdt het bij de
+    // vlekwerking van `glow` en `echo`.
+    stralen: false,
   },
   gradienten: GRADIENTEN,
   achter: ACHTER,
