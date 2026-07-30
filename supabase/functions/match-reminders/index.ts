@@ -5,6 +5,10 @@
 // en wordt de rest van die avond stil afgevinkt. Afgehandelde matches worden
 // in public.match_reminders bijgehouden.
 //
+// Tweede taak (#804): zodra een match begonnen is, krijgt de partner van wie
+// zijn lef inzette een melding dat er naast hem dubbel of niets gespeeld wordt.
+// Vóór de aftrap blijft die inzet verborgen; dedup via public.match_lef_notices.
+//
 // Deploy ZONDER JWT-verificatie:
 //   supabase functions deploy match-reminders --no-verify-jwt
 // en beveilig met een gedeeld geheim:
@@ -22,12 +26,15 @@ import {
   JOUW_BEURT_NEUTRAAL,
   kiesTitel,
   kiesUit,
+  LEF_PARTNER,
   type RoastIntensiteit,
   roastSeed,
   TITEL_JOUW_BEURT,
+  TITEL_LEF_PARTNER,
 } from "../_shared/roast.ts";
 import { cronGuard } from "../_shared/cronAuth.ts";
 import { bundelPerSpeeldag } from "../_shared/reminderBundel.ts";
+import { onthullingenVoorPartners } from "../_shared/lefOnthulling.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -41,6 +48,11 @@ webpush.setVapidDetails(
 );
 
 const REMINDER_HOURS = Number(Deno.env.get("REMINDER_HOURS") ?? "3");
+/** Minuten ná de aftrap waarbinnen de lef-onthulling nog vertrekt (#804).
+ *  Ruimer dan de crontik (elk kwartier), zodat een match die net na een tik
+ *  begint niet tussen wal en schip valt; match_lef_notices houdt het daarna bij
+ *  één melding per match. */
+const LEF_NOTICE_MIN = Number(Deno.env.get("LEF_NOTICE_MINUTES") ?? "30");
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 // Clubtijd, dezelfde constante als poll-deadline en dayInZone in de client.
 const TIME_ZONE = "Europe/Brussels";
@@ -184,7 +196,81 @@ Deno.serve(async (req) => {
     onderdrukt += bundel.onderdruk.length;
   }
 
-  return new Response(JSON.stringify({ reminded, sent, onderdrukt }), {
+  // ── Lef-onthulling bij de aftrap (#804) ───────────────────────────────────
+  // Vóór de aftrap houdt de app een inzet verborgen, anders kun je erop
+  // meeliften. Zodra de match loopt hoort je partner te weten dat er naast hem
+  // dubbel of niets gespeeld wordt — dat verandert hoe je de match ingaat.
+  // Inzetten kan niet meer na de starttijd (match_stakes_guard), dus wat we hier
+  // vinden is definitief en één melding per match volstaat.
+  const sinds = new Date(now - LEF_NOTICE_MIN * 60_000).toISOString();
+  const { data: begonnen } = await admin
+    .from("matches")
+    .select("id, team_a_id, team_b_id, group_id, played_at")
+    .not("group_id", "is", null)
+    .gte("played_at", sinds)
+    .lte("played_at", nowIso);
+
+  let lefSent = 0;
+  const verse = (begonnen ?? []) as MatchRow[];
+  if (verse.length > 0) {
+    const { data: gemeld } = await admin
+      .from("match_lef_notices")
+      .select("match_id")
+      .in("match_id", verse.map((m) => m.id));
+    const al = new Set((gemeld ?? []).map((r) => r.match_id));
+    const nieuw = verse.filter((m) => !al.has(m.id));
+    if (nieuw.length > 0) {
+      const { data: stakes } = await admin
+        .from("match_stakes")
+        .select("match_id, player_id")
+        .in("match_id", nieuw.map((m) => m.id));
+      const { data: teams } = await admin
+        .from("teams")
+        .select("id, player1_id, player2_id")
+        .in("id", nieuw.flatMap((m) => [m.team_a_id, m.team_b_id]));
+      const onthullingen = onthullingenVoorPartners(
+        nieuw,
+        teams ?? [],
+        stakes ?? [],
+      );
+      if (onthullingen.length > 0) {
+        // Dezelfde voorkeur als de herinnering zelf (#57): wie match-meldingen
+        // uitzette, krijgt ook deze niet.
+        const mag = new Set(
+          await withReminderPref(onthullingen.map((o) => o.partnerId)),
+        );
+        const { data: namen } = await admin
+          .from("profiles")
+          .select("id, username, full_name")
+          .in("id", onthullingen.map((o) => o.inzetterId));
+        const naamVan = new Map(
+          (namen ?? []).map((p) => [
+            p.id,
+            (p.full_name?.trim() || p.username) as string,
+          ]),
+        );
+        for (const o of onthullingen) {
+          if (!mag.has(o.partnerId)) continue;
+          const naam = naamVan.get(o.inzetterId) ?? "Je partner";
+          lefSent += await pushTo([o.partnerId], {
+            title: kiesTitel(TITEL_LEF_PARTNER, o.matchId, o.partnerId),
+            body: `${naam} zette lef in: dubbel of niets. ${
+              kiesUit(LEF_PARTNER, roastSeed(o.matchId, o.partnerId))
+            }`,
+            url: `/matches/${o.matchId}`,
+            tag: `lef-${o.matchId}`,
+          });
+        }
+      }
+      // Ook matches zonder inzet afvinken: dan valt er niets te melden en hoeft
+      // de volgende crontik er niet meer naar te kijken.
+      await admin
+        .from("match_lef_notices")
+        .insert(nieuw.map((m) => ({ match_id: m.id })));
+    }
+  }
+
+  return new Response(JSON.stringify({ reminded, sent, onderdrukt, lef: lefSent }), {
     headers: { "content-type": "application/json" },
   });
 });

@@ -1,0 +1,150 @@
+/* Eén gedeeld geometrisch register voor back, inside en front. Maskers bepalen
+   selectie; geen enkele laag krijgt een afwijkende positie of schaal. */
+
+.fut-kaart.fut-kaart--icon {
+  --bigdaddy-master-left: -22%;
+  --bigdaddy-master-top: -34%;
+  --bigdaddy-master-width: 144%;
+  --bigdaddy-master-scale: 1;
+  --bigdaddy-master-rotate: 0deg;
+  --bigdaddy-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.bigdaddy-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.bigdaddy-effect__master {
+  position: absolute;
+  left: var(--bigdaddy-master-left);
+  top: var(--bigdaddy-master-top);
+  width: var(--bigdaddy-master-width);
+  transform: rotate(var(--bigdaddy-master-rotate))
+    scale(var(--bigdaddy-master-scale));
+  transform-origin: 0 0;
+}
+
+.bigdaddy-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.009) rgba(255, 241, 250, 0.34)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.032) rgba(238, 49, 143, 0.27)
+    );
+}
+
+/* Expliciete paintvolgorde binnen de preserve-3d-flipper. De oude live
+   vectorornamenten zijn voor Big Daddy niet gemount; de selectors blijven
+   bruikbaar voor divisie-ornamenten en de canvasfallback. */
+.fut-kaart.fut-kaart--icon
+  .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  z-index: 1;
+}
+
+.fut-kaart.fut-kaart--icon .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.fut-kaart.fut-kaart--icon .fut-kaart__ornament--voor {
+  z-index: 4;
+}
+
+/* De volledige feestmassa ligt achter kaart en frame. */
+.bigdaddy-effect--achter {
+  z-index: 0;
+}
+
+/* Het bestaande schildvlak is het exacte binnenmasker. De negatieve inset
+   reconstrueert de coördinaten van de volledige kaartstage. */
+.bigdaddy-effect--binnen {
+  inset: calc(-1 * var(--bigdaddy-master-inset));
+  z-index: -1;
+}
+
+.bigdaddy-effect--binnen .bigdaddy-effect__master {
+  opacity: 0.28;
+  -webkit-mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100% no-repeat;
+}
+
+/* Alleen geselecteerde kroon-, teddy-, ballon-, ster- en medaillondelen
+   liggen vóór het frame. Daartussen blijft genoeg goud/rosé frame zichtbaar. */
+.bigdaddy-effect--voor {
+  z-index: 3;
+}
+
+.bigdaddy-effect--voor .bigdaddy-effect__master {
+  -webkit-mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
+      rgba(62, 8, 37, 0.82)
+  );
+}
+
+.bigdaddy-effect--voor .bigdaddy-effect__master img {
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.006) rgba(79, 12, 49, 0.78)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.02) rgba(255, 113, 190, 0.36)
+    );
+}
+
+/* Registratiedebug: /dev/bigdaddy?debugBigDaddy=1. */
+.bigdaddy-effect--debug {
+  outline: 1px dashed;
+}
+
+.bigdaddy-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.bigdaddy-effect--achter.bigdaddy-effect--debug {
+  outline-color: #ff4d9d;
+}
+
+.bigdaddy-effect--achter.bigdaddy-effect--debug::after {
+  background: #ff4d9d;
+}
+
+.bigdaddy-effect--binnen.bigdaddy-effect--debug {
+  outline-color: #7dff9c;
+}
+
+.bigdaddy-effect--binnen.bigdaddy-effect--debug::after {
+  background: #7dff9c;
+}
+
+.bigdaddy-effect--voor.bigdaddy-effect--debug {
+  outline-color: #5de1ff;
+}
+
+.bigdaddy-effect--voor.bigdaddy-effect--debug::after {
+  background: #5de1ff;
+}
+
+.bigdaddy-effect--debug .bigdaddy-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.76);
+}

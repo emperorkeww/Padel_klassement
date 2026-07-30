@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+  <defs>
+    <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
+      <feGaussianBlur stdDeviation="14" />
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#soft)">
+    <!-- Wolk, kroonlicht en ballonverbinding aan de bovenzijde. -->
+    <path d="M-20 -20 H1044 V514 C880 474 736 446 512 466 C288 446 144 474 -20 514 Z" />
+    <!-- Linker linten; stopt vóór de lager geplaatste teddy. -->
+    <path d="M-24 300 C76 276 198 322 260 420 C278 520 256 650 224 826 C150 860 62 832 -24 774 Z" />
+    <!-- Rechter ballonkoorden, strik, linten en sterverbinding. -->
+    <path d="M746 286 C854 252 990 298 1048 392 V1370 C950 1412 842 1376 786 1288 C758 1110 790 954 758 804 C730 668 718 440 746 286 Z" />
+    <!-- Onderste hartgloed en satijnverbinding in de schildpunt. -->
+    <path d="M174 1180 C322 1134 702 1134 850 1180 L850 1558 H174 Z" />
+  </g>
+</svg>
