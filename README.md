@@ -285,7 +285,7 @@ Asynchrone processen en integraties buiten de client om worden afgehandeld via *
 | :--- | :--- |
 | `send-push` | Database webhook. Verstuurt Web-Push notificaties bij belangrijke events (zoals het starten van een nieuwe ronde of een ingevoerde uitslag). |
 | `match-reminders` | `pg_cron` schedule. Verstuurt automatisch een pushnotificatie X uur voor aanvang van een geplande wedstrijd. |
-| `poll-deadline` | `pg_cron` / webhook. Beheert de speeldag-polls: stuurt herinneringen naar niet-stemmers, sluit de poll automatisch op de deadline en zet kort vóór de start de Americano-rondes klaar als er nog geen zijn (per groep uit te zetten met `auto_rondes`). |
+| `poll-deadline` | `pg_cron` / webhook. Beheert de speeldag-polls: stuurt herinneringen naar niet-stemmers, sluit de poll automatisch op de deadline en zet op de ochtend van de speeldag (`POLL_ROUNDS_AT`, standaard 08:00 clubtijd) de Americano-rondes klaar als er nog geen zijn (per groep uit te zetten met `auto_rondes`). |
 | `remind-group` | Client-aanroep. Handmatige actie om groepsleden via een pushnotificatie te porren om te stemmen. |
 | `playtomic-availability` | Aangeroepen door de Cloudflare Worker (`env.PLAYTOMIC_EGRESS`). Egress-hop voor de baanbeschikbaarheid: Playtomic's WAF blokkeert Cloudflare-IP's maar laat Supabase-egress door (#385). Deployen met `--no-verify-jwt`. |
 

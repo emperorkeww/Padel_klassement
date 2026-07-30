@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { KLAARZET_MIN, RONDE_MIN, rondesVoorDuur } from "./speeldagRondes.ts";
+import {
+  KLAARZET_MIN,
+  RONDE_MIN,
+  rondesDrempel,
+  rondesVoorDuur,
+} from "./speeldagRondes.ts";
 // De client-tegenhanger: dezelfde getallen, andere boom.
 import * as client from "@/features/groups/speeldagRondes";
 
@@ -13,6 +18,25 @@ describe("rondesVoorDuur", () => {
   it("gaat nooit onder nul bij een onrealistisch kort blok", () => {
     expect(rondesVoorDuur(10)).toBe(0);
     expect(rondesVoorDuur(0)).toBe(0);
+  });
+});
+
+describe("rondesDrempel", () => {
+  const ochtend = Date.parse("2026-07-30T06:00:00Z"); // 08:00 in Brussel
+
+  it("laat een avondspeeldag 's ochtends al indelen", () => {
+    const start = Date.parse("2026-07-30T18:00:00Z"); // 20:00 in Brussel
+    expect(rondesDrempel(ochtend, start, 90)).toBe(ochtend);
+  });
+
+  it("valt voor een speeldag vóór het ochtenduur terug op het venster vlak vóór de start", () => {
+    const start = Date.parse("2026-07-30T05:00:00Z"); // 07:00 in Brussel
+    expect(rondesDrempel(ochtend, start, 90)).toBe(start - 90 * 60_000);
+  });
+
+  it("blijft nooit later dan het vangnet-venster, ook net ná het ochtenduur", () => {
+    const start = Date.parse("2026-07-30T07:00:00Z"); // 09:00 in Brussel
+    expect(rondesDrempel(ochtend, start, 90)).toBe(start - 90 * 60_000);
   });
 });
 
