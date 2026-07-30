@@ -1,0 +1,59 @@
+.ballenraper-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 62px 0 48px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(199, 162, 83, 0.25), transparent 47%),
+    #152418;
+}
+
+.ballenraper-showcase__stage {
+  width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.ballenraper-showcase__kaart.fut-kaart {
+  /* De referentie laat de zichtbare alpha-bounds circa 84% van het canvas
+     innemen. De master zelf is al op die alpha-bounds geregistreerd; hier
+     voorkwam alleen de oude vaste 450px-maat dat de kaart de beschikbare
+     stage ook werkelijk benutte. */
+  --fut-kw: min(600px, 84vw);
+}
+
+.ballenraper-showcase__titel {
+  margin: 38px 0 0;
+  color: #f0dfb1;
+  font-size: 34px;
+  font-weight: 850;
+}
+
+.ballenraper-showcase__uitleg {
+  margin: 0;
+  color: #adbb97;
+  font-size: 19px;
+}
+
+@media (max-width: 640px) {
+  .ballenraper-showcase {
+    padding-top: 9vw;
+  }
+
+  .ballenraper-showcase__stage {
+    width: 100%;
+  }
+
+  .ballenraper-showcase__titel {
+    margin-top: 10vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .ballenraper-showcase__uitleg {
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}
