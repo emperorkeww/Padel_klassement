@@ -220,6 +220,11 @@ import {
   OnfireEffectVoor,
 } from "./onfire/OnfireEffect";
 import {
+  DictatorEffectAchter,
+  DictatorEffectBinnen,
+  DictatorEffectVoor,
+} from "./dictator/DictatorEffect";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -1954,6 +1959,8 @@ const EDITIE_ORNAMENT: Record<string, OrnamentNaam | undefined> = {
 };
 const TIER_ORNAMENT: Record<string, OrnamentNaam | undefined> = {
   legende: "goat",
+  // Canvas/poster blijft deze vector gebruiken. De live Dictator-kaart
+  // onderdrukt hem hieronder ten gunste van dictator-master.webp.
   dictator: "dictator",
 };
 
@@ -2041,6 +2048,8 @@ export function FutKaart({
   // vlak wint; zonder zo'n editie hangt het ornament aan de tíer, dus een
   // GOAT met In-Form houdt zijn hoorns.
   const ornament = EDITIE_ORNAMENT[editie ?? ""] ?? TIER_ORNAMENT[tier?.key ?? ""] ?? null;
+  const ornamentLive =
+    tier?.key === "dictator" && !editie ? null : ornament;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
   // verdwijnen — de kroon en punt-edelsteen van Big Daddy, de lauwerkrans en
   // het lakzegel van El Padelissimo, de diamantcrest van de Kampioen, de kraag
@@ -2050,7 +2059,7 @@ export function FutKaart({
   // een medaillon in de punt zou achter het schild half verdwijnen. Sinds #772
   // geldt dat ook voor de GOAT: de hoorns blijven erachter (ze groeien uit de
   // bovenhoeken vandaan), het baardfiligraan ligt ervóór, in de kaartpunt.
-  const ornamentVoor = ornament;
+  const ornamentVoor = ornamentLive;
   // Divisie-ornament (#710): de negen basisdivisies hebben elk hun eigen crest,
   // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
@@ -2144,15 +2153,18 @@ export function FutKaart({
             <use href={`#fut-div-${divisie!.key}-achter`} />
           </svg>
         )}
-        {ornament && (
+        {ornamentLive && (
           <svg
             className="fut-kaart__ornament"
             viewBox={ORNAMENT_VIEWBOX}
             aria-hidden="true"
           >
+            {/* `ornamentLive` bepaalt óf de DOM-laag bestaat; de href blijft
+                op de gedeelde tabelwaarde voor canvas-/DOM-pariteit. */}
             <use href={`#fut-orn-${ornament}-achter`} />
           </svg>
         )}
+        {tier?.key === "dictator" && !editie && <DictatorEffectAchter />}
         {/* On Fire-backlaag: één coherent vulkaanartwork achter kaart en
             frame. De metalen vinnen hierboven blijven als eigen ornament. */}
         {editie === "onfire" && <OnfireEffectAchter />}
@@ -2167,6 +2179,9 @@ export function FutKaart({
                 <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
+                {tier?.key === "dictator" && !editie && (
+                  <DictatorEffectBinnen />
+                )}
                 {/* Dezelfde On Fire-master in het echte kaartvlak. De inhoud
                     rendert erna en behoudt dus zijn contrast en interactie. */}
                 {editie === "onfire" && <OnfireEffectBinnen />}
@@ -2211,6 +2226,7 @@ export function FutKaart({
             <use href={`#fut-div-${divisie.key}-voor`} />
           </svg>
         )}
+        {tier?.key === "dictator" && !editie && <DictatorEffectVoor />}
         {/* Beperkte basalt- en eruptiedelen vóór het frame; crest en
             puntmedaillon blijven via hun hogere z-index leesbaar. */}
         {editie === "onfire" && <OnfireEffectVoor />}

@@ -1,0 +1,145 @@
+/* De drie instanties delen bewust één register. Selectie gebeurt met de
+   bestaande schildclip en het frontmask, nooit met een afwijkende transform. */
+
+.fut-kaart.fut-kaart--dictator {
+  --dictator-master-left: -15%;
+  --dictator-master-top: -18%;
+  --dictator-master-width: 130%;
+  --dictator-master-scale: 1;
+  --dictator-master-rotate: 0deg;
+  --dictator-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.dictator-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.dictator-effect__master {
+  position: absolute;
+  left: var(--dictator-master-left);
+  top: var(--dictator-master-top);
+  width: var(--dictator-master-width);
+  transform: rotate(var(--dictator-master-rotate))
+    scale(var(--dictator-master-scale));
+  transform-origin: 0 0;
+}
+
+.dictator-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.008) rgba(255, 221, 139, 0.24)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.026) rgba(132, 7, 24, 0.28)
+    );
+}
+
+/* Expliciete paintvolgorde binnen de preserve-3d-flipper. Dictator heeft geen
+   losse vectorornamenten meer: pet, lauweren en ster leven in de master. */
+.fut-kaart.fut-kaart--dictator
+  .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  z-index: 1;
+}
+
+.fut-kaart.fut-kaart--dictator .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.fut-kaart.fut-kaart--dictator .fut-kaart__ornament--voor {
+  z-index: 4;
+}
+
+.dictator-effect--achter {
+  z-index: 0;
+}
+
+/* De negatieve inset herstelt de volledige 100×139-kaartstage nadat de
+   binnenlaag door frame, liner en keyline naar binnen is genest. */
+.dictator-effect--binnen {
+  inset: calc(-1 * var(--dictator-master-inset));
+  z-index: -1;
+}
+
+.dictator-effect--binnen .dictator-effect__master {
+  opacity: 0.16;
+}
+
+/* Pet, lauweren, stermedaille, tank, onderste rook en geselecteerde
+   lintplooien liggen vóór de relevante framedelen. */
+.dictator-effect--voor {
+  z-index: 3;
+}
+
+.dictator-effect--voor .dictator-effect__master {
+  -webkit-mask: url("./assets/dictator-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/dictator-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
+      rgba(5, 1, 1, 0.9)
+  );
+}
+
+.dictator-effect--voor .dictator-effect__master img {
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.007) rgba(8, 1, 1, 0.92)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.018) rgba(235, 166, 54, 0.25)
+    );
+}
+
+/* Registratiedebug: /dev/dictator?debugDictator=1. */
+.dictator-effect--debug {
+  outline: 1px dashed;
+}
+
+.dictator-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.dictator-effect--achter.dictator-effect--debug {
+  outline-color: #ff4d5f;
+}
+
+.dictator-effect--achter.dictator-effect--debug::after {
+  background: #ff4d5f;
+}
+
+.dictator-effect--binnen.dictator-effect--debug {
+  outline-color: #64ff94;
+}
+
+.dictator-effect--binnen.dictator-effect--debug::after {
+  background: #64ff94;
+}
+
+.dictator-effect--voor.dictator-effect--debug {
+  outline-color: #47dfff;
+}
+
+.dictator-effect--voor.dictator-effect--debug::after {
+  background: #47dfff;
+}
+
+.dictator-effect--debug .dictator-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.74);
+}

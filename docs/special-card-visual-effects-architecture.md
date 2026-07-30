@@ -32,6 +32,10 @@ Belangrijkste implementatiebestanden:
   — dezelfde architectuur toegepast op lava, vulkaan en rook.
 - [`ASSET_SPEC.md`](../src/features/rating/components/onfire/ASSET_SPEC.md) —
   het actuele On Fire-assetcontract.
+- [`DictatorEffect.tsx`](../src/features/rating/components/dictator/DictatorEffect.tsx)
+  en [`DictatorEffect.css`](../src/features/rating/components/dictator/DictatorEffect.css)
+  — dezelfde architectuur toegepast op vaandels, regimegloed, tank en
+  ceremonieel lint.
 
 ## 1. Context en visueel doel
 
@@ -812,6 +816,36 @@ De vaste controle gebeurt via `/dev/onfire`,
 in `screenshots/onfire/final-desktop.png` en
 `screenshots/onfire/final-mobile.png`.
 
+**El Padelissimo / Dictator**
+
+De Dictator-tier gebruikt dezelfde drie-masterstructuur via
+`DictatorEffect.tsx`. `dictator-master.webp` houdt de centrale kaartzone
+grotendeels transparant en combineert twee bordeauxrode vaandels achter de
+bovenhoeken, een gedetailleerde officierspet, donkere goudrode rook en
+embers, volle gouden lauwerkransen, een rood-gouden stermedaille, een
+compacte tank linksonder en een doorlopend ceremonieel lint onder/rechts. De
+vroegere Dictator-pet, -lauweren en het lakzegel worden niet meer als losse
+SVG-ornamentlaag gemonteerd; het frontmask selecteert hun artworkpixels uit
+dezelfde gedeelde master.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--dictator`:
+
+```css
+--dictator-master-left: -15%;
+--dictator-master-top: -18%;
+--dictator-master-width: 130%;
+--dictator-master-scale: 1;
+--dictator-master-rotate: 0deg;
+```
+
+`dictator-front-mask.svg` laat de pet, lauweren, stermedaille, tank, lage
+rook en geselecteerde lintplooien vóór de relevante framedelen door. De
+vaste controle gebeurt via `/dev/dictator`,
+`scripts/dictator-screenshot.sh` en `?debugDictator=1`. De finale beelden
+staan in
+`screenshots/dictator/final-desktop.png` en
+`screenshots/dictator/final-mobile.png`.
+
 **Big Daddy**
 
 Big Daddy wordt in de huidige code als de `icon`-editie behandeld en heeft
@@ -845,11 +879,12 @@ registraties nodig.
 
 ### DOM en canvas/poster zijn niet dezelfde renderer
 
-De live React-kaart gebruikt voor In-Form `storm-master.webp` en voor On Fire
-`onfire-master.webp`. De canvas/posterroute in `futKaartCanvas.ts` tekent nog
+De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
+`onfire-master.webp` en voor Dictator `dictator-master.webp`. De
+canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
-`ornamentenInform.ts`, plus de oudere On Fire-pluimen en randvlammen uit
-`ornamentenOnfire.ts`.
+`ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
+`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:

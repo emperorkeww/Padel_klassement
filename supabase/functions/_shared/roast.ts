@@ -3,6 +3,11 @@
 // src/features/coach/ spiegelt (plagend over padel en ego, nooit persoonlijk of
 // grof). Sinds #409 staan hier twee tekstsets: de pias-sneer (#203) en de
 // afdroging-teksten (bagel/monsterzege), plus de gedeelde seed-helpers.
+//
+// #189 breidde dat uit naar de saaie hoekjes van de push: een gewone uitslag
+// (winst/verlies zonder afdroging), de laatste-kans- en speeldag-pushes, en de
+// titels — die waren per soort vast terwijl juist de titel vetgedrukt op het
+// vergrendelscherm staat. roast.test.ts bewaakt de hygiëne van alle pools.
 
 export type RoastIntensiteit = "mild" | "gemeen" | "radioactief";
 
@@ -20,6 +25,13 @@ export function roastSeed(...delen: string[]): number {
 
 export function kiesUit(pool: readonly string[], seed: number): string {
   return pool[((seed % pool.length) + pool.length) % pool.length];
+}
+
+/** Titel bij een push (#189). Dezelfde deterministische keuze als kiesUit, maar
+ *  met een eigen seed-tak: anders schuiven titel en body bij elke gebeurtenis
+ *  in hetzelfde tempo op en krijg je telkens dezelfde vaste combinatie. */
+export function kiesTitel(pool: readonly string[], ...delen: string[]): string {
+  return kiesUit(pool, roastSeed("titel", ...delen));
 }
 
 /** Puntenverschil vanaf wanneer een winst een "monsterzege" is — gelijk aan
@@ -748,3 +760,230 @@ export const RANK_DEGRADATIE: Record<
 ],
   },
 };
+
+// ── Gewone uitslag: winst en nederlaag zonder afdroging (#189) ──────────────
+// Verreweg de meeste matches eindigen zonder bagel of monsterzege, en tot nu
+// kregen alle vier de spelers daarbij exact dezelfde regel ("Uitslag ingevoerd
+// … bekijk het nieuwe klassement"). Dat is de meest verstuurde push van de app
+// én de saaiste. Sinds #189 splitst send-push ook een gewone uitslag: winnaars
+// een kort schouderklopje (schild-neutraal, zoals AFDROGING_LOF), verliezers een
+// op intensiteit geschaalde plaag — met het roast-schild terug naar de neutrale
+// regel. De teksten volgen op de eindstand, dus ze noemen de score niet zelf.
+
+/** Slotzin van de neutrale uitslag-push; volgt op "Eindstand 6–3." */
+export const UITSLAG_NEUTRAAL: readonly string[] = [
+  "Bekijk het nieuwe klassement.",
+  "De stand is bijgewerkt.",
+  "Je rating is opnieuw berekend.",
+  "Kijk maar wat het met je positie doet.",
+  "De punten zijn verdeeld.",
+  "Het klassement is bij.",
+  "Alles staat weer netjes in de boeken.",
+  "De ratings zijn verrekend.",
+];
+
+/** Volgt op "Gewonnen met 6–3." — noemt de uitslag dus zelf niet. */
+export const WINST_LOF: readonly string[] = [
+  "Netjes binnengehaald. Zo doe je dat.",
+  "Genoteerd. M'n boekje kleurt groen.",
+  "Je rating dankt je hartelijk.",
+  "Volgende slachtoffer, graag.",
+  "Prima werk. Ik zet er een dikke vink bij.",
+  "Klus geklaard. Niet spectaculair, wel effectief.",
+  "Punten gepakt. De concurrentie kijkt toe.",
+  "Blijf dit doen en we praten nog eens over de top-3.",
+  "M'n sportpet staat een tikje trotser vandaag.",
+  "Zo hoort een avond in de kooi te eindigen.",
+];
+
+/** Volgt op "Verloren met 3–6." — noemt de uitslag dus zelf niet. */
+export const VERLIES_SNEER: Record<RoastIntensiteit, readonly string[]> = {
+  mild: [
+    "Baal even, en dan door naar de volgende.",
+    "Nét niet. De volgende pak je wél.",
+    "Gebeurt de besten, en dus ook jou.",
+    "Werk aan de winkel, maar geen drama.",
+    "Deze ging naar de overkant. Kop op.",
+    "Niet je avond. Morgen ligt de baan er weer.",
+    "Neem je service nog eens rustig onder de loep.",
+    "M'n boekje noteert het zonder commentaar. Bijna.",
+  ],
+  gemeen: [
+    "Je partner heeft het netjes opgevangen, dat wel.",
+    "Ik noteer 'm met een diepe zucht.",
+    "Die bal aan het net had je toch echt moeten hebben.",
+    "De tegenstander bedankt je voor de ratingpunten.",
+    "Tactisch was het vooral heel creatief geprobeerd.",
+    "Volgende keer graag mét de bandeja waar je zo over opschept.",
+    "M'n spiekbriefjes gaan er weer bij.",
+    "Je liep prima. Alleen zelden naar de bal.",
+    "M'n sportpet zakte er vanzelf een stukje van.",
+  ],
+  radioactief: [
+    "Ik lees 'm straks voor op de persconferentie.",
+    "M'n rode pen stond al warmgelopen klaar.",
+    "Je Elo pakt alvast z'n koffers.",
+    "De VAR heeft het bekeken en keek beschaamd weg.",
+    "Ik overweeg je racket te schenken aan het grofvuil.",
+    "Zelfs Infantino kan deze niet meer wegmoffelen.",
+    "Dit tactische drama krijgt een eigen hoofdstuk in m'n boekje.",
+    "Ik zet 'm in de groepschat, met rode cirkels eromheen.",
+    "Zelfs de watersproeiers keken vanavond de andere kant op.",
+  ],
+};
+
+// ── Poll- en speeldag-pushes zonder eigen stem (#189) ───────────────────────
+// De laatste-kans-push (poll-deadline), de speeldag-herinnering en "herinner de
+// groep" (remind-group) stuurden tot nu één vaste zin. Niet-kwetsend en vaak
+// naar meerdere ontvangers tegelijk, dus één schild-neutrale pool per soort.
+
+export const POLL_LAATSTE_KANS: readonly string[] = [
+  "De speeldag-poll sluit binnenkort — laat weten wanneer je kunt.",
+  "Laatste oproep: geef je momenten door voor de poll dichtgaat.",
+  "Nog even en de groep beslist zonder jou. Stem snel.",
+  "De poll gaat zo dicht. Eén tik en je staat erin.",
+  "Je stem ontbreekt nog. Zonder jou plan ik in het wilde weg.",
+  "Bijna deadline. Geef door wanneer je kunt spelen.",
+  "De poll sluit bijna en jouw naam staat nog nergens.",
+  "Laatste kans om mee te beslissen over de speeldag.",
+];
+
+/** Slotzin van de speeldag-push; volgt op "Jullie spelen om 20:00 …". */
+export const SPEELDAG_VANDAAG: readonly string[] = [
+  "Rackettas klaar?",
+  "Tot straks in de kooi.",
+  "Zorg dat je op tijd bent.",
+  "Ik verwacht je fit aan de start.",
+  "Geen smoesjes meer vandaag.",
+  "M'n notitieboekje ligt al open.",
+  "Vergeet je waterfles niet.",
+  "Tot op de baan.",
+];
+
+export const GROEP_HERINNERING: readonly string[] = [
+  "Er loopt een speeldag-poll — laat weten wanneer je kunt.",
+  "De groep plant een speeldag en wacht nog op jouw stem.",
+  "Poll open, jouw vakje leeg. Even invullen?",
+  "Er wordt gepland. Zonder jouw stem gok ik maar wat.",
+  "Je groep zoekt een moment — geef je beschikbaarheid door.",
+  "Nog even stemmen op de speeldag-poll, dan is het rond.",
+];
+
+// ── Titels (#189) ───────────────────────────────────────────────────────────
+// De body varieerde al per speler, maar élke push droeg dezelfde vaste titel —
+// en juist die staat vetgedrukt op je vergrendelscherm. Eén pool per soort,
+// gekozen met kiesTitel() zodat titel en body los van elkaar rouleren. Kort
+// houden: Android en iOS kappen een notificatietitel rond de 40 tekens af.
+
+/** Roast-titels: pias, degradatie en verloren matches. */
+export const TITEL_SNEER: readonly string[] = [
+  "🎙️ Coach Rudy heeft iets over je te zeggen…",
+  "🎙️ Rudy pakt de microfoon",
+  "🎙️ Even een woordje van de coach",
+  "🎙️ Rudy's notitieboekje gaat open",
+  "🎙️ De coach schraapt z'n keel",
+  "🎙️ Rudy zet z'n sportpet recht",
+  "🎙️ Persconferentie van Coach Rudy",
+  "🎙️ Rudy heeft het allemaal gezien",
+];
+
+/** Lof-titels: afdroging gewonnen, en promotie in het klassement. */
+export const TITEL_LOF: readonly string[] = [
+  "🎙️ Coach Rudy is onder de indruk",
+  "🎙️ Rudy klapt in z'n handen",
+  "🎙️ De coach knikt goedkeurend",
+  "🎙️ Rudy's boekje krijgt een gouden randje",
+  "🎙️ Chapeau van de coach",
+  "🎙️ Rudy tikt tegen z'n sportpet",
+];
+
+export const TITEL_NIEUWE_RONDE: readonly string[] = [
+  "🎙️ Rudy heeft een nieuwe ronde voor je",
+  "🎾 Nieuwe ronde staat klaar",
+  "🎾 Je volgende match is bekend",
+  "🎙️ De coach heeft ingedeeld",
+  "🎾 De loting is binnen",
+  "🎾 Nieuwe tegenstander toegewezen",
+];
+
+export const TITEL_JOUW_BEURT: readonly string[] = [
+  "🎙️ Rudy: je bent zo aan de beurt",
+  "⏰ Bijna matchtijd",
+  "🎾 De kooi wacht op je",
+  "⏰ Nog even en je staat op de baan",
+  "🎾 Rackettas klaar?",
+  "🎙️ De coach roept je op",
+];
+
+export const TITEL_UITSLAG: readonly string[] = [
+  "Uitslag ingevoerd",
+  "De match staat in de boeken",
+  "Score genoteerd ✍️",
+  "Klassement bijgewerkt",
+  "Match afgerond 🎾",
+];
+
+export const TITEL_WINST: readonly string[] = [
+  "Gewonnen 🎉",
+  "Zege genoteerd 🎾",
+  "Winst bijgeschreven ↗",
+  "Punten binnen 🎾",
+  "Dat is er weer één 🎉",
+];
+
+export const TITEL_PROMOTIE: readonly string[] = [
+  "🎙️ Coach Rudy feliciteert je",
+  "📈 Je klimt in het klassement",
+  "🎉 Promotie in de stand",
+  "🎙️ De coach is trots op je",
+  "📈 Je gaat omhoog in de stand",
+];
+
+export const TITEL_VRIENDSCHAP: readonly string[] = [
+  "Nieuw vriendschapsverzoek 🎾",
+  "Iemand wil met je padellen 🎾",
+  "Vriendschapsverzoek binnen",
+  "Er meldt zich een nieuwe rivaal 🎾",
+];
+
+export const TITEL_POLL_NIEUW: readonly string[] = [
+  "Nieuwe speeldag-poll 🎾",
+  "Wanneer kun jij? 🗓️",
+  "Er wordt gepland 🗓️",
+  "Nieuwe poll in je groep 🎾",
+];
+
+export const TITEL_POLL_MOMENT: readonly string[] = [
+  "Speelmoment gekozen 🎾",
+  "De datum staat vast 🗓️",
+  "Poll gesloten — er is een moment",
+  "Jullie speelmoment is bekend 🗓️",
+];
+
+export const TITEL_POLL_GEBOEKT: readonly string[] = [
+  "Baan geboekt ✓",
+  "Reservering rond ✓",
+  "De kooi is gereserveerd ✓",
+  "Baan vastgelegd ✓",
+];
+
+export const TITEL_LAATSTE_KANS: readonly string[] = [
+  "Laatste kans om te stemmen ⏳",
+  "De poll sluit bijna ⏳",
+  "Nog niet gestemd? ⏳",
+  "⏳ De deadline nadert",
+];
+
+export const TITEL_SPEELDAG: readonly string[] = [
+  "Vandaag padel 🎾",
+  "Het is speeldag 🎾",
+  "Straks de kooi in 🎾",
+  "Matchdag 🎾",
+];
+
+export const TITEL_GROEP_HERINNERING: readonly string[] = [
+  "Speel je mee? 🎾",
+  "Jouw stem ontbreekt nog 🗓️",
+  "De groep wacht op jou 🎾",
+  "Nog even stemmen? 🗓️",
+];

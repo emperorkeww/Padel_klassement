@@ -117,6 +117,12 @@ self.addEventListener("push", (event) => {
       body: data.body ?? "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
+      // Meldingen over dezelfde gebeurtenis vervangen elkaar (#189): vier
+      // rondes die in één klap klaargezet worden (#827) of een tweede
+      // poll-herinnering laten zo één melding achter in plaats van een stapel.
+      // renotify: toch trillen/piepen bij de vervanging — anders vervangt een
+      // nieuwere melding de oude in stilte. Zonder tag is renotify ongeldig.
+      ...(data.tag ? { tag: data.tag, renotify: true } : {}),
       data: { url: data.url ?? "/" },
     }),
   );

@@ -116,12 +116,17 @@ function laadSw(opties: { fetcher?: Fetcher } = {}) {
   const fetcher = vi.fn(opties.fetcher ?? standaard);
 
   const listeners = new Map<string, (event: unknown) => void>();
+  const meldingen: { titel: string; opties: Record<string, unknown> }[] = [];
   const scope = {
     addEventListener: (type: string, h: (event: unknown) => void) =>
       listeners.set(type, h),
     location: { origin: ORIGIN },
     clients: { claim: async () => {}, matchAll: async () => [] },
-    registration: { showNotification: async () => {} },
+    registration: {
+      showNotification: async (titel: string, opties: Record<string, unknown>) => {
+        meldingen.push({ titel, opties });
+      },
+    },
     skipWaiting: () => {},
   };
 
@@ -158,7 +163,7 @@ function laadSw(opties: { fetcher?: Fetcher } = {}) {
     ...(caches.get(cacheNaam(voorvoegsel))?.entries.keys() ?? []),
   ];
 
-  return { caches, cacheApi, fetcher, vuur, cacheNaam, inhoud };
+  return { caches, cacheApi, fetcher, vuur, cacheNaam, inhoud, meldingen };
 }
 
 const haal = (sw: ReturnType<typeof laadSw>, url: string, init = {}) =>
@@ -315,3 +320,58 @@ describe.skipIf(!existsSync(`${DIST}/.vite/manifest.json`))(
     });
   },
 );
+
+describe("service worker: push-meldingen", () => {
+  const duw = (sw: ReturnType<typeof laadSw>, payload: unknown) =>
+    sw.vuur("push", { data: { json: () => payload } });
+
+  it("toont titel, body en doel-url uit de payload", async () => {
+    const sw = laadSw();
+    await duw(sw, {
+      title: "🎾 Nieuwe ronde staat klaar",
+      body: "Warm die smoesjes alvast op.",
+      url: "/groepen/g1",
+    });
+
+    expect(sw.meldingen).toHaveLength(1);
+    const [melding] = sw.meldingen;
+    expect(melding.titel).toBe("🎾 Nieuwe ronde staat klaar");
+    expect(melding.opties.body).toBe("Warm die smoesjes alvast op.");
+    expect(melding.opties.data).toEqual({ url: "/groepen/g1" });
+  });
+
+  it("laat meldingen over dezelfde gebeurtenis elkaar vervangen (#189)", async () => {
+    const sw = laadSw();
+    await duw(sw, { title: "Ronde 1", tag: "nieuwe-ronde-g1", url: "/" });
+
+    const [melding] = sw.meldingen;
+    expect(melding.opties.tag).toBe("nieuwe-ronde-g1");
+    // Zonder renotify vervangt de nieuwe melding de oude in stilte.
+    expect(melding.opties.renotify).toBe(true);
+  });
+
+  it("laat tag weg als de payload er geen meestuurt", async () => {
+    // renotify zónder tag is ongeldig: browsers weigeren de melding dan.
+    const sw = laadSw();
+    await duw(sw, { title: "Zonder tag" });
+
+    const [melding] = sw.meldingen;
+    expect(melding.opties).not.toHaveProperty("tag");
+    expect(melding.opties).not.toHaveProperty("renotify");
+  });
+
+  it("valt terug op een kale melding zonder geldige payload", async () => {
+    const sw = laadSw();
+    await sw.vuur("push", {
+      data: {
+        json: () => {
+          throw new SyntaxError("geen JSON");
+        },
+      },
+    });
+
+    expect(sw.meldingen[0].titel).toBe("Vamos!");
+    expect(sw.meldingen[0].opties.body).toBe("");
+    expect(sw.meldingen[0].opties.data).toEqual({ url: "/" });
+  });
+});

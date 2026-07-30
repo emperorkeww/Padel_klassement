@@ -15,6 +15,11 @@
 //  - UPDATE op matches met een afdroging (#409) → Rudy-sneer voor de verliezers,
 //    een schouderklopje voor de winnaars, i.p.v. de neutrale "Uitslag ingevoerd"
 //
+// Meer variatie (#189): sinds deze ronde splitst óók een gewone uitslag in
+// winst/verlies (WINST_LOF vs VERLIES_SNEER), kiest elke melding haar titel uit
+// een pool in plaats van één vaste regel, en draagt elke push een 'tag' zodat
+// meldingen over dezelfde gebeurtenis elkaar op het toestel vervangen.
+//
 // Notificatie-voorkeuren (#57): de notify_*-kolommen op profiles bepalen per
 // type wie een push krijgt (nieuwe ronde, uitslag, vriendschapsverzoek).
 //
@@ -31,6 +36,7 @@ import {
   AFDROGING_LOF,
   afdrogingLabel,
   BAGEL_SNEER,
+  kiesTitel,
   kiesUit,
   MONSTER_SNEER,
   NIEUWE_MATCH,
@@ -45,7 +51,20 @@ import {
   rangOvergang,
   type RoastIntensiteit,
   roastSeed,
+  TITEL_LOF,
+  TITEL_NIEUWE_RONDE,
+  TITEL_POLL_GEBOEKT,
+  TITEL_POLL_MOMENT,
+  TITEL_POLL_NIEUW,
+  TITEL_PROMOTIE,
+  TITEL_SNEER,
+  TITEL_UITSLAG,
+  TITEL_VRIENDSCHAP,
+  TITEL_WINST,
+  UITSLAG_NEUTRAAL,
+  VERLIES_SNEER,
   VRIENDSCHAP,
+  WINST_LOF,
 } from "../_shared/roast.ts";
 
 // Gedeeld geheim voor de database-webhook (#459). Bewust fail-closed: is het
@@ -104,6 +123,11 @@ type Message = {
   // null = altijd sturen: polls hebben (nog) geen voorkeur, en pias filtert
   // zichzelf al via roast_schild in messagesFor.
   kind: MessageKind | null;
+  /** Notificatie-tag (#189): meldingen met dezelfde tag vervangen elkaar op het
+   *  toestel. Bewust per gebeurtenis, niet per soort — zo vouwt een reeks
+   *  ineens gegenereerde rondes (#827) samen tot één melding, terwijl twee
+   *  verschillende matches gewoon los blijven staan. */
+  tag: string;
 };
 
 async function playersOf(match: MatchRecord): Promise<string[]> {
@@ -162,10 +186,11 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     );
     return [{
       recipients: [rec.addressee_id],
-      title: "Nieuw vriendschapsverzoek 🎾",
+      title: kiesTitel(TITEL_VRIENDSCHAP, rec.requester_id, rec.addressee_id),
       body: `${await nameOf(rec.requester_id)} wil met je padellen. ${quip}`,
       url: "/vrienden",
       kind: "friend_request",
+      tag: `vriendschap-${rec.requester_id}`,
     }];
   }
 
@@ -180,9 +205,12 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       neutraal: NIEUWE_MATCH_NEUTRAAL,
       pool: NIEUWE_MATCH,
       seedKey: `nieuwe-match|${rec.id}`,
-      title: "🎙️ Coach Rudy heeft een nieuwe ronde voor je",
+      titelPool: TITEL_NIEUWE_RONDE,
       url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
       kind: "new_round",
+      // Eén tag per groep: worden er in één klap vier rondes klaargezet (#827),
+      // dan houdt de speler één melding over in plaats van vier trillingen.
+      tag: `nieuwe-ronde-${rec.group_id ?? rec.id}`,
     });
   }
 
@@ -213,12 +241,13 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         recipients: (members ?? [])
           .map((m) => m.player_id)
           .filter((id) => id !== rec.created_by),
-        title: "Nieuwe speeldag-poll 🎾",
+        title: kiesTitel(TITEL_POLL_NIEUW, rec.id),
         body: `${await nameOf(rec.created_by)} stelt momenten voor. ${
           kiesUit(POLL_NIEUW, roastSeed(rec.id, "poll-nieuw"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
+        tag: `poll-${rec.id}`,
       }];
     }
 
@@ -232,12 +261,13 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       const voters = await pollVoters(rec.id);
       return [{
         recipients: voters,
-        title: "Speelmoment gekozen 🎾",
+        title: kiesTitel(TITEL_POLL_MOMENT, rec.id, "locked"),
         body: `De groep speelt ${moment}. ${
           kiesUit(POLL_MOMENT, roastSeed(rec.id, "locked"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
+        tag: `poll-${rec.id}`,
       }];
     }
 
@@ -251,12 +281,13 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       const yes = await optionYesVoters(rec.locked_option_id);
       return [{
         recipients: yes,
-        title: "Baan geboekt ✓",
+        title: kiesTitel(TITEL_POLL_GEBOEKT, rec.id, "booked"),
         body: `Jullie spelen ${moment}. ${
           kiesUit(POLL_GEBOEKT, roastSeed(rec.id, "booked"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen`,
         kind: null,
+        tag: `poll-${rec.id}`,
       }];
     }
   }
@@ -287,10 +318,11 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     const intensiteit = (profiel.roast_intensiteit ?? "radioactief") as RoastIntensiteit;
     return [{
       recipients: [rec.player_id],
-      title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
+      title: kiesTitel(TITEL_SNEER, rec.player_id, `${rec.iso_year}-W${rec.iso_week}`),
       body: `Jij bent de pias van de week. ${kiesUit(PIAS_SNEER[intensiteit], seed)}`,
       url: `/groepen/${rec.group_id}?tab=stand`,
       kind: null,
+      tag: `pias-${rec.group_id}-${rec.iso_year}-W${rec.iso_week}`,
     }];
   }
 
@@ -318,14 +350,16 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     const seed = roastSeed(rec.player_id, rec.group_id, rec.tier);
     const url = `/groepen/${rec.group_id}?tab=stand`;
 
+    const tag = `rang-${rec.group_id}`;
     if (overgang.richting === "promotie") {
       // Felicitatie: positief, niet door het schild gedempt.
       return [{
         recipients: [rec.player_id],
-        title: "🎙️ Coach Rudy feliciteert je",
+        title: kiesTitel(TITEL_PROMOTIE, rec.player_id, rec.group_id, rec.tier),
         body: kiesUit(RANK_PROMOTIE[overgang.event], seed),
         url,
         kind: "rank_change",
+        tag,
       }];
     }
 
@@ -337,10 +371,11 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       : kiesUit(RANK_DEGRADATIE[overgang.event][intensiteit], seed);
     return [{
       recipients: [rec.player_id],
-      title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
+      title: kiesTitel(TITEL_SNEER, rec.player_id, rec.group_id, rec.tier),
       body,
       url,
       kind: "rank_change",
+      tag,
     }];
   }
 
@@ -360,11 +395,12 @@ async function personalMessages(opts: {
   neutraal: readonly string[];
   pool: Record<RoastIntensiteit, readonly string[]>;
   seedKey: string;
-  title: string;
+  titelPool: readonly string[];
   url: string;
   kind: MessageKind | null;
+  tag: string;
 }): Promise<Message[]> {
-  const { recipients, neutraal, pool, seedKey, title, url, kind } = opts;
+  const { recipients, neutraal, pool, seedKey, titelPool, url, kind, tag } = opts;
   if (recipients.length === 0) return [];
   const { data: profielen } = await supabase
     .from("profiles")
@@ -378,32 +414,53 @@ async function personalMessages(opts: {
     const body = !p || p.roast_schild
       ? kiesUit(neutraal, seed)
       : kiesUit(pool[(p.roast_intensiteit ?? "radioactief") as RoastIntensiteit], seed);
-    return { recipients: [pid], title, body, url, kind };
+    // Ook de titel per speler (#189): vier spelers in dezelfde ronde krijgen zo
+    // niet vier identieke meldingen op hun scherm.
+    return {
+      recipients: [pid],
+      title: kiesTitel(titelPool, seedKey, pid),
+      body,
+      url,
+      kind,
+      tag,
+    };
   });
 }
 
 /**
- * De push-berichten bij een afgeronde match (#409). Zonder afdroging: één
- * neutrale "Uitslag ingevoerd" naar alle vier de spelers (zoals voorheen). Bij
- * een bagel/monsterzege krijgen de winnaars een schouderklopje en de verliezers
- * een Coach Rudy-sneer, tenzij hun roast-schild aanstaat — dan de neutrale
- * melding. De teksten vervángen de neutrale (kind "result"), dus elke speler zit
- * in precies één bericht: geen dubbele push voor dezelfde match.
+ * De push-berichten bij een afgeronde match (#409, verbreed in #189). Winnaars
+ * krijgen een schouderklopje en verliezers een Coach Rudy-sneer, tenzij hun
+ * roast-schild aanstaat — dan de neutrale melding. Bij een bagel/monsterzege
+ * zijn beide kanten forser (AFDROGING_LOF vs BAGEL/MONSTER_SNEER); bij een
+ * gewone uitslag houdt Rudy het korter (WINST_LOF vs VERLIES_SNEER). Zonder
+ * bekende winnaar of teamdata blijft het bij de neutrale melding voor iedereen.
+ * Elke speler zit in precies één bericht: geen dubbele push voor dezelfde match.
  */
 async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
-  const score = rec.score_a != null && rec.score_b != null
-    ? ` ${rec.score_a}–${rec.score_b}`
-    : "";
+  const url = `/matches/${rec.id}`;
+  const tag = `uitslag-${rec.id}`;
+  const heeftScore = rec.score_a != null && rec.score_b != null;
+  const hoog = heeftScore ? Math.max(rec.score_a!, rec.score_b!) : 0;
+  const laag = heeftScore ? Math.min(rec.score_a!, rec.score_b!) : 0;
+  // Vanuit het perspectief van de ontvanger: de winnaar leest z'n eigen score
+  // eerst, de verliezer ook. "Eindstand 6–3" zonder kant zei niemand iets.
+  const winstZin = heeftScore ? `Gewonnen met ${hoog}–${laag}.` : "Gewonnen.";
+  const verliesZin = heeftScore ? `Verloren met ${laag}–${hoog}.` : "Verloren.";
+
   const neutraal = (recipients: string[]): Message => ({
     recipients,
-    title: "Uitslag ingevoerd",
-    body: `Jouw match is afgerond:${score}. Bekijk het nieuwe klassement.`,
-    url: `/matches/${rec.id}`,
+    title: kiesTitel(TITEL_UITSLAG, rec.id),
+    body: `${
+      heeftScore
+        ? `Eindstand ${rec.score_a}–${rec.score_b}.`
+        : "Jouw match is afgerond."
+    } ${kiesUit(UITSLAG_NEUTRAAL, roastSeed(rec.id, "uitslag"))}`,
+    url,
     kind: "result",
+    tag,
   });
 
-  const label = afdrogingLabel(rec);
-  if (!label || !rec.winner_team_id) return [neutraal(await playersOf(rec))];
+  if (!rec.winner_team_id) return [neutraal(await playersOf(rec))];
 
   const byTeam = await playersByTeam(rec);
   const winners = byTeam[rec.winner_team_id] ?? [];
@@ -416,15 +473,23 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
     return [neutraal(await playersOf(rec))];
   }
 
+  const label = afdrogingLabel(rec);
   const messages: Message[] = [];
-  // Winnaars: één schouderklopje, deterministisch op de match-id.
+  // Winnaars: één schouderklopje voor beide, deterministisch op de match-id.
+  // Positief commentaar op de zege, dus niet door het schild gedempt.
   if (winners.length > 0) {
+    const seed = roastSeed(rec.id, "winst");
     messages.push({
       recipients: winners,
-      title: "🎙️ Coach Rudy is onder de indruk",
-      body: kiesUit(AFDROGING_LOF, roastSeed(rec.id, "winst")),
-      url: `/matches/${rec.id}`,
+      title: label
+        ? kiesTitel(TITEL_LOF, rec.id, "winst")
+        : kiesTitel(TITEL_WINST, rec.id, "winst"),
+      body: label
+        ? kiesUit(AFDROGING_LOF, seed)
+        : `${winstZin} ${kiesUit(WINST_LOF, seed)}`,
+      url,
       kind: "result",
+      tag,
     });
   }
 
@@ -435,7 +500,6 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
     .in("id", losers);
   const profielVan = new Map((profielen ?? []).map((p) => [p.id, p]));
   const neutraleVerliezers: string[] = [];
-  const pool = label === "bagel" ? BAGEL_SNEER : MONSTER_SNEER;
   for (const pid of losers) {
     const p = profielVan.get(pid);
     // Schild aan (of profiel weg) → geen sneer, wel de neutrale result-push.
@@ -444,12 +508,23 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
       continue;
     }
     const intensiteit = (p.roast_intensiteit ?? "radioactief") as RoastIntensiteit;
+    const seed = roastSeed(rec.id, pid);
+    // Een bagel/monsterzege benoemt zichzelf al; een gewone nederlaag krijgt de
+    // uitslag als eerste zin mee.
+    const afdroging = label === "bagel"
+      ? BAGEL_SNEER
+      : label === "monsterzege"
+      ? MONSTER_SNEER
+      : null;
     messages.push({
       recipients: [pid],
-      title: "🎙️ Coach Rudy heeft iets over je te zeggen…",
-      body: kiesUit(pool[intensiteit], roastSeed(rec.id, pid)),
-      url: `/matches/${rec.id}`,
+      title: kiesTitel(TITEL_SNEER, rec.id, pid),
+      body: afdroging
+        ? kiesUit(afdroging[intensiteit], seed)
+        : `${verliesZin} ${kiesUit(VERLIES_SNEER[intensiteit], seed)}`,
+      url,
       kind: "result",
+      tag,
     });
   }
   if (neutraleVerliezers.length > 0) {
@@ -575,6 +650,7 @@ Deno.serve(async (req) => {
               title: message.title,
               body: message.body,
               url: message.url,
+              tag: message.tag,
             }),
           );
           sent += 1;

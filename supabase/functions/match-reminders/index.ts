@@ -20,9 +20,11 @@ import webpush from "npm:web-push@3.6.7";
 import {
   JOUW_BEURT,
   JOUW_BEURT_NEUTRAAL,
+  kiesTitel,
   kiesUit,
   type RoastIntensiteit,
   roastSeed,
+  TITEL_JOUW_BEURT,
 } from "../_shared/roast.ts";
 import { cronGuard } from "../_shared/cronAuth.ts";
 import { bundelPerSpeeldag } from "../_shared/reminderBundel.ts";
@@ -164,9 +166,13 @@ Deno.serve(async (req) => {
           seed,
         );
       sent += await pushTo([pid], {
-        title: "🎙️ Coach Rudy: je bent zo aan de beurt",
+        // Titel per speler uit een pool (#189): vier spelers in dezelfde ronde
+        // kregen anders vier identieke meldingen te zien.
+        title: kiesTitel(TITEL_JOUW_BEURT, m.id, pid),
         body: `Om ${time} sta je op de baan. ${quip}`,
         url,
+        // Eén tag per speeldag: een tweede herinnering vervangt de eerste.
+        tag: `speeldag-${m.group_id ?? m.id}`,
       });
     }
     // De herinnerde match én de rest van die avond ineens afvinken, zodat een
