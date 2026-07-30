@@ -60,10 +60,11 @@ export function LefTipBlock({
   // Alleen ophalen zolang inzetten nog kán — op een gespeelde match is het
   // tegoed niet meer relevant en zou het een tweede query voor niets zijn.
   const dag = m.played_at ? playDay(m.played_at) : null;
-  const venster =
-    m.status === "scheduled" &&
-    m.played_at != null &&
-    new Date(m.played_at).getTime() > Date.now();
+  // Is de aftrap geweest? Draagt zowel het inzetvenster als de onthulling.
+  const gestart =
+    m.status !== "scheduled" ||
+    (m.played_at != null && new Date(m.played_at).getTime() <= Date.now());
+  const venster = !gestart && m.played_at != null;
   const eigenDag = useAsync(
     () => (myId && dag && venster ? getMyStakesOn(myId, dag) : Promise.resolve([])),
     [myId, dag, venster],
@@ -77,8 +78,11 @@ export function LefTipBlock({
     eigenStakes: eigenDag.data ?? [],
   });
   const openVoorMij = blokkade === null;
-  // Na de aftrap wordt zichtbaar wie er lef had.
-  const onthuld = !openVoorMij && alle.length > 0;
+  // Na de aftrap wordt zichtbaar wie er lef had. Bewust aan de aftrap gehangen
+  // en niet aan je eigen blokkade: wie niet meespeelt — of nog te weinig
+  // matches heeft, of zijn lef die dag al vergaf — zag andermans inzet anders
+  // al vóór de match staan en kon erop meeliften.
+  const onthuld = gestart && alle.length > 0;
   // Op een afgeronde match valt er niets meer te kiezen: dan alleen de
   // onthulling, geen uitgegrijsde knop die suggereert dat het nog kan.
   const afgelopen = m.status === "completed" || m.status === "cancelled";

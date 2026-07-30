@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+  <defs>
+    <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
+      <feGaussianBlur stdDeviation="5" />
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#soft)">
+    <!-- Grote kroon: over de gebogen bovenrand, met wolkflarden aan beide zijden. -->
+    <path d="M210 4 C310 -18 714 -18 814 4 L810 438 C704 474 320 474 214 438 C184 314 182 118 210 4 Z" />
+    <!-- Rechter balloncluster en strik: grotendeels buiten, lokaal over het frame. -->
+    <path d="M760 12 C900 -18 1036 28 1052 170 L1050 642 C1000 714 920 724 846 670 C818 568 824 478 800 388 C770 272 730 128 760 12 Z" />
+    <!-- De volledige, lager geplaatste teddy met staf blijft één leesbaar object. -->
+    <path d="M-28 874 C72 842 260 872 350 964 C372 1064 360 1198 378 1320 C356 1416 270 1468 158 1468 L-30 1436 Z" />
+    <!-- Kleine pluchen ster en de aansluitende rechterlinten. -->
+    <path d="M764 836 C872 796 1018 840 1054 948 L1054 1384 C956 1422 826 1372 786 1274 C766 1188 786 1098 758 1014 C736 950 732 884 764 836 Z" />
+    <!-- Hartmedaillon in de kaartpunt plus de dichtste onderste lintplooien. -->
+    <path d="M236 1208 C344 1162 680 1162 788 1208 C832 1292 822 1452 754 1538 L270 1538 C202 1452 192 1292 236 1208 Z" />
+  </g>
+</svg>

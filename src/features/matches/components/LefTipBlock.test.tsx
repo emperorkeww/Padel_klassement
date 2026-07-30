@@ -13,7 +13,7 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
-import { MATCH_DONE, PROFILES } from "@/test/fixtures";
+import { MATCH_DONE, MATCH_PLANNED, PROFILES } from "@/test/fixtures";
 import type { Match, Profile } from "@/types";
 
 const pmap = Object.fromEntries(PROFILES.map((p) => [p.id, p])) as Record<
@@ -34,16 +34,19 @@ function setStakes(rows: unknown[]) {
   tables.match_stakes = rows;
 }
 
-function renderBlok(match: Match = MATCH_DONE as Match) {
+function renderBlok(
+  match: Match = MATCH_DONE as Match,
+  props: { isDeelnemer?: boolean; games?: number } = {},
+) {
   return render(
     <ToastProvider>
       <LefTipBlock
         match={match}
         profiles={pmap}
         myId="p1"
-        isDeelnemer
+        isDeelnemer={props.isDeelnemer ?? true}
         mijnKans={null}
-        games={0}
+        games={props.games ?? 0}
       />
     </ToastProvider>,
   );
@@ -77,5 +80,31 @@ describe("<LefTipBlock /> op een afgeronde match", () => {
     // assertie alleen dat het blok nog niet gerenderd wás.
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
+  });
+});
+
+// De onthulling hoort aan de aftrap te hangen, niet aan de vraag of jíj nog
+// mag inzetten: anders lekt elke geblokkeerde kijker andermans inzet vooraf.
+describe("<LefTipBlock /> vóór de aftrap", () => {
+  const GEPLAND = {
+    ...MATCH_PLANNED,
+    played_at: new Date(Date.now() + 3600_000).toISOString(),
+  } as Match;
+  const STAKE_GEPLAND = { ...STAKE, match_id: GEPLAND.id };
+
+  it("verklapt andermans inzet niet aan wie zelf niet meespeelt", async () => {
+    setStakes([STAKE_GEPLAND]);
+    renderBlok(GEPLAND, { isDeelnemer: false, games: 12 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText(/lef getoond door bob/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
+  });
+
+  it("verklapt andermans inzet niet aan een deelnemer die nog niet mag", async () => {
+    setStakes([STAKE_GEPLAND]);
+    // Te weinig gespeelde matches: wel het blok met de uitleg, geen namen.
+    renderBlok(GEPLAND, { games: 3 });
+    await screen.findByText(/🎲 lef/i);
+    expect(screen.queryByText(/lef getoond door bob/i)).not.toBeInTheDocument();
   });
 });

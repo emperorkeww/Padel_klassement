@@ -860,6 +860,18 @@ export const SPEELDAG_VANDAAG: readonly string[] = [
   "Tot op de baan.",
 ];
 
+/** Slotzin van de lef-onthulling (#804); volgt op "Bob zette lef in: dubbel of
+ *  niets." en spreekt de partner van de inzetter aan. Bewust zonder sneer: de
+ *  ontvanger heeft zelf niets misdaan, die krijgt alleen nieuws. */
+export const LEF_PARTNER: readonly string[] = [
+  "Jij speelt voor de winst, je partner voor het dubbele.",
+  "Die punten tellen straks keer twee. De jouwe blijven gewoon.",
+  "Er staat een dubbele inzet naast je. Geen moment voor dubbele fouten.",
+  "Jouw rating blijft normaal, die van je partner niet. Geen druk.",
+  "Winst telt dubbel, verlies net zo hard. Speel er even naar.",
+  "Naast je staat iemand die alles op tafel gooit. Doe iets terug.",
+];
+
 export const GROEP_HERINNERING: readonly string[] = [
   "Er loopt een speeldag-poll — laat weten wanneer je kunt.",
   "De groep plant een speeldag en wacht nog op jouw stem.",
@@ -979,6 +991,13 @@ export const TITEL_SPEELDAG: readonly string[] = [
   "Het is speeldag 🎾",
   "Straks de kooi in 🎾",
   "Matchdag 🎾",
+];
+
+export const TITEL_LEF_PARTNER: readonly string[] = [
+  "Je partner speelt dubbel of niets 🎲",
+  "🎲 Lef naast je op de baan",
+  "Dubbele inzet in jouw team 🎲",
+  "🎲 Je partner gooit alles op tafel",
 ];
 
 export const TITEL_GROEP_HERINNERING: readonly string[] = [

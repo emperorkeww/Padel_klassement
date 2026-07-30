@@ -1,8 +1,8 @@
 # Special Card Visual Effects Architecture
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
-het In-Form-stormeffect en de daarop gebaseerde On Fire-vulkaanbreakout. Het
-is tegelijk een technische naslag en een
+het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator- en Big
+Daddy-breakouts. Het is tegelijk een technische naslag en een
 herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
 kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
 komt.
@@ -36,6 +36,10 @@ Belangrijkste implementatiebestanden:
   en [`DictatorEffect.css`](../src/features/rating/components/dictator/DictatorEffect.css)
   — dezelfde architectuur toegepast op vaandels, regimegloed, tank en
   ceremonieel lint.
+- [`BigDaddyEffect.tsx`](../src/features/rating/components/bigdaddy/BigDaddyEffect.tsx)
+  en [`BigDaddyEffect.css`](../src/features/rating/components/bigdaddy/BigDaddyEffect.css)
+  — dezelfde architectuur toegepast op kroon, wolken, ballonnen, pluchen
+  figuren, linten en een gevleugeld hartmedaillon.
 
 ## 1. Context en visueel doel
 
@@ -848,11 +852,40 @@ staan in
 
 **Big Daddy**
 
-Big Daddy wordt in de huidige code als de `icon`-editie behandeld en heeft
-bestaande ornamenten, waaronder voorliggende details. Die ornamenten hoeven
-niet vervangen te worden. De masterarchitectuur is aanvullend bruikbaar
-voor bijvoorbeeld één doorlopende aura of rookmassa, mits het nieuwe effect
-de bestaande frontornamenten en kaartinhoud respecteert.
+Big Daddy wordt als de `icon`-editie behandeld en gebruikt dezelfde
+drie-masterstructuur via `BigDaddyEffect.tsx`. `bigdaddy-master.webp` is een
+1024 × 1536 WebP met alpha en combineert één grote juwelenkroon, verbonden
+roze wolken, een compacte balloncluster rechtsboven, satijnen zijlinten, een
+volledige gekroonde teddy linksonder, een pluchen ster rechts en een
+gevleugeld hartmedaillon onderaan. De centrale zone blijft grotendeels leeg
+voor rating, avatar, naam en editie-informatie.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--icon`:
+
+```css
+--bigdaddy-master-left: -22%;
+--bigdaddy-master-top: -34%;
+--bigdaddy-master-width: 144%;
+--bigdaddy-master-scale: 1;
+--bigdaddy-master-rotate: 0deg;
+```
+
+`bigdaddy-inside-mask.svg` laat binnen het schild alleen wolken, linten en
+ondergloed door; daardoor verschijnt de teddy niet als bleke afdruk in het
+kaartvlak. `bigdaddy-front-mask.svg` selecteert de kroon, de volledige maar
+naar de buitenflank verplaatste teddy, beperkte ballon- en sterdelen en het
+onderste medaillon vóór het frame. Dit is een belangrijk verschil met een
+masker dat slechts een halve teddy toont: samengestelde herkenbare objecten
+worden in het artwork zelf responsief veilig geplaatst en niet geometrisch
+doormidden geknipt.
+
+De vroegere live Big Daddy-SVG's voor kroon, lint, ballonnen en
+puntornament worden bij `editie === "icon"` niet meer gemonteerd. Ze blijven
+wel beschikbaar voor de canvas/posterfallback. De vaste controle gebeurt via
+`/dev/bigdaddy`, `scripts/bigdaddy-screenshot.sh` en
+`?debugBigDaddy=1`. De finale beelden staan in
+`screenshots/bigdaddy/final-desktop.png` en
+`screenshots/bigdaddy/final-mobile.png`.
 
 **Andere special editions**
 
@@ -880,11 +913,13 @@ registraties nodig.
 ### DOM en canvas/poster zijn niet dezelfde renderer
 
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
-`onfire-master.webp` en voor Dictator `dictator-master.webp`. De
+`onfire-master.webp`, voor Dictator `dictator-master.webp` en voor Big Daddy
+`bigdaddy-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
-`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator.
+`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator en
+Big Daddy.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:
