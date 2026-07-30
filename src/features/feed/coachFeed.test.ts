@@ -572,3 +572,34 @@ describe("Coach Rudy over de bounty (#805)", () => {
     expect(coachStemming(verdedigd, () => "gemeen")).toBe("gemeen");
   });
 });
+
+describe("Coach Rudy over de lef-tip (#804)", () => {
+  const lefEvent = (highlights: Highlight[]): FeedEvent => ({
+    kind: "match",
+    at: "2026-07-30T18:00:00Z",
+    match: matchStub,
+    highlights,
+    myDelta: null,
+  });
+
+  const wonLef = lefEvent([{ type: "lef", playerId: "p3", factor: 2, won: true }]);
+  const lostLef = lefEvent([{ type: "lef", playerId: "p3", factor: 2, won: false }]);
+
+  it("reageert op gewonnen lef", () => {
+    const comment = coachOpmerking(wonLef, ctx);
+    expect(comment).toBeTruthy();
+    expect(comment).toMatch(/lef|multiplier|geluk|mazzel/i);
+  });
+
+  it("reageert op verloren lef met extra harde sneer", () => {
+    const comment = coachOpmerking(lostLef, ctx);
+    expect(comment).toBeTruthy();
+    expect(comment).toMatch(/lef|multiplier|stoer|verstand|kelder/i);
+  });
+
+  it("kiest de juiste mood per resultaat", () => {
+    expect(coachStemming(wonLef, () => "gemeen")).toBe("trots");
+    expect(coachStemming(lostLef, () => "gemeen")).toBe("gemeen");
+  });
+});
+

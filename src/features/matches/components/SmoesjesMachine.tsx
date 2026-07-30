@@ -132,7 +132,7 @@ export function SmoesjesMachine({
         </CoachBubble>
       ) : (
         <p className="smoesjes__hint">
-          Verloren? Geen zorgen — er is altijd een goede reden.
+          Verloren? Geen paniek — met de Smoesjesmachine is er altijd een waterdichte verklaring voor je nederlaag. Bedenk er direct eentje!
         </p>
       )}
 
