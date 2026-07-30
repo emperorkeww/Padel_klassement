@@ -249,6 +249,11 @@ import {
   BlaaskaakEffectBinnen,
   BlaaskaakEffectVoor,
 } from "./blaaskaak/BlaaskaakEffect";
+import { divisieLayout } from "./layouts/divisieLayouts";
+import { KaartLayoutContext, useKaartLayout } from "./layouts/KaartLayoutContext";
+import { KaartOnderdelen } from "./layouts/KaartOnderdelen";
+import { DivisieVoorkant } from "./layouts/DivisieVoorkant";
+import type { SpelerStatBron } from "./layouts/kaartLayout";
 import {
   GoatEffectAchter,
   GoatEffectBinnen,
@@ -279,6 +284,8 @@ import "./FutKaart.css";
 // Ná FutKaart.css: de negen divisieregisters (#710) winnen van de generieke
 // metaalladder daar.
 import "./divisies/index.css";
+// Eigen divisie-layouts winnen daarna doelgericht van hun oude kleurregister.
+import "./ballenraper/BallenraperEffect.css";
 
 /** Materiaal van de GOAT-strengen. Sinds #710 (Big Daddy) kan een ornament
  *  zijn eigen metaal meebrengen, dus wat eerst losse constanten waren staat
@@ -887,6 +894,12 @@ export function FutKaartDefs() {
         </clipPath>
         <clipPath id="fut-schild-notch" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0 L 0.40 0 C 0.44 0 0.46 0.022 0.5 0.022 C 0.54 0.022 0.56 0 0.60 0 L 0.915 0 C 0.962 0 1 0.028 1 0.062 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.062 C 0 0.028 0.038 0 0.085 0 Z" />
+        </clipPath>
+        {/* Ballenraper: een eigen, brede houten plaquette. De bovenste
+            mand en onderste medaillon zijn losse artworklagen en vervormen
+            deze basiscontour bewust niet. */}
+        <clipPath id="fut-schild-ballenraper" clipPathUnits="objectBoundingBox">
+          <path d="M 0.18 0.035 C 0.28 0.005 0.40 0.01 0.50 0.01 C 0.60 0.01 0.72 0.005 0.82 0.035 C 0.83 0.075 0.87 0.10 0.96 0.12 C 0.985 0.13 1 0.16 1 0.20 L 1 0.78 C 1 0.86 0.94 0.90 0.84 0.93 L 0.60 0.985 C 0.55 1 0.45 1 0.40 0.985 L 0.16 0.93 C 0.06 0.90 0 0.86 0 0.78 L 0 0.20 C 0 0.16 0.015 0.13 0.04 0.12 C 0.13 0.10 0.17 0.075 0.18 0.035 Z" />
         </clipPath>
         {/* Blaaskaak: vier eigen, asymmetrische contouren. Het frame en de
             donkerblauwe liner houden hun bovenbrug; de cyaan-keyline en het
@@ -2082,6 +2095,7 @@ export function FutKaart({
    *  (#773). Zonder dit starten alle kaarten in een raster synchroon. */
   glansZaad?: string;
 }) {
+  const layout = divisieLayout(tier?.key, editie);
   // Premium glans (#773): een editie met eigen glans wint van de tier-glans —
   // dezelfde cascade als bij het ornament. Is er een tijdelijke overlay actief
   // (In-Form, On Fire), dan houdt die de visuele voorrang en valt de permanente
@@ -2096,6 +2110,7 @@ export function FutKaart({
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
+    layout?.className ?? "",
     omgedraaid ? "is-omgedraaid" : "",
     glans && !inBeeld ? "is-buiten-beeld" : "",
     className ?? "",
@@ -2129,7 +2144,8 @@ export function FutKaart({
   // zijranden en medaillon. Ze staan onderaan de prioriteit — een editie of een
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
   // deze speler dan zijn divisie.
-  const divisie = !editie && !ornament ? divisieKaart(tier?.key) : undefined;
+  const divisie =
+    !layout && !editie && !ornament ? divisieKaart(tier?.key) : undefined;
   // Wannabe (#834): de goud-divisie krijgt zijn folieranden, crest, medaillon én
   // watermerk uit wannabe-master.webp. De vectorversies blijven bestaan voor de
   // canvas-/posterroute, maar mogen in de DOM niet dubbel staan — twee
@@ -2205,7 +2221,7 @@ export function FutKaart({
   // De glanslaag draagt geen kaartgegevens en is puur decoratief, dus
   // aria-hidden; de startvertraging gaat als custom property mee zodat één
   // keyframe-set alle kaarten uit de fase van elkaar houdt.
-  const glansLaag = glans ? (
+  const glansLaag = glans && !layout ? (
     <span
       className={`fut-kaart__glans${glansGedempt ? " fut-kaart__glans--gedempt" : ""}`}
       aria-hidden="true"
@@ -2217,17 +2233,24 @@ export function FutKaart({
     />
   ) : null;
   return (
-    <div className={klassen} ref={kaartRef}>
-      <div className="fut-kaart__flipper">
-        {(divisieLive?.achter?.length ?? 0) > 0 && (
-          <svg
-            className="fut-kaart__ornament"
-            viewBox={ORNAMENT_VIEWBOX}
-            aria-hidden="true"
-          >
-            <use href={`#fut-div-${divisieLive!.key}-achter`} />
-          </svg>
-        )}
+    <KaartLayoutContext.Provider value={layout}>
+      <div className={klassen} ref={kaartRef}>
+        <div className="fut-kaart__flipper">
+          {layout && <KaartOnderdelen layout={layout} slot="achter" />}
+          {/* Een eigen divisie-layout is full-bleed: het artwork is de kaart,
+              niet een illustratie ín het generieke kaartvlak. Het staat daarom
+              rechtstreeks op de flipperstage, vóór de transparante
+              inhoudsdrager. */}
+          {layout && <KaartOnderdelen layout={layout} slot="binnen" />}
+          {(divisieLive?.achter?.length ?? 0) > 0 && (
+            <svg
+              className="fut-kaart__ornament"
+              viewBox={ORNAMENT_VIEWBOX}
+              aria-hidden="true"
+            >
+              <use href={`#fut-div-${divisieLive!.key}-achter`} />
+            </svg>
+          )}
         {ornamentLive && (
           <svg
             className="fut-kaart__ornament"
@@ -2261,9 +2284,9 @@ export function FutKaart({
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
-            <span className="fut-kaart__keyline">
-              <span className="fut-kaart__vlak">
-                <span className="fut-kaart__randwaas" aria-hidden="true" />
+              <span className="fut-kaart__keyline">
+                <span className="fut-kaart__vlak">
+                  <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
                 {editie === "icon" && <BigDaddyEffectBinnen />}
@@ -2346,9 +2369,11 @@ export function FutKaart({
         {/* Storm-voorlaag (#834): dezelfde master door een klein frontmasker,
             zodat alleen geselecteerde wolk- en bliksemstukken het frame
             plaatselijk overlappen. */}
-        {editie === "inform" && <InformStormVoor />}
+          {editie === "inform" && <InformStormVoor />}
+          {layout && <KaartOnderdelen layout={layout} slot="voor" />}
+        </div>
       </div>
-    </div>
+    </KaartLayoutContext.Provider>
   );
 }
 
@@ -2377,6 +2402,7 @@ export function FutKaartVoorkant({
   editieTitel,
   playstyles,
   nieuwPlaystyleId,
+  statBron,
 }: {
   elo: number | null;
   tier: Tier | null;
@@ -2390,7 +2416,22 @@ export function FutKaartVoorkant({
   playstyles?: FutPlaystyle[];
   /** Zojuist verdiende badge (#615): die chip pulseert in het pack-overlay. */
   nieuwPlaystyleId?: string;
+  /** Dynamische wedstrijdbron voor divisie-layouts met eigenschapsvelden. */
+  statBron?: SpelerStatBron | null;
 }) {
+  const layout = useKaartLayout();
+  if (layout) {
+    return (
+      <DivisieVoorkant
+        layout={layout}
+        elo={elo}
+        tier={tier}
+        avatar={avatar}
+        naam={naam}
+        statBron={statBron}
+      />
+    );
+  }
   const chips = (playstyles ?? []).slice(0, MAX_PLAYSTYLES);
   return (
     <>

@@ -1,0 +1,111 @@
+.divisie-voorkant {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  color: #302516;
+  font-family: Georgia, "Times New Roman", serif;
+  pointer-events: none;
+}
+
+.divisie-voorkant__zone {
+  position: absolute;
+  left: calc(var(--zone-x) * 100%);
+  top: calc(var(--zone-y) * 100%);
+  width: calc(var(--zone-breedte) * 100%);
+  height: calc(var(--zone-hoogte) * 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(var(--zone-draai));
+  line-height: 1;
+  text-align: center;
+}
+
+.divisie-voorkant__rating {
+  color: #352614;
+  font-size: calc(var(--fut-kw) * 0.205);
+  font-weight: 900;
+  letter-spacing: -0.07em;
+  text-shadow: 0 1px 0 rgba(255, 245, 210, 0.6);
+}
+
+.divisie-voorkant__subniveau {
+  color: #3f321f;
+  font-size: calc(var(--fut-kw) * 0.085);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.divisie-voorkant__portret {
+  overflow: hidden;
+  border-radius: 50%;
+  background: #d9d2ba;
+}
+
+.divisie-voorkant__portret .avatar {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.divisie-voorkant__naam {
+  overflow: hidden;
+  color: #3a2c18;
+  font-size: calc(var(--fut-kw) * 0.085);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(255, 246, 211, 0.75);
+  white-space: nowrap;
+}
+
+.divisie-voorkant__titel {
+  overflow: hidden;
+  color: #f4df9b;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: calc(var(--fut-kw) * 0.042);
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 1px rgba(44, 31, 9, 0.8);
+  white-space: nowrap;
+}
+
+.divisie-voorkant__stats {
+  align-items: stretch;
+  justify-content: space-between;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.divisie-voorkant__stat {
+  min-width: 0;
+  flex: 1 1 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--fut-kw) * 0.006);
+}
+
+.divisie-voorkant__stat-label {
+  max-width: 100%;
+  overflow: hidden;
+  color: #574932;
+  font-size: calc(var(--fut-kw) * 0.0175);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.divisie-voorkant__stat-waarde {
+  color: #342718;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--fut-kw) * 0.055);
+  font-weight: 900;
+  line-height: 1;
+}

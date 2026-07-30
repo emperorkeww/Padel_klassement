@@ -11,7 +11,7 @@ import {
   FutKaartVoorkant,
 } from "@/features/rating/components/FutKaart";
 import { featuredPlaystyles } from "@/features/profiles/badges";
-import type { Row } from "../leaderboardHelpers";
+import { statBronVoor, type Row } from "../leaderboardHelpers";
 import {
   editieLabel,
   editieUitleg,
@@ -69,6 +69,7 @@ export function KaartRaster({
                   // PlayStyles (#500) ook op de wand (#621): dezelfde
                   // ★-uitgelichte badges als op de profielkaart.
                   playstyles={featuredPlaystyles(r.profile?.featured_badges)}
+                  statBron={statBronVoor(r)}
                 />
               }
             />

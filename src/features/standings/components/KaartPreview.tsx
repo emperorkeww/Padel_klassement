@@ -14,7 +14,11 @@ import {
   FutKaartVoorkant,
 } from "@/features/rating/components/FutKaart";
 import { featuredPlaystyles } from "@/features/profiles/badges";
-import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
+import {
+  primeAvatarMorph,
+  statBronVoor,
+  type Row,
+} from "../leaderboardHelpers";
 import {
   editieLabel,
   editieUitleg,
@@ -100,6 +104,7 @@ export function KaartPreview({
               // PlayStyles (#500) ook in de preview (#621): dezelfde chips
               // als op de profielkaart.
               playstyles={featuredPlaystyles(row.profile?.featured_badges)}
+              statBron={statBronVoor(row)}
             />
           }
           achterOverlay={
