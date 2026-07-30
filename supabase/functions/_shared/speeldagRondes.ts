@@ -20,17 +20,31 @@ export function rondesVoorDuur(duration: number): number {
 }
 
 /**
- * Vanaf welk moment (epoch ms) de cron de rondes van een speeldag mag
- * klaarzetten (#846): de ochtend van de speeldag zelf, zodat de indeling de
- * hele dag zichtbaar is en er ruim tijd blijft om een lef-tip te plaatsen.
+ * Mag de cron de rondes van deze speeldag nu klaarzetten (#846)? Twee
+ * voorwaarden, allebei nodig:
  *
- * Een speeldag die vóór dat ochtenduur begint zou zo nooit aan de beurt komen
- * — vandaar het vangnet vlak vóór de start. De vroegste van de twee wint.
+ * 1. De baan is **geboekt**. Dán pas ligt de spelerslijst vast — er kan niemand
+ *    meer bij — en is de indeling definitief. Een `locked` poll telt niet: het
+ *    moment ligt dan wel vast, de bezetting nog niet.
+ * 2. Het is **de ochtend van de speeldag** (`ochtend`, epoch ms). Zo staat het
+ *    schema de hele dag klaar en blijft er ruim tijd om een lef-tip te
+ *    plaatsen, die op de starttijd van de match sluit. Wordt er pas later op de
+ *    dag geboekt, dan is de eerstvolgende tik aan de beurt.
+ *
+ * Een speeldag die vóór dat ochtenduur begint zou zo nooit aan de beurt komen —
+ * vandaar `leadMin` als vangnet vlak vóór de start. De vroegste van de twee
+ * wint. `start > now` houdt een speeldag die intussen begonnen is met rust.
  */
-export function rondesDrempel(
-  ochtend: number,
-  start: number,
-  leadMin: number,
-): number {
-  return Math.min(ochtend, start - leadMin * 60_000);
+export function magRondesZetten(opts: {
+  status: string;
+  rondesGezetOp: string | null;
+  now: number;
+  start: number;
+  ochtend: number;
+  leadMin: number;
+}): boolean {
+  const { status, rondesGezetOp, now, start, ochtend, leadMin } = opts;
+  if (status !== "booked" || rondesGezetOp) return false;
+  if (start <= now) return false;
+  return now >= Math.min(ochtend, start - leadMin * 60_000);
 }

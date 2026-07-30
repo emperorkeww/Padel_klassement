@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   KLAARZET_MIN,
+  magRondesZetten,
   RONDE_MIN,
-  rondesDrempel,
   rondesVoorDuur,
 } from "./speeldagRondes.ts";
 // De client-tegenhanger: dezelfde getallen, andere boom.
@@ -21,22 +21,53 @@ describe("rondesVoorDuur", () => {
   });
 });
 
-describe("rondesDrempel", () => {
-  const ochtend = Date.parse("2026-07-30T06:00:00Z"); // 08:00 in Brussel
+describe("magRondesZetten", () => {
+  // Speeldag 30 juli, 20:00 in Brussel; ochtenddrempel 08:00 diezelfde dag.
+  const ochtend = Date.parse("2026-07-30T06:00:00Z");
+  const start = Date.parse("2026-07-30T18:00:00Z");
+  const mag = (over: Partial<Parameters<typeof magRondesZetten>[0]> = {}) =>
+    magRondesZetten({
+      status: "booked",
+      rondesGezetOp: null,
+      now: ochtend,
+      start,
+      ochtend,
+      leadMin: 90,
+      ...over,
+    });
 
-  it("laat een avondspeeldag 's ochtends al indelen", () => {
-    const start = Date.parse("2026-07-30T18:00:00Z"); // 20:00 in Brussel
-    expect(rondesDrempel(ochtend, start, 90)).toBe(ochtend);
+  it("zet de rondes van een geboekte speeldag 's ochtends klaar", () => {
+    expect(mag()).toBe(true);
   });
 
-  it("valt voor een speeldag vóór het ochtenduur terug op het venster vlak vóór de start", () => {
-    const start = Date.parse("2026-07-30T05:00:00Z"); // 07:00 in Brussel
-    expect(rondesDrempel(ochtend, start, 90)).toBe(start - 90 * 60_000);
+  it("wacht op de boeking — een gelockte speeldag ligt qua bezetting nog niet vast", () => {
+    expect(mag({ status: "locked" })).toBe(false);
+    expect(mag({ status: "open" })).toBe(false);
   });
 
-  it("blijft nooit later dan het vangnet-venster, ook net ná het ochtenduur", () => {
-    const start = Date.parse("2026-07-30T07:00:00Z"); // 09:00 in Brussel
-    expect(rondesDrempel(ochtend, start, 90)).toBe(start - 90 * 60_000);
+  it("wacht op de ochtend: de dag ervóór gebeurt er niets", () => {
+    expect(mag({ now: ochtend - 3600_000 })).toBe(false);
+    expect(mag({ now: Date.parse("2026-07-29T20:00:00Z") })).toBe(false);
+  });
+
+  it("pakt een boeking later op de dag bij de eerstvolgende tik", () => {
+    expect(mag({ now: Date.parse("2026-07-30T13:05:00Z") })).toBe(true);
+  });
+
+  it("doet niets meer zodra de speeldag begonnen is", () => {
+    expect(mag({ now: start })).toBe(false);
+    expect(mag({ now: start + 60_000 })).toBe(false);
+  });
+
+  it("houdt zich aan de dedup", () => {
+    expect(mag({ rondesGezetOp: "2026-07-30T06:05:00Z" })).toBe(false);
+  });
+
+  it("valt voor een speeldag vóór het ochtenduur terug op het vangnet vlak vóór de start", () => {
+    const vroeg = Date.parse("2026-07-30T05:00:00Z"); // 07:00 in Brussel
+    const opts = { start: vroeg, ochtend };
+    expect(mag({ ...opts, now: vroeg - 91 * 60_000 })).toBe(false);
+    expect(mag({ ...opts, now: vroeg - 89 * 60_000 })).toBe(true);
   });
 });
 

@@ -438,11 +438,12 @@ export function GroupLedenTab({
               />
             </div>
             <p className="field-hint">
-              Staat er op de ochtend van een vastgelegde speeldag nog geen
-              enkele ronde, dan zet het systeem er zelf een reeks eerlijke
-              rondes klaar met de spelers die “ja” zeiden — zo staat de
-              indeling er de hele dag en is er tijd voor een lef-tip. Zet dit
-              uit als jullie liever alles zelf indelen.
+              Staat er op de ochtend van een <strong>geboekte</strong> speeldag
+              nog geen enkele ronde, dan zet het systeem er zelf een reeks
+              eerlijke rondes klaar met de spelers die “ja” zeiden — na de
+              boeking ligt de bezetting vast, en zo staat de indeling er de hele
+              dag met tijd voor een lef-tip. Zet dit uit als jullie liever alles
+              zelf indelen.
             </p>
           </div>
           <div>
