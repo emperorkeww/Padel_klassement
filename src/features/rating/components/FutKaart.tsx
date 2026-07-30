@@ -240,6 +240,11 @@ import {
   PiasEffectVoor,
 } from "./pias/PiasEffect";
 import {
+  WannabeEffectAchter,
+  WannabeEffectBinnen,
+  WannabeEffectVoor,
+} from "./wannabe/WannabeEffect";
+import {
   GoatEffectAchter,
   GoatEffectBinnen,
   GoatEffectVoor,
@@ -2091,6 +2096,12 @@ export function FutKaart({
   // toptier-ornament wint, want die zeggen iets tijdelijkers en zeldzamers over
   // deze speler dan zijn divisie.
   const divisie = !editie && !ornament ? divisieKaart(tier?.key) : undefined;
+  // Wannabe (#834): de goud-divisie krijgt zijn folieranden, crest, medaillon én
+  // watermerk uit wannabe-master.webp. De vectorversies blijven bestaan voor de
+  // canvas-/posterroute, maar mogen in de DOM niet dubbel staan — twee
+  // watermerken over elkaar leest als vervuiling, precies zoals bij de Piet.
+  const wannabeMaster = tier?.key === "goud" && !editie;
+  const divisieLive = wannabeMaster ? undefined : divisie;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register. Onder
   // een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op het
   // In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
@@ -2131,12 +2142,12 @@ export function FutKaart({
         breedte={PIET_WATERMERK_BREEDTE}
         positie={PIET_WATERMERK_POSITIE}
       />
-    ) : divisie?.motief ? (
+    ) : divisieLive?.motief ? (
       <FutKaartMotief
-        paden={divisie.motief.paden}
-        kleur={divisie.motief.kleur}
-        breedte={divisie.motief.breedte}
-        positie={divisie.motief.positie}
+        paden={divisieLive.motief.paden}
+        kleur={divisieLive.motief.kleur}
+        breedte={divisieLive.motief.breedte}
+        positie={divisieLive.motief.positie}
       />
     ) : editie ? null : tier?.key === "legende" ? (
       <FutKaartMotief
@@ -2170,13 +2181,13 @@ export function FutKaart({
   return (
     <div className={klassen} ref={kaartRef}>
       <div className="fut-kaart__flipper">
-        {(divisie?.achter?.length ?? 0) > 0 && (
+        {(divisieLive?.achter?.length ?? 0) > 0 && (
           <svg
             className="fut-kaart__ornament"
             viewBox={ORNAMENT_VIEWBOX}
             aria-hidden="true"
           >
-            <use href={`#fut-div-${divisie!.key}-achter`} />
+            <use href={`#fut-div-${divisieLive!.key}-achter`} />
           </svg>
         )}
         {ornamentLive && (
@@ -2195,6 +2206,9 @@ export function FutKaart({
         {/* GOAT-achterlaag: hoorns, monument en kristallen komen uit één
             master en verdwijnen hier achter kaart en frame. */}
         {tier?.key === "legende" && !editie && <GoatEffectAchter />}
+        {/* Wannabe-achterlaag: racketcrest, plakstroken, briefjes en de
+            megafoon verdwijnen hier achter kaart en frame. */}
+        {wannabeMaster && <WannabeEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
         {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
             achter kaart en frame. */}
@@ -2220,6 +2234,10 @@ export function FutKaart({
                 {/* Dezelfde GOAT-master in het echte kaartvlak; het
                     binnenmasker laat er alleen de bergscene van door. */}
                 {tier?.key === "legende" && !editie && <GoatEffectBinnen />}
+                {/* Dezelfde Wannabe-master in het echte kaartvlak: het
+                    rasterpuntvuil en het getekende tekstballonnetje. Het artwork
+                    houdt de tekstzones zelf vrij, dus er is geen binnenmasker. */}
+                {wannabeMaster && <WannabeEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde pias-master, geclipt door het echte schild; de
                     inhoud rendert erná en blijft dus leesbaar. */}
@@ -2259,13 +2277,13 @@ export function FutKaart({
             <use href={`#fut-orn-${ornamentVoor}-voor`} />
           </svg>
         )}
-        {divisie?.voor && divisie.voor.length > 0 && (
+        {divisieLive?.voor && divisieLive.voor.length > 0 && (
           <svg
             className="fut-kaart__ornament fut-kaart__ornament--voor"
             viewBox={ORNAMENT_VIEWBOX}
             aria-hidden="true"
           >
-            <use href={`#fut-div-${divisie.key}-voor`} />
+            <use href={`#fut-div-${divisieLive.key}-voor`} />
           </svg>
         )}
         {editie === "icon" && <BigDaddyEffectVoor />}
@@ -2273,6 +2291,10 @@ export function FutKaart({
         {/* Kristalpunten langs de flanken en de edelsteen-chevron in de
             schildpunt liggen vóór het frame. */}
         {tier?.key === "legende" && !editie && <GoatEffectVoor />}
+        {/* Racketcrest, megafoon, beide plakstroken, beide briefjes met hun
+            pijlen, de splinter, het kroontje met krassen en de inktdruipers
+            liggen vóór het frame. */}
+        {wannabeMaster && <WannabeEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
             komen via het frontmask vóór het frame. */}

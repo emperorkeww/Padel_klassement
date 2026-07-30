@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1440">
+  <!-- Voorselectie: de onderdelen die in de referentie óver de lijst liggen — racketcrest, megafoonmedaillon, beide plakstroken, beide briefjes met hun pijlen, de afgesprongen splinter, het kroontje met krassenbundel en de inktdruipers. Elke vorm is de contour van het bijbehorende onderdeel uit scripts/wannabe-master.py, dus een maskervorm kan niet los van een voorwerp verschuiven. Er staat bewust geen zwarte achtergrondrect in: CSS mask met een SVG-image valt in match-source terug op alpha, niet op luminance, en een dekkende zwarte rect laat dan de hele master door. -->
+  <defs>
+    <filter id="zacht" x="-14%" y="-14%" width="128%" height="128%">
+      <feGaussianBlur stdDeviation="8" />
+    </filter>
+  </defs>
+  <g fill="#fff" filter="url(#zacht)">
+    <!-- crest -->
+    <path d="M588 161 L587 175 L584 188 L580 201 L573 212 L565 222 L556 231 L545 238 L534 243 L522 247 L510 248 L498 247 L486 243 L474 238 L464 231 L454 222 L446 212 L440 201 L435 188 L432 175 L431 161 L432 148 L435 135 L440 122 L446 111 L454 101 L464 92 L474 85 L486 79 L498 76 L510 75 L522 76 L534 79 L545 85 L556 92 L565 101 L573 111 L580 122 L584 135 L587 148 Z" />
+    <!-- megafoon -->
+    <path d="M612 1225 L611 1240 L607 1254 L601 1268 L593 1280 L583 1292 L571 1301 L558 1309 L544 1315 L529 1318 L513 1319 L498 1318 L483 1315 L468 1309 L455 1301 L443 1292 L433 1280 L425 1268 L419 1254 L415 1240 L414 1225 L415 1210 L419 1196 L425 1182 L433 1169 L443 1158 L455 1149 L468 1141 L483 1135 L498 1132 L513 1131 L529 1132 L544 1135 L558 1141 L571 1149 L583 1158 L593 1169 L601 1182 L607 1196 L611 1210 Z" />
+    <!-- tape-links -->
+    <path d="M73 463 L90 433 L134 420 L191 422 L231 459 L226 490 L176 506 L147 527 L112 534 L83 506 Z" />
+    <!-- tape-rechts -->
+    <path d="M968 415 L992 412 L1014 449 L1006 467 L902 578 L872 578 L858 547 L869 528 Z" />
+    <!-- splinter-links -->
+    <path d="M80 316 L93 317 L171 407 L166 419 L152 414 L84 326 Z" />
+    <!-- notitie-links -->
+    <path d="M61 641 L67 603 L96 591 L152 587 L202 593 L218 621 L216 673 L209 706 L174 718 L122 720 L82 708 L63 682 Z" />
+    <!-- pijlen-links -->
+    <path d="M69 601 L129 560 L178 511 L238 515 L251 598 L243 688 L251 737 L230 799 L176 801 L120 769 L77 725 L62 663 Z" />
+    <!-- notitie-rechts -->
+    <path d="M810 790 L847 777 L899 774 L954 779 L967 812 L971 878 L963 934 L958 975 L904 978 L858 971 L821 966 L808 925 L804 860 L806 815 Z" />
+    <!-- kroon-linksonder -->
+    <path d="M191 1186 L223 1146 L293 1129 L372 1129 L440 1146 L488 1193 L494 1236 L458 1280 L380 1300 L301 1293 L233 1259 L194 1221 Z" />
+    <!-- inktdruppels -->
+    <path d="M640 1155 L694 1145 L746 1155 L752 1207 L738 1265 L709 1301 L680 1305 L659 1269 L645 1217 Z" />
+  </g>
+</svg>

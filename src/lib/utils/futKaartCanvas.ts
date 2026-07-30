@@ -3561,6 +3561,7 @@ export function kaartSkin(
         stralen: r.stralen ?? false,
         textuur: r.textuur,
         satijnAlpha: r.satijnAlpha,
+        randDiktes: r.randDiktes,
         echo: r.echo,
         binnenlijn: r.binnenlijn,
         motief: divisie.motief

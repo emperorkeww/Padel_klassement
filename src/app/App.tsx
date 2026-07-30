@@ -69,6 +69,11 @@ const GoatShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/GoatShowcase"))
   : null;
 
+// Dev-stage voor de Wannabe-divisie en haar referentiegestuurde breakout.
+const WannabeShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/WannabeShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -133,6 +138,9 @@ function App() {
           )}
           {GoatShowcase && (
             <Route path="/dev/goat" element={<GoatShowcase />} />
+          )}
+          {WannabeShowcase && (
+            <Route path="/dev/wannabe" element={<WannabeShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}
