@@ -54,6 +54,11 @@ const BigDaddyShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BigDaddyShowcase"))
   : null;
 
+// Dev-stage voor de Zwarte Piet-kaart en haar referentiegestuurde breakout.
+const PietShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/PietShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -109,6 +114,9 @@ function App() {
           )}
           {BigDaddyShowcase && (
             <Route path="/dev/bigdaddy" element={<BigDaddyShowcase />} />
+          )}
+          {PietShowcase && (
+            <Route path="/dev/piet" element={<PietShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+  <defs>
+    <!-- Het masker wordt eerst naar echte alpha gerenderd. Daardoor wist de
+         zwarte avatarvorm pixels werkelijk uit wanneer dit SVG later als
+         extern CSS-mask-image wordt gebruikt. -->
+    <mask id="front-selection" maskUnits="userSpaceOnUse" mask-type="luminance">
+      <rect width="1024" height="1536" fill="black"/>
+      <g fill="white">
+        <!-- Complete bovencrest en vleugels; het overige wolkendek blijft achter. -->
+        <ellipse cx="512" cy="164" rx="292" ry="170"/>
+        <!-- Geselecteerde organische zijgroepen. -->
+        <ellipse cx="128" cy="510" rx="174" ry="330"/>
+        <ellipse cx="884" cy="568" rx="178" ry="350"/>
+        <ellipse cx="54" cy="1110" rx="82" ry="278"/>
+        <ellipse cx="970" cy="1110" rx="82" ry="282"/>
+        <!-- Complete onderste rozet, medaillon en aansluitende kettingbogen. -->
+        <ellipse cx="512" cy="1265" rx="318" ry="208"/>
+      </g>
+      <!-- De avatarschijf blijft volledig vrij; de omliggende wolklobben
+           blijven door de witte zijselectie wel vóór het frame beschikbaar. -->
+      <ellipse cx="696" cy="553" rx="148" ry="174" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="1024" height="1536" fill="white" mask="url(#front-selection)"/>
+</svg>

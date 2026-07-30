@@ -1,8 +1,8 @@
 # Special Card Visual Effects Architecture
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
-het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator- en Big
-Daddy-breakouts. Het is tegelijk een technische naslag en een
+het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator-, Big
+Daddy- en Piet-breakouts. Het is tegelijk een technische naslag en een
 herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
 kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
 komt.
@@ -887,6 +887,57 @@ wel beschikbaar voor de canvas/posterfallback. De vaste controle gebeurt via
 `screenshots/bigdaddy/final-desktop.png` en
 `screenshots/bigdaddy/final-mobile.png`.
 
+**Piet**
+
+De Piet-editie gebruikt `PietEffect.tsx` en `PietEffect.css` met één
+`piet-master.webp` van 1024 × 1536 pixels. Het master-artwork bevat een
+relatief smalle, doorlopende noir-omlijsting: zwarte rook met goudstof,
+complete speelkaarten, veren en geschenken, twee zware kettingtrajecten, een
+gevleugelde bovencrest en een onderste rozet met medaillon. De grote
+transparante middenopening (ongeveer x 15–85%, y 14–84%) is een expliciet
+assetcontract; rating, avatar en tekst worden dus niet met een toevallig
+frontmask “teruggewonnen”.
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--piet`:
+
+```css
+--piet-master-left: -18%;
+--piet-master-top: -18%;
+--piet-master-width: 136%;
+--piet-master-scale: 1;
+--piet-master-rotate: 0deg;
+```
+
+`piet-inside-mask.svg` dempt de veilige middenzone verder en laat alleen de
+randgebonden rook, gouddeeltjes en objectaansluitingen in het echte
+kaartschild door. `piet-front-mask.svg` selecteert complete objectgroepen:
+de bovencrest, beperkte zijgroepen, kleine kettingpartijen en de volledige
+onderste rozet. Dit voorkomt zowel halve herkenbare objecten als een dikke
+ornamentring die de kaart visueel verdringt.
+
+De onderste kettingen draaien in het artwork al rond 64–68% van de canvashoogte
+naar binnen. Dat is bewust geen afwijkende CSS-transform voor de frontlaag:
+kettingbogen en rozet sluiten daardoor in back, inside en front op exact
+dezelfde plek tegen de schildpunt aan.
+
+Het master-artwork bevat daarnaast een open rookcrescent rond het
+avatarregister (ongeveer x 68%, y 36%). `piet-inside-mask.svg` laat die
+selectief achter de echte avatar door, terwijl de content zelf later in de
+DOM wordt geschilderd. Daardoor krijgt de profielfotorand het donkere
+rookvolume uit de referentie zonder een algemene grijze overlay over de kaart.
+Het inside-mask gebruikt hiervoor vier overlappende, asymmetrische lobben in
+plaats van één gesloten ovaal. De Piet-specifieke avatarstijl in
+`PietEffect.css` vervangt bovendien de generieke lichte ring door drie
+materiaalbanden: fijn goud, donker metaal en antiek goud. Avatarinhoud,
+diameter en positie blijven die van de gedeelde kaartcomponent.
+
+De oude `fut-orn-piet-*`-SVG's worden voor de live React-kaart niet meer
+gemonteerd, maar blijven bestaan voor canvas-/postercompatibiliteit. De
+afzonderlijke `pias`-editie wordt niet geraakt. De vaste controle gebeurt via
+`/dev/piet`, `scripts/piet-screenshot.sh` en `?debugPiet=1`. De finale
+beelden staan in `screenshots/piet/final-desktop.png` en
+`screenshots/piet/final-mobile.png`.
+
 **Andere special editions**
 
 Gebruik het patroon voor effecten met fysieke continuïteit: sneeuwstorm,
@@ -913,13 +964,13 @@ registraties nodig.
 ### DOM en canvas/poster zijn niet dezelfde renderer
 
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
-`onfire-master.webp`, voor Dictator `dictator-master.webp` en voor Big Daddy
-`bigdaddy-master.webp`. De
+`onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
+`bigdaddy-master.webp` en voor Piet `piet-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
-`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator en
-Big Daddy.
+`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator, Big
+Daddy en Piet.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:

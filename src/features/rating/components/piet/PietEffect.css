@@ -1,0 +1,163 @@
+/* Eén gedeeld register voor back, inside en front. De drie instanties mogen
+   nooit afzonderlijk worden verschoven: alleen clipping en maskers verschillen. */
+
+.fut-kaart.fut-kaart--piet {
+  --piet-master-left: -18%;
+  --piet-master-top: -18%;
+  --piet-master-width: 136%;
+  --piet-master-scale: 1;
+  --piet-master-rotate: 0deg;
+  --piet-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.piet-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.piet-effect__master {
+  position: absolute;
+  left: var(--piet-master-left);
+  top: var(--piet-master-top);
+  width: var(--piet-master-width);
+  transform: rotate(var(--piet-master-rotate)) scale(var(--piet-master-scale));
+  transform-origin: 0 0;
+}
+
+.piet-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(
+      0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
+        rgba(4, 3, 2, 0.78)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.022) rgba(219, 164, 54, 0.2)
+    );
+}
+
+/* Expliciet paintregister binnen de preserve-3d-flipper. De oude live
+   Piet-vectoren zijn niet gemount; ze blijven alleen canvasfallback. */
+.fut-kaart.fut-kaart--piet
+  .fut-kaart__ornament:not(.fut-kaart__ornament--voor) {
+  z-index: 1;
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__ornament--voor {
+  z-index: 4;
+}
+
+/* De referentie gebruikt geen generieke lichte avatarrand, maar een
+   driedelige medaillonrand: fijne goudlijn, donkere metalen band en een
+   tweede antiek-gouden buitenlijn. De avatarmaat en -positie blijven exact
+   die van FutKaart; alleen het materiaal van de rand is editie-specifiek. */
+.fut-kaart.fut-kaart--piet .fut-kaart__avatar .avatar {
+  box-shadow:
+    0 0 0 max(1px, calc(var(--fut-kw) * 0.004)) #dfc583,
+    0 0 0 max(2px, calc(var(--fut-kw) * 0.011)) #171510,
+    0 0 0 max(3px, calc(var(--fut-kw) * 0.016)) #9d7b3e,
+    0 calc(var(--fut-kw) * 0.025) calc(var(--fut-kw) * 0.065)
+      rgba(8, 6, 3, 0.48);
+}
+
+/* Volledige rook-, kaarten-, veren- en kettingmassa achter kaart en frame. */
+.piet-effect--achter {
+  z-index: 0;
+}
+
+/* De negatieve inset reconstrueert de kaartstage vanuit het echte kaartvlak.
+   Het schildclip van .fut-kaart__vlak is daarmee het exacte binnenmasker. */
+.piet-effect--binnen {
+  inset: calc(-1 * var(--piet-master-inset));
+  z-index: -1;
+}
+
+.piet-effect--binnen .piet-effect__master {
+  opacity: 0.86;
+  -webkit-mask: url("./assets/piet-inside-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/piet-inside-mask.svg") center / 100% 100% no-repeat;
+}
+
+/* Alleen complete geselecteerde crest-, veer-, kaart-, ketting- en
+   medaillonpartijen komen vóór het frame. Tussen die partijen blijft het
+   donkere frame zichtbaar, zodat de laagvolgorde leesbaar blijft. */
+.piet-effect--voor {
+  z-index: 3;
+}
+
+.piet-effect--voor .piet-effect__master {
+  -webkit-mask: url("./assets/piet-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/piet-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.014) calc(var(--fut-kw) * 0.014)
+      rgba(3, 2, 1, 0.9)
+  );
+}
+
+.piet-effect--voor .piet-effect__master img {
+  filter:
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.006) rgba(1, 1, 1, 0.94)
+    )
+    drop-shadow(
+      0 0 calc(var(--fut-kw) * 0.018) rgba(235, 183, 65, 0.26)
+    );
+}
+
+/* Registratiedebug: /dev/piet?debugPiet=1. */
+.piet-effect--debug {
+  outline: 1px dashed;
+}
+
+.piet-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.piet-effect--achter.piet-effect--debug {
+  outline-color: #f3b33c;
+}
+
+.piet-effect--achter.piet-effect--debug::after {
+  background: #f3b33c;
+}
+
+.piet-effect--binnen.piet-effect--debug {
+  outline-color: #74f79b;
+}
+
+.piet-effect--binnen.piet-effect--debug::after {
+  background: #74f79b;
+}
+
+.piet-effect--voor.piet-effect--debug {
+  outline-color: #5bdcff;
+}
+
+.piet-effect--voor.piet-effect--debug::after {
+  background: #5bdcff;
+}
+
+.piet-effect--debug .piet-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.78);
+}
