@@ -40,6 +40,9 @@ Belangrijkste implementatiebestanden:
   en [`BigDaddyEffect.css`](../src/features/rating/components/bigdaddy/BigDaddyEffect.css)
   — dezelfde architectuur toegepast op kroon, wolken, ballonnen, pluchen
   figuren, linten en een gevleugeld hartmedaillon.
+- [`bigdaddy-master-compose.mjs`](../scripts/bigdaddy-master-compose.mjs) — de
+  eerste editie waarvan master én beide maskers uit één reproduceerbaar script
+  komen, gemeten aan de referentie.
 - [`PiasEffect.tsx`](../src/features/rating/components/pias/PiasEffect.tsx),
   [`PiasEffect.css`](../src/features/rating/components/pias/PiasEffect.css) en
   [`scripts/pias-master.py`](../scripts/pias-master.py) — dezelfde architectuur
@@ -864,30 +867,98 @@ staan in
 
 Big Daddy wordt als de `icon`-editie behandeld en gebruikt dezelfde
 drie-masterstructuur via `BigDaddyEffect.tsx`. `bigdaddy-master.webp` is een
-1024 × 1536 WebP met alpha en combineert één grote juwelenkroon, verbonden
-roze wolken, een compacte balloncluster rechtsboven, satijnen zijlinten, een
-volledige gekroonde teddy linksonder, een pluchen ster rechts en een
-gevleugeld hartmedaillon onderaan. De centrale zone blijft grotendeels leeg
-voor rating, avatar, naam en editie-informatie.
+1280 × 1727 WebP met alpha en combineert één grote juwelenkroon, pluchen wolken
+in beide bovenhoeken, een hart- en sterballon met strik rechtsboven, een tweede
+gespiegelde hartballon halverwege links, satijnlinten met neonharten en de
+pluchen ster op de rechterflank, een volledige gekroonde teddy linksonder,
+linten linksonder én rechtsonder en een gevleugeld hartmedaillon in de
+schildpunt. De centrale zone blijft grotendeels leeg voor rating, avatar, naam
+en editie-informatie.
 
 De gedeelde registratie staat uitsluitend op `.fut-kaart--icon`:
 
 ```css
---bigdaddy-master-left: -22%;
---bigdaddy-master-top: -34%;
---bigdaddy-master-width: 144%;
+--bigdaddy-master-left: -20%;
+--bigdaddy-master-top: -22%;
+--bigdaddy-master-width: 140%;
 --bigdaddy-master-scale: 1;
 --bigdaddy-master-rotate: 0deg;
 ```
 
-`bigdaddy-inside-mask.svg` laat binnen het schild alleen wolken, linten en
+`bigdaddy-inside-mask.webp` laat binnen het schild alleen wolken, linten en
 ondergloed door; daardoor verschijnt de teddy niet als bleke afdruk in het
-kaartvlak. `bigdaddy-front-mask.svg` selecteert de kroon, de volledige maar
-naar de buitenflank verplaatste teddy, beperkte ballon- en sterdelen en het
-onderste medaillon vóór het frame. Dit is een belangrijk verschil met een
-masker dat slechts een halve teddy toont: samengestelde herkenbare objecten
-worden in het artwork zelf responsief veilig geplaatst en niet geometrisch
-doormidden geknipt.
+kaartvlak. `bigdaddy-front-mask.webp` selecteert de kroon, de volledige maar
+naar de buitenflank verplaatste teddy, de ballonpartijen, de pluchen ster, het
+onderste medaillon en twee lintpartijen vóór het frame. Dit is een belangrijk
+verschil met een masker dat slechts een halve teddy toont: samengestelde
+herkenbare objecten worden in het artwork zelf responsief veilig geplaatst en
+niet geometrisch doormidden geknipt.
+
+Beide maskers zijn raster in plaats van SVG, omdat hun vorm de **alfa van de
+onderdelen zelf** is. Een eerdere versie tekende SVG-vormen op de bounding box
+van elk onderdeel; daarmee schilderde de frontlaag hele rechthoeken artwork
+(wolk, gloed, naburige onderdelen) over kaart en frame, met rechte randen dwars
+over de lijst — exact de fout die stap 7 hieronder verbiedt. Wie dit patroon
+kopieert: houd de versterkingsfactor op de alfa laag (1,3–1,8), anders wordt de
+geveerde snederand van een onderdeel alsnog een rechte kant in het masker.
+
+**Gegenereerde master en maskers (#834).** Big Daddy is de eerste editie waar
+master én maskers uit één script komen:
+
+```bash
+node scripts/bigdaddy-master-compose.mjs [--preview]
+```
+
+De oorspronkelijke master was één dichte ornamentkrans óm de kaart: het gouden
+frame verdween links en rechts volledig achter satijn en de kroon bedekte een
+derde van het kaartvlak. De referentie doet het omgekeerd — het frame blijft
+rondom leesbaar en objecten raken het frame alleen plaatselijk. Die krans is
+daarom bewaard als onderdelenblad (`bigdaddy-onderdelen.webp`, niet
+geïmporteerd en dus niet gebundeld); het script snijdt de objecten eruit en zet
+ze terug op posities die als fractie van het kaartvlak zijn gemeten aan
+[`referentie_big_daddy.png`](./referentie_big_daddy.png).
+
+Dat levert drie eigenschappen die de andere edities niet hebben:
+
+- de compositie is reproduceerbaar zonder gelaagd bronbestand — het bezwaar
+  onder "Het master-artwork is een afgeleid rasterasset" geldt hier niet meer;
+- `bigdaddy-front-mask.svg` en `bigdaddy-inside-mask.svg` zijn *afgeleid* van de
+  onderdelenlijst. Elk onderdeel draagt een `voor`-selectie (het hele object of
+  een paar vakken ervan), zodat een maskervorm nooit los van een objectpositie
+  kan verschuiven. Het middenstuk van het rechterlint heeft bewust géén
+  selectie: daardoor weeft het satijn zichtbaar achter én vóór het frame;
+- `BigDaddyEffect.test.tsx` vergelijkt de canvasmarges in het script met de
+  `--bigdaddy-master-*`-waarden in de CSS en met de `viewBox` van beide
+  maskers. Een desync valt daardoor in de tests om, niet pas op een screenshot.
+
+Twee valkuilen die het script expliciet afhandelt en die bij een volgende
+editie terugkomen:
+
+- een snede die volledig binnen een massa ligt (de wolken) is overal dekkend.
+  Alleen uitdoven van de randen maakt daar een zachte rechthoek van; zo'n
+  snede heeft een gelobd silhouetmasker nodig;
+- veer, silhouet, alfa en kleurcorrectie rekenen met de hand op de rauwe
+  RGBA-buffer. Sharps `dest-in` liet de gemaskeerde randen in deze pijplijn
+  ongemoeid en `modulate` gooide het alfakanaal plat — beide leverden een
+  onderdeel dat als dichte rechthoek op de kaart landde.
+
+Twee CSS-details die de aansluiting maken: het matelas-weefsel zit in de
+`background` van `.fut-kaart__vlak` en niet in een `::after`, want een
+pseudo-element schildert ná de kaartinhoud — daar lag de ruit over de avatar en
+de letters. En de icon-editie krijgt een magenta getinte contactschaduw in
+plaats van de gedeelde donkergroene: tegen roze artwork las die als een donkere
+goot tussen kaart en decor, waardoor de ornamenten niet meer op de lijst leken
+aan te sluiten.
+
+**Kaartvlak (#834).** Naast het artwork week ook de skin af: het vlak stond op
+bijna-wit met de gedeelde stralenkrans, terwijl de referentie verzadigd roze
+satijn met donkermagenta letters toont. De `--bigdaddy-kaart-*`-tokens in
+`index.css` staan daarom op dat diepere roze, de icon-editie brengt een eigen
+`matelas`-weefsel mee (een gequilt ruitraster dat de stralenkrans vervangt, net
+zoals het brokaat dat bij de dictator doet) en de lijst is zwaarder: goud,
+magenta liner, goud keyline op 0,026/0,017/0,007 × kaartbreedte. Vlakkleuren,
+liner, keyline, weefsel, randgloed en randdiktes staan gespiegeld in
+`EDITIE_REGISTERS.icon` in `futKaartCanvas.ts`, onder de bestaande synctest.
 
 De vroegere live Big Daddy-SVG's voor kroon, lint, ballonnen en
 puntornament worden bij `editie === "icon"` niet meer gemonteerd. Ze blijven
@@ -895,7 +966,10 @@ wel beschikbaar voor de canvas/posterfallback. De vaste controle gebeurt via
 `/dev/bigdaddy`, `scripts/bigdaddy-screenshot.sh` en
 `?debugBigDaddy=1`. De finale beelden staan in
 `screenshots/bigdaddy/final-desktop.png` en
-`screenshots/bigdaddy/final-mobile.png`.
+`screenshots/bigdaddy/final-mobile.png`; de drie #834-checkpoints in
+`bigdaddy-v4-krans-baseline.png` (de dichte krans vóór #834),
+`bigdaddy-v5-referentie-compositie.png` (objecten op referentieposities, roze
+vlak) en `bigdaddy-v6-vlak-en-lijst.png` (zwaardere goud-magenta lijst).
 
 **Piet**
 
@@ -1133,10 +1207,14 @@ waarheid voor de huidige browsercompositie.
 
 ### Het master-artwork is een afgeleid rasterasset
 
-Voor de pias geldt dit niet: dat artwork wordt door `scripts/pias-master.py`
-uit `docs/referentie_pias.png` gegenereerd en is dus wél reproduceerbaar. Voor
-de overige edities bevat de repository het productie-WebP en een specificatie,
-maar geen gelaagd bronbestand uit een beeldbewerkingspakket. Grote inhoudelijke
+Voor drie edities geldt dit niet. De pias en de GOAT worden door
+`scripts/pias-master.py` respectievelijk `scripts/goat-master.py` uit hun
+referentie-PNG gesneden; Big Daddy komt uit
+`scripts/bigdaddy-master-compose.mjs`, dat master én beide maskers uit het
+onderdelenblad `bigdaddy-onderdelen.webp` bouwt. Die drie composities zijn dus
+wél reproduceerbaar. Voor de overige edities bevat de repository het
+productie-WebP en een specificatie, maar geen gelaagd bronbestand uit een
+beeldbewerkingspakket. Grote inhoudelijke
 wijzigingen aan wolk of bliksem moeten daarom via een nieuwe
 assetgeneratie/-bewerking gebeuren en vervolgens opnieuw op alpha,
 resolutie, compressie en registratie worden gecontroleerd.

@@ -1,10 +1,14 @@
 /* Eén gedeeld geometrisch register voor back, inside en front. Maskers bepalen
    selectie; geen enkele laag krijgt een afwijkende positie of schaal. */
 
+/* De master is op deze drie waarden gecomponeerd: het canvas van
+   scripts/bigdaddy-master-compose.mjs hangt links en rechts 20% en boven 22%
+   buiten de kaart. Wijzig ze dus samen met dat script, anders verschuift elk
+   object t.o.v. het frame. */
 .fut-kaart.fut-kaart--icon {
-  --bigdaddy-master-left: -22%;
-  --bigdaddy-master-top: -34%;
-  --bigdaddy-master-width: 144%;
+  --bigdaddy-master-left: -20%;
+  --bigdaddy-master-top: -22%;
+  --bigdaddy-master-width: 140%;
   --bigdaddy-master-scale: 1;
   --bigdaddy-master-rotate: 0deg;
   --bigdaddy-master-inset: calc(
@@ -30,16 +34,19 @@
   transform-origin: 0 0;
 }
 
+/* Rondom elk object een parelroze kern en een ruimere magenta halo (#834): de
+   referentie zet de hele compositie in een roze bloom, waardoor de zwarte
+   achtergrond tussen de ornamenten oplicht in plaats van gapt. */
 .bigdaddy-effect__master img {
   display: block;
   width: 100%;
   height: auto;
   filter:
     drop-shadow(
-      0 0 calc(var(--fut-kw) * 0.009) rgba(255, 241, 250, 0.34)
+      0 0 calc(var(--fut-kw) * 0.01) rgba(255, 241, 250, 0.38)
     )
     drop-shadow(
-      0 0 calc(var(--fut-kw) * 0.032) rgba(238, 49, 143, 0.27)
+      0 0 calc(var(--fut-kw) * 0.046) rgba(238, 49, 143, 0.4)
     );
 }
 
@@ -73,10 +80,10 @@
 }
 
 .bigdaddy-effect--binnen .bigdaddy-effect__master {
-  opacity: 0.28;
-  -webkit-mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100%
+  opacity: 0.16;
+  -webkit-mask: url("./assets/bigdaddy-inside-mask.webp") center / 100% 100%
     no-repeat;
-  mask: url("./assets/bigdaddy-inside-mask.svg") center / 100% 100% no-repeat;
+  mask: url("./assets/bigdaddy-inside-mask.webp") center / 100% 100% no-repeat;
 }
 
 /* Alleen geselecteerde kroon-, teddy-, ballon-, ster- en medaillondelen
@@ -86,9 +93,9 @@
 }
 
 .bigdaddy-effect--voor .bigdaddy-effect__master {
-  -webkit-mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100%
+  -webkit-mask: url("./assets/bigdaddy-front-mask.webp") center / 100% 100%
     no-repeat;
-  mask: url("./assets/bigdaddy-front-mask.svg") center / 100% 100% no-repeat;
+  mask: url("./assets/bigdaddy-front-mask.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(
     0 calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.018)
       rgba(62, 8, 37, 0.82)

@@ -452,6 +452,7 @@ export type VlakTextuur =
   | "confetti"
   | "speelkaart"
   | "brokaat"
+  | "matelas"
   | "titanium"
   | "groeven";
 
@@ -969,6 +970,29 @@ export function drawKaartSchild(
         ctx.beginPath();
         ctx.moveTo(fx + i, fy);
         ctx.lineTo(fx + i + richting * fh, fy + fh);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Matelas (#834, Big Daddy): hetzelfde gekruiste raster als het brokaat, maar
+  // met een lichte stiklijn plus een magenta schaduwlijn ernaast en een ruimere
+  // periode — spiegel van de twee repeating-linear-gradients in de CSS (periode
+  // 0,047 × kaartbreedte).
+  if (kleuren.textuur === "matelas") {
+    const periode = Math.max(6, fw * 0.047);
+    ctx.lineWidth = 1.4;
+    for (const richting of [1, -1]) {
+      for (let i = -fh; i < fw + fh; i += periode) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
+        ctx.beginPath();
+        ctx.moveTo(fx + i, fy);
+        ctx.lineTo(fx + i + richting * fh, fy + fh);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(160, 20, 82, 0.1)";
+        ctx.beginPath();
+        ctx.moveTo(fx + i + 1.6, fy);
+        ctx.lineTo(fx + i + 1.6 + richting * fh, fy + fh);
         ctx.stroke();
       }
     }
@@ -2801,6 +2825,9 @@ interface EditieRegister {
   /** Snijkant (#705) — de --kaart-snijkant-token; alleen de pias. */
   snijkant?: string;
   liner: string;
+  /** Keyline (#834) — alleen als de editie hem in de CSS overschrijft; anders
+   *  mixt `kaartSkin` hem uit --kaart-lijn, net als de CSS. */
+  keyline?: string;
   vlak: readonly [string, string, string];
   vlakMid: number;
   /** Titanium-tint (#710): de laag tússen vlakverloop en topgloed. */
@@ -2859,33 +2886,39 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
   // edelsteen-ornament vóór de kaart).
   icon: {
     frame: [
-      [0, "#f6d7a0"],
-      [0.22, "#dd6ba2"],
-      [0.44, "#ffeef6"],
-      [0.66, "#c99a3f"],
-      [0.80, "#f2a9cf"],
+      [0, "#fbe6b4"],
+      [0.18, "#cd9438"],
+      [0.38, "#fff1cf"],
+      [0.56, "#dd6ba2"],
+      [0.74, "#c99a3f"],
       [1, "#8f3560"],
     ],
-    liner: "#54203a",
-    vlak: ["#fff6fa", "#fbdeed", "#f2bcd7"],
-    vlakMid: 0.56,
-    glow: "rgba(255, 226, 240, 0.9)",
-    // CSS 0.5 over 40/50/60; hier de vaste ~0,875-kalibratie van de basissheen.
-    sheen: "rgba(255, 255, 255, 0.44)",
+    liner: "#b3145e",
+    // Goud aan de binnenkant van de magenta liner (#834) — spiegel van de
+    // .fut-kaart--icon .fut-kaart__keyline-regel in FutKaart.css.
+    keyline: "#e5bd6d",
+    vlak: ["#f9ccdf", "#f2aacd", "#e788b6"],
+    vlakMid: 0.54,
+    glow: "rgba(255, 232, 244, 0.42)",
+    // CSS 0.32 over 40/50/60; hier de vaste ~0,875-kalibratie van de basissheen.
+    sheen: "rgba(255, 255, 255, 0.28)",
     sheenSpreiding: 0.1,
-    ink: "#8c2f5a",
-    inkSoft: "#a04a72",
+    // Matelas i.p.v. de gedeelde stralenkrans (#834): het gequilte satijnkussen
+    // van docs/referentie_big_daddy.png.
+    textuur: "matelas",
+    ink: "#8b0f4c",
+    inkSoft: "#9e2c62",
     lijn: "#ff3377",
-    editieKleur: "#c2447c",
+    editieKleur: "#b81263",
     feestFacetten: true,
-    randGloed: [0.02, "rgba(221, 107, 162, 0.3)"],
+    randGloed: [0.03, "rgba(238, 49, 143, 0.42)"],
     randWaas: {
       links: "rgba(221, 107, 162, 0.2)",
       rechts: "rgba(201, 154, 63, 0.14)",
       boven: "rgba(255, 238, 246, 0.42)",
       onder: "rgba(143, 53, 96, 0.18)",
     },
-    randDiktes: [0.02, 0.01, 0.005],
+    randDiktes: [0.026, 0.017, 0.007],
     echo: [[0.016, 0.021, "rgba(226, 154, 106, 0.8)"]],
     binnenlijn: [
       [1, "rgba(255, 245, 250, 0.85)"],

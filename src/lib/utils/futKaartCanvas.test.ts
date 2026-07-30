@@ -198,10 +198,10 @@ describe("kaartSkin", () => {
     // Zelfde cascade als de CSS: het editie-blok staat ná het special-blok.
     const iconGoud = kaartSkin("goud", "icon");
     const iconGoat = kaartSkin("legende", "icon");
-    expect(iconGoud.kleuren.vlak[0][1]).toBe("#fff6fa");
-    expect(iconGoat.kleuren.vlak[0][1]).toBe("#fff6fa");
-    expect(iconGoat.ink).toBe("#8c2f5a");
-    expect(iconGoat.editieKleur).toBe("#c2447c");
+    expect(iconGoud.kleuren.vlak[0][1]).toBe("#f9ccdf");
+    expect(iconGoat.kleuren.vlak[0][1]).toBe("#f9ccdf");
+    expect(iconGoat.ink).toBe("#8b0f4c");
+    expect(iconGoat.editieKleur).toBe("#b81263");
   });
 
   it("houdt de stralenkrans bij de divisie, niet bij de editie", () => {
@@ -209,8 +209,11 @@ describe("kaartSkin", () => {
     // editie. Sinds #710 zet een hertekende divisie hem uit — die brengt zijn
     // eigen textuur mee — dus meten we hem op een tier die nog op de generieke
     // ladder draait: meester heeft de spitse vleugels, hout niet.
-    expect(kaartSkin("meester", "icon").kleuren.stralen).toBe(true);
-    expect(kaartSkin("hout", "icon").kleuren.stralen).toBe(false);
+    // De Icon viel er met #834 uit: hij brengt sindsdien zelf een matelas-
+    // weefsel mee, dus meten we de krans op een editie zonder eigen textuur.
+    expect(kaartSkin("meester", "kampioen").kleuren.stralen).toBe(true);
+    expect(kaartSkin("hout", "kampioen").kleuren.stralen).toBe(false);
+    expect(kaartSkin("meester", "icon").kleuren.stralen).toBe(false);
     // GOAT en dictator vielen met #710 uit het premium-blok: ze hebben een
     // eigen ::after (ijl satijn met medaillon, respectievelijk brokaat) en
     // houden die ook onder een editie — editie-blokken raken ::after niet aan.
@@ -399,9 +402,11 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       const { kleuren } = skin;
       expect(kleuren.randGloed, `${naam}: canvas-randgloed ontbreekt`).toBeDefined();
       expect(kleuren.randWaas, `${naam}: canvas-randwaas ontbreekt`).toBeDefined();
-      // De diktes hoeven niet bij alle specials gelijk te zijn — de GOAT
-      // draagt sinds zijn breakout een zwaardere lijst dan de rest — maar CSS
-      // en canvas moeten wél dezelfde fracties van de kaartbreedte gebruiken.
+      // De diktes hoeven niet bij alle specials gelijk te zijn — de GOAT draagt
+      // sinds zijn breakout een zwaardere lijst dan de rest, en Big Daddy sinds
+      // #834 een zwaardere goud-magenta lijst — maar CSS en canvas moeten wél
+      // dezelfde fracties van de kaartbreedte gebruiken, anders wijkt de
+      // deel-poster van de kaart af.
       const cssDiktes = (
         [
           "--kaart-frame-dikte",
