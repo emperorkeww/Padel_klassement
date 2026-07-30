@@ -75,6 +75,12 @@ export interface DivisieRegister {
   satijnAlpha?: number;
   /** Stralenkrans; default false voor een divisie zonder eigen register. */
   stralen?: boolean;
+  /** Dikte van frame, liner en keyline als fracties van de kaartbreedte;
+   *  default [1/70, 1/280, 1/280]. Spiegel van de drie `--kaart-*-dikte`-clamps
+   *  in `divisies/<key>.css` — een divisie met een zwaardere lijst dan de
+   *  standaardhaarlijn moet ze hier herhalen, anders lopen kaart en poster
+   *  uiteen. */
+  randDiktes?: readonly [frame: number, liner: number, keyline: number];
 }
 
 /** Alles wat één divisiekaart bijdraagt. */

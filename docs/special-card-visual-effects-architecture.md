@@ -2,10 +2,10 @@
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
 het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator-, Big
-Daddy-, Piet-, pias- en GOAT-breakouts. Het is tegelijk een technische naslag en een
-herbruikbare blauwdruk voor special cards waarvan decoratie niet alleen ín de
-kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór het frame
-komt.
+Daddy-, Piet-, pias-, GOAT- en Wannabe-breakouts. Het is tegelijk een technische
+naslag en een herbruikbare blauwdruk voor special cards waarvan decoratie niet
+alleen ín de kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór
+het frame komt.
 
 De kern van de oplossing is eenvoudig: één coherent storm-artwork wordt drie
 keer op exact dezelfde coördinaten gerenderd. Alleen de clipping en de
@@ -53,6 +53,12 @@ Belangrijkste implementatiebestanden:
   [`scripts/goat-master.py`](../scripts/goat-master.py) — dezelfde architectuur
   toegepast op bokhoorns, geitenmonument, kristalclusters, bergscene en
   edelsteen-chevron, met een master die uit de referentie zelf wordt gesneden.
+- [`WannabeEffect.tsx`](../src/features/rating/components/wannabe/WannabeEffect.tsx),
+  [`WannabeEffect.css`](../src/features/rating/components/wannabe/WannabeEffect.css)
+  en [`scripts/wannabe-master.py`](../scripts/wannabe-master.py) — dezelfde
+  architectuur toegepast op racketcrest, megafoonmedaillon, plakstroken,
+  briefjes, stiftkroontjes en inktdruipers; de eerste referentie die op wit
+  staat in plaats van op zwart.
 
 ## 1. Context en visueel doel
 
@@ -1137,6 +1143,142 @@ het desktopscript een venster van 700 × 1300 en houdt de dev-stage 330px (mobie
 `screenshots/goat/final-desktop.png` en `screenshots/goat/final-mobile.png`; het
 kale artwork staat in `screenshots/goat/master-preview.png`.
 
+**Wannabe**
+
+De Wannabe is de goud-divisie (`tier.key === "goud"`, rating 1000–1099) en
+gebruikt dezelfde drie-masterstructuur via `WannabeEffect.tsx`.
+`wannabe-master.webp` is 1024 × 1440 pixels en, net als bij de pias en de GOAT,
+volledig afgeleid van [`referentie_wannabe.png`](./referentie_wannabe.png) door
+[`scripts/wannabe-master.py`](../scripts/wannabe-master.py). Het artwork draagt de
+bronzen racketcrest op de bovenrand, het megafoonmedaillon in de schildpunt, twee
+plakstroken, de briefjes "ALMOST THERE?" en "NOT BAD" met hun pijlen, een kruis,
+een stiftkroontje met krassenbundel, drie inktdruipers en het rasterpuntvuil met
+het getekende tekstballonnetje in het kaartvlak. Het volledige assetcontract staat
+in [`ASSET_SPEC.md`](../src/features/rating/components/wannabe/ASSET_SPEC.md).
+
+De gedeelde registratie staat uitsluitend op `.fut-kaart--goud`:
+
+```css
+--wannabe-master-left: -9.53%;
+--wannabe-master-top: -12.55%;
+--wannabe-master-width: 119.07%;
+--wannabe-master-scale: 1;
+--wannabe-master-rotate: 0deg;
+```
+
+Die waarden zijn de uitvoer van het script (kaartvak x 82..942, y 150..1345 in
+het canvas) en dus een rekenuitkomst, geen smaakinstelling.
+
+### Een referentie op wit vraagt drie poorten in plaats van één
+
+Dit is de eerste referentie die niet op zwart maar op **wit** staat. Een
+luminantiesleutel houdt daar precies het verkeerde vast. Het model is
+`P = a·C + (1−a)·BG` met `BG` een lokale papierschatting: een maximumfilter
+(elke stiftstreek is smaller dan het venster, dus het maximum ís het
+onbeschreven papier) gevolgd door een lichte vervaging. Dat werkt in één keer op
+het witte buitenveld én op het perkament van het kaartvlak — nodig, want dezelfde
+streek loopt hier van buiten de kaart tot over de lijst.
+
+Alleen: die lijst is even donker als de stift. Donkerte alleen levert daarom de
+halve onderhoek van de referentie als zwarte plaat op de kaart. De inktsleutel
+heeft twee extra poorten nodig, en die scheiden **materiaal**, niet onderdelen:
+
+- *chroma* (max − min kanaal): alles wat getekend is, is neutraal zwart (5–14),
+  de walnoten lijst is warm bruin (40–65). Waar de lijst zó diep in de schaduw
+  staat dat hij óók neutraal wordt, is hij ook bijna zwart en valt het verschil
+  met inkt weg — dan is het kopiëren ervan onschadelijk;
+- *lokaal contrast* tegenover een straal-12-vervaging: een streek is smal en
+  springt eruit, het vlak van de lijst is breed en glad.
+
+Voor de massieve voorwerpen (`vast`) is er één poort in de andere richting: het
+witte veld en de grijze slagschaduw búiten de kaart vallen binnen elke contour
+die over de kaartrand loopt. Wat licht én neutraal is valt daarom weg — papier is
+warm (chroma 30–60) en blijft staan. Zonder die poort krijgt elk briefje een
+witte halo op de kaart, en dan staat er bovendien een tweede, meegekopieerde
+slagschaduw onder de CSS-contactschaduw.
+
+Het perkamentvuil gebruikt alleen de **donkere** helft van twee detailschalen.
+Vuil maakt papier donkerder; de lichte helft meenemen levert een bleke waas over
+het kaartvlak in plaats van slijtage. De avatarzone wordt als cirkel uitgespaard
+en niet als rechthoek: precies in de hoeken van zijn bounding box zit het
+dichtste rasterpuntveld van de referentie.
+
+### Het frontmasker mag geen zwarte achtergrond hebben
+
+Hier viel een val op die de andere maskers ontlopen omdat hun master in het
+midden leeg is. CSS `mask` met een SVG-*image* valt in `match-source` terug op
+**alpha**, niet op luminance. Een dekkende zwarte `<rect>` als achtergrond heeft
+alpha 1 en laat dus de héle master door — het rasterpuntvuil stond daardoor vóór
+de avatar in plaats van erachter. `wannabe-front-mask.svg` heeft daarom geen
+achtergrondrect: transparant werkt in béide modi (alpha 0 én luminance 0).
+`storm-front-mask.svg` en `goat-front-mask.svg` doen het al zo; wie een nieuw
+masker genereert, moet die rect dus weglaten.
+
+### De taps zit 24 procentpunt hoger dan bij de referentie
+
+De referentiekaart loopt tot ~84% kaarthoogte op volle breedte door en tapst dan
+naar de punt; `#fut-schild-notch` begint zijn taps al op 60%. Alles wat in de
+referentie in die onderhoek staat — kroontje, krassenbundel, druipers, megafoon —
+zou op zijn referentieplek naast de kaart hangen. Die onderdelen krijgen daarom
+in het script een verschuiving in kaartfracties (`dfx`/`dfy`). Datzelfde geldt
+voor de rechterflank: de app zet zijn avatar lager en groter dan de referentie
+(0,35 tegen 0,23 kaarthoogte), dus het "NOT BAD"-briefje en het kruis zakken 7,5
+respectievelijk 9 procentpunt mee — anders ligt hun bovenhoek over de foto. Dit
+is een correctie in de **asset**, niet in CSS: de vier CSS-waarden blijven voor
+alle drie de lagen gelijk, en §5 blijft dus gelden.
+
+### Kaartvlak en lijst
+
+Ook hier week de skin af, en verder dan bij de andere divisies. Het oude register
+was champagnefolie over mosterdmessing: op afstand een dure gouden kaart, van
+dichtbij verguld messing. De referentie doet het grapje anders — daar is de kaart
+geen namaakgoud maar een *uitgeprint* trofee-certificaat: grauw karton, een zware
+walnoten lijst met een crème binnenband, en er is met stift op gekalkt. De
+imitatie zit in de pretentie, niet in het materiaal, en dat verdraagt geen
+holografische glansbaan en geen stralenkrans. De `--kaart-*`-tokens in
+`divisies/goud.css` staan daarom op verweerd karton met donkerbruine inkt, de
+`::before`-glansbaan is één brede kleurloze streep zonder animatie en de
+`::after`-stralenkrans is vervangen door vlekwerking (lichtkern linksboven,
+warme hoekschaduw rechtsonder). De lijst is zwaarder: 2,9/1,7/0,4% van de
+kaartbreedte, met `randDiktes` als canvas-spiegel.
+
+Drie details waar het bijna misging:
+
+- de **liner** wisselt van donker naar crème, want op de referentie is de
+  binnenband het lichte deel. De donkere haarlijn tussen band en kaartvlak zou
+  dan logisch in de *keyline* horen — maar de keyline is per definitie de
+  lijnkleur op-gemixt naar warm wit (#666) en `futKaartCanvas.test.ts` heeft daar
+  een invariant op. Een donkere keyline zou die omkeren voor élke goud-kaart, ook
+  mét editie. De haarlijn zit daarom in `--kaart-binnenlijn`;
+- de **tanne strook** onder de divisieregel is bewust géén uitsnede uit het
+  artwork: de strook van de referentie heeft "WANNABE II" ingebakken, en die
+  letters zouden als spookkopie naast de echte regel staan. Hij staat in CSS,
+  groeit met de tekst mee en blijft op élke kaartmaat scherp. De scheefstand zit
+  op de strook en wordt op de tekst teruggedraaid;
+- alles wat alleen bij de *kale* Wannabe hoort — de zwaardere lijstdiktes, de
+  avatarring, de tanne strook, de naamplaatbalken en de twee vlak-pseudo's —
+  staat achter `:has(.wannabe-effect)`. Die laag wordt alleen zonder editie
+  gemonteerd, dus dat is precies de juiste poort. Zonder die scoping krijgt een
+  Wannabe met een Big Daddy- of Kampioen-editie er een tanne strook en een
+  walnoten lijstdikte bij, dwars door zijn eigen editieskin heen. De
+  canvasrenderer doet hetzelfde: het divisieregister wordt daar pas bereikt als
+  geen editieregister matchte.
+
+De vroegere live goud-SVG's (folieranden met losgekomen hoekje, racketcrest,
+lauwermedaillon) en het racketwatermerk worden bij `tier.key === "goud"` zonder
+editie niet meer gemonteerd; ze blijven bestaan voor de canvas-/posterfallback.
+De vaste controle gebeurt via `/dev/wannabe`, `scripts/wannabe-screenshot.sh` en
+`?debugWannabe=1`. De finale beelden staan in
+`screenshots/wannabe/final-desktop.png` en
+`screenshots/wannabe/final-mobile.png`; de tussenstappen in `baseline.png` (de
+vectorkaart vóór #834), `v1-artwork.png` (het artwork op de oude gouden skin),
+`v2-skin.png` (verweerd karton met walnoten lijst), `v3-masker.png` (het
+frontmasker zonder zwarte rect), `v4-textuur.png` (perkamentvuil en de tanne
+strook), `v5-raster.png` (de rasterpunten, na de ronde avataruitsparing) en
+`v7-lijst.png` (zwaardere lijst, papierpoort tegen de witte halo's). Het kale
+artwork staat in `screenshots/wannabe/master-preview.png`, met de
+onderdeelcontouren in `master-contouren.png`.
+
 **Andere special editions**
 
 Gebruik het patroon voor effecten met fysieke continuïteit: sneeuwstorm,
@@ -1165,13 +1307,18 @@ registraties nodig.
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
 `onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
 `bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
-`pias-master.webp` en voor de GOAT `goat-master.webp`. De
+`pias-master.webp`, voor de GOAT `goat-master.webp` en voor de Wannabe
+`wannabe-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
 `ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator, Big
 Daddy en Piet. Voor de GOAT tekent `drawGoatOrnament()` daar dus nog de
 vector-bokhoorns; alleen de lijstdiktes zijn met `randDiktes` gelijkgetrokken.
+Hetzelfde geldt voor de Wannabe: de poster tekent nog de folieranden, de
+racketcrest en het lauwermedaillon uit `divisies/goud.ts`. Het `register`
+daarin — vlakkleuren, lijst, inkt, randdiktes — is wél gelijkgetrokken met de
+CSS, dus kaart en poster delen in ieder geval hun materiaal.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:

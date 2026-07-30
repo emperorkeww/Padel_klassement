@@ -1,104 +1,176 @@
-/* Divisiekaart "Wannabe" (goud) — 1000–1099 — crème emaille, champagnefolie, imitatiegoud.
+/* Divisiekaart "Wannabe" (goud) — 1000–1099 — verweerd karton, walnoten lijst,
+   crème binnenband.
 
-   Het register van de imitatie-luxe uit de referentie (#710): crèmekleurig
-   emaille als vlak, champagnefolie als glanspunten in het frame en mosterdgeel
-   imitatiegoud als grondtoon. Waarom het frame níet de generieke metaalladder
-   volgt: die mixt de tierkleur richting warm wit en levert daarmee echt goud —
-   precies wat deze divisie niet mag zijn. De donkerste framestop is hier
-   olijfbruin messing i.p.v. zwartgoud, dus de kaart blijft onder de hogere
-   divisies hangen (acceptatie-eis van de referentie).
+   Herzien in #834, samen met de referentiegestuurde breakout in
+   `wannabe/WannabeEffect.css`. Het oude register was champagnefolie over
+   mosterdmessing: op afstand een dure gouden kaart. Maar de referentie
+   ([`referentie_wannabe.png`](../../../../../docs/referentie_wannabe.png)) doet
+   het grapje anders. Daar is de kaart geen namaakgoud maar een *uitgeprint*
+   trofee-certificaat: grauw karton, een zware walnoten lijst met een crème
+   binnenband, en er is met stift op gekalkt. De imitatie zit dus niet meer in
+   het materiaal maar in de pretentie — en dat verdraagt geen holografische
+   glansbaan of stralenkrans.
+
+   Waarom de liner van donker naar crème gaat: op de referentie is de bínnenband
+   het lichte deel (crème karton, ±15 px op 889) en ligt er een donkere haarlijn
+   tussen band en kaartvlak. De oude opbouw had een donkere liner en een lichte
+   keyline, en dan leest de lijst als een goudrand met een schaduw in plaats van
+   als een ingelijste plaat. Die donkere haarlijn zit nu in --kaart-binnenlijn en
+   niet in de keyline — zie de opmerking daar.
 
    Vaste hexen i.p.v. color-mix op --tier (tokenregime #710): de deel-poster
    staat vast op het lichte palet (#125), dus alleen literals houden DOM-kaart en
-   poster in béide thema's gelijk. Tweede lezer: het `register` in goud.ts; de
-   synctest in goud.test.ts leest dít bestand in en houdt de twee gelijk. */
+   poster in béide thema's gelijk. Tweede lezer: het `register` in goud.ts. */
 .fut-kaart--goud {
-  /* Crème emaille. Contrast: ink 8,66:1 op --kaart-hi en 6,05:1 op --kaart-lo,
-     inkSoft 6,78:1 / 4,73:1 — ruim boven AA voor kleine tekst. */
-  --kaart-hi: #fdf7e6;
-  --kaart-mid: #f3e7c9;
-  --kaart-lo: #e2cfa6;
-  --kaart-ink: #5c4310;
-  --kaart-ink-soft: #6f5218;
-  --kaart-lijn: #c2a057;
-  /* Verguld messing ónder de folie: de echo verschuift het silhouet net genoeg
-     naar rechtsonder om een tweede, doffere laag te suggereren. Een filter werkt
-     ná de clip, dus de echo volgt het schild exact. */
+  /* Verweerd karton. Contrast: ink 10,79:1 op --kaart-hi en 7,44:1 op
+     --kaart-lo, inkSoft 7,20:1 / 4,96:1 — ruim boven AA voor kleine tekst. */
+  --kaart-hi: #ece5d7;
+  --kaart-mid: #dfd6c6;
+  --kaart-lo: #c9bfae;
+  --kaart-ink: #3c2b1a;
+  --kaart-ink-soft: #5a4530;
+  --kaart-lijn: #8f7752;
+  /* De donkere haarlijn tussen crème band en kaartvlak komt niet uit de keyline
+     maar uit --kaart-binnenlijn hieronder. De keyline blijft een lichte lijn:
+     hij is per definitie de lijnkleur op-gemixt naar warm wit (#666), en de
+     canvasrenderer heeft daar een invariant op (futKaartCanvas.test.ts). Een
+     donkere keyline zou die omkeren voor élke goud-kaart, ook mét editie. */
+  /* Donkere echo rechtsonder: de plaat is dik, dus hij werpt schaduw op zijn
+     eigen ondergrond. Een filter werkt ná de clip, dus de echo volgt het schild
+     exact. */
   --kaart-echo: drop-shadow(
-    calc(var(--fut-kw) * 0.014) calc(var(--fut-kw) * 0.018) 0
-      rgba(179, 144, 63, 0.72)
+    calc(var(--fut-kw) * 0.012) calc(var(--fut-kw) * 0.016) 0
+      rgba(52, 38, 22, 0.62)
   );
-  /* Dunne folielijn met een mosterdlijn erachter — de dubbele binnenrand van de
-     referentie, zonder extra DOM-laag. */
+  /* Vouwlijn net binnen de crème band, met een tweede doffe lijn erachter — de
+     dubbele binnenrand van de referentie, zonder extra DOM-laag. */
   --kaart-binnenlijn:
-    inset 0 0 0 1px rgba(255, 249, 224, 0.8),
-    inset 0 0 0 2.5px rgba(163, 128, 48, 0.55);
+    inset 0 0 0 2px rgba(74, 53, 30, 0.58),
+    inset 0 0 0 3px rgba(255, 250, 236, 0.4);
 }
+
+/* Hieronder alles wat alleen bij de *kale* Wannabe hoort. `:has(.wannabe-effect)`
+   is precies "goud-divisie zonder editie": die laag wordt door FutKaart.tsx
+   alleen dan gemonteerd. Zonder die poort krijgt een Wannabe met een Big Daddy-
+   of Kampioen-editie er een tanne strook en een walnoten lijstdikte bij, dwars
+   door zijn eigen editieskin heen. De canvasrenderer doet hetzelfde: het
+   divisieregister wordt daar pas bereikt als geen editieregister matchte. */
+
+/* Zwaardere lijst dan de andere divisies: op de referentie is de walnoten band
+   ±2,9% van de kaartbreedte met een crème binnenband van 1,7% — vier keer de
+   haarlijn van een gewone divisiekaart, en juist die massa laat de plakstroken
+   en briefjes er geloofwaardig over hángen. De ondergrens blijft 3/1,5/1 px,
+   zodat een 96px-kaart in het klassement niet dichtslibt. Canvas-spiegel:
+   `randDiktes` in het register in goud.ts. */
+.fut-kaart--goud:has(.wannabe-effect) {
+  --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.029), 13px);
+  --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.017), 7.6px);
+  --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.004), 1.8px);
+  /* Avatarring als op de referentie: een brede crème kartonrand met een bronzen
+     binnenring, niet de generieke lichte haarlijn. */
+  --kaart-avatar-ring: #b79a6d;
+  --kaart-avatar-ring-buiten: rgba(244, 238, 224, 0.92);
+}
+/* De divisieregel staat op de referentie op een tanne plakstrook met scheve,
+   afgescheurde uiteinden. Dat is bewust géén uitsnede uit het artwork: de strook
+   van de referentie heeft "WANNABE II" ingebakken, en die letters zouden als
+   spookkopie naast de echte regel staan. Een strook is bovendien precies wat
+   CSS goed doet — hij groeit met de tekst mee en blijft op élke kaartmaat scherp.
+   De scheefstand zit op de strook en wordt op de tekst teruggedraaid; anders
+   staat de divisienaam schuin en dat leest als een fout. */
+.fut-kaart--goud:has(.wannabe-effect) .fut-kaart__divisie {
+  position: relative;
+  isolation: isolate;
+  align-self: center;
+  padding: 0.6% 6%;
+  color: #4a3520;
+  transform: rotate(-0.7deg);
+}
+.fut-kaart--goud:has(.wannabe-effect) .fut-kaart__divisie::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    92deg,
+    rgba(196, 166, 125, 0.35) 0%,
+    #cbae83 6%,
+    #d8bf99 34%,
+    #c9ab7f 68%,
+    #d3b78f 94%,
+    rgba(196, 166, 125, 0.3) 100%
+  );
+  /* Afgescheurde uiteinden: vier kleine hoekafsnijdingen, geen rechte rand. */
+  clip-path: polygon(
+    1% 12%,
+    3% 0%,
+    97% 4%,
+    99% 16%,
+    98% 88%,
+    96% 100%,
+    4% 96%,
+    2% 84%
+  );
+  box-shadow: 0 1px 2px rgba(46, 32, 16, 0.28);
+}
+/* Walnoot met bronzen opstaande kanten: licht waar het profiel het licht vangt,
+   bijna zwart in de onderhoek. Bewust géén metaalladder — die mixt naar warm wit
+   en levert echt goud op, precies wat deze divisie niet mag zijn. */
 .fut-kaart--goud .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #faefc6 0%,
-    #b3903f 40%,
-    #f6e7b0 66%,
-    #6d5119 100%
+    #6d5539 0%,
+    #3c2b1c 32%,
+    #6a5236 60%,
+    #241a11 100%
   );
 }
 .fut-kaart--goud .fut-kaart__liner {
-  background: #4a3510;
+  background: #e8dfce;
 }
 .fut-kaart--goud .fut-kaart__keyline {
-  background: #f0dda2;
+  background: #f2ead8;
 }
-/* Licht holografische glansbaan: dezelfde diagonale sheen als de basiskaart,
-   maar met een zweem roze en cyaan langs de flanken — folie dat kleur breekt.
-   Bewust ijl (0,10/0,12) en alleen náást de witte kern: verder opgevoerd gaat de
-   kaart er premium uitzien, en dat is precies wat een Wannabe niet is. Op de
-   poster vlakt dit af naar één champagnetoon (het `sheen`-veld in goud.ts): één
-   gradient-stop kan geen regenboog dragen — zelfde afspraak als de
-   shimmer-edities, die op de poster stilstaan. */
-.fut-kaart--goud .fut-kaart__vlak::before {
+/* De iriserende folieband van vóór #834 is weg: de referentie heeft geen glans,
+   hij heeft slijtage. Wat overblijft is één brede, bijna kleurloze streep — het
+   licht dat over een matte kartonplaat strijkt. Zonder animatie: karton kantelt
+   niet mee. De poster vlakt dit af naar dezelfde toon (`sheen` in goud.ts). */
+.fut-kaart--goud:has(.wannabe-effect) .fut-kaart__vlak::before {
   background: linear-gradient(
     115deg,
-    transparent 34%,
-    rgba(255, 186, 214, 0.1) 42%,
-    rgba(255, 250, 232, 0.3) 50%,
-    rgba(150, 226, 232, 0.12) 58%,
-    transparent 66%
+    transparent 30%,
+    rgba(255, 252, 242, 0.16) 50%,
+    transparent 70%
   );
+  animation: none;
 }
-/* De baan schuift traag heen en weer, zoals folie dat je kantelt. Trager dan
-   In-Form (2,6s): dit is decoratie, geen aankondiging. */
-@media (prefers-reduced-motion: no-preference) {
-  .fut-kaart--goud .fut-kaart__vlak::before {
-    animation: fut-kaart-shimmer 8.5s ease-in-out infinite;
-  }
-}
-/* Zachte zonnestralen achter het bovenvlak, boven het satijnweefsel. Letterlijk
-   de maten van het premium-blok in FutKaart.css (radiale waas + wiggen van
-   5°/13° vanaf 50% 10%), want de canvas-tegenhanger is het `stralen`-veld in
-   goud.ts en die tekent precies díe krans — zelf andere hoeken kiezen zou DOM en
-   poster stil uiteen laten lopen. Op het crème vlak leest het witte licht al
-   champagne, dus warmer tinten is niet nodig. */
-.fut-kaart--goud .fut-kaart__vlak::after {
+/* Geen stralenkrans maar vlekwerking: een warme hoekschaduw rechtsonder en een
+   flauwe lichtkern linksboven, zoals een plaat die jaren aan één kant in het
+   licht heeft gehangen. Het echte vuil — rasterpunten, spatten, het getekende
+   tekstballonnetje — komt uit wannabe-master.webp, dus deze laag houdt het bij
+   de belichting. Canvas-spiegel: `stralen: false` in goud.ts. */
+.fut-kaart--goud:has(.wannabe-effect) .fut-kaart__vlak::after {
   background:
     radial-gradient(
-      130% 75% at 50% 8%,
-      rgba(255, 255, 255, 0.12),
-      transparent 55%
+      120% 80% at 22% 12%,
+      rgba(255, 253, 244, 0.28),
+      transparent 58%
     ),
-    repeating-conic-gradient(
-      from -10deg at 50% 10%,
-      rgba(255, 255, 255, 0.1) 0deg 5deg,
-      transparent 5deg 13deg
-    ),
-    repeating-linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.05) 0 1.5px,
-      transparent 1.5px 5px
+    radial-gradient(
+      90% 70% at 88% 96%,
+      rgba(74, 54, 32, 0.22),
+      transparent 62%
     );
 }
-/* Warme schaduw onder de vóór-liggende ornamentlaag: de gedeelde regel in
-   FutKaart.css is roze getint (Big Daddy), en dat vloekt op messing. */
+/* De twee scheidingslijnen om de naamplaat zijn op de referentie zware balken,
+   geen haarlijnen: op 889 px kaartbreedte ±6 px donkerbruin. Alleen de bovenrand
+   krijgt die massa — twee even zware balken lezen als een tabel. */
+.fut-kaart--goud:has(.wannabe-effect) .fut-kaart__naam {
+  border-top-width: clamp(1.5px, calc(var(--fut-kw) * 0.007), 3.2px);
+  border-bottom-width: clamp(1px, calc(var(--fut-kw) * 0.004), 1.8px);
+}
+/* Warme schaduw onder de vóór-liggende laag: de gedeelde regel in FutKaart.css
+   is roze getint (Big Daddy), en dat vloekt op walnoot. */
 .fut-kaart--goud .fut-kaart__ornament--voor {
-  filter: drop-shadow(0 1px 2px rgba(58, 41, 12, 0.45));
+  filter: drop-shadow(0 1px 2px rgba(38, 26, 12, 0.5));
 }
