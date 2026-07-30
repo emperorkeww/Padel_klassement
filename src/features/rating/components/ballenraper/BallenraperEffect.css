@@ -7,6 +7,13 @@
 .fut-kaart--ballenraper-layout .fut-kaart__zijde--voor {
   padding: 0;
   background: transparent;
+  filter: none;
+}
+
+.fut-kaart--ballenraper-layout .kaart-onderdelen--binnen {
+  filter:
+    drop-shadow(0 2px 0 rgba(63, 42, 13, 0.7))
+    drop-shadow(0 8px 16px rgba(26, 18, 8, 0.52));
 }
 
 .fut-kaart--ballenraper-layout
@@ -48,16 +55,16 @@
   visibility: hidden;
 }
 
-.fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--voor {
+.fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--binnen {
   opacity: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .fut-kaart--ballenraper-layout .kaart-onderdelen--voor {
+  .fut-kaart--ballenraper-layout .kaart-onderdelen--binnen {
     transition: opacity 0.18s ease 0.2s;
   }
 
-  .fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--voor {
+  .fut-kaart--ballenraper-layout.is-omgedraaid .kaart-onderdelen--binnen {
     transition-delay: 0s;
   }
 }

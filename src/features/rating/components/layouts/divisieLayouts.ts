@@ -1,9 +1,5 @@
 import type { FutEditie } from "../FutKaart";
 import oppervlak from "../ballenraper/assets/ballenraper-surface.webp";
-import mand from "../ballenraper/assets/ballenraper-basket.webp";
-import balLinks from "../ballenraper/assets/ballenraper-ball-left.webp";
-import balRechts from "../ballenraper/assets/ballenraper-ball-right.webp";
-import balRechtsboven from "../ballenraper/assets/ballenraper-ball-top-right.webp";
 import type {
   DivisieKaartLayout,
   SpelerStatBron,
@@ -67,52 +63,12 @@ export const BALLENRAPER_LAYOUT: DivisieKaartLayout = {
     {
       id: "oppervlak",
       src: oppervlak,
-      laag: "oppervlak",
+      laag: "randAchter",
       slot: "binnen",
       x: -0.1,
       y: -0.072,
       breedte: 1.2,
       hoogte: 1.151,
-    },
-    {
-      id: "mand",
-      src: mand,
-      laag: "embleem",
-      slot: "voor",
-      x: 0.2425,
-      y: -0.072,
-      breedte: 0.4972,
-      hoogte: 0.1988,
-    },
-    {
-      id: "bal-rechtsboven",
-      src: balRechtsboven,
-      laag: "randVoor",
-      slot: "voor",
-      x: 0.8171,
-      y: 0.0432,
-      breedte: 0.2541,
-      hoogte: 0.1431,
-    },
-    {
-      id: "bal-links",
-      src: balLinks,
-      laag: "bodem",
-      slot: "voor",
-      x: -0.0006,
-      y: 0.7746,
-      breedte: 0.1657,
-      hoogte: 0.1233,
-    },
-    {
-      id: "bal-rechts",
-      src: balRechts,
-      laag: "bodem",
-      slot: "voor",
-      x: 0.8116,
-      y: 0.7746,
-      breedte: 0.1768,
-      hoogte: 0.1233,
     },
   ],
 };

@@ -2234,18 +2234,23 @@ export function FutKaart({
   ) : null;
   return (
     <KaartLayoutContext.Provider value={layout}>
-    <div className={klassen} ref={kaartRef}>
-      <div className="fut-kaart__flipper">
-        {layout && <KaartOnderdelen layout={layout} slot="achter" />}
-        {(divisieLive?.achter?.length ?? 0) > 0 && (
-          <svg
-            className="fut-kaart__ornament"
-            viewBox={ORNAMENT_VIEWBOX}
-            aria-hidden="true"
-          >
-            <use href={`#fut-div-${divisieLive!.key}-achter`} />
-          </svg>
-        )}
+      <div className={klassen} ref={kaartRef}>
+        <div className="fut-kaart__flipper">
+          {layout && <KaartOnderdelen layout={layout} slot="achter" />}
+          {/* Een eigen divisie-layout is full-bleed: het artwork is de kaart,
+              niet een illustratie ín het generieke kaartvlak. Het staat daarom
+              rechtstreeks op de flipperstage, vóór de transparante
+              inhoudsdrager. */}
+          {layout && <KaartOnderdelen layout={layout} slot="binnen" />}
+          {(divisieLive?.achter?.length ?? 0) > 0 && (
+            <svg
+              className="fut-kaart__ornament"
+              viewBox={ORNAMENT_VIEWBOX}
+              aria-hidden="true"
+            >
+              <use href={`#fut-div-${divisieLive!.key}-achter`} />
+            </svg>
+          )}
         {ornamentLive && (
           <svg
             className="fut-kaart__ornament"
@@ -2279,10 +2284,9 @@ export function FutKaart({
         <div className="fut-kaart__zijde fut-kaart__zijde--voor">
           {voorOverlay}
           <span className="fut-kaart__liner">
-            <span className="fut-kaart__keyline">
-              <span className="fut-kaart__vlak">
-                {layout && <KaartOnderdelen layout={layout} slot="binnen" />}
-                <span className="fut-kaart__randwaas" aria-hidden="true" />
+              <span className="fut-kaart__keyline">
+                <span className="fut-kaart__vlak">
+                  <span className="fut-kaart__randwaas" aria-hidden="true" />
                 {motief}
                 {glansLaag}
                 {editie === "icon" && <BigDaddyEffectBinnen />}
@@ -2365,10 +2369,10 @@ export function FutKaart({
         {/* Storm-voorlaag (#834): dezelfde master door een klein frontmasker,
             zodat alleen geselecteerde wolk- en bliksemstukken het frame
             plaatselijk overlappen. */}
-        {editie === "inform" && <InformStormVoor />}
-        {layout && <KaartOnderdelen layout={layout} slot="voor" />}
+          {editie === "inform" && <InformStormVoor />}
+          {layout && <KaartOnderdelen layout={layout} slot="voor" />}
+        </div>
       </div>
-    </div>
     </KaartLayoutContext.Provider>
   );
 }

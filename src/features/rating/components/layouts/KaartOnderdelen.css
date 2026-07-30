@@ -11,6 +11,7 @@
 
 .kaart-onderdelen--binnen {
   z-index: 0;
+  overflow: visible;
 }
 
 .kaart-onderdelen--voor {

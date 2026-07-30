@@ -16,10 +16,10 @@ De broncanvas is `1086 × 1448`; bij 50% alpha liggen de zichtbare pixels in
 zonder `object-fit`-vervorming. De dev-stage gebruikt 84vw (maximaal 600px),
 zodat de zichtbare kaart dezelfde schermvulling heeft als de referentie.
 
-De mand en losse ballen zijn uitsneden uit dezelfde master. Ze gebruiken exact
-hetzelfde register, maar staan in het voor-slot
-zodat de onderdelen zichtbaar buiten het eigen Ballenraper-silhouet mogen
-uitsteken. De bitmaplaag binnen het kaartvlak wordt door
-`#fut-schild-ballenraper` geclipt.
+De volledige master staat rechtstreeks in het `binnen`-slot op de
+`.fut-kaart__flipper`. Dat slot is hier bewust full-bleed en ongeclipt: het
+artwork vormt zelf de buitenste kaartlaag. De generieke frame-, liner-,
+keyline- en vlaklagen zijn voor Ballenraper transparante inhoudsdragers en
+kunnen dus nergens als een tweede gouden shell door de alpha heen verschijnen.
 
 Controleer de echte, dynamische kaart via `/dev/ballenraper`.

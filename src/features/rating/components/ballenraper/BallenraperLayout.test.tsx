@@ -28,8 +28,15 @@ describe("Ballenraper-layout", () => {
     );
 
     expect(container.querySelector(".fut-kaart--ballenraper-layout")).toBeTruthy();
-    expect(container.querySelector(".kaart-onderdelen--binnen")).toBeTruthy();
-    expect(container.querySelector(".kaart-onderdelen--voor")).toBeTruthy();
+    expect(
+      container.querySelector(
+        ".fut-kaart__flipper > .kaart-onderdelen--binnen",
+      ),
+    ).toBeTruthy();
+    expect(
+      container.querySelector(".fut-kaart__vlak .kaart-onderdelen"),
+    ).toBeNull();
+    expect(container.querySelector(".kaart-onderdelen--voor")).toBeNull();
     expect(screen.getByText("750")).toBeTruthy();
     expect(screen.getByText("Dynamische Speler")).toBeTruthy();
     expect(screen.getByText("RAPEN")).toBeTruthy();
