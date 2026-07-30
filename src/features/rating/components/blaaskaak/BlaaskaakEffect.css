@@ -1,0 +1,311 @@
+/* De drie artworkinstanties delen één register. De kaartvorm zelf staat niet
+   in het WebP: Blaaskaak heeft hieronder vier eigen asymmetrische clips. */
+.fut-kaart.fut-kaart--zilver {
+  --blaaskaak-master-left: -4%;
+  --blaaskaak-master-top: -14%;
+  --blaaskaak-master-width: 108%;
+  --blaaskaak-master-scale: 1;
+  --blaaskaak-master-rotate: 0deg;
+  --rating-column-left: 5%;
+  --rating-column-top: 0%;
+  --rating-column-width: 32%;
+  --blaaskaak-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+/* Referentiecontour: links een rustige afgeronde schouder en rechts een
+   expliciete hoekige schouder. Frame en liner houden bovenaan hun brug;
+   keyline en vlak hebben de compacte U-uitsparing waaruit de megafoon komt.
+   De hoek blijft dus bestaan als alle `.blaaskaak-effect`-overlays visueel
+   verborgen worden. Geen van deze regels valt terug op `var(--schild)`. */
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__zijde {
+  clip-path: url("#fut-schild-blaaskaak-frame");
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__liner {
+  clip-path: url("#fut-schild-blaaskaak-liner");
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__keyline {
+  clip-path: url("#fut-schild-blaaskaak-keyline");
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__vlak {
+  clip-path: url("#fut-schild-blaaskaak-vlak");
+}
+
+.blaaskaak-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.blaaskaak-effect__master {
+  position: absolute;
+  left: var(--blaaskaak-master-left);
+  top: var(--blaaskaak-master-top);
+  width: var(--blaaskaak-master-width);
+  transform: rotate(var(--blaaskaak-master-rotate))
+    scale(var(--blaaskaak-master-scale));
+  transform-origin: 0 0;
+}
+
+.blaaskaak-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Het masterbeeld blijft één bestaande rasterbron. In de gewone decorlaag
+   wordt alleen de megafoonpolygoon uitgeponst; de voorlaag zet exact dat deel
+   opnieuw, 6% kaartbreedte lager. Zo blijven burst, chatballon, mond en
+   bliksems op hun bestaande ankers staan terwijl de megafoon in de U zakt. */
+.blaaskaak-effect__decor {
+  clip-path: polygon(
+    evenodd,
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 0,
+    35% 0,
+    34% 8%,
+    36% 15%,
+    43% 20%,
+    55% 20%,
+    63% 15%,
+    65% 7%,
+    56% 0,
+    35% 0
+  );
+}
+
+.blaaskaak-effect__megafoon {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    35% 0,
+    56% 0,
+    65% 7%,
+    63% 15%,
+    55% 20%,
+    43% 20%,
+    36% 15%,
+    34% 8%
+  );
+  transform: translateY(calc(var(--fut-kw) * 0.06));
+}
+
+/* De live Blaaskaak gebruikt geen tweede set vectorornamenten. */
+.fut-kaart.fut-kaart--zilver .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.blaaskaak-effect--achter {
+  z-index: 0;
+}
+
+/* Herstel de volledige kaartstage vanuit het geneste kaartvlak. De echte
+   schildclip begrenst deze laag; de content wordt erna gerenderd. */
+.blaaskaak-effect--binnen {
+  inset: calc(-1 * var(--blaaskaak-master-inset));
+  z-index: -1;
+}
+
+.blaaskaak-effect--binnen .blaaskaak-effect__master {
+  opacity: 0.72;
+}
+
+/* Alle vier de solide ornamentgroepen liggen in de referentie vóór het frame.
+   De alfa van het WebP is hier zelf het organische masker: geen nagebouwde
+   vectorcontour en geen rechthoekige clip. */
+.blaaskaak-effect--voor {
+  z-index: 3;
+}
+
+.blaaskaak-effect--voor::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 39.7%;
+  top: 4.6%;
+  width: 20.6%;
+  height: 7.8%;
+  box-sizing: border-box;
+  border: solid #69d9ff;
+  border-width: 0 calc(var(--fut-kw) * 0.004)
+    calc(var(--fut-kw) * 0.006);
+  border-radius: 0 0 52% 52%;
+  box-shadow:
+    0 calc(var(--fut-kw) * 0.004) 0 #102c49,
+    0 calc(var(--fut-kw) * 0.009) calc(var(--fut-kw) * 0.012)
+      rgba(4, 18, 32, 0.42);
+}
+
+.blaaskaak-effect--voor .blaaskaak-effect__master {
+  z-index: 1;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.009) calc(var(--fut-kw) * 0.014)
+      rgba(12, 31, 51, 0.48)
+  );
+}
+
+/* De referentie zet een korte scheld-/lawaairebus in de linker comic-burst.
+   Dit blijft scherpe tekst op alle kaartmaten; de complexe burst zelf is
+   rasterartwork. */
+.blaaskaak-effect__burst {
+  position: absolute;
+  z-index: 3;
+  left: calc(var(--fut-kw) * -0.04);
+  top: calc(var(--fut-kw) * 0.545);
+  width: calc(var(--fut-kw) * 0.17);
+  height: calc(var(--fut-kw) * 0.11);
+  display: grid;
+  place-items: center;
+  transform: rotate(-4deg);
+  transform-origin: center;
+}
+
+.blaaskaak-effect__burst-symbolen {
+  color: #122a43;
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(7px, calc(var(--fut-kw) * 0.047), 22px);
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: -0.06em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
+}
+
+/* Blaaskaak zet rating, subniveau en spreekhoofd als één verankerde kolom.
+   `.fut-kaart__boven` ligt al in het echte, geclipte kaartvlak; percentages
+   rekenen dus tegen de kaartinhoud en nooit tegen viewport of pagina. De
+   wrapper staat drie procentpunten naar links t.o.v. het wiskundige
+   kolommidden: de brede 950 en de naar rechts sprekende kop lezen daardoor
+   optisch in het midden van het vrije vlak vóór de avatar. */
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__boven {
+  position: relative;
+  grid-template-columns: 42% 58%;
+  column-gap: 0;
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__rating-column {
+  position: absolute;
+  left: var(--rating-column-left);
+  top: var(--rating-column-top);
+  width: var(--rating-column-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--fut-kw) * 0.016);
+  padding-bottom: calc(var(--fut-kw) * 0.025);
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__avatar {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__sub {
+  line-height: 1;
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__tier {
+  font-size: calc(var(--fut-kw) * 0.1);
+  line-height: 1;
+}
+
+.fut-kaart__spreekhoofd {
+  display: block;
+  color: #3ab9f4;
+  font-family: sans-serif;
+  font-variant-emoji: text;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85),
+    0 0 calc(var(--fut-kw) * 0.018) rgba(33, 169, 235, 0.3);
+}
+
+/* De referentie heeft een diepe navy spouw en een felle cyan binnenlijn. Deze
+   scoping geldt alleen wanneer het mastereffect werkelijk gemonteerd is, dus
+   een zilveren kaart met een editie houdt zijn eigen skin. */
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__liner {
+  background: #102c49;
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__keyline {
+  /* De cyaanlijn wordt rechts van de schouder en kort linksonder door de navy
+     liner onderbroken, zoals in de referentie. Het pad zelf blijft parallel. */
+  background: conic-gradient(
+    from 14deg at 50% 50%,
+    #72d9ff 0deg 68deg,
+    #183d5e 68deg 76deg,
+    #72d9ff 76deg 244deg,
+    #183d5e 244deg 254deg,
+    #72d9ff 254deg 360deg
+  );
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__vlak {
+  background:
+    radial-gradient(
+      80% 48% at 75% 18%,
+      rgba(59, 145, 205, 0.18),
+      transparent 68%
+    ),
+    linear-gradient(164deg, #f8fbfe 0%, #e0e8f0 52%, #a9b9c8 100%);
+}
+
+.fut-kaart--zilver:has(.blaaskaak-effect) .fut-kaart__vlak::after {
+  opacity: 0.24;
+}
+
+/* Registratiedebug: /dev/blaaskaak?debugBlaaskaak=1. */
+.blaaskaak-effect--debug {
+  outline: 1px dashed;
+}
+
+.blaaskaak-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.blaaskaak-effect--achter.blaaskaak-effect--debug {
+  outline-color: #ff4d5f;
+}
+
+.blaaskaak-effect--achter.blaaskaak-effect--debug::after {
+  background: #ff4d5f;
+}
+
+.blaaskaak-effect--binnen.blaaskaak-effect--debug {
+  outline-color: #64ff94;
+}
+
+.blaaskaak-effect--binnen.blaaskaak-effect--debug::after {
+  background: #64ff94;
+}
+
+.blaaskaak-effect--voor.blaaskaak-effect--debug {
+  outline-color: #47dfff;
+}
+
+.blaaskaak-effect--voor.blaaskaak-effect--debug::after {
+  background: #47dfff;
+}
+
+.blaaskaak-effect--debug .blaaskaak-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.74);
+}

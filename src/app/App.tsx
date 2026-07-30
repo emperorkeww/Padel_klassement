@@ -74,6 +74,11 @@ const WannabeShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/WannabeShowcase"))
   : null;
 
+// Dev-stage voor de Blaaskaak-divisie en haar referentiegestuurde artwork.
+const BlaaskaakShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/BlaaskaakShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -141,6 +146,9 @@ function App() {
           )}
           {WannabeShowcase && (
             <Route path="/dev/wannabe" element={<WannabeShowcase />} />
+          )}
+          {BlaaskaakShowcase && (
+            <Route path="/dev/blaaskaak" element={<BlaaskaakShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}
