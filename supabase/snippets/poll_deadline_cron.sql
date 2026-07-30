@@ -7,7 +7,7 @@
 --   supabase functions deploy poll-deadline --no-verify-jwt
 --   (CRON_SECRET en VAPID_* staan er al voor match-reminders; optioneel:
 --    POLL_LAST_CALL_HOURS=24, POLL_AUTO_LOCK_HOURS=12, POLL_DAY_OF_HOURS=5,
---    POLL_ROUNDS_LEAD_MIN=90)
+--    POLL_ROUNDS_AT=08:00, POLL_ROUNDS_LEAD_MIN=90)
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;

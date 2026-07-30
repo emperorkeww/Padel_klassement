@@ -10,8 +10,8 @@
 //    enkele ja-stem wordt de poll geannuleerd.
 // 3. Speeldag-herinnering: enkele uren vóór een vastgelegd/geboekt moment
 //    krijgen de ja-stemmers een "vanavond padel"-push.
-// 4. Rondes klaarzetten: staat er kort vóór de start nog geen enkele ronde
-//    voor die speeldag, dan zet de cron er zelf een reeks klaar (#827).
+// 4. Rondes klaarzetten: staat er op de ochtend van de speeldag nog geen
+//    enkele ronde, dan zet de cron er zelf een reeks klaar (#827/#846).
 //
 // Deploy ZONDER JWT-verificatie en beveilig met het gedeelde geheim:
 //   supabase functions deploy poll-deadline --no-verify-jwt
@@ -31,6 +31,10 @@ import {
   TITEL_SPEELDAG,
 } from "../_shared/roast.ts";
 import { RONDE_MIN, rondesVoorDuur } from "../_shared/speeldagRondes.ts";
+  magRondesZetten,
+  RONDE_MIN,
+  rondesVoorDuur,
+} from "../_shared/speeldagRondes.ts";
 import {
   americanoRound,
   applyRound,
@@ -55,11 +59,15 @@ const LAST_CALL_HOURS = Number(Deno.env.get("POLL_LAST_CALL_HOURS") ?? "24");
 const AUTO_LOCK_HOURS = Number(Deno.env.get("POLL_AUTO_LOCK_HOURS") ?? "12");
 /** Uren vóór het vastgelegde moment voor de speeldag-herinnering. */
 const DAY_OF_HOURS = Number(Deno.env.get("POLL_DAY_OF_HOURS") ?? "5");
-/** Minuten vóór de start waarbinnen de cron zelf rondes klaarzet (#827).
- *  Ruim een uur, want de cron tikt maar één keer per uur (op :05): met een
+/** Klokuur (clubtijd) op de speeldag zelf vanaf wanneer de cron de rondes van
+ *  een geboekte speeldag klaarzet (#846). 's Ochtends, zodat de indeling de
+ *  hele dag zichtbaar is en spelers ruim de tijd hebben om een lef-tip te
+ *  plaatsen. Eerste tik daarna is 08:05, want de cron loopt op :05. */
+const ROUNDS_AT = Deno.env.get("POLL_ROUNDS_AT") ?? "08:00";
+/** Vangnet voor speeldagen die vóór dat uur beginnen: dan alsnog vlak vóór de
+ *  start. Ruim een uur, want de cron tikt maar één keer per uur — met een
  *  krapper venster zou een speeldag die net tussen twee tikken start ernaast
- *  vallen. Het laat bovendien nog even ruimte om een lef-tip te plaatsen, die
- *  op de starttijd van de match sluit. */
+ *  vallen. */
 const ROUNDS_LEAD_MIN = Number(Deno.env.get("POLL_ROUNDS_LEAD_MIN") ?? "90");
 
 // Fallback-clubtijd voor polls van vóór #322 (die nog geen club_timezone hebben).
@@ -175,15 +183,23 @@ async function zetRondesKlaar(
   if (groep && groep.auto_rondes === false) return 0;
 
   // Staat er al iets voor deze speeldag, dan met rust laten — wie zelf indeelt
-  // wil niet dat de cron er ongevraagd rondes bij zet. Het venster van 36 uur
-  // houdt de query klein; verder terug kan geen ronde van vandaag zijn.
-  const vanaf = new Date(start - 36 * 3600_000).toISOString();
+  // wil niet dat de cron er ongevraagd rondes bij zet. De rondes van die dag
+  // zoeken we op played_at; een groep kan al ver vóór de speeldag zelf hebben
+  // ingedeeld, dus een venster op created_at zou die missen. Rondes van vóór
+  // #832 hebben geen played_at — die vallen terug op hun aanmaakdag.
+  const dagStart = new Date(clubEpoch(locked.date, "00:00", tz)).toISOString();
+  const dagEinde = new Date(
+    clubEpoch(locked.date, "00:00", tz) + 24 * 3600_000,
+  ).toISOString();
   const { data: bestaand } = await admin
     .from("matches")
     .select("played_at, created_at, round_number")
     .eq("group_id", poll.group_id)
     .not("round_number", "is", null)
-    .gte("created_at", vanaf);
+    .or(
+      `and(played_at.gte.${dagStart},played_at.lt.${dagEinde}),` +
+        `and(played_at.is.null,created_at.gte.${dagStart},created_at.lt.${dagEinde})`,
+    );
   const alBezet = (bestaand ?? []).some(
     (m) => dagInZone(m.played_at ?? m.created_at, tz) === locked.date,
   );
@@ -351,9 +367,18 @@ Deno.serve(async (req) => {
 
     // 4) Rondes klaarzetten (#827). Staat vóór de dayof-dedup hieronder: de
     //    speeldag-push vertrekt uren eerder, en anders zou deze tak nooit aan
-    //    de beurt komen.
-    if (!poll.rounds_generated_at && start > now &&
-        start - now <= ROUNDS_LEAD_MIN * 60_000) {
+    //    de beurt komen. Geboekt én de ochtend van de speeldag (#846), niet
+    //    pas vlak vóór de start.
+    if (
+      magRondesZetten({
+        status: poll.status,
+        rondesGezetOp: poll.rounds_generated_at,
+        now,
+        start,
+        ochtend: clubEpoch(locked.date, ROUNDS_AT, tz),
+        leadMin: ROUNDS_LEAD_MIN,
+      })
+    ) {
       const bevestigd = [...new Set(yesOn(locked.id).map((v) => v.player_id))];
       result.rondes += await zetRondesKlaar(poll, locked, start, tz, bevestigd);
     }
