@@ -230,6 +230,11 @@ import {
   BigDaddyEffectVoor,
 } from "./bigdaddy/BigDaddyEffect";
 import {
+  PietEffectAchter,
+  PietEffectBinnen,
+  PietEffectVoor,
+} from "./piet/PietEffect";
+import {
   ONFIRE_CREST_BAND,
   ONFIRE_CREST_NERVEN,
   ONFIRE_CREST_PLAAT,
@@ -2054,7 +2059,9 @@ export function FutKaart({
   // GOAT met In-Form houdt zijn hoorns.
   const ornament = EDITIE_ORNAMENT[editie ?? ""] ?? TIER_ORNAMENT[tier?.key ?? ""] ?? null;
   const ornamentLive =
-    (tier?.key === "dictator" && !editie) || editie === "icon"
+    (tier?.key === "dictator" && !editie) ||
+    editie === "icon" ||
+    editie === "piet"
       ? null
       : ornament;
   // Voorste ornamentlaag (#710): ornamenten die achter het schild half zouden
@@ -2173,6 +2180,7 @@ export function FutKaart({
         )}
         {editie === "icon" && <BigDaddyEffectAchter />}
         {tier?.key === "dictator" && !editie && <DictatorEffectAchter />}
+        {editie === "piet" && <PietEffectAchter />}
         {/* On Fire-backlaag: één coherent vulkaanartwork achter kaart en
             frame. De metalen vinnen hierboven blijven als eigen ornament. */}
         {editie === "onfire" && <OnfireEffectAchter />}
@@ -2191,6 +2199,7 @@ export function FutKaart({
                 {tier?.key === "dictator" && !editie && (
                   <DictatorEffectBinnen />
                 )}
+                {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde On Fire-master in het echte kaartvlak. De inhoud
                     rendert erna en behoudt dus zijn contrast en interactie. */}
                 {editie === "onfire" && <OnfireEffectBinnen />}
@@ -2237,6 +2246,7 @@ export function FutKaart({
         )}
         {editie === "icon" && <BigDaddyEffectVoor />}
         {tier?.key === "dictator" && !editie && <DictatorEffectVoor />}
+        {editie === "piet" && <PietEffectVoor />}
         {/* Beperkte basalt- en eruptiedelen vóór het frame; crest en
             puntmedaillon blijven via hun hogere z-index leesbaar. */}
         {editie === "onfire" && <OnfireEffectVoor />}
