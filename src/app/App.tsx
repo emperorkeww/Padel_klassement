@@ -59,6 +59,11 @@ const PietShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/PietShowcase"))
   : null;
 
+// Dev-stage voor de GOAT-tier en haar referentiegestuurde breakout.
+const GoatShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/GoatShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -117,6 +122,9 @@ function App() {
           )}
           {PietShowcase && (
             <Route path="/dev/piet" element={<PietShowcase />} />
+          )}
+          {GoatShowcase && (
+            <Route path="/dev/goat" element={<GoatShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

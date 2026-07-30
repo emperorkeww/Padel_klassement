@@ -100,6 +100,11 @@ describe("premium glans: de laag zelf (#773)", () => {
       "fut-kaart__randwaas",
       expect.stringContaining("fut-kaart__motief"),
       "fut-kaart__glans",
+      // De binnenlaag van het GOAT-mastereffect hoort hier ook: ná de glans,
+      // vóór de inhoud. Beide liggen op z-index −1 binnen dezelfde clip, dus
+      // de DOM-volgorde bepaalt dat de bergscene bóven de glans schildert en
+      // de inkt bóven allebei.
+      expect.stringContaining("goat-effect--binnen"),
       "fut-kaart__naam",
     ]);
   });

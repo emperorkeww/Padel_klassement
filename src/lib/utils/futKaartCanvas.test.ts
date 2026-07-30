@@ -399,13 +399,25 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       const { kleuren } = skin;
       expect(kleuren.randGloed, `${naam}: canvas-randgloed ontbreekt`).toBeDefined();
       expect(kleuren.randWaas, `${naam}: canvas-randwaas ontbreekt`).toBeDefined();
-      expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual([
-        0.02, 0.01, 0.005,
-      ]);
-      expect(skin.naamplaat, `${naam}: naamplaatverloop ontbreekt`).toHaveLength(5);
-      expect(token(blok, "--kaart-frame-dikte"), `${naam}: DOM-frame`).toContain(
-        "* 0.02",
+      // De diktes hoeven niet bij alle specials gelijk te zijn — de GOAT
+      // draagt sinds zijn breakout een zwaardere lijst dan de rest — maar CSS
+      // en canvas moeten wél dezelfde fracties van de kaartbreedte gebruiken.
+      const cssDiktes = (
+        [
+          "--kaart-frame-dikte",
+          "--kaart-liner-dikte",
+          "--kaart-keyline-dikte",
+        ] as const
+      ).map((eigenschap) => {
+        const waarde = token(blok, eigenschap) ?? "";
+        const fractie = /\*\s*([\d.]+)\)/.exec(waarde);
+        expect(fractie, `${naam}: geen kw-fractie in ${eigenschap}`).not.toBeNull();
+        return Number(fractie![1]);
+      });
+      expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual(
+        cssDiktes,
       );
+      expect(skin.naamplaat, `${naam}: naamplaatverloop ontbreekt`).toHaveLength(5);
 
       const [blur, gloed] = kleuren.randGloed!;
       const cssGloed = token(blok, "--kaart-randgloed")?.replace(/\s+/g, " ") ?? "";

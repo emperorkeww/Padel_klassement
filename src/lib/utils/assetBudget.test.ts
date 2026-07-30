@@ -16,9 +16,16 @@ import { fileURLToPath, URL } from "node:url";
 const pad = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const ASSETS = pad("../../../dist/assets");
 
-// Ruime marge boven de huidige ~6,2 MB: genoeg lucht voor een nieuwe route of
+// Ruime marge boven de huidige bundel: genoeg lucht voor een nieuwe route of
 // een handvol avatars, krap genoeg om één ongecomprimeerde 2 MB-PNG te vangen.
-const TOTAAL_MAX_MB = 8;
+//
+// De grens stond op 8 MB toen dit budget nog vooral over avatars en audio ging
+// (~6,2 MB). Sindsdien draagt elke special card een eigen master-artwork
+// (storm, on fire, dictator, big daddy, piet, goat): samen ruim 2 MB WebP die
+// bewust in de bundel zit, want het ís de kaart. Daarmee zat de bundel op
+// 7,98 MB vóór de GOAT-master (232 kB) erbij kwam. De per-bestandsgrens
+// hieronder blijft het echte vangnet voor ongecomprimeerd bronmateriaal.
+const TOTAAL_MAX_MB = 9;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;
