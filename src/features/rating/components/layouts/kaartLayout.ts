@@ -56,7 +56,13 @@ export interface DivisieKaartLayout {
     naam: KaartZone;
     titel: KaartZone;
     statistieken: KaartZone;
+    /** Vormemoji; alleen kaarten die hem in beeld dragen zetten deze zone. */
+    emoji?: KaartZone;
   };
+  /** Het artwork brengt zijn eigen contour mee — de alfa ervan ís de kaartvorm.
+   *  De kaart zet dan `--schild: none` en maakt frame, liner, keyline en vlak
+   *  onzichtbaar, zodat er geen tweede rand onder het artwork verschijnt. */
+  eigenSilhouet?: boolean;
   statistieken: ReadonlyArray<KaartStat>;
   onderdelen: ReadonlyArray<KaartOnderdeel>;
 }

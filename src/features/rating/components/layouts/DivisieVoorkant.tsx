@@ -32,7 +32,9 @@ export function DivisieVoorkant({
   statBron?: SpelerStatBron | null;
 }) {
   return (
-    <span className="divisie-voorkant">
+    <span
+      className={`divisie-voorkant divisie-voorkant--${layout.className}`}
+    >
       <span
         className="divisie-voorkant__zone divisie-voorkant__rating"
         style={zoneStijl(layout.zones.rating)}
@@ -45,6 +47,15 @@ export function DivisieVoorkant({
       >
         {tier?.subLabel ?? ""}
       </span>
+      {layout.zones.emoji && tier && (
+        <span
+          className="divisie-voorkant__zone divisie-voorkant__emoji"
+          style={zoneStijl(layout.zones.emoji)}
+          aria-hidden="true"
+        >
+          {tier.emoji}
+        </span>
+      )}
       <span
         className="divisie-voorkant__zone divisie-voorkant__portret"
         style={zoneStijl(layout.zones.portret)}
@@ -67,7 +78,7 @@ export function DivisieVoorkant({
       <span
         className="divisie-voorkant__zone divisie-voorkant__stats"
         style={zoneStijl(layout.zones.statistieken)}
-        aria-label="Ballenraper-eigenschappen"
+        aria-label={`${layout.id}-eigenschappen`}
       >
         {layout.statistieken.map((stat) => (
           <span className="divisie-voorkant__stat" key={stat.label}>

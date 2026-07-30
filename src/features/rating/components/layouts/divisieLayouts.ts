@@ -5,6 +5,7 @@ import type {
   SpelerStatBron,
 } from "./kaartLayout";
 import type { TierKey } from "@/features/rating/tiers";
+import { SLOF_LAYOUT } from "../slof/slofLayout";
 
 const begrens = (waarde: number) => Math.max(1, Math.min(99, Math.round(waarde)));
 const verhouding = (deel: number, totaal: number) =>
@@ -75,6 +76,7 @@ export const BALLENRAPER_LAYOUT: DivisieKaartLayout = {
 
 const LAYOUTS: Partial<Record<TierKey, DivisieKaartLayout>> = {
   hout: BALLENRAPER_LAYOUT,
+  slof: SLOF_LAYOUT,
 };
 
 /** Een tijdelijke editie wint altijd van de permanente divisie-layout. */

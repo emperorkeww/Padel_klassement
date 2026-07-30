@@ -1370,6 +1370,44 @@ De vaste visuele controle gebeurt via `/dev/blaaskaak`,
 staan in `screenshots/blaaskaak/final-desktop.png` en
 `screenshots/blaaskaak/final-mobile.png`.
 
+**Sletje van de baan (slof)**
+
+Deze kaart gebruikt dit patroon níet. Ze begon er wel mee — één master in drie
+lagen om een generieke kaart heen — maar de referentie
+([`referentie_sletje_van_de_baan.png`](./referentie_sletje_van_de_baan.png))
+bleek geen kaart-met-decoratie: rating, portret, titel en een statblok staan er
+allemaal ergens anders dan op de FUT-stapel. Een breakout kan daar het materiaal
+van naar de kaart brengen, maar niet de compositie.
+
+De slof gebruikt daarom het divisielayoutsysteem in
+[`components/layouts/`](../src/features/rating/components/layouts/), net als de
+Ballenraper, met drie samenhangende delen die letterlijk uit de referentie zijn
+gesneden: `buiten` (spinrag, tape, los afval) achter de kaart, `plaat` (het
+perkament mét al zijn vuil én het complete stilleven onderin) onder de inkt, en
+`omlijsting` (de metalen lijst met beide crests en de boog) ervóór. Het
+assetcontract staat in
+[`slof/ASSET_SPEC.md`](../src/features/rating/components/slof/ASSET_SPEC.md).
+
+Drie dingen daaruit zijn los van deze kaart bruikbaar:
+
+- **Knip een referentie alleen op langs naden die er visueel al zijn.** Een
+  eerdere versie sneed hier twaalf losse voorwerpen uit en zette ze op gemeten
+  posities terug, en bouwde de lijst opnieuw op uit een uitgerolde textuur. Dat
+  levert een herkenbare maar zichtbaar armere kaart: een uitgerolde band heeft
+  geen afschuiningen, geen afgebrokkelde hoeken en geen ingelegde crest, en
+  losgezette voorwerpen verliezen de contactschaduwen waarmee ze in het origineel
+  op elkaar rusten.
+- **Laat het silhouet uit het beeld komen.** Drempel → grootste samenhangende
+  component → gaten dichten; de alfa van de omlijsting ís dan de kaartvorm. De
+  layout zet `eigenSilhouet: true`, waarop de kaart `--schild: none` gebruikt en
+  frame, liner, keyline en vlak onzichtbaar maakt — anders tekent de generieke
+  schil een tweede rand onder een artwork dat zijn eigen contour al heeft.
+- **Een dekkend oppervlak vraagt om een textuurgetrouwe inpaint.** De tekst van
+  de referentie moet eruit, maar een genormaliseerde convolutie (het gemiddelde
+  van de omgeving) is glad en tekent zich op een verweerde plaat af als
+  spookvorm van de weggehaalde letter. Het script verplaatst in plaats daarvan
+  het residu van schoon perkament naar de weggehaalde plek.
+
 **Andere special editions**
 
 Gebruik het patroon voor effecten met fysieke continuïteit: sneeuwstorm,

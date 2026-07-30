@@ -32,3 +32,34 @@
   transform-origin: center;
   user-select: none;
 }
+
+/* Een layout die haar eigen silhouet meebrengt (de alfa van het artwork ís de
+   kaartvorm) maakt de generieke schil onzichtbaar. Zonder dit tekent de kaart
+   een tweede rand en een lichter kaartvlak onder een artwork dat zijn eigen
+   contour en licht al heeft — dat schemert als bleek silhouet om de kaart heen.
+
+   Dubbele basisklasse: de divisieregisters zetten hun kleuren op
+   `.fut-kaart--<key> .fut-kaart__vlak` (0,2,0), dus deze override heeft die
+   extra klasse nodig om te winnen. */
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__zijde,
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__liner,
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__keyline,
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__vlak,
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__vlak::before,
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__vlak::after {
+  background: none;
+  padding: 0;
+  box-shadow: none;
+  filter: none;
+}
+
+.fut-kaart.fut-kaart--eigen-silhouet {
+  --kaart-frame-dikte: 0px;
+  --kaart-liner-dikte: 0px;
+  --kaart-keyline-dikte: 0px;
+  --schild: none;
+}
+
+.fut-kaart.fut-kaart--eigen-silhouet .fut-kaart__randwaas {
+  display: none;
+}
