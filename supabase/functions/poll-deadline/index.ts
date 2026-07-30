@@ -30,7 +30,7 @@ import {
   TITEL_LAATSTE_KANS,
   TITEL_SPEELDAG,
 } from "../_shared/roast.ts";
-import { RONDE_MIN, rondesVoorDuur } from "../_shared/speeldagRondes.ts";
+import {
   magRondesZetten,
   RONDE_MIN,
   rondesVoorDuur,
