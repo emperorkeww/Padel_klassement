@@ -96,6 +96,13 @@ export type Highlight =
       carrierId: string;
       /** Wat er ná deze zege op z'n hoofd staat. */
       pool: number;
+    }
+  | {
+      /** Lef-tip (#804): deze speler speelde met lef (dubbel-of-niets). */
+      type: "lef";
+      playerId: string;
+      factor: number;
+      won: boolean;
     };
 
 export type FeedEvent =
@@ -528,6 +535,17 @@ export function buildFeed(input: {
               naarEmoji: wissel.naar.emoji,
               richting: wissel.richting,
               matchId: m.id,
+            });
+          }
+        }
+        // Lef-inzetten (#804): voeg een highlight toe als iemand lef speelde
+        for (const [pid, p] of points) {
+          if (p.stake_factor && p.stake_factor > 1) {
+            highlights.push({
+              type: "lef",
+              playerId: pid,
+              factor: p.stake_factor,
+              won: p.delta > 0,
             });
           }
         }

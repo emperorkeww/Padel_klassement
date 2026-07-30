@@ -33,7 +33,7 @@ export function SmoesPromptProvider({ children }: { children: ReactNode }) {
 
   const promptSmoes = useCallback(
     (args: SmoesPromptArgs) => {
-      toast.info("Verloren — tik voor een smoes 🙈", {
+      toast.info("Helaas verloren... Tik hier voor een waterdichte smoes! 🙈", {
         onClick: () => setPrompt(args),
       });
     },
@@ -48,7 +48,7 @@ export function SmoesPromptProvider({ children }: { children: ReactNode }) {
           open
           compact
           onClose={() => setPrompt(null)}
-          title="Verzin een smoes"
+          title="Smoesjesmachine"
         >
           <SmoesjesMachine
             matchId={prompt.matchId}
