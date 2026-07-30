@@ -1,0 +1,65 @@
+/* Reproduceerbare visuele teststage voor de Zwarte Piet-breakout. */
+
+.piet-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 150px 0 40px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(136, 95, 35, 0.16), transparent 46%),
+    #070604;
+}
+
+.piet-showcase__stage {
+  width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.piet-showcase__kaart.fut-kaart {
+  --fut-kw: 450px;
+}
+
+.piet-showcase__titel {
+  margin: 165px 0 0;
+  color: #d8c09a;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.piet-showcase__uitleg {
+  margin: 0;
+  color: #a69b89;
+  font-size: 19px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .piet-showcase {
+    padding-top: 28vw;
+  }
+
+  .piet-showcase__stage {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .piet-showcase__kaart.fut-kaart {
+    --fut-kw: min(450px, 72vw);
+  }
+
+  .piet-showcase__titel {
+    margin-top: 25vw;
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  .piet-showcase__uitleg {
+    max-width: 88vw;
+    font-size: clamp(14px, 4.2vw, 19px);
+  }
+}
