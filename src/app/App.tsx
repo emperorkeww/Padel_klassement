@@ -84,6 +84,11 @@ const BallenraperShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BallenraperShowcase"))
   : null;
 
+// Dev-stage voor de laagste divisie (slof) en haar referentiegestuurde layout.
+const SlofShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/SlofShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -157,6 +162,9 @@ function App() {
           )}
           {BallenraperShowcase && (
             <Route path="/dev/ballenraper" element={<BallenraperShowcase />} />
+          )}
+          {SlofShowcase && (
+            <Route path="/dev/slof" element={<SlofShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

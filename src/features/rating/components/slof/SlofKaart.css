@@ -1,0 +1,125 @@
+/* Zetting van de divisiekaart "Sletje van de baan" (#834).
+   De gedeelde DivisieVoorkant-stijl is die van de Ballenraper: serif, warme
+   inkt, statistieken als kolommen. Deze kaart is een verweerd plaquette met
+   zwarte inkt en zes regels label-links/waarde-rechts, dus zij overschrijft die
+   zetting via haar eigen klasse. Alles hier hangt onder
+   `.divisie-voorkant--slof`; de Ballenraper wordt niet geraakt. */
+
+.divisie-voorkant--slof {
+  color: #14110d;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.divisie-voorkant--slof .divisie-voorkant__rating {
+  color: #14110d;
+  font-family: var(--font-rounded, var(--font-sans, system-ui, sans-serif));
+  /* Krap onder 1: op deze maat is de regelhoogte anders hoger dan de cijfers
+     zelf en duwt de ratingzone het subniveau eruit. */
+  font-size: calc(var(--fut-kw) * 0.23);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 0.76;
+  text-shadow: none;
+}
+
+.divisie-voorkant--slof .divisie-voorkant__subniveau {
+  color: #14110d;
+  font-size: calc(var(--fut-kw) * 0.076);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+/* De vormemoji staat onder het subniveau, in dezelfde kolom. */
+.divisie-voorkant--slof .divisie-voorkant__emoji {
+  font-size: calc(var(--fut-kw) * 0.092);
+  line-height: 1;
+}
+
+/* Portret: het artwork levert de stenen ring, ingebed in de plaat. Geen tweede
+   ring en geen achtergrondcirkel eronder — die zou als lichte bies tussen foto
+   en steen lezen. */
+.divisie-voorkant--slof .divisie-voorkant__portret {
+  background: none;
+}
+
+.divisie-voorkant--slof .divisie-voorkant__portret .avatar {
+  font-size: calc(var(--fut-kw) * 0.115);
+}
+
+/* Echte cover-behavior op het beeld en niet op de wrapper: `Avatar` rendert een
+   <span> met een <img> erin. Deze zone moet een rond gat in het artwork vúllen —
+   blijft er ook maar een sikkel over, dan schemert de donkere band eronder door
+   en leest de foto als scheef uitgelijnd. */
+.divisie-voorkant--slof .divisie-voorkant__portret .avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* De naam draagt deze kaart niet in beeld; hij blijft wel voorleesbaar. */
+.divisie-voorkant--slof .divisie-voorkant__naam {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* De divisietitel: links uitgelijnd, één regel. De maat is zo gekozen dat
+   "Sletje van de baan III" — met 22 tekens de langste titel van de negen — er
+   zonder afbreking of ellipsis in past. */
+.divisie-voorkant--slof .divisie-voorkant__titel {
+  justify-content: flex-start;
+  color: #14110d;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: calc(var(--fut-kw) * 0.06);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-align: left;
+  text-shadow: none;
+  text-transform: uppercase;
+}
+
+/* Statblok: zes regels label-links, waarde-rechts, met een haarlijn onder elke
+   regel — geen kolommen zoals bij de Ballenraper. De rijhoogte volgt uit het
+   aantal regels, dus een layout met vijf of zeven regels verdeelt zichzelf. */
+.divisie-voorkant--slof .divisie-voorkant__stats {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+.divisie-voorkant--slof .divisie-voorkant__stat {
+  flex: 1 1 0;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10%;
+  border-bottom: max(1px, calc(var(--fut-kw) * 0.0022)) solid
+    rgba(20, 17, 13, 0.42);
+}
+
+.divisie-voorkant--slof .divisie-voorkant__stat-label {
+  color: #14110d;
+  font-size: calc(var(--fut-kw) * 0.044);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* Het lakrood van de referentie, één stap dieper zodat het op dit perkament
+   AA haalt. */
+.divisie-voorkant--slof .divisie-voorkant__stat-waarde {
+  color: #6a170f;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: calc(var(--fut-kw) * 0.044);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}

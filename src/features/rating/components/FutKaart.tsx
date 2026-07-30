@@ -2110,6 +2110,7 @@ export function FutKaart({
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
+    layout?.eigenSilhouet ? "fut-kaart--eigen-silhouet" : "",
     layout?.className ?? "",
     omgedraaid ? "is-omgedraaid" : "",
     glans && !inBeeld ? "is-buiten-beeld" : "",

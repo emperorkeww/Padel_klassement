@@ -1,0 +1,81 @@
+/* Reproduceerbare visuele teststage voor de slof-kaart. De maatvoering volgt de
+   referentie: een mobiel beeld waarin de kaart bijna de volledige breedte pakt,
+   met kleine marges en het informatieblok er direct onder. Geen vaste hoogtes en
+   geen min-height — de hoogte komt van de kaart en de tekst, en verder scrollt
+   de pagina gewoon. */
+
+.slof-showcase {
+  /* De maat staat hier, zodat ook de padding hierboven de kaart ertegen kan
+     rekenen: de boog steekt 16% kaarthoogte (= 22% kaartbreedte) uit en mag
+     niet door de bovenrand van het scherm worden afgesneden. */
+  --stage-kw: min(560px, 94vw);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Alleen ruimte voor de boog die boven de kaart uitsteekt, plus wat lucht;
+     niet meer. Geen vaste hoogte en geen min-height op de inhoud: de hoogte
+     komt van de kaart en de tekst, en verder scrollt de pagina gewoon. */
+  padding: calc(var(--stage-kw) * 0.26) 0 6vh;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(120, 108, 84, 0.14), transparent 52%),
+    #0d0c0a;
+}
+
+.slof-showcase__stage {
+  width: var(--stage-kw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* De boog steekt 16% kaarthoogte uit; die ruimte komt van de padding
+     hierboven, niet van een marge onder de kaart. */
+  gap: 0;
+}
+
+/* De kaart pakt de volle stagebreedte: geen tweede max-width, geen transform
+   scale, geen vaste px-maat. --fut-kw is de enige maat en alle interne lagen
+   rekenen daartegen. */
+/* Bewust een eigen --fut-kw en niet de geërfde --stage-kw: .fut-kaart
+   declareert --fut-kw zelf (116px default) en een declaratie op het element
+   wint van overerving — de kaart zou dan op haar minimummaat blijven staan. */
+.slof-showcase__kaart.fut-kaart {
+  --fut-kw: var(--stage-kw);
+}
+
+.slof-showcase__info {
+  /* Dicht onder de kaart, maar wél onder de bodemprops door: die steken ~13%
+     kaarthoogte uit en mogen niet achter de tekst verdwijnen. */
+  margin-top: calc(var(--stage-kw) * 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--stage-kw) * 0.014);
+  text-align: center;
+  max-width: 92%;
+}
+
+.slof-showcase__info p {
+  margin: 0;
+}
+
+.slof-showcase__kop {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  color: #e0d3b8;
+  font-size: clamp(19px, 5.4vw, 27px);
+  font-weight: 800;
+}
+
+.slof-showcase__bereik {
+  color: #a89d88;
+  font-size: clamp(14px, 3.8vw, 18px);
+  font-weight: 600;
+}
+
+.slof-showcase__flavor {
+  color: #8e8677;
+  font-size: clamp(13px, 3.4vw, 16px);
+  line-height: 1.4;
+}
