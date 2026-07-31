@@ -32,6 +32,7 @@ export function ShareSpeeldag({
   bestand,
   onShareText,
   accessCode,
+  shareUrl,
 }: {
   groupName: string;
   /** Bv. "vrijdag 10 januari · 20:00". */
@@ -46,12 +47,17 @@ export function ShareSpeeldag({
   onShareText: () => void | Promise<void>;
   /** Toegangscode van de poll; null als er geen is. */
   accessCode: string | null;
+  /** Deep-link naar deze speeldag — als QR op de poster, achter een opt-in. */
+  shareUrl: string;
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState<"tekst" | "poster" | null>(null);
   // Standaard uit (#675): een poster wordt doorgestuurd en blijft in
   // fotorollen staan, dus de code komt er alleen op als je dat zelf aanzet.
   const [codeOpPoster, setCodeOpPoster] = useState(false);
+  // Zelfde afweging voor de QR (#886): hij opent de speeldag in de app en is
+  // member-only, maar een doorgestuurde poster draagt 'm wel mee.
+  const [qrOpPoster, setQrOpPoster] = useState(false);
 
   async function deelTekst() {
     setBusy("tekst");
@@ -102,6 +108,7 @@ export function ShareSpeeldag({
         club,
         spelers,
         code: codeOpPoster ? accessCode : null,
+        link: qrOpPoster ? shareUrl : null,
       });
       // Alleen de kaarten die getekend worden hebben een avatar nodig.
       const avatars = await Promise.all(
@@ -144,6 +151,17 @@ export function ShareSpeeldag({
           </span>
         </label>
       )}
+      <label className="share-speeldag__optin">
+        <input
+          type="checkbox"
+          checked={qrOpPoster}
+          onChange={(e) => setQrOpPoster(e.target.checked)}
+        />
+        <span>
+          QR naar de speeldag
+          <em> — scannen opent 'm in de app, alleen voor groepsleden</em>
+        </span>
+      </label>
     </div>
   );
 }
