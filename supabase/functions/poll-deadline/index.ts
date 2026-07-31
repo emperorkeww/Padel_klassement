@@ -311,7 +311,7 @@ Deno.serve(async (req) => {
         result.lastCall += await pushTo(silent, {
           title: kiesTitel(TITEL_LAATSTE_KANS, poll.id),
           body: kiesUit(POLL_LAATSTE_KANS, roastSeed(poll.id, "laatste-kans")),
-          url: `/groepen/${poll.group_id}?tab=plannen`,
+          url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
           tag: `poll-${poll.id}`,
         });
         await admin
@@ -398,7 +398,7 @@ Deno.serve(async (req) => {
           (geboekt ? " — baan geboekt ✓" : " — vergeet de baan niet te boeken") +
           (code ? ` · code ${code}` : "") +
           `. ${kiesUit(SPEELDAG_VANDAAG, roastSeed(poll.id, "speeldag"))}`,
-        url: `/groepen/${poll.group_id}?tab=plannen`,
+        url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
         tag: `poll-${poll.id}`,
       });
       await admin

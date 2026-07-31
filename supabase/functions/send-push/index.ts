@@ -245,7 +245,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         body: `${await nameOf(rec.created_by)} stelt momenten voor. ${
           kiesUit(POLL_NIEUW, roastSeed(rec.id, "poll-nieuw"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen`,
+        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
         kind: null,
         tag: `poll-${rec.id}`,
       }];
@@ -265,7 +265,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         body: `De groep speelt ${moment}. ${
           kiesUit(POLL_MOMENT, roastSeed(rec.id, "locked"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen`,
+        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
         kind: null,
         tag: `poll-${rec.id}`,
       }];
@@ -285,7 +285,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         body: `Jullie spelen ${moment}. ${
           kiesUit(POLL_GEBOEKT, roastSeed(rec.id, "booked"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen`,
+        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
         kind: null,
         tag: `poll-${rec.id}`,
       }];
