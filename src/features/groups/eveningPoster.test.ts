@@ -7,6 +7,7 @@ import {
   verdeelVerticaal,
 } from "@/features/groups/eveningPoster";
 import { SNEER } from "@/features/coach/roastTone";
+import type { KaartData } from "@/features/profiles/profielPoster";
 import type { EveningRow, EveningSummary } from "@/features/feed/eveningSummary";
 import type { Match, Profile } from "@/types";
 
@@ -45,6 +46,17 @@ const opts = {
   naam: (id: string) => id.toUpperCase(),
   duo: (id: string) => `duo ${id}`,
   coachQuote: null,
+};
+
+/** Minimale kaart voor de winnaar (#895) — alleen de velden die de poster
+ *  doorgeeft aan `drawKaart`. */
+const KAART: KaartData = {
+  name: "P1",
+  avatarUrl: null,
+  rating: 1180,
+  tier: null,
+  editie: null,
+  editieTekst: null,
 };
 
 describe("eveningPoster", () => {
@@ -90,6 +102,42 @@ describe("eveningPoster", () => {
     expect(
       eveningPoster(summary({ bestDuo: { teamId: "t9", won: 3 } }), opts).bestDuo,
     ).toBe("🏆 Beste duo: duo t9 · 3 winsten");
+  });
+
+  // De kaart van de winnaar (#895): de avondposter toonde tot dan toe geen
+  // enkele FUT-kaart, terwijl de app er overal mee werkt.
+  it("vraagt de kaart van de nummer 1, niet van de eerste rij in de invoer", () => {
+    const gevraagd: string[] = [];
+    const p = eveningPoster(summary({ rows: [row("p2", 6), row("p1", 9)] }), {
+      ...opts,
+      kaart: (id) => {
+        gevraagd.push(id);
+        return { ...KAART, name: id.toUpperCase() };
+      },
+    });
+    // `summary.rows` is al gesorteerd; de winnaar is dus rows[0].
+    expect(gevraagd).toEqual(["p2"]);
+    expect(p.winnaar?.name).toBe("P2");
+  });
+
+  it("blijft zonder kaart-resolver werken", () => {
+    // De poster mag niet afhangen van ratings en editie-context: die worden
+    // pas bij het delen opgehaald en kunnen falen.
+    expect(eveningPoster(summary(), opts).winnaar).toBeNull();
+  });
+
+  it("laat de kaart weg als de resolver niets vindt", () => {
+    const p = eveningPoster(summary(), { ...opts, kaart: () => null });
+    expect(p.winnaar).toBeNull();
+  });
+
+  it("laat de kaart weg op een avond zonder spelers", () => {
+    const p = eveningPoster(summary({ rows: [] }), {
+      ...opts,
+      kaart: () => KAART,
+    });
+    expect(p.winnaar).toBeNull();
+    expect(p.podium).toEqual([]);
   });
 });
 
