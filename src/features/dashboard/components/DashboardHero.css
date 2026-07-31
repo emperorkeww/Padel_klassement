@@ -549,12 +549,16 @@
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--bd-goud);
 }
-/* Loopt er een tijdelijke overlay, dan wordt het kaartoppervlak donker — de tint
+/* Loopt er een On Fire overheen, dan wordt het kaartoppervlak donker — de tint
    ligt ín het vlak (HeroLagen) en de overlay zet zijn eigen crème-gouden inkt.
    Zonder deze regel blijft de lichte pil staan met die inkt erop: onleesbaar.
    Alleen wat op het oppervlak drijft verdonkert mee; de lijst, de ornamenten en
-   de knoppen blijven van de kaart. */
-.hero--bigdaddy.hero--overlay-inform .hero__coach,
+   de knoppen blijven van de kaart.
+
+   In-Form staat hier bewust niet meer bij: die neemt sinds #834 de hele kaart
+   over, dus er is geen roze pil meer om te verdonkeren — en deze selector zou
+   met zijn hogere specificiteit juist de zwarte capsule van In-Form
+   overschrijven. */
 .hero--bigdaddy.hero--overlay-onfire .hero__coach {
   background: rgba(10, 12, 22, 0.52);
   border-color: rgba(247, 223, 160, 0.42);
@@ -1846,16 +1850,6 @@
   inset: 0;
   border-radius: inherit;
 }
-.hero__tint--inform {
-  background:
-    radial-gradient(130% 60% at 50% -8%, rgba(240, 199, 102, 0.28), transparent 62%),
-    linear-gradient(
-      172deg,
-      rgba(33, 34, 35, 0.88) 0%,
-      rgba(17, 18, 19, 0.88) 60%,
-      rgba(5, 6, 7, 0.88) 100%
-    );
-}
 .hero__tint--onfire {
   background:
     radial-gradient(130% 60% at 50% -8%, rgba(255, 140, 66, 0.34), transparent 62%),
@@ -1893,72 +1887,24 @@
     transparent 1px 5px
   );
 }
-/* De watermerken van de twee edities: de bliksem met zijn halo, en het
-   vlamsilhouet dat in dit register de thermische ringen al meebrengt. Rechts,
-   waar de tekstkolom ophoudt, en zo bleek dat de rankingzin er dwars doorheen
-   leesbaar blijft. */
-.hero__watermerk--bliksem,
+/* Het watermerk van On Fire: het vlamsilhouet, dat in dit register de thermische
+   ringen al meebrengt. Rechts, waar de tekstkolom ophoudt, en zo bleek dat de
+   rankingzin er dwars doorheen leesbaar blijft. In-Form had hier zijn bliksem
+   staan; die is met de dunne variant vervallen (#834). */
 .hero__watermerk--vlam {
   right: 5%;
   height: 150%;
   opacity: 0.3;
   filter: none;
 }
-:root[data-theme="dark"] .hero__watermerk--bliksem,
 :root[data-theme="dark"] .hero__watermerk--vlam {
-  /* Deze twee liggen op de donkere tint, niet op licht kaartmateriaal: de
-     inversie van het basiswatermerk zou ze juist wegpoetsen. */
+  /* Deze ligt op de donkere tint, niet op licht kaartmateriaal: de inversie van
+     het basiswatermerk zou hem juist wegpoetsen. */
   filter: none;
   opacity: 0.32;
 }
-/* De elektrische pulsering van In-Form: één ring die traag uitdijt vanuit de
-   crest. Alleen `transform` en `opacity`, en volledig weg zonder
-   bewegingsvoorkeur — een stilstaande ring zou als een vlek lezen. */
-.hero__puls {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: clamp(90px, 14%, 190px);
-  aspect-ratio: 1;
-  margin: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(247, 223, 160, 0.5);
-  transform: translate(-50%, -50%) scale(0.35);
-  opacity: 0;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hero__puls {
-    animation: hero-puls 4.2s ease-out infinite;
-  }
-  @keyframes hero-puls {
-    0% {
-      transform: translate(-50%, -50%) scale(0.35);
-      opacity: 0.55;
-    }
-    45%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 0;
-    }
-  }
-}
-/* De snelheidslijnen van In-Form en de hittevinnen van On Fire: langs de
-   onderrand, waar geen inkt staat. Eén tekening, gespiegeld voor de andere
-   kant. */
-.hero__snelheid {
-  position: absolute;
-  bottom: 0;
-  width: clamp(70px, 12%, 150px);
-  aspect-ratio: 2 / 1;
-  opacity: 0.75;
-}
-.hero__snelheid--links {
-  left: 0;
-}
-.hero__snelheid--rechts {
-  right: 0;
-  transform: scaleX(-1);
-}
+/* De hittevinnen van On Fire: langs de onderrand, waar geen inkt staat. In-Form
+   had hier zijn snelheidslijnen; die zijn met de dunne variant vervallen. */
 .hero__vinnen {
   position: absolute;
   right: 0;
@@ -1984,7 +1930,6 @@
   transform: translateY(-50%) scaleX(-1);
 }
 /* De twee overlay-crests in de bovenrand. */
-.hero__crest--bliksem,
 .hero__crest--schild,
 .hero__crest--vlam {
   position: absolute;
@@ -1993,9 +1938,6 @@
   width: clamp(34px, 5%, 54px);
   aspect-ratio: 1;
   transform: translate(-50%, -46%);
-}
-.hero__crest--bliksem {
-  filter: drop-shadow(0 2px 4px rgba(10, 12, 20, 0.55));
 }
 /* De schildcrest is een plaat en geen glyph: hij mag groter en hangt iets
    dieper over de rand, zodat de gouden rail door zijn onderpunt loopt zoals op

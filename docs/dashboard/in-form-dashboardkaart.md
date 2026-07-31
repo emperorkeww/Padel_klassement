@@ -100,39 +100,45 @@ assen worden (§4).
 
 ## 4. De regel: wanneer krijgt een overlay een eigen lijst?
 
-Voorstel — één regel, geen uitzonderingen:
+> Draagt een overlay een eigen referentieontwerp, dan neemt hij vlak en lijst
+> over — op élke kaart. De ornamenten en de chip van het permanente thema blijven
+> staan.
 
-> Een overlay draagt zijn eigen lijst en zijn eigen artwork alleen wanneer er
-> geen permanent thema is. Ligt er wel een permanent thema onder, dan blijft de
-> overlay wat hij vandaag is: tint, groeven, glans en crest.
+| situatie | vlak en lijst | stormartwork | ornamenten van het thema |
+| --- | --- | --- | --- |
+| In-Form, geen permanent thema | In-Form | ja | — |
+| In-Form over Big Daddy | In-Form | ja | teddy, linten, hoekharten, medaillons |
+| In-Form over kampioen / pias / Piet / dictator | In-Form | ja | krans, kap, medaillon, ringen, hoeken |
+| On Fire over wat dan ook | het thema zelf | n.v.t. | alles |
 
-| situatie | lijst | stormartwork |
-| --- | --- | --- |
-| In-Form, geen permanent thema | eigen In-Form-lijst | ja, ín het vlak |
-| In-Form over Big Daddy | de BD-lijst blijft | nee |
-| In-Form over pias / Piet / kampioen / dictator | geen lijst (als nu) | nee |
+Dit is de tweede versie van deze regel, en de eerste staat er niet meer. Die zei:
+een overlay krijgt zijn eigen lijst *alleen* wanneer er geen permanent thema is,
+want #771 (AC4) wil dat de kaart eronder herkenbaar blijft. Dat leverde twee
+behandelingen voor één status op — hier een volle stormkaart, daar een dunne
+navy tint — en die lazen naast elkaar als twee verschillende statussen. Erger:
+juist de speler die én in vorm is én de pias van zijn groep kreeg de zwakste van
+de twee te zien, terwijl hij de meeste titels draagt.
 
-Waarom niet "storm overal":
+Wat AC4 wilde beschermen blijft overeind, alleen niet meer via het materiaal:
 
-- **de rechterflank is bezet.** Op de Big Daddy hangt daar de satijnwikkel. Twee
-  zware objecten op één flank is dezelfde fout als "driemaal hetzelfde juweel is
-  een patroon" (BD-doc §5) — alleen luider;
-- **AC4 werkt beide kanten op.** De storm is dekkend artwork. Op de piaskaart
-  legt hij 40 % van het kraftkarton toe, en dan is het permanente thema precies
-  zo onzichtbaar als #771 wilde voorkomen;
-- **de drager is één speler per club per week.** De kans dat die tegelijk Big
-  Daddy of pias is, is klein; de kaart die je in de praktijk ziet is de
-  divisiekaart met de In-Form-lijst erover. Een tweede variant onderhouden voor
-  het randgeval kost meer dan het oplevert.
+- **de ornamenten van het permanente thema blijven** — de teddy en de satijnlinten
+  van de Big Daddy, de narrenkap en het maskermedaillon van de pias, de
+  lauwerkrans en de linten van de kampioen. Ze hangen in `hero__lagen--voor` en
+  raken het vlak niet, dus ze kunnen gewoon mee op het zwart;
+- **de chip blijft** in de titelrij, zoals altijd. Kleur is nooit de enige
+  indicator (#613);
+- **de crest van het thema schuift naar 26%**, zoals hij dat voor elke overlay al
+  deed. Het midden van de bovenrand is voor de schildcrest van In-Form.
 
-Het alternatief — storm op halve dekking over de tint bij thema's zónder eigen
-lijst — is bewust niet gekozen, maar het is een kleine stap vanaf hier als de
-combinatie op de showcase tegenvalt.
+Wat er ná deze wijziging niet meer is: de dunne In-Form-variant. Bliksemwatermerk,
+pulsring, twee snelheidslijnen, de kale glyph-crest en de In-Form-tint zijn
+verwijderd in plaats van als fallback blijven staan — dezelfde keuze die de Big
+Daddy met zijn vectorornamenten maakte, en om dezelfde reden: er is geen tweede
+tekenaar (canvas, poster) die ze nog nodig heeft.
 
-De consequentie voor de code is dat `eigenLijst` en `heeftVoor` in `HeroLagen`
-van `(permanent, overlay)` gaan afhangen, en dat er in `DashboardHero.css` een
-tweede materiaalblok naast `.hero--bigdaddy` komt te staan. De rest van de
-overlaylogica blijft ongemoeid.
+On Fire houdt zijn dunne overlay. Niet uit principe, maar omdat er nog geen
+referentieontwerp voor is: `heroLijstProfiel` heeft er een tak voor zodra die er
+wel is.
 
 ## 5. De regel voor een vloeiende doos
 
@@ -213,8 +219,10 @@ watermerk) bleef daarmee ongebruikt.
 
 - `heroThema.ts` — `heroLijstProfiel(permanent, overlay)` is de regel uit §4 op
   één plek, en `heroKlassen` hangt er `hero--lijst-inform` aan. Big Daddy heeft
-  aan `.hero--bigdaddy` genoeg; In-Form deelt zijn klasse met de dunne variant en
-  heeft er dus een tweede nodig;
+  aan `.hero--bigdaddy` genoeg; In-Form heeft een tweede klasse nodig omdat
+  `.hero--overlay-inform` ook de inkt zet die hij met niemand deelt, en omdat zijn
+  materiaalblok het permanente thema in de cascade moet verslaan — het staat
+  daarvoor ná de vijf themablokken in het bestand;
 - `HeroLijst.tsx` bleef ongewijzigd, maar zijn geometrie in `DashboardHero.css`
   is generiek geworden: de vier vlakken lezen nu `--lijst-rail-d`,
   `--lijst-band-d` en `--lijst-key-d`, en het materiaal staat per thema. Zonder
@@ -245,6 +253,16 @@ watermerk) bleef daarmee ongebruikt.
   en schuift dus mee als de kaart smaller wordt;
 - onder 560 px containerbreedte zakt de kolom naar een lage band achter de
   knoppenrij (§5), en verdwijnt de vonkensleep.
+
+### De ornamenten van het permanente thema
+
+Die blijven staan (§4) en hoefden daarvoor niets: ze hangen in
+`hero__lagen--voor`, buiten het vlak, en de enige die ín het vlak zit — de
+satijnwikkel die bij Big Daddy achter de lijst door weeft — rekent tegen
+`--lijst-d`, en die levert In-Form net zo goed. Eén regel moest wél weg:
+`.hero--bigdaddy.hero--overlay-inform .hero__coach` maakte de roze spreekcapsule
+donker onder de oude tint, en zou met zijn hogere specificiteit nu juist de
+zwarte capsule van In-Form overschrijven. De On-Fire-helft van die regel blijft.
 
 ### De crest
 
