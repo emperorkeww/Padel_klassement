@@ -1754,7 +1754,7 @@
 .hero-if--storm {
   top: calc(-1 * var(--lijst-d));
   right: calc(-2cqw - var(--lijst-d));
-  width: clamp(240px, 46cqw, 680px);
+  width: clamp(240px, 46cqw, 600px);
   mask-image: linear-gradient(to left, #000 62%, transparent 98%);
   -webkit-mask-image: linear-gradient(to left, #000 62%, transparent 98%);
 }
@@ -1763,7 +1763,7 @@
 .hero-if--ember {
   left: calc(-1cqw - var(--lijst-d));
   bottom: calc(-0.5cqw - var(--lijst-d));
-  width: clamp(150px, 26cqw, 460px);
+  width: clamp(150px, 26cqw, 400px);
 }
 /* Onder ~560 px containerbreedte loopt de tekst over de volle breedte en is er
    geen rechterflank meer om de storm in te zetten: hij zakt naar een lage band
