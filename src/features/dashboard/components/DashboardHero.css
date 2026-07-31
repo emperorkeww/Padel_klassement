@@ -230,11 +230,14 @@
   --bd-goud-licht: #fbe6b4;
   --bd-goud-diep: #a9762a;
 
-  /* Lijstdiktes, zie de kop. */
-  --bd-rail-d: clamp(2.5px, 0.35cqw, 7px);
-  --bd-band-d: clamp(7px, 1.05cqw, 20px);
-  --bd-key-d: clamp(1.5px, 0.3cqw, 5px);
-  --bd-lijst-d: calc(var(--bd-rail-d) + var(--bd-band-d) + var(--bd-key-d));
+  /* Lijstdiktes, zie de kop. De namen zijn generiek: HeroLijst draagt sinds de
+     In-Form-kaart twee profielen en zijn geometrie leest deze drie. */
+  --lijst-rail-d: clamp(2.5px, 0.35cqw, 7px);
+  --lijst-band-d: clamp(7px, 1.05cqw, 20px);
+  --lijst-key-d: clamp(1.5px, 0.3cqw, 5px);
+  --lijst-d: calc(
+    var(--lijst-rail-d) + var(--lijst-band-d) + var(--lijst-key-d)
+  );
   /* Periode van het matelas-weefsel: op de referentie 46 px op 1774 breed. */
   --bd-ruit: clamp(18px, 2.6cqw, 34px);
 
@@ -280,8 +283,8 @@
      buitenlijn om het goud heen liggen. De inhoud schuift met dezelfde dikte
      naar binnen, zodat tekst nooit op de band belandt. */
   border: 0;
-  padding: calc(var(--sp-6) + var(--bd-lijst-d))
-    calc(var(--sp-7) + var(--bd-lijst-d));
+  padding: calc(var(--sp-6) + var(--lijst-d))
+    calc(var(--sp-7) + var(--lijst-d));
   /* Vangnet onder de lagen: zonder achtergrond flitst de paginakleur door de
      kaart voordat de lijst schildert. */
   background: var(--bd-vlak-mid);
@@ -290,7 +293,12 @@
 
 /* De vier geneste vlakken (HeroLijst). Elk vlak is dekkend en ligt ín zijn
    voorganger; de lijst die je ziet is het verschil tussen twee opeenvolgende
-   vlakken — precies zoals de FUT-kaart zijn rand maakt. */
+   vlakken — precies zoals de FUT-kaart zijn rand maakt.
+
+   Alleen de geometrie staat hier: de drie diktes komen als `--lijst-*-d` van het
+   thema, het materiaal uit een themablok verderop. Sinds de In-Form-kaart (#834)
+   zijn dit er twee, en een gedeelde stapeling met Big Daddy-kleuren erin zou de
+   tweede dwingen alle vier de vlakken over te schrijven. */
 .hero__lijst,
 .hero__lijst-band,
 .hero__lijst-key,
@@ -301,8 +309,27 @@
 .hero__lijst {
   inset: 0;
   border-radius: inherit;
-  /* Champagnegoud met roze weerschijn: byte-gelijk aan .fut-kaart--icon
-     .fut-kaart__zijde. */
+}
+.hero__lijst-band {
+  inset: var(--lijst-rail-d);
+  border-radius: calc(var(--radius-lg) - var(--lijst-rail-d));
+}
+.hero__lijst-key {
+  inset: var(--lijst-band-d);
+  border-radius: calc(var(--radius-lg) - var(--lijst-rail-d) - var(--lijst-band-d));
+}
+.hero__vlak {
+  inset: var(--lijst-key-d);
+  border-radius: calc(
+    var(--radius-lg) - var(--lijst-rail-d) - var(--lijst-band-d) -
+      var(--lijst-key-d)
+  );
+}
+
+/* Het materiaal van de Big Daddy-lijst: champagnegoud met roze weerschijn
+   (byte-gelijk aan .fut-kaart--icon .fut-kaart__zijde), de verzadigde magenta
+   band ertussen en een gouden keyline. */
+.hero--bigdaddy .hero__lijst {
   background: linear-gradient(
     160deg,
     var(--bd-goud-licht) 0%,
@@ -313,9 +340,7 @@
     #8f3560 100%
   );
 }
-.hero__lijst-band {
-  inset: var(--bd-rail-d);
-  border-radius: calc(var(--radius-lg) - var(--bd-rail-d));
+.hero--bigdaddy .hero__lijst-band {
   /* De verzadigde magenta band tussen goud en vlak, met licht van linksboven. */
   background: linear-gradient(
     160deg,
@@ -324,20 +349,14 @@
     var(--bd-band-diep) 100%
   );
 }
-.hero__lijst-key {
-  inset: var(--bd-band-d);
-  border-radius: calc(var(--radius-lg) - var(--bd-rail-d) - var(--bd-band-d));
+.hero--bigdaddy .hero__lijst-key {
   background: linear-gradient(160deg, #f2d18a 0%, var(--bd-key) 55%, #c79a45 100%);
 }
 /* Het kaartvlak: satijn met matelas-ruit, hartbokeh en een vignet naar de
    randen. Het weefsel zit in de achtergrond en niet in een ::after — een
    pseudo-element schildert ná de inhoud, en dan ligt de ruit over de letters
    (dezelfde valkuil als op de FUT-kaart, #834). */
-.hero__vlak {
-  inset: var(--bd-key-d);
-  border-radius: calc(
-    var(--radius-lg) - var(--bd-rail-d) - var(--bd-band-d) - var(--bd-key-d)
-  );
+.hero--bigdaddy .hero__vlak {
   background:
     /* Matelas: gequilt ruitraster met een lichte stiklijn en een magenta
        schaduwlijn ernaast. */
@@ -530,12 +549,16 @@
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--bd-goud);
 }
-/* Loopt er een tijdelijke overlay, dan wordt het kaartoppervlak donker — de tint
+/* Loopt er een On Fire overheen, dan wordt het kaartoppervlak donker — de tint
    ligt ín het vlak (HeroLagen) en de overlay zet zijn eigen crème-gouden inkt.
    Zonder deze regel blijft de lichte pil staan met die inkt erop: onleesbaar.
    Alleen wat op het oppervlak drijft verdonkert mee; de lijst, de ornamenten en
-   de knoppen blijven van de kaart. */
-.hero--bigdaddy.hero--overlay-inform .hero__coach,
+   de knoppen blijven van de kaart.
+
+   In-Form staat hier bewust niet meer bij: die neemt sinds #834 de hele kaart
+   over, dus er is geen roze pil meer om te verdonkeren — en deze selector zou
+   met zijn hogere specificiteit juist de zwarte capsule van In-Form
+   overschrijven. */
 .hero--bigdaddy.hero--overlay-onfire .hero__coach {
   background: rgba(10, 12, 22, 0.52);
   border-color: rgba(247, 223, 160, 0.42);
@@ -695,8 +718,8 @@
    pixels verspringen — precies het registratiedetail dat --storm-master-inset op
    de FUT-kaart oplost. */
 .hero-bd--flank-achter {
-  right: calc(-1 * var(--bd-lijst-d));
-  top: calc(2% - var(--bd-lijst-d));
+  right: calc(-1 * var(--lijst-d));
+  top: calc(2% - var(--lijst-d));
 }
 
 /* Dictator: hetzelfde keizerlijke verloop als De Troon (DictatorThrone.css) —
@@ -1352,23 +1375,32 @@
    een zweem kleur — genoeg om de divisie of de titel te herkennen, te weinig om
    de leesbaarheid van witte inkt te raken. */
 
-/* In-Form: het navy-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
+/* In-Form: het zwart-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
    als .hero--dictator een donker vlak in beide thema's, dus wit voor de kop en
    goud voor wat een eigen kleurbetekenis heeft — de kaart zet álle inkt op goud,
    maar dat is een vlak van 96px met vier regels, geen hero met een
    coachbriefing erin.
 
-   Navy naast het bordeaux van de troon: allebei donker met goud, maar de troon
+   Dit blok is de dúnne variant: In-Form bóven een permanent thema, waar de kaart
+   eronder herkenbaar moet blijven (#771, AC4). De volle variant staat verderop
+   in `.hero--lijst-inform`; sinds het navy van de editie is rechtgezet dragen ze
+   hetzelfde zwart.
+
+   Zwart naast het bordeaux van de troon: allebei donker met goud, maar de troon
    is warm en draagt propaganda-copy plus zijn eigen insigne — hetzelfde
-   onderscheid dat de kaart al maakt (#625). Contrast: wit 13,9:1 op de lichtste
-   stop, de gouden eyebrow 10,6:1, de zachte gold-white-mix daartussen. */
+   onderscheid dat de kaart al maakt (#625). Contrast op de lichtste stop, over
+   het lichtste materiaal dat er in de praktijk onder ligt (het kraftkarton van
+   de pias): wit 11,5:1, het champagnegoud 7,7:1 — allebei ruimer dan de navy
+   die hier stond (10,0 en 6,7). */
 .hero--overlay-inform {
   --inform-goud: #f2cf7d;
   --inform-goud-soft: #c9a95e;
   --inform-lijn: #ffd56b;
-  --inform-navy: #1b2235;
-  --inform-navy-mid: #0f121d;
-  --inform-navy-diep: #05060a;
+  /* Deze drie zijn byte-gelijk aan de vlak-stops van de ⚡-kaart in
+     futKaartCanvas.ts; futKaartCanvas.test.ts bewaakt dat. */
+  --inform-zwart: #212223;
+  --inform-zwart-mid: #111213;
+  --inform-zwart-diep: #050607;
 
   color: #fff;
   border-color: var(--inform-lijn);
@@ -1376,7 +1408,7 @@
      kader in plaats van een wolk over de kaart. */
   box-shadow:
     inset 0 0 0 1px rgba(247, 223, 160, 0.28),
-    0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
+    0 8px 24px color-mix(in srgb, var(--inform-zwart-diep) 45%, transparent);
 }
 .hero--overlay-inform .hero__eyebrow {
   color: #f7dfa0;
@@ -1397,22 +1429,361 @@
   background: color-mix(in srgb, var(--inform-goud) 40%, transparent);
 }
 .hero--overlay-inform .hero__actions .btn {
-  background: color-mix(in srgb, var(--inform-navy-diep) 62%, transparent);
+  background: color-mix(in srgb, var(--inform-zwart-diep) 62%, transparent);
   border-color: var(--inform-lijn);
   color: #fff;
 }
 .hero--overlay-inform .hero__actions .btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--inform-navy-diep) 80%, transparent);
+  background: color-mix(in srgb, var(--inform-zwart-diep) 80%, transparent);
   border-color: color-mix(in srgb, var(--inform-goud) 70%, transparent);
 }
 .hero--overlay-inform .hero__actions .btn--primary {
   background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
   border-color: #d8ae4e;
-  color: var(--inform-navy-diep);
+  color: var(--inform-zwart-diep);
 }
 .hero--overlay-inform .hero__actions .btn--primary:hover:not(:disabled) {
   background: linear-gradient(180deg, #fbeac0, #e5be5c);
   border-color: #e5be5c;
+}
+
+/* ---- In-Form met een eigen lijst (#834) ----
+   docs/dashboard/in_form_dashboard.png: zwart met een goud-zwart-goud profiel,
+   een stormkolom op de rechterflank en achthoekig afgesneden hoeken. Dit blok
+   staat ná .hero--overlay-inform en heeft dezelfde specificiteit, dus het wint
+   op volgorde — de inkt die de twee delen blijft daarboven staan.
+
+   Wanneer deze klasse er staat, bepaalt heroLijstProfiel: alleen als er geen
+   permanent thema onder ligt. Een dekkende storm over een piaskaart zou het
+   kraftkarton toedekken, en dat is precies wat #771 (AC4) verbiedt.
+
+   Gemeten op de referentie (kaartbox 1686 × 785, dus 2,15 : 1): goudrail 9 px,
+   zwarte band 6 px, gouden keyline 4 px = 0,53 / 0,36 / 0,24 % van de
+   kaartbreedte; de chamfer van de keyline 50 px = 3,0 %. Kaartvlak #0d0d10.
+
+   Twee dingen die deze kaart anders doet dan de Big Daddy:
+
+   1. de chamfer zit op de kéyline, niet op de buitenrand. De goudrail volgt een
+      gewone afgeronde hoek; het is de gouden haarlijn eróver die de hoek
+      diagonaal afsnijdt. Rail en band houden dus `border-radius`, keyline en
+      vlak krijgen een `clip-path`. Andersom zou de slagschaduw van de kaart een
+      achthoek moeten volgen, en dat kan `box-shadow` niet;
+   2. er is geen voorlaag. De referentie houdt het goud over de volle hoogte
+      ononderbroken — de storm eindigt exact op de keyline. Dat scheelt het hele
+      frontmasker dat de ⚡-FUT-kaart wél heeft.
+
+   Contrast op het kaartvlak: wit 19,4:1, --if-goud 12,9:1, --if-goud-soft
+   8,6:1. Ruim boven AA, en dat moet ook: op de heldere kern van een bliksem
+   haalt wit 3,1:1, dus alles hangt ervan af dat de storm rechts van de
+   tekstkolom blijft. Zie de veer van hero-if--storm verderop.
+
+   Dit vlak (#0d0d10) is iets donkerder dan de tintstops van de dunne variant
+   hierboven, maar het is dezelfde neutrale familie: die stops staan vast op de
+   vlak-stops van de ⚡-kaart, en die dragen een eigen vignet en topgloed. */
+.hero--lijst-inform {
+  --if-vlak: #0d0d10;
+  --if-goud: #f2cf7d;
+  --if-goud-licht: #fff3c8;
+  --if-goud-soft: #c9a95e;
+  --if-goud-diep: #8a6a2a;
+  --if-key: #ffd56b;
+  --if-zwart: #08080b;
+
+  /* Lijstdiktes en chamfer, zie de kop. */
+  --lijst-rail-d: clamp(3px, 0.53cqw, 9px);
+  --lijst-band-d: clamp(2.5px, 0.36cqw, 6.5px);
+  --lijst-key-d: clamp(1.5px, 0.24cqw, 4.5px);
+  --lijst-d: calc(
+    var(--lijst-rail-d) + var(--lijst-band-d) + var(--lijst-key-d)
+  );
+  --if-hoek: clamp(12px, 3cqw, 50px);
+
+  container-type: inline-size;
+
+  /* Token-eiland, zoals .hero--bigdaddy: chips, vormbolletjes en tooltips
+     volgen het thema zonder eigen regel. */
+  --surface: #17181e;
+  --surface-2: #1e2029;
+  --ink: #ffffff;
+  --ink-soft: #d7dae2;
+  --ink-soft-strong: #ffffff;
+  --line: rgba(242, 207, 125, 0.28);
+  --line-strong: var(--if-goud-soft);
+  --accent: var(--if-goud);
+  --accent-hover: var(--if-goud-licht);
+  --accent-ink: var(--if-vlak);
+  --coach: var(--if-goud);
+  --skeleton-hi: #23252d;
+  /* Winst en verlies als in de referentie: witte schijfjes met een groene of
+     rode letter. De donkere thema-varianten zouden hier drie bijna-zwarte
+     bolletjes op een zwarte kaart zetten. */
+  --success: #1d6a4d;
+  --success-soft: #eef8f1;
+  --success-line: #9fd4b8;
+  --danger: #a81f2a;
+  --danger-soft: #fdeceb;
+  --danger-line: #e7a5a1;
+  --warn: #8a5a12;
+  --warn-soft: #fbeccd;
+  --warn-line: #ddb877;
+
+  color: #fff;
+  /* De lijst is een echt profiel; de 1px-border en de gouden binnenring van
+     .hero--overlay-inform zouden er als tweede rand omheen liggen. */
+  border: 0;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  padding: calc(var(--sp-6) + var(--lijst-d)) calc(var(--sp-7) + var(--lijst-d));
+  /* Vangnet onder de lagen: zonder achtergrond flitst de paginakleur door de
+     kaart voordat de lijst schildert. */
+  background: var(--if-vlak);
+}
+
+/* Het materiaal van de lijst. De rail is champagnegoud met een specular top —
+   dezelfde familie als het frame van de ⚡-FUT-kaart (ornamentenInform.ts,
+   #f7dfa0 → #4c390a), alleen als verloop over een brede doos in plaats van om
+   een schild. */
+.hero--lijst-inform .hero__lijst {
+  background: linear-gradient(
+    160deg,
+    var(--if-goud-licht) 0%,
+    var(--if-goud-soft) 14%,
+    #fdf1c6 34%,
+    var(--if-goud) 52%,
+    var(--if-goud-diep) 78%,
+    #6a4d1c 100%
+  );
+}
+/* De band is bijna zwart: op de referentie zit tussen rail en keyline geen
+   kleur maar diepte. */
+.hero--lijst-inform .hero__lijst-band {
+  background: linear-gradient(160deg, #101116 0%, var(--if-zwart) 55%, #000 100%);
+}
+.hero--lijst-inform .hero__lijst-key {
+  background: linear-gradient(
+    160deg,
+    var(--if-goud-licht) 0%,
+    var(--if-key) 46%,
+    var(--if-goud-diep) 100%
+  );
+}
+/* Het kaartvlak: het zwart van de referentie met een gouden gloed rechtsboven,
+   waar de storm vandaan komt. De diagonale groeven zitten niet hier maar in een
+   eigen laag (HeroLagen) — die moet bóven het artwork liggen. */
+.hero--lijst-inform .hero__vlak {
+  background:
+    radial-gradient(
+      70% 90% at 92% 4%,
+      rgba(242, 207, 125, 0.16) 0%,
+      transparent 62%
+    ),
+    linear-gradient(168deg, #121319 0%, var(--if-vlak) 58%, #08080b 100%);
+}
+/* De achthoek. Keyline en vlak krijgen dezelfde chamfer: het verschil in
+   inzet is `--lijst-key-d`, en dat is precies de gouden haarlijn die je op de
+   diagonaal ziet. */
+.hero--lijst-inform .hero__lijst-key,
+.hero--lijst-inform .hero__vlak {
+  clip-path: polygon(
+    var(--if-hoek) 0,
+    calc(100% - var(--if-hoek)) 0,
+    100% var(--if-hoek),
+    100% calc(100% - var(--if-hoek)),
+    calc(100% - var(--if-hoek)) 100%,
+    var(--if-hoek) 100%,
+    0 calc(100% - var(--if-hoek)),
+    0 var(--if-hoek)
+  );
+}
+
+/* De naam in het zilververloop van de referentie in plaats van vlak wit. De
+   fallback-`color` staat er niet voor de sier: krijgt een browser
+   `background-clip: text` niet rond, dan blijft er anders onzichtbare tekst
+   staan. */
+.hero--lijst-inform .hero__name {
+  color: #fff;
+  background: linear-gradient(178deg, #ffffff 0%, #e6e8ee 42%, #9aa0ad 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* `-webkit-text-fill-color` erft, en de divisiepil staat ín de kop: zonder deze
+   regel is dat een wit blokje zonder letters. De pil houdt haar eigen
+   tierkleur — dat is een functioneel signaal — en krijgt alleen de gouden rand
+   van deze kaart mee, zoals bij Big Daddy. */
+.hero--lijst-inform .hero__name .tier-badge {
+  -webkit-text-fill-color: currentcolor;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--if-goud) 75%, transparent);
+}
+/* De eyebrow met de gouden haarlijn erachter, zoals bij Big Daddy. */
+.hero--lijst-inform .hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.hero--lijst-inform .hero__eyebrow::after {
+  content: "";
+  flex: 1 1 auto;
+  max-width: 15rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--if-goud) 0%,
+    color-mix(in srgb, var(--if-goud) 40%, transparent) 60%,
+    transparent 100%
+  );
+}
+/* Een gouden haarlijn in plaats van de grijze scheiding. */
+.hero--lijst-inform .hero__divide {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--if-goud) 55%, transparent) 10%,
+    color-mix(in srgb, var(--if-goud) 85%, transparent) 50%,
+    color-mix(in srgb, var(--if-goud) 55%, transparent) 90%,
+    transparent
+  );
+}
+/* De profielfoto in de dubbele goudring van de referentie, met de lichtboog
+   rechtsonder. */
+.hero--lijst-inform .hero__me .avatar {
+  background: linear-gradient(180deg, #23252e 0%, #101218 100%);
+  color: var(--if-goud);
+  box-shadow:
+    0 0 0 2px var(--if-vlak),
+    0 0 0 4px var(--if-goud-soft),
+    0 0 0 6px var(--if-zwart),
+    0 0 0 8px var(--if-goud),
+    6px 8px 16px rgba(242, 207, 125, 0.28);
+}
+/* De coachregel als donkere capsule met een gouden rand — de spreekbubbel van
+   de referentie. `inline-flex` zodat hij om de regel sluit in plaats van de
+   volle kaartbreedte te pakken. */
+.hero--lijst-inform .hero__coach {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 32, 41, 0.92) 0%,
+    rgba(12, 13, 17, 0.92) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--if-goud) 45%, transparent);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+}
+.hero--lijst-inform .hero__coach-face {
+  margin-top: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--if-goud);
+}
+
+/* De knoppen als de achthoekige platen uit de referentie: een gouden plaat met
+   een donkere kern erin, en bij de primaire knop juist andersom.
+
+   Een `border` kan dat niet: `clip-path` snijdt de diagonaal dwars door de rand
+   en dan mist de schuine kant zijn lijn. Vandaar de gouden achtergrond met een
+   ::before erin — en `isolation: isolate`, want alleen binnen een eigen
+   stacking context blijft een `z-index: -1` boven de achtergrond van de knop en
+   ónder zijn label. Zonder die isolatie schildert het pseudo-element over de
+   tekst heen. */
+.hero--lijst-inform .hero__actions .btn {
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    var(--if-goud-licht) 0%,
+    var(--if-goud) 45%,
+    var(--if-goud-diep) 100%
+  );
+  clip-path: polygon(
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px),
+    0 10px
+  );
+}
+.hero--lijst-inform .hero__actions .btn::before {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  background: linear-gradient(180deg, #23252e 0%, #0a0b0f 100%);
+  clip-path: inherit;
+}
+.hero--lijst-inform .hero__actions .btn:hover:not(:disabled)::before {
+  background: linear-gradient(180deg, #2e313c 0%, #131520 100%);
+}
+/* De primaire knop is de volle gouden plaat: geen donkere kern, wel dezelfde
+   achthoek. */
+.hero--lijst-inform .hero__actions .btn--primary {
+  color: var(--if-vlak);
+}
+.hero--lijst-inform .hero__actions .btn--primary::before {
+  background: linear-gradient(
+    180deg,
+    var(--if-goud-licht) 0%,
+    #e8c476 52%,
+    #b98f3c 100%
+  );
+}
+.hero--lijst-inform .hero__actions .btn--primary:hover:not(:disabled)::before {
+  background: linear-gradient(180deg, #fff8dd 0%, #f2d28c 52%, #c99c46 100%);
+}
+
+/* De artwork-onderdelen (InformDecor.tsx). Dezelfde drie regels als bij Big
+   Daddy: maat in `cqw` met een `clamp()`, `height: auto` zodat de
+   beeldverhouding uit het bestand komt, en verankeren aan één rand. */
+.hero-if {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+}
+/* De stormkolom op de rechterflank, van de bovenrand tot voorbij de onderrand.
+   De maskergradient links is de harde grens uit het plan: wit op een bliksemkern
+   haalt 3,1:1, dus de storm mag de tekstkolom niet raken. Het onderdeel is al
+   met een veer gesneden; deze tweede uitdoving hangt aan de kaartbreedte in
+   plaats van aan het bestand, en schuift dus mee als de kaart smaller wordt. */
+.hero-if--storm {
+  top: calc(-1 * var(--lijst-d));
+  right: calc(-2cqw - var(--lijst-d));
+  width: clamp(240px, 46cqw, 600px);
+  mask-image: linear-gradient(to left, #000 62%, transparent 98%);
+  -webkit-mask-image: linear-gradient(to left, #000 62%, transparent 98%);
+}
+/* De vonkensleep in de linkeronderhoek: het enige dat de storm aan de overkant
+   van de kaart beantwoordt. */
+.hero-if--ember {
+  left: calc(-1cqw - var(--lijst-d));
+  bottom: calc(-0.5cqw - var(--lijst-d));
+  width: clamp(150px, 26cqw, 400px);
+}
+/* Onder ~560 px containerbreedte loopt de tekst over de volle breedte en is er
+   geen rechterflank meer om de storm in te zetten: hij zakt naar een lage band
+   achter de knoppenrij, waar in de referentie de vonkensleep al staat. Dat is
+   de plek waar deze kaart het meest van de referentie afwijkt — die is nu
+   eenmaal op een breed scherm getekend. */
+@container (max-width: 560px) {
+  .hero-if--storm {
+    top: auto;
+    bottom: calc(-1 * var(--lijst-d));
+    right: calc(-14cqw - var(--lijst-d));
+    width: clamp(280px, 88cqw, 620px);
+    /* Steiler uitgedoofd dan op desktop: de tekstkolom loopt hier tot tegen de
+       rechterrand, dus de storm mag alleen de onderste strook halen. */
+    mask-image: linear-gradient(to top, #000 26%, transparent 76%);
+    -webkit-mask-image: linear-gradient(to top, #000 26%, transparent 76%);
+  }
+  .hero-if--ember {
+    display: none;
+  }
 }
 
 /* On-Fire: het sintel-donker met ember-frame van de 🔥-editie. Zelfde recept als
@@ -1479,16 +1850,6 @@
   inset: 0;
   border-radius: inherit;
 }
-.hero__tint--inform {
-  background:
-    radial-gradient(130% 60% at 50% -8%, rgba(240, 199, 102, 0.28), transparent 62%),
-    linear-gradient(
-      172deg,
-      rgba(35, 44, 68, 0.88) 0%,
-      rgba(20, 24, 38, 0.88) 60%,
-      rgba(10, 12, 20, 0.88) 100%
-    );
-}
 .hero__tint--onfire {
   background:
     radial-gradient(130% 60% at 50% -8%, rgba(255, 140, 66, 0.34), transparent 62%),
@@ -1526,72 +1887,24 @@
     transparent 1px 5px
   );
 }
-/* De watermerken van de twee edities: de bliksem met zijn halo, en het
-   vlamsilhouet dat in dit register de thermische ringen al meebrengt. Rechts,
-   waar de tekstkolom ophoudt, en zo bleek dat de rankingzin er dwars doorheen
-   leesbaar blijft. */
-.hero__watermerk--bliksem,
+/* Het watermerk van On Fire: het vlamsilhouet, dat in dit register de thermische
+   ringen al meebrengt. Rechts, waar de tekstkolom ophoudt, en zo bleek dat de
+   rankingzin er dwars doorheen leesbaar blijft. In-Form had hier zijn bliksem
+   staan; die is met de dunne variant vervallen (#834). */
 .hero__watermerk--vlam {
   right: 5%;
   height: 150%;
   opacity: 0.3;
   filter: none;
 }
-:root[data-theme="dark"] .hero__watermerk--bliksem,
 :root[data-theme="dark"] .hero__watermerk--vlam {
-  /* Deze twee liggen op de donkere tint, niet op licht kaartmateriaal: de
-     inversie van het basiswatermerk zou ze juist wegpoetsen. */
+  /* Deze ligt op de donkere tint, niet op licht kaartmateriaal: de inversie van
+     het basiswatermerk zou hem juist wegpoetsen. */
   filter: none;
   opacity: 0.32;
 }
-/* De elektrische pulsering van In-Form: één ring die traag uitdijt vanuit de
-   crest. Alleen `transform` en `opacity`, en volledig weg zonder
-   bewegingsvoorkeur — een stilstaande ring zou als een vlek lezen. */
-.hero__puls {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: clamp(90px, 14%, 190px);
-  aspect-ratio: 1;
-  margin: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(247, 223, 160, 0.5);
-  transform: translate(-50%, -50%) scale(0.35);
-  opacity: 0;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hero__puls {
-    animation: hero-puls 4.2s ease-out infinite;
-  }
-  @keyframes hero-puls {
-    0% {
-      transform: translate(-50%, -50%) scale(0.35);
-      opacity: 0.55;
-    }
-    45%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 0;
-    }
-  }
-}
-/* De snelheidslijnen van In-Form en de hittevinnen van On Fire: langs de
-   onderrand, waar geen inkt staat. Eén tekening, gespiegeld voor de andere
-   kant. */
-.hero__snelheid {
-  position: absolute;
-  bottom: 0;
-  width: clamp(70px, 12%, 150px);
-  aspect-ratio: 2 / 1;
-  opacity: 0.75;
-}
-.hero__snelheid--links {
-  left: 0;
-}
-.hero__snelheid--rechts {
-  right: 0;
-  transform: scaleX(-1);
-}
+/* De hittevinnen van On Fire: langs de onderrand, waar geen inkt staat. In-Form
+   had hier zijn snelheidslijnen; die zijn met de dunne variant vervallen. */
 .hero__vinnen {
   position: absolute;
   right: 0;
@@ -1617,7 +1930,7 @@
   transform: translateY(-50%) scaleX(-1);
 }
 /* De twee overlay-crests in de bovenrand. */
-.hero__crest--bliksem,
+.hero__crest--schild,
 .hero__crest--vlam {
   position: absolute;
   left: 50%;
@@ -1626,8 +1939,14 @@
   aspect-ratio: 1;
   transform: translate(-50%, -46%);
 }
-.hero__crest--bliksem {
-  filter: drop-shadow(0 2px 4px rgba(10, 12, 20, 0.55));
+/* De schildcrest is een plaat en geen glyph: hij mag groter en hangt iets
+   dieper over de rand, zodat de gouden rail door zijn onderpunt loopt zoals op
+   de referentie. */
+.hero__crest--schild {
+  width: clamp(40px, 6%, 68px);
+  aspect-ratio: 31 / 38;
+  transform: translate(-50%, -52%);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
 .hero__crest--vlam {
   filter: drop-shadow(0 2px 4px rgba(20, 7, 4, 0.6));

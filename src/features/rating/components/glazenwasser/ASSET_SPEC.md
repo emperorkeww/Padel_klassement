@@ -5,7 +5,7 @@ Twee generaties artwork naast elkaar, met elk hun eigen afnemer:
 | asset | afnemer | script |
 | --- | --- | --- |
 | `gw-*.webp` — losse onderdelen | `GlazenwasserKaart` (kaart-modal, `/dev/glazenwasser`) | `scripts/glazenwasser-onderdelen.py` |
-| `glazenwasser-master.webp` + `glazenwasser-front-mask.svg` | `GlazenwasserEffect` op `FutKaart` (klassement, opstelling, legenda) | `scripts/glazenwasser-master.py` |
+| `glazenwasser-master.webp` + `glazenwasser-front-mask.svg` | `GlazenwasserEffect` op `FutKaart` (klassement, opstelling, legenda) | `scripts/glazenwasser-onderdelen.py` |
 
 Beide worden gegenereerd uit
 [`docs/fut-kaarten/referentie_glazenwasser.png`](../../../../../docs/fut-kaarten/referentie_glazenwasser.png).
@@ -58,6 +58,14 @@ hierboven is het vertrekpunt, `schaal` en `verzet` daarin zijn de bewuste
 afwijkingen (grotere crest, lagere trekker, emmer verder over de rand).
 
 ## De master (`glazenwasser-master.webp`)
+
+> Deze master komt sinds de artworkpass uit `scripts/glazenwasser-onderdelen.py`
+> (`compacte_master()`), niet meer uit `scripts/glazenwasser-master.py`. Hij wordt
+> opgebouwd uit dezelfde ring en dezelfde losse voorwerpen als de brede kaart,
+> zodat wat spelers in de app zien hetzelfde artwork is. Het kaartvak in dit doek
+> heeft dezelfde 100:139 als het stelsel van de ring, dus de lagen gaan er één op
+> één in. Eén verschil met de brede kaart: hier dooft de ring naar het midden toe
+> uit, want de compacte kaart tekent zijn rating, naam en divisieregel eróver.
 
 De compacte kaart in het klassement blijft de drie-lagenbreakout gebruiken: één
 master op drie diepten, met `glazenwasser-front-mask.svg` als voorselectie. Canvas

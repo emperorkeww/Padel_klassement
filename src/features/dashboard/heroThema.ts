@@ -127,17 +127,56 @@ export function heroOverlay(s: HeroStatusVlaggen): HeroOverlay {
   return null;
 }
 
+/** Welk profiel draagt de lijst van deze kaart — de vier geneste vlakken van
+ *  HeroLijst — als er één is?
+ *
+ *  Big Daddy was de eerste (#834), In-Form de tweede. Die tweede stelde een
+ *  vraag die een permanent thema niet heeft: mag een tijdelijke status het
+ *  kaartvlak overnemen? #771 (AC4) zei nee — een overlay hoort de kaart eronder
+ *  herkenbaar te laten — en In-Form kreeg zijn profiel eerst alleen op een kaart
+ *  zonder permanent thema.
+ *
+ *  Dat is teruggedraaid: er is één In-Form-kaart, en die ziet er overal
+ *  hetzelfde uit. Twee behandelingen voor dezelfde status — hier een volle
+ *  stormkaart, daar een dunne tint — lazen als twee verschillende statussen, en
+ *  juist de speler die én in vorm is én de pias van zijn groep kreeg de zwakste
+ *  van de twee te zien.
+ *
+ *  Wat AC4 wilde beschermen blijft overeind, alleen niet meer via het materiaal:
+ *  het permanente thema houdt zijn ornamenten én zijn chip in de titelrij. De
+ *  teddy van de Big Daddy, de narrenkap van de pias en de lauwertakken van de
+ *  kampioen staan er dus gewoon op — alleen het vlak en de lijst eronder zijn
+ *  van In-Form. Zie docs/dashboard/in-form-dashboardkaart.md §4.
+ *
+ *  On Fire heeft nog geen eigen profiel, dus daar blijft Big Daddy de kaart. */
+export function heroLijstProfiel(
+  permanent: HeroPermanent,
+  overlay: HeroOverlay,
+): "bigdaddy" | "inform" | null {
+  if (overlay === "inform") return "inform";
+  if (permanent === "bigdaddy") return "bigdaddy";
+  return null;
+}
+
 /** De klassenlijst van de kaart. Permanent thema en overlay staan naast elkaar
  *  op hetzelfde element: de overlay vervangt de variant dus niet, hij komt
- *  erbovenop (#771, AC4). */
+ *  erbovenop (#771, AC4).
+ *
+ *  Draagt de overlay zijn eigen lijst, dan komt daar een derde klasse bij: het
+ *  materiaal van die lijst is een ánder ontwerp dan de tint die dezelfde overlay
+ *  op een permanent thema legt, en de twee moeten elkaar in de CSS niet in de
+ *  weg zitten. `.hero--overlay-inform` blijft eronder staan voor de inkt die ze
+ *  wél delen. */
 export function heroKlassen(
   permanent: HeroPermanent,
   overlay: HeroOverlay,
 ): string {
+  const profiel = heroLijstProfiel(permanent, overlay);
   return [
     "hero",
     permanent ? `hero--${permanent}` : null,
     overlay ? `hero--overlay-${overlay}` : null,
+    profiel === "inform" ? "hero--lijst-inform" : null,
   ]
     .filter(Boolean)
     .join(" ");

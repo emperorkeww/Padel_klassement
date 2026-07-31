@@ -156,7 +156,7 @@ export function HeroShowcase() {
       />
       <Kaart
         titel="7 · In-Form-overlay op de divisiekaart"
-        uitleg="Tijdelijke overlay: tint, glans en badge over de basiskaart."
+        uitleg="In-Form draagt zijn eigen kaart: zwart-goud profiel, stormkolom en schildcrest."
         status={status(null, "inform")}
       />
       <Kaart
@@ -168,22 +168,22 @@ export function HeroShowcase() {
       <h2 className="hero-showcase__sectie">Overlay boven een permanent thema</h2>
       <Kaart
         titel="In-Form over de Kampioen-kaart"
-        uitleg="Het platina-wit en de lauwertakken blijven staan; de diamantcrest schuift naar 26%."
+        uitleg="In-Form neemt vlak en lijst over; de lauwertakken en de diamantcrest blijven staan."
         status={status("kampioen", "inform")}
       />
       <Kaart
         titel="In-Form over de piaskaart"
-        uitleg="Het kraftkarton blijft staan; de badge vertelt het nieuws van deze week."
+        uitleg="Zelfde kaart als hierboven, met de narrenkap en het maskermedaillon van de pias erop."
         status={status("pias", "inform")}
       />
       <Kaart
         titel="In-Form over de Big Daddy-kaart"
-        uitleg="Kroon blijft de kaart, de bliksemcrest van de In-Form overlay ligt erover."
+        uitleg="Ook hier wint In-Form het vlak; teddy, linten en hoekharten blijven van de kroon."
         status={status("bigdaddy", "inform")}
       />
       <Kaart
         titel="On Fire over de Big Daddy-kaart"
-        uitleg="Kroon blijft de kaart, de reeks ligt erover."
+        uitleg="On Fire heeft geen eigen ontwerp en blijft de dunne overlay: de kroon blijft de kaart."
         status={status("bigdaddy", "onfire")}
       />
 

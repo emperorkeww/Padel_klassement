@@ -2997,7 +2997,13 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       [1, "#3e2e07"],
     ],
     liner: "#0a0c14",
-    vlak: ["#1b2235", "#0f121d", "#05060a"],
+    // Neutraal zwart, niet navy (#834). De ramp is ongewijzigd — per stop
+    // dezelfde relatieve luminantie als de navy die hier stond — maar de
+    // blauwzweem is eruit: beide referenties van deze editie meten neutraal
+    // (referentie_in_form.png #141616 op het kaartvlak,
+    // docs/dashboard/in_form_dashboard.png #0d0d10), met een rood-blauw-
+    // verschil van 2 punten waar deze stops er 26 hadden.
+    vlak: ["#212223", "#111213", "#050607"],
     vlakMid: 0.6,
     tint: [
       [0, "rgba(5, 7, 12, 0.6)"],

@@ -161,10 +161,19 @@ const ISLANDS = [
   ],
   [
     ".hero--overlay-inform",
-    "In-Form-overlay (navy-goud)",
+    "In-Form-overlay (zwart-goud)",
     [
-      ["inform-goud", "inform-navy", 4.5, "goud op de lichtste tintstop"],
-      ["inform-navy-diep", "inform-goud", 4.5, "knoptekst op de gouden knop"],
+      ["inform-goud", "inform-zwart", 4.5, "goud op de lichtste tintstop"],
+      ["inform-zwart-diep", "inform-goud", 4.5, "knoptekst op de gouden knop"],
+    ],
+  ],
+  [
+    ".hero--lijst-inform",
+    "In-Form-kaart (zwart-goud, eigen vlak)",
+    [
+      ["if-goud", "if-vlak", 4.5, "goud op het kaartvlak"],
+      ["if-goud-soft", "if-vlak", 4.5, "zachte inkt op het kaartvlak"],
+      ["if-vlak", "if-goud", 4.5, "knoptekst op de gouden knop"],
     ],
   ],
   [

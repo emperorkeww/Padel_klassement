@@ -297,7 +297,7 @@ describe("<DashboardHero /> — decoratielagen", () => {
     // instantie compenseert die inzet — anders verspringt dezelfde bron een
     // paar pixels (zelfde registratiedetail als --storm-master-inset).
     expect(HERO_CSS).toMatch(
-      /\.hero-bd--flank-achter\s*\{[^}]*var\(--bd-lijst-d\)/,
+      /\.hero-bd--flank-achter\s*\{[^}]*var\(--lijst-d\)/,
     );
   });
 
@@ -320,12 +320,12 @@ describe("<DashboardHero /> — decoratielagen", () => {
     expect(HERO_CSS).toMatch(
       /\.hero--bigdaddy\s*\{[^}]*container-type:\s*inline-size/,
     );
-    for (const dikte of ["--bd-rail-d", "--bd-band-d", "--bd-key-d"])
+    for (const dikte of ["--lijst-rail-d", "--lijst-band-d", "--lijst-key-d"])
       expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
     // En de inhoud schuift met de volle lijstdikte naar binnen; anders belandt
     // tekst op de magenta band.
     expect(HERO_CSS).toMatch(
-      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--bd-lijst-d\)/,
+      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--lijst-d\)/,
     );
   });
 
@@ -336,6 +336,93 @@ describe("<DashboardHero /> — decoratielagen", () => {
       renderKaart({ pias: true, thema: "pias" }).querySelector(".hero__lijst"),
     ).toBeNull();
     expect(renderKaart().querySelector(".hero__lijst")).toBeNull();
+  });
+
+  it("bouwt de In-Form-kaart als zwart-goud profiel met storm (#834)", () => {
+    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    // Dezelfde vier geneste vlakken als bij Big Daddy; alleen het materiaal en
+    // de chamfer verschillen, en die staan in de CSS.
+    const vlak = hero.querySelector(
+      ".hero__lagen > .hero__lijst > .hero__lijst-band > .hero__lijst-key > .hero__vlak",
+    );
+    expect(vlak).toBeInTheDocument();
+    // Het artwork hangt ín dat vlak, dus het klipt op de binnenrand van de
+    // keyline en kan per constructie niet over de gouden lijst schilderen —
+    // precies wat de referentie doet, die het goud over de volle hoogte
+    // ononderbroken houdt.
+    expect(vlak?.querySelector(".hero-if--storm")).toBeInTheDocument();
+    expect(vlak?.querySelector(".hero-if--ember")).toBeInTheDocument();
+    for (const deel of vlak?.querySelectorAll<HTMLImageElement>(".hero-if") ?? [])
+      expect(deel).toHaveAttribute("decoding", "sync");
+    // Geen tint: die is er om een permanent thema doorheen te laten schemeren,
+    // en een tweede donkere laag over dit vlak haalt de storm er weer uit.
+    expect(hero.querySelector(".hero__tint--inform")).toBeNull();
+    // De diktes rekenen in containerbreedte, om dezelfde reden als bij Big
+    // Daddy: procenten in `inset` geven een brede kaart een dunnere boven- dan
+    // zijrand.
+    expect(HERO_CSS).toMatch(
+      /\.hero--lijst-inform\s*\{[^}]*container-type:\s*inline-size/,
+    );
+    for (const dikte of ["--lijst-rail-d", "--lijst-band-d", "--lijst-key-d"])
+      expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
+    // De achthoek zit op de keyline en het vlak, niet op de buitenrand: de
+    // goudrail volgt een gewone afgeronde hoek.
+    expect(HERO_CSS).toMatch(
+      /\.hero--lijst-inform \.hero__lijst-key,\s*\.hero--lijst-inform \.hero__vlak\s*\{[^}]*clip-path:\s*polygon/,
+    );
+  });
+
+  it("laat In-Form het vlak overnemen van élk permanent thema (#834)", () => {
+    // Er is één In-Form-kaart, en die ziet er overal hetzelfde uit. Tot #834
+    // kreeg juist de speler die én in vorm was én de pias van zijn groep de
+    // zwakste van twee behandelingen te zien.
+    for (const [naam, status] of [
+      ["pias", { pias: true, thema: "pias" }],
+      ["kampioen", { kampioen: true, thema: "kampioen" }],
+      ["bigdaddy", { bigDaddy: true, thema: "bigdaddy" }],
+    ] as const) {
+      const hero = renderKaart({ ...status, inForm: true, overlay: "inform" });
+      expect(hero.classList.contains("hero--lijst-inform"), naam).toBe(true);
+      expect(hero.querySelector(".hero__vlak > .hero-if--storm"), naam).toBeInTheDocument();
+    }
+    // Alleen het vlak en de lijst gaan naar In-Form: de ornamenten van het
+    // permanente thema blijven staan, en zijn chip ook. Kleur is nooit de enige
+    // indicator (#613), en de kaart moet blijven vertellen wie je verder bent.
+    // Binnen déze kaart zoeken, want de lus hierboven heeft er al drie in het
+    // document staan.
+    const pias = renderKaart({
+      pias: true,
+      thema: "pias",
+      inForm: true,
+      overlay: "inform",
+    });
+    expect(pias.querySelector(".hero-crest--pias")).toBeInTheDocument();
+    for (const ornament of [".hero__crest--kap", ".hero__medaillon", ".hero__decor"])
+      expect(pias.querySelector(ornament), ornament).toBeInTheDocument();
+    const bd = renderKaart({
+      bigDaddy: true,
+      thema: "bigdaddy",
+      inForm: true,
+      overlay: "inform",
+    });
+    // Ook het onderdeel dat achter de lijst weeft blijft: het hangt ín het
+    // In-Form-vlak en klipt daar op de binnenrand van de keyline.
+    expect(bd.querySelector(".hero__vlak > .hero-bd--flank-achter")).toBeInTheDocument();
+    expect(bd.querySelector(".hero-bd--teddy")).toBeInTheDocument();
+  });
+
+  it("laat On Fire het permanente thema wél staan (#771, AC4)", () => {
+    // Alleen In-Form heeft een eigen referentieontwerp; 🔥 blijft de dunne
+    // overlay die de kaart eronder herkenbaar laat.
+    const hero = renderKaart({
+      bigDaddy: true,
+      thema: "bigdaddy",
+      onFire: true,
+      overlay: "onfire",
+    });
+    expect(hero.classList.contains("hero--lijst-inform")).toBe(false);
+    expect(hero.querySelector(".hero-bd--teddy")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__vlak > .hero__tint--onfire")).toBeInTheDocument();
   });
 
   it("geeft de Dictator zijn commandoster, hoeken en lakzegel (#771)", () => {
@@ -431,17 +518,24 @@ describe("<DashboardHero /> — decoratielagen", () => {
     ).toContain("📊");
   });
 
-  it("geeft In-Form zijn bliksem, groeven en snelheidslijnen (#771)", () => {
+  it("geeft In-Form zijn schildcrest, groeven en storm (#834)", () => {
     const hero = renderKaart({ inForm: true, overlay: "inform" });
     for (const klasse of [
-      ".hero__crest--bliksem",
+      ".hero__crest--schild",
       ".hero__groeven--inform",
+      ".hero-if--storm",
+      ".hero-if--ember",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+    // De dunne variant is met #834 vervallen: er is geen tweede In-Form meer.
+    for (const weg of [
+      ".hero__crest--bliksem",
       ".hero__watermerk--bliksem",
       ".hero__puls",
       ".hero__snelheid--links",
-      ".hero__snelheid--rechts",
+      ".hero__tint--inform",
     ])
-      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+      expect(hero.querySelector(weg), weg).toBeNull();
   });
 
   it("geeft On Fire zijn vlamcrest, vinnen en sintels (#771)", () => {
@@ -458,20 +552,20 @@ describe("<DashboardHero /> — decoratielagen", () => {
   });
 
   it("laat de overlay-ornamenten bovenop die van het thema liggen (AC4)", () => {
-    // De kern van #771: een pias die in vorm raakt houdt zijn narrenkap en zijn
-    // maskers; de bliksem komt erbij, niet in de plaats.
+    // De kern van #771: een pias die op een reeks zit houdt zijn narrenkap en
+    // zijn maskers; de vlam komt erbij, niet in de plaats.
     const hero = renderKaart({
       pias: true,
-      inForm: true,
+      onFire: true,
       thema: "pias",
-      overlay: "inform",
+      overlay: "onfire",
     });
     for (const klasse of [
       ".hero__crest--kap",
       ".hero__medaillon",
       ".hero__decor",
-      ".hero__crest--bliksem",
-      ".hero__tint--inform",
+      ".hero__crest--vlam",
+      ".hero__tint--onfire",
     ])
       expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
   });
@@ -490,21 +584,14 @@ describe("<DashboardHero /> — decoratielagen", () => {
     );
   });
 
-  it("beweegt de pulse-ring alleen zonder bewegingsvoorkeur (AC11)", () => {
-    // Anders dan de glansbaan heeft de ring géén zinnige stilstaande vorm: een
-    // halfdoorzichtige cirkel midden op de kaart leest als een vlek. Hij blijft
-    // dus onzichtbaar bij `reduce`.
-    const blok = bewegingsblok("hero-puls");
-    expect(blok).toMatch(/animation: hero-puls/);
-    expect(HERO_CSS.replace(blok, "")).not.toMatch(/animation:\s*hero-puls/);
-  });
-
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {
-    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    // Met On Fire, want dat is sinds #834 de enige overlay die nog een tint
+    // legt: In-Form draagt overal zijn eigen vlak.
+    const hero = renderKaart({ onFire: true, overlay: "onfire" });
     const lagen = hero.querySelector(".hero__lagen");
     expect(lagen).toHaveAttribute("aria-hidden", "true");
-    expect(hero.querySelector(".hero__tint--inform")).toBeInTheDocument();
-    expect(hero.querySelector(".hero__sheen--inform")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__tint--onfire")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__sheen--onfire")).toBeInTheDocument();
     // pointer-events staat in CSS (jsdom rekent geen stylesheets door).
     expect(HERO_CSS).toMatch(/\.hero__lagen\s*\{[^}]*pointer-events:\s*none/);
   });

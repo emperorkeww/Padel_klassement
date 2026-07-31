@@ -1,24 +1,31 @@
 // Ornamenten van de twee tijdelijke statusoverlays (#771).
 //
-// In-Form en On Fire liggen bóven het permanente thema (zie HeroLagen), dus hun
-// ornamenten moeten twee dingen tegelijk: de status onmiskenbaar maken en de
-// kaart eronder herkenbaar laten. Dat stuurt elke keuze hier — dunne crests en
-// lijnen, geen vlakken; alles langs de randen, niets over de tekstkolom.
+// On Fire ligt bóven het permanente thema (zie HeroLagen) en moet dus twee dingen
+// tegelijk: de status onmiskenbaar maken en de kaart eronder herkenbaar laten.
+// Dat stuurt elke keuze hier — dunne crests en lijnen, geen vlakken; alles langs
+// de randen, niets over de tekstkolom.
+//
+// In-Form deed dat tot #834 ook, met een bliksemwatermerk, een pulsring en twee
+// snelheidslijnen. Sindsdien draagt die editie op élke kaart zijn eigen vlak met
+// het artwork uit de referentie, en is van dit register alleen de schildcrest
+// over. Zie docs/dashboard/in-form-dashboardkaart.md §4.
 //
 // De tekeningen komen uit het register van de ⚡- en 🔥-editie (#710,
 // ornamentenInform.ts / ornamentenOnfire.ts): dezelfde bliksem, dezelfde
 // vlamcrest, dezelfde vinnen en sintels. Alleen de plaatsing is nieuw, want de
 // FUT-kaart hangt ze aan een schild van 100×139 units en deze kaart is breed.
 //
-// Beweging zit niet hier maar in de CSS (de gedeelde HeroSheen en de pulse-ring),
-// achter `prefers-reduced-motion: no-preference`.
+// Beweging zit niet hier maar in de CSS (de gedeelde HeroSheen), achter
+// `prefers-reduced-motion: no-preference`.
 
 import {
   INFORM_CREST,
+  INFORM_CREST_KERN,
+  INFORM_CREST_PLAAT,
   INFORM_GOUD_CONTOUR,
   INFORM_GOUD_GLANS,
   INFORM_GOUD_VERLOOP,
-  INFORM_VIN,
+  INFORM_TITAAN,
 } from "@/features/rating/components/ornamentenInform";
 import {
   ONFIRE_CREST_BAND,
@@ -125,63 +132,46 @@ function OverlayStreng({
 
 /* --------------------------------- In-Form -------------------------------- */
 
-const BLIKSEM_VIEWBOX = doosVan([INFORM_CREST]);
+const SCHILD_VIEWBOX = doosVan([INFORM_CREST_PLAAT]);
 
-/** De champagnegouden bliksemcrest in de bovenrand. */
-export function InformBliksemCrest({ className }: { className?: string }) {
-  const id = "hero-inform-goud";
+/** Dezelfde bliksem op een schildplaat, voor de kaart die het In-Form-profiel
+ *  zélf draagt (#834). Op een permanent thema blijft de kale glyph hierboven
+ *  staan: daar is de crest een accent op andermans kaart en moet hij dun zijn.
+ *  Op de eigen kaart is hij het insigne van de bovenrand, en dan heeft hij de
+ *  drager nodig die de FUT-kaart in zijn inkeping al heeft. */
+export function InformSchildCrest({ className }: { className?: string }) {
+  const id = "hero-inform-schild-goud";
   return (
     <svg
       className={className}
-      viewBox={BLIKSEM_VIEWBOX}
+      viewBox={SCHILD_VIEWBOX}
       aria-hidden="true"
       focusable="false"
     >
       <defs>
         <Verloop id={id} stops={INFORM_GOUD_VERLOOP} />
       </defs>
+      <path
+        d={INFORM_CREST_PLAAT}
+        fill={`url(#${id})`}
+        stroke={INFORM_GOUD_CONTOUR}
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      <path d={INFORM_CREST_KERN} fill={INFORM_TITAAN} />
+      <path
+        d={INFORM_CREST_KERN}
+        fill="none"
+        stroke={INFORM_GOUD_GLANS}
+        strokeWidth="0.3"
+        opacity="0.45"
+      />
       <path
         d={INFORM_CREST}
         fill={`url(#${id})`}
         stroke={INFORM_GOUD_CONTOUR}
-        strokeWidth="0.6"
+        strokeWidth="0.4"
         strokeLinejoin="round"
-      />
-      <path
-        d={INFORM_CREST}
-        fill="none"
-        stroke={INFORM_GOUD_GLANS}
-        strokeWidth="0.35"
-        strokeLinejoin="round"
-        opacity="0.7"
-      />
-    </svg>
-  );
-}
-
-const VIN_VIEWBOX = doosVan([INFORM_VIN.omtrek]);
-
-/** De aerodynamische vin als snelheidslijn langs de onderrand. Eén tekening; de
- *  CSS spiegelt hem voor de andere kant, net als op de kaart. */
-export function InformSnelheidslijn({ className }: { className?: string }) {
-  const id = "hero-inform-vin";
-  return (
-    <svg
-      className={className}
-      viewBox={VIN_VIEWBOX}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <defs>
-        <Verloop id={id} stops={INFORM_GOUD_VERLOOP} />
-      </defs>
-      <OverlayStreng
-        streng={INFORM_VIN}
-        vulling={`url(#${id})`}
-        contour={INFORM_GOUD_CONTOUR}
-        ribbel="rgba(28, 34, 52, 0.4)"
-        ribbelGlans={INFORM_GOUD_GLANS}
-        schaduw="rgba(10, 12, 20, 0.35)"
       />
     </svg>
   );

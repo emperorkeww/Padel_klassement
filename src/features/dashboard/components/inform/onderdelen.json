@@ -1,0 +1,17 @@
+{
+  "_": "Gegenereerd door scripts/inform-dashboard-onderdelen.py — niet met de hand bijwerken.",
+  "onderdelen": [
+    {
+      "naam": "storm",
+      "bestand": "if-storm.webp",
+      "breedte": 600,
+      "hoogte": 749
+    },
+    {
+      "naam": "ember",
+      "bestand": "if-ember.webp",
+      "breedte": 400,
+      "hoogte": 126
+    }
+  ]
+}

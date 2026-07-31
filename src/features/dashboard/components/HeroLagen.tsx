@@ -45,16 +45,11 @@ import {
   PiasWatermerk,
 } from "@/features/standings/components/piasOrnamenten";
 import {
-  INFORM_MOTIEF,
-  INFORM_MOTIEF_KLEUR,
-} from "@/features/rating/components/ornamentenInform";
-import {
   ONFIRE_WATERMARK,
   ONFIRE_WATERMARK_KLEUR,
 } from "@/features/rating/components/ornamentenOnfire";
 import {
-  InformBliksemCrest,
-  InformSnelheidslijn,
+  InformSchildCrest,
   OnfireSintels,
   OnfireVinnen,
   OnfireVlamCrest,
@@ -66,8 +61,9 @@ import {
   PietSluiting,
 } from "./heroOrnamentenPiet";
 import type { HeroBasis } from "../heroDivisie";
-import type { HeroOverlay, HeroPermanent } from "../heroThema";
+import { type HeroOverlay, type HeroPermanent, heroLijstProfiel } from "../heroThema";
 import { HeroLijst } from "./HeroLijst";
+import { InformDecor } from "./inform/InformDecor";
 import { HeroSheen } from "./HeroSheen";
 import { HeroWatermerk } from "./HeroWatermerk";
 import {
@@ -184,23 +180,23 @@ function OrnamentenVoor({ permanent }: { permanent: HeroPermanent }) {
   }
 }
 
-/** Wat een tijdelijke overlay ín de geklipte laag legt: groeven, watermerk en
- *  de lijnen langs de rand. Alles dun en langs de randen — de kaart eronder moet
- *  herkenbaar blijven en de tekst leesbaar. */
+/** Wat een tijdelijke overlay ín de geklipte laag legt.
+ *
+ *  Voor On Fire is dat nog wat #771 bedoelde: dun en langs de randen, zodat de
+ *  kaart eronder herkenbaar blijft. In-Form draagt sinds #834 zijn eigen vlak en
+ *  zet daar het artwork uit de referentie neer — op élke kaart, ook boven een
+ *  permanent thema. De dunne variant die hier stond (bliksemwatermerk, pulsring,
+ *  twee snelheidslijnen) is daarmee vervallen; er is geen tweede In-Form meer. */
 function OverlayAchter({ overlay }: { overlay: HeroOverlay }) {
   switch (overlay) {
     case "inform":
       return (
         <>
+          <InformDecor />
+          {/* De groeven ná het artwork: op de referentie lopen de diagonale
+              pinstripes óók over de wolken door. Dat is wat de storm aan de
+              kaart vastzet in plaats van erop te leggen. */}
           <span className="hero__groeven hero__groeven--inform" />
-          <HeroWatermerk
-            paden={INFORM_MOTIEF}
-            kleur={INFORM_MOTIEF_KLEUR}
-            className="hero__watermerk--bliksem"
-          />
-          <span className="hero__puls" />
-          <InformSnelheidslijn className="hero__snelheid hero__snelheid--links" />
-          <InformSnelheidslijn className="hero__snelheid hero__snelheid--rechts" />
         </>
       );
     case "onfire":
@@ -227,7 +223,7 @@ function OverlayAchter({ overlay }: { overlay: HeroOverlay }) {
 function OverlayVoor({ overlay }: { overlay: HeroOverlay }) {
   switch (overlay) {
     case "inform":
-      return <InformBliksemCrest className="hero__crest hero__crest--bliksem" />;
+      return <InformSchildCrest className="hero__crest hero__crest--schild" />;
     case "onfire":
       return <OnfireVlamCrest className="hero__crest hero__crest--vlam" />;
     default:
@@ -252,8 +248,11 @@ export function HeroLagen({
 
   // Thema's met een eigen lijstprofiel (#834): het materiaal zit dan niet in de
   // achtergrond van .hero maar in de vier geneste vlakken van HeroLijst, zodat
-  // decoratie tússen kaartvlak en lijst kan liggen.
-  const eigenLijst = permanent === "bigdaddy";
+  // decoratie tússen kaartvlak en lijst kan liggen. Big Daddy was de eerste;
+  // In-Form is de tweede en de eerste die het als overlay doet — heroThema.ts
+  // legt uit onder welke voorwaarde dat mag.
+  const lijstProfiel = heroLijstProfiel(permanent, overlay);
+  const informEigen = lijstProfiel === "inform";
 
   // Niet elk thema heeft iets dat over de rand steekt; zonder inhoud blijft de
   // tweede container weg.
@@ -272,7 +271,13 @@ export function HeroLagen({
   // eronder herkenbaar blijft.
   const overlaylagen = (
     <>
-      {overlay && <span className={`hero__tint hero__tint--${overlay}`} />}
+      {/* Geen tint waar de overlay zijn eigen vlak draagt: dat vlak ís al het
+          zwart van de referentie, en een tweede donkere laag erover haalt de
+          storm eruit die er net op is gezet. In de praktijk is dat alleen nog
+          On Fire — In-Form draagt overal zijn eigen vlak. */}
+      {overlay && !informEigen && (
+        <span className={`hero__tint hero__tint--${overlay}`} />
+      )}
       <OverlayAchter overlay={overlay} />
       {overlay && <HeroSheen overlay={overlay} />}
     </>
@@ -304,7 +309,7 @@ export function HeroLagen({
             bij een thema met een eigen lijstprofiel (#834): daar draagt
             `hero__vlak` het materiaal en verdwijnt de decoratie erin achter de
             lijst in plaats van eroverheen te schilderen. */}
-        {eigenLijst ? (
+        {lijstProfiel ? (
           // Mét lijst gaan ook de overlaylagen ín het vlak: de tint van een
           // In-Form of On Fire hoort op het kaartoppervlak, niet over de lijst.
           // Als sibling erná dekte hij het hele goud-magenta profiel af, en dan

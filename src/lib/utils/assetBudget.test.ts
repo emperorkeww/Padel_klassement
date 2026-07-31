@@ -18,18 +18,29 @@ const ASSETS = pad("../../../dist/assets");
 
 // Ruime marge boven de huidige ~9,0 MB: genoeg lucht voor een nieuwe route of
 // een handvol avatars, krap genoeg om één ongecomprimeerde 2 MB-PNG te vangen.
-// Verhoogd van 8 naar 9 bij de pias-breakout, van 9 naar 10 toen de
-// Ballenraper-master erbij kwam, en van 10 naar 11 met de Glazenwasser: develop
-// stond al op 9,80 MB en de compacte Glazenwasser-master voegt 0,31 MB toe. Het
-// grote-kaartartwork (gw-ring.webp e.a.) telt hier níét in mee — dat hangt
-// achter een DEV-only route en valt bij een productiebuild weg. De kaarteffect-masters (dictator, on fire,
+// Verhoogd van 8 naar 9 bij de pias-breakout en van 9 naar 10 toen de
+// Ballenraper-master erbij kwam. Bij de Glazenwasser ging hij eerst naar 11,
+// maar dat bleek te ruim: nadat de master zijn kaartvlak leeg kreeg (de tekst
+// wordt eroverheen getekend) zakte hij van 0,35 naar 0,19 MB en staat het
+// geheel op 9,99 MB. Terug naar 10,5 — genoeg lucht voor een volgende master,
+// krap genoeg om er een te vangen die niet gecomprimeerd is. Het
+// grote-kaartartwork (gw-ring.webp e.a.) telt hier níét in mee: dat hangt achter
+// een DEV-only route en valt bij een productiebuild weg. De kaarteffect-masters (dictator, on fire,
 // storm, big daddy, ballenraper, wannabe, goat, pias, piet, blaaskaak) zijn
 // samen ~2,6 MB en zijn de enige structurele groei sinds #732. Ze staan al op
 // hun compressiegrens (WebP met alpha, 600–1024 px breed); zakt er nog meer
 // resolutie af, dan wordt het artwork zichtbaar zacht op een 450px-kaart. De
 // per-bestandsgrens hieronder blijft het echte vangnet voor ongecomprimeerde
 // bronbestanden.
-const TOTAAL_MAX_MB = 11;
+//
+// Stand na de In-Form-dashboardkaart (#834): 10,48 MB, dus nog 19 kB lucht. Die
+// twee onderdelen (242 kB) zijn al teruggesneden tot de `clamp()`-bovengrens van
+// hun eigen CSS — 600 px voor een kolom die op de breedste layout (940 px) 432 px
+// toont. De huisregel "snij op twee keer de toonmaat, voor retina" is daarmee
+// bewust losgelaten; verder squeezen kost zichtbare scherpte en levert kilobytes
+// op. Wie hierna iets toevoegt hoort dus déze grens te verhogen, niet dat
+// artwork nog kleiner te maken.
+const TOTAAL_MAX_MB = 10.5;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;
