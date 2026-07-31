@@ -1,0 +1,35 @@
+{
+  "_": "Gegenereerd door scripts/bigdaddy-dashboard-onderdelen.mjs — niet met de hand bijwerken.",
+  "onderdelen": [
+    {
+      "naam": "medaillon",
+      "bestand": "bd-medaillon.webp",
+      "breedte": 320,
+      "hoogte": 245
+    },
+    {
+      "naam": "teddy",
+      "bestand": "bd-teddy.webp",
+      "breedte": 420,
+      "hoogte": 641
+    },
+    {
+      "naam": "hoekhart",
+      "bestand": "bd-hoekhart.webp",
+      "breedte": 260,
+      "hoogte": 217
+    },
+    {
+      "naam": "lint-flank",
+      "bestand": "bd-lint-flank.webp",
+      "breedte": 300,
+      "hoogte": 688
+    },
+    {
+      "naam": "lint-bodem",
+      "bestand": "bd-lint-bodem.webp",
+      "breedte": 460,
+      "hoogte": 186
+    }
+  ]
+}

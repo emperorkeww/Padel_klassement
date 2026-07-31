@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { BD_KROON } from "@/features/rating/components/ornamentenBigDaddy";
+import MANIFEST from "./bigdaddy/onderdelen.json";
 import { DashboardHero, type HeroStatus } from "./DashboardHero";
 import type { HeroOverlay, HeroPermanent } from "../heroThema";
 
@@ -239,25 +239,103 @@ describe("<DashboardHero /> — decoratielagen", () => {
     expect(hero.querySelector(".hero__materiaal")).toBeNull();
   });
 
-  it("geeft Big Daddy de ornamenten van zijn FUT-kaart (#771)", () => {
+  it("geeft Big Daddy de artwork-onderdelen van zijn FUT-master (#834)", () => {
     const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
-    // Kroon in de bovenrand, ballonnen, twee lintkrullen en confetti — precies de
-    // opsomming uit de issue, en geen ervan verzonnen: de paden komen uit het
-    // register van de 👑-kaart.
-    for (const klasse of [
-      ".hero__crest--kroon",
-      ".hero__ballonnen",
-      ".hero__lint--links",
-      ".hero__lint--rechts",
-      ".hero__confetti",
-      ".hero__watermerk--kroon",
+    // Tot #834 waren dit vectorornamenten uit het register van de 👑-kaart. De
+    // referentie toont geschilderd satijn, dus het zijn nu sneden uit hetzelfde
+    // onderdelenblad als de FUT-master — geen enkel onderdeel is hier getekend.
+    for (const plek of [
+      "medaillon-boven",
+      "medaillon-onder",
+      "hoek-rechtsboven",
+      "hoek-rechtsonder",
+      "teddy",
+      "bodem-links",
+      "bodem-rechts",
+      "flank-voor",
     ])
-      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
-    // De kroon is letterlijk het pad van de kaart; zou dit bestand een eigen
-    // silhouet tekenen, dan drijven kaart en dashboard uit elkaar.
+      expect(
+        hero.querySelector(`.hero-bd--${plek}`),
+        plek,
+      ).toBeInTheDocument();
+    // Elk onderdeel staat als eigen <img> in de DOM en niet als
+    // achtergrondafbeelding: alleen zo volgt de hoogte uit de beeldverhouding
+    // van het bestand en kan een opnieuw gesneden asset de layout niet
+    // uitrekken.
+    for (const deel of hero.querySelectorAll(".hero-bd")) {
+      expect(deel.tagName).toBe("IMG");
+      expect(deel).toHaveAttribute("alt", "");
+      // Async decoderen laat het onderdeel leeg op de vaste screenshotroute, en
+      // dan lijkt een ontbrekend onderdeel op een z-index-fout.
+      expect(deel).toHaveAttribute("decoding", "sync");
+    }
+    // Elk gebruikt bestand komt uit het manifest dat het snijscript schrijft.
+    const bestanden = new Set(
+      MANIFEST.onderdelen.map((o: { bestand: string }) => o.bestand),
+    );
+    for (const deel of hero.querySelectorAll<HTMLImageElement>(".hero-bd"))
+      expect(bestanden, deel.className).toContain(
+        deel.getAttribute("src")?.split("/").pop(),
+      );
+  });
+
+  it("rendert het wevende lint twee keer uit één bron (#834)", () => {
+    const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
+    const achter = hero.querySelector<HTMLImageElement>(".hero-bd--flank-achter");
+    const voor = hero.querySelector<HTMLImageElement>(".hero-bd--flank-voor");
+    // Eén bron, één anker: alleen het masker verschilt. Twee verschillende
+    // bestanden zouden bij de eerstvolgende hersnede uit elkaar lopen, en dan
+    // verspringt het lint precies op de lijst.
+    expect(achter?.getAttribute("src")).toBe(voor?.getAttribute("src"));
+    // De achterste hangt ín het kaartvlak (dus achter de lijst), de voorste in
+    // de ongeklipte laag erbovenop.
+    expect(hero.querySelector(".hero__vlak > .hero-bd--flank-achter")).toBeInTheDocument();
     expect(
-      hero.querySelector(`.hero__crest--kroon path[d="${BD_KROON}"]`),
+      hero.querySelector(".hero__lagen--voor > .hero-bd--flank-voor"),
     ).toBeInTheDocument();
+    // En het vlak ligt de volle lijstdikte naar binnen, dus de achterste
+    // instantie compenseert die inzet — anders verspringt dezelfde bron een
+    // paar pixels (zelfde registratiedetail als --storm-master-inset).
+    expect(HERO_CSS).toMatch(
+      /\.hero-bd--flank-achter\s*\{[^}]*var\(--bd-lijst-d\)/,
+    );
+  });
+
+  it("bouwt de Big Daddy-lijst als vier geneste vlakken (#834)", () => {
+    const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
+    // Rail → band → keyline → vlak, elk ín zijn voorganger: precies zoals de
+    // FUT-kaart zijn rand maakt. Vier siblings zouden dezelfde kleuren geven en
+    // tóch geen profiel, want dan ligt er niets ín iets anders.
+    const vlak = hero.querySelector(
+      ".hero__lagen > .hero__lijst > .hero__lijst-band > .hero__lijst-key > .hero__vlak",
+    );
+    expect(vlak).toBeInTheDocument();
+    // Wat achter de lijst hoort te verdwijnen hangt ín dat vlak: daar klipt het
+    // op de binnenrand en kan het per constructie niet over de lijst
+    // schilderen.
+    expect(vlak?.querySelector(".hero-bd--flank-achter")).toBeInTheDocument();
+    // De diktes rekenen in containerbreedte. Met procenten zou `inset`
+    // horizontaal tegen de breedte en verticaal tegen de hoogte rekenen, en
+    // krijgt een brede kaart een dunnere boven- dan zijrand.
+    expect(HERO_CSS).toMatch(
+      /\.hero--bigdaddy\s*\{[^}]*container-type:\s*inline-size/,
+    );
+    for (const dikte of ["--bd-rail-d", "--bd-band-d", "--bd-key-d"])
+      expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
+    // En de inhoud schuift met de volle lijstdikte naar binnen; anders belandt
+    // tekst op de magenta band.
+    expect(HERO_CSS).toMatch(
+      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--bd-lijst-d\)/,
+    );
+  });
+
+  it("geeft alleen een thema met eigen profiel die lijst (#834)", () => {
+    // Opt-in, zoals het divisielayout-register: wie hem niet vraagt, krijgt de
+    // gewone kaartrand en geen vier lege spans in zijn DOM.
+    expect(
+      renderKaart({ pias: true, thema: "pias" }).querySelector(".hero__lijst"),
+    ).toBeNull();
+    expect(renderKaart().querySelector(".hero__lijst")).toBeNull();
   });
 
   it("geeft de Dictator zijn commandoster, hoeken en lakzegel (#771)", () => {
@@ -282,9 +360,9 @@ describe("<DashboardHero /> — decoratielagen", () => {
     const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
     const voor = hero.querySelector(".hero__lagen--voor");
     expect(voor).toHaveAttribute("aria-hidden", "true");
-    // De kroon steekt boven de kaart uit en mag dus niet geklipt worden; het
+    // Het medaillon ligt half boven de kaart en mag dus niet geklipt worden; het
     // materiaal eronder juist wél.
-    expect(voor?.querySelector(".hero__crest--kroon")).toBeInTheDocument();
+    expect(voor?.querySelector(".hero-bd--medaillon-boven")).toBeInTheDocument();
     expect(HERO_CSS).toMatch(
       /\.hero__lagen--voor\s*\{[^}]*overflow:\s*visible/,
     );
