@@ -245,8 +245,11 @@ watermerk) bleef daarmee ongebruikt.
 
 - `scripts/inform-dashboard-onderdelen.py` snijdt twee onderdelen uit
   `in_form_dashboard.png`: de stormkolom van de rechterflank en de vonkensleep in
-  de linkeronderhoek. Samen 317 kB; `dist/assets` komt daarmee op 10,58 van de
-  11 MB uit `assetBudget.test.ts`;
+  de linkeronderhoek. Samen 242 kB; `dist/assets` komt daarmee op 10,48 van de
+  10,5 MB uit `assetBudget.test.ts`. Die grens werd bij de Glazenwasser bewust
+  aangedraaid van 11 naar 10,5, dus de doelbreedtes van het snijscript zijn de
+  `clamp()`-bovengrens van de CSS zélf en niet het dubbele daarvan — retina wint
+  het hier niet van de bundel;
 - `InformDecor.tsx` rendert ze als losse `<img>`'s met `decoding="sync"`;
   `DashboardHero.css` verankert ze aan één rand en geeft de stormkolom een tweede
   uitdoving links — die hangt aan de kaartbreedte in plaats van aan het bestand

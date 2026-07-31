@@ -32,6 +32,14 @@ const ASSETS = pad("../../../dist/assets");
 // resolutie af, dan wordt het artwork zichtbaar zacht op een 450px-kaart. De
 // per-bestandsgrens hieronder blijft het echte vangnet voor ongecomprimeerde
 // bronbestanden.
+//
+// Stand na de In-Form-dashboardkaart (#834): 10,48 MB, dus nog 19 kB lucht. Die
+// twee onderdelen (242 kB) zijn al teruggesneden tot de `clamp()`-bovengrens van
+// hun eigen CSS — 600 px voor een kolom die op de breedste layout (940 px) 432 px
+// toont. De huisregel "snij op twee keer de toonmaat, voor retina" is daarmee
+// bewust losgelaten; verder squeezen kost zichtbare scherpte en levert kilobytes
+// op. Wie hierna iets toevoegt hoort dus déze grens te verhogen, niet dat
+// artwork nog kleiner te maken.
 const TOTAAL_MAX_MB = 10.5;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.

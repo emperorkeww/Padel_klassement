@@ -4,14 +4,14 @@
     {
       "naam": "storm",
       "bestand": "if-storm.webp",
-      "breedte": 680,
-      "hoogte": 848
+      "breedte": 600,
+      "hoogte": 749
     },
     {
       "naam": "ember",
       "bestand": "if-ember.webp",
-      "breedte": 460,
-      "hoogte": 145
+      "breedte": 400,
+      "hoogte": 126
     }
   ]
 }

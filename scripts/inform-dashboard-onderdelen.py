@@ -59,12 +59,14 @@ KEY_LAAG = 17.0
 KEY_HOOG = 46.0
 
 # Bewust laag: het gewicht van dit onderdeel zit niet in de kleur maar in de
-# fijne wolkstructuur en het alfakanaal. Van 82/92 naar 78/80 scheelt 50 kB en is
-# op het kaartvlak niet te zien; resolutie is hier de echte knop (760 → 680 px
-# scheelt nog eens 50). De bundel staat met de Big Daddy-onderdelen al op
-# 10,3 MB van de 11 uit assetBudget.test.ts.
-KWALITEIT = 78
-ALFA_KWALITEIT = 80
+# fijne wolkstructuur en het alfakanaal. Van 82/92 naar 76/78 scheelt 60 kB en is
+# op het kaartvlak niet te zien; resolutie is hier de echte knop (760 → 600 px
+# scheelt nog eens 100). De doelbreedtes hieronder zijn dan ook de `clamp()`-
+# bovengrens uit DashboardHero.css zelf en niet het dubbele daarvan: bij een
+# bundelbudget van 10,5 MB (assetBudget.test.ts) is één master ongeveer wat er nog
+# in past, en dit zijn er twee.
+KWALITEIT = 76
+ALFA_KWALITEIT = 78
 
 
 def luminantie(rgb: np.ndarray) -> np.ndarray:
@@ -128,9 +130,10 @@ def veer(vorm: tuple[int, int], links=0, boven=0, rechts=0, onder=0) -> np.ndarr
 
 # Per onderdeel:
 #   snee     [x0, y0, x1, y1] in referentiepixels, binnen VLAK
-#   breedte  doelbreedte in pixels — twee keer de grootste maat waarop de CSS het
-#            onderdeel ooit toont (de `clamp()`-bovengrens), zodat het op een
-#            retina-scherm scherp blijft en geen byte zwaarder is dan dat
+#   breedte  doelbreedte in pixels — hier gelijk aan de `clamp()`-bovengrens uit
+#            DashboardHero.css, niet het dubbele daarvan zoals bij de Big Daddy.
+#            De bundel staat op 10,48 van de 10,5 MB (assetBudget.test.ts) en
+#            retina wint dat niet
 #   veer     uitdoving per rand, in sneepixels
 #   weg      rechthoeken met kaartinhoud die uit de snee moeten
 #   weg_vlak veelhoeken idem — de chamfer van de keyline is geen rechthoek
@@ -147,7 +150,7 @@ ONDERDELEN = [
         # wat verder naar links staat is kaartinhoud, en die uit een snee
         # wegpoetsen laat spookranden achter waar de wolk juist het dunst is.
         "snee": [1240, 90, 1698, 650],
-        "breedte": 680,
+        "breedte": 600,
         # Links diep uitgeveerd: dáár begint de tekstkolom, en wit op een
         # bliksemkern haalt 3,1:1. De veer is de harde grens uit §5, niet smaak.
         "veer": {"links": 170, "boven": 22, "rechts": 12, "onder": 80},
@@ -171,7 +174,7 @@ ONDERDELEN = [
         # (eindigt op y 745) en de chamfer van de linkeronderhoek (begint rond
         # x 105 op y 805) — vandaar dat hij smal is en niet tot in de hoek loopt.
         "snee": [78, 742, 300, 806],
-        "breedte": 460,
+        "breedte": 400,
         "veer": {"links": 16, "boven": 16, "rechts": 90, "onder": 14},
     },
 ]
