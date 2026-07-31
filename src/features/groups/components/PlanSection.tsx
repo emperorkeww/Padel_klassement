@@ -82,6 +82,8 @@ export function PlanSection({
   const openPoll = gekozen ?? standaard;
   const solo = polls.length === 1;
 
+  const gespot = (p: PlayPoll) => spotlightId != null && p.id === spotlightId;
+
   const kaart = (p: PlayPoll) => (
     <PollCard
       poll={p}
@@ -93,7 +95,7 @@ export function PlanSection({
       myId={myId}
       isOwner={isOwner}
       onChanged={onChanged}
-      spotlight={spotlightId != null && p.id === spotlightId}
+      spotlight={gespot(p)}
       roundsExist={roundsExist?.(p)}
       rondesVandaag={rondesVandaag?.(p)}
       onRoundsMade={onRoundsMade ? () => onRoundsMade(p) : undefined}
@@ -124,8 +126,14 @@ export function PlanSection({
               : chosen || own.length === 1 || !laatste || laatste.id === eerste.id
                 ? `${shortDay(eerste.date)} · ${eerste.start_time}`
                 : `${shortDay(eerste.date)} – ${shortDay(laatste.date)}`;
+            // Uitgeklapt dragen rij en kaart samen één rand (#892): de <li> is
+            // het vlak, de rij de kop ervan. De spotlight-puls verhuist mee
+            // naar dat vlak, want de kaart heeft dan zelf geen rand meer.
+            const klassen = ["plan-other__item"];
+            if (expanded) klassen.push("is-open");
+            if (expanded && gespot(p)) klassen.push("is-spotlight");
             return (
-              <li key={p.id}>
+              <li key={p.id} className={klassen.join(" ")}>
                 <button
                   type="button"
                   className="plan-other__row"
@@ -145,7 +153,9 @@ export function PlanSection({
                     ⌄
                   </span>
                 </button>
-                {expanded && kaart(p)}
+                {expanded && (
+                  <div className="plan-other__body">{kaart(p)}</div>
+                )}
               </li>
             );
           })}

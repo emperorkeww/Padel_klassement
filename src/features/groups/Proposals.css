@@ -497,10 +497,71 @@
 }
 .plan-other__chevron {
   color: var(--ink-soft);
+  transition: transform 0.15s ease;
 }
-/* De uitgeklapte poll-kaart in de accordeon: lucht boven de kaart. */
-.plan-other__rows > li > .card {
-  margin-top: var(--sp-2);
+
+/* Uitgeklapt lezen rij en poll-kaart als één vlak (#892). Eerder droegen ze
+   allebei hun eigen rand, met lucht ertussen: het openen van een speeldag
+   leek "een tweede vierkant" te openen i.p.v. dezelfde kaart uit te klappen.
+   Nu draagt de <li> de rand en de achtergrond; de rij is de kop, de kaart
+   loopt eronder door. Ingeklapt blijft alles zoals het was.
+   Geen overflow: hidden — de menu's in de kaartkop (locatie, dagen aanpassen)
+   hangen buiten de kaart en zouden dan worden afgeknipt. */
+.plan-other__item.is-open {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.plan-other__item.is-open > .plan-other__row {
+  border: 0;
+  /* Alleen een haarlijn als naad: genoeg om kop en inhoud te scheiden, te
+     weinig om als een losse doos te lezen. */
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: transparent;
+}
+.plan-other__item.is-open > .plan-other__row .plan-other__chevron {
+  transform: rotate(180deg);
+}
+.plan-other__item.is-open > .plan-other__body > .card {
+  border: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: transparent;
+  box-shadow: none;
+}
+/* De kaarttitel ("Speeldag-poll") herhaalt binnen de accordeon wat de sectiekop
+   en de rij al zeggen. Alleen visueel weg: screenreaders houden hun kop. */
+.plan-other__item.is-open
+  > .plan-other__body
+  > .card
+  > .card__head
+  > .card__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* De spotlight-puls van een gedeelde link (#886) verhuist naar het omhullende
+   vlak: de kaart heeft binnen de accordeon zelf geen rand meer om te kleuren. */
+.plan-other__item.is-open > .plan-other__body > .card.is-spotlight {
+  animation: none;
+}
+.plan-other__item.is-spotlight {
+  animation: poll-spotlight 2.5s ease-out 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .plan-other__item.is-spotlight {
+    animation: none;
+    border-color: var(--accent-line);
+  }
+  .plan-other__chevron {
+    transition: none;
+  }
 }
 
 /* Landen vanuit een gedeelde link (#886): de kaart scrolt zichzelf in beeld en
