@@ -74,6 +74,11 @@ const WannabeShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/WannabeShowcase"))
   : null;
 
+// Dev-stage voor de Glazenwasser-divisie en haar referentiegestuurde breakout.
+const GlazenwasserShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/GlazenwasserShowcase"))
+  : null;
+
 // Dev-stage voor de Blaaskaak-divisie en haar referentiegestuurde artwork.
 const BlaaskaakShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BlaaskaakShowcase"))
@@ -82,6 +87,11 @@ const BlaaskaakShowcase = import.meta.env.DEV
 // Dev-stage voor de Ballenraper en zijn blauwdrukgestuurde artwork-register.
 const BallenraperShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BallenraperShowcase"))
+  : null;
+
+// Dev-stage voor de laagste divisie (slof) en haar referentiegestuurde layout.
+const SlofShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/SlofShowcase"))
   : null;
 
 function App() {
@@ -152,11 +162,20 @@ function App() {
           {WannabeShowcase && (
             <Route path="/dev/wannabe" element={<WannabeShowcase />} />
           )}
+          {GlazenwasserShowcase && (
+            <Route
+              path="/dev/glazenwasser"
+              element={<GlazenwasserShowcase />}
+            />
+          )}
           {BlaaskaakShowcase && (
             <Route path="/dev/blaaskaak" element={<BlaaskaakShowcase />} />
           )}
           {BallenraperShowcase && (
             <Route path="/dev/ballenraper" element={<BallenraperShowcase />} />
+          )}
+          {SlofShowcase && (
+            <Route path="/dev/slof" element={<SlofShowcase />} />
           )}
 
           {/* Onbekende paden terug naar de start. */}

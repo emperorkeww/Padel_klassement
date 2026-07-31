@@ -1615,6 +1615,12 @@
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 .fut-kaart.fut-kaart--piet {
+  /* Het perkament van referentie_zwarte_piet.png is warmer en donkerder dan
+     deze stops. Bewust niet meegegaan (#834): .hero--piet spiegelt deze
+     materiaalwaarden (bewaakt door futKaartCanvas.test.ts, #644) en op een
+     donkerder onderstop haalt het lakrood #8e2117 van de hero nog maar 3,8:1.
+     De rook uit piet-master.webp is in plaats daarvan aan de assetkant
+     versterkt, zodat hij op dit lichtere vlak nog als roet leest. */
   --kaart-hi: #f4eedb;
   --kaart-mid: #e6ddc2;
   --kaart-lo: #cfc4a4;
@@ -1714,12 +1720,17 @@
     var(--kaart-frame-lo) 100%
   );
 }
+/* #834: geen bone liner. In de referentie loopt de lijst van ornament naar
+   perkament door bijna-zwart naar goud; een lichte tussenlijn is daar het enige
+   wat je ziet, en dan lijken de randornamenten er los tegenaan geplakt. Liner en
+   keyline zijn daarom donker, zodat ze de moulure uit het artwork voortzetten
+   in plaats van hem te doorsnijden. */
 .fut-kaart.fut-kaart--piet .fut-kaart__liner {
-  background: #efe7d2;
+  background: #16140e;
 }
                                                                                                                                                                                                                                                                                                        
 .fut-kaart.fut-kaart--piet .fut-kaart__keyline {
-  background: color-mix(in srgb, var(--kaart-lijn) 75%, #fff8e8);
+  background: #241f16;
 }
                                                                                                                                                     
 .fut-kaart.fut-kaart--piet .fut-kaart__vlak::before {

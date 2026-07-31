@@ -1,0 +1,30 @@
+/* Reproduceerbare visuele teststage voor de brede Glazenwasser-kaart. De stage
+   doet niets anders dan de kaart een breedte geven en hem centreren: de hele
+   compositie zit in de kaart zelf, dus een screenshot hiervan is één-op-één te
+   vergelijken met docs/referentie_glazenwasser.png. */
+
+.glazenwasser-showcase {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6vh 16px 40px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(58, 132, 196, 0.14), transparent 55%),
+    #0a1018;
+}
+
+.glazenwasser-showcase__stage {
+  /* Iets ruimer dan de kaart: crest, trekker en emmer steken erbuiten. */
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Eén variabele stuurt de hele kaart én de spacing van het informatieblok. */
+.glazenwasser-showcase__kaart.gw-kaart,
+.glazenwasser-showcase .gw-info {
+  --gw-kw: min(440px, 84vw);
+}

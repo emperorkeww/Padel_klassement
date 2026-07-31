@@ -18,15 +18,18 @@ const ASSETS = pad("../../../dist/assets");
 
 // Ruime marge boven de huidige ~9,0 MB: genoeg lucht voor een nieuwe route of
 // een handvol avatars, krap genoeg om één ongecomprimeerde 2 MB-PNG te vangen.
-// Verhoogd van 8 naar 9 bij de pias-breakout, en van 9 naar 10 toen de
-// Ballenraper-master erbij kwam. De kaarteffect-masters (dictator, on fire,
+// Verhoogd van 8 naar 9 bij de pias-breakout, van 9 naar 10 toen de
+// Ballenraper-master erbij kwam, en van 10 naar 11 met de Glazenwasser: develop
+// stond al op 9,80 MB en de compacte Glazenwasser-master voegt 0,31 MB toe. Het
+// grote-kaartartwork (gw-ring.webp e.a.) telt hier níét in mee — dat hangt
+// achter een DEV-only route en valt bij een productiebuild weg. De kaarteffect-masters (dictator, on fire,
 // storm, big daddy, ballenraper, wannabe, goat, pias, piet, blaaskaak) zijn
 // samen ~2,6 MB en zijn de enige structurele groei sinds #732. Ze staan al op
 // hun compressiegrens (WebP met alpha, 600–1024 px breed); zakt er nog meer
 // resolutie af, dan wordt het artwork zichtbaar zacht op een 450px-kaart. De
 // per-bestandsgrens hieronder blijft het echte vangnet voor ongecomprimeerde
 // bronbestanden.
-const TOTAAL_MAX_MB = 10;
+const TOTAAL_MAX_MB = 11;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;

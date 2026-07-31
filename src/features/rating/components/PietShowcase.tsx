@@ -12,9 +12,18 @@ const ELO = 1050;
 
 export function PietShowcase() {
   const tier = tierFor(ELO);
+  // ?kaart=1 zet de stage in exportmodus: alleen de kaart met zijn breakout,
+  // zonder titel en uitleg. Die twee horen bij de dev-stage, niet bij de
+  // kaartcompositie, en ze maakten een screenshotvergelijking met de referentie
+  // troebel — de uitsnede moest ze anders uit de pixels zien te raden.
+  const alleenKaart =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("kaart");
 
   return (
-    <div className="piet-showcase">
+    <div
+      className={`piet-showcase${alleenKaart ? " piet-showcase--export" : ""}`}
+    >
       <FutKaartDefs />
       <div className="piet-showcase__stage" data-piet-stage>
         <FutKaart
@@ -31,10 +40,14 @@ export function PietShowcase() {
             />
           }
         />
-        <h1 className="piet-showcase__titel">♣ Zwarte Piet</h1>
-        <p className="piet-showcase__uitleg">
-          De drager van de Zwarte Piet.
-        </p>
+        {!alleenKaart && (
+          <>
+            <h1 className="piet-showcase__titel">♣ Zwarte Piet</h1>
+            <p className="piet-showcase__uitleg">
+              De drager van de Zwarte Piet.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

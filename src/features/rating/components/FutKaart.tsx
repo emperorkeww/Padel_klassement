@@ -182,10 +182,6 @@ import {
   PIET_STAAL_GLANS,
   PIET_STAAL_RIBBEL,
   PIET_STAAL_VERLOOP,
-  PIET_WATERMERK,
-  PIET_WATERMERK_BREEDTE,
-  PIET_WATERMERK_KLEUR,
-  PIET_WATERMERK_POSITIE,
   PIET_ZEGEL_BREUK,
   PIET_ZEGEL_DRAAD,
   PIET_ZEGEL_GRAVURE,
@@ -244,6 +240,11 @@ import {
   WannabeEffectBinnen,
   WannabeEffectVoor,
 } from "./wannabe/WannabeEffect";
+import {
+  GlazenwasserEffectAchter,
+  GlazenwasserEffectBinnen,
+  GlazenwasserEffectVoor,
+} from "./glazenwasser/GlazenwasserEffect";
 import {
   BlaaskaakEffectAchter,
   BlaaskaakEffectBinnen,
@@ -939,6 +940,23 @@ export function FutKaartDefs() {
         {/* GOAT (#834): een vloeiende drievoudige crest i.p.v. de oude ene
             ronde bobbel. Twee zijpunten leiden via zachte dalen naar de hogere
             middenpunt; de brede schouders lopen onder de hoornwortels door. */}
+        {/* Zwarte Piet (#834): de ogeeboog van referentie_zwarte_piet.png. De
+            hoeken lopen schuin omhoog naar een breed kruinstuk waar de
+            gevleugelde crest op rust — het meest herkenbare aan die kaart, en
+            zolang dit schild vlak bleef moest élke randgebonden laag in het
+            artwork worden bijgestuurd om er niet dwars overheen te lopen.
+            De boog is gemeten, niet getekend: scripts/piet_schild.py drukt dit
+            pad af uit de referentie. De onderkant wijkt óók af: geen punt op
+            (0.5, 1) maar de brede, afgeronde onderrand van de referentie. Onder
+            de kaart hangt daar één doorlopend bouwsel — kettingen, lint,
+            medaille — en dat houdt elkaar vast omdát alles op één brede rand
+            aankomt; op een punt is er niets om op aan te komen. De chemielijn in
+            de Opstelling mikt op het midden-onder van de kaartbox (Lineup.css:
+            bottom plus een halve kaartbreedte), niet op het schildpad, en blijft
+            dus kloppen. */}
+        <clipPath id="fut-schild-piet" clipPathUnits="objectBoundingBox">
+          <path d="M 0.0000 0.2492 L 0.0828 0.1136 L 0.0891 0.1034 L 0.0999 0.0949 L 0.1317 0.0900 L 0.1591 0.0815 L 0.1864 0.0738 L 0.2136 0.0635 L 0.2391 0.0534 L 0.2662 0.0431 L 0.2909 0.0308 L 0.3131 0.0194 L 0.3317 0.0091 L 0.3492 0.0041 L 0.3710 0.0019 L 0.4073 0.0009 L 0.4449 0.0000 L 0.5551 0.0000 L 0.5927 0.0009 L 0.6290 0.0019 L 0.6508 0.0041 L 0.6683 0.0091 L 0.6869 0.0194 L 0.7091 0.0308 L 0.7338 0.0431 L 0.7609 0.0534 L 0.7864 0.0635 L 0.8136 0.0738 L 0.8409 0.0815 L 0.8683 0.0900 L 0.9001 0.0949 L 0.9109 0.1034 L 0.9172 0.1136 L 1.0000 0.2492 L 1 0.6 L 1 0.8777 C 1 0.9450 0.9235 1 0.8300 1 L 0.1700 1 C 0.0765 1 0 0.9450 0 0.8777 Z" />
+        </clipPath>
         <clipPath id="fut-schild-goat" clipPathUnits="objectBoundingBox">
           <path d="M 0.075 0.045 C 0.16 0.014 0.26 0.018 0.35 0.022 C 0.38 0.022 0.395 0.006 0.42 0.006 C 0.445 0.01 0.46 0.032 0.475 0.032 C 0.486 0.018 0.494 0 0.5 0 C 0.506 0 0.514 0.018 0.525 0.032 C 0.54 0.032 0.555 0.01 0.58 0.006 C 0.605 0.006 0.62 0.022 0.65 0.022 C 0.74 0.018 0.84 0.014 0.925 0.045 C 0.972 0.061 1 0.078 1 0.108 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.108 C 0 0.078 0.028 0.061 0.075 0.045 Z" />
         </clipPath>
@@ -2110,6 +2128,7 @@ export function FutKaart({
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
+    layout?.eigenSilhouet ? "fut-kaart--eigen-silhouet" : "",
     layout?.className ?? "",
     omgedraaid ? "is-omgedraaid" : "",
     glans && !inBeeld ? "is-buiten-beeld" : "",
@@ -2154,8 +2173,14 @@ export function FutKaart({
   // Blaaskaak: dezelfde cascade voor het referentiegestuurde rastermaster.
   // De vectorornamenten blijven beschikbaar voor de canvas-/posterroute.
   const blaaskaakMaster = tier?.key === "zilver" && !editie;
+  // Glazenwasser (#834): de platina-divisie om dezelfde reden uit
+  // glazenwasser-master.webp — raamcrest, paneelklemmen, veegbogen, medaillon en
+  // het paneelraster-watermerk zitten daar in één natte glaswand.
+  const glazenwasserMaster = tier?.key === "platina" && !editie;
   const divisieLive =
-    wannabeMaster || blaaskaakMaster ? undefined : divisie;
+    wannabeMaster || blaaskaakMaster || glazenwasserMaster
+      ? undefined
+      : divisie;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register. Onder
   // een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op het
   // In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
@@ -2190,12 +2215,11 @@ export function FutKaart({
         positie={INFORM_MOTIEF_POSITIE}
       />
     ) : editie === "piet" ? (
-      <FutKaartMotief
-        paden={PIET_WATERMERK}
-        kleur={PIET_WATERMERK_KLEUR}
-        breedte={PIET_WATERMERK_BREEDTE}
-        positie={PIET_WATERMERK_POSITIE}
-      />
+      // #834: de live Piet-kaart krijgt zijn watermerk uit piet-master.webp. De
+      // stadssilhouet uit de referentie staat precies op de hoogte waar de
+      // vectorpion stond; twee watermerken over elkaar leest als vervuiling.
+      // PIET_WATERMERK blijft de bron voor de canvas-/posterroute.
+      null
     ) : divisieLive?.motief ? (
       <FutKaartMotief
         paden={divisieLive.motief.paden}
@@ -2270,6 +2294,9 @@ export function FutKaart({
         {/* Wannabe-achterlaag: racketcrest, plakstroken, briefjes en de
             megafoon verdwijnen hier achter kaart en frame. */}
         {wannabeMaster && <WannabeEffectAchter />}
+        {/* Glazenwasser-achterlaag: raamcrest, sopemmer en de waterexplosie
+            langs de onderrand verdwijnen hier achter kaart en frame. */}
+        {glazenwasserMaster && <GlazenwasserEffectAchter />}
         {blaaskaakMaster && <BlaaskaakEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
         {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
@@ -2300,6 +2327,10 @@ export function FutKaart({
                     rasterpuntvuil en het getekende tekstballonnetje. Het artwork
                     houdt de tekstzones zelf vrij, dus er is geen binnenmasker. */}
                 {wannabeMaster && <WannabeEffectBinnen />}
+                {/* Dezelfde Glazenwasser-master in het echte kaartvlak: de
+                    natte glaswand, het raampje en de trekkers. Het artwork houdt
+                    de tekstzones zelf vrij, dus er is geen binnenmasker. */}
+                {glazenwasserMaster && <GlazenwasserEffectBinnen />}
                 {blaaskaakMaster && <BlaaskaakEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde pias-master, geclipt door het echte schild; de
@@ -2358,6 +2389,9 @@ export function FutKaart({
             pijlen, de splinter, het kroontje met krassen en de inktdruipers
             liggen vóór het frame. */}
         {wannabeMaster && <WannabeEffectVoor />}
+        {/* Raamcrest, hoekschuim, beide trekkers, de sopemmer, de schildbadge en
+            de onderste helft van de waterexplosie liggen vóór het frame. */}
+        {glazenwasserMaster && <GlazenwasserEffectVoor />}
         {blaaskaakMaster && <BlaaskaakEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
