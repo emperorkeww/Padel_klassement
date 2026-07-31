@@ -563,7 +563,12 @@ def kaartring() -> None:
     # halftransparant — en dan schemert de donkere onderlegger er als blauwe
     # waas doorheen. Binnen het silhouet is de alfa dus vol; alleen de spray die
     # buiten de kaart op zwart staat houdt een zachte alfa.
-    kern = luma > 14.0
+    # Drempel ruim boven de achtergrond. Buiten de kaart ligt de referentie op
+    # lum 11–25, dus op een drempel van 14 werd een deel van die achtergrond als
+    # massieve kaart gekeyd — dat gaf de rafelige donkere rand die aan de lijst
+    # plakte. De donkere kant van de lijst zelf ligt hier wel onder, maar die is
+    # ingesloten en wordt door `vul_gaten` alsnog dichtgezet.
+    kern = luma > 46.0
     kern = vul_gaten(ontkorrel(kern, 2), maxdeel=10.0)
     binnen_sil = vervaag(kern.astype(np.float32), 1.0)
     # Drempel ruim boven de achtergrond. Buiten de kaart is de referentie niet
@@ -571,7 +576,7 @@ def kaartring() -> None:
     # alfa 0,3–0,6 en hing er dus een halftransparante donkere waas om de kaart,
     # die op de app-achtergrond duidelijk zichtbaar werd. Alleen echt licht
     # materiaal — ijs en opspattend water — hoort hier nog te keyen.
-    spray = np.clip((luma - 34.0) / 45.0, 0, 1)
+    spray = np.clip((luma - 40.0) / 50.0, 0, 1)
     alpha = np.clip(binnen_sil + spray * (1.0 - binnen_sil), 0, 1)
 
     # De crest blijft in de ring. In de bovenzone is de verticale afbeelding een
@@ -631,6 +636,16 @@ def kaartring() -> None:
         [vervaag(herhaald[..., k] / 255.0, 9.0) * 255.0 for k in range(3)], -1
     )
     rgb = np.where(onbekend[..., None], laag + fijn * 1.15, BRON.rgb)
+
+    # Randkleur terugrekenen. De referentie staat op bijna zwart, dus elke
+    # halfdoorzichtige randpixel is een menging van kaart én die zwarte
+    # achtergrond. Composite je hem daarna op een andere ondergrond, dan blijft
+    # dat zwart als donkere zoom zichtbaar. Delen door de alfa haalt de
+    # achtergrondbijdrage eruit en geeft de kleur die de kaart daar écht heeft.
+    veilig = np.maximum(alpha, 0.06)[..., None]
+    rgb = np.where(
+        (alpha > 0.02)[..., None], np.clip(rgb / veilig, 0, 255), rgb
+    )
 
     # Verticaal herbemonsteren met dezelfde stuksgewijze afbeelding die de layout
     # gebruikt: de kap en de punt houden hun maat, het middenveld rekt mee.
