@@ -605,7 +605,7 @@ describe("editie-registers spiegelen FutKaart.css", () => {
     // literale gradient in de CSS. De hero-stops horen dus bij de vlak-stops van
     // het canvas-register, dat diezelfde gradient spiegelt.
     for (const [editie, prefix, inkt, vlakNamen] of [
-      ["inform", "inform", "goud", ["navy", "navy-mid", "navy-diep"]],
+      ["inform", "inform", "goud", ["zwart", "zwart-mid", "zwart-diep"]],
       ["onfire", "onfire", "ember", ["sintel", "sintel-mid", "sintel-diep"]],
     ] as const) {
       const kaart = waarden(

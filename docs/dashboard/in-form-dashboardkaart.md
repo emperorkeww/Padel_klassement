@@ -45,7 +45,7 @@ y 57…842 — 1686 × 785, dus 2,15 : 1.
 | zwarte band | 6 px | 0,36 % |
 | gouden keyline | 4 px | 0,24 % |
 | chamfer op de keyline | ≈ 50 px | 3,0 % |
-| kaartvlak | #0d0d10, vrijwel neutraal zwart | donkerder dan de huidige navy-tint |
+| kaartvlak | #0d0d10, vrijwel neutraal zwart | iets donkerder dan de tintstops van de dunne variant |
 | rail-goud | #f9eab8 → #e1bc67 → #987131 | champagne met een specular top |
 | keyline-goud | piek #fff38e | ≈ `--inform-lijn` (#ffd56b) één stap heter |
 | groeven | diagonale pinstripes, ~115°, ook over de storm | = `.hero__groeven--inform` |
@@ -300,21 +300,21 @@ piaskaart moet het kraftkarton herkenbaar blijven.
 één referentieontwerp per kaart is en dat van 🔥 er nog niet is. De structuur
 staat er wel: een tweede tak in die functie en een materiaalblok ernaast.
 
-**Het navy van de ⚡-editie.** De dúnne variant (In-Form boven een permanent
-thema) tint navy: `--inform-navy` = #1b2235, en `futKaartCanvas.test.ts` bindt die
-drie stops aan de vlak-stops van de ⚡-FUT-kaart. De volle variant hierboven is
-neutraal zwart, want dat is wat de referentie meet (#0d0d10). Twee zwarten voor
-één status dus — zichtbaar op `/dev/hero`, waar ze onder elkaar staan; in de app
-niet, want een speler heeft één kaart.
+**Het navy van de ⚡-editie is rechtgezet.** De dunne variant (In-Form boven een
+permanent thema) tintte navy (`#1b2235`), en `futKaartCanvas.test.ts` bindt die
+drie stops aan de vlak-stops van de ⚡-FUT-kaart. Die kaart was dus óók navy —
+terwijl beide referenties van deze editie neutraal meten: het kaartvlak van
+`referentie_in_form.png` staat op #141616 en dat van de dashboardkaart op
+#0d0d10, allebei met een rood-blauwverschil van twee punten waar de code er
+zesentwintig had.
 
-Het navy is aantoonbaar de afwijking: óók de FUT-referentie
-(`referentie_in_form.png`) meet #141616 op het kaartvlak, met een rood-blauw-
-verschil van 2 punten. Rechtzetten betekent `vlak: ["#1b2235", "#0f121d",
-"#05060a"]` in `futKaartCanvas.ts` en de bijbehorende gradient in `FutKaart.css`
-neutraliseren — en dat raakt de kaartenwand, de pack-opening en de posters. Het
-hoort daarom in een eigen wijziging, met eigen screenshots van de kaart. De
-synctest houdt de twee tot die tijd aan elkaar vast; hij hoeft er alleen bij te
-weten dat het een keuze is, zoals hij dat voor de Kampioen-stop al doet.
+De stops zijn daarom geneutraliseerd naar `["#212223", "#111213", "#050607"]`, in
+`futKaartCanvas.ts` én in de gelijkluidende gradient in `FutKaart.css`. Bewust
+alléén de tint: per stop is de relatieve luminantie gelijk gebleven, dus de
+belichting van de kaart verandert niet — alleen de blauwzweem verdwijnt. Op de
+piaskaart is dat meteen zichtbaar: het kraftkarton schemert nu als karton door de
+tint in plaats van als blauwgrijs, wat AC4 juist bedoelt. De synctest houdt de
+kaart en de hero verder aan elkaar vast.
 
 **Pariteit voor het goud.** `--if-goud` (#f2cf7d) is byte-gelijk aan
 `--kaart-ink` van de ⚡-kaart, maar niets bewaakt dat. Een regel erbij in dezelfde
