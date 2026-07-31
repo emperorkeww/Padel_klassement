@@ -1,0 +1,445 @@
+/* De brede Glazenwasser-kaart (#834).
+   Eén coördinatenstelsel: de stage heeft de aspect ratio van het referentieschild
+   en élke laag staat er absoluut in, met percentages. Er is dus geen enkele
+   pixelwaarde of media-query die de compositie verandert — de kaart schaalt als
+   één geheel met --gw-kw.
+
+   Kleuren komen uit hetzelfde register als de divisiekaart (divisies/platina.css
+   en het `register` in platina.ts), zodat de brede kaart en de compacte kaart
+   dezelfde Glazenwasser zijn. */
+
+.gw-kaart {
+  /* Kaartbreedte; de caller zet hem. Alles hieronder is een fractie hiervan. */
+  --gw-kw: 380px;
+  /* Banddiktes van de lijst, als fractie van de kaartbreedte. Samen 9,2%: op de
+     referentie is de glasrail 11%, maar daar hoort ook het water overheen dat
+     hier als eigen laag komt. */
+  --gw-frame: calc(var(--gw-kw) * 0.034);
+  --gw-bevel: calc(var(--gw-kw) * 0.016);
+  --gw-liner: calc(var(--gw-kw) * 0.012);
+  --gw-keyline: calc(var(--gw-kw) * 0.005);
+  --gw-band: calc(
+    var(--gw-frame) + var(--gw-bevel) + var(--gw-liner) + var(--gw-keyline)
+  );
+  --gw-schild: url(#gw-schild);
+  /* Nat glas. Een stap donkerder dan het platina-register: gemeten op leeg glas
+     zit de referentie op rgb(154 175 198) en stond deze kaart op rgb(181 200 219).
+     Dat verschil is precies wat de kaart van nat glas naar wit plastic duwde — de
+     donkerblauwe inkt verloor er zijn contrast door, en het paneel had geen diepte
+     meer naar de randen toe. */
+  --gw-hi: #c1d5e9;
+  --gw-mid: #97b1cd;
+  --gw-lo: #7b98b7;
+  --gw-ink: #10294a;
+  --gw-ink-soft: #214d78;
+  --gw-lijn: #7ea6c8;
+
+  width: var(--gw-kw);
+  margin-inline: auto;
+  /* De uitstekende crest, trekker en emmer horen bij de kaart en mogen niet
+     worden afgesneden; de eigenaar van de cel clipt (zie §8 van de
+     architectuurdoc). */
+  overflow: visible;
+  isolation: isolate;
+}
+
+.gw-kaart__stage {
+  position: relative;
+  width: 100%;
+  /* Dezelfde verhouding als élke andere kaart in de app. De referentie is
+     breder dan hoog; die compositie wordt over deze hoogte verdeeld (zie
+     `naarKaartY` in glazenwasserLayout.ts), niet uitgerekt. */
+  aspect-ratio: 100 / 139;
+}
+
+.gw-kaart__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Buitenwaas: het koele licht dat in de referentie om het schild hangt. Geen
+   onderdeel van de kaart, dus ruim buiten de contour en zonder eigen contour. */
+.gw-kaart__waas {
+  position: absolute;
+  inset: -8% -10% -6%;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    rgba(120, 186, 232, 0.26),
+    rgba(24, 70, 116, 0.12) 52%,
+    transparent 72%
+  );
+  filter: blur(calc(var(--gw-kw) * 0.02));
+  pointer-events: none;
+}
+
+/* --- lijst en glasvlak --------------------------------------------------- */
+
+.gw-kaart__schild,
+.gw-kaart__bevel,
+.gw-kaart__liner,
+.gw-kaart__keyline,
+.gw-kaart__vlak {
+  display: block;
+  clip-path: var(--gw-schild);
+}
+
+.gw-kaart__schild {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  padding: var(--gw-frame);
+  /* Slagschaduw ónder de lijst: de kaart moet als los, dik object op de
+     achtergrond liggen. */
+  filter: drop-shadow(
+      0 calc(var(--gw-kw) * 0.014) calc(var(--gw-kw) * 0.034) rgba(3, 12, 24, 0.62)
+    )
+    drop-shadow(0 0 calc(var(--gw-kw) * 0.004) rgba(180, 222, 255, 0.5));
+  /* Scherpe lichtrand op de buitenste millimeter van de lijst. De referentie
+     toont daar de zíjkant van het profiel: een smal, helder vlak dat de rail als
+     dik voorwerp leest in plaats van als een vlakke omtrek. De banddikte ligt
+     vast, dus dit moet van een rand komen en niet van een bredere lijst. */
+  /* Donkere onderlegger, geen zichtbare lijst meer. De lijst kómt sinds de
+     ringlaag uit het artwork zelf; deze banden houden alleen nog de geometrie
+     (de paddings bepalen waar het glasvlak begint) en vangen het randje op waar
+     ring en silhouet elkaar op een haar na missen. Een helder verloop zou daar
+     als lichte streep naast het echte frame gaan liggen. */
+  background: linear-gradient(160deg, #0d2c4c 0%, #071f39 55%, #04162a 100%);
+}
+
+/* Tweede bevel: de zilverwitte spiegeling op de binnenflank van de rail. Zonder
+   deze laag leest de lijst als één vlakke blauwe omtrek. */
+.gw-kaart__bevel {
+  height: 100%;
+  padding: var(--gw-bevel);
+  /* Diepte in de rail zelf: een lichte bovenrand en een donkere onderrand maken
+     van de band een profiel in plaats van een vlakke kleurstrook. */
+  box-shadow:
+    inset 0 calc(var(--gw-kw) * 0.004) calc(var(--gw-kw) * 0.006)
+      rgba(255, 255, 255, 0.85),
+    inset 0 calc(var(--gw-kw) * -0.004) calc(var(--gw-kw) * 0.008)
+      rgba(2, 14, 30, 0.85);
+  background: linear-gradient(200deg, #0a2946 0%, #071e37 60%, #041428 100%);
+}
+
+.gw-kaart__liner {
+  height: 100%;
+  padding: var(--gw-liner);
+  background: linear-gradient(180deg, #0a2a4c, #061a30 60%, #0a2745);
+}
+
+.gw-kaart__keyline {
+  height: 100%;
+  padding: var(--gw-keyline);
+  background: #0a2440;
+}
+
+.gw-kaart__vlak {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(
+    170deg,
+    var(--gw-hi) 0%,
+    var(--gw-mid) 56%,
+    var(--gw-lo) 100%
+  );
+  /* Witte glasrand, donkere sponning, lichte tweede ruit — een glaspaneel in een
+     sponning toont altijd twéé randen. Zelfde recept als divisies/platina.css. */
+  box-shadow:
+    inset 0 0 0 max(1px, calc(var(--gw-kw) * 0.003)) rgba(255, 255, 255, 0.72),
+    inset 0 0 0 max(2px, calc(var(--gw-kw) * 0.008)) rgba(8, 32, 58, 0.82),
+    inset 0 0 0 max(3px, calc(var(--gw-kw) * 0.012)) rgba(190, 222, 244, 0.45),
+    /* Het glas loopt naar zijn randen donker weg. Zonder dit blijft het vlak
+       overal even licht en leest het als een egale plaat in plaats van als een
+       ruit die in een sponning ligt. De bandbreedtes liggen vast, dus de diepte
+       moet uit de schaduw komen en niet uit een bredere lijst. */
+    inset 0 0 calc(var(--gw-kw) * 0.09) calc(var(--gw-kw) * 0.02)
+      rgba(14, 42, 74, 0.34);
+}
+
+/* Drie paddings hebben het vlak naar binnen genest; deze negatieve inset zet het
+   coördinatenstelsel terug op de hele kaart, zodat een geclipte laag dezelfde
+   percentages gebruikt als een vrije laag. */
+.gw-kaart__vlak-stage {
+  position: absolute;
+  inset: calc(-1 * var(--gw-band));
+  display: block;
+}
+
+/* --- artworklagen -------------------------------------------------------- */
+
+.gw-kaart__laag {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gw-kaart__laag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* De flankstrepen zijn verbindingsweefsel, geen voorwerp: ze mogen het water
+   boven en onder aan elkaar knopen zonder zelf op te vallen. Ze stonden op 0,6
+   omdat ze een halve trekker en een halve emmer meesleepten en dus wegmoesten;
+   nu ze alleen nog water zijn, mogen ze gezien worden. */
+.gw-kaart__laag[data-laag^="sideDrips"] {
+  opacity: 0.85;
+}
+
+.gw-kaart__laag-schaduw {
+  position: absolute;
+  inset: 0;
+  /* Kort en licht: een lange schaduw op een onderdeel met zachte alfaranden
+     wordt een grijze wolk in plaats van een contactschaduw. */
+  opacity: 0.24;
+}
+
+/* De natte glaswand: een herhalende tegel over het hele kaartvlak.
+
+   Twee keer dezelfde tegel op een verschillende maat en een verschillende plek.
+   Er is maar één stuk onbedekt glas van formaat in de referentie (92 × 160 px),
+   dus de tegel is klein en zou op één maat als behang gaan lezen. Twee maten die
+   niet in elkaar passen, maken de periode van het patroon vele malen langer dan
+   de kaart breed is — daarmee ziet het oog textuur in plaats van herhaling.
+
+   De maten staan in procenten van de laag, niet in pixels: zo houdt de korrel
+   dezelfde verhouding tot de kaart op elk formaat. */
+.gw-kaart__laag[data-laag="wetGlassSurface"] {
+  background-repeat: repeat, repeat;
+  background-size:
+    13% auto,
+    21% auto;
+  background-position:
+    0 0,
+    37% 61%;
+  /* Ruim opgeschaald en zacht gehouden: op referentiemaat legt de tegel een
+     regelmatige ruit over het glas, want zijn periode is dan een fractie van de
+     kaart. Groter is de periode langer dan het oog als patroon herkent, en wat
+     de tegel aan fijne korrel verliest, hoort hier ook niet — de scherpe
+     details op de referentie zijn de druppels en het schuim, en die zijn eigen
+     lagen. */
+  opacity: 0.92;
+}
+
+/* Géén randlicht en géén glow op de voorwerpen meer.
+
+   Die stonden er om trekker, emmer en crest los te maken van een lijst die in
+   CSS was gebouwd en dus zijn eigen licht niet had. Sinds de ring het frame
+   levert, komt het licht op de voorwerpen én op de lijst uit dezelfde render:
+   ze staan al in hetzelfde licht. Er een halo omheen leggen maakt ze juist weer
+   los — dat is precies de "opgeplakt"-blik die weg moest. */
+
+/* --- inhoud -------------------------------------------------------------- */
+
+.gw-kaart__inhoud {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  color: var(--gw-ink);
+  font-family: var(--font-rounded, inherit);
+}
+
+.gw-kaart__ratinggroep {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gw-kaart__rating {
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  /* Nat glas laat de inkt iets uitlopen; dat is wat de referentie toont. */
+  text-shadow: 0 calc(var(--gw-kw) * 0.004) calc(var(--gw-kw) * 0.008)
+    rgba(255, 255, 255, 0.5);
+}
+
+.gw-kaart__subniveau {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
+.gw-kaart__raamicoon {
+  line-height: 1;
+  text-align: center;
+}
+
+/* Glaslat tussen identiteit en naam: een dunne lichtbaan met een donkere onderkant
+   — een glasplaat op zijn kant, geen kale lijn. */
+.gw-kaart__scheiding {
+  position: absolute;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(146, 190, 226, 0.65) 55%,
+    rgba(16, 41, 74, 0.45)
+  );
+  box-shadow: 0 calc(var(--gw-kw) * 0.004) calc(var(--gw-kw) * 0.008)
+    rgba(16, 41, 74, 0.25);
+}
+
+.gw-kaart__naam {
+  position: absolute;
+  text-align: center;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gw-kaart__divisie {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3%;
+  color: var(--gw-ink-soft);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gw-kaart__divisie-tekst {
+  display: inline-block;
+}
+
+.gw-kaart__divisie-lijn {
+  width: 11%;
+  height: max(1px, calc(var(--gw-kw) * 0.005));
+  background: var(--gw-ink-soft);
+  opacity: 0.92;
+}
+
+/* Zes kolommen op één rij, met een verticale scheiding tussen de kolommen. Ze
+   passen omdat de kaart de brede schildverhouding heeft: in het smalle schild is
+   hier geen ruimte voor. */
+.gw-kaart__stats {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: start;
+}
+
+.gw-kaart__stat {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4%;
+  padding-inline: 2%;
+  text-align: center;
+}
+
+.gw-kaart__stat + .gw-kaart__stat {
+  border-left: max(1px, calc(var(--gw-kw) * 0.003)) solid var(--gw-lijn);
+}
+
+.gw-kaart__stat-label {
+  /* Twee regels ruimte: "CONCENTRATIE" past op deze kolombreedte niet op één
+     regel in een leesbare maat. De vaste hoogte houdt alle waarden op dezelfde
+     grondlijn, ook als een label wél op één regel past; `anywhere` breekt ook een
+     woord zonder koppelpunt af. */
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--gw-ink);
+}
+
+.gw-kaart__stat-waarde {
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- portret ------------------------------------------------------------- */
+
+.gw-kaart__portret {
+  position: absolute;
+  aspect-ratio: 1;
+  z-index: 60;
+  border-radius: 50%;
+  /* De dubbele glasring van de referentie: de blauwe ring is de padding, de witte
+     een box-shadow eromheen. Zo blijft de cirkel rond op elke kaartmaat. */
+  background: #1d63a8;
+  box-shadow:
+    0 0 0 var(--gw-portret-wit) #eef7ff,
+    0 calc(var(--gw-kw) * 0.014) calc(var(--gw-kw) * 0.028) rgba(6, 24, 44, 0.4);
+}
+
+.gw-kaart__portret .avatar {
+  width: 100% !important;
+  height: 100% !important;
+  /* Initialen even groot als in de generieke avatar: 38% van de diameter. */
+  font-size: calc(var(--gw-portret-maat) * 0.38) !important;
+}
+
+.gw-kaart__portret .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* --- informatieblok ------------------------------------------------------ */
+
+/* Aparte sectie ónder de kaart, geen onderdeel van het schild. De marge is
+   uitgedrukt in kaartbreedtes, zodat er nooit een gat van een halve schermhoogte
+   tussen kaart en tekst valt. */
+.gw-info {
+  --gw-kw: 380px;
+  width: min(100%, calc(var(--gw-kw) * 1.05));
+  margin: calc(var(--gw-kw) * 0.06) auto 0;
+  text-align: center;
+  color: var(--tekst, #e8f1f8);
+}
+
+.gw-info__kop {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  font-size: calc(var(--gw-kw) * 0.088);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.gw-info__icoon {
+  font-size: calc(var(--gw-kw) * 0.072);
+  line-height: 1;
+}
+
+.gw-info__bereik {
+  margin: calc(var(--gw-kw) * 0.012) 0 0;
+  color: #6f9bc0;
+  font-size: calc(var(--gw-kw) * 0.055);
+  font-weight: 700;
+}
+
+.gw-info__flavor {
+  margin: calc(var(--gw-kw) * 0.016) 0 0;
+  color: var(--tekst-zacht, #9db4c6);
+  font-size: calc(var(--gw-kw) * 0.045);
+  line-height: 1.4;
+}
