@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
+import { prefersReducedMotion } from "@/lib/utils/motion";
 import { addDays, dateInZone } from "@/lib/utils/time";
 import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
 import { dayStarts } from "@/features/availability/availabilityShare";
@@ -64,6 +65,7 @@ export function PollCard({
   myId,
   isOwner,
   onChanged,
+  spotlight,
   roundsExist,
   rondesVandaag,
   onRoundsMade,
@@ -77,6 +79,9 @@ export function PollCard({
   myId: string;
   isOwner: boolean;
   onChanged: () => void;
+  /** Je landde op deze kaart via een gedeelde link (#886): breng 'm in beeld
+   *  en markeer 'm kort, zodat duidelijk is wélke speeldag bedoeld werd. */
+  spotlight?: boolean;
   /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
   roundsExist?: boolean;
   /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
@@ -110,6 +115,36 @@ export function PollCard({
   const isManager = poll.created_by === myId || isOwner;
   const weekEnd = addDays(today, 6);
   const name = (id: string) => displayName(profiles[id]);
+
+  /* Landen vanuit een gedeelde link (#886). De kaart stond al open (openId in
+     PlanSection), maar je keek nog naar de bovenkant van de tab: bij een groep
+     met een vastgelegde speeldag erboven staan de stemknoppen onder de vouw.
+     Mikken op de stemrijen en niet op de kaartkop — de vraag is "wanneer kun
+     jij?", dus die knoppen horen in beeld. Bij een gekozen of geboekte
+     speeldag valt dat terug op de kaart zelf: daar valt niets te stemmen. */
+  const stemRijenRef = useRef<HTMLUListElement>(null);
+  const kaartRef = useRef<HTMLElement>(null);
+  const gespot = useRef(false);
+
+  useEffect(() => {
+    // Eén keer per mount: een re-render (stem binnen via realtime, banen
+    // geladen) mag je niet opnieuw naar boven trekken terwijl je zit te lezen.
+    if (!spotlight || gespot.current) return;
+    const doel = stemRijenRef.current ?? kaartRef.current;
+    if (!doel) return;
+    gespot.current = true;
+    // jsdom kent scrollIntoView niet (zelfde guard als PageTabs).
+    if (typeof doel.scrollIntoView === "function") {
+      doel.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "center",
+      });
+    }
+  }, [spotlight]);
+  /* De markering zelf hangt aan de prop, niet aan een timer: de CSS-animatie
+     draait één keer af en laat de kaart daarna staan zoals hij was. Een
+     setTimeout die de klasse weer weghaalt leverde alleen een tijdgevoelige
+     test op, zonder dat je er iets aan ziet. */
 
   /** Live vrije banen binnen het datavenster; anders de momentopname. */
   function liveFree(o: PollOption): number | null {
@@ -316,7 +351,10 @@ export function PollCard({
   );
 
   return (
-    <section className="card">
+    <section
+      ref={kaartRef}
+      className={`card${spotlight ? " is-spotlight" : ""}`}
+    >
       <div className="card__head">
         <h2 className="card__title">{CARD_TITLE[poll.status]}</h2>
         <div className="proposal__links">
@@ -365,7 +403,10 @@ export function PollCard({
         </p>
       )}
 
-      <ul className="poll-rows">
+      <ul
+        className="poll-rows"
+        ref={poll.status === "open" ? stemRijenRef : null}
+      >
         {winnerFirst.map((o, idx) => {
           if (collapsed && idx > 0) return null;
           const t = tallyOption(o, votes);

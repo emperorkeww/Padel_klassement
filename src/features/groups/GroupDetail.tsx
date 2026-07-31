@@ -84,7 +84,11 @@ export function GroupDetail() {
   // ("kijk even bij de stand"). Staat bewust vóór de queries: een directe
   // ?tab=stand moet de stand-data meteen aanzetten (zie standSeen).
   const [params, setParams] = useSearchParams();
-  const urlView = viewFromParam(params.get("tab"));
+  // ?poll=<id> hoort bij de Plannen-tab: alleen PlanTab leest 'm. Een gedeelde
+  // link draagt ?tab=plannen zelf mee, maar een ingekorte of half doorgestuurde
+  // variant niet — en dan zou de landingslogica je op een tab zetten waar
+  // niemand naar de poll kijkt (#886).
+  const urlView = viewFromParam(params.get("tab")) ?? (params.get("poll") ? "plannen" : null);
 
   // #674 C2 — de pagina deed dertien queries bij mount, ook als je alleen een
   // uitslag kwam invullen. Wat alleen de Stand-tab voedt wacht tot je die tab

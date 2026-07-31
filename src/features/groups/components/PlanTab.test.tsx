@@ -342,6 +342,58 @@ describe("<PlanTab />", () => {
     ).toBeInTheDocument();
   });
 
+  // #886: die stille terugval liet je op een wíllekeurige andere speeldag
+  // kijken zonder dat iets verklaarde waarom je niet kreeg wat je aanklikte.
+  it("meldt het als de gedeelde speeldag niet meer loopt", async () => {
+    renderTab([], "?tab=plannen&poll=bestaat-niet");
+
+    expect(
+      await screen.findByText(/deze gedeelde speeldag loopt niet meer/i),
+    ).toBeInTheDocument();
+  });
+
+  it("zwijgt over dode links bij een gewoon bezoek", async () => {
+    renderTab();
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByText(/deze gedeelde speeldag loopt niet meer/i),
+    ).not.toBeInTheDocument();
+  });
+
+  // De kaart stond al open, maar je keek nog naar de bovenkant van de tab: met
+  // een vastgelegde speeldag erboven staan de stemknoppen onder de vouw.
+  it("scrolt de gedeelde poll naar de stemknoppen en markeert 'm", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    renderTab([], "?tab=plannen&poll=poll-open");
+
+    const kop = await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    // De stemrijen, niet de kaartkop: de vraag is "wanneer kun jij?".
+    expect(scrollIntoView.mock.instances[0]).toHaveClass("poll-rows");
+    expect(kop.closest(".card")).toHaveClass("is-spotlight");
+
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("scrolt niet bij een gewoon bezoek zonder gedeelde link", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    renderTab();
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
   // #721: de suggestiekaart klapt dicht zodra er écht een poll loopt.
   it("klapt de suggesties dicht bij een lopende poll", async () => {
     renderTab();
