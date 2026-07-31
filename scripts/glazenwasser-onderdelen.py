@@ -92,11 +92,13 @@ OPHANGING = [
 # Emmer met beugel, schuimkop en de druppels die eroverheen lopen.
 # Emmer met beugel, schuimkop én de druppels die eronder doorlopen: die druppels
 # zijn de verbinding met het water lager op de kaart.
+# Ruim tot onder de kuip: de bodem zat eerder onder de statblok-rechthoek en
+# werd daardoor halftransparant, waardoor de emmer recht afgesneden leek.
 EMMER = [
     (794, 646), (802, 612), (846, 592), (850, 578), (874, 572), (938, 572),
-    (952, 592), (954, 612), (988, 594), (1012, 620), (1020, 652), (1016, 704),
-    (1012, 768), (1006, 830), (996, 884), (964, 900), (930, 886), (896, 862),
-    (856, 848), (826, 820), (806, 744),
+    (952, 592), (954, 612), (988, 594), (1016, 618), (1034, 648), (1040, 704),
+    (1038, 768), (1032, 840), (1020, 906), (1000, 948), (966, 962), (930, 946),
+    (896, 900), (856, 866), (826, 826), (806, 748),
 ]
 
 TREKKER_ONDER = [
@@ -362,6 +364,7 @@ def snijd(
     inhoudvrij: bool = True,
     zacht: float = 0.8,
     korrel: int = 2,
+    vrij_vanaf_x: float | None = None,
     silhouet: float = 0.42,
     halo: int = 6,
     aanhechting: float = 0.55,
@@ -392,7 +395,16 @@ def snijd(
             alpha = ruw * contour
     alpha = np.clip(alpha * versterk, 0, 1)
     if inhoudvrij:
-        alpha *= BRON.vrij
+        vrij = BRON.vrij
+        if vrij_vanaf_x is not None:
+            # De inhoudrechthoeken zijn ruim: die van het statblok loopt tot
+            # x 914, terwijl de tekst erin op x 897 ophoudt en de emmer op 900
+            # begint. Zo'n rechthoek knipt dan puur het voorwerp en geen letter.
+            # Rechts van deze grens staat geen kaarttekst meer, dus daar hoeft
+            # niets beschermd te worden.
+            vrij = vrij.copy()
+            vrij[:, int(vrij_vanaf_x):] = 1.0
+        alpha *= vrij
     # Onderdelen die als eigen asset terugkomen horen niet ook in deze uitsnede:
     # anders staat er een tweede, verschoven exemplaar op de kaart zodra de twee
     # los worden geplaatst.
@@ -812,11 +824,14 @@ def main() -> int:
     # lijst hoort zoals op de referentie. Zijn contour blijft nodig om hem daar
     # tegen het tekstmasker te beschermen.
     # Dunne, hooggekleurde steel: een grovere ontkorreling knipt hem weg.
+    # Krappere aanhechting: het schuim aan het blad hoort erbij, de losse
+    # glasvlekken rechts ernaast niet.
     snijd("trekker-boven", TREKKER_BOVEN, "vast", feather=5.0, drempel=14.0,
-          korrel=1, zacht=1.0)
+          korrel=1, zacht=1.0, halo=5, aanhechting=0.42)
     snijd("ophanging", OPHANGING, "glas", feather=6.0, drempel=11.0,
           spreiding=24.0, versterk=1.15, zonder=(EMMER,))
-    snijd("emmer", EMMER, "vast", feather=5.0, drempel=14.0, zacht=1.0)
+    snijd("emmer", EMMER, "vast", feather=5.0, drempel=14.0, zacht=1.0,
+          vrij_vanaf_x=900)
     snijd("onderschild", ONDERSCHILD, "vast", feather=6.0, drempel=14.0,
           zacht=1.2)
     # Waterexplosie, hoekijs en flankdruppels zijn geen losse onderdelen meer:
