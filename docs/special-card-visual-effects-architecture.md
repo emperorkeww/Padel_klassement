@@ -2,10 +2,10 @@
 
 Dit document beschrijft de daadwerkelijk geïmplementeerde architectuur van
 het In-Form-stormeffect en de daarop gebaseerde On Fire-, Dictator-, Big
-Daddy-, Piet-, pias-, GOAT- en Wannabe-breakouts. Het is tegelijk een technische
-naslag en een herbruikbare blauwdruk voor special cards waarvan decoratie niet
-alleen ín de kaart staat, maar ook achter de kaart verdwijnt en plaatselijk vóór
-het frame komt.
+Daddy-, Piet-, pias-, GOAT-, Glazenwasser- en Wannabe-breakouts. Het is
+tegelijk een technische naslag en een herbruikbare blauwdruk voor special cards
+waarvan decoratie niet alleen ín de kaart staat, maar ook achter de kaart
+verdwijnt en plaatselijk vóór het frame komt.
 
 De kern van de oplossing is eenvoudig: één coherent storm-artwork wordt drie
 keer op exact dezelfde coördinaten gerenderd. Alleen de clipping en de
@@ -14,51 +14,61 @@ pixelmatig door van het kaartvlak naar de breakout buiten de kaart.
 
 Belangrijkste implementatiebestanden:
 
-- [`FutKaart.tsx`](../src/features/rating/components/FutKaart.tsx) — biedt de
+- [`FutKaart.tsx`](../../src/features/rating/components/FutKaart.tsx) — biedt de
   drie montagepunten rond en in de bestaande kaartstructuur.
-- [`InformStorm.tsx`](../src/features/rating/components/storm/InformStorm.tsx)
+- [`InformStorm.tsx`](../../src/features/rating/components/storm/InformStorm.tsx)
   — rendert de drie instanties van dezelfde bron.
-- [`InformStorm.css`](../src/features/rating/components/storm/InformStorm.css)
+- [`InformStorm.css`](../../src/features/rating/components/storm/InformStorm.css)
   — gedeelde registratie, z-index, clipping, frontmask en contactschaduw.
-- [`storm-master.webp`](../src/features/rating/components/storm/assets/in-form/storm-master.webp)
+- [`storm-master.webp`](../../src/features/rating/components/storm/assets/in-form/storm-master.webp)
   — het transparante master-artwork.
-- [`storm-front-mask.svg`](../src/features/rating/components/storm/assets/in-form/storm-front-mask.svg)
+- [`storm-front-mask.svg`](../../src/features/rating/components/storm/assets/in-form/storm-front-mask.svg)
   — selecteert de twee lokale voorgrondocclusies.
-- [`STORM_MASTER_SPEC.md`](../src/features/rating/components/storm/STORM_MASTER_SPEC.md)
-  en [`MANIFEST.md`](../src/features/rating/components/storm/MANIFEST.md) —
+- [`STORM_MASTER_SPEC.md`](../../src/features/rating/components/storm/STORM_MASTER_SPEC.md)
+  en [`MANIFEST.md`](../../src/features/rating/components/storm/MANIFEST.md) —
   het assetcontract en de actuele registratie.
-- [`OnfireEffect.tsx`](../src/features/rating/components/onfire/OnfireEffect.tsx)
-  en [`OnfireEffect.css`](../src/features/rating/components/onfire/OnfireEffect.css)
+- [`OnfireEffect.tsx`](../../src/features/rating/components/onfire/OnfireEffect.tsx)
+  en [`OnfireEffect.css`](../../src/features/rating/components/onfire/OnfireEffect.css)
   — dezelfde architectuur toegepast op lava, vulkaan en rook.
-- [`ASSET_SPEC.md`](../src/features/rating/components/onfire/ASSET_SPEC.md) —
+- [`ASSET_SPEC.md`](../../src/features/rating/components/onfire/ASSET_SPEC.md) —
   het actuele On Fire-assetcontract.
-- [`DictatorEffect.tsx`](../src/features/rating/components/dictator/DictatorEffect.tsx)
-  en [`DictatorEffect.css`](../src/features/rating/components/dictator/DictatorEffect.css)
+- [`DictatorEffect.tsx`](../../src/features/rating/components/dictator/DictatorEffect.tsx)
+  en [`DictatorEffect.css`](../../src/features/rating/components/dictator/DictatorEffect.css)
   — dezelfde architectuur toegepast op vaandels, regimegloed, tank en
   ceremonieel lint.
-- [`BigDaddyEffect.tsx`](../src/features/rating/components/bigdaddy/BigDaddyEffect.tsx)
-  en [`BigDaddyEffect.css`](../src/features/rating/components/bigdaddy/BigDaddyEffect.css)
+- [`BigDaddyEffect.tsx`](../../src/features/rating/components/bigdaddy/BigDaddyEffect.tsx)
+  en [`BigDaddyEffect.css`](../../src/features/rating/components/bigdaddy/BigDaddyEffect.css)
   — dezelfde architectuur toegepast op kroon, wolken, ballonnen, pluchen
   figuren, linten en een gevleugeld hartmedaillon.
-- [`bigdaddy-master-compose.mjs`](../scripts/bigdaddy-master-compose.mjs) — de
+- [`bigdaddy-master-compose.mjs`](../../scripts/bigdaddy-master-compose.mjs) — de
   eerste editie waarvan master én beide maskers uit één reproduceerbaar script
   komen, gemeten aan de referentie.
-- [`PiasEffect.tsx`](../src/features/rating/components/pias/PiasEffect.tsx),
-  [`PiasEffect.css`](../src/features/rating/components/pias/PiasEffect.css) en
-  [`scripts/pias-master.py`](../scripts/pias-master.py) — dezelfde architectuur
+- [`GoatEffect.tsx`](../../src/features/rating/components/goat/GoatEffect.tsx) en
+  [`GoatEffect.css`](../../src/features/rating/components/goat/GoatEffect.css) —
+  dezelfde architectuur toegepast op bokhoorns, geitenmonument,
+  kristalclusters, bergscene en edelsteen-chevron.
+- [`PiasEffect.tsx`](../../src/features/rating/components/pias/PiasEffect.tsx),
+  [`PiasEffect.css`](../../src/features/rating/components/pias/PiasEffect.css) en
+  [`../../scripts/pias-master.py`](../../scripts/pias-master.py) — dezelfde architectuur
   toegepast op narrenkroon, speelkaarten, lint, rozet, narrenkop en bagel, met
   een master die uit de referentie zelf wordt gesneden.
-- [`GoatEffect.tsx`](../src/features/rating/components/goat/GoatEffect.tsx),
-  [`GoatEffect.css`](../src/features/rating/components/goat/GoatEffect.css) en
-  [`scripts/goat-master.py`](../scripts/goat-master.py) — dezelfde architectuur
-  toegepast op bokhoorns, geitenmonument, kristalclusters, bergscene en
-  edelsteen-chevron, met een master die uit de referentie zelf wordt gesneden.
-- [`WannabeEffect.tsx`](../src/features/rating/components/wannabe/WannabeEffect.tsx),
-  [`WannabeEffect.css`](../src/features/rating/components/wannabe/WannabeEffect.css)
-  en [`scripts/wannabe-master.py`](../scripts/wannabe-master.py) — dezelfde
+- [`GlazenwasserEffect.tsx`](../../src/features/rating/components/glazenwasser/GlazenwasserEffect.tsx),
+  [`GlazenwasserEffect.css`](../../src/features/rating/components/glazenwasser/GlazenwasserEffect.css)
+  en [`../../scripts/glazenwasser-master.py`](../../scripts/glazenwasser-master.py) —
+  dezelfde architectuur toegepast op raamcrest, twee trekkers, sopemmer,
+  schildbadge, waterexplosie en een natte glaswand, met master én voormasker uit
+  één script.
+- [`WannabeEffect.tsx`](../../src/features/rating/components/wannabe/WannabeEffect.tsx),
+  [`WannabeEffect.css`](../../src/features/rating/components/wannabe/WannabeEffect.css)
+  en [`../../scripts/wannabe-master.py`](../../scripts/wannabe-master.py) — dezelfde
   architectuur toegepast op racketcrest, megafoonmedaillon, plakstroken,
   briefjes, stiftkroontjes en inktdruipers; de eerste referentie die op wit
   staat in plaats van op zwart.
+- [`slofLayout.ts`](../../src/features/rating/components/slof/slofLayout.ts) en
+  [`../../scripts/slof-master.py`](../../scripts/slof-master.py) — de "Sletje van de
+  baan" begon als breakout maar bleek een eigen compositie nodig te hebben; zie
+  [`divisie-kaartlayouts.md`](divisie-kaartlayouts.md). De techniek voor de
+  uitgerolde steenlijst staat nog wel hieronder.
 
 ## 1. Context en visueel doel
 
@@ -70,8 +80,8 @@ aanvoelen, zonder de rating, avatar, naam of editie-informatie te
 overschilderen.
 
 De oorspronkelijke visuele referentie staat in
-[`referentie_in_form.png`](./referentie_in_form.png). De compacte
-beginsituatie staat in [`implementatie.png`](./implementatie.png).
+[`referentie_in_form.png`](referentie_in_form.png). De compacte
+beginsituatie staat in [`implementatie.png`](implementatie.png).
 
 Een breakout-effect werkt alleen wanneer het oog één doorlopende massa kan
 volgen:
@@ -162,24 +172,24 @@ laagpositie én door art direction beschermd.
 ## 3. Iteratieve ontwikkeling
 
 De repository bevat de visuele checkpoints onder
-[`screenshots/storm/`](../screenshots/storm/). De bestandsnamen zijn de
+[`../../screenshots/storm`](../screenshots/storm/). De bestandsnamen zijn de
 feitelijke ontwikkelvolgorde; niet iedere tussenstap was bedoeld als
 productie-eindbeeld.
 
 | Iteratie | Probleem | Aanpassing | Resultaat | Screenshot |
 | --- | --- | --- | --- | --- |
-| Beginsituatie | Compact zij-effect; ronde wolksegmenten; bliksem leest los van de kaart | Vast referentie- en implementatiebeeld als vergelijkingsbasis | Verschil in massa, schaal en overlap werd meetbaar | [`implementatie.png`](./implementatie.png), [`referentie_in_form.png`](./referentie_in_form.png) |
-| Baseline | Storm staat vooral naast de kaart | Reproduceerbare dev-stage en vaste desktopviewport | Betrouwbaar startpunt voor visuele vergelijking | [`baseline.png`](../screenshots/storm/baseline.png) |
-| Eerste iteraties | Ronde wolkenrij en randbliksem blijven dominant | Losse assets herschaald en richting rechterbovenhoek gegroepeerd | Meer activiteit, maar nog geen samenhangende storm | [`iteratie-1.png`](../screenshots/storm/iteratie-1.png), [`iteratie-2.png`](../screenshots/storm/iteratie-2.png), [`iteratie-3.png`](../screenshots/storm/iteratie-3.png) |
-| V2 compositie | Te weinig brede massa binnen en buiten de kaart | Back-, inside- en frontrollen explicieter gemaakt; grotere organische compositie | De storm kreeg een duidelijker zwaartepunt rechtsboven/rechtsmidden | [`storm-v2-composition.png`](../screenshots/storm/storm-v2-composition.png) |
-| V2 layering | Technische lagen sloten visueel onvoldoende aan | Registratie en clipping afzonderlijk gecontroleerd | Zichtbaar onderscheid tussen binnen-, achter- en voorgebied | [`storm-v2-layering.png`](../screenshots/storm/storm-v2-layering.png), [`storm-v2-registration.png`](../screenshots/storm/storm-v2-registration.png) |
-| Gedeeld master-artwork | Afzonderlijke assets weken in vorm en licht van elkaar af | Eén `storm-master.webp` drie keer met dezelfde transform gerenderd | Pixelmatige continuïteit van wolk en bliksem | [`storm-v2-final.png`](../screenshots/storm/storm-v2-final.png) |
-| V4 | Storm voelde nog als cluster naast de kaart | De gedeelde compositie verder naar links geplaatst | Interne oorsprong werd duidelijker zonder breakout te verliezen | [`storm-v4-final.png`](../screenshots/storm/storm-v4-final.png) |
-| V5 | Hoofdwolk was te compact en te smal | Master zichtbaar vergroot; interne en externe massa verbreed | Meer donkere kernen en een zwaardere rechtercluster | [`storm-v5-final.png`](../screenshots/storm/storm-v5-final.png) |
-| V6 | Gouden frame bleef te consequent vóór de wolk | Frontmask uitgebreid naar twee lokale occlusies | De storm breekt aantoonbaar vóór het rechterframe | [`storm-v6-front-occlusion.png`](../screenshots/storm/storm-v6-front-occlusion.png) |
-| V8 volume | Wolk bleef verticaal te compact | Master vervangen door een 2:3-artwork met nieuwe boven- en ondermassa; gedeelde transform bijgesteld | Eén doorlopende stormkolom boven, naast en tot aan de rechteronderhoek | [`storm-v8-vertical-volume.png`](../screenshots/storm/storm-v8-vertical-volume.png) |
-| V8 frame | Frameonderbrekingen waren lokaal nog te abrupt | Organisch frontmask en kleine, maskergebonden contactschaduw | Bovenste en middelste wolklob bedekken de frame-einden natuurlijk | [`storm-v8-frame-occlusion.png`](../screenshots/storm/storm-v8-frame-occlusion.png) |
-| V8 eindcontrole | Desktop alleen is onvoldoende bewijs voor responsiviteit | Dezelfde implementatie op vaste desktop- en mobiele viewport vastgelegd | Breakout, leesbaarheid en registratie blijven bij schalen behouden | [`storm-v8-final.png`](../screenshots/storm/storm-v8-final.png), [`storm-v8-mobile.png`](../screenshots/storm/storm-v8-mobile.png) |
+| Beginsituatie | Compact zij-effect; ronde wolksegmenten; bliksem leest los van de kaart | Vast referentie- en implementatiebeeld als vergelijkingsbasis | Verschil in massa, schaal en overlap werd meetbaar | [`implementatie.png`](implementatie.png), [`referentie_in_form.png`](referentie_in_form.png) |
+| Baseline | Storm staat vooral naast de kaart | Reproduceerbare dev-stage en vaste desktopviewport | Betrouwbaar startpunt voor visuele vergelijking | [`baseline.png`](../../screenshots/storm/baseline.png) |
+| Eerste iteraties | Ronde wolkenrij en randbliksem blijven dominant | Losse assets herschaald en richting rechterbovenhoek gegroepeerd | Meer activiteit, maar nog geen samenhangende storm | [`iteratie-1.png`](../../screenshots/storm/iteratie-1.png), [`iteratie-2.png`](../../screenshots/storm/iteratie-2.png), [`iteratie-3.png`](../../screenshots/storm/iteratie-3.png) |
+| V2 compositie | Te weinig brede massa binnen en buiten de kaart | Back-, inside- en frontrollen explicieter gemaakt; grotere organische compositie | De storm kreeg een duidelijker zwaartepunt rechtsboven/rechtsmidden | [`storm-v2-composition.png`](../../screenshots/storm/storm-v2-composition.png) |
+| V2 layering | Technische lagen sloten visueel onvoldoende aan | Registratie en clipping afzonderlijk gecontroleerd | Zichtbaar onderscheid tussen binnen-, achter- en voorgebied | [`storm-v2-layering.png`](../../screenshots/storm/storm-v2-layering.png), [`storm-v2-registration.png`](../../screenshots/storm/storm-v2-registration.png) |
+| Gedeeld master-artwork | Afzonderlijke assets weken in vorm en licht van elkaar af | Eén `storm-master.webp` drie keer met dezelfde transform gerenderd | Pixelmatige continuïteit van wolk en bliksem | [`storm-v2-final.png`](../../screenshots/storm/storm-v2-final.png) |
+| V4 | Storm voelde nog als cluster naast de kaart | De gedeelde compositie verder naar links geplaatst | Interne oorsprong werd duidelijker zonder breakout te verliezen | [`storm-v4-final.png`](../../screenshots/storm/storm-v4-final.png) |
+| V5 | Hoofdwolk was te compact en te smal | Master zichtbaar vergroot; interne en externe massa verbreed | Meer donkere kernen en een zwaardere rechtercluster | [`storm-v5-final.png`](../../screenshots/storm/storm-v5-final.png) |
+| V6 | Gouden frame bleef te consequent vóór de wolk | Frontmask uitgebreid naar twee lokale occlusies | De storm breekt aantoonbaar vóór het rechterframe | [`storm-v6-front-occlusion.png`](../../screenshots/storm/storm-v6-front-occlusion.png) |
+| V8 volume | Wolk bleef verticaal te compact | Master vervangen door een 2:3-artwork met nieuwe boven- en ondermassa; gedeelde transform bijgesteld | Eén doorlopende stormkolom boven, naast en tot aan de rechteronderhoek | [`storm-v8-vertical-volume.png`](../../screenshots/storm/storm-v8-vertical-volume.png) |
+| V8 frame | Frameonderbrekingen waren lokaal nog te abrupt | Organisch frontmask en kleine, maskergebonden contactschaduw | Bovenste en middelste wolklob bedekken de frame-einden natuurlijk | [`storm-v8-frame-occlusion.png`](../../screenshots/storm/storm-v8-frame-occlusion.png) |
+| V8 eindcontrole | Desktop alleen is onvoldoende bewijs voor responsiviteit | Dezelfde implementatie op vaste desktop- en mobiele viewport vastgelegd | Breakout, leesbaarheid en registratie blijven bij schalen behouden | [`storm-v8-final.png`](../../screenshots/storm/storm-v8-final.png), [`storm-v8-mobile.png`](../../screenshots/storm/storm-v8-mobile.png) |
 
 De belangrijkste ontwikkelles is dat schaal en positie pas betrouwbaar
 kunnen worden beoordeeld nadat de lagen dezelfde bron en hetzelfde
@@ -391,7 +401,7 @@ de drie kopieën pixelmatig laat aansluiten.
 ### 6.1 Master-artwork
 
 Het productie-artwork staat in
-`src/features/rating/components/storm/assets/in-form/storm-master.webp`.
+`../../src/features/rating/components/storm/assets/in-form/storm-master.webp`.
 De actuele eigenschappen zijn:
 
 - 1444 × 1536 pixels;
@@ -612,7 +622,7 @@ Daardoor veranderen visuele vergelijkingen niet door willekeurige data.
 
 ### Desktopscript
 
-`scripts/storm-screenshot.sh` start een headless Chromium-opname met:
+`../../scripts/storm-screenshot.sh` start een headless Chromium-opname met:
 
 - viewport 700 × 900;
 - device-pixel-ratio 2;
@@ -835,9 +845,9 @@ De gedeelde On Fire-transform staat uitsluitend op `.fut-kaart--onfire`:
 ```
 
 De vaste controle gebeurt via `/dev/onfire`,
-`scripts/onfire-screenshot.sh` en `?debugOnfire=1`. De finale beelden staan
-in `screenshots/onfire/final-desktop.png` en
-`screenshots/onfire/final-mobile.png`.
+`../../scripts/onfire-screenshot.sh` en `?debugOnfire=1`. De finale beelden staan
+in `../../screenshots/onfire/final-desktop.png` en
+`../../screenshots/onfire/final-mobile.png`.
 
 **El Padelissimo / Dictator**
 
@@ -864,10 +874,10 @@ De gedeelde registratie staat uitsluitend op `.fut-kaart--dictator`:
 `dictator-front-mask.svg` laat de pet, lauweren, stermedaille, tank, lage
 rook en geselecteerde lintplooien vóór de relevante framedelen door. De
 vaste controle gebeurt via `/dev/dictator`,
-`scripts/dictator-screenshot.sh` en `?debugDictator=1`. De finale beelden
+`../../scripts/dictator-screenshot.sh` en `?debugDictator=1`. De finale beelden
 staan in
-`screenshots/dictator/final-desktop.png` en
-`screenshots/dictator/final-mobile.png`.
+`../../screenshots/dictator/final-desktop.png` en
+`../../screenshots/dictator/final-mobile.png`.
 
 **Big Daddy**
 
@@ -922,7 +932,7 @@ rondom leesbaar en objecten raken het frame alleen plaatselijk. Die krans is
 daarom bewaard als onderdelenblad (`bigdaddy-onderdelen.webp`, niet
 geïmporteerd en dus niet gebundeld); het script snijdt de objecten eruit en zet
 ze terug op posities die als fractie van het kaartvlak zijn gemeten aan
-[`referentie_big_daddy.png`](./referentie_big_daddy.png).
+[`referentie_big_daddy.png`](referentie_big_daddy.png).
 
 Dat levert drie eigenschappen die de andere edities niet hebben:
 
@@ -969,10 +979,10 @@ liner, keyline, weefsel, randgloed en randdiktes staan gespiegeld in
 De vroegere live Big Daddy-SVG's voor kroon, lint, ballonnen en
 puntornament worden bij `editie === "icon"` niet meer gemonteerd. Ze blijven
 wel beschikbaar voor de canvas/posterfallback. De vaste controle gebeurt via
-`/dev/bigdaddy`, `scripts/bigdaddy-screenshot.sh` en
+`/dev/bigdaddy`, `../../scripts/bigdaddy-screenshot.sh` en
 `?debugBigDaddy=1`. De finale beelden staan in
-`screenshots/bigdaddy/final-desktop.png` en
-`screenshots/bigdaddy/final-mobile.png`; de drie #834-checkpoints in
+`../../screenshots/bigdaddy/final-desktop.png` en
+`../../screenshots/bigdaddy/final-mobile.png`; de drie #834-checkpoints in
 `bigdaddy-v4-krans-baseline.png` (de dichte krans vóór #834),
 `bigdaddy-v5-referentie-compositie.png` (objecten op referentieposities, roze
 vlak) en `bigdaddy-v6-vlak-en-lijst.png` (zwaardere goud-magenta lijst).
@@ -980,61 +990,246 @@ vlak) en `bigdaddy-v6-vlak-en-lijst.png` (zwaardere goud-magenta lijst).
 **Piet**
 
 De Piet-editie gebruikt `PietEffect.tsx` en `PietEffect.css` met één
-`piet-master.webp` van 1024 × 1536 pixels. Het master-artwork bevat een
-relatief smalle, doorlopende noir-omlijsting: zwarte rook met goudstof,
-complete speelkaarten, veren en geschenken, twee zware kettingtrajecten, een
-gevleugelde bovencrest en een onderste rozet met medaillon. De grote
-transparante middenopening (ongeveer x 15–85%, y 14–84%) is een expliciet
-assetcontract; rating, avatar en tekst worden dus niet met een toevallig
-frontmask “teruggewonnen”.
+`piet-master.webp`. Waar de andere edities een apart gegenereerd of geprompt
+artwork hebben, is deze master **de referentie zelf**, vrijgesteld: hij wordt
+gereproduceerd uit [`referentie_zwarte_piet.png`](referentie_zwarte_piet.png)
+door `../../scripts/piet-master.py`. Zie
+[`ASSET_SPEC.md`](../../src/features/rating/components/piet/ASSET_SPEC.md) voor het
+volledige assetcontract.
 
-De gedeelde registratie staat uitsluitend op `.fut-kaart--piet`:
+Dat is een andere strategie dan bij Big Daddy, waar het script objecten uit een
+onderdelenblad terugzet op gemeten posities. Hier hoeft niets teruggezet te
+worden: de referentie is al een gerenderde kaart, dus rook, goudstof,
+speelkaarten, veren, geschenken, kettingen, crest en rozet staan er al in
+precies de juiste onderlinge verhouding. Het werk zit in het scheiden van
+artwork en kaart.
+
+### Twee extractieregimes
+
+De referentie is één ondoorzichtige PNG. Om er alfa uit te halen splitst het
+script het beeld op het kaartvlak van de referentie (een polygoon met de
+gemeten ogeeboog als bovenrand):
+
+- **buiten het vlak** ligt het artwork op zwart, dus `P = a·C`. Alfa komt uit de
+  luminantie met een pedestal die de ruisvloer wegknipt, plus een
+  detailgebaseerde *solid*-boost zodat massieve objecten (kettingschakels,
+  geschenken, speelkaarten) dekkend worden en rook en goudstof halftransparant
+  blijven. Let op bij het vervlakken van kleur in gebieden met lage alfa: dat moet
+  op de **voorgemultipliceerde** kleur gebeuren. Een gewone blur trekt de
+  perkamentkleur van volledig transparante buurpixels naar binnen, en dan krijgt
+  elke rooklob een witte gloed zodra hij op het kaartvlak ligt;
+- **binnen het vlak** ligt het artwork op perkament, dus
+  `P = a·C + (1−a)·BG`. `BG` is een kleinste-kwadratenfit van orde 3 over de
+  echte perkamentpixels. Een lokaal filter werkt hier niet: onder de grote
+  rating en het statblok vindt het geen perkament en valt het te donker uit, wat
+  na un-premultiply roestbruine vlekken oplevert.
+
+Alleen door dat tweede regime komen de binnenrook en de **stadssilhouet** mee.
+Die silhouet vervangt het vectorwatermerk: `FutKaart.tsx` zet `motief` voor
+`editie === "piet"` op `null`, want twee watermerken over elkaar leest als
+vervuiling. `PIET_WATERMERK` blijft de bron voor de canvas-/posterroute.
+
+### Registratie volgt uit de uitsnede
+
+Het canvas is 1086 × 1448 — het coördinatenstelsel van de referentie. De
+kaartbox van de app ligt daarin op x[152, 936] en y[155, 1245]. De drie
+CSS-waarden zijn dus een rekenuitkomst, geen smaakinstelling:
 
 ```css
---piet-master-left: -18%;
---piet-master-top: -18%;
---piet-master-width: 136%;
+--piet-master-left: -19.39%;   /* -152 / 784  */
+--piet-master-top: -14.22%;    /* -155 / 1090 */
+--piet-master-width: 138.52%;  /* 1086 / 784  */
 --piet-master-scale: 1;
 --piet-master-rotate: 0deg;
 ```
 
-`piet-inside-mask.svg` dempt de veilige middenzone verder en laat alleen de
-randgebonden rook, gouddeeltjes en objectaansluitingen in het echte
-kaartschild door. `piet-front-mask.svg` selecteert complete objectgroepen:
-de bovencrest, beperkte zijgroepen, kleine kettingpartijen en de volledige
-onderste rozet. Dit voorkomt zowel halve herkenbare objecten als een dikke
-ornamentring die de kaart visueel verdringt.
+### Geen binnenmasker meer
 
-De onderste kettingen draaien in het artwork al rond 64–68% van de canvashoogte
-naar binnen. Dat is bewust geen afwijkende CSS-transform voor de frontlaag:
-kettingbogen en rozet sluiten daardoor in back, inside en front op exact
-dezelfde plek tegen de schildpunt aan.
+`piet-inside-mask.svg` bestaat niet langer. Het script laat de zones waar de
+kaart zelf tekent — rating, divisiecijfer, vormemoji, naam, tier, editieregel en
+de avatarfoto van de referentie — leeg in de master. Daarbij zijn *twee* sets
+zones nodig: die van de referentie (die tekst zit in het bronbeeld ingebakken en
+zou anders als spookkopie naast de echte tekst staan) én die van de kaart zelf,
+die zijn rating en naam lager plaatst. De master is daardoor van zichzelf
+content-veilig en de inside-laag kan het echte `clip-path: var(--schild)`
+gebruiken — precies wat §6.3 aanbeveelt.
 
-Het master-artwork bevat daarnaast een open rookcrescent rond het
-avatarregister (ongeveer x 68%, y 36%). `piet-inside-mask.svg` laat die
-selectief achter de echte avatar door, terwijl de content zelf later in de
-DOM wordt geschilderd. Daardoor krijgt de profielfotorand het donkere
-rookvolume uit de referentie zonder een algemene grijze overlay over de kaart.
-Het inside-mask gebruikt hiervoor vier overlappende, asymmetrische lobben in
-plaats van één gesloten ovaal. De Piet-specifieke avatarstijl in
-`PietEffect.css` vervangt bovendien de generieke lichte ring door drie
-materiaalbanden: fijn goud, donker metaal en antiek goud. Avatarinhoud,
-diameter en positie blijven die van de gedeelde kaartcomponent.
+### Vormverschil tussen referentie en app-schild
+
+Dit is het punt waar het meeste werk zat, en de belangrijkste les van deze
+editie. De referentiekaart heeft een ogeeboog als bovenrand en een **vlakke
+onderrand**; het app-schild (`#fut-schild-notch`) heeft een vlakke bovenrand en
+loopt vanaf 60% hoogte **naar een punt**. Dat punt op 50%/100% is structureel —
+het is het anker van de chemielijn in de Opstelling — dus het schild wijkt niet.
+
+Alles in de referentie dat de kaartrand markeert, loopt daardoor rechtdoor waar
+de kaart schuin naar binnen gaat: de frameband, en de kettingen die langs die
+rand hangen. **Meeërven kan niet.** Wat de rand van de kaart raakt, moet vanuit
+het afstandsveld van het écht gebruikte schild worden opgezet:
+
+- de **frameband** van de referentie gaat eruit, behalve waar een compleet
+  ornament hem kruist — daar zou wegsnijden de kettingen, geschenken, crest of
+  rozet doormidden knippen;
+- de **randlijst** wordt opnieuw getekend op `distance_transform_edt` van het
+  app-schild, met het volledige profiel dat gemeten is langs de rechte zijkanten
+  van de referentie: bijna-zwarte moulure, warme goudband, donkere keyline tegen
+  het perkament. Dat het hele profiel erin kan, is nieuw. Eerder ging alleen het
+  binnenste stuk mee, omdat de bone liner van de kaart anders als felle witte
+  streep tussen twee donkere balken kwam te liggen — en precies díe lichte
+  scheiding tussen ring en kaart maakte dat de randornamenten er los tegenaan
+  geplakt leken. Liner en keyline zijn voor deze editie daarom zelf donker
+  (`#16140e` en `#241f16`), zodat ze de moulure uit het artwork voortzetten in
+  plaats van hem te doorsnijden;
+- de **onderrand is verbreed**. Dit was de laatste en grootste correctie die
+  verdween. Onder de kaart hangt in de referentie één doorlopend bouwsel —
+  kettingen langs de zijkanten, een lint, een medaille — en dat houdt elkaar vast
+  omdát alles op één brede onderrand aankomt. Op een punt is er niets om op aan
+  te komen: de kettingen hangen dan naast een kaart die er onder de 60% niet meer
+  is, en de rozet zweeft eronder. Daar is lang tegenaan gewerkt (kettingen naar
+  binnen schuiven met de taps mee, de groep omhoog liften, een schaduw onder het
+  gat), maar dat bestreed het symptoom. `#fut-schild-piet` heeft daarom als enige
+  schild géén punt op (0.5, 1) maar de brede, afgeronde onderrand van de
+  referentie, met een hoekstraal van 0,17 × kaartbreedte — smal genoeg dat het
+  rechte stuk de rozet draagt, ruim genoeg om als de zachte hoek van de
+  referentie te lezen. Daarmee vervalt de kettingschuif volledig;
+- een **rookschaduw** langs de onderste helft van het silhouet, ook vanuit dat
+  afstandsveld. Zonder die schaduw valt het gebied tussen de vlakke onderrand van
+  de referentie en de punt van de kaart op als een rechthoekig donker plaatje:
+  het is transparant, terwijl er net buiten wél rook staat. Een vulling die op
+  het vlak van de *referentie* is begrensd geeft juist rechte randen op x=191 en
+  y≈980 — de vorm van de bron, niet die van de kaart. De schaduw blijft licht
+  (alfa 0,4): zwaarder vult hij de gaten tussen de kettingschakels en gaat de
+  ketting als één donkere massa lezen.
+
+**Let op de Opstelling en de poster.** De chemielijn in `Lineup.css` mikt op het
+midden-onder van de kaart*box* (`bottom` plus een halve kaartbreedte), niet op
+het schildpad, dus die blijft kloppen met een vlakke onderrand. De canvas-/
+posterroute kiest zijn schildvorm echter op *tier*, niet op editie
+(`schildVorm()` in `futKaartCanvas.ts`), en tekent voor deze kaart dus nog het
+notch-schild. Vorm-pariteit tussen DOM en poster is voor Piet daarmee open.
+
+De ogeeboog zit inmiddels wél in het schild zelf (`#fut-schild-piet`, afgeleid
+door `scripts/piet_schild.py`). Een tussenversie probeerde hem in het artwork te
+leggen — de boog dekkend, met een breed frontmask vóór het rechte frame — maar
+dan sluit het artwork zichtbaar niet aan op de kaartrand, en dat is precies wat
+een breakout kapot maakt.
+
+### De rookkraag om de avatar
+
+De dikke zwarte rookkraag om de profielfoto is een van de sterkste kenmerken van
+de referentie. Eén op één overnemen kan niet: de avatar van de kaart staat lager
+en is kleiner (kaartrelatief 0,747 / 0,327 met r 0,178 tegenover 0,742 / 0,239 met
+r 0,227), en in de referentie rákt die foto de rechterrand van de kaart — daar
+zit dus helemaal geen kraag, terwijl de kleinere avatar van de kaart aan alle
+kanten ruimte heeft.
+
+De kraag wordt daarom in **poolcoördinaten** opgebouwd: één schone boog dichte
+rook uit de referentie (158°–237°, links tot linksboven langs de ring) wordt met
+een driehoeksgolf over de volle 360° om de avatar gelegd. Rook heeft geen
+oriëntatie, dus de gespiegelde herhaling is onzichtbaar, en de golf is continu
+bij ±180° én bij zijn omkeerpunten — geen naad. De binnenrand valt exact samen
+met de buitenrand van de avatarring, de buitenrand golft in drie lobben, en de
+sterkte loopt met de hoek mee (zwaar links en boven, dunner rechts).
+
+Twee dingen die eerder níet werkten:
+
+- een **gelijkvormige warp** van de hele omgeving rond de referentiefoto. Die
+  gaf losse concentrische bogen met perkament ertussen en kopieerde de vleugels
+  van de crest mee;
+- een **generieke detailpoort** (`solid`) om die objecten tegen te houden. Die
+  dooft ook de rooklobben zelf, en dan blijft er precies boven de avatar niets
+  over. Twee expliciete uitsluitzones zijn scherper.
+
+Verder geldt: de killzone voor de referentiefoto moet exact op de buitenrand van
+zijn gouden ring liggen (gemeten: 744/426, r 191). Eén pixel ruimer en de rook
+die de ring raakt sneuvelt mee — dan staat er een ring rook op afstand van de
+foto, met perkament ertussen.
+
+Dat alles is bewerking in de asset, niet in CSS. De drie lagen blijven één bron
+met één register; §5 blijft dus gelden.
+
+### Kaartvlak en glans
+
+Het perkament van de referentie is warmer en donkerder dan de skin van de kaart.
+Dat verschil is bewust niet weggewerkt: `.hero--piet` spiegelt dezelfde
+`--kaart-hi/mid/lo` (bewaakt door `futKaartCanvas.test.ts`, #644) en op een
+donkerder onderstop haalt het lakrood `#8e2117` van die hero nog maar 3,8:1 —
+onder AA. De correctie zit daarom aan de assetkant: `a_in` in het script is
+versterkt (`ROOK_L` op 10 en een factor 1,62), zodat rook en stadssilhouet ook op
+het lichtere vlak van de kaart als roet lezen in plaats van als grijze waas.
+
+De standaardglans liep als glasachtige diagonaal precies over de rookkolom
+rechtsboven en maakte die melkig. Hij staat op `--glans-kracht: 0.16` zonder
+radiale puls — schande glimt niet (#705).
+
+De Piet-specifieke avatarstijl in `PietEffect.css` vervangt de generieke lichte
+ring door drie materiaalbanden: fijn goud, donker metaal en antiek goud.
+
+### Avatarregister: de content volgt hier het artwork
+
+Bij de andere edities staat de avatar in de gridcel van `.fut-kaart__boven` en
+volgt zijn plek dus uit de breedte van het eloblok en de padding van het vlak. Bij
+Piet kan dat niet: de rookkraag in het artwork is om één specifieke cirkel
+opgebouwd. De avatar staat daarom absoluut, in hetzelfde stelsel als het artwork —
+alle maten fracties van `--fut-kw`, met dezelfde `--piet-master-inset` eraf omdat
+`.fut-kaart__vlak` het containing block is:
+
+```css
+.fut-kaart.fut-kaart--piet {
+  --fut-avatar: 0.356;        /* diameter, kaartrelatief */
+  --piet-avatar-rechts: 0.0747;
+  --piet-avatar-boven: 0.2762;
+}
+```
+
+Drie dingen die dat oplost, en één die het vastlegt:
+
+- de cirkel schuift niet meer mee met een drie- of viercijferige rating;
+- `--fut-avatar` staat vast in plaats van per containerbreedte te wisselen
+  (0,34 onder 132px, 0,44 boven 168px), dus de compositie is op élke kaartmaat
+  gelijk — nagemeten op 281, 310 en 450px kaartbreedte;
+- het `clip-path` van het vlak clipt de cirkel, dus hij kan nooit buiten het
+  schild zweven;
+- maar diameter en middelpunt zijn nu een assetcontract. Verplaatsen vraagt een
+  nieuwe run van `../../scripts/piet-master.py` met een andere `AV_APP`.
+
+### Laagvolgorde
+
+De stapel is, van achter naar voren: pagina-achtergrond, achterlaag (goudstof,
+rook, kettingen), kaartzijde met frame (`z-index: 2`), kaartinhoud in het vlak
+(binnenlaag op `z-index: -1` eronder, dan rating, avatar en tekst) en tot slot de
+voorlaag (`z-index: 3`) met crest, zijgroepen en de onderste rozet.
+
+Twee keuzes daarin zijn niet willekeurig:
+
+- de **kettingen zitten niet in het frontmask**. Ze horen achter het kaartframe
+  en alleen vóór de zwarte achtergrond; uit de voorlaag zouden ze over het frame
+  en over de rozet heen lopen. Ze komen dus uitsluitend uit de achterlaag, waar
+  het kaartsilhouet ze afsnijdt — daardoor lijken ze ook halverwege de zijkanten
+  te beginnen, zoals in de referentie;
+- het frontmask heeft een **zwarte avatarschijf** met één witte lob eruit
+  gesneden, rechtsonder. Dat is geen detail maar het verschil tussen "een ronde
+  avatar op de kaart" en "een portret in de compositie": achter de foto ligt de
+  rook uit de binnenlaag, en vóór de rand lopen de veren en de speelkaarten van
+  de rechtergroep er net overheen — precies zoals in de referentie. Alles ervóór
+  of alles eráchter leest allebei fout. Het gezicht blijft vrij; de lob raakt
+  alleen de buitenste band.
 
 De oude `fut-orn-piet-*`-SVG's worden voor de live React-kaart niet meer
 gemonteerd, maar blijven bestaan voor canvas-/postercompatibiliteit. De
 afzonderlijke `pias`-editie wordt niet geraakt. De vaste controle gebeurt via
-`/dev/piet`, `scripts/piet-screenshot.sh` en `?debugPiet=1`. De finale
-beelden staan in `screenshots/piet/final-desktop.png` en
-`screenshots/piet/final-mobile.png`.
+`/dev/piet`, `../../scripts/piet-screenshot.sh` en `?debugPiet=1`. De finale
+beelden staan in `../../screenshots/piet/final-desktop.png` en
+`../../screenshots/piet/final-mobile.png`.
 
 **Pias**
 
 De pias-editie gebruikt `PiasEffect.tsx` en `PiasEffect.css` met één
-`pias-master.webp` van 768 × 1024 pixels. Anders dan de andere masters is dit
+`pias-master.webp` van 768 × 1024 pixels, gerekend op een werkcanvas van
+1024 × 1365. Anders dan de andere masters is dit
 artwork niet los aangeleverd maar volledig afgeleid van
-[`referentie_pias.png`](./referentie_pias.png) door
-[`scripts/pias-master.py`](../scripts/pias-master.py). Dat script is daarmee de
+[`referentie_pias.png`](referentie_pias.png) door
+[`../../scripts/pias-master.py`](../../scripts/pias-master.py). Dat script is daarmee de
 bron van waarheid: het snijdt de kaart, het frame en alle kaartinhoud uit de
 referentie weg en houdt de ornamentring over — narrenkroon met strikken,
 klaverteken, schaakpion, twee speelkaarten, lintboog met rozet en
@@ -1095,10 +1290,7 @@ narrenkop tot ~200 px in het vlak, tot tegen de editieregel.
 `pias-front-mask.svg` is daarom niet langer handwerk: het script schrijft het mee,
 met dezelfde schuif op de vensters van de onderste groepen. Een masker dat blijft
 staan terwijl het artwork schuift, laat de verschoven prop half achter het frame
-vallen en snijdt hem op de framerand af — precies wat de breakout kapotmaakt. Het
-script rekent daarvoor in een werkcanvas van 1024 × 1365 (ook de viewBox van het
-masker) en schrijft het WebP op 768 × 1024; het register is percentagegebaseerd,
-dus aan die rastermaat hangt alleen de scherpte.
+vallen en snijdt hem op de framerand af — precies wat de breakout kapotmaakt.
 
 De profielfoto volgt hier het artwork in plaats van omgekeerd (zie
 §"Avatarregister" bij de Piet voor de tegenovergestelde keuze). Op de referentie is
@@ -1115,10 +1307,10 @@ huidige 0,36-maat gesneden.
 De vroegere live pias-SVG's (narrenkap, belletjes, maskermedaillon) worden bij
 `editie === "pias"` niet meer gemonteerd; ze blijven bestaan voor de
 canvas-/posterfallback. De vaste controle gebeurt via `/dev/pias`,
-`scripts/pias-screenshot.sh` en `?debugPias=1`. De finale beelden staan in
-`screenshots/pias/final-desktop.png` en `screenshots/pias/final-mobile.png`; het
-kale artwork staat in `screenshots/pias/master-preview.png` en dezelfde plaat mét
-de rand van het app-schild erover in `screenshots/pias/master-contouren.png` —
+`../../scripts/pias-screenshot.sh` en `?debugPias=1`. De finale beelden staan in
+`../../screenshots/pias/final-desktop.png` en `../../screenshots/pias/final-mobile.png`; het
+kale artwork staat in `../../screenshots/pias/master-preview.png` en dezelfde plaat mét
+de rand van het app-schild erover in `../../screenshots/pias/master-contouren.png` —
 dát is het beeld waarop te zien is of de props de kaartvorm raken in plaats van
 die van de referentie.
 
@@ -1126,15 +1318,15 @@ die van de referentie.
 
 De GOAT is geen editie maar een tier (`tier.key === "legende"`, rating
 1400–1599) en gebruikt dezelfde drie-masterstructuur via `GoatEffect.tsx`.
-`goat-master.webp` is 1024 × 1664 pixels en volledig afgeleid van
-[`referentie_goat.png`](./referentie_goat.png) door
-[`scripts/goat-master.py`](../scripts/goat-master.py). Dat script is daarmee de
-bron van waarheid: het snijdt per element een uitsnede uit de referentie,
-sleutelt de bijna-zwarte achtergrond via luminantie naar alpha, isoleert het
-element met een organisch polygoonmasker en plaatst het op het gedeelde canvas.
-Donkere massieve delen (de rots onder de geit, de bergflank) krijgen daarbij een
-tweede polygoon die hun alpha opaak forceert: een luminantiekey alleen maakt van
-bijna-zwart gesteente een halftransparante vlek.
+`goat-master.webp` is 1024 × 1664 pixels en, net als bij de pias, volledig
+afgeleid van [`referentie_goat.png`](referentie_goat.png) door
+[`../../scripts/goat-master.py`](../../scripts/goat-master.py). Dat script snijdt per
+element een uitsnede uit de referentie, sleutelt de bijna-zwarte achtergrond via
+luminantie naar alpha, isoleert het element met een organisch polygoonmasker en
+plaatst het op het gedeelde canvas. Donkere massieve delen (de rots onder de
+geit, de bergflank) krijgen daarbij een tweede polygoon die hun alpha opaak
+forceert: een luminantiekey alleen maakt van bijna-zwart gesteente een
+halftransparante vlek.
 
 Het artwork draagt zeven groepen: twee spiraalvormige bokhoorns, het
 geitenmonument op zijn rots, kristalclusters langs beide flanken, de bergscene
@@ -1155,7 +1347,7 @@ De gedeelde registratie staat uitsluitend op `.fut-kaart--legende`:
 --goat-master-rotate: 0deg;
 ```
 
-Die eerste drie waarden bepalen het kaartvak in het canvas (x 146..877,
+Die drie eerste waarden bepalen het kaartvak in het canvas (x 146..877,
 y 539..1556). `ASSET_SPEC.md` legt per element de canvaspositie vast, want de
 maskers zijn erop gekalibreerd: `goat-inside-mask.svg` laat binnen het schild
 alleen de bergscene door en `goat-front-mask.svg` selecteert de kristalpunten op
@@ -1163,13 +1355,6 @@ de flanken plus de volledige edelsteen-chevron. Beide maskerranden vallen
 bewust bínnen de bijbehorende uitsnede. Dat is het leerpunt van deze breakout:
 een masker dat rúimer is dan zijn artwork toont juist de rechte uitsnederand,
 terwijl een masker dat er bínnen eindigt die rand verbergt.
-
-Een tweede leerpunt zit in de bovenrand. De topgroep mag geen framepixels uit de
-referentie meenemen: het schild van de echte kaart zakt bij de bovenhoeken 4,5%
-van de kaarthoogte, dus een meegesneden referentieframe komt daar bóven de
-kaartrand uit en leest als een tweede, verschoven lijst. De uitsnedes stoppen
-daarom op referentie-y 566 en de rots wordt zo geplaatst dat zijn snijrand onder
-de diepste framerand van het schild valt.
 
 Twee dingen zijn buiten het artwork aangepast. De hoorn- en
 baardfiligraan-SVG's worden bij `tier.key === "legende"` zonder editie niet meer
@@ -1182,231 +1367,109 @@ divisiekaart, en juist die massa laat de hoorns er geloofwaardig achter
 verdwijnen. De ondergrens blijft 3/1,5/1 px, zodat een 130px-kaart in het
 klassement niet dichtslibt.
 
-De vaste controle gebeurt via `/dev/goat`, `scripts/goat-screenshot.sh` en
+De vaste controle gebeurt via `/dev/goat`, `../../scripts/goat-screenshot.sh` en
 `?debugGoat=1`. Omdat de breakout hoger is dan bij de andere kaarten gebruikt
 het desktopscript een venster van 700 × 1300 en houdt de dev-stage 330px (mobiel
 62vw) ruimte boven de kaart. De finale beelden staan in
-`screenshots/goat/final-desktop.png` en `screenshots/goat/final-mobile.png`; het
-kale artwork staat in `screenshots/goat/master-preview.png`.
-
-**Wannabe**
-
-De Wannabe is de goud-divisie (`tier.key === "goud"`, rating 1000–1099) en
-gebruikt dezelfde drie-masterstructuur via `WannabeEffect.tsx`.
-`wannabe-master.webp` is 1024 × 1440 pixels en, net als bij de pias en de GOAT,
-volledig afgeleid van [`referentie_wannabe.png`](./referentie_wannabe.png) door
-[`scripts/wannabe-master.py`](../scripts/wannabe-master.py). Het artwork draagt de
-bronzen racketcrest op de bovenrand, het megafoonmedaillon in de schildpunt, twee
-plakstroken, de briefjes "ALMOST THERE?" en "NOT BAD" met hun pijlen, een kruis,
-een stiftkroontje met krassenbundel, drie inktdruipers en het rasterpuntvuil met
-het getekende tekstballonnetje in het kaartvlak. Het volledige assetcontract staat
-in [`ASSET_SPEC.md`](../src/features/rating/components/wannabe/ASSET_SPEC.md).
-
-De gedeelde registratie staat uitsluitend op `.fut-kaart--goud`:
-
-```css
---wannabe-master-left: -9.53%;
---wannabe-master-top: -12.55%;
---wannabe-master-width: 119.07%;
---wannabe-master-scale: 1;
---wannabe-master-rotate: 0deg;
-```
-
-Die waarden zijn de uitvoer van het script (kaartvak x 82..942, y 150..1345 in
-het canvas) en dus een rekenuitkomst, geen smaakinstelling.
-
-### Een referentie op wit vraagt drie poorten in plaats van één
-
-Dit is de eerste referentie die niet op zwart maar op **wit** staat. Een
-luminantiesleutel houdt daar precies het verkeerde vast. Het model is
-`P = a·C + (1−a)·BG` met `BG` een lokale papierschatting: een maximumfilter
-(elke stiftstreek is smaller dan het venster, dus het maximum ís het
-onbeschreven papier) gevolgd door een lichte vervaging. Dat werkt in één keer op
-het witte buitenveld én op het perkament van het kaartvlak — nodig, want dezelfde
-streek loopt hier van buiten de kaart tot over de lijst.
-
-Alleen: die lijst is even donker als de stift. Donkerte alleen levert daarom de
-halve onderhoek van de referentie als zwarte plaat op de kaart. De inktsleutel
-heeft twee extra poorten nodig, en die scheiden **materiaal**, niet onderdelen:
-
-- *chroma* (max − min kanaal): alles wat getekend is, is neutraal zwart (5–14),
-  de walnoten lijst is warm bruin (40–65). Waar de lijst zó diep in de schaduw
-  staat dat hij óók neutraal wordt, is hij ook bijna zwart en valt het verschil
-  met inkt weg — dan is het kopiëren ervan onschadelijk;
-- *lokaal contrast* tegenover een straal-12-vervaging: een streek is smal en
-  springt eruit, het vlak van de lijst is breed en glad.
-
-Voor de massieve voorwerpen (`vast`) is er één poort in de andere richting: het
-witte veld en de grijze slagschaduw búiten de kaart vallen binnen elke contour
-die over de kaartrand loopt. Wat licht én neutraal is valt daarom weg — papier is
-warm (chroma 30–60) en blijft staan. Zonder die poort krijgt elk briefje een
-witte halo op de kaart, en dan staat er bovendien een tweede, meegekopieerde
-slagschaduw onder de CSS-contactschaduw.
-
-Het perkamentvuil gebruikt alleen de **donkere** helft van twee detailschalen.
-Vuil maakt papier donkerder; de lichte helft meenemen levert een bleke waas over
-het kaartvlak in plaats van slijtage. De avatarzone wordt als cirkel uitgespaard
-en niet als rechthoek: precies in de hoeken van zijn bounding box zit het
-dichtste rasterpuntveld van de referentie.
-
-### Het frontmasker mag geen zwarte achtergrond hebben
-
-Hier viel een val op die de andere maskers ontlopen omdat hun master in het
-midden leeg is. CSS `mask` met een SVG-*image* valt in `match-source` terug op
-**alpha**, niet op luminance. Een dekkende zwarte `<rect>` als achtergrond heeft
-alpha 1 en laat dus de héle master door — het rasterpuntvuil stond daardoor vóór
-de avatar in plaats van erachter. `wannabe-front-mask.svg` heeft daarom geen
-achtergrondrect: transparant werkt in béide modi (alpha 0 én luminance 0).
-`storm-front-mask.svg` en `goat-front-mask.svg` doen het al zo; wie een nieuw
-masker genereert, moet die rect dus weglaten.
-
-### De taps zit 24 procentpunt hoger dan bij de referentie
-
-De referentiekaart loopt tot ~84% kaarthoogte op volle breedte door en tapst dan
-naar de punt; `#fut-schild-notch` begint zijn taps al op 60%. Alles wat in de
-referentie in die onderhoek staat — kroontje, krassenbundel, druipers, megafoon —
-zou op zijn referentieplek naast de kaart hangen. Die onderdelen krijgen daarom
-in het script een verschuiving in kaartfracties (`dfx`/`dfy`). Datzelfde geldt
-voor de rechterflank: de app zet zijn avatar lager en groter dan de referentie
-(0,35 tegen 0,23 kaarthoogte), dus het "NOT BAD"-briefje en het kruis zakken 7,5
-respectievelijk 9 procentpunt mee — anders ligt hun bovenhoek over de foto. Dit
-is een correctie in de **asset**, niet in CSS: de vier CSS-waarden blijven voor
-alle drie de lagen gelijk, en §5 blijft dus gelden.
-
-### Kaartvlak en lijst
-
-Ook hier week de skin af, en verder dan bij de andere divisies. Het oude register
-was champagnefolie over mosterdmessing: op afstand een dure gouden kaart, van
-dichtbij verguld messing. De referentie doet het grapje anders — daar is de kaart
-geen namaakgoud maar een *uitgeprint* trofee-certificaat: grauw karton, een zware
-walnoten lijst met een crème binnenband, en er is met stift op gekalkt. De
-imitatie zit in de pretentie, niet in het materiaal, en dat verdraagt geen
-holografische glansbaan en geen stralenkrans. De `--kaart-*`-tokens in
-`divisies/goud.css` staan daarom op verweerd karton met donkerbruine inkt, de
-`::before`-glansbaan is één brede kleurloze streep zonder animatie en de
-`::after`-stralenkrans is vervangen door vlekwerking (lichtkern linksboven,
-warme hoekschaduw rechtsonder). De lijst is zwaarder: 2,9/1,7/0,4% van de
-kaartbreedte, met `randDiktes` als canvas-spiegel.
-
-Drie details waar het bijna misging:
-
-- de **liner** wisselt van donker naar crème, want op de referentie is de
-  binnenband het lichte deel. De donkere haarlijn tussen band en kaartvlak zou
-  dan logisch in de *keyline* horen — maar de keyline is per definitie de
-  lijnkleur op-gemixt naar warm wit (#666) en `futKaartCanvas.test.ts` heeft daar
-  een invariant op. Een donkere keyline zou die omkeren voor élke goud-kaart, ook
-  mét editie. De haarlijn zit daarom in `--kaart-binnenlijn`;
-- de **tanne strook** onder de divisieregel is bewust géén uitsnede uit het
-  artwork: de strook van de referentie heeft "WANNABE II" ingebakken, en die
-  letters zouden als spookkopie naast de echte regel staan. Hij staat in CSS,
-  groeit met de tekst mee en blijft op élke kaartmaat scherp. De scheefstand zit
-  op de strook en wordt op de tekst teruggedraaid;
-- alles wat alleen bij de *kale* Wannabe hoort — de zwaardere lijstdiktes, de
-  avatarring, de tanne strook, de naamplaatbalken en de twee vlak-pseudo's —
-  staat achter `:has(.wannabe-effect)`. Die laag wordt alleen zonder editie
-  gemonteerd, dus dat is precies de juiste poort. Zonder die scoping krijgt een
-  Wannabe met een Big Daddy- of Kampioen-editie er een tanne strook en een
-  walnoten lijstdikte bij, dwars door zijn eigen editieskin heen. De
-  canvasrenderer doet hetzelfde: het divisieregister wordt daar pas bereikt als
-  geen editieregister matchte.
-
-De vroegere live goud-SVG's (folieranden met losgekomen hoekje, racketcrest,
-lauwermedaillon) en het racketwatermerk worden bij `tier.key === "goud"` zonder
-editie niet meer gemonteerd; ze blijven bestaan voor de canvas-/posterfallback.
-De vaste controle gebeurt via `/dev/wannabe`, `scripts/wannabe-screenshot.sh` en
-`?debugWannabe=1`. De finale beelden staan in
-`screenshots/wannabe/final-desktop.png` en
-`screenshots/wannabe/final-mobile.png`; de tussenstappen in `baseline.png` (de
-vectorkaart vóór #834), `v1-artwork.png` (het artwork op de oude gouden skin),
-`v2-skin.png` (verweerd karton met walnoten lijst), `v3-masker.png` (het
-frontmasker zonder zwarte rect), `v4-textuur.png` (perkamentvuil en de tanne
-strook), `v5-raster.png` (de rasterpunten, na de ronde avataruitsparing) en
-`v7-lijst.png` (zwaardere lijst, papierpoort tegen de witte halo's). Het kale
-artwork staat in `screenshots/wannabe/master-preview.png`, met de
-onderdeelcontouren in `master-contouren.png`.
-
-**Blaaskaak**
-
-De Blaaskaak is de zilverdivisie (`tier.key === "zilver"`, rating 900–999) en
-gebruikt voor de kale divisie dezelfde drie-masterstructuur via
-`BlaaskaakEffect.tsx`. `blaaskaak-master.webp` is een transparant
-1086 × 1538-rasterartwork dat met
-[`referentie_blaaskaak.png`](./referentie_blaaskaak.png) als directe
-compositie-, materiaal- en lichtreferentie is gemaakt. De grotere megafoon,
-geluidsschichten, comic-burst, tekstballon en het mondmedaillon zijn beeldwerk
-in plaats van nagebouwde SVG's. De kaartomranding is juist niet in het
-masterartwork opgenomen. `FutKaartDefs` bevat vier specifieke
-`fut-schild-blaaskaak-*`-clips. Frame en donkerblauwe liner houden een
-doorlopende bovenbrug; de cyaan-keyline en het kaartvlak maken de compacte
-U-uitsparing waaruit de megafoon komt. Alle vier delen de vaste asymmetrische
-rechterschouder: een bijna horizontale bovenrand, twee schuine segmenten en
-dan de verticale flank. Daardoor blijft die hoek zichtbaar wanneer chatballon
-en bliksems wegvallen, terwijl die decoratie het silhouet niet bepaalt. De
-lawaaissymbolen `#!&*` in de burst blijven scherpe decoratieve DOM-tekst.
-Rating, avatar, naam en divisietekst blijven echte DOM-inhoud en zijn in het
-mastercanvas vrijgehouden.
-
-De gedeelde registratie staat uitsluitend op `.fut-kaart--zilver`:
-
-```css
---blaaskaak-master-left: -4%;
---blaaskaak-master-top: -14%;
---blaaskaak-master-width: 108%;
---blaaskaak-master-scale: 1;
---blaaskaak-master-rotate: 0deg;
-```
-
-De alfa van het WebP vormt zelf de organische voorcontour; er is geen los
-masker voor het artwork nodig. De SVG-clips hierboven zijn uitsluitend de
-kaartgeometrie. De bestaande zilvervectoren blijven voor de canvas- en
-posterroute beschikbaar, maar worden in de live DOM niet dubbel gemonteerd.
-De skin krijgt alleen bij `:has(.blaaskaak-effect)` de diepe navy spouw, deels
-onderbroken cyan-keyline en koelere blauwe vlakgloed uit de referentie. Een
-zilveren kaart met een editie houdt daardoor ongewijzigd de skin en
-ornamenten van die editie.
-
-De vaste visuele controle gebeurt via `/dev/blaaskaak`,
-`scripts/blaaskaak-screenshot.sh` en `?debugBlaaskaak=1`. De finale beelden
-staan in `screenshots/blaaskaak/final-desktop.png` en
-`screenshots/blaaskaak/final-mobile.png`.
+`../../screenshots/goat/final-desktop.png` en `../../screenshots/goat/final-mobile.png`.
 
 **Sletje van de baan (slof)**
 
-Deze kaart gebruikt dit patroon níet. Ze begon er wel mee — één master in drie
-lagen om een generieke kaart heen — maar de referentie
-([`referentie_sletje_van_de_baan.png`](./referentie_sletje_van_de_baan.png))
-bleek geen kaart-met-decoratie: rating, portret, titel en een statblok staan er
-allemaal ergens anders dan op de FUT-stapel. Een breakout kan daar het materiaal
-van naar de kaart brengen, maar niet de compositie.
+Deze kaart is geen breakout meer. Ze begon als een volgende toepassing van dit
+patroon — één master in drie lagen om een generieke kaart heen — maar de
+referentie bleek geen kaart-met-decoratie te zijn: rating, portret, titel en een
+statblok staan er allemaal ergens anders dan op de FUT-stapel. Een breakout kan
+daar het materiaal van naar de kaart brengen, maar niet de compositie.
 
-De slof gebruikt daarom het divisielayoutsysteem in
-[`components/layouts/`](../src/features/rating/components/layouts/), net als de
-Ballenraper, met drie samenhangende delen die letterlijk uit de referentie zijn
-gesneden: `buiten` (spinrag, tape, los afval) achter de kaart, `plaat` (het
-perkament mét al zijn vuil én het complete stilleven onderin) onder de inkt, en
-`omlijsting` (de metalen lijst met beide crests en de boog) ervóór. Het
-assetcontract staat in
-[`slof/ASSET_SPEC.md`](../src/features/rating/components/slof/ASSET_SPEC.md).
+De slof gebruikt daarom het layoutsysteem uit
+[`divisie-kaartlayouts.md`](divisie-kaartlayouts.md): elf losse artwork-
+onderdelen met een eigen positie, schaal, rotatie en laag, plus een zonering voor
+de dynamische inhoud. Twee dingen uit dít document zijn daarin blijven staan,
+want ze bleken los van het patroon bruikbaar:
 
-Drie dingen daaruit zijn los van deze kaart bruikbaar:
+- de dubbele keying van de Zwarte Piet (zwartsleutel buiten het perkament, fit
+  binnen), hier met het *absolute* verschil omdat deze kaart naast vuil ook
+  spinrag en kalkstof draagt — lichter dan zijn ondergrond;
+- de randlijst opnieuw leggen op het afstandsveld van het écht gebruikte schild,
+  omdat de referentie een ogeeboog met vlakke onderrand heeft en het app-schild
+  een vlakke bovenrand met een punt. Nieuw is dat de lijst als téxtuur wordt
+  uitgerold (diepte × booglengte, via een cKDTree op de schildomtrek) in plaats
+  van als 1-D kleurprofiel: verweerd steen uitgerekt tot een profiel wordt een
+  glad bruin lint.
 
-- **Knip een referentie alleen op langs naden die er visueel al zijn.** Een
-  eerdere versie sneed hier twaalf losse voorwerpen uit en zette ze op gemeten
-  posities terug, en bouwde de lijst opnieuw op uit een uitgerolde textuur. Dat
-  levert een herkenbare maar zichtbaar armere kaart: een uitgerolde band heeft
-  geen afschuiningen, geen afgebrokkelde hoeken en geen ingelegde crest, en
-  losgezette voorwerpen verliezen de contactschaduwen waarmee ze in het origineel
-  op elkaar rusten.
-- **Laat het silhouet uit het beeld komen.** Drempel → grootste samenhangende
-  component → gaten dichten; de alfa van de omlijsting ís dan de kaartvorm. De
-  layout zet `eigenSilhouet: true`, waarop de kaart `--schild: none` gebruikt en
-  frame, liner, keyline en vlak onzichtbaar maakt — anders tekent de generieke
-  schil een tweede rand onder een artwork dat zijn eigen contour al heeft.
-- **Een dekkend oppervlak vraagt om een textuurgetrouwe inpaint.** De tekst van
-  de referentie moet eruit, maar een genormaliseerde convolutie (het gemiddelde
-  van de omgeving) is glad en tekent zich op een verweerde plaat af als
-  spookvorm van de weggehaalde letter. Het script verplaatst in plaats daarvan
-  het residu van schoon perkament naar de weggehaalde plek.
+`../../scripts/slof-master.py` schrijft de onderdelen en een manifest met hun
+natuurlijke plek; `SlofEffect.tsx` bestaat niet meer.
+
+**Glazenwasser (platina) — een eigen kaart in plaats van een breakout**
+
+De Glazenwasser is de eerste divisie waar de drie-masterstructuur níet volstond.
+De breakout zelf werkte (raamcrest, trekker, sopemmer, waterexplosie en natte
+glaswand uit `glazenwasser-master.webp`), maar de compositie van
+[`referentie_glazenwasser.png`](referentie_glazenwasser.png) past niet in het
+gedeelde schild: dat is 0,72 breed × hoog met een vlakke bovenrand, de referentie
+is 0,875 met een gebogen bovenrand, een portretcirkel van 34% kaartbreedte, een
+scheidingslijn op 43% en zes statistieken op één regel. Het gedeelde schild dwong
+de statistiekenrij weg, kneep de waterexplosie tot 70% en duwde de emmer van de
+flank.
+
+Daarom heeft deze divisie sinds #834 een eigen kaart:
+[`GlazenwasserKaart.tsx`](../../src/features/rating/components/glazenwasser/GlazenwasserKaart.tsx)
+met alle geometrie in
+[`glazenwasserLayout.ts`](../../src/features/rating/components/glazenwasser/glazenwasserLayout.ts).
+De gedeelde `FutKaart` blijft in gebruik waar de kaart klein is (klassement,
+opstelling, legenda) — daar is de compacte breakout juist beter leesbaar. De brede
+kaart staat op de plekken waar hij groot is: de kaart-modal en `/dev/glazenwasser`.
+
+### Losse onderdelen in plaats van vensters op één master
+
+De eerste versie sneed elk onderdeel als *venster* uit `glazenwasser-master.webp`.
+Die master is een platte compositie, dus elke rechthoekige uitsnede sleepte de
+buren en de natte-glastextuur mee. Dat kostte twee kunstgrepen — het voormasker als
+alfamasker om die textuur weg te knippen, en één gedeelde transform voor water,
+onderschild en trekker omdat hun uitsnedes elkaar overlappen. Zichtbaar bleef: een
+tweede, verschoven trekker in de glaslaag, en een onderschild dat 36% te groot
+uitviel omdat het de schaal van het water moest volgen.
+
+`scripts/glazenwasser-onderdelen.py` snijdt daarom élk onderdeel als eigen, strak
+op zijn alfa bijgesneden WebP. Geen transparante rand, geen gedeeld canvas, geen
+masker: elk onderdeel wordt los geschaald en geplaatst. Drie regels dwingt het
+script af, en die gelden voor elke volgende kaart die uit een platte referentie
+wordt gesneden:
+
+- kaartinhoud van de referentie (rating, avatarcirkel, naam, statblok) gaat uit élk
+  onderdeel — anders staat er een spookkopie naast de echte tekst;
+- een onderdeel dat als eigen asset terugkomt, hoort niet in de uitsnede van zijn
+  buurman: het water wordt gesneden mét badge en trekker eruit, de glaswand zonder
+  álle voorwerpen;
+- massieve voorwerpen volgen hun eigen silhouet (afwijking tegenover een lokaal
+  achtergrondmodel, gaten dicht) in plaats van de handgetrokken contour. Een dunne
+  steel vraagt daarbij een fijnere ontkorreling — op de grove stand verdween de
+  steel van de trekker.
+
+De lijst is geen enkele omtrek meer maar vijf geneste, identiek geclipte vlakken
+(rail, bevel, liner, keyline, glas) met elk een eigen materiaal en een slagschaduw
+eronder: dát is wat een gefabriceerde lijst van een blauwe rand onderscheidt.
+
+### Referentiecompositie op een kaart met normale lengte
+
+De kaart heeft de aspect ratio van élke andere kaart (100/139), zodat hij naast een
+GOAT of een Wannabe niet als een afgeknot blokje leest. De referentie is breder dan
+hoog, dus er komt 22% hoogte bij, en waar die ruimte landt bepaalt hoe de kaart
+oogt. `naarKaartY()` is daarom een stuksgewijze afbeelding: tot 10% hangt alles aan
+de bovenrand (raamcrest, hoekschuim, rating, portret), vanaf 80% aan de onderrand
+(waterlaag, onderschild, tweede trekker), en daartussen houdt alles zijn relatieve
+hoogte. `naarKaartH()` krimpt maten met één vaste factor, zodat geen enkel voorwerp
+wordt uitgerekt. Alle gemeten referentiewaarden blijven daardoor de bron; de langere
+kaart is een afgeleide, geen tweede set getallen.
+
+### Zes statistieken met echte cijfers
+
+De referentie zet zes kolommen in FIFA-stijl (STREEPEN 96, GLANS 98, …). Die
+90-en-hoger zijn decoratie: de app heeft geen attributenmodel en verzint er ook
+geen. `glazenwasserStats.ts` houdt de vaktaal van de referentie als label en zet er
+de échte cijfers van deze speler onder — gespeeld, winstpercentage, punten,
+klassement, gamesaldo en de vorm over de laatste vijf — elk met een `title` die
+uitlegt waar het getal vandaan komt.
 
 **Andere special editions**
 
@@ -1436,21 +1499,19 @@ registraties nodig.
 De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
 `onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
 `bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
-`pias-master.webp`, voor de GOAT `goat-master.webp` en voor de Wannabe
-`wannabe-master.webp`. De kale Blaaskaak gebruikt daarnaast
-`blaaskaak-master.webp`. De
+`pias-master.webp`, voor de GOAT `goat-master.webp` en voor de Glazenwasser
+`glazenwasser-master.webp`. De
 canvas/posterroute in `futKaartCanvas.ts` tekent nog
 `INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
 `ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
 `ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator, Big
 Daddy en Piet. Voor de GOAT tekent `drawGoatOrnament()` daar dus nog de
 vector-bokhoorns; alleen de lijstdiktes zijn met `randDiktes` gelijkgetrokken.
-Hetzelfde geldt voor de Wannabe: de poster tekent nog de folieranden, de
-racketcrest en het lauwermedaillon uit `divisies/goud.ts`. Het `register`
+Hetzelfde geldt voor de divisies waarvan de DOM-ornamenten in #834 door een
+master zijn vervangen: de poster tekent voor de goud-divisie nog de folieranden,
+de racketcrest en het lauwermedaillon uit `divisies/goud.ts`. Het `register`
 daarin — vlakkleuren, lijst, inkt, randdiktes — is wél gelijkgetrokken met de
 CSS, dus kaart en poster delen in ieder geval hun materiaal.
-Voor de Blaaskaak tekent de poster nog de buisprofielen, windcrest en resonator
-uit `divisies/zilver.ts`; de live kaart gebruikt het nieuwe rastermaster.
 
 Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
 niet gegarandeerd. Een toekomstige verbetering kan:
@@ -1470,7 +1531,10 @@ boven de kaart. In de dev-stage en de kaart-preview is daar ruimte voor, maar
 `.kaart-raster__cel` in het klassement heeft alleen `position: relative` — geen
 `overflow: clip` — en de rijafstand is kleiner dan die 53%. Een GOAT in de
 kaartenwand kan dus over de rij erboven schilderen, net zoals de bestaande
-Dictator- (18%) en Big Daddy-breakouts (34%) dat in mindere mate al doen.
+Dictator- (18%) en Big Daddy-breakouts (34%) dat in mindere mate al doen. De
+slof-layout speelt hier ook mee: die is de instapdivisie, dus in een gewone
+kaartenwand staan er meerdere naast elkaar, en haar boog en bodemprops steken
+16% boven en 13% onder de kaart uit.
 
 De cel kan niet zonder meer worden geclipt: de rangmunt hangt bewust op
 `top: -10px` buiten de kaart en zou dan wegvallen. Een oplossing hoort dus in de
@@ -1486,14 +1550,14 @@ waarheid voor de huidige browsercompositie.
 
 ### Het master-artwork is een afgeleid rasterasset
 
-Voor drie edities geldt dit niet. De pias en de GOAT worden door
-`scripts/pias-master.py` respectievelijk `scripts/goat-master.py` uit hun
-referentie-PNG gesneden; Big Daddy komt uit
-`scripts/bigdaddy-master-compose.mjs`, dat master én beide maskers uit het
-onderdelenblad `bigdaddy-onderdelen.webp` bouwt. Die drie composities zijn dus
-wél reproduceerbaar. Voor de overige edities bevat de repository het
-productie-WebP en een specificatie, maar geen gelaagd bronbestand uit een
-beeldbewerkingspakket. Grote inhoudelijke
+Voor de pias geldt dit niet: dat artwork wordt door `../../scripts/pias-master.py`
+uit `referentie_pias.png` gegenereerd en is dus wél reproduceerbaar.
+Hetzelfde geldt voor de Zwarte Piet, de GOAT en de slof-onderdelen, die elk hun
+eigen `scripts/<naam>-master.py` hebben. Ook
+Big Daddy valt erbuiten: `../../scripts/bigdaddy-master-compose.mjs` bouwt master en
+maskers uit het onderdelenblad `bigdaddy-onderdelen.webp`. Voor
+de overige edities bevat de repository het productie-WebP en een specificatie,
+maar geen gelaagd bronbestand uit een beeldbewerkingspakket. Grote inhoudelijke
 wijzigingen aan wolk of bliksem moeten daarom via een nieuwe
 assetgeneratie/-bewerking gebeuren en vervolgens opnieuw op alpha,
 resolutie, compressie en registratie worden gecontroleerd.

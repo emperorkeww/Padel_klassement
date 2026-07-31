@@ -1,10 +1,25 @@
 /* Eén gedeeld register voor back, inside en front. De drie instanties mogen
    nooit afzonderlijk worden verschoven: alleen clipping en maskers verschillen. */
 
+/* Het artwork komt rechtstreeks uit docs/referentie_zwarte_piet.png
+   (zie
+   scripts/piet-master.py) en houdt dus het coördinatenstelsel van die
+   referentie: 1086 x 1448 px, met de kaartbox op x[152, 936] en y[85, 1175].
+   Die bovengrens is de kruin van de ogeeboog, gemeten door scripts/piet_schild.py
+   — hetzelfde punt waar #fut-schild-piet zijn y=0 heeft. Daaruit volgen deze
+   drie waarden; ze zijn geen smaakinstelling maar de uitkomst van die uitsnede:
+     left  = -152 / 784  = -19,39%
+     top   =  -85 / 1090 =  -7,80%
+     width = 1086 / 784  = 138,52%
+   Wie de uitsnede wijzigt, herberekent ze allemaal. */
+/* De schildvorm komt uit scripts/piet_schild.py: de gemeten ogeeboog van de
+   referentie, met de gedeelde onderkant. Daarmee valt de kaartrand samen met de
+   rand van het artwork en hoeft er bovenin niets meer te worden bijgestuurd. */
 .fut-kaart.fut-kaart--piet {
-  --piet-master-left: -18%;
-  --piet-master-top: -18%;
-  --piet-master-width: 136%;
+  --schild: url(#fut-schild-piet);
+  --piet-master-left: -19.39%;
+  --piet-master-top: -7.8%;
+  --piet-master-width: 138.52%;
   --piet-master-scale: 1;
   --piet-master-rotate: 0deg;
   --piet-master-inset: calc(
@@ -43,6 +58,16 @@
     );
 }
 
+/* De referentie heeft geen glasachtige diagonaal over het vlak: daar ligt roet.
+   De standaardglans liep precies over de rookkolom rechtsboven en maakte die
+   melkig. Hij blijft staan als materiaalhint, maar op een vijfde van de kracht
+   en zonder radiale puls — schande glimt niet (#705). */
+.fut-kaart.fut-kaart--piet .fut-kaart__glans {
+  --glans-kracht: 0.1;
+  --glans-hoek: -6deg;
+  --glans-hart-kracht: 0;
+}
+
 /* Expliciet paintregister binnen de preserve-3d-flipper. De oude live
    Piet-vectoren zijn niet gemount; ze blijven alleen canvasfallback. */
 .fut-kaart.fut-kaart--piet
@@ -59,17 +84,155 @@
   z-index: 4;
 }
 
+/* Avatarregister (#834). In de gedeelde kaart staat de avatar in een gridcel van
+   .fut-kaart__boven: zijn plek volgt dus uit de breedte van het eloblok en de
+   padding van het vlak. Een driecijferige rating schuift hem al op, en hij komt
+   daardoor lager en verder van de binnenrand te staan dan in de referentie.
+   Voor deze editie staat hij daarom absoluut, in hetzelfde coördinatenstelsel
+   als het artwork: alle maten zijn fracties van --fut-kw, de referentiebreedte
+   van de kaart zelf. Geen viewporteenheden, geen vaste pixeloffsets.
+
+   De positioneringsouder is .fut-kaart__vlak: dat is de enige `relative` in de
+   keten, en .fut-kaart__boven is géén positioned element, dus de gridcel wordt
+   niet het containing block (en zijn justify-/align-self doen hier dus niets).
+   Het vlak ligt frame + liner + keyline naar binnen, dus die inset gaat van de
+   kaartrelatieve maat af — met dezelfde --piet-master-inset die het artwork
+   gebruikt, zodat beide op élke kaartmaat exact hetzelfde stelsel houden. Het
+   clip-path van het vlak zorgt er meteen voor dat de cirkel nooit buiten het
+   schild kan zweven.
+
+   --fut-avatar staat hier bewust vast. De gedeelde kaart zet die per
+   containerbreedte anders (0,34 onder 132px, 0,44 boven 168px); met een vaste
+   waarde houdt deze editie op élke maat dezelfde compositie, wat de rookkraag
+   ook eist.
+
+   De maat en het middelpunt zijn niet vrij te kiezen: in piet-master.webp zit een
+   rookkraag die exact om deze cirkel heen is opgebouwd (zie ASSET_SPEC.md). Zijn
+   binnenrand ligt op kaartrelatief r 0,194 rond 0,747 / 0,327. De avatarschijf
+   plus zijn driedelige rand (~0,016 kaartbreedte) moet daar tegenaan sluiten,
+   dus de diameter staat vast op 35,6% en het middelpunt op die coördinaat.
+   Verschuiven of verkleinen legt een strook kaal perkament tussen de gouden rand
+   en het roet — precies de losgezongen cirkel die dit moest oplossen.
+
+   De waarden zijn niet gekozen maar gemeten. In de referentie staat de
+   portretring op middelpunt 744/426 met buitenstraal 191, en de kaartbox loopt
+   daar over x[152, 936] en y[85, 1175]. Kaartrelatief:
+     middelpunt  0,755 breed / 0,313 hoog
+     buitenrand  0,2436 × kaartbreedte
+   De rand van PietEffect.css is 0,027 dik, dus de schijf zelf komt op een
+   diameter van 43,3%; `rechts` en `boven` volgen daaruit. De ring sluit zo
+   precies aan op de binnenrand van de rookkraag in het artwork, want die is om
+   diezelfde cirkel opgebouwd.
+
+   De linkerrand van het portret komt op 0,511 uit. Het ratingblok van deze
+   editie eindigt rond 0,50 — vandaar de kleinere ratingzetting hieronder; met
+   de gedeelde 0,20 loopt "1050" er tegenaan. */
+.fut-kaart.fut-kaart--piet {
+  --fut-avatar: 0.418;
+  --piet-avatar-rechts: 0.045;
+  --piet-avatar-boven: 0.2183;
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__avatar {
+  position: absolute;
+  right: calc(
+    var(--fut-kw) * var(--piet-avatar-rechts) - var(--piet-master-inset)
+  );
+  top: calc(var(--fut-kw) * var(--piet-avatar-boven) - var(--piet-master-inset));
+}
+
 /* De referentie gebruikt geen generieke lichte avatarrand, maar een
    driedelige medaillonrand: fijne goudlijn, donkere metalen band en een
-   tweede antiek-gouden buitenlijn. De avatarmaat en -positie blijven exact
-   die van FutKaart; alleen het materiaal van de rand is editie-specifiek. */
+   tweede antiek-gouden buitenlijn. De randdiktes zijn rondom gelijk (drie
+   spread-only box-shadows, geen offset), en de foto zelf vult het ronde masker
+   via .avatar { overflow: hidden } met object-fit: cover in ui.css — dus geen
+   uitgerekte of decentrale uitsnede. */
 .fut-kaart.fut-kaart--piet .fut-kaart__avatar .avatar {
+  /* De omlijsting van de referentie is geen haarlijn maar een zwaar metalen
+     medaillon: een dikke ring met een duidelijke welving, een donkere kern en
+     goudlicht op de opstaande kanten. Dat wordt hier met vijf spread-only
+     ringen opgebouwd — van binnen naar buiten fijn goud, donker metaal, breed
+     antiek goud, een lichte goudkam en een bijna zwarte buitenlijn. Die laatste
+     doet het werk van ambient occlusion: zonder hem plakt de ring plat op het
+     vlak. Alles rondom gelijk in dikte, dus geen offsets in de spreads.
+
+     De inset-schaduwen liggen bínnen de foto en geven de welving: donker aan de
+     bovenrand waar de ring overhangt, en een dunne warme terugkaats onderaan.
+     .avatar heeft overflow: hidden met border-radius, dus ze volgen de cirkel.
+
+     Twee slagschaduwen erbuiten: een korte, harde contactschaduw vlak onder de
+     ring (die legt hem fysiek op het vlak) en een langere, zachte eronder.
+     De buitenste ring eindigt op 0,027 × kaartbreedte; de rook in het artwork
+     begint op 0,198 en sluit daar dus tegenaan. */
   box-shadow:
-    0 0 0 max(1px, calc(var(--fut-kw) * 0.004)) #dfc583,
-    0 0 0 max(2px, calc(var(--fut-kw) * 0.011)) #171510,
-    0 0 0 max(3px, calc(var(--fut-kw) * 0.016)) #9d7b3e,
-    0 calc(var(--fut-kw) * 0.025) calc(var(--fut-kw) * 0.065)
-      rgba(8, 6, 3, 0.48);
+    inset 0 max(1px, calc(var(--fut-kw) * 0.012)) calc(var(--fut-kw) * 0.03)
+      rgba(6, 4, 2, 0.55),
+    inset 0 calc(var(--fut-kw) * -0.01) calc(var(--fut-kw) * 0.022)
+      rgba(223, 197, 131, 0.16),
+    0 0 0 max(1px, calc(var(--fut-kw) * 0.004)) #e8d095,
+    0 0 0 max(2px, calc(var(--fut-kw) * 0.011)) #14120d,
+    0 0 0 max(3px, calc(var(--fut-kw) * 0.021)) #a07f40,
+    0 0 0 max(4px, calc(var(--fut-kw) * 0.024)) #d8bd7c,
+    0 0 0 max(5px, calc(var(--fut-kw) * 0.027)) #100e09,
+    0 calc(var(--fut-kw) * 0.006) calc(var(--fut-kw) * 0.012)
+      rgba(4, 3, 1, 0.7),
+    0 calc(var(--fut-kw) * 0.024) calc(var(--fut-kw) * 0.06)
+      rgba(8, 6, 3, 0.46);
+}
+
+/* Met de brede onderrand loopt het kaartvlak tot onderaan door; de forse
+   bodempadding van de gedeelde zetting (24%) hield ruimte vrij voor een punt
+   die er niet meer is en liet nu een leeg stuk perkament onder de editieregel
+   staan. */
+.fut-kaart.fut-kaart--piet .fut-kaart__vlak {
+  padding-bottom: 11%;
+}
+
+/* Contentzones (#834). Vier gerichte correcties op de gedeelde zetting, zodat
+   de kaart dichter bij referentie_zwarte_piet.png komt. Alles kaartrelatief. */
+
+/* 1. De naam moet volledig passen. Op de mobiele maat liep "Alice Anders ♣" op
+      0,095 × kaartbreedte tegen de rand en werd hij "Alice Ande…". Het
+      beschikbare vlak is ~0,785 kaartbreedte breed; op 0,082 past een naam van
+      deze lengte er met het klaverteken bij. text-overflow blijft als vangnet
+      staan voor werkelijk extreme namen, maar raakt normale namen niet meer. */
+.fut-kaart.fut-kaart--piet .fut-kaart__naam {
+  font-size: clamp(11px, calc(var(--fut-kw) * 0.082), 40px);
+}
+
+/* 2. De twee haarlijnen van de gedeelde zetting — onder het ratingblok en boven
+      de naamplaat — lopen hier over rook en stadssilhouet. Op ivoor zijn ze een
+      nette FUT-scheiding, op roet lezen ze als een lichte streep dwars door de
+      compositie. Ze blijven staan (de referentie heeft ze ook) maar op een
+      fractie van de dekking, en de onderrand van de plaat vervalt. */
+.fut-kaart.fut-kaart--piet .fut-kaart__eloblok {
+  border-bottom-color: color-mix(in srgb, var(--kaart-lijn) 38%, transparent);
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__naam {
+  border-top-color: color-mix(in srgb, var(--kaart-lijn) 42%, transparent);
+  border-bottom-color: transparent;
+}
+
+/* 3. Ratinggroep iets minder dominant en de divisie dichter onder de rating,
+      met een wat grotere vormemoji — de verticale hiërarchie van de referentie.
+      De avatar staat absoluut, dus een smaller eloblok verschuift niets. */
+.fut-kaart.fut-kaart--piet .fut-kaart__elo {
+  font-size: calc(var(--fut-kw) * 0.175);
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__sub {
+  font-size: calc(var(--fut-kw) * 0.078);
+}
+
+.fut-kaart.fut-kaart--piet .fut-kaart__tier {
+  font-size: calc(var(--fut-kw) * 0.125);
+}
+
+/* 4. Divisie en editieregel compacter onder elkaar. */
+.fut-kaart.fut-kaart--piet .fut-kaart__divisie,
+.fut-kaart.fut-kaart--piet .fut-kaart__editie {
+  margin-top: 1px;
 }
 
 /* Volledige rook-, kaarten-, veren- en kettingmassa achter kaart en frame. */
@@ -78,17 +241,14 @@
 }
 
 /* De negatieve inset reconstrueert de kaartstage vanuit het echte kaartvlak.
-   Het schildclip van .fut-kaart__vlak is daarmee het exacte binnenmasker. */
+   Het schildclip van .fut-kaart__vlak is daarmee het exacte binnenmasker.
+   Er is geen apart binnenmasker meer: het artwork is zelf content-veilig — de
+   rating-, naam-, editie- en avatarzones van de échte kaart zijn in de master
+   leeg gelaten (scripts/piet-master.py). Een tweede veiligheidsmasker
+   zou daar alleen een tweede waarheid over de kaartvorm bij zetten. */
 .piet-effect--binnen {
   inset: calc(-1 * var(--piet-master-inset));
   z-index: -1;
-}
-
-.piet-effect--binnen .piet-effect__master {
-  opacity: 0.86;
-  -webkit-mask: url("./assets/piet-inside-mask.svg") center / 100% 100%
-    no-repeat;
-  mask: url("./assets/piet-inside-mask.svg") center / 100% 100% no-repeat;
 }
 
 /* Alleen complete geselecteerde crest-, veer-, kaart-, ketting- en

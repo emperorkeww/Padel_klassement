@@ -1,11 +1,13 @@
 /* Reproduceerbare visuele teststage voor de Zwarte Piet-breakout. */
 
 .piet-showcase {
-  min-height: 100vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 150px 0 40px;
+  /* Geen min-height: 100vh — die dwong lege ruimte onder de kaart en maakte de
+     compositie in een screenshot kleiner dan nodig. De stage is nu zo hoog als
+     zijn inhoud. */
+  padding: 40px 0 24px;
   overflow-x: clip;
   background:
     radial-gradient(circle at 50% 34%, rgba(136, 95, 35, 0.16), transparent 46%),
@@ -25,7 +27,7 @@
 }
 
 .piet-showcase__titel {
-  margin: 165px 0 0;
+  margin: 40px 0 0;
   color: #d8c09a;
   font-size: 34px;
   font-weight: 800;
@@ -39,9 +41,19 @@
   text-align: center;
 }
 
+/* De marges waren op maat gesneden voor de vroegere compacte breakout: 28vw
+   erboven en 25vw eronder. Met de huidige compositie leverde dat vooral zwarte
+   ruimte, en de kaart bleef daardoor onnodig klein in de screenshot. De kaart is
+   het onderwerp van deze stage, dus hij mag bijna de volle breedte pakken en de
+   marges gaan terug naar wat de breakout echt nodig heeft.
+
+   --fut-kw is de kaartbreedte, niet die van het artwork: het masterartwork loopt
+   138,5% van de kaart breed. Op 82vw beslaat de hele compositie dus ~114vw en
+   valt het buitenste goudstof net buiten beeld — dat is de bovengrens waarbij de
+   kaart groot is én de rook langs de zijkanten nog leest. */
 @media (max-width: 640px) {
   .piet-showcase {
-    padding-top: 28vw;
+    padding: 7vw 0 4vw;
   }
 
   .piet-showcase__stage {
@@ -50,11 +62,11 @@
   }
 
   .piet-showcase__kaart.fut-kaart {
-    --fut-kw: min(450px, 72vw);
+    --fut-kw: min(450px, 82vw);
   }
 
   .piet-showcase__titel {
-    margin-top: 25vw;
+    margin-top: 8vw;
     font-size: clamp(22px, 7vw, 34px);
   }
 
@@ -62,4 +74,19 @@
     max-width: 88vw;
     font-size: clamp(14px, 4.2vw, 19px);
   }
+}
+
+/* Exportmodus (?kaart=1): alleen de kaart met zijn breakout. Geen titel, geen
+   uitleg. De marge is niet cosmetisch maar rekenkundig: het masterartwork begint
+   19,8% van de kaartbreedte bóven de kaartbox en loopt 25,9% eronder door. Met
+   te weinig ruimte snijdt de viewport de crest en de rozet af — en dan mist de
+   export precies de breakout die het punt van deze kaart is. 96/124px dekt zowel
+   de desktopmaat (450px kaart) als de mobiele (82vw). De uitsnede in
+   scripts/piet-screenshot.sh haalt de overmaat er daarna weer af. */
+.piet-showcase--export {
+  padding: 96px 0 124px;
+}
+
+.piet-showcase--export .piet-showcase__stage {
+  gap: 0;
 }
