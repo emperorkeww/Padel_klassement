@@ -28,3 +28,13 @@
 .glazenwasser-showcase .gw-info {
   --gw-kw: min(440px, 84vw);
 }
+
+/* Compacte kaart naast de brede: dít is wat de app toont. */
+.glazenwasser-showcase__compact {
+  /* FutKaart leidt al zijn maten af van --fut-kw; zonder die variabele heeft de
+     kaart geen breedte en rendert er niets. */
+  --fut-kw: min(320px, 80vw);
+  margin: 2rem auto 3rem;
+  display: flex;
+  justify-content: center;
+}
