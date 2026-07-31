@@ -1,7 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { kaartSkin, mix, rgba, schildVorm, type KaartEditie } from "./futKaartCanvas";
+import {
+  drawKaartOrnamentVoor,
+  drawKaartSchild,
+  kaartSkin,
+  mix,
+  rgba,
+  schildVorm,
+  type KaartEditie,
+} from "./futKaartCanvas";
+import {
+  KAART_MASTERS,
+  type GeladenMaster,
+  type MasterNaam,
+} from "@/features/rating/components/kaartMasters";
 import { GOAT_ICOON } from "@/features/rating/components/futKaartOrnamenten";
 import { DIVISIE_KAARTEN } from "@/features/rating/components/divisies";
 
@@ -1139,5 +1152,178 @@ describe("cascade: een editie wint van de tier- én de divisieklasse (#710)", ()
       /\.fut-kaart\.fut-kaart--/.test(zonderCommentaar(css)),
     ).map(([naam]) => naam);
     expect(fout).toEqual([]);
+  });
+});
+
+/* ── Rastermasters op de poster (#895) ────────────────────────────────────
+   De registratie zelf wordt in kaartMasters.test.ts tegen de CSS gehouden;
+   hier gaat het om wat de canvas ermee dóét: de drie lagen op de goede
+   coördinaten, en de vectorlaag die eronder wijkt zoals in FutKaart.tsx. */
+
+// jsdom kent geen Path2D; de vectorlagen bouwen er wel paden mee. Een lege
+// huls volstaat: de test kijkt naar wélke aanroepen gebeuren, niet naar de
+// vorm die eruit komt.
+if (!("Path2D" in globalThis)) {
+  (globalThis as { Path2D?: unknown }).Path2D = class {
+    constructor(readonly d?: string) {}
+  };
+}
+
+/** Minimale opnemende 2D-context: alles wat de tekening aanroept wordt
+ *  vastgelegd, verlopen krijgen een dummy terug. Genoeg om laagvolgorde en
+ *  geometrie te toetsen zonder een echte canvas-implementatie. */
+function maakCtx() {
+  const calls: { naam: string; args: unknown[] }[] = [];
+  const staat: Record<string, unknown> = {};
+  const ctx = new Proxy(staat, {
+    get(doel, prop: string) {
+      if (prop in doel) return doel[prop];
+      return (...args: unknown[]) => {
+        calls.push({ naam: prop, args });
+        if (prop.startsWith("create"))
+          return { addColorStop: () => {} } as unknown as CanvasGradient;
+        if (prop === "measureText") return { width: 10 };
+        return undefined;
+      };
+    },
+    set(doel, prop: string, waarde) {
+      doel[prop] = waarde;
+      calls.push({ naam: `set:${prop}`, args: [waarde] });
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
+  return { ctx, calls };
+}
+
+/** Een geladen master met een artwork van 1000 × 1390 bronpixels, met de
+ *  maskers die zijn registratie belooft. */
+function nepMaster(naam: MasterNaam): GeladenMaster {
+  const beeld = () =>
+    ({ naturalWidth: 1000, naturalHeight: 1390 }) as HTMLImageElement;
+  const registratie = KAART_MASTERS[naam];
+  return {
+    naam,
+    registratie,
+    master: beeld(),
+    binnenMasker: registratie.binnenMasker ? beeld() : null,
+    voorMasker: registratie.voorMasker ? beeld() : null,
+  };
+}
+
+describe("drawKaartSchild met een rastermaster (#895)", () => {
+  const X = 100;
+  const Y = 200;
+  const W = 560;
+  const H = W * 1.39;
+
+  it("tekent de achter- én de binnenlaag op dezelfde registratie", () => {
+    const { ctx, calls } = maakCtx();
+    const master = nepMaster("goat");
+    drawKaartSchild(ctx, X, Y, W, H, "goat", kaartSkin("legende", null).kleuren, master);
+
+    const beelden = calls.filter((c) => c.naam === "drawImage");
+    expect(beelden).toHaveLength(2);
+    // left −20% van de breedte, top −53% van de hóógte, breedte 140% — en de
+    // hoogte volgt de bronverhouding, net als `height: auto` in de CSS.
+    for (const beeld of beelden) {
+      expect(beeld.args.slice(1)).toEqual([0, 0, 1.4 * W, 1.4 * W * 1.39]);
+    }
+    const ankers = calls
+      .filter((c) => c.naam === "translate")
+      .map((c) => c.args);
+    expect(ankers).toContainEqual([X - 0.2 * W, Y - 0.53 * H]);
+  });
+
+  it("laat de binnenlaag de dekking uit de CSS overnemen", () => {
+    const { ctx, calls } = maakCtx();
+    drawKaartSchild(
+      ctx,
+      X,
+      Y,
+      W,
+      H,
+      "notch",
+      kaartSkin("goud", null).kleuren,
+      nepMaster("wannabe"),
+    );
+    const alphas = calls
+      .filter((c) => c.naam === "set:globalAlpha")
+      .map((c) => c.args[0]);
+    expect(alphas).toContain(0.9);
+  });
+
+  it("laat de vectorornamenten staan zolang er géén master geladen is", () => {
+    // De terugval is het hele punt: een mislukte download levert de oude
+    // poster op, geen kale kaart.
+    const { ctx, calls } = maakCtx();
+    drawKaartSchild(ctx, X, Y, W, H, "goat", kaartSkin("legende", null).kleuren);
+    expect(calls.filter((c) => c.naam === "drawImage")).toHaveLength(0);
+    expect(calls.some((c) => c.naam === "fill")).toBe(true);
+  });
+
+  it("onderdrukt het vector-ornament dat het master zelf draagt", () => {
+    // Het GOAT-monument tekent zijn hoorns met Path2D-vullingen; met master
+    // erbij moeten die verdwijnen, precies zoals `ornamentLive` in
+    // FutKaart.tsx doet.
+    const kleuren = kaartSkin("legende", null).kleuren;
+    const zonder = maakCtx();
+    drawKaartSchild(zonder.ctx, X, Y, W, H, "goat", kleuren);
+    const met = maakCtx();
+    drawKaartSchild(met.ctx, X, Y, W, H, "goat", kleuren, nepMaster("goat"));
+    const padVullingen = (calls: { naam: string; args: unknown[] }[]) =>
+      calls.filter((c) => c.naam === "fill" && c.args.length > 0).length;
+    expect(padVullingen(zonder.calls)).toBeGreaterThan(0);
+    expect(padVullingen(met.calls)).toBe(0);
+  });
+
+  it("houdt het watermerk van de Piet enkelvoudig", () => {
+    // De piet-master draagt zijn stadssilhouet zelf; de vectorpion eronder zou
+    // een tweede watermerk zijn.
+    const kleuren = kaartSkin(undefined, "piet").kleuren;
+    expect(kleuren.motief).toBeDefined();
+    const { ctx, calls } = maakCtx();
+    drawKaartSchild(ctx, X, Y, W, H, "notch", kleuren, nepMaster("piet"));
+    // Alleen de twee masterlagen tekenen nog beeld; het motief tekent paden.
+    expect(calls.filter((c) => c.naam === "drawImage")).toHaveLength(2);
+    expect(calls.filter((c) => c.naam === "fill" && c.args.length > 0)).toHaveLength(0);
+  });
+});
+
+describe("drawKaartOrnamentVoor met een rastermaster (#895)", () => {
+  it("zet de voorlaag ónder een ornament dat blijft staan (On Fire)", () => {
+    const { ctx, calls } = maakCtx();
+    const kleuren = kaartSkin(undefined, "onfire").kleuren;
+    drawKaartOrnamentVoor(ctx, 0, 0, 560, kleuren, nepMaster("onfire"));
+    const volgorde = calls
+      .map((c, i) => ({ ...c, i }))
+      .filter((c) => c.naam === "drawImage" || (c.naam === "fill" && c.args.length > 0));
+    // De crest van On Fire ligt op z-index 4, de master op 3: het beeld gaat
+    // vóór de vectorvullingen.
+    expect(volgorde[0]?.naam).toBe("drawImage");
+    expect(volgorde.some((c) => c.naam === "fill")).toBe(true);
+  });
+
+  it("zet de storm juist bóven de vinnen die blijven staan (In-Form)", () => {
+    const { ctx, calls } = maakCtx();
+    const kleuren = kaartSkin(undefined, "inform").kleuren;
+    drawKaartOrnamentVoor(ctx, 0, 0, 560, kleuren, nepMaster("inform"));
+    const volgorde = calls
+      .filter((c) => c.naam === "drawImage" || (c.naam === "fill" && c.args.length > 0))
+      .map((c) => c.naam);
+    expect(volgorde.at(-1)).toBe("drawImage");
+    expect(volgorde[0]).toBe("fill");
+  });
+
+  it("vervangt de vector-divisiekaart van de drie divisiemasters", () => {
+    const kleuren = kaartSkin("goud", null).kleuren;
+    expect(kleuren.divisie).toBe("goud");
+    const zonder = maakCtx();
+    drawKaartOrnamentVoor(zonder.ctx, 0, 0, 560, kleuren);
+    const met = maakCtx();
+    drawKaartOrnamentVoor(met.ctx, 0, 0, 560, kleuren, nepMaster("wannabe"));
+    const vullingen = (calls: { naam: string }[]) =>
+      calls.filter((c) => c.naam === "fill").length;
+    expect(vullingen(zonder.calls)).toBeGreaterThan(0);
+    expect(vullingen(met.calls)).toBe(0);
   });
 });

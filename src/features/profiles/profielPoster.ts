@@ -22,6 +22,7 @@ import {
   rgba,
   schildVorm,
 } from "@/lib/utils/futKaartCanvas";
+import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
 import type { Editie } from "@/features/standings/edities";
 import type { Outcome } from "@/features/rating/results";
 import type { Tier } from "@/features/rating/tiers";
@@ -95,6 +96,7 @@ export function drawKaart(
   x: number,
   y: number,
   w: number,
+  master: GeladenMaster | null = null,
 ) {
   const h = w * 1.39;
   const key = d.tier?.key;
@@ -103,8 +105,19 @@ export function drawKaart(
   const { ink, inkSoft, lijn } = skin;
 
   // Laag-opbouw (frame → liner → keyline → geclipt vlak met textuur, topglans
-  // en sheen) komt uit de gedeelde schildkaart-tekening (#498).
-  const { fx, fy, fw, fh } = drawKaartSchild(ctx, x, y, w, h, vorm, skin.kleuren);
+  // en sheen) komt uit de gedeelde schildkaart-tekening (#498). Sinds #895
+  // gaat het rastermaster van de special mee: dezelfde drie lagen als live,
+  // met de vectorversie als terugval wanneer het artwork niet geladen is.
+  const { fx, fy, fw, fh } = drawKaartSchild(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    vorm,
+    skin.kleuren,
+    master,
+  );
 
   // Eloblok links: rating groot, sub-niveau (Romeins), divisie-emoji.
   const ex = fx + fw * 0.27;
@@ -253,7 +266,7 @@ export function drawKaart(
   // Voorste ornamentlaag (#710): alles wat vóór de kaartinhoud hoort — een
   // crest in de bovenrand, een medaillon in de punt. Moet ná de restore:
   // binnen de vlak-clip zou wat buiten het schild hangt wegvallen.
-  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren);
+  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren, master);
 }
 
 /** De hele poster: court-gloed, kop, de kaart als blikvanger en de
@@ -262,6 +275,7 @@ export function drawProfielPoster(
   ctx: CanvasRenderingContext2D,
   d: ProfileShareData,
   avatarImg: HTMLImageElement | null,
+  master: GeladenMaster | null = null,
 ) {
   const c = canvasPalette();
   const W = POSTER_W;
@@ -299,7 +313,7 @@ export function drawProfielPoster(
 
   // De kaart als blikvanger.
   const kaartW = 560;
-  drawKaart(ctx, d, avatarImg, (W - kaartW) / 2, 218, kaartW);
+  drawKaart(ctx, d, avatarImg, (W - kaartW) / 2, 218, kaartW, master);
 
   // Klassement en vorm naast elkaar onder de kaart.
   const statsY = 1108;

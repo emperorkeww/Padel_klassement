@@ -3,6 +3,10 @@ import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { sharePng } from "@/lib/utils/shareImage";
 import { laadAvatar } from "@/lib/utils/futKaartCanvas";
+import {
+  laadKaartMasters,
+  masterVoor,
+} from "@/features/rating/components/kaartMasters";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { laadEditieContext } from "@/features/standings/editieContext";
 import { vsKaartVoor } from "@/features/profiles/compare";
@@ -110,12 +114,18 @@ export function ShareSpeeldag({
         code: codeOpPoster ? accessCode : null,
         link: qrOpPoster ? shareUrl : null,
       });
-      // Alleen de kaarten die getekend worden hebben een avatar nodig.
-      const avatars = await Promise.all(
-        poster.kaarten.map((k) => laadAvatar(k.avatarUrl)),
-      );
+      // Alleen de kaarten die getekend worden hebben een avatar nodig. Idem
+      // voor de rastermasters van de specials (#895): `laadKaartMasters`
+      // bundelt dubbele edities tot één laadbeurt, dus acht kaarten halen het
+      // storm-artwork hooguit één keer op.
+      const [avatars, masters] = await Promise.all([
+        Promise.all(poster.kaarten.map((k) => laadAvatar(k.avatarUrl))),
+        laadKaartMasters(
+          poster.kaarten.map((k) => masterVoor(k.tier?.key, k.editie)),
+        ),
+      ]);
       const outcome = await sharePng(
-        (ctx) => drawSpeeldagPoster(ctx, poster, avatars),
+        (ctx) => drawSpeeldagPoster(ctx, poster, avatars, masters),
         { width: POSTER_W, height: POSTER_H, filename: bestand, title: "Padel-opstelling" },
       );
       if (outcome === "clipboard") toast.success("Poster gekopieerd naar klembord.");

@@ -4,6 +4,10 @@ import { errorMessage } from "@/lib/utils/errors";
 import { sharePng } from "@/lib/utils/shareImage";
 import { laadAvatar } from "@/lib/utils/futKaartCanvas";
 import {
+  laadKaartMaster,
+  masterVoor,
+} from "@/features/rating/components/kaartMasters";
+import {
   drawProfielPoster,
   POSTER_H,
   POSTER_W,
@@ -30,9 +34,15 @@ export function ShareProfile({
   async function share() {
     setBusy(true);
     try {
-      const avatarImg = await laadAvatar(data.avatarUrl);
+      // Profielfoto én het rastermaster van de special (#895) vooraf laden: het
+      // canvas tekent synchroon, dus een nog niet gedecodeerd artwork zou als
+      // niets op de poster belanden.
+      const [avatarImg, master] = await Promise.all([
+        laadAvatar(data.avatarUrl),
+        laadKaartMaster(masterVoor(data.tier?.key, data.editie)),
+      ]);
       const outcome = await sharePng(
-        (ctx) => drawProfielPoster(ctx, data, avatarImg),
+        (ctx) => drawProfielPoster(ctx, data, avatarImg, master),
         {
           width: POSTER_W,
           height: POSTER_H,

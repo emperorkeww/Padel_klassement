@@ -15,6 +15,7 @@ import {
 import { FormChips } from "@/features/rating/components/FormChips";
 import { tierFor, type Tier } from "@/features/rating/tiers";
 import { drawKaart } from "@/features/profiles/profielPoster";
+import { laadKaartMaster, masterVoor } from "./kaartMasters";
 import { Avatar } from "@/ui/Avatar";
 import "./KaartShowcase.css";
 
@@ -120,8 +121,11 @@ function Kaart({
 const POSTER_KAART_W = 560;
 // Ruimte voor de slagschaduw én voor de ornamentlaag (#710): die reikt tot 30
 // kaart-units naast en 38 boven het schild, dus met de oude 48px sneed het
-// canvas de hoorns en linten er stil af.
-const POSTER_MARGE = 180;
+// canvas de hoorns en linten er stil af. Sinds #895 tekent de canvas ook de
+// rastermasters, en die reiken verder: de GOAT begint op 53% van de kaarthóógte
+// bóven het schild. Met te weinig marge zou de showcase de breakout stil
+// afsnijden — juist het detail dat hier vergeleken moet worden.
+const POSTER_MARGE = 460;
 
 function PosterKaart({
   tier,
@@ -140,27 +144,37 @@ function PosterKaart({
   const w = POSTER_KAART_W + POSTER_MARGE * 2;
   const h = Math.round(POSTER_KAART_W * 1.39) + POSTER_MARGE * 2;
   useEffect(() => {
-    const ctx = ref.current?.getContext("2d");
-    if (!ctx) return;
-    // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#0b241a";
-    ctx.fillRect(0, 0, w, h);
-    drawKaart(
-      ctx,
-      {
-        name: naam,
-        avatarUrl: null,
-        rating: tier?.min != null ? tier.min + 50 : 1050,
-        tier,
-        editie,
-        editieTekst: editieLabel,
-      },
-      null,
-      POSTER_MARGE,
-      POSTER_MARGE,
-      POSTER_KAART_W,
-    );
+    let afgebroken = false;
+    // Het rastermaster (#895) laadt async — zoals op de echte poster — dus de
+    // tekening wacht erop. Een tussentijdse wissel van editie mag de vorige
+    // beurt niet meer op het canvas laten landen.
+    laadKaartMaster(masterVoor(tier?.key, editie)).then((master) => {
+      const ctx = ref.current?.getContext("2d");
+      if (!ctx || afgebroken) return;
+      // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b241a";
+      ctx.fillRect(0, 0, w, h);
+      drawKaart(
+        ctx,
+        {
+          name: naam,
+          avatarUrl: null,
+          rating: tier?.min != null ? tier.min + 50 : 1050,
+          tier,
+          editie,
+          editieTekst: editieLabel,
+        },
+        null,
+        POSTER_MARGE,
+        POSTER_MARGE,
+        POSTER_KAART_W,
+        master,
+      );
+    });
+    return () => {
+      afgebroken = true;
+    };
   }, [tier, editie, editieLabel, naam, w, h]);
   return (
     <canvas
