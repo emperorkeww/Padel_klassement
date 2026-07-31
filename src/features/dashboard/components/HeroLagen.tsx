@@ -8,6 +8,8 @@
 //   3. basisachtergrond van de divisie│
 //   4. permanent speciaal thema       ├ .hero__lagen (geklipt)
 //   5. watermerken en materiaaltextuur│
+//      (bij een eigen lijstprofiel:    │  rail → band → keyline → vlak, met de
+//       HeroLijst, #834)               │  watermerken ín dat vlak)
 //   7. tijdelijke In-Form/On Fire-tint│
 //   8. bewegende glans               ┘
 //   6. profielavatar en inhoud       → .hero__main / __divide / __foot (z-index 1)
@@ -24,8 +26,10 @@
 // mag nooit een knop of link afvangen (#771, AC10).
 //
 // De ornamenten zelf komen uit het register van de bijbehorende FUT-kaart
-// (#710/#769): dezelfde kroon, dezelfde commandoster, dezelfde linten. Zie
-// heroOrnamentenBigDaddy.tsx en dictatorOrnamenten.tsx.
+// (#710/#769): dezelfde commandoster, dezelfde linten. Zie
+// dictatorOrnamenten.tsx. Big Daddy is sinds #834 de eerste die geen vectoren
+// meer tekent maar artwork-onderdelen uit het onderdelenblad van zijn FUT-master
+// snijdt — zie bigdaddy/BigDaddyDecor.tsx.
 
 import {
   DictatorGoudDefs,
@@ -34,10 +38,6 @@ import {
   DictatorRandRuit,
   DictatorWatermerk,
 } from "@/features/standings/components/dictatorOrnamenten";
-import {
-  BD_KROON_MOTIEF,
-  BD_KROON_MOTIEF_KLEUR,
-} from "@/features/rating/components/ornamentenBigDaddy";
 import {
   PiasKaartDecor,
   PiasMaskerMedaillon,
@@ -67,14 +67,13 @@ import {
 } from "./heroOrnamentenPiet";
 import type { HeroBasis } from "../heroDivisie";
 import type { HeroOverlay, HeroPermanent } from "../heroThema";
+import { HeroLijst } from "./HeroLijst";
 import { HeroSheen } from "./HeroSheen";
 import { HeroWatermerk } from "./HeroWatermerk";
 import {
-  BigDaddyBallonnen,
-  BigDaddyConfetti,
-  BigDaddyKroonCrest,
-  BigDaddyLint,
-} from "./heroOrnamentenBigDaddy";
+  BigDaddyDecorAchter,
+  BigDaddyDecorVoor,
+} from "./bigdaddy/BigDaddyDecor";
 import {
   KAMPIOEN_ZEGEL,
   KAMPIOEN_ZEGEL_KLEUR,
@@ -90,17 +89,11 @@ import {
 function OrnamentenAchter({ permanent }: { permanent: HeroPermanent }) {
   switch (permanent) {
     case "bigdaddy":
-      return (
-        <>
-          {/* De kroon als watermerk, letterlijk het motief van de 👑-kaart. */}
-          <HeroWatermerk
-            paden={BD_KROON_MOTIEF}
-            kleur={BD_KROON_MOTIEF_KLEUR}
-            className="hero__watermerk--kroon"
-          />
-          <BigDaddyConfetti className="hero__confetti" />
-        </>
-      );
+      // Geen watermerk: het vlak draagt zijn eigen matelas-ruit en hartbokeh
+      // (DashboardHero.css), en twee weefsels over elkaar wordt druk — dezelfde
+      // keuze die de pias en de Piet op de FUT-kaart al maken. Wat hier staat is
+      // de passage van het flanklint die achter de lijst door loopt.
+      return <BigDaddyDecorAchter />;
     case "dictator":
       return (
         <>
@@ -144,14 +137,7 @@ function OrnamentenAchter({ permanent }: { permanent: HeroPermanent }) {
 function OrnamentenVoor({ permanent }: { permanent: HeroPermanent }) {
   switch (permanent) {
     case "bigdaddy":
-      return (
-        <>
-          <BigDaddyKroonCrest className="hero__crest hero__crest--kroon" />
-          <BigDaddyBallonnen className="hero__ballonnen" />
-          <BigDaddyLint className="hero__lint hero__lint--links" />
-          <BigDaddyLint className="hero__lint hero__lint--rechts" />
-        </>
-      );
+      return <BigDaddyDecorVoor />;
     case "dictator":
       return (
         <>
@@ -264,6 +250,11 @@ export function HeroLagen({
   // DOM van een kaart die niets bijzonders draagt (een speler zonder rating).
   if (!basis && !permanent && !overlay) return null;
 
+  // Thema's met een eigen lijstprofiel (#834): het materiaal zit dan niet in de
+  // achtergrond van .hero maar in de vier geneste vlakken van HeroLijst, zodat
+  // decoratie tússen kaartvlak en lijst kan liggen.
+  const eigenLijst = permanent === "bigdaddy";
+
   // Niet elk thema heeft iets dat over de rand steekt; zonder inhoud blijft de
   // tweede container weg.
   const heeftVoor =
@@ -273,6 +264,19 @@ export function HeroLagen({
     permanent === "piet" ||
     permanent === "kampioen" ||
     overlay != null;
+
+  // Stap 7 en 8: de tint van de tijdelijke overlay, zijn eigen groeven en de
+  // bewegende glans. Bewust lagen en niet de achtergrond van .hero — anders
+  // vervangt de overlay het permanente materiaal in plaats van erop te liggen
+  // (AC4), en dat is precies wat #771 rechtzet. Half doorlatend, zodat de kaart
+  // eronder herkenbaar blijft.
+  const overlaylagen = (
+    <>
+      {overlay && <span className={`hero__tint hero__tint--${overlay}`} />}
+      <OverlayAchter overlay={overlay} />
+      {overlay && <HeroSheen overlay={overlay} />}
+    </>
+  );
 
   return (
     <>
@@ -296,17 +300,26 @@ export function HeroLagen({
         )}
         {basis?.glans && <span className="hero__glans" />}
         {/* Stap 4 en 5 voor een permanent thema: zijn materiaaltextuur en
-            watermerk. Het vlak zelf staat op .hero (DashboardHero.css). */}
-        <OrnamentenAchter permanent={permanent} />
-        {/* Stap 7: de tint van de tijdelijke overlay. Bewust een láág en niet de
-            achtergrond van .hero — anders vervangt de overlay het permanente
-            materiaal in plaats van erop te liggen (AC4), en dat is precies wat
-            #771 rechtzet. Half doorlatend, zodat de kaart eronder herkenbaar
-            blijft. */}
-        {overlay && <span className={`hero__tint hero__tint--${overlay}`} />}
-        <OverlayAchter overlay={overlay} />
-        {/* Stap 8: de bewegende glans, gedeeld door beide overlays. */}
-        {overlay && <HeroSheen overlay={overlay} />}
+            watermerk. Het vlak zelf staat op .hero (DashboardHero.css) — behalve
+            bij een thema met een eigen lijstprofiel (#834): daar draagt
+            `hero__vlak` het materiaal en verdwijnt de decoratie erin achter de
+            lijst in plaats van eroverheen te schilderen. */}
+        {eigenLijst ? (
+          // Mét lijst gaan ook de overlaylagen ín het vlak: de tint van een
+          // In-Form of On Fire hoort op het kaartoppervlak, niet over de lijst.
+          // Als sibling erná dekte hij het hele goud-magenta profiel af, en dan
+          // is er van de kaart eronder niets meer te herkennen — precies wat
+          // AC4 verbiedt.
+          <HeroLijst>
+            <OrnamentenAchter permanent={permanent} />
+            {overlaylagen}
+          </HeroLijst>
+        ) : (
+          <>
+            <OrnamentenAchter permanent={permanent} />
+            {overlaylagen}
+          </>
+        )}
       </span>
       {/* Stap 9: alles wat over de rand heen steekt. Alleen renderen als er iets
           in staat — een lege span in de DOM van elke kaart is nergens goed voor. */}
