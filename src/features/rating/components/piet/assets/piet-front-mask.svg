@@ -1,25 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1086 1448">
+  <!-- Selecteert uit piet-master.webp de groepen die vóór het kaartframe mogen
+       komen: de gevleugelde bovencrest, de zijgroepen (veren, speelkaarten,
+       geschenken) en de onderste rozet met lint. Het kaartmidden blijft zwart —
+       de binnenrook, de stadssilhouet en de randlijst worden al door de
+       binnenlaag getekend; hier zouden ze een tweede keer, en dan bovenop
+       rating, naam en avatar, geschilderd worden.
+
+       Twee dingen zitten hier bewust NIET in:
+       - de kettingen. Die horen áchter het kaartframe en alleen vóór de zwarte
+         achtergrond, dus ze komen uitsluitend uit de achterlaag;
+       - de avatarzone. Rook, veren en speelkaarten blijven achter de
+         profielfoto; de zwarte schijf onderaan snijdt ze daar weg.
+
+       Het masker wordt eerst naar echte alfa gerenderd, zodat de zwarte vormen
+       pixels werkelijk wissen wanneer dit SVG als extern CSS-mask-image hangt. -->
   <defs>
-    <!-- Het masker wordt eerst naar echte alpha gerenderd. Daardoor wist de
-         zwarte avatarvorm pixels werkelijk uit wanneer dit SVG later als
-         extern CSS-mask-image wordt gebruikt. -->
     <mask id="front-selection" maskUnits="userSpaceOnUse" mask-type="luminance">
-      <rect width="1024" height="1536" fill="black"/>
+      <rect width="1086" height="1448" fill="black"/>
       <g fill="white">
-        <!-- Complete bovencrest en vleugels; het overige wolkendek blijft achter. -->
-        <ellipse cx="512" cy="164" rx="292" ry="170"/>
-        <!-- Geselecteerde organische zijgroepen. -->
-        <ellipse cx="128" cy="510" rx="174" ry="330"/>
-        <ellipse cx="884" cy="568" rx="178" ry="350"/>
-        <ellipse cx="54" cy="1110" rx="82" ry="278"/>
-        <ellipse cx="970" cy="1110" rx="82" ry="282"/>
-        <!-- Complete onderste rozet, medaillon en aansluitende kettingbogen. -->
-        <ellipse cx="512" cy="1265" rx="318" ry="208"/>
+        <!-- Alleen de gevleugelde bovencrest met de rook die er direct achter
+             hangt. Bewust niet de hele bovenrand: de randlijst zit óók in de
+             master, dus een brede selectie schildert die een tweede keer over
+             het echte frame en levert een zware zwarte bezel op. -->
+        <ellipse cx="549" cy="122" rx="205" ry="122"/>
+        <!-- Zijgroepen: veren, speelkaarten en geschenken. -->
+        <ellipse cx="150" cy="530" rx="188" ry="268"/>
+        <ellipse cx="932" cy="545" rx="182" ry="252"/>
+        <!-- De complete onderste rozet met medaillon, lauwer en lintpunten. -->
+        <ellipse cx="549" cy="1300" rx="300" ry="172"/>
       </g>
-      <!-- De avatarschijf blijft volledig vrij; de omliggende wolklobben
-           blijven door de witte zijselectie wel vóór het frame beschikbaar. -->
-      <ellipse cx="696" cy="553" rx="148" ry="174" fill="black"/>
+      <!-- De portretschijf. Sinds #fut-schild-piet valt de kaartbox samen met
+           die van de referentie, dus staat de avatar op het middelpunt en de
+           straal van de portretring uit het bronbeeld: 744/426 met r 191. Wat
+           hier zwart is blijft achter de foto. -->
+      <ellipse cx="744" cy="426" rx="188" ry="188" fill="black"/>
+      <!-- Twee lobben rook die er vóór langs trekken, linksboven en boven. De
+           binnenlaag ligt onder de content en kan dus nooit over de foto heen;
+           zonder deze twee blijft de cirkel een gave, onafgebroken vorm en ziet
+           het oog meteen waar het portret ophoudt. De rook staat er in de
+           referentie zelf al — er wordt niets verplaatst, alleen doorgelaten. -->
+      <g fill="white">
+        <ellipse cx="596" cy="330" rx="104" ry="80" transform="rotate(-28 596 330)"/>
+        <ellipse cx="714" cy="258" rx="86" ry="56"/>
+      </g>
     </mask>
   </defs>
-  <rect width="1024" height="1536" fill="white" mask="url(#front-selection)"/>
+  <rect width="1086" height="1448" fill="white" mask="url(#front-selection)"/>
 </svg>

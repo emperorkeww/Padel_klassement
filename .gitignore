@@ -42,3 +42,6 @@ scratch-artifacts/
 
 # Storm-screenshotscript output (#834)
 screenshots/
+
+# Python-bytecode van de assetscripts.
+__pycache__/
