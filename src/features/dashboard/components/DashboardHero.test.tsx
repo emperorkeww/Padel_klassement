@@ -297,7 +297,7 @@ describe("<DashboardHero /> — decoratielagen", () => {
     // instantie compenseert die inzet — anders verspringt dezelfde bron een
     // paar pixels (zelfde registratiedetail als --storm-master-inset).
     expect(HERO_CSS).toMatch(
-      /\.hero-bd--flank-achter\s*\{[^}]*var\(--bd-lijst-d\)/,
+      /\.hero-bd--flank-achter\s*\{[^}]*var\(--lijst-d\)/,
     );
   });
 
@@ -320,12 +320,12 @@ describe("<DashboardHero /> — decoratielagen", () => {
     expect(HERO_CSS).toMatch(
       /\.hero--bigdaddy\s*\{[^}]*container-type:\s*inline-size/,
     );
-    for (const dikte of ["--bd-rail-d", "--bd-band-d", "--bd-key-d"])
+    for (const dikte of ["--lijst-rail-d", "--lijst-band-d", "--lijst-key-d"])
       expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
     // En de inhoud schuift met de volle lijstdikte naar binnen; anders belandt
     // tekst op de magenta band.
     expect(HERO_CSS).toMatch(
-      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--bd-lijst-d\)/,
+      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--lijst-d\)/,
     );
   });
 
@@ -336,6 +336,63 @@ describe("<DashboardHero /> — decoratielagen", () => {
       renderKaart({ pias: true, thema: "pias" }).querySelector(".hero__lijst"),
     ).toBeNull();
     expect(renderKaart().querySelector(".hero__lijst")).toBeNull();
+  });
+
+  it("bouwt de In-Form-kaart als zwart-goud profiel met storm (#834)", () => {
+    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    // Dezelfde vier geneste vlakken als bij Big Daddy; alleen het materiaal en
+    // de chamfer verschillen, en die staan in de CSS.
+    const vlak = hero.querySelector(
+      ".hero__lagen > .hero__lijst > .hero__lijst-band > .hero__lijst-key > .hero__vlak",
+    );
+    expect(vlak).toBeInTheDocument();
+    // Het artwork hangt ín dat vlak, dus het klipt op de binnenrand van de
+    // keyline en kan per constructie niet over de gouden lijst schilderen —
+    // precies wat de referentie doet, die het goud over de volle hoogte
+    // ononderbroken houdt.
+    expect(vlak?.querySelector(".hero-if--storm")).toBeInTheDocument();
+    expect(vlak?.querySelector(".hero-if--ember")).toBeInTheDocument();
+    for (const deel of vlak?.querySelectorAll<HTMLImageElement>(".hero-if") ?? [])
+      expect(deel).toHaveAttribute("decoding", "sync");
+    // Geen tint: die is er om een permanent thema doorheen te laten schemeren,
+    // en een tweede donkere laag over dit vlak haalt de storm er weer uit.
+    expect(hero.querySelector(".hero__tint--inform")).toBeNull();
+    // De diktes rekenen in containerbreedte, om dezelfde reden als bij Big
+    // Daddy: procenten in `inset` geven een brede kaart een dunnere boven- dan
+    // zijrand.
+    expect(HERO_CSS).toMatch(
+      /\.hero--lijst-inform\s*\{[^}]*container-type:\s*inline-size/,
+    );
+    for (const dikte of ["--lijst-rail-d", "--lijst-band-d", "--lijst-key-d"])
+      expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
+    // De achthoek zit op de keyline en het vlak, niet op de buitenrand: de
+    // goudrail volgt een gewone afgeronde hoek.
+    expect(HERO_CSS).toMatch(
+      /\.hero--lijst-inform \.hero__lijst-key,\s*\.hero--lijst-inform \.hero__vlak\s*\{[^}]*clip-path:\s*polygon/,
+    );
+  });
+
+  it("houdt de In-Form-overlay dun boven een permanent thema (#834)", () => {
+    // De regel uit heroLijstProfiel, hier op zijn zichtbare kant: ligt er een
+    // permanent thema onder, dan krijgt In-Form geen eigen lijst en geen
+    // stormartwork. Een dekkende storm over het kraftkarton van de pias zou dat
+    // thema onzichtbaar maken, en dat is precies wat #771 (AC4) verbiedt.
+    const pias = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
+    expect(pias.querySelector(".hero__lijst")).toBeNull();
+    expect(pias.querySelector(".hero-if--storm")).toBeNull();
+    expect(pias.querySelector(".hero__tint--inform")).toBeInTheDocument();
+    // Bij Big Daddy blijft zijn eigen roze profiel staan — mét de tint erin.
+    const bd = renderKaart({ bigDaddy: true, thema: "bigdaddy", inForm: true, overlay: "inform" });
+    expect(bd.querySelector(".hero__vlak > .hero__tint--inform")).toBeInTheDocument();
+    expect(bd.querySelector(".hero-if--storm")).toBeNull();
+    // En de crest verschilt: op de eigen kaart de schildplaat, daarboven de
+    // kale glyph die de kaart eronder heel laat.
+    expect(
+      renderKaart({ inForm: true, overlay: "inform" }).querySelector(
+        ".hero__crest--schild",
+      ),
+    ).toBeInTheDocument();
+    expect(pias.querySelector(".hero__crest--bliksem")).toBeInTheDocument();
   });
 
   it("geeft de Dictator zijn commandoster, hoeken en lakzegel (#771)", () => {
@@ -432,7 +489,10 @@ describe("<DashboardHero /> — decoratielagen", () => {
   });
 
   it("geeft In-Form zijn bliksem, groeven en snelheidslijnen (#771)", () => {
-    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    // Boven een permanent thema: dun en langs de randen, zodat de kaart eronder
+    // herkenbaar blijft. Op de kaart die In-Form zélf draagt staat sinds #834
+    // het artwork uit de referentie — zie de suite hieronder.
+    const hero = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
     for (const klasse of [
       ".hero__crest--bliksem",
       ".hero__groeven--inform",
@@ -500,7 +560,9 @@ describe("<DashboardHero /> — decoratielagen", () => {
   });
 
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {
-    const hero = renderKaart({ inForm: true, overlay: "inform" });
+    // Met een permanent thema eronder, want dan staat de tint er: op de eigen
+    // In-Form-kaart is het vlak zelf al zwart en zou een tint de storm doven.
+    const hero = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
     const lagen = hero.querySelector(".hero__lagen");
     expect(lagen).toHaveAttribute("aria-hidden", "true");
     expect(hero.querySelector(".hero__tint--inform")).toBeInTheDocument();

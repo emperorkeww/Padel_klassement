@@ -127,17 +127,49 @@ export function heroOverlay(s: HeroStatusVlaggen): HeroOverlay {
   return null;
 }
 
+/** Welk profiel draagt de lijst van deze kaart — de vier geneste vlakken van
+ *  HeroLijst — als er één is?
+ *
+ *  Big Daddy was de eerste (#834). In-Form is de tweede, en die roept een vraag
+ *  op die een permanent thema niet heeft: een overlay hoort de kaart eronder
+ *  herkenbaar te laten (#771, AC4), en een eigen lijst mét een dekkende
+ *  stormkolom doet precies het omgekeerde. Vandaar de regel:
+ *
+ *    een overlay draagt zijn eigen lijst alleen wanneer er geen permanent thema
+ *    is; ligt er wel een onder, dan blijft hij tint, groeven, glans en crest.
+ *
+ *  Zo houdt de piaskaart zijn kraftkarton en de Big Daddy zijn satijn, terwijl
+ *  de kaart die je in de praktijk ziet — de divisiekaart van de speler die deze
+ *  week de grootste ratingwinst pakte — het volle stormprofiel krijgt. Zie
+ *  docs/dashboard/in-form-dashboardkaart.md §4. */
+export function heroLijstProfiel(
+  permanent: HeroPermanent,
+  overlay: HeroOverlay,
+): "bigdaddy" | "inform" | null {
+  if (permanent === "bigdaddy") return "bigdaddy";
+  if (!permanent && overlay === "inform") return "inform";
+  return null;
+}
+
 /** De klassenlijst van de kaart. Permanent thema en overlay staan naast elkaar
  *  op hetzelfde element: de overlay vervangt de variant dus niet, hij komt
- *  erbovenop (#771, AC4). */
+ *  erbovenop (#771, AC4).
+ *
+ *  Draagt de overlay zijn eigen lijst, dan komt daar een derde klasse bij: het
+ *  materiaal van die lijst is een ánder ontwerp dan de tint die dezelfde overlay
+ *  op een permanent thema legt, en de twee moeten elkaar in de CSS niet in de
+ *  weg zitten. `.hero--overlay-inform` blijft eronder staan voor de inkt die ze
+ *  wél delen. */
 export function heroKlassen(
   permanent: HeroPermanent,
   overlay: HeroOverlay,
 ): string {
+  const profiel = heroLijstProfiel(permanent, overlay);
   return [
     "hero",
     permanent ? `hero--${permanent}` : null,
     overlay ? `hero--overlay-${overlay}` : null,
+    profiel === "inform" ? "hero--lijst-inform" : null,
   ]
     .filter(Boolean)
     .join(" ");
