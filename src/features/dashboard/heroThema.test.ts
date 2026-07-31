@@ -3,6 +3,7 @@ import {
   HERO_OVERLAY_PRIORITEIT,
   HERO_PERMANENT_PRIORITEIT,
   heroKlassen,
+  heroLijstProfiel,
   heroOverlay,
   heroPermanent,
 } from "./heroThema";
@@ -182,5 +183,40 @@ describe("heroKlassen (#771)", () => {
     expect(heroKlassen(null, null)).toBe("hero");
     expect(heroKlassen("dictator", null)).toBe("hero hero--dictator");
     expect(heroKlassen(null, "onfire")).toBe("hero hero--overlay-onfire");
+  });
+});
+
+describe("heroLijstProfiel (#834)", () => {
+  it("geeft Big Daddy zijn profiel, ook onder een overlay", () => {
+    // Het permanente materiaal blijft van de kaart; de overlay gaat er ín (zie
+    // HeroLagen), niet overheen.
+    expect(heroLijstProfiel("bigdaddy", null)).toBe("bigdaddy");
+    expect(heroLijstProfiel("bigdaddy", "inform")).toBe("bigdaddy");
+    expect(heroLijstProfiel("bigdaddy", "onfire")).toBe("bigdaddy");
+  });
+
+  it("geeft In-Form een eigen profiel, maar alleen op een kale kaart", () => {
+    expect(heroLijstProfiel(null, "inform")).toBe("inform");
+    // Ligt er een permanent thema onder, dan blijft In-Form een glans erover:
+    // een dekkende stormkolom zou dat thema onzichtbaar maken (#771, AC4).
+    for (const thema of ["dictator", "kampioen", "pias", "piet"] as const)
+      expect(heroLijstProfiel(thema, "inform"), thema).toBeNull();
+  });
+
+  it("geeft On Fire (nog) geen eigen profiel", () => {
+    // Er is één referentieontwerp per kaart, en dat van 🔥 is er nog niet.
+    expect(heroLijstProfiel(null, "onfire")).toBeNull();
+    expect(heroLijstProfiel(null, null)).toBeNull();
+  });
+
+  it("zet de klasse alleen wanneer de overlay het profiel draagt", () => {
+    // Big Daddy heeft aan `.hero--bigdaddy` genoeg; In-Form deelt zijn klasse
+    // met de dunne variant en heeft er dus een tweede nodig.
+    expect(heroKlassen(null, "inform")).toBe(
+      "hero hero--overlay-inform hero--lijst-inform",
+    );
+    expect(heroKlassen("pias", "inform")).toBe(
+      "hero hero--pias hero--overlay-inform",
+    );
   });
 });

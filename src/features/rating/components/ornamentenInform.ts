@@ -90,6 +90,41 @@ export function bliksem(
  *  `punt`/`troon` nestelt hij precies boven de V. */
 export const INFORM_CREST = bliksem(50, -5.2, 14, 18);
 
+/** De schildplaat áchter die bliksem, gecentreerd op (cx, cy): rechte schouders
+ *  die naar een punt lopen. Alleen de dashboardkaart gebruikt hem (#834): daar
+ *  hangt de crest los boven een rechte bovenrand en heeft de glyph een drager
+ *  nodig, terwijl hij op de FUT-kaart in de inkeping van het schild valt en er
+ *  al één heeft. Twee maten uit dezelfde functie zijn de gouden rand en de
+ *  donkere kern — zo kan de rand per constructie niet ongelijk worden. */
+export function informSchild(
+  cx: number,
+  cy: number,
+  breedte: number,
+  hoogte: number,
+): string {
+  const b = breedte / 2;
+  const t = cy - hoogte / 2;
+  const o = cy + hoogte / 2;
+  // De schouder is een vaste fractie van de hoogte: zo houdt een grotere plaat
+  // dezelfde vorm in plaats van een spitsere punt.
+  const schouder = t + hoogte * 0.52;
+  const r = Math.min(b * 0.24, hoogte * 0.1);
+  return [
+    `M ${rond(cx - b)} ${rond(t + r)}`,
+    `C ${rond(cx - b)} ${rond(t)} ${rond(cx - b)} ${rond(t)} ${rond(cx - b + r)} ${rond(t)}`,
+    `L ${rond(cx + b - r)} ${rond(t)}`,
+    `C ${rond(cx + b)} ${rond(t)} ${rond(cx + b)} ${rond(t)} ${rond(cx + b)} ${rond(t + r)}`,
+    `L ${rond(cx + b)} ${rond(schouder)}`,
+    `C ${rond(cx + b)} ${rond(schouder + hoogte * 0.2)} ${rond(cx + b * 0.5)} ${rond(o - hoogte * 0.12)} ${rond(cx)} ${rond(o)}`,
+    `C ${rond(cx - b * 0.5)} ${rond(o - hoogte * 0.12)} ${rond(cx - b)} ${rond(schouder + hoogte * 0.2)} ${rond(cx - b)} ${rond(schouder)}`,
+    "Z",
+  ].join(" ");
+}
+
+/** De plaat en zijn donkere kern, om dezelfde as als INFORM_CREST. */
+export const INFORM_CREST_PLAAT = informSchild(50, -5.2, 31, 38);
+export const INFORM_CREST_KERN = informSchild(50, -5.6, 25, 31);
+
 /* ---------------------------- vinnen (achter) ---------------------------- */
 
 /** Aerodynamisch goudaccent langs de onderste zijrand — de linkerhelft; de

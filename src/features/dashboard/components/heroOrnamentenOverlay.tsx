@@ -15,9 +15,12 @@
 
 import {
   INFORM_CREST,
+  INFORM_CREST_KERN,
+  INFORM_CREST_PLAAT,
   INFORM_GOUD_CONTOUR,
   INFORM_GOUD_GLANS,
   INFORM_GOUD_VERLOOP,
+  INFORM_TITAAN,
   INFORM_VIN,
 } from "@/features/rating/components/ornamentenInform";
 import {
@@ -154,6 +157,51 @@ export function InformBliksemCrest({ className }: { className?: string }) {
         strokeWidth="0.35"
         strokeLinejoin="round"
         opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+const SCHILD_VIEWBOX = doosVan([INFORM_CREST_PLAAT]);
+
+/** Dezelfde bliksem op een schildplaat, voor de kaart die het In-Form-profiel
+ *  zélf draagt (#834). Op een permanent thema blijft de kale glyph hierboven
+ *  staan: daar is de crest een accent op andermans kaart en moet hij dun zijn.
+ *  Op de eigen kaart is hij het insigne van de bovenrand, en dan heeft hij de
+ *  drager nodig die de FUT-kaart in zijn inkeping al heeft. */
+export function InformSchildCrest({ className }: { className?: string }) {
+  const id = "hero-inform-schild-goud";
+  return (
+    <svg
+      className={className}
+      viewBox={SCHILD_VIEWBOX}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <Verloop id={id} stops={INFORM_GOUD_VERLOOP} />
+      </defs>
+      <path
+        d={INFORM_CREST_PLAAT}
+        fill={`url(#${id})`}
+        stroke={INFORM_GOUD_CONTOUR}
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      <path d={INFORM_CREST_KERN} fill={INFORM_TITAAN} />
+      <path
+        d={INFORM_CREST_KERN}
+        fill="none"
+        stroke={INFORM_GOUD_GLANS}
+        strokeWidth="0.3"
+        opacity="0.45"
+      />
+      <path
+        d={INFORM_CREST}
+        fill={`url(#${id})`}
+        stroke={INFORM_GOUD_CONTOUR}
+        strokeWidth="0.4"
+        strokeLinejoin="round"
       />
     </svg>
   );
