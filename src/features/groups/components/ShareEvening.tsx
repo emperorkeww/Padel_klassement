@@ -14,7 +14,11 @@ import {
   laadKaartMaster,
   masterVoor,
 } from "@/features/rating/components/kaartMasters";
+import { divisieLayout } from "@/features/rating/components/layouts/divisieLayouts";
+import { laadDivisieOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
+import { getPlayerStandings } from "@/features/standings/api";
+import { statBronVoorStand } from "@/features/standings/leaderboardHelpers";
 import { laadEditieContext } from "@/features/standings/editieContext";
 import { vsKaartVoor } from "@/features/profiles/compare";
 import { displayName } from "@/features/profiles/api";
@@ -73,10 +77,11 @@ export function ShareEvening({
       // de Vandaag-tab hoeft ze niet bij elke render te kennen en alles zit
       // achter cached(). Faalt het, dan valt de poster terug op de versie
       // zonder kaart — een samenvatting delen is belangrijker dan de trofee.
-      const [ratings, edities] = await Promise.all([
+      const [ratings, edities, standen] = await Promise.all([
         getPlayerRatings(),
         laadEditieContext(),
-      ]).catch(() => [null, null] as const);
+        getPlayerStandings().catch(() => []),
+      ]).catch(() => [null, null, []] as const);
       const poster = eveningPoster(summary, {
         groepsnaam: groupName,
         datum: avondDatumLabel(today),
@@ -104,19 +109,29 @@ export function ShareEvening({
             tier: kaart.tier,
             editie: kaart.editie,
             editieTekst: kaart.editieTekst,
+            // Bewust de all-time stand en niet de avondcijfers: de kaart is de
+            // klassementskaart van deze speler, niet een avondrapport (#895).
+            stats: statBronVoorStand(
+              standen.find((s) => s.player_id === playerId),
+            ),
           };
         },
       });
       // Profielfoto en rastermaster van de winnaar vooraf laden — het canvas
       // tekent synchroon.
-      const [avatarImg, master] = await Promise.all([
+      const layout = divisieLayout(
+        poster.winnaar?.tier?.key,
+        poster.winnaar?.editie,
+      );
+      const [avatarImg, master, onderdelen] = await Promise.all([
         laadAvatar(poster.winnaar?.avatarUrl ?? null),
         laadKaartMaster(
           masterVoor(poster.winnaar?.tier?.key, poster.winnaar?.editie),
         ),
+        layout ? laadDivisieOnderdelen(layout) : Promise.resolve(null),
       ]);
       const outcome = await sharePng(
-        (ctx) => drawEveningPoster(ctx, poster, avatarImg, master),
+        (ctx) => drawEveningPoster(ctx, poster, avatarImg, master, onderdelen),
         {
           width: W,
           height: H,

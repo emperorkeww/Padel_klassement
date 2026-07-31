@@ -7,6 +7,8 @@ import {
   laadKaartMaster,
   masterVoor,
 } from "@/features/rating/components/kaartMasters";
+import { divisieLayout } from "@/features/rating/components/layouts/divisieLayouts";
+import { laadDivisieOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 import {
   drawProfielPoster,
   POSTER_H,
@@ -37,12 +39,15 @@ export function ShareProfile({
       // Profielfoto én het rastermaster van de special (#895) vooraf laden: het
       // canvas tekent synchroon, dus een nog niet gedecodeerd artwork zou als
       // niets op de poster belanden.
-      const [avatarImg, master] = await Promise.all([
+      // Idem voor het artwork van een divisie met een eigen layout (#895).
+      const layout = divisieLayout(data.tier?.key, data.editie);
+      const [avatarImg, master, onderdelen] = await Promise.all([
         laadAvatar(data.avatarUrl),
         laadKaartMaster(masterVoor(data.tier?.key, data.editie)),
+        layout ? laadDivisieOnderdelen(layout) : Promise.resolve(null),
       ]);
       const outcome = await sharePng(
-        (ctx) => drawProfielPoster(ctx, data, avatarImg, master),
+        (ctx) => drawProfielPoster(ctx, data, avatarImg, master, onderdelen),
         {
           width: POSTER_W,
           height: POSTER_H,

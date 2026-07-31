@@ -3670,6 +3670,77 @@ export function kaartSkin(
  *  in de CSS én hier, tegen rekenen. */
 export const KAART_RATIO = 1.39;
 
+// Zelfde initialen- en hue-recept als Avatar.tsx, met de lichte hue-tokens uit
+// index.css — de posters zijn (net als de andere, #125) vastgepind op het
+// lichte palet.
+const AVATAR_HUES: ReadonlyArray<{ bg: string; fg: string }> = [
+  { bg: "#dcefdd", fg: "#256d33" },
+  { bg: "#dbeafe", fg: "#1d4ed8" },
+  { bg: "#fde8d7", fg: "#b45309" },
+  { bg: "#ede9fe", fg: "#6d28d9" },
+  { bg: "#fce7f3", fg: "#be185d" },
+  { bg: "#cffafe", fg: "#0e7490" },
+  { bg: "#fef3c7", fg: "#a16207" },
+  { bg: "#e2e8f0", fg: "#334155" },
+];
+
+function initialen(naam: string): string {
+  const delen = naam.trim().split(/\s+/).filter(Boolean);
+  if (delen.length === 0) return "?";
+  if (delen.length === 1) return delen[0].slice(0, 2).toUpperCase();
+  return (delen[0][0] + delen[delen.length - 1][0]).toUpperCase();
+}
+
+function hueIndex(naam: string): number {
+  let h = 0;
+  for (let i = 0; i < naam.length; i++) h = (h * 31 + naam.charCodeAt(i)) >>> 0;
+  return h % AVATAR_HUES.length;
+}
+
+/**
+ * De ronde portretcirkel van een kaart: de échte profielfoto cover-passend
+ * geclipt, of — zonder foto — de initialen-avatar op zijn hue-vlak, precies
+ * zoals `Avatar` in de DOM. Gedeeld door de schildkaart en de divisiekaarten
+ * met een eigen layout (#895); een lege cirkel op de poster terwijl de app
+ * initialen toont is precies het soort verschil dat #895 wegwerkt.
+ */
+export function drawAvatarCirkel(
+  ctx: CanvasRenderingContext2D,
+  naam: string,
+  img: HTMLImageElement | null,
+  cx: number,
+  cy: number,
+  r: number,
+) {
+  if (img) {
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const schaal = Math.max((r * 2) / iw, (r * 2) / ih);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(
+      img,
+      cx - (iw * schaal) / 2,
+      cy - (ih * schaal) / 2,
+      iw * schaal,
+      ih * schaal,
+    );
+    ctx.restore();
+    return;
+  }
+  const hue = AVATAR_HUES[hueIndex(naam)];
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = hue.bg;
+  ctx.fill();
+  ctx.fillStyle = hue.fg;
+  ctx.textAlign = "center";
+  ctx.font = `800 ${Math.round(r * 0.75)}px Outfit, system-ui, sans-serif`;
+  ctx.fillText(initialen(naam), cx, cy + r * 0.27);
+}
+
 /**
  * Waar het master-artwork terechtkomt op een kaart van `w × h` op `(x, y)`.
  * Spiegel van `.<naam>-effect__master` in de CSS: `left` en `width` rekenen

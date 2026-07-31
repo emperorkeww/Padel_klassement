@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import type { Profile, RatingPoint } from "@/types";
+import type { PlayerStanding, Profile, RatingPoint } from "@/types";
 import { winRate, type Outcome } from "@/features/rating/results";
 import type { Shift } from "@/features/rating/rankShift";
 import type { SpelerStatBron } from "@/features/rating/components/layouts/kaartLayout";
@@ -34,6 +34,27 @@ export type Row = {
    *  getal bij een oude rating zetten. */
   bounty?: number | null;
 };
+
+/**
+ * Dezelfde afleiding voor de deelposters (#895), die geen klassementsrij
+ * hebben maar wél de serverstand. Eén verschil, bewust: `vorm` ontbreekt — die
+ * staat niet in de stand maar in de rating-historie, en een poster die daarvoor
+ * per speler een tweede query doet is die twee regels niet waard. De statregels
+ * die op vorm rekenen tonen dan een streepje, precies zoals bij een lege bron.
+ */
+export function statBronVoorStand(
+  stand: PlayerStanding | undefined,
+): SpelerStatBron | null {
+  if (!stand) return null;
+  return {
+    gespeeld: stand.played,
+    gewonnen: stand.won,
+    gelijk: stand.drawn,
+    verloren: stand.lost,
+    punten: stand.points,
+    doelsaldo: stand.goal_diff,
+  };
+}
 
 /** De wedstrijdwaarden die een dynamische divisiekaart in eigen velden mag
  *  vertalen. Dit blijft één afleiding van de bestaande klassementsrij. */
