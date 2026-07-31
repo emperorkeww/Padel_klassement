@@ -566,7 +566,12 @@ def kaartring() -> None:
     kern = luma > 14.0
     kern = vul_gaten(ontkorrel(kern, 2), maxdeel=10.0)
     binnen_sil = vervaag(kern.astype(np.float32), 1.0)
-    spray = np.clip((luma - 5.0) / 22.0, 0, 1)
+    # Drempel ruim boven de achtergrond. Buiten de kaart is de referentie niet
+    # zwart maar een donkere gloed (lum 11–25); op de oude drempel kreeg die
+    # alfa 0,3–0,6 en hing er dus een halftransparante donkere waas om de kaart,
+    # die op de app-achtergrond duidelijk zichtbaar werd. Alleen echt licht
+    # materiaal — ijs en opspattend water — hoort hier nog te keyen.
+    spray = np.clip((luma - 34.0) / 45.0, 0, 1)
     alpha = np.clip(binnen_sil + spray * (1.0 - binnen_sil), 0, 1)
 
     # De crest blijft in de ring. In de bovenzone is de verticale afbeelding een
@@ -733,8 +738,25 @@ def compacte_master() -> None:
         ],
         fill=255,
     )
-    afstand = ndimage.distance_transform_edt(np.asarray(binnen) > 127)
-    verval = 1.0 - 0.92 * np.clip(afstand / (0.17 * vw), 0, 1)
+    # Strak wegsnijden op de glasrand in plaats van naar binnen uitdoven. De
+    # `voor`-laag toont de master ongemaskeerd (het front-mask-SVG is in CSS een
+    # alfamasker en is overal ondoorzichtig, dus het selecteert niets), dus alles
+    # wat hier op het kaartvlak staat komt over rating, naam en divisieregel.
+    # Een uitdoving over 17% kaartbreedte las als een grote bleke gradiënt midden
+    # op de kaart; een korte snede valt weg onder de binnenrand van de lijst.
+    # De onderste waterexplosie blijft staan: die hoort op de referentie óver het
+    # vlak te lopen en zat ook in de oude master.
+    vlak = np.asarray(binnen).astype(np.float32) / 255.0
+    onder = np.zeros_like(vlak)
+    # Tot 0,80 wegsnijden: op 0,72 liep de waterexplosie over de divisieregel
+    # van FutKaart heen en was 'GLAZENWASSER' niet meer te lezen.
+    onder[int(vy + 0.80 * vh):] = 1.0
+    snede = np.clip(vlak - onder, 0, 1)
+    snede = np.asarray(
+        Image.fromarray((snede * 255).astype(np.uint8), "L")
+        .filter(ImageFilter.GaussianBlur(7.0))
+    ).astype(np.float32) / 255.0
+    verval = 1.0 - snede
 
     ringdoos = DELEN["ring"]["doos"]
     ringlaag = Image.open(UIT / "gw-ring.webp").convert("RGBA")
