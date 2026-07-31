@@ -1371,7 +1371,7 @@
    een zweem kleur — genoeg om de divisie of de titel te herkennen, te weinig om
    de leesbaarheid van witte inkt te raken. */
 
-/* In-Form: het navy-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
+/* In-Form: het zwart-goud van de ⚡-editie, met dezelfde lopende glansbaan. Net
    als .hero--dictator een donker vlak in beide thema's, dus wit voor de kop en
    goud voor wat een eigen kleurbetekenis heeft — de kaart zet álle inkt op goud,
    maar dat is een vlak van 96px met vier regels, geen hero met een
@@ -1379,22 +1379,24 @@
 
    Dit blok is de dúnne variant: In-Form bóven een permanent thema, waar de kaart
    eronder herkenbaar moet blijven (#771, AC4). De volle variant staat verderop
-   in `.hero--lijst-inform`, en die is neutraal zwart in plaats van navy — zie de
-   noot daar over de twee zwarten.
+   in `.hero--lijst-inform`; sinds het navy van de editie is rechtgezet dragen ze
+   hetzelfde zwart.
 
-   Navy naast het bordeaux van de troon: allebei donker met goud, maar de troon
+   Zwart naast het bordeaux van de troon: allebei donker met goud, maar de troon
    is warm en draagt propaganda-copy plus zijn eigen insigne — hetzelfde
-   onderscheid dat de kaart al maakt (#625). Contrast: wit 13,9:1 op de lichtste
-   stop, de gouden eyebrow 10,6:1, de zachte gold-white-mix daartussen. */
+   onderscheid dat de kaart al maakt (#625). Contrast op de lichtste stop, over
+   het lichtste materiaal dat er in de praktijk onder ligt (het kraftkarton van
+   de pias): wit 11,5:1, het champagnegoud 7,7:1 — allebei ruimer dan de navy
+   die hier stond (10,0 en 6,7). */
 .hero--overlay-inform {
   --inform-goud: #f2cf7d;
   --inform-goud-soft: #c9a95e;
   --inform-lijn: #ffd56b;
   /* Deze drie zijn byte-gelijk aan de vlak-stops van de ⚡-kaart in
      futKaartCanvas.ts; futKaartCanvas.test.ts bewaakt dat. */
-  --inform-navy: #1b2235;
-  --inform-navy-mid: #0f121d;
-  --inform-navy-diep: #05060a;
+  --inform-zwart: #212223;
+  --inform-zwart-mid: #111213;
+  --inform-zwart-diep: #050607;
 
   color: #fff;
   border-color: var(--inform-lijn);
@@ -1402,7 +1404,7 @@
      kader in plaats van een wolk over de kaart. */
   box-shadow:
     inset 0 0 0 1px rgba(247, 223, 160, 0.28),
-    0 8px 24px color-mix(in srgb, var(--inform-navy-diep) 45%, transparent);
+    0 8px 24px color-mix(in srgb, var(--inform-zwart-diep) 45%, transparent);
 }
 .hero--overlay-inform .hero__eyebrow {
   color: #f7dfa0;
@@ -1423,18 +1425,18 @@
   background: color-mix(in srgb, var(--inform-goud) 40%, transparent);
 }
 .hero--overlay-inform .hero__actions .btn {
-  background: color-mix(in srgb, var(--inform-navy-diep) 62%, transparent);
+  background: color-mix(in srgb, var(--inform-zwart-diep) 62%, transparent);
   border-color: var(--inform-lijn);
   color: #fff;
 }
 .hero--overlay-inform .hero__actions .btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--inform-navy-diep) 80%, transparent);
+  background: color-mix(in srgb, var(--inform-zwart-diep) 80%, transparent);
   border-color: color-mix(in srgb, var(--inform-goud) 70%, transparent);
 }
 .hero--overlay-inform .hero__actions .btn--primary {
   background: linear-gradient(180deg, #f7dfa0, #d8ae4e);
   border-color: #d8ae4e;
-  color: var(--inform-navy-diep);
+  color: var(--inform-zwart-diep);
 }
 .hero--overlay-inform .hero__actions .btn--primary:hover:not(:disabled) {
   background: linear-gradient(180deg, #fbeac0, #e5be5c);
@@ -1471,14 +1473,9 @@
    haalt wit 3,1:1, dus alles hangt ervan af dat de storm rechts van de
    tekstkolom blijft. Zie de veer van hero-if--storm verderop.
 
-   Eén open punt: dit vlak is neutraal zwart (#0d0d10, gemeten op de referentie)
-   terwijl de dúnne variant hierboven navy is (#1b2235). Dat is geen slordigheid
-   maar een contract: `futKaartCanvas.test.ts` bindt die drie tintstops aan de
-   vlak-stops van de ⚡-kaart, en díé is navy. Beide referenties — de
-   dashboardkaart én referentie_in_form.png (#141616) — zijn neutraal, dus het
-   navy is de afwijking; rechtzetten raakt echter de kaartenwand en hoort in een
-   eigen wijziging. Zie in-form-dashboardkaart.md §8. In de praktijk staan de
-   twee varianten nooit samen op één scherm: een speler heeft één kaart. */
+   Dit vlak (#0d0d10) is iets donkerder dan de tintstops van de dunne variant
+   hierboven, maar het is dezelfde neutrale familie: die stops staan vast op de
+   vlak-stops van de ⚡-kaart, en die dragen een eigen vignet en topgloed. */
 .hero--lijst-inform {
   --if-vlak: #0d0d10;
   --if-goud: #f2cf7d;
@@ -1854,9 +1851,9 @@
     radial-gradient(130% 60% at 50% -8%, rgba(240, 199, 102, 0.28), transparent 62%),
     linear-gradient(
       172deg,
-      rgba(35, 44, 68, 0.88) 0%,
-      rgba(20, 24, 38, 0.88) 60%,
-      rgba(10, 12, 20, 0.88) 100%
+      rgba(33, 34, 35, 0.88) 0%,
+      rgba(17, 18, 19, 0.88) 60%,
+      rgba(5, 6, 7, 0.88) 100%
     );
 }
 .hero__tint--onfire {
