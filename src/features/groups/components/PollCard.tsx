@@ -18,6 +18,7 @@ import {
   cancelPoll,
   remindPoll,
   pollClub,
+  pollShareUrl,
   type PlayPoll,
   type PollOption,
   type PollVote,
@@ -30,7 +31,9 @@ import {
   optionState,
   tallyOption,
 } from "@/features/groups/pollLogic";
+import { shareOrCopyText } from "@/lib/utils/shareText";
 import type { GroupMember, Profile } from "@/types";
+import { openPollShareText } from "../pollShareText";
 import { floorHalfHour, shortDay } from "../planPollHelpers";
 import { PollWizard } from "./PollWizard";
 import { PollWizardSheet } from "./PollWizardSheet";
@@ -145,6 +148,38 @@ export function PollCard({
         n === 0 ? "Iedereen heeft al gestemd." : `${n} ${n === 1 ? "lid" : "leden"} herinnerd.`,
       );
     } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * De lopende stemming delen (#886). "Herinner" bereikt alleen wie push aan
+   * heeft staan; dit gaat naar de groepschat, waar het plannen toch al gebeurt.
+   * De deep-link opent bij de ontvanger déze poll — ook als er meerdere lopen.
+   */
+  async function deelPoll() {
+    setBusy(true);
+    try {
+      const outcome = await shareOrCopyText({
+        title: `Padel — ${groupName}`,
+        text: openPollShareText({
+          groepsnaam: groupName,
+          clubnaam: club.name,
+          options,
+          votes,
+          memberIds: members.map((m) => m.player_id),
+          naam: name,
+          today,
+        }),
+        // Als los url-veld: het deelvenster maakt er een nette preview van en
+        // het klembord zet 'm onder de tekst.
+        url: pollShareUrl(poll.group_id, poll.id),
+      });
+      if (outcome === "clipboard") toast.success("Tekst gekopieerd naar klembord.");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       toast.error(errorMessage(err));
     } finally {
       setBusy(false);
@@ -312,6 +347,13 @@ export function PollCard({
           {poll.status === "open" && !remindedDone && (
             <button className="btn btn--sm" disabled={busy} onClick={remind}>
               🔔 Herinner
+            </button>
+          )}
+          {/* Delen mag elk lid (#886): wie de groep wil porren hoeft daarvoor
+              niet de maker of eigenaar te zijn. */}
+          {poll.status === "open" && (
+            <button className="btn btn--sm" disabled={busy} onClick={deelPoll}>
+              ↗ Deel
             </button>
           )}
         </div>

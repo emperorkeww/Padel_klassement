@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  drawSpeeldagPoster,
   kaartRaster,
   speeldagPoster,
   KAART_RATIO,
   MAX_KAARTEN,
+  POSTER_H,
   POSTER_W,
 } from "@/features/groups/speeldagPoster";
 import type { KaartData } from "@/features/profiles/profielPoster";
@@ -96,6 +98,43 @@ describe("speeldagPoster", () => {
     expect(p.code).toBe("b3: 1234");
   });
 
+  // #886: de QR staat op dezelfde voet als de code — standaard níét op de
+  // poster, want een afbeelding wordt doorgestuurd en blijft rondslingeren.
+  it("laat de QR weg zolang er geen opt-in is", () => {
+    const spelers = [speler("Ann")];
+    expect(speeldagPoster({ ...basis, spelers }).qr).toBeNull();
+    expect(speeldagPoster({ ...basis, spelers, link: null }).qr).toBeNull();
+    expect(speeldagPoster({ ...basis, spelers, link: " " }).qr).toBeNull();
+  });
+
+  it("maakt een vierkante QR-matrix van de deel-link", () => {
+    const p = speeldagPoster({
+      ...basis,
+      spelers: [speler("Ann")],
+      link: "https://padel.example/groepen/g1?tab=plannen&poll=poll-1",
+    });
+    expect(p.qr).not.toBeNull();
+    const qr = p.qr!;
+    expect(qr.length).toBeGreaterThanOrEqual(29);
+    expect(qr.every((rij) => rij.length === qr.length)).toBe(true);
+    // Zoekpatroon linksboven: 7×7 met een donkere rand — als dat klopt heeft
+    // de encoder echt een QR gemaakt en geen lege matrix.
+    expect(qr[0].slice(0, 7)).toEqual([true, true, true, true, true, true, true]);
+    expect(qr[1].slice(0, 7)).toEqual([true, false, false, false, false, false, true]);
+  });
+
+  // De scanbaarheid hangt aan het aantal modules: het QR-blok op de poster is
+  // 200px, dus boven de 42 modules zakt elke module onder de ~4px die een
+  // telefooncamera nodig heeft. Een echte deel-link is het langste wat er in
+  // gaat — die moet er dus met marge onder blijven.
+  it("houdt een echte deel-link met twee uuid's scanbaar klein", () => {
+    const echt =
+      "https://padel-klassement.pages.dev/groepen/91d8d419-3736-498e-90be-362de786d588" +
+      "?tab=plannen&poll=8f14e45f-ceea-467a-9575-2b4f4c6a4f0b";
+    const p = speeldagPoster({ ...basis, spelers: [speler("Ann")], link: echt });
+    expect(p.qr!.length).toBeLessThanOrEqual(42);
+  });
+
   it("blijft overeind zonder deelnemers", () => {
     const p = speeldagPoster({ ...basis, spelers: [] });
     expect(p.kaarten).toEqual([]);
@@ -136,5 +175,99 @@ describe("kaartRaster", () => {
     // blok 1314px hoog — ruim buiten de poster. De hoogtegrens wint.
     const { kaartBreedte } = kaartRaster(4, ruimte);
     expect(kaartBreedte).toBeLessThan((ruimte.breedte - ruimte.gap) / 2);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Tekenlaag: waar de QR (#886) op de poster terechtkomt. Een QR die    */
+/* half over het kaartraster valt of buiten de poster steekt is stuk,   */
+/* en dat zie je aan de matrix alleen niet.                             */
+/* ------------------------------------------------------------------ */
+
+type Rect = { x: number; y: number; w: number; h: number };
+
+/** Canvas-dubbel dat alleen fillRect onthoudt. Alle andere tekencalls zijn
+ *  no-ops; measureText geeft een grove maar monotone breedte terug, genoeg
+ *  voor de wrap- en ellipsize-helpers. */
+function recorderCtx(): { ctx: CanvasRenderingContext2D; rects: Rect[] } {
+  const rects: Rect[] = [];
+  const verloop = { addColorStop: () => {} };
+  const ctx = new Proxy(
+    {},
+    {
+      get(_doel, prop) {
+        if (prop === "canvas") return { width: POSTER_W, height: POSTER_H };
+        if (prop === "measureText") {
+          return (t: unknown) => ({ width: String(t).length * 12 });
+        }
+        if (
+          prop === "createLinearGradient" ||
+          prop === "createRadialGradient" ||
+          prop === "createPattern"
+        ) {
+          return () => verloop;
+        }
+        if (prop === "fillRect") {
+          return (x: number, y: number, w: number, h: number) =>
+            rects.push({ x, y, w, h });
+        }
+        // Stijl-eigenschappen worden gelezen én geschreven (globalAlpha e.d.);
+        // een getal is het enige antwoord waar gereken op blijft werken.
+        if (
+          prop === "globalAlpha" ||
+          prop === "lineWidth" ||
+          prop === "shadowBlur"
+        ) {
+          return 1;
+        }
+        return () => undefined;
+      },
+      set: () => true,
+    },
+  ) as CanvasRenderingContext2D;
+  return { ctx, rects };
+}
+
+/** De blokjes van de QR: kleine vierkantjes, in tegenstelling tot de
+ *  paginavullende achtergrondvlakken. */
+const qrBlokjes = (rects: Rect[]) => rects.filter((r) => r.w < 20 && r.h < 20);
+
+describe("drawSpeeldagPoster — QR-plaatsing", () => {
+  const poster = (link: string | null) =>
+    speeldagPoster({
+      ...basis,
+      spelers: [speler("Ann"), speler("Bo"), speler("Cis"), speler("Dirk")],
+      link,
+    });
+
+  it("tekent geen losse blokjes zonder opt-in", () => {
+    const { ctx, rects } = recorderCtx();
+    drawSpeeldagPoster(ctx, poster(null), [null, null, null, null]);
+    expect(qrBlokjes(rects)).toHaveLength(0);
+  });
+
+  it("zet alle QR-modules binnen de poster, onder het kaartraster", () => {
+    const { ctx, rects } = recorderCtx();
+    drawSpeeldagPoster(
+      ctx,
+      poster("https://padel.example/groepen/g1?tab=plannen&poll=poll-1"),
+      [null, null, null, null],
+    );
+    const blokjes = qrBlokjes(rects);
+    // Een QR van 33×33 heeft honderden donkere modules.
+    expect(blokjes.length).toBeGreaterThan(200);
+
+    const links = Math.min(...blokjes.map((r) => r.x));
+    const rechts = Math.max(...blokjes.map((r) => r.x + r.w));
+    const boven = Math.min(...blokjes.map((r) => r.y));
+    const onder = Math.max(...blokjes.map((r) => r.y + r.h));
+
+    // Binnen de poster, en horizontaal gecentreerd.
+    expect(links).toBeGreaterThan(0);
+    expect(rechts).toBeLessThan(POSTER_W);
+    expect(onder).toBeLessThan(POSTER_H);
+    expect((links + rechts) / 2).toBeCloseTo(POSTER_W / 2, 0);
+    // In de onderste band: de voet, niet ergens tussen de kaarten.
+    expect(boven).toBeGreaterThan(POSTER_H - 300);
   });
 });
