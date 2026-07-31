@@ -42,6 +42,9 @@ export type PlanSectionProps = {
   onChanged: () => void;
   /** Welke speeldag standaard openstaat; valt terug op de eerste. */
   openId?: string | null;
+  /** Speeldag waarop een gedeelde link je liet landen (#886): die kaart brengt
+   *  zichzelf in beeld en licht kort op. Null bij een gewoon bezoek. */
+  spotlightId?: string | null;
   /** Polls waarop deze speler nog niet stemde — krijgen een eigen badge. */
   wachtOpJou?: Set<string>;
   /** Er staan al rondes klaar voor deze geboekte speeldag (#349). */
@@ -63,6 +66,7 @@ export function PlanSection({
   isOwner,
   onChanged,
   openId,
+  spotlightId,
   wachtOpJou,
   roundsExist,
   rondesVandaag,
@@ -89,6 +93,7 @@ export function PlanSection({
       myId={myId}
       isOwner={isOwner}
       onChanged={onChanged}
+      spotlight={spotlightId != null && p.id === spotlightId}
       roundsExist={roundsExist?.(p)}
       rondesVandaag={rondesVandaag?.(p)}
       onRoundsMade={onRoundsMade ? () => onRoundsMade(p) : undefined}
