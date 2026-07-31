@@ -518,7 +518,12 @@ def inpaint(rgb: np.ndarray, bekend: np.ndarray, zacht: float = 40.0) -> np.ndar
 # over de bovenrand hangt en het water dat langs de flanken naar buiten spat
 # meekomen in plaats van op een rechthoek te worden afgesneden.
 RING_X0, RING_X1 = -0.05, 1.05
-RING_Y0, RING_Y1 = -0.14, 1.06
+# Onder de kaart staat in de referentie het infoblok (titel, ratingbereik,
+# flavor). Gemeten begint dat op fractie 1,025; de waterexplosie is op 1,016 al
+# afgelopen. Ondergrens dus op 1,02: één pixel lager en de ingebakken titel
+# "Glazenwasser" komt mee in de ring, en dan staat hij op de kaart dubbel naast
+# het echte infoblok.
+RING_Y0, RING_Y1 = -0.14, 1.02
 
 
 def _naar_kaart_y(y: float) -> float:
@@ -671,6 +676,98 @@ def kaartring() -> None:
     }
 
 
+# Doek en kaartvak van de compacte master, exact zoals GlazenwasserEffect.css ze
+# registreert (--glazenwasser-master-left/-top/-width). Het kaartvak erin is
+# 880 × 1223 px, oftewel dezelfde 100:139 als het stelsel van de ring.
+MASTER_DOEK = (1024, 1440)
+MASTER_VAK = (72, 160, 880, 1223)
+
+# Verschuiving per voorwerp, gelijk aan `verzet` in GW_LAGEN. Zelfde tabel als in
+# `kaartring()`; staat hier apart zodat de compacte master exact dezelfde
+# compositie oplevert als de brede kaart.
+MASTER_LAGEN = (
+    # naam, z-volgorde
+    ("ophanging", (0.0, 0.0)),
+    ("trekker-boven", (0.0, 0.012)),
+    ("emmer", (0.004, -0.022)),
+    ("onderschild", (0.0, 0.012)),
+)
+
+
+def compacte_master() -> None:
+    """Bouwt glazenwasser-master.webp uit de ring en de losse voorwerpen.
+
+    De brede `GlazenwasserKaart` staat alleen op de dev-route; wat spelers in de
+    app zien is `FutKaart` met dit master-artwork. Zolang die master uit het oude
+    `glazenwasser-master.py` kwam, zag niemand het nieuwe werk. Door hem uit
+    dezelfde ring en dezelfde voorwerpen op te bouwen krijgt élke plek waar een
+    platina-kaart staat het nieuwe artwork, zónder dat er één aanroeper verandert
+    — de flip naar de statistieken, de overlays en de editie-skins blijven van
+    FutKaart.
+
+    Het kaartvak in dit doek heeft dezelfde verhouding als de kaart zelf, dus de
+    lagen worden hier één op één ingezet: geen tweede afbeelding, geen rek."""
+    doek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    vx, vy, vw, vh = MASTER_VAK
+
+    def plaats(pad: Path, vak: tuple[float, float, float, float]) -> None:
+        left, top, breedte, hoogte = vak
+        b = max(1, int(round(breedte * vw)))
+        h = max(1, int(round(hoogte * vh)))
+        laag = Image.open(pad).convert("RGBA").resize((b, h), Image.LANCZOS)
+        doek.alpha_composite(
+            laag, (int(round(vx + left * vw)), int(round(vy + top * vh)))
+        )
+
+    # De ring naar binnen toe laten uitdoven. De compacte kaart tekent zijn tekst
+    # ín de `voor`-laag, dus alles wat het artwork midden op het vlak zet, komt
+    # over rating, naam en divisieregel te liggen; FutKaart tekent daar bovendien
+    # zijn eigen glasvlak al. Rechthoeken uitknippen langs de tekstzones geeft
+    # zichtbare blokken — een uitdoving vanaf de lijst niet, en die houdt precies
+    # vast wat de kaart wél moet erven: de lijst, het ijs, het water en de bellen.
+    binnen = Image.new("L", MASTER_DOEK, 0)
+    ImageDraw.Draw(binnen).polygon(
+        [
+            (vx + (x - RX0) / RW * vw, vy + _naar_kaart_y((y - RY0) / RH) * vh)
+            for x, y in GLAS_BINNEN
+        ],
+        fill=255,
+    )
+    afstand = ndimage.distance_transform_edt(np.asarray(binnen) > 127)
+    verval = 1.0 - 0.92 * np.clip(afstand / (0.17 * vw), 0, 1)
+
+    ringdoos = DELEN["ring"]["doos"]
+    ringlaag = Image.open(UIT / "gw-ring.webp").convert("RGBA")
+    rb = max(1, int(round(ringdoos[2] * vw)))
+    rh = max(1, int(round(ringdoos[3] * vh)))
+    ringlaag = ringlaag.resize((rb, rh), Image.LANCZOS)
+    ringdoek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    ringdoek.alpha_composite(
+        ringlaag,
+        (int(round(vx + ringdoos[0] * vw)), int(round(vy + ringdoos[1] * vh))),
+    )
+    ra = np.asarray(ringdoek.split()[3]).astype(np.float32) * verval
+    ringdoek.putalpha(Image.fromarray(np.clip(ra, 0, 255).astype(np.uint8), "L"))
+    doek.alpha_composite(ringdoek)
+
+    for naam, (dx, dy) in MASTER_LAGEN:
+        left, top, breedte, hoogte = DELEN[naam]["doos"]
+        plaats(
+            UIT / f"gw-{naam}.webp",
+            (left + dx, _naar_kaart_y(top) + dy, breedte, naar_kaart_h(hoogte)),
+        )
+
+    pad = UIT / "glazenwasser-master.webp"
+    doek.save(pad, "WEBP", quality=82, method=6)
+    print(f"  {'master (compact)':16s} {doek.width}×{doek.height}px  "
+          f"{pad.stat().st_size // 1024} kB")
+
+
+def naar_kaart_h(h: float) -> float:
+    """Referentiehoogte naar kaarthoogte, gelijk aan `naarKaartH` in de layout."""
+    return h * (1114.0 / 975.0) / (139.0 / 100.0)
+
+
 def main() -> int:
     UIT.mkdir(parents=True, exist_ok=True)
 
@@ -698,6 +795,7 @@ def main() -> int:
         print(f"  {naam:16s} {d['pixels'][2]:4d}×{d['pixels'][3]:4d}px  "
               f"alfa {d['alfa']:.3f}  dekking {d['dekking']:.3f}  {d['kB']:3d} kB"
               f"{'  overlap: ' + spook if spook else ''}")
+    compacte_master()
     (UIT / "gw-onderdelen.json").write_text(
         json.dumps({k: v for k, v in sorted(DELEN.items())}, indent=2) + "\n",
         encoding="utf8",

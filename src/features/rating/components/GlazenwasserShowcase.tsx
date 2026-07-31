@@ -5,6 +5,7 @@
 // vergeleken.
 
 import { Avatar } from "@/ui/Avatar";
+import { FutKaart, FutKaartDefs, FutKaartVoorkant } from "./FutKaart";
 import { tierFor, tierLegend } from "@/features/rating/tiers";
 import {
   GlazenwasserInfo,
@@ -49,7 +50,29 @@ export function GlazenwasserShowcase() {
           stats={glazenwasserStats(BRON)}
         />
         {tier && <GlazenwasserInfo tier={tier} bereik={bereik} />}
+
+        {/* De compacte kaart eronder. Dít is wat spelers in de app zien — de
+            ranglijst, de kaart-modal, de opstelling en het profiel renderen
+            allemaal FutKaart, niet de brede kaart hierboven. Het artwork komt uit
+            glazenwasser-master.webp, dat uit dezelfde ring en dezelfde voorwerpen
+            wordt opgebouwd. Zonder deze tweede stage is die masterwissel nergens
+            te beoordelen en blijft onzichtbaar of hij klopt. */}
+        <FutKaartDefs />
+        <div className="glazenwasser-showcase__compact" data-glazenwasser-compact>
+          <FutKaart
+            tier={tier}
+            voor={
+                <FutKaartVoorkant
+                  elo={ELO}
+                  tier={tier}
+                  naam={NAAM}
+                  avatar={<Avatar name={NAAM} size={64} />}
+                />
+            }
+          />
+        </div>
       </div>
+
     </div>
   );
 }
