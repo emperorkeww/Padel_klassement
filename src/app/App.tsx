@@ -74,6 +74,11 @@ const WannabeShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/WannabeShowcase"))
   : null;
 
+// Dev-stage voor de Glazenwasser-divisie en haar referentiegestuurde breakout.
+const GlazenwasserShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/rating/components/GlazenwasserShowcase"))
+  : null;
+
 // Dev-stage voor de Blaaskaak-divisie en haar referentiegestuurde artwork.
 const BlaaskaakShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/BlaaskaakShowcase"))
@@ -156,6 +161,12 @@ function App() {
           )}
           {WannabeShowcase && (
             <Route path="/dev/wannabe" element={<WannabeShowcase />} />
+          )}
+          {GlazenwasserShowcase && (
+            <Route
+              path="/dev/glazenwasser"
+              element={<GlazenwasserShowcase />}
+            />
           )}
           {BlaaskaakShowcase && (
             <Route path="/dev/blaaskaak" element={<BlaaskaakShowcase />} />

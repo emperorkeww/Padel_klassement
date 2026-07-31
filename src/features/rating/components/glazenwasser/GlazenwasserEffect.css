@@ -1,0 +1,142 @@
+/* De drie instanties delen bewust één register. Selectie gebeurt met de
+   bestaande schildclip en het voormasker, nooit met een afwijkende transform.
+   Het canvas van glazenwasser-master.webp is 1024 × 1440; het kaartvak daarin
+   (x 72..952, y 160..1383) volgt exact uit deze drie waarden, en
+   scripts/glazenwasser-master.py rekent ze uit dezelfde constanten. */
+
+.fut-kaart.fut-kaart--platina {
+  --glazenwasser-master-left: -8.18%;
+  --glazenwasser-master-top: -13.08%;
+  --glazenwasser-master-width: 116.36%;
+  --glazenwasser-master-scale: 1;
+  --glazenwasser-master-rotate: 0deg;
+  --glazenwasser-master-inset: calc(
+    var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
+      var(--kaart-keyline-dikte, 1px)
+  );
+}
+
+.glazenwasser-effect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backface-visibility: hidden;
+}
+
+.glazenwasser-effect__master {
+  position: absolute;
+  left: var(--glazenwasser-master-left);
+  top: var(--glazenwasser-master-top);
+  width: var(--glazenwasser-master-width);
+  transform: rotate(var(--glazenwasser-master-rotate))
+    scale(var(--glazenwasser-master-scale));
+  transform-origin: 0 0;
+}
+
+.glazenwasser-effect__master img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Koel randlicht i.p.v. een gloed: nat glas kaatst licht terug, het straalt
+     niet. */
+  filter:
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.006) rgba(226, 244, 252, 0.3))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.026) rgba(23, 92, 156, 0.34));
+}
+
+/* Expliciete paintvolgorde binnen de preserve-3d-flipper. De Glazenwasser heeft
+   geen losse vectorornamenten meer: crest, klemmen, veegbogen en medaillon leven
+   in de master (de canvas-/posterroute tekent ze nog wel). */
+.fut-kaart.fut-kaart--platina .fut-kaart__zijde--voor {
+  position: relative;
+  z-index: 2;
+}
+
+.glazenwasser-effect--achter {
+  z-index: 0;
+}
+
+/* De negatieve inset herstelt de volledige 100×139-kaartstage nadat de
+   binnenlaag door frame, liner en keyline naar binnen is genest. */
+.glazenwasser-effect--binnen {
+  inset: calc(-1 * var(--glazenwasser-master-inset));
+  z-index: -1;
+}
+
+/* Binnen het schild is er geen apart masker: het artwork houdt de zones van
+   rating, avatar, naamplaat en divisieregel zelf vrij, dus de echte
+   `clip-path: var(--schild)` doet het werk. Wel iets rustiger, zodat de inkt
+   zijn contrast houdt. */
+.glazenwasser-effect--binnen .glazenwasser-effect__master {
+  opacity: 0.94;
+}
+
+.glazenwasser-effect--binnen .glazenwasser-effect__master img {
+  filter: none;
+}
+
+/* Crest, hoekschuim, trekkers, sopemmer, badge en de onderste helft van de
+   waterexplosie liggen vóór het frame. */
+.glazenwasser-effect--voor {
+  z-index: 3;
+}
+
+.glazenwasser-effect--voor .glazenwasser-effect__master {
+  -webkit-mask: url("./assets/glazenwasser-front-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/glazenwasser-front-mask.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(
+    0 calc(var(--fut-kw) * 0.008) calc(var(--fut-kw) * 0.014)
+      rgba(4, 16, 30, 0.72)
+  );
+}
+
+.glazenwasser-effect--voor .glazenwasser-effect__master img {
+  filter:
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.005) rgba(4, 16, 30, 0.8))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.016) rgba(146, 205, 240, 0.32));
+}
+
+/* Registratiedebug: /dev/glazenwasser?debugGlazenwasser=1. */
+.glazenwasser-effect--debug {
+  outline: 1px dashed;
+}
+
+.glazenwasser-effect--debug::after {
+  content: attr(data-laag);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 20;
+  padding: 1px 3px;
+  color: #000;
+  font: 700 9px/1 monospace;
+}
+
+.glazenwasser-effect--achter.glazenwasser-effect--debug {
+  outline-color: #ff4d5f;
+}
+
+.glazenwasser-effect--achter.glazenwasser-effect--debug::after {
+  background: #ff4d5f;
+}
+
+.glazenwasser-effect--binnen.glazenwasser-effect--debug {
+  outline-color: #64ff94;
+}
+
+.glazenwasser-effect--binnen.glazenwasser-effect--debug::after {
+  background: #64ff94;
+}
+
+.glazenwasser-effect--voor.glazenwasser-effect--debug {
+  outline-color: #47dfff;
+}
+
+.glazenwasser-effect--voor.glazenwasser-effect--debug::after {
+  background: #47dfff;
+}
+
+.glazenwasser-effect--debug .glazenwasser-effect__master {
+  outline: 1px dotted rgba(255, 255, 255, 0.74);
+}

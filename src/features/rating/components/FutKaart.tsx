@@ -241,6 +241,11 @@ import {
   WannabeEffectVoor,
 } from "./wannabe/WannabeEffect";
 import {
+  GlazenwasserEffectAchter,
+  GlazenwasserEffectBinnen,
+  GlazenwasserEffectVoor,
+} from "./glazenwasser/GlazenwasserEffect";
+import {
   BlaaskaakEffectAchter,
   BlaaskaakEffectBinnen,
   BlaaskaakEffectVoor,
@@ -2168,8 +2173,14 @@ export function FutKaart({
   // Blaaskaak: dezelfde cascade voor het referentiegestuurde rastermaster.
   // De vectorornamenten blijven beschikbaar voor de canvas-/posterroute.
   const blaaskaakMaster = tier?.key === "zilver" && !editie;
+  // Glazenwasser (#834): de platina-divisie om dezelfde reden uit
+  // glazenwasser-master.webp — raamcrest, paneelklemmen, veegbogen, medaillon en
+  // het paneelraster-watermerk zitten daar in één natte glaswand.
+  const glazenwasserMaster = tier?.key === "platina" && !editie;
   const divisieLive =
-    wannabeMaster || blaaskaakMaster ? undefined : divisie;
+    wannabeMaster || blaaskaakMaster || glazenwasserMaster
+      ? undefined
+      : divisie;
   // Motief (#710): het watermerk ín het vlak hoort bij het vlak-register. Onder
   // een editie-skin wijkt het tier-motief dus (het GOAT-medaillon zou op het
   // In-Form-navy vloeken); een editie met eigen watermerk zet dat ervoor.
@@ -2283,6 +2294,9 @@ export function FutKaart({
         {/* Wannabe-achterlaag: racketcrest, plakstroken, briefjes en de
             megafoon verdwijnen hier achter kaart en frame. */}
         {wannabeMaster && <WannabeEffectAchter />}
+        {/* Glazenwasser-achterlaag: raamcrest, sopemmer en de waterexplosie
+            langs de onderrand verdwijnen hier achter kaart en frame. */}
+        {glazenwasserMaster && <GlazenwasserEffectAchter />}
         {blaaskaakMaster && <BlaaskaakEffectAchter />}
         {editie === "piet" && <PietEffectAchter />}
         {/* Pias-achterlaag: de volledige ornamentring uit de referentie,
@@ -2313,6 +2327,10 @@ export function FutKaart({
                     rasterpuntvuil en het getekende tekstballonnetje. Het artwork
                     houdt de tekstzones zelf vrij, dus er is geen binnenmasker. */}
                 {wannabeMaster && <WannabeEffectBinnen />}
+                {/* Dezelfde Glazenwasser-master in het echte kaartvlak: de
+                    natte glaswand, het raampje en de trekkers. Het artwork houdt
+                    de tekstzones zelf vrij, dus er is geen binnenmasker. */}
+                {glazenwasserMaster && <GlazenwasserEffectBinnen />}
                 {blaaskaakMaster && <BlaaskaakEffectBinnen />}
                 {editie === "piet" && <PietEffectBinnen />}
                 {/* Dezelfde pias-master, geclipt door het echte schild; de
@@ -2371,6 +2389,9 @@ export function FutKaart({
             pijlen, de splinter, het kroontje met krassen en de inktdruipers
             liggen vóór het frame. */}
         {wannabeMaster && <WannabeEffectVoor />}
+        {/* Raamcrest, hoekschuim, beide trekkers, de sopemmer, de schildbadge en
+            de onderste helft van de waterexplosie liggen vóór het frame. */}
+        {glazenwasserMaster && <GlazenwasserEffectVoor />}
         {blaaskaakMaster && <BlaaskaakEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
