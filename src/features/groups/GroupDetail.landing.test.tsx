@@ -162,4 +162,22 @@ describe("<GroupDetail /> landingstab (#674)", () => {
       screen.getByRole("heading", { name: /^wedstrijden$/i }),
     ).toBeInTheDocument();
   });
+
+  // #886: een gedeelde link draagt ?tab=plannen zelf mee, maar een ingekorte of
+  // half doorgestuurde variant niet. Alleen PlanTab leest ?poll=, dus zonder
+  // deze regel landde je met wedstrijden van vandaag op Vandaag — en keek je
+  // naar iets anders dan waarop je tikte.
+  it("dwingt Plannen af bij een ?poll= zonder ?tab", async () => {
+    const today = dateInZone("Europe/Brussels");
+    tables.matches = (TABLES.matches as { id: string }[]).map((m) => ({
+      ...m,
+      played_at: `${today}T12:00:00.000Z`,
+      created_at: `${today}T12:00:00.000Z`,
+    }));
+    renderPage("/groepen/g1?poll=poll-1");
+
+    expect(
+      await screen.findByRole("tab", { name: /^plannen$/i }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
 });

@@ -40,7 +40,13 @@ const ASSETS = pad("../../../dist/assets");
 // bewust losgelaten; verder squeezen kost zichtbare scherpte en levert kilobytes
 // op. Wie hierna iets toevoegt hoort dus déze grens te verhogen, niet dat
 // artwork nog kleiner te maken.
-const TOTAAL_MAX_MB = 10.5;
+//
+// Zo gebeurd bij de QR op de speeldagposter (#886): de encoder
+// (qrcode-generator, ~22 kB) paste niet meer in die 19 kB lucht. Geen artwork
+// dus maar code, en daarmee de eerste post die niet terug te snijden valt door
+// harder te comprimeren. Verhoogd naar 10,6 MB — ruim 100 kB lucht, nog altijd
+// krap genoeg om één ongecomprimeerde PNG te vangen.
+const TOTAAL_MAX_MB = 10.6;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;

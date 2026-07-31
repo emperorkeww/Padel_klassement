@@ -145,6 +145,14 @@ export function PlanTab({
   // (#675) wint; onbekend of verlopen valt stil terug op de gewone keuze.
   const focus = focusPoll(active, allOptions, today, gedeeldePollId);
   const chosen = focus ? lockedOptionOf(focus, allOptions) : null;
+  // Landde je hier via een gedeelde link (#886)? Dan krijgt díé kaart de
+  // spotlight. Wijst de link naar een speeldag die niet meer loopt, dan zeggen
+  // we dat — focusPoll toont anders stilzwijgend een ándere speeldag, en dan
+  // sta je te stemmen op iets wat je niet aanklikte.
+  const gedeeldGevonden =
+    gedeeldePollId != null && active.some((p) => p.id === gedeeldePollId);
+  const dodeLink = gedeeldePollId != null && !gedeeldGevonden;
+  const spotlightId = gedeeldGevonden ? gedeeldePollId : null;
   const rondesVoor = (p: PlayPoll) =>
     roundsExistFor(p, matches) || locallyRounded.has(p.id);
   // Vertrekpunt voor de starttijden van de volgende rondes (#827).
@@ -242,6 +250,15 @@ export function PlanTab({
         onPlan={() => setWizardOpen(true)}
       />
 
+      {/* Inline en niet als toast (#886): dit mag niet wegtikken vóór je het
+          gelezen hebt — je kwam hier tenslotte voor iets anders. */}
+      {dodeLink && (
+        <p className="plan-deadlink" role="status">
+          Deze gedeelde speeldag loopt niet meer — hij is afgelopen of
+          geannuleerd. Hieronder staat wat er wél op de planning staat.
+        </p>
+      )}
+
       {/* Wat vastligt eerst: "wanneer spelen we en is de baan geregeld?" is
           de vraag waarvoor de groep deze tab opent. */}
       <PlanSection
@@ -256,6 +273,7 @@ export function PlanTab({
         isOwner={isOwner}
         onChanged={reloadAll}
         openId={focus?.id}
+        spotlightId={spotlightId}
         roundsExist={rondesVoor}
         rondesVandaag={rondesGemaakt}
         onRoundsMade={(p) =>
@@ -275,6 +293,7 @@ export function PlanTab({
         isOwner={isOwner}
         onChanged={reloadAll}
         openId={focus?.id}
+        spotlightId={spotlightId}
         wachtOpJou={wachtOpJou}
       />
 

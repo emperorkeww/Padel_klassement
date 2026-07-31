@@ -297,6 +297,40 @@ describe("<PlanTab />", () => {
     expect(rijen[1]).toHaveAttribute("aria-expanded", "true");
   });
 
+  // #886: tot nu toe kon je alleen een al vastgelegde speeldag delen. De
+  // deelknop op een lopende poll stuurt de stemming zelf de groepschat in.
+  it("deelt een lopende poll met de deep-link naar díe poll", async () => {
+    const share = vi.fn<(data: ShareData) => Promise<void>>(async () => {});
+    Object.assign(navigator, { share });
+    tables.play_polls = [openPoll];
+    tables.play_poll_options = [openOption];
+    renderTab();
+
+    await userEvent.click(await screen.findByRole("button", { name: /↗ deel/i }));
+
+    expect(share).toHaveBeenCalledTimes(1);
+    const arg = share.mock.calls[0][0];
+    expect(arg.url).toBe(
+      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-open`,
+    );
+    expect(arg.text).toContain("🗳 Stem mee");
+    expect(arg.text).toContain("Vrijdagavond padel");
+    delete (navigator as { share?: unknown }).share;
+  });
+
+  it("toont geen deelknop op een al geboekte speeldag", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.play_poll_options = [bookedOption];
+    renderTab();
+
+    // De geboekte kaart heeft zijn eigen deelknoppen (↗ Tekst / 🖼 Afbeelding);
+    // de poll-deelknop hoort alleen bij een lopende stemming.
+    await screen.findByRole("heading", { name: /agenda & delen/i });
+    expect(
+      screen.queryByRole("button", { name: /↗ deel$/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("valt stil terug op de gewone keuze bij een onbekende poll-id", async () => {
     renderTab([], "?tab=plannen&poll=bestaat-niet");
 
@@ -306,6 +340,58 @@ describe("<PlanTab />", () => {
     expect(
       screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
     ).toBeInTheDocument();
+  });
+
+  // #886: die stille terugval liet je op een wíllekeurige andere speeldag
+  // kijken zonder dat iets verklaarde waarom je niet kreeg wat je aanklikte.
+  it("meldt het als de gedeelde speeldag niet meer loopt", async () => {
+    renderTab([], "?tab=plannen&poll=bestaat-niet");
+
+    expect(
+      await screen.findByText(/deze gedeelde speeldag loopt niet meer/i),
+    ).toBeInTheDocument();
+  });
+
+  it("zwijgt over dode links bij een gewoon bezoek", async () => {
+    renderTab();
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByText(/deze gedeelde speeldag loopt niet meer/i),
+    ).not.toBeInTheDocument();
+  });
+
+  // De kaart stond al open, maar je keek nog naar de bovenkant van de tab: met
+  // een vastgelegde speeldag erboven staan de stemknoppen onder de vouw.
+  it("scrolt de gedeelde poll naar de stemknoppen en markeert 'm", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    renderTab([], "?tab=plannen&poll=poll-open");
+
+    const kop = await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    // De stemrijen, niet de kaartkop: de vraag is "wanneer kun jij?".
+    expect(scrollIntoView.mock.instances[0]).toHaveClass("poll-rows");
+    expect(kop.closest(".card")).toHaveClass("is-spotlight");
+
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("scrolt niet bij een gewoon bezoek zonder gedeelde link", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    renderTab();
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   });
 
   // #721: de suggestiekaart klapt dicht zodra er écht een poll loopt.

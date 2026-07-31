@@ -71,8 +71,18 @@ function bookingPatch(details: BookingDetails) {
  * (/groepen/join/:token) de weg.
  */
 export function pollShareUrl(groupId: string, pollId: string): string {
+  return `${window.location.origin}${pollSharePath(groupId, pollId)}`;
+}
+
+/**
+ * Hetzelfde pad zonder origin (#886), voor links bínnen de app: een
+ * react-router `<Link to>` wil een relatief pad — een absolute url zou de hele
+ * app opnieuw laten laden. De edge functions bouwen hun push-url zelf op; die
+ * draaien in Deno en kunnen hier niet bij.
+ */
+export function pollSharePath(groupId: string, pollId: string): string {
   const params = new URLSearchParams({ tab: "plannen", poll: pollId });
-  return `${window.location.origin}/groepen/${groupId}?${params.toString()}`;
+  return `/groepen/${groupId}?${params.toString()}`;
 }
 
 /** De op een poll opgeslagen locatie als Club-object (voor de UI/availability). */

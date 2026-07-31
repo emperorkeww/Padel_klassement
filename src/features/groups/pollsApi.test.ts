@@ -14,6 +14,7 @@ import {
   addPollOption,
   removePollOption,
   pollShareUrl,
+  pollSharePath,
   markPollBooked,
   setPollBookingDetails,
   reopenPoll,
@@ -346,5 +347,20 @@ describe("pollShareUrl", () => {
 
   it("codeert id's die niet URL-veilig zijn", () => {
     expect(pollShareUrl("g1", "a b&c")).toContain("poll=a+b%26c");
+  });
+});
+
+// Zelfde pad zonder origin (#886), voor links binnen de app.
+describe("pollSharePath", () => {
+  it("geeft een relatief pad — een absolute url herlaadt de hele app", () => {
+    expect(pollSharePath("g1", "poll-1")).toBe(
+      "/groepen/g1?tab=plannen&poll=poll-1",
+    );
+  });
+
+  it("is precies het pad-deel van pollShareUrl", () => {
+    expect(pollShareUrl("g1", "poll-1")).toBe(
+      `${window.location.origin}${pollSharePath("g1", "poll-1")}`,
+    );
   });
 });

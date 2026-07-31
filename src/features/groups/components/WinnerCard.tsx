@@ -363,6 +363,7 @@ export function WinnerCard({
               profiles={profiles}
               bestand={`padel-${o.date}.png`}
               accessCode={code}
+              shareUrl={pollShareUrl(poll.group_id, poll.id)}
               onShareText={shareWinner}
             />
           </section>

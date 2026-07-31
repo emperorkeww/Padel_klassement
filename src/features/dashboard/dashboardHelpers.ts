@@ -104,6 +104,9 @@ export type PollPick =
   | {
       kind: "open";
       group: GroupSummary;
+      /** De poll waar deze banner over gaat (#886). Zonder id landde "Stem nu"
+       *  op de tab en mocht je zelf uitzoeken welke speeldag bedoeld werd. */
+      pollId: string;
       optionCount: number;
       voterCount: number;
       iVoted: boolean;
@@ -111,6 +114,7 @@ export type PollPick =
   | {
       kind: "fixed";
       group: GroupSummary;
+      pollId: string;
       booked: boolean;
       date: string;
       startTime: string;
@@ -160,6 +164,7 @@ export function pickPollBanner(
       return {
         kind: "open",
         group,
+        pollId: open.id,
         optionCount: optionIds.size,
         voterCount: new Set(pollVotes.map((v) => v.player_id)).size,
         iVoted: pollVotes.some((v) => v.player_id === myId),
@@ -186,6 +191,7 @@ export function pickPollBanner(
         return {
           kind: "fixed",
           group,
+          pollId: fixed.id,
           booked: fixed.status === "booked",
           date: opt.date,
           startTime: opt.start_time,

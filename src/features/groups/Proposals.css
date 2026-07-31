@@ -503,6 +503,44 @@
   margin-top: var(--sp-2);
 }
 
+/* Landen vanuit een gedeelde link (#886): de kaart scrolt zichzelf in beeld en
+   licht twee tellen op, zodat je ziet wélke speeldag de link bedoelde. Zelfde
+   pols als journey-nudge in Groups.css, maar eenmalig — een oneindige animatie
+   op de kaart waar je net op landde leest als een foutmelding. De klasse blijft
+   daarna staan; de animatie eindigt op "geen schaduw", dus dat zie je niet.
+   Bestaande tokens, dus scripts/contrast-check.mjs hoeft er niet aan te pas. */
+.card.is-spotlight {
+  animation: poll-spotlight 2.5s ease-out 1;
+}
+@keyframes poll-spotlight {
+  0%,
+  60% {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-color: var(--accent-line);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Geen pols, maar de rand blijft — de markering zelf is de informatie. */
+  .card.is-spotlight {
+    animation: none;
+    border-color: var(--accent-line);
+  }
+}
+
+/* De melding bij een link naar een speeldag die niet meer loopt (#886). */
+.plan-deadlink {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: 0.94rem;
+}
+
 /* Compacte stemrijen. */
 .poll-rows {
   list-style: none;

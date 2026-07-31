@@ -8,6 +8,7 @@
 // als de persoonlijke deel-poster, inclusief de editie-skins (#666). Geen
 // tweede kaartrecept dus, en geen kans om die fout opnieuw te maken.
 
+import qrcode from "qrcode-generator";
 import { canvasPalette, ellipsize, rrect, wrapLines } from "@/lib/utils/shareImage";
 import { drawKaart, type KaartData } from "@/features/profiles/profielPoster";
 
@@ -37,6 +38,9 @@ export interface SpeeldagPoster {
   extraNamen: string | null;
   /** Toegangscode — alleen gevuld als de gebruiker daar expliciet voor koos. */
   code: string | null;
+  /** QR-modules van de deel-link (#886), `true` = donker; null zonder opt-in.
+   *  Vierkant: qr.length is zowel het aantal rijen als kolommen. */
+  qr: boolean[][] | null;
 }
 
 export interface SpeeldagPosterOpts {
@@ -51,6 +55,29 @@ export interface SpeeldagPosterOpts {
    * vullen als de gebruiker de opt-in aanzette.
    */
   code?: string | null;
+  /**
+   * Deep-link naar de speeldag als QR (#886). Zelfde afweging als de code — een
+   * doorgestuurde poster draagt 'm mee — dus ook achter een eigen opt-in. Als
+   * QR en niet als tekst: een url met twee uuid's tikt niemand over.
+   */
+  link?: string | null;
+}
+
+/**
+ * QR-matrix van een link. Foutcorrectie "L": deze code wordt van een scherm
+ * gescand, niet van een gehavende sticker, dus de redundantie van "M" koopt
+ * hier niets — ze kost alleen modules. Een echte deel-link (~130 tekens) wordt
+ * 41×41 op L tegen 49×49 op M, en dat scheelt op de poster net genoeg ruimte om
+ * elke module ±4px te kunnen geven.
+ */
+export function qrModules(link: string): boolean[][] {
+  const qr = qrcode(0, "L");
+  qr.addData(link);
+  qr.make();
+  const n = qr.getModuleCount();
+  return Array.from({ length: n }, (_, rij) =>
+    Array.from({ length: n }, (_, kol) => qr.isDark(rij, kol)),
+  );
 }
 
 /** Hoogste rating eerst; spelers zonder rating achteraan, dan op naam — zodat
@@ -80,6 +107,7 @@ export function speeldagPoster(opts: SpeeldagPosterOpts): SpeeldagPoster {
             .join(", ")}`
         : null,
     code: opts.code?.trim() ? opts.code.trim() : null,
+    qr: opts.link?.trim() ? qrModules(opts.link.trim()) : null,
   };
 }
 
@@ -118,6 +146,21 @@ const GAP = 22;
 
 const FONT_EXTRA = "600 26px Outfit, system-ui, sans-serif";
 const EXTRA_LH = 34;
+
+/**
+ * Zijde van het witte QR-vlak, inclusief rustzone (#886). Een echte deel-link
+ * (origin + twee uuid's) wordt 41×41 modules; bij 200px houdt elke module ±4px
+ * over — de ondergrens om 'm van een telefoonscherm te scannen. Kleiner oogt
+ * netter maar scant niet meer, en een QR die niet scant is geen QR.
+ *
+ * De prijs staat hier eerlijk bij: dit blok claimt zijn hoogte vóór het
+ * kaartraster, dus met de QR aan krimpen de kaarten bij 1, 4 en 6 deelnemers
+ * (bv. 316 → 237px). Bij 2 en 8 verandert er niets — daar is het raster
+ * breedte-begrensd. Vandaar de opt-in: wie de QR niet aanzet, betaalt niets.
+ */
+const QR_BLOK = 200;
+/** Witte marge rond de modules; onder ±4 modules breed scant het slecht. */
+const QR_RUST = 16;
 
 /** De hele poster: court-gloed, header met moment en club, het kaartraster en
  *  onderaan de namenregel en (alleen op verzoek) de toegangscode. */
@@ -179,10 +222,11 @@ export function drawSpeeldagPoster(
     : [];
   const extraH = extraRegels.length > 0 ? extraRegels.length * EXTRA_LH + 16 : 0;
   const codeH = poster.code ? 78 : 0;
+  const qrH = poster.qr ? QR_BLOK + 20 : 0;
 
   // ── Kaartraster in de ruimte die overblijft ──
   const rasterTop = HEADER_Y + HEADER_H + 40;
-  const rasterH = BODEM - rasterTop - extraH - codeH;
+  const rasterH = BODEM - rasterTop - extraH - codeH - qrH;
   const { kolommen, rijen, kaartBreedte } = kaartRaster(poster.kaarten.length, {
     breedte: CW,
     hoogte: rasterH,
@@ -213,7 +257,7 @@ export function drawSpeeldagPoster(
   });
 
   // ── Voet: wie er niet op paste, en desgevraagd de code ──
-  let y = BODEM - extraH - codeH + 34;
+  let y = BODEM - extraH - codeH - qrH + 34;
   if (extraRegels.length > 0) {
     ctx.textAlign = "center";
     ctx.fillStyle = c.inkSoft;
@@ -235,5 +279,40 @@ export function drawSpeeldagPoster(
       POSTER_W / 2,
       y + 34,
     );
+    y += codeH;
+  }
+  if (poster.qr) {
+    drawQr(ctx, poster.qr, (POSTER_W - QR_BLOK) / 2, y, c.ink);
+  }
+}
+
+/**
+ * QR met een witte rustzone eronder — een code die direct op de posterachter-
+ * grond staat scant onbetrouwbaar. De modules worden op hele pixels afgerond
+ * zodat er geen grijze naden tussen de blokjes vallen.
+ */
+function drawQr(
+  ctx: CanvasRenderingContext2D,
+  modules: boolean[][],
+  x: number,
+  y: number,
+  kleur: string,
+) {
+  rrect(ctx, x, y, QR_BLOK, QR_BLOK, 14);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  const n = modules.length;
+  const cel = (QR_BLOK - QR_RUST * 2) / n;
+  ctx.fillStyle = kleur;
+  for (let rij = 0; rij < n; rij++) {
+    for (let kol = 0; kol < n; kol++) {
+      if (!modules[rij][kol]) continue;
+      const mx = Math.round(x + QR_RUST + kol * cel);
+      const my = Math.round(y + QR_RUST + rij * cel);
+      const mw = Math.round(x + QR_RUST + (kol + 1) * cel) - mx;
+      const mh = Math.round(y + QR_RUST + (rij + 1) * cel) - my;
+      ctx.fillRect(mx, my, mw, mh);
+    }
   }
 }
