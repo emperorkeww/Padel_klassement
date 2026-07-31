@@ -300,11 +300,25 @@ piaskaart moet het kraftkarton herkenbaar blijven.
 één referentieontwerp per kaart is en dat van 🔥 er nog niet is. De structuur
 staat er wel: een tweede tak in die functie en een materiaalblok ernaast.
 
-**Pariteit met de kaartenwand.** De FUT-kaart en deze kaart delen het thema maar
-niet meer de bron, en niemand bewaakt dat het champagnegoud van de twee niet uit
-elkaar loopt. De synctest in `futKaartCanvas.test.ts` doet dat al voor de
-Kampioen-, In-Form- en On-Fire-stops; een regel erbij voor `--if-goud` zou
-hetzelfde doen voor deze kaart.
+**Het navy van de ⚡-editie.** De dúnne variant (In-Form boven een permanent
+thema) tint navy: `--inform-navy` = #1b2235, en `futKaartCanvas.test.ts` bindt die
+drie stops aan de vlak-stops van de ⚡-FUT-kaart. De volle variant hierboven is
+neutraal zwart, want dat is wat de referentie meet (#0d0d10). Twee zwarten voor
+één status dus — zichtbaar op `/dev/hero`, waar ze onder elkaar staan; in de app
+niet, want een speler heeft één kaart.
+
+Het navy is aantoonbaar de afwijking: óók de FUT-referentie
+(`referentie_in_form.png`) meet #141616 op het kaartvlak, met een rood-blauw-
+verschil van 2 punten. Rechtzetten betekent `vlak: ["#1b2235", "#0f121d",
+"#05060a"]` in `futKaartCanvas.ts` en de bijbehorende gradient in `FutKaart.css`
+neutraliseren — en dat raakt de kaartenwand, de pack-opening en de posters. Het
+hoort daarom in een eigen wijziging, met eigen screenshots van de kaart. De
+synctest houdt de twee tot die tijd aan elkaar vast; hij hoeft er alleen bij te
+weten dat het een keuze is, zoals hij dat voor de Kampioen-stop al doet.
+
+**Pariteit voor het goud.** `--if-goud` (#f2cf7d) is byte-gelijk aan
+`--kaart-ink` van de ⚡-kaart, maar niets bewaakt dat. Een regel erbij in dezelfde
+synctest zou dat afdekken.
 
 **De smalle kaart.** Onder 560 px wijkt de compositie het meest van de referentie
 af — die is nu eenmaal op een breed scherm getekend. De storm ligt daar als band

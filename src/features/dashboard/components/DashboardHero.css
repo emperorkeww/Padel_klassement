@@ -1377,6 +1377,11 @@
    maar dat is een vlak van 96px met vier regels, geen hero met een
    coachbriefing erin.
 
+   Dit blok is de dúnne variant: In-Form bóven een permanent thema, waar de kaart
+   eronder herkenbaar moet blijven (#771, AC4). De volle variant staat verderop
+   in `.hero--lijst-inform`, en die is neutraal zwart in plaats van navy — zie de
+   noot daar over de twee zwarten.
+
    Navy naast het bordeaux van de troon: allebei donker met goud, maar de troon
    is warm en draagt propaganda-copy plus zijn eigen insigne — hetzelfde
    onderscheid dat de kaart al maakt (#625). Contrast: wit 13,9:1 op de lichtste
@@ -1385,6 +1390,8 @@
   --inform-goud: #f2cf7d;
   --inform-goud-soft: #c9a95e;
   --inform-lijn: #ffd56b;
+  /* Deze drie zijn byte-gelijk aan de vlak-stops van de ⚡-kaart in
+     futKaartCanvas.ts; futKaartCanvas.test.ts bewaakt dat. */
   --inform-navy: #1b2235;
   --inform-navy-mid: #0f121d;
   --inform-navy-diep: #05060a;
@@ -1462,7 +1469,16 @@
    Contrast op het kaartvlak: wit 19,4:1, --if-goud 12,9:1, --if-goud-soft
    8,6:1. Ruim boven AA, en dat moet ook: op de heldere kern van een bliksem
    haalt wit 3,1:1, dus alles hangt ervan af dat de storm rechts van de
-   tekstkolom blijft. Zie de veer van hero-if--storm verderop. */
+   tekstkolom blijft. Zie de veer van hero-if--storm verderop.
+
+   Eén open punt: dit vlak is neutraal zwart (#0d0d10, gemeten op de referentie)
+   terwijl de dúnne variant hierboven navy is (#1b2235). Dat is geen slordigheid
+   maar een contract: `futKaartCanvas.test.ts` bindt die drie tintstops aan de
+   vlak-stops van de ⚡-kaart, en díé is navy. Beide referenties — de
+   dashboardkaart én referentie_in_form.png (#141616) — zijn neutraal, dus het
+   navy is de afwijking; rechtzetten raakt echter de kaartenwand en hoort in een
+   eigen wijziging. Zie in-form-dashboardkaart.md §8. In de praktijk staan de
+   twee varianten nooit samen op één scherm: een speler heeft één kaart. */
 .hero--lijst-inform {
   --if-vlak: #0d0d10;
   --if-goud: #f2cf7d;
