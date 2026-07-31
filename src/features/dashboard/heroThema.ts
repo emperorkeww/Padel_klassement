@@ -130,24 +130,31 @@ export function heroOverlay(s: HeroStatusVlaggen): HeroOverlay {
 /** Welk profiel draagt de lijst van deze kaart — de vier geneste vlakken van
  *  HeroLijst — als er één is?
  *
- *  Big Daddy was de eerste (#834). In-Form is de tweede, en die roept een vraag
- *  op die een permanent thema niet heeft: een overlay hoort de kaart eronder
- *  herkenbaar te laten (#771, AC4), en een eigen lijst mét een dekkende
- *  stormkolom doet precies het omgekeerde. Vandaar de regel:
+ *  Big Daddy was de eerste (#834), In-Form de tweede. Die tweede stelde een
+ *  vraag die een permanent thema niet heeft: mag een tijdelijke status het
+ *  kaartvlak overnemen? #771 (AC4) zei nee — een overlay hoort de kaart eronder
+ *  herkenbaar te laten — en In-Form kreeg zijn profiel eerst alleen op een kaart
+ *  zonder permanent thema.
  *
- *    een overlay draagt zijn eigen lijst alleen wanneer er geen permanent thema
- *    is; ligt er wel een onder, dan blijft hij tint, groeven, glans en crest.
+ *  Dat is teruggedraaid: er is één In-Form-kaart, en die ziet er overal
+ *  hetzelfde uit. Twee behandelingen voor dezelfde status — hier een volle
+ *  stormkaart, daar een dunne tint — lazen als twee verschillende statussen, en
+ *  juist de speler die én in vorm is én de pias van zijn groep kreeg de zwakste
+ *  van de twee te zien.
  *
- *  Zo houdt de piaskaart zijn kraftkarton en de Big Daddy zijn satijn, terwijl
- *  de kaart die je in de praktijk ziet — de divisiekaart van de speler die deze
- *  week de grootste ratingwinst pakte — het volle stormprofiel krijgt. Zie
- *  docs/dashboard/in-form-dashboardkaart.md §4. */
+ *  Wat AC4 wilde beschermen blijft overeind, alleen niet meer via het materiaal:
+ *  het permanente thema houdt zijn ornamenten én zijn chip in de titelrij. De
+ *  teddy van de Big Daddy, de narrenkap van de pias en de lauwertakken van de
+ *  kampioen staan er dus gewoon op — alleen het vlak en de lijst eronder zijn
+ *  van In-Form. Zie docs/dashboard/in-form-dashboardkaart.md §4.
+ *
+ *  On Fire heeft nog geen eigen profiel, dus daar blijft Big Daddy de kaart. */
 export function heroLijstProfiel(
   permanent: HeroPermanent,
   overlay: HeroOverlay,
 ): "bigdaddy" | "inform" | null {
+  if (overlay === "inform") return "inform";
   if (permanent === "bigdaddy") return "bigdaddy";
-  if (!permanent && overlay === "inform") return "inform";
   return null;
 }
 

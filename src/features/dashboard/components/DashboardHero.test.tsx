@@ -372,27 +372,57 @@ describe("<DashboardHero /> — decoratielagen", () => {
     );
   });
 
-  it("houdt de In-Form-overlay dun boven een permanent thema (#834)", () => {
-    // De regel uit heroLijstProfiel, hier op zijn zichtbare kant: ligt er een
-    // permanent thema onder, dan krijgt In-Form geen eigen lijst en geen
-    // stormartwork. Een dekkende storm over het kraftkarton van de pias zou dat
-    // thema onzichtbaar maken, en dat is precies wat #771 (AC4) verbiedt.
-    const pias = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
-    expect(pias.querySelector(".hero__lijst")).toBeNull();
-    expect(pias.querySelector(".hero-if--storm")).toBeNull();
-    expect(pias.querySelector(".hero__tint--inform")).toBeInTheDocument();
-    // Bij Big Daddy blijft zijn eigen roze profiel staan — mét de tint erin.
-    const bd = renderKaart({ bigDaddy: true, thema: "bigdaddy", inForm: true, overlay: "inform" });
-    expect(bd.querySelector(".hero__vlak > .hero__tint--inform")).toBeInTheDocument();
-    expect(bd.querySelector(".hero-if--storm")).toBeNull();
-    // En de crest verschilt: op de eigen kaart de schildplaat, daarboven de
-    // kale glyph die de kaart eronder heel laat.
-    expect(
-      renderKaart({ inForm: true, overlay: "inform" }).querySelector(
-        ".hero__crest--schild",
-      ),
-    ).toBeInTheDocument();
-    expect(pias.querySelector(".hero__crest--bliksem")).toBeInTheDocument();
+  it("laat In-Form het vlak overnemen van élk permanent thema (#834)", () => {
+    // Er is één In-Form-kaart, en die ziet er overal hetzelfde uit. Tot #834
+    // kreeg juist de speler die én in vorm was én de pias van zijn groep de
+    // zwakste van twee behandelingen te zien.
+    for (const [naam, status] of [
+      ["pias", { pias: true, thema: "pias" }],
+      ["kampioen", { kampioen: true, thema: "kampioen" }],
+      ["bigdaddy", { bigDaddy: true, thema: "bigdaddy" }],
+    ] as const) {
+      const hero = renderKaart({ ...status, inForm: true, overlay: "inform" });
+      expect(hero.classList.contains("hero--lijst-inform"), naam).toBe(true);
+      expect(hero.querySelector(".hero__vlak > .hero-if--storm"), naam).toBeInTheDocument();
+    }
+    // Alleen het vlak en de lijst gaan naar In-Form: de ornamenten van het
+    // permanente thema blijven staan, en zijn chip ook. Kleur is nooit de enige
+    // indicator (#613), en de kaart moet blijven vertellen wie je verder bent.
+    // Binnen déze kaart zoeken, want de lus hierboven heeft er al drie in het
+    // document staan.
+    const pias = renderKaart({
+      pias: true,
+      thema: "pias",
+      inForm: true,
+      overlay: "inform",
+    });
+    expect(pias.querySelector(".hero-crest--pias")).toBeInTheDocument();
+    for (const ornament of [".hero__crest--kap", ".hero__medaillon", ".hero__decor"])
+      expect(pias.querySelector(ornament), ornament).toBeInTheDocument();
+    const bd = renderKaart({
+      bigDaddy: true,
+      thema: "bigdaddy",
+      inForm: true,
+      overlay: "inform",
+    });
+    // Ook het onderdeel dat achter de lijst weeft blijft: het hangt ín het
+    // In-Form-vlak en klipt daar op de binnenrand van de keyline.
+    expect(bd.querySelector(".hero__vlak > .hero-bd--flank-achter")).toBeInTheDocument();
+    expect(bd.querySelector(".hero-bd--teddy")).toBeInTheDocument();
+  });
+
+  it("laat On Fire het permanente thema wél staan (#771, AC4)", () => {
+    // Alleen In-Form heeft een eigen referentieontwerp; 🔥 blijft de dunne
+    // overlay die de kaart eronder herkenbaar laat.
+    const hero = renderKaart({
+      bigDaddy: true,
+      thema: "bigdaddy",
+      onFire: true,
+      overlay: "onfire",
+    });
+    expect(hero.classList.contains("hero--lijst-inform")).toBe(false);
+    expect(hero.querySelector(".hero-bd--teddy")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__vlak > .hero__tint--onfire")).toBeInTheDocument();
   });
 
   it("geeft de Dictator zijn commandoster, hoeken en lakzegel (#771)", () => {
@@ -488,20 +518,24 @@ describe("<DashboardHero /> — decoratielagen", () => {
     ).toContain("📊");
   });
 
-  it("geeft In-Form zijn bliksem, groeven en snelheidslijnen (#771)", () => {
-    // Boven een permanent thema: dun en langs de randen, zodat de kaart eronder
-    // herkenbaar blijft. Op de kaart die In-Form zélf draagt staat sinds #834
-    // het artwork uit de referentie — zie de suite hieronder.
-    const hero = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
+  it("geeft In-Form zijn schildcrest, groeven en storm (#834)", () => {
+    const hero = renderKaart({ inForm: true, overlay: "inform" });
     for (const klasse of [
-      ".hero__crest--bliksem",
+      ".hero__crest--schild",
       ".hero__groeven--inform",
+      ".hero-if--storm",
+      ".hero-if--ember",
+    ])
+      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+    // De dunne variant is met #834 vervallen: er is geen tweede In-Form meer.
+    for (const weg of [
+      ".hero__crest--bliksem",
       ".hero__watermerk--bliksem",
       ".hero__puls",
       ".hero__snelheid--links",
-      ".hero__snelheid--rechts",
+      ".hero__tint--inform",
     ])
-      expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
+      expect(hero.querySelector(weg), weg).toBeNull();
   });
 
   it("geeft On Fire zijn vlamcrest, vinnen en sintels (#771)", () => {
@@ -518,20 +552,20 @@ describe("<DashboardHero /> — decoratielagen", () => {
   });
 
   it("laat de overlay-ornamenten bovenop die van het thema liggen (AC4)", () => {
-    // De kern van #771: een pias die in vorm raakt houdt zijn narrenkap en zijn
-    // maskers; de bliksem komt erbij, niet in de plaats.
+    // De kern van #771: een pias die op een reeks zit houdt zijn narrenkap en
+    // zijn maskers; de vlam komt erbij, niet in de plaats.
     const hero = renderKaart({
       pias: true,
-      inForm: true,
+      onFire: true,
       thema: "pias",
-      overlay: "inform",
+      overlay: "onfire",
     });
     for (const klasse of [
       ".hero__crest--kap",
       ".hero__medaillon",
       ".hero__decor",
-      ".hero__crest--bliksem",
-      ".hero__tint--inform",
+      ".hero__crest--vlam",
+      ".hero__tint--onfire",
     ])
       expect(hero.querySelector(klasse), klasse).toBeInTheDocument();
   });
@@ -550,23 +584,14 @@ describe("<DashboardHero /> — decoratielagen", () => {
     );
   });
 
-  it("beweegt de pulse-ring alleen zonder bewegingsvoorkeur (AC11)", () => {
-    // Anders dan de glansbaan heeft de ring géén zinnige stilstaande vorm: een
-    // halfdoorzichtige cirkel midden op de kaart leest als een vlek. Hij blijft
-    // dus onzichtbaar bij `reduce`.
-    const blok = bewegingsblok("hero-puls");
-    expect(blok).toMatch(/animation: hero-puls/);
-    expect(HERO_CSS.replace(blok, "")).not.toMatch(/animation:\s*hero-puls/);
-  });
-
   it("verbergt de lagen voor schermlezers en laat aanwijzers erdoor", () => {
-    // Met een permanent thema eronder, want dan staat de tint er: op de eigen
-    // In-Form-kaart is het vlak zelf al zwart en zou een tint de storm doven.
-    const hero = renderKaart({ pias: true, thema: "pias", inForm: true, overlay: "inform" });
+    // Met On Fire, want dat is sinds #834 de enige overlay die nog een tint
+    // legt: In-Form draagt overal zijn eigen vlak.
+    const hero = renderKaart({ onFire: true, overlay: "onfire" });
     const lagen = hero.querySelector(".hero__lagen");
     expect(lagen).toHaveAttribute("aria-hidden", "true");
-    expect(hero.querySelector(".hero__tint--inform")).toBeInTheDocument();
-    expect(hero.querySelector(".hero__sheen--inform")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__tint--onfire")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__sheen--onfire")).toBeInTheDocument();
     // pointer-events staat in CSS (jsdom rekent geen stylesheets door).
     expect(HERO_CSS).toMatch(/\.hero__lagen\s*\{[^}]*pointer-events:\s*none/);
   });
