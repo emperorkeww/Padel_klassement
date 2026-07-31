@@ -69,6 +69,36 @@ describe("pickPollBanner", () => {
     expect(pick?.kind).toBe("open");
   });
 
+  // #886: zonder poll-id linkte "Stem nu →" naar de tab, waarna je bij drie
+  // lopende speeldagen zelf mocht raden welke de banner bedoelde.
+  it("draagt de poll-id mee zodat de banner naar díé speeldag kan linken", () => {
+    const open = [
+      {
+        group: group(),
+        polls: [poll({ id: "poll-open" })],
+        options: [option({ poll_id: "poll-open" })],
+        votes: noVotes,
+      },
+    ];
+    expect(pickPollBanner(open, "p1", at("2026-07-09T12:00:00Z"))).toMatchObject(
+      { kind: "open", pollId: "poll-open" },
+    );
+
+    const geboekt = [
+      {
+        group: group(),
+        polls: [
+          poll({ id: "poll-geboekt", status: "booked", locked_option_id: "opt-1" }),
+        ],
+        options: [option({ poll_id: "poll-geboekt" })],
+        votes: [vote()],
+      },
+    ];
+    expect(
+      pickPollBanner(geboekt, "p1", at("2026-07-09T12:00:00Z")),
+    ).toMatchObject({ kind: "fixed", pollId: "poll-geboekt" });
+  });
+
   it("slaat een verlopen open poll over en valt door naar een geldig geboekt moment", () => {
     const rows = [
       {

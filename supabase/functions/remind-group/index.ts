@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
   const sent = await pushTo(recipients, {
     title: kiesTitel(TITEL_GROEP_HERINNERING, pollId, String(responded.size)),
     body: kiesUit(GROEP_HERINNERING, seed),
-    url: `/groepen/${groupId}?tab=plannen`,
+    url: `/groepen/${groupId}?tab=plannen&poll=${pollId}`,
     tag: `poll-${pollId}`,
   });
 

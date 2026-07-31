@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { courtsLabel } from "@/features/groups/planPollHelpers";
+import { pollSharePath } from "@/features/groups/pollsApi";
 import { pickPollBanner, pollDay, type OpenPollBundle } from "../dashboardHelpers";
 
 // Speeldag op het overzicht: een lopende poll om op te stemmen, of de
@@ -38,7 +39,7 @@ export function PollBanner({
         </p>
         <Link
           className={`btn btn--sm${pick.iVoted ? "" : " btn--primary"}`}
-          to={`/groepen/${pick.group.id}?tab=plannen`}
+          to={pollSharePath(pick.group.id, pick.pollId)}
         >
           {pick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
         </Link>
@@ -80,7 +81,7 @@ export function PollBanner({
       )}
       <Link
         className={`btn btn--sm${pick.booked ? "" : " btn--primary"}`}
-        to={`/groepen/${pick.group.id}?tab=plannen`}
+        to={pollSharePath(pick.group.id, pick.pollId)}
       >
         {pick.booked ? "Bekijk →" : "Regel de baan →"}
       </Link>
