@@ -323,10 +323,18 @@ describe("<DashboardHero /> — decoratielagen", () => {
     for (const dikte of ["--lijst-rail-d", "--lijst-band-d", "--lijst-key-d"])
       expect(HERO_CSS, dikte).toMatch(new RegExp(`${dikte}:[^;]*cqw`));
     // En de inhoud schuift met de volle lijstdikte naar binnen; anders belandt
-    // tekst op de magenta band.
+    // tekst op de magenta band. Sinds #939 doet het thema dat via `--hero-inzet`
+    // in plaats van via een eigen `padding`: de mobiele maat van .hero schreef
+    // die padding anders terug naar sp-5 en zette de avatar op de gouden band.
     expect(HERO_CSS).toMatch(
-      /\.hero--bigdaddy\s*\{[^}]*padding:[^;]*var\(--lijst-d\)/,
+      /\.hero--bigdaddy\s*\{[^}]*--hero-inzet:\s*var\(--lijst-d\)/,
     );
+    expect(HERO_CSS).toMatch(
+      /\.hero\s*\{[^}]*padding:\s*calc\(var\(--hero-pad-y\)\s*\+\s*var\(--hero-inzet\)\)/,
+    );
+    // De mobiele regel raakt alléén de maat, nooit de inzet.
+    const mobiel = HERO_CSS.slice(HERO_CSS.indexOf("@media (max-width: 640px)"));
+    expect(mobiel).not.toMatch(/\.hero\s*\{[^}]*padding:/);
   });
 
   it("geeft alleen een thema met eigen profiel die lijst (#834)", () => {
@@ -620,8 +628,80 @@ describe("<DashboardHero /> — decoratielagen", () => {
 
   it("houdt de inhoud boven de decoratie", () => {
     // Anders zou de bewegende glans over de tekst en de knoppen lopen.
+    // De coachbubbel staat sinds #939 náást hero__main in plaats van erin, dus
+    // hij heeft die z-index nu zelf nodig.
     expect(HERO_CSS).toMatch(
-      /\.hero__main,\s*\.hero__divide,\s*\.hero__foot\s*\{[^}]*z-index:\s*1/,
+      /\.hero__main,\s*\.hero__coach,\s*\.hero__divide,\s*\.hero__foot\s*\{[^}]*z-index:\s*1/,
+    );
+  });
+});
+
+// De hero verzamelde zoveel edities dat er op 390px ~1000px scrollde vóór de
+// eerste actie in beeld kwam (#939). Deze suite bewaakt de vier ingrepen die dat
+// terugbrachten: de titelrij uit de tekstkolom, de overige titels compact op één
+// rij, de coachbubbel ná de knoppen, en de ruimte voor een crest die over de
+// bovenrand hangt.
+describe("<DashboardHero /> — compacte hero (#939)", () => {
+  it("zet de titelrij op kaartbreedte in plaats van in de tekstkolom", () => {
+    const hero = renderKaart({ bigDaddy: true, thema: "bigdaddy" });
+    // Naast de avatar bleef er op 390px ~278px over, en dan pakt elke chip een
+    // eigen regel. De rij hangt nu onder de begroeting, over beide kolommen.
+    expect(hero.querySelector(".hero__text .hero__titles")).toBeNull();
+    expect(hero.querySelector(".hero__main > .hero__titles")).toBeInTheDocument();
+    expect(HERO_CSS).toMatch(/\.hero__titles\s*\{[^}]*grid-column:\s*1 \/ -1/);
+    expect(HERO_CSS).toMatch(/\.hero__main\s*\{[^}]*display:\s*grid/);
+  });
+
+  it("houdt de overige titels samen op één rij naast de statusbadge", () => {
+    const hero = renderKaart({
+      bigDaddy: true,
+      kampioen: true,
+      piet: true,
+      inForm: true,
+      thema: "bigdaddy",
+      overlay: "inform",
+    });
+    // De winnende editie blijft de badge en staat buiten die rij; de andere drie
+    // staan er samen in, zodat ze niet elk een regel claimen.
+    const rij = hero.querySelector(".hero__crests");
+    expect(rij?.querySelectorAll(".hero-crest")).toHaveLength(3);
+    expect(rij?.querySelector(".hero-crest--badge")).toBeNull();
+    expect(
+      hero.querySelector(".hero__badge-slot .hero-crest--badge"),
+    ).toBeInTheDocument();
+  });
+
+  it("krimpt meerdere titels op mobiel tot hun icoon, met het label in de DOM", () => {
+    // Kleur blijft niet de enige indicator: het label gaat naar `sr-only`-maat,
+    // niet weg — het staat dus nog in de `aria-label` en in de tooltip. Eén
+    // enkele chip houdt zijn tekst gewoon; die past.
+    const hero = renderKaart({ pias: true, piet: true, thema: "pias" });
+    for (const chip of hero.querySelectorAll(".hero__crests .hero-crest"))
+      expect(chip.querySelector(".hero-crest__label")?.textContent).toBeTruthy();
+    const mobiel = HERO_CSS.slice(HERO_CSS.indexOf("@media (max-width: 640px)"));
+    expect(mobiel).toMatch(
+      /\.hero__crests:has\(\.hero-crest \+ \.hero-crest\) \.hero-crest__label\s*\{[^}]*clip-path:\s*inset\(50%\)/,
+    );
+  });
+
+  it("zet de coachbubbel op mobiel ná de knoppen", () => {
+    // Zijn commentaar stond tussen de begroeting en de eerste actie in. Alleen de
+    // volgorde in beeld verschuift; in de DOM blijft hij bij de begroeting staan.
+    const hero = renderKaart();
+    const kinderen = [...hero.children].map((k) => k.className);
+    expect(kinderen.indexOf("hero__coach")).toBeLessThan(
+      kinderen.indexOf("hero__foot"),
+    );
+    expect(hero.querySelector(".hero__main .hero__coach")).toBeNull();
+    const mobiel = HERO_CSS.slice(HERO_CSS.indexOf("@media (max-width: 640px)"));
+    expect(mobiel).toMatch(/\.hero__coach\s*\{[^}]*order:\s*1/);
+  });
+
+  it("reserveert ruimte voor een crest die over de bovenrand hangt", () => {
+    // Bovenaan de pagina sneed de viewport het In-Form-schild af. Alleen een
+    // kaart die zo'n ornament draagt krijgt die marge.
+    expect(HERO_CSS).toMatch(
+      /\.hero:has\(\.hero__crest\)\s*\{\s*margin-top:/,
     );
   });
 });
