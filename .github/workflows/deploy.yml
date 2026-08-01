@@ -44,7 +44,7 @@ jobs:
           # intussen alweer kan zijn veranderd.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
