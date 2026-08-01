@@ -43,25 +43,16 @@
 }
 
 /* ---------- Zwevende hoofdactie (#914) ----------
-   Zelfde plaatsing als de "jouw positie"-chip van het klassement, inclusief de
-   ruimte boven de vaste onderbalk op mobiel. */
+   Plaatsing en uitwijkgedrag komen sinds #942 van .zwevende-actie (ui.css), die
+   ze deelt met de "jouw positie"-chip van het klassement. Hier staat alleen nog
+   wat deze knop eigen is. */
 .matches__fab {
-  position: fixed;
-  right: var(--sp-4);
-  bottom: var(--sp-6);
-  z-index: 15;
   min-height: 48px;
   border-radius: 999px;
-  box-shadow: var(--shadow-lg);
 }
 .matches__fab-plus {
   font-size: 1.25rem;
   line-height: 1;
-}
-@media (max-width: 720px) {
-  .matches__fab {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* Per-set uitslag onder de score op een matchkaart, bv. "6-4 3-6 7-5". */

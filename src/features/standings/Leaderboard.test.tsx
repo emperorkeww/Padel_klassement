@@ -654,9 +654,14 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
           renderPage();
           await screen.findAllByText(/alice anders/i);
           fireEvent.click(screen.getByRole("tab", { name: patroon }));
-          expect(
-            await screen.findByRole("button", { name: /jouw positie/i }),
-          ).toBeInTheDocument();
+          const chip = await screen.findByRole("button", {
+            name: /jouw positie/i,
+          });
+          expect(chip).toBeInTheDocument();
+          // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942):
+          // dezelfde die de zwevende logknop op Matches draagt. Anders lag de
+          // chip tijdens het scrollen over de rating van de rij eronder.
+          expect(chip).toHaveClass("zwevende-actie");
         } finally {
           herstel();
         }

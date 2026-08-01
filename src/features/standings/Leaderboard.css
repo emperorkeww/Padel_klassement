@@ -356,11 +356,9 @@
 }
 
 /* ---------- "Jouw positie"-knop ---------- */
+/* Plaatsing en uitwijkgedrag komen sinds #942 van .zwevende-actie (ui.css),
+   gedeeld met de "+ Match loggen"-knop op Matches. */
 .me-chip {
-  position: fixed;
-  right: var(--sp-4);
-  bottom: var(--sp-6);
-  z-index: 15;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -374,8 +372,10 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: background 0.15s, transform 0.1s;
+  /* De transform-overgang (ook die van de hover-lift) komt van
+     .zwevende-actie; twee transition-regels op één element vechten anders om
+     dezelfde eigenschap. */
+  transition: background 0.15s;
 }
 .me-chip:hover {
   background: var(--accent-hover);
@@ -434,13 +434,6 @@
 .standings-switch {
   container-type: inline-size;
   container-name: standings;
-}
-
-/* Boven de vaste onderbalk blijven (die verschijnt bij de shell-switch ≤720px). */
-@media (max-width: 720px) {
-  .me-chip {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* Kop van het klassement: tabs links, en rechts één menuknop die zoeken én

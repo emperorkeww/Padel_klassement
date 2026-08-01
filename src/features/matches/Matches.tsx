@@ -6,6 +6,7 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
 import { MatchListSkeleton } from "@/ui/Skeleton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
@@ -60,6 +61,8 @@ export function Matches() {
   // laden" en zonder melding dat de lijst afgekapt was — alles daarvoor viel
   // vanaf deze pagina buiten bereik.
   const [limiet, setLimiet] = useState(PAGINA);
+  // De zwevende logknop wijkt bij vooruitscrollen (#942).
+  const fabVerborgen = useVerbergBijScrollen();
   const matches = useAsync(() => getRecentMatches(limiet), [limiet]);
   // Kreeg de server precies de limiet terug, dan zit er waarschijnlijk meer
   // achter. Minder betekent: dit is alles.
@@ -164,7 +167,7 @@ export function Matches() {
   );
 
   return (
-    <div>
+    <div className="heeft-zwevende-actie">
       <header className="page-head">
         <div className="row-between">
           <div>
@@ -284,10 +287,14 @@ export function Matches() {
       )}
 
       {/* Eén primaire actie op de pagina (#914): loggen is het meest gebruikte
-          pad en blijft ook onderaan een lange lijst bereikbaar. */}
+          pad en blijft ook onderaan een lange lijst bereikbaar. Hij wijkt bij
+          vooruitscrollen (#942) — anders ligt hij over de steppers en de
+          Opslaan-knop van de kaart eronder. */}
       <button
         type="button"
-        className="btn btn--primary matches__fab"
+        className={`btn btn--primary matches__fab zwevende-actie${
+          fabVerborgen ? " is-verborgen" : ""
+        }`}
         onClick={() => openSheet("score")}
       >
         <span className="matches__fab-plus" aria-hidden="true">
