@@ -72,6 +72,9 @@ vi.mock("@/lib/supabase/client", () => {
 
 import * as profilesApi from "@/features/profiles/api";
 import Leaderboard from "./Leaderboard";
+import { supabase } from "@/lib/supabase/client";
+import { makeQuery } from "@/test/supabaseMock";
+import { invalidateAll } from "@/lib/supabase/queryCache";
 
 function renderPage(url = "/") {
   return render(
@@ -90,6 +93,25 @@ function renderPage(url = "/") {
 const bannerText = /^kampioen /i;
 const shareButton = () => screen.queryByRole("button", { name: /deel poster/i });
 
+// Sinds #913 is het filtermenu een echte disclosure: het paneel bestaat alleen
+// terwijl het open staat, dus de velden zijn er pas na een tik op de knop.
+// (Het menu sluit ook na elke keuze, vandaar telkens opnieuw openen.)
+const openFilters = () =>
+  fireEvent.click(screen.getByRole("button", { name: /filteren/i }));
+
+/** Dwingt de gemeten containerbreedte af, zodat de tabel⇄ranglijst-keuze in
+ *  jsdom te sturen is; zonder layout meet de hook niets en valt hij terug op
+ *  de tabel. Geeft een herstelfunctie terug. */
+function metContainerBreedte(px: number) {
+  const origRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    return { ...origRect.call(this), width: px } as DOMRect;
+  };
+  return () => {
+    Element.prototype.getBoundingClientRect = origRect;
+  };
+}
+
 describe("<Leaderboard />", () => {
   it("toont de titel en een spelerrij (alle tijden als default)", async () => {
     renderPage();
@@ -98,6 +120,7 @@ describe("<Leaderboard />", () => {
     ).toBeInTheDocument();
     // Naam staat zowel in de desktop-tabel als in de mobiele ranglijst.
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
+    openFilters();
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
     // Geen seizoen gekozen → geen kampioensposter om te delen.
     expect(shareButton()).toBeNull();
@@ -203,6 +226,7 @@ describe("<Leaderboard />", () => {
   it("wisselt via de seizoenskiezer en toont de kampioensbanner van Q2", async () => {
     renderPage();
     // Wachten tot de kwartalen geladen zijn (afgeleid van de eerste match).
+    openFilters();
     await screen.findByRole("option", { name: "Q2 2026" });
     fireEvent.change(screen.getByLabelText("Seizoen"), {
       target: { value: "2026-q2" },
@@ -219,6 +243,7 @@ describe("<Leaderboard />", () => {
 
   it("toont geen banner en geen deelknop voor het lopende kwartaal", async () => {
     renderPage("/?seizoen=2026-q3");
+    openFilters();
     expect(screen.getByLabelText("Seizoen")).toHaveValue("2026-q3");
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
     expect(screen.queryByText(bannerText)).toBeNull();
@@ -236,6 +261,7 @@ describe("<Leaderboard />", () => {
   it("valt bij een ongeldige seizoenswaarde terug op alle tijden", async () => {
     renderPage("/?seizoen=onzin");
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
+    openFilters();
     expect(screen.getByLabelText("Seizoen")).toHaveValue("");
     expect(screen.queryByText(bannerText)).toBeNull();
   });
@@ -294,8 +320,11 @@ describe("<Leaderboard />", () => {
   });
 
   it("toont rating als hoofdgetal in de mobiele ranglijst, punten als label", async () => {
+    // Smalle kaart → compacte ranglijst i.p.v. de tabel (#913).
+    const herstel = metContainerBreedte(400);
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
+    herstel();
     // Bovenaan staan p1/p2 (rating 1012, 3 ptn); rating is het grote getal.
     const lead = container.querySelector(".ranklist__lead");
     const label = container.querySelector(".ranklist__lead-label");
@@ -319,6 +348,7 @@ describe("<Leaderboard />", () => {
     const { container } = renderPage();
     await screen.findAllByText("Wannabe III");
     fireEvent.click(screen.getByRole("tab", { name: /^divisies$/i }));
+    openFilters();
     fireEvent.change(screen.getByLabelText("Groep"), { target: { value: "g1" } });
 
     await screen.findAllByText(/alice anders/i);
@@ -458,5 +488,193 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
     expect(
       within(dialog).getByRole("link", { name: /profiel/i }),
     ).toHaveAttribute("href", expect.stringContaining("/spelers/"));
+  });
+
+  // ── #913: filtermenu, filterchips en één lijstweergave ──────────────────
+
+  describe("filters (#913)", () => {
+    const filterKnop = () => screen.getByRole("button", { name: /filteren/i });
+
+    it("sluit het menu bij Escape en geeft de focus terug aan de knop", async () => {
+      renderPage();
+      await screen.findAllByText(/alice anders/i);
+
+      openFilters();
+      expect(filterKnop()).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(filterKnop()).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByLabelText("Seizoen")).toBeNull();
+      expect(filterKnop()).toHaveFocus();
+    });
+
+    it("sluit het menu bij een klik buiten", async () => {
+      renderPage();
+      await screen.findAllByText(/alice anders/i);
+
+      openFilters();
+      expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+      fireEvent.pointerDown(document.body);
+      expect(screen.queryByLabelText("Seizoen")).toBeNull();
+    });
+
+    it("sluit het menu na een keuze", async () => {
+      renderPage();
+      await screen.findAllByText(/alice anders/i);
+
+      openFilters();
+      await screen.findByRole("option", { name: "Q2 2026" });
+      fireEvent.change(screen.getByLabelText("Seizoen"), {
+        target: { value: "2026-q2" },
+      });
+      expect(screen.queryByLabelText("Seizoen")).toBeNull();
+      expect(filterKnop()).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("toont elk actief filter als chip die apart te wissen is", async () => {
+      renderPage("/?seizoen=2026-q2");
+      await screen.findAllByText(/carol claes/i);
+
+      const chips = screen.getByRole("group", { name: /actieve filters/i });
+      expect(chips).toHaveTextContent("Seizoen: Q2 2026");
+      // Eén filter: nog geen "alles wissen".
+      expect(screen.queryByRole("button", { name: /alles wissen/i })).toBeNull();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /seizoen: q2 2026 wissen/i }),
+      );
+      expect(screen.queryByRole("group", { name: /actieve filters/i })).toBeNull();
+    });
+
+    it("biedt 'alles wissen' vanaf twee filters", async () => {
+      renderPage("/?seizoen=2026-q2&min=3");
+      await screen.findByRole("group", { name: /actieve filters/i });
+
+      expect(screen.getByRole("button", { name: /alles wissen/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /alles wissen/i }));
+      expect(screen.queryByRole("group", { name: /actieve filters/i })).toBeNull();
+    });
+
+    it("legt uit waarom een uitsluitende keuze vervalt", async () => {
+      renderPage("/?stand=2026-06-01");
+      await screen.findAllByText(/alice anders/i);
+
+      openFilters();
+      await screen.findByRole("option", { name: "Q2 2026" });
+      fireEvent.change(screen.getByLabelText("Seizoen"), {
+        target: { value: "2026-q2" },
+      });
+
+      // Tot #913 verdween "stand op datum" hier zonder een woord.
+      expect(
+        screen.getByText(/gaat niet samen met een seizoen en is uitgezet/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /stand op .* wissen/i }),
+      ).toBeNull();
+    });
+  });
+
+  describe("één lijstweergave in de DOM (#913)", () => {
+    it("toont bij een brede kaart de tabel en géén ranglijst", async () => {
+      const herstel = metContainerBreedte(1200);
+      try {
+        const { container } = renderPage();
+        await screen.findAllByText(/alice anders/i);
+        expect(container.querySelector(".leaderboard-table")).not.toBeNull();
+        expect(container.querySelector(".ranklist")).toBeNull();
+      } finally {
+        herstel();
+      }
+    });
+
+    it("toont bij een smalle kaart de ranglijst en géén tabel", async () => {
+      const herstel = metContainerBreedte(400);
+      try {
+        const { container } = renderPage();
+        await screen.findAllByText(/alice anders/i);
+        expect(container.querySelector(".ranklist")).not.toBeNull();
+        expect(container.querySelector(".leaderboard-table")).toBeNull();
+      } finally {
+        herstel();
+      }
+    });
+  });
+
+  // #913: de chip bestond alleen op de Spelers-tab, terwijl je jezelf op de
+  // kaartenwand en tussen de divisies net zo goed kwijt bent.
+  describe("'jouw positie' op elke spelersweergave (#913)", () => {
+    /** Twaalf spelers (p1 = ingelogd) — boven de drempel van 8 rijen. */
+    function metVolleRanglijst() {
+      invalidateAll();
+      const spelers = Array.from({ length: 12 }, (_, i) => ({
+        player_id: i === 0 ? "p1" : `x${i}`,
+        username: i === 0 ? "alice" : `speler${i}`,
+        full_name: i === 0 ? "Alice Anders" : `Speler ${i}`,
+        played: 5,
+        won: 5 - i,
+        drawn: 0,
+        lost: i,
+        points: (5 - i) * 3,
+        goal_diff: 10 - i,
+      }));
+      const ratings = spelers.map((s, i) => ({
+        player_id: s.player_id,
+        rating: 1200 - i * 10,
+        games: 5,
+        updated_at: "2026-07-01T10:00:00.000Z",
+      }));
+      const fromMock = supabase.from as unknown as {
+        getMockImplementation: () => (table: string) => unknown;
+        mockImplementation: (impl: (table: string) => unknown) => void;
+      };
+      const orig = fromMock.getMockImplementation();
+      fromMock.mockImplementation((t) =>
+        t === "player_standings"
+          ? makeQuery({ data: spelers, error: null })
+          : t === "player_ratings"
+            ? makeQuery({ data: ratings, error: null })
+            : orig(t),
+      );
+      return () => {
+        fromMock.mockImplementation(orig);
+        invalidateAll();
+      };
+    }
+
+    for (const [tabNaam, patroon] of [
+      ["Spelers", /^spelers$/i],
+      ["🃏 Kaarten", /kaarten/i],
+      ["Divisies", /^divisies$/i],
+    ] as const) {
+      it(`toont de chip op de ${tabNaam}-tab`, async () => {
+        const herstel = metVolleRanglijst();
+        try {
+          renderPage();
+          await screen.findAllByText(/alice anders/i);
+          fireEvent.click(screen.getByRole("tab", { name: patroon }));
+          expect(
+            await screen.findByRole("button", { name: /jouw positie/i }),
+          ).toBeInTheDocument();
+        } finally {
+          herstel();
+        }
+      });
+    }
+
+    it("blijft weg op de Teams-tab — daar sta jij niet als speler", async () => {
+      const herstel = metVolleRanglijst();
+      try {
+        renderPage();
+        await screen.findAllByText(/alice anders/i);
+        fireEvent.click(screen.getByRole("tab", { name: /^teams$/i }));
+        expect(
+          screen.queryByRole("button", { name: /jouw positie/i }),
+        ).toBeNull();
+      } finally {
+        herstel();
+      }
+    });
   });
 });
