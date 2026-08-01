@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  aantalTekst,
   formatDate,
   formatPlannedDay,
   formatRelativeDay,
@@ -58,5 +59,12 @@ describe("formatPlannedDay", () => {
     expect(formatPlannedDay("2026-07-15T10:00:00", now)).toBe(
       formatDate("2026-07-15T10:00:00"),
     );
+  });
+});
+describe("aantalTekst", () => {
+  it("kiest enkelvoud, meervoud en nul", () => {
+    expect(aantalTekst(0, "speler", "spelers")).toBe("geen spelers");
+    expect(aantalTekst(1, "speler", "spelers")).toBe("1 speler");
+    expect(aantalTekst(7, "speler", "spelers")).toBe("7 spelers");
   });
 });

@@ -7,6 +7,8 @@ import { StandingsSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { PageTabs } from "@/ui/PageTabs";
+import { Aankondiging } from "@/ui/Aankondiging";
+import { aantalTekst } from "@/lib/utils/format";
 import {
   LeaderboardFilterChips,
   LeaderboardFilterMenu,
@@ -914,6 +916,18 @@ export function Leaderboard() {
 
       {/* Elke actieve keuze bij naam, apart te wissen (#913). */}
       <LeaderboardFilterChips waarden={filterWaarden} acties={filterActies} />
+
+      {/* Zoeken en filteren snoeien de ranglijst zonder dat te melden (#924).
+          De vindbare spelers buiten de ranglijst tellen mee: die staan er als
+          zoekresultaat óók. */}
+      <Aankondiging
+        sleutel={`${tab}|${nq}|${season}|${groupId}|${asof ?? ""}|${minMatches}`}
+        bericht={`${aantalTekst(
+          visibleRows.length + extraProfiles.length,
+          tab === "team" ? "team" : "speler",
+          tab === "team" ? "teams" : "spelers",
+        )} in de lijst.`}
+      />
       {vervallen && (
         <p className="lb-vervallen" role="status">
           {vervallen}

@@ -125,6 +125,19 @@ describe("<Friends />", () => {
     expect(await screen.findByText(rivaalQuip)).toBeInTheDocument();
   });
 
+  // #924: "Zoeken…" meldde het begin, de uitkomst kwam geluidloos binnen.
+  it("kondigt het aantal zoekresultaten aan", async () => {
+    renderPage();
+    await openTab(/^ontdekken/i);
+    await userEvent.type(
+      await screen.findByPlaceholderText(/zoek op gebruikersnaam/i),
+      "dave",
+    );
+    await screen.findAllByRole("button", { name: /verzoek sturen/i });
+
+    expect(await screen.findByText(/spelers? gevonden\./)).toBeInTheDocument();
+  });
+
   it("opent de gemeenschappelijke vrienden in een popup", async () => {
     renderPage();
     await openTab(/^ontdekken/i);
