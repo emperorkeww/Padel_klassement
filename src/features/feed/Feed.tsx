@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -28,12 +28,12 @@ import {
 } from "@/features/feed/feedLogic";
 import {
   eventKey,
-  FILTER_CAT,
   FILTER_LABELS,
   FILTERS,
   MATCH_WINDOW,
   type FilterLabel,
 } from "@/features/feed/feedHelpers";
+import { FeedFilters } from "@/features/feed/components/FeedFilters";
 import { celebrate } from "@/lib/utils/confetti";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
@@ -41,7 +41,7 @@ import { getMySmoesjes } from "@/features/matches/smoesjesApi";
 import { getMyVendettas } from "@/features/groups/vendettaApi";
 import { getActiveBounties } from "@/features/standings/bountyApi";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
-import { getMyFriendships } from "@/features/friends/api";
+import { categorize, getMyFriendships } from "@/features/friends/api";
 import { getMyGroups, getGroupMembers } from "@/features/groups/api";
 import { getGroupPollOptions, getGroupPolls } from "@/features/groups/pollsApi";
 import { getPlayerStandings } from "@/features/standings/api";
@@ -202,6 +202,27 @@ export function Feed() {
   };
 
   const [limit, setLimit] = useState(FEED_LIMIT);
+  // "Toon meer" liet je zelf terugzoeken waar je gebleven was (#912): de knop
+  // schoof mee naar beneden en de nieuwe items kwamen eronder. We onthouden de
+  // index van het eerste nieuwe item en brengen dat na de render in beeld — met
+  // focus erbij, zodat ook toetsenbord- en screenreadergebruikers verder lezen
+  // in plaats van terug naar de documentstart te vallen.
+  const [eersteNieuwe, setEersteNieuwe] = useState<number | null>(null);
+  const eersteNieuweRef = useRef<HTMLLIElement>(null);
+  const toonMeer = () => {
+    setEersteNieuwe(limit);
+    setLimit((l) => l + FEED_LIMIT);
+  };
+  useEffect(() => {
+    if (eersteNieuwe === null) return;
+    const el = eersteNieuweRef.current;
+    if (!el) return;
+    // jsdom kent scrollIntoView niet.
+    if (typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "start" });
+    }
+    el.focus({ preventScroll: true });
+  }, [eersteNieuwe]);
 
   // Coach Rudy (#212): eenmalige kennismaking (localStorage-vlag per gebruiker)
   // en de "Over Coach Rudy"-popup vanaf de ⓘ op de bubble.
@@ -211,6 +232,13 @@ export function Feed() {
     writeFlag(coachIntroKey);
     setCoachIntroWeg(true);
   };
+  // Terughaalbaar via het ⓘ-venster (#912): de kennismaking was met één tik op
+  // "Begrepen" voorgoed weg, zonder enige weg terug.
+  const herhaalCoachIntro = () => {
+    writeFlag(coachIntroKey, null);
+    setCoachIntroWeg(false);
+    setCoachAboutOpen(false);
+  };
   const [coachAboutOpen, setCoachAboutOpen] = useState(false);
 
   // Het actieve filter leeft in de URL (?filter=matches): het overleeft zo
@@ -219,13 +247,20 @@ export function Feed() {
   const filterParam = params.get("filter");
   const activeFilter =
     FILTER_LABELS.find((l) => l.toLowerCase() === filterParam) ?? "Alles";
+  // Nogmaals op de actieve chip tikken zet het filter uit (#912): dat is wat je
+  // bij een schakelchip verwacht, en het klopt met de aria-pressed-staat.
   const selectFilter = (label: FilterLabel) => {
+    const uit = label === "Alles" || label === activeFilter;
     const next = new URLSearchParams(params);
-    if (label === "Alles") next.delete("filter");
+    if (uit) next.delete("filter");
     else next.set("filter", label.toLowerCase());
     setParams(next, { replace: true });
     setLimit(FEED_LIMIT);
   };
+
+  // Onderscheidt "je hebt nog niemand" van "je vrienden deden niks" (#912).
+  const heeftVrienden =
+    categorize(friendships.data ?? [], myId).accepted.length > 0;
 
   const pmap = profiles.data ?? {};
   const tmap = teams.data ?? {};
@@ -327,8 +362,24 @@ export function Feed() {
     pmap[myId]?.roast_intensiteit ?? "radioactief";
   const intensiteitVoor = (): RoastIntensiteit => mijnIntensiteit;
 
-  // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli".
-  let lastDay = "";
+  // Dag-kopjes: "vandaag / gisteren / eergisteren / 8 juli". De feed is per dag
+  // gegroepeerd zodat de kop sticky kan zijn (#912): een sticky element kan zijn
+  // eigen containing block niet verlaten, en met één platte grid was dat precies
+  // de rij van de kop zelf. `index` is de positie in de ongegroepeerde lijst —
+  // die hebben we nodig om na "toon meer" het eerste nieuwe item te vinden.
+  const dagen: { day: string; label: string; items: { event: FeedEvent; index: number }[] }[] =
+    [];
+  feed.forEach((event, index) => {
+    const day = feedDay(event);
+    const laatste = dagen[dagen.length - 1];
+    if (laatste?.day === day) laatste.items.push({ event, index });
+    else
+      dagen.push({
+        day,
+        label: formatRelativeDay(event.at),
+        items: [{ event, index }],
+      });
+  });
   // Eén gedeelde set per render: zo herhaalt Coach Rudy geen enkele quip binnen
   // de zichtbare feed (anti-herhaling, #201). Deterministisch dankzij de vaste
   // feed-volgorde.
@@ -372,29 +423,11 @@ export function Feed() {
       )}
 
       {!loading && !error && (
-        <div className="tabs feed__filters">
-          {FILTER_LABELS.map((label) => {
-            const cat = FILTER_CAT[label];
-            return (
-              <button
-                key={label}
-                type="button"
-                className={`tab ${activeFilter === label ? "is-active" : ""}`}
-                onClick={() => selectFilter(label)}
-              >
-                {cat && (
-                  <span className="tab__dot" data-cat={cat} aria-hidden="true" />
-                )}
-                {label}
-                {label !== "Alles" && (
-                  <span className="tab__count" aria-hidden="true">
-                    {countFor(label)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <FeedFilters
+          active={activeFilter}
+          onSelect={selectFilter}
+          countFor={countFor}
+        />
       )}
 
       {!loading && !error && feed.length === 0 && activeFilter !== "Alles" && (
@@ -417,19 +450,38 @@ export function Feed() {
         </div>
       )}
 
+      {/* Twee verschillende problemen, twee verschillende antwoorden (#912):
+          "zoek vrienden" klopte niet voor wie er al twintig heeft en gewoon een
+          rustige week meemaakt. */}
       {!loading && !error && feed.length === 0 && activeFilter === "Alles" && (
         <div className="card">
-          <EmptyState
-            icon="📣"
-            title="Muisstille feed."
-            action={
-              <Link className="btn btn--primary" to="/vrienden">
-                Vrienden zoeken
-              </Link>
-            }
-          >
-            Nog geen sappige updates. Zodra jij of je vrienden de baan op gaan of connecties leggen, verschijnt de actie hier!
-          </EmptyState>
+          {heeftVrienden ? (
+            <EmptyState
+              icon="😴"
+              title="Iedereen zit stil."
+              action={
+                <Link className="btn btn--primary" to="/matches">
+                  Uitslag invullen
+                </Link>
+              }
+            >
+              Je maten hebben even niets uitgespookt. Zet zelf iets op de teller —
+              dan heeft Rudy tenminste weer wat te zeuren.
+            </EmptyState>
+          ) : (
+            <EmptyState
+              icon="📣"
+              title="Nog niemand om te volgen."
+              action={
+                <Link className="btn btn--primary" to="/vrienden">
+                  Vrienden zoeken
+                </Link>
+              }
+            >
+              De feed toont wat jij en je vrienden uitspoken. Leg eerst een paar
+              connecties, dan komt de actie vanzelf.
+            </EmptyState>
+          )}
         </div>
       )}
 
@@ -437,72 +489,73 @@ export function Feed() {
         <>
           {!coachIntroWeg && <CoachIntro onDismiss={dismissCoachIntro} />}
           <ol className="feed" aria-label="Recente gebeurtenissen">
-            {feed.map((event) => {
-              const day = feedDay(event);
-              const showDay = day !== lastDay;
-              lastDay = day;
-              return (
-                <Fragment key={eventKey(event)}>
-                  {showDay && (
-                    <li className="feed__day" aria-hidden="true">
-                      {formatRelativeDay(event.at)}
-                    </li>
-                  )}
-                  <li className="feed__item">
-                    {event.kind === "evening" ? (
-                      <EveningCard
-                        event={event}
-                        data={avondData(event)}
-                        mood={mijnIntensiteit}
-                        pmap={pmap}
-                        tmap={tmap}
-                        name={name}
-                        onInfo={() => setCoachAboutOpen(true)}
-                      />
-                    ) : event.kind === "smoes" ? (
-                      <SmoesCard
-                        event={event}
-                        pmap={pmap}
-                        tmap={tmap}
-                        name={name}
-                        onInfo={() => setCoachAboutOpen(true)}
-                      />
-                    ) : (
-                      <>
-                        <FeedItem
+            {dagen.map((dag) => (
+              <li className="feed__dag" key={dag.day}>
+                {/* Decoratief: de dag staat al in elk item zelf (#232). */}
+                <div className="feed__day" aria-hidden="true">
+                  {dag.label}
+                </div>
+                <ol className="feed__items">
+                  {dag.items.map(({ event, index }) => (
+                    <li
+                      className="feed__item"
+                      key={eventKey(event)}
+                      // Het eerste item van een "toon meer"-ronde krijgt focus
+                      // en scrollt in beeld (#912).
+                      ref={index === eersteNieuwe ? eersteNieuweRef : undefined}
+                      tabIndex={index === eersteNieuwe ? -1 : undefined}
+                    >
+                      {event.kind === "evening" ? (
+                        <EveningCard
+                          event={event}
+                          data={avondData(event)}
+                          mood={mijnIntensiteit}
+                          pmap={pmap}
+                          tmap={tmap}
+                          name={name}
+                          onInfo={() => setCoachAboutOpen(true)}
+                        />
+                      ) : event.kind === "smoes" ? (
+                        <SmoesCard
                           event={event}
                           pmap={pmap}
                           tmap={tmap}
-                          myId={myId}
                           name={name}
-                        />
-                        <CoachComment
-                          tekst={coachOpmerking(event, {
-                            intensiteitVoor,
-                            profiles: pmap,
-                            teams: tmap,
-                            gebruikt: gebruiktCoach,
-                            matches: matches.data ?? [],
-                            naamVoor,
-                            piasWeeks: piasWeeksFlat,
-                          })}
-                          mood={coachStemming(event, intensiteitVoor)}
                           onInfo={() => setCoachAboutOpen(true)}
                         />
-                      </>
-                    )}
-                  </li>
-                </Fragment>
-              );
-            })}
+                      ) : (
+                        <>
+                          <FeedItem
+                            event={event}
+                            pmap={pmap}
+                            tmap={tmap}
+                            myId={myId}
+                            name={name}
+                          />
+                          <CoachComment
+                            tekst={coachOpmerking(event, {
+                              intensiteitVoor,
+                              profiles: pmap,
+                              teams: tmap,
+                              gebruikt: gebruiktCoach,
+                              matches: matches.data ?? [],
+                              naamVoor,
+                              piasWeeks: piasWeeksFlat,
+                            })}
+                            mood={coachStemming(event, intensiteitVoor)}
+                            onInfo={() => setCoachAboutOpen(true)}
+                          />
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </li>
+            ))}
           </ol>
           {remaining > 0 && (
             <div className="feed__more">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setLimit((l) => l + FEED_LIMIT)}
-              >
+              <button type="button" className="btn" onClick={toonMeer}>
                 Toon meer ({remaining})
               </button>
             </div>
@@ -520,6 +573,7 @@ export function Feed() {
           <CoachAbout
             showSettingsLink
             onNavigate={() => setCoachAboutOpen(false)}
+            onHerhaalIntro={coachIntroWeg ? herhaalCoachIntro : undefined}
           />
         </Sheet>
       )}

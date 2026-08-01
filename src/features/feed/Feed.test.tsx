@@ -11,6 +11,28 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import Feed from "./Feed";
+import { supabase } from "@/lib/supabase/client";
+import { makeQuery } from "@/test/supabaseMock";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+import { MATCH_DONE, PROFILES } from "@/test/fixtures";
+
+/** Vervangt tijdelijk wat een of meer tabellen teruggeven; geeft een
+ *  herstelfunctie terug. */
+function overrideTabellen(rijen: Record<string, unknown[]>) {
+  invalidateAll();
+  const fromMock = supabase.from as unknown as {
+    getMockImplementation: () => (table: string) => unknown;
+    mockImplementation: (impl: (table: string) => unknown) => void;
+  };
+  const orig = fromMock.getMockImplementation();
+  fromMock.mockImplementation((t) =>
+    t in rijen ? makeQuery({ data: rijen[t], error: null }) : orig(t),
+  );
+  return () => {
+    fromMock.mockImplementation(orig);
+    invalidateAll();
+  };
+}
 
 function renderPage() {
   return render(
@@ -79,6 +101,141 @@ describe("<Feed />", () => {
     // exact het filterlabel (regressiewacht voor de aria-hidden-decoratie).
     expect(screen.getByRole("button", { name: "Roast" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Matches" })).toBeInTheDocument();
+  });
+
+  // #912: de rij was een kale <div className="tabs"> met losse buttons — geen
+  // rol, geen ingedrukt-staat. Het zijn filters, geen tabbladen (daarom bleef
+  // dit liggen in #910).
+  it("presenteert de filterrij als groep schakelknoppen", async () => {
+    renderPage();
+    const groep = await screen.findByRole("group", { name: /feed filteren/i });
+    expect(groep).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Alles" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    expect(screen.getByRole("button", { name: "Sociaal" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Alles" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("wist een actief filter via de wis-knop én via de chip zelf", async () => {
+    renderPage();
+    await screen.findByRole("group", { name: /feed filteren/i });
+
+    // Zonder actief filter is er niets te wissen.
+    expect(screen.queryByRole("button", { name: /wis filter/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    fireEvent.click(screen.getByRole("button", { name: /wis filter/i }));
+    expect(screen.getByRole("button", { name: "Alles" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // En nogmaals op de actieve chip tikken doet hetzelfde — wat je bij een
+    // schakelchip verwacht.
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    expect(screen.getByRole("button", { name: "Sociaal" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.queryByRole("button", { name: /wis filter/i })).toBeNull();
+  });
+
+  it("groepeert de items per dag zodat de dagkop kan blijven plakken (#912)", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("list", { name: /recente gebeurtenissen/i });
+
+    // Elk dagblok is een eigen element met de kop en zijn eigen itemlijst; in
+    // de vroegere platte grid kon een sticky kop zijn eigen rij niet verlaten.
+    const dagen = container.querySelectorAll(".feed__dag");
+    expect(dagen.length).toBeGreaterThan(0);
+    for (const dag of dagen) {
+      expect(dag.querySelector(".feed__day")).not.toBeNull();
+      expect(dag.querySelector(".feed__items")).not.toBeNull();
+    }
+  });
+
+  // #912: "Toon meer" schoof de knop naar beneden en zette de nieuwe items
+  // eronder, zonder je leespositie mee te nemen — je moest zelf terugzoeken.
+  it("verplaatst de focus naar het eerste nieuw geladen item", async () => {
+    // Ruim boven FEED_LIMIT (50), elk op een eigen dag en zonder groep, zodat
+    // ze niet tot één avondkaart gebundeld worden.
+    const veelMatches = Array.from({ length: 60 }, (_, i) => {
+      const ts = new Date(Date.UTC(2026, 3, 1) - i * 86_400_000).toISOString();
+      return {
+        ...MATCH_DONE,
+        id: `bulk-${i}`,
+        group_id: null,
+        round_number: null,
+        played_at: ts,
+        created_at: ts,
+      };
+    });
+    const herstel = overrideTabellen({ matches: veelMatches });
+    try {
+      const { container } = renderPage();
+      const meer = await screen.findByRole("button", { name: /toon meer/i });
+
+      const voorAantal = container.querySelectorAll(".feed__item").length;
+      fireEvent.click(meer);
+
+      const items = container.querySelectorAll(".feed__item");
+      expect(items.length).toBeGreaterThan(voorAantal);
+      // Het eerste item van de nieuwe lading heeft de focus, niet de body.
+      expect(items[voorAantal]).toHaveFocus();
+    } finally {
+      herstel();
+    }
+  });
+
+  // #912: "Muisstille feed · Vrienden zoeken" verscheen ook voor wie er al
+  // twintig heeft en gewoon een rustige week meemaakt.
+  it("stuurt zonder vrienden naar Vrienden, mét vrienden naar Matches", async () => {
+    // Een lege feed vraagt om lege matches én groepen; de vriendschapsitems
+    // zelf vallen weg via de privacyfilter (niet-vindbare profielen, #59) —
+    // precies de situatie "je hébt vrienden, maar er is niets te zien".
+    const stil = {
+      matches: [],
+      groups: [],
+      profiles: PROFILES.map((p) =>
+        p.id === "p1" ? p : { ...p, discoverable: false },
+      ),
+    };
+
+    const metVrienden = overrideTabellen(stil);
+    try {
+      renderPage();
+      expect(await screen.findByText(/iedereen zit stil/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /uitslag invullen/i }),
+      ).toHaveAttribute("href", "/matches");
+      expect(screen.queryByText(/nog niemand om te volgen/i)).toBeNull();
+    } finally {
+      metVrienden();
+    }
+
+    const zonderVrienden = overrideTabellen({ ...stil, friendships: [] });
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/nog niemand om te volgen/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /vrienden zoeken/i }),
+      ).toHaveAttribute("href", "/vrienden");
+    } finally {
+      zonderVrienden();
+    }
   });
 
   it("linkt een vriendschap door naar het spelersprofiel", async () => {

@@ -3,16 +3,37 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+/* Eén dagblok = kop + items. Sinds #912 een echt element: een sticky kop kan
+   zijn containing block niet verlaten, en in de vroegere platte grid was dat
+   precies de rij van de kop zelf — hij kon dus geen millimeter meebewegen. */
+.feed__dag {
+  position: relative;
+}
+.feed__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   gap: var(--sp-2);
 }
 /* Dag-kopje als kicker met uitlopende hairline: maakt dagblokken als eenheden
    leesbaar (items binnen een dag blijven dicht op elkaar via de grid-gap). */
 .feed__day {
+  /* Blijft plakken zolang je binnen die dag scrollt (#912): bij een lange feed
+     raakte je anders de datumcontext kwijt. Onder de topbalk (die op mobiel
+     zelf sticky is en z-index 20 heeft), vandaar --topbar-h; op desktop is er
+     geen topbalk en valt de offset terug op 0. Ondoorzichtige achtergrond en
+     wat lucht eromheen, anders schuiven de items eronder zichtbaar door. */
+  position: sticky;
+  top: var(--topbar-h, 0px);
+  z-index: 3;
+  background: var(--bg);
+  padding: var(--sp-2) 0;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-top: var(--sp-5);
+  margin-top: var(--sp-4);
   font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -25,8 +46,13 @@
   height: 1px;
   background: var(--line);
 }
-.feed__day:first-child {
+.feed__dag:first-child .feed__day {
   margin-top: 0;
+}
+/* Het item dat na "toon meer" focus krijgt is geen bedienbaar element; een
+   focusring eromheen zou suggereren dat je er iets mee kunt (#912). */
+.feed__item:focus {
+  outline: none;
 }
 
 /* Routine-regel (vriendschap, gepland, groep, poll): randloze regel — het
@@ -575,8 +601,24 @@
 }
 
 /* Filterchips als losse pills (mockup-layout, #232): één scrollrij. */
-.feed__filters {
+.feed__filterbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   margin-bottom: var(--sp-3);
+}
+/* De rij zelf mag krimpen; de wis-knop ernaast niet. */
+.feed__filterbar .feed__filters {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.feed__filters-wis {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.feed__filters {
+  position: relative;
+  margin-bottom: 0;
   background: transparent;
   border: 0;
   padding: 0;
@@ -584,6 +626,26 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  /* De fade is een masker op de rij zelf: een overlay met een achtergrondkleur
+     zou over de chips heen liggen en op elke themawissel bijgehouden moeten
+     worden. Welke kant vervaagt komt uit data-schaduw (#912) — een altijd
+     zichtbare fade zou liegen zodra je aan het einde bent. */
+  --fade: 24px;
+}
+.feed__filters[data-schaduw="rechts"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+}
+.feed__filters[data-schaduw="links"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+}
+.feed__filters[data-schaduw="beide"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
 }
 .feed__filters::-webkit-scrollbar { display: none; }
 .feed__filters .tab {
