@@ -153,6 +153,54 @@ export async function createGroupInvite(groupId: string): Promise<string> {
   return data;
 }
 
+/** Status van een uitnodigingslink voor de ingelogde gebruiker (#923).
+ *  `member` is een succespad, geen fout: die hoort gewoon de groep in. */
+export type InviteStatus = "ok" | "expired" | "unknown" | "member";
+
+/** Wat er achter een uitnodigingstoken zit, zonder al lid te worden.
+ *  Buiten `status` is alles leeg bij een onbekend token. */
+export interface InvitePreview {
+  status: InviteStatus;
+  group_id: string | null;
+  group_name: string | null;
+  member_count: number;
+  member_ids: string[];
+  inviter_id: string | null;
+  expires_at: string | null;
+}
+
+const ONBEKENDE_UITNODIGING: InvitePreview = {
+  status: "unknown",
+  group_id: null,
+  group_name: null,
+  member_count: 0,
+  member_ids: [],
+  inviter_id: null,
+  expires_at: null,
+};
+
+/** Bekijkt een uitnodiging vóór het inwisselen. Loopt via een SECURITY
+ *  DEFINER-RPC: een niet-lid mag `groups` en `group_members` niet lezen (RLS),
+ *  en juist die naam moet je zien vóór je op "Word lid" drukt (#923). */
+export async function previewGroupInvite(
+  token: string,
+): Promise<InvitePreview> {
+  const { data, error } = await supabase
+    .rpc("group_invite_preview", { p_token: token })
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return ONBEKENDE_UITNODIGING;
+  return {
+    status: (data.status ?? "unknown") as InviteStatus,
+    group_id: data.group_id,
+    group_name: data.group_name,
+    member_count: data.member_count ?? 0,
+    member_ids: data.member_ids ?? [],
+    inviter_id: data.inviter_id,
+    expires_at: data.expires_at,
+  };
+}
+
 /** Wisselt een uitnodigingstoken in (auto-join); geeft het groep-id terug. */
 export async function redeemGroupInvite(token: string): Promise<string> {
   const { data, error } = await supabase.rpc("redeem_group_invite", {

@@ -2249,6 +2249,18 @@ export type Database = {
           since: string
         }[]
       }
+      group_invite_preview: {
+        Args: { p_token: string }
+        Returns: {
+          expires_at: string
+          group_id: string
+          group_name: string
+          inviter_id: string
+          member_count: number
+          member_ids: string[]
+          status: string
+        }[]
+      }
       is_accepted_friend: {
         Args: { p_a: string; p_b: string }
         Returns: boolean

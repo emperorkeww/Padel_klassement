@@ -1,50 +1,14 @@
--- Uitnodigingslinks voor groepen: aanmaken (elk lid, #776), vooraf bekijken
--- (#923) en inwisselen.
-create or replace function public.create_group_invite(
-  p_group_id uuid,
-  p_days int default 14
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_uid uuid := (select auth.uid());
-  v_token uuid;
-begin
-  if v_uid is null then
-    raise exception 'Niet ingelogd';
-  end if;
-  if not public.is_group_member(p_group_id, v_uid) then
-    raise exception 'Alleen leden van deze groep kunnen een uitnodiging maken';
-  end if;
+-- #923: een uitnodigingslink laat eerst zien wáár je lid van wordt.
+--
+-- De preview kan niet client-side: `groups` en `group_members` zijn alleen
+-- leesbaar voor leden (RLS), en juist een niet-lid moet de groepsnaam zien
+-- vóór hij op "Word lid" drukt. Vandaar een SECURITY DEFINER-functie die op
+-- het token — een ongeraden uuid dat je alleen hebt als je de link kreeg —
+-- precies zoveel prijsgeeft als op het scherm hoort: naam, ledental, de
+-- eerste paar leden en wie de link maakte.
+--
+-- Spiegel van supabase/schemas/functions/14_group_invites.sql.
 
-  select token into v_token
-  from public.group_invites
-  where group_id = p_group_id
-    and (expires_at is null or expires_at > now())
-  order by created_at desc
-  limit 1;
-
-  if v_token is null then
-    insert into public.group_invites (group_id, created_by, expires_at)
-    values (p_group_id, v_uid, now() + make_interval(days => greatest(p_days, 1)))
-    returning token into v_token;
-  end if;
-
-  return v_token;
-end;
-$$;
-
-grant execute on function public.create_group_invite(uuid, int) to authenticated;
-
--- Wat er achter een token zit, zonder lid te worden (#923). Kan niet
--- client-side: `groups`/`group_members` zijn alleen leesbaar voor leden (RLS),
--- en juist een niet-lid moet de groepsnaam zien vóór hij op "Word lid" drukt.
--- Het token is een ongeraden uuid dat je alleen hebt als je de link kreeg;
--- daarom mag de functie naam, ledental, de eerste leden en de uitnodiger
--- prijsgeven — precies wat er op het scherm staat, niet meer.
 create or replace function public.group_invite_preview(p_token uuid)
 returns table (
   status text,
@@ -110,10 +74,10 @@ $$;
 
 grant execute on function public.group_invite_preview(uuid) to authenticated;
 
--- De twee afwijzingen dragen een stabiele code in DETAIL (PostgREST geeft die
--- door als `details`, #923). De UI hing eerst aan de Nederlandse foutzin om
--- "verlopen" van "bestaat niet" te onderscheiden; dat brak zodra iemand de
--- tekst mooier maakte.
+-- Inwisselen zelf verandert niet, op één punt na: de twee afwijzingen dragen
+-- nu een stabiele code in DETAIL (PostgREST geeft die door als `details`).
+-- De UI hing eerst aan de Nederlandse foutzin om "verlopen" van "bestaat niet"
+-- te onderscheiden; dat brak zodra iemand de tekst mooier maakte.
 create or replace function public.redeem_group_invite(p_token uuid)
 returns uuid
 language plpgsql
