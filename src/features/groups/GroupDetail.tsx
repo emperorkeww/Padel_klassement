@@ -453,6 +453,8 @@ export function GroupDetail() {
             rounds={rounds}
             openRound={openRound ?? null}
             dayDone={dayDone}
+            polls={polls.data ?? []}
+            pollOptions={pollOpts.data ?? []}
             today={today}
             timezone={club.timezone}
             teams={tmap}

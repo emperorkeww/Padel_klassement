@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DagKop } from "./DagKop";
 import { DayStats } from "./DayStats";
 import { MakeTeams } from "./MakeTeams";
 import { ShareEvening } from "./ShareEvening";
@@ -10,6 +11,7 @@ import {
   type NewMatchMode,
 } from "@/features/matches/components/NewMatchSheet";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
+import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { Upset } from "@/features/matches/upset";
 import type {
   Group,
@@ -29,10 +31,15 @@ import "./VandaagTab.css";
 //
 //   1. niets gepland   → de teamgenerator staat centraal
 //   2. wedstrijden klaar → de rondes staan bovenaan, generator klapt weg
-//   3. alles ingevuld  → afsluitkaart met de stap naar de stand + deel-poster
+//   3. alles ingevuld  → de dagkop sluit af met de stap naar de stand
 //
 // Daardoor kunnen de flow-next-banners weg (#674 B3): de volgende stap zit in
 // de tab zelf in plaats van in een kaart die de inhoud omlaag duwt.
+//
+// Sinds #839 opent de tab met de dagkop: één blok over de dag als geheel
+// (voortgang, deelposter, herkomst van de indeling). De afsluitkaart die hier
+// stond ging daarin op — dezelfde actie hoort niet te verhuizen zodra de
+// laatste uitslag binnen is.
 //
 // Eén blok beweegt bewust níét mee met de dag: "Losse partij" (#722). Dat
 // verhuisde vroeger van onder de generator naar ín de inklapper "Nog een ronde
@@ -55,8 +62,12 @@ interface VandaagTabProps {
   rounds: { round: number; list: Match[] }[];
   /** Ronde met nog openstaande uitslagen (blokkeert Mexicano), of null. */
   openRound: { round: number } | null;
-  /** Alle uitslagen van vandaag binnen → afsluitkaart tonen. */
+  /** Alle uitslagen van vandaag binnen → de dagkop sluit de dag af. */
   dayDone: boolean;
+  /** Speeldag-polls van de groep (uit GroupDetail): de dagkop leest eruit of
+   *  de indeling van vandaag van de automaat kwam (#839). */
+  polls: PlayPoll[];
+  pollOptions: PollOption[];
   /** Clubdag (parent bepaalt de tijdzone). */
   today: string;
   /** Clubtijdzone: nodig om per match te bepalen of die op `today` valt. */
@@ -84,6 +95,8 @@ export function VandaagTab({
   rounds,
   openRound,
   dayDone,
+  polls,
+  pollOptions,
   today,
   timezone,
   teams,
@@ -179,33 +192,36 @@ export function VandaagTab({
 
   return (
     <>
+      {/* De dag als geheel (#839): voortgang over alle rondes, de deelposter op
+          één vaste plek, en waar de indeling vandaan komt. Stond hiervoor
+          verspreid over de afsluitkaart, de kop van Wedstrijden en nergens. */}
+      <DagKop
+        groupId={groupId}
+        group={group}
+        polls={polls}
+        pollOptions={pollOptions}
+        rounds={rounds}
+        profiles={profiles}
+        today={today}
+        timezone={timezone}
+        dayDone={dayDone}
+        share={share}
+        onShowStand={onShowStand}
+      />
+
       {/* Vaste plek bovenaan (#722), los van de dagstaat: compact genoeg om
           niets weg te drukken, zichtbaar genoeg om gevonden te worden. */}
       {losseMatch}
-
-      {/* Staat 3: alles ingevuld. */}
-      {dayDone && (
-        <div className="card flow-next" role="status">
-          <span>🏁 Alle uitslagen van vandaag staan erin — mooi gespeeld!</span>
-          <div className="vandaag-done__actions">
-            <button className="btn btn--sm btn--primary" onClick={onShowStand}>
-              Bekijk de stand →
-            </button>
-            {share}
-          </div>
-        </div>
-      )}
 
       {/* Staat 2 en 3: de wedstrijden van vandaag met de uitslagen. */}
       {dayStarted && (
         <section className="card">
           <div className="card__head">
             <h2 className="card__title card__title--tight">Wedstrijden</h2>
-            {!dayDone && share}
           </div>
           <p className="card__subtitle">
-            De wedstrijden en gelogde partijen van vandaag — vul de uitslagen
-            in en de stand rekent live mee.
+            De wedstrijden en gelogde partijen van vandaag — vul de uitslagen in
+            en de stand rekent live mee.
           </p>
 
           <div className="rounds">

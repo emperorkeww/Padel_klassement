@@ -1,0 +1,100 @@
+/* Dagkop van de Vandaag-tab (#839): de samenvatting van de speeldag boven de
+   losse blokken. Hij mag opvallen — dit is het enige blok dat over de hele dag
+   gaat — maar niet zo hard dat de wedstrijdkaarten eronder hun accent kwijt
+   zijn. Vandaar één zachte accentrand links in plaats van een gevuld vlak. */
+
+.dagkop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border-left: 3px solid var(--accent);
+}
+
+/* Alles binnen: dezelfde groene afsluiting die .flow-next hiervoor gaf. */
+.dagkop--done {
+  border-left-color: var(--success);
+  background: var(--success-soft);
+}
+
+.dagkop__line {
+  margin: 0;
+  font-size: var(--fs-base);
+  color: var(--ink-soft);
+}
+.dagkop--done .dagkop__line {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Dagvoortgang over álle rondes samen — per ronde stond die teller er al,
+   maar wie wilde weten hoe ver de avond stond, moest zelf optellen. */
+.dagkop__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.dagkop__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.dagkop--done .dagkop__bar-fill {
+  background: var(--success);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dagkop__bar-fill {
+    transition: none;
+  }
+}
+
+.dagkop__automaat {
+  margin: 0;
+}
+
+/* Herkomst van de indeling (#827/#846). Pil-vorm zodat hij als status leest en
+   niet als nog een zin: dit is een feit over de dag, geen instructie. */
+.dagkop__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+/* De automaat deed het werk: padelbal-lime, de kleur die in de app voor
+   "automatisch/systeem" staat. */
+.dagkop__chip--auto {
+  border-color: var(--lime-deep);
+  background: var(--lime-soft);
+  color: var(--ink);
+}
+/* Hij moet nog komen of wacht ergens op: rustig groen, geen alarm. */
+.dagkop__chip--wacht {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+/* Er gebeurde niets terwijl je dat wél mocht verwachten. */
+.dagkop__chip--let-op {
+  border-color: var(--warn-line);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.dagkop__chip a {
+  color: inherit;
+}
+
+.dagkop__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}

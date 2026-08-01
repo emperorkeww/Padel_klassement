@@ -37,8 +37,10 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  /* Zelfde tussenruimte als .card + .card, want de volgende kaart krijgt die
-     niet: haar voorganger is geen .card. */
+  /* Zelfde tussenruimte als .card + .card aan beide kanten, want dit blok is
+     zelf geen .card: de dagkop erboven (#839) en de kaart eronder zouden die
+     afstand anders geen van beide krijgen. */
+  margin-top: var(--sp-5);
   margin-bottom: var(--sp-5);
   padding: var(--sp-3) var(--sp-4);
   border: 1px dashed var(--line-strong);
@@ -114,10 +116,6 @@
   content: "✓ ";
 }
 
-/* Afsluitkaart: stand-CTA + deel-poster naast elkaar, wrappend op smal. */
-.vandaag-done__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
+/* De afsluitkaart die hier stond ging op in de dagkop (#839): de stand-CTA en
+   de deelposter staan nu in DagKop.css, zodat dezelfde actie niet verhuist
+   zodra de laatste uitslag binnen is. */

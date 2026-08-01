@@ -41,6 +41,7 @@ function poll(overrides: Partial<PlayPoll> = {}): PlayPoll {
     club_timezone: "Europe/Brussels",
     access_code: null,
     courts: null,
+    rounds_generated_at: null,
     ...overrides,
   };
 }
