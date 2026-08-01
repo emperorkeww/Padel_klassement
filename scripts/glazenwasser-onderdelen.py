@@ -371,9 +371,27 @@ def snijd(
     silhouet: float = 0.42,
     halo: int = 6,
     aanhechting: float = 0.55,
+    licht_aanhechting: bool = False,
+    vul: float = 0.08,
+    forceer: tuple = (),
     zonder=(),
 ) -> None:
-    """Snijdt één onderdeel vrij, bijgesneden op zijn eigen alfa."""
+    """Snijdt één onderdeel vrij, bijgesneden op zijn eigen alfa.
+
+    `vul` is de maat van vul_gaten: het schuim ín de sopemmer is een groot,
+    licht binnengat (geen van beide voorwerpsleutels pakt het) en valt met de
+    standaard 8% buiten de vulling — dan kijk je op de kaart dwars door de
+    emmer heen.
+
+    `licht_aanhechting` poort het aangehechte materiaal op helderheid: schuim
+    en druppels zijn licht, maar de afwijkingssleutel is tekenloos en nam ook
+    donkere raildelen mee die binnen de contour vielen — de halfdoorzichtige
+    brokstukken die om de trekker hingen.
+
+    `forceer` is een reeks (punten, krimp): contouren die hoe dan ook dekkend
+    meegaan, een aantal pixels naar binnen geërodeerd. Voor massieve delen die
+    over een donkere ondergrond lopen (het trekkerblad over de linkerrail)
+    faalt elke lokale sleutel — het silhouet ís daar het antwoord."""
     contour = BRON.contour(punten, feather)
     if sleutel == "zwart":
         alpha = np.clip((BRON.luma - 8.0) / 42.0, 0, 1) * contour
@@ -384,18 +402,21 @@ def snijd(
             # of verzadigd tegenover de omgeving. De contour bakent alleen af
             # wáár gezocht wordt; hij is niet zelf het masker.
             kern = (contour > 0.5) & (BRON.voorwerp > silhouet)
-            kern = vul_gaten(ontkorrel(kern, korrel))
+            kern = vul_gaten(ontkorrel(kern, korrel), maxdeel=vul)
             # Aangehecht schuim en water: dat hangt áán het voorwerp en hoort
             # erbij, maar alleen vlak ertegenaan. Zonder die begrenzing komt de
             # halve glaswand mee, want die is net zo getextureerd.
             nabij = dilate(kern, halo)
-            alpha = np.maximum(
-                vervaag(kern.astype(np.float32), zacht),
-                ruw * nabij * aanhechting,
-            )
+            hecht = ruw * nabij * aanhechting
+            if licht_aanhechting:
+                hecht *= np.clip((BRON.luma - 150.0) / 60.0, 0, 1)
+            alpha = np.maximum(vervaag(kern.astype(np.float32), zacht), hecht)
             alpha = alpha * np.clip(contour * 1.6, 0, 1)
         else:
             alpha = ruw * contour
+    for fpunten, krimp in forceer:
+        vast = erode(BRON.contour(fpunten, 0.0) > 0.5, krimp)
+        alpha = np.maximum(alpha, vervaag(vast.astype(np.float32), 1.2))
     alpha = np.clip(alpha * versterk, 0, 1)
     if inhoudvrij:
         vrij = BRON.vrij
@@ -622,13 +643,14 @@ def kaartring() -> None:
         vorm = np.roll(vorm, (int(round(dy * RH)), int(round(dx * RW))), (0, 1))
         weg = np.maximum(weg, vervaag(vorm, 2.0))
 
-    # De ingebakken kaarttekst. De poort is het glaspaneel zónder erosie: de
-    # eerdere, naar binnen geërodeerde poort liet tekst vlak langs de rand
-    # (de laatste E van CONCENTRATIE naast de emmer) buiten schot, en die stond
-    # als losse letter op de kaart. De rail zelf blijft beschermd doordat de
-    # poort op de glascontour stopt.
+    # De ingebakken kaarttekst. De poort is het glaspaneel zónder erosie en
+    # zónder blur: de eerdere, naar binnen geërodeerde poort liet tekst vlak
+    # langs de rand (de laatste E van CONCENTRATIE naast de emmer) buiten
+    # schot, en een zachte poort lekte de tekstzone tot óver de glasrand — dat
+    # sloeg een gat in de rail en de waterhuid naast de emmer, met een harde
+    # streep als onderrand.
     kern_glas = BRON.contour(GLAS_BINNEN, 0.0) > 0.5
-    binnen = vervaag(kern_glas.astype(np.float32), 3.0)
+    binnen = kern_glas.astype(np.float32)
     tekst = np.zeros_like(luma)
     for (x0, y0, x1, y1) in INHOUD:
         blok = np.zeros_like(luma)
@@ -673,8 +695,13 @@ def kaartring() -> None:
     # en druppelband waar het natte glas tegen de lijst aan loopt. Zonder die
     # band zou het glas zacht naar het frame vervagen in plaats van er nat op
     # aan te sluiten.
-    diep = erode(kern_glas, 44)
-    binnenvlak = vervaag(diep.astype(np.float32), 28.0)
+    # De band is smal: hij draagt alleen de natte overgang glas→lijst. Breder
+    # sleepte hij een baan referentieglas mee waarvan de strepen niet
+    # aansluiten op het samengestelde glasvlak eronder — precies de naad
+    # tussen binnenkant en omranding die opviel. De randcondens komt nu uit
+    # `glasvlak()` zelf.
+    diep = erode(kern_glas, 14)
+    binnenvlak = vervaag(diep.astype(np.float32), 10.0)
     # Inpaint-zones doven ook in de band uit: een spook in de rand is nog
     # steeds een spook. Het gat valt op de kaart dicht — de echte voorwerpen
     # staan er bovenop en het glasvlak ligt eronder.
@@ -845,10 +872,34 @@ def glasvlak() -> None:
     demp_v = 1.0 - 0.3 * np.clip(1.0 - np.abs(yy - 0.585) / 0.21, 0, 1)
     demp = np.repeat(demp_v[:, None], W, axis=1).astype(np.float32)
 
+    # Randzone: waar het glas de lijst nadert. De natte overgang komt sinds de
+    # smalle ringband uit dit vlak zelf — condens en druppels verdichten naar
+    # de rand toe, en de toon koelt er een fractie af, zodat glas en lijst in
+    # elkaar grijpen in plaats van langs elkaar heen te schuiven.
+    poly = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(poly).polygon(
+        [
+            ((x - RX0) / RW * W, _naar_kaart_y((y - RY0) / RH) * H)
+            for x, y in GLAS_BINNEN
+        ],
+        fill=255,
+    )
+    pm = np.asarray(poly) > 127
+    rand = vervaag((pm & ~erode(pm, 64)).astype(np.float32), 16.0)
+    demp = np.clip(demp * (1.0 + 1.3 * rand), 0, 2.2).astype(np.float32)
+
     cond = np.zeros((H, W, 3), np.float32)
     strooi(cond, patches_van(44, 26), 900, (0.85, 1.9), (0.7, 1.3), demp)
     # Kleinere, scherpere patches: losse druppels en spetters.
     strooi(cond, patches_van(20, 22), 650, (0.8, 1.7), (1.1, 1.9), demp)
+    # Extra druppels in de randzone alleen: op de referentie zitten de dichtste
+    # druppels tegen de lijst aan.
+    strooi(cond, patches_van(20, 22), 260, (0.7, 1.3), (1.0, 1.7),
+           rand.astype(np.float32))
+    veld = np.clip(
+        veld - (rand * 9.0)[..., None] * np.array([1.0, 0.55, 0.15], np.float32),
+        0, 255,
+    )
 
     # -- verticale waterstrepen ----------------------------------------------
     licht = np.zeros((H, W), np.float32)
@@ -1049,14 +1100,23 @@ def main() -> int:
     # Dunne, hooggekleurde steel: een grovere ontkorreling knipt hem weg.
     # Krappere aanhechting: het schuim aan het blad hoort erbij, de losse
     # glasvlekken rechts ernaast niet.
+    # Forceer het blad: dat loopt over de donkere linkerrail, waar élke lokale
+    # sleutel faalt — de linkerarm viel er half uit. Lichtpoort op de
+    # aanhechting: de afwijkingssleutel nam ook raildelen binnen de contour mee.
     snijd("trekker-boven", TREKKER_BOVEN, "vast", feather=5.0, drempel=14.0,
-          korrel=1, zacht=1.0, halo=5, aanhechting=0.42)
+          korrel=1, zacht=1.0, halo=5, aanhechting=0.42,
+          licht_aanhechting=True, forceer=((TREKKER_BOVEN, 6),))
     snijd("ophanging", OPHANGING, "glas", feather=6.0, drempel=11.0,
           spreiding=24.0, versterk=1.15, zonder=(EMMER,))
+    # Het schuim ín de emmer is een groot licht binnengat (vul), de beugel en
+    # de klem zijn licht metaal (aanhechting hoger, op licht gepoort) en de
+    # romp hoort hoe dan ook dicht (forceer) — anders kijk je door de emmer
+    # heen naar het glas.
     snijd("emmer", EMMER, "vast", feather=5.0, drempel=14.0, zacht=1.0,
-          vrij_vanaf_x=900)
+          vrij_vanaf_x=900, vul=0.35, aanhechting=0.85,
+          licht_aanhechting=True, forceer=((EMMER, 8),))
     snijd("onderschild", ONDERSCHILD, "vast", feather=6.0, drempel=14.0,
-          zacht=1.2)
+          zacht=1.2, licht_aanhechting=True)
     # Waterexplosie, hoekijs en flankdruppels zijn geen losse onderdelen meer:
     # ze zitten in de ring, waar ze in één doorlopende waterhuid om het schild
     # lopen zoals op de referentie. Hun contouren blijven hierboven staan omdat
