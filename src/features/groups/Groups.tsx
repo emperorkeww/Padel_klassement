@@ -21,7 +21,8 @@ import {
   type PollOption,
 } from "./pollsApi";
 import { journeyFor } from "./journey";
-import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
+import { ledenLabel } from "./groepHelpers";
+import { MemberStack } from "./components/MemberStack";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
@@ -187,28 +188,7 @@ export function Groups() {
                         )}
                       </span>
                       <span className="group-card__meta">
-                        {g.member_ids.length > 0 && (
-                          <span
-                            className="group-card__members"
-                            aria-hidden="true"
-                          >
-                            {g.member_ids
-                              .slice(0, MAX_MEMBER_AVATARS)
-                              .map((pid) => (
-                                <Avatar
-                                  key={pid}
-                                  profile={pmap[pid]}
-                                  size={20}
-                                  short
-                                />
-                              ))}
-                            {g.member_ids.length > MAX_MEMBER_AVATARS && (
-                              <span className="group-card__more">
-                                +{g.member_ids.length - MAX_MEMBER_AVATARS}
-                              </span>
-                            )}
-                          </span>
-                        )}
+                        <MemberStack ids={g.member_ids} profiles={pmap} />
                         <span>
                           {ledenLabel(g.member_ids.length)} · sinds{" "}
                           {formatDate(g.created_at)}

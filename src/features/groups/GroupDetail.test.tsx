@@ -474,7 +474,7 @@ describe("<GroupDetail />", () => {
 
     const kop = container.querySelector(".group-head")!;
     // Ledenrij plus ledental — dezelfde bouwstenen als de kaart op de hub.
-    expect(kop.querySelector(".group-head__leden")).not.toBeNull();
+    expect(kop.querySelector(".member-stack")).not.toBeNull();
     expect(kop).toHaveTextContent(/4 leden/i);
     // De reisstatus komt uit journeyFor; die staat er zodra de polls er zijn.
     await waitFor(() =>

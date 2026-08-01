@@ -91,6 +91,14 @@
 .dagkop__chip a {
   color: inherit;
 }
+/* Rudy's koppie in de pil (#975): stond hier een 🤖, terwijl de app voor precies
+   dit soort mededelingen al een gezicht heeft. Iets naar links zodat hij tegen
+   de rand van de pil aanligt — een medaillon, geen los icoon met lucht eromheen. */
+.dagkop__rudy {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: calc(var(--sp-1) * -1);
+}
 
 .dagkop__actions {
   display: flex;
