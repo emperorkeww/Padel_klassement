@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildFeed,
+  bundelSpelers,
+  bundelVriendschappen,
   feedDay,
   feedPrivacyFilter,
   networkIds,
@@ -8,6 +10,7 @@ import {
   scoreHighlight,
   UPSET_MAX_KANS,
   type FeedEvent,
+  type FriendshipBundel,
 } from "@/features/feed/feedLogic";
 import type {
   Friendship,
@@ -1069,5 +1072,68 @@ describe("buildFeed — bounty (#805)", () => {
     expect(
       matchEvent?.highlights.some((h) => h.type === "bounty-verdedigd"),
     ).toBe(false);
+  });
+});
+
+// Acht keer "X en Y zijn nu vrienden" met hetzelfde tijdstip verdrinkt de rest
+// van de feed (#944).
+describe("bundelVriendschappen", () => {
+  const vriend = (a: string, b: string, at = "2026-07-03T20:00:00.000Z") =>
+    ({ kind: "friendship", at, a, b }) as FeedEvent;
+  const match = (at = "2026-07-03T19:00:00.000Z") =>
+    ({ kind: "match", at, match: {}, highlights: [], myDelta: null }) as unknown as FeedEvent;
+  const zelf = (e: FeedEvent) => e;
+
+  it("laat een korte reeks met rust", () => {
+    // Twee rijen zijn geen muur; die horen los te blijven staan.
+    const uit = bundelVriendschappen([vriend("p1", "p2"), vriend("p3", "p4")], zelf);
+    expect(uit).toHaveLength(2);
+    expect(uit.every((r) => !("bundel" in (r as object)))).toBe(true);
+  });
+
+  it("vat een lange reeks samen tot één regel", () => {
+    const events = [
+      vriend("p1", "p2"),
+      vriend("p3", "p4"),
+      vriend("p5", "p6"),
+      vriend("p7", "p8"),
+    ];
+    const uit = bundelVriendschappen(events, zelf);
+    expect(uit).toHaveLength(1);
+    const eerste = uit[0] as { bundel: FriendshipBundel; leden: FeedEvent[] };
+    expect(eerste.bundel.events).toHaveLength(4);
+    // De bundel draagt het tijdstip van de nieuwste erin.
+    expect(eerste.bundel.at).toBe(events[0].at);
+    // En de losse gebeurtenissen blijven beschikbaar om uit te klappen.
+    expect(eerste.leden).toHaveLength(4);
+  });
+
+  it("bundelt alleen wat aan elkaar grenst", () => {
+    // Staat er een match tussen, dan zijn het twee losse momenten.
+    const uit = bundelVriendschappen(
+      [
+        vriend("p1", "p2"),
+        vriend("p3", "p4"),
+        vriend("p5", "p6"),
+        match(),
+        vriend("p7", "p8"),
+        vriend("p9", "p10"),
+      ],
+      zelf,
+    );
+    expect(uit).toHaveLength(4);
+    expect("bundel" in (uit[0] as object)).toBe(true);
+    expect("bundel" in (uit[1] as object)).toBe(false);
+    expect("bundel" in (uit[2] as object)).toBe(false);
+    expect("bundel" in (uit[3] as object)).toBe(false);
+  });
+
+  it("noemt elke betrokken speler één keer", () => {
+    const uit = bundelVriendschappen(
+      [vriend("p1", "p2"), vriend("p1", "p3"), vriend("p1", "p4")],
+      zelf,
+    );
+    const { bundel } = uit[0] as { bundel: FriendshipBundel };
+    expect(bundelSpelers(bundel)).toEqual(["p1", "p2", "p3", "p4"]);
   });
 });
