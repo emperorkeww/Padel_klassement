@@ -1,0 +1,34 @@
+/* Overlappende rij lid-avatars met een "+n"-badge (#975).
+   --stack-ring is de kleur van het vlak waaróp de stapel ligt: die ring maakt
+   de overlap leesbaar (een uitsparing, geen witte rand). Standaard een kaart;
+   staat de stapel op de pagina-achtergrond, dan zet die plek 'm op --bg. */
+.member-stack {
+  --stack-ring: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.member-stack > * + * {
+  margin-left: -6px;
+}
+.member-stack .avatar {
+  box-shadow: 0 0 0 2px var(--stack-ring);
+}
+/* Het restaantal is een badge in dezelfde vorm als een avatar, geen los cijfer:
+   zo leest "+15" als "en nog vijftien" en niet als een zwevend getal naast het
+   ledental. De ring houdt de "+" vrij van de avatar ervoor. */
+.member-stack__meer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--stack-size, 20px);
+  height: var(--stack-size, 20px);
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2px var(--stack-ring);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}

@@ -57,31 +57,11 @@
   color: var(--ink-soft);
   font-size: var(--fs-md);
 }
-/* Overlappende mini-avatars, net als op de groepskaart in de hub. */
-.join__avatars {
-  display: inline-flex;
-  align-items: center;
-}
-.join__avatars .avatar {
-  box-shadow: 0 0 0 2px var(--surface);
-}
-.join__avatars .avatar + .avatar,
-.join__meer {
-  margin-left: -6px;
-}
-.join__meer {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  box-shadow: 0 0 0 2px var(--surface);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
+/* Overlappende mini-avatars, net als op de groepskaart in de hub — zelfde
+   MemberStack (#975). De uitnodiging staat op de pagina-achtergrond, dus de ring
+   om de avatars volgt die en niet het kaartwit. */
+.join__leden .member-stack {
+  --stack-ring: var(--bg);
 }
 
 .join__verval,

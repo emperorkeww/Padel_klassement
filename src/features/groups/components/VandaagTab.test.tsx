@@ -485,7 +485,8 @@ describe("<VandaagTab />", () => {
       pollOptions: [AUTO_OPTION],
     });
 
-    expect(screen.getByText(/automatisch klaargezet om/i)).toBeInTheDocument();
+    // De pil spreekt namens Coach Rudy i.p.v. een robot-emoji (#975).
+    expect(screen.getByText(/rudy zette ze klaar om/i)).toBeInTheDocument();
   });
 
   it("vertelt op een lege dag dat de automaat nog moet komen", () => {
@@ -499,7 +500,7 @@ describe("<VandaagTab />", () => {
         pollOptions: [AUTO_OPTION],
       });
       expect(
-        screen.getByText(/de automaat deelt om 08:00/i),
+        screen.getByText(/rudy deelt om 08:00/i),
       ).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
@@ -513,7 +514,7 @@ describe("<VandaagTab />", () => {
       pollOptions: [AUTO_OPTION],
     });
 
-    expect(screen.getByText(/de automaat staat uit/i)).toBeInTheDocument();
+    expect(screen.getByText(/rudy staat uit/i)).toBeInTheDocument();
   });
 
   it("meldt dat de automaat wacht zolang de baan niet geboekt is", () => {
@@ -523,7 +524,7 @@ describe("<VandaagTab />", () => {
     });
 
     expect(
-      screen.getByText(/de automaat wacht op de baanboeking/i),
+      screen.getByText(/rudy wacht op de baanboeking/i),
     ).toBeInTheDocument();
   });
 

@@ -4,7 +4,6 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useToast } from "@/ui/ToastProvider";
-import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
 import { InviteSkeleton } from "@/ui/Skeleton";
 import { getProfilesByIds } from "@/features/profiles/api";
@@ -13,7 +12,8 @@ import {
   redeemGroupInvite,
   type InvitePreview,
 } from "./api";
-import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
+import { ledenLabel } from "./groepHelpers";
+import { MemberStack } from "./components/MemberStack";
 import {
   UITNODIGING_TEKST,
   uitnodigingProbleem,
@@ -151,18 +151,12 @@ export function JoinGroup() {
       <h1 className="join__groep">{preview.group_name}</h1>
 
       <p className="join__leden">
-        {preview.member_ids.length > 0 && (
-          <span className="join__avatars" aria-hidden="true">
-            {preview.member_ids.slice(0, MAX_MEMBER_AVATARS).map((pid) => (
-              <Avatar key={pid} profile={pmap[pid]} size={28} short />
-            ))}
-            {preview.member_count > MAX_MEMBER_AVATARS && (
-              <span className="join__meer">
-                +{preview.member_count - MAX_MEMBER_AVATARS}
-              </span>
-            )}
-          </span>
-        )}
+        <MemberStack
+          ids={preview.member_ids}
+          profiles={pmap}
+          size={28}
+          total={preview.member_count}
+        />
         <span>{ledenLabel(preview.member_count)}</span>
       </p>
 

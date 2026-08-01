@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatTime } from "@/lib/utils/format";
+import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { displayName } from "@/features/profiles/api";
 import { automaatStatus, dagVoortgang, type Automaat } from "../dagStatus";
 import { longDay } from "../planPollHelpers";
@@ -137,6 +138,17 @@ function voortgangZin(
   return `Ronde ${v.openRonde}${van} loopt · ${stand}`;
 }
 
+/** Rudy's koppie vóór een pil die over zijn werk gaat (#975). Decoratief: de
+ *  zin noemt hem al bij naam, dus de screenreader hoeft de alt-tekst van de
+ *  illustratie er niet nog een keer bij te horen. */
+function RudyKop() {
+  return (
+    <span className="dagkop__rudy" aria-hidden="true">
+      <CoachAvatar size={18} mood="portret" fixed />
+    </span>
+  );
+}
+
 /** Waar de indeling van vandaag vandaan komt, als één pil. */
 function AutomaatChip({
   automaat,
@@ -151,7 +163,7 @@ function AutomaatChip({
     case "klaargezet":
       return (
         <span className="dagkop__chip dagkop__chip--auto">
-          🤖 automatisch klaargezet om {formatTime(automaat.tijdstip)}
+          <RudyKop /> Rudy zette ze klaar om {formatTime(automaat.tijdstip)}
         </span>
       );
     case "handmatig":
@@ -166,25 +178,25 @@ function AutomaatChip({
     case "komt":
       return (
         <span className="dagkop__chip dagkop__chip--wacht">
-          🤖 de automaat deelt om {automaat.uur} zelf in
+          <RudyKop /> Rudy deelt om {automaat.uur} zelf in
         </span>
       );
     case "wacht":
       return (
         <span className="dagkop__chip dagkop__chip--wacht">
-          🤖 de automaat wacht op de baanboeking
+          <RudyKop /> Rudy wacht op de baanboeking
         </span>
       );
     case "overgeslagen":
       return (
         <span className="dagkop__chip dagkop__chip--let-op">
-          🤖 de automaat deelde niets in — deel zelf in
+          <RudyKop /> Rudy deelde niets in — deel zelf in
         </span>
       );
     case "uit":
       return (
         <span className="dagkop__chip dagkop__chip--let-op">
-          ✋ de automaat staat uit ·{" "}
+          ✋ Rudy staat uit ·{" "}
           <Link to={`/groepen/${groupId}?tab=leden`}>aanzetten bij Leden</Link>
         </span>
       );

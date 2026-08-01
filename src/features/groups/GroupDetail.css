@@ -31,22 +31,22 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
-.group-head__leden {
-  display: inline-flex;
-}
-.group-head__leden > :not(:first-child) {
-  margin-left: -8px;
-}
-/* De "+2" hangt aan de avatarstapel maar plakte tegen de laatste avatar (#946):
-   die stapel schuift zichzelf 8px in, en dat gold ook voor het getal. */
-.group-head__meer {
-  margin-left: var(--sp-2);
-  font-variant-numeric: tabular-nums;
+/* De ledenrij ligt hier op de pagina-achtergrond, niet op een kaart: de ring om
+   de avatars volgt dat vlak, anders wordt de uitsparing een witte rand. */
+.group-head .member-stack {
+  --stack-ring: var(--bg);
 }
 /* De poll-pil is een eigen mededeling en hoort niet met de ledenrij op één
-   krappe regel te vechten: op telefoonbreedte krijgt hij een eigen regel. */
+   krappe regel te vechten: op telefoonbreedte krijgt hij een eigen regel.
+   Die regel is de wikkel, niet de pil zelf — `flex-basis: 100%` op de pil maakte
+   er een balk over de volle schermbreedte van, met de tekst links en een grote
+   lege rechterkant (#975). Nu rekt de wikkel en hugt de pil z'n inhoud. */
+.group-head__journey-rij {
+  display: inline-flex;
+  min-width: 0;
+}
 @media (max-width: 480px) {
-  .group-head__journey {
+  .group-head__journey-rij {
     flex-basis: 100%;
   }
 }

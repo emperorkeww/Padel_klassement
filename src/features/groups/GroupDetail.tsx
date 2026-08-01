@@ -43,7 +43,8 @@ import {
 import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound } from "./groupDetailHelpers";
 import { journeyFor } from "./journey";
-import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
+import { ledenLabel } from "./groepHelpers";
+import { MemberStack } from "./components/MemberStack";
 import { Avatar } from "@/ui/Avatar";
 import { getGroupPolls, getGroupPollOptions } from "./pollsApi";
 import { GroupStandTab } from "./components/GroupStandTab";
@@ -425,34 +426,25 @@ export function GroupDetail() {
                 )}
               </h1>
               <p className="group-head__meta">
-                {memberList.length > 0 && (
-                  <span className="group-head__leden" aria-hidden="true">
-                    {memberList
-                      .slice(0, MAX_MEMBER_AVATARS)
-                      .map((m) => (
-                        <Avatar
-                          key={m.player_id}
-                          profile={pmap[m.player_id]}
-                          size={20}
-                          short
-                        />
-                      ))}
-                    {memberList.length > MAX_MEMBER_AVATARS && (
-                      <span className="group-head__meer">
-                        +{memberList.length - MAX_MEMBER_AVATARS}
-                      </span>
-                    )}
-                  </span>
-                )}
+                <MemberStack
+                  ids={memberList.map((m) => m.player_id)}
+                  profiles={pmap}
+                />
+
                 <span>{ledenLabel(memberList.length)}</span>
                 {journey && (
-                  <span
-                    className={`group-head__journey group-head__journey--${journey.tone}`}
-                  >
-                    {journey.icon && (
-                      <span aria-hidden="true">{journey.icon}</span>
-                    )}
-                    {journey.label}
+                  /* De wikkel pakt op telefoonbreedte de hele regel, de pil
+                     erin houdt z'n eigen breedte (#975) — zonder wikkel rekte
+                     de pil zelf mee tot een balk over het hele scherm. */
+                  <span className="group-head__journey-rij">
+                    <span
+                      className={`group-head__journey group-head__journey--${journey.tone}`}
+                    >
+                      {journey.icon && (
+                        <span aria-hidden="true">{journey.icon}</span>
+                      )}
+                      {journey.label}
+                    </span>
                   </span>
                 )}
               </p>
