@@ -399,6 +399,12 @@ export function GroupDetail() {
 
   return (
     <div>
+      {/* Terugnavigatie hoort bóven de kop (#946); als knop naast "Leden
+          uitnodigen" stond de weg omhoog ónder de groepstitel, tussen de
+          acties van deze pagina. */}
+      <Link className="terug-link" to="/spelen">
+        <span aria-hidden="true">←</span> Alle groepen
+      </Link>
       {/* De kop droeg alleen naam plus eigenaar-badge, terwijl de groepskaart
           op de hub wél avatar, ledenrij en reisstatus toont (#917) — de
           groepspagina voelde daardoor minder "van de groep" dan het overzicht
@@ -465,12 +471,6 @@ export function GroupDetail() {
                 Leden uitnodigen
               </button>
             )}
-            {/* Gewoon de weg omhoog. Was tot #916 de énige ingang naar de hub —
-                en dus naar "+ Nieuwe groep" — omdat /spelen je bij één groep
-                meteen hierheen stuurde; die omweg bestaat niet meer. */}
-            <Link className="btn btn--sm" to="/spelen">
-              ← Alle groepen
-            </Link>
           </div>
         </div>
       </header>

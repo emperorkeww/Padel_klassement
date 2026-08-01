@@ -6,7 +6,8 @@ import type {
 } from "@/features/groups/pollsApi";
 import type { OptionState, OptionTally } from "@/features/groups/pollLogic";
 import type { Profile } from "@/types";
-import { STATE_ICON, VOTE_SEGMENTS, shortDay } from "../planPollHelpers";
+import { VOTE_SEGMENTS, shortDay } from "../planPollHelpers";
+import { PollJaIcon, PollNeeIcon, PollStateIcon } from "./pollIconen";
 
 /* ------------------------------------------------------------------ */
 /* Eén kandidaat-moment: compacte stemrij met haalbaarheid + detail.   */
@@ -79,7 +80,7 @@ export function PollOptionRow({
           aria-expanded={detailOpen}
           onClick={onToggleDetail}
         >
-          {STATE_ICON[state]}
+          <PollStateIcon state={state} />
         </button>
         {votable ? (
           <span className="seg" role="group" aria-label="Jouw stem">
@@ -91,7 +92,13 @@ export function PollOptionRow({
                 title={s.label}
                 onClick={() => onVote(s.status)}
               >
-                {s.icon}
+                {s.status === "yes" ? (
+                  <PollJaIcon />
+                ) : s.status === "no" ? (
+                  <PollNeeIcon />
+                ) : (
+                  "?"
+                )}
               </button>
             ))}
           </span>

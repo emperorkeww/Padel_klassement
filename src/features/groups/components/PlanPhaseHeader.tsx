@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BallIcon } from "@/ui/BallIcon";
 import { PLAN_PHASES, type PlanPhase } from "../planFlowLogic";
 
 /* ------------------------------------------------------------------ */
@@ -83,8 +84,8 @@ export function PlanPhaseHeader({
             className={`plan-phases__step${i === activeIdx ? " is-active" : ""}${activeIdx >= 0 && i < activeIdx ? " is-done" : ""}`}
           >
             {i === activeIdx && (
-              <span aria-hidden="true" className="plan-phases__ball">
-                🎾
+              <span className="plan-phases__ball">
+                <BallIcon size={12} />
               </span>
             )}
             {PHASE_LABELS[p]}
@@ -110,9 +111,12 @@ export function PlanPhaseHeader({
             hieronder
           </span>
         )}
+        {/* Het gedeelde padelbal-logo i.p.v. de 🎾-emoji (#946): de app tekent
+            zijn iconen, en een emoji valt per platform anders uit. */}
         {banenHref && (
           <Link className="plan-phases__banen" to={banenHref}>
-            🎾 Vrije banen bekijken →
+            <BallIcon size={14} />
+            Vrije banen bekijken →
           </Link>
         )}
       </p>
