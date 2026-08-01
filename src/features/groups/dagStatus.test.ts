@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { automaatStatus, dagVoortgang } from "./dagStatus";
+import { automaatStatus, dagVoortgang, rondeWinnaars } from "./dagStatus";
 import type { PlayPoll, PollOption } from "./pollsApi";
 
 const TZ = "Europe/Brussels";
@@ -68,6 +68,40 @@ describe("dagVoortgang", () => {
       rondes: 0,
       openRonde: null,
     });
+  });
+});
+
+describe("rondeWinnaars", () => {
+  const label = (id: string) =>
+    ({ t1: "Remco & Tom", t2: "Sam & Els", t3: "Kris & Bo" })[id] ?? "";
+  const won = (teamId: string | null) => ({
+    status: "completed",
+    winner_team_id: teamId,
+  });
+
+  it("noemt de winnende teams van een afgeronde ronde", () => {
+    expect(rondeWinnaars([won("t1"), won("t2")], label)).toBe(
+      "Remco & Tom, Sam & Els",
+    );
+  });
+
+  it("telt hetzelfde team maar één keer", () => {
+    expect(rondeWinnaars([won("t1"), won("t1")], label)).toBe("Remco & Tom");
+  });
+
+  it("kapt af zodat een ingeklapte ronde één regel blijft", () => {
+    expect(rondeWinnaars([won("t1"), won("t2"), won("t3")], label)).toBe(
+      "Remco & Tom, Sam & Els +1",
+    );
+  });
+
+  it("laat gelijkspelen en onafgemaakte matches weg", () => {
+    expect(
+      rondeWinnaars(
+        [won(null), { status: "scheduled", winner_team_id: "t1" }],
+        label,
+      ),
+    ).toBe("");
   });
 });
 
