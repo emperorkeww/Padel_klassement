@@ -147,17 +147,43 @@ export function sweepExpired() {
   }
 }
 
+// Abonnees op invalidatie (#907). Een cache legen is niet genoeg: componenten
+// die al gerenderd staan houden hun eigen kopie in useAsync-state en merken
+// niets van een lege cache. Wie op dezelfde gegevens leunt als een ander scherm
+// — het lef-dagtegoed, dat over meerdere matchkaarten gedeeld is — kan zich
+// hier abonneren en zelf opnieuw ophalen.
+type InvalidateListener = (prefixes: string[]) => void;
+
+const listeners = new Set<InvalidateListener>();
+
+function notify(prefixes: string[]) {
+  for (const cb of listeners) cb(prefixes);
+}
+
+/** Abonneert op invalidaties; geeft een unsubscribe-functie terug. De callback
+ *  krijgt de geraakte prefixen mee — `""` betekent "alles" (invalidateAll). */
+export function subscribeInvalidate(cb: InvalidateListener): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
 /** Verwijdert alle sleutels die met één van de prefixen beginnen. */
 export function invalidate(...prefixes: string[]) {
   for (const key of cache.keys()) {
     if (prefixes.some((p) => key.startsWith(p))) cache.delete(key);
   }
+  notify(prefixes);
 }
 
 /** Leegt de hele cache — bij in-/uitloggen, zodat RLS-gefilterde data nooit
  *  tussen sessies blijft hangen. */
 export function invalidateAll() {
   cache.clear();
+  // De lege prefix raakt per definitie elke sleutel: abonnees weten zo dat hun
+  // gegevens óók weg zijn, zonder dat we hier elke prefix hoeven te kennen.
+  notify([""]);
 }
 
 /** Aantal entries in de cache. Alleen voor tests/diagnose. */

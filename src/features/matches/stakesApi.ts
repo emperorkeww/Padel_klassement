@@ -72,6 +72,9 @@ export async function clearStake(
     .delete()
     .eq("match_id", matchId)
     .eq("player_id", playerId);
-  if (error) throw error;
+  // Zelfde reden als bij setStake: ook een mislukte intrekking betekent dat het
+  // beeld van de client niet meer te vertrouwen is. De invalidatie laat elke
+  // lef-tegel opnieuw ophalen (#907), niet alleen die van deze match.
   invalidate("match-stakes");
+  if (error) throw error;
 }

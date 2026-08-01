@@ -3,7 +3,9 @@ import {
   cached,
   cachedMany,
   cacheSize,
+  invalidate,
   invalidateAll,
+  subscribeInvalidate,
   sweepExpired,
 } from "./queryCache";
 
@@ -206,5 +208,41 @@ describe("cachedMany — per id cachen (#738)", () => {
       cachedMany("profiles:one:", [], fetchMissing),
     ).resolves.toEqual({});
     expect(fetchMissing).not.toHaveBeenCalled();
+  });
+});
+
+describe("subscribeInvalidate — abonnees op een lege cache (#907)", () => {
+  it("meldt de geraakte prefixen aan elke abonnee", () => {
+    const a = vi.fn();
+    const b = vi.fn();
+    subscribeInvalidate(a);
+    const stop = subscribeInvalidate(b);
+
+    invalidate("match-stakes", "matches");
+    expect(a).toHaveBeenCalledWith(["match-stakes", "matches"]);
+    expect(b).toHaveBeenCalledWith(["match-stakes", "matches"]);
+
+    stop();
+    invalidate("match-stakes");
+    expect(a).toHaveBeenCalledTimes(2);
+    expect(b).toHaveBeenCalledTimes(1);
+  });
+
+  it("meldt invalidateAll als de lege prefix — die raakt elke sleutel", () => {
+    const cb = vi.fn();
+    const stop = subscribeInvalidate(cb);
+    invalidateAll();
+    expect(cb).toHaveBeenCalledWith([""]);
+    stop();
+  });
+
+  it("meldt ook als er niets in de cache stond", () => {
+    // De abonnee leest niet uit de cache maar haalt zelf opnieuw op; of er
+    // toevallig een verse entry stond mag zijn refetch niet bepalen.
+    const cb = vi.fn();
+    const stop = subscribeInvalidate(cb);
+    invalidate("bestaat-niet");
+    expect(cb).toHaveBeenCalledTimes(1);
+    stop();
   });
 });
