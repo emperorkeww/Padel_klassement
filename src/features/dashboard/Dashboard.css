@@ -1,9 +1,36 @@
-/* Zachte achtergrondwas achter de kop van de pagina: geeft het overzicht een
-   "boven" zonder donkere vlakken. z-index:0 maakt een stacking context zodat
-   de ::before achter de inhoud maar vóór de shell-achtergrond schildert. */
+/* De pagina zelf: een zachte achtergrondwas achter de kop (geeft het overzicht
+   een "boven" zonder donkere vlakken; z-index:0 maakt een stacking context zodat
+   de ::before achter de inhoud maar vóór de shell-achtergrond schildert), en
+   sinds #940 ook het verticale ritme.
+
+   Eén ritme voor de hele pagina (#940). De tussenruimtes kwamen van
+   `.card + .card`, en dat werkt alleen tussen twee kaarten: het cijfer-blok is
+   een <details> en de baanteaser erna plakte er dus tegenaan. De container geeft
+   nu de afstand, en de blokken erin geven hun eigen marges op — dan kan er per
+   constructie geen gat meer ontbreken of verdubbelen. */
 .dashboard {
   position: relative;
   z-index: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--sp-5);
+}
+.dashboard > * {
+  margin-bottom: 0;
+}
+/* Dezelfde reset nog eens op naam voor de blokken die hun onderrand-marge zelf
+   zetten. `.dashboard > *` is even specifiek als een klasse-selector, en dan
+   beslist de importvolgorde van de stylesheets wie wint — met deze regel niet
+   meer. De bovenmarge blijft staan: de hero heeft er een voor het ornament dat
+   over zijn bovenrand hangt. */
+.dashboard > .hero,
+.dashboard > .card,
+.dashboard > .dash-zone,
+.dashboard > .todo-strip {
+  margin-bottom: 0;
+}
+.dashboard > .card + .card {
+  margin-top: 0;
 }
 .dashboard::before {
   content: "";
@@ -79,23 +106,35 @@
    .dash-extras en zat alleen de gamification erin, met de statsrij en rating
    los erboven — waardoor de pagina één lange rij gelijkwaardige kaarten was.
    De inklapper zelf is een rustige kaart-achtige balk; de items erin houden
-   hun eigen kaartstijl. */
+   hun eigen kaartstijl.
+
+   Sinds #940 draagt alléén die balk nog een rand: het omhulsel eromheen zette
+   een tweede kaartrand en een tweede binnenmarge om vier kaarten die er zelf al
+   een hadden — op 390px kost dat twee niveaus horizontale padding. De inhoud
+   staat nu los onder de balk, met dezelfde tussenruimte als de rest van de
+   pagina. */
 .dash-cijfers {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: var(--sp-5);
 }
+/* De kop blijft een eigen klikbare balk: als kale regel is een inklapper op
+   touch nauwelijks als knop te herkennen. Titel en hint staan gestapeld links,
+   de chevron vast rechts — als één flexrij wrapten ze op 390px allebei en werd
+   de kop drie à vier regels hoog (#940). */
 .dash-cijfers__summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--sp-3);
+  gap: 0 var(--sp-3);
   padding: var(--sp-4) var(--sp-5);
   cursor: pointer;
   list-style: none;
   font-weight: 700;
   color: var(--ink);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 .dash-cijfers__summary::-webkit-details-marker {
   display: none;
@@ -103,7 +142,8 @@
 /* Eigen chevron rechts, die meedraait bij openen. */
 .dash-cijfers__summary::after {
   content: "";
-  margin-left: auto;
+  grid-column: 2;
+  grid-row: 1 / -1;
   width: 9px;
   height: 9px;
   border-right: 2px solid var(--ink-soft);
@@ -118,17 +158,20 @@
   background: var(--surface-2);
 }
 .dash-cijfers__title {
+  grid-column: 1;
   font-size: 1rem;
 }
 .dash-cijfers__hint {
+  grid-column: 1;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-soft);
 }
+/* Geen eigen binnenmarge meer: de kaarten hierin dragen die zelf, en het
+   omhulsel eromheen is weg (#940). */
 .dash-cijfers__body {
   display: grid;
   gap: var(--sp-5);
-  padding: 0 var(--sp-5) var(--sp-5);
 }
 @media (prefers-reduced-motion: reduce) {
   .dash-cijfers__summary::after {
@@ -152,19 +195,66 @@
   margin-bottom: var(--sp-4);
 }
 
-/* Compacte volgende-match (#273): teams + "wanneer" in het midden, de hele
-   kaart is een link naar de match-detail (waar de uitslag ingevuld wordt). */
+/* Compacte volgende-match (#273): teams met "vs" ertussen en "wanneer" eronder,
+   de hele kaart is een link naar de match-detail (waar de uitslag ingevuld
+   wordt). De paring staat sinds #940 niet meer in een eigen omlijnd blok: die
+   rand zat als tweede kaartrand binnen de kaart die er al omheen stond. */
 .next-match {
-  display: block;
+  display: grid;
+  gap: var(--sp-2);
   text-decoration: none;
   color: inherit;
   border-radius: var(--radius-sm);
 }
 .next-match .match-card {
-  transition: background 0.15s;
+  padding: 0;
+  border: 0;
+  background: none;
+  transition: none;
 }
 .next-match:hover .match-card {
-  background: var(--surface-2);
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+.next-match:hover .match-card__names {
+  color: var(--ink);
+}
+.next-match__meta {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+/* Namen wrappen hier in plaats van af te kappen: op deze kaart zijn ze de
+   inhoud, niet een detail bij een uitslag (#940). */
+.next-match .match-card__names span {
+  overflow: visible;
+  white-space: normal;
+}
+/* Op smalle schermen stapelen de twee teams: drie kolommen laat op 390px ~90px
+   per team over, en dan kappen álle vier de namen af (#940). Gestapeld krijgen
+   ze de volle kaartbreedte, met "vs" als scheiding ertussen. */
+@media (max-width: 560px) {
+  .next-match .match-card {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    row-gap: var(--sp-2);
+  }
+  /* Ook het tweede team leest van links naar rechts: gespiegeld hoort bij twee
+     kolommen die naar het midden kijken, niet bij een lijst onder elkaar. */
+  .next-match .match-card__side--right {
+    flex-direction: row;
+    text-align: left;
+  }
+  .next-match .match-card__mid {
+    justify-items: start;
+  }
+  /* De gedeelde matchkaart verbergt zijn avatars onder 480px zodat de namen
+     niet afkappen. Gestapeld is die ruimte er wél, en dan helpen ze juist om de
+     twee teams uit elkaar te houden. */
+  .next-match .match-card .avatar-pair {
+    display: inline-flex;
+  }
 }
 
 /* Zone met wat vandaag speelt (#911): poll, volgende match, avondkaart. Een
@@ -399,11 +489,9 @@
   display: grid;
   gap: 1px;
 }
+/* Een naam kappen we niet af; hij wrapt (#940). */
 .rival__name {
   font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .rival__meta {
   font-size: var(--fs-sm);
@@ -458,12 +546,10 @@
 .next-badge__name {
   font-weight: 700;
 }
+/* Zelfde reden als .missions__hint: de omschrijving wrapt (#940). */
 .next-badge__hint {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .next-badge__count {
   flex-shrink: 0;
@@ -517,12 +603,12 @@
 .missions__name {
   font-weight: 700;
 }
+/* Wrapt in plaats van af te kappen (#940). Met `nowrap` hing het van de breedte
+   van het rechterelement af of je de missie kon lezen: naast een smal vinkje
+   paste de zin wél, naast een teller als "1201/1300" niet. */
 .missions__hint {
   font-size: var(--fs-sm);
   color: var(--ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .missions__count {
   font-weight: 800;

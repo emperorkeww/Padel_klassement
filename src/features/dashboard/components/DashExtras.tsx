@@ -92,7 +92,9 @@ export function DashExtras({
       {rival && (
         <section className="card rival-card">
           <div className="card__head">
-            <h2 className="card__title">Aartsrivaal ⚔️</h2>
+            {/* Zonder emoji: geen enkele andere sectiekop op het overzicht
+                draagt er een (#940). */}
+            <h2 className="card__title">Aartsrivaal</h2>
             <Link className="profile-link" to={`/spelers/${rival.oppId}`}>
               Profiel →
             </Link>
