@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
@@ -108,7 +108,10 @@ export function PlanTab({
 
   // polls/options staan in GroupDetail (die abonneert er ook op); alleen de
   // stemmen zijn puur van deze tab.
-  const votes = useAsync<PollVote[]>(() => getGroupPollVotes(groupId), [groupId]);
+  const votes = useAsync<PollVote[]>(
+    () => getGroupPollVotes(groupId),
+    [groupId],
+  );
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
 
   // Vrije banen (7-daags venster) van de gekozen nieuwe-poll-club: voedt de
@@ -159,6 +162,13 @@ export function PlanTab({
   const rondesGemaakt = (p: PlayPoll) => roundsMadeFor(p, matches);
   const roundsExist = focus ? rondesVoor(focus) : false;
   const phase = focus ? pollPhase(focus, roundsExist) : null;
+  // Welke speeldag de kop bedoelt (#839). Zonder gekozen moment vat de kop de
+  // eerste kandidaat samen — beter dan een naamloze fasebalk boven drie rijen.
+  const focusWanneer = (() => {
+    if (!focus) return null;
+    const moment = chosen ?? pollOptions(focus, allOptions)[0] ?? null;
+    return moment ? `${shortDay(moment.date)} · ${moment.start_time}` : null;
+  })();
 
   // Polls waarop ik nog niet stemde: het enige wat je met meerdere polls
   // naast elkaar echt uit elkaar moet kunnen houden (#267).
@@ -200,8 +210,9 @@ export function PlanTab({
     }
     if (phase === "gekozen") {
       if (isManager) {
+        // Zonder datum: die staat sinds #839 in de kop erboven.
         return {
-          text: `Boek een baan voor ${chosen ? `${shortDay(chosen.date)} · ${chosen.start_time}` : "het gekozen moment"} en tik daarna op 'Baan geboekt ✓'.`,
+          text: "Boek een baan en tik daarna op 'Baan geboekt ✓'.",
         };
       }
       return {
@@ -211,9 +222,7 @@ export function PlanTab({
     if (phase === "geboekt") {
       const yes = chosen ? tallyOption(chosen, allVotes).yes.length : 0;
       if (yes >= PLAYERS_PER_COURT) {
-        return {
-          text: `Alles staat vast voor ${chosen ? shortDay(chosen.date) : "de speeldag"} — zet de wedstrijden klaar.`,
-        };
+        return { text: "Alles staat vast — zet de wedstrijden klaar." };
       }
       const short = PLAYERS_PER_COURT - yes;
       return {
@@ -230,7 +239,18 @@ export function PlanTab({
       linkText: "Bekijk de wedstrijden →",
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, phase, chosen, allVotes, options.data, members, myId, isOwner, profiles, groupId]);
+  }, [
+    focus,
+    phase,
+    chosen,
+    allVotes,
+    options.data,
+    members,
+    myId,
+    isOwner,
+    profiles,
+    groupId,
+  ]);
 
   if (polls.loading || options.loading) {
     return (
@@ -246,7 +266,9 @@ export function PlanTab({
       <PlanPhaseHeader
         phase={phase}
         action={action}
+        focusWanneer={focusWanneer}
         aantalSpeeldagen={active.length}
+        banenHref={`/banen?datum=${today}`}
         onPlan={() => setWizardOpen(true)}
       />
 
@@ -274,11 +296,11 @@ export function PlanTab({
         onChanged={reloadAll}
         openId={focus?.id}
         spotlightId={spotlightId}
+        focusId={focus?.id}
+        today={today}
         roundsExist={rondesVoor}
         rondesVandaag={rondesGemaakt}
-        onRoundsMade={(p) =>
-          setLocallyRounded((cur) => new Set(cur).add(p.id))
-        }
+        onRoundsMade={(p) => setLocallyRounded((cur) => new Set(cur).add(p.id))}
       />
 
       <PlanSection
@@ -294,11 +316,17 @@ export function PlanTab({
         onChanged={reloadAll}
         openId={focus?.id}
         spotlightId={spotlightId}
+        focusId={focus?.id}
+        today={today}
         wachtOpJou={wachtOpJou}
       />
 
       {/* Suggesties sluiten de tab af (#721): een instap voor wie nog niets
-          gepland heeft, geen blok dat de lopende speeldagen wegdrukt. */}
+          gepland heeft, geen blok dat de lopende speeldagen wegdrukt. Sinds
+          #839 met een baanlijn ertussen en een eigen, gedempte stijl — alle
+          drie de blokken deelden dezelfde kaartstijl, waardoor de instap net zo
+          zwaar woog als de speeldagen die echt lopen. */}
+      <div className="plan-instap-lijn" role="presentation" />
       <SuggestionsCard
         groupId={groupId}
         myId={myId}
@@ -308,12 +336,6 @@ export function PlanTab({
         votes={allVotes}
         onStarted={reloadAll}
       />
-
-      {/* Banen-verkenning altijd zichtbaar op de Plannen-tab (niet alleen in
-          de wizard): in de app zelf, dus swipe-terug brengt je hier terug. */}
-      <p className="plan-banen">
-        <Link to={`/banen?datum=${today}`}>🎾 Vrije banen bekijken →</Link>
-      </p>
 
       {/* Wizard als bottom-sheet (#349): geen layout-shift op de tab. */}
       <PollWizardSheet
@@ -333,7 +355,12 @@ export function PlanTab({
           storageKey={wizardStorageKey}
           submitLabel={(n) => `Start poll (${n})`}
           onSubmit={async (opts) => {
-            await createPoll({ groupId, createdBy: myId, club: newPollClub, options: opts });
+            await createPoll({
+              groupId,
+              createdBy: myId,
+              club: newPollClub,
+              options: opts,
+            });
             toast.success("Poll gestart — de groep kan stemmen.");
           }}
           onClose={closeWizard}

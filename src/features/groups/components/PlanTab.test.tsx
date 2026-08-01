@@ -91,9 +91,10 @@ const ROUND_MATCH: Match = {
   format: "2v2",
 };
 
-const profileMap = Object.fromEntries(
-  PROFILES.map((p) => [p.id, p]),
-) as Record<string, Profile>;
+const profileMap = Object.fromEntries(PROFILES.map((p) => [p.id, p])) as Record<
+  string,
+  Profile
+>;
 
 // Polls en opties komen sinds #674 uit GroupDetail (de landingstab heeft de
 // reis-status nodig vóór deze tab mount). Dit harnas doet wat de parent doet,
@@ -133,7 +134,11 @@ function stubPlaytomic() {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const body = String(input).includes("/v1/tenants/")
-        ? { resources: [], opening_hours: {}, address: { timezone: "Europe/Brussels" } }
+        ? {
+            resources: [],
+            opening_hours: {},
+            address: { timezone: "Europe/Brussels" },
+          }
         : [];
       return { ok: true, status: 200, json: async () => body } as Response;
     }),
@@ -184,8 +189,11 @@ describe("<PlanTab />", () => {
     expect(
       screen.getByText(/wacht op 2 leden — stuur gerust een herinnering/i),
     ).toBeInTheDocument();
-    // … maar geven wel toe dat er meer dan één loopt.
-    expect(screen.getByText(/2 speeldagen lopen/i)).toBeInTheDocument();
+    // … en noemen sinds #839 wélke speeldag dat is, plus dat er meer lopen.
+    expect(screen.getByText(/^volgende$/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/\+1 andere speeldag hieronder/i),
+    ).toBeInTheDocument();
   });
 
   it("markeert per speeldag of jij nog moet stemmen", async () => {
@@ -207,9 +215,7 @@ describe("<PlanTab />", () => {
       name: /stemmen loopt/i,
     });
     expect(rijen).toHaveLength(2);
-    expect(
-      screen.getAllByText(/jij moet nog stemmen/i),
-    ).toHaveLength(1);
+    expect(screen.getAllByText(/jij moet nog stemmen/i)).toHaveLength(1);
     expect(
       within(rijen[1]).getByText(/jij moet nog stemmen/i),
     ).toBeInTheDocument();
@@ -219,6 +225,41 @@ describe("<PlanTab />", () => {
     expect(
       await screen.findByRole("heading", { name: /speeldag-poll/i }),
     ).toBeInTheDocument();
+  });
+
+  // #839: de rijen droegen alleen een datum en een statusbadge, dus bij
+  // meerdere speeldagen moest je uitklappen om te weten waar elk op wacht.
+  it("zet onder elke rij waar die speeldag op wacht", async () => {
+    const tweede = { ...openPoll, id: "poll-open-2" };
+    const tweedeOptie = {
+      ...openOption,
+      id: "opt-open-2",
+      poll_id: "poll-open-2",
+      date: "2030-02-02",
+    };
+    tables.play_polls = [openPoll, tweede];
+    tables.play_poll_options = [openOption, tweedeOptie];
+    tables.play_poll_votes = [vote("opt-open", "p1")];
+    renderTab();
+
+    const rijen = await screen.findAllByRole("button", {
+      name: /stemmen loopt/i,
+    });
+    // Eén stemmer op de eerste speeldag, nog niemand op de tweede.
+    expect(within(rijen[0]).getByText(/1 van 4 stemden/i)).toBeInTheDocument();
+    expect(within(rijen[1]).getByText(/0 van 4 stemden/i)).toBeInTheDocument();
+    // De rij waar de kop-actie over gaat is als zodanig gemarkeerd.
+    expect(within(rijen[0]).getByText(/^volgende$/i)).toBeInTheDocument();
+  });
+
+  it("zet de banen-ingang in de fasekop in plaats van los onderaan", async () => {
+    renderTab();
+
+    const banen = await screen.findByRole("link", {
+      name: /vrije banen bekijken/i,
+    });
+    // Bij de plan-acties, niet als kale paragraaf onder de suggesties.
+    expect(banen.closest(".plan-phases")).not.toBeNull();
   });
 
   it("toont de Klaar-fase zodra er rondes na het boeken bestaan", async () => {
@@ -232,9 +273,7 @@ describe("<PlanTab />", () => {
     expect(
       await screen.findByRole("heading", { name: /geboekte speeldag/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/de wedstrijden staan klaar/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/de wedstrijden staan klaar/i)).toBeInTheDocument();
     // Reis-CTA in de action-regel (en in de winner-card). Mét ?tab=spelen
     // (#727): het kale pad is de route waar je al op staat, dus dat wisselt
     // geen tab en de knop leek stuk.
@@ -306,7 +345,9 @@ describe("<PlanTab />", () => {
     tables.play_poll_options = [openOption];
     renderTab();
 
-    await userEvent.click(await screen.findByRole("button", { name: /↗ deel/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /↗ deel/i }),
+    );
 
     expect(share).toHaveBeenCalledTimes(1);
     const arg = share.mock.calls[0][0];

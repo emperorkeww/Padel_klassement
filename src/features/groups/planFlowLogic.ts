@@ -1,5 +1,6 @@
 import type { Match } from "@/types";
 import { pollOptions } from "./pollLogic";
+import { courtsLabel } from "./planPollHelpers";
 import type { PlayPoll, PollOption, PollVote } from "./pollsApi";
 
 // Pure logica voor de fase-gedreven Plannen-tab (#349): welke fase de tab
@@ -11,7 +12,12 @@ export type PlanPhase = "stemmen" | "gekozen" | "geboekt" | "klaar";
 
 /** Volgorde + labels van de fasebalk (labels zijn geen exacte kopie van de
  *  statusnamen: "Stemmen" staat als stap-label alleen in de fasebalk). */
-export const PLAN_PHASES: PlanPhase[] = ["stemmen", "gekozen", "geboekt", "klaar"];
+export const PLAN_PHASES: PlanPhase[] = [
+  "stemmen",
+  "gekozen",
+  "geboekt",
+  "klaar",
+];
 
 /** Het gekozen moment van een gelockte/geboekte poll; null zolang de poll open is. */
 export function lockedOptionOf(
@@ -103,6 +109,62 @@ export function heeftGestemd(
 ): boolean {
   const eigen = new Set(pollOptions(poll, options).map((o) => o.id));
   return votes.some((v) => v.player_id === playerId && eigen.has(v.option_id));
+}
+
+/**
+ * "vandaag" / "morgen" / "over 3 dagen" voor een clubdag (#839). Beide datums
+ * zijn kale YYYY-MM-DD in clubtijd; middagtijd volstaat om DST-kantelen te
+ * vermijden. Voorbij kan ook: een speeldag die net verliep staat nog even in
+ * beeld tot de cron hem opruimt.
+ */
+export function relatieveDag(date: string, today: string): string {
+  const dag = 24 * 3600_000;
+  const verschil = Math.round(
+    (Date.parse(`${date}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / dag,
+  );
+  if (verschil === 0) return "vandaag";
+  if (verschil === 1) return "morgen";
+  if (verschil === -1) return "gisteren";
+  return verschil > 0 ? `over ${verschil} dagen` : `${-verschil} dagen geleden`;
+}
+
+/**
+ * De contextregel onder een speeldag-rij (#839). De rijen droegen alleen een
+ * datum en een statusbadge; bij twee of drie gelijktijdige speeldagen moest je
+ * uitklappen om te weten waar elk van hen op wacht.
+ *
+ * Per fase het antwoord op "en dan?": hoeveel leden al stemden, of de baan nog
+ * geboekt moet worden, en waar je straks staat.
+ */
+export function planRijMeta(opts: {
+  poll: PlayPoll;
+  /** Alleen de opties van deze poll. */
+  options: PollOption[];
+  votes: PollVote[];
+  /** Ledental van de groep — de noemer van "3 van 8 stemden". */
+  aantalLeden: number;
+  today: string;
+}): string {
+  const { poll, options, votes, aantalLeden, today } = opts;
+  const eigen = new Set(options.map((o) => o.id));
+  const gekozen = lockedOptionOf(poll, options);
+  const delen: string[] = [];
+
+  const dag = gekozen?.date ?? options[0]?.date ?? null;
+  if (dag) delen.push(relatieveDag(dag, today));
+
+  if (poll.status === "open") {
+    const stemmers = new Set(
+      votes.filter((v) => eigen.has(v.option_id)).map((v) => v.player_id),
+    );
+    delen.push(`${stemmers.size} van ${aantalLeden} stemden`);
+  } else if (poll.status === "locked") {
+    delen.push("baan nog te boeken");
+  } else if (poll.status === "booked") {
+    delen.push(poll.courts ? courtsLabel(poll.courts) : "baan geboekt");
+  }
+
+  return delen.join(" · ");
 }
 
 export function focusPoll(
