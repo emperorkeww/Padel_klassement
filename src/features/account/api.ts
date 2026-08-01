@@ -1,4 +1,8 @@
 import { supabase } from "@/lib/supabase/client";
+import { getProfile } from "@/features/profiles/api";
+import { getPlayerMatches } from "@/features/matches/api";
+import { getMyFriendships } from "@/features/friends/api";
+import { getMyGroups } from "@/features/groups/api";
 import { invalidate } from "@/lib/supabase/queryCache";
 import type { RoastIntensiteit } from "@/types";
 
@@ -120,4 +124,33 @@ export async function changePassword(
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw error;
+}
+
+/**
+ * Alles wat de app over jou bewaart, als één object (#921).
+ *
+ * Bewust client-side samengesteld uit de bestaande api-functies: RLS bepaalt al
+ * precies wat jij mag zien, dus een aparte export-RPC zou dezelfde regels nóg
+ * een keer moeten formuleren — en dan kunnen ze uit elkaar lopen.
+ */
+export async function exporteerMijnGegevens(userId: string) {
+  const [profiel, privacy, meldingen, matches, vriendschappen, groepen] =
+    await Promise.all([
+      getProfile(userId),
+      getPrivacy(userId),
+      getNotificationPrefs(userId),
+      getPlayerMatches(userId, 1000),
+      getMyFriendships(),
+      getMyGroups(),
+    ]);
+
+  return {
+    geexporteerdOp: new Date().toISOString(),
+    profiel,
+    privacy,
+    meldingen,
+    matches,
+    vriendschappen,
+    groepen,
+  };
 }
