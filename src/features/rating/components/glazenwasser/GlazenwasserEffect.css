@@ -63,10 +63,11 @@
   z-index: -1;
 }
 
-/* Binnen het schild is er geen apart masker: het artwork houdt de zones van
-   rating, avatar, naamplaat en divisieregel zelf vrij, dus de echte
-   `clip-path: var(--schild)` doet het werk. Wel iets rustiger, zodat de inkt
-   zijn contrast houdt. */
+/* Binnen het schild is er geen apart masker: de `clip-path: var(--schild)`
+   doet het werk. Sinds de referentiepass draagt de master hier het volle natte
+   glas (gw-glasvlak in het interieur); deze laag ligt onder de kaartinhoud,
+   dus rating, naam en divisieregel staan eróp — iets rustiger gezet, zodat de
+   inkt zijn contrast houdt. */
 .glazenwasser-effect--binnen .glazenwasser-effect__master {
   opacity: 0.94;
 }

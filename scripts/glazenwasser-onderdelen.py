@@ -41,6 +41,8 @@ diff niet te lezen, deze cijfers wel.
 
 from __future__ import annotations
 
+import base64
+import io
 import json
 import sys
 from pathlib import Path
@@ -925,25 +927,44 @@ def compacte_master() -> None:
     FutKaart.
 
     Het kaartvak in dit doek heeft dezelfde verhouding als de kaart zelf, dus de
-    lagen worden hier één op één ingezet: geen tweede afbeelding, geen rek."""
-    doek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    lagen worden hier één op één ingezet: geen tweede afbeelding, geen rek.
+
+    Sinds de referentiepass draagt de master ook het glas zelf: het interieur
+    was leeg omdat het voormasker als alfamasker overal dekkend was (zwart is
+    net zo ondoorzichtig als wit) en de `voor`-laag dus de héle master over
+    rating en naam legde. Dat masker komt nu uit dit script, mét een echt
+    transparant gat boven het glas — de `voor`-laag toont alleen lijst, band en
+    voorwerpen, en de `binnen`-laag (onder de tekst) mag het volle natte glas
+    laten zien. Zo leest de klassement-kaart eindelijk als de referentie in
+    plaats van als een leeg platina-vlak met een natte rand."""
     vx, vy, vw, vh = MASTER_VAK
+
+    # Ring + voorwerpen eerst op een eigen doek: dat is precies wat er bóven
+    # het glas ligt, en dus ook precies wat de voor-laag mag tonen. Het
+    # voormasker wordt uit deze alfa afgeleid in plaats van uit ruime
+    # handcontouren — binnen zo'n contour zou anders ook het (dekkende) glas
+    # vóór de kaartinhoud komen.
+    boven = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
 
     def plaats(pad: Path, vak: tuple[float, float, float, float]) -> None:
         left, top, breedte, hoogte = vak
         b = max(1, int(round(breedte * vw)))
         h = max(1, int(round(hoogte * vh)))
         laag = Image.open(pad).convert("RGBA").resize((b, h), Image.LANCZOS)
-        doek.alpha_composite(
+        boven.alpha_composite(
             laag, (int(round(vx + left * vw)), int(round(vy + top * vh)))
         )
 
-    # De ring naar binnen toe laten uitdoven. De compacte kaart tekent zijn tekst
-    # ín de `voor`-laag, dus alles wat het artwork midden op het vlak zet, komt
-    # over rating, naam en divisieregel te liggen; FutKaart tekent daar bovendien
-    # zijn eigen glasvlak al. Rechthoeken uitknippen langs de tekstzones geeft
-    # zichtbare blokken — een uitdoving vanaf de lijst niet, en die houdt precies
-    # vast wat de kaart wél moet erven: de lijst, het ijs, het water en de bellen.
+    plaats(UIT / "gw-ring.webp", DELEN["ring"]["doos"])
+    for naam, (dx, dy) in MASTER_LAGEN:
+        left, top, breedte, hoogte = DELEN[naam]["doos"]
+        plaats(
+            UIT / f"gw-{naam}.webp",
+            (left + dx, _naar_kaart_y(top) + dy, breedte, naar_kaart_h(hoogte)),
+        )
+
+    # Het natte glas als onderste laag, strak binnen de glascontour; ring en
+    # voorwerpen eroverheen — dezelfde stapeling als de brede kaart.
     binnen = Image.new("L", MASTER_DOEK, 0)
     ImageDraw.Draw(binnen).polygon(
         [
@@ -952,58 +973,66 @@ def compacte_master() -> None:
         ],
         fill=255,
     )
-    # Strak wegsnijden op de glasrand in plaats van naar binnen uitdoven. De
-    # `voor`-laag toont de master ongemaskeerd (het front-mask-SVG is in CSS een
-    # alfamasker en is overal ondoorzichtig, dus het selecteert niets), dus alles
-    # wat hier op het kaartvlak staat komt over rating, naam en divisieregel.
-    # Een uitdoving over 17% kaartbreedte las als een grote bleke gradiënt midden
-    # op de kaart; een korte snede valt weg onder de binnenrand van de lijst.
-    # De onderste waterexplosie blijft staan: die hoort op de referentie óver het
-    # vlak te lopen en zat ook in de oude master.
-    #
-    # Sinds de ring zijn natte randband heeft (condens en druppels waar het glas
-    # de lijst raakt) snijdt de compacte kaart een band smaller: de snede volgt
-    # de bínnenkant van die band, zodat ook het klassement de natte aansluiting
-    # erft. De tekst van FutKaart staat verder naar binnen en blijft vrij.
-    band_px = 40  # 44 referentiepixels × S (0,9026)
-    vlak_mask = np.asarray(binnen) > 127
-    vlak = erode(vlak_mask, band_px).astype(np.float32)
-    onder = np.zeros_like(vlak)
-    # Tot 0,80 wegsnijden: op 0,72 liep de waterexplosie over de divisieregel
-    # van FutKaart heen en was 'GLAZENWASSER' niet meer te lezen.
-    onder[int(vy + 0.80 * vh):] = 1.0
-    snede = np.clip(vlak - onder, 0, 1)
-    snede = np.asarray(
-        Image.fromarray((snede * 255).astype(np.uint8), "L")
-        .filter(ImageFilter.GaussianBlur(7.0))
-    ).astype(np.float32) / 255.0
-    verval = 1.0 - snede
-
-    ringdoos = DELEN["ring"]["doos"]
-    ringlaag = Image.open(UIT / "gw-ring.webp").convert("RGBA")
-    rb = max(1, int(round(ringdoos[2] * vw)))
-    rh = max(1, int(round(ringdoos[3] * vh)))
-    ringlaag = ringlaag.resize((rb, rh), Image.LANCZOS)
-    ringdoek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
-    ringdoek.alpha_composite(
-        ringlaag,
-        (int(round(vx + ringdoos[0] * vw)), int(round(vy + ringdoos[1] * vh))),
+    glas = Image.open(UIT / "gw-glasvlak.webp").convert("RGBA").resize(
+        (vw, vh), Image.LANCZOS
     )
-    ra = np.asarray(ringdoek.split()[3]).astype(np.float32) * verval
-    ringdoek.putalpha(Image.fromarray(np.clip(ra, 0, 255).astype(np.uint8), "L"))
-    doek.alpha_composite(ringdoek)
-
-    for naam, (dx, dy) in MASTER_LAGEN:
-        left, top, breedte, hoogte = DELEN[naam]["doos"]
-        plaats(
-            UIT / f"gw-{naam}.webp",
-            (left + dx, _naar_kaart_y(top) + dy, breedte, naar_kaart_h(hoogte)),
-        )
+    doek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    doek.paste(glas, (vx, vy))
+    doek.putalpha(binnen.filter(ImageFilter.GaussianBlur(1.5)))
+    doek.alpha_composite(boven)
 
     pad = UIT / "glazenwasser-master.webp"
     doek.save(pad, "WEBP", quality=82, method=6)
     print(f"  {'master (compact)':16s} {doek.width}×{doek.height}px  "
           f"{pad.stat().st_size // 1024} kB")
+    voormasker(np.asarray(binnen) > 127,
+               np.asarray(boven.split()[3]).astype(np.float32) / 255.0)
+
+
+def voormasker(glasvlak_mask: np.ndarray, boven_alpha: np.ndarray) -> None:
+    """Schrijft glazenwasser-front-mask.svg met een écht transparant glasgat.
+
+    Zowel de CSS (`mask: url(...)`) als de canvasrenderer (`destination-in`)
+    maskeren op álfa. De oude SVG had een zwarte achtergrond met witte lobes:
+    als luminantiemasker correct, als alfamasker overal dekkend — en dus
+    selecteerde hij niets en lag de hele master over de kaarttekst. Daarom
+    moest het glasinterieur destijds uit de master worden gesneden.
+
+    Dit masker is de exacte selectie "wat ligt er boven het glas": buiten de
+    glascontour alles, erbinnen alleen waar ring en voorwerpen echt pixels
+    hebben. Handcontouren waren hier te ruim — binnen zo'n contour kwam ook
+    het (voortaan dekkende) glas vóór de kaartinhoud te liggen, dwars over de
+    naamregel. De alfa komt daarom uit de compositie zelf en gaat als raster
+    de SVG in; iets verruimd en zacht gemaakt, zodat de rand van een voorwerp
+    nooit een sliver kaarttekst laat doorschemeren."""
+    vol = np.clip(boven_alpha * 1.2, 0.0, 1.0)
+    vol = vervaag(vol, 2.0)
+    masker = np.where(glasvlak_mask, vol, 1.0)
+    # Op halve resolutie de SVG in: een masker hoeft niet pixelscherp (de rand
+    # is toch zacht) en op volle maat woog de data-URI 125 kB — te veel voor
+    # het bundelbudget van assetBudget.test.ts.
+    beeld = Image.fromarray(
+        np.clip(masker * 255, 0, 255).astype(np.uint8), "L"
+    ).resize((MASTER_DOEK[0] // 2, MASTER_DOEK[1] // 2), Image.LANCZOS)
+    beeld = beeld.convert("LA")
+    # Alfa == luminantie: als PNG met alfakanaal, zodat élke afnemer (CSS-mask,
+    # canvas destination-in) hetzelfde selecteert, hoe hij ook maskeert.
+    la = np.asarray(beeld).copy()
+    la[..., 1] = la[..., 0]
+    png = io.BytesIO()
+    Image.fromarray(la, "LA").save(png, "PNG", optimize=True)
+    data = base64.standard_b64encode(png.getvalue()).decode("ascii")
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" viewBox="0 0 {MASTER_DOEK[0]} {MASTER_DOEK[1]}">
+  <!-- Gegenereerd door scripts/glazenwasser-onderdelen.py (voormasker()): de alfa van
+       ring + voorwerpen boven het glas, met een transparant gat over het kale glas.
+       Niet met de hand bijwerken. Expliciete width/height: canvas drawImage heeft een
+       intrinsieke maat nodig (de posterrenderer maskeert met dit bestand). -->
+  <image width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" href="data:image/png;base64,{data}" />
+</svg>
+"""
+    (UIT / "glazenwasser-front-mask.svg").write_text(svg, encoding="utf8")
+    kb = len(svg) // 1024
+    print(f"  {'voormasker':16s} raster-alfa uit de compositie  {kb} kB")
 
 
 def naar_kaart_h(h: float) -> float:
