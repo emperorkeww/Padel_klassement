@@ -213,11 +213,93 @@ for (const [selector, omschrijving, pairs] of ISLANDS) {
   }
 }
 
-if (darkFailures > 0 || islandFailures > 0) {
+// ---- Divisieregisters van de FUT-kaart (#924) ----
+// Elke divisiekaart zet naam, rating en stats rechtstreeks op zijn eigen
+// materiaal: negen registers met vaste hexen (tokenregime #710), elk in een
+// eigen bestand. De contrastcijfers stonden daar met de hand uitgerekend in het
+// commentaar — precies de situatie die #771 voor de dashboardkaart opruimde.
+//
+// Het kaartvlak loopt van --kaart-hi via --kaart-mid naar --kaart-lo. Beide
+// bovenste stops tellen hard mee: daar staat de tekst (eloblok, naamplaat,
+// divisieregel). --kaart-lo blijft informatief, en dat is geen slordigheid maar
+// meetkunde: het vlak heeft 24% bodempadding, dus de donkerste stop valt in de
+// lege schildpunt waar geen letter komt. Karton en platina schrijven dat met
+// zoveel woorden in hun eigen commentaar, mét het cijfer op de hoogte waar de
+// regel wél staat. Zou lo hard meetellen, dan zou dit script twee bewust
+// genomen ontwerpbesluiten omverwerpen op een plek zonder tekst.
+//
+// Beide richtingen worden gecontroleerd zonder dat het script hoeft te weten
+// welk register licht of donker is: bij een licht register is --kaart-mid de
+// ongunstigste, bij een donker (brons) juist --kaart-hi.
+//
+// De speciale edities (dictator, GOAT, In Form, On Fire, Big Daddy, pias, piet)
+// staan hier bewust NIET tussen: hun kaartvlak is geen tweekleurig verloop maar
+// een stapel van vier tot negen lagen met halftransparante texturen. Wat daar
+// achter de tekst ligt volgt pas uit de gerenderde kaart — dat vraagt een
+// meting op pixels, niet op CSS. Zie #924.
+const DIVISIES = [
+  ["slof", "Slof (vilt)"],
+  ["karton", "Karton"],
+  ["hout", "Hout"],
+  ["brons", "Brons"],
+  ["zilver", "Zilver"],
+  ["goud", "Wannabe (goud)"],
+  ["platina", "Platina"],
+  ["diamant", "Diamant"],
+  ["meester", "Meester"],
+];
+
+// [voorgrond, achtergrond, drempel, hard, label]
+const DIVISIE_PAREN = [
+  ["kaart-ink", "kaart-hi", 4.5, true, "inkt op de lichtste stop"],
+  ["kaart-ink", "kaart-mid", 4.5, true, "inkt op de middenstop"],
+  ["kaart-ink", "kaart-lo", 4.5, false, "inkt op de donkerste stop (schildpunt)"],
+  ["kaart-ink-soft", "kaart-hi", 4.5, true, "zachte inkt op de lichtste stop"],
+  ["kaart-ink-soft", "kaart-mid", 4.5, true, "zachte inkt op de middenstop"],
+  ["kaart-ink-soft", "kaart-lo", 4.5, false, "zachte inkt op de donkerste stop (schildpunt)"],
+];
+
+let divisieFailures = 0;
+console.log("\n— Divisieregisters van de FUT-kaart (#924) —");
+for (const [naam, omschrijving] of DIVISIES) {
+  const bestand = new URL(
+    `../src/features/rating/components/divisies/${naam}.css`,
+    import.meta.url,
+  );
+  const blok = readFileSync(bestand, "utf8").match(
+    new RegExp(`\\.fut-kaart--${naam}\\s*\\{([\\s\\S]*?)\\n\\}`),
+  )?.[1];
+  if (!blok) {
+    console.error(`  FAIL blok .fut-kaart--${naam} niet gevonden in ${naam}.css`);
+    divisieFailures++;
+    continue;
+  }
+  const tokens = tokensOf(blok);
+  console.log(`  ${omschrijving} (.fut-kaart--${naam})`);
+  for (const [fg, bg, min, hard, label] of DIVISIE_PAREN) {
+    const f = tokens[fg];
+    const b = tokens[bg];
+    if (!f?.startsWith("#") || !b?.startsWith("#")) {
+      console.error(`    FAIL ${fg} of ${bg} ontbreekt of is geen hex`);
+      divisieFailures++;
+      continue;
+    }
+    const c = contrast(f, b);
+    const ok = c >= min;
+    if (!ok && hard) divisieFailures++;
+    console.log(
+      `    ${ok ? "  ok  " : hard ? "  FAIL" : "  let-op"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${fg} op ${bg} (${label})`,
+    );
+  }
+}
+
+if (darkFailures > 0 || islandFailures > 0 || divisieFailures > 0) {
   if (darkFailures > 0)
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
   if (islandFailures > 0)
     console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
+  if (divisieFailures > 0)
+    console.error(`${divisieFailures} divisiepa(a)r(en) onder de drempel.`);
   process.exit(1);
 }
 console.log(
