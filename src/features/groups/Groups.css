@@ -184,3 +184,14 @@
   color: var(--ink-soft);
   font-size: var(--fs-sm);
 }
+
+/* Groepsnaam-formulier: het veld draagt sinds #924 een zichtbaar label, dus de
+   knop lijnt uit op de onderrand van het veld in plaats van op het midden van
+   label + veld samen. */
+.groepsnaam-form {
+  align-items: end;
+}
+.groepsnaam-form__veld {
+  flex: 1;
+  min-width: 0;
+}

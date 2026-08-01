@@ -57,12 +57,12 @@ describe("<Groups />", () => {
   it("verbergt het aanmaakformulier achter een knop zodra je een groep hebt", async () => {
     renderPage();
     await screen.findByRole("link", { name: /vrijdagavond padel/i });
-    expect(screen.queryByPlaceholderText(/groepsnaam/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: /nieuwe groep/i }),
     );
-    const veld = await screen.findByPlaceholderText(/groepsnaam/i);
+    const veld = await screen.findByLabelText(/groepsnaam/i);
     expect(veld).toHaveFocus();
   });
 
@@ -72,7 +72,7 @@ describe("<Groups />", () => {
     expect(
       await screen.findByText(/geen groep, geen glorie/i),
     ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/groepsnaam/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/groepsnaam/i)).toBeInTheDocument();
   });
 
   it("maakt een groep aan en gaat door naar de ledentab", async () => {
@@ -82,7 +82,7 @@ describe("<Groups />", () => {
       screen.getByRole("button", { name: /nieuwe groep/i }),
     );
     await userEvent.type(
-      await screen.findByPlaceholderText(/groepsnaam/i),
+      await screen.findByLabelText(/groepsnaam/i),
       "Zondagochtend",
     );
     await userEvent.click(screen.getByRole("button", { name: /aanmaken/i }));
@@ -166,13 +166,13 @@ describe("<Groups />", () => {
 
     const openen = screen.getByRole("button", { name: /nieuwe groep/i });
     await userEvent.click(openen);
-    await screen.findByPlaceholderText(/groepsnaam/i);
+    await screen.findByLabelText(/groepsnaam/i);
 
     // #916: uitklappen had geen tegenhanger.
     await userEvent.click(
       screen.getByRole("button", { name: /formulier sluiten/i }),
     );
-    expect(screen.queryByPlaceholderText(/groepsnaam/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
     // Focus komt terug op de knop waar je vandaan kwam.
     expect(screen.getByRole("button", { name: /nieuwe groep/i })).toHaveFocus();
   });
@@ -189,7 +189,7 @@ describe("<Groups />", () => {
     expect(knop).toBeDisabled();
 
     await userEvent.type(
-      screen.getByPlaceholderText(/groepsnaam/i),
+      screen.getByLabelText(/groepsnaam/i),
       "Zondagochtend",
     );
     await userEvent.click(screen.getByRole("button", { name: /maak deze groep/i }));

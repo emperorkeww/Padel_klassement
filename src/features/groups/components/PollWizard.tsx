@@ -392,6 +392,7 @@ export function PollWizard({
                 type="button"
                 className="picked-chip"
                 title="Verwijderen"
+                aria-label={`${shortDay(o.date)} ${o.startTime} verwijderen`}
                 onClick={() => {
                   setArmed(false);
                   setPicked((cur) => {
@@ -401,8 +402,10 @@ export function PollWizard({
                   });
                 }}
               >
-                {shortDay(o.date)} {o.startTime}
-                {o.courtsFree == null ? " ?" : ""} ×
+                <span aria-hidden="true">
+                  {shortDay(o.date)} {o.startTime}
+                  {o.courtsFree == null ? " ?" : ""} ×
+                </span>
               </button>
             ))}
         </div>

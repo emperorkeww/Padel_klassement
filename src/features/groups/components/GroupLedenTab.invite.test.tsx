@@ -19,6 +19,7 @@ import { ToastProvider } from "@/ui/ToastProvider";
 import { supabase } from "@/lib/supabase/client";
 import { invalidateAll } from "@/lib/supabase/queryCache";
 import type { Group, GroupMember, Profile } from "@/types";
+import type { ZwartePietHolder } from "../zwartePietApi";
 
 const profiel = (id: string, naam: string) =>
   ({
@@ -50,7 +51,7 @@ const group: Group = {
   created_at: "2026-01-01T00:00:00Z",
 };
 
-function renderTab() {
+function renderTab(zwartePiet: ZwartePietHolder | null = null) {
   return render(
     <MemoryRouter>
       <ToastProvider>
@@ -64,7 +65,7 @@ function renderTab() {
           }}
           memberList={[lid("p1", "owner"), lid("p2", "member")]}
           profiles={profiles}
-          zwartePiet={null}
+          zwartePiet={zwartePiet}
           group={group}
           reloadGroup={() => {}}
           addableFriendIds={["p3"]}
@@ -115,7 +116,7 @@ describe("<GroupLedenTab /> — leden nodigen zelf uit (#776)", () => {
     renderTab();
 
     await userEvent.type(
-      await screen.findByLabelText(/naam van een gastspeler/i),
+      await screen.findByLabelText(/naam van de gast/i),
       "Dirk",
     );
     await userEvent.click(screen.getByRole("button", { name: /\+ gast/i }));
@@ -140,4 +141,21 @@ describe("<GroupLedenTab /> — leden nodigen zelf uit (#776)", () => {
       `${window.location.origin}/groepen/join/tok-776`,
     );
   });
+});
+
+// #924: de 🃏-badge droeg zijn betekenis alleen in een `title` op een <span> —
+// niet focusbaar, dus met het toetsenbord én op touch onbereikbaar.
+it("noemt de drager van de Zwarte Piet bij naam voor een screenreader", () => {
+  renderTab({
+    groupId: "gr1",
+    holderId: "p1",
+    fromId: null,
+    reden: "afdroging",
+    ernst: 3,
+    detail: "werd afgedroogd",
+    matchId: "m1",
+    since: "2026-01-01T00:00:00Z",
+  });
+
+  expect(screen.getByText("Draagt de Zwarte Piet")).toBeInTheDocument();
 });

@@ -315,8 +315,9 @@ export function WinnerCard({
                     className="winner-card__code"
                     onClick={copyCode}
                     title="Tik om te kopiëren"
+                    aria-label={`Toegangscode ${code} kopiëren`}
                   >
-                    🔑 <strong>{code}</strong>
+                    <span aria-hidden="true">🔑</span> <strong>{code}</strong>
                   </button>
                 )}
                 {isManager && (
