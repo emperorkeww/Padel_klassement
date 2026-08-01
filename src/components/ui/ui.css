@@ -1075,6 +1075,17 @@ textarea {
   color: var(--accent);
 }
 /* Laatste verandering naast een statwaarde (bv. rating na de vorige match). */
+/* Vangnet voor een lange divisienaam: binnen de tegel afkappen in plaats van
+   over de rand lopen (#947). De volle naam staat in de `title` van de badge. */
+.stat__badge {
+  max-width: 100%;
+  min-width: 0;
+}
+.stat__badge .tier-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .stat__delta {
   margin-left: var(--sp-2);
   font-size: var(--fs-sm);
@@ -1460,6 +1471,15 @@ textarea {
   .stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--sp-2);
+  }
+  /* Vier tegels naast elkaar houdt op bij ~480px (#947): daaronder blijft er
+     ~84px per tegel over en knipt de tegelrand de divisiechip af
+     ("Glazenwass…") terwijl de vierde tegel buiten de viewport valt. Twee
+     kolommen geven elke tegel ruim 150px — genoeg voor de chip. */
+  @media (max-width: 480px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   .stat {
     padding: var(--sp-3) var(--sp-1);
