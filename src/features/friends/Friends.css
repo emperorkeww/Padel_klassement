@@ -5,8 +5,14 @@
   flex-direction: column;
   gap: var(--sp-1);
 }
+/* Rudy's balans hoort bij de rij erboven, niet ertussen (#945). Als los blok
+   stond hij tussen twee vrienden in en verloor de lijst zijn raster; nu leest
+   hij als bijschrift van díe rij: ingesprongen tot onder de naam, met een
+   verbindingslijn en zonder eigen blokmarge. */
 .friend-cell .coach-sneer {
-  margin: 0 var(--sp-2) var(--sp-2);
+  margin: 0 0 var(--sp-2) var(--sp-6);
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--line);
 }
 
 /* Rudy's welkom bij een lege vriendenlijst, onder de lege-status. */
@@ -41,14 +47,10 @@
 
 /* Schakelaar om Rudy's onderlinge balans te dempen; die verdubbelde de
    rijhoogte en was niet uit te zetten. */
+/* Voorkeurschakelaar boven de lijst (#945: was een kale checkbox). De Toggle
+   brengt zijn eigen rij mee; hier staat alleen nog de ruimte eronder. */
 .friends-h2h-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
   margin-bottom: var(--sp-3);
-  font-size: var(--fs-sm);
-  color: var(--ink-soft);
-  cursor: pointer;
 }
 
 /* Rij-menu (⋯) mag de persoonsrij niet laten krimpen. */
