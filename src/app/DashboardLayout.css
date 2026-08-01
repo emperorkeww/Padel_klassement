@@ -214,6 +214,13 @@
 @media (max-width: 720px) {
   .shell {
     flex-direction: column;
+    /* Hoogte van de topbalk hieronder, als variabele op de shell zodat sticky
+       elementen ín de pagina eronder kunnen blijven plakken (de dagkoppen van
+       de feed, #912) zonder dat die maat op twee plekken staat. 0.5rem padding
+       boven en onder, 32px avatar, 1px rand — plus de veilige zone van het
+       toestel. Op desktop bestaat de variabele niet; daar valt zo'n sticky
+       element terug op 0. */
+    --topbar-h: calc(3rem + 1px + env(safe-area-inset-top, 0px));
   }
   .sidebar {
     display: none;

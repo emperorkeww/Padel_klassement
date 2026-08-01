@@ -8,11 +8,16 @@ import "./CoachAbout.css";
 export function CoachAbout({
   showSettingsLink = false,
   onNavigate,
+  onHerhaalIntro,
 }: {
   /** Toon een "Coach afstellen"-knop naar de instellingen (feed-popup). */
   showSettingsLink?: boolean;
   /** Aangeroepen als er op een link wordt geklikt (bv. popup sluiten). */
   onNavigate?: () => void;
+  /** Zet de eenmalige kennismaking terug (#912). Meegegeven door de feed, die
+   *  als enige weet waar die intro staat; zonder dit was hij na één tik op
+   *  "Begrepen" voorgoed weg. */
+  onHerhaalIntro?: () => void;
 }) {
   return (
     <div className="coach-about">
@@ -51,10 +56,23 @@ export function CoachAbout({
           .
         </li>
       </ul>
-      {showSettingsLink && (
-        <Link className="btn btn--sm" to="/profiel" onClick={onNavigate}>
-          Coach afstellen
-        </Link>
+      {(showSettingsLink || onHerhaalIntro) && (
+        <div className="btn-row">
+          {showSettingsLink && (
+            <Link className="btn btn--sm" to="/profiel" onClick={onNavigate}>
+              Coach afstellen
+            </Link>
+          )}
+          {onHerhaalIntro && (
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={onHerhaalIntro}
+            >
+              Toon de kennismaking opnieuw
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
