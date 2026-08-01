@@ -11,7 +11,8 @@ select policies_are(
   array[
     'Matches: deelnemers, groepsleden en publiek (niet-groep)',
     'Aanmaker kan match bijwerken',
-    'Deelnemer kan uitslag invullen'
+    'Deelnemer kan uitslag invullen',
+    'Groepseigenaar kan uitslag invullen'
   ],
   'matches heeft geen directe INSERT-policy meer (creatie loopt via RPC)'
 );

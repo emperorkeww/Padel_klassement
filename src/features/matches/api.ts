@@ -306,9 +306,10 @@ export async function createPlannedMatch(
 }
 
 /** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel.
- *  Mag door de aanmaker en de deelnemers (RLS), en alleen op een nog niet
- *  afgeronde match: als iemand anders net eerder opsloeg, faalt dit met een
- *  duidelijke melding i.p.v. stil te overschrijven. */
+ *  Mag door de aanmaker, de deelnemers en de eigenaar van de groep waarin de
+ *  match hangt (RLS), en alleen op een nog niet afgeronde match: als iemand
+ *  anders net eerder opsloeg, faalt dit met een duidelijke melding i.p.v. stil
+ *  te overschrijven. */
 export async function setMatchResult(params: {
   matchId: string;
   winnerTeamId: string | null;
@@ -349,7 +350,7 @@ export async function setMatchResult(params: {
     if (current.status === "completed")
       throw new Error("Deze uitslag is al door iemand anders ingevuld.");
     throw new Error(
-      "Je kunt deze uitslag niet invullen — alleen de spelers van deze match of de aanmaker mogen dat."
+      "Je kunt deze uitslag niet invullen — alleen de spelers van deze match, de aanmaker of de eigenaar van de groep mogen dat."
     );
   }
 }
