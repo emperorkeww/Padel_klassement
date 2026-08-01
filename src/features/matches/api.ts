@@ -391,9 +391,10 @@ export async function replaceMatchPlayer(
 }
 
 /**
- * Corrigeert de eindscore van een reeds afgeronde match. Alleen de aanmaker
- * mag dit (RLS). Anders dan setMatchResult blijft played_at behouden — het is
- * een correctie, geen nieuwe uitslag. De winnaar volgt uit de score.
+ * Corrigeert de eindscore van een reeds afgeronde match. De aanmaker en de
+ * eigenaar van de groep mogen dit (RLS, #978). Anders dan setMatchResult blijft
+ * played_at behouden — het is een correctie, geen nieuwe uitslag. De winnaar
+ * volgt uit de score.
  */
 export async function updateMatchScore(params: {
   matchId: string;
@@ -411,11 +412,21 @@ export async function updateMatchScore(params: {
   // Alleen aanraken als expliciet meegegeven, zodat een score-correctie zonder
   // set-invoer de bestaande set-stand niet per ongeluk wist.
   if (params.setScores !== undefined) patch.set_scores = params.setScores;
-  const { error } = await supabase
+  // .select() erbij zodat een door RLS geweigerde correctie niet als succes
+  // langskomt: zonder select geeft PostgREST geen fout én geen rijen, en toonde
+  // de UI vrolijk "Score bijgewerkt." terwijl er niets veranderde. Sinds #978
+  // is de kring die hieraan mag groter, dus is die stilte duurder.
+  const { data, error } = await supabase
     .from("matches")
     .update(patch)
-    .eq("id", params.matchId);
+    .eq("id", params.matchId)
+    .select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Je kunt deze uitslag niet aanpassen — alleen wie hem invoerde of de beheerder van de groep mag dat.",
+    );
+  }
   invalidateMatchData();
 }
 

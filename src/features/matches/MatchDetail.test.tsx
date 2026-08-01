@@ -44,17 +44,27 @@ async function openBeheer() {
   );
 }
 
-/** Vervangt tijdelijk wat de matches-tabel teruggeeft. */
-function metMatch(rij: Record<string, unknown>) {
+/** Vervangt tijdelijk wat de matches-tabel teruggeeft, en desgewenst ook de
+ *  groepen-tabel. Dat laatste is nodig sinds #978: de kijker (p1) bezit g1 uit
+ *  de fixtures, dus "iemand anders beheert deze groep" bestaat alleen als je
+ *  ook de groep vervangt — de mock negeert .eq(), dus een ander group_id
+ *  verzinnen levert nog steeds g1 op. */
+function metMatch(
+  rij: Record<string, unknown>,
+  groep?: Record<string, unknown> | null,
+) {
   invalidateAll();
   const fromMock = supabase.from as unknown as {
     getMockImplementation: () => (table: string) => unknown;
     mockImplementation: (impl: (table: string) => unknown) => void;
   };
   const orig = fromMock.getMockImplementation();
-  fromMock.mockImplementation((t) =>
-    t === "matches" ? makeQuery({ data: [rij], error: null }) : orig(t),
-  );
+  fromMock.mockImplementation((t) => {
+    if (t === "matches") return makeQuery({ data: [rij], error: null });
+    if (t === "groups" && groep !== undefined)
+      return makeQuery({ data: groep ? [groep] : [], error: null });
+    return orig(t);
+  });
   return () => {
     fromMock.mockImplementation(orig);
     invalidateAll();
@@ -163,8 +173,14 @@ describe("<MatchDetail />", () => {
   });
 
   it("legt uit dat alleen de invoerder de score kan aanpassen", async () => {
-    // Zelfde match, maar ingevoerd door Carol (p3) in plaats van de kijker.
-    const herstel = metMatch({ ...MATCH_DONE, created_by: "p3" });
+    // Zelfde match, maar ingevoerd door Carol (p3) in plaats van de kijker, en
+    // bewust zonder groep: de kijker bezit g1, en sinds #978 zou hij daar wél
+    // mogen corrigeren.
+    const herstel = metMatch({
+      ...MATCH_DONE,
+      created_by: "p3",
+      group_id: null,
+    });
     try {
       renderPage();
       await screen.findByText(/eindstand/i);
@@ -177,6 +193,45 @@ describe("<MatchDetail />", () => {
           screen.getByText(/alleen wie de uitslag invoerde kan hem aanpassen/i),
         ).toHaveTextContent(/carol/i),
       );
+    } finally {
+      herstel();
+    }
+  });
+
+  it("noemt de groepsbeheerder als medecorrector (#978)", async () => {
+    // Ingevoerd door Carol, in een groep die de kijker níét bezit.
+    const herstel = metMatch(
+      { ...MATCH_DONE, created_by: "p3", group_id: "g-vreemd" },
+      { id: "g-vreemd", name: "Andermans groep", created_by: "p3" },
+    );
+    try {
+      renderPage();
+      await screen.findByText(/eindstand/i);
+      expect(
+        screen.queryByRole("button", { name: /score aanpassen/i }),
+      ).toBeNull();
+      await waitFor(() =>
+        expect(
+          screen.getByText(/beheerder van de groep kan deze uitslag aanpassen/i),
+        ).toHaveTextContent(/carol/i),
+      );
+    } finally {
+      herstel();
+    }
+  });
+
+  it("laat de groepseigenaar een uitslag van iemand anders corrigeren (#978)", async () => {
+    // Carol voerde de uitslag in, maar de kijker (p1) bezit groep g1.
+    const herstel = metMatch({ ...MATCH_DONE, created_by: "p3" });
+    try {
+      renderPage();
+      await screen.findByText(/eindstand/i);
+      expect(
+        await screen.findByRole("button", { name: /score aanpassen/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/jij beheert deze groep/i),
+      ).toBeInTheDocument();
     } finally {
       herstel();
     }

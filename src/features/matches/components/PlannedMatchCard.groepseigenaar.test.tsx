@@ -85,4 +85,21 @@ describe("<PlannedMatchCard /> groepseigenaar", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  // #978: verplaatsen en verwijderen mochten alleen door de aanmaker, terwijl
+  // delete_match de groepseigenaar serverzijdig allang toestond.
+  it("geeft de eigenaar het ⋯-menu om te verplaatsen of te verwijderen", async () => {
+    renderCard(MATCH_VAN_ANDEREN);
+    expect(
+      await screen.findByRole("button", { name: /meer acties/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("houdt het ⋯-menu dicht in een groep die je niet bezit", async () => {
+    renderCard({ ...MATCH_VAN_ANDEREN, group_id: "g-onbekend" } as Match);
+    await openPlannedCards();
+    expect(
+      screen.queryByRole("button", { name: /meer acties/i }),
+    ).not.toBeInTheDocument();
+  });
 });

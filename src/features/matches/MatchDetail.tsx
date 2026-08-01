@@ -235,23 +235,31 @@ export function MatchDetail() {
   );
   // Verloor de kijker deze match? → de smoesjesmachine mag verschijnen.
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
-  // Enkel de aanmaker kan de score corrigeren (RLS dwingt dit ook af).
-  const canEdit = done && !!user && m.created_by === user.id;
+  // Beheert de kijker de groep waar deze match in hangt? (#978) De groep is
+  // hier toch al geladen (voor Rudy's roast-toon), dus dit kost geen query.
+  const beheertGroep =
+    !!user && !!group.data && group.data.created_by === user.id;
+  // De aanmaker en de groepseigenaar kunnen de score corrigeren (RLS dwingt
+  // dit ook af: "Aanmaker kan match bijwerken" en "Groepseigenaar kan
+  // groepsmatch bijwerken").
+  const canEdit = done && !!user && (m.created_by === user.id || beheertGroep);
   // Netrollers (#809): alleen wie zelf meespeelde vult ze in.
   const speeltMee =
     !!user &&
     [teamA, teamB].some((t) => playersOf(t).includes(user.id));
   // Per-set uitslag (optioneel), als paren zodat elke set zijn winnaar kan tonen.
   const setPairs = readSetScores(m);
-  // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet of
-  // hem hebt aangemaakt — precies de kring die de RLS-policy toestaat (#413).
+  // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet,
+  // hem hebt aangemaakt of de groep beheert — precies de kring die de
+  // RLS-policies toestaan (#413, #978).
   const amParticipant =
     !!user &&
     [teamA, teamB].some(
       (t) => t && (t.player1_id === user.id || t.player2_id === user.id),
     );
   const showPlanned =
-    !done && (amParticipant || (!!user && m.created_by === user.id));
+    !done &&
+    (amParticipant || beheertGroep || (!!user && m.created_by === user.id));
   // Gasten in deze match (#681). Alleen als er één is heeft de vervang-sectie
   // zin — zo betaalt een gewone match niet voor de extra queries daarin.
   const gastenInMatch = [teamA, teamB]
@@ -263,8 +271,9 @@ export function MatchDetail() {
   // eigen query null terug.
   const toonBeheer = done || !!user;
 
-  // Wie voerde deze uitslag in? (#915) Alleen die persoon kan hem corrigeren;
-  // zonder dat te zeggen leest het ontbreken van de knop als een bug.
+  // Wie voerde deze uitslag in? (#915) Die persoon en de groepsbeheerder (#978)
+  // kunnen hem corrigeren; zonder dat te zeggen leest het ontbreken van de knop
+  // als een bug.
   const invoerder = m.created_by ? pmap[m.created_by] : undefined;
   const invoerderNaam = invoerder
     ? displayName(invoerder)
@@ -463,14 +472,17 @@ export function MatchDetail() {
                   />
                 ) : (
                   <p className="md-edit-note">
-                    Jij voerde deze uitslag in, dus jij kunt hem corrigeren.
+                    {m.created_by === user?.id
+                      ? "Jij voerde deze uitslag in, dus jij kunt hem corrigeren."
+                      : "Jij beheert deze groep, dus jij kunt de uitslag corrigeren."}
                   </p>
                 )}
               </>
             ) : (
               <p className="md-edit-note">
-                Alleen wie de uitslag invoerde kan hem aanpassen — dat was{" "}
-                {invoerderNaam}.
+                {m.group_id
+                  ? `Alleen ${invoerderNaam} of de beheerder van de groep kan deze uitslag aanpassen.`
+                  : `Alleen wie de uitslag invoerde kan hem aanpassen — dat was ${invoerderNaam}.`}
               </p>
             )}
           </div>
