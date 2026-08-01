@@ -9,8 +9,27 @@
 // import.meta.env.DEV) — geen productiechunk.
 
 import { DashboardHero, type HeroStatus } from "./DashboardHero";
+import type { Badge } from "@/features/profiles/badges";
 import type { HeroOverlay, HeroPermanent } from "../heroThema";
 import "./HeroShowcase.css";
+
+/** Een volle badgekast (#939): de rij toont er zes en telt de rest als "+N",
+ *  precies de situatie waarin ze op 390px na vijf cirkels brak. */
+const BADGES: Badge[] = [
+  ["🎯", "Scherpschutter", "Tien matches met een setwinst op nul."],
+  ["🧱", "Muur", "Vijf keer een wedstrijd zonder verloren game."],
+  ["🌪️", "Comeback", "Gewonnen na een 0-4 achterstand."],
+  ["🧊", "IJskoud", "Drie tiebreaks op rij gewonnen."],
+  ["🚀", "Raket", "Vijftig Elo in één avond gepakt."],
+  ["🦉", "Nachtuil", "Twintig matches na tienen 's avonds."],
+  ["🐐", "Legende", "Honderd matches gespeeld."],
+].map(([emoji, naam, omschrijving]) => ({
+  id: naam.toLowerCase(),
+  naam,
+  emoji,
+  omschrijving,
+  behaald: true,
+}));
 
 /** Realistische editie-regels: exact de vormen die editieLabel produceert,
  *  inclusief de langste varianten als stress-case. */
@@ -83,6 +102,7 @@ function Kaart({
   naam = "Remco",
   rating = 994,
   briefing = "Bijna 🤡 Wannabe: nog 6 Elo. M'n notitieboekje ligt al open op de felicitatiepagina.",
+  badges = [],
 }: {
   titel: string;
   uitleg: string;
@@ -90,6 +110,7 @@ function Kaart({
   naam?: string;
   rating?: number | null;
   briefing?: string | null;
+  badges?: Badge[];
 }) {
   return (
     <section className="hero-showcase__geval">
@@ -105,7 +126,7 @@ function Kaart({
         heeftStand
         loading={false}
         status={s}
-        earnedBadges={[]}
+        earnedBadges={badges}
         form={["W", "W", "W", "L", "W"]}
         briefing={briefing}
         generateCta={{ to: "/groepen", label: "Wedstrijden genereren" }}
@@ -218,8 +239,9 @@ export function HeroShowcase() {
       />
       <Kaart
         titel="Meerdere titels tegelijk"
-        uitleg="Eén badge, de rest als chips — kleur is nooit de enige indicator."
+        uitleg="Eén badge, de rest compact als chips, badgerij eronder — kleur is nooit de enige indicator."
         status={status("bigdaddy", "inform", { piet: true, kampioen: true })}
+        badges={BADGES}
       />
       <Kaart
         titel="Lange naam en lang coachbericht"
