@@ -168,18 +168,18 @@ export const GW_LAGEN: readonly GwLaag[] = [
     voorbewerkt: true,
     z: 40,
   },
-  // Trekker schuin langs de linkerflank: lager en forser dan op de referentie,
-  // zodat hij de langere flank vult en zijn blad buiten het schild komt.
+  // Trekker schuin langs de linkerflank: iets forser dan de referentie en met
+  // zijn blad búiten het schild, zoals daar — blad en steel houden dan
+  // dezelfde visuele lengte-balans op de smallere kaart. Het gat in de ring
+  // zit op de ingebakken plek en wordt gevuld, dus de trekker mag hier vrij
+  // schuiven en schalen.
   {
     naam: "leftSqueegee",
     schaduw: 0.004,
     bron: "trekker-boven",
     doel: doos("trekker-boven"),
-    // Op referentiemaat en -plek. De vergroting en de verschuiving omlaag
-    // compenseerden een uitsnede die bij de ferrule ophield; met de steel erbij
-    // zet dat het blad juist bovenop de glaslat en de naam. De hoek zit al in de
-    // pixels, dus er hoeft ook niets gedraaid te worden.
-    verzet: [0.0, 0.012],
+    schaal: 1.12,
+    verzet: [-0.035, 0.012],
     z: 70,
   },
   // Haak met ketting waar de emmer aan hangt; die moet aan de lijst vastzitten,
