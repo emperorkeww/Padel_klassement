@@ -13,6 +13,7 @@ import { useOutboxFlush } from "@/features/matches/useOutbox";
 import { Avatar } from "@/ui/Avatar";
 import { BallIcon } from "@/ui/BallIcon";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
+import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
@@ -159,13 +160,18 @@ export function DashboardLayout() {
         <div className="sidebar__foot">
           <Link to="/profiel" className="sidebar__user">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
+            {/* Zolang het profiel nog laadt is de naam het e-mailadres, en
+                dan stond datzelfde adres er twee keer (#949). De tweede regel
+                verschijnt pas als hij iets toevoegt. */}
             <span className="sidebar__user-text">
               <span className="sidebar__user-name">
                 {me ? displayName(me) : (user?.email ?? "")}
               </span>
-              <span className="sidebar__user-mail" title={user?.email ?? ""}>
-                {user?.email}
-              </span>
+              {me && (
+                <span className="sidebar__user-mail" title={user?.email ?? ""}>
+                  {user?.email}
+                </span>
+              )}
             </span>
           </Link>
           <button className="sidebar__signout" onClick={() => signOut()}>
@@ -178,23 +184,15 @@ export function DashboardLayout() {
         <div className="content__inner">
           {/* Suspense hier (i.p.v. rond alle routes) houdt de balken gemount
               tijdens het lazy-laden van een pagina — zo springt de navigatie
-              op mobiel niet weg. Een neutrale, tekstloze skeleton voorkomt de
-              sprong van "Laden…" naar de pagina-eigen skeletons.
+              op mobiel niet weg. De skeleton is tekstloos en volgt sinds #949
+              de vorm van de route die geladen wordt, zodat de echte layout er
+              niet overheen ploft.
               Om dezelfde reden staat hier óók een foutgrens (#733): crasht een
               pagina, dan blijft de shell eromheen staan en is de gebruiker één
               tik van een werkende pagina verwijderd. De pathname als resetKey
               wist de fout zodra je wegnavigeert. */}
           <ErrorBoundary scope="pagina" resetKey={pathname}>
-            <Suspense
-              fallback={
-                <div className="route-skeleton" aria-hidden="true">
-                  <div className="route-skeleton__bar route-skeleton__bar--title" />
-                  <div className="route-skeleton__bar route-skeleton__bar--sub" />
-                  <div className="route-skeleton__card" />
-                  <div className="route-skeleton__card" />
-                </div>
-              }
-            >
+            <Suspense fallback={<RouteSkeleton pathname={pathname} />}>
               <Outlet />
             </Suspense>
           </ErrorBoundary>

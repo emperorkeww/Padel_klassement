@@ -146,3 +146,40 @@
     animation: none;
   }
 }
+
+/* Groepskaarten op de hub (#949). */
+.sk-groups {
+  display: grid;
+  gap: var(--sp-3);
+}
+.sk-group {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.sk-group__kop,
+.sk-group__leden {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.sk-group__kop {
+  justify-content: space-between;
+}
+
+/* Stemrijen van een speeldag-poll (#949). */
+.sk-poll-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.sk-poll-row__seg {
+  width: 116px;
+  height: 34px;
+  border-radius: 999px;
+}

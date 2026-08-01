@@ -159,6 +159,21 @@ describe("<DashboardLayout />", () => {
   });
 });
 
+// Zolang het profiel laadt is de naam in de zijbalk het e-mailadres, en dan
+// stond datzelfde adres er twee keer — als naam én als ondertitel (#949).
+describe("zijbalk-identiteit (#949)", () => {
+  it("toont het e-mailadres niet twee keer", async () => {
+    const { container } = renderShell();
+    await screen.findByText("pagina-inhoud");
+    const mailregels = container.querySelectorAll(".sidebar__user-mail");
+    const naam = container.querySelector(".sidebar__user-name")?.textContent;
+    // Ofwel het profiel is er (naam + mail), ofwel nog niet (alleen de mail
+    // als naam) — maar nooit dezelfde tekst op beide regels.
+    for (const regel of mailregels)
+      expect(regel.textContent).not.toBe(naam);
+  });
+});
+
 describe("tier-aankondiging (#127)", () => {
   it("seedt bij het eerste bezoek zonder historische toasts", async () => {
     vi.mocked(getRatingHistory).mockResolvedValue([

@@ -14,6 +14,13 @@
   justify-content: center;
   gap: var(--sp-3);
   margin-bottom: var(--sp-5);
+  /* Ruimte voor wat de kaarten buiten hun doos schilderen: het schildframe en
+     de ornamentlaag steken een paar pixels uit (`overflow: visible`, #710).
+     Zonder deze marge rekende de maat hieronder de kaarten exact op de
+     containerbreedte en staken ze links en rechts buiten de omhullende kaart
+     (#947). De padding valt bovendien buiten de cqw-meting, dus de kaarten
+     krimpen er vanzelf mee. */
+  padding-inline: var(--sp-2);
   container-type: inline-size;
 }
 

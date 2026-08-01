@@ -398,6 +398,13 @@
   border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
+/* Blokken naast elkaar (podium, tegelrij, twee kaarten) — de vormen die
+   RouteSkeleton per route neerzet (#949). */
+.route-skeleton__rij {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
 .route-skeleton__bar--title {
   width: 40%;
   height: 1.875rem;

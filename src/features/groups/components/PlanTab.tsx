@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
-import { Skeleton } from "@/ui/Skeleton";
+import { PollSkeleton } from "@/ui/Skeleton";
 import { dateInZone } from "@/lib/utils/time";
 import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
 import { useClub, type Club } from "@/features/availability/club";
@@ -256,7 +256,8 @@ export function PlanTab({
     return (
       <section className="card">
         <h2 className="card__title">Speeldag plannen</h2>
-        <Skeleton rows={3} />
+        {/* Fasebalk + stemrijen, de vorm die zo verschijnt (#949). */}
+        <PollSkeleton />
       </section>
     );
   }

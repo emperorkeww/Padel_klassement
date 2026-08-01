@@ -72,6 +72,21 @@
   border-top-color: var(--success);
   box-shadow: 0 0 0 3px var(--success-soft), var(--shadow-sm);
 }
+/* Zodra er een uitslag is, dragen de blokken de úitslag en niet meer de kant
+   (#948). Twee groenige vlakken naast elkaar — smaragd voor A, lime voor B —
+   met alleen een iets fellere rand om de winnaar lieten het verschil aan een
+   kleurnuance over. De verliezer wordt neutraal; de winnaar houdt zijn ring
+   én zijn chip, en die chip is het echte signaal. */
+.md-versus.is-done .md-team {
+  background: var(--surface);
+  border-color: var(--line);
+  border-top-color: var(--line-strong);
+}
+.md-versus.is-done .md-team.is-win {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  border-top-color: var(--success);
+}
 
 .md-team__name {
   font-weight: 700;
@@ -376,12 +391,16 @@
   .md-hero {
     padding: var(--sp-4);
   }
-  /* Eén kolom in DOM-volgorde: team A → score → team B. */
+  /* Eén kolom. De uitslag gaat vóór de teamblokken (#948): gestapeld in
+     DOM-volgorde stond hij tússen de teams in, en dan moet je scrollen om te
+     zien wie won. Op desktop blijft hij in het midden staan — daar is het een
+     scorebord tussen twee kolommen. */
   .md-versus {
     grid-template-columns: 1fr;
     gap: var(--sp-3);
   }
   .md-score {
+    order: -1;
     padding: var(--sp-1) 0;
   }
   .md-team {
@@ -425,16 +444,20 @@
 }
 
 /* Spelerrijen: op --surface zodat ze afsteken tegen de getinte teamvlakken. */
+/* Een speler is een rij in het teamblok, geen eigen kaartje (#948). De kaart
+   ín de kaart ín de kaart kostte op 390px ~48px horizontale ruimte, precies
+   waar de ELO-regel en de chips het krap hadden. Een haarlijn tussen de rijen
+   doet hetzelfde werk als een kader. */
 .md-team__players .md-player {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
+  padding: var(--sp-2) 0;
   width: 100%;
+}
+.md-team__players .md-player + .md-player {
+  border-top: 1px solid var(--line);
 }
 .md-player__identity {
   display: flex;
@@ -458,4 +481,12 @@
 .md-player__rating {
   font-weight: 700;
   color: var(--ink);
+}
+
+/* Chips met een getekend icoon ernaast (#948). */
+.md-team__winnaar,
+.md-player__wissel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

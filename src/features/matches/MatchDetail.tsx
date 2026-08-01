@@ -348,7 +348,11 @@ export function MatchDetail() {
             <GroupBadge groupId={m.group_id} />
           </div>
 
-          <div className="md-versus">
+          {/* `is-done` schakelt de teamkleuren uit zodra er een uitslag is
+              (#948): op een gespeelde match hoort de kleur de úitslag te
+              dragen, niet de kant. Zolang er niets gespeeld is identificeren
+              de tinten juist wél de twee teams. */}
+          <div className={`md-versus${done ? " is-done" : ""}`}>
             <TeamBlock
               team={teamA}
               side="a"
@@ -1116,7 +1120,12 @@ function TeamBlock({
     <div className={`md-team md-team--${side} ${won ? "is-win" : ""}`}>
       <div className="md-team__name">
         {label}
-        {won && <span className="badge badge--win">Winnaar</span>}
+        {won && (
+          <span className="badge badge--win md-team__winnaar">
+            <IconBeker />
+            Winnaar
+          </span>
+        )}
       </div>
       <ul className="md-team__players">
         {players.map((p, i) => {
@@ -1146,8 +1155,11 @@ function TeamBlock({
                   )}
                   <TierBadge rating={ratingAfter ?? null} size="sm" />
                   {wissel && (
-                    <span className={`badge ${wissel.richting === "promotie" ? "badge--win" : "badge--danger"}`}>
-                      {wissel.richting === "promotie" ? "⬆️ Promotie" : "⬇️ Degradatie"}
+                    <span
+                      className={`badge md-player__wissel ${wissel.richting === "promotie" ? "badge--win" : "badge--danger"}`}
+                    >
+                      <IconPijl omhoog={wissel.richting === "promotie"} />
+                      {wissel.richting === "promotie" ? "Promotie" : "Degradatie"}
                     </span>
                   )}
                 </div>
@@ -1157,6 +1169,48 @@ function TeamBlock({
         })}
       </ul>
     </div>
+  );
+}
+
+/** Bekertje bij de winnaarschip (#948) en pijl bij promotie/degradatie: de
+ *  chips droegen ⬆️/⬇️ als emoji, en die vallen per platform anders uit — de
+ *  rest van de app tekent zijn iconen. */
+function IconBeker() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" />
+      <path d="M9 20h6M12 13v7" />
+    </svg>
+  );
+}
+
+function IconPijl({ omhoog }: { omhoog: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={omhoog ? undefined : { transform: "rotate(180deg)" }}
+    >
+      <path d="M12 19V5M6 11l6-6 6 6" />
+    </svg>
   );
 }
 

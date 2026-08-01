@@ -1,19 +1,15 @@
 // Speler-avatar: foto indien aanwezig, anders initialen op een kleur die
 // stabiel uit de naam volgt (dezelfde speler krijgt overal dezelfde tint).
+// De initialen zelf komen uit lib/utils/initialen — gedeeld met de plekken die
+// hun eigen avatarvorm tekenen (#949).
+
+import { initialen } from "@/lib/utils/initialen";
 
 export type AvatarSource = {
   username?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
 };
-
-function initials(name: string, short: boolean): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (short || parts.length === 1)
-    return parts[0].slice(0, short ? 1 : 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function hueIndex(name: string): number {
   let h = 0;
@@ -44,7 +40,7 @@ export function Avatar({
       style={{ width: size, height: size, fontSize: size * 0.38 }}
       aria-hidden="true"
     >
-      {url ? <img src={url} alt="" loading="lazy" /> : initials(label, short)}
+      {url ? <img src={url} alt="" loading="lazy" /> : initialen(label, short)}
     </span>
   );
 }

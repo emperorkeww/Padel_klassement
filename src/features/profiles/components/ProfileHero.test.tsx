@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -171,5 +172,45 @@ describe("ProfileHero — speciale editie op de kaart (#621)", () => {
     const { container } = render(<ProfileHero d={hero()} />);
     expect(container.querySelector(".fut-kaart--icon")).toBeNull();
     expect(container.querySelector(".fut-kaart--inform")).toBeNull();
+  });
+});
+
+// Op 390px liepen de statistiek-tegels en de VS-kaarten buiten hun container
+// (#947). jsdom rekent geen layout door, dus de regels die dat bepalen worden
+// uit de stylesheets gelezen.
+describe("profielbreedtes op telefoonformaat (#947)", () => {
+  const UI_CSS = readFileSync("src/components/ui/ui.css", "utf8");
+  const VS_CSS = readFileSync(
+    "src/features/profiles/components/VersusKaarten.css",
+    "utf8",
+  );
+  const PROFIEL_CSS = readFileSync(
+    "src/features/profiles/PlayerProfile.css",
+    "utf8",
+  );
+
+  it("zet de tegelrij op twee kolommen onder 480px", () => {
+    // Vier tegels naast elkaar laat daar ~84px per tegel over: de tegelrand
+    // knipt de divisiechip af en de vierde tegel valt buiten de viewport.
+    const smal = UI_CSS.slice(UI_CSS.indexOf("@media (max-width: 480px)"));
+    expect(smal).toMatch(
+      /\.stats\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/,
+    );
+    // En een chip die tóch te breed is kapt bínnen de tegel af.
+    expect(UI_CSS).toMatch(
+      /\.stat__badge \.tier-badge\s*\{[^}]*text-overflow:\s*ellipsis/,
+    );
+  });
+
+  it("houdt de VS-kaarten binnen hun container", () => {
+    // De kaarten schilderen een paar pixels buiten hun doos (schildframe en
+    // ornamentlaag); de padding valt buiten de cqw-meting, dus ze krimpen mee.
+    expect(VS_CSS).toMatch(/\.vs-kaarten\s*\{[^}]*padding-inline:/);
+  });
+
+  it("lijnt de flip-hint uit op de kaart, niet op de tekstbreedte", () => {
+    expect(PROFIEL_CSS).toMatch(
+      /\.profile-hero__kaart\s*\{[^}]*width:\s*var\(--fut-kw\)/,
+    );
   });
 });
