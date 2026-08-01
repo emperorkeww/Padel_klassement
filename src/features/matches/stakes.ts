@@ -122,3 +122,29 @@ export function blokkadeUitleg(reden: StakeBlokkade, games: number): string {
       return "";
   }
 }
+
+/**
+ * Een afgewezen inzet in gewone taal (#804).
+ *
+ * Het dagtegoed wordt bewust door de unieke index `match_stakes_one_per_day`
+ * bewaakt en niet door een `raise` in de guard: twee gelijktijdige inserts
+ * zouden een telling allebei passeren, een index niet. De prijs is dat een
+ * botsing als kale Postgres-tekst binnenkomt ("duplicate key value violates
+ * unique constraint …"). Dat overkomt je zodra de client zijn tegoed nog van
+ * vóór je vorige inzet kent — bijvoorbeeld een tweede rondekaart in de
+ * Spelen-tab die al geladen was toen je op de eerste inzette. Hier wordt die
+ * botsing weer een zin.
+ *
+ * De `raise`-meldingen van de guard zelf zijn al Nederlands en leesbaar
+ * ("de match is al begonnen"); die gaan ongewijzigd door.
+ */
+export function stakeFoutMelding(err: unknown): string {
+  const fout = err as { code?: string; message?: string } | null;
+  const tekst = typeof fout?.message === "string" ? fout.message : "";
+  if (fout?.code === "23505" || tekst.includes("duplicate key value")) {
+    return tekst.includes("match_stakes_one_per_day")
+      ? blokkadeUitleg("dag-bezet", 0)
+      : "Je lef stond al op deze match.";
+  }
+  return tekst || "Inzetten lukte niet. Probeer het zo nog eens.";
+}

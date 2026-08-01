@@ -6,6 +6,7 @@ import {
   playDay,
   stakeBlokkade,
   stakeFactor,
+  stakeFoutMelding,
   stakeSwing,
   type MatchStake,
 } from "@/features/matches/stakes";
@@ -146,5 +147,56 @@ describe("blokkadeUitleg", () => {
   it("telt af naar de drempel, met het juiste enkelvoud", () => {
     expect(blokkadeUitleg("te-weinig-matches", MIN_GAMES - 1)).toContain("1 match");
     expect(blokkadeUitleg("te-weinig-matches", MIN_GAMES - 3)).toContain("3 matches");
+  });
+});
+
+describe("stakeFoutMelding", () => {
+  // De unieke index is de échte poort voor het dagtegoed (race-vast), maar hij
+  // praat Postgres. Wat de speler te zien kreeg was letterlijk:
+  // 'duplicate key value violates unique constraint "match_stakes_one_per_day"'.
+  it("vertaalt een botsing op het dagtegoed naar de blokkade-uitleg", () => {
+    const melding = stakeFoutMelding({
+      code: "23505",
+      message:
+        'duplicate key value violates unique constraint "match_stakes_one_per_day"',
+    });
+    expect(melding).toBe(blokkadeUitleg("dag-bezet", 0));
+    expect(melding).not.toContain("constraint");
+  });
+
+  it("herkent de botsing ook zonder code, op de tekst alleen", () => {
+    expect(
+      stakeFoutMelding({
+        message:
+          'duplicate key value violates unique constraint "match_stakes_one_per_day"',
+      }),
+    ).toBe(blokkadeUitleg("dag-bezet", 0));
+  });
+
+  it("onderscheidt een tweede inzet op dezelfde match", () => {
+    // De primaire sleutel (match_id, player_id), niet het dagtegoed: dan klopt
+    // "vandaag al vergeven" niet — je stond al op déze match.
+    expect(
+      stakeFoutMelding({
+        code: "23505",
+        message:
+          'duplicate key value violates unique constraint "match_stakes_pkey"',
+      }),
+    ).toBe("Je lef stond al op deze match.");
+  });
+
+  it("laat de leesbare meldingen van de guard ongemoeid", () => {
+    expect(stakeFoutMelding({ message: "de match is al begonnen" })).toBe(
+      "de match is al begonnen",
+    );
+  });
+
+  it("valt terug op een zin, nooit op een leeg vak", () => {
+    expect(stakeFoutMelding(null)).toBe(
+      "Inzetten lukte niet. Probeer het zo nog eens.",
+    );
+    expect(stakeFoutMelding({})).toBe(
+      "Inzetten lukte niet. Probeer het zo nog eens.",
+    );
   });
 });
