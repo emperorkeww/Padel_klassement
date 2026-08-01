@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -57,6 +57,31 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import GroupDetail from "./GroupDetail";
 import { supabase } from "@/lib/supabase/client";
+import { makeQuery } from "@/test/supabaseMock";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+
+/** Vervangt tijdelijk de ledenlijst van de groep; geeft een herstelfunctie. */
+function metLeden(ids: string[]) {
+  invalidateAll();
+  const rijen = ids.map((pid, i) => ({
+    group_id: "g1",
+    player_id: pid,
+    role: i === 0 ? "owner" : "member",
+    joined_at: "2026-07-01T10:00:00.000Z",
+  }));
+  const fromMock = supabase.from as unknown as {
+    getMockImplementation: () => (table: string) => unknown;
+    mockImplementation: (impl: (table: string) => unknown) => void;
+  };
+  const orig = fromMock.getMockImplementation();
+  fromMock.mockImplementation((t) =>
+    t === "group_members" ? makeQuery({ data: rijen, error: null }) : orig(t),
+  );
+  return () => {
+    fromMock.mockImplementation(orig);
+    invalidateAll();
+  };
+}
 
 // De suggestiekaart haalt baanbeschikbaarheid via fetch (Playtomic-proxy);
 // een leeg antwoord volstaat.
@@ -432,5 +457,96 @@ describe("<GroupDetail />", () => {
     // Filter op Verloren: de gewonnen match (voor Alice) verdwijnt.
     await userEvent.click(screen.getByRole("button", { name: /^verloren/i }));
     expect(screen.queryByText("6–3")).not.toBeInTheDocument();
+  });
+
+  // ── #917: de kop draagt de groep ────────────────────────────────────────
+
+  it("toont in de kop de leden en de eerstvolgende speeldag", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("heading", { name: /vrijdagavond padel/i });
+
+    const kop = container.querySelector(".group-head")!;
+    // Ledenrij plus ledental — dezelfde bouwstenen als de kaart op de hub.
+    expect(kop.querySelector(".group-head__leden")).not.toBeNull();
+    expect(kop).toHaveTextContent(/4 leden/i);
+    // De reisstatus komt uit journeyFor; die staat er zodra de polls er zijn.
+    await waitFor(() =>
+      expect(kop.querySelector(".group-head__journey")).not.toBeNull(),
+    );
+  });
+
+  it("houdt de speeldag zichtbaar op een andere tab dan Plannen", async () => {
+    // Bevinding 5: wie op Historie of Stand stond, zag niet meer wanneer er
+    // weer gespeeld wordt.
+    const { container } = renderPage();
+    await screen.findByRole("heading", { name: /vrijdagavond padel/i });
+    await waitFor(() =>
+      expect(
+        container.querySelector(".group-head__journey"),
+      ).not.toBeNull(),
+    );
+
+    await userEvent.click(screen.getByRole("tab", { name: /^historie/i }));
+    expect(container.querySelector(".group-head__journey")).not.toBeNull();
+  });
+
+  it("laat de tabbalk weten dat er meer tabs staan", async () => {
+    // Zes tabs passen niet op telefoonbreedte; jsdom heeft geen layout, dus we
+    // voeren de breedtes op waar useScrollSchaduw naar kijkt.
+    const proto = HTMLElement.prototype;
+    const origScroll = Object.getOwnPropertyDescriptor(proto, "scrollWidth");
+    const origClient = Object.getOwnPropertyDescriptor(proto, "clientWidth");
+    Object.defineProperty(proto, "scrollWidth", { configurable: true, value: 900 });
+    Object.defineProperty(proto, "clientWidth", { configurable: true, value: 375 });
+    try {
+      renderPage();
+      const balk = await screen.findByRole("tablist", {
+        name: /groepsonderdelen/i,
+      });
+      await waitFor(() =>
+        expect(balk).toHaveAttribute("data-schaduw", "rechts"),
+      );
+    } finally {
+      if (origScroll) Object.defineProperty(proto, "scrollWidth", origScroll);
+      if (origClient) Object.defineProperty(proto, "clientWidth", origClient);
+    }
+  });
+
+  it("zet uitnodigen in de kop zolang de groep te klein is om te spelen", async () => {
+    // Padel is 2v2: met twee leden kun je nog niet spelen, dus uitnodigen hoort
+    // vanaf elke tab bereikbaar te zijn (#917) — niet weggestopt op Leden.
+    const herstel = metLeden(["p1", "p2"]);
+    try {
+      const { container } = renderPage();
+      await screen.findByRole("heading", { name: /vrijdagavond padel/i });
+      const kop = container.querySelector(".group-head")!;
+      const knop = await waitFor(() =>
+        within(kop as HTMLElement).getByRole("button", {
+          name: /leden uitnodigen/i,
+        }),
+      );
+
+      await userEvent.click(knop);
+      expect(
+        screen.getByRole("tab", { name: /^leden/i }),
+      ).toHaveAttribute("aria-selected", "true");
+    } finally {
+      herstel();
+    }
+  });
+
+  it("laat de uitnodig-knop weg zodra de groep kan spelen", async () => {
+    // De fixture-groep heeft vier leden.
+    const { container } = renderPage();
+    await screen.findByRole("heading", { name: /vrijdagavond padel/i });
+    const kop = container.querySelector(".group-head")!;
+    await waitFor(() =>
+      expect(kop).toHaveTextContent(/4 leden/i),
+    );
+    expect(
+      within(kop as HTMLElement).queryByRole("button", {
+        name: /leden uitnodigen/i,
+      }),
+    ).toBeNull();
   });
 });

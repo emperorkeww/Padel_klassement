@@ -26,6 +26,7 @@ import {
   type PollOption,
 } from "./pollsApi";
 import { journeyFor } from "./journey";
+import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
@@ -33,12 +34,6 @@ import "./Groups.css";
 // losse matches en het archief zijn hiervandaan bereikbaar. Bij precies één
 // groep opent de tab direct de groepspagina (terug via "← Alle groepen", de
 // enige link naar ?hub=1 — zonder die knop was de hub onbereikbaar, #761).
-
-const MAX_MEMBER_AVATARS = 4;
-
-function ledenLabel(n: number): string {
-  return n === 1 ? "1 lid" : `${n} leden`;
-}
 
 // Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
 // en nooit gelezen — bij 5 groepen 5 nutteloze queries (#674 C1). Het blijft
