@@ -3,7 +3,15 @@ import { Avatar } from "@/ui/Avatar";
 import { tierFor, TIER_BANDEN_HOOG_NAAR_LAAG } from "@/features/rating/tiers";
 import { primeAvatarMorph, type Row } from "../leaderboardHelpers";
 
-export function TierDivisions({ rows }: { rows: Row[] }) {
+export function TierDivisions({
+  rows,
+  meRef,
+}: {
+  rows: Row[];
+  /** Anker op je eigen regel voor de "jouw positie"-chip (#913): met tien
+   *  divisies onder elkaar is je eigen band niet vanzelf in beeld. */
+  meRef?: React.Ref<HTMLLIElement>;
+}) {
   // Alleen spelers met een rating hebben een divisie; hoog (Diamant) → laag.
   const withRating = rows.filter((r) => r.rating != null);
   const groups = TIER_BANDEN_HOOG_NAAR_LAAG.map((band) => ({
@@ -50,6 +58,7 @@ export function TierDivisions({ rows }: { rows: Row[] }) {
                 <li
                   key={r.key}
                   className={`division__row ${r.isMe ? "is-me" : ""}`}
+                  ref={r.isMe ? meRef : undefined}
                 >
                   {r.link ? (
                     <Link
