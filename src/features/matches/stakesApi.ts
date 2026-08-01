@@ -20,6 +20,38 @@ export function getMatchStakes(matchId: string): Promise<MatchStake[]> {
   });
 }
 
+/** Meer id's per .in()-query en de URL wordt onhandig lang; dan liever twee. */
+const BULK_CHUNK = 100;
+
+/**
+ * Inzetten op een lijst matches tegelijk (#981): één query voor een hele
+ * rondelijst of historie, zodat niet elke ingeklapte kaart zijn eigen fetch
+ * doet. De sleutel sorteert de id's zodat dezelfde lijst in een andere
+ * volgorde dezelfde cache raakt.
+ */
+export function getStakesForMatches(
+  matchIds: string[],
+): Promise<MatchStake[]> {
+  if (matchIds.length === 0) return Promise.resolve([]);
+  const ids = [...new Set(matchIds)].sort();
+  return cached(`match-stakes:bulk:${ids.join(",")}`, async () => {
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += BULK_CHUNK)
+      chunks.push(ids.slice(i, i + BULK_CHUNK));
+    const delen = await Promise.all(
+      chunks.map(async (chunk) => {
+        const { data, error } = await supabase
+          .from("match_stakes")
+          .select("*")
+          .in("match_id", chunk);
+        if (error) throw error;
+        return data ?? [];
+      }),
+    );
+    return delen.flat();
+  });
+}
+
 /**
  * Je eigen inzetten op één speeldag — genoeg om het tegoed te tonen zonder de
  * hele historie op te halen. Meer dan één rij kan het per definitie niet zijn.

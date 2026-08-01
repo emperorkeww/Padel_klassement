@@ -24,6 +24,7 @@ export function MatchCard({
   profiles,
   perspectiveId,
   upset,
+  lef,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -31,6 +32,10 @@ export function MatchCard({
   perspectiveId?: string;
   /** Upset-indicatie (#85): getoond bij een afgeronde underdog-winst. */
   upset?: Upset | null;
+  /** Lef-regel (#981), kant-en-klaar via lefKaartRegel: wie er dubbel of
+   *  niets speelde en hoe dat afliep. null/undefined = geen inzet (of nog
+   *  niet onthuld) en dus geen regel. */
+  lef?: string | null;
 }) {
   const done = m.status === "completed";
   const aWon = done && m.winner_team_id === m.team_a_id;
@@ -81,6 +86,9 @@ export function MatchCard({
         {setLine && (
           <span className="match-card__meta match-card__sets">{setLine}</span>
         )}
+        {/* Lef-inzet (#981): blijft ook op de ingeklapte kaart staan, zodat
+            wie waar dubbel of niets speelde na de speeldag terug te lezen is. */}
+        {lef && <span className="match-card__meta match-card__lef">{lef}</span>}
       </span>
       <TeamSide
         team={teams[m.team_b_id]}
@@ -100,6 +108,7 @@ export function DeletableMatchCard({
   profiles,
   perspectiveId,
   upset,
+  lef,
   canManage = false,
   onDeleted,
 }: {
@@ -108,6 +117,8 @@ export function DeletableMatchCard({
   profiles: Record<string, Profile>;
   perspectiveId?: string;
   upset?: Upset | null;
+  /** Lef-regel (#981), doorgegeven aan de onderliggende MatchCard. */
+  lef?: string | null;
   /** True voor de groepseigenaar: mag ook matches van anderen verwijderen. */
   canManage?: boolean;
   onDeleted: () => void;
@@ -157,6 +168,7 @@ export function DeletableMatchCard({
         profiles={profiles}
         perspectiveId={perspectiveId}
         upset={upset}
+        lef={lef}
       />
     );
   }
@@ -169,6 +181,7 @@ export function DeletableMatchCard({
         profiles={profiles}
         perspectiveId={perspectiveId}
         upset={upset}
+        lef={lef}
       />
       <button
         type="button"

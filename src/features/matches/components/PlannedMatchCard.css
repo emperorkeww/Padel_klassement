@@ -53,6 +53,25 @@
   color: var(--danger);
 }
 
+/* Lef op de kaartkop (#981): zelfde pilvorm als de deadline, in het
+   lef-violet. Vóór de aftrap ("jouw lef") open; vanaf de onthulling gevuld,
+   zodat "wie had er lef" ook op een dichte kaart in één oogopslag leest. */
+.planned-card__lefpil {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--lef-line);
+  border-radius: 999px;
+  background: var(--lef-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--lef);
+  white-space: nowrap;
+}
+.planned-card__lefpil--vol {
+  border-color: var(--lef);
+  background: var(--lef);
+  color: var(--lef-ink);
+}
+
 /* Gedeelde winkansbalk tussen de twee teamrijen: één feit, één balk. */
 .planned-card__prob {
   display: grid;

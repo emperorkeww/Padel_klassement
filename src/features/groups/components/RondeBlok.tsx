@@ -1,6 +1,11 @@
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { teamLabel } from "@/features/matches/api";
+import { lefKaartRegel } from "@/features/matches/stakes";
+import { getStakesForMatches } from "@/features/matches/stakesApi";
+import { displayName } from "@/features/profiles/api";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { formatTime } from "@/lib/utils/format";
 import { rondeWinnaars } from "../dagStatus";
 import type { Upset } from "@/features/matches/upset";
@@ -56,6 +61,20 @@ export function RondeBlok({
   const bodyId = `ronde-${round}-matches`;
   const winnaars = rondeWinnaars(list, (id) => teamLabel(teams[id], profiles));
 
+  // Lef op de afgeronde kaarten (#981): één bulk-query voor de hele ronde in
+  // plaats van een fetch per kaart. De cache-revisie trekt de regels bij als
+  // er elders wordt ingezet of ingetrokken (#907). De geplande kaarten halen
+  // hun eigen (gedeelde, gecachte) inzetten al op voor de kop-pil.
+  const stakesRev = useCacheRevision("match-stakes");
+  const ids = list
+    .filter((m) => m.group_id != null)
+    .map((m) => m.id)
+    .join(",");
+  const stakes = useAsync(
+    () => getStakesForMatches(ids ? ids.split(",") : []),
+    [ids, stakesRev],
+  );
+
   return (
     <div
       className={`round ${roundDone ? "is-done" : "is-open"}${
@@ -109,6 +128,12 @@ export function RondeBlok({
                   profiles={profiles}
                   perspectiveId={myId}
                   upset={upsets.get(m.id) ?? null}
+                  lef={lefKaartRegel({
+                    match: m,
+                    stakes: stakes.data ?? [],
+                    teams,
+                    naam: (id) => displayName(profiles[id]),
+                  })}
                   canManage={isOwner}
                   onDeleted={onMatches}
                 />

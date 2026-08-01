@@ -10,8 +10,9 @@
 
 import { DEFAULT_CLUB } from "@/features/availability/club";
 import { K_FACTOR } from "@/features/rating/elo";
+import { inTeam } from "@/features/rating/results";
 import { dayInZone } from "@/lib/utils/time";
-import type { Match } from "@/types";
+import type { Match, Team } from "@/types";
 
 export interface MatchStake {
   match_id: string;
@@ -69,6 +70,37 @@ export function stakeSwing(
 }
 
 /**
+ * Is de aftrap geweest? Vanaf dat moment sluit het inzetvenster én wordt
+ * onthuld wie er lef had (#981). Eén regel voor tegel, kaartkop en compacte
+ * kaart, zodat de anti-meelift-garantie — vóór de aftrap zie je alleen je
+ * eigen inzet — niet per component opnieuw wordt uitgevonden.
+ */
+export function lefGestart(match: Match, now?: number): boolean {
+  return (
+    match.status !== "scheduled" ||
+    (match.played_at != null &&
+      new Date(match.played_at).getTime() <= (now ?? Date.now()))
+  );
+}
+
+/**
+ * De inzet die het dagtegoed bezet houdt: jouw stake op een ándere match van
+ * dezelfde speeldag (#981), of null. De kaart gebruikt hem om je erheen te
+ * wijzen in plaats van alleen "al vergeven" te zeggen.
+ */
+export function dagBezetDoor(
+  eigenStakes: MatchStake[],
+  matchId: string,
+  playedAt: string,
+): MatchStake | null {
+  const dag = playDay(playedAt);
+  return (
+    eigenStakes.find((s) => s.match_id !== matchId && s.play_date === dag) ??
+    null
+  );
+}
+
+/**
  * Heeft deze speler op die speeldag al ergens anders ingezet? Dat is het
  * tegoed: één lef-tip per speeldag, in de databank afgedwongen door de unieke
  * index op (player_id, play_date).
@@ -78,8 +110,39 @@ export function dagBezet(
   matchId: string,
   playedAt: string,
 ): boolean {
-  const dag = playDay(playedAt);
-  return eigenStakes.some((s) => s.match_id !== matchId && s.play_date === dag);
+  return dagBezetDoor(eigenStakes, matchId, playedAt) !== null;
+}
+
+/**
+ * Meta-regel voor op de (ingeklapte) matchkaart (#981): wie er lef had, met
+ * de uitkomst zodra die vaststaat. Volgt lefGestart — vóór de aftrap dus
+ * niets, hoe de kaart er verder ook bij staat. Een gelijkspel telt niet
+ * (stakeFactor 1), maar de inzet blijft wel zichtbaar: opschepmateriaal werkt
+ * alleen als ook de mislukte gok te zien is.
+ */
+export function lefKaartRegel(opts: {
+  match: Match;
+  /** Inzetten, eventueel van meerdere matches (bulk); er wordt gefilterd. */
+  stakes: MatchStake[];
+  teams: Record<string, Team>;
+  naam: (playerId: string) => string;
+  now?: number;
+}): string | null {
+  const { match, teams, naam } = opts;
+  const eigen = opts.stakes.filter((s) => s.match_id === match.id);
+  if (eigen.length === 0 || !lefGestart(match, opts.now)) return null;
+  const klaar = match.status === "completed";
+  const winnaar =
+    klaar && match.winner_team_id != null ? teams[match.winner_team_id] : null;
+  const delen = eigen.map((s) => {
+    if (!klaar) return naam(s.player_id);
+    if (winnaar == null) return `${naam(s.player_id)} — gelijkspel, telt niet`;
+    return `${naam(s.player_id)} — ${
+      inTeam(winnaar, s.player_id) ? "winst" : "verlies"
+    }`;
+  });
+  const factor = klaar && winnaar == null ? "" : ` ×${STAKE_FACTOR}`;
+  return `🎲 lef${factor} · ${delen.join(" · ")}`;
 }
 
 /**
