@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
 // Snapshot-leespad (#405) gemockt: standaard geen snapshot (het leespad valt
@@ -171,5 +171,83 @@ describe("Availability — degradatie en versheid (#405)", () => {
     expect(
       screen.queryByText("Beschikbaarheid nu niet op te halen"),
     ).not.toBeInTheDocument();
+  });
+});
+
+// #920: gedeelde legenda, raster-skeleton, dagnavigatie en de duur-uitleg bij
+// het filter waar hij over gaat.
+describe("Availability — overzicht en navigatie (#920)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setClub(DEFAULT_CLUB);
+  });
+
+  const mockLegeFetch = () =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as Response),
+    );
+
+  it("toont een laadstaat die op het raster lijkt", () => {
+    mockLegeFetch();
+    const { container } = renderBanen("");
+    // Meteen bij de eerste render, vóór de proxy antwoordt.
+    expect(container.querySelector(".avail-sk")).not.toBeNull();
+    expect(
+      container.querySelectorAll(".avail-sk__cell").length,
+    ).toBeGreaterThan(0);
+    // De generieke drie-balken-skeleton is hier weg.
+    expect(container.querySelector(".skeleton")).toBeNull();
+  });
+
+  it("heeft één ingeklapte legenda in plaats van een kopie per weergave", async () => {
+    mockLegeFetch();
+    renderBanen("");
+    const kop = await screen.findByText(/wat betekenen de kleuren/i);
+    // Eén bron: DaySection en WeekSection droegen elk hun eigen kopie.
+    expect(screen.getAllByText(/wat betekenen de kleuren/i)).toHaveLength(1);
+
+    const details = kop.closest("details")!;
+    expect(details.open).toBe(false);
+  });
+
+  it("bladert per dag en blokkeert terug vóór vandaag", async () => {
+    mockLegeFetch();
+    renderBanen("");
+    const vorige = await screen.findByRole("button", { name: /vorige dag/i });
+    // Op vandaag valt er niets terug te bladeren.
+    expect(vorige).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /volgende dag/i }));
+    await waitFor(() =>
+      expect(screen.getByTestId("search")).toHaveTextContent("datum="),
+    );
+    expect(
+      screen.getByRole("button", { name: /vorige dag/i }),
+    ).not.toBeDisabled();
+  });
+
+  it("verbergt de dagnavigatie in de weekweergave", async () => {
+    mockLegeFetch();
+    renderBanen("?weergave=week");
+    await screen.findByRole("tab", { name: "Week" });
+    expect(screen.queryByRole("button", { name: /vorige dag/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /vorige 7 dagen/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("zet de duur-uitleg bij het filter, niet in de voetnoot", async () => {
+    mockLegeFetch();
+    const { container } = renderBanen("");
+    await screen.findByRole("group", { name: /duur/i });
+    expect(container.querySelector(".avail-duur-uitleg")).toHaveTextContent(
+      /vanaf 60 minuten/i,
+    );
+    // En dus niet verstopt in de ingeklapte legenda.
+    const legenda = screen
+      .getByText(/wat betekenen de kleuren/i)
+      .closest("details")!;
+    expect(legenda).not.toHaveTextContent(/vanaf 60 minuten/i);
   });
 });
