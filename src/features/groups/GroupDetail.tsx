@@ -374,7 +374,7 @@ export function GroupDetail() {
       <ErrorRetry
         melding="Deze groep bestaat niet (meer) of je hebt er geen toegang toe."
         actie={
-          <Link className="btn btn--sm" to="/spelen?hub=1">
+          <Link className="btn btn--sm" to="/spelen">
             Alle groepen
           </Link>
         }
@@ -395,13 +395,10 @@ export function GroupDetail() {
               </span>
             )}
           </h1>
-          {/* Altijd zichtbaar (#761). #674 A4 verborg deze knop bij één groep,
-              omdat /spelen je dan tóch meteen hierheen stuurt en de hub dus
-              alleen een kaart toonde die terugleidt. Maar de hub draagt ook
-              "+ Nieuwe groep" — de enige plek met die actie — en dit is de
-              enige link naar /spelen?hub=1: wie één groep had, zat vast. De
-              hub met één kaart is de goedkopere prijs. */}
-          <Link className="btn btn--sm" to="/spelen?hub=1">
+          {/* Gewoon de weg omhoog. Was tot #916 de énige ingang naar de hub —
+              en dus naar "+ Nieuwe groep" — omdat /spelen je bij één groep
+              meteen hierheen stuurde; die omweg bestaat niet meer. */}
+          <Link className="btn btn--sm" to="/spelen">
             ← Alle groepen
           </Link>
         </div>
