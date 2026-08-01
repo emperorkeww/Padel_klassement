@@ -55,7 +55,11 @@
   --coach: #e0821c;
   --coach-soft: #fdf0dc;
   --coach-line: #f0d3a3;
-  --coach-ink: #5a3410; /* tekst/details op --coach */
+  --coach-ink: #5a3410; /* tekst/details op de vólle --coach */
+  /* Tekst op --coach-soft (#941). De familie miste deze rol, en daardoor stond
+     er --coach-ink op het zachte vlak: in het donkere thema is dat bijna-zwart
+     op donkerbruin. Zelfde rol als --lime-deep voor lime. */
+  --coach-diep: #5a3410;
 
   --lime: #c7e63a; /* padelbal */
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
@@ -273,6 +277,7 @@
   --coach-soft: #2e2313;
   --coach-line: #4a3a1f;
   --coach-ink: #241606;
+  --coach-diep: #f0c489;
 
   /* Lime (padelbal) een tint stiller — accentje, geen schreeuw. */
   --lime: #a9bd55;

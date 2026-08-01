@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { openPlannedCards } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -66,6 +67,8 @@ describe("<Matches />", () => {
   it("toont Te spelen met inline invoer en de recente matches", async () => {
     renderPage();
     expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
+    // De score-invoer zit sinds #941 achter de uitklapknop van de kaart.
+    await openPlannedCards();
     // De geplande match heeft twee score-invoervelden met teamnamen als label.
     expect(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
@@ -214,6 +217,7 @@ describe("<Matches />", () => {
     ).toBeNull();
 
     // En zodra de data er is, staat de echte inhoud er.
+    await openPlannedCards();
     expect(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
     ).toBeInTheDocument();

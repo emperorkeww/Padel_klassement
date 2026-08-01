@@ -22,6 +22,7 @@ vi.mock("@/lib/supabase/client", async () => {
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { MATCH_PLANNED, PROFILES, TABLES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
+import { openPlannedCards } from "@/test/plannedCard";
 
 const tmap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
   string,
@@ -92,7 +93,9 @@ describe("<PlannedMatchCard /> bounty", () => {
     // Een kroon in een andere groep hoort deze kaart niet te halen.
     setTables({ active_bounties: [bountyRij("p1", "g-anders", 15)] });
     renderCard();
-    // De toto-samenvatting bewijst dat de kaart geladen is.
+    // De toto-samenvatting bewijst dat de kaart geladen is; die zit sinds #941
+    // achter de uitklapknop.
+    await openPlannedCards();
     await screen.findByText(/toto/i);
     expect(screen.queryByText(/bounty actief/i)).not.toBeInTheDocument();
   });
