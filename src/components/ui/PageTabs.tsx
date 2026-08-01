@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
 
 /**
  * Paginabrede tabbalk met échte tab-semantiek (#674 B2): role="tablist" +
@@ -32,10 +33,18 @@ export function PageTabs<K extends string>({
   value: K;
   onChange: (id: K) => void;
   ariaLabel: string;
-  /** Prefix voor de tab-/paneel-id's; moet gelijk zijn aan die van TabPanel. */
-  idPrefix: string;
+  /** Prefix voor de tab-/paneel-id's; moet gelijk zijn aan die van TabPanel.
+   *  Laat 'm weg als de tab-inhoud geen aaneengesloten blok is (bv. het
+   *  klassement, waar de tabkeuze door de hele pagina heen doorwerkt): dan
+   *  blijft `aria-controls` achterwege in plaats van naar een niet-bestaand
+   *  paneel te wijzen. */
+  idPrefix?: string;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  // Zes tabs passen op telefoonbreedte niet naast elkaar; de balk schuift dan,
+  // maar niets verried dat er meer stond (#917). Dezelfde fade als de
+  // filterchips van de feed (#912) — die hook meet aan welke kant nog iets zit.
+  const schaduw = useScrollSchaduw(listRef);
 
   // Op smalle schermen scrollt de balk (.tabs--page); zorg dat de actieve tab
   // in beeld staat als je ergens op landt (bv. ?tab=leden).
@@ -68,6 +77,7 @@ export function PageTabs<K extends string>({
     <div
       ref={listRef}
       className="tabs tabs--page"
+      data-schaduw={schaduw}
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
@@ -79,10 +89,12 @@ export function PageTabs<K extends string>({
             key={t.id}
             type="button"
             role="tab"
-            id={`${idPrefix}-tab-${t.id}`}
+            id={idPrefix ? `${idPrefix}-tab-${t.id}` : undefined}
             className={`tab ${active ? "is-active" : ""}`}
             aria-selected={active}
-            aria-controls={active ? `${idPrefix}-panel-${t.id}` : undefined}
+            aria-controls={
+              idPrefix && active ? `${idPrefix}-panel-${t.id}` : undefined
+            }
             aria-label={t.count === undefined ? undefined : `${t.label}, ${t.count}`}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(t.id)}

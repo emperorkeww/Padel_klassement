@@ -1,6 +1,69 @@
 /* De dag-kopjes (.match-day*) wonen sinds #342 bij MatchHistory.css, zodat ze
    ook laden op de groep-Historie-tab. */
 
+/* ---------- Filters boven de historie (#914) ---------- */
+.match-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.match-filters__field {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.match-filters__wis {
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  /* Twee selects naast elkaar op één regel; de wis-knop zakt eronder. */
+  .match-filters__field {
+    flex: 1 1 40%;
+  }
+}
+
+/* ---------- Oudere matches bijladen (#914) ---------- */
+.matches__meer {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  text-align: center;
+}
+.matches__meer-note {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Zwevende hoofdactie (#914) ----------
+   Zelfde plaatsing als de "jouw positie"-chip van het klassement, inclusief de
+   ruimte boven de vaste onderbalk op mobiel. */
+.matches__fab {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-6);
+  z-index: 15;
+  min-height: 48px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+}
+.matches__fab-plus {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+@media (max-width: 720px) {
+  .matches__fab {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Per-set uitslag onder de score op een matchkaart, bv. "6-4 3-6 7-5". */
 .match-card__sets {
   font-variant-numeric: tabular-nums;

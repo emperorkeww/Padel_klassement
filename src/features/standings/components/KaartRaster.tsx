@@ -23,12 +23,16 @@ export function KaartRaster({
   rows,
   edities,
   onPreview,
+  meRef,
 }: {
   rows: Row[];
   /** Editie- en dictator-context (#625): overal identiek opgebouwd, zodat
    *  de kaart hier dezelfde is als op profiel en veld. */
   edities: EditieContext;
   onPreview: (row: Row) => void;
+  /** Anker op je eigen kaart voor de "jouw positie"-chip (#913): op een wand
+   *  van tientallen kaarten ben je jezelf net zo goed kwijt als in de lijst. */
+  meRef?: React.Ref<HTMLLIElement>;
 }) {
   return (
     <ul className="kaart-raster">
@@ -37,7 +41,11 @@ export function KaartRaster({
         const editie = editieVoor(r.key, edities);
         const rank = r.rank ?? i + 1;
         return (
-          <li key={r.key} className="kaart-raster__cel">
+          <li
+            key={r.key}
+            className="kaart-raster__cel"
+            ref={r.isMe ? meRef : undefined}
+          >
             <span
               className={`kaart-raster__rang${rank <= 3 ? ` kaart-raster__rang--${rank}` : ""}`}
               aria-hidden="true"

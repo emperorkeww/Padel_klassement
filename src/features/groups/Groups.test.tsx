@@ -17,10 +17,10 @@ import Groups from "./Groups";
 import { supabase } from "@/lib/supabase/client";
 import { TABLES } from "@/test/fixtures";
 
-// De hub leeft op /spelen; /groepen is in de app een redirect hierheen. De
-// doorstuur-naar-je-enige-groep (#674) kijkt naar het pad, dus de entry bepaalt
-// of die afgaat — vandaar dat hij instelbaar is (#761).
-function renderPage(entry = "/spelen?hub=1") {
+// De hub leeft op /spelen; /groepen is in de app een redirect hierheen. Sinds
+// #916 stuurt de hub niemand meer door, dus de entry doet er alleen nog toe
+// voor tests die expliciet een andere URL willen.
+function renderPage(entry = "/spelen") {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <AuthProvider>
@@ -92,36 +92,34 @@ describe("<Groups />", () => {
     expect(await screen.findByText(/detailpagina/i)).toBeInTheDocument();
   });
 
-  // #674 A5: losse match en vrije banen stonden als volwaardige kaarten tussen
-  // de groepen; ze horen in een secundaire rij ónder de groepen.
-  it("zet losse match en vrije banen in een secundaire rij onder de groepen", async () => {
-    renderPage();
+  // #674 A5 zette losse match en vrije banen in een secundaire rij ónder de
+  // groepen. #916 haalt "losse match" daar weer uit: het is een veelgebruikt
+  // pad, geen restcategorie. De groepen blijven wél bovenaan.
+  it("zet losse match onder de groepen, maar als gewone actie", async () => {
+    const { container } = renderPage();
     const kaart = await screen.findByRole("link", {
       name: /vrijdagavond padel/i,
     });
-    const rij = screen.getByRole("region", { name: /ook hier/i });
+    const los = container.querySelector(".hub-los")!;
     expect(
-      kaart.compareDocumentPosition(rij) & Node.DOCUMENT_POSITION_FOLLOWING,
+      kaart.compareDocumentPosition(los) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(within(rij).getByText(/^losse match$/i)).toBeInTheDocument();
-    expect(within(rij).getByText(/^vrije banen$/i)).toBeInTheDocument();
-    // "Match loggen" is niet langer de primaire knop van de pagina.
+    expect(within(los as HTMLElement).getByText(/^losse match$/i)).toBeInTheDocument();
     expect(
-      within(rij).getByRole("link", { name: /match loggen/i }),
-    ).not.toHaveClass("btn--primary");
+      within(los as HTMLElement).getByRole("link", { name: /match loggen/i }),
+    ).toHaveClass("btn--primary");
+    // Vrije banen blijft een rustige verwijzing, geen kaart.
+    expect(
+      screen.getByRole("link", { name: /bekijk de banen/i }),
+    ).toHaveAttribute("href", "/banen");
   });
 
-  // #674: met precies één groep is die groep je Spelen-tab.
-  it("stuurt kaal /spelen met één groep door naar die groep", async () => {
+  // #674 maakte van "één groep" een doorstuur naar die groep; #761 moest daar
+  // een ?hub=1-uitzondering voor bouwen omdat "+ Nieuwe groep" anders alleen
+  // via een knop diep in de groepskop te vinden was. Sinds #916 staat de hub
+  // er gewoon altijd.
+  it("blijft op de hub staan met één groep, inclusief nieuwe groep", async () => {
     renderPage("/spelen");
-    expect(await screen.findByText(/detailpagina/i)).toBeInTheDocument();
-  });
-
-  // #761: die doorstuur maakte de hub onbereikbaar — en daarmee de enige plek
-  // met "+ Nieuwe groep". Met ?hub=1 (de knop in de groepskop, en waar /groepen
-  // heen redirect) blijft de hub staan, ook met één groep.
-  it("laat de hub staan op ?hub=1, inclusief nieuwe groep", async () => {
-    renderPage("/spelen?hub=1");
     expect(
       await screen.findByRole("link", { name: /vrijdagavond padel/i }),
     ).toBeInTheDocument();
@@ -143,5 +141,58 @@ describe("<Groups />", () => {
     expect(
       within(badge).getByText("📊", { selector: "[aria-hidden='true']" }),
     ).toBeInTheDocument();
+  });
+
+  // ── #916 ────────────────────────────────────────────────────────────────
+
+  it("houdt de plek van het statuslabel vrij tijdens het laden", async () => {
+    // De journey komt uit een tweede query en viel ná de kaarten binnen,
+    // waardoor de lijst versprong.
+    const { container } = renderPage();
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    expect(
+      container.querySelector(".group-card__journey"),
+    ).not.toBeNull();
+
+    // En daarna staat op diezelfde plek het echte label.
+    expect(
+      await screen.findByText(/poll loopt — stem mee/i),
+    ).toHaveClass("group-card__journey");
+  });
+
+  it("laat het aanmaakformulier weer sluiten", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+
+    const openen = screen.getByRole("button", { name: /nieuwe groep/i });
+    await userEvent.click(openen);
+    await screen.findByPlaceholderText(/groepsnaam/i);
+
+    // #916: uitklappen had geen tegenhanger.
+    await userEvent.click(
+      screen.getByRole("button", { name: /formulier sluiten/i }),
+    );
+    expect(screen.queryByPlaceholderText(/groepsnaam/i)).not.toBeInTheDocument();
+    // Focus komt terug op de knop waar je vandaan kwam.
+    expect(screen.getByRole("button", { name: /nieuwe groep/i })).toHaveFocus();
+  });
+
+  it("geeft de lege staat één knop die de groep echt aanmaakt", async () => {
+    tables.groups = [];
+    renderPage();
+    await screen.findByText(/geen groep, geen glorie/i);
+
+    // Eerder stond hier een knop "Maak een groep" die alleen het veld focuste,
+    // met datzelfde formulier al open eronder.
+    expect(screen.queryByRole("button", { name: /^maak een groep$/i })).toBeNull();
+    const knop = screen.getByRole("button", { name: /maak deze groep/i });
+    expect(knop).toBeDisabled();
+
+    await userEvent.type(
+      screen.getByPlaceholderText(/groepsnaam/i),
+      "Zondagochtend",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /maak deze groep/i }));
+    expect(supabase.from).toHaveBeenCalledWith("groups");
   });
 });

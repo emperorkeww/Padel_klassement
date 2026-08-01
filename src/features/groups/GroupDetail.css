@@ -6,6 +6,74 @@
   vertical-align: middle;
 }
 
+/* ---------- Groepskop met identiteit (#917) ----------
+   De kop droeg alleen naam plus badge, terwijl de kaart op de hub avatar,
+   ledenrij én reisstatus toont. Dezelfde bouwstenen dus; de journey-pil erft
+   haar kleuren van .group-card__journey--* uit Groups.css. */
+.group-head__id {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.group-head__tekst {
+  min-width: 0;
+}
+.group-head__tekst .page-title {
+  margin: 0;
+}
+.group-head__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.group-head__leden {
+  display: inline-flex;
+}
+.group-head__leden > :not(:first-child) {
+  margin-left: -8px;
+}
+.group-head__meer {
+  margin-left: var(--sp-1);
+  font-variant-numeric: tabular-nums;
+}
+/* Zelfde pil als op de hub, maar met eigen tone-klassen: Groups.css laadt
+   alleen wanneer de hub gemount is, en op een deeplink naar /groepen/:id
+   gebeurt dat nooit — dan zou de pil hier kleurloos zijn. */
+.group-head__journey {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0.125rem var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.group-head__journey--act {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.group-head__journey--info {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+  color: var(--success);
+}
+.group-head__journey--idle {
+  padding-left: 0;
+  padding-right: 0;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.group-head__acties {
+  flex-shrink: 0;
+}
+
 /* Reis-CTA: volgende stap in de kernreis (#106). Ook hergebruikt door
    SpelenTab (#364) en VandaagTab (#377) — die mounten alleen binnen
    GroupDetail, dus dit blad is daar altijd geladen. */

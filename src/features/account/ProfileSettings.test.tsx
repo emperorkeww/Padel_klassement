@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -30,6 +30,7 @@ import {
 } from "@/lib/supabase/push";
 import { SESSION } from "@/test/fixtures";
 import * as profilesApi from "@/features/profiles/api";
+import { PASSWORD_RULE } from "@/features/auth/authErrors";
 
 function renderPage() {
   return render(
@@ -45,8 +46,9 @@ function renderPage() {
 
 // De secties zitten sinds #70 achter tabs (Profiel / Meldingen & privacy /
 // Account); open eerst de juiste tab voor de kaart die de test nodig heeft.
+// Sinds #910 draait die rij op de gedeelde PageTabs: role="tab", geen button.
 async function openTab(name: RegExp) {
-  await userEvent.click(await screen.findByRole("button", { name }));
+  await userEvent.click(await screen.findByRole("tab", { name }));
 }
 
 describe("<ProfileSettings />", () => {
@@ -118,7 +120,7 @@ describe("<ProfileSettings />", () => {
     const spy = vi.spyOn(profilesApi, "updateProfile").mockResolvedValue();
     try {
       renderPage();
-      const toggle = await screen.findByRole("checkbox", {
+      const toggle = await screen.findByRole("switch", {
         name: /waarnemend dictator/i,
       });
       expect(toggle).toBeChecked();
@@ -138,7 +140,7 @@ describe("<ProfileSettings />", () => {
     const spy = vi.spyOn(profilesApi, "updateProfile").mockResolvedValue();
     try {
       renderPage();
-      const toggle = await screen.findByRole("checkbox", {
+      const toggle = await screen.findByRole("switch", {
         name: /pias-portret/i,
       });
       expect(toggle).toBeChecked();
@@ -304,12 +306,12 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
       await screen.findByRole("heading", { name: /welke meldingen wil je/i }),
     ).toBeInTheDocument();
     const toggles = [
-      await screen.findByRole("checkbox", { name: /nieuwe ronde/i }),
-      screen.getByRole("checkbox", { name: /uitslagen/i }),
+      await screen.findByRole("switch", { name: /nieuwe ronde/i }),
+      screen.getByRole("switch", { name: /uitslagen/i }),
       // Niet op /vriendschapsverzoeken/ matchen: de privacykaart heeft ook
       // een toggle "Vriendschapsverzoeken toestaan" — de hint is uniek.
-      screen.getByRole("checkbox", { name: /verzoek stuurt/i }),
-      screen.getByRole("checkbox", { name: /match-herinneringen/i }),
+      screen.getByRole("switch", { name: /verzoek stuurt/i }),
+      screen.getByRole("switch", { name: /match-herinneringen/i }),
     ];
     for (const t of toggles) expect(t).toBeChecked();
   });
@@ -318,7 +320,7 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
     renderPage();
     await openTab(/meldingen & privacy/i);
     await userEvent.click(
-      await screen.findByRole("checkbox", { name: /nieuwe ronde/i }),
+      await screen.findByRole("switch", { name: /nieuwe ronde/i }),
     );
     expect(await screen.findByText(/meldingen bijgewerkt/i)).toBeInTheDocument();
   });
@@ -361,5 +363,54 @@ describe("<ProfileSettings /> — tabs (#70)", () => {
   it("valt bij een onbekende tab terug op de algemene tab", async () => {
     renderAt("/profiel?tab=onzin");
     expect(await screen.findByText(/profielfoto/i)).toBeInTheDocument();
+  });
+
+  // ── #921 ────────────────────────────────────────────────────────────────
+
+  it("markeert onopgeslagen werk en waarschuwt bij een tabwissel", async () => {
+    renderPage();
+    await screen.findByLabelText(/gebruikersnaam/i);
+
+    // Schoon: geen badge.
+    expect(screen.queryByText(/nog niet opgeslagen/i)).toBeNull();
+
+    await userEvent.type(screen.getByLabelText(/gebruikersnaam/i), "x");
+    expect(screen.getByText(/nog niet opgeslagen/i)).toBeInTheDocument();
+
+    // Van tab wisselen gooit dat weg, dus eerst bevestigen (#921).
+    await userEvent.click(screen.getByRole("tab", { name: /^account$/i }));
+    const dialoog = await screen.findByRole("dialog", {
+      name: /wijzigingen niet opgeslagen/i,
+    });
+    // Annuleren houdt je op de tab, mét je invoer.
+    await userEvent.click(
+      within(dialoog).getByRole("button", { name: /annuleren/i }),
+    );
+    expect(screen.getByLabelText(/gebruikersnaam/i)).toBeInTheDocument();
+  });
+
+  it("toont de wachtwoordeis uit dezelfde bron als het loginscherm", async () => {
+    renderPage();
+    await openTab(/^account$/i);
+    expect(await screen.findByText(PASSWORD_RULE)).toBeInTheDocument();
+  });
+
+  it("splitst meldingen in dit apparaat en al je apparaten", async () => {
+    renderPage();
+    await openTab(/meldingen & privacy/i);
+    expect(
+      await screen.findByRole("heading", { name: /meldingen op dit apparaat/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /welke meldingen wil je/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("biedt een download van je eigen gegevens", async () => {
+    renderPage();
+    await openTab(/^account$/i);
+    expect(
+      await screen.findByRole("button", { name: /download mijn gegevens/i }),
+    ).toBeInTheDocument();
   });
 });

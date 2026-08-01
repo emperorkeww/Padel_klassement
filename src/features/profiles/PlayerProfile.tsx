@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
@@ -33,6 +33,11 @@ import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { OverflowMenu } from "@/ui/OverflowMenu";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useBackTo } from "@/lib/hooks/useBackTo";
 import {
   recentForm,
   winRate,
@@ -53,7 +58,7 @@ import {
   listSeasons,
   seasonFromId,
 } from "@/features/rating/seasons";
-import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
+import { matchesInSeason, byRank } from "@/features/rating/standings";
 import { ShareProfile, type ProfileShareData } from "@/features/profiles/components/ShareProfile";
 import { statBronVoorStand } from "@/features/standings/leaderboardHelpers";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
@@ -79,7 +84,6 @@ import { ProfileBadges } from "@/features/profiles/components/ProfileBadges";
 import { ProfileMatches } from "@/features/profiles/components/ProfileMatches";
 import { ComparisonSheet } from "@/features/profiles/components/ComparisonSheet";
 import type { ProfileData, ProfileTab, H2HRow } from "@/features/profiles/components/types";
-import type { Match } from "@/types";
 import "./PlayerProfile.css";
 
 // Zoveel badges mag een speler maximaal uitlichten bovenaan zijn profiel.
@@ -99,11 +103,16 @@ function tabFrom(value: string | null): ProfileTab {
 export function PlayerProfile() {
   const { id = "" } = useParams();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const isMe = user?.id === id;
   const club = useClub();
 
   const profile = useAsync(() => getProfile(id), [id]);
+  // Tabtitel op de spelersnaam (#910); zolang die laadt blijft de titel staan
+  // in plaats van naar een tussenstand te flitsen.
+  usePageTitle(profile.data ? displayName(profile.data) : null);
+  // Bij een deeplink uit een pushbericht is er geen vorige pagina — dan naar
+  // het klassement in plaats van de app uit (#910).
+  const terug = useBackTo("/klassement");
   const standing = useAsync(() => getPlayerStanding(id), [id]);
   // Volledige stand voor de klassementpositie (#N), net als het dashboard.
   const standings = useAsync(getPlayerStandings, []);
@@ -156,22 +165,15 @@ export function PlayerProfile() {
       ),
     [netTouches.data],
   );
-  // Rang-verloop (all-time sparkline) staat sinds #461 tijdelijk uit: het werd
+  // Het rang-verloop (all-time sparkline) stond sinds #461 uit: het werd
   // client-side uit álle ruwe matchrijen berekend, maar die zijn niet meer
-  // publiek leesbaar, dus de rang zou per-kijker en dus misleidend worden. Wordt
-  // in fase 2 hersteld via een SECURITY DEFINER RPC (player_rank_progression).
-  const allMatches = useAsync<Match[]>(() => Promise.resolve([]), []);
-  // Rang-verloop: positie in het klassement ná elke eigen speeldag (all-time).
-  const rankPoints = useMemo(
-    () =>
-      rankProgression(
-        allMatches.data ?? [],
-        teams.data ?? {},
-        profiles.data ?? {},
-        id,
-      ),
-    [allMatches.data, teams.data, profiles.data, id],
-  );
+  // publiek leesbaar, dus de rang zou per-kijker en dus misleidend worden. De
+  // bron stond daarna hard op een lege lijst, waardoor `hasRank` permanent false
+  // was en de "Positie-verloop"-tak nooit meer draaide — dode UI die alleen nog
+  // in de code bestond. Die is in #918 opgeruimd. `rankProgression` en
+  // `RankChart` blijven staan (getest en correct); herstellen vraagt een
+  // SECURITY DEFINER RPC (player_rank_progression) plus migratie, en dat is een
+  // eigen issue.
   // Upsets per match-id (#85) — hook vóór eventuele vroege returns.
   const upsets = useMemo(
     () =>
@@ -240,7 +242,16 @@ export function PlayerProfile() {
       </div>
     );
   if (!profile.data)
-    return <p className="msg msg--error">Speler niet gevonden.</p>;
+    return (
+      <ErrorRetry
+        melding="Deze speler bestaat niet (meer) of is niet zichtbaar voor jou."
+        actie={
+          <Link className="btn btn--sm" to="/klassement">
+            Naar klassement
+          </Link>
+        }
+      />
+    );
 
   const p = profile.data;
   const s = standing.data;
@@ -277,7 +288,6 @@ export function PlayerProfile() {
   // Dag-cumulatieve ELO-beweging voor de ▲/▼-badge (#352), niet de laatste match.
   const ratingDelta = deltaToday(rhist, club.timezone);
   const hasRating = rhist.length >= 2;
-  const hasRank = rankPoints.length >= 2;
   const badgeExtras = {
     matchRatings,
     predictions: predictions.data ?? undefined,
@@ -492,6 +502,10 @@ export function PlayerProfile() {
     }
     return null;
   })();
+  // Het overflow-menu draagt de knoppen die er alleen sóms zijn (#918). Zonder
+  // inhoud blijft hij weg: een lege ⋯ is erger dan geen ⋯.
+  const heeftMenu =
+    seasons.length > 0 || (!!user && !isMe) || heeftWrapped || !!seizoenWrapped;
 
   const d: ProfileData = {
     id,
@@ -518,9 +532,7 @@ export function PlayerProfile() {
     editie,
     editieTekst,
     hasRating,
-    hasRank,
     rhist,
-    rankPoints,
     scoped,
     tmap,
     pmap,
@@ -528,6 +540,7 @@ export function PlayerProfile() {
     season,
     matchesLoading: matches.loading,
     matchesError: matches.error,
+    matchesReload: matches.reload,
     badges,
     featuredBadges,
     featuredIds,
@@ -549,55 +562,78 @@ export function PlayerProfile() {
     <div>
       <header className="page-head profile-head">
         {/* Terug naar waar je vandaan kwam (klassement, vrienden, …). */}
-        <button
-          type="button"
-          className="btn btn--sm"
-          onClick={() => navigate(-1)}
-        >
+        <button type="button" className="btn btn--sm" onClick={terug}>
           ← Terug
         </button>
         <div className="profile-head__tools">
-          {seasons.length > 0 && (
-            <select
-              className="select select--filter"
-              aria-label="Seizoen"
-              value={season?.id ?? ""}
-              onChange={(e) => setSeasonId(e.target.value)}
-            >
-              <option value="">Alle tijden</option>
-              {seasons.map((s2) => (
-                <option key={s2.id} value={s2.id}>
-                  {s2.label}
-                </option>
-              ))}
-            </select>
-          )}
-          {user && !isMe && (
-            <button
-              className="btn btn--sm"
-              aria-haspopup="dialog"
-              onClick={() => setCompareOpen(true)}
-            >
-              ⚔️ Vergelijk met mij
-            </button>
-          )}
-          {heeftWrapped && (
-            <button
-              className="btn btn--sm"
-              aria-haspopup="dialog"
-              onClick={() => setWrappedOpen(true)}
-            >
-              🎁 Wrapped {wrappedYr}
-            </button>
-          )}
-          {seizoenWrapped && (
-            <button
-              className="btn btn--sm"
-              aria-haspopup="dialog"
-              onClick={() => setSeizoenWrappedOpen(true)}
-            >
-              {seizoenWrapped.kicker}
-            </button>
+          {/* Zes bedieningselementen naast elkaar werden op telefoonbreedte een
+              blok knoppen boven de inhoud (#918). Terug en Delen blijven staan;
+              de rest — die er bovendien alleen sóms is — zit in het menu. Alleen
+              renderen als er iets in zit: een lege ⋯ is erger dan geen ⋯. */}
+          {heeftMenu && (
+            <OverflowMenu label="Meer op dit profiel">
+              {(sluit) => (
+                <>
+                  {seasons.length > 0 && (
+                    <label className="overflow-menu__veld">
+                      <span>Seizoen</span>
+                      <select
+                        className="select select--filter"
+                        aria-label="Seizoen"
+                        value={season?.id ?? ""}
+                        onChange={(e) => {
+                          setSeasonId(e.target.value);
+                          sluit();
+                        }}
+                      >
+                        <option value="">Alle tijden</option>
+                        {seasons.map((s2) => (
+                          <option key={s2.id} value={s2.id}>
+                            {s2.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {user && !isMe && (
+                    <button
+                      className="btn btn--sm"
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setCompareOpen(true);
+                        sluit();
+                      }}
+                    >
+                      ⚔️ Vergelijk met mij
+                    </button>
+                  )}
+                  {heeftWrapped && (
+                    <button
+                      className="btn btn--sm"
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setWrappedOpen(true);
+                        sluit();
+                      }}
+                    >
+                      🎁 Wrapped {wrappedYr}
+                    </button>
+                  )}
+                  {seizoenWrapped && (
+                    <button
+                      className="btn btn--sm"
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setSeizoenWrappedOpen(true);
+                        sluit();
+                      }}
+                    >
+                      {seizoenWrapped.kicker}
+                    </button>
+                  )}
+                </>
+              )}
+            </OverflowMenu>
           )}
           <ShareProfile
             data={shareData}
@@ -605,6 +641,18 @@ export function PlayerProfile() {
           />
         </div>
       </header>
+
+      {/* Het seizoensfilter geldt bewust niet overal: badges, bijnaam en roast
+          rekenen over de volledige historie (zie de comments bij deriveBadges
+          en bijnaam hierboven). Dat stond nergens op het scherm, dus een
+          gefilterd profiel toonde deels ongefilterde cijfers zonder uitleg
+          (#918). Zonder seizoen valt er niets uit te leggen. */}
+      {season && (
+        <p className="profile-scope" role="status">
+          Statistieken, matches en stand tonen <strong>{season.label}</strong>.
+          Badges, bijnaam en Rudy's oordeel kijken altijd naar de hele historie.
+        </p>
+      )}
 
       {seizoenWrappedOpen && seizoenWrapped && (
         <WrappedSheet
@@ -645,38 +693,36 @@ export function PlayerProfile() {
 
       <ProfileHero d={d} action={isMe ? undefined : <FriendButton targetId={id} />} />
 
-      <nav className="tabs tabs--page" aria-label="Profielonderdelen">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`tab ${tab === t.id ? "is-active" : ""}`}
-            aria-current={tab === t.id ? "page" : undefined}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      {/* Gedeelde tabbalk (#910): tablist-semantiek en pijltjesnavigatie in
+          plaats van losse buttons met een handmatige aria-current. */}
+      <PageTabs
+        tabs={TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Profielonderdelen"
+        idPrefix="profiel"
+      />
 
-      {tab === "overzicht" && (
-        <ProfileOverview
-          d={d}
-          mijnKaart={mijnKaart}
-          hunKaart={hunKaart}
-          onOpenBadge={setOpenBadge}
-          onShowMatches={() => setTab("matches")}
-        />
-      )}
-      {tab === "statistieken" && <ProfileStats d={d} />}
-      {tab === "badges" && (
-        <ProfileBadges
-          d={d}
-          onOpenBadge={setOpenBadge}
-          onToggleFeatured={toggleFeatured}
-        />
-      )}
-      {tab === "matches" && <ProfileMatches d={d} />}
+      <TabPanel id={tab} idPrefix="profiel">
+        {tab === "overzicht" && (
+          <ProfileOverview
+            d={d}
+            mijnKaart={mijnKaart}
+            hunKaart={hunKaart}
+            onOpenBadge={setOpenBadge}
+            onShowMatches={() => setTab("matches")}
+          />
+        )}
+        {tab === "statistieken" && <ProfileStats d={d} />}
+        {tab === "badges" && (
+          <ProfileBadges
+            d={d}
+            onOpenBadge={setOpenBadge}
+            onToggleFeatured={toggleFeatured}
+          />
+        )}
+        {tab === "matches" && <ProfileMatches d={d} />}
+      </TabPanel>
 
       {openBadgeInfo && (
         <Sheet

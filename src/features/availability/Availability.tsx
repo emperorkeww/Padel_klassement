@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
-import { Skeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   fetchClub,
   getClubAvailability,
@@ -28,7 +29,11 @@ import {
 } from "./weatherLogic";
 import { WeatherDays, WeatherParts } from "@/features/availability/components/WeatherStrip";
 import { addDays, dateInZone, minutesNowInZone } from "@/lib/utils/time";
-import { CourtTypeIcon } from "@/features/availability/components/CourtTypeIcon";
+import { AvailabilityLegend } from "@/features/availability/components/AvailabilityLegend";
+import {
+  TimetableSkeleton,
+  WeekGridSkeleton,
+} from "@/features/availability/components/AvailabilitySkeleton";
 import "./Availability.css";
 
 function formatDay(date: string): string {
@@ -101,7 +106,14 @@ function FreshnessLine({ days }: { days: DayAvailability[] }) {
 // Speelduren die Playtomic aanbiedt; null = geen filter (alle duren tonen).
 const DURATION_FILTERS = [null, 60, 90, 120] as const;
 
+// Weergavewissel als echte tabbladen (#910).
+const WEERGAVE_TABS: { id: "dag" | "week"; label: string }[] = [
+  { id: "dag", label: "Dag" },
+  { id: "week", label: "Week" },
+];
+
 export function Availability() {
+  usePageTitle("Banen");
   const club = useClub();
   // "Vandaag" in clubtijd, zodat de dagkeuze klopt vanuit elke tijdzone.
   const today = dateInZone(club.timezone);
@@ -226,32 +238,52 @@ export function Availability() {
           min={today}
           onChange={(e) => setDate(e.target.value)}
         />
+        {/* De weekweergave bladert al per zeven dagen; de dagweergave had
+            alleen "Vandaag"/"Morgen" en een datumveld (#920). Terug vóór
+            vandaag heeft geen zin — daar is geen beschikbaarheid meer. */}
+        {view === "dag" && (
+          <div className="avail-quick avail-daynav">
+            <button
+              type="button"
+              className="btn btn--sm"
+              aria-label="Vorige dag"
+              disabled={date <= today}
+              onClick={() => setDate(addDays(date, -1))}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm"
+              aria-label="Volgende dag"
+              onClick={() => setDate(addDays(date, 1))}
+            >
+              →
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Weergave (dag/week) + duurfilter, zoals op de Playtomic-pagina. */}
+      {/* Weergave (dag/week) + duurfilter, zoals op de Playtomic-pagina.
+          De weergavekeuze is een écht tabblad — twee panelen, één zichtbaar —
+          en draait daarom op de gedeelde PageTabs (#910). Het duurfilter niet:
+          dat verandert niet van paneel maar filtert de inhoud, dus dat krijgt
+          groep-semantiek met aria-pressed in plaats van tabs. */}
       <div className="avail-controls">
-        <div className="tabs">
-          <button
-            type="button"
-            className={`tab ${view === "dag" ? "is-active" : ""}`}
-            onClick={() => setView("dag")}
-          >
-            Dag
-          </button>
-          <button
-            type="button"
-            className={`tab ${view === "week" ? "is-active" : ""}`}
-            onClick={() => setView("week")}
-          >
-            Week
-          </button>
-        </div>
-        <div className="tabs">
+        <PageTabs
+          tabs={WEERGAVE_TABS}
+          value={view}
+          onChange={setView}
+          ariaLabel="Weergave"
+          idPrefix="banen"
+        />
+        <div className="tabs" role="group" aria-label="Duur">
           {DURATION_FILTERS.map((d) => (
             <button
               key={d ?? "alle"}
               type="button"
               className={`tab ${duration === d ? "is-active" : ""}`}
+              aria-pressed={duration === d}
               onClick={() => setDuration(d)}
             >
               {d == null ? "Alle duren" : `${d} min`}
@@ -260,20 +292,30 @@ export function Availability() {
         </div>
       </div>
 
-      {view === "dag" ? (
-        <DaySection date={date} today={today} duration={duration} />
-      ) : (
-        <WeekSection
-          start={date}
-          today={today}
-          duration={duration}
-          onPickDay={pickDay}
-          onShift={(days) => {
-            const next = addDays(date, days);
-            setDate(next < today ? today : next);
-          }}
-        />
-      )}
+      {/* Deze zin stond als kleine letters onderaan, terwijl hij precies
+          verklaart waarom het raster soms verwarrend is (#920). Bij het filter
+          waar hij over gaat dus. */}
+      <p className="avail-duur-uitleg">
+        Playtomic verhuurt vanaf 60 minuten, dus een korter gaatje kan als
+        geboekt tonen.
+      </p>
+
+      <TabPanel id={view} idPrefix="banen">
+        {view === "dag" ? (
+          <DaySection date={date} today={today} duration={duration} />
+        ) : (
+          <WeekSection
+            start={date}
+            today={today}
+            duration={duration}
+            onPickDay={pickDay}
+            onShift={(days) => {
+              const next = addDays(date, days);
+              setDate(next < today ? today : next);
+            }}
+          />
+        )}
+      </TabPanel>
     </div>
   );
 }
@@ -312,54 +354,40 @@ function DaySection({
       <p className="avail-day">{formatDay(date)}</p>
 
       {availability.loading ? (
-        <Skeleton rows={3} />
+        <TimetableSkeleton />
       ) : availability.error ? (
         <AvailabilityUnavailable club={club} date={date} message={availability.error} />
       ) : availability.data ? (
         <>
-          {hasOutdoor && <WeatherParts parts={parts} />}
-          <FreshnessLine days={[availability.data]} />
-          <NextFreeLine data={availability.data} date={date} duration={duration} />
+          {/* Vier gelijkwaardige alinea's boven het raster (#920): weer,
+              versheid, eerstvolgend vrij en delen. Nu één samenvattingsblok —
+              waar je voor komt bovenaan met de deelknop ernaast, de context
+              (weer, versheid) er rustig onder. */}
+          <div className="avail-summary">
+            <div className="avail-summary__lead">
+              <NextFreeLine
+                data={availability.data}
+                date={date}
+                duration={duration}
+              />
+              <ShareAvailability
+                mode="dag"
+                data={availability.data}
+                date={date}
+                duration={duration}
+                club={club}
+              />
+            </div>
+            <div className="avail-summary__meta">
+              {hasOutdoor && <WeatherParts parts={parts} />}
+              <FreshnessLine days={[availability.data]} />
+            </div>
+          </div>
           <Timetable data={availability.data} date={date} duration={duration} />
-          <ShareAvailability
-            mode="dag"
-            data={availability.data}
-            date={date}
-            duration={duration}
-            club={club}
-          />
         </>
       ) : null}
 
-      <div className="avail-legend">
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--free avail-legend__swatch" /> Vrij
-        </span>
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--busy avail-legend__swatch" /> Geboekt
-        </span>
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--nofit avail-legend__swatch" /> Vrij,
-          niet boekbaar
-        </span>
-        {date === today && (
-          <span className="avail-legend__item">
-            <span className="avail-cell avail-cell--past avail-legend__swatch" /> Voorbij
-          </span>
-        )}
-        <span className="avail-legend__item">
-          <CourtTypeIcon type="roofed" /> overdekt
-        </span>
-        <span className="avail-legend__item">
-          <CourtTypeIcon type="outdoor" /> buiten
-        </span>
-      </div>
-
-      <p className="avail-note">
-        Tik een groen slot voor duren en prijzen. Playtomic verhuurt vanaf 60
-        minuten, dus een korter gaatje kan als geboekt tonen. Tijden zijn onder
-        voorbehoud — niet officieel.
-      </p>
+      <AvailabilityLegend modus="dag" toonVoorbij={date === today} />
     </>
   );
 }
@@ -482,59 +510,40 @@ function WeekSection({
       </div>
 
       {week.loading ? (
-        <Skeleton rows={7} />
+        <WeekGridSkeleton />
       ) : week.error ? (
         <AvailabilityUnavailable club={club} date={start} message={week.error} />
       ) : week.data ? (
         <>
-          {hasOutdoor && <WeatherDays days={weatherDays} />}
-          <FreshnessLine
-            days={week.data
-              .map((d) => d.data)
-              .filter((d): d is DayAvailability => d !== null)}
-          />
-          <BestWeekLine week={week.data} duration={duration} />
+          <div className="avail-summary">
+            <div className="avail-summary__lead">
+              <BestWeekLine week={week.data} duration={duration} />
+              <ShareAvailability
+                mode="week"
+                week={week.data}
+                date={start}
+                duration={duration}
+                club={club}
+              />
+            </div>
+            <div className="avail-summary__meta">
+              {hasOutdoor && <WeatherDays days={weatherDays} />}
+              <FreshnessLine
+                days={week.data
+                  .map((d) => d.data)
+                  .filter((d): d is DayAvailability => d !== null)}
+              />
+            </div>
+          </div>
           <WeekGrid week={week.data} duration={duration} onPickDay={onPickDay} />
-          <ShareAvailability
-            mode="week"
-            week={week.data}
-            date={start}
-            duration={duration}
-            club={club}
-          />
         </>
       ) : null}
 
-      <div className="avail-legend">
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--free avail-legend__swatch" /> Vrij
-        </span>
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--busy avail-legend__swatch" /> Geboekt
-        </span>
-        <span className="avail-legend__item">
-          <span className="avail-cell avail-cell--nofit avail-legend__swatch" /> Vrij,
-          niet boekbaar
-        </span>
-        {start === today && (
-          <span className="avail-legend__item">
-            <span className="avail-cell avail-cell--past avail-legend__swatch" /> Voorbij
-          </span>
-        )}
-        <span className="avail-legend__item">
-          <CourtTypeIcon type="roofed" /> overdekt
-        </span>
-        <span className="avail-legend__item">
-          <CourtTypeIcon type="outdoor" /> buiten
-        </span>
-      </div>
-
-      <p className="avail-note">
-        Elke dag toont een strip per baan; het icoontje bij het baanlabel
-        geeft aan of die overdekt (dakje) of buiten (zonnetje) is
-        {duration != null ? `. Gefilterd op ${duration} minuten` : ""}. Tik op
-        een vrij (groen) vak om de dagweergave met duren en prijzen te openen.
-      </p>
+      <AvailabilityLegend
+        modus="week"
+        toonVoorbij={start === today}
+        duration={duration}
+      />
     </>
   );
 }

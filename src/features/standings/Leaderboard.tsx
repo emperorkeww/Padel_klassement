@@ -5,6 +5,16 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { PageTabs } from "@/ui/PageTabs";
+import {
+  LeaderboardFilterChips,
+  LeaderboardFilterMenu,
+  type FilterActies,
+  type FilterWaarden,
+} from "./components/LeaderboardFilters";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useContainerBreedte } from "@/lib/hooks/useContainerBreedte";
 import { Avatar } from "@/ui/Avatar";
 import { recentForm, type Outcome } from "@/features/rating/results";
 import { isSeasonClosed, listSeasons, seasonFromId } from "@/features/rating/seasons";
@@ -93,6 +103,15 @@ import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies" | "kaarten";
 
+// Eén gedeelde tabbalk voor de hele app (#910): PageTabs levert tablist-
+// semantiek en pijltjesnavigatie die de losse buttons hier niet hadden.
+const KLASSEMENT_TABS: { id: Tab; label: string }[] = [
+  { id: "player", label: "Spelers" },
+  { id: "team", label: "Teams" },
+  { id: "divisies", label: "Divisies" },
+  { id: "kaarten", label: "🃏 Kaarten" },
+];
+
 // Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
 // mount van het klassement pakt de volgende buig-regel, zodat opeenvolgende
 // bezoeken cyclen i.p.v. altijd dezelfde te tonen. Zelfde patroon als de
@@ -100,6 +119,7 @@ type Tab = "player" | "team" | "divisies" | "kaarten";
 let buigingBeurt = 0;
 
 export function Leaderboard() {
+  usePageTitle("Klassement");
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const club = useClub();
@@ -137,12 +157,24 @@ export function Leaderboard() {
   // deelbaar en refresh-bestendig. Ongeldige waarde → "Alle tijden".
   const [params, setParams] = useSearchParams();
   const season = seasonFromId(params.get("seizoen") ?? "");
+  // Seizoen en "stand op datum" sluiten elkaar uit; tot #913 wisten we de
+  // andere param stil, waardoor je keuze zonder uitleg verdween. Deze melding
+  // staat als regel onder de filterchips en verdwijnt bij de volgende wissel.
+  const [vervallen, setVervallen] = useState<string | null>(null);
   const setSeasonId = (id: string) => {
     const next = new URLSearchParams(params);
     if (id) {
       next.set("seizoen", id);
-      next.delete("stand"); // seizoen en "stand op datum" sluiten elkaar uit
-    } else next.delete("seizoen");
+      setVervallen(
+        next.has("stand")
+          ? "“Stand op datum” gaat niet samen met een seizoen en is uitgezet."
+          : null,
+      );
+      next.delete("stand");
+    } else {
+      next.delete("seizoen");
+      setVervallen(null);
+    }
     setParams(next, { replace: true });
   };
 
@@ -153,8 +185,16 @@ export function Leaderboard() {
     const next = new URLSearchParams(params);
     if (d) {
       next.set("stand", d);
+      setVervallen(
+        next.has("seizoen")
+          ? "Het seizoensfilter gaat niet samen met “stand op datum” en is uitgezet."
+          : null,
+      );
       next.delete("seizoen");
-    } else next.delete("stand");
+    } else {
+      next.delete("stand");
+      setVervallen(null);
+    }
     setParams(next, { replace: true });
   };
   // Minimaal aantal gespeelde matches om in de lijst te verschijnen (eerlijkheid).
@@ -163,6 +203,16 @@ export function Leaderboard() {
     const next = new URLSearchParams(params);
     if (n > 0) next.set("min", String(n));
     else next.delete("min");
+    setVervallen(null);
+    setParams(next, { replace: true });
+  };
+  // Alles in één keer wissen (#913): vier losse setters zouden elk dezelfde
+  // `params` lezen en elkaars wijziging overschrijven.
+  const wisAlleFilters = () => {
+    const next = new URLSearchParams(params);
+    for (const k of ["seizoen", "stand", "min"]) next.delete(k);
+    setGroupId("");
+    setVervallen(null);
     setParams(next, { replace: true });
   };
 
@@ -511,6 +561,17 @@ export function Leaderboard() {
       : tab === "team"
         ? teams.error
         : players.error;
+  // Herstelactie bij de foutstaat (#910): dezelfde bron die de fout gaf ook
+  // opnieuw laten proberen, in plaats van alles te herladen.
+  const herlaad = globalSeason
+    ? tab === "team"
+      ? seasonTeams.reload
+      : seasonPlayers.reload
+    : usingScope
+      ? scopeAsync.reload
+      : tab === "team"
+        ? teams.reload
+        : players.reload;
   // De Kaarten-tab (#497) is een tweede gezicht van het spelersklassement:
   // podium, troon en coach gedragen zich er hetzelfde als op de Spelers-tab.
   const spelerTab = tab === "player" || tab === "kaarten";
@@ -522,15 +583,31 @@ export function Leaderboard() {
       ? shownPlayerRows[0]
       : null;
 
+  // Tabel of compacte ranglijst? Onder ~820px kaartbreedte zou de tabel
+  // overlopen. De meting zit in JS zodat er ook maar één van de twee in de DOM
+  // komt (#913); zolang er niets gemeten is (eerste render, of geen
+  // ResizeObserver zoals in jsdom) tonen we de tabel — dat is de rijkste
+  // weergave en de meest voorkomende breedte.
+  const { ref: switchRef, breedte: switchBreedte } = useContainerBreedte();
+  const breedeLijst = switchBreedte === null || switchBreedte > 820;
+
   // "Jouw positie": scrolt naar je eigen rij (tabel op desktop, lijst op mobiel).
   const meRowRef = useRef<HTMLTableRowElement | null>(null);
   const meItemRef = useRef<HTMLLIElement | null>(null);
+  // Kaartenwand en divisies hebben hun eigen anker (#913): daar was je jezelf
+  // net zo goed kwijt, maar de chip bestond er niet.
+  const meKaartRef = useRef<HTMLLIElement | null>(null);
+  const meDivisieRef = useRef<HTMLLIElement | null>(null);
+  // Op elke weergave waarin jíj als speler voorkomt — dus niet op Teams.
   const myRankIdx =
-    tab === "player" ? displayRows.findIndex((r) => r.isMe) : -1;
+    tab === "team" ? -1 : displayRows.findIndex((r) => r.isMe);
   const scrollToMe = () => {
-    const el = [meItemRef.current, meRowRef.current].find(
-      (e) => e && e.offsetParent !== null,
-    );
+    const el = [
+      meItemRef.current,
+      meRowRef.current,
+      meKaartRef.current,
+      meDivisieRef.current,
+    ].find((e) => e && e.offsetParent !== null);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -743,14 +820,24 @@ export function Leaderboard() {
       ? extraResults.filter((p) => !rankedKeys.has(p.id))
       : [];
 
-  // Aantal actieve filterkeuzes — als badge op de menuknop, zodat je ook met
-  // een dichtgeklapt menu ziet dat er iets gefilterd wordt. (Zoeken staat los
-  // zichtbaar en telt hier niet mee.)
-  const activeFilters =
-    (season ? 1 : 0) +
-    (groupId ? 1 : 0) +
-    (asof ? 1 : 0) +
-    (minMatches > 0 ? 1 : 0);
+  // Alles wat het filtermenu en de chips nodig hebben, op één plek (#913).
+  const filterWaarden: FilterWaarden = {
+    season,
+    seasons,
+    groupId,
+    groups: groups.data ?? [],
+    toonGroep: tab !== "team",
+    asof,
+    myLastMatchDay,
+    minMatches,
+  };
+  const filterActies: FilterActies = {
+    onSeason: setSeasonId,
+    onGroup: setGroupId,
+    onAsof: setAsof,
+    onMin: setMin,
+    onWisAlles: wisAlleFilters,
+  };
 
   return (
     <div>
@@ -767,32 +854,15 @@ export function Leaderboard() {
 
       <FutKaartDefs />
       <div className="lb-toolbar">
-        <div className="tabs">
-          <button
-            className={`tab ${tab === "player" ? "is-active" : ""}`}
-            onClick={() => setTab("player")}
-          >
-            Spelers
-          </button>
-          <button
-            className={`tab ${tab === "team" ? "is-active" : ""}`}
-            onClick={() => setTab("team")}
-          >
-            Teams
-          </button>
-          <button
-            className={`tab ${tab === "divisies" ? "is-active" : ""}`}
-            onClick={() => setTab("divisies")}
-          >
-            Divisies
-          </button>
-          <button
-            className={`tab ${tab === "kaarten" ? "is-active" : ""}`}
-            onClick={() => setTab("kaarten")}
-          >
-            🃏 Kaarten
-          </button>
-        </div>
+        {/* Geen `idPrefix`: de tabkeuze werkt hier door de hele pagina heen
+            (legenda's, kaartenwand, uitleg), dus er is geen enkel paneel om
+            met `aria-controls` naar te wijzen (#910). */}
+        <PageTabs
+          tabs={KLASSEMENT_TABS}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Klassement-weergave"
+        />
 
         {/* Zoekbalk staat direct zichtbaar tussen de tabs en de filterknop. */}
         {searchable && (
@@ -836,113 +906,20 @@ export function Leaderboard() {
 
         {/* Alleen de filters (seizoen/groep/geavanceerd) zitten achter de
             menuknop; een telbadge toont hoeveel er actief zijn. */}
-        <details className="lb-menu">
-          <summary className="lb-menu__btn" aria-label="Filteren">
-            <svg
-              className="lb-menu__icon"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M3 6h18M3 12h18M3 18h18" />
-            </svg>
-            <span className="lb-menu__label">Filter</span>
-            {activeFilters > 0 && (
-              <span className="lb-filters__count">{activeFilters}</span>
-            )}
-          </summary>
-          <div className="lb-menu__panel">
-            <div className="lb-menu__row">
-              <label className="lb-filters__field">
-                <span>Seizoen</span>
-                <select
-                  className="select select--filter"
-                  aria-label="Seizoen"
-                  value={season?.id ?? ""}
-                  onChange={(e) => setSeasonId(e.target.value)}
-                >
-                  <option value="">Alle tijden</option>
-                  {/* Gedeeld seizoen uit de URL dat (nog) niet in de lijst zit. */}
-                  {season && !seasons.some((s) => s.id === season.id) && (
-                    <option value={season.id}>{season.label}</option>
-                  )}
-                  {seasons.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {tab !== "team" && (
-                <label className="lb-filters__field">
-                  <span>Groep</span>
-                  <select
-                    className="select select--filter"
-                    aria-label="Groep"
-                    value={groupId}
-                    onChange={(e) => setGroupId(e.target.value)}
-                  >
-                    <option value="">Alle groepen</option>
-                    {(groups.data ?? []).map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
-
-            {/* Geavanceerd: stand-op-datum en minimaal aantal matches (#71). */}
-            <label className="lb-filters__field">
-              <span>Stand op datum</span>
-              <input
-                className="input select--filter lb-date"
-                type="date"
-                aria-label="Stand op datum"
-                title="Bekijk de stand zoals hij was t/m deze datum"
-                value={asof}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setAsof(e.target.value)}
-              />
-            </label>
-            {myLastMatchDay && (
-              <button
-                type="button"
-                className={`tab lb-menu__preset ${asof === myLastMatchDay ? "is-active" : ""}`}
-                onClick={() =>
-                  setAsof(asof === myLastMatchDay ? "" : myLastMatchDay)
-                }
-              >
-                Mijn laatste match
-              </button>
-            )}
-            <label className="lb-filters__field">
-              <span>Minimaal gespeeld</span>
-              <select
-                className="select select--filter"
-                aria-label="Minimaal aantal matches"
-                value={minMatches}
-                onChange={(e) => setMin(Number(e.target.value))}
-              >
-                <option value={0}>Alle spelers</option>
-                {[3, 5, 10, 20].map((n) => (
-                  <option key={n} value={n}>
-                    ≥ {n} matches
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </details>
+        <LeaderboardFilterMenu waarden={filterWaarden} acties={filterActies} />
       </div>
 
+      {/* Elke actieve keuze bij naam, apart te wissen (#913). */}
+      <LeaderboardFilterChips waarden={filterWaarden} acties={filterActies} />
+      {vervallen && (
+        <p className="lb-vervallen" role="status">
+          {vervallen}
+        </p>
+      )}
+
+      {/* De chip hierboven zegt dát je naar een oude stand kijkt; deze regel
+          legt uit wat dat met de cijfers doet. Twee verschillende dingen, dus
+          blijft hij staan naast de chips (#913). */}
       {asof && (
         <p className="lb-asof-note" role="status">
           Stand zoals op <strong>{asof}</strong> — punten en saldo berekend uit
@@ -1065,7 +1042,10 @@ export function Leaderboard() {
         {loading ? (
           <StandingsSkeleton rows={6} />
         ) : error ? (
-          <p className="msg msg--error">{error}</p>
+          <ErrorRetry
+            melding={`Het klassement laden mislukte: ${error}`}
+            onRetry={herlaad}
+          />
         ) : rows.length === 0 ? (
           season ? (
             <p className="empty">Geen matches in dit seizoen.</p>
@@ -1093,7 +1073,7 @@ export function Leaderboard() {
             </EmptyState>
           )
         ) : tab === "divisies" ? (
-          <TierDivisions rows={displayRows} />
+          <TierDivisions rows={displayRows} meRef={meDivisieRef} />
         ) : visibleRows.length === 0 ? (
           <p className="empty">
             Geen speler in de ranglijst gevonden voor “{q.trim()}”.
@@ -1103,21 +1083,30 @@ export function Leaderboard() {
             rows={visibleRows}
             edities={editieCtx}
             onPreview={setPreview}
+            meRef={meKaartRef}
           />
         ) : (
-          <div className="standings-switch">
-            <StandingsTable
-              rows={visibleRows}
-              showForm={tab === "player"}
-              meRef={meRowRef}
-              onPreview={tab === "player" ? setPreview : undefined}
-            />
-            <RankList
-              rows={visibleRows}
-              meRef={meItemRef}
-              lead={tab === "player" ? "rating" : "points"}
-              onPreview={tab === "player" ? setPreview : undefined}
-            />
+          // Eén weergave tegelijk in de DOM (#913). De keuze hangt bewust aan de
+          // BESCHIKBARE BREEDTE van de kaart, niet aan de viewport: met een brede
+          // zijnavigatie is de kaart smaller dan het venster en liep de tabel
+          // juist dan over. Dat deed een container query, maar die verbergt
+          // alleen — beide lijsten stonden er en werden allebei gerenderd.
+          <div className="standings-switch" ref={switchRef}>
+            {breedeLijst ? (
+              <StandingsTable
+                rows={visibleRows}
+                showForm={tab === "player"}
+                meRef={meRowRef}
+                onPreview={tab === "player" ? setPreview : undefined}
+              />
+            ) : (
+              <RankList
+                rows={visibleRows}
+                meRef={meItemRef}
+                lead={tab === "player" ? "rating" : "points"}
+                onPreview={tab === "player" ? setPreview : undefined}
+              />
+            )}
           </div>
         )}
       </div>
@@ -1170,7 +1159,11 @@ export function Leaderboard() {
           checken krijgt die meteen bovenaan te zien. */}
       <KlassementUitleg />
 
-      {tab === "player" && myRankIdx >= 0 && rows.length > 8 && !nq &&
+      {/* Op elke spelersweergave (#913), niet alleen de Spelers-tab: op de
+          kaartenwand en tussen de divisies ben je jezelf net zo goed kwijt.
+          De drempel van 8 rijen blijft — bij een korte lijst zie je jezelf al —
+          net als de troon-uitzondering: wie erop zit staat bovenaan in beeld. */}
+      {tab !== "team" && myRankIdx >= 0 && rows.length > 8 && !nq &&
         !throneRow?.isMe && (
         <button className="me-chip" onClick={scrollToMe}>
           Jouw positie · #{myRankIdx + 1}

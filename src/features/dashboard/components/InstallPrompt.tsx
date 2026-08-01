@@ -1,12 +1,10 @@
-import { useState, useSyncExternalStore } from "react";
-import {
-  clearInstallPromptEvent,
-  getInstallPromptEvent,
-  isIos,
-  isStandalone,
-  subscribeInstallPrompt,
-} from "@/lib/utils/pwa";
+import { useState } from "react";
+import { clearInstallPromptEvent, isIos } from "@/lib/utils/pwa";
 import { readFlag, writeFlag } from "../flags";
+import {
+  useInstallPromptEvent,
+  useInstallPromptZichtbaar,
+} from "../installPrompt";
 
 /** Eenmalige, wegklikbare uitnodiging om de app te installeren (#75).
  *  Op iOS een "Zet op beginscherm"-instructie (daar bestaat geen prompt),
@@ -18,16 +16,11 @@ export function InstallPrompt() {
     readFlag("install-prompt-dismissed"),
   );
   const [busy, setBusy] = useState(false);
-  // main.tsx vangt het event eager af (het vuurt vóór deze lazy chunk laadt);
-  // hier lezen we het reactief uit.
-  const promptEvent = useSyncExternalStore(
-    subscribeInstallPrompt,
-    getInstallPromptEvent,
-    () => null,
-  );
+  const promptEvent = useInstallPromptEvent();
+  const zichtbaar = useInstallPromptZichtbaar();
 
   const ios = isIos();
-  if (dismissed || isStandalone() || (!ios && !promptEvent)) return null;
+  if (dismissed || !zichtbaar) return null;
 
   async function install() {
     if (!promptEvent) return;

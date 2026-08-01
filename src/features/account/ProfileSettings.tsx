@@ -4,6 +4,13 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { ProfileSkeleton, Skeleton } from "@/ui/Skeleton";
+import { Toggle } from "@/ui/Toggle";
+import { AvatarCropper } from "./components/AvatarCropper";
+import { snijUit, type Uitsnede } from "./components/avatarCrop";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { useConfirm } from "@/ui/ConfirmDialog";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   getProfile,
   updateProfile,
@@ -17,10 +24,13 @@ import {
   getPrivacy,
   updateNotificationPrefs,
   updatePrivacy,
+  exporteerMijnGegevens,
   type NotificationPrefs,
   type Privacy,
 } from "./api";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
+import { PASSWORD_RULE, passwordError } from "@/features/auth/authErrors";
+import { heeftVuileVorm, useVuileVorm } from "@/lib/hooks/useVuileVorm";
 import type { RoastIntensiteit } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { errorMessage } from "@/lib/utils/errors";
@@ -60,12 +70,27 @@ export function ProfileSettings() {
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
+  usePageTitle("Instellingen");
 
   // Actieve tab in de URL (?tab=): deelbaar en refresh-bestendig. De default
   // (profiel) laat de param weg, net als elders in de app.
   const [params, setParams] = useSearchParams();
+  const [confirm, confirmUi] = useConfirm();
   const tab = tabFrom(params.get("tab"));
-  function setTab(next: SettingsTab) {
+  async function setTab(next: SettingsTab) {
+    // Van tab wisselen ontkoppelt de kaarten en gooit dus onopgeslagen werk
+    // weg (#921). De hoofdnavigatie kunnen we niet blokkeren — dat vraagt een
+    // data-router — maar dít pad loopt door onze eigen code.
+    if (
+      heeftVuileVorm() &&
+      !(await confirm({
+        title: "Wijzigingen niet opgeslagen",
+        body: "Je hebt iets ingevuld dat nog niet is opgeslagen. Van tab wisselen gooit dat weg.",
+        confirmLabel: "Toch wisselen",
+        danger: true,
+      }))
+    )
+      return;
     const p = new URLSearchParams(params);
     if (next === "algemeen") p.delete("tab");
     else p.set("tab", next);
@@ -84,7 +109,13 @@ export function ProfileSettings() {
         </div>
       </div>
     );
-  if (!profile.data) return <p className="msg msg--error">Profiel niet gevonden.</p>;
+  if (!profile.data)
+    return (
+      <ErrorRetry
+        melding="Je profiel laden lukte niet."
+        onRetry={profile.reload}
+      />
+    );
 
   return (
     <div>
@@ -109,74 +140,89 @@ export function ProfileSettings() {
         <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>
 
-      <nav className="tabs settings-tabs" aria-label="Instellingen">
-        {SETTINGS_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`tab ${tab === t.id ? "is-active" : ""}`}
-            aria-current={tab === t.id ? "page" : undefined}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      {/* Gedeelde tabbalk (#910). */}
+      <PageTabs
+        tabs={SETTINGS_TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Instellingen"
+        idPrefix="instellingen"
+      />
 
-      {tab === "algemeen" && (
-        <>
-          <div className="grid grid--2">
-            <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-            <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-          </div>
-          <ThemeCard
-            userId={myId}
-            toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
-            dictatorPortret={profile.data?.dictator_portret ?? true}
-            piasPortret={profile.data?.pias_portret ?? true}
-            onUpdated={profile.reload}
-          />
-        </>
-      )}
-
-      {tab === "privacy" && (
-        <>
-          <div className="grid grid--2">
-            <NotificationsCard userId={myId} />
-            <PrivacyCard userId={myId} />
-          </div>
-          <section className="card">
-            <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
-            <p className="card__subtitle">
-              Wie hij is en hoe je hem afstelt.
-            </p>
-            <CoachAbout />
-          </section>
-        </>
-      )}
-
-      {tab === "account" && (
-        <>
-          <div className="grid grid--2">
-            <EmailCard currentEmail={user?.email ?? ""} />
-            <PasswordCard email={user?.email ?? ""} />
-          </div>
-
-          <section className="card">
-            <div className="row-between">
-              <div>
-                <h2 className="card__title card__title--tight">Sessie</h2>
-                <p className="empty empty--bare">Ingelogd als {user?.email}</p>
-              </div>
-              <button className="btn btn--danger" onClick={() => signOut()}>
-                Uitloggen
-              </button>
+      <TabPanel id={tab} idPrefix="instellingen">
+        {tab === "algemeen" && (
+          <>
+            <div className="grid grid--2">
+              <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+              <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
             </div>
-          </section>
+            <ThemeCard
+              userId={myId}
+              toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+              dictatorPortret={profile.data?.dictator_portret ?? true}
+              piasPortret={profile.data?.pias_portret ?? true}
+              onUpdated={profile.reload}
+            />
+          </>
+        )}
 
-          <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
-        </>
-      )}
+        {tab === "privacy" && (
+          <>
+            <div className="grid grid--2">
+              <NotificationsCard userId={myId} />
+              <PrivacyCard userId={myId} />
+            </div>
+            <section className="card">
+              <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+              <p className="card__subtitle">
+                Wie hij is en hoe je hem afstelt.
+              </p>
+              <CoachAbout />
+            </section>
+          </>
+        )}
+
+        {tab === "account" && (
+          <>
+            <div className="grid grid--2">
+              <EmailCard currentEmail={user?.email ?? ""} />
+              <PasswordCard email={user?.email ?? ""} />
+            </div>
+
+            <section className="card">
+              <div className="row-between">
+                <div>
+                  <h2 className="card__title card__title--tight">Sessie</h2>
+                  <p className="empty empty--bare">Ingelogd als {user?.email}</p>
+                </div>
+                <button className="btn btn--danger" onClick={() => signOut()}>
+                  Uitloggen
+                </button>
+              </div>
+            </section>
+
+            {/* Je eigen gegevens meenemen (#921). Client-side samengesteld:
+                RLS bepaalt al wat je mag zien, dus een export-RPC zou dezelfde
+                regels nóg een keer moeten formuleren. */}
+            <section className="card">
+              <div className="row-between">
+                <div>
+                  <h2 className="card__title card__title--tight">
+                    Mijn gegevens
+                  </h2>
+                  <p className="empty empty--bare">
+                    Download alles wat de app over jou bewaart als JSON.
+                  </p>
+                </div>
+                <ExportButton userId={myId} />
+              </div>
+            </section>
+
+            <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+          </>
+        )}
+      </TabPanel>
+      {confirmUi}
     </div>
   );
 }
@@ -194,8 +240,11 @@ function AvatarCard({
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Uitsnede en geladen beeld komen uit de cropper; die heeft de blob-URL in
+  // beheer (inclusief het vrijgeven ervan, #921).
+  const uitsnede = useRef<Uitsnede>({ zoom: 1, x: 0, y: 0 });
+  const beeld = useRef<HTMLImageElement | null>(null);
 
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -203,14 +252,18 @@ function AvatarCard({
     if (!f.type.startsWith("image/")) return toast.error("Kies een afbeelding.");
     if (f.size > 5 * 1024 * 1024) return toast.error("Maximaal 5 MB.");
     setFile(f);
-    setPreview(URL.createObjectURL(f));
   }
 
   async function save() {
     if (!file) return;
     setBusy(true);
     try {
-      const url = await uploadAvatar(userId, file);
+      // Uitsnijden vóór uploaden: wat je in het kader ziet, is wat er komt te
+      // staan — en het scheelt bandbreedte (#921).
+      const bron = beeld.current;
+      const blob = bron ? await snijUit(bron, uitsnede.current) : file;
+      const bestand = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      const url = await uploadAvatar(userId, bestand);
       await updateProfile(userId, { avatar_url: url });
       toast.success("Profielfoto bijgewerkt.");
       setFile(null);
@@ -222,19 +275,32 @@ function AvatarCard({
     }
   }
 
-  const shown = preview ?? profile.avatar_url;
-
   return (
     <section className="card">
       <h2 className="card__title">Profielfoto</h2>
       <div className="avatar-row">
-        <div className="avatar-preview">
-          {shown ? (
-            <img src={shown} alt="Profielfoto" loading="lazy" decoding="async" />
-          ) : (
-            <span>{displayName(profile).slice(0, 1).toUpperCase()}</span>
-          )}
-        </div>
+        {file ? (
+          <AvatarCropper
+            bestand={file}
+            onChange={(u, img) => {
+              uitsnede.current = u;
+              beeld.current = img;
+            }}
+          />
+        ) : (
+          <div className="avatar-preview">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="Profielfoto"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span>{displayName(profile).slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+        )}
         <div className="stack">
           <input ref={inputRef} type="file" accept="image/*" hidden onChange={pick} />
           <div className="btn-row">
@@ -244,6 +310,11 @@ function AvatarCard({
             <button className="btn btn--primary" disabled={busy || !file} onClick={save}>
               {busy ? "Uploaden…" : "Opslaan"}
             </button>
+            {file && (
+              <button className="btn btn--sm" onClick={() => setFile(null)}>
+                Annuleren
+              </button>
+            )}
           </div>
           {file && <span className="badge badge--accent">Nog niet opgeslagen</span>}
           <p className="avatar-hint">JPG of PNG, maximaal 5 MB.</p>
@@ -267,6 +338,10 @@ function NameCard({
   const [username, setUsername] = useState(profile.username);
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [busy, setBusy] = useState(false);
+  // Onopgeslagen wijzigingen gingen stil verloren bij een tabwissel (#921).
+  const vuil =
+    username !== profile.username || fullName !== (profile.full_name ?? "");
+  useVuileVorm("naam", vuil);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -292,7 +367,10 @@ function NameCard({
 
   return (
     <section className="card">
-      <h2 className="card__title">Naam</h2>
+      <div className="row-between">
+        <h2 className="card__title">Naam</h2>
+        {vuil && <span className="badge badge--accent">Nog niet opgeslagen</span>}
+      </div>
       <form className="stack" onSubmit={save}>
         <label className="label">
           Gebruikersnaam
@@ -406,9 +484,13 @@ function NotificationsCard({ userId }: { userId: string }) {
 
   const np = prefs.data;
 
+  // Eén kaart droeg zowel de apparaat-schakelaar als de per-type voorkeuren,
+  // en het verschil moest in twee alinea's uitgelegd worden (#921). Nu twee
+  // kaarten: het verschil blijkt uit de structuur.
   return (
+    <>
     <section className="card">
-      <h2 className="card__title card__title--tight">Meldingen</h2>
+      <h2 className="card__title card__title--tight">Meldingen op dit apparaat</h2>
       <p className="card__subtitle">
         Nieuwe wedstrijden, uitslagen van jouw matches en vriendschapsverzoeken —
         ook als de app dicht is.
@@ -441,35 +523,33 @@ function NotificationsCard({ userId }: { userId: string }) {
               : "Meldingen aanzetten"}
         </button>
       )}
-      {/* Per-type voorkeuren (#57): server-side, gelden voor ál je apparaten —
-          daarom ook zichtbaar als push op dít apparaat niet kan of uit staat. */}
-      <h3 className="card__title card__title--section">Welke meldingen wil je?</h3>
-      <p className="card__subtitle">
-        {availability === "ready"
-          ? "De knop hierboven regelt dít apparaat; deze keuzes gelden voor al je apparaten."
-          : "Deze keuzes gelden voor al je apparaten."}
-      </p>
+    </section>
+
+    {/* Per-type voorkeuren (#57): server-side, dus voor ál je apparaten —
+        daarom ook zichtbaar als push op dít apparaat niet kan of uit staat. */}
+    <section className="card">
+      <h2 className="card__title card__title--tight">
+        Welke meldingen wil je?
+      </h2>
+      <p className="card__subtitle">Geldt voor al je apparaten.</p>
       {prefs.loading || !np ? (
         <Skeleton rows={4} />
       ) : (
         <div className="stack">
           {NOTIFY_OPTIES.map((o) => (
-            <label key={o.key} className="toggle-row">
-              <span className="toggle-row__text">
-                <span className="toggle-row__label">{o.label}</span>
-                <span className="toggle-row__hint">{o.hint}</span>
-              </span>
-              <input
-                type="checkbox"
-                checked={np[o.key]}
-                disabled={prefsBusy}
-                onChange={(e) => setPref({ [o.key]: e.target.checked })}
-              />
-            </label>
+            <Toggle
+              key={o.key}
+              label={o.label}
+              hint={o.hint}
+              checked={np[o.key]}
+              disabled={prefsBusy}
+              onChange={(aan) => setPref({ [o.key]: aan })}
+            />
           ))}
         </div>
       )}
     </section>
+    </>
   );
 }
 
@@ -571,57 +651,27 @@ function ThemeCard({
           </button>
         ))}
       </div>
-      <label className="toggle-row">
-        <span className="toggle-row__text">
-          <span className="toggle-row__label">Waarnemend dictator 🫡</span>
-          <span className="toggle-row__hint">
-            Toont Kylian Mbappé bovenaan het klassement zolang niemand de
-            El Padelissimo-tier haalt. Puur cosmetisch — zet uit als je hem
-            liever niet ziet; de dictator-divisie zelf blijft gewoon bestaan.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          checked={toonWaarnemend}
-          disabled={busy}
-          onChange={(e) => toggleMbappe(e.target.checked)}
-        />
-      </label>
-      <label className="toggle-row">
-        <span className="toggle-row__text">
-          <span className="toggle-row__label">Dictator-portret 🎨</span>
-          <span className="toggle-row__hint">
-            Kom je in de buurt van de troon, dan maakt een AI van je foto een
-            militair dictator-portret (via OpenAI) voor op De Troon. Zet uit als
-            je je foto liever niet laat versturen — dan blijft je gewone avatar
-            staan.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          checked={dictatorPortret}
-          disabled={busy}
-          onChange={(e) => toggleDictatorPortret(e.target.checked)}
-        />
-      </label>
-      <label className="toggle-row">
-        <span className="toggle-row__text">
-          <span className="toggle-row__label">Pias-portret 🤡</span>
-          <span className="toggle-row__hint">
-            Word je de pias van de club, dan maakt een AI van je foto een
-            hofnar-portret (via OpenAI) voor op De Schandpaal. Zet uit als je je
-            foto liever niet laat versturen — dan blijft je gewone avatar staan
-            en verdwijnt een eerder gemaakt portret. Heb je je roast-schild aan,
-            dan gebeurt dit hoe dan ook niet.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          checked={piasPortret}
-          disabled={busy}
-          onChange={(e) => togglePiasPortret(e.target.checked)}
-        />
-      </label>
+      <Toggle
+        label="Waarnemend dictator 🫡"
+        hint="Kylian Mbappé bezet de troon zolang niemand El Padelissimo haalt. Puur cosmetisch."
+        checked={toonWaarnemend}
+        disabled={busy}
+        onChange={toggleMbappe}
+      />
+      <Toggle
+        label="Dictator-portret 🎨"
+        hint="Bij de troon maakt een AI (OpenAI) een dictator-portret van je foto. Uit = je gewone avatar."
+        checked={dictatorPortret}
+        disabled={busy}
+        onChange={toggleDictatorPortret}
+      />
+      <Toggle
+        label="Pias-portret 🤡"
+        hint="Als pias maakt een AI (OpenAI) een hofnar-portret van je foto. Uit = je gewone avatar; met roast-schild gebeurt het sowieso niet."
+        checked={piasPortret}
+        disabled={busy}
+        onChange={togglePiasPortret}
+      />
     </section>
   );
 }
@@ -657,51 +707,27 @@ function PrivacyCard({ userId }: { userId: string }) {
         <Skeleton rows={2} />
       ) : (
         <div className="stack">
-          <label className="toggle-row">
-            <span className="toggle-row__text">
-              <span className="toggle-row__label">Vindbaar in zoeken</span>
-              <span className="toggle-row__hint">
-                Anderen kunnen je op gebruikersnaam vinden.
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={p.discoverable}
-              disabled={busy}
-              onChange={(e) => set({ discoverable: e.target.checked })}
-            />
-          </label>
-          <label className="toggle-row">
-            <span className="toggle-row__text">
-              <span className="toggle-row__label">
-                Vriendschapsverzoeken toestaan
-              </span>
-              <span className="toggle-row__hint">
-                Zet uit om geen nieuwe verzoeken te ontvangen.
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={p.allow_friend_requests}
-              disabled={busy}
-              onChange={(e) => set({ allow_friend_requests: e.target.checked })}
-            />
-          </label>
-          <label className="toggle-row">
-            <span className="toggle-row__text">
-              <span className="toggle-row__label">Roast-schild 🛡️</span>
-              <span className="toggle-row__hint">
-                Zet aan als je niet geroast wilt worden: pias, feed en profiel
-                tonen dan een neutrale variant zonder spot.
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={p.roast_schild}
-              disabled={busy}
-              onChange={(e) => set({ roast_schild: e.target.checked })}
-            />
-          </label>
+          <Toggle
+            label="Vindbaar in zoeken"
+            hint="Anderen kunnen je op gebruikersnaam vinden."
+            checked={p.discoverable}
+            disabled={busy}
+            onChange={(aan) => set({ discoverable: aan })}
+          />
+          <Toggle
+            label="Vriendschapsverzoeken toestaan"
+            hint="Zet uit om geen nieuwe verzoeken te ontvangen."
+            checked={p.allow_friend_requests}
+            disabled={busy}
+            onChange={(aan) => set({ allow_friend_requests: aan })}
+          />
+          <Toggle
+            label="Roast-schild 🛡️"
+            hint="Pias, feed en profiel tonen dan een neutrale variant zonder spot."
+            checked={p.roast_schild}
+            disabled={busy}
+            onChange={(aan) => set({ roast_schild: aan })}
+          />
           <label className="toggle-row">
             <span className="toggle-row__text">
               <span className="toggle-row__label">Roast-intensiteit 🎙️</span>
@@ -736,6 +762,8 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
   const toast = useToast();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const vuil = email.trim().length > 0;
+  useVuileVorm("email", vuil);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -786,11 +814,15 @@ function PasswordCard({ email }: { email: string }) {
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const vuil = !!(current || next || confirm);
+  useVuileVorm("wachtwoord", vuil);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (next.length < 6)
-      return toast.error("Nieuw wachtwoord: minstens 6 tekens.");
+    // Eén verhaal over dezelfde regel (#921): het loginscherm gebruikte
+    // PASSWORD_RULE/passwordError, deze kaart hardcodeerde "6 tekens".
+    const fout = passwordError(next);
+    if (fout) return toast.error(fout);
     if (next !== confirm)
       return toast.error("De nieuwe wachtwoorden komen niet overeen.");
     setBusy(true);
@@ -809,7 +841,10 @@ function PasswordCard({ email }: { email: string }) {
 
   return (
     <section className="card">
-      <h2 className="card__title">Wachtwoord</h2>
+      <div className="row-between">
+        <h2 className="card__title">Wachtwoord</h2>
+        {vuil && <span className="badge badge--accent">Nog niet opgeslagen</span>}
+      </div>
       <form className="stack account-form" onSubmit={save}>
         <label className="label">
           Huidig wachtwoord
@@ -848,7 +883,7 @@ function PasswordCard({ email }: { email: string }) {
           </label>
         </div>
         <p className="field-hint" id="new-password-hint">
-          Minstens 6 tekens.
+          {PASSWORD_RULE}
         </p>
         <div className="form-actions">
           <button
@@ -864,3 +899,37 @@ function PasswordCard({ email }: { email: string }) {
 }
 
 export default ProfileSettings;
+
+/* ---------- Gegevens exporteren (#921) ---------- */
+function ExportButton({ userId }: { userId: string }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    try {
+      const data = await exporteerMijnGegevens(userId);
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `vamos-gegevens-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      // Zonder dit blijft de blob hangen tot de pagina herlaadt — dezelfde
+      // fout die de avatar-preview maakte.
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button className="btn" disabled={busy} onClick={download}>
+      {busy ? "Verzamelen…" : "Download mijn gegevens"}
+    </button>
+  );
+}

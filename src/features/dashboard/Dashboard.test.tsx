@@ -182,13 +182,93 @@ describe("<Dashboard />", () => {
     ).toBeInTheDocument();
   });
 
-  it("bundelt de secundaire gamification achter één inklapper (#276)", async () => {
-    renderPage();
-    const titel = await screen.findByText(/jouw spel & stats/i);
+  // #276 vouwde de gamification-extra's op; #911 trok statsrij en rating erbij,
+  // zodat het hele "hoe sta ik ervoor"-blok in dezelfde inklapper zit in plaats
+  // van als losse kaarten met de rest te concurreren.
+  it("bundelt het hele cijfer-blok achter één inklapper (#276/#911)", async () => {
+    const { container } = renderPage();
+    const titel = await screen.findByText(/jouw cijfers/i);
     const details = titel.closest("details");
     expect(details).not.toBeNull();
-    // Weekmissies zit binnen die inklapper, niet los op het overzicht.
-    expect(details!.querySelector(".week-missions")).not.toBeNull();
+    for (const sel of [".week-missions", ".stats", ".rating-card"]) {
+      expect(details!.querySelector(sel)).not.toBeNull();
+    }
+    // En er is er maar één; geen inklapper-in-een-inklapper.
+    expect(container.querySelectorAll("details.dash-cijfers")).toHaveLength(1);
+  });
+
+  it("houdt het pias-alarm búiten de inklapper (#276)", async () => {
+    // Tijdgevoelige waarschuwing: die mag je niet kunnen wegvouwen.
+    const { container } = renderPage();
+    await screen.findByText(/jouw cijfers/i);
+    const alarm = container.querySelector(".pias-card");
+    if (alarm) expect(alarm.closest("details.dash-cijfers")).toBeNull();
+  });
+
+  it("zet de acties direct onder de hero, vóór de vandaag-zone (#911)", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/jouw volgende match/i);
+    const strip = container.querySelector(".todo-strip");
+    const zone = container.querySelector(".dash-zone");
+    expect(strip).not.toBeNull();
+    expect(zone).not.toBeNull();
+    // compareDocumentPosition: FOLLOWING (4) betekent "zone komt na strip".
+    expect(
+      strip!.compareDocumentPosition(zone!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("reserveert de ruimte van de vandaag-zone tijdens het laden (#911)", async () => {
+    // Poll, volgende match en avondkaart kwamen elk apart binnen en duwden de
+    // rest omlaag terwijl je al las. Nu staat er eerst één placeholder.
+    const { container } = renderPage();
+    expect(container.querySelector(".dash-vandaag__skeleton")).not.toBeNull();
+    expect(screen.queryByText(/jouw volgende match/i)).toBeNull();
+
+    // En zodra alle drie de bronnen er zijn, wisselt de zone in één keer.
+    await screen.findByText(/jouw volgende match/i);
+    expect(container.querySelector(".dash-vandaag__skeleton")).toBeNull();
+  });
+
+  it("toont een nieuwe speler één lege staat i.p.v. een rij nullen (#911)", async () => {
+    invalidateAll();
+    const fromMock = supabase.from as unknown as {
+      getMockImplementation: () => (table: string) => unknown;
+      mockImplementation: (impl: (table: string) => unknown) => void;
+    };
+    const orig = fromMock.getMockImplementation();
+    // Geen klassementsrij = nog niet gespeeld.
+    fromMock.mockImplementation((table) =>
+      table === "player_standings"
+        ? makeQuery({ data: [], error: null })
+        : orig(table),
+    );
+    try {
+      const { container } = renderPage();
+      expect(
+        await screen.findByText(/je cijfers beginnen bij je eerste match/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /uitslag invullen/i }),
+      ).toHaveAttribute("href", "/matches");
+      // Geen inklapper met lege kaarten eronder.
+      expect(container.querySelector("details.dash-cijfers")).toBeNull();
+    } finally {
+      fromMock.mockImplementation(orig);
+      invalidateAll();
+    }
+  });
+
+  it("geeft de todo-chips een zichtbare pijl (#911)", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/uitslagen wachten op jou|uitslag wacht op jou/i);
+    const chip = container.querySelector(".todo-chip");
+    expect(chip!.querySelector(".todo-chip__pijl")).not.toBeNull();
+    // Decoratie: de pijl hoort niet in de toegankelijke naam van de link.
+    expect(chip!.querySelector(".todo-chip__pijl")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
   it("toont de weekmissies-kaart met drie voortgangsbalken", async () => {

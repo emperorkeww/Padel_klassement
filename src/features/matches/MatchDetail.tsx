@@ -19,6 +19,7 @@ import {
 } from "./api";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
+import { MatchBeheer } from "@/features/matches/components/MatchBeheer";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { getMatchPredictions } from "./predictionsApi";
 import { getMatchNetTouches, setNetTouches } from "./netTouchesApi";
@@ -29,7 +30,10 @@ import { formatDate } from "@/lib/utils/format";
 import { tap } from "@/lib/utils/haptics";
 import { Avatar } from "@/ui/Avatar";
 import { Skeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { ScoreStepper } from "@/ui/ScoreStepper";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useBackTo } from "@/lib/hooks/useBackTo";
 import { ShareMatch } from "@/features/matches/components/ShareMatch";
 import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 import { Lineup } from "@/features/matches/components/Lineup";
@@ -58,6 +62,8 @@ import { playersOf } from "@/features/rating/results";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { tierChange } from "@/features/rating/tiers";
 import { scoreHighlight } from "@/features/feed/feedLogic";
+// Uit de constante zelf, zodat de uitleg niet wegdrijft van de regel (#915).
+import { MONSTERZEGE_DREMPEL } from "@/features/profiles/badges.constants";
 import type { Match, Profile, Team, RatingPoint } from "@/types";
 import "./MatchDetail.css";
 
@@ -65,8 +71,20 @@ export function MatchDetail() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const match = useAsync(() => getMatch(id), [id]);
+  // Bij een deeplink uit een pushbericht of gedeelde link is er geen vorige
+  // pagina om naar terug te gaan (#910). Het vangnet is de groep waar deze
+  // match bij hoort — dat is de context waar zo'n link vandaan komt (#915);
+  // zonder groep valt hij terug op het matchoverzicht.
+  const terug = useBackTo(
+    match.data?.group_id ? `/groepen/${match.data.group_id}` : "/matches",
+  );
+  // Tabtitel op de matchdatum (#910); blijft staan zolang de match laadt.
+  usePageTitle(
+    match.data
+      ? `Match ${formatDate(match.data.played_at ?? match.data.created_at)}`
+      : null,
+  );
   // Alleen de twee teams en vier spelers van déze match ophalen, niet de
   // volledige teams- en profielentabellen.
   const teamIds = match.data ? [match.data.team_a_id, match.data.team_b_id] : [];
@@ -157,6 +175,8 @@ export function MatchDetail() {
     piet: globaleZwartePiet.data ?? null,
   };
   const [editing, setEditing] = useState(false);
+  // Welke momenten-chip zijn uitleg openklapt (#915); null = geen.
+  const [openMoment, setOpenMoment] = useState<string | null>(null);
 
   if (match.loading)
     return (
@@ -181,7 +201,17 @@ export function MatchDetail() {
         </div>
       </div>
     );
-  if (!match.data) return <p className="msg msg--error">Match niet gevonden.</p>;
+  if (!match.data)
+    return (
+      <ErrorRetry
+        melding="Deze match bestaat niet (meer) of is niet zichtbaar voor jou."
+        actie={
+          <Link className="btn btn--sm" to="/matches">
+            Naar matches
+          </Link>
+        }
+      />
+    );
 
   const m = match.data;
   const tmap = teams.data ?? {};
@@ -227,6 +257,53 @@ export function MatchDetail() {
   const gastenInMatch = [teamA, teamB]
     .flatMap((t) => playersOf(t))
     .filter((pid) => pmap[pid]?.is_guest);
+  // Grove poort voor de beheer-inklapper (#915): zonder sessie en op een nog
+  // niet gespeelde match valt er sowieso niets te beheren. Of er daarna écht
+  // iets in staat beslist MatchBeheer zelf — de secties erin geven pas ná hun
+  // eigen query null terug.
+  const toonBeheer = done || !!user;
+
+  // Wie voerde deze uitslag in? (#915) Alleen die persoon kan hem corrigeren;
+  // zonder dat te zeggen leest het ontbreken van de knop als een bug.
+  const invoerder = m.created_by ? pmap[m.created_by] : undefined;
+  const invoerderNaam = invoerder
+    ? displayName(invoerder)
+    : "degene die hem invoerde";
+
+  // Momenten met een uitleg (#915). Gelijkspel staat er los bij: dat legt
+  // zichzelf uit en heeft dus geen knop nodig.
+  const momenten: { sleutel: string; label: string; uitleg: string }[] = [];
+  if (derby)
+    momenten.push({
+      sleutel: "derby",
+      label: `🏟️ Derby · ${derby.emoji} ${derby.naam}`,
+      uitleg: `Alle spelers zitten in dezelfde divisie (${derby.naam}) — hier staat divisie-eer op het spel.`,
+    });
+  if (upset)
+    momenten.push({
+      sleutel: "upset",
+      label: `🎯 Upset · ${Math.round(upset.chance * 100)}% kans`,
+      uitleg:
+        "De underdog won: op basis van de ratings vooraf was de winkans lager dan 35%.",
+    });
+  if (scoreHi && scoreHi.type === "score")
+    momenten.push({
+      sleutel: "score",
+      label:
+        scoreHi.label === "bagel"
+          ? "🥯 6-0 Droog"
+          : scoreHi.label === "monsterzege"
+            ? "🦖 Monsterzege"
+            : "😬 Nagelbijter",
+      uitleg:
+        scoreHi.label === "bagel"
+          ? "Een bagel: de verliezer pakte geen enkele game."
+          : scoreHi.label === "monsterzege"
+            ? `Een monsterzege: minstens ${MONSTERZEGE_DREMPEL} games verschil.`
+            : "Een nagelbijter: het scheelde maar één game.",
+    });
+  const openMomentUitleg =
+    momenten.find((mo) => mo.sleutel === openMoment)?.uitleg ?? null;
 
   return (
     <div>
@@ -234,7 +311,7 @@ export function MatchDetail() {
         {/* Het scorebord ís de kop; voor screenreaders en de outline toch een h1. */}
         <h1 className="sr-only">Matchdetail</h1>
         <div className="row-between">
-          <button className="btn btn--sm" onClick={() => navigate(-1)}>
+          <button className="btn btn--sm" onClick={terug}>
             ← Terug
           </button>
           {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
@@ -307,36 +384,37 @@ export function MatchDetail() {
             />
           </div>
 
-          {/* Bijzondere momenten apart van de metaregel, zodat ze echt opvallen. */}
-          {(isDraw || upset || scoreHi || derby) && (
+          {/* Bijzondere momenten apart van de metaregel, zodat ze echt opvallen.
+              De uitleg zat in een `title` en was daarmee op touch onbereikbaar
+              (#915); nu klap je hem uit met een tik. Eén tegelijk — twee open
+              uitleggen naast elkaar leest niet. */}
+          {momenten.length > 0 && (
             <div className="md-moments">
-              {isDraw && <span className="md-moment md-moment--draw">Gelijkspel</span>}
-              {derby && (
-                <span
-                  className="md-moment"
-                  title={`Alle spelers zitten in dezelfde divisie (${derby.naam}) — hier staat divisie-eer op het spel.`}
+              {isDraw && (
+                <span className="md-moment md-moment--draw">Gelijkspel</span>
+              )}
+              {momenten.map((mo) => (
+                <button
+                  key={mo.sleutel}
+                  type="button"
+                  className={`md-moment md-moment--knop ${
+                    openMoment === mo.sleutel ? "is-open" : ""
+                  }`}
+                  aria-expanded={openMoment === mo.sleutel}
+                  aria-controls="md-moment-uitleg"
+                  onClick={() =>
+                    setOpenMoment((h) => (h === mo.sleutel ? null : mo.sleutel))
+                  }
                 >
-                  🏟️ Derby · {derby.emoji} {derby.naam}
-                </span>
-              )}
-              {upset && (
-                <span
-                  className="md-moment"
-                  title="De underdog won: winkans vooraf lager dan 35%."
-                >
-                  🎯 Upset · {Math.round(upset.chance * 100)}% kans
-                </span>
-              )}
-              {scoreHi && scoreHi.type === "score" && (
-                <span className="md-moment">
-                  {scoreHi.label === "bagel"
-                    ? "🥯 6-0 Droog"
-                    : scoreHi.label === "monsterzege"
-                      ? "🦖 Monsterzege"
-                      : "😬 Nagelbijter"}
-                </span>
-              )}
+                  {mo.label}
+                </button>
+              ))}
             </div>
+          )}
+          {openMomentUitleg && (
+            <p className="md-moment-uitleg" id="md-moment-uitleg" role="status">
+              {openMomentUitleg}
+            </p>
           )}
 
           {setPairs && (
@@ -352,26 +430,44 @@ export function MatchDetail() {
           )}
         </div>
 
-        {canEdit && (
+        {/* Wie mag corrigeren, en waarom (#915)? Zonder deze regel las het
+            ontbreken van de knop als een bug in plaats van als een regel. */}
+        {done && (
           <div className="md-board__foot">
-            {!editing && (
-              <div className="md-edit-actions">
-                <button className="btn btn--sm" onClick={() => setEditing(true)}>
-                  {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
-                </button>
-              </div>
-            )}
-            {editing && (
-              <ScoreEditor
-                match={m}
-                labelA={teamLabel(teamA, pmap)}
-                labelB={teamLabel(teamB, pmap)}
-                onClose={() => setEditing(false)}
-                onSaved={() => {
-                  setEditing(false);
-                  match.reload();
-                }}
-              />
+            {canEdit ? (
+              <>
+                {!editing && (
+                  <div className="md-edit-actions">
+                    <button
+                      className="btn btn--sm"
+                      onClick={() => setEditing(true)}
+                    >
+                      {m.score_a != null ? "Score aanpassen" : "Score invoeren"}
+                    </button>
+                  </div>
+                )}
+                {editing ? (
+                  <ScoreEditor
+                    match={m}
+                    labelA={teamLabel(teamA, pmap)}
+                    labelB={teamLabel(teamB, pmap)}
+                    onClose={() => setEditing(false)}
+                    onSaved={() => {
+                      setEditing(false);
+                      match.reload();
+                    }}
+                  />
+                ) : (
+                  <p className="md-edit-note">
+                    Jij voerde deze uitslag in, dus jij kunt hem corrigeren.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="md-edit-note">
+                Alleen wie de uitslag invoerde kan hem aanpassen — dat was{" "}
+                {invoerderNaam}.
+              </p>
             )}
           </div>
         )}
@@ -388,31 +484,47 @@ export function MatchDetail() {
         edities={editieCtx}
       />
 
-      {/* Netrollers (#809): alleen de speler zelf weet er zijn aantal van, dus
-          invoer achteraf op de matchpagina in plaats van in de invoerwizard —
-          die wordt vaak door iemand anders ingevuld. */}
-      <NetTouchesSection match={m} profiles={pmap} magInvoeren={speeltMee} />
+      {/* Beheer & correcties achter één inklapper (#915): administratie die je
+          hooguit één keer per match doet, en die anders als drie gelijkwaardige
+          kaarten met de wedstrijd zelf concurreerde. Alleen renderen als er ook
+          echt iets in zit — de secties erin geven zelf null terug wanneer ze
+          niet van toepassing zijn, dus zonder deze check bleef er een lege balk
+          over. */}
+      {toonBeheer && (
+        <MatchBeheer>
+          {/* Netrollers (#809): alleen de speler zelf weet er zijn aantal van,
+              dus invoer achteraf op de matchpagina in plaats van in de
+              invoerwizard — die wordt vaak door iemand anders ingevuld. */}
+          {done && (
+            <NetTouchesSection
+              match={m}
+              profiles={pmap}
+              magInvoeren={speeltMee}
+            />
+          )}
 
-      {/* #648: losse match achteraf aan een groep koppelen (of verhangen/
-          loskoppelen). key reset de lokale select-state na een geslaagde
-          wijziging, wanneer de match herlaadt met de nieuwe group_id. */}
-      {user && (
-        <GroupLinkSection
-          key={m.group_id ?? "los"}
-          match={m}
-          onSaved={() => match.reload()}
-        />
-      )}
+          {/* #648: losse match achteraf aan een groep koppelen (of verhangen/
+              loskoppelen). key reset de lokale select-state na een geslaagde
+              wijziging, wanneer de match herlaadt met de nieuwe group_id. */}
+          {user && (
+            <GroupLinkSection
+              key={m.group_id ?? "los"}
+              match={m}
+              onSaved={() => match.reload()}
+            />
+          )}
 
-      {done && user && gastenInMatch.length > 0 && (
-        <GuestSwapSection
-          match={m}
-          guestIds={gastenInMatch}
-          matchPlayerIds={playerIds}
-          profiles={pmap}
-          myId={user.id}
-          onSaved={() => match.reload()}
-        />
+          {done && user && gastenInMatch.length > 0 && (
+            <GuestSwapSection
+              match={m}
+              guestIds={gastenInMatch}
+              matchPlayerIds={playerIds}
+              profiles={pmap}
+              myId={user.id}
+              onSaved={() => match.reload()}
+            />
+          )}
+        </MatchBeheer>
       )}
 
       {iLost && (
@@ -454,14 +566,16 @@ export function MatchDetail() {
           </div>
           {/* Dezelfde inline invoer als bij "Te spelen": score/sets opslaan,
               agenda, tijd wijzigen en verwijderen. Rechten worden serverzijdig
-              afgedwongen. Na verwijderen navigeren we terug. */}
+              afgedwongen. Na verwijderen gaan we naar het matchoverzicht:
+              "terug" naar een zojuist verwijderde match slaat nergens op, dus
+              hier bewust géén useBackTo maar een harde vervanging (#910). */}
           <PlannedMatchCard
             match={m}
             teams={tmap}
             profiles={pmap}
             perspectiveId={user?.id}
             onSaved={() => match.reload()}
-            onDeleted={() => navigate(-1)}
+            onDeleted={() => navigate("/matches", { replace: true })}
           />
         </section>
       )}

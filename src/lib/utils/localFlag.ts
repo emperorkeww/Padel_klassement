@@ -9,9 +9,12 @@ export function readFlag(key: string): string | null {
   }
 }
 
-export function writeFlag(key: string, value = "1"): void {
+/** `null` wist de vlag. Nodig sinds #912: de coach-kennismaking moet ook terug
+ *  te halen zijn, en die was met alleen zetten voorgoed weg. */
+export function writeFlag(key: string, value: string | null = "1"): void {
   try {
-    localStorage.setItem(key, value);
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
   } catch {
     // storage niet beschikbaar — negeer
   }

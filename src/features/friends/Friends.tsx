@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { Skeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Sheet } from "@/ui/Sheet";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   getMyFriendships,
   getFriendSuggestions,
@@ -31,6 +33,9 @@ import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import type { RoastCtx, CoachMood } from "@/features/coach/roastTone";
 import { Avatar } from "@/ui/Avatar";
 import { AccountNav } from "@/ui/AccountNav";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { OverflowMenu } from "@/ui/OverflowMenu";
+import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 import { EmptyState } from "@/ui/EmptyState";
 import type { Profile } from "@/types";
 import "./Friends.css";
@@ -39,9 +44,40 @@ import "./Friends.css";
 // als MIN_DUELS in groups/rivalry.ts en MIN_SAMEN in profiles/headToHead.ts.
 const MIN_DUELS = 3;
 
+// Vijf secties stapelden altijd volledig uitgeklapt onder elkaar (#919). Drie
+// tabs: je lijst, wat op je wacht, en waar je iemand vindt.
+type Tab = "vrienden" | "verzoeken" | "ontdekken";
+
+function tabFrom(value: string | null): Tab {
+  return value === "verzoeken" || value === "ontdekken" ? value : "vrienden";
+}
+
+/** Hoeveel rijen een lange lijst toont voordat "Toon meer" verschijnt. */
+const LIJST_STAP = 12;
+
+/** localStorage-sleutel voor het dempen van de H2H-bubbels. */
+const H2H_UIT = "vrienden-h2h-uit";
+
 export function Friends() {
+  usePageTitle("Vrienden");
   const { user } = useAuth();
   const myId = user?.id ?? "";
+
+  // Tab in de URL (?tab=), net als op het groepsdetail en het profiel:
+  // deelbaar en refresh-bestendig.
+  const [params, setParams] = useSearchParams();
+  const tab = tabFrom(params.get("tab"));
+  const setTab = (next: Tab) => {
+    const volgende = new URLSearchParams(params);
+    if (next === "vrienden") volgende.delete("tab");
+    else volgende.set("tab", next);
+    setParams(volgende, { replace: true });
+  };
+  // Hoeveel rijen er per lange lijst getoond worden; groeit per LIJST_STAP.
+  const [vriendenLimiet, setVriendenLimiet] = useState(LIJST_STAP);
+  const [suggestieLimiet, setSuggestieLimiet] = useState(LIJST_STAP);
+  // De H2H-sneer per vriend verdubbelde de rijhoogte en was niet te dempen.
+  const [h2hUit, setH2hUit] = useState(() => readFlag(H2H_UIT) === "1");
 
   const friendships = useAsync(getMyFriendships, []);
   const profiles = useAsync(getProfilesMap, []);
@@ -92,6 +128,20 @@ export function Friends() {
     (s) => !relatedIds.has(s.id) && pmap[s.id],
   );
 
+  // Lange lijsten stap voor stap (#919): een volle vriendenlijst maakte de tab
+  // alsnog eindeloos.
+  const zichtbareVrienden = accepted.slice(0, vriendenLimiet);
+  const zichtbareSuggesties = visibleSuggestions.slice(0, suggestieLimiet);
+  // Alleen een schakelaar aanbieden als er ook echt een H2H-regel te dempen is.
+  const heeftH2H =
+    !!myMatches.data &&
+    !!teams.data &&
+    accepted.some(
+      (f) =>
+        headToHead(myMatches.data!, teams.data!, myId, otherId(f, myId))
+          .alsTegenstanders.gespeeld >= MIN_DUELS,
+    );
+
   // Oplopend volgnummer per zoekopdracht: een traag, verouderd antwoord mag
   // een nieuwer resultaat niet overschrijven.
   const searchSeq = useRef(0);
@@ -114,8 +164,8 @@ export function Friends() {
     [myId, toast],
   );
 
-  // Live zoeken terwijl je typt (met debounce); de Zoek-knop blijft voor
-  // Enter en als expliciete bevestiging.
+  // Live zoeken terwijl je typt (met debounce). Sinds #919 de enige manier: de
+  // Zoek-knop ernaast riep exact dezelfde functie aan.
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
@@ -128,11 +178,6 @@ export function Friends() {
     const t = setTimeout(() => doSearch(q), 300);
     return () => clearTimeout(t);
   }, [query, doSearch]);
-
-  function runSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (query.trim()) doSearch(query.trim());
-  }
 
   // Koppelverzoeken voor gastspelers (#681): iemand claimt dat een gast die hij
   // aanmaakte in werkelijkheid dit account is. Alleen ik kan dat bevestigen.
@@ -196,328 +241,429 @@ export function Friends() {
 
       {/* Mislukte query → echte foutmelding i.p.v. "geen vrienden" (issue #67). */}
       {(friendships.error ?? profiles.error) && (
-        <div className="msg msg--error">
-          Je vrienden laden mislukte: {friendships.error ?? profiles.error}{" "}
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => {
-              if (friendships.error) friendships.reload();
-              if (profiles.error) profiles.reload();
-              if (suggestions.error) suggestions.reload();
-            }}
-          >
-            Opnieuw proberen
-          </button>
-        </div>
+        <ErrorRetry
+          melding={`Je vrienden laden mislukte: ${friendships.error ?? profiles.error}`}
+          onRetry={() => {
+            if (friendships.error) friendships.reload();
+            if (profiles.error) profiles.reload();
+            if (suggestions.error) suggestions.reload();
+          }}
+        />
       )}
 
-      {inkomendeClaims.length > 0 && (
-        <section className="card">
-          <h2 className="card__title">Ben jij deze gast? 👤</h2>
-          <p className="card__subtitle">
-            Iemand speelde je als gast in, voordat je een account had. Bevestig
-            je dat, dan komt die historie op jouw naam te staan.
-          </p>
-          <div className="person-list">
-            {inkomendeClaims.map((c) => {
-              const gast = displayName(pmap[c.guest_id]);
-              const vrager = displayName(pmap[c.requested_by]);
-              const aantal = claimMatchCounts.data?.[c.guest_id];
-              return (
-                <div key={c.id} className="person-row person-row--attn">
-                  <PersonCell profile={pmap[c.guest_id]} />
-                  <span className="btn-row">
-                    <span className="badge">
-                      {vrager} vraagt
-                      {aantal != null && ` · ${aantal} matches`}
-                    </span>
-                    <button
-                      className="btn btn--primary btn--sm"
-                      onClick={async () => {
-                        if (
-                          !(await confirm({
-                            title: "Ben jij deze gast?",
-                            body: `Alle matches, punten en groepen van ${gast} komen op jouw account te staan en je rating wordt opnieuw berekend — inclusief de matches die je als gast speelde. ${gast} verdwijnt daarna. Dit kan niet ongedaan worden gemaakt.`,
-                            confirmLabel: "Ja, koppel mijn account",
-                          }))
-                        )
-                          return;
-                        await claimAct(async () => {
-                          const res = await claimGuestPlayer(c.guest_id, myId);
-                          return `Gekoppeld — ${res.matches} matches staan nu op jouw naam.`;
-                        });
+      {/* Drie tabs in plaats van vijf stapelende secties (#919). De gastclaims
+          horen bij "wacht op jou" en verhuizen dus naar Verzoeken; de teller op
+          die tab is meteen het signaal dat er iets ligt — dat zag je eerder
+          alleen door te scrollen. */}
+      <PageTabs
+        tabs={[
+          { id: "vrienden" as const, label: "Vrienden", count: accepted.length || undefined },
+          {
+            id: "verzoeken" as const,
+            label: "Verzoeken",
+            count: incoming.length + outgoing.length + inkomendeClaims.length || undefined,
+          },
+          { id: "ontdekken" as const, label: "Ontdekken" },
+        ]}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Vriendenonderdelen"
+        idPrefix="vrienden"
+      />
+
+      <TabPanel id={tab} idPrefix="vrienden">
+        {tab === "vrienden" && (
+              <section className="card">
+                <h2 className="card__title">
+                  Mijn vrienden{" "}
+                  {accepted.length > 0 && (
+                    <span className="badge badge--accent">{accepted.length}</span>
+                  )}
+                </h2>
+                {!friendships.loading && !friendships.error && accepted.length === 0 && (
+                  <>
+                    <EmptyState icon="👋" title="Alleen op de baan?">
+                      Padel speel je niet alleen. Zoek hierboven je vaste partners of tegenstanders op en stuur ze een uitnodiging om samen matches te loggen!
+                    </EmptyState>
+                    <div className="friends-coach">
+                      <CoachBubble mood={mySchild ? "portret" : myIntensiteit} size={26}>
+                        <span className="coach-sneer__text">
+                          {coachVrienden({ situatie: "leeg", seed: myId, ctx: myCtx })}
+                        </span>
+                      </CoachBubble>
+                    </div>
+                  </>
+                )}
+                {/* De H2H-sneer verdubbelde de rijhoogte en was niet te dempen
+                    (#919). Alleen aanbieden als er ook echt iets te dempen is. */}
+                {accepted.length > 0 && heeftH2H && (
+                  <label className="friends-h2h-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!h2hUit}
+                      onChange={(e) => {
+                        const aan = e.target.checked;
+                        setH2hUit(!aan);
+                        writeFlag(H2H_UIT, aan ? null : "1");
                       }}
-                    >
-                      Ja, dat ben ik
-                    </button>
-                    <button
-                      className="btn btn--sm"
-                      onClick={() =>
-                        claimAct(async () => {
-                          await cancelGuestClaim(c.id);
-                          return "Verzoek geweigerd.";
-                        })
-                      }
-                    >
-                      Nee
-                    </button>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <div className="grid grid--2">
-        <section className="card">
-          <h2 className="card__title">Speler zoeken</h2>
-          <form className="row-between" onSubmit={runSearch}>
-            <input
-              className="input"
-              placeholder="Zoek op gebruikersnaam…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button className="btn btn--primary" disabled={searching}>
-              {searching ? "Zoeken…" : "Zoek"}
-            </button>
-          </form>
-
-          <div className="person-list mt-4">
-            {results.length === 0 && (
-              <p className="empty">
-                {searched
-                  ? `Geen spelers gevonden voor “${query.trim()}”.`
-                  : "Typ een gebruikersnaam — resultaten verschijnen vanzelf."}
-              </p>
-            )}
-            {results.map((p) => {
-              const already = relatedIds.has(p.id);
-              return (
-                <div key={p.id} className="person-row">
-                  <PersonCell profile={p} to={`/spelers/${p.id}`} />
-                  <button
-                    className="btn btn--sm"
-                    disabled={already}
-                    onClick={() =>
-                      act(
-                        () => sendFriendRequest(myId, p.id),
-                        nieuweRivaalQuip(p.id),
-                      )
-                    }
-                  >
-                    {already ? "Al gekoppeld" : "Verzoek sturen"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2 className="card__title">
-            Inkomende verzoeken{" "}
-            {incoming.length > 0 && (
-              <span className="badge badge--accent">{incoming.length}</span>
-            )}
-          </h2>
-          <div className="person-list">
-            {friendships.loading && <Skeleton rows={2} />}
-            {/* Lege staat alleen als de query slaagde en écht leeg is. */}
-            {!friendships.loading && !friendships.error && incoming.length === 0 && (
-              <p className="empty">Geen openstaande verzoeken.</p>
-            )}
-            {incoming.map((f) => (
-              <div key={f.id} className="person-row person-row--attn">
-                <PersonCell
-                  profile={pmap[otherId(f, myId)]}
-                  to={`/spelers/${otherId(f, myId)}`}
-                />
-                <span className="btn-row">
-                  <button
-                    className="btn btn--primary btn--sm"
-                    onClick={() =>
-                      act(() => respondToRequest(f.id, "accepted"), "Geaccepteerd.")
-                    }
-                  >
-                    Accepteer
-                  </button>
-                  <button
-                    className="btn btn--sm"
-                    onClick={() =>
-                      act(() => respondToRequest(f.id, "declined"), "Geweigerd.")
-                    }
-                  >
-                    Weiger
-                  </button>
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {outgoing.length > 0 && (
-            <>
-              <h2 className="card__title card__title--section">Verzonden verzoeken</h2>
-              <div className="person-list">
-                {outgoing.map((f) => (
-                  <div key={f.id} className="person-row">
-                    <PersonCell
-                      profile={pmap[otherId(f, myId)]}
-                      to={`/spelers/${otherId(f, myId)}`}
                     />
-                    <span className="btn-row">
-                      <span className="badge">In afwachting</span>
-                      <button
-                        className="btn btn--sm btn--danger"
-                        onClick={() =>
-                          act(() => removeFriendship(f.id), "Verzoek ingetrokken.")
-                        }
-                      >
-                        Intrekken
-                      </button>
-                    </span>
+                    <span>Rudy's onderlinge balans tonen</span>
+                  </label>
+                )}
+                <div className="person-grid">
+                  {friendships.loading && <Skeleton rows={3} />}
+                  {zichtbareVrienden.map((f) => {
+                    const fid = otherId(f, myId);
+                    // Onderlinge balans tegen deze vriend (alleen tonen bij genoeg duels).
+                    const balans =
+                      myMatches.data && teams.data
+                        ? headToHead(myMatches.data, teams.data, myId, fid).alsTegenstanders
+                        : null;
+                    const toonH2H =
+                      !h2hUit && !!balans && balans.gespeeld >= MIN_DUELS;
+                    // Bij de rivaal telt diéns schild; de toon blijft mijn intensiteit.
+                    const fSchild = pmap[fid]?.roast_schild ?? false;
+                    const h2hMood: CoachMood = fSchild ? "portret" : myIntensiteit;
+                    return (
+                      <div key={f.id} className="friend-cell">
+                        <div className="person-row">
+                          <PersonCell profile={pmap[fid]} to={`/spelers/${fid}`} />
+                          {/* Verwijderen stond als rode knop naast elke vriend,
+                              terwijl je hier meestal komt om iemand tóe te
+                              voegen (#919). De bevestiging blijft — dat was
+                              nooit het probleem, de prominentie wel. */}
+                          <OverflowMenu
+                            label={`Meer bij ${displayName(pmap[fid])}`}
+                            className="person-row__menu"
+                          >
+                            {(sluit) => (
+                              <>
+                                <Link className="btn btn--sm" to={`/spelers/${fid}`}>
+                                  Profiel bekijken
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="btn btn--danger btn--sm"
+                                  onClick={async () => {
+                                    sluit();
+                                    if (
+                                      !(await confirm({
+                                        title: "Vriend verwijderen?",
+                                        body: `${displayName(pmap[fid])} wordt uit je vriendenlijst verwijderd.`,
+                                        confirmLabel: "Verwijderen",
+                                        danger: true,
+                                      }))
+                                    )
+                                      return;
+                                    act(() => removeFriendship(f.id), "Verwijderd.");
+                                  }}
+                                >
+                                  Vriend verwijderen
+                                </button>
+                              </>
+                            )}
+                          </OverflowMenu>
+                        </div>
+                        {toonH2H && (
+                          <CoachBubble mood={h2hMood} size={24}>
+                            <span className="coach-sneer__text">
+                              {coachVrienden({
+                                situatie: "h2h",
+                                balans: balans!,
+                                seed: `${myId}:${fid}`,
+                                ctx: { intensiteit: myIntensiteit, schild: fSchild },
+                              })}
+                            </span>
+                          </CoachBubble>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {accepted.length > vriendenLimiet && (
+                  <div className="friends-meer">
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setVriendenLimiet((n) => n + LIJST_STAP)}
+                    >
+                      Toon meer ({accepted.length - vriendenLimiet})
+                    </button>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+                )}
+              </section>
+        )}
 
-      <section className="card">
-        <h2 className="card__title">
-          Mijn vrienden{" "}
-          {accepted.length > 0 && (
-            <span className="badge badge--accent">{accepted.length}</span>
-          )}
-        </h2>
-        {!friendships.loading && !friendships.error && accepted.length === 0 && (
+        {tab === "verzoeken" && (
           <>
-            <EmptyState icon="👋" title="Alleen op de baan?">
-              Padel speel je niet alleen. Zoek hierboven je vaste partners of tegenstanders op en stuur ze een uitnodiging om samen matches te loggen!
-            </EmptyState>
-            <div className="friends-coach">
-              <CoachBubble mood={mySchild ? "portret" : myIntensiteit} size={26}>
-                <span className="coach-sneer__text">
-                  {coachVrienden({ situatie: "leeg", seed: myId, ctx: myCtx })}
-                </span>
-              </CoachBubble>
-            </div>
+                  {inkomendeClaims.length > 0 && (
+                    <section className="card">
+                      <h2 className="card__title">Ben jij deze gast? 👤</h2>
+                      <p className="card__subtitle">
+                        Iemand speelde je als gast in, voordat je een account had. Bevestig
+                        je dat, dan komt die historie op jouw naam te staan.
+                      </p>
+                      <div className="person-list">
+                        {inkomendeClaims.map((c) => {
+                          const gast = displayName(pmap[c.guest_id]);
+                          const vrager = displayName(pmap[c.requested_by]);
+                          const aantal = claimMatchCounts.data?.[c.guest_id];
+                          return (
+                            <div key={c.id} className="person-row person-row--attn">
+                              <PersonCell profile={pmap[c.guest_id]} />
+                              <span className="btn-row">
+                                <span className="badge">
+                                  {vrager} vraagt
+                                  {aantal != null && ` · ${aantal} matches`}
+                                </span>
+                                <button
+                                  className="btn btn--primary btn--sm"
+                                  onClick={async () => {
+                                    if (
+                                      !(await confirm({
+                                        title: "Ben jij deze gast?",
+                                        body: `Alle matches, punten en groepen van ${gast} komen op jouw account te staan en je rating wordt opnieuw berekend — inclusief de matches die je als gast speelde. ${gast} verdwijnt daarna. Dit kan niet ongedaan worden gemaakt.`,
+                                        confirmLabel: "Ja, koppel mijn account",
+                                      }))
+                                    )
+                                      return;
+                                    await claimAct(async () => {
+                                      const res = await claimGuestPlayer(c.guest_id, myId);
+                                      return `Gekoppeld — ${res.matches} matches staan nu op jouw naam.`;
+                                    });
+                                  }}
+                                >
+                                  Ja, dat ben ik
+                                </button>
+                                <button
+                                  className="btn btn--sm"
+                                  onClick={() =>
+                                    claimAct(async () => {
+                                      await cancelGuestClaim(c.id);
+                                      return "Verzoek geweigerd.";
+                                    })
+                                  }
+                                >
+                                  Nee
+                                </button>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+                    <section className="card">
+                      <h2 className="card__title">
+                        Inkomende verzoeken{" "}
+                        {incoming.length > 0 && (
+                          <span className="badge badge--accent">{incoming.length}</span>
+                        )}
+                      </h2>
+                      <div className="person-list">
+                        {friendships.loading && <Skeleton rows={2} />}
+                        {/* Lege staat alleen als de query slaagde en écht leeg is. */}
+                        {!friendships.loading && !friendships.error && incoming.length === 0 && (
+                          <p className="empty">Geen openstaande verzoeken.</p>
+                        )}
+                        {incoming.map((f) => (
+                          <div key={f.id} className="person-row person-row--attn">
+                            <PersonCell
+                              profile={pmap[otherId(f, myId)]}
+                              to={`/spelers/${otherId(f, myId)}`}
+                            />
+                            <span className="btn-row">
+                              <button
+                                className="btn btn--primary btn--sm"
+                                onClick={() =>
+                                  act(() => respondToRequest(f.id, "accepted"), "Geaccepteerd.")
+                                }
+                              >
+                                Accepteer
+                              </button>
+                              <button
+                                className="btn btn--sm"
+                                onClick={() =>
+                                  act(() => respondToRequest(f.id, "declined"), "Geweigerd.")
+                                }
+                              >
+                                Weiger
+                              </button>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {outgoing.length > 0 && (
+                        <>
+                          <h2 className="card__title card__title--section">Verzonden verzoeken</h2>
+                          <div className="person-list">
+                            {outgoing.map((f) => (
+                              <div key={f.id} className="person-row">
+                                <PersonCell
+                                  profile={pmap[otherId(f, myId)]}
+                                  to={`/spelers/${otherId(f, myId)}`}
+                                />
+                                <span className="btn-row">
+                                  <span className="badge">In afwachting</span>
+                                  <button
+                                    className="btn btn--sm btn--danger"
+                                    onClick={() =>
+                                      act(() => removeFriendship(f.id), "Verzoek ingetrokken.")
+                                    }
+                                  >
+                                    Intrekken
+                                  </button>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </section>
           </>
         )}
-        <div className="person-grid">
-          {friendships.loading && <Skeleton rows={3} />}
-          {accepted.map((f) => {
-            const fid = otherId(f, myId);
-            // Onderlinge balans tegen deze vriend (alleen tonen bij genoeg duels).
-            const balans =
-              myMatches.data && teams.data
-                ? headToHead(myMatches.data, teams.data, myId, fid).alsTegenstanders
-                : null;
-            const toonH2H = !!balans && balans.gespeeld >= MIN_DUELS;
-            // Bij de rivaal telt diéns schild; de toon blijft mijn intensiteit.
-            const fSchild = pmap[fid]?.roast_schild ?? false;
-            const h2hMood: CoachMood = fSchild ? "portret" : myIntensiteit;
-            return (
-              <div key={f.id} className="friend-cell">
-                <div className="person-row">
-                  <PersonCell profile={pmap[fid]} to={`/spelers/${fid}`} />
-                  <button
-                    className="btn btn--danger btn--sm"
-                    onClick={async () => {
-                      if (
-                        !(await confirm({
-                          title: "Vriend verwijderen?",
-                          body: `${displayName(pmap[fid])} wordt uit je vriendenlijst verwijderd.`,
-                          confirmLabel: "Verwijderen",
-                          danger: true,
-                        }))
-                      )
-                        return;
-                      act(() => removeFriendship(f.id), "Verwijderd.");
-                    }}
-                  >
-                    Verwijderen
-                  </button>
-                </div>
-                {toonH2H && (
-                  <CoachBubble mood={h2hMood} size={24}>
-                    <span className="coach-sneer__text">
-                      {coachVrienden({
-                        situatie: "h2h",
-                        balans: balans!,
-                        seed: `${myId}:${fid}`,
-                        ctx: { intensiteit: myIntensiteit, schild: fSchild },
-                      })}
-                    </span>
-                  </CoachBubble>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
-      <section className="card">
-        <h2 className="card__title">Misschien ken je</h2>
-        {suggestions.loading && <Skeleton rows={3} />}
-        {suggestions.error && (
-          <p className="msg msg--error">
-            Suggesties laden mislukte: {suggestions.error}
-          </p>
-        )}
-        {!suggestions.loading && !suggestions.error && visibleSuggestions.length === 0 && (
-          <p className="empty">
-            Nog geen suggesties — voeg vrienden toe en we stellen op basis van
-            gemeenschappelijke vrienden nieuwe spelers voor.
-          </p>
-        )}
-        <div className="suggest-grid">
-          {visibleSuggestions.map((s) => {
-            const p = pmap[s.id];
-            return (
-              <div key={s.id} className="suggest-card">
-                <Link className="suggest-card__id" to={`/spelers/${s.id}`}>
-                  <Avatar profile={p} size={56} />
-                  <span className="suggest-card__name">{displayName(p)}</span>
-                  <span className="badge">@{p.username}</span>
-                </Link>
+        {tab === "ontdekken" && (
+          <>
+                    <section className="card">
+                      <h2 className="card__title">Speler zoeken</h2>
+                      {/* Eén affordance (#919): er werd al live gezocht met debounce, dus
+                          de "Zoek"-knop deed exact hetzelfde als typen. Het formulier blijft
+                          staan zodat Enter de pagina niet herlaadt; de wis-knop is een
+                          ándere actie en telt dus niet als tweede zoekknop. */}
+                      <form
+                        className="friends-search"
+                        role="search"
+                        onSubmit={(e) => e.preventDefault()}
+                      >
+                        <input
+                          className="input"
+                          placeholder="Zoek op gebruikersnaam…"
+                          aria-label="Zoek een speler"
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                        {query && (
+                          <button
+                            type="button"
+                            className="btn btn--sm friends-search__clear"
+                            aria-label="Zoekterm wissen"
+                            onClick={() => setQuery("")}
+                          >
+                            <span aria-hidden="true">✕</span>
+                          </button>
+                        )}
+                      </form>
+                      {searching && (
+                        <p className="empty" role="status">
+                          Zoeken…
+                        </p>
+                      )}
 
-                {s.mutual_count > 0 ? (
-                  <button
-                    type="button"
-                    className="mutual-toggle"
-                    onClick={() => setMutualFor(s)}
-                  >
-                    {s.mutual_ids.length > 0 && (
-                      <span className="mutual-avatars" aria-hidden="true">
-                        {s.mutual_ids.slice(0, 3).map((mid) => (
-                          <Avatar key={mid} profile={pmap[mid]} size={20} />
-                        ))}
-                      </span>
+                      <div className="person-list mt-4">
+                        {results.length === 0 && (
+                          <p className="empty">
+                            {searched
+                              ? `Geen spelers gevonden voor “${query.trim()}”.`
+                              : "Typ een gebruikersnaam — resultaten verschijnen vanzelf."}
+                          </p>
+                        )}
+                        {results.map((p) => {
+                          const already = relatedIds.has(p.id);
+                          return (
+                            <div key={p.id} className="person-row">
+                              <PersonCell profile={p} to={`/spelers/${p.id}`} />
+                              <button
+                                className="btn btn--sm"
+                                disabled={already}
+                                onClick={() =>
+                                  act(
+                                    () => sendFriendRequest(myId, p.id),
+                                    nieuweRivaalQuip(p.id),
+                                  )
+                                }
+                              >
+                                {already ? "Al gekoppeld" : "Verzoek sturen"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  <section className="card">
+                    <h2 className="card__title">Misschien ken je</h2>
+                    {suggestions.loading && <Skeleton rows={3} />}
+                    {suggestions.error && (
+                      <ErrorRetry
+                        melding={`Suggesties laden mislukte: ${suggestions.error}`}
+                        onRetry={suggestions.reload}
+                      />
                     )}
-                    {s.mutual_count} gemeenschappelijke vriend
-                    {s.mutual_count === 1 ? "" : "en"}
-                  </button>
-                ) : (
-                  <span className="person-sub">Voorgesteld voor jou</span>
-                )}
+                    {!suggestions.loading && !suggestions.error && visibleSuggestions.length === 0 && (
+                      <p className="empty">
+                        Nog geen suggesties — voeg vrienden toe en we stellen op basis van
+                        gemeenschappelijke vrienden nieuwe spelers voor.
+                      </p>
+                    )}
+                    <div className="suggest-grid">
+                      {zichtbareSuggesties.map((s) => {
+                        const p = pmap[s.id];
+                        return (
+                          <div key={s.id} className="suggest-card">
+                            <Link className="suggest-card__id" to={`/spelers/${s.id}`}>
+                              <Avatar profile={p} size={56} />
+                              <span className="suggest-card__name">{displayName(p)}</span>
+                              <span className="badge">@{p.username}</span>
+                            </Link>
 
-                <button
-                  className="btn btn--sm btn--primary suggest-card__cta"
-                  onClick={() =>
-                    act(() => sendFriendRequest(myId, s.id), nieuweRivaalQuip(s.id))
-                  }
-                >
-                  Verzoek sturen
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+                            {s.mutual_count > 0 ? (
+                              <button
+                                type="button"
+                                className="mutual-toggle"
+                                onClick={() => setMutualFor(s)}
+                              >
+                                {s.mutual_ids.length > 0 && (
+                                  <span className="mutual-avatars" aria-hidden="true">
+                                    {s.mutual_ids.slice(0, 3).map((mid) => (
+                                      <Avatar key={mid} profile={pmap[mid]} size={20} />
+                                    ))}
+                                  </span>
+                                )}
+                                {s.mutual_count} gemeenschappelijke vriend
+                                {s.mutual_count === 1 ? "" : "en"}
+                              </button>
+                            ) : (
+                              <span className="person-sub">Voorgesteld voor jou</span>
+                            )}
+
+                            <button
+                              className="btn btn--sm btn--primary suggest-card__cta"
+                              onClick={() =>
+                                act(() => sendFriendRequest(myId, s.id), nieuweRivaalQuip(s.id))
+                              }
+                            >
+                              Verzoek sturen
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {visibleSuggestions.length > suggestieLimiet && (
+                      <div className="friends-meer">
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setSuggestieLimiet((n) => n + LIJST_STAP)}
+                        >
+                          Toon meer ({visibleSuggestions.length - suggestieLimiet})
+                        </button>
+                      </div>
+                    )}
+                  </section>
+          </>
+        )}
+      </TabPanel>
 
       {mutualFor && (
         <Sheet

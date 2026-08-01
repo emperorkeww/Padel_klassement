@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useToast } from "@/ui/ToastProvider";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { errorMessage } from "@/lib/utils/errors";
 import { redeemGroupInvite } from "./api";
 
@@ -8,6 +10,7 @@ import { redeemGroupInvite } from "./api";
 // ingelogde gebruiker toe aan de groep en stuurt door naar de groepspagina.
 // Deze route zit achter ProtectedRoute, dus de gebruiker is hier altijd ingelogd.
 export function JoinGroup() {
+  usePageTitle("Uitnodiging");
   const { token = "" } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -37,10 +40,14 @@ export function JoinGroup() {
     return (
       <div className="card">
         <h1 className="page-title">Uitnodiging</h1>
-        <p className="msg msg--error">{error}</p>
-        <Link className="btn btn--primary" to="/groepen">
-          Naar mijn groepen
-        </Link>
+        <ErrorRetry
+          melding={error}
+          actie={
+            <Link className="btn btn--primary" to="/groepen">
+              Naar mijn groepen
+            </Link>
+          }
+        />
       </div>
     );
   }

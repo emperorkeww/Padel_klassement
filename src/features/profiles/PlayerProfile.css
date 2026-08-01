@@ -485,6 +485,17 @@
   flex-wrap: wrap;
 }
 
+/* Welke cijfers het seizoensfilter volgen en welke all-time zijn (#918). */
+.profile-scope {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
 /* Onderlinge stand: uitgelichte nemesis + favoriete tegenstander. */
 .h2h-highlights {
   display: grid;

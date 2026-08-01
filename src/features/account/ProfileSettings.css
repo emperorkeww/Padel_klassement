@@ -30,6 +30,58 @@
   color: var(--ink-soft);
 }
 
+/* ---------- Uitsnijden vóór uploaden (#921) ----------
+   Een staande telefoonfoto werd ongecontroleerd geschaald in een ronde, kleine
+   avatar. Hier kies je zelf wat er in het kader valt. De kadermaat staat óók in
+   AvatarCropper.tsx (KADER_ZIJDE): het slepen gebeurt in schermpixels en het
+   uitsnijden in canvaspixels, dus die twee moeten gelijk blijven. */
+.avatar-crop {
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: center;
+}
+.avatar-crop__kader {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background: var(--surface-2);
+  border: 1px solid var(--accent-line);
+  cursor: grab;
+  touch-action: none; /* anders scrollt de pagina mee tijdens het slepen */
+}
+.avatar-crop__kader:active {
+  cursor: grabbing;
+}
+.avatar-crop__kader img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  transform-origin: center;
+}
+.avatar-crop__zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 220px;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.avatar-crop__zoom input {
+  flex: 1;
+}
+@media (max-width: 720px) {
+  /* Naast elkaar past niet meer zodra het kader er staat. */
+  .avatar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .profile-meta {
   margin-top: var(--sp-5);
   color: var(--ink-soft);
@@ -56,12 +108,6 @@
   min-height: 44px;
   cursor: pointer;
 }
-.toggle-row input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  accent-color: var(--accent);
-}
 .toggle-row__text {
   display: flex;
   flex-direction: column;
@@ -74,25 +120,61 @@
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
-.toggle-row input[type="checkbox"] {
-  width: 1.15rem;
-  height: 1.15rem;
-  accent-color: var(--accent);
+
+/* Schakelaar in plaats van een vinkje (#921). Deze rijen zijn voorkeuren die
+   meteen ingaan, geen formuliervelden die je nog moet indienen — en met
+   role="switch" zegt een screenreader "aan"/"uit" i.p.v. "aangevinkt". */
+.toggle-row__switch {
+  appearance: none;
+  position: relative;
   flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.toggle-row__switch::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 1.1rem;
+  height: 1.1rem;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s;
+}
+.toggle-row__switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle-row__switch:checked::after {
+  transform: translate(1.2rem, -50%);
+}
+.toggle-row__switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.toggle-row__switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toggle-row__switch,
+  .toggle-row__switch::after {
+    transition: none;
+  }
 }
 
-/* #70: de sectie-tabbar van de instellingen is de enige tab-rij op de pagina,
-   dus houdt hij de gewone pil-stijl (.tabs). Enige toevoeging: lange labels
-   ("Meldingen & privacy") mogen op smal scherm horizontaal doorschuiven i.p.v.
-   de pagina op te rekken. */
-.settings-tabs {
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.settings-tabs::-webkit-scrollbar {
-  display: none;
-}
+/* #70 gaf de instellingen-tabbar een eigen doorschuif-regel voor lange labels
+   ("Meldingen & privacy"). Sinds #910 draait deze rij op het gedeelde
+   PageTabs/.tabs--page, dat datzelfde horizontale schuiven al meebrengt — de
+   eigen regels zijn daarmee overbodig geworden. */
 
 /* Kop met twee snelkoppelingen ("Mijn profiel", "Vrienden"): op 320px past die
    rij niet naast de titel, dus daar breekt hij af i.p.v. te knellen (#706). */

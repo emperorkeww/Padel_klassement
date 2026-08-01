@@ -132,6 +132,17 @@
   color: var(--ink-soft);
   font-weight: 600;
 }
+/* De status komt uit een tweede query en viel dus ná de kaarten binnen (#916).
+   Deze placeholder houdt de plek vast zodat de lijst niet verspringt; hij is
+   even hoog als een echt label en verder onopvallend. */
+.group-card__journey--laadt {
+  width: 9rem;
+  max-width: 60%;
+  height: 1.15em;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border-color: var(--line);
+}
 
 /* Zachte pols op de rand — genoeg om het oog te trekken, niet genoeg om te
    irriteren naast vier andere kaarten. */
@@ -158,43 +169,18 @@
   margin-bottom: var(--sp-5);
 }
 
-/* Secundaire rij onder de groepen: losse match + vrije banen. Compacter dan
-   een volle kaart, zodat de groepen de pagina blijven dragen. */
-.hub-extra {
-  display: grid;
-  gap: var(--sp-3);
+/* Losse match: een gewone actie in de hub-toon (#916). Stond als grijs kaartje
+   onder "Ook hier", terwijl loggen buiten een groep een veelgebruikt pad is. */
+.hub-los {
+  margin-bottom: var(--sp-4);
 }
-@media (min-width: 640px) {
-  .hub-extra {
-    grid-template-columns: 1fr 1fr;
-  }
+.hub-los .btn-row {
+  flex-shrink: 0;
 }
-.hub-extra__card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  padding: var(--sp-3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-}
-.hub-extra__title {
+
+/* Vrije banen blijft wél een rustige verwijzing: één regel onderaan. */
+.hub-banen {
   margin: 0;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--ink-soft);
-}
-.hub-extra__text {
-  margin: 0;
-  flex: 1;
   font-size: var(--fs-sm);
-  color: var(--ink-soft);
-}
-.hub-extra__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
 }

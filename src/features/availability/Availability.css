@@ -489,6 +489,77 @@
 
 /* ---- Legenda & voetnoot ---- */
 
+/* Ingeklapt sinds #920: zes swatches plus een alinea kleine letters onder élk
+   raster is ruis, en je leest het hooguit één keer. */
+.avail-legend-box {
+  margin-top: var(--sp-5);
+}
+.avail-legend-box__summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* ---- Samenvatting boven het raster (#920) ----
+   Weer, versheid, "eerstvolgend vrij" en delen stonden als vier gelijkwaardige
+   alinea's onder elkaar. Nu: waar je voor komt bovenaan, context eronder. */
+.avail-summary {
+  margin-bottom: var(--sp-4);
+}
+.avail-summary__lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+/* De lead-regel draagt zichzelf; de eigen ondermarge zou een gat trekken. */
+.avail-summary__lead .avail-next {
+  margin: 0;
+}
+.avail-summary__meta {
+  margin-top: var(--sp-2);
+}
+.avail-summary__meta .avail-fresh {
+  margin: var(--sp-1) 0 0;
+}
+
+/* Uitleg bij het duurfilter waar hij over gaat, in plaats van kleine letters
+   onderaan (#920). */
+.avail-duur-uitleg {
+  margin: 0 0 var(--sp-4);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* ---- Laadstaat die op het raster lijkt (#920) ---- */
+.avail-sk {
+  display: grid;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.avail-sk__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.avail-sk__label {
+  flex: 0 0 5.5rem;
+  height: 14px;
+}
+.avail-sk__cells {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+.avail-sk__cell {
+  flex: 1 1 0;
+  height: 24px;
+  border-radius: 4px;
+}
+
 .avail-legend {
   display: flex;
   flex-wrap: wrap;

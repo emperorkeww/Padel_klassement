@@ -13,10 +13,13 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import Matches from "./Matches";
 import { supabase } from "@/lib/supabase/client";
+import { makeQuery } from "@/test/supabaseMock";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+import { MATCH_DONE } from "@/test/fixtures";
 
-function renderPage() {
+function renderPage(url = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <AuthProvider>
         <ToastProvider>
           <Matches />
@@ -25,6 +28,39 @@ function renderPage() {
     </MemoryRouter>,
   );
 }
+
+/** Vervangt tijdelijk wat de matches-tabel teruggeeft; geeft een
+ *  herstelfunctie terug. Respecteert de limit() van de aanroeper, zodat het
+ *  "toon oudere matches"-pad echt getoetst wordt. */
+function metMatches(rijen: unknown[]) {
+  invalidateAll();
+  const fromMock = supabase.from as unknown as {
+    getMockImplementation: () => (table: string) => unknown;
+    mockImplementation: (impl: (table: string) => unknown) => void;
+  };
+  const orig = fromMock.getMockImplementation();
+  fromMock.mockImplementation((t) =>
+    t === "matches" ? makeQuery({ data: rijen, error: null }) : orig(t),
+  );
+  return () => {
+    fromMock.mockImplementation(orig);
+    invalidateAll();
+  };
+}
+
+/** n afgeronde matches, elk op een eigen dag, zonder groep. */
+const veelMatches = (n: number, groupId: string | null = null) =>
+  Array.from({ length: n }, (_, i) => {
+    const ts = new Date(Date.UTC(2026, 6, 3) - i * 86_400_000).toISOString();
+    return {
+      ...MATCH_DONE,
+      id: `bulk-${i}`,
+      group_id: groupId,
+      round_number: null,
+      played_at: ts,
+      created_at: ts,
+    };
+  });
 
 describe("<Matches />", () => {
   it("toont Te spelen met inline invoer en de recente matches", async () => {
@@ -148,5 +184,123 @@ describe("<Matches />", () => {
     await screen.findByRole("dialog");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  // ── #914 ────────────────────────────────────────────────────────────────
+
+  it("heeft één primaire actie: loggen zweeft, plannen staat in de kop", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/recente matches/i);
+
+    const log = screen.getByRole("button", { name: /match loggen/i });
+    expect(log).toHaveClass("matches__fab");
+    // De kop draagt alleen nog de secundaire actie.
+    const kop = container.querySelector(".page-head")!;
+    expect(
+      within(kop as HTMLElement).getByRole("button", { name: /match plannen/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(kop as HTMLElement).queryByRole("button", { name: /match loggen/i }),
+    ).toBeNull();
+  });
+
+  it("reserveert de ruimte van 'Te spelen' tijdens het laden", async () => {
+    const { container } = renderPage();
+    // Meteen bij de eerste render: kop staat er, kaarten nog niet.
+    expect(screen.getByText(/te spelen/i)).toBeInTheDocument();
+    expect(container.querySelector(".sk")).not.toBeNull();
+    expect(
+      screen.queryByLabelText(/^score alice anders & bob boers$/i),
+    ).toBeNull();
+
+    // En zodra de data er is, staat de echte inhoud er.
+    expect(
+      await screen.findByLabelText(/^score alice anders & bob boers$/i),
+    ).toBeInTheDocument();
+  });
+
+  it("filtert op periode en bewaart de keuze in de URL", async () => {
+    // Eén match van vandaag, één van ruim een maand terug.
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },
+      {
+        ...MATCH_DONE,
+        id: "oud",
+        score_a: 1,
+        score_b: 6,
+        played_at: "2020-01-05T18:00:00.000Z",
+        created_at: "2020-01-05T18:00:00.000Z",
+      },
+    ]);
+    try {
+      renderPage();
+      await screen.findByText("6–3");
+      expect(screen.getByText("1–6")).toBeInTheDocument();
+
+      await userEvent.selectOptions(screen.getByLabelText("Periode"), "7d");
+      expect(screen.getByText("6–3")).toBeInTheDocument();
+      expect(screen.queryByText("1–6")).toBeNull();
+
+      // Wissen brengt de oude match terug.
+      await userEvent.click(screen.getByRole("button", { name: /wis filters/i }));
+      expect(screen.getByText("1–6")).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("leest het periodefilter uit de URL", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },
+      {
+        ...MATCH_DONE,
+        id: "oud",
+        score_a: 1,
+        score_b: 6,
+        played_at: "2020-01-05T18:00:00.000Z",
+        created_at: "2020-01-05T18:00:00.000Z",
+      },
+    ]);
+    try {
+      renderPage("/?periode=7d");
+      await screen.findByText("6–3");
+      expect(screen.getByLabelText("Periode")).toHaveValue("7d");
+      expect(screen.queryByText("1–6")).toBeNull();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("meldt de afkapping en laadt oudere matches bij", async () => {
+    // Precies de paginagrootte terug = er zit waarschijnlijk meer achter.
+    const herstel = metMatches(veelMatches(100));
+    try {
+      renderPage();
+      expect(
+        await screen.findByText(/alleen de laatste 100 matches zijn geladen/i),
+      ).toBeInTheDocument();
+
+      await userEvent.click(
+        screen.getByRole("button", { name: /toon oudere matches/i }),
+      );
+      // Nu vraagt de pagina 200 op; de mock geeft er 100, dus dit is alles.
+      expect(
+        await screen.findByText(/recente matches/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/alleen de laatste/i),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: /toon oudere matches/i }),
+      ).toBeNull();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("houdt de dagkoppen in de historie (#914, bevinding 5)", async () => {
+    const { container } = renderPage();
+    await screen.findByText("6–3");
+    expect(container.querySelector(".match-day__title")).not.toBeNull();
   });
 });

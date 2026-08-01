@@ -237,7 +237,8 @@
 
 /* ---------- Mobiele ranglijst (vervangt de tabel op smalle schermen) ---------- */
 .ranklist {
-  display: none;
+  /* Stond op `display: none` omdat de container query hem aanzette; sinds #913
+     rendert Leaderboard.tsx hem alleen wanneer hij nodig is. */
   list-style: none;
   margin: 0;
   padding: 0;
@@ -421,21 +422,18 @@
 }
 
 /* ---------- Tabel ⇄ ranglijst-omschakeling ----------
-   Gestuurd door de BESCHIKBARE BREEDTE van de kaart (container query), niet de
-   viewport: met een brede zij-nav is de kaart smaller dan het venster, en juist
-   dan liep de tabel over. Onder ~820px kaartbreedte tonen we de compacte
-   ranglijst i.p.v. de tabel — zo verschijnt er nooit een horizontale scrollbar. */
+   Gestuurd door de BESCHIKBARE BREEDTE van de kaart, niet de viewport: met een
+   brede zij-nav is de kaart smaller dan het venster, en juist dan liep de tabel
+   over. Onder ~820px kaartbreedte toont Leaderboard.tsx de compacte ranglijst
+   i.p.v. de tabel — zo verschijnt er nooit een horizontale scrollbar.
+
+   Dat deed tot #913 een container query, maar die verbérgt alleen: beide
+   lijsten stonden in de DOM en werden allebei gerenderd. De meting zit nu in
+   useContainerBreedte, zodat er echt maar één bestaat. `container-type` blijft
+   staan: de tabel eronder heeft zijn eigen container query voor de sparkline. */
 .standings-switch {
   container-type: inline-size;
   container-name: standings;
-}
-@container standings (max-width: 820px) {
-  .leaderboard-table {
-    display: none;
-  }
-  .ranklist {
-    display: block;
-  }
 }
 
 /* Boven de vaste onderbalk blijven (die verschijnt bij de shell-switch ≤720px). */
@@ -537,25 +535,71 @@
   justify-self: start;
 }
 
+/* Actieve filters als losse chips (#913). Tot dan stond er alleen een getal op
+   de menuknop: je zag wél dát er gefilterd werd, maar niet waarop. */
+.lb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+}
+.lb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-3);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.lb-chip__wis {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+.lb-chip__wis:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.lb-chips__alles {
+  min-height: 32px;
+}
+/* Uitleg wanneer een keuze verviel omdat hij niet samengaat met de nieuwe. */
+.lb-vervallen {
+  margin: 0 0 var(--sp-4);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
 @media (max-width: 720px) {
-  /* Ook op mobiel alles op één lijn: tabs (mogen intern scrollen) + zoekbalk
-     die de rest vult + de filterknop als compact icoon. */
+  /* Vier tabs, zoekveld én filterknop op één regel was te druk (#913): de tabs
+     kregen zo weinig ruimte dat er altijd iets buiten beeld viel. Nu twee
+     regels — tabs boven (die scrollen al intern), zoeken plus filter eronder. */
   .lb-toolbar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
   .lb-toolbar .tabs {
-    flex: 0 1 auto;
+    flex: 1 1 100%;
     min-width: 0;
   }
   .lb-toolbar .lb-search {
     flex: 1 1 60px;
   }
-  /* Filterknop wordt icoon-only zodat alles op de regel past. */
+  /* Filterknop houdt zijn label; er is nu ruimte op de tweede regel. */
   .lb-menu__btn {
-    padding: var(--sp-2);
-  }
-  .lb-menu__label {
-    display: none;
+    padding: var(--sp-2) var(--sp-3);
   }
 }
 
