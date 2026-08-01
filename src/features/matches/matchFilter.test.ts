@@ -1,10 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   applyFilter,
+  filterOpGroep,
+  filterOpPeriode,
   groupByDay,
   dayLabel,
+  periodeFromParam,
   EMPTY_BY_FILTER,
   FILTER_TABS,
+  PERIODE_OPTIES,
 } from "./matchFilter";
 import type { Match, Team } from "@/types";
 
@@ -116,5 +120,93 @@ describe("constanten", () => {
     for (const [key] of FILTER_TABS) {
       expect(EMPTY_BY_FILTER[key]).toBeTruthy();
     }
+  });
+});
+
+// ── #914: groep en periode versmallen de lijst vóór de tabs hierboven ────────
+
+/** Match op een vaste dag, met een group_id. */
+const opDag = (id: string, dag: string, groupId: string | null): Match =>
+  ({
+    id,
+    team_a_id: "ta",
+    team_b_id: "tb",
+    status: "completed",
+    group_id: groupId,
+    played_at: `${dag}T18:00:00.000Z`,
+    created_at: `${dag}T18:00:00.000Z`,
+  }) as unknown as Match;
+
+describe("filterOpGroep (#914)", () => {
+  const lijst = [
+    opDag("a", "2026-07-01", "g1"),
+    opDag("b", "2026-07-01", "g2"),
+    opDag("c", "2026-07-01", null),
+  ];
+
+  it("laat alles door zonder gekozen groep", () => {
+    expect(filterOpGroep(lijst, "")).toHaveLength(3);
+  });
+
+  it("houdt alleen de matches van die groep", () => {
+    expect(filterOpGroep(lijst, "g1").map((m) => m.id)).toEqual(["a"]);
+  });
+
+  it("laat losse matches zonder groep buiten een groepsfilter", () => {
+    expect(filterOpGroep(lijst, "g2").map((m) => m.id)).toEqual(["b"]);
+  });
+});
+
+describe("filterOpPeriode (#914)", () => {
+  // "Nu" is 10 juli 2026, 12:00 UTC.
+  const nu = Date.UTC(2026, 6, 10, 12);
+  const lijst = [
+    opDag("vandaag", "2026-07-10", null),
+    opDag("zesDagen", "2026-07-04", null),
+    opDag("achtDagen", "2026-07-02", null),
+    opDag("vorigJaar", "2025-12-30", null),
+  ];
+
+  it("laat alles door zonder periode", () => {
+    expect(filterOpPeriode(lijst, "", "UTC", nu)).toHaveLength(4);
+  });
+
+  it("telt bij 7 dagen vandaag mee en kapt op de zevende dag af", () => {
+    // Vandaag t/m zes dagen terug = zeven dagen; de achtste valt af.
+    const ids = filterOpPeriode(lijst, "7d", "UTC", nu).map((m) => m.id);
+    expect(ids).toEqual(["vandaag", "zesDagen"]);
+  });
+
+  it("neemt bij 30 dagen ook de oudere match uit dezelfde maand mee", () => {
+    const ids = filterOpPeriode(lijst, "30d", "UTC", nu).map((m) => m.id);
+    expect(ids).toEqual(["vandaag", "zesDagen", "achtDagen"]);
+  });
+
+  it("beperkt 'dit jaar' tot het lopende kalenderjaar", () => {
+    const ids = filterOpPeriode(lijst, "jaar", "UTC", nu).map((m) => m.id);
+    expect(ids).not.toContain("vorigJaar");
+    expect(ids).toHaveLength(3);
+  });
+
+  it("rekent in de clubtijdzone, niet in UTC", () => {
+    // 23:30 UTC op 3 juli is in Brussel al 4 juli (zomertijd, +2). Binnen
+    // "laatste 7 dagen" telt hij daardoor wél mee.
+    const laat = opDag("grens", "2026-07-03", null);
+    laat.played_at = "2026-07-03T23:30:00.000Z";
+    expect(
+      filterOpPeriode([laat], "7d", "Europe/Brussels", nu).map((m) => m.id),
+    ).toEqual(["grens"]);
+    expect(filterOpPeriode([laat], "7d", "UTC", nu)).toHaveLength(0);
+  });
+});
+
+describe("periodeFromParam (#914)", () => {
+  it("accepteert elke bekende sleutel", () => {
+    for (const [k] of PERIODE_OPTIES) expect(periodeFromParam(k)).toBe(k);
+  });
+
+  it("valt bij onzin of ontbreken terug op alle tijden", () => {
+    expect(periodeFromParam("gisteren")).toBe("");
+    expect(periodeFromParam(null)).toBe("");
   });
 });

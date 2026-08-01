@@ -45,6 +45,55 @@ export function applyFilter(
   });
 }
 
+/* ---------- Groep en periode (#914) ----------
+   Deze twee versmallen de kandidatenlijst vóór de tabs hierboven. Ze staan hier
+   en niet in het scherm, zodat alles wat "een lijst matches versmallen" doet op
+   één plek zit en te toetsen is zonder de pagina te renderen. */
+
+/** Perioden voor het historie-filter, als [sleutel, label]. */
+export const PERIODE_OPTIES = [
+  ["", "Alle tijden"],
+  ["7d", "Laatste 7 dagen"],
+  ["30d", "Laatste 30 dagen"],
+  ["jaar", "Dit jaar"],
+] as const;
+
+export type Periode = (typeof PERIODE_OPTIES)[number][0];
+
+/** Valideert een periode-sleutel uit de URL; onbekend = alle tijden. */
+export function periodeFromParam(value: string | null): Periode {
+  return PERIODE_OPTIES.some(([k]) => k === value) ? (value as Periode) : "";
+}
+
+export function filterOpGroep(matches: Match[], groupId: string): Match[] {
+  if (!groupId) return matches;
+  return matches.filter((m) => m.group_id === groupId);
+}
+
+/**
+ * Houdt de matches binnen de gekozen periode. De dag komt uit `dayInZone`,
+ * dezelfde bron als de dagkoppen: anders kan een avondmatch in het ene
+ * overzicht op dinsdag vallen en in het andere op maandag.
+ */
+export function filterOpPeriode(
+  matches: Match[],
+  periode: Periode,
+  timeZone: string,
+  nowMs = Date.now(),
+): Match[] {
+  if (!periode) return matches;
+  const vanaf =
+    periode === "7d"
+      ? dateInZone(timeZone, -6, nowMs)
+      : periode === "30d"
+        ? dateInZone(timeZone, -29, nowMs)
+        : `${dateInZone(timeZone, 0, nowMs).slice(0, 4)}-01-01`;
+  // Dagen zijn YYYY-MM-DD; string-vergelijking volstaat en is tijdzone-veilig.
+  return matches.filter(
+    (m) => dayInZone(m.played_at ?? m.created_at, timeZone) >= vanaf,
+  );
+}
+
 export function dayLabel(iso: string, timeZone: string): string {
   const day = dayInZone(iso, timeZone);
   const today = dateInZone(timeZone);
