@@ -123,6 +123,11 @@ export function LefTipBlock({
       eigenDag.reload();
     } catch (err) {
       toast.error(errorMessage(err));
+      // De server zag een blokkade die deze kaart nog niet kende — meestal het
+      // dagtegoed dat op een andere rondekaart al vergeven is. Opnieuw ophalen,
+      // zodat de tegel meteen klopt in plaats van te blijven uitnodigen.
+      stakes.reload();
+      eigenDag.reload();
     } finally {
       setBusy(false);
     }
