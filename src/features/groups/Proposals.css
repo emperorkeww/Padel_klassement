@@ -339,13 +339,36 @@
 
 /* ---------- Fasebalk over de hele tab (#349) ---------- */
 /* Stemmen → Gekozen → Geboekt → Klaar, met de next-action-regel eronder
-   en de altijd bereikbare plan-CTA rechts. */
+   en de altijd bereikbare plan-CTA rechts.
+   Sinds #839 staat de speeldag zélf bovenaan: de balk praat over precies één
+   focus-poll, maar liet die ongenoemd — bij meerdere lopende speeldagen was
+   niet duidelijk vóór welke de actietekst gold. */
 .plan-phases__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
   flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+.plan-phases__wie {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-lg);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.plan-phases__wie-label {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
 }
 .plan-phases__steps {
   display: flex;
@@ -391,6 +414,33 @@
   color: var(--ink-soft);
   font-size: var(--fs-sm);
 }
+/* Teller en banen-ingang delen één rustige voetregel (#839). De banen-link
+   stond als kale paragraaf onder aan de tab, tussen verder alleen kaarten;
+   plan-acties horen in deze kop. */
+.plan-phases__extra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.plan-phases__extra:empty {
+  display: none;
+}
+.plan-phases__banen {
+  /* Volwaardig tapdoel (richtlijn ~44px, #374). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  text-decoration: none;
+}
+.plan-phases__banen:hover {
+  text-decoration: underline;
+}
+
 /* Meerdere lopende speeldagen (#721): de fasebalk toont er maar één fase, dus
    deze teller zegt dat er meer zijn. */
 .plan-phases__count {
@@ -462,10 +512,26 @@
   text-align: left;
   cursor: pointer;
 }
-.plan-other__when {
+/* Datum boven, context eronder (#839): de rijen droegen alleen een datum en
+   een statusbadge, waardoor je bij twee of drie gelijktijdige speeldagen moest
+   uitklappen om te weten waar elk van hen op wacht. */
+.plan-other__kop {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.plan-other__when {
+  min-width: 0;
   font-weight: 700;
+}
+.plan-other__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.plan-other__meta:empty {
+  display: none;
 }
 .plan-other__when::first-letter {
   text-transform: uppercase;
@@ -484,6 +550,12 @@
 }
 .plan-other__badge.is-booked {
   color: var(--success);
+}
+/* De speeldag waar de kop-actie over gaat: de tegenhanger van "Volgende" in
+   de fasekop, zodat zichtbaar is waarop die tekst slaat. */
+.plan-other__badge.is-volgende {
+  color: var(--accent-ink);
+  background: var(--accent);
 }
 /* Het enige signaal dat om jóu gaat: warm i.p.v. het groene app-accent, zodat
    het niet met de statusbadge ernaast concurreert. De kleur zit in het vlak en
@@ -1058,23 +1130,26 @@
   justify-content: space-between;
 }
 
-/* Vaste banen-ingang op de Plannen-tab. */
-.plan-banen {
-  margin: var(--sp-2) 0 0;
-  font-size: var(--fs-sm);
-  font-weight: 600;
+/* Scheiding vóór de suggesties (#839). "Vastgelegd", "Stemmen loopt" en de
+   suggesties deelden alle drie dezelfde kaartstijl, waardoor de instap net zo
+   zwaar woog als de speeldagen die echt lopen. Een baanlijn — dezelfde dubbele
+   streep als op een padelbaan — markeert dat hier iets anders begint. */
+.plan-instap-lijn {
+  height: 4px;
+  margin: var(--sp-6) 0 var(--sp-5);
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
 }
-.plan-banen a {
-  /* Volwaardig tapdoel (richtlijn ~44px, #374): losse regel, dus de link mag
-     gewoon hoger worden. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--accent);
-  text-decoration: none;
+/* De suggestiekaart zelf gedempt en gestippeld, net als "Losse partij" op de
+   Vandaag-tab: een instap mag opvallen door zijn plek, niet door zijn kleur. */
+.card.suggestions {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+  box-shadow: none;
 }
-.plan-banen a:hover {
-  text-decoration: underline;
+.plan-instap-lijn + .card.suggestions {
+  margin-top: 0;
 }
 
 /* Maak teams: aan/uit te tikken deelnemers voor de teamgenerator. */
@@ -1085,7 +1160,6 @@
   /* Ademruimte naar de waarschuwing/knoppen eronder (raakte elkaar). */
   margin-bottom: var(--sp-3);
 }
-
 
 /* Heel smalle schermen (320px): de vier fase-stappen passen zonder
    letter-spacing nét op één regel. */

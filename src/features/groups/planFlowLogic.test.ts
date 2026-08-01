@@ -3,7 +3,9 @@ import {
   focusPoll,
   heeftGestemd,
   lockedOptionOf,
+  planRijMeta,
   pollPhase,
+  relatieveDag,
   roundsExistFor,
   roundsMadeFor,
   splitPolls,
@@ -69,9 +71,9 @@ describe("lockedOptionOf", () => {
   it("vindt het gekozen moment; null zonder lock of bij ontbrekende optie", () => {
     const opts = [option({ id: "opt-a" })];
     expect(lockedOptionOf(poll(), opts)).toBeNull();
-    expect(
-      lockedOptionOf(poll({ locked_option_id: "opt-a" }), opts)?.id,
-    ).toBe("opt-a");
+    expect(lockedOptionOf(poll({ locked_option_id: "opt-a" }), opts)?.id).toBe(
+      "opt-a",
+    );
     expect(lockedOptionOf(poll({ locked_option_id: "weg" }), opts)).toBeNull();
   });
 });
@@ -237,14 +239,20 @@ describe("focusPoll", () => {
         booked_at: "2026-07-09T08:00:00Z",
       }),
     ];
-    const opts = [option({ id: "opt-b", poll_id: "geboekt", date: "2026-07-12" })];
+    const opts = [
+      option({ id: "opt-b", poll_id: "geboekt", date: "2026-07-12" }),
+    ];
     expect(focusPoll(active, opts, today)?.id).toBe("geboekt");
     expect(focusPoll([], [], today)).toBeNull();
   });
   // Gedeelde link (#675): ?poll=<id> zet die speeldag in focus.
   describe("gedeelde link", () => {
     const active = [
-      poll({ id: "vandaag", status: "booked", locked_option_id: "opt-vandaag" }),
+      poll({
+        id: "vandaag",
+        status: "booked",
+        locked_option_id: "opt-vandaag",
+      }),
       poll({ id: "open", status: "open" }),
       poll({ id: "later", status: "booked", locked_option_id: "opt-later" }),
     ];
@@ -267,7 +275,9 @@ describe("focusPoll", () => {
     it("valt stil terug als de poll niet meer actief is", () => {
       // Verlopen, geannuleerd of uit een andere groep: geen lege tab, gewoon
       // de normale keuze.
-      expect(focusPoll(active, opts, today, "bestaat-niet")?.id).toBe("vandaag");
+      expect(focusPoll(active, opts, today, "bestaat-niet")?.id).toBe(
+        "vandaag",
+      );
       expect(focusPoll([], [], today, "bestaat-niet")).toBeNull();
     });
 
@@ -276,5 +286,88 @@ describe("focusPoll", () => {
       expect(focusPoll(active, opts, today, null)?.id).toBe("vandaag");
       expect(focusPoll(active, opts, today, undefined)?.id).toBe("vandaag");
     });
+  });
+});
+
+describe("relatieveDag", () => {
+  const today = "2026-07-10";
+
+  it("noemt vandaag, morgen en gisteren bij naam", () => {
+    expect(relatieveDag("2026-07-10", today)).toBe("vandaag");
+    expect(relatieveDag("2026-07-11", today)).toBe("morgen");
+    expect(relatieveDag("2026-07-09", today)).toBe("gisteren");
+  });
+
+  it("telt verder weg in dagen", () => {
+    expect(relatieveDag("2026-07-13", today)).toBe("over 3 dagen");
+    expect(relatieveDag("2026-07-07", today)).toBe("3 dagen geleden");
+  });
+
+  it("kantelt niet op de zomertijd-grens", () => {
+    // 25 → 26 oktober 2026: de nacht waarin de klok een uur terug gaat.
+    expect(relatieveDag("2026-10-26", "2026-10-25")).toBe("morgen");
+  });
+});
+
+describe("planRijMeta", () => {
+  const today = "2026-07-10";
+  const vote = (option_id: string, player_id: string): PollVote => ({
+    option_id,
+    group_id: "g1",
+    player_id,
+    status: "yes",
+    updated_at: "2026-07-08T10:00:00Z",
+  });
+
+  it("telt bij een open poll hoeveel leden al stemden", () => {
+    const opts = [option({ id: "opt-a" }), option({ id: "opt-b" })];
+    const meta = planRijMeta({
+      poll: poll({ status: "open" }),
+      options: opts,
+      // Twee stemmen van dezelfde speler tellen als één stemmer.
+      votes: [vote("opt-a", "p1"), vote("opt-b", "p1"), vote("opt-a", "p2")],
+      aantalLeden: 8,
+      today,
+    });
+    expect(meta).toBe("vandaag · 2 van 8 stemden");
+  });
+
+  it("zegt bij een gekozen moment dat de baan nog geboekt moet", () => {
+    const opt = option({ id: "opt-a", date: "2026-07-12" });
+    const meta = planRijMeta({
+      poll: poll({ status: "locked", locked_option_id: "opt-a" }),
+      options: [opt],
+      votes: [],
+      aantalLeden: 8,
+      today,
+    });
+    expect(meta).toBe("over 2 dagen · baan nog te boeken");
+  });
+
+  it("toont de geboekte baan zodra die ingevuld is", () => {
+    const opt = option({ id: "opt-a", date: "2026-07-11" });
+    const geboekt = (courts: string | null) =>
+      planRijMeta({
+        poll: poll({ status: "booked", locked_option_id: "opt-a", courts }),
+        options: [opt],
+        votes: [],
+        aantalLeden: 8,
+        today,
+      });
+    expect(geboekt("3 & 4")).toBe("morgen · Baan 3 & 4");
+    expect(geboekt(null)).toBe("morgen · baan geboekt");
+  });
+
+  it("rekent op het gekozen moment, niet op de eerste optie", () => {
+    const eerste = option({ id: "opt-a", date: "2026-07-11" });
+    const gekozen = option({ id: "opt-b", date: "2026-07-14" });
+    const meta = planRijMeta({
+      poll: poll({ status: "booked", locked_option_id: "opt-b" }),
+      options: [eerste, gekozen],
+      votes: [],
+      aantalLeden: 8,
+      today,
+    });
+    expect(meta).toBe("over 4 dagen · baan geboekt");
   });
 });
