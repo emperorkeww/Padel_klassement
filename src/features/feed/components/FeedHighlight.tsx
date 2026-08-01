@@ -2,11 +2,17 @@ import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 import { formatTime } from "@/lib/utils/format";
 
+/** Editie-skins (#986): dezelfde kaart, maar in het materiaal van de FUT-editie
+ *  in plaats van in zijn categoriekleur. Alleen voor de twee tijdelijke edities
+ *  — dit is een uitzondering voor wie een kaart draagt, geen tweede palet. */
+export type FeedEditie = "inform" | "onfire";
+
 /** Highlight-kaart (#232): een groot moment (klassement/roast/kampioen) als
  *  geaccentueerde kaart in de kleur van zijn categorie — i.p.v. dezelfde
  *  compacte regel als routine-items. */
 export function FeedHighlight({
   cat,
+  editie,
   icon,
   label,
   to,
@@ -14,6 +20,9 @@ export function FeedHighlight({
   children,
 }: {
   cat: "rank" | "champ" | "roast";
+  /** Overschrijft alléén het materiaal; `cat` blijft de soort bepalen, zodat de
+   *  filterchip en zijn stip kloppen. */
+  editie?: FeedEditie;
   icon: string;
   label: string;
   to: string;
@@ -21,7 +30,11 @@ export function FeedHighlight({
   children: ReactNode;
 }) {
   return (
-    <Link className="feed-hi" data-cat={cat} to={to}>
+    <Link
+      className={editie ? `feed-hi feed-hi--${editie}` : "feed-hi"}
+      data-cat={cat}
+      to={to}
+    >
       <span className="feed-hi__tok" aria-hidden="true">
         {icon}
       </span>

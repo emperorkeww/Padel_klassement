@@ -12,6 +12,8 @@ import {
   type FeedEvent,
   type FriendshipBundel,
 } from "@/features/feed/feedLogic";
+import { eventKey, FILTERS } from "@/features/feed/feedHelpers";
+import { ONFIRE_DREMPEL } from "@/features/standings/onFire";
 import type {
   Friendship,
   GroupMember,
@@ -1135,5 +1137,135 @@ describe("bundelVriendschappen", () => {
     );
     const { bundel } = uit[0] as { bundel: FriendshipBundel };
     expect(bundelSpelers(bundel)).toEqual(["p1", "p2", "p3", "p4"]);
+  });
+});
+
+describe("buildFeed — In-Form en On Fire (#986)", () => {
+  /** rating_history-punt mét speeldatum; beide edities rekenen daarop. */
+  const punt = (matchId: string, at: string, delta: number): RatingPoint =>
+    ({
+      match_id: matchId,
+      rating_before: 1000,
+      rating_after: 1000 + delta,
+      delta,
+      played_at: at,
+    }) as RatingPoint;
+
+  // Woensdag; de maandag van die week is 2026-07-13.
+  const NU = new Date("2026-07-15T20:00:00Z");
+  const WEEK = "2026-07-13";
+
+  /** n zeges op rij, dag 1..n van juli. */
+  const zeges = (n: number, prefix = "w") =>
+    Array.from({ length: n }, (_, i) =>
+      punt(`${prefix}${i + 1}`, `2026-07-${String(i + 1).padStart(2, "0")}T18:00:00Z`, 8),
+    );
+
+  const bouw = (histories: Record<string, RatingPoint[]>, now = NU) =>
+    buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories,
+      now,
+    });
+
+  it("roept de speler van de week uit, gedateerd op zijn laatste match", () => {
+    const feed = bouw({
+      p1: [
+        punt("m1", "2026-07-12T18:00:00Z", 20),
+        punt("m2", "2026-07-14T18:00:00Z", 28),
+      ],
+    });
+    expect(feed.filter((e) => e.kind === "in-form")).toEqual([
+      {
+        kind: "in-form",
+        at: "2026-07-14T18:00:00Z",
+        playerId: "p1",
+        delta: 48,
+        matches: 2,
+        weekStart: WEEK,
+      },
+    ]);
+  });
+
+  it("houdt één weeksleutel aan, ook later in dezelfde week", () => {
+    const histories = {
+      p1: [
+        punt("m1", "2026-07-12T18:00:00Z", 20),
+        punt("m2", "2026-07-14T18:00:00Z", 28),
+      ],
+    };
+    const woensdag = bouw(histories).find((e) => e.kind === "in-form");
+    const zaterdag = bouw(histories, new Date("2026-07-18T20:00:00Z")).find(
+      (e) => e.kind === "in-form",
+    );
+    if (woensdag?.kind !== "in-form" || zaterdag?.kind !== "in-form")
+      throw new Error("verwacht twee in-form-items");
+    expect(zaterdag.weekStart).toBe(woensdag.weekStart);
+    expect(eventKey(zaterdag)).toBe(eventKey(woensdag));
+  });
+
+  it("zwijgt over een speler van de week buiten je netwerk", () => {
+    const feed = bouw({
+      p8: [
+        punt("m1", "2026-07-12T18:00:00Z", 30),
+        punt("m2", "2026-07-14T18:00:00Z", 30),
+      ],
+    });
+    expect(feed.some((e) => e.kind === "in-form")).toBe(false);
+  });
+
+  it("meldt On Fire op de match waarin de reeks de drempel haalde", () => {
+    const feed = bouw({ p1: zeges(ONFIRE_DREMPEL) });
+    expect(feed.filter((e) => e.kind === "on-fire")).toEqual([
+      {
+        kind: "on-fire",
+        at: `2026-07-0${ONFIRE_DREMPEL}T18:00:00Z`,
+        playerId: "p1",
+        streak: ONFIRE_DREMPEL,
+        matchId: `w${ONFIRE_DREMPEL}`,
+      },
+    ]);
+  });
+
+  it("levert geen tweede On Fire-item als de reeks doorgroeit", () => {
+    const bij5 = bouw({ p1: zeges(5) }).find((e) => e.kind === "on-fire");
+    const bij9 = bouw({ p1: zeges(9) }).find((e) => e.kind === "on-fire");
+    if (bij5?.kind !== "on-fire" || bij9?.kind !== "on-fire")
+      throw new Error("verwacht twee on-fire-items");
+    expect(eventKey(bij9)).toBe(eventKey(bij5));
+  });
+
+  it("zwijgt onder de drempels", () => {
+    // Eén match in het venster is geen vorm (MIN_MATCHES_VOOR_INFORM), en vier
+    // zeges op rij is geen editie.
+    const feed = bouw({
+      p1: [punt("m1", "2026-07-14T18:00:00Z", 40)],
+      p2: zeges(ONFIRE_DREMPEL - 1, "x"),
+    });
+    expect(feed.some((e) => e.kind === "in-form" || e.kind === "on-fire")).toBe(
+      false,
+    );
+  });
+
+  it("zet beide edities onder de chip Klassement", () => {
+    const feed = bouw({
+      // Vijf zeges begin juli (de reeks) plus twee deze week (de vorm).
+      p1: [
+        ...zeges(ONFIRE_DREMPEL),
+        punt("m8", "2026-07-12T18:00:00Z", 20),
+        punt("m9", "2026-07-14T18:00:00Z", 28),
+      ],
+    });
+    const editieItems = feed.filter(
+      (e) => e.kind === "in-form" || e.kind === "on-fire",
+    );
+    expect(editieItems).toHaveLength(2);
+    for (const e of editieItems) {
+      expect(FILTERS.Klassement.has(e.kind)).toBe(true);
+      expect(FILTERS.Roast.has(e.kind)).toBe(false);
+    }
   });
 });

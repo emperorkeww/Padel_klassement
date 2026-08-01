@@ -190,6 +190,38 @@ export function FeedItem({
           <strong>{event.groupName}</strong> ({event.seasonLabel})!
         </FeedHighlight>
       );
+    // De twee tijdelijke edities (#986). Ze linken naar het profiel: dáár staat
+    // de FUT-kaart waar het item over gaat. Het roast-schild speelt hier geen
+    // rol — dit is eer, en daar valt niets tegen te beschermen (heroThema.ts).
+    case "in-form":
+      return (
+        <FeedHighlight
+          cat="rank"
+          editie="inform"
+          icon="⚡"
+          label="In-Form"
+          to={`/spelers/${event.playerId}`}
+          at={event.at}
+        >
+          {name(event.playerId)} {event.playerId === myId ? "bent" : "is"} de{" "}
+          <strong>speler van de week</strong>: +{event.delta} in {event.matches}{" "}
+          matches.
+        </FeedHighlight>
+      );
+    case "on-fire":
+      return (
+        <FeedHighlight
+          cat="rank"
+          editie="onfire"
+          icon="🔥"
+          label="On Fire"
+          to={`/spelers/${event.playerId}`}
+          at={event.at}
+        >
+          {name(event.playerId)} staat <strong>on fire</strong>:{" "}
+          <strong>{event.streak} zeges op rij</strong>.
+        </FeedHighlight>
+      );
     case "maand-pias":
       {
         const beschermd = pmap[event.playerId]?.roast_schild ?? false;
