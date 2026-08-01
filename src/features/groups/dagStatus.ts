@@ -55,6 +55,30 @@ export function dagVoortgang(
 }
 
 /**
+ * Wie er won in een afgeronde ronde, als één regel voor de ingeklapte kop
+ * (#839). Hooguit twee teams voluit; de rest telt als "+N", want een
+ * ingeklapte ronde hoort één regel te blijven. Gelijkspelen leveren geen
+ * winnaar en vallen dus weg; is er niets te melden, dan blijft de regel leeg.
+ */
+export function rondeWinnaars(
+  list: { status: string; winner_team_id: string | null }[],
+  labelVoor: (teamId: string) => string,
+  maxTeams = 2,
+): string {
+  const namen: string[] = [];
+  for (const m of list) {
+    if (m.status !== "completed" || !m.winner_team_id) continue;
+    const label = labelVoor(m.winner_team_id);
+    if (label && !namen.includes(label)) namen.push(label);
+  }
+  if (namen.length === 0) return "";
+  const rest = namen.length - maxTeams;
+  return rest > 0
+    ? `${namen.slice(0, maxTeams).join(", ")} +${rest}`
+    : namen.join(", ");
+}
+
+/**
  * Waar de indeling van vandaag vandaan komt — of waarom er nog geen is.
  *
  * - `klaargezet`   de cron zette de rondes neer (poll draagt `rounds_generated_at`)

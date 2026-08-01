@@ -1,29 +1,18 @@
 /* Vandaag-tab (#377, sinds #674 ook de teamgenerator van de oude Teams-tab).
-   De afsluitkaart bovenaan hergebruikt .flow-next uit GroupDetail.css (de
-   parent laadt die altijd). */
+   De dagkop bovenaan staat in DagKop.css. */
 
-/* Zodra de dag loopt klapt de teamgenerator weg: je maakt hooguit nog een
-   volgende ronde, dus hij hoort niet meer boven de uitslagen te staan. */
-.next-round {
-  padding: 0;
-}
-.next-round__toggle {
-  padding: var(--sp-3) var(--sp-4);
-  font-weight: 700;
-  color: var(--ink-soft);
-  cursor: pointer;
-  list-style-position: inside;
-  border-radius: inherit;
-}
-.next-round__toggle:hover {
-  color: var(--ink);
-}
-.next-round[open] .next-round__toggle {
-  color: var(--ink);
-  border-bottom: 1px solid var(--line);
-}
-.next-round__body {
-  padding: var(--sp-4);
+/* De volgende ronde starten sluit de wedstrijdenlijst af als echte actie
+   (#839). Hij zat achter een <details> "Nog een ronde maken" — een kernactie
+   met dezelfde behandeling als een instelling, terwijl de rest van de tab
+   alles direct zichtbaar houdt. De generator zelf opent nu als sheet, zodat
+   hij de rondes niet omlaag duwt. */
+.rondes__acties {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
 }
 
 /* Losse match loggen/plannen binnen de groep. Stond als gedempte voetnoot
@@ -89,20 +78,29 @@
   border-left-color: var(--success-line);
 }
 
+/* Een dichtgeklapte ronde is één regel hoog: de inzetlijn hoeft dan niet meer
+   te doen alsof er een blok onder hangt. */
+.round.is-dicht {
+  padding-bottom: 0;
+}
+
 /* Rondekop: titel links, voortgang rechts als gedempte tekst i.p.v. badge —
-   één accent per ronde (de inzetlijn) houdt de lijst rustig. */
+   één accent per ronde (de inzetlijn) houdt de lijst rustig. Sinds #839 ook de
+   in-/uitklapper: afgeronde rondes namen evenveel ruimte in als de ronde waar
+   het om gaat. */
 .round-head {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-2);
   flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-3);
   margin-bottom: var(--sp-2);
 }
 .round-head .card__title--compact {
   margin-bottom: 0;
 }
 .round-head__progress {
+  margin-left: auto;
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--ink-soft);
@@ -114,6 +112,110 @@
 }
 .round-head__progress--done::before {
   content: "✓ ";
+}
+
+/* De knop draagt alleen het chevron, maar spant met ::after de hele kop op als
+   raakvlak. Zo blijft de titel een echte heading (schermlezers en de
+   tab-teller rekenen erop) en is de kop toch in zijn geheel tikbaar. */
+.round-head__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.round-head__toggle::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--sp-1) * -1) 0;
+}
+.round-head__toggle:hover {
+  color: var(--ink);
+}
+.round-head__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.round-head__caret {
+  display: block;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.round-head__toggle[aria-expanded="true"] .round-head__caret {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .round-head__caret {
+    transition: none;
+  }
+}
+
+/* Wat een ingeklapte ronde nog vertelt: wie won. */
+.round__winnaars {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* Eén kaarttaal binnen de ronde (#839). De geplande kaart (.planned-card) had
+   een kop, een winkansbalk en inzet-tegels; de gespeelde was een platte rij.
+   Binnen dezelfde stapel las dat als twee ontwerpen. De uitslagkaart krijgt nu
+   hetzelfde frame en dezelfde kopregel — alleen de staat verschilt: groen waar
+   de geplande kaart smaragd is, en zonder de diepte die alleen vóór de match
+   iets betekent. */
+.ronde-kaart {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.ronde-kaart--klaar {
+  border-color: var(--success-line);
+  background:
+    linear-gradient(160deg, var(--success-soft) 0%, transparent 45%),
+    var(--surface);
+}
+.ronde-kaart__kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+/* Zelfde plek en toon als .planned-card__when-day, een maatje kleiner: de
+   afgeronde match hoeft niet meer om aandacht te vragen. */
+.ronde-kaart__wanneer {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+.ronde-kaart__status {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--success-line);
+  border-radius: 999px;
+  background: var(--success-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--success);
+  white-space: nowrap;
+}
+/* Geen doos in een doos: het frame zit op .ronde-kaart, de matchrij levert
+   alleen nog de teams en de score. */
+.ronde-kaart .match-card {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /* De afsluitkaart die hier stond ging op in de dagkop (#839): de stand-CTA en

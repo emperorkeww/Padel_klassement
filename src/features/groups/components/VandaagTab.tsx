@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { Sheet } from "@/ui/Sheet";
 import { DagKop } from "./DagKop";
 import { DayStats } from "./DayStats";
 import { MakeTeams } from "./MakeTeams";
+import { RondeBlok } from "./RondeBlok";
 import { ShareEvening } from "./ShareEvening";
 import { VendettaCard } from "./VendettaCard";
-import { DeletableMatchCard } from "@/features/matches/components/MatchList";
-import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import {
   NewMatchSheet,
   type NewMatchMode,
@@ -112,6 +112,15 @@ export function VandaagTab({
   // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
   const [logOpen, setLogOpen] = useState(false);
   const [logMode, setLogMode] = useState<NewMatchMode>("score");
+  // De teamgenerator voor de volgende ronde, als sheet (#839).
+  const [volgendeOpen, setVolgendeOpen] = useState(false);
+
+  // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
+  // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
+  // uitslagen blijft open — dáár hoor je te kijken.
+  const [geklapt, setGeklapt] = useState<Record<number, boolean>>({});
+  const rondeOpen = (round: number, list: Match[]) =>
+    geklapt[round] ?? list.some((m) => m.status !== "completed");
 
   const intensiteit = group.roast_intensiteit ?? "radioactief";
   // Groepsleden als profielen — de kiesbare spelers bij het loggen van een match.
@@ -225,71 +234,65 @@ export function VandaagTab({
           </p>
 
           <div className="rounds">
-            {rounds.map(({ round, list }) => {
-              const done = list.filter((m) => m.status === "completed").length;
-              const roundDone = done === list.length;
-              return (
-                <div
-                  key={round}
-                  className={`round ${roundDone ? "is-done" : "is-open"}`}
-                >
-                  <div className="round-head">
-                    <h3 className="card__title card__title--compact">
-                      {round === 0 ? "Losse matches" : `Ronde ${round}`}
-                    </h3>
-                    <span
-                      className={`round-head__progress ${
-                        roundDone ? "round-head__progress--done" : ""
-                      }`}
-                    >
-                      {roundDone
-                        ? "Afgerond"
-                        : `${done}/${list.length} uitslagen`}
-                    </span>
-                  </div>
-                  <div className="stack">
-                    {list.map((m) =>
-                      m.status === "completed" ? (
-                        <DeletableMatchCard
-                          key={m.id}
-                          match={m}
-                          teams={teams}
-                          profiles={profiles}
-                          perspectiveId={myId}
-                          upset={upsets.get(m.id) ?? null}
-                          canManage={isOwner}
-                          onDeleted={onMatches}
-                        />
-                      ) : (
-                        <PlannedMatchCard
-                          key={m.id}
-                          match={m}
-                          teams={teams}
-                          profiles={profiles}
-                          perspectiveId={myId}
-                          history={matches}
-                          intensiteit={intensiteit}
-                          onSaved={onMatches}
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {rounds.map(({ round, list }) => (
+              <RondeBlok
+                key={round}
+                round={round}
+                list={list}
+                open={rondeOpen(round, list)}
+                onToggle={() =>
+                  setGeklapt((cur) => ({
+                    ...cur,
+                    [round]: !rondeOpen(round, list),
+                  }))
+                }
+                teams={teams}
+                profiles={profiles}
+                myId={myId}
+                isOwner={isOwner}
+                matches={matches}
+                intensiteit={intensiteit}
+                upsets={upsets}
+                onMatches={onMatches}
+              />
+            ))}
+          </div>
+
+          {/* De volgende ronde starten is een kernactie, geen instelling. Hij
+              zat achter <details> "Nog een ronde maken" — dezelfde low-key
+              behandeling als een lade, terwijl de rest van de tab alles direct
+              zichtbaar houdt. Nu een echte knop, met de generator als sheet
+              zodat hij de rondes niet omlaag duwt. */}
+          <div className="rondes__acties">
+            <button
+              className="btn btn--primary"
+              onClick={() => setVolgendeOpen(true)}
+            >
+              + Volgende ronde
+            </button>
           </div>
         </section>
       )}
 
       {/* Staat 1: de teamgenerator is de inhoud van de tab. Zodra de dag
-          loopt klapt hij weg — je maakt hooguit nog een volgende ronde. */}
-      {dayStarted ? (
-        <details className="card next-round">
-          <summary className="next-round__toggle">Nog een ronde maken</summary>
-          <div className="next-round__body">{makeTeams}</div>
-        </details>
-      ) : (
-        makeTeams
+          loopt verhuist hij naar de sheet achter "+ Volgende ronde". */}
+      {!dayStarted && makeTeams}
+
+      {dayStarted && (
+        <Sheet
+          open={volgendeOpen}
+          onClose={() => setVolgendeOpen(false)}
+          title="Volgende ronde"
+        >
+          {/* De drie routes naar een volgende ronde (deze generator, de
+              winner-card op Plannen en sinds #827 de cron) deelden niet
+              dezelfde vorm zonder dat de UI dat ergens zei. */}
+          <p className="card__subtitle">
+            De automaat deelt 's ochtends Americano; hier kies je zelf de vorm
+            voor deze ronde.
+          </p>
+          {makeTeams}
+        </Sheet>
       )}
 
       {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij

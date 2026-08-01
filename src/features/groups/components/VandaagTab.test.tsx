@@ -180,11 +180,11 @@ describe("<VandaagTab />", () => {
       screen.queryByRole("heading", { name: /^wedstrijden$/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /nog een ronde maken/i }),
+      screen.queryByRole("button", { name: /volgende ronde/i }),
     ).not.toBeInTheDocument();
-    // Ook geen dagoverzicht of deelknop: één rustige tab met één actie.
+    // Ook geen hoogtepunten of deelknop: één rustige tab met één actie.
     expect(
-      screen.queryByRole("heading", { name: /^vandaag$/i }),
+      screen.queryByRole("heading", { name: /^hoogtepunten$/i }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /deel avond-samenvatting/i }),
@@ -301,30 +301,72 @@ describe("<VandaagTab />", () => {
     expect(screen.getByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
+  // ── Inklapbare rondes (#839) ──────────────────────────────────────────
+  // Afgeronde rondes namen evenveel ruimte in als de ronde waar het om gaat.
+
+  it("klapt een afgeronde ronde dicht en houdt de open ronde open", async () => {
+    renderTab(DAG_ONDERWEG);
+
+    const dicht = screen
+      .getByRole("button", { name: /ronde 1 uitklappen/i })
+      .closest(".round") as HTMLElement;
+    const open = screen
+      .getByRole("button", { name: /ronde 2 inklappen/i })
+      .closest(".round") as HTMLElement;
+
+    // Ronde 1 is afgerond: geen kaarten, wel wie er won.
+    expect(dicht.querySelector(".stack")).toBeNull();
+    expect(within(dicht).getByText(/🏆/)).toBeInTheDocument();
+    // Ronde 2 heeft nog een openstaande uitslag en blijft uitgeklapt.
+    expect(open.querySelector(".stack")).not.toBeNull();
+
+    // Zelf uitklappen laat de uitslagkaart alsnog zien.
+    await userEvent.click(
+      screen.getByRole("button", { name: /ronde 1 uitklappen/i }),
+    );
+    expect(within(dicht).getByText("6–3")).toBeInTheDocument();
+  });
+
+  it("geeft de uitslagkaart dezelfde kopregel als de geplande kaart", async () => {
+    renderTab({
+      matches: [DONE_TODAY],
+      rounds: [{ round: 1, list: [DONE_TODAY] }],
+      dayDone: true,
+    });
+
+    // Binnen één ronde stonden hiervoor twee kaarttalen: een platte
+    // uitslagrij naast een kaart met kop, winkansbalk en inzet-tegels.
+    await userEvent.click(
+      screen.getByRole("button", { name: /ronde 1 uitklappen/i }),
+    );
+    const kaart = screen
+      .getByText("6–3")
+      .closest(".ronde-kaart") as HTMLElement;
+    expect(kaart).not.toBeNull();
+    expect(within(kaart).getByText(/ronde 1/i)).toBeInTheDocument();
+    expect(within(kaart).getByText(/uitslag ✓/i)).toBeInTheDocument();
+  });
+
   // #674 A2: één tab voor de hele speeldag. Zodra er wedstrijden staan
-  // verhuist de generator naar een inklapper ónder de uitslagen, in plaats
-  // van naar een eigen tab met een CTA-banner heen en weer.
-  it("klapt de teamgenerator weg zodra er wedstrijden staan", async () => {
+  // verhuist de generator weg van boven de uitslagen — sinds #839 naar een
+  // sheet achter een echte knop, niet meer naar een <details>-lade.
+  it("zet de teamgenerator achter '+ Volgende ronde' zodra er wedstrijden staan", async () => {
     renderTab(DAG_ONDERWEG);
 
     const wedstrijden = screen.getByRole("heading", { name: /^wedstrijden$/i });
-    const toggle = screen.getByText(/nog een ronde maken/i);
-    const details = toggle.closest("details") as HTMLDetailsElement;
-    expect(details).not.toBeNull();
-    expect(details.open).toBe(false);
-    // De generator zit erin, en de inklapper staat ónder de wedstrijden.
+    const knop = screen.getByRole("button", { name: /volgende ronde/i });
+    // Dicht: de generator staat niet in de weg van de uitslagen.
     expect(
-      within(details).getByRole("heading", { name: /maak teams/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: /maak teams/i }),
+    ).not.toBeInTheDocument();
+    // De actie sluit de wedstrijdenlijst af, dus staat hij eronder.
     expect(
-      wedstrijden.compareDocumentPosition(details) &
+      wedstrijden.compareDocumentPosition(knop) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    // De losse partij verhuist niet mee de inklapper in (#722): ook met
-    // rondes op het scherm staat hij los, bovenaan, boven de wedstrijden.
+    // De losse partij blijft los, bovenaan, boven de wedstrijden (#722).
     const losse = screen.getByRole("region", { name: /losse partij/i });
-    expect(details.contains(losse)).toBe(false);
     expect(
       wedstrijden.compareDocumentPosition(losse) &
         Node.DOCUMENT_POSITION_PRECEDING,
@@ -336,14 +378,26 @@ describe("<VandaagTab />", () => {
       screen.queryByRole("button", { name: /naar vandaag/i }),
     ).not.toBeInTheDocument();
 
-    await userEvent.click(toggle);
-    expect(details.open).toBe(true);
+    await userEvent.click(knop);
+    const sheet = await screen.findByRole("dialog", {
+      name: /volgende ronde/i,
+    });
+    expect(
+      within(sheet).getByRole("heading", { name: /maak teams/i }),
+    ).toBeInTheDocument();
+    // De sheet benoemt het verschil met de automaat (#827): drie routes naar
+    // dezelfde ronde, met verschillende uitkomst.
+    expect(
+      within(sheet).getByText(/automaat deelt .*americano/i),
+    ).toBeInTheDocument();
   });
 
   it("blokkeert Mexicano zolang een ronde open staat", async () => {
     renderTab({ ...DAG_ONDERWEG, openRound: { round: 2 } });
 
-    await userEvent.click(screen.getByText(/nog een ronde maken/i));
+    await userEvent.click(
+      screen.getByRole("button", { name: /volgende ronde/i }),
+    );
     await waitForSelection();
     await userEvent.click(screen.getByRole("button", { name: /^mexicano$/i }));
     expect(
