@@ -126,8 +126,13 @@ describe("<MatchDetail />", () => {
 
   it("toont Elo delta's, divisies en eventuele divisiewissels per speler", async () => {
     renderPage();
-    // Check that p1's ELO and delta are shown
-    expect(await screen.findByText(/1012 ELO/i)).toBeInTheDocument();
+    // De spelersregel verschijnt pas als zowel de profielen als de
+    // rating-historie binnen zijn — twee losse queries. Op een trage runner
+    // haalt dat de standaard 1s van findBy niet, vandaar de ruimere timeout.
+    // Zodra deze er staat, zit de rest van de regel in dezelfde render.
+    expect(
+      await screen.findByText(/1012 ELO/i, undefined, { timeout: 3000 }),
+    ).toBeInTheDocument();
     expect(await screen.findByText(/▲7/i)).toBeInTheDocument();
     // Check that the TierBadge is rendered (sinds #495 noemt ook de
     // divisieregel op de lineup-kaart de tier, vandaar findAll).
