@@ -11,6 +11,8 @@ import { useToast } from "@/ui/ToastProvider";
 import { Skeleton } from "@/ui/Skeleton";
 import { Avatar } from "@/ui/Avatar";
 import { EmptyState } from "@/ui/EmptyState";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { errorMessage } from "@/lib/utils/errors";
 import { formatDate } from "@/lib/utils/format";
 import { dateInZone } from "@/lib/utils/time";
@@ -57,6 +59,7 @@ async function loadJourneys(
 }
 
 export function Groups() {
+  usePageTitle("Spelen");
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const groups = useAsync(getMyGroups, []);
@@ -140,7 +143,12 @@ export function Groups() {
           <Skeleton rows={3} />
         </div>
       )}
-      {groups.error && <p className="msg msg--error">{groups.error}</p>}
+      {groups.error && (
+        <ErrorRetry
+          melding={`Je groepen laden mislukte: ${groups.error}`}
+          onRetry={groups.reload}
+        />
+      )}
 
       {!groups.loading && !groups.error && (
         <>

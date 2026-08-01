@@ -858,6 +858,18 @@ textarea {
   border: 1px solid var(--danger-line);
   color: var(--danger);
 }
+/* Melding met een herstelactie ernaast (#910). Op smalle schermen zakt de knop
+   onder de tekst i.p.v. hem samen te knijpen. */
+.msg--actie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+}
+.msg--actie .msg__tekst {
+  min-width: 0;
+}
 .msg--warn {
   background: var(--warn-soft);
   border: 1px solid var(--warn-line);

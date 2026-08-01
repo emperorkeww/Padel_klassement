@@ -1,4 +1,5 @@
 import { Avatar } from "@/ui/Avatar";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import type { Profile } from "@/types";
 
 // Mislukte kernquery → echte foutstaat i.p.v. lege stats en onboarding-teksten
@@ -28,10 +29,10 @@ export function DashboardError({
         </div>
       </section>
       <section className="card">
-        <p className="msg msg--error">Het dashboard kon niet laden: {error}</p>
-        <button type="button" className="btn" onClick={onRetry}>
-          Opnieuw proberen
-        </button>
+        <ErrorRetry
+          melding={`Het dashboard kon niet laden: ${error}`}
+          onRetry={onRetry}
+        />
       </section>
     </div>
   );

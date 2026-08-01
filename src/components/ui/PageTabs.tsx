@@ -32,8 +32,12 @@ export function PageTabs<K extends string>({
   value: K;
   onChange: (id: K) => void;
   ariaLabel: string;
-  /** Prefix voor de tab-/paneel-id's; moet gelijk zijn aan die van TabPanel. */
-  idPrefix: string;
+  /** Prefix voor de tab-/paneel-id's; moet gelijk zijn aan die van TabPanel.
+   *  Laat 'm weg als de tab-inhoud geen aaneengesloten blok is (bv. het
+   *  klassement, waar de tabkeuze door de hele pagina heen doorwerkt): dan
+   *  blijft `aria-controls` achterwege in plaats van naar een niet-bestaand
+   *  paneel te wijzen. */
+  idPrefix?: string;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -79,10 +83,12 @@ export function PageTabs<K extends string>({
             key={t.id}
             type="button"
             role="tab"
-            id={`${idPrefix}-tab-${t.id}`}
+            id={idPrefix ? `${idPrefix}-tab-${t.id}` : undefined}
             className={`tab ${active ? "is-active" : ""}`}
             aria-selected={active}
-            aria-controls={active ? `${idPrefix}-panel-${t.id}` : undefined}
+            aria-controls={
+              idPrefix && active ? `${idPrefix}-panel-${t.id}` : undefined
+            }
             aria-label={t.count === undefined ? undefined : `${t.label}, ${t.count}`}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(t.id)}

@@ -45,8 +45,9 @@ function renderPage() {
 
 // De secties zitten sinds #70 achter tabs (Profiel / Meldingen & privacy /
 // Account); open eerst de juiste tab voor de kaart die de test nodig heeft.
+// Sinds #910 draait die rij op de gedeelde PageTabs: role="tab", geen button.
 async function openTab(name: RegExp) {
-  await userEvent.click(await screen.findByRole("button", { name }));
+  await userEvent.click(await screen.findByRole("tab", { name }));
 }
 
 describe("<ProfileSettings />", () => {

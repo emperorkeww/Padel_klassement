@@ -83,8 +83,9 @@ function renderProfile(id: string) {
 }
 
 // De profielinhoud zit sinds #103 achter tabs; deze helper opent er één.
+// Sinds #910 is dat de gedeelde PageTabs, dus role="tab" i.p.v. button.
 function clickTab(name: string) {
-  fireEvent.click(screen.getByRole("button", { name }));
+  fireEvent.click(screen.getByRole("tab", { name }));
 }
 
 beforeEach(() => {

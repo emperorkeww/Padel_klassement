@@ -28,7 +28,7 @@ function renderProfile(id: string) {
 
 // Badges zitten sinds #103 achter een tab; open die eerst (wacht op het laden).
 async function openBadges() {
-  fireEvent.click(await screen.findByRole("button", { name: "Badges" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Badges" }));
 }
 
 describe("<PlayerProfile /> badges", () => {

@@ -90,6 +90,8 @@ export interface ProfileData {
   season: Season | null;
   matchesLoading: boolean;
   matchesError: string | null;
+  /** Herstelactie bij een mislukte matchfetch (#910). */
+  matchesReload: () => void;
 
   // Badges
   badges: Badge[];

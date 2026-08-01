@@ -1,10 +1,21 @@
 import { MatchList } from "@/features/matches/components/MatchList";
 import { MatchListSkeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import type { ProfileData } from "@/features/profiles/components/types";
 
 // Matches-tab: de volledige (seizoensgescoopte) matchlijst, niet afgekapt.
 export function ProfileMatches({ d }: { d: ProfileData }) {
-  const { scoped, tmap, pmap, id, upsets, season, matchesLoading, matchesError } = d;
+  const {
+    scoped,
+    tmap,
+    pmap,
+    id,
+    upsets,
+    season,
+    matchesLoading,
+    matchesError,
+    matchesReload,
+  } = d;
   return (
     <section className="card">
       <div className="card__head">
@@ -12,7 +23,12 @@ export function ProfileMatches({ d }: { d: ProfileData }) {
         {season && <span className="badge">{season.label}</span>}
       </div>
       {matchesLoading && <MatchListSkeleton count={6} />}
-      {matchesError && <p className="msg msg--error">{matchesError}</p>}
+      {matchesError && (
+        <ErrorRetry
+          melding={`De matches laden mislukte: ${matchesError}`}
+          onRetry={matchesReload}
+        />
+      )}
       {!matchesLoading && (
         <MatchList
           matches={scoped}

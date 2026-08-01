@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
@@ -18,6 +19,7 @@ import type { Profile } from "@/types";
 import "./Matches.css";
 
 export function Matches() {
+  usePageTitle("Matches");
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const [sheetOpen, setSheetOpen] = useState(false);

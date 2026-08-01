@@ -4,11 +4,13 @@ import { updateUser } from "./api";
 import { useAuth } from "./AuthProvider";
 import { authErrorMessage, passwordError, PASSWORD_RULE } from "./authErrors";
 import { BallIcon } from "@/ui/BallIcon";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import "./LoginScreen.css";
 
 type Status = "idle" | "loading" | "error" | "success";
 
 export function ResetPassword() {
+  usePageTitle("Nieuw wachtwoord");
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const [password, setPassword] = useState("");

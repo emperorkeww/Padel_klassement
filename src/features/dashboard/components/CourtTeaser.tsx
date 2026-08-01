@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { nextFreeSlot, type DayAvailability } from "@/features/availability/api";
 import type { AsyncState } from "@/lib/hooks/useAsync";
 import { minutesNowInZone } from "@/lib/utils/time";
@@ -31,7 +32,10 @@ export function CourtTeaser({
       {availability.loading ? (
         <Skeleton rows={1} />
       ) : availability.error ? (
-        <p className="msg msg--error">{availability.error}</p>
+        <ErrorRetry
+          melding={`De banen laden mislukte: ${availability.error}`}
+          onRetry={availability.reload}
+        />
       ) : availability.data ? (
         <NextFreeLine slot={slot} />
       ) : null}

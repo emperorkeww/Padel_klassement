@@ -6,6 +6,8 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
 import { PageTabs, TabPanel, type PageTabItem } from "@/ui/PageTabs";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getGroup, getGroupMembers } from "./api";
@@ -99,6 +101,8 @@ export function GroupDetail() {
   const standSeen = standOpened || urlView === "stand";
 
   const group = useAsync(() => getGroup(id), [id]);
+  // Tabtitel op de groepsnaam (#910).
+  usePageTitle(group.data?.name ?? null);
   const members = useAsync(() => getGroupMembers(id), [id]);
   const matches = useAsync(() => getGroupMatches(id), [id]);
   const standings = useAsync(() => getGroupPlayerStandings(id), [id], {
@@ -367,7 +371,14 @@ export function GroupDetail() {
     );
   if (!group.data)
     return (
-      <p className="msg msg--error">Groep niet gevonden of geen toegang.</p>
+      <ErrorRetry
+        melding="Deze groep bestaat niet (meer) of je hebt er geen toegang toe."
+        actie={
+          <Link className="btn btn--sm" to="/spelen?hub=1">
+            Alle groepen
+          </Link>
+        }
+      />
     );
 
   return (

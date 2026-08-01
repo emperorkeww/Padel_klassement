@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName, updateFeaturedBadges } from "./api";
@@ -33,6 +33,10 @@ import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useBackTo } from "@/lib/hooks/useBackTo";
 import {
   recentForm,
   winRate,
@@ -99,11 +103,16 @@ function tabFrom(value: string | null): ProfileTab {
 export function PlayerProfile() {
   const { id = "" } = useParams();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const isMe = user?.id === id;
   const club = useClub();
 
   const profile = useAsync(() => getProfile(id), [id]);
+  // Tabtitel op de spelersnaam (#910); zolang die laadt blijft de titel staan
+  // in plaats van naar een tussenstand te flitsen.
+  usePageTitle(profile.data ? displayName(profile.data) : null);
+  // Bij een deeplink uit een pushbericht is er geen vorige pagina — dan naar
+  // het klassement in plaats van de app uit (#910).
+  const terug = useBackTo("/klassement");
   const standing = useAsync(() => getPlayerStanding(id), [id]);
   // Volledige stand voor de klassementpositie (#N), net als het dashboard.
   const standings = useAsync(getPlayerStandings, []);
@@ -240,7 +249,16 @@ export function PlayerProfile() {
       </div>
     );
   if (!profile.data)
-    return <p className="msg msg--error">Speler niet gevonden.</p>;
+    return (
+      <ErrorRetry
+        melding="Deze speler bestaat niet (meer) of is niet zichtbaar voor jou."
+        actie={
+          <Link className="btn btn--sm" to="/klassement">
+            Naar klassement
+          </Link>
+        }
+      />
+    );
 
   const p = profile.data;
   const s = standing.data;
@@ -528,6 +546,7 @@ export function PlayerProfile() {
     season,
     matchesLoading: matches.loading,
     matchesError: matches.error,
+    matchesReload: matches.reload,
     badges,
     featuredBadges,
     featuredIds,
@@ -549,11 +568,7 @@ export function PlayerProfile() {
     <div>
       <header className="page-head profile-head">
         {/* Terug naar waar je vandaan kwam (klassement, vrienden, …). */}
-        <button
-          type="button"
-          className="btn btn--sm"
-          onClick={() => navigate(-1)}
-        >
+        <button type="button" className="btn btn--sm" onClick={terug}>
           ← Terug
         </button>
         <div className="profile-head__tools">
@@ -645,38 +660,36 @@ export function PlayerProfile() {
 
       <ProfileHero d={d} action={isMe ? undefined : <FriendButton targetId={id} />} />
 
-      <nav className="tabs tabs--page" aria-label="Profielonderdelen">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`tab ${tab === t.id ? "is-active" : ""}`}
-            aria-current={tab === t.id ? "page" : undefined}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      {/* Gedeelde tabbalk (#910): tablist-semantiek en pijltjesnavigatie in
+          plaats van losse buttons met een handmatige aria-current. */}
+      <PageTabs
+        tabs={TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Profielonderdelen"
+        idPrefix="profiel"
+      />
 
-      {tab === "overzicht" && (
-        <ProfileOverview
-          d={d}
-          mijnKaart={mijnKaart}
-          hunKaart={hunKaart}
-          onOpenBadge={setOpenBadge}
-          onShowMatches={() => setTab("matches")}
-        />
-      )}
-      {tab === "statistieken" && <ProfileStats d={d} />}
-      {tab === "badges" && (
-        <ProfileBadges
-          d={d}
-          onOpenBadge={setOpenBadge}
-          onToggleFeatured={toggleFeatured}
-        />
-      )}
-      {tab === "matches" && <ProfileMatches d={d} />}
+      <TabPanel id={tab} idPrefix="profiel">
+        {tab === "overzicht" && (
+          <ProfileOverview
+            d={d}
+            mijnKaart={mijnKaart}
+            hunKaart={hunKaart}
+            onOpenBadge={setOpenBadge}
+            onShowMatches={() => setTab("matches")}
+          />
+        )}
+        {tab === "statistieken" && <ProfileStats d={d} />}
+        {tab === "badges" && (
+          <ProfileBadges
+            d={d}
+            onOpenBadge={setOpenBadge}
+            onToggleFeatured={toggleFeatured}
+          />
+        )}
+        {tab === "matches" && <ProfileMatches d={d} />}
+      </TabPanel>
 
       {openBadgeInfo && (
         <Sheet

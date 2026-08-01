@@ -35,9 +35,11 @@ import { OnboardCard } from "./components/OnboardCard";
 import { WrappedBanners } from "./components/WrappedBanners";
 import { dashboardBriefing } from "./dashboardBriefing";
 import { useDashboardData } from "./useDashboardData";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import "./Dashboard.css";
 
 export function Dashboard() {
+  usePageTitle("Overzicht");
   // Alle bronnen, hun realtime-verversing en de kern-foutstaat zitten in de
   // hook (#736); hier blijft alleen wat het scherm ermee doet.
   const {

@@ -5,6 +5,8 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { FeedSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import { Sheet } from "@/ui/Sheet";
 import { COMMENTATOR } from "@/features/coach/roastTone";
@@ -69,6 +71,7 @@ import "./Feed.css";
 // verschijnt zodra de kern er is en verrijkt zichzelf daarna.
 
 export function Feed() {
+  usePageTitle("Feed");
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -192,6 +195,11 @@ export function Feed() {
   const loading =
     matches.loading || teams.loading || profiles.loading || friendships.loading;
   const error = matches.error ?? friendships.error;
+  // Herstelactie (#910): alleen de bron(nen) die faalden opnieuw proberen.
+  const herlaad = () => {
+    if (matches.error) matches.reload();
+    if (friendships.error) friendships.reload();
+  };
 
   const [limit, setLimit] = useState(FEED_LIMIT);
 
@@ -359,7 +367,9 @@ export function Feed() {
       </header>
 
       {loading && <FeedSkeleton />}
-      {!loading && error && <p className="msg msg--error">{error}</p>}
+      {!loading && error && (
+        <ErrorRetry melding={`De feed laden mislukte: ${error}`} onRetry={herlaad} />
+      )}
 
       {!loading && !error && (
         <div className="tabs feed__filters">
