@@ -8,9 +8,12 @@ export function readFlag(key: string): boolean {
   }
 }
 
-export function writeFlag(key: string) {
+/** Zet de vlag aan, of wist hem met `aan = false`. Wissen is nodig sinds #911:
+ *  de inklap-keuze van het cijfer-blok kan beide kanten op. */
+export function writeFlag(key: string, aan = true) {
   try {
-    localStorage.setItem(key, "1");
+    if (aan) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
   } catch {
     /* privémodus — dan geldt de keuze alleen voor deze sessie */
   }

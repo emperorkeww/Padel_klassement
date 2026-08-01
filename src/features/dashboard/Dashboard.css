@@ -74,17 +74,19 @@
     var(--surface);
 }
 
-/* Samengevouwen gamification (#276): weekmissies, pias, badge-voortgang en
-   rivaal achter één inklapper, zodat ze niet met de kern concurreren. De
-   inklapper zelf is een rustige kaart-achtige balk; de items erin houden hun
-   eigen kaartstijl. */
-.dash-extras {
+/* Het secundaire cijfer-blok achter één inklapper (#276, verbreed in #911):
+   statsrij, rating, weekmissies, badge-voortgang en rivaal. Eerder heette dit
+   .dash-extras en zat alleen de gamification erin, met de statsrij en rating
+   los erboven — waardoor de pagina één lange rij gelijkwaardige kaarten was.
+   De inklapper zelf is een rustige kaart-achtige balk; de items erin houden
+   hun eigen kaartstijl. */
+.dash-cijfers {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
-.dash-extras__summary {
+.dash-cijfers__summary {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -95,11 +97,11 @@
   color: var(--ink);
   border-radius: var(--radius);
 }
-.dash-extras__summary::-webkit-details-marker {
+.dash-cijfers__summary::-webkit-details-marker {
   display: none;
 }
 /* Eigen chevron rechts, die meedraait bij openen. */
-.dash-extras__summary::after {
+.dash-cijfers__summary::after {
   content: "";
   margin-left: auto;
   width: 9px;
@@ -109,27 +111,27 @@
   transform: rotate(45deg);
   transition: transform 0.15s ease;
 }
-.dash-extras[open] .dash-extras__summary::after {
+.dash-cijfers[open] .dash-cijfers__summary::after {
   transform: rotate(-135deg);
 }
-.dash-extras__summary:hover {
+.dash-cijfers__summary:hover {
   background: var(--surface-2);
 }
-.dash-extras__title {
+.dash-cijfers__title {
   font-size: 1rem;
 }
-.dash-extras__hint {
+.dash-cijfers__hint {
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-soft);
 }
-.dash-extras__body {
+.dash-cijfers__body {
   display: grid;
   gap: var(--sp-5);
   padding: 0 var(--sp-5) var(--sp-5);
 }
 @media (prefers-reduced-motion: reduce) {
-  .dash-extras__summary::after {
+  .dash-cijfers__summary::after {
     transition: none;
   }
 
@@ -165,6 +167,34 @@
   background: var(--surface-2);
 }
 
+/* Zone met wat vandaag speelt (#911): poll, volgende match, avondkaart. Een
+   benoemde zone in plaats van drie losse kaarten in de stapel, zodat zichtbaar
+   is wat bij elkaar hoort — en zodat de gedeelde laadstaat één plek heeft. */
+.dash-zone {
+  margin-bottom: var(--sp-5);
+}
+.dash-zone__titel {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.dash-zone__body {
+  display: grid;
+  gap: var(--sp-5);
+}
+/* De zone-inhoud brengt zijn eigen ritme mee; de generieke kaartafstanden
+   zouden er een dubbele marge bovenop leggen. */
+.dash-zone__body > * {
+  margin-bottom: 0;
+}
+.dash-vandaag__skeleton {
+  display: grid;
+  gap: var(--sp-5);
+}
+
 /* Actiestrook: dingen die op jou wachten (uitslagen, verzoeken). */
 .todo-strip {
   display: flex;
@@ -189,6 +219,27 @@
 .todo-chip:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+/* Zonder deze regel verraadde alleen de hover-schaduw dat je erop kunt tikken —
+   op desktop pas als je er al overheen bent, met het toetsenbord nooit (#911). */
+.todo-chip:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+/* Pijl achter het label: leest als "hier ga je heen", ook stilstaand. */
+.todo-chip__pijl {
+  font-weight: 800;
+  transition: transform 0.15s ease;
+}
+.todo-chip:hover .todo-chip__pijl,
+.todo-chip:focus-visible .todo-chip__pijl {
+  transform: translateX(2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .todo-chip,
+  .todo-chip__pijl {
+    transition: none;
+  }
 }
 .todo-chip__count {
   display: inline-flex;
