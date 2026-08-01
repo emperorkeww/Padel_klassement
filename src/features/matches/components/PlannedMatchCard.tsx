@@ -21,6 +21,7 @@ import {
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { displayName } from "@/features/profiles/api";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { predictionPoints } from "@/features/matches/predictions";
 import {
@@ -224,6 +225,19 @@ export function PlannedMatchCard({
   const serveKant = m.status === "scheduled" ? serveerTeam(m) : null;
 
   const isGroupMatch = m.group_id != null;
+  // De organisator van een speeldag staat vaak niet zelf op de baan en drukte
+  // ook niet op "ronde maken", maar mag de uitslag wél invullen (RLS). Zijn
+  // eigen groepen zijn genoeg om dat te weten; getMyGroups is gecacht en wordt
+  // over alle kaarten op het scherm gedeeld.
+  const myGroups = useAsync(
+    () => (isGroupMatch ? getMyGroups() : Promise.resolve([])),
+    [isGroupMatch],
+  );
+  const isGroupOwner =
+    !!myId &&
+    (myGroups.data ?? []).some(
+      (g) => g.id === m.group_id && g.created_by === myId,
+    );
   const predictions = useAsync(
     () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
     [m.id, isGroupMatch],
@@ -283,13 +297,14 @@ export function PlannedMatchCard({
   // Alleen de aanmaker mag verplaatsen/verwijderen (de server dwingt dit ook af);
   // toon die knoppen dus niet aan anderen om een voorspelbare fout te vermijden.
   const canManage = !!perspectiveId && m.created_by === perspectiveId;
-  // De uitslag invullen mag door de aanmaker én de spelers zelf (RLS #413);
-  // verberg de score-invoer voor anderen, die zouden op de server stuklopen.
-  // Op basis van de ingelogde gebruiker (myId), niet perspectiveId: op een
-  // profielpagina is dat de profieleigenaar, niet de kijker.
+  // De uitslag invullen mag door de aanmaker, de spelers zelf (RLS #413) én de
+  // eigenaar van de groep; verberg de score-invoer voor anderen, die zouden op
+  // de server stuklopen. Op basis van de ingelogde gebruiker (myId), niet
+  // perspectiveId: op een profielpagina is dat de profieleigenaar, niet de kijker.
   const canScore =
     !!myId &&
     (m.created_by === myId ||
+      isGroupOwner ||
       [teams[m.team_a_id], teams[m.team_b_id]].some(
         (t) => t && (t.player1_id === myId || t.player2_id === myId),
       ));
@@ -613,7 +628,8 @@ export function PlannedMatchCard({
           lege kaart; de toto hieronder blijft juist voor kijkers relevant. */}
       {!canScore && (
         <p className="planned-card__noscore">
-          Alleen de spelers of de aanmaker kunnen het resultaat invullen.
+          Alleen de spelers, de aanmaker of de groepseigenaar kunnen het
+          resultaat invullen.
         </p>
       )}
 
