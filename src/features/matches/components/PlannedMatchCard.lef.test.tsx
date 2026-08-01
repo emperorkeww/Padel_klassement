@@ -159,6 +159,42 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     expect(screen.getByRole("button", { name: /zet je lef in/i })).toBeDisabled();
   });
 
+  // ── De kop-pil op de dichte kaart (#981) ──────────────────────────────────
+
+  it("toont op de dichte kaart dat jouw lef hier staat", async () => {
+    setTables({ match_stakes: [stakeRij(GEPLAND.id, "p1")] });
+    renderCard();
+    // Zonder de kaart te openen: de pil staat op de kop.
+    expect(await screen.findByText(/jouw lef/i)).toBeInTheDocument();
+  });
+
+  it("verklapt andermans inzet niet op de dichte kaart vóór de aftrap", async () => {
+    setTables({ match_stakes: [stakeRij(GEPLAND.id, "p2")] });
+    renderCard();
+    // Wachten tot de kaart (en dus de stakes-fetch) er staat.
+    await screen.findByRole("button", { name: /uitslag invullen/i });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText(/jouw lef/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/lef:/i)).not.toBeInTheDocument();
+  });
+
+  it("onthult op de dichte kaart wie er lef had zodra de match begonnen is", async () => {
+    const begonnen = {
+      ...GEPLAND,
+      played_at: new Date(Date.now() - 3600_000).toISOString(),
+    } as Match;
+    setTables({
+      matches: [begonnen],
+      match_stakes: [
+        stakeRij(begonnen.id, "p2"),
+        stakeRij(begonnen.id, "p4"),
+      ],
+    });
+    renderCard(begonnen);
+    // Zonder openen; bij meerdere inzetters kort de pil in tot "Bob Boers +1".
+    expect(await screen.findByText(/lef: bob boers \+1/i)).toBeInTheDocument();
+  });
+
   it("toont geen lef-blok bij een match waarin je niet meespeelt", async () => {
     const anderen = {
       ...GEPLAND,
@@ -281,6 +317,45 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
     expect(
       within(b).queryByText(/je lef is vandaag al vergeven/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("wijst aan waar je lef al staat en springt naar die kaart (#981)", async () => {
+    setTables({
+      matches: [GEPLAND, GEPLAND_B],
+      // play_date moet de echte speeldag zijn, anders telt het tegoed niet.
+      match_stakes: [{ ...stakeRij(GEPLAND.id, "p1"), play_date: DAG }],
+    });
+    // jsdom kent scrollIntoView niet; de spy bewijst de sprong.
+    const scrollSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollSpy;
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <PlannedMatchCard
+              match={GEPLAND}
+              teams={tmap}
+              profiles={pmap}
+              history={[GEPLAND, GEPLAND_B]}
+            />
+            <PlannedMatchCard
+              match={GEPLAND_B}
+              teams={tmap}
+              profiles={pmap}
+              history={[GEPLAND, GEPLAND_B]}
+            />
+          </ToastProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await openPlannedCards();
+    const [, b] = await tegels();
+    // Niet alleen "al vergeven": de voet noemt de match waar je lef wél staat.
+    expect(
+      await within(b).findByText(/je lef staat vandaag al op/i),
+    ).toBeInTheDocument();
+    await userEvent.click(within(b).getByRole("button", { name: /ronde 2/i }));
+    expect(scrollSpy).toHaveBeenCalled();
   });
 
   it("laat de kaart waarop je inzet zelf ook meteen kloppen", async () => {

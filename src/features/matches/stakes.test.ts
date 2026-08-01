@@ -3,6 +3,9 @@ import {
   MIN_GAMES,
   blokkadeUitleg,
   dagBezet,
+  dagBezetDoor,
+  lefGestart,
+  lefKaartRegel,
   playDay,
   stakeBlokkade,
   stakeFactor,
@@ -10,7 +13,7 @@ import {
   stakeSwing,
   type MatchStake,
 } from "@/features/matches/stakes";
-import type { Match } from "@/types";
+import type { Match, Team } from "@/types";
 
 const OVER_2_DAGEN = new Date(Date.now() + 2 * 86400_000).toISOString();
 
@@ -198,5 +201,91 @@ describe("stakeFoutMelding", () => {
     expect(stakeFoutMelding({})).toBe(
       "Inzetten lukte niet. Probeer het zo nog eens.",
     );
+  });
+});
+
+// ── Onthulling en kaartregel (#981) ─────────────────────────────────────────
+
+describe("lefGestart", () => {
+  it("blijft dicht zolang de match gepland is en de starttijd niet voorbij", () => {
+    expect(lefGestart(match())).toBe(false);
+  });
+
+  it("start zodra de starttijd voorbij is, ook al is de status nog scheduled", () => {
+    const nu = new Date(OVER_2_DAGEN).getTime() + 1;
+    expect(lefGestart(match(), nu)).toBe(true);
+  });
+
+  it("start op status, ook zonder verstreken starttijd", () => {
+    expect(lefGestart(match({ status: "completed" }))).toBe(true);
+    expect(lefGestart(match({ status: "cancelled" }))).toBe(true);
+  });
+
+  it("blijft dicht zonder starttijd", () => {
+    expect(lefGestart(match({ played_at: null }))).toBe(false);
+  });
+});
+
+describe("dagBezetDoor", () => {
+  it("wijst de inzet aan die het tegoed bezet houdt", () => {
+    const andere = stake({ match_id: "m2" });
+    expect(dagBezetDoor([andere], "m1", OVER_2_DAGEN)).toBe(andere);
+  });
+
+  it("geeft null voor de eigen match of een andere speeldag", () => {
+    expect(dagBezetDoor([stake()], "m1", OVER_2_DAGEN)).toBeNull();
+    const andereDag = stake({ match_id: "m2", play_date: "2020-01-01" });
+    expect(dagBezetDoor([andereDag], "m1", OVER_2_DAGEN)).toBeNull();
+  });
+});
+
+describe("lefKaartRegel", () => {
+  const TEAMS: Record<string, Team> = {
+    "t-ab": {
+      id: "t-ab",
+      name: null,
+      player1_id: "p1",
+      player2_id: "p2",
+      created_at: OVER_2_DAGEN,
+    },
+    "t-cd": {
+      id: "t-cd",
+      name: null,
+      player1_id: "p3",
+      player2_id: "p4",
+      created_at: OVER_2_DAGEN,
+    },
+  } as Record<string, Team>;
+  const naam = (id: string) => ({ p1: "Alice", p3: "Cor" })[id] ?? id;
+  const regel = (m: Match, stakes: MatchStake[], now?: number) =>
+    lefKaartRegel({ match: m, stakes, teams: TEAMS, naam, now });
+
+  it("verklapt vóór de aftrap niets — ook niet met inzetten", () => {
+    expect(regel(match(), [stake()])).toBeNull();
+  });
+
+  it("toont vanaf de aftrap wie er lef had, nog zonder uitkomst", () => {
+    const nu = new Date(OVER_2_DAGEN).getTime() + 1;
+    expect(regel(match(), [stake()], nu)).toBe("🎲 lef ×2 · Alice");
+  });
+
+  it("zet de uitkomst per inzetter bij een afgeronde match", () => {
+    const klaar = match({ status: "completed", winner_team_id: "t-ab" });
+    expect(
+      regel(klaar, [stake(), stake({ player_id: "p3" })]),
+    ).toBe("🎲 lef ×2 · Alice — winst · Cor — verlies");
+  });
+
+  it("laat een gelijkspel zien zonder ×2 — de inzet telde niet", () => {
+    const gelijk = match({ status: "completed", winner_team_id: null });
+    expect(regel(gelijk, [stake()])).toBe(
+      "🎲 lef · Alice — gelijkspel, telt niet",
+    );
+  });
+
+  it("filtert op de eigen match en zwijgt zonder inzetten", () => {
+    const klaar = match({ status: "completed", winner_team_id: "t-ab" });
+    expect(regel(klaar, [stake({ match_id: "m2" })])).toBeNull();
+    expect(regel(klaar, [])).toBeNull();
   });
 });

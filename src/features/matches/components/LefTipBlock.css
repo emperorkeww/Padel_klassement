@@ -45,3 +45,16 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+
+/* "Je lef staat vandaag al op …" (#981): link-knop in de voettekst die naar de
+   kaart springt waar je inzet staat. */
+.lef__doel {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--lef);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

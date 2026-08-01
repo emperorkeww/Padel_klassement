@@ -3,6 +3,7 @@ import { ScoreStepper } from "@/ui/ScoreStepper";
 import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { errorMessage } from "@/lib/utils/errors";
 import { celebrate } from "@/lib/utils/confetti";
 import { tap, winPulse } from "@/lib/utils/haptics";
@@ -40,7 +41,7 @@ import {
   type SetPair,
 } from "@/features/matches/api";
 import { serveerTeam } from "@/features/matches/serve";
-import { stakeSwing } from "@/features/matches/stakes";
+import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { getMatchStakes } from "@/features/matches/stakesApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
@@ -249,6 +250,27 @@ export function PlannedMatchCard({
     (myGroups.data ?? []).some(
       (g) => g.id === m.group_id && g.created_by === myId,
     );
+  // Lef op de kaartkop (#981): vóór de aftrap alleen je éígen inzet — een
+  // 🎲-pil die je vertelt waar je dagtegoed staat zonder de kaart te openen.
+  // Vanaf de aftrap onthult dezelfde pil voor iedereen wie er lef had; de
+  // volgorde van die twee staten is de anti-meelift-garantie uit LefTipBlock.
+  // getMatchStakes is gecacht en gedeeld met de tegel; de cache-revisie trekt
+  // de pil bij zodra ergens een inzet gezet of ingetrokken wordt (#907).
+  const stakesRev = useCacheRevision("match-stakes");
+  const kaartStakes = useAsync(
+    () => (isGroupMatch ? getMatchStakes(m.id) : Promise.resolve([])),
+    [m.id, isGroupMatch, stakesRev],
+  );
+  const lefOnthuld =
+    lefGestart(m, now) && (kaartStakes.data?.length ?? 0) > 0;
+  const mijnLefHier =
+    !lefGestart(m, now) &&
+    !!myId &&
+    (kaartStakes.data ?? []).some((s) => s.player_id === myId);
+  const lefInzetters = (kaartStakes.data ?? []).map((s) =>
+    displayName(profiles[s.player_id]),
+  );
+
   const predictions = useAsync(
     () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
     [m.id, isGroupMatch],
@@ -528,7 +550,9 @@ export function PlannedMatchCard({
   // Scorebord-layout: per rij een team met zijn eigen stepper; de verwachte
   // winkans als één gedeelde balk tussen de twee rijen.
   return (
-    <div className="planned-card">
+    // Het id is het anker voor "je lef staat al op …" op een andere kaart van
+    // dezelfde speeldag (#981): tikken scrolt hierheen.
+    <div className="planned-card" id={`match-${m.id}`}>
       <div className="planned-card__head">
         <div className="planned-card__when">
           <span className="planned-card__when-day">
@@ -547,6 +571,29 @@ export function PlannedMatchCard({
                 }`}
               >
                 {deadline.label}
+              </span>
+            )}
+            {/* Lef op de kop (#981): vóór de aftrap alleen je eigen inzet,
+                daarna de onthulling — zichtbaar terwijl de kaart dicht staat. */}
+            {(mijnLefHier || lefOnthuld) && (
+              <span
+                className={`planned-card__lefpil${
+                  lefOnthuld ? " planned-card__lefpil--vol" : ""
+                }`}
+                title={
+                  lefOnthuld
+                    ? `Lef getoond door ${lefInzetters.join(", ")}`
+                    : "Jouw lef staat op deze match"
+                }
+              >
+                🎲{" "}
+                {lefOnthuld
+                  ? `Lef: ${
+                      lefInzetters.length > 1
+                        ? `${lefInzetters[0]} +${lefInzetters.length - 1}`
+                        : lefInzetters[0]
+                    }`
+                  : "jouw lef"}
               </span>
             )}
           </span>
@@ -719,6 +766,7 @@ export function PlannedMatchCard({
                 isDeelnemer={mijnTeam != null}
                 mijnKans={mijnKans}
                 games={(myId && ratings.data?.[myId]?.games) || 0}
+                matches={history}
               />
             </div>
           )}
