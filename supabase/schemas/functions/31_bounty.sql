@@ -25,8 +25,14 @@
 -- en de dictator-drempel (1600) is absoluut — inflatie maakt de troon
 -- structureel goedkoper. Zie ook de motivatie in tables/21_match_stakes.sql.
 
--- Vaste pool van 16, ongeacht de zegereeks van de drager (#823). De parameter
--- blijft bestaan voor call-compatibiliteit met active_bounties en
+-- Vaste pool van 8, ongeacht de zegereeks van de drager (#823). Afgestemd op
+-- de K-factor van de Elo-kern (24, zie 09_ratings.sql): een normale partij
+-- verschuift in de praktijk zo'n 10 à 14 Elo, dus bij de oude pool van 16 woog
+-- de kop van de leider zwaarder dan de uitslag zelf. Een derde van K laat de
+-- bounty voelbaar zijn zonder de match te overstemmen, en 8 is even — in een
+-- dubbel splitst hij netjes 4/4, zonder de oneven-restregel hieronder.
+--
+-- De parameter blijft bestaan voor call-compatibiliteit met active_bounties en
 -- _bounty_deltas. Immutable en publiek uitvoerbaar — de client spiegelt deze
 -- waarde (rating/bounty.ts).
 create or replace function public.bounty_value(p_streak int)
@@ -35,7 +41,7 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select 16;
+  select 8;
 $$;
 
 -- Actieve zegereeks van een speler vlak vóór een bepaald punt in de historie.
@@ -129,7 +135,7 @@ declare
   drempel constant int := 1600;
   -- Onder dit aantal matches is de rating te dun om er een kroon aan te hangen
   -- (THIN_GAMES, groupRating.ts). Zonder deze rem draagt een nieuwkomer die na
-  -- twee toevalstreffers bovenaan piekt meteen 15 Elo op z'n hoofd.
+  -- twee toevalstreffers bovenaan piekt meteen de volle pool op z'n hoofd.
   min_games constant int := 3;
   -- Startmoment van de feature. De bounty is afgeleid, dus zónder deze grens
   -- zou de eerstvolgende recompute met terugwerkende kracht de hele historie

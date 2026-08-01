@@ -23,7 +23,7 @@ const team = (id: string, p1: string, p2: string | null): Team =>
 
 describe("BOUNTY_POOL", () => {
   it("spiegelt de vaste databasewaarde", () => {
-    expect(BOUNTY_POOL).toBe(16);
+    expect(BOUNTY_POOL).toBe(8);
   });
 });
 
