@@ -20,6 +20,57 @@ export function passwordError(password: string): string | null {
   return null;
 }
 
+/** De velden die een eigen foutmelding kunnen krijgen (#922). */
+export type AuthVeld = "gebruikersnaam" | "email" | "wachtwoord" | "bevestig";
+
+/**
+ * Controleert het e-mailadres net streng genoeg om typefouten te vangen. Geen
+ * regex-marathon: of het adres écht bestaat weet alleen de mailserver, en een
+ * te strenge regel weigert geldige adressen.
+ */
+export function emailError(email: string): string | null {
+  const clean = email.trim();
+  if (!clean) return "Vul je e-mailadres in.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+    return "Dit lijkt geen geldig e-mailadres.";
+  }
+  return null;
+}
+
+/** Komt de bevestiging overeen met het gekozen wachtwoord? */
+export function bevestigError(
+  password: string,
+  confirm: string,
+): string | null {
+  if (!confirm) return "Herhaal je wachtwoord.";
+  if (password !== confirm) return "De wachtwoorden komen niet overeen.";
+  return null;
+}
+
+// Bij welk veld hoort een serverfout? Codes zonder ingang horen bij het
+// formulier als geheel (rate limits, onbekende fouten) en blijven algemeen.
+const VELDEN: Record<string, AuthVeld> = {
+  // Bewust het wachtwoordveld, mét de dubbelzinnige tekst "E-mail of wachtwoord
+  // klopt niet": Supabase zegt niet wélke van de twee fout is. Maak dit niet
+  // "preciezer" dan waar is — het scherm markeert daarom béide velden.
+  invalid_credentials: "wachtwoord",
+  email_not_confirmed: "email",
+  user_already_exists: "email",
+  email_exists: "email",
+  validation_failed: "email",
+  weak_password: "wachtwoord",
+  same_password: "wachtwoord",
+};
+
+/**
+ * Zegt bij welk veld een Supabase-authfout thuishoort, of `null` als de fout
+ * het hele formulier betreft.
+ */
+export function authErrorVeld(error: unknown): AuthVeld | null {
+  if (hasCode(error) && error.code) return VELDEN[error.code] ?? null;
+  return null;
+}
+
 // Bekende Supabase-foutcodes → NL. We mappen op `error.code` (stabiel vanaf
 // auth-js v2) i.p.v. op `error.message` (Engelse, wijzigende tekst).
 const MESSAGES: Record<string, string> = {

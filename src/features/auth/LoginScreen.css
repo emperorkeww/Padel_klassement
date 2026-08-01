@@ -415,6 +415,95 @@
 .field__hint--available {
   color: var(--accent);
 }
-.field__hint--taken {
+/* --taken bestaat niet meer als hint: een bezette naam blokkeert nu en gaat
+   door .field__error (#922). */
+.field__hint--warn {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* ---------- Fout bij het veld (#922) ----------
+   Elke fout stond onderaan boven de knop, los van het veld waar het misging. */
+.field__error {
+  display: block;
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.field__input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.field__input[aria-invalid="true"]:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+/* ---------- Wachtwoordsterkte (#922) ---------- */
+.sterkte {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+}
+.sterkte__balk {
+  display: flex;
+  flex: 1;
+  gap: 3px;
+}
+.sterkte__segment {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background 0.15s;
+}
+.sterkte__segment--n1 {
+  background: var(--danger);
+}
+.sterkte__segment--n2 {
+  background: var(--warn);
+}
+.sterkte__segment--n3 {
+  background: var(--success);
+}
+.sterkte__label {
   color: var(--ink-soft);
+  font-weight: 600;
+  /* Vaste breedte: anders springt de balk bij elk woord ("Zwak" ↔ "Redelijk"). */
+  min-width: 5.5em;
+  text-align: right;
+}
+.sterkte__label--n0 {
+  color: var(--ink-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sterkte__segment {
+    transition: none;
+  }
+}
+
+/* ---------- "Check je mail" na registreren (#922) ----------
+   Het volledig ingevulde formulier bleef staan met er één regel tekst boven;
+   nu neemt dit paneel het over, zodat duidelijk is wat er nog van je wordt
+   verwacht. */
+.login-mailcheck {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: center;
+  text-align: center;
+}
+.login-mailcheck__adres {
+  margin: 0;
+  font-weight: 700;
+  /* Lange adressen mogen afbreken i.p.v. de kaart oprekken. */
+  overflow-wrap: anywhere;
+}
+.login-mailcheck__uitleg {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  line-height: 1.5;
 }
