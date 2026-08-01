@@ -10,7 +10,15 @@ export const MATCH_WINDOW = 250;
 export const FILTERS = {
   Alles: null,
   Matches: new Set<FeedEvent["kind"]>(["match", "evening", "planned"]),
-  Klassement: new Set<FeedEvent["kind"]>(["rank", "season-champion", "tier"]),
+  // In-Form en On Fire horen hier en niet bij Roast: het zijn verdiensten uit
+  // het klassement, net als een rangsprong of een promotie (#986).
+  Klassement: new Set<FeedEvent["kind"]>([
+    "rank",
+    "season-champion",
+    "tier",
+    "in-form",
+    "on-fire",
+  ]),
   Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes", "vendetta"]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
@@ -62,6 +70,13 @@ export function eventKey(event: FeedEvent): string {
       return `pw-${event.groupId}-${event.weekStart}`;
     case "zwarte-piet":
       return `zp-${event.groupId}-${event.at}`;
+    // Eén In-Form-item per speler per week, één On Fire-item per doorbraak:
+    // de sleutels zeggen precies dat, zodat een groeiende reeks of een tweede
+    // zege in dezelfde week geen nieuw item oplevert (#986).
+    case "in-form":
+      return `if-${event.playerId}-${event.weekStart}`;
+    case "on-fire":
+      return `of-${event.playerId}-${event.matchId}`;
     case "smoes":
       return `sm-${event.matchId}-${event.playerId}`;
     case "vendetta":

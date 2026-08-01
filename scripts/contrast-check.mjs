@@ -114,9 +114,15 @@ const heroCss = readFileSync(
   new URL("../src/features/dashboard/components/DashboardHero.css", import.meta.url),
   "utf8",
 );
+// Sinds #986 draagt de feed dezelfde twee edities als eiland: dezelfde stops,
+// dezelfde inkt, dus dezelfde meting.
+const feedCss = readFileSync(
+  new URL("../src/features/feed/Feed.css", import.meta.url),
+  "utf8",
+);
 
-function islandTokens(selector) {
-  const block = heroCss.match(
+function islandTokens(selector, bron = heroCss) {
+  const block = bron.match(
     new RegExp(`\\${selector}\\s*\\{([\\s\\S]*?)\\n\\}`),
   )?.[1];
   if (!block) return null;
@@ -129,7 +135,7 @@ function islandTokens(selector) {
   return out;
 }
 
-// [selector, omschrijving, [voorgrond, achtergrond, drempel, label]...]
+// [selector, omschrijving, [voorgrond, achtergrond, drempel, label]..., bron?]
 const ISLANDS = [
   [
     ".hero--pias",
@@ -185,14 +191,37 @@ const ISLANDS = [
       ["onfire-sintel-diep", "onfire-ember", 4.5, "knoptekst op de emberknop"],
     ],
   ],
+  // De twee editie-kaarten in de feed (#986). Achtergrond is hier de líchtste
+  // stop: het verloop van de feedkaart loopt van licht naar donker en de tekst
+  // begint bovenaan, dus daar staat de inkt op zijn ongunstigst.
+  [
+    ".feed-hi--inform",
+    "In-Form-feedkaart (zwart-goud)",
+    [
+      ["ed-ink", "ed-vlak", 4.5, "titel op de lichtste stop"],
+      ["ed-accent", "ed-vlak", 4.5, "goud label op de lichtste stop"],
+      ["ed-accent-soft", "ed-vlak", 4.5, "tijdstempel op de lichtste stop"],
+    ],
+    feedCss,
+  ],
+  [
+    ".feed-hi--onfire",
+    "On Fire-feedkaart (sintel-ember)",
+    [
+      ["ed-ink", "ed-vlak", 4.5, "titel op de lichtste stop"],
+      ["ed-accent", "ed-vlak", 4.5, "ember label op de lichtste stop"],
+      ["ed-accent-soft", "ed-vlak", 4.5, "tijdstempel op de lichtste stop"],
+    ],
+    feedCss,
+  ],
 ];
 
 let islandFailures = 0;
 console.log("\n— Token-eilanden van de dashboardkaart (#771) —");
-for (const [selector, omschrijving, pairs] of ISLANDS) {
-  const tokens = islandTokens(selector);
+for (const [selector, omschrijving, pairs, bron] of ISLANDS) {
+  const tokens = islandTokens(selector, bron);
   if (!tokens) {
-    console.error(`  FAIL blok ${selector} niet gevonden in DashboardHero.css`);
+    console.error(`  FAIL blok ${selector} niet gevonden`);
     islandFailures++;
     continue;
   }

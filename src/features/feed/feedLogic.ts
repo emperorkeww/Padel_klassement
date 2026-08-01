@@ -17,6 +17,12 @@ import { isSeasonClosed, seasonFor, type Season } from "@/features/rating/season
 import { eveningSummary } from "@/features/feed/eveningSummary";
 import { tierChange } from "@/features/rating/tiers";
 import { bepaalPias, type PiasReden } from "@/features/groups/maandpias";
+import { isoParts } from "@/features/standings/pias";
+import { onFireDoorbraken } from "@/features/standings/onFire";
+import {
+  spelerVanDeWeek,
+  WEEK_VENSTER_DAGEN,
+} from "@/features/standings/spelerVanDeWeek";
 import { vendettaStand } from "@/features/groups/vendetta";
 import { matchDerby } from "@/features/matches/derby";
 import type { ActiveBounty } from "@/features/rating/bounty";
@@ -133,6 +139,8 @@ export type FeedEvent =
   | { kind: "maand-pias"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; detail: string; periodeLabel: string }
   | { kind: "pias-week"; at: string; groupId: string; groupName: string; playerId: string; reden: PiasReden; waarde: number; winChance: number | null; weekStart: string }
   | { kind: "zwarte-piet"; at: string; groupId: string; groupName: string; toPlayerId: string; fromPlayerId: string | null; reden: PiasReden; detail: string }
+  | { kind: "in-form"; at: string; playerId: string; delta: number; matches: number; weekStart: string }
+  | { kind: "on-fire"; at: string; playerId: string; streak: number; matchId: string }
   | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null }
   | { kind: "vendetta"; at: string; sub: "gestart" | "omgeslagen" | "beslist"; groupId: string; groupName: string; challengerId: string; rivalId: string; winsChallenger: number; winsRival: number; doel: number; matchId: string | null };
 
@@ -777,6 +785,52 @@ export function buildFeed(input: {
         }
       }
     }
+  }
+
+  // ── De twee tijdelijke edities: In-Form (#497) en On Fire (#632) ──
+  // Beide met exact dezelfde helpers als klassement en dashboard, op dezelfde
+  // histories. Geen tweede definitie van "wie is in vorm": de feed mag nooit
+  // iemand uitroepen wiens kaart het niet toont.
+  //
+  // Het lastige is niet wie, maar wannéér: dit zijn toestanden, geen
+  // gebeurtenissen. Zonder vast tijdstip zou zo'n item bij elke herberekening
+  // opnieuw bovenaan komen. Allebei hangen ze daarom aan de match die de
+  // toestand veroorzaakte — zie onFireDoorbraken voor de reeks, en hieronder
+  // voor de vorm.
+  const vorm = spelerVanDeWeek(histories, now);
+  if (vorm && network.has(vorm.playerId)) {
+    // Het tijdstip is de recentste match binnen het weekvenster: sinds díé
+    // partij is hij de speler van de week. Speelt hij later in de week nog
+    // eens, dan schuift het item mee naar boven — het is dezelfde titel, maar
+    // wel opnieuw verdiend. De weeksleutel houdt het één item per week.
+    const vanaf = now.getTime() - WEEK_VENSTER_DAGEN * 24 * 60 * 60 * 1000;
+    const laatste = (histories[vorm.playerId] ?? [])
+      .filter((p) => {
+        const t = new Date(p.played_at).getTime();
+        return !Number.isNaN(t) && t >= vanaf;
+      })
+      .map((p) => p.played_at)
+      .sort()
+      .pop();
+    if (laatste)
+      events.push({
+        kind: "in-form",
+        at: laatste,
+        playerId: vorm.playerId,
+        delta: vorm.delta,
+        matches: vorm.matches,
+        weekStart: isoParts(now).weekStart,
+      });
+  }
+  for (const d of onFireDoorbraken(histories)) {
+    if (!network.has(d.playerId)) continue;
+    events.push({
+      kind: "on-fire",
+      at: d.at,
+      playerId: d.playerId,
+      streak: d.streak,
+      matchId: d.matchId,
+    });
   }
 
   // ── Avond-bundeling: N of meer groepsmatches op één dag worden één item
