@@ -392,7 +392,10 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.plan-phases__step:not(:last-child)::after {
+/* De pijl hoort vóór de stap, niet achter de vorige (#946): bij een wrap bleef
+   hij anders op de vorige regel achter en begon "KLAAR" zonder pijl — dan valt
+   de stapmetafoor uit elkaar. */
+.plan-phases__step:not(:first-child)::before {
   content: "→";
   color: var(--line-strong);
 }
@@ -403,7 +406,8 @@
   color: var(--success);
 }
 .plan-phases__ball {
-  font-size: 0.85em;
+  display: inline-flex;
+  align-items: center;
 }
 .plan-phases__action {
   display: flex;
@@ -430,6 +434,9 @@
   display: none;
 }
 .plan-phases__banen {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
   /* Volwaardig tapdoel (richtlijn ~44px, #374). */
   display: inline-flex;
   align-items: center;
@@ -737,6 +744,9 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+/* Haalbaarheid als meter (#946): een ring die vol/half/leeg staat. Dit is de
+   afleesbare status; de knoppengroep ernaast is de actie. Ze deelden eerder
+   allebei een ✓ en dan weet je niet wat je aantikt. */
 .poll-row__state {
   display: inline-grid;
   place-items: center;
@@ -744,26 +754,24 @@
   height: 28px;
   padding: 0;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  /* Geen eigen ring meer (#946): de meter ín de knop draagt de kleur, en een
+     gekleurde rand eromheen maakte er een ring in een ring van. */
+  border: 1px solid transparent;
   background: var(--surface-2);
   font-weight: 700;
   cursor: pointer;
 }
 .poll-state--haalbaar {
   color: var(--success);
-  border-color: var(--success);
 }
 .poll-state--krap {
   color: var(--gold);
-  border-color: var(--gold);
 }
 .poll-state--onhaalbaar {
   color: var(--danger);
-  border-color: var(--danger-line);
 }
 .poll-state--onbekend {
   color: var(--ink-soft);
-  border-style: dashed;
 }
 .poll-option--onhaalbaar {
   opacity: 0.75;
@@ -789,6 +797,15 @@
 }
 .seg__btn + .seg__btn {
   border-left: 1px solid var(--line);
+}
+/* De buitenste segmenten dragen de afronding zélf (#946). Met alleen
+   `overflow: hidden` op de groep hield de gekleurde vulling een vierkante
+   schouder in de hoek: het klippen valt net naast de ronding van de rand. */
+.seg__btn:first-child {
+  border-radius: 999px 0 0 999px;
+}
+.seg__btn:last-child {
+  border-radius: 0 999px 999px 0;
 }
 .seg__btn.is-active.is-yes {
   background: var(--success);

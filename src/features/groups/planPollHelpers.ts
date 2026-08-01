@@ -1,19 +1,15 @@
 import type { PollVoteStatus } from "@/features/groups/pollsApi";
-import type { OptionState } from "@/features/groups/pollLogic";
 
 // Gedeelde constants en pure helpers voor de Speeldag-poll (PlanPoll).
 
-export const VOTE_SEGMENTS: { status: PollVoteStatus; icon: string; label: string }[] = [
-  { status: "yes", icon: "✓", label: "Ik kan" },
-  { status: "maybe", icon: "?", label: "Misschien" },
-  { status: "no", icon: "✗", label: "Kan niet" },
+/** De drie stemknoppen. Het teken zelf tekent PollOptionRow (#946): ✓ en ✗ als
+ *  tekst vielen per platform anders uit — in de doorloop verscheen het vinkje
+ *  als het wortelteken √ en het kruis als een hoofdletter X. */
+export const VOTE_SEGMENTS: { status: PollVoteStatus; label: string }[] = [
+  { status: "yes", label: "Ik kan" },
+  { status: "maybe", label: "Misschien" },
+  { status: "no", label: "Kan niet" },
 ];
-export const STATE_ICON: Record<OptionState, string> = {
-  haalbaar: "✓",
-  krap: "⚠",
-  onhaalbaar: "✕",
-  onbekend: "?",
-};
 export const MAX_OPTIONS = 5;
 export const DURATIONS = [60, 90, 120] as const;
 /** Avonduren als standaardvenster in de wizard. */
