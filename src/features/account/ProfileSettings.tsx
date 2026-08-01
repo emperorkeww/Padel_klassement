@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { ProfileSkeleton, Skeleton } from "@/ui/Skeleton";
+import { initialen } from "@/lib/utils/initialen";
 import { Toggle } from "@/ui/Toggle";
 import { AvatarCropper } from "./components/AvatarCropper";
 import { snijUit, type Uitsnede } from "./components/avatarCrop";
@@ -173,7 +174,7 @@ export function ProfileSettings() {
               <PrivacyCard userId={myId} />
             </div>
             <section className="card">
-              <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+              <h2 className="card__title card__title--tight">Over Coach Rudy</h2>
               <p className="card__subtitle">
                 Wie hij is en hoe je hem afstelt.
               </p>
@@ -297,7 +298,10 @@ function AvatarCard({
                 decoding="async"
               />
             ) : (
-              <span>{displayName(profile).slice(0, 1).toUpperCase()}</span>
+              // Dezelfde afleiding als elke andere avatar (#949): hier stond
+              // met de hand `slice(0, 1)`, en dus "A" waar de topbalk "AA"
+              // toonde voor dezelfde persoon.
+              <span>{initialen(displayName(profile))}</span>
             )}
           </div>
         )}
@@ -659,14 +663,14 @@ function ThemeCard({
         onChange={toggleMbappe}
       />
       <Toggle
-        label="Dictator-portret 🎨"
+        label="Dictator-portret"
         hint="Bij de troon maakt een AI (OpenAI) een dictator-portret van je foto. Uit = je gewone avatar."
         checked={dictatorPortret}
         disabled={busy}
         onChange={toggleDictatorPortret}
       />
       <Toggle
-        label="Pias-portret 🤡"
+        label="Pias-portret"
         hint="Als pias maakt een AI (OpenAI) een hofnar-portret van je foto. Uit = je gewone avatar; met roast-schild gebeurt het sowieso niet."
         checked={piasPortret}
         disabled={busy}

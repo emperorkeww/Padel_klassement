@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
-import { Skeleton } from "@/ui/Skeleton";
+import { GroupListSkeleton } from "@/ui/Skeleton";
 import { Avatar } from "@/ui/Avatar";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
@@ -119,11 +119,9 @@ export function Groups() {
         </p>
       </header>
 
-      {groups.loading && (
-        <div className="card">
-          <Skeleton rows={3} />
-        </div>
-      )}
+      {/* De vorm van wat er komt: een stapel groepskaarten (#949), niet drie
+          kale regels in één kaart. */}
+      {groups.loading && <GroupListSkeleton count={2} />}
       {groups.error && (
         <ErrorRetry
           melding={`Je groepen laden mislukte: ${groups.error}`}
@@ -318,7 +316,11 @@ export function Groups() {
           een baan te bekijken, maar het is handig dat het pad er staat. */}
       <p className="hub-banen">
         Benieuwd welke banen vrij zijn bij {club.name}?{" "}
-        <Link to="/banen">🎾 Bekijk de banen →</Link>
+        {/* Als kale tekstlink was dit de enige actie op deze pagina die geen
+            pil was (#949); de 🎾 ervoor was bovendien besturing-met-emoji. */}
+        <Link className="btn btn--sm" to="/banen">
+          Bekijk de banen →
+        </Link>
       </p>
     </div>
   );

@@ -119,4 +119,43 @@ export function StatsSkeleton() {
   );
 }
 
+/** Groepskaart op de Spelen-hub: avatarrij, naam en een statuspil (#949).
+ *  De hub toonde tot dan drie kale regels in één kaart — de vorm van wat er
+ *  komt (een stapel groepskaarten) zag je pas als het er stond. */
+export function GroupListSkeleton({ count = 2 }: { count?: number }) {
+  return (
+    <div className="skeleton sk-groups" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="sk-group">
+          <span className="sk-group__kop">
+            <Line w="45%" h={16} />
+            <span className="sk sk--pill" />
+          </span>
+          <span className="sk-group__leden">
+            <Circle size={22} />
+            <Circle size={22} />
+            <Circle size={22} />
+            <Line w="30%" h={11} />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Speeldag-poll: de fasebalk boven een paar stemrijen met knoppen rechts. */
+export function PollSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="skeleton" aria-hidden="true">
+      <Line w="70%" h={14} />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="sk-poll-row">
+          <Line w={`${45 - (i % 2) * 10}%`} h={13} />
+          <span className="sk sk--pill sk-poll-row__seg" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default Skeleton;

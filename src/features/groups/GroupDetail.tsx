@@ -4,7 +4,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
-import { MatchListSkeleton, Skeleton } from "@/ui/Skeleton";
+import { MatchListSkeleton, Skeleton, StandingsSkeleton } from "@/ui/Skeleton";
 import { PageTabs, TabPanel, type PageTabItem } from "@/ui/PageTabs";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
@@ -602,7 +602,8 @@ export function GroupDetail() {
             staat er al) blijft de bestaande stand gewoon staan. */}
         {view === "stand" && standings.data === null && standings.loading && (
           <div className="card">
-            <Skeleton rows={4} />
+            {/* De stand is een ranglijst, geen vier kale regels (#949). */}
+            <StandingsSkeleton rows={5} />
           </div>
         )}
 
