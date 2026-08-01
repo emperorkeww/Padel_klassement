@@ -15,8 +15,25 @@ import {
 import { FormChips } from "@/features/rating/components/FormChips";
 import { tierFor, type Tier } from "@/features/rating/tiers";
 import { drawKaart } from "@/features/profiles/profielPoster";
+import { KAART_MASTERS, laadKaartMaster, masterVoor } from "./kaartMasters";
+import { divisieLayout } from "./layouts/divisieLayouts";
+import { laadDivisieOnderdelen } from "./layouts/divisieKaartCanvas";
+import type { SpelerStatBron } from "./layouts/kaartLayout";
 import { Avatar } from "@/ui/Avatar";
 import "./KaartShowcase.css";
+
+/** Synthetische wedstrijdcijfers voor de twee divisies met een eigen layout —
+ *  dezelfde bron als SlofShowcase, zodat DOM- en posterkaart hier dezelfde
+ *  getallen tonen. */
+const SHOWCASE_STATS: SpelerStatBron = {
+  gespeeld: 20,
+  gewonnen: 2,
+  gelijk: 3,
+  verloren: 15,
+  punten: 9,
+  doelsaldo: -48,
+  vorm: ["L", "L", "W", "L", "L", "L"],
+};
 
 /** Midden-in-de-band ratings zodat élke tier (en subLabel II) verschijnt. */
 const TIER_RATINGS = [550, 650, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1650];
@@ -123,6 +140,29 @@ const POSTER_KAART_W = 560;
 // canvas de hoorns en linten er stil af.
 const POSTER_MARGE = 180;
 
+/**
+ * Hoeveel marge deze kaart écht nodig heeft (#895). De rastermasters reiken
+ * verder dan de vectorornamenten — de GOAT begint 53% van de kaarthóógte bóven
+ * het schild — en met te weinig marge snijdt het canvas juist de breakout weg
+ * die hier vergeleken moet worden.
+ *
+ * Bewust per kaart en niet één ruime waarde voor allemaal: deze pagina toont
+ * tientallen posterkaarten, en een canvas van 1480 × 2158 voor élke maakt de
+ * dev-route onbruikbaar traag.
+ */
+function posterMarge(tier: Tier | null, editie: Editie | null): number {
+  const naam = masterVoor(tier?.key, editie);
+  if (!naam) return POSTER_MARGE;
+  const r = KAART_MASTERS[naam];
+  return Math.ceil(
+    Math.max(
+      POSTER_MARGE,
+      -r.boven * 1.39 * POSTER_KAART_W,
+      -r.links * POSTER_KAART_W,
+    ),
+  );
+}
+
 function PosterKaart({
   tier,
   editie,
@@ -137,31 +177,48 @@ function PosterKaart({
   breedte: number;
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
-  const w = POSTER_KAART_W + POSTER_MARGE * 2;
-  const h = Math.round(POSTER_KAART_W * 1.39) + POSTER_MARGE * 2;
+  const marge = posterMarge(tier, editie);
+  const w = POSTER_KAART_W + marge * 2;
+  const h = Math.round(POSTER_KAART_W * 1.39) + marge * 2;
   useEffect(() => {
-    const ctx = ref.current?.getContext("2d");
-    if (!ctx) return;
-    // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#0b241a";
-    ctx.fillRect(0, 0, w, h);
-    drawKaart(
-      ctx,
-      {
-        name: naam,
-        avatarUrl: null,
-        rating: tier?.min != null ? tier.min + 50 : 1050,
-        tier,
-        editie,
-        editieTekst: editieLabel,
-      },
-      null,
-      POSTER_MARGE,
-      POSTER_MARGE,
-      POSTER_KAART_W,
-    );
-  }, [tier, editie, editieLabel, naam, w, h]);
+    let afgebroken = false;
+    // Het rastermaster en het layout-artwork (#895) laden async — zoals op de
+    // echte poster — dus de tekening wacht erop. Een tussentijdse wissel van
+    // editie mag de vorige beurt niet meer op het canvas laten landen.
+    const layout = divisieLayout(tier?.key, editie);
+    Promise.all([
+      laadKaartMaster(masterVoor(tier?.key, editie)),
+      layout ? laadDivisieOnderdelen(layout) : Promise.resolve(null),
+    ]).then(([master, onderdelen]) => {
+      const ctx = ref.current?.getContext("2d");
+      if (!ctx || afgebroken) return;
+      // Zelfde donkere ondergrond als de poster, zodat het frame net zo leest.
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b241a";
+      ctx.fillRect(0, 0, w, h);
+      drawKaart(
+        ctx,
+        {
+          name: naam,
+          avatarUrl: null,
+          rating: tier?.min != null ? tier.min + 50 : 1050,
+          tier,
+          editie,
+          editieTekst: editieLabel,
+          stats: SHOWCASE_STATS,
+        },
+        null,
+        marge,
+        marge,
+        POSTER_KAART_W,
+        master,
+        onderdelen,
+      );
+    });
+    return () => {
+      afgebroken = true;
+    };
+  }, [tier, editie, editieLabel, naam, marge, w, h]);
   return (
     <canvas
       ref={ref}

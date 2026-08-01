@@ -3,7 +3,15 @@ import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { sharePng } from "@/lib/utils/shareImage";
 import { laadAvatar } from "@/lib/utils/futKaartCanvas";
+import {
+  laadKaartMasters,
+  masterVoor,
+} from "@/features/rating/components/kaartMasters";
+import { divisieLayout } from "@/features/rating/components/layouts/divisieLayouts";
+import { laadDivisieOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 import { getPlayerRatings } from "@/features/standings/ratingsApi";
+import { getPlayerStandings } from "@/features/standings/api";
+import { statBronVoorStand } from "@/features/standings/leaderboardHelpers";
 import { laadEditieContext } from "@/features/standings/editieContext";
 import { vsKaartVoor } from "@/features/profiles/compare";
 import { displayName } from "@/features/profiles/api";
@@ -74,10 +82,15 @@ export function ShareSpeeldag({
       // Pas op dit moment ophalen — de Plannen-tab hoeft de ratings en
       // editie-context niet bij elke render te kennen. Alles zit achter
       // cached(), dus meestal is dit gratis.
-      const [ratings, edities] = await Promise.all([
+      const [ratings, edities, standen] = await Promise.all([
         getPlayerRatings(),
         laadEditieContext(),
+        // De twee divisies met een eigen layout (#895) vertalen de
+        // wedstrijdcijfers naar hun eigen statregels. Zonder stand tonen die
+        // regels een streepje, dus de poster gaat door als dit faalt.
+        getPlayerStandings().catch(() => []),
       ]);
+      const standPer = new Map(standen.map((s) => [s.player_id, s]));
       const spelers: KaartData[] = deelnemers
         .filter((id) => profiles[id])
         .map((id) => {
@@ -95,6 +108,7 @@ export function ShareSpeeldag({
             tier: kaart.tier,
             editie: kaart.editie,
             editieTekst: kaart.editieTekst,
+            stats: statBronVoorStand(standPer.get(id)),
           };
         });
       if (spelers.length === 0) {
@@ -110,12 +124,26 @@ export function ShareSpeeldag({
         code: codeOpPoster ? accessCode : null,
         link: qrOpPoster ? shareUrl : null,
       });
-      // Alleen de kaarten die getekend worden hebben een avatar nodig.
-      const avatars = await Promise.all(
-        poster.kaarten.map((k) => laadAvatar(k.avatarUrl)),
-      );
+      // Alleen de kaarten die getekend worden hebben een avatar nodig. Idem
+      // voor de rastermasters van de specials (#895): `laadKaartMasters`
+      // bundelt dubbele edities tot één laadbeurt, dus acht kaarten halen het
+      // storm-artwork hooguit één keer op.
+      const [avatars, masters, onderdelen] = await Promise.all([
+        Promise.all(poster.kaarten.map((k) => laadAvatar(k.avatarUrl))),
+        laadKaartMasters(
+          poster.kaarten.map((k) => masterVoor(k.tier?.key, k.editie)),
+        ),
+        // Idem voor de twee divisies met een eigen layout (#895); ook hier
+        // deelt elke layout één laadbeurt.
+        Promise.all(
+          poster.kaarten.map((k) => {
+            const layout = divisieLayout(k.tier?.key, k.editie);
+            return layout ? laadDivisieOnderdelen(layout) : null;
+          }),
+        ),
+      ]);
       const outcome = await sharePng(
-        (ctx) => drawSpeeldagPoster(ctx, poster, avatars),
+        (ctx) => drawSpeeldagPoster(ctx, poster, avatars, masters, onderdelen),
         { width: POSTER_W, height: POSTER_H, filename: bestand, title: "Padel-opstelling" },
       );
       if (outcome === "clipboard") toast.success("Poster gekopieerd naar klembord.");

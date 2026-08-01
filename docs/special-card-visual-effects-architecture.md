@@ -1494,35 +1494,62 @@ registraties nodig.
 
 ## 14. Bekende beperkingen en open eindes
 
-### DOM en canvas/poster zijn niet dezelfde renderer
+### DOM en canvas/poster delen sinds #895 hetzelfde artwork
 
-De live React-kaart gebruikt voor In-Form `storm-master.webp`, voor On Fire
-`onfire-master.webp`, voor Dictator `dictator-master.webp`, voor Big Daddy
-`bigdaddy-master.webp`, voor Piet `piet-master.webp`, voor de pias
-`pias-master.webp`, voor de GOAT `goat-master.webp` en voor de Glazenwasser
-`glazenwasser-master.webp`. De
-canvas/posterroute in `futKaartCanvas.ts` tekent nog
-`INFORM_STORM_ACHTER`, `INFORM_STORM_BINNEN` en `INFORM_STORM_VOOR` uit
-`ornamentenInform.ts`, plus de oudere On Fire-pluimen/randvlammen uit
-`ornamentenOnfire.ts` en de bestaande vectorornamenten van de Dictator, Big
-Daddy en Piet. Voor de GOAT tekent `drawGoatOrnament()` daar dus nog de
-vector-bokhoorns; alleen de lijstdiktes zijn met `randDiktes` gelijkgetrokken.
-Hetzelfde geldt voor de divisies waarvan de DOM-ornamenten in #834 door een
-master zijn vervangen: de poster tekent voor de goud-divisie nog de folieranden,
-de racketcrest en het lauwermedaillon uit `divisies/goud.ts`. Het `register`
-daarin — vlakkleuren, lijst, inkt, randdiktes — is wél gelijkgetrokken met de
-CSS, dus kaart en poster delen in ieder geval hun materiaal.
+Van de twee eerder voorgestelde routes is de eerste gekozen: **de
+canvasrenderer laadt hetzelfde WebP-masterwerk en tekent het op dezelfde
+relatieve transform.** De deelposters — profiel (`profielPoster.ts`), speeldag
+(`speeldagPoster.ts`) en de dev-showcase op `/dev/kaarten` — tonen dus dezelfde
+tien masters als de live kaart, in dezelfde drie lagen.
 
-Daarom is vorm- en lichtpariteit tussen live kaart en geëxporteerde poster
-niet gegarandeerd. Een toekomstige verbetering kan:
+De registratie staat in
+[`kaartMasters.ts`](../src/features/rating/components/kaartMasters.ts):
+per master de vijf custom properties uit zijn `*Effect.css`, plus het
+frontmasker, een eventueel binnenmasker, de dekking van de binnenlaag en de
+contactschaduw. `kaartMasters.test.ts` leest elk stylesheet in en vergelijkt het
+met die tabel, zodat een verschoven `--…-master-top` niet stil alleen in de DOM
+landt. Eén waarheid is niet haalbaar — CSS kan geen TS importeren en de posters
+mogen bewust geen live tokens lezen (#125) — dus wordt de tweede boekhouding
+bewaakt in plaats van weggepoetst, net als bij de kleurregisters.
 
-- het WebP-masterwerk ook in de canvasrenderer laden en op dezelfde
-  relatieve transform tekenen; of
-- bewust twee renderers behouden, maar ze met aparte referentiescreenshots
-  en expliciete tolerantie testen.
+Wat de canvas doet met dat master:
 
-Tot die keuze is gemaakt, mogen de vectortests niet als bewijs voor de
-live WebP-composities worden gebruikt.
+- `drawKaartSchild` tekent de achterlaag vóór frame en liner, en de binnenlaag
+  binnen de al actieve schildclip — hetzelfde masker dat de DOM als
+  `clip-path: var(--schild)` gebruikt, dus geen tweede waarheid over de
+  kaartvorm.
+- `drawKaartOrnamentVoor` tekent de voorlaag door het frontmasker. Alfamaskers
+  gaan via een tussencanvas met `destination-in`; dat is geen benadering van
+  `mask-image`, maar dezelfde uitkomst.
+- De vectorlagen wijken exact waar `FutKaart.tsx` dat ook doet: het ornament bij
+  vijf masters, de divisiekaart bij de drie divisiemasters, het motief bij de
+  Piet. In-Form en On Fire houden hun metalen vinnen, en de z-index-volgorde
+  tussen master en ornament is meegenomen (de On-Fire-crest ligt erboven, de
+  storm eronderdoor niet).
+
+Dezelfde beweging is gemaakt voor de twee divisies met een eigen full-bleed
+layout (Ballenraper en "Sletje van de baan"). Die dragen niet de generieke
+FUT-stapel maar een compositie uit `DivisieKaartLayout`; de posters gaven die
+spelers tot #895 een gewone schildkaart. `divisieKaartCanvas.ts` tekent nu
+dezelfde zones en hetzelfde plaatwerk — de geometrie komt uit diezelfde layout,
+dus dát is één bron. Alleen de zetting (kleur, korps, gewicht, spatiering) staat
+apart, en `divisieKaartCanvas.test.ts` houdt die tegen DivisieVoorkant.css en
+SlofKaart.css. De statregels rekenen op een `SpelerStatBron`: de profielposter
+levert die inclusief vorm, de speeldag- en avondposter uit de serverstand (dus
+zonder vorm — de regels die daarop rekenen tonen dan een streepje).
+
+Twee dingen blijven staan:
+
+- **Terugval op de vector.** Laadt het artwork niet (offline, blokkerende
+  proxy), dan tekent de poster de oude vectorversie in plaats van een kale
+  kaart. De vectorbestanden blijven daarom bestaan.
+- **Blaaskaak is vereenvoudigd.** De DOM ponst met een `clip-path` de megafoon
+  uit de decorlaag en zet hem in de voorlaag 6% lager terug, plus een
+  tekstburst; de poster tekent de drie lagen zonder die verfijning.
+
+Verder blijft gelden: laad het artwork vóór het tekenen en wacht op `decode()`.
+Een `HTMLImageElement` dat nog niet gedecodeerd is tekent op canvas als niets —
+dezelfde val als `decoding="sync"` bij de headless screenshots.
 
 ### De GOAT-breakout is hoger dan de cellen die hem tonen
 

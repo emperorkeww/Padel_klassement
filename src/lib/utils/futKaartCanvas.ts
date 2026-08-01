@@ -18,6 +18,7 @@
 // en de tokens hieronder ertegen vergelijkt.
 
 import type { TierKey } from "@/features/rating/tiers";
+import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
 import {
   DICTATOR_EPAULET,
   DICTATOR_EPAULET_FRANJE,
@@ -629,14 +630,27 @@ export function drawKaartSchild(
   h: number,
   vorm: SchildVorm,
   kleuren: FutKaartKleuren,
+  master?: GeladenMaster | null,
 ): { fx: number; fy: number; fw: number; fh: number } {
+  // Rastermaster (#895): waar de live kaart zijn decoratie uit één artwork
+  // haalt, wijkt de vectorlaag — precies zoals `ornamentLive` dat in
+  // FutKaart.tsx doet. Zonder geladen master blijft de vector staan, dus een
+  // mislukte download levert de oude poster op i.p.v. een kale kaart.
+  const ornament = master?.registratie.onderdruktOrnament
+    ? undefined
+    : kleuren.ornament;
+
   // Ornamentlaag (#710): hoorns, lauwertakken en andere uitsteeksels éérst —
   // de DOM legt ze als eerste kind achter de kaart, dus alles hierna tekent
   // eroverheen.
-  if (kleuren.ornament === "goat") drawGoatOrnament(ctx, x, y, w);
-  if (kleuren.ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
-  if (kleuren.ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);  if (kleuren.ornament === "kampioen") drawKampioenOrnament(ctx, x, y, w);
-  if (kleuren.ornament === "pias") drawPiasAchter(ctx, x, y, w);  if (kleuren.ornament === "piet") drawPietAchter(ctx, x, y, w);  if (kleuren.ornament === "inform") drawInformAchter(ctx, x, y, w);  if (kleuren.ornament === "onfire") drawOnfireAchter(ctx, x, y, w);
+  if (ornament === "goat") drawGoatOrnament(ctx, x, y, w);
+  if (ornament === "dictator") drawDictatorAchter(ctx, x, y, w);
+  if (ornament === "bigdaddy") drawBigDaddyAchter(ctx, x, y, w);  if (ornament === "kampioen") drawKampioenOrnament(ctx, x, y, w);
+  if (ornament === "pias") drawPiasAchter(ctx, x, y, w);  if (ornament === "piet") drawPietAchter(ctx, x, y, w);  if (ornament === "inform") drawInformAchter(ctx, x, y, w);  if (ornament === "onfire") drawOnfireAchter(ctx, x, y, w);
+
+  // Masterlaag 1 (#895): het volledige artwork achter kaart en frame. Staat ná
+  // het vector-ornament, net als in de DOM-volgorde van FutKaart.tsx.
+  if (master) tekenMasterLaag(ctx, x, y, w, h, master, "achter");
 
   // Zachte randhalo (#834): dezelfde schildvulling als het frame, maar alleen
   // zijn schaduw blijft zichtbaar nadat het echte frame eroverheen is gezet.
@@ -811,6 +825,14 @@ export function drawKaartSchild(
     ctx.restore();
   }
 
+  // Masterlaag 2 (#895): hetzelfde artwork, nu door de actieve schildclip —
+  // exact het masker dat de DOM als `clip-path: var(--schild)` op
+  // .fut-kaart__vlak zet. De laag hangt in de DOM op z-index -1 binnen dat
+  // vlak: boven de vlak-achtergrond (verloop, tint, weefsel, topgloed,
+  // vignet), onder alles wat daarna als element volgt (randwaas, motief,
+  // sheen) en dus ruim onder de inkt.
+  if (master) tekenMasterLaag(ctx, x, y, w, h, master, "binnen");
+
   // Randwaas (#834): vier elliptische verlopen trekken de framekleur het vlak
   // in. Dit staat boven achtergrond/textuur en onder motief, sheen en inkt —
   // dezelfde laagvolgorde als .fut-kaart__randwaas in de DOM.
@@ -866,9 +888,13 @@ export function drawKaartSchild(
   }
 
   // Vlak-motief (#710): het geëtste watermerk, exact de DOM-laagvolgorde —
-  // boven achtergrond, gloed en binnenlijnen, onder sheen en textuur.
-  if (kleuren.motief) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief);
-  if (kleuren.motief2) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief2);
+  // boven achtergrond, gloed en binnenlijnen, onder sheen en textuur. Draagt
+  // het master zijn eigen watermerk (#895), dan wijkt de vector: twee
+  // watermerken over elkaar leest als vervuiling, net als in FutKaart.tsx.
+  if (!master?.registratie.onderdruktMotief) {
+    if (kleuren.motief) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief);
+    if (kleuren.motief2) drawMotief(ctx, fx, fy, fw, fh, kleuren.motief2);
+  }
 
   const sheen = ctx.createLinearGradient(
     fx,
@@ -2416,16 +2442,37 @@ export function drawKaartOrnamentVoor(
   y: number,
   w: number,
   kleuren: FutKaartKleuren,
+  master?: GeladenMaster | null,
 ) {
-  if (kleuren.ornamentVoor === "goat") drawGoatVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "dictator") drawDictatorVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "kampioen") drawKampioenCrest(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "pias") drawPiasVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "piet") drawPietVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "inform") drawInformVoor(ctx, x, y, w);
-  else if (kleuren.ornamentVoor === "onfire") drawOnfireVoor(ctx, x, y, w);
-  if (kleuren.divisie) drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
+  // Zelfde cascade als de achterlaag: het master vervangt de vectorvormen die
+  // het zelf draagt (#895), en de drie divisiemasters (Wannabe, Blaaskaak,
+  // Glazenwasser) vervangen bovendien de crest/zijranden/medaillon van hun
+  // divisiekaart — spiegel van `divisieLive` in FutKaart.tsx.
+  const voor = master?.registratie.onderdruktOrnament
+    ? undefined
+    : kleuren.ornamentVoor;
+
+  // Masterlaag 3 (#895): hetzelfde artwork door het frontmasker, plaatselijk
+  // vóór het frame. Waar een vector-ornament blíjft staan (In-Form en On Fire
+  // houden hun metalen vinnen), beslist de z-index in de CSS wie wint: de
+  // On-Fire-crest ligt op 4 en dus bóven de master op 3, terwijl de storm zelf
+  // op 5 staat en over álles heen gaat.
+  if (master && !master.registratie.voorBovenOrnament)
+    tekenMasterLaag(ctx, x, y, w, w * KAART_RATIO, master, "voor");
+
+  if (voor === "goat") drawGoatVoor(ctx, x, y, w);
+  else if (voor === "dictator") drawDictatorVoor(ctx, x, y, w);
+  else if (voor === "bigdaddy") drawBigDaddyVoor(ctx, x, y, w);
+  else if (voor === "kampioen") drawKampioenCrest(ctx, x, y, w);
+  else if (voor === "pias") drawPiasVoor(ctx, x, y, w);
+  else if (voor === "piet") drawPietVoor(ctx, x, y, w);
+  else if (voor === "inform") drawInformVoor(ctx, x, y, w);
+  else if (voor === "onfire") drawOnfireVoor(ctx, x, y, w);
+  if (kleuren.divisie && !master?.registratie.onderdruktDivisie)
+    drawDivisieOrnament(ctx, x, y, w, kleuren.divisie, "voor");
+
+  if (master?.registratie.voorBovenOrnament)
+    tekenMasterLaag(ctx, x, y, w, w * KAART_RATIO, master, "voor");
 }
 
 /** De diamantcrest van de Kampioen (#710): hangt met zijn punt bóven de
@@ -3617,6 +3664,191 @@ export function kaartSkin(
     // Zonder editie valt --editie-kleur in de CSS terug op --kaart-ink.
     editieKleur: ink,
   };
+}
+
+/** Hoogte/breedte van de kaartstage — de 100 × 139 waar álle registraties,
+ *  in de CSS én hier, tegen rekenen. */
+export const KAART_RATIO = 1.39;
+
+// Zelfde initialen- en hue-recept als Avatar.tsx, met de lichte hue-tokens uit
+// index.css — de posters zijn (net als de andere, #125) vastgepind op het
+// lichte palet.
+const AVATAR_HUES: ReadonlyArray<{ bg: string; fg: string }> = [
+  { bg: "#dcefdd", fg: "#256d33" },
+  { bg: "#dbeafe", fg: "#1d4ed8" },
+  { bg: "#fde8d7", fg: "#b45309" },
+  { bg: "#ede9fe", fg: "#6d28d9" },
+  { bg: "#fce7f3", fg: "#be185d" },
+  { bg: "#cffafe", fg: "#0e7490" },
+  { bg: "#fef3c7", fg: "#a16207" },
+  { bg: "#e2e8f0", fg: "#334155" },
+];
+
+function initialen(naam: string): string {
+  const delen = naam.trim().split(/\s+/).filter(Boolean);
+  if (delen.length === 0) return "?";
+  if (delen.length === 1) return delen[0].slice(0, 2).toUpperCase();
+  return (delen[0][0] + delen[delen.length - 1][0]).toUpperCase();
+}
+
+function hueIndex(naam: string): number {
+  let h = 0;
+  for (let i = 0; i < naam.length; i++) h = (h * 31 + naam.charCodeAt(i)) >>> 0;
+  return h % AVATAR_HUES.length;
+}
+
+/**
+ * De ronde portretcirkel van een kaart: de échte profielfoto cover-passend
+ * geclipt, of — zonder foto — de initialen-avatar op zijn hue-vlak, precies
+ * zoals `Avatar` in de DOM. Gedeeld door de schildkaart en de divisiekaarten
+ * met een eigen layout (#895); een lege cirkel op de poster terwijl de app
+ * initialen toont is precies het soort verschil dat #895 wegwerkt.
+ */
+export function drawAvatarCirkel(
+  ctx: CanvasRenderingContext2D,
+  naam: string,
+  img: HTMLImageElement | null,
+  cx: number,
+  cy: number,
+  r: number,
+) {
+  if (img) {
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const schaal = Math.max((r * 2) / iw, (r * 2) / ih);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(
+      img,
+      cx - (iw * schaal) / 2,
+      cy - (ih * schaal) / 2,
+      iw * schaal,
+      ih * schaal,
+    );
+    ctx.restore();
+    return;
+  }
+  const hue = AVATAR_HUES[hueIndex(naam)];
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = hue.bg;
+  ctx.fill();
+  ctx.fillStyle = hue.fg;
+  ctx.textAlign = "center";
+  ctx.font = `800 ${Math.round(r * 0.75)}px Outfit, system-ui, sans-serif`;
+  ctx.fillText(initialen(naam), cx, cy + r * 0.27);
+}
+
+/**
+ * Waar het master-artwork terechtkomt op een kaart van `w × h` op `(x, y)`.
+ * Spiegel van `.<naam>-effect__master` in de CSS: `left` en `width` rekenen
+ * tegen de kaartbreedte, `top` tegen de kaarthoogte, en `transform-origin: 0 0`
+ * legt het draai- en schaalpunt op de linkerbovenhoek van diezelfde doos.
+ */
+function masterDoos(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  { registratie, master }: GeladenMaster,
+) {
+  const breedte = registratie.breedte * w;
+  const bronB = master.naturalWidth || master.width || 1;
+  const bronH = master.naturalHeight || master.height || 1;
+  return {
+    dx: x + registratie.links * w,
+    dy: y + registratie.boven * h,
+    dw: breedte,
+    // `height: auto` in de CSS: de master houdt zijn eigen verhouding.
+    dh: breedte * (bronH / bronB),
+  };
+}
+
+/**
+ * Eén van de drie masterlagen. De geometrie is voor alle drie identiek — dat
+ * ís de architectuur: hetzelfde artwork, alleen andere clipping — dus alleen
+ * het masker, de dekking en de schaduw verschillen.
+ *
+ *   achter — het volledige artwork; de caller tekent er kaart en frame
+ *            overheen.
+ *   binnen — hetzelfde artwork binnen de al actieve schildclip van het vlak,
+ *            eventueel door een extra binnenmasker (GOAT, Big Daddy).
+ *   voor   — hetzelfde artwork door het frontmasker, met de contactschaduw uit
+ *            de CSS.
+ *
+ * Een masker is een alfamasker, net als `mask-image` met een SVG- of
+ * WebP-bron: het wordt over de master heen op de mastermaat geschaald en de
+ * doorzichtige delen gummen weg. Canvas kan dat niet direct, dus dat gebeurt
+ * op een tussencanvas met `destination-in` — geen benadering, dezelfde
+ * uitkomst.
+ */
+function tekenMasterLaag(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  geladen: GeladenMaster,
+  laag: "achter" | "binnen" | "voor",
+) {
+  const { registratie, master } = geladen;
+  const masker =
+    laag === "binnen"
+      ? geladen.binnenMasker
+      : laag === "voor"
+        ? geladen.voorMasker
+        : null;
+  // De voorlaag zónder frontmasker (blaaskaak) selecteert op de alfa van de
+  // master zelf; dat is precies wat drawImage al doet.
+  if (laag === "voor" && !masker && registratie.voorMasker) return;
+
+  const { dx, dy, dw, dh } = masterDoos(x, y, w, h, geladen);
+  if (!(dw > 0) || !(dh > 0)) return;
+
+  ctx.save();
+  ctx.translate(dx, dy);
+  if (registratie.rotatie) ctx.rotate((registratie.rotatie * Math.PI) / 180);
+  if (registratie.schaal !== 1) ctx.scale(registratie.schaal, registratie.schaal);
+  if (laag === "binnen") ctx.globalAlpha = registratie.binnenAlpha;
+  if (laag === "voor") {
+    const [sx, sy, blur, kleur] = registratie.voorSchaduw;
+    ctx.shadowColor = kleur;
+    ctx.shadowOffsetX = sx * w;
+    ctx.shadowOffsetY = sy * w;
+    ctx.shadowBlur = blur * w;
+  }
+
+  if (masker) {
+    const buffer = maakBuffer(dw, dh);
+    if (buffer) {
+      buffer.drawImage(master, 0, 0, dw, dh);
+      buffer.globalCompositeOperation = "destination-in";
+      buffer.drawImage(masker, 0, 0, dw, dh);
+      ctx.drawImage(buffer.canvas, 0, 0, dw, dh);
+    } else {
+      // Geen tussencanvas beschikbaar: liever het artwork ongemaskeerd dan een
+      // gat in de kaart.
+      ctx.drawImage(master, 0, 0, dw, dh);
+    }
+  } else {
+    ctx.drawImage(master, 0, 0, dw, dh);
+  }
+  ctx.restore();
+}
+
+/** Tussencanvas voor het alfamasker. Geeft null terug waar `document`
+ *  ontbreekt of 2D niet beschikbaar is, zodat de caller kan terugvallen. */
+function maakBuffer(
+  breedte: number,
+  hoogte: number,
+): CanvasRenderingContext2D | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.ceil(breedte));
+  canvas.height = Math.max(1, Math.ceil(hoogte));
+  return canvas.getContext("2d");
 }
 
 /**

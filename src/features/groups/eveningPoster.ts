@@ -9,6 +9,9 @@
 // groepschat leest exact wat de app al zei.
 
 import { canvasPalette, ellipsize, rrect, wrapLines } from "@/lib/utils/shareImage";
+import { drawKaart, type KaartData } from "@/features/profiles/profielPoster";
+import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
+import type { GeladenOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 import { coachAvond, type AvondCtx } from "@/features/feed/coachEvening";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import type { EveningSummary } from "@/features/feed/eveningSummary";
@@ -20,6 +23,10 @@ export interface EveningPoster {
   datum: string;
   /** Rudy's quote (blikvanger), of null als er niets te melden valt. */
   coachQuote: string | null;
+  /** De winnaar van de avond als FUT-kaart (#895), naast de avondstand. Null
+   *  wanneer de caller geen kaart kon samenstellen — dan blijft de stand op de
+   *  volle breedte staan, precies zoals vóór #895. */
+  winnaar: KaartData | null;
   /** Avondstand-top-3. */
   podium: { plaats: number; naam: string; punten: number }[];
   /** "Ook gespeeld: …" voor de spelers buiten de top 3, of null. */
@@ -39,6 +46,11 @@ export interface EveningPosterOpts {
   duo: (teamId: string) => string;
   /** Rudy's quote; stel samen met eveningCoachQuote(). */
   coachQuote: string | null;
+  /** Kaart-resolver voor de winnaar (#895). De editie hangt aan het
+   *  klassement, niet aan de avond, dus die context komt van de caller —
+   *  hetzelfde `vsKaartVoor`-recept als de speeldagposter. Weglaten (of null
+   *  teruggeven) laat de kaart weg. */
+  kaart?: (playerId: string) => KaartData | null;
 }
 
 /**
@@ -73,10 +85,12 @@ export function eveningPoster(
   opts: EveningPosterOpts,
 ): EveningPoster {
   const rest = summary.rows.slice(3);
+  const winnaarId = summary.rows[0]?.playerId;
   return {
     groepsnaam: opts.groepsnaam,
     datum: opts.datum,
     coachQuote: opts.coachQuote,
+    winnaar: (winnaarId && opts.kaart?.(winnaarId)) || null,
     podium: summary.rows.slice(0, 3).map((r, i) => ({
       plaats: i + 1,
       naam: opts.naam(r.playerId),
@@ -189,6 +203,13 @@ const QUOTE_PAD = 30;
 /** Rudy is de blikvanger, maar mag de uitslagen niet helemaal verdringen. */
 const QUOTE_MAX_REGELS = 4;
 const OOK_LH = 32;
+/** Breedte van de winnaarskaart (#895). Groter dan dit duwt de podiumrijen zo
+ *  smal dat namen gaan afkappen; kleiner en de kaart leest als een sticker
+ *  i.p.v. als de trofee van de avond. */
+const KAART_W = 250;
+/** Lucht tussen de podiumrijen en de kaart. */
+const KAART_GAP = 26;
+const KAART_H = KAART_W * 1.39;
 
 const FONT_QUOTE = "italic 500 32px Outfit, system-ui, sans-serif";
 const FONT_OOK = "600 24px Outfit, system-ui, sans-serif";
@@ -220,6 +241,13 @@ function sectionLabel(ctx: CanvasRenderingContext2D, text: string, y: number) {
 export function drawEveningPoster(
   ctx: CanvasRenderingContext2D,
   poster: EveningPoster,
+  /** Profielfoto van de winnaar; vooraf geladen, zoals bij de andere posters. */
+  winnaarAvatar: HTMLImageElement | null = null,
+  /** Rastermaster van de winnaarskaart (#895), of null. */
+  winnaarMaster: GeladenMaster | null = null,
+  /** Artwork van zijn divisielayout (#895), voor de twee divisies die er een
+   *  hebben. */
+  winnaarOnderdelen: GeladenOnderdelen | null = null,
 ) {
   const c = canvasPalette();
 
@@ -271,8 +299,14 @@ export function drawEveningPoster(
     : [];
   const podiumH =
     poster.podium.length * RIJ_H + Math.max(0, poster.podium.length - 1) * RIJ_GAP;
+  // De kaart staat naast de podiumrijen (#895) en is doorgaans hoger dan drie
+  // rijen; het blok groeit dus tot de hoogste van de twee kolommen.
+  const kolomH = poster.winnaar ? Math.max(podiumH, KAART_H) : podiumH;
   const standH =
-    LABEL_H + podiumH + (ookRegels.length > 0 ? 18 + ookRegels.length * OOK_LH : 0);
+    LABEL_H + kolomH + (ookRegels.length > 0 ? 18 + ookRegels.length * OOK_LH : 0);
+  // Breedte van één podiumrij: de volle inhoudsbreedte, of wat er naast de
+  // kaart overblijft.
+  const rijW = poster.winnaar ? CW - KAART_W - KAART_GAP : CW;
 
   const duoH = poster.bestDuo ? 82 : 0;
 
@@ -317,9 +351,12 @@ export function drawEveningPoster(
   const sy = ys[i++];
   sectionLabel(ctx, "Avondstand", sy);
   const medaille = [c.gold, c.silver, c.bronze];
+  // De rijen staan optisch gecentreerd naast de kaart wanneer die hoger is —
+  // drie rijen die bovenaan blijven plakken lezen als een gat onder de stand.
+  const rijTop = sy + LABEL_H + Math.max(0, (kolomH - podiumH) / 2);
   poster.podium.forEach((row, n) => {
-    const ry = sy + LABEL_H + n * (RIJ_H + RIJ_GAP);
-    rrect(ctx, M, ry, CW, RIJ_H, 20);
+    const ry = rijTop + n * (RIJ_H + RIJ_GAP);
+    rrect(ctx, M, ry, rijW, RIJ_H, 20);
     ctx.fillStyle = n === 0 ? c.goldSoft : c.zebra;
     ctx.fill();
     // Medaille-cirkel met rangnummer.
@@ -333,9 +370,9 @@ export function drawEveningPoster(
     ctx.font = "800 30px Outfit, system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(String(row.plaats), mx, my + 11);
-    // Punten-pil rechts.
+    // Punten-pil rechts in de rij.
     const pw = 150;
-    const px = M + CW - pw - 16;
+    const px = M + rijW - pw - 16;
     rrect(ctx, px, my - 22, pw, 44, 22);
     ctx.fillStyle = "#ffffff";
     ctx.fill();
@@ -348,11 +385,32 @@ export function drawEveningPoster(
     ctx.font = "800 34px Outfit, system-ui, sans-serif";
     ctx.fillText(ellipsize(ctx, row.naam, px - (M + 92) - 24), M + 92, my + 12);
   });
+
+  // ── De winnaar als FUT-kaart, rechts naast de stand (#895) ──
+  // Zelfde tekening als de profiel- en speeldagposter, dus inclusief het
+  // rastermaster van zijn editie of divisie. Ná de rijen: een breakout die
+  // buiten het schild valt hoort over de rij ernaast te lopen, niet eronder —
+  // net als in de app.
+  if (poster.winnaar) {
+    const kx = M + CW - KAART_W;
+    const ky = sy + LABEL_H + Math.max(0, (kolomH - KAART_H) / 2);
+    drawKaart(
+      ctx,
+      poster.winnaar,
+      winnaarAvatar,
+      kx,
+      ky,
+      KAART_W,
+      winnaarMaster,
+      winnaarOnderdelen,
+    );
+  }
+
   if (ookRegels.length > 0) {
     ctx.textAlign = "left";
     ctx.fillStyle = c.inkSoft;
     ctx.font = FONT_OOK;
-    drawLines(ctx, ookRegels, M, sy + LABEL_H + podiumH + 18 + 22, OOK_LH);
+    drawLines(ctx, ookRegels, M, sy + LABEL_H + kolomH + 18 + 22, OOK_LH);
   }
 
   // ── Uitslagen als gestreepte rijen ──

@@ -55,6 +55,7 @@ import {
 } from "@/features/rating/seasons";
 import { matchesInSeason, rankProgression, byRank } from "@/features/rating/standings";
 import { ShareProfile, type ProfileShareData } from "@/features/profiles/components/ShareProfile";
+import { statBronVoorStand } from "@/features/standings/leaderboardHelpers";
 import { WrappedSheet } from "@/features/wrapped/components/WrappedSheet";
 import {
   jaarPeriode,
@@ -447,6 +448,7 @@ export function PlayerProfile() {
           edities: editieCtx,
         })
       : null;
+  const stand = statBronVoorStand(s ?? undefined);
   const shareData: ProfileShareData = {
     name: displayName(p),
     avatarUrl: p.avatar_url ?? null,
@@ -457,6 +459,10 @@ export function PlayerProfile() {
     rank,
     form,
     topBadge,
+    // De twee divisies met een eigen layout (#895) vertalen deze cijfers naar
+    // hun eigen statregels. Hier zit de vorm er wél bij — anders dan bij de
+    // speeldag- en avondposter, die alleen de serverstand hebben.
+    stats: stand ? { ...stand, vorm: form } : null,
   };
 
   // Padel Wrapped (#115): jaarrond terugvindbaar op het eigen profiel zodra

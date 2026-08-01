@@ -159,6 +159,10 @@ const POSTER_FONTS = [
   "700 40px Outfit",
   "800 40px Outfit",
   "italic 500 40px Outfit",
+  // Nunito (#895): de rating van de "Sletje van de baan"-kaart staat in
+  // --font-rounded. Zonder deze laadbeurt valt juist het grootste cijfer van
+  // die kaart terug op system-ui, met andere metrics.
+  "900 40px Nunito",
 ];
 
 /**

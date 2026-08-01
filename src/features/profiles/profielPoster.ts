@@ -15,6 +15,7 @@
 
 import { canvasPalette, ellipsize } from "@/lib/utils/shareImage";
 import {
+  drawAvatarCirkel,
   drawDivisieIcoon,
   drawKaartOrnamentVoor,
   drawKaartSchild,
@@ -22,6 +23,14 @@ import {
   rgba,
   schildVorm,
 } from "@/lib/utils/futKaartCanvas";
+import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
+import { divisieLayout } from "@/features/rating/components/layouts/divisieLayouts";
+import {
+  drawDivisieOnderdelen,
+  drawDivisieVoorkant,
+  type GeladenOnderdelen,
+} from "@/features/rating/components/layouts/divisieKaartCanvas";
+import type { DivisieKaartLayout, SpelerStatBron } from "@/features/rating/components/layouts/kaartLayout";
 import type { Editie } from "@/features/standings/edities";
 import type { Outcome } from "@/features/rating/results";
 import type { Tier } from "@/features/rating/tiers";
@@ -45,6 +54,11 @@ export type KaartData = {
   /** De editie-regel zoals de live kaart die draagt — letterlijk de uitvoer
    *  van `editieLabel`, zodat poster en kaart nooit anders formuleren. */
   editieTekst: string | null;
+  /** Wedstrijdcijfers voor de divisies met een eigen layout (#895): die
+   *  vertalen ze naar hun eigen statregels. De generieke schildkaart doet er
+   *  niets mee. Ontbreekt de bron, dan tonen die regels een streepje —
+   *  dezelfde terugval als `statBron={null}` in de DOM. */
+  stats?: SpelerStatBron | null;
 };
 
 export type ProfileShareData = KaartData & {
@@ -52,35 +66,6 @@ export type ProfileShareData = KaartData & {
   form: Outcome[];
   topBadge: { emoji: string; naam: string } | null;
 };
-
-/* ------------------------------- avatar ------------------------------- */
-
-// Zelfde initialen- en hue-recept als Avatar.tsx, met de lichte hue-tokens
-// uit index.css — de poster is (net als de andere posters, #125) vastgepind
-// op het lichte palet.
-const AVATAR_HUES: ReadonlyArray<{ bg: string; fg: string }> = [
-  { bg: "#dcefdd", fg: "#256d33" },
-  { bg: "#dbeafe", fg: "#1d4ed8" },
-  { bg: "#fde8d7", fg: "#b45309" },
-  { bg: "#ede9fe", fg: "#6d28d9" },
-  { bg: "#fce7f3", fg: "#be185d" },
-  { bg: "#cffafe", fg: "#0e7490" },
-  { bg: "#fef3c7", fg: "#a16207" },
-  { bg: "#e2e8f0", fg: "#334155" },
-];
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function hueIndex(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return h % 8;
-}
 
 /* ------------------------------- tekenen ------------------------------- */
 
@@ -95,16 +80,39 @@ export function drawKaart(
   x: number,
   y: number,
   w: number,
+  master: GeladenMaster | null = null,
+  onderdelen: GeladenOnderdelen | null = null,
 ) {
   const h = w * 1.39;
   const key = d.tier?.key;
+
+  // Eigen divisielayout (#895): twee divisies dragen niet de generieke stapel
+  // maar een volledige eigen compositie. Zonder geladen artwork blijft de
+  // gewone schildkaart staan — dezelfde terugval als bij de rastermasters.
+  const layout = divisieLayout(key, d.editie);
+  if (layout && onderdelen) {
+    drawDivisieKaart(ctx, layout, d, avatarImg, onderdelen, x, y, w, h);
+    return;
+  }
+
   const vorm = schildVorm(key);
   const skin = kaartSkin(key, d.editie);
   const { ink, inkSoft, lijn } = skin;
 
   // Laag-opbouw (frame → liner → keyline → geclipt vlak met textuur, topglans
-  // en sheen) komt uit de gedeelde schildkaart-tekening (#498).
-  const { fx, fy, fw, fh } = drawKaartSchild(ctx, x, y, w, h, vorm, skin.kleuren);
+  // en sheen) komt uit de gedeelde schildkaart-tekening (#498). Sinds #895
+  // gaat het rastermaster van de special mee: dezelfde drie lagen als live,
+  // met de vectorversie als terugval wanneer het artwork niet geladen is.
+  const { fx, fy, fw, fh } = drawKaartSchild(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    vorm,
+    skin.kleuren,
+    master,
+  );
 
   // Eloblok links: rating groot, sub-niveau (Romeins), divisie-emoji.
   const ex = fx + fw * 0.27;
@@ -136,32 +144,11 @@ export function drawKaart(
 
   // Avatar rechts: de echte profielfoto cirkelvormig geclipt (#618), met de
   // initialen-variant als terugval wanneer de foto ontbreekt of niet laadde.
+  // Sinds #895 gedeeld met de divisiekaarten, in futKaartCanvas.
   const ax = fx + fw * 0.67;
   const ay = fy + fh * 0.26;
   const ar = w * 0.185;
-  if (avatarImg) {
-    // Cover-fit: de foto vult de cirkel, overtollige randen worden geklipt.
-    const iw = avatarImg.naturalWidth || avatarImg.width;
-    const ih = avatarImg.naturalHeight || avatarImg.height;
-    const schaal = Math.max((ar * 2) / iw, (ar * 2) / ih);
-    const dw = iw * schaal;
-    const dh = ih * schaal;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(avatarImg, ax - dw / 2, ay - dh / 2, dw, dh);
-    ctx.restore();
-  } else {
-    const hue = AVATAR_HUES[hueIndex(d.name)];
-    ctx.beginPath();
-    ctx.arc(ax, ay, ar, 0, Math.PI * 2);
-    ctx.fillStyle = hue.bg;
-    ctx.fill();
-    ctx.fillStyle = hue.fg;
-    ctx.font = `800 ${Math.round(ar * 0.75)}px Outfit, system-ui, sans-serif`;
-    ctx.fillText(initials(d.name), ax, ay + ar * 0.27);
-  }
+  drawAvatarCirkel(ctx, d.name, avatarImg, ax, ay, ar);
   // Dubbele metalen avatarring (#834): eerst de kaartkleur als buitenrand,
   // daarbinnen een dunne lichtvangende lijn. Dit zet het portret echt ín de
   // kaart i.p.v. als een losse cirkel erop.
@@ -253,7 +240,55 @@ export function drawKaart(
   // Voorste ornamentlaag (#710): alles wat vóór de kaartinhoud hoort — een
   // crest in de bovenrand, een medaillon in de punt. Moet ná de restore:
   // binnen de vlak-clip zou wat buiten het schild hangt wegvallen.
-  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren);
+  drawKaartOrnamentVoor(ctx, x, y, w, skin.kleuren, master);
+}
+
+/**
+ * Een divisiekaart met eigen layout (#895): artwork achter → binnen → de
+ * tekstzones → artwork voor. Draagt de layout een eigen silhouet, dan ís het
+ * artwork de kaart en komt er geen frame, liner of vlak onder; anders staat de
+ * gewone schildstapel eronder, precies zoals `--schild` dat in de DOM regelt.
+ */
+function drawDivisieKaart(
+  ctx: CanvasRenderingContext2D,
+  layout: DivisieKaartLayout,
+  d: KaartData,
+  avatarImg: HTMLImageElement | null,
+  onderdelen: GeladenOnderdelen,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  drawDivisieOnderdelen(ctx, layout, "achter", onderdelen, x, y, w, h);
+  if (layout.eigenSilhouet) {
+    drawDivisieOnderdelen(ctx, layout, "binnen", onderdelen, x, y, w, h);
+  } else {
+    // Zonder eigen silhouet blijft de schildstapel de drager; de binnen-laag
+    // hoort dan ín het geclipte vlak, net als in de DOM.
+    const skin = kaartSkin(d.tier?.key, d.editie);
+    drawKaartSchild(ctx, x, y, w, h, schildVorm(d.tier?.key), skin.kleuren);
+    drawDivisieOnderdelen(ctx, layout, "binnen", onderdelen, x, y, w, h);
+    // drawKaartSchild laat zijn vlak-clip open staan voor de content van de
+    // caller. Die content is hier de tekstlaag, en die mag buiten het vlak
+    // reiken, dus de clip gaat er eerst af.
+    ctx.restore();
+  }
+  drawDivisieVoorkant(
+    ctx,
+    layout,
+    {
+      naam: d.name,
+      rating: d.rating,
+      tier: d.tier,
+      stats: d.stats ?? null,
+    },
+    avatarImg,
+    x,
+    y,
+    w,
+  );
+  drawDivisieOnderdelen(ctx, layout, "voor", onderdelen, x, y, w, h);
 }
 
 /** De hele poster: court-gloed, kop, de kaart als blikvanger en de
@@ -262,6 +297,8 @@ export function drawProfielPoster(
   ctx: CanvasRenderingContext2D,
   d: ProfileShareData,
   avatarImg: HTMLImageElement | null,
+  master: GeladenMaster | null = null,
+  onderdelen: GeladenOnderdelen | null = null,
 ) {
   const c = canvasPalette();
   const W = POSTER_W;
@@ -299,7 +336,7 @@ export function drawProfielPoster(
 
   // De kaart als blikvanger.
   const kaartW = 560;
-  drawKaart(ctx, d, avatarImg, (W - kaartW) / 2, 218, kaartW);
+  drawKaart(ctx, d, avatarImg, (W - kaartW) / 2, 218, kaartW, master, onderdelen);
 
   // Klassement en vorm naast elkaar onder de kaart.
   const statsY = 1108;
