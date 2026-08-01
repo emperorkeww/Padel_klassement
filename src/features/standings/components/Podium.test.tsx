@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -103,5 +104,54 @@ describe("<Podium /> — geen Coach Rudy over de #1 (#411)", () => {
     ]);
     expect(container.querySelector(".coach-sneer")).toBeNull();
     expect(screen.queryByText("Coach Rudy")).not.toBeInTheDocument();
+  });
+});
+
+// Op 390px kneep het podium (#943): de #1-kolom droeg de kroonpil én een
+// roast-regel ín de kolom en werd daardoor fors hoger dan #2 en #3, en de
+// divisiebadge kapte af tot "Glazenw…".
+describe("<Podium /> — compact op telefoonformaat (#943)", () => {
+  const PODIUM_CSS = readFileSync(
+    "src/features/standings/components/Podium.css",
+    "utf8",
+  );
+
+  it("haalt de kroon uit de kolomstroom", () => {
+    // Anders bepaalt de kroon de hoogte van de #1-kolom en lopen medaille,
+    // avatar en rating van de drie kolommen uit elkaar.
+    expect(PODIUM_CSS).toMatch(
+      /\.podium__crown\s*\{[^}]*position:\s*absolute/,
+    );
+    expect(PODIUM_CSS).toMatch(/\.podium__crown\s*\{[^}]*bottom:\s*100%/);
+    // En de rij reserveert de ruimte die de kroon erboven vraagt.
+    expect(PODIUM_CSS).toMatch(/\.podium\s*\{[^}]*margin-top:/);
+  });
+
+  it("laat de roast-regel weg op telefoonbreedte", () => {
+    const smal = PODIUM_CSS.slice(PODIUM_CSS.indexOf("@media (max-width: 480px)"));
+    expect(smal).toMatch(/\.podium__roast\s*\{\s*display:\s*none/);
+  });
+
+  it("houdt de divisiebadge leesbaar in plaats van afgekapt", () => {
+    // De badge toont daar zijn tekentje en zijn niveau; de volle naam blijft
+    // in de `title` staan.
+    const smal = PODIUM_CSS.slice(PODIUM_CSS.indexOf("@media (max-width: 480px)"));
+    expect(smal).toMatch(
+      /\.podium__spot \.tier-badge::after\s*\{[^}]*content:\s*attr\(data-niveau\)/,
+    );
+  });
+
+  it("geeft de badge het niveau als attribuut mee", () => {
+    // 1050 valt in Wannabe; het niveau staat apart zodat CSS de bandnaam kan
+    // wegnemen zonder de tekstinhoud van de badge te veranderen.
+    const { container } = renderPodium([
+      { ...entry("p1", "Alice", 1050), tier: true },
+      { ...entry("p2", "Bob", 1000), tier: true },
+    ]);
+    const badge = container.querySelector(".tier-badge");
+    expect(badge).toHaveAttribute("data-niveau");
+    expect(badge?.getAttribute("data-niveau")).toMatch(/^(I|II|III)$/);
+    // De zichtbare tekst blijft de volledige label.
+    expect(badge).toHaveTextContent(/Wannabe (I|II|III)/);
   });
 });

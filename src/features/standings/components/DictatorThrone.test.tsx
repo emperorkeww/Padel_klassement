@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -245,5 +246,30 @@ describe("<DictatorThrone /> — waarnemend (#530)", () => {
     knop.focus();
     expect(knop).toHaveFocus();
     expect(knop).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+// Op 390px vulde de troonkaart een heel scherm: het staatsportret is 280px
+// breed met aspect-ratio 11/12, dus ruim 300px hoog, met het paneel er nog
+// onder — en de eerste klassementrij lag daardoor een volledige veeg verderop
+// (#943).
+describe("<DictatorThrone /> — compact op telefoonformaat (#943)", () => {
+  const THROONCSS = readFileSync(
+    "src/features/standings/components/DictatorThrone.css",
+    "utf8",
+  );
+
+  it("krimpt het staatsportret onder 560px", () => {
+    const smal = THROONCSS.slice(THROONCSS.indexOf("@media (max-width: 560px)"));
+    expect(smal).toMatch(
+      /\.dictator-throne__frame\s*\{\s*width:\s*min\(185px, 58%\)/,
+    );
+    // En de nameplate krimpt mee, anders schuift ze over het gezicht heen.
+    expect(smal).toMatch(/\.dictator-throne__plate\s*\{[^}]*padding:/);
+  });
+
+  it("houdt de brede opbouw voor tablet en desktop", () => {
+    // De twee-koloms opbouw vanaf 640px blijft ongemoeid.
+    expect(THROONCSS).toMatch(/@media \(min-width: 640px\)/);
   });
 });

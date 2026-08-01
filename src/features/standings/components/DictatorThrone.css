@@ -689,6 +689,33 @@
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
+/* ── Compact op telefoonformaat (#943) ─────────────────────────────────────
+   Onder 560px stond het staatsportret op volle kaartbreedte: 280px breed en met
+   `aspect-ratio: 11/12` dus ruim 300px hoog, met het paneel er nog onder. De
+   kaart vulde daarmee een heel scherm en de eerste klassementrij lag een
+   volledige veeg verderop. Het portret krijgt hier de helft van die maat — nog
+   altijd het grootste element op de kaart, maar niet meer het hele scherm — en
+   de lucht eromheen krimpt mee. */
+@media (max-width: 560px) {
+  .dictator-throne {
+    gap: clamp(10px, 2.4vw, 18px);
+    padding: calc(var(--troon-filet) + var(--sp-4))
+      calc(var(--troon-filet) + var(--sp-3));
+  }
+  .dictator-throne__frame {
+    width: min(185px, 58%);
+  }
+  /* De nameplate hangt ín het portret; op deze maat moet ze meekrimpen, anders
+     schuift ze over het gezicht heen. */
+  .dictator-throne__plate {
+    padding: var(--sp-6) var(--sp-2) var(--sp-2);
+    gap: 3px;
+  }
+  .dictator-throne__name {
+    font-size: 0.95rem;
+  }
+}
+
 /* ── Twee kolommen (≥640px) ───────────────────────────────────────────────
    Vanaf tablet staat het portret links en het paneel rechts, in de verhouding
    van de referentie (portret ≈ 29% van de kaartbreedte). Onder 640px valt de
