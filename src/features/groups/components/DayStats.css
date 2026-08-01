@@ -1,9 +1,7 @@
-/* Dagoverzicht op de Vandaag-tab (#342). Mobile-first: één kolom highlights,
-   op bredere schermen krijgt de kaart wat meer lucht. */
-
-.day-stats__counts {
-  margin-bottom: var(--sp-3);
-}
+/* Hoogtepunten op de Vandaag-tab (#342). Mobile-first: één kolom highlights,
+   op bredere schermen krijgt de kaart wat meer lucht.
+   Het telblok gespeeld/gepland (.day-stats__counts) verhuisde in #839 naar de
+   dagkop bovenaan de tab — één stand voor de hele dag, op één plek. */
 
 .day-stats__highlights {
   list-style: none;

@@ -111,7 +111,7 @@ describe("<GroupDetail />", () => {
     // teamgenerator zit ingeklapt eronder (#674 A2). De suggesties horen bij
     // Plannen (#342) en horen hier niet te staan.
     expect(
-      await screen.findByRole("heading", { name: /^vandaag$/i }),
+      await screen.findByRole("heading", { name: /^vandaag ·/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /suggesties/i }),
@@ -383,14 +383,17 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText("opgeslagen ✓")).toBeInTheDocument();
   });
 
-  it("toont het dagoverzicht met telling en MVP op Vandaag (#342)", async () => {
+  it("toont de dagvoortgang bovenaan en de MVP eronder op Vandaag (#342, #839)", async () => {
     renderPage();
-    // De dag-stats-kaart heeft een eigen "Vandaag"-kop met tellers.
+    // De telling zit sinds #839 in de dagkop, die de dag als geheel samenvat;
+    // de hoogtepunten-kaart eronder houdt de MVP.
     expect(
-      await screen.findByRole("heading", { name: /^vandaag$/i }),
+      await screen.findByRole("heading", { name: /^vandaag ·/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/^gespeeld$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^gepland$/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 van 2 uitslagen binnen/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^hoogtepunten$/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/MVP ·/i)).toBeInTheDocument();
   });
 

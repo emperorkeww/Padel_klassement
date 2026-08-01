@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 import { dateInZone } from "@/lib/utils/time";
+import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { Group, GroupMember, Match, Profile, Team } from "@/types";
 
 const NOW = "2026-07-08T10:00:00.000Z";
@@ -40,9 +41,10 @@ import {
 // clubdag i.p.v. de kale UTC-dag.
 const today = dateInZone(TIMEZONE);
 
-const profileMap = Object.fromEntries(
-  PROFILES.map((p) => [p.id, p]),
-) as Record<string, Profile>;
+const profileMap = Object.fromEntries(PROFILES.map((p) => [p.id, p])) as Record<
+  string,
+  Profile
+>;
 const teamMap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
   string,
   Team
@@ -79,6 +81,8 @@ function renderTab(
             rounds={[]}
             openRound={null}
             dayDone={false}
+            polls={[]}
+            pollOptions={[]}
             today={today}
             timezone={TIMEZONE}
             teams={teamMap}
@@ -106,6 +110,39 @@ async function waitForSelection() {
     expect(toggles.length).toBeGreaterThanOrEqual(4);
   });
 }
+
+/** Geboekte speeldag van vandaag: het vertrekpunt voor de automaat-status in
+ *  de dagkop (#839). De cron zet `rounds_generated_at` zodra hij indeelde. */
+const AUTO_OPTION = {
+  id: "opt-vandaag",
+  poll_id: "poll-vandaag",
+  group_id: "g1",
+  date: today,
+  start_time: "20:00",
+  duration: 90,
+  courts_free: 2,
+  created_at: `${today}T06:00:00.000Z`,
+} as unknown as PollOption;
+
+const autoPoll = (overrides: Partial<PlayPoll> = {}): PlayPoll =>
+  ({
+    id: "poll-vandaag",
+    group_id: "g1",
+    created_by: "p1",
+    status: "booked",
+    locked_option_id: AUTO_OPTION.id,
+    created_at: `${today}T06:00:00.000Z`,
+    locked_at: `${today}T06:00:00.000Z`,
+    booked_at: `${today}T06:30:00.000Z`,
+    club_id: "c1",
+    club_name: "LAGO CLUB Padel Beveren",
+    club_city: "Beveren",
+    club_timezone: TIMEZONE,
+    access_code: null,
+    courts: null,
+    rounds_generated_at: `${today}T06:04:00.000Z`,
+    ...overrides,
+  }) as PlayPoll;
 
 /** Een dag met rondes: twee rondes, één afgerond en één nog open. */
 const DAG_ONDERWEG = {
@@ -317,32 +354,122 @@ describe("<VandaagTab />", () => {
     ).toBeInTheDocument();
   });
 
-  it("zet de wedstrijden boven het dagoverzicht (uitslagen invullen primair)", () => {
+  it("zet de wedstrijden boven de hoogtepunten (uitslagen invullen primair)", () => {
     renderTab(DAG_ONDERWEG);
 
     const wedstrijden = screen.getByRole("heading", {
       name: /^wedstrijden$/i,
     });
-    // Dagoverzicht (#342) is aanwezig, maar ondersteunend ónder de rondes.
-    const dagoverzicht = screen.getByRole("heading", { name: /^vandaag$/i });
-    expect(screen.getByText(/^gespeeld$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^gepland$/i)).toBeInTheDocument();
+    // De hoogtepunten (#342) blijven ondersteunend ónder de rondes; de telling
+    // die hier stond is sinds #839 de dagkop bovenaan.
+    const hoogtepunten = screen.getByRole("heading", {
+      name: /^hoogtepunten$/i,
+    });
     expect(
-      wedstrijden.compareDocumentPosition(dagoverzicht) &
+      wedstrijden.compareDocumentPosition(hoogtepunten) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
-  it("toont de deelknop in de kaartkop zodra er een uitslag is", () => {
+  // ── Dagkop (#839) ─────────────────────────────────────────────────────
+  // Voortgang, deelknop en herkomst van de indeling stonden verspreid over de
+  // tab (of nergens); ze horen in één blok dat over de hele dag gaat.
+
+  it("telt de voortgang van de hele dag in de dagkop", () => {
+    renderTab(DAG_ONDERWEG);
+
+    const kop = screen
+      .getByRole("heading", { name: /^vandaag ·/i })
+      .closest(".dagkop") as HTMLElement;
+    expect(kop).not.toBeNull();
+    // Eén afgeronde en één openstaande match, in twee rondes.
+    expect(
+      within(kop).getByText(/1 van 2 uitslagen binnen/i),
+    ).toBeInTheDocument();
+    expect(
+      within(kop).getByLabelText(/1 van 2 uitslagen ingevuld/i),
+    ).toBeInTheDocument();
+  });
+
+  it("houdt de deelknop onderweg in de dagkop, niet in de kop van Wedstrijden", () => {
     renderTab(DAG_ONDERWEG);
 
     const share = screen.getByRole("button", {
       name: /deel avond-samenvatting/i,
     });
-    // Nog niet alles binnen → de deelknop staat ondersteunend in de kaartkop,
-    // niet in een afsluitkaart.
-    expect(share.closest(".card__head")).not.toBeNull();
-    expect(share.closest(".flow-next")).toBeNull();
+    expect(share.closest(".dagkop")).not.toBeNull();
+  });
+
+  it("sluit de dag af in diezelfde dagkop, met de stand-CTA erbij", async () => {
+    const { onShowStand } = renderTab({
+      matches: [DONE_TODAY],
+      rounds: [{ round: 1, list: [DONE_TODAY] }],
+      dayDone: true,
+    });
+
+    // Dezelfde plek als onderweg: de deelknop verhuist niet meer naar een
+    // aparte afsluitkaart zodra de laatste uitslag binnen is.
+    const kop = screen
+      .getByRole("button", { name: /deel avond-samenvatting/i })
+      .closest(".dagkop") as HTMLElement;
+    expect(kop).not.toBeNull();
+    expect(
+      within(kop).getByText(/alle 1 uitslagen staan erin/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      within(kop).getByRole("button", { name: /bekijk de stand/i }),
+    );
+    expect(onShowStand).toHaveBeenCalled();
+  });
+
+  it("vertelt in de dagkop dat de automaat de rondes klaarzette (#827)", () => {
+    renderTab({
+      ...DAG_ONDERWEG,
+      polls: [autoPoll()],
+      pollOptions: [AUTO_OPTION],
+    });
+
+    expect(screen.getByText(/automatisch klaargezet om/i)).toBeInTheDocument();
+  });
+
+  it("vertelt op een lege dag dat de automaat nog moet komen", () => {
+    // Vóór het ochtenduur (08:00 clubtijd) waarop de cron indeelt — anders
+    // zou de kop terecht melden dat hij niets ingedeeld heeft.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(`${today}T04:00:00.000Z`));
+    try {
+      renderTab({
+        polls: [autoPoll({ rounds_generated_at: null })],
+        pollOptions: [AUTO_OPTION],
+      });
+      expect(
+        screen.getByText(/de automaat deelt om 08:00/i),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("vertelt dat de automaat uit staat", () => {
+    renderTab({
+      group: { ...(GROUPS[0] as unknown as Group), auto_rondes: false },
+      polls: [autoPoll({ rounds_generated_at: null })],
+      pollOptions: [AUTO_OPTION],
+    });
+
+    expect(screen.getByText(/de automaat staat uit/i)).toBeInTheDocument();
+  });
+
+  it("meldt dat de automaat wacht zolang de baan niet geboekt is", () => {
+    renderTab({
+      polls: [autoPoll({ status: "locked", rounds_generated_at: null })],
+      pollOptions: [AUTO_OPTION],
+    });
+
+    expect(
+      screen.getByText(/de automaat wacht op de baanboeking/i),
+    ).toBeInTheDocument();
   });
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
@@ -368,29 +495,6 @@ describe("<VandaagTab />", () => {
     expect(await screen.findByText("7–5")).toBeInTheDocument();
     expect(await screen.findByText("opgeslagen ✓")).toBeInTheDocument();
     expect(onMatches).toHaveBeenCalled();
-  });
-
-  // ── Staat 3: alles ingevuld ───────────────────────────────────────────
-
-  it("sluit de dag af met stand-CTA en deelknop in de afsluitkaart", async () => {
-    const { onShowStand } = renderTab({
-      matches: [DONE_TODAY],
-      rounds: [{ round: 1, list: [DONE_TODAY] }],
-      dayDone: true,
-    });
-
-    const card = screen
-      .getByText(/alle uitslagen van vandaag staan erin/i)
-      .closest(".flow-next") as HTMLElement;
-    expect(card).not.toBeNull();
-    expect(
-      within(card).getByRole("button", { name: /deel avond-samenvatting/i }),
-    ).toBeInTheDocument();
-
-    await userEvent.click(
-      within(card).getByRole("button", { name: /bekijk de stand/i }),
-    );
-    expect(onShowStand).toHaveBeenCalled();
   });
 
   // #524: de vendetta-kaart hoort bij het spelen, niet bij de stand.

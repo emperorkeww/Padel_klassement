@@ -35,6 +35,10 @@ export type PlayPoll = {
   /** Geboekte baan/banen (#802), vrije tekst zoals de code; null zolang de
    *  boeker ze niet invulde. Ook member-only. */
   courts: string | null;
+  /** Moment waarop de cron de rondes van deze speeldag klaarzette (#827/#846);
+   *  null zolang dat niet gebeurde. De Vandaag-tab leest het om te tonen waar
+   *  de indeling van vandaag vandaan komt (#839). */
+  rounds_generated_at: string | null;
 };
 
 /**
