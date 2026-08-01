@@ -12,6 +12,9 @@
 
 .podium {
   display: grid;
+  /* Ruimte voor de kroon die boven de #1-tegel uithangt; zonder deze marge
+     loopt hij over de kaart erboven. */
+  margin-top: var(--sp-6);
   /* minmax(0, …): kolommen mogen smaller worden dan hun breedste inhoud,
      anders duwt een lange divisie-badge plek 3 het scherm af op smalle
      telefoons (de pagina clipt, dus die plek is dan onbereikbaar). */
@@ -21,6 +24,7 @@
 }
 
 .podium__spot {
+  position: relative;
   display: grid;
   min-width: 0;
   justify-items: center;
@@ -64,12 +68,23 @@
 .podium__spot--1.is-bigdaddy .podium__name {
   color: var(--bigdaddy-text);
 }
+/* De kroon van Big Daddy hangt óver de bovenrand van zijn tegel (#943). Stond
+   hij ín de kolom, dan werd de #1 twee regels hoger dan #2 en #3 en liepen
+   medaille, avatar en rating van de drie kolommen uit elkaar — `align-items:
+   end` lijnt alleen de dozen uit, niet wat erin staat. De podium-container
+   reserveert de ruimte erboven (zie .podium). */
 .podium__crown {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  margin-bottom: var(--sp-1);
+  padding-bottom: var(--sp-1);
 }
 .podium__crown-title {
   padding: 0.1rem var(--sp-3);
@@ -183,6 +198,30 @@
 @media (max-width: 480px) {
   .podium {
     gap: var(--sp-2);
+    /* Zonder roast-regel is de kroon één pil hoog. */
+    margin-top: var(--sp-5);
+  }
+  /* De roast kost in een kolom van ~110px twee regels en is er nauwelijks
+     leesbaar; de kroonpil zegt al wie hier staat (#943). Vanaf tablet blijft
+     de grap gewoon staan. */
+  .podium__roast {
+    display: none;
+  }
+  /* De divisiebadge kapte hier af tot "Glazenw…". Op deze breedte houdt hij
+     zijn tekentje en zijn niveau — leesbaar in plaats van halve tekst; de
+     volle naam blijft in de `title` staan. */
+  .podium__spot .tier-badge {
+    font-size: 0;
+    padding: 0 0.35rem;
+    gap: 3px;
+  }
+  .podium__spot .tier-badge__icon {
+    font-size: 0.6875rem;
+  }
+  .podium__spot .tier-badge::after {
+    content: attr(data-niveau);
+    font-size: 0.6875rem;
+    font-weight: 800;
   }
   .podium__spot {
     padding: var(--sp-3) var(--sp-2);

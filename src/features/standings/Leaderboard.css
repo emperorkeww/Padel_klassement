@@ -313,6 +313,18 @@
 .ranklist__record {
   white-space: nowrap;
 }
+/* Op telefoonbreedte past tier + vormreeks + record niet op één regel, en dan
+   wrapte de meta-regel: die rij werd een regel hoger dan zijn buren en het
+   lijstritme brak (#943). Het record is hier het minst dringende getal — het
+   staat voluit in de tabel op een breed scherm en op het profiel. */
+@media (max-width: 480px) {
+  .ranklist__meta {
+    flex-wrap: nowrap;
+  }
+  .ranklist__record {
+    display: none;
+  }
+}
 .ranklist__end {
   grid-column: 4;
   grid-row: 1 / 3;

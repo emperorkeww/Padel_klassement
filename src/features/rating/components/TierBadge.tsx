@@ -25,6 +25,12 @@ export function TierBadge({
     <span
       className={`tier-badge tier-badge--${tier.key}${size === "sm" ? " tier-badge--sm" : ""}${dimmed ? " is-dim" : ""}`}
       title={tierTitle(tier)}
+      // Het niveau apart als attribuut (#943), zodat een krappe plek — de
+      // podiumkolom op 390px — de bandnaam kan wegnemen en tóch "🫧 I" kan
+      // tonen in plaats van "Glazenw…". Bewust een attribuut en geen extra
+      // span: de badge houdt zo één tekstknoop, en dat is waar de rest van de
+      // app (en de tests) hem op vindt.
+      data-niveau={tier.subLabel ?? ""}
     >
       <span className="tier-badge__icon" aria-hidden="true">
         {tier.emoji}
