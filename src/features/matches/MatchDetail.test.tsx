@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -237,5 +238,56 @@ describe("<MatchDetail />", () => {
     } finally {
       herstel();
     }
+  });
+});
+
+// Op 390px stapelde het matchdetail drie kaartniveaus, stond de eindstand
+// tússen de teams en droegen beide teamblokken een groenige tint (#948).
+describe("<MatchDetail /> — leesbaar op telefoonformaat (#948)", () => {
+  const MD_CSS = readFileSync("src/features/matches/MatchDetail.css", "utf8");
+
+  it("laat de uitslag de kleur dragen zodra er gespeeld is", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/eindstand/i);
+    // De teamtinten wijken voor de uitslag; de winnaar houdt zijn blok én zijn
+    // chip, de verliezer wordt neutraal.
+    expect(container.querySelector(".md-versus")).toHaveClass("is-done");
+    expect(MD_CSS).toMatch(
+      /\.md-versus\.is-done \.md-team\s*\{[^}]*background:\s*var\(--surface\)/,
+    );
+    expect(MD_CSS).toMatch(
+      /\.md-versus\.is-done \.md-team\.is-win\s*\{[^}]*background:\s*var\(--success-soft\)/,
+    );
+    // En de winnaar staat er in woorden, niet alleen in kleur.
+    expect(container.querySelector(".md-team.is-win .badge--win")).toHaveTextContent(
+      /winnaar/i,
+    );
+  });
+
+  it("zet de eindstand vóór de teamblokken op smalle schermen", () => {
+    // Gestapeld in DOM-volgorde stond hij tússen de teams: dan moet je scrollen
+    // om te zien wie won.
+    const smal = MD_CSS.slice(MD_CSS.indexOf("@media (max-width: 560px)"));
+    expect(smal).toMatch(/\.md-score\s*\{[^}]*order:\s*-1/);
+  });
+
+  it("houdt het bij twee kaartniveaus", () => {
+    // De spelerrij was een derde kaart in de kaart in de kaart; dat kostte op
+    // 390px ~48px horizontale ruimte.
+    expect(MD_CSS).not.toMatch(
+      /\.md-team__players \.md-player\s*\{[^}]*border:\s*1px solid/,
+    );
+    expect(MD_CSS).toMatch(
+      /\.md-team__players \.md-player \+ \.md-player\s*\{\s*border-top:/,
+    );
+  });
+
+  it("tekent de promotie- en winnaarschips in plaats van emoji", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/eindstand/i);
+    expect(container.innerHTML).not.toMatch(/⬆️|⬇️/);
+    expect(
+      container.querySelector(".md-team__winnaar svg"),
+    ).toBeInTheDocument();
   });
 });
