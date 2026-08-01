@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { openPlannedCards } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -533,8 +534,10 @@ describe("<VandaagTab />", () => {
       rounds: [{ round: 2, list: [PLANNED_TODAY] }],
     });
 
-    // findBy: de score-invoer verschijnt pas zodra de sessie geladen is en de
-    // kijker aanmaker/deelnemer blijkt (#413).
+    // De invoer zit sinds #941 achter de uitklapknop; findBy omdat die knop
+    // pas verschijnt zodra de sessie geladen is en de kijker
+    // aanmaker/deelnemer blijkt (#413).
+    await openPlannedCards();
     await userEvent.type(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
       "7",

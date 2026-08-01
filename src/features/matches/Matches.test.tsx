@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { openPlannedCards } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -66,6 +67,8 @@ describe("<Matches />", () => {
   it("toont Te spelen met inline invoer en de recente matches", async () => {
     renderPage();
     expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
+    // De score-invoer zit sinds #941 achter de uitklapknop van de kaart.
+    await openPlannedCards();
     // De geplande match heeft twee score-invoervelden met teamnamen als label.
     expect(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
@@ -194,6 +197,9 @@ describe("<Matches />", () => {
 
     const log = screen.getByRole("button", { name: /match loggen/i });
     expect(log).toHaveClass("matches__fab");
+    // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942): dezelfde
+    // die de "Jouw positie"-chip van het klassement draagt.
+    expect(log).toHaveClass("zwevende-actie");
     // De kop draagt alleen nog de secundaire actie.
     const kop = container.querySelector(".page-head")!;
     expect(
@@ -214,6 +220,7 @@ describe("<Matches />", () => {
     ).toBeNull();
 
     // En zodra de data er is, staat de echte inhoud er.
+    await openPlannedCards();
     expect(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
     ).toBeInTheDocument();

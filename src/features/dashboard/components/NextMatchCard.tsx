@@ -6,6 +6,13 @@ import { matchWhen } from "../dashboardHelpers";
 // De eerstvolgende te spelen match, compact op het overzicht (#273): wie +
 // wanneer, en één tik naar de match zelf voor de uitslag — de score-invoer
 // hoort daar, niet op de startpagina (zeker niet op mobiel).
+//
+// De drie kolommen van de gedeelde .match-card werken hier niet op 390px (#940):
+// dan houdt elk team ~90px over en truncaten alle vier de namen, terwijl
+// "ronde 1 · gepland · Vrijdagavond Padel" in het midden de volle breedte pakt.
+// De namen zijn het punt van deze kaart, dus die metadata staat nu als eigen
+// regel onder de paring en op mobiel stapelen de twee teams (CSS). In het midden
+// blijft "vs" staan — dezelfde plek waar de matchlijst de uitslag zet.
 
 export function NextMatchCard({
   match,
@@ -34,7 +41,7 @@ export function NextMatchCard({
         <div className="match-card">
           <TeamSide team={teams[match.team_a_id]} profiles={profiles} won={false} />
           <span className="match-card__mid">
-            <span className="match-card__meta">{matchWhen(match, groupName)}</span>
+            <span className="match-card__score">vs</span>
           </span>
           <TeamSide
             team={teams[match.team_b_id]}
@@ -43,6 +50,7 @@ export function NextMatchCard({
             right
           />
         </div>
+        <p className="next-match__meta">{matchWhen(match, groupName)}</p>
       </Link>
     </section>
   );

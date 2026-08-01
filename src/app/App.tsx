@@ -35,6 +35,13 @@ const HeroShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/dashboard/components/HeroShowcase"))
   : null;
 
+// Dev-showcase (#940): de kaartenrij onder de hero — volgende match, cijfer-blok
+// en baanteaser — met synthetische props, om op 390px te kunnen beoordelen wat
+// er in seed-data zelden allemaal tegelijk staat.
+const OverzichtShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/dashboard/components/OverzichtShowcase"))
+  : null;
+
 // Dev-stage (#834): de In-Form stormkaart op vaste maat, als vast doelwit van
 // scripts/storm-screenshot.sh en de ?debugStorm=1-weergave.
 const StormShowcase = import.meta.env.DEV
@@ -145,6 +152,9 @@ function App() {
             <Route path="/dev/kaarten" element={<KaartShowcase />} />
           )}
           {HeroShowcase && <Route path="/dev/hero" element={<HeroShowcase />} />}
+          {OverzichtShowcase && (
+            <Route path="/dev/overzicht" element={<OverzichtShowcase />} />
+          )}
           {StormShowcase && (
             <Route path="/dev/storm" element={<StormShowcase />} />
           )}

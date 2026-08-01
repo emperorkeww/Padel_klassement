@@ -287,7 +287,8 @@ textarea {
   border: 1px solid var(--coach-line);
   border-radius: 99px;
   background: var(--coach-soft);
-  color: var(--coach-ink);
+  /* Zelfde correctie als de bounty-banner (#941): tekst op het zachte vlak. */
+  color: var(--coach-diep);
 }
 .bounty-mark__waarde {
   font-size: 0.85em;
@@ -1512,6 +1513,60 @@ textarea {
     font-size: var(--fs-md);
     padding: 0.1rem var(--sp-2);
   }
+}
+
+/* ---------- Zwevende hoofdactie (#942) ----------
+   De "+ Match loggen"-knop van Matches en de "Jouw positie"-chip van het
+   klassement stonden allebei met hun eigen, bijna identieke regels rechtsonder
+   vastgezet — inclusief twee kopieën van de ruimte boven de mobiele onderbalk.
+   Ze deelden daardoor ook hetzelfde probleem: ze wisten niets van wat eronder
+   lag en kwamen tijdens het scrollen over de score-steppers, de Opslaan-knop en
+   de rating van de rij eronder te liggen.
+
+   Plaatsing én uitwijkgedrag staan nu één keer hier. `is-verborgen` komt van
+   useVerbergBijScrollen: vooruit scrollen schuift de knop weg, terugscrollen of
+   bovenaan staan brengt hem terug. `visibility` doet het echte werk — weg is
+   ook weg voor de tabvolgorde en voor een klik, want een knop die je niet ziet
+   hoor je niet te kunnen raken. */
+.zwevende-actie {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-6);
+  z-index: 15;
+  box-shadow: var(--shadow-lg);
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease,
+    visibility 0s;
+}
+.zwevende-actie.is-verborgen {
+  /* Zijn eigen hoogte plus de onderrand: ver genoeg om écht van het scherm te
+     zijn, ongeacht of het de brede knop of de compacte chip is. */
+  transform: translateY(calc(100% + var(--sp-6)));
+  opacity: 0;
+  visibility: hidden;
+  transition-delay: 0s, 0s, 0.18s;
+}
+/* Boven de vaste onderbalk blijven (die verschijnt bij de shell-switch ≤720px). */
+@media (max-width: 720px) {
+  .zwevende-actie {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+  .zwevende-actie.is-verborgen {
+    transform: translateY(
+      calc(100% + 84px + env(safe-area-inset-bottom, 0px) + var(--sp-4))
+    );
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zwevende-actie {
+    transition: none;
+  }
+}
+/* Ruimte onderaan een pagina met een zwevende actie: zonder deze strook ligt de
+   laatste kaart of rij er permanent onder zodra je onderaan terugscrollt. */
+.heeft-zwevende-actie {
+  padding-bottom: calc(48px + var(--sp-6));
 }
 
 /* ---------- Alleen voor screenreaders ---------- */

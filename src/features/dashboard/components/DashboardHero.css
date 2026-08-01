@@ -26,7 +26,17 @@
   flex-direction: column;
   gap: var(--sp-5);
   margin-bottom: var(--sp-6);
-  padding: var(--sp-6) var(--sp-7);
+  /* De binnenmarge in twee delen (#939): de maat van de kaart, plus de dikte van
+     een eventueel lijstprofiel. Een thema met een lijst zet alleen `--hero-inzet`
+     en de mobiele maat alleen `--hero-pad-*`, zodat die twee elkaar niet meer
+     kunnen overschrijven. Vóór #939 deed de mobiele `padding` dat wél: de
+     compensatie van Big Daddy en In-Form viel weg en de avatar belandde op hun
+     gouden band. */
+  --hero-pad-y: var(--sp-6);
+  --hero-pad-x: var(--sp-7);
+  --hero-inzet: 0px;
+  padding: calc(var(--hero-pad-y) + var(--hero-inzet))
+    calc(var(--hero-pad-x) + var(--hero-inzet));
   border-radius: var(--radius-lg);
   background:
     radial-gradient(120% 140% at 100% 0%, var(--lime-soft) 0%, transparent 55%),
@@ -58,10 +68,18 @@
 /* De inhoud staat boven élke decoratielaag — inclusief de bewegende glans, want
    leesbaarheid gaat voor effect. */
 .hero__main,
+.hero__coach,
 .hero__divide,
 .hero__foot {
   position: relative;
   z-index: 1;
+}
+/* Een crest hangt over de bovenrand van de kaart (HeroLagen, stap 9). Bovenaan de
+   pagina is daar niets boven, en dan sneed de viewport hem af (#939). Deze marge
+   reserveert die ruimte — alleen voor een kaart die zo'n ornament dráágt, zodat
+   een gewone divisiekaart geen lege strook krijgt. */
+.hero:has(.hero__crest) {
+  margin-top: var(--sp-5);
 }
 
 /* ---- Basisthema: je divisie (#771) ----
@@ -283,8 +301,7 @@
      buitenlijn om het goud heen liggen. De inhoud schuift met dezelfde dikte
      naar binnen, zodat tekst nooit op de band belandt. */
   border: 0;
-  padding: calc(var(--sp-6) + var(--lijst-d))
-    calc(var(--sp-7) + var(--lijst-d));
+  --hero-inzet: var(--lijst-d);
   /* Vangnet onder de lagen: zonder achtergrond flitst de paginakleur door de
      kaart voordat de lijst schildert. */
   background: var(--bd-vlak-mid);
@@ -663,7 +680,17 @@
   .hero-bd--teddy {
     width: clamp(76px, 22cqw, 140px);
     bottom: 0;
-    transform: translate(-32%, 28%);
+    /* Hij hangt uit de hoek, maar niet verder dan de paginamarge (#939): links
+       daarvan sneed het scherm zijn arm af, en een half afgesneden beer is
+       precies de rommel die de kaart niet nodig heeft. */
+    transform: translate(-14%, 26%);
+  }
+  /* Dezelfde grens voor de twee hoekjuwelen op de rechterflank. */
+  .hero-bd--hoek-rechtsboven {
+    transform: translate(4%, -10%);
+  }
+  .hero-bd--hoek-rechtsonder {
+    transform: translate(4%, 10%);
   }
   .hero--bigdaddy .hero__foot {
     padding-left: 0;
@@ -817,6 +844,14 @@
   left: 7px;
   bottom: 7px;
   transform: scaleY(-1);
+}
+/* Het onderste linkerhoekje reikt net voorbij de binnenmarge en zette zijn blad
+   dwars door de "V" van "Vorm" (#939). De vormregel springt daarom op deze kaart
+   in — zoals de voetregel dat op de Big Daddy-kaart voor de teddy doet. Alleen
+   die regel, want op mobiel staat ze op een eigen rij en kost de inspringing
+   geen knopbreedte. */
+.hero--dictator .hero__form {
+  padding-left: clamp(14px, 2.2%, 24px);
 }
 .hero__hoek--ro {
   right: 7px;
@@ -1005,13 +1040,16 @@
   height: auto;
   filter: drop-shadow(0 2px 3px rgba(17, 33, 26, 0.22));
 }
+/* Ze hangen aan de hoek in plaats van erin (#939): op -18% lag het linkerlint
+   over het woord "Vorm" en het rechter over "Vrije banen". Een ornament mag over
+   de rand steken, maar niet over de tekst eronder. */
 .hero__lint-kam--links {
   left: 0;
-  transform: translate(-18%, 26%) scaleX(-1);
+  transform: translate(-46%, 34%) scaleX(-1);
 }
 .hero__lint-kam--rechts {
   right: 0;
-  transform: translate(18%, 26%);
+  transform: translate(46%, 34%);
 }
 
 /* Het legacy-zegel als watermerk in het rechterpaneel. */
@@ -1532,7 +1570,7 @@
      .hero--overlay-inform zouden er als tweede rand omheen liggen. */
   border: 0;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  padding: calc(var(--sp-6) + var(--lijst-d)) calc(var(--sp-7) + var(--lijst-d));
+  --hero-inzet: var(--lijst-d);
   /* Vangnet onder de lagen: zonder achtergrond flitst de paginakleur door de
      kaart voordat de lijst schildert. */
   background: var(--if-vlak);
@@ -2006,10 +2044,15 @@
   }
 }
 
+/* Begroetingsblok: avatarkolom + tekst op rij 1, de titelrij eronder over de
+   volle breedte (#939). Een grid en geen flexrij, want alleen zo kan de titelrij
+   de avatarkolom overspannen zonder dat de begroeting eronder wegzakt. */
 .hero__main {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--sp-4);
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-3);
   min-width: 0;
 }
 /* Ook het tekstblok naast de avatar mag krimpen, anders steekt een lange
@@ -2045,14 +2088,29 @@
   color: var(--accent);
 }
 
-/* Titels + badges (#287, herzien #317): staan als leesbare chips op één rij
-   onder de samenvatting, niet meer zwevend in de rechterbovenhoek. */
+/* Titels + badges (#287, herzien #317 en #939): leesbare chips onder de
+   samenvatting, over de volle kaartbreedte — dus buiten de tekstkolom, want daar
+   naast de avatar paste er op 390px maar één chip per regel.
+
+   De drie onderdelen zijn drie regels in leesvolgorde: de dominante editie als
+   statusbadge, dan de overige titels, dan de badgerij. Op een brede kaart passen
+   ze naast elkaar; wrap doet de rest. */
 .hero__titles {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-2);
-  margin: var(--sp-3) 0 0;
+  margin: 0;
+}
+/* De overige titels blijven onderling op één rij: ze zijn samen de "en verder"
+   van de statusbadge en horen niet elk een eigen regel te krijgen (#939). */
+.hero__crests {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-width: 0;
 }
 /* De badge-rij deelt de titel-rij en heeft daar geen eigen bovenmarge nodig. */
 .hero__titles .hero__badges-wrap {
@@ -2248,12 +2306,17 @@
   line-height: 1.55;
 }
 
-/* Coach Rudy's ochtendbriefing (#213): gezicht + regel onder de subtitel. */
+/* Coach Rudy's ochtendbriefing (#213): gezicht + regel onder de begroeting.
+   Sinds #939 een eigen blok op kaartbreedte in plaats van een alinea in de
+   tekstkolom — dat scheelt op mobiel twee regels, en het maakt de verhuizing
+   naar ná de knoppen mogelijk (zie de mobiele sectie onderaan). De negatieve
+   bovenmarge haalt de helft van de kaartgap weg: als losse alinea hoort hij
+   dichter bij de begroeting te staan dan bij de voetregel. */
 .hero__coach {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-2);
-  margin: var(--sp-2) 0 0;
+  margin: calc(var(--sp-3) - var(--sp-5)) 0 0;
   font-size: var(--fs-sm);
   font-style: italic;
   color: var(--ink-soft);
@@ -2433,7 +2496,9 @@
 @media (max-width: 640px) {
   .hero {
     gap: var(--sp-4);
-    padding: var(--sp-5);
+    /* Alleen de maat, niet de lijstcompensatie — zie `--hero-inzet` bovenaan. */
+    --hero-pad-y: var(--sp-5);
+    --hero-pad-x: var(--sp-5);
     margin-bottom: var(--sp-5);
   }
   .hero__name {
@@ -2441,6 +2506,15 @@
   }
   .hero__sub {
     font-size: var(--fs-md);
+  }
+  /* De coachbubbel ná de knoppen (#939). Op 390px stond hij tussen de
+     begroeting en de eerste actie in, en dan zie je "+ Match loggen" niet meer
+     zonder scrollen. Alleen de volgorde in beeld verschuift: het is een
+     `role="note"` zonder knoppen, dus de leesvolgorde van de DOM blijft
+     kloppen. */
+  .hero__coach {
+    order: 1;
+    margin-top: calc(var(--sp-2) - var(--sp-4));
   }
   /* Voetregel gestapeld: vorm boven de knoppen. */
   .hero__foot {
@@ -2457,6 +2531,34 @@
   }
   .hero__actions .btn--primary {
     grid-column: 1 / -1;
+  }
+  /* De overige titels krimpen tot hun icoon (#939). Vier statussen pasten
+     anders alleen onder elkaar: "Kampioen Q2 2026" alleen is al breder dan de
+     halve kaart. Het label blijft in de DOM (dus in `aria-label` én in de
+     tooltip die een tik opent), zodat de tekst de indicator blijft — alleen de
+     dominante editie draagt zijn naam nog voluit. */
+  .hero__crests:has(.hero-crest + .hero-crest) .hero-crest__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .hero__crests:has(.hero-crest + .hero-crest) .hero-crest {
+    /* Vierkant om het icoon: dezelfde hoogte als de badge-emoji ernaast. */
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  /* De badgerij begint op een eigen regel: naast vier titelchips paste ze niet,
+     en dan brak ze na vijf cirkels met alleen "+29" op de tweede regel. */
+  .hero__titles .hero__badges-wrap {
+    flex-basis: 100%;
   }
   /* Badge-emoji op touch-formaat: iets groter en verder uit elkaar, met een
      klein onzichtbaar extra tapvlak (#374). */

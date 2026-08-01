@@ -15,6 +15,7 @@ import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard
 import { supabase } from "@/lib/supabase/client";
 import { MATCH_PLANNED, PROFILES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
+import { openPlannedCards } from "@/test/plannedCard";
 
 const tmap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
   string,
@@ -40,7 +41,9 @@ function renderCard(match: Match) {
 describe("<PlannedMatchCard /> toto", () => {
   it("toont de tip-chips direct in de open toto-tegel", async () => {
     renderCard(MATCH_PLANNED as Match);
-    // Open tegel (geen accordeon meer): beide teams direct tapbaar.
+    // De toto zit sinds #941 achter de uitklapknop; open tegel bínnen de kaart:
+    // beide teams direct tapbaar, geen accordeon.
+    await openPlannedCards();
     const chipA = await screen.findByRole("button", {
       name: /^tip alice anders & bob boers$/i,
     });
@@ -56,6 +59,7 @@ describe("<PlannedMatchCard /> toto", () => {
 
   it("plaatst een tip via de chip", async () => {
     renderCard(MATCH_PLANNED as Match);
+    await openPlannedCards();
     await userEvent.click(
       await screen.findByRole("button", {
         name: /^tip carol claes & dave de vos$/i,
@@ -69,6 +73,7 @@ describe("<PlannedMatchCard /> toto", () => {
 
   it("toont geen tip-chips op een match zonder groep", async () => {
     renderCard({ ...MATCH_PLANNED, group_id: null } as Match);
+    await openPlannedCards();
     // De kaart is er wel (score-invoer), maar zonder toto-tegel.
     await screen.findByLabelText(/^score alice anders & bob boers$/i);
     expect(screen.queryByText(/🎯 toto/i)).not.toBeInTheDocument();
@@ -82,6 +87,7 @@ describe("<PlannedMatchCard /> toto", () => {
       ...MATCH_PLANNED,
       played_at: "2026-07-01T18:00:00.000Z",
     } as Match);
+    await openPlannedCards();
     // Kopregel van de tegel: gesloten + teller (Carol's fixture-tip).
     expect(
       await screen.findByText(/tippen gesloten · 1 tip/i),

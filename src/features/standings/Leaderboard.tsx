@@ -14,6 +14,7 @@ import {
   type FilterWaarden,
 } from "./components/LeaderboardFilters";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
 import { useContainerBreedte } from "@/lib/hooks/useContainerBreedte";
 import { Avatar } from "@/ui/Avatar";
 import { recentForm, type Outcome } from "@/features/rating/results";
@@ -120,6 +121,8 @@ let buigingBeurt = 0;
 
 export function Leaderboard() {
   usePageTitle("Klassement");
+  // De "Jouw positie"-chip wijkt bij vooruitscrollen (#942).
+  const chipVerborgen = useVerbergBijScrollen();
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const club = useClub();
@@ -840,7 +843,7 @@ export function Leaderboard() {
   };
 
   return (
-    <div>
+    <div className="heeft-zwevende-actie">
       <header className="page-head">
         <h1 className="page-title">Klassement</h1>
         <p className="page-subtitle">
@@ -1165,7 +1168,12 @@ export function Leaderboard() {
           net als de troon-uitzondering: wie erop zit staat bovenaan in beeld. */}
       {tab !== "team" && myRankIdx >= 0 && rows.length > 8 && !nq &&
         !throneRow?.isMe && (
-        <button className="me-chip" onClick={scrollToMe}>
+        <button
+          className={`me-chip zwevende-actie${
+            chipVerborgen ? " is-verborgen" : ""
+          }`}
+          onClick={scrollToMe}
+        >
           Jouw positie · #{myRankIdx + 1}
         </button>
       )}

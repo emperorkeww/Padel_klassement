@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -602,6 +603,16 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
     });
   });
 
+  // #943: op 390px wrapte de meta-regel van een rij met veel matches (tier +
+  // vormreeks + record), waardoor die rij hoger werd dan zijn buren en het
+  // lijstritme brak. Het record valt daar weg; de rest blijft op één regel.
+  it("houdt de lijstrijen op telefoonbreedte even hoog", () => {
+    const css = readFileSync("src/features/standings/Leaderboard.css", "utf8");
+    const smal = css.slice(css.indexOf("@media (max-width: 480px)"));
+    expect(smal).toMatch(/\.ranklist__meta\s*\{[^}]*flex-wrap:\s*nowrap/);
+    expect(smal).toMatch(/\.ranklist__record\s*\{\s*display:\s*none/);
+  });
+
   // #913: de chip bestond alleen op de Spelers-tab, terwijl je jezelf op de
   // kaartenwand en tussen de divisies net zo goed kwijt bent.
   describe("'jouw positie' op elke spelersweergave (#913)", () => {
@@ -654,9 +665,14 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
           renderPage();
           await screen.findAllByText(/alice anders/i);
           fireEvent.click(screen.getByRole("tab", { name: patroon }));
-          expect(
-            await screen.findByRole("button", { name: /jouw positie/i }),
-          ).toBeInTheDocument();
+          const chip = await screen.findByRole("button", {
+            name: /jouw positie/i,
+          });
+          expect(chip).toBeInTheDocument();
+          // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942):
+          // dezelfde die de zwevende logknop op Matches draagt. Anders lag de
+          // chip tijdens het scrollen over de rating van de rij eronder.
+          expect(chip).toHaveClass("zwevende-actie");
         } finally {
           herstel();
         }

@@ -313,6 +313,18 @@
 .ranklist__record {
   white-space: nowrap;
 }
+/* Op telefoonbreedte past tier + vormreeks + record niet op één regel, en dan
+   wrapte de meta-regel: die rij werd een regel hoger dan zijn buren en het
+   lijstritme brak (#943). Het record is hier het minst dringende getal — het
+   staat voluit in de tabel op een breed scherm en op het profiel. */
+@media (max-width: 480px) {
+  .ranklist__meta {
+    flex-wrap: nowrap;
+  }
+  .ranklist__record {
+    display: none;
+  }
+}
 .ranklist__end {
   grid-column: 4;
   grid-row: 1 / 3;
@@ -356,11 +368,9 @@
 }
 
 /* ---------- "Jouw positie"-knop ---------- */
+/* Plaatsing en uitwijkgedrag komen sinds #942 van .zwevende-actie (ui.css),
+   gedeeld met de "+ Match loggen"-knop op Matches. */
 .me-chip {
-  position: fixed;
-  right: var(--sp-4);
-  bottom: var(--sp-6);
-  z-index: 15;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -374,8 +384,10 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: background 0.15s, transform 0.1s;
+  /* De transform-overgang (ook die van de hover-lift) komt van
+     .zwevende-actie; twee transition-regels op één element vechten anders om
+     dezelfde eigenschap. */
+  transition: background 0.15s;
 }
 .me-chip:hover {
   background: var(--accent-hover);
@@ -434,13 +446,6 @@
 .standings-switch {
   container-type: inline-size;
   container-name: standings;
-}
-
-/* Boven de vaste onderbalk blijven (die verschijnt bij de shell-switch ≤720px). */
-@media (max-width: 720px) {
-  .me-chip {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* Kop van het klassement: tabs links, en rechts één menuknop die zoeken én

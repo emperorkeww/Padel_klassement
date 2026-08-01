@@ -244,49 +244,64 @@ export function DashboardHero({
                   : "Kom in beweging en speel je eerste match om het klassement te bestormen!"}
             </p>
           )}
-          {(crests.length > 0 || earnedBadges.length > 0) && (
-            <div className="hero__titles" aria-label="Jouw titels en badges">
-              {badge && (
-                <span className="hero__badge-slot">
-                  <HeroCrest
-                    variant={badge.variant}
-                    emoji={badge.emoji}
-                    icoon={badge.icoon}
-                    label={badge.label}
-                    uitleg={badge.uitleg}
-                    prominent
-                  />
-                  {/* Het lakzegel van de Dictator hoort naast zijn badge, niet in
-                      de decoratielaag — die weet niet waar de rij afbreekt. */}
-                  <HeroBadgeSieraad permanent={thema} />
-                </span>
-              )}
-              {chips.map((c) => (
-                <HeroCrest
-                  key={c.variant}
-                  variant={c.variant}
-                  emoji={c.emoji}
-                  icoon={c.icoon}
-                  label={c.label}
-                  uitleg={c.uitleg}
-                />
-              ))}
-              {earnedBadges.length > 0 && (
-                <BadgeStrip badges={earnedBadges} to={`/spelers/${myId}`} />
-              )}
-            </div>
-          )}
-          {briefing && !loading && (
-            <p className="hero__coach" role="note">
-              <CoachAvatar size={26} className="hero__coach-face" />
-              <span>
-                <span className="hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
-                {briefing}
-              </span>
-            </p>
-          )}
         </div>
+        {/* Titels en badges staan sinds #939 op de volle kaartbreedte in plaats
+            van in de tekstkolom naast de avatar. Daar was op 390px ~278px
+            beschikbaar, en dan pakt élke editie-chip een eigen regel — vier
+            statussen werden vier regels, en de badgerij brak na vijf cirkels. */}
+        {(crests.length > 0 || earnedBadges.length > 0) && (
+          <div className="hero__titles" aria-label="Jouw titels en badges">
+            {badge && (
+              <span className="hero__badge-slot">
+                <HeroCrest
+                  variant={badge.variant}
+                  emoji={badge.emoji}
+                  icoon={badge.icoon}
+                  label={badge.label}
+                  uitleg={badge.uitleg}
+                  prominent
+                />
+                {/* Het lakzegel van de Dictator hoort naast zijn badge, niet in
+                    de decoratielaag — die weet niet waar de rij afbreekt. */}
+                <HeroBadgeSieraad permanent={thema} />
+              </span>
+            )}
+            {/* De overige titels in één eigen rij. Op mobiel krimpen ze daar tot
+                hun icoon (CSS): het label blijft in de DOM en in de tooltip, dus
+                kleur is nog steeds niet de enige indicator — alleen de dominante
+                editie hoeft zijn naam voluit te dragen. */}
+            {chips.length > 0 && (
+              <div className="hero__crests">
+                {chips.map((c) => (
+                  <HeroCrest
+                    key={c.variant}
+                    variant={c.variant}
+                    emoji={c.emoji}
+                    icoon={c.icoon}
+                    label={c.label}
+                    uitleg={c.uitleg}
+                  />
+                ))}
+              </div>
+            )}
+            {earnedBadges.length > 0 && (
+              <BadgeStrip badges={earnedBadges} to={`/spelers/${myId}`} />
+            )}
+          </div>
+        )}
       </div>
+      {/* De coachbubbel is een eigen blok onder de begroeting, en op mobiel
+          verhuist hij met `order` naar ná de knoppen (#939): zijn commentaar
+          duwde de primaire actie onder de vouw. */}
+      {briefing && !loading && (
+        <p className="hero__coach" role="note">
+          <CoachAvatar size={26} className="hero__coach-face" />
+          <span>
+            <span className="hero__coach-name">{COMMENTATOR.naam}:</span>{" "}
+            {briefing}
+          </span>
+        </p>
+      )}
       <div className="hero__divide" aria-hidden="true" />
       <div className="hero__foot">
         {form.length > 0 && (

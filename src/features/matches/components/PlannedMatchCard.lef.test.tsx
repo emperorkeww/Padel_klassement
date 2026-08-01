@@ -27,6 +27,7 @@ import { invalidateAll } from "@/lib/supabase/queryCache";
 import { playDay } from "@/features/matches/stakes";
 import { MATCH_PLANNED, PROFILES, TABLES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
+import { openPlannedCards } from "@/test/plannedCard";
 
 // Los 1v1-team van Bob, zodat er een match bestaat waarin Alice niet meespeelt.
 const T_B = {
@@ -103,7 +104,8 @@ beforeEach(() => {
 describe("<PlannedMatchCard /> lef-tip", () => {
   it("toont wat er op het spel staat en zet de inzet weg", async () => {
     renderCard();
-    // Open tegel (geen accordeon meer): de uitleg staat er direct.
+    await openPlannedCards();
+    // Open tegel binnen de uitgeklapte kaart: de uitleg staat er direct.
     expect(
       await screen.findByText(/verlies je, dan telt je verlies net zo hard/i),
     ).toBeInTheDocument();
@@ -117,6 +119,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
   it("trekt een bestaande inzet weer in", async () => {
     setTables({ match_stakes: [stakeRij(GEPLAND.id, "p1")] });
     renderCard();
+    await openPlannedCards();
     // De kopregel van de tegel verraadt de eigen inzet meteen.
     expect(await screen.findByText(/jouw lef staat ingezet/i)).toBeInTheDocument();
     await userEvent.click(
@@ -132,6 +135,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       ),
     });
     renderCard();
+    await openPlannedCards();
     expect(
       await screen.findByText(/nog 6 matches te gaan/i),
     ).toBeInTheDocument();
@@ -148,6 +152,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       match_stakes: [stakeRij(begonnen.id, "p2")],
     });
     renderCard(begonnen);
+    await openPlannedCards();
     expect(
       await screen.findByText(/lef getoond door bob/i),
     ).toBeInTheDocument();
@@ -163,6 +168,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     } as Match;
     setTables({ matches: [anderen] });
     renderCard(anderen);
+    await openPlannedCards();
     // De toto-tegel hoort er wel te staan (het blijft een groepsmatch).
     await screen.findByText(/🎯 toto/i);
     expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
@@ -256,6 +262,7 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
 
   it("blokkeert de andere kaart zodra je ergens inzet, en geeft hem weer vrij zodra je intrekt", async () => {
     renderTwee();
+    await openPlannedCards();
     const [a, b] = await tegels();
     await waitFor(() => expect(knop(b)).toBeEnabled());
 
@@ -278,6 +285,7 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
 
   it("laat de kaart waarop je inzet zelf ook meteen kloppen", async () => {
     renderTwee();
+    await openPlannedCards();
     const [a] = await tegels();
 
     await userEvent.click(knop(a));

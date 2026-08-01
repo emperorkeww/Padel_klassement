@@ -84,6 +84,14 @@
   background: var(--accent);
 }
 
+/* Het uitgeklapte formulier met zijn context (#941). Eigen grid, want de kaart
+   zelf ziet dit blok als één rij en zou anders zijn eigen gap tussen de delen
+   verliezen. */
+.planned-card__body {
+  display: grid;
+  gap: var(--sp-2);
+}
+
 /* Compacte actiebalk onder de kaart: meta + één primaire actie. */
 .planned-card__actions {
   display: flex;
@@ -400,4 +408,28 @@
 }
 .planned-saved__amount.is-down {
   color: var(--danger);
+}
+/* ---------- Teamnamen op de geplande kaart (#941) ----------
+   De gedeelde .match-card kapt namen af met een ellipsis: daar is één regel per
+   match het punt. Op deze kaart zijn de namen juist de inhoud — je kiest hier
+   wie er speelt en vult hun uitslag in — dus ze wrappen. Op 390px truncateerden
+   ze naar ~10 tekens ("Alice An…", "Bob Boers …"), ook als de naam paste. */
+.planned-card__row .match-card__names span {
+  overflow: visible;
+  white-space: normal;
+}
+/* Smal scherm: de score-stepper zakt naar een eigen regel onder het team. Naast
+   de naam eet hij anders de halve rij op — en dan is er weer geen ruimte. */
+@media (max-width: 480px) {
+  .planned-card__row {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+  .planned-card__row .match-card__side {
+    flex: 1 1 100%;
+  }
+  .planned-card__row .stepper {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
 }
