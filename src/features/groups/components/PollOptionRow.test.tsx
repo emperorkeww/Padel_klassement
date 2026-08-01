@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -91,5 +92,49 @@ describe("<PollOptionRow /> misschien-stemmers (#803)", () => {
     renderRow({ votable: false });
 
     expect(screen.getByText("1 mee · 2?")).toBeInTheDocument();
+  });
+});
+
+// Status en actie droegen allebei een ✓: rechtsboven een rond omlijnd vinkje
+// voor de haalbaarheid, en ernaast nóg een vinkje om mee te stemmen (#946).
+describe("<PollOptionRow /> — status vs. actie (#946)", () => {
+  const PROPOSALS_CSS = readFileSync(
+    "src/features/groups/Proposals.css",
+    "utf8",
+  );
+
+  it("tekent de haalbaarheid als meter, niet als vinkje", () => {
+    renderRow();
+    const status = screen.getByRole("button", { name: /haalbaarheid/i });
+    // Geen tekstteken meer: een getekende ring die vol/half/leeg staat.
+    expect(status).toHaveTextContent("");
+    expect(status.querySelector("svg.poll-state-icon")).toBeInTheDocument();
+    // En de stemknoppen dragen hun eigen tekening.
+    expect(
+      screen.getByRole("button", { name: "Ik kan" }).querySelector("svg"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Kan niet" }).querySelector("svg"),
+    ).toBeInTheDocument();
+  });
+
+  it("laat de selectievulling de afronding van de groep volgen", () => {
+    // Met alleen `overflow: hidden` op de groep hield de gekleurde vulling een
+    // vierkante schouder in de hoek.
+    expect(PROPOSALS_CSS).toMatch(
+      /\.seg__btn:first-child\s*\{\s*border-radius:\s*999px 0 0 999px/,
+    );
+    expect(PROPOSALS_CSS).toMatch(
+      /\.seg__btn:last-child\s*\{\s*border-radius:\s*0 999px 999px 0/,
+    );
+  });
+
+  it("houdt de pijl bij de stap waar hij voor staat", () => {
+    // Als ::after op de vorige stap bleef de pijl bij een wrap op de vorige
+    // regel achter en begon "KLAAR" zonder pijl.
+    expect(PROPOSALS_CSS).toMatch(
+      /\.plan-phases__step:not\(:first-child\)::before\s*\{\s*content:\s*"→"/,
+    );
+    expect(PROPOSALS_CSS).not.toMatch(/\.plan-phases__step:not\(:last-child\)::after/);
   });
 });

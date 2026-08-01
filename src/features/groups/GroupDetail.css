@@ -37,9 +37,18 @@
 .group-head__leden > :not(:first-child) {
   margin-left: -8px;
 }
+/* De "+2" hangt aan de avatarstapel maar plakte tegen de laatste avatar (#946):
+   die stapel schuift zichzelf 8px in, en dat gold ook voor het getal. */
 .group-head__meer {
-  margin-left: var(--sp-1);
+  margin-left: var(--sp-2);
   font-variant-numeric: tabular-nums;
+}
+/* De poll-pil is een eigen mededeling en hoort niet met de ledenrij op één
+   krappe regel te vechten: op telefoonbreedte krijgt hij een eigen regel. */
+@media (max-width: 480px) {
+  .group-head__journey {
+    flex-basis: 100%;
+  }
 }
 /* Zelfde pil als op de hub, maar met eigen tone-klassen: Groups.css laadt
    alleen wanneer de hub gemount is, en op een deeplink naar /groepen/:id
@@ -331,4 +340,22 @@
 .empty-group__hint {
   color: var(--ink-soft);
   margin-bottom: 1.5rem;
+}
+
+/* Terugnavigatie boven de groepskop (#946). Zelfde toon als de andere
+   secundaire ingangen: een link, geen knop — de weg omhoog concurreert niet
+   met de acties van deze pagina. */
+.terug-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+  min-height: 32px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.terug-link:hover {
+  color: var(--accent);
 }

@@ -153,23 +153,74 @@
   justify-content: flex-start;
   gap: var(--sp-2);
 }
+/* ===== Samengevatte vriendschappen (#944) =====
+   Acht identieke rijen met hetzelfde tijdstip zijn een muur; dit is één regel
+   met de gezichten erbij, die de losse rijen alsnog uitklapt. */
+.feed-bundel__kop {
+  width: 100%;
+  border: 1px dashed var(--line-strong);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.feed-bundel.is-open .feed-bundel__kop {
+  border-style: solid;
+  background: var(--surface-2);
+}
+/* Het getal achter de gezichten die niet meer passen. */
+.feed-bundel__rest {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.feed-bundel__hint {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+}
+.feed-bundel__leden {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--sp-4);
+  border-left: 2px solid var(--line);
+  margin-left: var(--sp-4);
+}
+
+/* De ⓘ naast Rudy's naam was een glyfje op --fs-xs met opacity 0.7 en geen
+   knopvorm: nauwelijks te zien en niet te herkennen als knop (#944). */
 .coach-comment__info {
   position: relative;
   flex-shrink: 0;
   border: none;
   background: none;
   padding: 0;
-  font-size: var(--fs-xs);
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-sm);
   line-height: 1;
   color: var(--ink-soft);
   cursor: pointer;
-  opacity: 0.7;
 }
-/* Onzichtbaar groter tapvlak rond het ⓘ-glyfje (richtlijn ~44px). */
+/* Onzichtbaar groter tapvlak (richtlijn ~44px). */
 .coach-comment__info::after {
   content: "";
   position: absolute;
-  inset: -16px;
+  inset: -11px;
 }
 .coach-comment__info:hover {
   color: var(--coach);
@@ -187,32 +238,62 @@
     radial-gradient(120% 140% at 0% 0%, var(--coach-soft) 0%, transparent 60%),
     var(--surface);
 }
+/* Sluitknop als echte knop (#944): een kale ✕-letter zonder vorm leest niet als
+   iets waar je op kunt drukken. Rond, met een rand, en groot genoeg om te
+   raken zonder onzichtbaar hulpvlak. */
 .coach-intro__close {
   position: absolute;
   top: var(--sp-2);
   right: var(--sp-2);
-  border: none;
-  background: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
   cursor: pointer;
   color: var(--ink-soft);
-  font-size: var(--fs-sm);
   line-height: 1;
 }
-/* Onzichtbaar groter tapvlak rond het kleine kruisje (richtlijn ~44px). */
+.coach-intro__close:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+/* Onzichtbaar extra tapvlak: 32px is zichtbaar comfortabel, 44px is de
+   richtlijn voor het doel zelf. */
 .coach-intro__close::after {
   content: "";
   position: absolute;
-  inset: -14px;
+  inset: -6px;
+}
+/* Het volledige verhaal achter een uitklapper; de teaser erboven zegt al wat
+   je moet weten. */
+.coach-intro__meer {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.coach-intro__meer > summary {
+  cursor: pointer;
+  color: var(--coach);
+  font-weight: 700;
+}
+.coach-intro__meer .coach-intro__text {
+  margin-top: var(--sp-2);
+  margin-bottom: 0;
 }
 .coach-intro__body {
   min-width: 0;
 }
 .coach-intro__title {
-  margin: 0 0 var(--sp-1);
+  margin: 0 var(--sp-6) var(--sp-1) 0;
   font-size: var(--fs-md);
   color: var(--coach);
 }
 .coach-intro__text {
+  /* Ruimte rechts voor de sluitknop: zonder deze marge loopt de eerste regel
+     eronderdoor. De titel houdt hem al via .coach-intro__title. */
   margin: 0 0 var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--ink-soft);

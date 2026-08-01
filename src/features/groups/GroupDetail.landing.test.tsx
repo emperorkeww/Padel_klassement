@@ -94,8 +94,16 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   it("toont de terugknop naar het overzicht ook met één groep", async () => {
     renderPage();
     await screen.findByRole("tablist");
-    const terug = await screen.findByRole("link", { name: /← alle groepen/i });
+    // De pijl is sinds #946 decoratie (aria-hidden), dus hij zit niet meer in
+    // de toegankelijke naam — een schermlezer las "← alle groepen" voor.
+    const terug = await screen.findByRole("link", { name: /^alle groepen$/i });
     expect(terug).toHaveAttribute("href", "/spelen");
+    // En hij staat bóven de groepskop in plaats van tussen de acties eronder.
+    expect(terug).toHaveClass("terug-link");
+    const kop = document.querySelector(".group-head")!;
+    expect(
+      terug.compareDocumentPosition(kop) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("toont de terugknop ook bij meerdere groepen", async () => {
@@ -105,7 +113,7 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ];
     renderPage();
     expect(
-      await screen.findByRole("link", { name: /← alle groepen/i }),
+      await screen.findByRole("link", { name: /^alle groepen$/i }),
     ).toBeInTheDocument();
   });
 

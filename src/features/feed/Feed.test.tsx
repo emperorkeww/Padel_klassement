@@ -47,6 +47,14 @@ function renderPage() {
 }
 
 describe("<Feed />", () => {
+  /** Drie of meer opeenvolgende vriendschappen staan sinds #944 samengevat
+   *  achter één regel; de fixtures leveren er precies drie. */
+  async function openVriendschapsbundel() {
+    fireEvent.click(
+      await screen.findByRole("button", { name: /nieuwe vriendschappen/i }),
+    );
+  }
+
   it("toont matches en vriendschappen chronologisch met dag-kopjes", async () => {
     renderPage();
     expect(
@@ -59,7 +67,9 @@ describe("<Feed />", () => {
       name: /recente gebeurtenissen/i,
     });
     expect(list).toHaveTextContent(/alice/i);
-    // … en alice' geaccepteerde vriendschappen staan er als items tussen.
+    // … en alice' geaccepteerde vriendschappen staan er samengevat tussen,
+    // met de losse regels één tik verderop (#944).
+    await openVriendschapsbundel();
     expect(
       (await screen.findAllByText(/zijn nu vrienden/i)).length,
     ).toBeGreaterThan(0);
@@ -75,6 +85,7 @@ describe("<Feed />", () => {
 
     // … na "Sociaal" alleen nog vriendschapsregels (Alice heet daar "Jij").
     fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    await openVriendschapsbundel();
     expect(screen.getAllByText(/zijn nu vrienden/i).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("list", { name: /recente gebeurtenissen/i }),
@@ -240,6 +251,7 @@ describe("<Feed />", () => {
 
   it("linkt een vriendschap door naar het spelersprofiel", async () => {
     renderPage();
+    await openVriendschapsbundel();
     const items = await screen.findAllByRole("link", {
       name: /zijn nu vrienden/i,
     });
