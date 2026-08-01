@@ -9,6 +9,14 @@ import {
   eveningPoster,
 } from "@/features/groups/eveningPoster";
 import { eveningSummary } from "@/features/feed/eveningSummary";
+import { laadAvatar } from "@/lib/utils/futKaartCanvas";
+import {
+  laadKaartMaster,
+  masterVoor,
+} from "@/features/rating/components/kaartMasters";
+import { getPlayerRatings } from "@/features/standings/ratingsApi";
+import { laadEditieContext } from "@/features/standings/editieContext";
+import { vsKaartVoor } from "@/features/profiles/compare";
 import { displayName } from "@/features/profiles/api";
 import { teamLabel } from "@/features/matches/api";
 import { dateInZone } from "@/lib/utils/time";
@@ -61,6 +69,14 @@ export function ShareEvening({
     setBusy(true);
     try {
       const naam = (playerId: string) => displayName(profiles[playerId]);
+      // Ratings en editie-context pas hier ophalen, net als de speeldagposter:
+      // de Vandaag-tab hoeft ze niet bij elke render te kennen en alles zit
+      // achter cached(). Faalt het, dan valt de poster terug op de versie
+      // zonder kaart — een samenvatting delen is belangrijker dan de trofee.
+      const [ratings, edities] = await Promise.all([
+        getPlayerRatings(),
+        laadEditieContext(),
+      ]).catch(() => [null, null] as const);
       const poster = eveningPoster(summary, {
         groepsnaam: groupName,
         datum: avondDatumLabel(today),
@@ -71,13 +87,43 @@ export function ShareEvening({
           profiles,
           naam,
         }),
+        kaart: (playerId) => {
+          const profile = profiles[playerId];
+          if (!profile || !ratings || !edities) return null;
+          const kaart = vsKaartVoor({
+            id: playerId,
+            profile,
+            naam: naam(playerId),
+            ratings,
+            edities,
+          });
+          return {
+            name: kaart.naam,
+            avatarUrl: kaart.avatarUrl,
+            rating: kaart.rating,
+            tier: kaart.tier,
+            editie: kaart.editie,
+            editieTekst: kaart.editieTekst,
+          };
+        },
       });
-      const outcome = await sharePng((ctx) => drawEveningPoster(ctx, poster), {
-        width: W,
-        height: H,
-        filename: "vamos-avond.png",
-        title: "Vamos! avond",
-      });
+      // Profielfoto en rastermaster van de winnaar vooraf laden — het canvas
+      // tekent synchroon.
+      const [avatarImg, master] = await Promise.all([
+        laadAvatar(poster.winnaar?.avatarUrl ?? null),
+        laadKaartMaster(
+          masterVoor(poster.winnaar?.tier?.key, poster.winnaar?.editie),
+        ),
+      ]);
+      const outcome = await sharePng(
+        (ctx) => drawEveningPoster(ctx, poster, avatarImg, master),
+        {
+          width: W,
+          height: H,
+          filename: "vamos-avond.png",
+          title: "Vamos! avond",
+        },
+      );
       if (outcome === "clipboard")
         toast.success("Poster gekopieerd naar klembord.");
       if (outcome === "download") toast.success("Poster gedownload.");
