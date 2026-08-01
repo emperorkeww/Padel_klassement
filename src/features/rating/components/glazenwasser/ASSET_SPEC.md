@@ -35,7 +35,8 @@ geplaatst.
 | `gw-badge.webp` | onderschild met raamicoon | 0,345 · 0,808 · 0,289 × 0,186 |
 | `gw-trekker-onder.webp` | tweede trekker | 0,337 · 0,740 · 0,404 × 0,207 |
 | `gw-schuim-links/rechts.webp` | ijs en schuim over de bovenhoeken | −0,001 / 0,693 · −0,026 |
-| `gw-glas.webp` | natte glaswand: strepen, condens, druppels | 0,109 · 0,052 · 0,780 × 0,582 |
+| `gw-glas.webp` | geweven glastegel (92 × 160 px schoon glas) — sinds de referentiepass alleen nog weef-ingrediënt voor de tekstvulling in de ring | — (tegel) |
+| `gw-glasvlak.webp` | het volledige natte glasvlak op kaartmaat: toonveld, condens, druppels en waterstrepen, samengesteld uit uitsluitend schone referentiedelen (`glasvlak()`) | 0 · 0 · 1 × 1 (kaartfracties) |
 
 Drie regels die het script afdwingt en die bij een volgende kaart terugkomen:
 
@@ -57,6 +58,22 @@ De plek van elk onderdeel op de kaart staat in `glazenwasserLayout.ts`; de `doos
 hierboven is het vertrekpunt, `schaal` en `verzet` daarin zijn de bewuste
 afwijkingen (grotere crest, lagere trekker, emmer verder over de rand).
 
+### De referentiepass: glasinterieur uit de ring, glasvlak samengesteld
+
+De ring droeg eerst het hele glasinterieur van de referentie mee. Dat interieur
+zit vol ingebakken inhoud (rating, avatarcirkel, naam, statblok) en de vier
+weggeknipte voorwerpen; elke vulling daarvan liet bleke wolken en donkere
+schimmen achter — de "faded / washed out"-vlekken en de egale plek naast de
+PA-badge. Sinds de referentiepass:
+
+- houdt de ring binnen de glasrand alleen een **natte randband** over (condens en
+  druppels waar het glas de lijst raakt), met de vul-zones ook in die band
+  gedoofd;
+- komt het glas zelf uit **`gw-glasvlak.webp`**: één dekkend vlak op kaartmaat,
+  samengesteld uit uitsluitend schone referentiedelen — toonveld (lage
+  frequenties van het echte glas), honderden condens- en druppel-patches en
+  getrokken verticale waterstrepen, alles met vaste seed (`glasvlak()`).
+
 ## De master (`glazenwasser-master.webp`)
 
 > Deze master komt sinds de artworkpass uit `scripts/glazenwasser-onderdelen.py`
@@ -64,8 +81,11 @@ afwijkingen (grotere crest, lagere trekker, emmer verder over de rand).
 > opgebouwd uit dezelfde ring en dezelfde losse voorwerpen als de brede kaart,
 > zodat wat spelers in de app zien hetzelfde artwork is. Het kaartvak in dit doek
 > heeft dezelfde 100:139 als het stelsel van de ring, dus de lagen gaan er één op
-> één in. Eén verschil met de brede kaart: hier dooft de ring naar het midden toe
-> uit, want de compacte kaart tekent zijn rating, naam en divisieregel eróver.
+> één in. Eén verschil met de brede kaart: hier wordt de ring op de glasrand
+> afgesneden, want de compacte kaart tekent zijn rating, naam en divisieregel
+> eróver. De snede volgt sinds de referentiepass de bínnenkant van de natte
+> randband, zodat ook het klassement de condens- en druppelrand tegen de lijst
+> erft.
 
 De compacte kaart in het klassement blijft de drie-lagenbreakout gebruiken: één
 master op drie diepten, met `glazenwasser-front-mask.svg` als voorselectie. Canvas

@@ -124,7 +124,7 @@ import DOZEN from "./assets/gw-onderdelen.json";
 
 export type GwBron =
   | "ring"
-  | "glas"
+  | "glasvlak"
   | "trekker-boven"
   | "ophanging"
   | "emmer"
@@ -140,15 +140,17 @@ const doos = (naam: GwBron) =>
   DOZEN[naam].doos as unknown as readonly [number, number, number, number];
 
 export const GW_LAGEN: readonly GwLaag[] = [
-  // Natte glaswand op het kaartvlak: strepen, condens en druppels. Een
-  // herhalende tegel, geen uitsnede — zie `tegel` hierboven. Niet uitrekken
-  // dus: de tegel houdt op elke kaartmaat dezelfde korrel.
+  // Het natte glasvlak: één samengesteld, dekkend vlak op kaartmaat —
+  // toonveld, condens, druppels en waterstrepen uit schone referentiedelen
+  // (scripts/glazenwasser-onderdelen.py, `glasvlak()`). Dit verving de kleine
+  // geweven tegel: die las op kaartmaat als behang en droeg geen strepen. Al
+  // in kaartfracties opgebouwd, dus `voorbewerkt`.
   {
     naam: "wetGlassSurface",
-    bron: "glas",
-    doel: [0.02, 0.03, 0.96, 0.95],
+    bron: "glasvlak",
+    doel: [0, 0, 1, 1],
     clip: true,
-    tegel: true,
+    voorbewerkt: true,
     z: 30,
   },
   // De hele omlijsting als één illustratie: lijst, ijs, flankdruppels, schuim,

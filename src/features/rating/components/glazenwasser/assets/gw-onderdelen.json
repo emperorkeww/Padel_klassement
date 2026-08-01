@@ -38,21 +38,40 @@
     "tegel": true,
     "overlap": {}
   },
+  "glasvlak": {
+    "doos": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+    ],
+    "pixels": [
+      0,
+      0,
+      880,
+      1223
+    ],
+    "alfa": 1.0,
+    "dekking": 1.0,
+    "kB": 41,
+    "voorbewerkt": true,
+    "overlap": {}
+  },
   "onderschild": {
     "doos": [
       0.3251,
-      0.7424,
+      0.7469,
       0.4267,
-      0.2765
+      0.272
     ],
     "pixels": [
       361,
-      945,
+      950,
       416,
-      308
+      303
     ],
-    "alfa": 0.3633,
-    "dekking": 0.4042,
+    "alfa": 0.3674,
+    "dekking": 0.4085,
     "kB": 56,
     "overlap": {}
   },
@@ -89,9 +108,9 @@
       1072,
       1533
     ],
-    "alfa": 0.6368,
-    "dekking": 0.6336,
-    "kB": 364,
+    "alfa": 0.1783,
+    "dekking": 0.1749,
+    "kB": 295,
     "overlap": {},
     "voorbewerkt": true
   },

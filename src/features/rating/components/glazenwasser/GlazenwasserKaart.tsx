@@ -16,7 +16,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
 import ring from "./assets/gw-ring.webp";
-import glas from "./assets/gw-glas.webp";
+import glasvlak from "./assets/gw-glasvlak.webp";
 import trekkerBoven from "./assets/gw-trekker-boven.webp";
 import ophanging from "./assets/gw-ophanging.webp";
 import emmer from "./assets/gw-emmer.webp";
@@ -36,7 +36,7 @@ import "./GlazenwasserKaart.css";
 /** De losse onderdelen. Eén plek waar een sleutel aan een bestand hangt. */
 const GW_BRONNEN: Record<GwBron, string> = {
   ring,
-  glas,
+  glasvlak,
   "trekker-boven": trekkerBoven,
   ophanging,
   emmer,
