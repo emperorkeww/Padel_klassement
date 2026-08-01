@@ -1527,6 +1527,17 @@ Wat de canvas doet met dat master:
   tussen master en ornament is meegenomen (de On-Fire-crest ligt erboven, de
   storm eronderdoor niet).
 
+Dezelfde beweging is gemaakt voor de twee divisies met een eigen full-bleed
+layout (Ballenraper en "Sletje van de baan"). Die dragen niet de generieke
+FUT-stapel maar een compositie uit `DivisieKaartLayout`; de posters gaven die
+spelers tot #895 een gewone schildkaart. `divisieKaartCanvas.ts` tekent nu
+dezelfde zones en hetzelfde plaatwerk — de geometrie komt uit diezelfde layout,
+dus dát is één bron. Alleen de zetting (kleur, korps, gewicht, spatiering) staat
+apart, en `divisieKaartCanvas.test.ts` houdt die tegen DivisieVoorkant.css en
+SlofKaart.css. De statregels rekenen op een `SpelerStatBron`: de profielposter
+levert die inclusief vorm, de speeldag- en avondposter uit de serverstand (dus
+zonder vorm — de regels die daarop rekenen tonen dan een streepje).
+
 Twee dingen blijven staan:
 
 - **Terugval op de vector.** Laadt het artwork niet (offline, blokkerende

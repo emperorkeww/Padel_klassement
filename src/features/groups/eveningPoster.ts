@@ -11,6 +11,7 @@
 import { canvasPalette, ellipsize, rrect, wrapLines } from "@/lib/utils/shareImage";
 import { drawKaart, type KaartData } from "@/features/profiles/profielPoster";
 import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
+import type { GeladenOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 import { coachAvond, type AvondCtx } from "@/features/feed/coachEvening";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import type { EveningSummary } from "@/features/feed/eveningSummary";
@@ -244,6 +245,9 @@ export function drawEveningPoster(
   winnaarAvatar: HTMLImageElement | null = null,
   /** Rastermaster van de winnaarskaart (#895), of null. */
   winnaarMaster: GeladenMaster | null = null,
+  /** Artwork van zijn divisielayout (#895), voor de twee divisies die er een
+   *  hebben. */
+  winnaarOnderdelen: GeladenOnderdelen | null = null,
 ) {
   const c = canvasPalette();
 
@@ -390,7 +394,16 @@ export function drawEveningPoster(
   if (poster.winnaar) {
     const kx = M + CW - KAART_W;
     const ky = sy + LABEL_H + Math.max(0, (kolomH - KAART_H) / 2);
-    drawKaart(ctx, poster.winnaar, winnaarAvatar, kx, ky, KAART_W, winnaarMaster);
+    drawKaart(
+      ctx,
+      poster.winnaar,
+      winnaarAvatar,
+      kx,
+      ky,
+      KAART_W,
+      winnaarMaster,
+      winnaarOnderdelen,
+    );
   }
 
   if (ookRegels.length > 0) {

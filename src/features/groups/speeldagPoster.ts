@@ -12,6 +12,7 @@ import qrcode from "qrcode-generator";
 import { canvasPalette, ellipsize, rrect, wrapLines } from "@/lib/utils/shareImage";
 import { drawKaart, type KaartData } from "@/features/profiles/profielPoster";
 import type { GeladenMaster } from "@/features/rating/components/kaartMasters";
+import type { GeladenOnderdelen } from "@/features/rating/components/layouts/divisieKaartCanvas";
 
 export const POSTER_W = 1080;
 export const POSTER_H = 1350;
@@ -170,6 +171,7 @@ export function drawSpeeldagPoster(
   poster: SpeeldagPoster,
   avatars: (HTMLImageElement | null)[],
   masters: (GeladenMaster | null)[] = [],
+  onderdelen: (GeladenOnderdelen | null)[] = [],
 ) {
   const c = canvasPalette();
 
@@ -256,6 +258,7 @@ export function drawSpeeldagPoster(
       startY + rij * (kaartHoogte + GAP),
       kaartBreedte,
       masters[i] ?? null,
+      onderdelen[i] ?? null,
     );
   });
 
