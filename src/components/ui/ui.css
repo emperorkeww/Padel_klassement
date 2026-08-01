@@ -287,7 +287,8 @@ textarea {
   border: 1px solid var(--coach-line);
   border-radius: 99px;
   background: var(--coach-soft);
-  color: var(--coach-ink);
+  /* Zelfde correctie als de bounty-banner (#941): tekst op het zachte vlak. */
+  color: var(--coach-diep);
 }
 .bounty-mark__waarde {
   font-size: 0.85em;

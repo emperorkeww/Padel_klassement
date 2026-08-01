@@ -61,7 +61,7 @@ export function MatchCalendarButton({
         aria-haspopup={m.played_at ? "dialog" : undefined}
         onClick={() => (m.played_at ? setOpen(true) : addToCalendar(90))}
       >
-        <span aria-hidden="true">📅</span>
+        <IconAgenda />
       </button>
       {m.played_at && (
         <Sheet
@@ -80,6 +80,29 @@ export function MatchCalendarButton({
         </Sheet>
       )}
     </>
+  );
+}
+
+/** Agenda-icoon in de lijnstijl van de app (#941). De knop droeg een 📅-emoji,
+ *  en die viel uit de toon naast de getekende iconen van de navigatie — en valt
+ *  bovendien per platform anders uit. Zelfde maat en streekdikte als
+ *  DashboardLayout's iconenset. */
+function IconAgenda() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
   );
 }
 

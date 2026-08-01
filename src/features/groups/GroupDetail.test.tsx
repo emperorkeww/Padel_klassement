@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { openPlannedCards } from "@/test/plannedCard";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -417,6 +418,8 @@ describe("<GroupDetail />", () => {
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
+    // De invoer zit sinds #941 achter de uitklapknop van de kaart.
+    await openPlannedCards();
     const inputA = await screen.findByLabelText(
       /^score alice anders & bob boers$/i,
     );

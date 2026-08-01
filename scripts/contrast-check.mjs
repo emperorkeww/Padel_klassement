@@ -57,6 +57,7 @@ const PAIRS = [
   ["danger", "surface", 4.5, "verlies-tekst op kaart"],
   ["danger", "danger-soft", 4.5, "verlies-tekst op verliesvlak"],
   ["warn", "warn-soft", 4.5, "waarschuwing op waarschuwingsvlak"],
+  ["coach-diep", "coach-soft", 4.5, "coach/bounty-tekst op coachvlak (#941)"],
   ["slof", "slof-soft", 3.0, "slof-tierbadge (groot/UI)"],
   ["karton", "karton-soft", 3.0, "karton-tierbadge (groot/UI)"],
   ["hout", "hout-soft", 3.0, "hout-tierbadge (groot/UI)"],

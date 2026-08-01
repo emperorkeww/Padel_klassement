@@ -11,7 +11,9 @@
   border-left: 3px solid var(--coach);
   border-radius: var(--radius-sm);
   background: var(--coach-soft);
-  color: var(--coach-ink);
+  /* --coach-ink is de tekst op de vólle --coach; op dit zachte vlak was dat in
+     het donkere thema bijna-zwart op donkerbruin (~1,2:1) — zie #941. */
+  color: var(--coach-diep);
   font-size: var(--fs-xs);
   line-height: 1.45;
 }
