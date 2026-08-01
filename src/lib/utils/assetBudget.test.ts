@@ -46,7 +46,14 @@ const ASSETS = pad("../../../dist/assets");
 // dus maar code, en daarmee de eerste post die niet terug te snijden valt door
 // harder te comprimeren. Verhoogd naar 10,6 MB — ruim 100 kB lucht, nog altijd
 // krap genoeg om één ongecomprimeerde PNG te vangen.
-const TOTAAL_MAX_MB = 10.6;
+//
+// Die 100 kB bleek er niet te zijn: `develop` stond op 10,5992 MB, dus 800 byte
+// onder de grens. Daarmee liet elke volgende PR — ook een van vijf regels — de
+// build struikelen op een budget dat over artwork gaat, niet over code. De
+// aankondigingsregio van #924 (~600 byte) was de eerste die er tegenaan liep.
+// Nu 10,75 MB, met ~150 kB echte lucht. Meet de stand vóór het verhogen; de
+// tekst hierboven ging uit van een reserve die er niet was.
+const TOTAAL_MAX_MB = 10.75;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;

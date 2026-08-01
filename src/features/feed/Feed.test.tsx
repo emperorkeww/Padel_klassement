@@ -137,6 +137,20 @@ describe("<Feed />", () => {
     );
   });
 
+  // #924: de chip krijgt aria-pressed, maar wát het filter oplevert hoorde je
+  // nergens — de lijst wisselt geluidloos.
+  it("kondigt de uitkomst van een filterwissel aan", async () => {
+    renderPage();
+    await screen.findByRole("group", { name: /feed filteren/i });
+
+    // Bij het laden blijft de regio stil.
+    const regios = screen.getAllByRole("status");
+    expect(regios.some((r) => /filter/i.test(r.textContent ?? ""))).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sociaal" }));
+    expect(await screen.findByText(/^Filter Sociaal: .* berichten\.$/)).toBeInTheDocument();
+  });
+
   it("wist een actief filter via de wis-knop én via de chip zelf", async () => {
     renderPage();
     await screen.findByRole("group", { name: /feed filteren/i });

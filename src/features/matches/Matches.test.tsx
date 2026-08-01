@@ -256,6 +256,32 @@ describe("<Matches />", () => {
     }
   });
 
+  // #924: de historie krimpt bij het filteren zonder dat iets dat meldt.
+  it("kondigt aan hoeveel matches het filter overlaat", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },
+      {
+        ...MATCH_DONE,
+        id: "oud",
+        score_a: 1,
+        score_b: 6,
+        played_at: "2020-01-05T18:00:00.000Z",
+        created_at: "2020-01-05T18:00:00.000Z",
+      },
+    ]);
+    try {
+      renderPage();
+      await screen.findByText("6–3");
+
+      await userEvent.selectOptions(screen.getByLabelText("Periode"), "7d");
+      expect(
+        await screen.findByText(/1 match in de historie\./),
+      ).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
   it("leest het periodefilter uit de URL", async () => {
     const herstel = metMatches([
       { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },

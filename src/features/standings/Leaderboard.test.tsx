@@ -207,6 +207,24 @@ describe("<Leaderboard />", () => {
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
   });
 
+  // #924: zoeken snoeide de lijst geluidloos — de uitkomst hoorde je nergens.
+  it("kondigt aan hoeveel spelers er na het zoeken overblijven", async () => {
+    renderPage();
+    await screen.findAllByText(/carol claes/i);
+
+    fireEvent.change(screen.getByLabelText("Zoek een speler"), {
+      target: { value: "carol" },
+    });
+    expect(await screen.findByText(/1 speler in de lijst\./)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Zoek een speler"), {
+      target: { value: "zzzzz" },
+    });
+    expect(
+      await screen.findByText(/geen spelers in de lijst\./i),
+    ).toBeInTheDocument();
+  });
+
   it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
     renderPage();
     await screen.findAllByText("Wannabe III");

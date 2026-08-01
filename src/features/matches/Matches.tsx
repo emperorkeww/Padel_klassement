@@ -4,6 +4,8 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { EmptyState } from "@/ui/EmptyState";
+import { Aankondiging } from "@/ui/Aankondiging";
+import { aantalTekst } from "@/lib/utils/format";
 import { MatchListSkeleton } from "@/ui/Skeleton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
@@ -192,6 +194,13 @@ export function Matches() {
         periode={periode}
         onPeriode={(p: Periode) => patchParam("periode", p)}
         onWis={wisFilters}
+      />
+
+      {/* Filteren op groep of periode herschikt de historie zonder dat iets
+          verraadt hoeveel er overblijft (#924). */}
+      <Aankondiging
+        sleutel={`${groupFilter}|${periode}`}
+        bericht={`${aantalTekst(recent.length, "match", "matches")} in de historie.`}
       />
 
       {/* "Te spelen" verscheen zonder placeholder en duwde de historie omlaag
