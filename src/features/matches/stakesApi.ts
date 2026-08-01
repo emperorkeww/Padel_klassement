@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import type { TablesInsert } from "@/lib/supabase/database.types";
-import type { MatchStake } from "@/features/matches/stakes";
+import { stakeFoutMelding, type MatchStake } from "@/features/matches/stakes";
 
 // Lef-tip (#804): inzetten op geplande groepsmatches. Zelfde cache/RLS-patroon
 // als predictionsApi. play_date is een serverside kolom: de guard-trigger leidt
@@ -55,8 +55,11 @@ export async function setStake(input: {
       player_id: input.playerId,
     } as TablesInsert<"match_stakes">,
   );
-  if (error) throw error;
+  // Ook ná een fout: botst de insert op het dagtegoed, dan klopte het beeld dat
+  // de client had niet meer. Die cache moet hoe dan ook weg, anders blijft de
+  // tegel "dubbel of niets?" aanbieden terwijl je lef al vergeven is.
   invalidate("match-stakes");
+  if (error) throw new Error(stakeFoutMelding(error));
 }
 
 /** Trekt je inzet weer in (kan tot de starttijd). */

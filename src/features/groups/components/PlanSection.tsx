@@ -6,7 +6,7 @@ import type {
   PollVote,
 } from "@/features/groups/pollsApi";
 import { pollOptions } from "@/features/groups/pollLogic";
-import { lockedOptionOf } from "../planFlowLogic";
+import { lockedOptionOf, planRijMeta } from "../planFlowLogic";
 import { shortDay } from "../planPollHelpers";
 import { PollCard } from "./PollCard";
 
@@ -47,6 +47,11 @@ export type PlanSectionProps = {
   spotlightId?: string | null;
   /** Polls waarop deze speler nog niet stemde — krijgen een eigen badge. */
   wachtOpJou?: Set<string>;
+  /** De speeldag waar de kop-actie over gaat (#839): die rij krijgt de
+   *  "volgende"-pil, zodat zichtbaar is waarop de actietekst slaat. */
+  focusId?: string | null;
+  /** Clubdag: voedt "vandaag / over 3 dagen" per rij. */
+  today?: string;
   /** Er staan al rondes klaar voor deze geboekte speeldag (#349). */
   roundsExist?: (poll: PlayPoll) => boolean;
   /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
@@ -68,6 +73,8 @@ export function PlanSection({
   openId,
   spotlightId,
   wachtOpJou,
+  focusId,
+  today,
   roundsExist,
   rondesVandaag,
   onRoundsMade,
@@ -123,7 +130,10 @@ export function PlanSection({
             // "ma 4 aug – do 7 aug" zegt meer dan alleen de eerste dag.
             const wanneer = !eerste
               ? "Nog geen momenten"
-              : chosen || own.length === 1 || !laatste || laatste.id === eerste.id
+              : chosen ||
+                  own.length === 1 ||
+                  !laatste ||
+                  laatste.id === eerste.id
                 ? `${shortDay(eerste.date)} · ${eerste.start_time}`
                 : `${shortDay(eerste.date)} – ${shortDay(laatste.date)}`;
             // Uitgeklapt dragen rij en kaart samen één rand (#892): de <li> is
@@ -140,7 +150,27 @@ export function PlanSection({
                   aria-expanded={expanded}
                   onClick={() => setGekozen(expanded ? "" : p.id)}
                 >
-                  <span className="plan-other__when">{wanneer}</span>
+                  <span className="plan-other__kop">
+                    <span className="plan-other__when">{wanneer}</span>
+                    {/* Waar wacht déze speeldag op? Zonder die regel moest je
+                        elke rij openklappen om ze uit elkaar te houden. */}
+                    {today && (
+                      <span className="plan-other__meta">
+                        {planRijMeta({
+                          poll: p,
+                          options: own,
+                          votes,
+                          aantalLeden: members.length,
+                          today,
+                        })}
+                      </span>
+                    )}
+                  </span>
+                  {p.id === focusId && (
+                    <span className="plan-other__badge is-volgende">
+                      volgende
+                    </span>
+                  )}
                   {wachtOpJou?.has(p.id) && (
                     <span className="plan-other__badge is-jij">
                       jij moet nog stemmen
@@ -153,9 +183,7 @@ export function PlanSection({
                     ⌄
                   </span>
                 </button>
-                {expanded && (
-                  <div className="plan-other__body">{kaart(p)}</div>
-                )}
+                {expanded && <div className="plan-other__body">{kaart(p)}</div>}
               </li>
             );
           })}

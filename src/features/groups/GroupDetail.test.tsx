@@ -7,9 +7,8 @@ import { ToastProvider } from "@/ui/ToastProvider";
 
 vi.mock("@/lib/supabase/client", async () => {
   const { makeSupabaseMock } = await import("@/test/supabaseMock");
-  const { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } = await import(
-    "@/test/fixtures"
-  );
+  const { TABLES, SESSION, MATCH_DONE, MATCH_PLANNED } =
+    await import("@/test/fixtures");
   const { dateInZone } = await import("@/lib/utils/time");
   // Extra poll-optie voor vandaag waar alle vier de leden op "kan" staan,
   // zodat de "Vanavond"-kaart en de eerlijke-teams-generator iets te doen
@@ -18,7 +17,11 @@ vi.mock("@/lib/supabase/client", async () => {
   // De Vandaag-tab toont enkel matches van vandaag (#342); dateer de
   // fixture-matches daarom op de clubdag zodat de rondekaart ze toont.
   const todayMatches = [
-    { ...MATCH_DONE, played_at: `${today}T18:00:00.000Z`, created_at: `${today}T18:00:00.000Z` },
+    {
+      ...MATCH_DONE,
+      played_at: `${today}T18:00:00.000Z`,
+      created_at: `${today}T18:00:00.000Z`,
+    },
     { ...MATCH_PLANNED, created_at: `${today}T18:00:00.000Z` },
   ];
   const tonightOption = {
@@ -62,7 +65,11 @@ function stubPlaytomic() {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const body = String(input).includes("/v1/tenants/")
-        ? { resources: [], opening_hours: {}, address: { timezone: "Europe/Brussels" } }
+        ? {
+            resources: [],
+            opening_hours: {},
+            address: { timezone: "Europe/Brussels" },
+          }
         : [];
       return { ok: true, status: 200, json: async () => body } as Response;
     }),
@@ -108,21 +115,22 @@ describe("<GroupDetail />", () => {
   it("houdt de teamgenerator op Vandaag en de suggesties op Plannen", async () => {
     renderPage();
     // De dag loopt (rondes van vandaag), dus de uitslagen staan bovenaan en de
-    // teamgenerator zit ingeklapt eronder (#674 A2). De suggesties horen bij
-    // Plannen (#342) en horen hier niet te staan.
+    // teamgenerator zit achter "+ Volgende ronde" (#674 A2, #839). De
+    // suggesties horen bij Plannen (#342) en horen hier niet te staan.
     expect(
-      await screen.findByRole("heading", { name: /^vandaag$/i }),
+      await screen.findByRole("heading", { name: /^vandaag ·/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /suggesties/i }),
     ).not.toBeInTheDocument();
-    const details = screen
-      .getByText(/nog een ronde maken/i)
-      .closest("details") as HTMLDetailsElement;
-    expect(details.open).toBe(false);
+    expect(
+      screen.queryByRole("heading", { name: /maak teams/i }),
+    ).not.toBeInTheDocument();
 
-    // Uitklappen geeft de volle teamgenerator.
-    await userEvent.click(screen.getByText(/nog een ronde maken/i));
+    // De sheet openen geeft de volle teamgenerator.
+    await userEvent.click(
+      screen.getByRole("button", { name: /volgende ronde/i }),
+    );
     expect(
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
@@ -148,7 +156,7 @@ describe("<GroupDetail />", () => {
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
     renderPage();
     await userEvent.click(
-      await screen.findByText(/nog een ronde maken/i),
+      await screen.findByRole("button", { name: /volgende ronde/i }),
     );
     await userEvent.click(
       await screen.findByRole("button", { name: /stel eerlijke teams voor/i }),
@@ -171,7 +179,9 @@ describe("<GroupDetail />", () => {
     renderPage();
     // Wacht tot de matches geladen zijn (Ronde 2 op Vandaag), ga dan naar Teams.
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByText(/nog een ronde maken/i));
+    await userEvent.click(
+      screen.getByRole("button", { name: /volgende ronde/i }),
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: /^mexicano$/i }),
     );
@@ -186,7 +196,9 @@ describe("<GroupDetail />", () => {
   it("genereert een Americano-ronde en schrijft de gekozen teams weg", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByText(/nog een ronde maken/i));
+    await userEvent.click(
+      screen.getByRole("button", { name: /volgende ronde/i }),
+    );
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
       await screen.findByRole("button", { name: /^americano$/i }),
@@ -200,8 +212,9 @@ describe("<GroupDetail />", () => {
       "create_fair_round",
       expect.objectContaining({ p_group_id: "g1" }),
     );
-    const call = (supabase.rpc as unknown as { mock: { calls: unknown[][] } })
-      .mock.calls.find((c) => c[0] === "create_fair_round");
+    const call = (
+      supabase.rpc as unknown as { mock: { calls: unknown[][] } }
+    ).mock.calls.find((c) => c[0] === "create_fair_round");
     const players = (call?.[1] as { p_players: string[] }).p_players;
     expect(players).toHaveLength(4);
     expect(new Set(players).size).toBe(4); // vier verschillende leden
@@ -266,11 +279,17 @@ describe("<GroupDetail />", () => {
     await userEvent.click(screen.getByRole("tab", { name: /^stand$/i }));
 
     // Rating is de standaardweergave (fixtures: 1012/1012/988/988).
-    expect(await screen.findByText(/gesorteerd op rating/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/gesorteerd op rating/i),
+    ).toBeInTheDocument();
     expect((await screen.findAllByText("1012")).length).toBe(2);
     // Tier-badges (#127): 1012 = Wannabe III (podium), 988 = Blaaskaak I.
-    expect((await screen.findAllByText("Wannabe III")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Blaaskaak I")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Wannabe III")).length).toBeGreaterThan(
+      0,
+    );
+    expect((await screen.findAllByText("Blaaskaak I")).length).toBeGreaterThan(
+      0,
+    );
 
     // Toggle naar punten: de vertrouwde puntentabel met Ptn-kolom.
     await userEvent.click(screen.getByRole("button", { name: /^punten$/i }));
@@ -373,8 +392,12 @@ describe("<GroupDetail />", () => {
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
-    const inputA = await screen.findByLabelText(/^score alice anders & bob boers$/i);
-    const inputB = await screen.findByLabelText(/^score carol claes & dave de vos$/i);
+    const inputA = await screen.findByLabelText(
+      /^score alice anders & bob boers$/i,
+    );
+    const inputB = await screen.findByLabelText(
+      /^score carol claes & dave de vos$/i,
+    );
     await userEvent.type(inputA, "7");
     await userEvent.type(inputB, "5");
     await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
@@ -383,14 +406,17 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText("opgeslagen ✓")).toBeInTheDocument();
   });
 
-  it("toont het dagoverzicht met telling en MVP op Vandaag (#342)", async () => {
+  it("toont de dagvoortgang bovenaan en de MVP eronder op Vandaag (#342, #839)", async () => {
     renderPage();
-    // De dag-stats-kaart heeft een eigen "Vandaag"-kop met tellers.
+    // De telling zit sinds #839 in de dagkop, die de dag als geheel samenvat;
+    // de hoogtepunten-kaart eronder houdt de MVP.
     expect(
-      await screen.findByRole("heading", { name: /^vandaag$/i }),
+      await screen.findByRole("heading", { name: /^vandaag ·/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/^gespeeld$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^gepland$/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 van 2 uitslagen binnen/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^hoogtepunten$/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/MVP ·/i)).toBeInTheDocument();
   });
 

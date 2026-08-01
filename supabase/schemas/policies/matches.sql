@@ -53,6 +53,28 @@ create policy "Deelnemer kan uitslag invullen"
          or public.is_team_member(team_b_id, (select auth.uid())))
   );
 
+-- De eigenaar van de groep waar de match in hangt mag de uitslag óók invullen.
+-- Op een speeldag is dat de organisator: hij staat lang niet altijd zelf op de
+-- baan, en de rondes worden gegenereerd (created_by = degene die op "ronde
+-- maken" drukte), dus zonder deze policy kon hij geen enkele uitslag invoeren.
+-- Dezelfde begrenzing als de deelnemer-policy — alleen de overgang naar
+-- 'completed' op een nog niet afgeronde match; corrigeren achteraf blijft bij
+-- de aanmaker. Sluit aan bij delete_match, waar de groepseigenaar al mag.
+create policy "Groepseigenaar kan uitslag invullen"
+  on public.matches
+  for update
+  to authenticated
+  using (
+    status <> 'completed'
+    and group_id is not null
+    and public.is_group_owner(group_id, (select auth.uid()))
+  )
+  with check (
+    status = 'completed'
+    and group_id is not null
+    and public.is_group_owner(group_id, (select auth.uid()))
+  );
+
 -- #432: de policies hierboven werken op rij-niveau, maar de UPDATE-grant op
 -- matches is table-wide (Supabase-default). Daardoor mag een deelnemer bij de
 -- ene toegestane UPDATE (uitslag invullen) élke kolom meeschrijven — o.a.
@@ -60,9 +82,9 @@ create policy "Deelnemer kan uitslag invullen"
 -- group_id/team_*/played_at manipuleren. RLS controleert alleen de rij, niet
 -- welke kolommen worden geraakt.
 --
--- Beperk de UPDATE-grant tot de unie van wat aanmaker én deelnemer nodig
--- hebben (kolom-grants gelden per rol, niet per policy — beide zijn
--- 'authenticated'):
+-- Beperk de UPDATE-grant tot de unie van wat aanmaker, deelnemer én
+-- groepseigenaar nodig hebben (kolom-grants gelden per rol, niet per policy —
+-- alle drie zijn 'authenticated'):
 --   setMatchResult        status, winner_team_id, score_a, score_b, set_scores, played_at
 --   updateMatchScore      winner_team_id, score_a, score_b, set_scores
 --   updatePlannedMatchTime played_at

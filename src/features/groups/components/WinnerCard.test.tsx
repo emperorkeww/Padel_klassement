@@ -57,6 +57,7 @@ const POLL: PlayPoll = {
   club_timezone: "Europe/Brussels",
   access_code: null,
   courts: null,
+  rounds_generated_at: null,
 };
 
 const OPTION: PollOption = {
