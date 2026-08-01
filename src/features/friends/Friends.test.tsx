@@ -252,7 +252,9 @@ describe("<Friends />", () => {
 
   it("dempt Rudy's onderlinge balans en onthoudt dat", async () => {
     const { unmount } = renderPage();
-    const schakelaar = await screen.findByRole("checkbox", {
+    // Sinds #945 dezelfde schakelaar als de instellingen: role="switch", dus
+    // een schermlezer zegt "aan/uit" in plaats van "aangevinkt".
+    const schakelaar = await screen.findByRole("switch", {
       name: /onderlinge balans tonen/i,
     });
     expect(schakelaar).toBeChecked();
@@ -264,7 +266,28 @@ describe("<Friends />", () => {
     unmount();
     renderPage();
     expect(
-      await screen.findByRole("checkbox", { name: /onderlinge balans tonen/i }),
+      await screen.findByRole("switch", { name: /onderlinge balans tonen/i }),
     ).not.toBeChecked();
+  });
+
+  // Twee segmented controls onder elkaar met identiek gewicht, en de actieve
+  // tab er direct onder nóg eens als sectiekop (#945).
+  it("houdt één navigatieniveau en herhaalt de actieve tab niet", async () => {
+    renderPage();
+    await screen.findByRole("tab", { name: /vrienden/i });
+    // De account-wissel is geen tweede tabbalk meer maar een gewone link.
+    expect(
+      screen.queryByRole("navigation", { name: /account/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /naar je profiel/i }),
+    ).toHaveAttribute("href", "/profiel");
+    // En de kop onder de tab herhaalt de teller niet meer zichtbaar.
+    expect(
+      screen.queryByRole("heading", { name: /mijn vrienden \d/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^mijn vrienden$/i }),
+    ).toHaveClass("sr-only");
   });
 });

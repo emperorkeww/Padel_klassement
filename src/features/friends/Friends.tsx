@@ -32,8 +32,8 @@ import { coachVrienden } from "@/features/coach/coachMoments";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
 import type { RoastCtx, CoachMood } from "@/features/coach/roastTone";
 import { Avatar } from "@/ui/Avatar";
-import { AccountNav } from "@/ui/AccountNav";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { Toggle } from "@/ui/Toggle";
 import { OverflowMenu } from "@/ui/OverflowMenu";
 import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 import { EmptyState } from "@/ui/EmptyState";
@@ -231,13 +231,22 @@ export function Friends() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Vrienden</h1>
+        <div className="row-between">
+          <h1 className="page-title">Vrienden</h1>
+          {/* Terug naar de andere helft van je account (#945). Stond hier als
+              segmented control (AccountNav) dwars boven de tabs van deze
+              pagina: twee balken met hetzelfde gewicht die op verschillende
+              niveaus navigeren. Dit is een secundaire ingang, dus die leest ook
+              zo. Op desktop staan Profiel en Vrienden al naast elkaar in de
+              zijbalk; op mobiel blijft de avatar in de topbalk. */}
+          <Link className="profile-link" to="/profiel">
+            Naar je profiel →
+          </Link>
+        </div>
         <p className="page-subtitle">
           Je favoriete bondgenoten en slachtoffers op het veld.
         </p>
       </header>
-
-      <AccountNav />
 
       {/* Mislukte query → echte foutmelding i.p.v. "geen vrienden" (issue #67). */}
       {(friendships.error ?? profiles.error) && (
@@ -274,12 +283,10 @@ export function Friends() {
       <TabPanel id={tab} idPrefix="vrienden">
         {tab === "vrienden" && (
               <section className="card">
-                <h2 className="card__title">
-                  Mijn vrienden{" "}
-                  {accepted.length > 0 && (
-                    <span className="badge badge--accent">{accepted.length}</span>
-                  )}
-                </h2>
+                {/* De tab erboven zegt "Vrienden 3" al; deze kop herhaalde dat
+                    met dezelfde teller (#945). Hij blijft voor schermlezers
+                    staan, zodat het paneel een kop houdt. */}
+                <h2 className="sr-only">Mijn vrienden</h2>
                 {!friendships.loading && !friendships.error && accepted.length === 0 && (
                   <>
                     <EmptyState icon="👋" title="Alleen op de baan?">
@@ -297,18 +304,16 @@ export function Friends() {
                 {/* De H2H-sneer verdubbelde de rijhoogte en was niet te dempen
                     (#919). Alleen aanbieden als er ook echt iets te dempen is. */}
                 {accepted.length > 0 && heeftH2H && (
-                  <label className="friends-h2h-toggle">
-                    <input
-                      type="checkbox"
+                  <div className="friends-h2h-toggle">
+                    <Toggle
+                      label="Rudy's onderlinge balans tonen"
                       checked={!h2hUit}
-                      onChange={(e) => {
-                        const aan = e.target.checked;
+                      onChange={(aan) => {
                         setH2hUit(!aan);
                         writeFlag(H2H_UIT, aan ? null : "1");
                       }}
                     />
-                    <span>Rudy's onderlinge balans tonen</span>
-                  </label>
+                  </div>
                 )}
                 <div className="person-grid">
                   {friendships.loading && <Skeleton rows={3} />}
