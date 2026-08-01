@@ -43,6 +43,8 @@ import {
 import { errorMessage } from "@/lib/utils/errors";
 import { groupByRound } from "./groupDetailHelpers";
 import { journeyFor } from "./journey";
+import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
+import { Avatar } from "@/ui/Avatar";
 import { getGroupPolls, getGroupPollOptions } from "./pollsApi";
 import { GroupStandTab } from "./components/GroupStandTab";
 import { GroupLedenTab } from "./components/GroupLedenTab";
@@ -201,6 +203,10 @@ export function GroupDetail() {
     [matches.data, tmap, hmap],
   );
   const memberList = members.data ?? [];
+  // Padel is 2v2: onder de vier leden kun je nog niet spelen, dus dan hoort
+  // uitnodigen vanaf elke tab bereikbaar te zijn (#917). Pas oordelen als de
+  // leden geladen zijn, anders flitst de knop bij elk bezoek even voorbij.
+  const kleineGroep = !members.loading && memberList.length < 4;
   // De huidige Zwarte Piet-drager van déze groep (#185), of null als de Piet vrij is.
   const zwartePiet = piet.data?.[id] ?? null;
   const isOwner = group.data?.created_by === myId;
@@ -324,6 +330,13 @@ export function GroupDetail() {
     const j = journeyFor(polls.data ?? [], pollOpts.data ?? [], today, Date.now());
     return j.tab === "plannen" ? "plannen" : "vandaag";
   })();
+  // Reisstatus voor de kop (#917): dezelfde functie als de hub, zodat er niet
+  // twee definities van "wanneer wordt er weer gespeeld" ontstaan. Null zolang
+  // de polls laden — de rest van de kop staat er dan al.
+  const journey =
+    polls.loading || pollOpts.loading
+      ? null
+      : journeyFor(polls.data ?? [], pollOpts.data ?? [], today, Date.now());
   // Eigen keuze (?tab of een tik) gaat vóór de reis-status.
   const view: View = urlView ?? landed ?? landingTab ?? "vandaag";
   const landingPending = !urlView && landed === null && landingTab === null;
@@ -362,7 +375,10 @@ export function GroupDetail() {
     { id: "leden", label: "Leden", count: memberList.length || undefined },
   ];
 
-  if (group.loading || landingPending)
+  // Alleen de kop wachtte niet op de reis-status; die hangt aan group+members
+  // (#917). Eerder blokkeerde `landingPending` de hele pagina, ook als je
+  // alleen een uitslag kwam invullen.
+  if (group.loading)
     return (
       <div className="card">
         <Skeleton rows={2} />
@@ -383,24 +399,79 @@ export function GroupDetail() {
 
   return (
     <div>
-      {/* Het ledental stond hier én als teller op de Leden-tab (#674 B4); de
-          tab houdt het, de kop houdt alleen de eigenaar-badge. */}
-      <header className="page-head">
+      {/* De kop droeg alleen naam plus eigenaar-badge, terwijl de groepskaart
+          op de hub wél avatar, ledenrij en reisstatus toont (#917) — de
+          groepspagina voelde daardoor minder "van de groep" dan het overzicht
+          ervan. Dezelfde bouwstenen dus, met journeyFor als één bron voor
+          "wanneer wordt er weer gespeeld". Die status staat hier ook op
+          Historie of Stand, waar je hem eerder helemaal kwijt was. */}
+      <header className="page-head group-head">
         <div className="row-between">
-          <h1 className="page-title">
-            {group.data.name}
-            {isOwner && (
-              <span className="badge badge--accent group-head__owner">
-                eigenaar
-              </span>
+          <div className="group-head__id">
+            <Avatar name={group.data.name} size={44} />
+            <div className="group-head__tekst">
+              <h1 className="page-title">
+                {group.data.name}
+                {isOwner && (
+                  <span className="badge badge--accent group-head__owner">
+                    eigenaar
+                  </span>
+                )}
+              </h1>
+              <p className="group-head__meta">
+                {memberList.length > 0 && (
+                  <span className="group-head__leden" aria-hidden="true">
+                    {memberList
+                      .slice(0, MAX_MEMBER_AVATARS)
+                      .map((m) => (
+                        <Avatar
+                          key={m.player_id}
+                          profile={pmap[m.player_id]}
+                          size={20}
+                          short
+                        />
+                      ))}
+                    {memberList.length > MAX_MEMBER_AVATARS && (
+                      <span className="group-head__meer">
+                        +{memberList.length - MAX_MEMBER_AVATARS}
+                      </span>
+                    )}
+                  </span>
+                )}
+                <span>{ledenLabel(memberList.length)}</span>
+                {journey && (
+                  <span
+                    className={`group-head__journey group-head__journey--${journey.tone}`}
+                  >
+                    {journey.icon && (
+                      <span aria-hidden="true">{journey.icon}</span>
+                    )}
+                    {journey.label}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="btn-row group-head__acties">
+            {/* Uitnodigen is dé actie in een jonge groep, maar zat weggestopt
+                op de Leden-tab (#917). Padel is 2v2: vanaf vier leden kun je
+                spelen en is het geen dringende actie meer. */}
+            {kleineGroep && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => setView("leden")}
+              >
+                Leden uitnodigen
+              </button>
             )}
-          </h1>
-          {/* Gewoon de weg omhoog. Was tot #916 de énige ingang naar de hub —
-              en dus naar "+ Nieuwe groep" — omdat /spelen je bij één groep
-              meteen hierheen stuurde; die omweg bestaat niet meer. */}
-          <Link className="btn btn--sm" to="/spelen">
-            ← Alle groepen
-          </Link>
+            {/* Gewoon de weg omhoog. Was tot #916 de énige ingang naar de hub —
+                en dus naar "+ Nieuwe groep" — omdat /spelen je bij één groep
+                meteen hierheen stuurde; die omweg bestaat niet meer. */}
+            <Link className="btn btn--sm" to="/spelen">
+              ← Alle groepen
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -435,6 +506,18 @@ export function GroupDetail() {
         </section>
       )}
 
+      {/* De reis-status bepaalt op welke tab je landt (#674 A3), en die mag
+          niet onder je vinger wegspringen — dus wachten tabbalk én paneel tot
+          hij bekend is. Sinds #917 wacht alleen dít stuk daarop: de kop
+          hierboven staat er meteen, zodat je ziet waar je bent en al kunt
+          uitnodigen of terug. */}
+      {landingPending ? (
+        <div className="card">
+          <Skeleton rows={1} />
+          <MatchListSkeleton count={2} />
+        </div>
+      ) : (
+      <>
       {/* Tabs in reis-volgorde (#106): plannen → spelen → stand.
           Labels ≠ URL-keys (#673): de keys (spelen/matches) staan in
           pushberichten en edge functions en blijven daarom ongewijzigd.
@@ -573,6 +656,8 @@ export function GroupDetail() {
           />
         )}
       </TabPanel>
+        </>
+      )}
     </div>
   );
 }

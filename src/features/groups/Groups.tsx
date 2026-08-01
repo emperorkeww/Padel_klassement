@@ -21,17 +21,12 @@ import {
   type PollOption,
 } from "./pollsApi";
 import { journeyFor } from "./journey";
+import { ledenLabel, MAX_MEMBER_AVATARS } from "./groepHelpers";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
 // de reis (poll loopt → gekozen → geboekt) met één duidelijke vervolgstap;
 // losse matches en het archief zijn hiervandaan bereikbaar.
-
-const MAX_MEMBER_AVATARS = 4;
-
-function ledenLabel(n: number): string {
-  return n === 1 ? "1 lid" : `${n} leden`;
-}
 
 // Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
 // en nooit gelezen — bij 5 groepen 5 nutteloze queries (#674 C1). Het blijft

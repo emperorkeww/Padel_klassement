@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
 
 /**
  * Paginabrede tabbalk met échte tab-semantiek (#674 B2): role="tablist" +
@@ -40,6 +41,10 @@ export function PageTabs<K extends string>({
   idPrefix?: string;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  // Zes tabs passen op telefoonbreedte niet naast elkaar; de balk schuift dan,
+  // maar niets verried dat er meer stond (#917). Dezelfde fade als de
+  // filterchips van de feed (#912) — die hook meet aan welke kant nog iets zit.
+  const schaduw = useScrollSchaduw(listRef);
 
   // Op smalle schermen scrollt de balk (.tabs--page); zorg dat de actieve tab
   // in beeld staat als je ergens op landt (bv. ?tab=leden).
@@ -72,6 +77,7 @@ export function PageTabs<K extends string>({
     <div
       ref={listRef}
       className="tabs tabs--page"
+      data-schaduw={schaduw}
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}

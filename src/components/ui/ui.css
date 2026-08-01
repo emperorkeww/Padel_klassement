@@ -987,6 +987,28 @@ textarea {
   margin-bottom: var(--sp-5);
   overflow-x: auto;
   scrollbar-width: none;
+  /* Fade aan de kant waar nog tabs staan (#917). De balk schoof al, maar niets
+     verried dat de laatste tabs bestonden. Welke kant vervaagt komt uit
+     data-schaduw — een fade die er altijd staat liegt zodra je aan het einde
+     bent. Zelfde mask-aanpak als de filterchips van de feed (#912): een overlay
+     met een achtergrondkleur zou over de tabs heen liggen en per thema
+     bijgehouden moeten worden. */
+  --fade: 24px;
+}
+.tabs--page[data-schaduw="rechts"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+}
+.tabs--page[data-schaduw="links"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+}
+.tabs--page[data-schaduw="beide"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
 }
 .tabs--page::-webkit-scrollbar {
   display: none;
