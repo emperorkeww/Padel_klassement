@@ -125,6 +125,20 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
         tekst: `${naam(ctx, e.playerId)} ${e.playerId === ctx.myId ? "bent" : "is"} kampioen van ${e.groupName} (${e.seasonLabel})`,
         to: `/groepen/${e.groupId}?tab=stand&seizoen=${e.seasonLabel}`,
       };
+    // De twee tijdelijke edities (#986): naar het profiel, want daar staat de
+    // kaart waar de regel over gaat.
+    case "in-form":
+      return {
+        icon: "⚡",
+        tekst: `${naam(ctx, e.playerId)} ${e.playerId === ctx.myId ? "bent" : "is"} de speler van de week (+${e.delta})`,
+        to: `/spelers/${e.playerId}`,
+      };
+    case "on-fire":
+      return {
+        icon: "🔥",
+        tekst: `${naam(ctx, e.playerId)} staat on fire: ${e.streak} zeges op rij`,
+        to: `/spelers/${e.playerId}`,
+      };
     case "maand-pias":
       return {
         icon: "🤡",
