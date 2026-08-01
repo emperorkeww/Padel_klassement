@@ -17,6 +17,12 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
+  /* De kolom is precies zo breed als de kaart (#947), zodat de hint eronder
+     per constructie op de kaart uitlijnt in plaats van op wat de tekst
+     toevallig breed is. De maat staat daarom hier en niet op .fut-kaart; die
+     erft hem. */
+  --fut-kw: clamp(170px, 52vw, 210px);
+  width: var(--fut-kw);
   /* Centreert de kaart wanneer de identiteit eronder wrapt (smal scherm);
      naast de groeiende body is er geen vrije ruimte, dus daar plakt hij links. */
   margin-inline: auto;
@@ -25,10 +31,11 @@
   flex: 1 1 300px;
 }
 .profile-hero .fut-kaart {
-  --fut-kw: clamp(170px, 52vw, 210px);
   --fut-focus: var(--accent);
 }
 .profile-hero__fliphint {
+  text-align: center;
+  text-wrap: balance;
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--ink-soft);
