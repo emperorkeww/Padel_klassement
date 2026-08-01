@@ -485,6 +485,58 @@
   flex-wrap: wrap;
 }
 
+/* ---------- Overflow-menu in de kop (#918) ----------
+   De kop droeg tot zes bedieningselementen naast elkaar en werd op
+   telefoonbreedte een blok knoppen boven de inhoud. Terug en Delen blijven
+   zichtbaar; de rest zit hierachter. Zelfde dropdown-vorm als het filtermenu
+   van het klassement (#913). */
+.profile-menu {
+  position: relative;
+}
+.profile-menu__btn {
+  min-width: 44px; /* tap-target (WCAG 2.5.5) */
+  font-size: 1.125rem;
+  line-height: 1;
+}
+.profile-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  min-width: 200px;
+  max-width: 92vw;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.profile-menu__veld {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.profile-menu__panel .select--filter {
+  width: 100%;
+  max-width: none;
+}
+
+/* Welke cijfers het seizoensfilter volgen en welke all-time zijn (#918). */
+.profile-scope {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
 /* Onderlinge stand: uitgelichte nemesis + favoriete tegenstander. */
 .h2h-highlights {
   display: grid;

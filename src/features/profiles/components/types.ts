@@ -8,7 +8,6 @@ import type { Editie } from "@/features/standings/edities";
 import type { Upset } from "@/features/matches/upset";
 import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "@/features/rating/components/RatingChart";
-import type { RankChart } from "@/features/rating/components/RankChart";
 
 // Eén rij in de onderlinge stand (tegen één tegenstander).
 export interface H2HRow {
@@ -76,11 +75,10 @@ export interface ProfileData {
   /** Editie-regel op het kaartvlak, bv. "⚡ In-Form · +48". */
   editieTekst?: string | null;
 
-  // Grafieken
+  // Grafieken. Het positie-verloop is in #918 opgeruimd: de bron stond sinds
+  // #461 hard op een lege lijst, dus die tak draaide nooit meer.
   hasRating: boolean;
-  hasRank: boolean;
   rhist: ComponentProps<typeof RatingChart>["history"];
-  rankPoints: ComponentProps<typeof RankChart>["points"];
 
   // Matches (gescoopt op seizoen)
   scoped: Match[];
