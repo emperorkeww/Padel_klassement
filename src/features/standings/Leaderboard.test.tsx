@@ -186,7 +186,7 @@ describe("<Leaderboard />", () => {
   it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
     renderPage();
     await screen.findAllByText("Wannabe III");
-    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^divisies$/i }));
 
     // Sectiekop per hoofd-divisie: fixtures 1012 = Wannabe, 988 = Blaaskaak.
     expect(await screen.findByRole("heading", { name: /wannabe/i })).toBeInTheDocument();
@@ -308,7 +308,7 @@ describe("<Leaderboard />", () => {
     // dan deterministisch uit de NIEUW-pool.
     const { container } = renderPage();
     await screen.findAllByText("Wannabe III");
-    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^divisies$/i }));
 
     const tekst = container.querySelector(".klassement-coach .coach-sneer__text");
     expect(tekst).not.toBeNull();
@@ -318,7 +318,7 @@ describe("<Leaderboard />", () => {
   it("blijft spreken wanneer een groep gekozen is (#411)", async () => {
     const { container } = renderPage();
     await screen.findAllByText("Wannabe III");
-    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^divisies$/i }));
     fireEvent.change(screen.getByLabelText("Groep"), { target: { value: "g1" } });
 
     await screen.findAllByText(/alice anders/i);
@@ -346,7 +346,7 @@ describe("<Leaderboard />", () => {
   it("zwijgt over je positie in een seizoensarchief (#411)", async () => {
     const { container } = renderPage("/?seizoen=2026-q2");
     await screen.findAllByText(/carol claes/i);
-    fireEvent.click(screen.getByRole("button", { name: /^divisies$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^divisies$/i }));
     expect(container.querySelector(".klassement-coach")).toBeNull();
   });
 
@@ -359,7 +359,7 @@ describe("<Leaderboard />", () => {
       screen.getByText("Wie is de koning en wie is het slofje? Puur gesorteerd op rating."),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Teams" }));
     expect(await screen.findByText("Vaste duo's gesorteerd op pure puntenheerschappij.")).toBeInTheDocument();
     const teamHeaders = await screen.findAllByRole("columnheader");
     expect(teamHeaders[teamHeaders.length - 1]).toHaveTextContent(/punten/i);
@@ -370,7 +370,7 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
   it("toont op de Kaarten-tab de kaartenwand met rang-munten en de Big Daddy als Icon", async () => {
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
-    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /kaarten/i }));
     // Alle spelers als kaart, met een rang-munt; de #1 draagt goud.
     expect(
       container.querySelectorAll(".kaart-raster .fut-kaart").length,
@@ -391,7 +391,7 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
   it("legt de kaarten uit in een uitklapper op de Kaarten-tab", async () => {
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
-    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /kaarten/i }));
 
     const legenda = container.querySelector(".kaart-legenda") as HTMLElement;
     expect(legenda).not.toBeNull();
@@ -425,14 +425,14 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
     const { container } = renderPage();
     await screen.findAllByText(/alice anders/i);
     expect(container.querySelector(".kaart-legenda")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Divisies" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Divisies" }));
     expect(container.querySelector(".kaart-legenda")).toBeNull();
   });
 
   it("opent de kaart-preview vanaf een raster-kaart en sluit met Escape", async () => {
     renderPage();
     await screen.findAllByText(/alice anders/i);
-    fireEvent.click(screen.getByRole("button", { name: /kaarten/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /kaarten/i }));
     fireEvent.click(
       screen.getAllByRole("button", { name: /fut-kaart van/i })[0],
     );

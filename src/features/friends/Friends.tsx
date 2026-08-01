@@ -6,7 +6,9 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { useToast } from "@/ui/ToastProvider";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { Skeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Sheet } from "@/ui/Sheet";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   getMyFriendships,
   getFriendSuggestions,
@@ -40,6 +42,7 @@ import "./Friends.css";
 const MIN_DUELS = 3;
 
 export function Friends() {
+  usePageTitle("Vrienden");
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -196,20 +199,14 @@ export function Friends() {
 
       {/* Mislukte query → echte foutmelding i.p.v. "geen vrienden" (issue #67). */}
       {(friendships.error ?? profiles.error) && (
-        <div className="msg msg--error">
-          Je vrienden laden mislukte: {friendships.error ?? profiles.error}{" "}
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => {
-              if (friendships.error) friendships.reload();
-              if (profiles.error) profiles.reload();
-              if (suggestions.error) suggestions.reload();
-            }}
-          >
-            Opnieuw proberen
-          </button>
-        </div>
+        <ErrorRetry
+          melding={`Je vrienden laden mislukte: ${friendships.error ?? profiles.error}`}
+          onRetry={() => {
+            if (friendships.error) friendships.reload();
+            if (profiles.error) profiles.reload();
+            if (suggestions.error) suggestions.reload();
+          }}
+        />
       )}
 
       {inkomendeClaims.length > 0 && (
@@ -464,9 +461,10 @@ export function Friends() {
         <h2 className="card__title">Misschien ken je</h2>
         {suggestions.loading && <Skeleton rows={3} />}
         {suggestions.error && (
-          <p className="msg msg--error">
-            Suggesties laden mislukte: {suggestions.error}
-          </p>
+          <ErrorRetry
+            melding={`Suggesties laden mislukte: ${suggestions.error}`}
+            onRetry={suggestions.reload}
+          />
         )}
         {!suggestions.loading && !suggestions.error && visibleSuggestions.length === 0 && (
           <p className="empty">

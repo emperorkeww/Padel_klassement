@@ -5,6 +5,9 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { StandingsSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { PageTabs } from "@/ui/PageTabs";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { Avatar } from "@/ui/Avatar";
 import { recentForm, type Outcome } from "@/features/rating/results";
 import { isSeasonClosed, listSeasons, seasonFromId } from "@/features/rating/seasons";
@@ -93,6 +96,15 @@ import "./Leaderboard.css";
 
 type Tab = "player" | "team" | "divisies" | "kaarten";
 
+// Eén gedeelde tabbalk voor de hele app (#910): PageTabs levert tablist-
+// semantiek en pijltjesnavigatie die de losse buttons hier niet hadden.
+const KLASSEMENT_TABS: { id: Tab; label: string }[] = [
+  { id: "player", label: "Spelers" },
+  { id: "team", label: "Teams" },
+  { id: "divisies", label: "Divisies" },
+  { id: "kaarten", label: "🃏 Kaarten" },
+];
+
 // Rotatieteller voor Coach Rudy's knieval onder de troon (#535): elke nieuwe
 // mount van het klassement pakt de volgende buig-regel, zodat opeenvolgende
 // bezoeken cyclen i.p.v. altijd dezelfde te tonen. Zelfde patroon als de
@@ -100,6 +112,7 @@ type Tab = "player" | "team" | "divisies" | "kaarten";
 let buigingBeurt = 0;
 
 export function Leaderboard() {
+  usePageTitle("Klassement");
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const club = useClub();
@@ -511,6 +524,17 @@ export function Leaderboard() {
       : tab === "team"
         ? teams.error
         : players.error;
+  // Herstelactie bij de foutstaat (#910): dezelfde bron die de fout gaf ook
+  // opnieuw laten proberen, in plaats van alles te herladen.
+  const herlaad = globalSeason
+    ? tab === "team"
+      ? seasonTeams.reload
+      : seasonPlayers.reload
+    : usingScope
+      ? scopeAsync.reload
+      : tab === "team"
+        ? teams.reload
+        : players.reload;
   // De Kaarten-tab (#497) is een tweede gezicht van het spelersklassement:
   // podium, troon en coach gedragen zich er hetzelfde als op de Spelers-tab.
   const spelerTab = tab === "player" || tab === "kaarten";
@@ -767,32 +791,15 @@ export function Leaderboard() {
 
       <FutKaartDefs />
       <div className="lb-toolbar">
-        <div className="tabs">
-          <button
-            className={`tab ${tab === "player" ? "is-active" : ""}`}
-            onClick={() => setTab("player")}
-          >
-            Spelers
-          </button>
-          <button
-            className={`tab ${tab === "team" ? "is-active" : ""}`}
-            onClick={() => setTab("team")}
-          >
-            Teams
-          </button>
-          <button
-            className={`tab ${tab === "divisies" ? "is-active" : ""}`}
-            onClick={() => setTab("divisies")}
-          >
-            Divisies
-          </button>
-          <button
-            className={`tab ${tab === "kaarten" ? "is-active" : ""}`}
-            onClick={() => setTab("kaarten")}
-          >
-            🃏 Kaarten
-          </button>
-        </div>
+        {/* Geen `idPrefix`: de tabkeuze werkt hier door de hele pagina heen
+            (legenda's, kaartenwand, uitleg), dus er is geen enkel paneel om
+            met `aria-controls` naar te wijzen (#910). */}
+        <PageTabs
+          tabs={KLASSEMENT_TABS}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Klassement-weergave"
+        />
 
         {/* Zoekbalk staat direct zichtbaar tussen de tabs en de filterknop. */}
         {searchable && (
@@ -1065,7 +1072,10 @@ export function Leaderboard() {
         {loading ? (
           <StandingsSkeleton rows={6} />
         ) : error ? (
-          <p className="msg msg--error">{error}</p>
+          <ErrorRetry
+            melding={`Het klassement laden mislukte: ${error}`}
+            onRetry={herlaad}
+          />
         ) : rows.length === 0 ? (
           season ? (
             <p className="empty">Geen matches in dit seizoen.</p>

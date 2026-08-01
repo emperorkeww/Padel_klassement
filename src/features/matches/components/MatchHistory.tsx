@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { MatchListSkeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import {
   applyFilter,
@@ -94,7 +95,14 @@ export function MatchHistory({
       </div>
 
       {loading && <MatchListSkeleton count={4} />}
-      {error && <p className="msg msg--error">{error}</p>}
+      {/* `onChanged` is de herlaad-callback van de aanroeper; die dient hier
+          ook als herstelactie bij een mislukte fetch (#910). */}
+      {error && (
+        <ErrorRetry
+          melding={`De matches laden mislukte: ${error}`}
+          onRetry={onChanged}
+        />
+      )}
       {!loading &&
         groups.length === 0 &&
         (filter === "all" && emptyAll ? (

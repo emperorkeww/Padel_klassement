@@ -4,6 +4,9 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { ProfileSkeleton, Skeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { ErrorRetry } from "@/ui/ErrorRetry";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   getProfile,
   updateProfile,
@@ -60,6 +63,7 @@ export function ProfileSettings() {
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
+  usePageTitle("Instellingen");
 
   // Actieve tab in de URL (?tab=): deelbaar en refresh-bestendig. De default
   // (profiel) laat de param weg, net als elders in de app.
@@ -84,7 +88,13 @@ export function ProfileSettings() {
         </div>
       </div>
     );
-  if (!profile.data) return <p className="msg msg--error">Profiel niet gevonden.</p>;
+  if (!profile.data)
+    return (
+      <ErrorRetry
+        melding="Je profiel laden lukte niet."
+        onRetry={profile.reload}
+      />
+    );
 
   return (
     <div>
@@ -109,74 +119,71 @@ export function ProfileSettings() {
         <p className="page-subtitle">Pas je profiel aan. Zorg in ieder geval dat je foto er professioneler uitziet dan je slagen.</p>
       </header>
 
-      <nav className="tabs settings-tabs" aria-label="Instellingen">
-        {SETTINGS_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`tab ${tab === t.id ? "is-active" : ""}`}
-            aria-current={tab === t.id ? "page" : undefined}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      {/* Gedeelde tabbalk (#910). */}
+      <PageTabs
+        tabs={SETTINGS_TABS}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Instellingen"
+        idPrefix="instellingen"
+      />
 
-      {tab === "algemeen" && (
-        <>
-          <div className="grid grid--2">
-            <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-            <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
-          </div>
-          <ThemeCard
-            userId={myId}
-            toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
-            dictatorPortret={profile.data?.dictator_portret ?? true}
-            piasPortret={profile.data?.pias_portret ?? true}
-            onUpdated={profile.reload}
-          />
-        </>
-      )}
-
-      {tab === "privacy" && (
-        <>
-          <div className="grid grid--2">
-            <NotificationsCard userId={myId} />
-            <PrivacyCard userId={myId} />
-          </div>
-          <section className="card">
-            <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
-            <p className="card__subtitle">
-              Wie hij is en hoe je hem afstelt.
-            </p>
-            <CoachAbout />
-          </section>
-        </>
-      )}
-
-      {tab === "account" && (
-        <>
-          <div className="grid grid--2">
-            <EmailCard currentEmail={user?.email ?? ""} />
-            <PasswordCard email={user?.email ?? ""} />
-          </div>
-
-          <section className="card">
-            <div className="row-between">
-              <div>
-                <h2 className="card__title card__title--tight">Sessie</h2>
-                <p className="empty empty--bare">Ingelogd als {user?.email}</p>
-              </div>
-              <button className="btn btn--danger" onClick={() => signOut()}>
-                Uitloggen
-              </button>
+      <TabPanel id={tab} idPrefix="instellingen">
+        {tab === "algemeen" && (
+          <>
+            <div className="grid grid--2">
+              <AvatarCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
+              <NameCard profile={profile.data} userId={myId} onUpdated={profile.reload} />
             </div>
-          </section>
+            <ThemeCard
+              userId={myId}
+              toonWaarnemend={profile.data?.toon_waarnemend_dictator ?? true}
+              dictatorPortret={profile.data?.dictator_portret ?? true}
+              piasPortret={profile.data?.pias_portret ?? true}
+              onUpdated={profile.reload}
+            />
+          </>
+        )}
 
-          <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
-        </>
-      )}
+        {tab === "privacy" && (
+          <>
+            <div className="grid grid--2">
+              <NotificationsCard userId={myId} />
+              <PrivacyCard userId={myId} />
+            </div>
+            <section className="card">
+              <h2 className="card__title card__title--tight">Over Coach Rudy 🎙️</h2>
+              <p className="card__subtitle">
+                Wie hij is en hoe je hem afstelt.
+              </p>
+              <CoachAbout />
+            </section>
+          </>
+        )}
+
+        {tab === "account" && (
+          <>
+            <div className="grid grid--2">
+              <EmailCard currentEmail={user?.email ?? ""} />
+              <PasswordCard email={user?.email ?? ""} />
+            </div>
+
+            <section className="card">
+              <div className="row-between">
+                <div>
+                  <h2 className="card__title card__title--tight">Sessie</h2>
+                  <p className="empty empty--bare">Ingelogd als {user?.email}</p>
+                </div>
+                <button className="btn btn--danger" onClick={() => signOut()}>
+                  Uitloggen
+                </button>
+              </div>
+            </section>
+
+            <p className="profile-meta">Lid sinds {formatDate(profile.data.created_at)}.</p>
+          </>
+        )}
+      </TabPanel>
     </div>
   );
 }

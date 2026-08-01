@@ -9,10 +9,19 @@ import {
 import { useAuth } from "./AuthProvider";
 import { authErrorMessage, passwordError, PASSWORD_RULE } from "./authErrors";
 import { BallIcon } from "@/ui/BallIcon";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import "./LoginScreen.css";
 
 type Mode = "signin" | "signup" | "forgot";
 type Status = "idle" | "loading" | "error" | "success";
+
+// Tabtitel per modus (#910): het scherm wisselt van taak zonder van route te
+// wisselen, dus de titel volgt de modus in plaats van het pad.
+const TITEL_PER_MODUS: Record<Mode, string> = {
+  signin: "Inloggen",
+  signup: "Account maken",
+  forgot: "Wachtwoord vergeten",
+};
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -22,6 +31,7 @@ export function LoginScreen() {
     (location.state as { from?: string } | null)?.from || "/";
   const { session } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
+  usePageTitle(TITEL_PER_MODUS[mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

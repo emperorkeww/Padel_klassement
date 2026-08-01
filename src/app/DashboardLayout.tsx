@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
@@ -23,11 +23,19 @@ import "./DashboardLayout.css";
 // /spelen is — zonder dit verliest "Spelen" zijn markering in een groep (#287).
 type NavItem = { to: string; label: string; end?: boolean; icon: ReactNode; matchPaths?: string[] };
 
-// Actief als NavLink het al vindt (exacte/prefix-match op `to`), óf als het
-// pad binnen een van de opgegeven sectiepaden valt.
-function isSectionActive(item: NavItem, isActive: boolean, pathname: string) {
+// Actief als het pad op `to` matcht (exact bij `end`, anders als prefix), óf
+// als het binnen een van de opgegeven sectiepaden valt.
+//
+// Dit deed NavLink eerder half zelf via zijn `isActive`, maar `aria-current`
+// accepteert geen render-prop: een groepsdetail kleurde "Spelen" wél actief en
+// bleef voor een screenreader stil (#910). Eén berekening voedt nu zowel de
+// class als `aria-current`.
+function isSectionActive(item: NavItem, pathname: string) {
+  const opZichzelf = item.end
+    ? pathname === item.to
+    : pathname === item.to || pathname.startsWith(`${item.to}/`);
   return (
-    isActive ||
+    opZichzelf ||
     (item.matchPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ?? false)
   );
 }
@@ -129,20 +137,21 @@ export function DashboardLayout() {
           {SIDEBAR_GROUPS.map((group) => (
             <div key={group.title} className="sidebar__group">
               <span className="sidebar__group-title">{group.title}</span>
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  viewTransition
-                  className={({ isActive }) =>
-                    `sidebar__link ${isSectionActive(item, isActive, pathname) ? "is-active" : ""}`
-                  }
-                >
-                  <span className="sidebar__icon">{item.icon}</span>
-                  <span className="sidebar__label">{item.label}</span>
-                </NavLink>
-              ))}
+              {group.items.map((item) => {
+                const actief = isSectionActive(item, pathname);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    viewTransition
+                    aria-current={actief ? "page" : undefined}
+                    className={`sidebar__link ${actief ? "is-active" : ""}`}
+                  >
+                    <span className="sidebar__icon">{item.icon}</span>
+                    <span className="sidebar__label">{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </nav>
@@ -205,21 +214,22 @@ export function DashboardLayout() {
 
       {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}
       <nav className="tabbar" aria-label="Hoofdnavigatie">
-        {TABBAR.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            viewTransition
-            aria-label={item.label}
-            className={({ isActive }) =>
-              `tabbar__link ${item.end ? "tabbar__link--home" : ""} ${isSectionActive(item, isActive, pathname) ? "is-active" : ""}`
-            }
-          >
-            <span className="tabbar__icon">{item.icon}</span>
-            <span className="tabbar__label">{item.label}</span>
-          </NavLink>
-        ))}
+        {TABBAR.map((item) => {
+          const actief = isSectionActive(item, pathname);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              viewTransition
+              aria-label={item.label}
+              aria-current={actief ? "page" : undefined}
+              className={`tabbar__link ${item.end ? "tabbar__link--home" : ""} ${actief ? "is-active" : ""}`}
+            >
+              <span className="tabbar__icon">{item.icon}</span>
+              <span className="tabbar__label">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

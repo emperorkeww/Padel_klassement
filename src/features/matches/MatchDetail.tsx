@@ -29,7 +29,10 @@ import { formatDate } from "@/lib/utils/format";
 import { tap } from "@/lib/utils/haptics";
 import { Avatar } from "@/ui/Avatar";
 import { Skeleton } from "@/ui/Skeleton";
+import { ErrorRetry } from "@/ui/ErrorRetry";
 import { ScoreStepper } from "@/ui/ScoreStepper";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { useBackTo } from "@/lib/hooks/useBackTo";
 import { ShareMatch } from "@/features/matches/components/ShareMatch";
 import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 import { Lineup } from "@/features/matches/components/Lineup";
@@ -65,8 +68,17 @@ export function MatchDetail() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Bij een deeplink uit een pushbericht of gedeelde link is er geen vorige
+  // pagina; dan naar het matchoverzicht i.p.v. de app uit (#910).
+  const terug = useBackTo("/matches");
 
   const match = useAsync(() => getMatch(id), [id]);
+  // Tabtitel op de matchdatum (#910); blijft staan zolang de match laadt.
+  usePageTitle(
+    match.data
+      ? `Match ${formatDate(match.data.played_at ?? match.data.created_at)}`
+      : null,
+  );
   // Alleen de twee teams en vier spelers van déze match ophalen, niet de
   // volledige teams- en profielentabellen.
   const teamIds = match.data ? [match.data.team_a_id, match.data.team_b_id] : [];
@@ -181,7 +193,17 @@ export function MatchDetail() {
         </div>
       </div>
     );
-  if (!match.data) return <p className="msg msg--error">Match niet gevonden.</p>;
+  if (!match.data)
+    return (
+      <ErrorRetry
+        melding="Deze match bestaat niet (meer) of is niet zichtbaar voor jou."
+        actie={
+          <Link className="btn btn--sm" to="/matches">
+            Naar matches
+          </Link>
+        }
+      />
+    );
 
   const m = match.data;
   const tmap = teams.data ?? {};
@@ -234,7 +256,7 @@ export function MatchDetail() {
         {/* Het scorebord ís de kop; voor screenreaders en de outline toch een h1. */}
         <h1 className="sr-only">Matchdetail</h1>
         <div className="row-between">
-          <button className="btn btn--sm" onClick={() => navigate(-1)}>
+          <button className="btn btn--sm" onClick={terug}>
             ← Terug
           </button>
           {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
@@ -454,14 +476,16 @@ export function MatchDetail() {
           </div>
           {/* Dezelfde inline invoer als bij "Te spelen": score/sets opslaan,
               agenda, tijd wijzigen en verwijderen. Rechten worden serverzijdig
-              afgedwongen. Na verwijderen navigeren we terug. */}
+              afgedwongen. Na verwijderen gaan we naar het matchoverzicht:
+              "terug" naar een zojuist verwijderde match slaat nergens op, dus
+              hier bewust géén useBackTo maar een harde vervanging (#910). */}
           <PlannedMatchCard
             match={m}
             teams={tmap}
             profiles={pmap}
             perspectiveId={user?.id}
             onSaved={() => match.reload()}
-            onDeleted={() => navigate(-1)}
+            onDeleted={() => navigate("/matches", { replace: true })}
           />
         </section>
       )}

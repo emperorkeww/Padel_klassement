@@ -69,14 +69,15 @@ const pt = (
   played_at: "2026-07-02T10:00:00.000Z",
 });
 
-function renderShell() {
+function renderShell(pad = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[pad]}>
       <AuthProvider>
         <ToastProvider>
           <Routes>
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<div>pagina-inhoud</div>} />
+              <Route path="/groepen/:id" element={<div>pagina-inhoud</div>} />
             </Route>
           </Routes>
         </ToastProvider>
@@ -121,6 +122,32 @@ describe("<DashboardLayout />", () => {
     // Gebruikersblok in de zijbalkvoet.
     expect(await screen.findByText(/alice anders/i)).toBeInTheDocument();
     expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+  });
+
+  // #910: "actief" werd half door NavLink en half door matchPaths bepaald,
+  // waardoor een groepsdetail "Spelen" wél kleurde maar geen aria-current
+  // kreeg — een screenreader hoorde die sectie-match dus niet.
+  it("markeert Spelen met aria-current op een groepsdetail-pad", async () => {
+    renderShell("/groepen/g1");
+    await screen.findByText("pagina-inhoud");
+    for (const link of screen.getAllByRole("link", { name: /^spelen$/i })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+    // Andere secties blijven ongemarkeerd.
+    for (const link of screen.getAllByRole("link", { name: /^feed$/i })) {
+      expect(link).not.toHaveAttribute("aria-current");
+    }
+  });
+
+  it("markeert alleen het overzicht op /", async () => {
+    renderShell("/");
+    await screen.findByText("pagina-inhoud");
+    for (const link of screen.getAllByRole("link", { name: /^overzicht$/i })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+    for (const link of screen.getAllByRole("link", { name: /^spelen$/i })) {
+      expect(link).not.toHaveAttribute("aria-current");
+    }
   });
 
   it("logt uit via de zijbalk", async () => {

@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRefetchOnFocus } from "@/lib/hooks/useRefetchOnFocus";
 import { Skeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
   fetchClub,
   getClubAvailability,
@@ -101,7 +103,14 @@ function FreshnessLine({ days }: { days: DayAvailability[] }) {
 // Speelduren die Playtomic aanbiedt; null = geen filter (alle duren tonen).
 const DURATION_FILTERS = [null, 60, 90, 120] as const;
 
+// Weergavewissel als echte tabbladen (#910).
+const WEERGAVE_TABS: { id: "dag" | "week"; label: string }[] = [
+  { id: "dag", label: "Dag" },
+  { id: "week", label: "Week" },
+];
+
 export function Availability() {
+  usePageTitle("Banen");
   const club = useClub();
   // "Vandaag" in clubtijd, zodat de dagkeuze klopt vanuit elke tijdzone.
   const today = dateInZone(club.timezone);
@@ -228,30 +237,26 @@ export function Availability() {
         />
       </div>
 
-      {/* Weergave (dag/week) + duurfilter, zoals op de Playtomic-pagina. */}
+      {/* Weergave (dag/week) + duurfilter, zoals op de Playtomic-pagina.
+          De weergavekeuze is een écht tabblad — twee panelen, één zichtbaar —
+          en draait daarom op de gedeelde PageTabs (#910). Het duurfilter niet:
+          dat verandert niet van paneel maar filtert de inhoud, dus dat krijgt
+          groep-semantiek met aria-pressed in plaats van tabs. */}
       <div className="avail-controls">
-        <div className="tabs">
-          <button
-            type="button"
-            className={`tab ${view === "dag" ? "is-active" : ""}`}
-            onClick={() => setView("dag")}
-          >
-            Dag
-          </button>
-          <button
-            type="button"
-            className={`tab ${view === "week" ? "is-active" : ""}`}
-            onClick={() => setView("week")}
-          >
-            Week
-          </button>
-        </div>
-        <div className="tabs">
+        <PageTabs
+          tabs={WEERGAVE_TABS}
+          value={view}
+          onChange={setView}
+          ariaLabel="Weergave"
+          idPrefix="banen"
+        />
+        <div className="tabs" role="group" aria-label="Duur">
           {DURATION_FILTERS.map((d) => (
             <button
               key={d ?? "alle"}
               type="button"
               className={`tab ${duration === d ? "is-active" : ""}`}
+              aria-pressed={duration === d}
               onClick={() => setDuration(d)}
             >
               {d == null ? "Alle duren" : `${d} min`}
@@ -260,20 +265,22 @@ export function Availability() {
         </div>
       </div>
 
-      {view === "dag" ? (
-        <DaySection date={date} today={today} duration={duration} />
-      ) : (
-        <WeekSection
-          start={date}
-          today={today}
-          duration={duration}
-          onPickDay={pickDay}
-          onShift={(days) => {
-            const next = addDays(date, days);
-            setDate(next < today ? today : next);
-          }}
-        />
-      )}
+      <TabPanel id={view} idPrefix="banen">
+        {view === "dag" ? (
+          <DaySection date={date} today={today} duration={duration} />
+        ) : (
+          <WeekSection
+            start={date}
+            today={today}
+            duration={duration}
+            onPickDay={pickDay}
+            onShift={(days) => {
+              const next = addDays(date, days);
+              setDate(next < today ? today : next);
+            }}
+          />
+        )}
+      </TabPanel>
     </div>
   );
 }
