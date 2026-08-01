@@ -1584,3 +1584,44 @@ textarea {
     transition: none;
   }
 }
+
+/* ---------- Overflow-menu (#918, gedeeld sinds #919) ----------
+   Acties die er wél moeten zijn maar niet vooraan horen: de profielkop droeg
+   tot zes bedieningselementen naast elkaar, en verwijderen stond als rode knop
+   in elke vriendenrij. Stond eerst in PlayerProfile.css; die laadt alleen op
+   het profiel. */
+.overflow-menu {
+  position: relative;
+}
+.overflow-menu__btn {
+  min-width: 44px; /* tap-target (WCAG 2.5.5) */
+  font-size: 1.125rem;
+  line-height: 1;
+}
+.overflow-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  min-width: 200px;
+  max-width: 92vw;
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.overflow-menu__veld {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.overflow-menu__panel .select--filter {
+  width: 100%;
+  max-width: none;
+}
