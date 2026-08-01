@@ -305,9 +305,15 @@ export function PlannedMatchCard({
   const saNum = sa === "" ? null : Number(sa);
   const sbNum = sb === "" ? null : Number(sb);
   const valid = saNum !== null && sbNum !== null && saNum >= 0 && sbNum >= 0;
-  // Alleen de aanmaker mag verplaatsen/verwijderen (de server dwingt dit ook af);
-  // toon die knoppen dus niet aan anderen om een voorspelbare fout te vermijden.
-  const canManage = !!perspectiveId && m.created_by === perspectiveId;
+  // Verplaatsen/verwijderen mag de aanmaker en — sinds #978 — de eigenaar van
+  // de groep; de server dwingt dit ook af (policy "Groepseigenaar kan
+  // groepsmatch bijwerken" en delete_match, dat hem allang toestond). Toon die
+  // knoppen niet aan anderen om een voorspelbare fout te vermijden.
+  // De aanmaker-tak blijft op perspectiveId hangen (op een profielpagina is dat
+  // de profieleigenaar); het eigenaarschap gaat op de ingelogde gebruiker, want
+  // alleen díé kan de knop ook echt indrukken.
+  const canManage =
+    (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner;
   // De uitslag invullen mag door de aanmaker, de spelers zelf (RLS #413) én de
   // eigenaar van de groep; verberg de score-invoer voor anderen, die zouden op
   // de server stuklopen. Op basis van de ingelogde gebruiker (myId), niet
@@ -791,7 +797,8 @@ export function PlannedMatchCard({
         )}
       </div>
 
-      {/* Beheeracties (alleen de aanmaker) in een compacte sheet achter ⋯. */}
+      {/* Beheeracties (de aanmaker en de groepseigenaar) in een compacte sheet
+          achter ⋯. */}
       {canManage && (
         <Sheet
           open={manageOpen}

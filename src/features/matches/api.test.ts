@@ -241,7 +241,7 @@ describe("setMatchResult", () => {
 
 describe("updateMatchScore", () => {
   it("update de score op de matches-tabel", async () => {
-    enqueue({ error: null });
+    enqueue({ data: [{ id: "m1" }] });
     await updateMatchScore({
       matchId: "m1",
       winnerTeamId: "t-b",
@@ -266,6 +266,15 @@ describe("updateMatchScore", () => {
     await expect(
       updateMatchScore({ matchId: "m1", winnerTeamId: null, scoreA: 1, scoreB: 2 }),
     ).rejects.toThrow("score stuk");
+  });
+
+  // Zonder .select() gaf een door RLS geweigerde correctie geen fout én geen
+  // rijen, en meldde de UI alsnog "Score bijgewerkt." (#978).
+  it("meldt een rechten-probleem in plaats van stil te slagen (0 rijen)", async () => {
+    enqueue({ data: [] });
+    await expect(
+      updateMatchScore({ matchId: "m1", winnerTeamId: null, scoreA: 1, scoreB: 2 }),
+    ).rejects.toThrow(/beheerder van de groep/i);
   });
 });
 

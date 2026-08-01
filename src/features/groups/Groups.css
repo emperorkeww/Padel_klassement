@@ -55,33 +55,8 @@
   color: var(--ink-soft);
 }
 
-/* Overlappende mini-avatars van de leden; witte ring houdt ze leesbaar. */
-.group-card__members {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-.group-card__members .avatar {
-  box-shadow: 0 0 0 2px var(--surface);
-}
-.group-card__members .avatar + .avatar,
-.group-card__members .group-card__more {
-  margin-left: -6px;
-}
-.group-card__more {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  box-shadow: 0 0 0 2px var(--surface);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--ink-soft);
-}
+/* De overlappende ledenrij zit in MemberStack (#975); de kaart is het vlak
+   eronder, dus de standaard --stack-ring (--surface) klopt hier. */
 .group-card__name {
   font-weight: 700;
   font-size: var(--fs-base);

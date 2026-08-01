@@ -53,25 +53,32 @@ create policy "Deelnemer kan uitslag invullen"
          or public.is_team_member(team_b_id, (select auth.uid())))
   );
 
--- De eigenaar van de groep waar de match in hangt mag de uitslag óók invullen.
--- Op een speeldag is dat de organisator: hij staat lang niet altijd zelf op de
--- baan, en de rondes worden gegenereerd (created_by = degene die op "ronde
--- maken" drukte), dus zonder deze policy kon hij geen enkele uitslag invoeren.
--- Dezelfde begrenzing als de deelnemer-policy — alleen de overgang naar
--- 'completed' op een nog niet afgeronde match; corrigeren achteraf blijft bij
--- de aanmaker. Sluit aan bij delete_match, waar de groepseigenaar al mag.
-create policy "Groepseigenaar kan uitslag invullen"
+-- De eigenaar van de groep waar de match in hangt beheert die match volledig,
+-- net als de aanmaker (#978). Op een speeldag is dat de organisator: hij staat
+-- lang niet altijd zelf op de baan, en de rondes worden gegenereerd (created_by
+-- = degene die op "ronde maken" drukte), dus zonder deze policy kon hij geen
+-- enkele uitslag invoeren. #905 gaf hem eerst alleen de overgang naar
+-- 'completed'; dat bleek te krap — stond er één cijfer verkeerd, dan kon juist
+-- de administrateur het niet rechtzetten, terwijl hij de match wél al mocht
+-- verwijderen (delete_match staat de groepseigenaar toe). Vandaar dezelfde
+-- onbegrensde vorm als de aanmaker-policy, alleen ingeperkt tot zijn eigen
+-- groep: uitslag invullen én corrigeren, tijdstip verplaatsen, annuleren.
+--
+-- De begrenzing zit niet in deze policy maar in de kolom-grant hieronder:
+-- created_by en group_id staan daar niet in, dus een eigenaar kan een vreemde
+-- match niet naar zijn groep trekken om er rechten op te krijgen, en zich niet
+-- tot aanmaker promoveren. group_id blijft alleen via set_match_group (#648)
+-- muteren, dat lidmaatschap van bron- én doelgroep eist.
+create policy "Groepseigenaar kan groepsmatch bijwerken"
   on public.matches
   for update
   to authenticated
   using (
-    status <> 'completed'
-    and group_id is not null
+    group_id is not null
     and public.is_group_owner(group_id, (select auth.uid()))
   )
   with check (
-    status = 'completed'
-    and group_id is not null
+    group_id is not null
     and public.is_group_owner(group_id, (select auth.uid()))
   );
 

@@ -414,6 +414,31 @@ body {
   color: var(--ink);
 }
 
+/* Links krijgen hun stijl per component (.plan-banen a, .dagkop__chip a, …), en
+   wie er één vergat kreeg het blauw van de browser midden in een groene kaart
+   (#975). Dit is het vangnet daaronder: :where() weegt niets, dus élke
+   component-regel wint hier moeiteloos van — geen extra laag om tegenaan te
+   vechten, alleen een fatsoenlijke bodem onder de UA-stijl. Alleen links zónder
+   klasse: wie wél een klasse meegeeft, stuurt zelf.
+   De onderstreping blijft staan: deze links staan ook middenin een zin (Rudy's
+   uitleg in de instellingen), en daar is kleur alléén geen signaal (WCAG 1.4.1). */
+:where(a:not([class])) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+:where(a:not([class]):hover) {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+:where(a:not([class]):focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ---- View Transitions: zachte crossfade tussen pagina's ----
    Alleen in browsers die het kennen én zonder reduced-motion; de vaste
    balken (zijbalk/topbalk/onderbalk) hebben een eigen naam en blijven staan. */
