@@ -194,8 +194,12 @@ describe("<GroupDetail />", () => {
     expect(screen.getByText(/bob boers & dave de vos/i)).toBeInTheDocument();
     expect(screen.getAllByText("(50%)")).toHaveLength(2);
 
-    // "Opnieuw" toont de op één na eerlijkste verdeling.
-    await userEvent.click(screen.getByRole("button", { name: /^opnieuw$/i }));
+    // "Andere verdeling" toont de op één na eerlijkste verdeling. Die knop heette
+    // "Opnieuw" met de uitleg in een title-tooltip; het label draagt hem nu zelf
+    // (#924).
+    await userEvent.click(
+      screen.getByRole("button", { name: /andere verdeling/i }),
+    );
     expect(
       await screen.findByText(/alice anders & dave de vos/i),
     ).toBeInTheDocument();
@@ -295,7 +299,7 @@ describe("<GroupDetail />", () => {
     ).toBeInTheDocument();
     // De bestaande momenten staan als verwijderbare chips in de balk.
     expect(
-      screen.getByRole("button", { name: /za 5 jan.*×/i }),
+      screen.getByRole("button", { name: /za 5 jan.*verwijderen/i }),
     ).toBeInTheDocument();
   });
 

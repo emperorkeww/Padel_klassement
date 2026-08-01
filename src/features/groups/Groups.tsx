@@ -140,16 +140,23 @@ export function Groups() {
                 Start je eigen padelgroep, nodig je vrienden uit en hou jullie
                 onderlinge klassementen en wedstrijden live bij!
               </EmptyState>
-              <form className="row-between account-form" onSubmit={create}>
-                <input
-                  ref={nameRef}
-                  className="input"
-                  aria-label="Groepsnaam"
-                  placeholder="Groepsnaam, bijv. Vrijdagavond"
-                  maxLength={60}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+              <form
+                className="row-between account-form groepsnaam-form"
+                onSubmit={create}
+              >
+                {/* Een placeholder is geen label: hij verdwijnt zodra je typt
+                    (#924). */}
+                <label className="label groepsnaam-form__veld">
+                  Groepsnaam
+                  <input
+                    ref={nameRef}
+                    className="input"
+                    placeholder="bijv. Vrijdagavond"
+                    maxLength={60}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </label>
                 <button
                   className="btn btn--primary"
                   disabled={busy || !name.trim()}
@@ -260,16 +267,21 @@ export function Groups() {
                 ✕
               </button>
             </div>
-            <form className="row-between account-form" onSubmit={create}>
-              <input
-                ref={nameRef}
-                className="input"
-                aria-label="Groepsnaam"
-                placeholder="Groepsnaam, bijv. Vrijdagavond"
-                maxLength={60}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+            <form
+              className="row-between account-form groepsnaam-form"
+              onSubmit={create}
+            >
+              <label className="label groepsnaam-form__veld">
+                Groepsnaam
+                <input
+                  ref={nameRef}
+                  className="input"
+                  placeholder="bijv. Vrijdagavond"
+                  maxLength={60}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
               <button
                 className="btn btn--primary"
                 disabled={busy || !name.trim()}

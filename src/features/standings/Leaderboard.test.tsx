@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { makeSupabaseMock } from "@/test/supabaseMock";
 import { TABLES, SESSION, TEAMS, PROFILES, MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
@@ -207,6 +207,24 @@ describe("<Leaderboard />", () => {
     expect((await screen.findAllByText(/alice anders/i)).length).toBeGreaterThan(0);
   });
 
+  // #924: zoeken snoeide de lijst geluidloos — de uitkomst hoorde je nergens.
+  it("kondigt aan hoeveel spelers er na het zoeken overblijven", async () => {
+    renderPage();
+    await screen.findAllByText(/carol claes/i);
+
+    fireEvent.change(screen.getByLabelText("Zoek een speler"), {
+      target: { value: "carol" },
+    });
+    expect(await screen.findByText(/1 speler in de lijst\./)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Zoek een speler"), {
+      target: { value: "zzzzz" },
+    });
+    expect(
+      await screen.findByText(/geen spelers in de lijst\./i),
+    ).toBeInTheDocument();
+  });
+
   it("groepeert spelers per divisie op de Divisies-tab met legenda en promotie-hint", async () => {
     renderPage();
     await screen.findAllByText("Wannabe III");
@@ -323,14 +341,24 @@ describe("<Leaderboard />", () => {
   it("toont rating als hoofdgetal in de mobiele ranglijst, punten als label", async () => {
     // Smalle kaart → compacte ranglijst i.p.v. de tabel (#913).
     const herstel = metContainerBreedte(400);
-    const { container } = renderPage();
-    await screen.findAllByText(/alice anders/i);
-    herstel();
-    // Bovenaan staan p1/p2 (rating 1012, 3 ptn); rating is het grote getal.
-    const lead = container.querySelector(".ranklist__lead");
-    const label = container.querySelector(".ranklist__lead-label");
-    expect(lead).toHaveTextContent("1012");
-    expect(label).toHaveTextContent("3 ptn");
+    try {
+      const { container } = renderPage();
+      await screen.findAllByText(/alice anders/i);
+      // De meting zit in een effect dat pas loopt als de lijstcontainer
+      // gemonteerd is — dus ná de eerste rij met een naam. Wacht tot de
+      // omschakeling er echt is; de stub moet zolang blijven staan, anders
+      // meet dat effect de jsdom-breedte 0 en valt de tabel terug.
+      await waitFor(() =>
+        expect(container.querySelector(".ranklist__lead")).not.toBeNull(),
+      );
+      // Bovenaan staan p1/p2 (rating 1012, 3 ptn); rating is het grote getal.
+      const lead = container.querySelector(".ranklist__lead");
+      const label = container.querySelector(".ranklist__lead-label");
+      expect(lead).toHaveTextContent("1012");
+      expect(label).toHaveTextContent("3 ptn");
+    } finally {
+      herstel();
+    }
   });
 
   it("becommentarieert jouw positie bij 'Alle groepen' (#411)", async () => {

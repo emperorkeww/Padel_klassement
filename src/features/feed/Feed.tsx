@@ -6,6 +6,7 @@ import { useRealtime } from "@/lib/hooks/useRealtime";
 import { FeedSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
+import { Aankondiging } from "@/ui/Aankondiging";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import { Sheet } from "@/ui/Sheet";
@@ -37,7 +38,7 @@ import {
 } from "@/features/feed/feedHelpers";
 import { FeedFilters } from "@/features/feed/components/FeedFilters";
 import { celebrate } from "@/lib/utils/confetti";
-import { formatRelativeDay } from "@/lib/utils/format";
+import { formatRelativeDay, aantalTekst } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
 import { getMySmoesjes } from "@/features/matches/smoesjesApi";
 import { getMyVendettas } from "@/features/groups/vendettaApi";
@@ -487,6 +488,12 @@ export function Feed() {
           countFor={countFor}
         />
       )}
+
+      {/* De chip zegt wélk filter aanstaat, niet wat het oplevert (#924). */}
+      <Aankondiging
+        sleutel={activeFilter}
+        bericht={`Filter ${activeFilter}: ${aantalTekst(filtered.length, "bericht", "berichten")}.`}
+      />
 
       {!loading && !error && feed.length === 0 && activeFilter !== "Alles" && (
         <div className="card">

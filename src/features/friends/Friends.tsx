@@ -7,6 +7,8 @@ import { useToast } from "@/ui/ToastProvider";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { Skeleton } from "@/ui/Skeleton";
 import { ErrorRetry } from "@/ui/ErrorRetry";
+import { Aankondiging } from "@/ui/Aankondiging";
+import { aantalTekst } from "@/lib/utils/format";
 import { Sheet } from "@/ui/Sheet";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import {
@@ -565,6 +567,18 @@ export function Friends() {
                           Zoeken…
                         </p>
                       )}
+
+                      {/* "Zoeken…" hierboven meldt dát er gezocht wordt; dit
+                          meldt de uitkomst, die anders geluidloos binnenkomt
+                          (#924). Nog niet gezocht = niets te melden. */}
+                      <Aankondiging
+                        sleutel={query.trim()}
+                        bericht={
+                          searching || !searched
+                            ? ""
+                            : `${aantalTekst(results.length, "speler", "spelers")} gevonden.`
+                        }
+                      />
 
                       <div className="person-list mt-4">
                         {results.length === 0 && (

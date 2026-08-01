@@ -148,7 +148,8 @@ export function GroupLedenTab({
                 )}
                 {zwartePiet?.holderId === m.player_id && (
                   <span className="badge badge--loss" title="Draagt de Zwarte Piet">
-                    🃏
+                    <span aria-hidden="true">🃏</span>
+                    <span className="sr-only">Draagt de Zwarte Piet</span>
                   </span>
                 )}
               </span>
@@ -302,27 +303,30 @@ export function GroupLedenTab({
         hij telt mee in gegenereerde rondes.
       </p>
       <div className="guest-add">
-        <input
-          className="input guest-add__input"
-          type="text"
-          placeholder="Naam van de gast…"
-          aria-label="Naam van een gastspeler"
-          value={guestName}
-          maxLength={40}
-          disabled={busy}
-          onChange={(e) => setGuestName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && guestName.trim()) {
-              e.preventDefault();
-              const naam = guestName.trim();
-              void act(async () => {
-                const gid = await createGuestPlayer(naam);
-                await addGroupMembers(groupId, [gid]);
-                setGuestName("");
-              }, "Gast toegevoegd.");
-            }
-          }}
-        />
+        {/* Placeholder als enig label verdwijnt zodra je typt (#924). */}
+        <label className="label guest-add__veld">
+          Naam van de gast
+          <input
+            className="input guest-add__input"
+            type="text"
+            placeholder="bijv. Jan"
+            value={guestName}
+            maxLength={40}
+            disabled={busy}
+            onChange={(e) => setGuestName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && guestName.trim()) {
+                e.preventDefault();
+                const naam = guestName.trim();
+                void act(async () => {
+                  const gid = await createGuestPlayer(naam);
+                  await addGroupMembers(groupId, [gid]);
+                  setGuestName("");
+                }, "Gast toegevoegd.");
+              }
+            }}
+          />
+        </label>
         <button
           className="btn btn--primary btn--sm"
           disabled={busy || !guestName.trim()}

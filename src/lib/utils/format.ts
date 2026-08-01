@@ -62,3 +62,14 @@ export function formatPlannedDay(
   if (diff === 2) return "overmorgen";
   return formatDate(iso);
 }
+
+/** "12 spelers" / "1 speler" / "geen spelers" — de kern van een telmelding
+ *  voor een screenreader (#924). */
+export function aantalTekst(
+  aantal: number,
+  enkelvoud: string,
+  meervoud: string,
+): string {
+  if (aantal === 0) return `geen ${meervoud}`;
+  return `${aantal} ${aantal === 1 ? enkelvoud : meervoud}`;
+}

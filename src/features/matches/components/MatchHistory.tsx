@@ -76,11 +76,16 @@ export function MatchHistory({
     <section className="card">
       <div className="card__head">
         <h2 className="card__title">{title}</h2>
-        <div className="tabs">
+        {/* Filters, geen tabbladen: dezelfde groep-met-schakelknoppen als
+            elders (#924). De rij had helemaal geen rol, dus was er ook geen
+            ingedrukt-staat te horen. */}
+        <div className="tabs" role="group" aria-label="Historie filteren">
           {FILTER_TABS.map(([key, label]) => (
             <button
               key={key}
+              type="button"
               className={`tab ${filter === key ? "is-active" : ""}`}
+              aria-pressed={filter === key}
               onClick={() => setFilter(key)}
             >
               {label}

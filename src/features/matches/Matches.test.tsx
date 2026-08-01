@@ -90,6 +90,27 @@ describe("<Matches />", () => {
     ).toBeInTheDocument();
   });
 
+  // #924: de rij had geen rol en dus geen hoorbare ingedrukt-staat — het zijn
+  // filters, geen tabbladen.
+  it("presenteert de historie-filters als groep schakelknoppen", async () => {
+    renderPage();
+    await screen.findByText("6–3");
+
+    expect(
+      screen.getByRole("group", { name: /historie filteren/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^alles/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /^gewonnen$/i }));
+    expect(screen.getByRole("button", { name: /^gewonnen$/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("logt een match via de wizard (spelers → score → opslaan)", async () => {
     renderPage();
     await userEvent.click(
@@ -251,6 +272,32 @@ describe("<Matches />", () => {
       // Wissen brengt de oude match terug.
       await userEvent.click(screen.getByRole("button", { name: /wis filters/i }));
       expect(screen.getByText("1–6")).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  // #924: de historie krimpt bij het filteren zonder dat iets dat meldt.
+  it("kondigt aan hoeveel matches het filter overlaat", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "vers", played_at: new Date().toISOString() },
+      {
+        ...MATCH_DONE,
+        id: "oud",
+        score_a: 1,
+        score_b: 6,
+        played_at: "2020-01-05T18:00:00.000Z",
+        created_at: "2020-01-05T18:00:00.000Z",
+      },
+    ]);
+    try {
+      renderPage();
+      await screen.findByText("6–3");
+
+      await userEvent.selectOptions(screen.getByLabelText("Periode"), "7d");
+      expect(
+        await screen.findByText(/1 match in de historie\./),
+      ).toBeInTheDocument();
     } finally {
       herstel();
     }

@@ -143,6 +143,24 @@ export function GroupListSkeleton({ count = 2 }: { count?: number }) {
   );
 }
 
+/** Uitnodigingskaart (#923): uitnodiger-regel, groepsnaam, ledenrij en de
+ *  bevestigknop — de vorm van de kaart die je zo te zien krijgt. */
+export function InviteSkeleton() {
+  return (
+    <div className="skeleton sk-invite" aria-hidden="true">
+      <Line w="45%" h={11} />
+      <Line w="65%" h={22} />
+      <span className="sk-invite__leden">
+        <Circle size={28} />
+        <Circle size={28} />
+        <Circle size={28} />
+        <Line w="22%" h={12} />
+      </span>
+      <span className="sk sk--knop" />
+    </div>
+  );
+}
+
 /** Speeldag-poll: de fasebalk boven een paar stemrijen met knoppen rechts. */
 export function PollSkeleton({ rows = 3 }: { rows?: number }) {
   return (

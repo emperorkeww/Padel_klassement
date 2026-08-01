@@ -132,14 +132,17 @@ export function ClubPicker({
                 locatie; in de globale kiezer tonen we alleen een uitleg. */}
             {allowManual ? (
               <>
-                <input
-                  type="text"
-                  className="select club-picker__search"
-                  placeholder="Typ je eigen locatie…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  autoFocus
-                />
+                <label className="label club-picker__veld">
+                  Eigen locatie
+                  <input
+                    type="text"
+                    className="select club-picker__search"
+                    placeholder="bijv. Tennisclub De Es"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    autoFocus
+                  />
+                </label>
                 {canManual ? (
                   <div className="club-picker__manual">
                     <p className="club-picker__recent-title">Eigen locatie</p>

@@ -590,22 +590,26 @@ export function NewMatchSheet({
 
             {/* Gast toevoegen: iemand zonder app-account, gewoon met een naam. */}
             <div className="guest-add">
-              <input
-                className="input guest-add__input"
-                type="text"
-                placeholder="Speelt iemand zonder account mee? Typ zijn naam…"
-                aria-label="Naam van een gastspeler"
-                value={guestName}
-                maxLength={40}
-                disabled={full || addingGuest}
-                onChange={(e) => setGuestName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addGuest();
-                  }
-                }}
-              />
+              {/* De uitleg zat in de placeholder en verdween zodra je typte
+                  (#924); ze staat nu boven het veld als label. */}
+              <label className="label guest-add__veld">
+                Speelt iemand zonder account mee?
+                <input
+                  className="input guest-add__input"
+                  type="text"
+                  placeholder="Typ zijn naam"
+                  value={guestName}
+                  maxLength={40}
+                  disabled={full || addingGuest}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void addGuest();
+                    }
+                  }}
+                />
+              </label>
               <button
                 type="button"
                 className="btn btn--sm"
