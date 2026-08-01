@@ -65,7 +65,7 @@ describe("uitslag invalideert pias- en shame-cache (#603)", () => {
   });
 
   it("updateMatchScore (correctie) bust pias en shame mee", async () => {
-    enqueue({ data: null });
+    enqueue({ data: [{ id: "match-1" }] });
     await updateMatchScore({
       matchId: "match-1",
       winnerTeamId: "t-ab",

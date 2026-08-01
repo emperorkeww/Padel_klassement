@@ -1,11 +1,17 @@
--- pgTAP-tests voor de policy "Groepseigenaar kan uitslag invullen": de eigenaar
--- van de groep mag de uitslag van een groepsmatch invullen, ook als hij zelf
--- niet meespeelt en de match niet aanmaakte. Dezelfde begrenzing als bij een
--- deelnemer: alleen de overgang naar 'completed' op een nog niet afgeronde
--- match — corrigeren, annuleren en verplaatsen blijven bij de aanmaker.
+-- pgTAP-tests voor de policy "Groepseigenaar kan groepsmatch bijwerken" (#978):
+-- de eigenaar van de groep beheert elke match in die groep volledig, ook als
+-- hij zelf niet meespeelt en de match niet aanmaakte — uitslag invullen én
+-- achteraf corrigeren, tijdstip verplaatsen, annuleren. Dat is bewust dezelfde
+-- vrijheid als de aanmaker heeft; #905 gaf hem alleen de overgang naar
+-- 'completed' en dat bleek te krap.
+--
+-- De begrenzing zit in de kolom-grant uit #432, niet in de policy: created_by
+-- en group_id blijven buiten bereik. Die twee tests zijn hier het hart van de
+-- suite — zonder die grant kon een groepseigenaar een vreemde match naar zijn
+-- eigen groep trekken en zich er vervolgens rechten op geven.
 begin;
 
-select plan(14);
+select plan(18);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -42,7 +48,10 @@ values
 insert into public.groups (id, name, created_by)
 values ('c0000000-0000-0000-0000-0000000000f1','Andere groep','c0000000-0000-0000-0000-000000000007');
 
--- c1 plant twee groepsmatches c1+c2 vs c3+c4; played_at onderscheidt ze.
+-- c1 plant drie groepsmatches c1+c2 vs c3+c4; played_at onderscheidt ze.
+-- Match 1 (10:00) is voor invullen + corrigeren, match 2 (11:00) voor de
+-- geweigerde pogingen, match 3 (12:00) voor verplaatsen en annuleren. Match 4
+-- (14:00) hangt bewust in géén groep.
 set local request.jwt.claims = '{"sub":"c0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 select isnt(
   public.create_planned_match(
@@ -58,6 +67,26 @@ select isnt(
     '2026-02-01 11:00:00+00','c0000000-0000-0000-0000-0000000000f0',null),
   null, 'fixture: match 2 gepland'
 );
+select isnt(
+  public.create_planned_match(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',
+    'c0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000004',
+    '2026-02-01 12:00:00+00','c0000000-0000-0000-0000-0000000000f0',null),
+  null, 'fixture: match 3 gepland'
+);
+-- Match 4 wordt in de groep gepland en daarna als superuser losgekoppeld:
+-- create_planned_match eist buiten een groep vriendschap tussen alle spelers
+-- (_can_add_player), en die relaties zijn hier niet gelegd.
+select isnt(
+  public.create_planned_match(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',
+    'c0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000004',
+    '2026-02-01 14:00:00+00','c0000000-0000-0000-0000-0000000000f0',null),
+  null, 'fixture: match 4 gepland (wordt zo losgekoppeld)'
+);
+update public.matches
+   set group_id = null
+ where played_at = '2026-02-01 14:00:00+00';
 
 ------------------------------------------------------------------------
 -- is_group_owner: c5 bezit de groep, c6 (gewoon lid) niet.
@@ -86,31 +115,49 @@ select is(
   'completed', 'groepseigenaar kan de uitslag invullen'
 );
 
--- Corrigeren achteraf blijft bij de aanmaker: RLS geeft geruisloos 0 rijen.
+-- #978: en hij kan hem daarna corrigeren. Vóór deze issue gaf RLS hier
+-- geruisloos 0 rijen terug.
 update public.matches
    set score_a = 6, score_b = 4
  where played_at = '2026-02-01 10:00:00+00';
 select is(
   (select score_b::int from public.matches where played_at = '2026-02-01 10:00:00+00'),
-  3, 'groepseigenaar kan een afgeronde uitslag niet corrigeren'
+  4, 'groepseigenaar kan een afgeronde uitslag corrigeren'
 );
 
--- Alleen de overgang naar 'completed': annuleren of enkel het tijdstip
--- verzetten faalt op with check.
-select throws_ok(
-  $$ update public.matches set status = 'cancelled'
-     where played_at = '2026-02-01 11:00:00+00' $$,
-  '42501', null, 'groepseigenaar kan een match niet annuleren'
-);
-select throws_ok(
-  $$ update public.matches set played_at = '2026-02-02 10:00:00+00'
-     where played_at = '2026-02-01 11:00:00+00' $$,
-  '42501', null, 'groepseigenaar kan het tijdstip niet wijzigen'
+-- Ook een correctie die de winnaar omdraait — het pad dat serverzijdig een
+-- volledige recompute_ratings() en een herbeoordeling van de tips uitlokt.
+update public.matches
+   set winner_team_id = team_b_id, score_a = 3, score_b = 6
+ where played_at = '2026-02-01 10:00:00+00';
+select is(
+  (select winner_team_id = team_b_id from public.matches
+    where played_at = '2026-02-01 10:00:00+00'),
+  true, 'groepseigenaar kan de winnaar achteraf omdraaien'
 );
 
--- De kolom-grant (#432) geldt onverkort: created_by/group_id meeschrijven bij
--- het invullen wordt geweigerd nog vóór RLS eraan te pas komt. Zonder die
--- grant kon een groepseigenaar een match naar zich toe trekken.
+-- Verplaatsen mag nu ook (match 3, van 12:00 naar 13:00).
+update public.matches
+   set played_at = '2026-02-01 13:00:00+00'
+ where played_at = '2026-02-01 12:00:00+00';
+select is(
+  (select count(*)::int from public.matches where played_at = '2026-02-01 13:00:00+00'),
+  1, 'groepseigenaar kan het tijdstip verzetten'
+);
+
+-- En annuleren.
+update public.matches
+   set status = 'cancelled'
+ where played_at = '2026-02-01 13:00:00+00';
+select is(
+  (select status::text from public.matches where played_at = '2026-02-01 13:00:00+00'),
+  'cancelled', 'groepseigenaar kan een match annuleren'
+);
+
+-- De kolom-grant (#432) geldt onverkort: created_by/group_id meeschrijven
+-- wordt geweigerd nog vóór RLS eraan te pas komt. Zonder die grant kon een
+-- groepseigenaar een match naar zich toe trekken — dit is de enige rem die
+-- deze bredere policy nog begrenst.
 select throws_ok(
   $$ update public.matches
         set status = 'completed', winner_team_id = team_a_id, score_a = 6, score_b = 1,
@@ -124,6 +171,16 @@ select throws_ok(
             group_id = 'c0000000-0000-0000-0000-0000000000f1'
       where played_at = '2026-02-01 11:00:00+00' $$,
   '42501', null, 'groepseigenaar kan group_id niet meeschrijven (#432)'
+);
+
+-- De policy hangt volledig aan group_id: een match zonder groep raakt hij niet,
+-- ook al is hij ergens anders eigenaar.
+update public.matches
+   set status = 'completed', winner_team_id = team_a_id, score_a = 6, score_b = 0
+ where played_at = '2026-02-01 14:00:00+00';
+select is(
+  (select status::text from public.matches where played_at = '2026-02-01 14:00:00+00'),
+  'scheduled', 'groepseigenaar raakt een match zonder groep niet aan'
 );
 
 -- Een gewoon groepslid dat niet meespeelt blijft buitengesloten.
