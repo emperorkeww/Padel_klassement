@@ -9,6 +9,11 @@ import {
   FILTER_TABS,
   type Filter,
 } from "@/features/matches/matchFilter";
+import { lefKaartRegel } from "@/features/matches/stakes";
+import { getStakesForMatches } from "@/features/matches/stakesApi";
+import { displayName } from "@/features/profiles/api";
+import { useAsync } from "@/lib/hooks/useAsync";
+import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { useClub } from "@/features/availability/club";
 import type { Upset } from "@/features/matches/upset";
 import type { Match, Profile, Team } from "@/types";
@@ -60,6 +65,24 @@ export function MatchHistory({
     );
     return groupByDay(sorted, club.timezone);
   }, [matches, teams, myId, filter, club.timezone]);
+
+  // Lef-regels op de kaarten (#981): één bulk-query over de getoonde lijst —
+  // alleen groepsmatches, want daarbuiten bestaat er geen inzet. De query is
+  // gecacht en in stukken gehakt, dus ook een lange historie blijft één ronde
+  // vragen; de cache-revisie trekt de regels bij na een inzet elders (#907).
+  const stakesRev = useCacheRevision("match-stakes");
+  const stakeIds = useMemo(
+    () =>
+      matches
+        .filter((m) => m.group_id != null)
+        .map((m) => m.id)
+        .join(","),
+    [matches],
+  );
+  const stakes = useAsync(
+    () => getStakesForMatches(stakeIds ? stakeIds.split(",") : []),
+    [stakeIds, stakesRev],
+  );
 
   // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
   const counts = useMemo(() => {
@@ -133,6 +156,12 @@ export function MatchHistory({
                     profiles={profiles}
                     perspectiveId={myId}
                     upset={upsets.get(m.id) ?? null}
+                    lef={lefKaartRegel({
+                      match: m,
+                      stakes: stakes.data ?? [],
+                      teams,
+                      naam: (id) => displayName(profiles[id]),
+                    })}
                     canManage={canManage}
                     onDeleted={onChanged}
                   />

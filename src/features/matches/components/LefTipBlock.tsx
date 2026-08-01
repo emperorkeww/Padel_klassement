@@ -3,10 +3,13 @@ import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { errorMessage } from "@/lib/utils/errors";
+import { formatTime } from "@/lib/utils/format";
 import { tap } from "@/lib/utils/haptics";
 import { displayName } from "@/features/profiles/api";
 import {
   blokkadeUitleg,
+  dagBezetDoor,
+  lefGestart,
   playDay,
   stakeBlokkade,
   stakeSwing,
@@ -35,6 +38,7 @@ export function LefTipBlock({
   isDeelnemer,
   mijnKans,
   games,
+  matches,
 }: {
   match: Match;
   profiles: Record<string, Profile>;
@@ -46,6 +50,9 @@ export function LefTipBlock({
   mijnKans: number | null;
   /** Aantal gespeelde matches van de gebruiker (drempel uit de guard). */
   games: number;
+  /** Context van de speeldag (#981): waar je lef al staat als het tegoed
+   *  vergeven is. Zonder deze prop valt de tekst terug op "al vergeven". */
+  matches?: Match[];
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -69,9 +76,7 @@ export function LefTipBlock({
   // tegoed niet meer relevant en zou het een tweede query voor niets zijn.
   const dag = m.played_at ? playDay(m.played_at) : null;
   // Is de aftrap geweest? Draagt zowel het inzetvenster als de onthulling.
-  const gestart =
-    m.status !== "scheduled" ||
-    (m.played_at != null && new Date(m.played_at).getTime() <= Date.now());
+  const gestart = lefGestart(m);
   const venster = !gestart && m.played_at != null;
   const eigenDag = useAsync(
     () => (myId && dag && venster ? getMyStakesOn(myId, dag) : Promise.resolve([])),
@@ -104,6 +109,41 @@ export function LefTipBlock({
   const inzetters = alle.map((s) => displayName(profiles[s.player_id]));
   const swing = mijnKans != null ? stakeSwing(mijnKans, true) : null;
   const normaal = mijnKans != null ? stakeSwing(mijnKans, false) : null;
+
+  // Waar je lef wél staat als het tegoed vergeven is (#981): de eigen inzet op
+  // de andere match van deze speeldag, met de kaart erbij als de aanroeper de
+  // dagcontext meegaf. Dan kan de voet ernaartoe wijzen in plaats van alleen
+  // "al vergeven" te zeggen.
+  const doelStake =
+    blokkade === "dag-bezet" && m.played_at
+      ? dagBezetDoor(eigenDag.data ?? [], m.id, m.played_at)
+      : null;
+  const doelMatch = doelStake
+    ? (matches?.find((kandidaat) => kandidaat.id === doelStake.match_id) ??
+      null)
+    : null;
+  const doelLabel = doelMatch
+    ? [
+        doelMatch.round_number != null
+          ? `ronde ${doelMatch.round_number}`
+          : null,
+        doelMatch.played_at ? formatTime(doelMatch.played_at) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  function naarDoelMatch() {
+    if (!doelMatch) return;
+    // matchMedia defensief: jsdom (tests) heeft hem niet.
+    const rustig =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(`match-${doelMatch.id}`)?.scrollIntoView?.({
+      behavior: rustig ? "auto" : "smooth",
+      block: "center",
+    });
+  }
 
   const samenvatting = mijnInzet
     ? openVoorMij
@@ -166,9 +206,25 @@ export function LefTipBlock({
             {mijnInzet ? "Inzet intrekken" : "Zet je lef in"}
           </button>
           <p className="bet-tile__foot">
-            {blokkade
-              ? blokkadeUitleg(blokkade, games)
-              : "Dubbel of niets: win je, dan telt jouw winst dubbel — verlies je, dan telt je verlies net zo hard. Alleen jouw rating, niet die van je partner. Eén inzet per speeldag, tot de starttijd."}
+            {blokkade === "dag-bezet" && doelMatch && doelLabel ? (
+              // Niet alleen "al vergeven": wijs de match aan waar je lef wél
+              // staat, met een sprong naar die kaart (#981).
+              <>
+                Je lef staat vandaag al op{" "}
+                <button
+                  type="button"
+                  className="lef__doel"
+                  onClick={naarDoelMatch}
+                >
+                  {doelLabel}
+                </button>{" "}
+                — één inzet per speeldag.
+              </>
+            ) : blokkade ? (
+              blokkadeUitleg(blokkade, games)
+            ) : (
+              "Dubbel of niets: win je, dan telt jouw winst dubbel — verlies je, dan telt je verlies net zo hard. Alleen jouw rating, niet die van je partner. Eén inzet per speeldag, tot de starttijd."
+            )}
           </p>
         </>
       )}

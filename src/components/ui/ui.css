@@ -1265,6 +1265,13 @@ textarea {
   color: var(--accent);
   font-weight: 700;
 }
+/* Lef-regel op de (ingeklapte) matchkaart (#981): wie er dubbel of niets
+   speelde blijft ook na de speeldag te lezen — in het lef-violet, zodat het
+   risicospel dezelfde kleur draagt als de inzet-tegel. */
+.match-card__lef {
+  color: var(--lef);
+  font-weight: 700;
+}
 
 /* Compacte badge-strook (gelijk / ronde). */
 .match-card__tags {
