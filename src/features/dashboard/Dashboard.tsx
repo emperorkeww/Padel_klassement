@@ -18,10 +18,10 @@ import {
   rememberName,
   pickRival,
   heroCrestTekst,
+  pickPollBanner,
 } from "./dashboardHelpers";
 import { heroOverlay, heroPermanent } from "./heroThema";
-import { InstallPrompt } from "./components/InstallPrompt";
-import { PushPrompt } from "./components/PushPrompt";
+import { DashboardPrompts } from "./components/DashboardPrompts";
 import { EveningCard } from "./components/EveningCard";
 import { PollBanner } from "./components/PollBanner";
 import { NextMatchCard } from "./components/NextMatchCard";
@@ -29,6 +29,9 @@ import { StatsRow } from "./components/StatsRow";
 import { CourtTeaser } from "./components/CourtTeaser";
 import { RatingCard } from "./components/RatingCard";
 import { DashExtras } from "./components/DashExtras";
+import { DashCijfers } from "./components/DashCijfers";
+import { VandaagSkeleton } from "./components/VandaagSkeleton";
+import { EmptyState } from "@/ui/EmptyState";
 import { DashboardHero } from "./components/DashboardHero";
 import { DashboardError } from "./components/DashboardError";
 import { OnboardCard } from "./components/OnboardCard";
@@ -64,6 +67,7 @@ export function Dashboard() {
     coreError,
     retryCore,
     coreLoading,
+    vandaagLoading,
   } = useDashboardData();
 
   const pmap = profiles.data ?? {};
@@ -218,6 +222,10 @@ export function Dashboard() {
   const myGroups = groups.data ?? [];
   const hasGroup = myGroups.length > 0;
   const hasPlayed = (me?.played ?? 0) > 0;
+  // Zolang de kernbronnen laden tonen we het cijfer-blok wél: de kaarten erin
+  // hebben hun eigen skeleton, en anders zou de lege staat even flitsen voor
+  // iemand die allang speelt (#911).
+  const toonCijfers = coreLoading || hasPlayed;
   // Hero-CTA voor wedstrijden genereren (#73): het label moet kloppen met waar
   // je landt. Genereren gebeurt op de Vandaag-tab van een groep (#674), dus met
   // precies één groep sturen we daar direct heen; zonder groep is "genereren"
@@ -246,6 +254,12 @@ export function Dashboard() {
         a.created_at.localeCompare(b.created_at),
     );
   const nextMatch = planned[0] ?? null;
+  // Heeft de "Vandaag"-zone iets te melden? Zo niet, dan blijft ook de kop weg:
+  // een lege zone met alleen een label is erger dan geen zone (#911). Voor de
+  // poll gebruiken we dezelfde keuze-functie als de banner zelf, zodat kop en
+  // inhoud niet uit elkaar kunnen lopen.
+  const heeftPoll =
+    pickPollBanner(openPolls.data ?? [], myId, Date.now()) != null;
   const nextMatchGroupName = nextMatch?.group_id
     ? ((groups.data ?? []).find((g) => g.id === nextMatch.group_id)?.name ?? null)
     : null;
@@ -325,15 +339,8 @@ export function Dashboard() {
         generateCta={generateCta}
       />
 
-      <OnboardCard
-        myId={myId}
-        profile={myProfile}
-        hasFriend={hasFriend}
-        hasGroup={hasGroup}
-        hasPlayed={hasPlayed}
-        loading={coreLoading}
-      />
-
+      {/* De acties staan direct onder de hero (#911): "3 uitslagen wachten op
+          jou" is het enige op deze pagina waar iemand iets mee móet. */}
       {(planned.length > 0 || incoming.length > 0) && (
         <div className="todo-strip">
           {planned.length > 0 && (
@@ -345,6 +352,9 @@ export function Dashboard() {
               {planned.length === 1
                 ? "uitslag wacht op jou"
                 : "uitslagen wachten op jou"}
+              <span className="todo-chip__pijl" aria-hidden="true">
+                →
+              </span>
             </Link>
           )}
           {incoming.length > 0 && (
@@ -353,12 +363,65 @@ export function Dashboard() {
               {incoming.length === 1
                 ? "vriendschapsverzoek"
                 : "vriendschapsverzoeken"}
+              <span className="todo-chip__pijl" aria-hidden="true">
+                →
+              </span>
             </Link>
           )}
         </div>
       )}
 
-      <PollBanner bundles={openPolls.data ?? []} myId={myId} />
+      <OnboardCard
+        myId={myId}
+        profile={myProfile}
+        hasFriend={hasFriend}
+        hasGroup={hasGroup}
+        hasPlayed={hasPlayed}
+        loading={coreLoading}
+      />
+
+      {/* Wat vandaag speelt, als één zone (#911). Poll, volgende match en
+          avondkaart komen elk uit een eigen bron en vielen daardoor gespreid
+          binnen — telkens bovenin, terwijl je verderop al las. Nu wisselt de
+          zone in één keer van skeleton naar kaarten. */}
+      {(vandaagLoading || heeftPoll || nextMatch || evening) && (
+        <section className="dash-zone" aria-labelledby="dash-vandaag">
+          <h2 className="dash-zone__titel" id="dash-vandaag">
+            Vandaag
+          </h2>
+          <div className="dash-zone__body">
+            {vandaagLoading ? (
+              <VandaagSkeleton />
+            ) : (
+              <>
+                <PollBanner bundles={openPolls.data ?? []} myId={myId} />
+
+                {nextMatch && (
+                  <NextMatchCard
+                    match={nextMatch}
+                    groupName={nextMatchGroupName}
+                    teams={tmap}
+                    profiles={pmap}
+                  />
+                )}
+
+                {evening && (
+                  <EveningCard
+                    evening={evening}
+                    groups={groups.data ?? []}
+                    completed={completed}
+                    teams={tmap}
+                    profiles={pmap}
+                    histories={histories.data ?? undefined}
+                    intensiteit={myProfile?.roast_intensiteit ?? "radioactief"}
+                    timezone={club.timezone}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       <WrappedBanners
         myId={myId}
@@ -370,88 +433,83 @@ export function Dashboard() {
         rating={myRating}
       />
 
-      {nextMatch && (
-        <NextMatchCard
-          match={nextMatch}
-          groupName={nextMatchGroupName}
+      {/* Pias-alarm blijft bewust búiten de inklapper (#276): deze kaart
+          verschijnt alléén als jíj deze week de pias bent — een tijdgevoelige
+          waarschuwing, geen kaart om weg te vouwen. Sinds #643 uit de
+          serverbron (pias_of_week), zodat het alarm dezelfde persoon roept als
+          banner, feed en FUT-kaart. */}
+      {mijnWeekPias && (
+        <PiasCard
+          matches={[]}
           teams={tmap}
           profiles={pmap}
+          scope="week"
+          restrictTo={myId}
+          selfId={myId}
+          pias={{
+            playerId: mijnWeekPias.playerId,
+            reden: mijnWeekPias.reden,
+            detail: piasDetail(mijnWeekPias.reden, mijnWeekPias.waarde),
+            ernst: mijnWeekPias.ernst,
+            waarde: mijnWeekPias.waarde,
+          }}
         />
       )}
 
-      {evening && (
-        <EveningCard
-          evening={evening}
-          groups={groups.data ?? []}
-          completed={completed}
-          teams={tmap}
-          profiles={pmap}
-          histories={histories.data ?? undefined}
-          intensiteit={myProfile?.roast_intensiteit ?? "radioactief"}
-          timezone={club.timezone}
-        />
-      )}
-
-      <StatsRow
-        loading={standings.loading}
-        rating={myRating}
-        rank={rank}
-        winrate={rate}
-        played={me?.played ?? 0}
-      />
-
-      {/* Gamification-kolom (rating, weekmissies, pias, badge, rivaal). Blijft
-          hier tot #276 die naar het profiel/paspoort verhuist; #273 haalt enkel
-          de schermduplicaten (feed, uitslagen, topspelers, banen) weg. */}
-      <div className="grid">
-        <RatingCard
-          myId={myId}
-          loading={ratings.loading}
-          rating={myRating}
-          games={myRatingGames}
-          dayDelta={dayDelta}
-          history={rhist}
-        />
-
-        {/* Pias-alarm blijft zichtbaar (#276): deze kaart verschijnt alléén
-            als jíj deze week de pias bent — een tijdgevoelige waarschuwing,
-            geen kaart om weg te vouwen. Sinds #643 uit de serverbron
-            (pias_of_week), zodat het alarm dezelfde persoon roept als
-            banner, feed en FUT-kaart. */}
-        {mijnWeekPias && (
-          <PiasCard
-            matches={[]}
-            teams={tmap}
-            profiles={pmap}
-            scope="week"
-            restrictTo={myId}
-            selfId={myId}
-            pias={{
-              playerId: mijnWeekPias.playerId,
-              reden: mijnWeekPias.reden,
-              detail: piasDetail(mijnWeekPias.reden, mijnWeekPias.waarde),
-              ernst: mijnWeekPias.ernst,
-              waarde: mijnWeekPias.waarde,
-            }}
+      {/* Het hele "hoe sta ik ervoor"-blok achter één inklapper (#911): eerder
+          hingen statsrij en rating los boven de gamification-inklapper (#276),
+          waardoor de pagina één rij gelijkwaardige kaarten was. Wie nog niet
+          gespeeld heeft krijgt geen rij nullen maar één lege staat. */}
+      {toonCijfers ? (
+        <DashCijfers>
+          <StatsRow
+            loading={standings.loading}
+            rating={myRating}
+            rank={rank}
+            winrate={rate}
+            played={me?.played ?? 0}
           />
-        )}
 
-        <DashExtras
-          myId={myId}
-          matches={myMatches.data}
-          teams={teams.data}
-          profiles={pmap}
-          badges={allBadges}
-          nextBadge={nextBadge}
-          rival={rival}
-        />
-      </div>
+          <RatingCard
+            myId={myId}
+            loading={ratings.loading}
+            rating={myRating}
+            games={myRatingGames}
+            dayDelta={dayDelta}
+            history={rhist}
+          />
 
-      <InstallPrompt />
-
-      <PushPrompt userId={myId} />
+          <DashExtras
+            myId={myId}
+            matches={myMatches.data}
+            teams={teams.data}
+            profiles={pmap}
+            badges={allBadges}
+            nextBadge={nextBadge}
+            rival={rival}
+          />
+        </DashCijfers>
+      ) : (
+        <section className="card">
+          <EmptyState
+            icon="📈"
+            title="Je cijfers beginnen bij je eerste match."
+            action={
+              <Link className="btn btn--primary" to="/matches">
+                Uitslag invullen
+              </Link>
+            }
+          >
+            Rating, klassementspositie, weekmissies en badges verschijnen hier
+            zodra er een uitslag staat. Tot die tijd valt er weinig te meten.
+          </EmptyState>
+        </section>
+      )}
 
       <CourtTeaser availability={availability} timezone={club.timezone} />
+
+      {/* Hooguit één onderbreking per bezoek (#911); de gate kiest welke. */}
+      <DashboardPrompts userId={myId} />
     </div>
   );
 }

@@ -168,6 +168,11 @@ export function useDashboardData() {
     coreError,
     retryCore,
     coreLoading: standings.loading || friendships.loading || groups.loading,
+    // De "Vandaag"-zone (#911): poll, volgende match en avondkaart komen elk uit
+    // een eigen bron en verschenen daardoor gespreid, telkens bovenin de pagina.
+    // Eén gedeelde laadvlag laat de zone in één keer wisselen van skeleton naar
+    // kaarten, in plaats van drie keer de rest omlaag te duwen.
+    vandaagLoading: openPolls.loading || myMatches.loading || results.loading,
   };
 }
 
