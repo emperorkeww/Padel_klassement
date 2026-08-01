@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -23,6 +23,8 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { supabase } from "@/lib/supabase/client";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+import { playDay } from "@/features/matches/stakes";
 import { MATCH_PLANNED, PROFILES, TABLES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
 
@@ -62,6 +64,12 @@ function stakeRij(matchId: string, playerId: string) {
   };
 }
 
+// Tweede ronde op dezelfde speeldag: samen dragen ze één lef-tegoed (#907).
+const GEPLAND_B = { ...GEPLAND, id: "m-plan-2", round_number: 3 } as Match;
+
+/** Speeldag in clubtijd — de sleutel waarop het tegoed geteld wordt. */
+const DAG = playDay(OVER_2_DAGEN);
+
 function setTables(over: Record<string, unknown[]> = {}) {
   for (const key of Object.keys(tables)) delete tables[key];
   Object.assign(tables, {
@@ -88,6 +96,8 @@ function renderCard(match: Match = GEPLAND) {
 beforeEach(() => {
   setTables();
   vi.clearAllMocks();
+  // Verse querycache: de inzetten van de vorige test mogen niet blijven hangen.
+  invalidateAll();
 });
 
 describe("<PlannedMatchCard /> lef-tip", () => {
@@ -156,5 +166,127 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     // De toto-tegel hoort er wel te staan (het blijft een groepsmatch).
     await screen.findByText(/🎯 toto/i);
     expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
+  });
+});
+
+// ── Het dagtegoed over twee kaarten (#907) ──────────────────────────────────
+// De basis-mock filtert niet en schrijft niet: elke select geeft de hele tabel
+// terug en een insert/delete verdwijnt. Voor het tegoed is dat te grof — wie op
+// wélke match inzet is nu juist de vraag. Deze query-bouwer houdt de eq-filters
+// bij en laat schrijfacties echt op `tables.match_stakes` landen, zodat een
+// volgende select ziet wat de kaart zojuist deed.
+type Rij = Record<string, unknown>;
+
+function stakesQuery() {
+  const filters: [string, unknown][] = [];
+  let invoer: Rij | null = null;
+  let wissen = false;
+  const q: Record<string, unknown> = {};
+  for (const m of ["select", "order", "in", "is", "limit", "match"])
+    q[m] = () => q;
+  q.eq = (kolom: string, waarde: unknown) => {
+    filters.push([kolom, waarde]);
+    return q;
+  };
+  q.insert = (rij: Rij) => {
+    invoer = rij;
+    return q;
+  };
+  q.delete = () => {
+    wissen = true;
+    return q;
+  };
+  const past = (r: Rij) => filters.every(([k, v]) => r[k] === v);
+  const rijen = () => (tables.match_stakes ?? []) as Rij[];
+  q.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
+    if (invoer) {
+      // play_date zet de guard serverside af uit de starttijd; de client stuurt
+      // die kolom niet mee.
+      rijen().push({ ...invoer, play_date: DAG, created_at: OVER_2_DAGEN });
+    } else if (wissen) {
+      tables.match_stakes = rijen().filter((r) => !past(r));
+    }
+    const data = invoer || wissen ? [] : rijen().filter(past);
+    return Promise.resolve({ data, error: null }).then(resolve, reject);
+  };
+  return q;
+}
+
+type FromMock = {
+  getMockImplementation: () => (table: string) => unknown;
+  mockImplementation: (impl: (table: string) => unknown) => void;
+};
+
+const fromMock = supabase.from as unknown as FromMock;
+const basisFrom = fromMock.getMockImplementation();
+
+function renderTwee() {
+  return render(
+    <MemoryRouter>
+      <AuthProvider>
+        <ToastProvider>
+          <PlannedMatchCard match={GEPLAND} teams={tmap} profiles={pmap} />
+          <PlannedMatchCard match={GEPLAND_B} teams={tmap} profiles={pmap} />
+        </ToastProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
+/** De twee lef-tegels, in renderoorde: [ronde 2, ronde 3]. */
+async function tegels() {
+  const gevonden = await screen.findAllByRole("region", { name: "Lef" });
+  expect(gevonden).toHaveLength(2);
+  return gevonden;
+}
+
+const knop = (tegel: HTMLElement) => within(tegel).getByRole("button");
+
+describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
+  beforeEach(() => {
+    setTables({ matches: [GEPLAND, GEPLAND_B] });
+    fromMock.mockImplementation((table: string) =>
+      table === "match_stakes" ? stakesQuery() : basisFrom(table),
+    );
+  });
+
+  afterEach(() => {
+    fromMock.mockImplementation(basisFrom);
+  });
+
+  it("blokkeert de andere kaart zodra je ergens inzet, en geeft hem weer vrij zodra je intrekt", async () => {
+    renderTwee();
+    const [a, b] = await tegels();
+    await waitFor(() => expect(knop(b)).toBeEnabled());
+
+    // Inzetten op ronde 2: het tegoed van de dag is daarmee vergeven.
+    await userEvent.click(knop(a));
+    await waitFor(() => expect(knop(a)).toHaveTextContent(/inzet intrekken/i));
+    await waitFor(() => expect(knop(b)).toBeDisabled());
+    expect(
+      within(b).getByText(/je lef is vandaag al vergeven/i),
+    ).toBeInTheDocument();
+
+    // Weer intrekken: ronde 3 hoort meteen open te staan, zonder refresh.
+    await userEvent.click(knop(a));
+    await waitFor(() => expect(knop(b)).toBeEnabled());
+    expect(knop(b)).toHaveTextContent(/zet je lef in/i);
+    expect(
+      within(b).queryByText(/je lef is vandaag al vergeven/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("laat de kaart waarop je inzet zelf ook meteen kloppen", async () => {
+    renderTwee();
+    const [a] = await tegels();
+
+    await userEvent.click(knop(a));
+    expect(
+      await within(a).findByText(/jouw lef staat ingezet/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(knop(a));
+    await waitFor(() => expect(knop(a)).toHaveTextContent(/zet je lef in/i));
+    expect(within(a).getByText(/dubbel of niets\?/i)).toBeInTheDocument();
   });
 });

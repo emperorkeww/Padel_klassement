@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { errorMessage } from "@/lib/utils/errors";
 import { tap } from "@/lib/utils/haptics";
 import { displayName } from "@/features/profiles/api";
@@ -49,9 +50,16 @@ export function LefTipBlock({
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
+  // Elke inzet-mutatie leegt de "match-stakes"-cache; deze teller zorgt dat
+  // álle lef-tegels daarop opnieuw ophalen (#907). Het dagtegoed is er één per
+  // speeldag, dus wat je op de ene rondekaart doet bepaalt wat op de andere nog
+  // mag — zonder dit bleef die andere kaart tot een refresh op zijn oude beeld
+  // hangen.
+  const rev = useCacheRevision("match-stakes");
+
   const stakes = useAsync(
     () => (m.group_id ? getMatchStakes(m.id) : Promise.resolve([])),
-    [m.id, m.group_id],
+    [m.id, m.group_id, rev],
   );
   const alle = stakes.data ?? [];
   const mijnInzet = myId ? alle.some((s) => s.player_id === myId) : false;
@@ -67,7 +75,7 @@ export function LefTipBlock({
   const venster = !gestart && m.played_at != null;
   const eigenDag = useAsync(
     () => (myId && dag && venster ? getMyStakesOn(myId, dag) : Promise.resolve([])),
-    [myId, dag, venster],
+    [myId, dag, venster, rev],
   );
 
   // Spiegel van match_stakes_guard; de server blijft de echte poort.
@@ -119,15 +127,15 @@ export function LefTipBlock({
         toast.success("Lef ingezet: dubbel of niets.");
       }
       tap();
-      stakes.reload();
-      eigenDag.reload();
+      // Geen eigen reload(): setStake/clearStake legen de "match-stakes"-cache
+      // en dat trekt via `rev` élke lef-tegel bij — deze kaart incluis. Een
+      // reload() hier zou bovendien niet volstaan: die haalt op via dezelfde
+      // cache, dus zonder invalidatie kreeg hij zijn eigen oude antwoord terug.
     } catch (err) {
+      // Ook de foutkant leunt op die invalidatie: zag de server een blokkade
+      // die deze kaart nog niet kende — meestal het dagtegoed dat op een andere
+      // rondekaart al vergeven is — dan klopt de tegel meteen daarna weer.
       toast.error(errorMessage(err));
-      // De server zag een blokkade die deze kaart nog niet kende — meestal het
-      // dagtegoed dat op een andere rondekaart al vergeven is. Opnieuw ophalen,
-      // zodat de tegel meteen klopt in plaats van te blijven uitnodigen.
-      stakes.reload();
-      eigenDag.reload();
     } finally {
       setBusy(false);
     }
