@@ -4,7 +4,6 @@ import { Stat } from "@/ui/Stat";
 import { Avatar } from "@/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { RatingChart } from "@/features/rating/components/RatingChart";
-import { RankChart } from "@/features/rating/components/RankChart";
 import { winRate } from "@/features/rating/results";
 import { bestWeekday, monthlyWinRate, opponentExtremes } from "@/features/profiles/trends";
 import { formatDate } from "@/lib/utils/format";
@@ -31,9 +30,7 @@ export function ProfileStats({ d }: { d: ProfileData }) {
     bigWin,
     partner,
     hasRating,
-    hasRank,
     rhist,
-    rankPoints,
     scoped,
     tmap,
     pmap,
@@ -45,10 +42,7 @@ export function ProfileStats({ d }: { d: ProfileData }) {
     vendettaMet,
   } = d;
 
-  const [chartTab, setChartTab] = useState<"rating" | "positie">("rating");
   const [showAllH2H, setShowAllH2H] = useState(false);
-  const chartShown =
-    hasRating && hasRank ? chartTab : hasRating ? "rating" : "positie";
   const h2hShown = showAllH2H ? h2h : h2h.slice(0, 5);
 
   const months = monthlyWinRate(scoped, tmap, id);
@@ -76,46 +70,16 @@ export function ProfileStats({ d }: { d: ProfileData }) {
         <Stat label="Gespeeld" value={playedCount} />
       </div>
 
-      {(hasRating || hasRank) && (
+      {/* Er stond een weergavewissel rating ⇄ positie, maar het positie-verloop
+          draaide sinds #461 nooit meer (dode bron) — dus een toggle met altijd
+          maar één optie. Opgeruimd in #918; zie PlayerProfile.tsx voor wat er
+          nodig is om het terug te brengen. */}
+      {hasRating && (
         <section className="card">
           <div className="card__head">
-            <h2 className="card__title">
-              {chartShown === "rating" ? "Rating-verloop" : "Positie-verloop"}
-            </h2>
-            {hasRating && hasRank && (
-              <div
-                className="tabs tabs--head"
-                role="group"
-                aria-label="Grafiek-weergave"
-              >
-                <button
-                  type="button"
-                  className={`tab ${chartShown === "rating" ? "is-active" : ""}`}
-                  onClick={() => setChartTab("rating")}
-                >
-                  Rating
-                </button>
-                <button
-                  type="button"
-                  className={`tab ${chartShown === "positie" ? "is-active" : ""}`}
-                  onClick={() => setChartTab("positie")}
-                >
-                  Positie
-                </button>
-              </div>
-            )}
+            <h2 className="card__title">Rating-verloop</h2>
           </div>
-          {chartShown === "rating" ? (
-            <RatingChart history={rhist} />
-          ) : (
-            <>
-              <p className="card__subtitle">
-                Klassementspositie na elke speeldag — de stand is telkens berekend uit
-                alle matches t/m die dag.
-              </p>
-              <RankChart points={rankPoints} />
-            </>
-          )}
+          <RatingChart history={rhist} />
         </section>
       )}
 

@@ -268,6 +268,10 @@ describe("<PlayerProfile />", () => {
     try {
       setTables("p1");
       renderProfile("p1");
+      // Sinds #918 zit Wrapped in het overflow-menu van de kop.
+      fireEvent.click(
+        await screen.findByRole("button", { name: /meer op dit profiel/i }),
+      );
       const knop = await screen.findByRole("button", { name: /wrapped 2026/i });
       fireEvent.click(knop);
       const dialog = await screen.findByRole("dialog", { name: /wrapped 2026/i });
@@ -352,5 +356,101 @@ describe("<PlayerProfile />", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /verzoek/i })).toBeNull();
     expect(screen.queryByText(/vrienden ✓/i)).toBeNull();
+  });
+
+  // ── #918 ────────────────────────────────────────────────────────────────
+
+  describe("kopbalk (#918)", () => {
+    const menuKnop = () =>
+      screen.getByRole("button", { name: /meer op dit profiel/i });
+
+    it("houdt alleen Terug en Delen zichtbaar; de rest zit in het menu", async () => {
+      setTables("p2");
+      renderProfile("p2");
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+
+      // Zichtbaar zonder het menu te openen.
+      expect(screen.getByRole("button", { name: /terug/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /deel profiel/i }),
+      ).toBeInTheDocument();
+      // En de rest niet — die stapelde op telefoonbreedte.
+      expect(screen.queryByLabelText("Seizoen")).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: /vergelijk met mij/i }),
+      ).toBeNull();
+
+      fireEvent.click(menuKnop());
+      expect(screen.getByLabelText("Seizoen")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /vergelijk met mij/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("sluit het menu bij Escape en geeft de focus terug", async () => {
+      setTables("p2");
+      renderProfile("p2");
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+
+      fireEvent.click(menuKnop());
+      expect(menuKnop()).toHaveAttribute("aria-expanded", "true");
+
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(menuKnop()).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByLabelText("Seizoen")).toBeNull();
+      expect(menuKnop()).toHaveFocus();
+    });
+
+    it("sluit het menu na het kiezen van een seizoen", async () => {
+      setTables("p2");
+      renderProfile("p2");
+      await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+
+      fireEvent.click(menuKnop());
+      const kiezer = await screen.findByLabelText("Seizoen");
+      const optie = within(kiezer).getAllByRole("option")[1] as HTMLOptionElement;
+      fireEvent.change(kiezer, { target: { value: optie.value } });
+
+      expect(menuKnop()).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+
+  it("legt uit welke cijfers het seizoensfilter volgen (#918)", async () => {
+    setTables("p2");
+    renderProfileAt("/spelers/p2?seizoen=2026-q3");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    const uitleg = screen.getByText(/badges, bijnaam en rudy/i);
+    expect(uitleg).toHaveTextContent(/Q3 2026/);
+  });
+
+  it("zwijgt over de scope zonder gekozen seizoen (#918)", async () => {
+    setTables("p2");
+    renderProfile("p2");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    expect(screen.queryByText(/badges, bijnaam en rudy/i)).toBeNull();
+  });
+
+  // Deze twee waren al opgelost toen de issue geschreven werd; een test houdt
+  // ze zo.
+  it("gebruikt de gedeelde tabbalk met tablist-semantiek (#910)", async () => {
+    setTables("p2");
+    renderProfile("p2");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    expect(
+      screen.getByRole("tablist", { name: /profielonderdelen/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "Overzicht" }),
+    ).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("toont badge-voortgang in het raster, zonder de pop-up te openen", async () => {
+    setTables("p2");
+    const { container } = renderProfile("p2");
+    await screen.findByRole("heading", { name: /bob boers/i, level: 1 });
+    fireEvent.click(screen.getByRole("tab", { name: "Badges" }));
+    const voortgang = container.querySelectorAll(".badges__progress");
+    expect(voortgang.length).toBeGreaterThan(0);
+    expect(voortgang[0].textContent).toMatch(/^\d+\/\d+$/);
   });
 });
