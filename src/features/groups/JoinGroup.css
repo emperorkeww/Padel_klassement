@@ -1,0 +1,122 @@
+/* Uitnodiging inwisselen (#923).
+   Eén smalle kolom met een merkkop erboven: dit scherm is voor veel spelers
+   het eerste wat ze van de app zien, en het vraagt maar één ding. Alle staten
+   (laden, preview, fout) delen dezelfde kaart, zodat er niets verspringt
+   tussen "we halen hem op" en "dit is de groep". */
+
+.join {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: var(--sp-4) 0 var(--sp-6);
+}
+
+.join__merk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.join__merknaam {
+  font-weight: 800;
+  font-size: var(--fs-xl);
+  letter-spacing: -0.03em;
+}
+
+.join__kaart {
+  display: grid;
+  gap: var(--sp-3);
+  text-align: center;
+}
+
+.join__intro {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+
+.join__groep {
+  margin: 0;
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  /* Groepsnamen zijn vrije tekst; een lange naam zonder spaties mag de kaart
+     niet openbreken. */
+  overflow-wrap: anywhere;
+}
+.join__groep--fout {
+  font-size: var(--fs-xl);
+}
+
+.join__leden {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+/* Overlappende mini-avatars, net als op de groepskaart in de hub. */
+.join__avatars {
+  display: inline-flex;
+  align-items: center;
+}
+.join__avatars .avatar {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.join__avatars .avatar + .avatar,
+.join__meer {
+  margin-left: -6px;
+}
+.join__meer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.join__verval,
+.join__uitleg,
+.join__laadtekst {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+}
+.join__uitleg {
+  text-wrap: pretty;
+}
+
+.join__acties {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.join__knop {
+  width: 100%;
+}
+
+.join__account {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
+}
+.join__wissel {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
