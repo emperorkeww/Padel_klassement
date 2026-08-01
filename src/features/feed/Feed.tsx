@@ -12,12 +12,14 @@ import { Sheet } from "@/ui/Sheet";
 import { COMMENTATOR } from "@/features/coach/roastTone";
 import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 import { CoachIntro } from "@/features/feed/components/CoachIntro";
+import { FeedFriendshipBundle } from "@/features/feed/components/FeedFriendshipBundle";
 import { CoachComment } from "@/features/feed/components/CoachComment";
 import { EveningCard } from "@/features/feed/components/EveningCard";
 import { FeedItem } from "@/features/feed/components/FeedItem";
 import { SmoesCard } from "@/features/feed/components/SmoesCard";
 import {
   buildFeed,
+  bundelVriendschappen,
   feedDay,
   feedPrivacyFilter,
   recentlyClosedMonth,
@@ -385,6 +387,62 @@ export function Feed() {
   // feed-volgorde.
   const gebruiktCoach = new Set<string>();
 
+  /** Eén feed-rij als <li>. Als functie i.p.v. inline JSX, zodat een
+   *  samengevatte vriendschapsbundel (#944) dezelfde rijen kan uitklappen. */
+  const feedRij = ({ event, index }: { event: FeedEvent; index: number }) => (
+    <li
+      className="feed__item"
+      key={eventKey(event)}
+      // Het eerste item van een "toon meer"-ronde krijgt focus en scrollt in
+      // beeld (#912).
+      ref={index === eersteNieuwe ? eersteNieuweRef : undefined}
+      tabIndex={index === eersteNieuwe ? -1 : undefined}
+    >
+                      {event.kind === "evening" ? (
+                        <EveningCard
+                          event={event}
+                          data={avondData(event)}
+                          mood={mijnIntensiteit}
+                          pmap={pmap}
+                          tmap={tmap}
+                          name={name}
+                          onInfo={() => setCoachAboutOpen(true)}
+                        />
+                      ) : event.kind === "smoes" ? (
+                        <SmoesCard
+                          event={event}
+                          pmap={pmap}
+                          tmap={tmap}
+                          name={name}
+                          onInfo={() => setCoachAboutOpen(true)}
+                        />
+                      ) : (
+                        <>
+                          <FeedItem
+                            event={event}
+                            pmap={pmap}
+                            tmap={tmap}
+                            myId={myId}
+                            name={name}
+                          />
+                          <CoachComment
+                            tekst={coachOpmerking(event, {
+                              intensiteitVoor,
+                              profiles: pmap,
+                              teams: tmap,
+                              gebruikt: gebruiktCoach,
+                              matches: matches.data ?? [],
+                              naamVoor,
+                              piasWeeks: piasWeeksFlat,
+                            })}
+                            mood={coachStemming(event, intensiteitVoor)}
+                            onInfo={() => setCoachAboutOpen(true)}
+                          />
+                        </>
+                      )}
+    </li>
+  );
+
   // Coach Rudy's avondverslag (#204): 2-3 zinnen bij een speelavond-item,
   // afgeleid uit de eveningSummary van díe groep + dag (uit de al geladen
   // matches). Respecteert intensiteit + schild en deelt de anti-herhaling.
@@ -496,59 +554,25 @@ export function Feed() {
                   {dag.label}
                 </div>
                 <ol className="feed__items">
-                  {dag.items.map(({ event, index }) => (
-                    <li
-                      className="feed__item"
-                      key={eventKey(event)}
-                      // Het eerste item van een "toon meer"-ronde krijgt focus
-                      // en scrollt in beeld (#912).
-                      ref={index === eersteNieuwe ? eersteNieuweRef : undefined}
-                      tabIndex={index === eersteNieuwe ? -1 : undefined}
-                    >
-                      {event.kind === "evening" ? (
-                        <EveningCard
-                          event={event}
-                          data={avondData(event)}
-                          mood={mijnIntensiteit}
+                  {bundelVriendschappen(dag.items, (i) => i.event).map((rij) =>
+                    "bundel" in rij ? (
+                      // Acht keer "X en Y zijn nu vrienden" met hetzelfde
+                      // tijdstip is een muur; één regel met de gezichten erbij
+                      // laat de rest van de feed weer ademen (#944).
+                      <li className="feed__item" key={`bundel-${rij.bundel.at}`}>
+                        <FeedFriendshipBundle
+                          bundel={rij.bundel}
                           pmap={pmap}
-                          tmap={tmap}
+                          myId={myId}
                           name={name}
-                          onInfo={() => setCoachAboutOpen(true)}
-                        />
-                      ) : event.kind === "smoes" ? (
-                        <SmoesCard
-                          event={event}
-                          pmap={pmap}
-                          tmap={tmap}
-                          name={name}
-                          onInfo={() => setCoachAboutOpen(true)}
-                        />
-                      ) : (
-                        <>
-                          <FeedItem
-                            event={event}
-                            pmap={pmap}
-                            tmap={tmap}
-                            myId={myId}
-                            name={name}
-                          />
-                          <CoachComment
-                            tekst={coachOpmerking(event, {
-                              intensiteitVoor,
-                              profiles: pmap,
-                              teams: tmap,
-                              gebruikt: gebruiktCoach,
-                              matches: matches.data ?? [],
-                              naamVoor,
-                              piasWeeks: piasWeeksFlat,
-                            })}
-                            mood={coachStemming(event, intensiteitVoor)}
-                            onInfo={() => setCoachAboutOpen(true)}
-                          />
-                        </>
-                      )}
-                    </li>
-                  ))}
+                        >
+                          {rij.leden.map((lid) => feedRij(lid))}
+                        </FeedFriendshipBundle>
+                      </li>
+                    ) : (
+                      feedRij(rij)
+                    ),
+                  )}
                 </ol>
               </li>
             ))}

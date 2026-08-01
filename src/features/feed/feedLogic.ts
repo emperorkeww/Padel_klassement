@@ -878,3 +878,76 @@ function addDays(isoDate: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+/* ---------- Opeenvolgende vriendschappen bundelen (#944) ---------- */
+
+/** Eén samengevatte regel in plaats van een reeks losse vriendschapsrijen. */
+export interface FriendshipBundel {
+  kind: "friendship-bundel";
+  /** Tijdstip van de eerste (nieuwste) vriendschap in de bundel. */
+  at: string;
+  /** De gebundelde gebeurtenissen zelf; de UI kan ze uitklappen. */
+  events: Extract<FeedEvent, { kind: "friendship" }>[];
+}
+
+/** Vanaf zoveel opeenvolgende vriendschappen wordt het één regel. Twee rijen
+ *  is geen muur; vanaf drie verdrinkt de rest van de feed erin. */
+export const BUNDEL_DREMPEL = 3;
+
+/**
+ * Vat opeenvolgende vriendschapsgebeurtenissen samen (#944).
+ *
+ * Een clubavond waarop iedereen elkaar toevoegt levert acht identieke regels
+ * met hetzelfde tijdstip op ("X en Y zijn nu vrienden"), en daar verdwijnt de
+ * rest van de feed onder. Alleen áán elkaar grenzende items worden gebundeld:
+ * staat er een match tussen, dan zijn het twee losse momenten en horen ze dat
+ * ook te blijven.
+ *
+ * Bewust een aparte pass over de al gefilterde, al afgekapte lijst in plaats van
+ * een stap in `buildFeed`: zo blijven de filtertellers en de "toon meer"-limiet
+ * tellen wat er echt gebeurd is.
+ */
+export function bundelVriendschappen<T>(
+  items: T[],
+  eventVan: (item: T) => FeedEvent,
+  drempel = BUNDEL_DREMPEL,
+): (T | { bundel: FriendshipBundel; leden: T[] })[] {
+  const uit: (T | { bundel: FriendshipBundel; leden: T[] })[] = [];
+  let reeks: T[] = [];
+
+  const spoel = () => {
+    if (reeks.length === 0) return;
+    if (reeks.length < drempel) uit.push(...reeks);
+    else {
+      const events = reeks.map(
+        (r) => eventVan(r) as Extract<FeedEvent, { kind: "friendship" }>,
+      );
+      uit.push({
+        bundel: { kind: "friendship-bundel", at: events[0].at, events },
+        leden: reeks,
+      });
+    }
+    reeks = [];
+  };
+
+  for (const item of items) {
+    if (eventVan(item).kind === "friendship") reeks.push(item);
+    else {
+      spoel();
+      uit.push(item);
+    }
+  }
+  spoel();
+  return uit;
+}
+
+/** De spelers in een bundel, in volgorde van verschijnen en zonder dubbels —
+ *  voedt de avatarrij van de samengevatte regel. */
+export function bundelSpelers(bundel: FriendshipBundel): string[] {
+  const gezien = new Set<string>();
+  for (const e of bundel.events) {
+    gezien.add(e.a);
+    gezien.add(e.b);
+  }
+  return [...gezien];
+}

@@ -41,6 +41,15 @@ export function useScrollSchaduw(ref: RefObject<HTMLElement | null>): Schaduw {
     setSchaduw(schaduwVoor(el.scrollLeft, el.scrollWidth, el.clientWidth));
   }, [ref]);
 
+  // Na élke render opnieuw meten (#944). De ResizeObserver hieronder kijkt naar
+  // de border box van de rij, en die verandert níet wanneer alleen de inhoud
+  // groeit: de filterchips van de feed worden pas breder dan het scherm zodra
+  // de tellers binnenkomen ("Matches 65"). Er werd dus nooit hermeten en de
+  // fade bleef weg, precies bij de rij die hem het hardst nodig had. Eén
+  // layout-uitlezing per render, en `setSchaduw` met dezelfde waarde rendert
+  // niets opnieuw.
+  useEffect(meet);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
