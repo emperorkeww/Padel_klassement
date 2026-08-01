@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
@@ -30,9 +25,7 @@ import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106). Per groep zie je wáár je zit in
 // de reis (poll loopt → gekozen → geboekt) met één duidelijke vervolgstap;
-// losse matches en het archief zijn hiervandaan bereikbaar. Bij precies één
-// groep opent de tab direct de groepspagina (terug via "← Alle groepen", de
-// enige link naar ?hub=1 — zonder die knop was de hub onbereikbaar, #761).
+// losse matches en het archief zijn hiervandaan bereikbaar.
 
 const MAX_MEMBER_AVATARS = 4;
 
@@ -66,8 +59,6 @@ export function Groups() {
   const profiles = useAsync(getProfilesMap, []);
   const toast = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [params] = useSearchParams();
   const club = useClub();
   const today = dateInZone(club.timezone);
 
@@ -78,22 +69,12 @@ export function Groups() {
     [groupKey],
   );
 
-  // Eén groep → direct de groepspagina, maar alleen op kaal /spelen: met
-  // "?hub=1" blijft de hub staan. Dat is de escape uit de groep (de knop
-  // "← Alle groepen" in de groepskop) én waar /groepen heen redirect — zonder
-  // die uitzondering is "+ Nieuwe groep" onbereikbaar met één groep (#761).
+  // Tot #916 stuurde kaal /spelen je bij precies één groep meteen die groep in,
+  // met "?hub=1" als enige uitzondering (#761). Dat maakte de hub — en dus
+  // "+ Nieuwe groep", dat alleen hier staat — bereikbaar via één knop diep in
+  // de groepskop, precies waar niemand hem zoekt. De hub staat er nu altijd;
+  // dat kost één tik naar je groep, maar de tab doet wat hij belooft.
   const list = groups.data ?? [];
-  useEffect(() => {
-    if (
-      location.pathname === "/spelen" &&
-      !params.has("hub") &&
-      !groups.loading &&
-      list.length === 1
-    ) {
-      navigate(`/groepen/${list[0].id}`, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups.loading, groupKey, location.pathname]);
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -103,12 +84,17 @@ export function Groups() {
   // render en niet in een effect, anders verschijnt het formulier één frame
   // ná de lege staat.
   const [newOpen, setNewOpen] = useState(false);
+  const nieuwKnopRef = useRef<HTMLButtonElement>(null);
   const noGroups = !groups.loading && !groups.error && list.length === 0;
-  const showNew = newOpen || noGroups;
   // Zelf uitklappen zet de cursor meteen in het naamveld; bij een lege hub
-  // niet, want dan zou de pagina bij het laden je focus kapen.
+  // niet, want dan zou de pagina bij het laden je focus kapen. Sluiten geeft
+  // de focus terug aan de knop (#916) — dat moet in een effect: op het moment
+  // van klikken bestaat die knop nog niet, het formulier staat er dan nog.
+  const wasOpen = useRef(false);
   useEffect(() => {
     if (newOpen) nameRef.current?.focus();
+    else if (wasOpen.current) nieuwKnopRef.current?.focus();
+    wasOpen.current = newOpen;
   }, [newOpen]);
 
   async function create(e: React.FormEvent) {
@@ -153,21 +139,31 @@ export function Groups() {
       {!groups.loading && !groups.error && (
         <>
           {list.length === 0 ? (
+            // Eén kaart met één actie (#916). Hiervoor stonden er twee dingen
+            // onder elkaar: een lege staat met een knop die alleen het veld
+            // focuste, en daaronder datzelfde formulier al open.
             <div className="card">
-              <EmptyState
-                icon="👥"
-                title="Geen groep, geen glorie."
-                action={
-                  <button
-                    className="btn btn--primary"
-                    onClick={() => nameRef.current?.focus()}
-                  >
-                    Maak een groep
-                  </button>
-                }
-              >
-                Start hieronder je eigen padelgroep, nodig je vrienden uit en hou jullie onderlinge klassementen en wedstrijden live bij!
+              <EmptyState icon="👥" title="Geen groep, geen glorie.">
+                Start je eigen padelgroep, nodig je vrienden uit en hou jullie
+                onderlinge klassementen en wedstrijden live bij!
               </EmptyState>
+              <form className="row-between account-form" onSubmit={create}>
+                <input
+                  ref={nameRef}
+                  className="input"
+                  aria-label="Groepsnaam"
+                  placeholder="Groepsnaam, bijv. Vrijdagavond"
+                  maxLength={60}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <button
+                  className="btn btn--primary"
+                  disabled={busy || !name.trim()}
+                >
+                  {busy ? "Aanmaken…" : "Maak deze groep"}
+                </button>
+              </form>
             </div>
           ) : (
             <div className="group-grid">
@@ -218,7 +214,10 @@ export function Groups() {
                           {formatDate(g.created_at)}
                         </span>
                       </span>
-                      {journey && (
+                      {/* De status komt uit een tweede query en viel dus ná de
+                          kaarten binnen, waardoor de lijst versprong (#916).
+                          De plek staat er nu meteen; alleen de inhoud wisselt. */}
+                      {journey ? (
                         <span
                           className={`group-card__journey group-card__journey--${journey.tone}`}
                         >
@@ -227,6 +226,11 @@ export function Groups() {
                           )}
                           {journey.label}
                         </span>
+                      ) : (
+                        <span
+                          className="group-card__journey group-card__journey--laadt"
+                          aria-hidden="true"
+                        />
                       )}
                     </span>
                     <span className="group-card__chevron" aria-hidden="true">
@@ -241,51 +245,71 @@ export function Groups() {
       )}
 
       {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
-          even zwaar als de groepen zelf (#674 A5). Achter een knop dus — met
-          nul groepen staat hij meteen open, want dan ís dit de actie. */}
-      {showNew ? (
-        <section className="card">
-          <h2 className="card__title">Nieuwe groep</h2>
-          <form className="row-between account-form" onSubmit={create}>
-            <input
-              ref={nameRef}
-              className="input"
-              aria-label="Groepsnaam"
-              placeholder="Groepsnaam, bijv. Vrijdagavond"
-              maxLength={60}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <button
-              className="btn btn--primary"
-              disabled={busy || !name.trim()}
-            >
-              {busy ? "Aanmaken…" : "Aanmaken"}
-            </button>
-          </form>
-        </section>
-      ) : (
-        <button
-          type="button"
-          className="btn hub-new"
-          onClick={() => setNewOpen(true)}
-        >
-          + Nieuwe groep
-        </button>
-      )}
+          even zwaar als de groepen zelf (#674 A5). Achter een knop dus. Met nul
+          groepen zit het formulier ín de lege staat hierboven, dus deze tak
+          draait alleen als je al een groep hebt. */}
+      {!noGroups &&
+        (newOpen ? (
+          <section className="card">
+            <div className="row-between">
+              <h2 className="card__title">Nieuwe groep</h2>
+              {/* #916: uitklappen had geen tegenhanger — het formulier bleef
+                  staan tot je wegnavigeerde. */}
+              <button
+                type="button"
+                className="btn btn--sm"
+                aria-label="Formulier sluiten"
+                onClick={() => {
+                  setNewOpen(false);
+                  setName("");
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <form className="row-between account-form" onSubmit={create}>
+              <input
+                ref={nameRef}
+                className="input"
+                aria-label="Groepsnaam"
+                placeholder="Groepsnaam, bijv. Vrijdagavond"
+                maxLength={60}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <button
+                className="btn btn--primary"
+                disabled={busy || !name.trim()}
+              >
+                {busy ? "Aanmaken…" : "Aanmaken"}
+              </button>
+            </form>
+          </section>
+        ) : (
+          <button
+            type="button"
+            ref={nieuwKnopRef}
+            className="btn hub-new"
+            onClick={() => setNewOpen(true)}
+          >
+            + Nieuwe groep
+          </button>
+        ))}
 
-      {/* Secundaire rij: losse matches (buiten een groep) en de
-          baanbeschikbaarheid. Stonden eerst als volwaardige kaarten tussen de
-          groepen, waardoor de hub drie gelijkwaardige acties toonde. */}
-      <section className="hub-extra" aria-label="Ook hier">
-        <div className="hub-extra__card">
-          <h2 className="hub-extra__title">Losse match</h2>
-          <p className="hub-extra__text">
-            Buiten een groep gespeeld? De uitslag telt gewoon mee voor je
-            rating.
-          </p>
-          <div className="hub-extra__links">
-            <Link className="btn btn--sm" to="/matches?log=1">
+      {/* Losse match is een veelgebruikt pad, geen voetnoot (#916): het stond
+          als grijs kaartje onder de kop "Ook hier", naast de banen-verwijzing.
+          Nu een gewone actie in de hub-toon, direct onder de groepen. */}
+      <section className="card hub-los">
+        <div className="row-between">
+          <div>
+            <h2 className="card__title card__title--tight">Losse match</h2>
+            <p className="card__subtitle">
+              Buiten een groep gespeeld? De uitslag telt gewoon mee voor je
+              rating.
+            </p>
+          </div>
+          <div className="btn-row">
+            <Link className="btn btn--primary btn--sm" to="/matches?log=1">
               + Match loggen
             </Link>
             <Link className="btn btn--sm" to="/matches">
@@ -293,19 +317,14 @@ export function Groups() {
             </Link>
           </div>
         </div>
-
-        <div className="hub-extra__card">
-          <h2 className="hub-extra__title">Vrije banen</h2>
-          <p className="hub-extra__text">
-            Kijk per dag of week welke banen vrij zijn bij {club.name}.
-          </p>
-          <div className="hub-extra__links">
-            <Link className="btn btn--sm" to="/banen">
-              🎾 Banen bekijken →
-            </Link>
-          </div>
-        </div>
       </section>
+
+      {/* Vrije banen blijft wél een rustige verwijzing: je komt hier niet om
+          een baan te bekijken, maar het is handig dat het pad er staat. */}
+      <p className="hub-banen">
+        Benieuwd welke banen vrij zijn bij {club.name}?{" "}
+        <Link to="/banen">🎾 Bekijk de banen →</Link>
+      </p>
     </div>
   );
 }
