@@ -197,6 +197,9 @@ describe("<Matches />", () => {
 
     const log = screen.getByRole("button", { name: /match loggen/i });
     expect(log).toHaveClass("matches__fab");
+    // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942): dezelfde
+    // die de "Jouw positie"-chip van het klassement draagt.
+    expect(log).toHaveClass("zwevende-actie");
     // De kop draagt alleen nog de secundaire actie.
     const kop = container.querySelector(".page-head")!;
     expect(
