@@ -181,23 +181,54 @@
   letter-spacing: 0.05em;
   color: var(--ink-soft);
 }
+/* De setstand is vaak het interessantste deel van het verhaal, maar stond er
+   als lichte chip-rij bij (#915). Nu het tweede niveau na de eindstand: grotere
+   tabulaire cijfers, meer lucht, en de winnende kant per set duidelijk zwaarder
+   in plaats van alleen een kleurtje. */
 .md-sets__chip {
   display: inline-flex;
   align-items: baseline;
+  gap: 1px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: var(--fs-sm);
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--surface);
+  font-size: var(--fs-lg);
+  letter-spacing: -0.01em;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--ink-soft);
 }
 .md-sets__chip .is-winside {
   color: var(--success);
+  font-weight: 800;
 }
 
-/* Score corrigeren (alleen de aanmaker): kalme footer onder de hero. */
+/* Uitleg bij een momenten-chip (#915). Zat in een `title` en was daarmee op
+   touch onbereikbaar; nu een uitklapregel onder de rij. */
+.md-moment--knop {
+  font: inherit;
+  font-family: var(--font-rounded);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.md-moment--knop:hover,
+.md-moment--knop.is-open {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.md-moment-uitleg {
+  margin: var(--sp-2) auto 0;
+  max-width: 46ch;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* Score corrigeren: kalme footer onder de hero. Draagt sinds #915 ook de uitleg
+   voor wie de knop níet krijgt — zonder die regel las dat als een bug. */
 .md-board__foot {
   padding: var(--sp-4) var(--sp-5);
   border-top: 1px solid var(--line);
@@ -207,6 +238,75 @@
 .md-edit-actions {
   display: flex;
   justify-content: center;
+}
+.md-edit-note {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+.md-edit-note:first-child {
+  margin-top: 0;
+}
+
+/* ---------- Beheer & correcties, ingeklapt (#915) ----------
+   Zelfde rustige balk als het cijfer-blok van het overzicht (#911): de
+   administratie die je hooguit één keer per match doet, weg van de wedstrijd
+   zelf. Standaard dicht. */
+.md-beheer {
+  margin-top: var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.md-beheer__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--ink);
+  border-radius: var(--radius);
+}
+.md-beheer__summary::-webkit-details-marker {
+  display: none;
+}
+.md-beheer__summary::after {
+  content: "";
+  margin-left: auto;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.md-beheer[open] .md-beheer__summary::after {
+  transform: rotate(-135deg);
+}
+.md-beheer__summary:hover {
+  background: var(--surface-2);
+}
+.md-beheer__title {
+  font-size: 1rem;
+}
+.md-beheer__hint {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.md-beheer__body {
+  display: grid;
+  gap: var(--sp-5);
+  padding: 0 var(--sp-5) var(--sp-5);
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-beheer__summary::after {
+    transition: none;
+  }
 }
 
 .md-editor {

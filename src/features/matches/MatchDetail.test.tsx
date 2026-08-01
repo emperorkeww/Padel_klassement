@@ -12,6 +12,10 @@ vi.mock("@/lib/supabase/client", async () => {
 });
 
 import MatchDetail from "./MatchDetail";
+import { supabase } from "@/lib/supabase/client";
+import { makeQuery } from "@/test/supabaseMock";
+import { invalidateAll } from "@/lib/supabase/queryCache";
+import { MATCH_DONE } from "@/test/fixtures";
 
 function renderPage(id = "m-done") {
   return render(
@@ -20,11 +24,40 @@ function renderPage(id = "m-done") {
         <ToastProvider>
           <Routes>
             <Route path="/matches/:id" element={<MatchDetail />} />
+            {/* Waar "terug" bij een deeplink kan landen (#915). */}
+            <Route path="/matches" element={<p>matchoverzicht</p>} />
+            <Route path="/groepen/:gid" element={<p>groepspagina</p>} />
           </Routes>
         </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );
+}
+
+/** Beheer & correcties zit sinds #915 achter een inklapper; jsdom toont de
+ *  inhoud van een gesloten <details> gewoon, maar een echte browser niet — dus
+ *  openen we hem net als een gebruiker. */
+async function openBeheer() {
+  await userEvent.click(
+    await screen.findByText(/beheer & correcties/i),
+  );
+}
+
+/** Vervangt tijdelijk wat de matches-tabel teruggeeft. */
+function metMatch(rij: Record<string, unknown>) {
+  invalidateAll();
+  const fromMock = supabase.from as unknown as {
+    getMockImplementation: () => (table: string) => unknown;
+    mockImplementation: (impl: (table: string) => unknown) => void;
+  };
+  const orig = fromMock.getMockImplementation();
+  fromMock.mockImplementation((t) =>
+    t === "matches" ? makeQuery({ data: [rij], error: null }) : orig(t),
+  );
+  return () => {
+    fromMock.mockImplementation(orig);
+    invalidateAll();
+  };
 }
 
 describe("<MatchDetail />", () => {
@@ -63,6 +96,7 @@ describe("<MatchDetail />", () => {
     renderPage();
     // Kijker p1 is lid van g1: de groepssectie toont de select met de huidige
     // groep; kies "Losse match" en sla op → de RPC ontkoppelt.
+    await openBeheer();
     const select = await screen.findByLabelText(/^groep$/i);
     const opslaan = screen.getByRole("button", { name: /groep opslaan/i });
     // Ongewijzigd = niets op te slaan.
@@ -100,5 +134,103 @@ describe("<MatchDetail />", () => {
     expect((await screen.findAllByText(/Wannabe III/i)).length).toBeGreaterThan(
       0,
     );
+  });
+
+  // ── #915 ────────────────────────────────────────────────────────────────
+
+  it("stopt beheer & correcties achter één inklapper", async () => {
+    const { container } = renderPage();
+    await screen.findByText(/eindstand/i);
+
+    const details = container.querySelector("details.md-beheer");
+    expect(details).not.toBeNull();
+    // De balk verbergt zichzelf tot een van de secties iets rendert; de
+    // groepskoppeling komt pas ná zijn eigen query.
+    await waitFor(() => expect(details).not.toHaveAttribute("hidden"));
+    // De groepskoppeling zit erin, niet los op de pagina.
+    const select = await screen.findByLabelText(/^groep$/i);
+    expect(select.closest("details.md-beheer")).toBe(details);
+    // Wat over de wedstrijd zelf gaat blijft er buiten.
+    expect(
+      screen.getByText(/eindstand/i).closest("details.md-beheer"),
+    ).toBeNull();
+  });
+
+  it("legt uit dat alleen de invoerder de score kan aanpassen", async () => {
+    // Zelfde match, maar ingevoerd door Carol (p3) in plaats van de kijker.
+    const herstel = metMatch({ ...MATCH_DONE, created_by: "p3" });
+    try {
+      renderPage();
+      await screen.findByText(/eindstand/i);
+      expect(
+        screen.queryByRole("button", { name: /score aanpassen/i }),
+      ).toBeNull();
+      // De naam komt uit de profielen van deze match; die laden apart.
+      await waitFor(() =>
+        expect(
+          screen.getByText(/alleen wie de uitslag invoerde kan hem aanpassen/i),
+        ).toHaveTextContent(/carol/i),
+      );
+    } finally {
+      herstel();
+    }
+  });
+
+  it("zegt de aanmaker waaróm hij mag corrigeren", async () => {
+    renderPage();
+    await screen.findByText(/eindstand/i);
+    expect(
+      await screen.findByRole("button", { name: /score aanpassen/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/jij voerde deze uitslag in/i),
+    ).toBeInTheDocument();
+  });
+
+  it("klapt de uitleg bij een momenten-chip uit — ook zonder hover", async () => {
+    // 6-0 levert de bagel-chip op; de fixture-uitslag (6-3) heeft geen enkel
+    // bijzonder moment.
+    const herstel = metMatch({ ...MATCH_DONE, score_a: 6, score_b: 0 });
+    try {
+      renderPage();
+      await screen.findByText(/eindstand/i);
+
+      const chip = await screen.findByRole("button", { name: /droog/i });
+      // De uitleg zat in een `title` en was op touch onbereikbaar.
+      expect(chip).not.toHaveAttribute("title");
+      expect(chip).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByText(/geen enkele game/i)).toBeNull();
+
+      await userEvent.click(chip);
+      expect(chip).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByText(/geen enkele game/i)).toBeInTheDocument();
+
+      // Nogmaals tikken sluit hem weer.
+      await userEvent.click(chip);
+      expect(screen.queryByText(/geen enkele game/i)).toBeNull();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("gaat bij een deeplink terug naar de groep van de match", async () => {
+    // MemoryRouter heeft geen browserhistorie, dus useBackTo pakt het vangnet —
+    // precies het pad dat een deeplink uit een pushbericht volgt.
+    renderPage();
+    await screen.findByText(/eindstand/i);
+    await userEvent.click(screen.getByRole("button", { name: /terug/i }));
+    expect(await screen.findByText("groepspagina")).toBeInTheDocument();
+  });
+
+  it("valt zonder groep terug op het matchoverzicht", async () => {
+    const herstel = metMatch({ ...MATCH_DONE, group_id: null });
+    try {
+      renderPage();
+      await screen.findByText(/eindstand/i);
+      await userEvent.click(screen.getByRole("button", { name: /terug/i }));
+      expect(await screen.findByText("matchoverzicht")).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
   });
 });
