@@ -104,12 +104,8 @@ export function FairTeamsCard({
           Stel eerlijke teams voor
         </button>
         {proposal && (
-          <button
-            className="btn"
-            title="Andere verdeling; laat de reserve rouleren"
-            onClick={reshuffle}
-          >
-            Opnieuw
+          <button className="btn" onClick={reshuffle}>
+            Andere verdeling
           </button>
         )}
         {proposal && proposal.courts.length > 0 && (
@@ -117,12 +113,22 @@ export function FairTeamsCard({
             className="btn btn--primary"
             disabled={saving}
             onClick={play}
-            title="Zet deze teams als geplande matches klaar"
           >
             {saving ? "Bezig…" : "Speel deze teams"}
           </button>
         )}
       </div>
+
+      {/* Wat de twee knoppen dóén stond alleen in een `title` (#924): op touch
+          onbereikbaar, met het toetsenbord lastig. "Opnieuw" draagt zijn uitleg
+          nu in het label zelf; de gevolgen van "Speel deze teams" staan er als
+          gewone regel onder, waar iedereen ze ziet. */}
+      {proposal && proposal.courts.length > 0 && (
+        <p className="fair-teams__uitleg">
+          “Andere verdeling” laat de reserve rouleren; “Speel deze teams” zet ze
+          klaar als geplande matches.
+        </p>
+      )}
 
       {!enough && (
         <p className="empty">

@@ -90,6 +90,27 @@ describe("<Matches />", () => {
     ).toBeInTheDocument();
   });
 
+  // #924: de rij had geen rol en dus geen hoorbare ingedrukt-staat — het zijn
+  // filters, geen tabbladen.
+  it("presenteert de historie-filters als groep schakelknoppen", async () => {
+    renderPage();
+    await screen.findByText("6–3");
+
+    expect(
+      screen.getByRole("group", { name: /historie filteren/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^alles/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /^gewonnen$/i }));
+    expect(screen.getByRole("button", { name: /^gewonnen$/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("logt een match via de wizard (spelers → score → opslaan)", async () => {
     renderPage();
     await userEvent.click(

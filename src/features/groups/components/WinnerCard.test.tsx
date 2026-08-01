@@ -180,7 +180,11 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
 
     renderCard({ status: "booked", booked_at: "2026-07-08T12:00:00Z", access_code: "1234" });
 
-    const chip = screen.getByRole("button", { name: /1234/ });
+    // Dát een tik de code kopieert stond alleen in een title-tooltip (#924):
+    // op touch onbereikbaar. Het zit nu in de naam van de knop.
+    const chip = screen.getByRole("button", {
+      name: /toegangscode 1234 kopiëren/i,
+    });
     await userEvent.click(chip);
     expect(writeText).toHaveBeenCalledWith("1234");
   });

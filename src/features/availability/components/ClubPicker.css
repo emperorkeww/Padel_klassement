@@ -54,13 +54,17 @@
   right: 0;
 }
 
-.club-picker__search {
-  width: 100%;
-  /* De zoekbalk blijft in beeld terwijl de resultaten eronder scrollen. */
+/* Het veld draagt sinds #924 een zichtbaar label; het plakken verhuist mee naar
+   de wikkel, anders plakt het veld binnen zijn eigen label — en dus nergens. */
+.club-picker__veld {
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--surface);
+  padding-bottom: var(--sp-1);
+}
+.club-picker__search {
+  width: 100%;
 }
 .club-picker__search::placeholder {
   color: var(--placeholder);

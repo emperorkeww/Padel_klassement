@@ -205,6 +205,13 @@
   gap: var(--sp-2);
   flex-wrap: wrap;
 }
+/* Wat de knoppen doen, als gewone regel eronder (#924) — dat stond eerst
+   alleen in een `title`. */
+.fair-teams__uitleg {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
 .fair-teams__result {
   margin-top: var(--sp-3);
   display: flex;
@@ -309,11 +316,17 @@
 .guest-add {
   display: flex;
   gap: var(--sp-2);
-  align-items: center;
+  /* Het veld draagt sinds #924 een zichtbaar label; de knop lijnt daarom uit op
+     de onderrand van het veld, niet op het midden van label + veld. */
+  align-items: end;
   margin-top: var(--sp-2);
 }
-.guest-add__input {
+.guest-add__veld {
   flex: 1;
+  min-width: 0;
+}
+.guest-add__input {
+  width: 100%;
   min-width: 0;
 }
 
