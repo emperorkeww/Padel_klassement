@@ -13,3 +13,52 @@
 .friends-coach {
   margin-top: var(--sp-3);
 }
+
+/* ---------- #919 ---------- */
+
+/* Zoekveld met wis-knop erin. De "Zoek"-knop ernaast is weg: er werd al live
+   gezocht, dus dat waren twee affordances voor één actie. */
+.friends-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.friends-search .input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+.friends-search__clear {
+  position: absolute;
+  right: var(--sp-1);
+  min-width: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+}
+.friends-search__clear:hover {
+  color: var(--ink);
+}
+
+/* Schakelaar om Rudy's onderlinge balans te dempen; die verdubbelde de
+   rijhoogte en was niet uit te zetten. */
+.friends-h2h-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+/* Rij-menu (⋯) mag de persoonsrij niet laten krimpen. */
+.person-row__menu {
+  flex-shrink: 0;
+}
+
+/* "Toon meer" onder een lange lijst. */
+.friends-meer {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-4);
+}

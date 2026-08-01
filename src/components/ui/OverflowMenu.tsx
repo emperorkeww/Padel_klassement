@@ -1,31 +1,34 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 /**
- * Overflow-menu in de profielkop (#918).
+ * Klein ⋯-menu voor acties die er wél moeten zijn maar niet vooraan horen.
  *
- * De kop stapelde tot zes bedieningselementen — terug, seizoenskiezer,
- * vergelijken, jaar-Wrapped, kwartaal-Wrapped en delen — die op telefoonbreedte
- * een blok knoppen boven de eigenlijke inhoud werden. Terug en Delen blijven
- * zichtbaar; de rest zit hierachter.
+ * Ontstaan in #918 voor de profielkop (die tot zes bedieningselementen naast
+ * elkaar droeg) en in #919 gedeeld gemaakt, toen de vriendenrij hetzelfde nodig
+ * had voor "verwijderen". Anders stonden er twee bijna-identieke disclosures
+ * met dezelfde Escape-, klik-buiten- en focusherstel-logica.
  *
- * Zelfde gedrag als het filtermenu van het klassement (#913): Escape sluit en
- * geeft de focus terug, een klik buiten sluit, en na een keuze gaat hij dicht.
- * De aanroeper rendert dit alleen als er ook echt iets in zit — een lege ⋯ is
- * erger dan geen ⋯.
+ * `children` krijgt `sluit` mee in plaats van dat het paneel op elke klik
+ * dichtgaat: een blanket-onClick zou het openklappen van een `<select>` erin
+ * al als keuze tellen. Elk item roept `sluit` zelf aan ná zijn eigen actie.
  */
-export function ProfileMenu({
+export function OverflowMenu({
+  label,
   children,
+  className,
 }: {
-  /** Krijgt `sluit` mee: elk item roept dat aan ná zijn eigen actie. Bewust
-   *  geen blanket-onClick op het paneel — dan zou het openklappen van de
-   *  seizoens-select het menu meteen dichtgooien. */
+  /** Toegankelijke naam van de knop, bv. "Meer op dit profiel". */
+  label: string;
   children: (sluit: () => void) => ReactNode;
+  /** Extra class op de wikkel, voor plaatsing binnen een rij of kop. */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const wikkelRef = useRef<HTMLDivElement>(null);
   const knopRef = useRef<HTMLButtonElement>(null);
   const paneelId = useId();
 
+  // Escape sluit en geeft de focus terug aan de knop — je verliest je plek niet.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -50,12 +53,12 @@ export function ProfileMenu({
   }, [open]);
 
   return (
-    <div className="profile-menu" ref={wikkelRef}>
+    <div className={`overflow-menu ${className ?? ""}`} ref={wikkelRef}>
       <button
         type="button"
         ref={knopRef}
-        className="btn btn--sm profile-menu__btn"
-        aria-label="Meer op dit profiel"
+        className="btn btn--sm overflow-menu__btn"
+        aria-label={label}
         aria-expanded={open}
         aria-controls={paneelId}
         onClick={() => setOpen((o) => !o)}
@@ -64,7 +67,7 @@ export function ProfileMenu({
       </button>
 
       {open && (
-        <div className="profile-menu__panel" id={paneelId}>
+        <div className="overflow-menu__panel" id={paneelId}>
           {children(() => {
             setOpen(false);
             knopRef.current?.focus();
@@ -75,4 +78,4 @@ export function ProfileMenu({
   );
 }
 
-export default ProfileMenu;
+export default OverflowMenu;

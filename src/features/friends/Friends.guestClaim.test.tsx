@@ -48,6 +48,12 @@ import Friends from "./Friends";
 import { supabase } from "@/lib/supabase/client";
 import { invalidateAll } from "@/lib/supabase/queryCache";
 
+// Sinds #919 staan de gastclaims onder de Verzoeken-tab: die horen bij "wacht
+// op jou", niet als losse sectie bovenaan.
+async function openVerzoeken() {
+  await userEvent.click(await screen.findByRole("tab", { name: /^verzoeken/i }));
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -76,6 +82,7 @@ beforeEach(() => {
 describe("<Friends /> — koppelverzoek voor een gast (#681)", () => {
   it("toont wie het vraagt en hoeveel historie er op het spel staat", async () => {
     renderPage();
+    await openVerzoeken();
     expect(
       await screen.findByRole("heading", { name: /ben jij deze gast/i }),
     ).toBeInTheDocument();
@@ -86,6 +93,7 @@ describe("<Friends /> — koppelverzoek voor een gast (#681)", () => {
 
   it("neemt de historie over na bevestiging", async () => {
     renderPage();
+    await openVerzoeken();
     await userEvent.click(
       await screen.findByRole("button", { name: /ja, dat ben ik/i }),
     );
@@ -105,6 +113,7 @@ describe("<Friends /> — koppelverzoek voor een gast (#681)", () => {
 
   it("weigert het verzoek", async () => {
     renderPage();
+    await openVerzoeken();
     await userEvent.click(await screen.findByRole("button", { name: /^nee$/i }));
     expect(supabase.rpc).toHaveBeenCalledWith("cancel_guest_claim", {
       p_claim_id: "gc1",

@@ -15,6 +15,27 @@ vi.mock("@/lib/supabase/client", () => ({
         { id: "f2", requester_id: "p1", addressee_id: "p3", status: "accepted" },
         { id: "f3", requester_id: "p1", addressee_id: "p5", status: "pending" },
       ],
+      // Drie afgeronde duels Alice vs Carol: genoeg voor MIN_DUELS, zodat de
+      // H2H-sneer (en dus de schakelaar) er is (#919).
+      teams: [
+        { id: "t-a", player1_id: "p1", player2_id: null },
+        { id: "t-c", player1_id: "p3", player2_id: null },
+      ],
+      matches: [1, 2, 3].map((n) => ({
+        id: `h2h-${n}`,
+        team_a_id: "t-a",
+        team_b_id: "t-c",
+        status: "completed",
+        winner_team_id: n === 3 ? "t-c" : "t-a",
+        score_a: n === 3 ? 3 : 6,
+        score_b: n === 3 ? 6 : 3,
+        played_at: `2026-0${n}-10T18:00:00.000Z`,
+        created_at: `2026-0${n}-10T18:00:00.000Z`,
+        created_by: "p1",
+        group_id: null,
+        round_number: null,
+        format: "1v1",
+      })),
       profiles: [
         { id: "p1", username: "alice", full_name: "Alice Anders" },
         { id: "p2", username: "bob", full_name: "Bob Boers" },
@@ -47,19 +68,28 @@ function renderPage() {
   );
 }
 
+// Sinds #919 staan de vijf secties in drie tabs; de meeste tests moeten dus
+// eerst naar de juiste tab.
+async function openTab(naam: RegExp) {
+  await userEvent.click(await screen.findByRole("tab", { name: naam }));
+}
+
 describe("<Friends />", () => {
   it("toont inkomend verzoek en bestaande vriend", async () => {
     renderPage();
     expect(
       await screen.findByRole("heading", { name: /^vrienden$/i }),
     ).toBeInTheDocument();
-    // Bob stuurde een verzoek (inkomend), Carol is een geaccepteerde vriend.
-    expect(await screen.findByText(/bob boers/i)).toBeInTheDocument();
+    // Carol is een geaccepteerde vriend en staat op de eerste tab …
     expect(await screen.findByText(/carol claes/i)).toBeInTheDocument();
+    // … Bob stuurde een verzoek en staat dus onder Verzoeken.
+    await openTab(/^verzoeken/i);
+    expect(await screen.findByText(/bob boers/i)).toBeInTheDocument();
   });
 
   it("accepteert een inkomend verzoek", async () => {
     renderPage();
+    await openTab(/^verzoeken/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /accepteer/i }),
     );
@@ -69,18 +99,20 @@ describe("<Friends />", () => {
 
   it("zoekt spelers en stuurt een verzoek naar een nieuwe speler", async () => {
     renderPage();
+    await openTab(/^ontdekken/i);
     await userEvent.type(
       await screen.findByPlaceholderText(/zoek op gebruikersnaam/i),
       "dave",
     );
-    await userEvent.click(screen.getByRole("button", { name: /^zoek$/i }));
+    // Geen "Zoek"-knop meer (#919): typen zoekt al, met debounce.
+    expect(screen.queryByRole("button", { name: /^zoek$/i })).toBeNull();
     // Dave heeft nog geen relatie: verzoek-knop is actief; Bob wel: "Al gekoppeld".
     const sturen = await screen.findAllByRole("button", {
       name: /verzoek sturen/i,
     });
     expect(sturen.length).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("button", { name: /al gekoppeld/i }).length,
+      (await screen.findAllByRole("button", { name: /al gekoppeld/i })).length,
     ).toBeGreaterThan(0);
     await userEvent.click(sturen[0]);
     // De bevestiging spreekt nu met Coach Rudy's stem (#294): deterministisch
@@ -95,6 +127,7 @@ describe("<Friends />", () => {
 
   it("opent de gemeenschappelijke vrienden in een popup", async () => {
     renderPage();
+    await openTab(/^ontdekken/i);
     expect(
       await screen.findByRole("heading", { name: /misschien ken je/i }),
     ).toBeInTheDocument();
@@ -112,6 +145,7 @@ describe("<Friends />", () => {
 
   it("trekt een verzonden verzoek in", async () => {
     renderPage();
+    await openTab(/^verzoeken/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /intrekken/i }),
     );
@@ -151,9 +185,13 @@ describe("<Friends />", () => {
 
   it("verwijdert een vriend na bevestiging (#68)", async () => {
     renderPage();
-    // Klik opent nu eerst een bevestigings-dialoog i.p.v. direct te verwijderen.
+    // Sinds #919 zit verwijderen in het ⋯-menu van de rij, niet als rode knop
+    // naast elke vriend. De bevestiging bleef.
     await userEvent.click(
-      await screen.findByRole("button", { name: /verwijderen/i }),
+      await screen.findByRole("button", { name: /meer bij carol/i }),
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: /vriend verwijderen/i }),
     );
     const dialog = await screen.findByRole("dialog", {
       name: /vriend verwijderen/i,
@@ -162,5 +200,71 @@ describe("<Friends />", () => {
       within(dialog).getByRole("button", { name: /verwijderen/i }),
     );
     expect(await screen.findByText(/^verwijderd\.$/i)).toBeInTheDocument();
+  });
+
+  // ── #919 ────────────────────────────────────────────────────────────────
+
+  it("verdeelt de vijf secties over drie tabs, met tellers", async () => {
+    renderPage();
+    await screen.findByRole("tablist", { name: /vriendenonderdelen/i });
+
+    // Vrienden staat vooraan; verzoeken draagt een teller zodat je ziet dat er
+    // iets ligt zonder te scrollen.
+    expect(screen.getByRole("tab", { name: /^vrienden/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      await screen.findByRole("tab", { name: /verzoeken, \d+/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^ontdekken$/i })).toBeInTheDocument();
+
+    // Zoeken hoort bij Ontdekken en staat dus niet meteen in beeld.
+    expect(screen.queryByPlaceholderText(/zoek op gebruikersnaam/i)).toBeNull();
+    await openTab(/^ontdekken$/i);
+    expect(
+      screen.getByPlaceholderText(/zoek op gebruikersnaam/i),
+    ).toBeInTheDocument();
+  });
+
+  it("wist de zoekterm met de wis-knop", async () => {
+    renderPage();
+    await openTab(/^ontdekken$/i);
+    const veld = await screen.findByPlaceholderText(/zoek op gebruikersnaam/i);
+    await userEvent.type(veld, "dave");
+    expect(veld).toHaveValue("dave");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /zoekterm wissen/i }),
+    );
+    expect(veld).toHaveValue("");
+  });
+
+  it("houdt verwijderen uit de vriendenrij zelf", async () => {
+    renderPage();
+    await screen.findByText(/carol claes/i);
+    // Geen losse rode knop meer naast elke vriend.
+    expect(screen.queryByRole("button", { name: /^verwijderen$/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /meer bij carol/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("dempt Rudy's onderlinge balans en onthoudt dat", async () => {
+    const { unmount } = renderPage();
+    const schakelaar = await screen.findByRole("checkbox", {
+      name: /onderlinge balans tonen/i,
+    });
+    expect(schakelaar).toBeChecked();
+
+    await userEvent.click(schakelaar);
+    expect(schakelaar).not.toBeChecked();
+
+    // De keuze overleeft een remount (localStorage-vlag).
+    unmount();
+    renderPage();
+    expect(
+      await screen.findByRole("checkbox", { name: /onderlinge balans tonen/i }),
+    ).not.toBeChecked();
   });
 });

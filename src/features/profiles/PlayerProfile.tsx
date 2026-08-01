@@ -34,7 +34,7 @@ import { upsetsByMatch } from "@/features/matches/upset";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
-import { ProfileMenu } from "./components/ProfileMenu";
+import { OverflowMenu } from "@/ui/OverflowMenu";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useBackTo } from "@/lib/hooks/useBackTo";
@@ -571,11 +571,11 @@ export function PlayerProfile() {
               de rest — die er bovendien alleen sóms is — zit in het menu. Alleen
               renderen als er iets in zit: een lege ⋯ is erger dan geen ⋯. */}
           {heeftMenu && (
-            <ProfileMenu>
+            <OverflowMenu label="Meer op dit profiel">
               {(sluit) => (
                 <>
                   {seasons.length > 0 && (
-                    <label className="profile-menu__veld">
+                    <label className="overflow-menu__veld">
                       <span>Seizoen</span>
                       <select
                         className="select select--filter"
@@ -633,7 +633,7 @@ export function PlayerProfile() {
                   )}
                 </>
               )}
-            </ProfileMenu>
+            </OverflowMenu>
           )}
           <ShareProfile
             data={shareData}
