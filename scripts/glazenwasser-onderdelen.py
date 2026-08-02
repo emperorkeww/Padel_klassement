@@ -809,7 +809,10 @@ MASTER_VAK = (72, 160, 880, 1223)
 MASTER_LAGEN = (
     # naam, z-volgorde
     ("ophanging", (0.0, 0.0, 1.0)),
-    ("trekker-boven", (-0.035, 0.012, 1.12)),
+    # Minder ver naar buiten dan op de brede kaart (−0,02 tegen −0,035): op de
+    # compacte kaart moet de klem óp de rail blijven rusten — verder naar
+    # buiten leek de wisser los naast de kaart te zweven.
+    ("trekker-boven", (-0.02, 0.012, 1.12)),
     ("emmer", (0.004, -0.022, 1.0)),
     ("onderschild", (0.0, 0.012, 1.0)),
 )
@@ -1039,7 +1042,8 @@ def compacte_master() -> None:
 
     def plaats(pad: Path, vak: tuple[float, float, float, float],
                schaal: float = 1.0,
-               masker: np.ndarray | None = None) -> None:
+               masker: np.ndarray | None = None,
+               schaduw: bool = False) -> None:
         left, top, breedte, hoogte = vak
         left -= breedte * (schaal - 1.0) / 2.0
         top -= hoogte * (schaal - 1.0) / 2.0
@@ -1047,6 +1051,17 @@ def compacte_master() -> None:
         h = max(1, int(round(hoogte * schaal * vh)))
         laag = Image.open(pad).convert("RGBA").resize((b, h), Image.LANCZOS)
         px, py = int(round(vx + left * vw)), int(round(vy + top * vh))
+        if schaduw:
+            # Contactschaduw (briefing §5): dezelfde vorm, zwart en geblurd,
+            # een fractie lager-rechts — dát zet een voorwerp óp de kaart in
+            # plaats van ernaast. Spiegel van `schaduw` op de brede kaart.
+            a = laag.split()[3].filter(ImageFilter.GaussianBlur(4.0))
+            zw = Image.new("RGBA", laag.size, (5, 14, 26, 0))
+            zw.putalpha(Image.fromarray(
+                (np.asarray(a).astype(np.float32) * 0.55).astype(np.uint8)
+            ))
+            boven.alpha_composite(zw, (px + max(1, b // 90),
+                                       py + max(2, h // 60)))
         if masker is None:
             boven.alpha_composite(laag, (px, py))
             return
@@ -1072,8 +1087,19 @@ def compacte_master() -> None:
         fill=255,
     )
     pm = np.asarray(poly) > 127
-    snede = erode(pm, 12).astype(np.float32)
+    # Zonder erosie: op de compacte kaart gaat óók de smalle natte band weg.
+    # Op kaartmaat las de donkere kant van die band als een veeg op het glas
+    # onder de linkerschouder (briefing §3); de randcondens van het glasvlak
+    # draagt de natte overgang hier alleen.
+    snede = pm.astype(np.float32)
     snede[int(vy + 0.80 * vh):] = 0.0
+    # Heldere zone achter de divisieregel (briefing §1): het water blijft aan
+    # de flanken en onder de punt, maar wijkt in het midden waar FutKaart
+    # "GLAZENWASSER II" zet — dezelfde rust die de referentie daar toont.
+    xs = (np.arange(MASTER_DOEK[0]) - (vx + 0.5 * vw)) / (0.30 * vw)
+    ys = (np.arange(MASTER_DOEK[1]) - (vy + 0.872 * vh)) / (0.085 * vh)
+    helder = np.exp(-(xs[None, :] ** 2 + ys[:, None] ** 2) / 2.0)
+    snede = np.clip(snede + 0.9 * helder.astype(np.float32), 0, 1)
     snede = np.asarray(
         Image.fromarray((snede * 255).astype(np.uint8), "L")
         .filter(ImageFilter.GaussianBlur(7.0))
@@ -1086,6 +1112,7 @@ def compacte_master() -> None:
             UIT / f"gw-{naam}.webp",
             (left + dx, _naar_kaart_y(top) + dy, breedte, naar_kaart_h(hoogte)),
             schaal=schaal,
+            schaduw=naam in ("trekker-boven", "emmer", "onderschild"),
         )
 
     # Het natte glas als onderste laag, strak binnen de glascontour; ring en
