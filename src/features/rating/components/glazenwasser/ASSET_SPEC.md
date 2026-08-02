@@ -1,91 +1,61 @@
 # Glazenwasser-artwork
 
-Twee generaties artwork naast elkaar, met elk hun eigen afnemer:
+Eén doorlopend referentie-artwork met twee afnemers:
 
 | asset | afnemer | script |
 | --- | --- | --- |
-| `gw-*.webp` — losse onderdelen | `GlazenwasserKaart` (kaart-modal, `/dev/glazenwasser`) | `scripts/glazenwasser-onderdelen.py` |
+| `gw-ring.webp`, `gw-glasvlak.webp`, `gw-strip-*.webp` | `GlazenwasserKaart` (kaart-modal, `/dev/glazenwasser`) | `scripts/glazenwasser-onderdelen.py` |
 | `glazenwasser-master.webp` + `glazenwasser-front-mask.svg` | `GlazenwasserEffect` op `FutKaart` (klassement, opstelling, legenda) | `scripts/glazenwasser-onderdelen.py` |
 
-Beide worden gegenereerd uit
+Alles wordt gegenereerd uit
 [`docs/fut-kaarten/referentie_glazenwasser.png`](../../../../../docs/fut-kaarten/referentie_glazenwasser.png).
-Die scripts zijn de bron van waarheid: bij een gewijzigde referentie of een andere
-uitsnede draai je ze opnieuw in plaats van een WebP met de hand bij te werken.
+Het script is de bron van waarheid: bij een gewijzigde referentie of een andere
+uitsnede draai je het opnieuw in plaats van een WebP met de hand bij te werken.
 
 ```bash
-python3 scripts/glazenwasser-onderdelen.py --preview   # losse onderdelen + contactblad
-python3 scripts/glazenwasser-master.py --preview       # master + voormasker
+python3 scripts/glazenwasser-onderdelen.py --preview
 ```
 
-## De losse onderdelen (`gw-*.webp`)
+## De herbouw: alles in één doek
 
-Elk onderdeel is een eigen, strak op zijn alfa bijgesneden WebP — geen
-transparante rand, geen gedeeld canvas. Dat is het verschil met de master: die is
-één platte compositie, dus elke rechthoekige uitsnede eruit sleepte de buren en de
-natte-glastextuur mee. Losse onderdelen kunnen los worden geschaald, gedraaid en
-geplaatst.
+Sinds de herbouw worden er géén voorwerpen meer uitgesneden en teruggeplakt.
+Elke knip was een naad: een gat dat gevuld moest worden, een voorwerp dat los op
+de kaart kwam te staan, een contactschaduw die nagebouwd moest worden — terwijl
+de referentiepixels dat allemaal al dragen. De lagen zijn nu:
 
-| bestand | inhoud | plek in de referentie (fractie van het kaartvak) |
-| --- | --- | --- |
-| `gw-crest.webp` | raamcrest met koperen raam | 0,408 · −0,081 · 0,172 × 0,142 |
-| `gw-trekker-boven.webp` | trekker met blad, ferrule, steel en schuim | −0,017 · 0,365 · 0,325 × 0,271 |
-| `gw-ophanging.webp` | haak met ketting | 0,870 · 0,189 · 0,116 × 0,336 |
-| `gw-emmer.webp` | sopemmer met beugel, schuim en druppels | 0,802 · 0,413 · 0,194 × 0,238 |
-| `gw-water-onder.webp` | waterexplosie, schuim en zeepbellen over de volle breedte | −0,013 · 0,688 · 1,028 × 0,338 |
-| `gw-badge.webp` | onderschild met raamicoon | 0,345 · 0,808 · 0,289 × 0,186 |
-| `gw-trekker-onder.webp` | tweede trekker | 0,337 · 0,740 · 0,404 × 0,207 |
-| `gw-schuim-links/rechts.webp` | ijs en schuim over de bovenhoeken | −0,001 / 0,693 · −0,026 |
-| `gw-glas.webp` | geweven glastegel (92 × 160 px schoon glas) — sinds de referentiepass alleen nog weef-ingrediënt voor de tekstvulling in de ring | — (tegel) |
-| `gw-glasvlak.webp` | het volledige natte glasvlak op kaartmaat: toonveld, condens, druppels en waterstrepen, samengesteld uit uitsluitend schone referentiedelen (`glasvlak()`) | 0 · 0 · 1 × 1 (kaartfracties) |
+| bestand | inhoud |
+| --- | --- |
+| `gw-ring.webp` | het volledige artwork op kaartverhouding: lijst, ijs, crest, trekker, ophanging met emmer, ondergroep en waterexplosie — ingebakken zoals de referentie ze monteert. Binnen de glascontour blijft alleen wat óp het glas ligt (water, voorwerpen met krappe marge); de ingebakken kaarttekst is eruit. |
+| `gw-glasvlak.webp` | het natte glas op kaartmaat: toonveld, condens, druppels en waterstrepen, samengesteld uit uitsluitend schone referentiedelen (`glasvlak()`). |
+| `gw-strip-trekker/-emmer/-ondergroep.webp` | drie zones uit exact het ringdoek, nóg een keer geplaatst bóven de kaartinhoud — de voorwerpen horen vóór de tekst (de emmer hangt over de statkolom). Zelfde pixels op dezelfde plek, dus per constructie naadloos. Krap gesneden: elke rij te veel dekt kaarttekst af. |
+| `gw-glas.webp` | geweven glastegel (92 × 160 px schoon glas) — weef-ingrediënt voor de tekstvulling in de ring. |
 
-Drie regels die het script afdwingt en die bij een volgende kaart terugkomen:
+De kaart is hoger dan de referentie (100:139 tegen 0,875), dus de ring wordt
+verticaal stuksgewijs herbemonsterd (`_naar_kaart_y`). De flankzones met een
+massief voorwerp — trekker en emmer — krijgen daarbij een eigen kolomband met
+een aspect-behoudende helling over de hoogte van het voorwerp; het rek gaat naar
+het glas en de rail erboven en eronder, waar het als extrusie onzichtbaar is.
+Buiten de middenzone (0,15–0,85) volgt elke band exact de globale afbeelding,
+zodat kap, schouders, punt en waterrand aan de bandgrenzen niet verspringen.
 
-- **kaartinhoud van de referentie is verboden gebied.** Rating, subniveau,
-  avatarcirkel, glaslat, naam, divisieregel, statblok en het losse raampje zitten
-  in het bronbeeld ingebakken. `INHOUD` snijdt ze uit élk onderdeel, anders staat
-  er een spookkopie naast de echte tekst;
-- **een onderdeel dat als eigen asset terugkomt, hoort niet in de uitsnede van
-  zijn buurman.** `water-onder` wordt daarom gesneden mét de badge en de tweede
-  trekker eruit (`zonder=`), en `gw-glas.webp` zonder álle voorwerpen. Zonder dat
-  verschijnt elk onderdeel twee keer zodra de lagen los worden geplaatst;
-- **massieve voorwerpen volgen hun eigen silhouet, niet de handgetrokken lijn.**
-  Binnen de contour bepaalt de afwijking tegenover een lokaal achtergrondmodel
-  welke pixels bij het voorwerp horen, met gaten dicht (`vul_gaten`). Een dunne
-  steel vraagt daarbij een fijnere ontkorreling (`korrel=1`) — op de grove stand
-  knipte hij de steel van de trekker weg.
-
-De plek van elk onderdeel op de kaart staat in `glazenwasserLayout.ts`; de `doos`
-hierboven is het vertrekpunt, `schaal` en `verzet` daarin zijn de bewuste
-afwijkingen (grotere crest, lagere trekker, emmer verder over de rand).
-
-### De referentiepass: glasinterieur uit de ring, glasvlak samengesteld
-
-De ring droeg eerst het hele glasinterieur van de referentie mee. Dat interieur
-zit vol ingebakken inhoud (rating, avatarcirkel, naam, statblok) en de vier
-weggeknipte voorwerpen; elke vulling daarvan liet bleke wolken en donkere
-schimmen achter — de "faded / washed out"-vlekken en de egale plek naast de
-PA-badge. Sinds de referentiepass:
-
-- houdt de ring binnen de glasrand alleen een **natte randband** over (condens en
-  druppels waar het glas de lijst raakt), met de vul-zones ook in die band
-  gedoofd;
-- komt het glas zelf uit **`gw-glasvlak.webp`**: één dekkend vlak op kaartmaat,
-  samengesteld uit uitsluitend schone referentiedelen — toonveld (lage
-  frequenties van het echte glas), honderden condens- en druppel-patches en
-  getrokken verticale waterstrepen, alles met vaste seed (`glasvlak()`).
+Wat blijft gelden: **kaartinhoud van de referentie is verboden gebied** —
+rating, subniveau, avatarcirkel, glaslat, naam, divisieregel, statblok en het
+losse raampje zitten in het bronbeeld ingebakken en gaan er via `INHOUD` uit,
+met een vulling die verticaal doorloopt (`inpaint_verticaal`): rails en
+glasstrepen zijn verticale structuren.
 
 ## De master (`glazenwasser-master.webp`)
 
-> Deze master komt sinds de artworkpass uit `scripts/glazenwasser-onderdelen.py`
-> (`compacte_master()`), niet meer uit `scripts/glazenwasser-master.py`. Hij wordt
-> opgebouwd uit dezelfde ring en dezelfde losse voorwerpen als de brede kaart,
-> zodat wat spelers in de app zien hetzelfde artwork is. Het kaartvak in dit doek
-> heeft dezelfde 100:139 als het stelsel van de ring, dus de lagen gaan er één op
-> één in. Eén verschil met de brede kaart: hier wordt de ring op de glasrand
-> afgesneden, want de compacte kaart tekent zijn rating, naam en divisieregel
-> eróver. De snede volgt sinds de referentiepass de bínnenkant van de natte
-> randband, zodat ook het klassement de condens- en druppelrand tegen de lijst
-> erft.
+> Deze master komt uit `scripts/glazenwasser-onderdelen.py`
+> (`compacte_master()`) en wordt opgebouwd uit dezelfde ring en hetzelfde
+> glasvlak als de brede kaart, zodat wat spelers in de app zien hetzelfde
+> artwork is. Het kaartvak in dit doek heeft dezelfde 100:139 als het stelsel
+> van de ring, dus de lagen gaan er één op één in. Twee verschillen met de
+> brede kaart, beide voor de leesbaarheid van FutKaart-tekst: de waterexplosie
+> blijft beperkt tot onder 80% kaarthoogte mét een heldere zone achter de
+> divisieregel, en het voormasker (raster-alfa uit de compositie, met een écht
+> transparant gat boven het kale glas) bepaalt wat de voor-laag over de
+> kaartinhoud mag tonen.
 
 De compacte kaart in het klassement blijft de drie-lagenbreakout gebruiken: één
 master op drie diepten, met `glazenwasser-front-mask.svg` als voorselectie. Canvas

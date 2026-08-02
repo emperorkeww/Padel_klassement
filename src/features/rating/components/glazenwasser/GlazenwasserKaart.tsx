@@ -8,19 +8,20 @@
 // in gebruik waar hij klein wordt (klassement, opstelling, legenda); deze kaart is
 // voor de plekken waar hij groot is: de kaart-modal en de dev-stage.
 //
-// Het artwork bestaat uit losse, strak bijgesneden onderdelen uit
-// `scripts/glazenwasser-onderdelen.py` — elk met eigen alfa, zonder transparante
-// rand. Alle geometrie staat in glazenwasserLayout.ts; dit bestand zet die
+// Het artwork komt sinds de herbouw uit één doorlopend referentiedoek
+// (`scripts/glazenwasser-onderdelen.py`): de ring draagt frame, water én alle
+// voorwerpen zoals de referentie ze monteert, het glasvlak draagt het natte
+// glas, en drie voorstrips herhalen exact de zones die vóór de kaartinhoud
+// horen. Alle geometrie staat in glazenwasserLayout.ts; dit bestand zet die
 // fracties om in stijlen en de CSS doet alleen materiaal (kleur, bevel, schaduw).
 
 import type { CSSProperties, ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
 import ring from "./assets/gw-ring.webp";
 import glasvlak from "./assets/gw-glasvlak.webp";
-import trekkerBoven from "./assets/gw-trekker-boven.webp";
-import ophanging from "./assets/gw-ophanging.webp";
-import emmer from "./assets/gw-emmer.webp";
-import onderschild from "./assets/gw-onderschild.webp";
+import stripTrekker from "./assets/gw-strip-trekker.webp";
+import stripEmmer from "./assets/gw-strip-emmer.webp";
+import stripOndergroep from "./assets/gw-strip-ondergroep.webp";
 import {
   GW_INHOUD,
   GW_LAGEN,
@@ -33,14 +34,13 @@ import {
 import type { GlazenwasserStat } from "./glazenwasserStats";
 import "./GlazenwasserKaart.css";
 
-/** De losse onderdelen. Eén plek waar een sleutel aan een bestand hangt. */
+/** De artworklagen. Eén plek waar een sleutel aan een bestand hangt. */
 const GW_BRONNEN: Record<GwBron, string> = {
   ring,
   glasvlak,
-  "trekker-boven": trekkerBoven,
-  ophanging,
-  emmer,
-  onderschild,
+  "strip-trekker": stripTrekker,
+  "strip-emmer": stripEmmer,
+  "strip-ondergroep": stripOndergroep,
 };
 
 /** Fractie van de kaartbreedte als CSS-lengte. Eén helper, zodat geen enkele maat

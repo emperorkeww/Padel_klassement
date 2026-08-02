@@ -125,10 +125,9 @@ import DOZEN from "./assets/gw-onderdelen.json";
 export type GwBron =
   | "ring"
   | "glasvlak"
-  | "trekker-boven"
-  | "ophanging"
-  | "emmer"
-  | "onderschild";
+  | "strip-trekker"
+  | "strip-emmer"
+  | "strip-ondergroep";
 
 /** De lagen, in paintvolgorde. `doel` komt uit
  *  `python3 scripts/glazenwasser-onderdelen.py`; `schaal` en `verzet` zijn de
@@ -168,55 +167,32 @@ export const GW_LAGEN: readonly GwLaag[] = [
     voorbewerkt: true,
     z: 40,
   },
-  // Trekker schuin langs de linkerflank: iets forser dan de referentie en met
-  // zijn blad búiten het schild, zoals daar — blad en steel houden dan
-  // dezelfde visuele lengte-balans op de smallere kaart. Het gat in de ring
-  // zit op de ingebakken plek en wordt gevuld, dus de trekker mag hier vrij
-  // schuiven en schalen.
+  // Voorstrips (herbouw): trekker, emmer-met-ophanging en de ondergroep zijn
+  // ín de ring gebakken — gemonteerd, beschaduwd en nat zoals de referentie
+  // ze schilderde. Maar de kaartinhoud (z 50) tekent bóven de ring (z 40), en
+  // deze drie horen vóór de tekst (de emmer hangt op de referentie over de
+  // statkolom). Daarom worden exact deze zones uit hetzelfde ringdoek nóg een
+  // keer geplaatst: dezelfde pixels op dezelfde plek, dus per constructie
+  // zonder naad of dubbeling zichtbaar.
   {
     naam: "leftSqueegee",
-    schaduw: 0.004,
-    bron: "trekker-boven",
-    doel: doos("trekker-boven"),
-    schaal: 1.12,
-    verzet: [-0.035, 0.012],
+    bron: "strip-trekker",
+    doel: doos("strip-trekker"),
+    voorbewerkt: true,
     z: 70,
   },
-  // Haak met ketting waar de emmer aan hangt; die moet aan de lijst vastzitten,
-  // dus hij schuift met de emmer mee naar buiten.
-  {
-    naam: "bucketHanger",
-    bron: "ophanging",
-    doel: doos("ophanging"),
-    // Vóór de lijst, niet erachter: op de referentie is de klem op de rail
-    // geschroefd en ligt de ketting er zichtbaar overheen. Achter de lijst
-    // (z 19) verdween hij eronder en hing de emmer nergens aan.
-    z: 66,
-  },
-  // Sopemmer: groter, lager en verder over de rechterrand dan op de referentie.
   {
     naam: "rightBucket",
-    bron: "emmer",
-    doel: doos("emmer"),
-    // Op referentiemaat: op 1,22 dekte de emmer de rechterhelft van de
-    // divisieregel en de kolom CONCENTRATIE af. Iets omhoog, zodat de ketting
-    // uit de ophanging de beugel raakt in plaats van er een gat boven te laten:
-    // een emmer die náást zijn ketting hangt leest als los plaatje.
-    verzet: [0.004, -0.022],
+    bron: "strip-emmer",
+    doel: doos("strip-emmer"),
+    voorbewerkt: true,
     z: 70,
   },
-  // Onderschild mét de tweede trekker: op de referentie is dat één brandpunt, dus
-  // het is ook één asset. Het water eromheen loopt er in dezelfde uitsnede
-  // overheen, zodat er geen naad tussen crest, trekker en splash overblijft.
   {
     naam: "bottomShield",
-    schaduw: 0.01,
-    bron: "onderschild",
-    doel: doos("onderschild"),
-    verzet: [0, 0.012],
-    // Geen eigen anker meer: het water waar dit schild in ligt zit nu in de ring,
-    // en die is met de gewone afbeelding herbemonsterd. Een afwijkend anker zou
-    // het schild 1,8% kaarthoogte boven zijn eigen plas leggen.
+    bron: "strip-ondergroep",
+    doel: doos("strip-ondergroep"),
+    voorbewerkt: true,
     z: 100,
   },
 ];
