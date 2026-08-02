@@ -24,20 +24,11 @@ describe("sectie-register (#989)", () => {
     }
   });
 
-  it("dekt inmiddels de eerste acht secties uit #989", () => {
-    // PR 2 vult 1 t/m 8; Coach Rudy (11) kwam al mee in PR 1.
-    for (const id of [
-      "aan-de-slag",
-      "speeldag",
-      "banen",
-      "uitslagen",
-      "rating",
-      "tiers",
-      "troon",
-      "kaarten",
-      "rudy",
-    ]) {
-      expect(GEVULDE_SECTIES, id).toContain(id);
-    }
+  // De belofte uit #989: álle vijftien secties zijn gevuld. Zakt dit ooit, dan
+  // is er een sectie uit het register gevallen — of eentje bijgezet in SECTIES
+  // zonder inhoud, en dan verdwijnt hij stil uit de inhoudsopgave.
+  it("dekt alle vijftien secties uit #989", () => {
+    for (const id of SECTIE_IDS) expect(GEVULDE_SECTIES, id).toContain(id);
+    expect(GEVULDE_SECTIES).toHaveLength(SECTIE_IDS.length);
   });
 });

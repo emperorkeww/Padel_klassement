@@ -10,12 +10,18 @@ import type { ReactNode } from "react";
 import type { Profile } from "@/types";
 import type { SectieId } from "../secties";
 import { AanDeSlag } from "./AanDeSlag";
+import { Badges } from "./Badges";
 import { Banen } from "./Banen";
+import { Feed } from "./Feed";
 import { Kaarten } from "./Kaarten";
+import { Meldingen } from "./Meldingen";
+import { Privacy } from "./Privacy";
 import { Rating } from "./Rating";
 import { Rudy } from "./Rudy";
+import { Seizoen } from "./Seizoen";
 import { Speeldag } from "./Speeldag";
 import { Tiers } from "./Tiers";
+import { Toto } from "./Toto";
 import { Troon } from "./Troon";
 import { Uitslagen } from "./Uitslagen";
 
@@ -39,7 +45,13 @@ export const SECTIE_INHOUD: Partial<
   tiers: Tiers,
   troon: Troon,
   kaarten: Kaarten,
+  badges: Badges,
+  toto: Toto,
   rudy: Rudy,
+  feed: Feed,
+  seizoen: Seizoen,
+  meldingen: Meldingen,
+  privacy: Privacy,
 };
 
 /** De id's die vandaag inhoud hebben. */
