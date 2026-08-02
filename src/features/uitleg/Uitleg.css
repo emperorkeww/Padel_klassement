@@ -91,3 +91,54 @@
 .uitleg__body > p:last-child {
   margin-bottom: 0;
 }
+
+/* Tussenkop binnen een sectie (bv. De Troon / De Schandpaal): kleiner dan de
+   sectiekop erboven, maar zwaarder dan lopende tekst. */
+.uitleg__kop {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.uitleg__body > .uitleg__kop:first-child {
+  margin-top: 0;
+}
+
+/* Genummerde stappen ("doe dit, dan dat"). */
+.uitleg__stappen {
+  margin: 0 0 var(--sp-3);
+  padding-left: 1.25rem;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+/* Term + uitleg, voor de tabs van een groepspagina en soortgelijke lijstjes. */
+.uitleg__lijst {
+  margin: 0 0 var(--sp-3);
+}
+.uitleg__lijst dt {
+  font-weight: 800;
+}
+.uitleg__lijst dd {
+  margin: 2px 0 var(--sp-3);
+  color: var(--ink);
+}
+.uitleg__lijst dd:last-child {
+  margin-bottom: 0;
+}
+
+/* Opsomming zonder bolletjes waar de vetgedrukte term het anker al is. */
+.uitleg__lijst-kaal {
+  list-style: none;
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+/* Terzijde: waar of nuttig, maar niet het antwoord waar je voor kwam. */
+.uitleg__noot {
+  margin: var(--sp-3) 0 0;
+  color: var(--ink-soft-strong);
+  font-size: 0.9rem;
+}
