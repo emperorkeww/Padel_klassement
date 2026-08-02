@@ -666,6 +666,13 @@
   display: grid;
   gap: var(--sp-2);
 }
+/* Ingang naar de uitlegpagina (#989): volle breedte onder de checklist, maar
+   in de rustige knopstijl — de stappen erboven blijven de hoofdactie. */
+.onboard__uitleg {
+  margin-top: var(--sp-3);
+  width: 100%;
+  justify-content: center;
+}
 .onboard__item {
   display: flex;
   align-items: center;

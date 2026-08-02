@@ -20,6 +20,7 @@ const PlayerProfile = lazy(() => import("@/features/profiles/PlayerProfile"));
 const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
+const Uitleg = lazy(() => import("@/features/uitleg/Uitleg"));
 const NotFound = lazy(() => import("@/features/misc/NotFound"));
 
 // Dev-showcase (#664): alle FUT-kaartvarianten naast elkaar. Alleen in
@@ -128,6 +129,9 @@ function App() {
               <Route path="/klassement" element={<Leaderboard />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/banen" element={<Availability />} />
+              {/* "Hoe werkt het?" (#989): de centrale uitleg, bereikbaar via
+                  de ?-knop in de shell op elk scherm. */}
+              <Route path="/uitleg" element={<Uitleg />} />
               <Route path="/matches/:id" element={<MatchDetail />} />
               {/* "Spelen" is de hub van de kernreis (#106); de oude
                   groepen-URL blijft werken via een redirect. Die ging tot #916

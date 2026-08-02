@@ -259,6 +259,13 @@
     position: absolute;
     inset: -9px 0;
   }
+  /* Rechterkant van de topbalk: de ?-knop (#989) en de avatar. Genoeg tussen-
+     ruimte dat de vergrote tapvlakken van beide elkaar niet overlappen. */
+  .topbar__acties {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
   .topbar__profile {
     position: relative;
     display: inline-flex;

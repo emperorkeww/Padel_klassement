@@ -15,6 +15,7 @@ import { BallIcon } from "@/ui/BallIcon";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
+import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
 import "./DashboardLayout.css";
@@ -53,12 +54,15 @@ const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
+// De uitlegpagina (#989) hoort op desktop bij de vaste navigatie in plaats van
+// als losse knop: de topbalk waarin de ?-knop op mobiel staat is hier verborgen.
+const UITLEG: NavItem = { to: "/uitleg", label: "Hoe werkt het?", icon: <IconHelp /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, MATCHES, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
-  { title: "Ik", items: [VRIENDEN, IK] },
+  { title: "Ik", items: [VRIENDEN, IK, UITLEG] },
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
@@ -113,15 +117,21 @@ export function DashboardLayout() {
       {/* Open source-signaal: schuine GitHub-ribbon in de rechterbovenhoek
           (#252). Enkel op desktop; op mobiel staat daar de avatar. */}
       <GithubRibbon />
-      {/* Mobiele topbalk: merk links, eigen avatar (naar profiel) rechts. */}
+      {/* Mobiele topbalk: merk links, de ?-knop en de eigen avatar rechts.
+          De ?-knop is de vaste ingang naar "Hoe werkt het?" (#989) en springt
+          waar mogelijk naar de sectie van het scherm waar je nú staat. Op
+          desktop staat diezelfde ingang in de zijbalk hieronder. */}
       <header className="topbar">
         <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
           <BallIcon size={22} />
           <span>Vamos!</span>
         </Link>
-        <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
-          <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
-        </Link>
+        <div className="topbar__acties">
+          <HelpKnop />
+          <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
+            <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
+          </Link>
+        </div>
       </header>
 
       {/* Zichtbare offline-status op elke beschermde route (#462). */}
@@ -293,6 +303,18 @@ function IconUser() {
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="8" r="3.2" />
       <path d="M5 20a7 7 0 0 1 14 0" />
+    </svg>
+  );
+}
+
+// Uitleg: het universele vraagteken-in-een-cirkel, zodat de zijbalk-ingang op
+// desktop hetzelfde signaal geeft als de ?-knop in de mobiele topbalk (#989).
+function IconHelp() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.9" />
+      <path d="M12 17.2h.01" />
     </svg>
   );
 }
