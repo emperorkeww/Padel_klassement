@@ -12,6 +12,7 @@ import { PageTabs, TabPanel } from "@/ui/PageTabs";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { UITLEG_PAD } from "@/features/uitleg/secties";
 import {
   getProfile,
   updateProfile,
@@ -135,6 +136,12 @@ export function ProfileSettings() {
                 link i.p.v. een tweede tab-rij (#70). Ook op mobiel bereikbaar. */}
             <Link className="btn btn--sm" to="/vrienden">
               Vrienden →
+            </Link>
+            {/* De tweede, verwachte plek voor de uitleg (#989): de eerste is de
+                ?-knop in de shell. Wie iets niet snapt zoekt het als eerste bij
+                z'n instellingen. */}
+            <Link className="btn btn--sm" to={UITLEG_PAD}>
+              Hoe werkt het? →
             </Link>
           </div>
         </div>

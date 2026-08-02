@@ -23,4 +23,5 @@ Refs #…
 - [ ] Schema gewijzigd? → migration gegenereerd (`supabase db diff`) en pgTAP-tests bijgewerkt
 - [ ] Getest op mobiel formaat (≤390px)
 - [ ] Nieuwe teksten zijn Nederlands
+- [ ] Nieuwe feature of veranderde spelregel? → `/uitleg` bijgewerkt (`src/features/uitleg/inhoud/`)
 - [ ] Release-PR (→ main)? → `Closes #…` staat hierboven voor elk meegeleverd issue

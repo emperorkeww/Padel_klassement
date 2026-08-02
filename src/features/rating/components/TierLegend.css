@@ -127,3 +127,8 @@
   font-style: italic;
   color: var(--ink-soft);
 }
+/* Wegwijzer naar de volledige uitleg (#989); onderaan, na de pias-voetnoot. */
+.tier-legend__uitleg {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+}
