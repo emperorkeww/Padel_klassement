@@ -12,6 +12,7 @@ import { useToast } from "@/ui/ToastProvider";
 import { displayName } from "@/features/profiles/api";
 import { nextEncounter } from "@/features/groups/rivalry";
 import { roastSeed } from "@/features/coach/roastTone";
+import { sectieHref } from "@/features/uitleg/secties";
 import { errorMessage } from "@/lib/utils/errors";
 import { formatDate, formatRelativeDay, formatTime } from "@/lib/utils/format";
 import { tap } from "@/lib/utils/haptics";
@@ -123,7 +124,10 @@ export function VendettaCard({
           Een <strong>vendetta</strong> is een verklaarde aartsrivaliteit:
           jullie onderlinge duels worden een seizoen. Wie als eerste 3, 5 of 7
           zeges pakt sinds de start, wint — alleen duels waarin jullie
-          tegenover elkaar staan tellen mee.
+          tegenover elkaar staan tellen mee.{" "}
+          {/* Deze korte uitleg blijft staan — hij is contextueel nuttig — maar
+              wijst door naar het volledige verhaal (#989). */}
+          <Link to={sectieHref("feed")}>Meer uitleg over de app →</Link>
         </p>
       )}
 

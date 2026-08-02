@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import { CoachSneer } from "@/features/coach/components/CoachSneer";
+import { sectieHref } from "@/features/uitleg/secties";
 import type { RoastCtx } from "@/features/coach/roastTone";
 import { piasDetail, type PiasReden } from "@/features/groups/maandpias";
 import { tierLegend } from "@/features/rating/tiers";
@@ -28,7 +30,15 @@ export interface TierLegendPias {
  * die er is; anders valt hij terug op de vaste grap — het easter egg verdwijnt
  * nooit.
  */
-export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
+export function TierLegend({
+  pias,
+  toonUitlegLink = false,
+}: {
+  pias?: TierLegendPias | null;
+  /** Wegwijzer naar /uitleg#tiers eronder (#989). Standaard uit: de
+   *  uitlegpagina rendert dit paneel zélf. De Divisies-tab zet 'm aan. */
+  toonUitlegLink?: boolean;
+} = {}) {
   const rijen = tierLegend();
   return (
     <details className="tier-legend">
@@ -71,6 +81,11 @@ export function TierLegend({ pias }: { pias?: TierLegendPias | null } = {}) {
         )}
       </p>
       {pias && <CoachSneer ctx={pias.ctx} seed={pias.seed} size={26} />}
+      {toonUitlegLink && (
+        <p className="tier-legend__uitleg">
+          <Link to={sectieHref("tiers")}>Meer uitleg over de app →</Link>
+        </p>
+      )}
     </details>
   );
 }

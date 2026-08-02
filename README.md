@@ -27,7 +27,7 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
     *   Ondersteuning voor gastspelers zonder geregistreerd account.
 *   📊 **Wedstrijden & Statistieken**
     *   Plan toekomstige wedstrijden of log direct uitslagen (termen zijn gestroomlijnd van 'Wedstrijdrondes' naar **Wedstrijden**).
-    *   Punt-voor-punt invoer en gedetailleerde weergave van het scoreverloop per wedstrijd.
+    *   Invoer in twee stappen (spelers, dan de score in games), met een offline-wachtrij voor wie geen bereik heeft in de kooi.
     *   Historische Elo-ratinggrafieken op spelersprofielen.
 *   🏆 **Klassementen & Tiers**
     *   Ranglijsten op zowel globaal niveau als per specifieke groep.
@@ -49,26 +49,20 @@ De stack bestaat uit **React 19 + TypeScript + Supabase**, gebouwd met **Vite** 
 *   🔔 **Notificaties & PWA**
     *   Web-Push notificaties voor nieuwe speelrondes, uitslagen, wedstrijdherinneringen en poll-deadlines.
     *   Installeerbaar als Progressive Web App (PWA) op mobiel en desktop.
+*   📖 **"Hoe werkt het?" (`/uitleg`)**
+    *   Eén pagina waar Coach Rudy alle begrippen en mechanieken hierboven uitlegt, met een deep-link per sectie (`/uitleg#toto`).
+    *   Bereikbaar via een vaste `?`-knop in de app-shell, op elk scherm.
+    *   De divisietabel en de kaart-edities worden er uit `tiers.ts` en `edities.ts` gerenderd, zodat de uitleg niet veroudert.
 
 ---
 
 ## 🏆 Tiers & Divisies
 
-De applicatie verdeelt spelers op basis van hun actieve Elo-rating onder in verschillende divisies. Deze indeling bepaalt de badges, toasts, en visuals in de app:
+De applicatie verdeelt spelers op basis van hun actieve Elo-rating onder in divisies, van *Sletje van de baan* (500–600) tot *El Padelissimo* (1600+). Die indeling bepaalt de badges, toasts en visuals in de app.
 
-| Divisie | Rating | Sleutel | Emoji | Karakteristiek / Flavor |
-| :--- | :--- | :--- | :--- | :--- |
-| **El Padelissimo** | 1600+ | `dictator` | 🫡 | Regeert de club als absolute dictator, weert tegenstanders per direct uit de groepsapp en eist 90% van de baromzet. |
-| **GOAT** | 1400–1599 | `legende` | 🐐 | Heeft een ego dat zo reusachtig groot is dat het niet eens in de kooi past. |
-| **Forever second** | 1300–1400 | `meester` | 🥈 | Eeuwig gedoemd om de verliezersfinale te spelen, de ultieme figurant. |
-| **Eeuwige belofte** | 1200–1300 | `diamant` | ⏳ | Staat in theorie altijd 5-1 voor in de beslissende set, maar choket gegarandeerd zodra er druk op de ketel staat. |
-| **Glazenwasser** | 1100–1200 | `platina` | 🪟 | Heeft de glazen achterwand zo vaak geraakt dat hij er inmiddels woont. |
-| **Wannabe** | 1000–1100 | `goud` | 😤 | Koopt een racket van €350 om het chronische gebrek aan talent te compenseren. *(Startniveau)* |
-| **Blaaskaak** | 900–1000 | `zilver` | 💨 | Geeft luidkeels tactisch advies dat-ie zelf nog nooit succesvol heeft uitgevoerd. |
-| **Bankvuller** | 800–900 | `brons` | 🪑 | Blijft bij voorkeur op de bank zitten om het spelniveau niet te verpesten. |
-| **Ballenraper** | 700–800 | `hout` | 🎾 | Besteedt 90% van de tijd aan het bukken en rapen van ballen; slaat ze zelden over het net. |
-| **Stofzuiger** | 600–700 | `karton` | 🧹 | Rent blindelings op elke bal af, inclusief de ballen die overduidelijk voor zijn partner bedoeld waren. |
-| **Sletje van de baan** | 500–600 | `slof` | 🥴 | Wordt door de rest van de club gebruikt voor makkelijke gratis winst. |
+**De volledige tabel — namen, rating-grenzen, sleutels en flavor — staat niet meer hier, maar in de app zelf op `/uitleg#tiers`.** Die pagina rendert hem rechtstreeks uit `TIER_BANDEN`, de enige plek met de drempels (`src/features/rating/tiers.ts`). Een tier bijzetten of een grens verschuiven is dus één wijziging, en de uitleg volgt vanzelf — in plaats van dat deze README er stil naast gaat lopen.
+
+Voor wie de tabel in de repo wil lezen: `src/features/rating/tiers.ts` is de bron.
 
 ---
 

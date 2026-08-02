@@ -1042,7 +1042,7 @@ export function Leaderboard() {
           {groupPias && (
             <PiasBanner pias={groupPias} groepsnaam={groupPias.groepsnaam} />
           )}
-          <TierLegend pias={groupPias} />
+          <TierLegend pias={groupPias} toonUitlegLink />
         </>
       )}
 
@@ -1052,6 +1052,7 @@ export function Leaderboard() {
         <KaartLegenda
           naam={pmap[myId] ? displayName(pmap[myId]) : "Jij"}
           profile={pmap[myId]}
+          toonUitlegLink
         />
       )}
 

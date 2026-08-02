@@ -36,7 +36,13 @@ const ZICHTBAAR = [
   { id: "tiers", titel: "Tiers & divisies" },
   { id: "troon", titel: "De Troon & De Schandpaal" },
   { id: "kaarten", titel: "Spelerskaarten" },
+  { id: "badges", titel: "Badges & mijlpalen" },
+  { id: "toto", titel: "Toto & Lef" },
   { id: "rudy", titel: "Coach Rudy" },
+  { id: "feed", titel: "Feed & vrienden" },
+  { id: "seizoen", titel: "Seizoen & Wrapped" },
+  { id: "meldingen", titel: "Meldingen & installeren" },
+  { id: "privacy", titel: "Privacy & instellingen" },
 ] as const;
 
 describe("<Uitleg /> (#989)", () => {
@@ -140,6 +146,28 @@ describe("<Uitleg /> (#989)", () => {
     // De dictator-drempel is de ondergrens van de hoogste tier-band.
     expect(troon).toContain(String(TIER_BANDEN[TIER_BANDEN.length - 1].min));
     expect(troon).toContain(String(AFDROGING_DREMPEL));
+  });
+
+  it("haalt de toto-staffel en de lef-regels uit de modules die ze afdwingen", async () => {
+    const { predictionPoints } = await import("@/features/matches/predictions");
+    const { MIN_GAMES, STAKE_FACTOR } = await import("@/features/matches/stakes");
+    renderPagina();
+    await screen.findByRole("heading", { level: 1 });
+    const toto = document.getElementById("toto")?.textContent ?? "";
+    // De underdog-tip levert de hoogste staffelwaarde op.
+    expect(toto).toContain(`${predictionPoints(0.25)} punten`);
+    expect(toto).toContain(`${MIN_GAMES} matches`);
+    expect(toto).toContain(`${STAKE_FACTOR}×`);
+  });
+
+  // iOS is de enige plek waar push écht níét werkt zonder installatie; wie dat
+  // niet weet denkt dat de app stuk is.
+  it("noemt de iOS-uitzondering bij meldingen", async () => {
+    renderPagina();
+    await screen.findByRole("heading", { level: 1 });
+    const meldingen = document.getElementById("meldingen")?.textContent ?? "";
+    expect(meldingen).toMatch(/iOS/);
+    expect(meldingen).toMatch(/beginscherm/i);
   });
 
   it("rendert de divisies en kaart-edities uit de bestaande legenda's", async () => {

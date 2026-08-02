@@ -11,7 +11,9 @@
 // jóuw kaart eruit als je hem verdient".
 
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Avatar } from "@/ui/Avatar";
+import { sectieHref } from "@/features/uitleg/secties";
 import {
   FutKaart,
   FutKaartVoorkant,
@@ -135,10 +137,15 @@ function LegendaKaart({
 export function KaartLegenda({
   naam,
   profile,
+  toonUitlegLink = false,
 }: {
   /** Naam van de kijker: die staat op elke voorbeeldkaart. */
   naam: string;
   profile?: Profile;
+  /** Zet de wegwijzer naar /uitleg#kaarten eronder (#989). Standaard uit, want
+   *  de uitlegpagina rendert dit paneel zélf — daar zou de link naar zichzelf
+   *  wijzen. De Kaarten-tab zet 'm aan. */
+  toonUitlegLink?: boolean;
 }) {
   // Pas renderen als het paneel open is: zeventien kaarten met clip-paths en
   // gradients hoeven niet te bestaan zolang niemand kijkt.
@@ -203,6 +210,13 @@ export function KaartLegenda({
               voor de héle club, terwijl de pias in de groepsbanner en op je
               dashboard die van jouw groep is.
             </p>
+            {toonUitlegLink && (
+              <p className="kaart-legenda__noot">
+                <Link to={sectieHref("kaarten")}>
+                  Meer uitleg over de app →
+                </Link>
+              </p>
+            )}
           </>
         )}
       </div>
