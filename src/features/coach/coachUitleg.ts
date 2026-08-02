@@ -169,12 +169,12 @@ export const UITLEG_REGELS: Record<UitlegSleutel, Pools> = {
   },
   feed: {
     zacht: [
-      "De feed laat zien wat je vrienden en groepen hebben uitgespookt.",
+      "Het clubblad laat zien wat je vrienden en groepen hebben uitgespookt.",
       "Alles wat er gebeurt komt hier voorbij. Rustig doorscrollen maar.",
       "Zo blijf je op de hoogte zonder in de groepsapp te hoeven duiken.",
     ],
     scherp: [
-      "In de feed zie je wat iedereen heeft uitgevreten. Inclusief jij, helaas.",
+      "In het clubblad zie je wat iedereen heeft uitgevreten. Inclusief jij, helaas.",
       "Alles komt voorbij. Ook die uitslag waarvan je hoopte dat niemand het zag.",
       "Scrollen is prima. Maar iemand scrollt óók langs jouw resultaten.",
     ],

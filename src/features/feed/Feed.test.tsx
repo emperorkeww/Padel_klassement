@@ -58,7 +58,7 @@ describe("<Feed />", () => {
   it("toont matches en vriendschappen chronologisch met dag-kopjes", async () => {
     renderPage();
     expect(
-      await screen.findByRole("heading", { name: /^feed$/i }),
+      await screen.findByRole("heading", { name: /^clubblad$/i }),
     ).toBeInTheDocument();
 
     // De afgeronde match uit de fixtures (alice+bob vs carol+dave) is een
@@ -119,7 +119,7 @@ describe("<Feed />", () => {
   // dit liggen in #910).
   it("presenteert de filterrij als groep schakelknoppen", async () => {
     renderPage();
-    const groep = await screen.findByRole("group", { name: /feed filteren/i });
+    const groep = await screen.findByRole("group", { name: /clubblad filteren/i });
     expect(groep).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: "Alles" })).toHaveAttribute(
@@ -141,7 +141,7 @@ describe("<Feed />", () => {
   // nergens — de lijst wisselt geluidloos.
   it("kondigt de uitkomst van een filterwissel aan", async () => {
     renderPage();
-    await screen.findByRole("group", { name: /feed filteren/i });
+    await screen.findByRole("group", { name: /clubblad filteren/i });
 
     // Bij het laden blijft de regio stil.
     const regios = screen.getAllByRole("status");
@@ -153,7 +153,7 @@ describe("<Feed />", () => {
 
   it("wist een actief filter via de wis-knop én via de chip zelf", async () => {
     renderPage();
-    await screen.findByRole("group", { name: /feed filteren/i });
+    await screen.findByRole("group", { name: /clubblad filteren/i });
 
     // Zonder actief filter is er niets te wissen.
     expect(screen.queryByRole("button", { name: /wis filter/i })).toBeNull();

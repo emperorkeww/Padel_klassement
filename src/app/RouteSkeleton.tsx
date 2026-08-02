@@ -51,7 +51,7 @@ function vormVoor(pathname: string) {
       </>
     );
   // Feed: dagkop met een reeks smalle gebeurtenisrijen.
-  if (pathname.startsWith("/feed"))
+  if (pathname.startsWith("/clubblad"))
     return (
       <>
         <div className="route-skeleton__bar route-skeleton__bar--sub" />

@@ -734,7 +734,7 @@ function PrivacyCard({ userId }: { userId: string }) {
           />
           <Toggle
             label="Roast-schild 🛡️"
-            hint="Pias, feed en profiel tonen dan een neutrale variant zonder spot."
+            hint="Pias, clubblad en profiel tonen dan een neutrale variant zonder spot."
             checked={p.roast_schild}
             disabled={busy}
             onChange={(aan) => set({ roast_schild: aan })}
@@ -743,7 +743,7 @@ function PrivacyCard({ userId }: { userId: string }) {
             <span className="toggle-row__text">
               <span className="toggle-row__label">Roast-intensiteit 🎙️</span>
               <span className="toggle-row__hint">
-                Hoe hard Coach Rudy jóu in je eigen feed en dashboard toespreekt.
+                Hoe hard Coach Rudy jóu in je eigen clubblad en dashboard toespreekt.
                 De toon binnen een groep bepaalt de eigenaar apart. Zet je het
                 roast-schild aan, dan word je hoe dan ook gespaard.
               </span>
