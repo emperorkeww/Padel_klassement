@@ -159,6 +159,38 @@ describe("<DashboardLayout />", () => {
   });
 });
 
+// De uitlegpagina (#989) is waardeloos zonder een ingang die overal zichtbaar
+// is: een ?-knop in de mobiele topbalk en een zijbalk-item op desktop. Beide
+// zitten in de shell, dus beide staan in de DOM ongeacht de viewport.
+describe("snelkoppeling naar de uitleg (#989)", () => {
+  it("staat op élk scherm in de shell, mobiel én desktop", async () => {
+    renderShell("/groepen/g1");
+    await screen.findByText("pagina-inhoud");
+    const ingangen = screen.getAllByRole("link", { name: /hoe werkt het/i });
+    // De ?-knop uit de topbalk plus het zijbalk-item.
+    expect(ingangen).toHaveLength(2);
+  });
+
+  it("springt naar de sectie van het scherm waar je nú staat", async () => {
+    renderShell("/groepen/g1");
+    await screen.findByText("pagina-inhoud");
+    const knop = screen
+      .getAllByRole("link", { name: /hoe werkt het/i })
+      .find((el) => el.classList.contains("help-knop"));
+    // Op een groepspagina hoort de sectie over het organiseren van een speeldag.
+    expect(knop).toHaveAttribute("href", "/uitleg#speeldag");
+  });
+
+  it("laat de zijbalk-ingang gewoon naar de bovenkant van de pagina wijzen", async () => {
+    renderShell("/groepen/g1");
+    await screen.findByText("pagina-inhoud");
+    const zijbalk = screen
+      .getAllByRole("link", { name: /hoe werkt het/i })
+      .find((el) => el.classList.contains("sidebar__link"));
+    expect(zijbalk).toHaveAttribute("href", "/uitleg");
+  });
+});
+
 // Zolang het profiel laadt is de naam in de zijbalk het e-mailadres, en dan
 // stond datzelfde adres er twee keer — als naam én als ondertitel (#949).
 describe("zijbalk-identiteit (#949)", () => {

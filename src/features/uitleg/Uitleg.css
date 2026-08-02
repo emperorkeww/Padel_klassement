@@ -1,0 +1,93 @@
+/* "Hoe werkt het?" (#989) — leespagina, geen dashboard. Ruime regelafstand en
+   een smalle maatregel, want dit is het enige scherm in de app waar je écht
+   zit te lezen. */
+
+.uitleg {
+  /* Maximaal ~68 tekens per regel; daarboven wordt lopende tekst vermoeiend. */
+  max-width: 46rem;
+}
+
+.uitleg__intro {
+  margin-bottom: var(--sp-4);
+}
+
+/* ---------- Inhoudsopgave ---------- */
+
+.uitleg__toc-lijst {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.uitleg__toc-link {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: 0.6rem var(--sp-2);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.uitleg__toc-link:hover,
+.uitleg__toc-link:focus-visible {
+  background: var(--accent-soft);
+}
+
+.uitleg__toc-emoji {
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+
+.uitleg__toc-tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.uitleg__toc-titel {
+  font-weight: 700;
+}
+
+.uitleg__toc-sub {
+  color: var(--ink-soft-strong);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+/* ---------- Secties ---------- */
+
+/* De secties zijn programmatisch focusbaar (tabIndex -1) zodat een deep-link
+   ook de focus meeneemt; die focus mag geen permanente omlijning geven, maar
+   moet wél zichtbaar zijn als hij landt. */
+.uitleg__sectie:focus {
+  outline: none;
+}
+
+.uitleg__sectie:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Genoeg lucht boven een sectie zodat hij na een sprong niet tegen de
+   (sticky) topbalk plakt. */
+.uitleg__sectie {
+  scroll-margin-top: var(--sp-5);
+}
+
+.uitleg__body {
+  margin-top: var(--sp-3);
+  line-height: 1.6;
+}
+
+.uitleg__body > p {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink);
+}
+
+.uitleg__body > p:last-child {
+  margin-bottom: 0;
+}

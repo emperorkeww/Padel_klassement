@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
+import { UITLEG_PAD } from "@/features/uitleg/secties";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import type { Profile } from "@/types";
 import { readFlag, writeFlag } from "../flags";
@@ -85,6 +87,12 @@ export function OnboardCard({
           hint="Log je eerste match of genereer direct evenwichtige teams om te knallen."
         />
       </ul>
+      {/* De prominente ingang naar de uitleg voor wie nog aan het begin staat
+          (#989). Deze kaart verdwijnt zodra de onboarding rond is, waarna de
+          ?-knop in de app-shell de discretere, permanente ingang blijft. */}
+      <Link className="btn onboard__uitleg" to={UITLEG_PAD}>
+        🎙️ Eerste keer hier? Rudy legt de hele app uit
+      </Link>
     </section>
   );
 }

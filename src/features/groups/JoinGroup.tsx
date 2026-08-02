@@ -7,6 +7,7 @@ import { useToast } from "@/ui/ToastProvider";
 import { BallIcon } from "@/ui/BallIcon";
 import { InviteSkeleton } from "@/ui/Skeleton";
 import { getProfilesByIds } from "@/features/profiles/api";
+import { UITLEG_PAD } from "@/features/uitleg/secties";
 import {
   previewGroupInvite,
   redeemGroupInvite,
@@ -175,6 +176,15 @@ export function JoinGroup() {
           Nee, terug naar mijn groepen
         </Link>
       </div>
+
+      {/* Wie via een invite-link binnenkomt is per definitie nieuw (#989). Dit
+          is dus hét moment om naar de uitleg te wijzen — en niet pas als hij
+          zich al door een dashboard vol kronen en dictators heeft geworsteld.
+          Bewust ónder de knoppen: de uitnodiging aannemen blijft de hoofdactie. */}
+      <p className="join__uitlegwijzer">
+        Eerste keer hier?{" "}
+        <Link to={UITLEG_PAD}>Coach Rudy legt uit hoe het werkt</Link>.
+      </p>
 
       {/* Uitnodigingen zijn niet accountgebonden: je wordt lid met het account
           waarmee je nu ingelogd bent. Wie op een gedeelde telefoon of met het

@@ -90,6 +90,14 @@
   font-size: var(--fs-sm);
   text-wrap: pretty;
 }
+/* Wegwijzer naar de uitleg (#989): dezelfde gedempte voetnoot-toon als de
+   accountregel eronder, zodat hij de hoofdactie niet beconcurreert. */
+.join__uitlegwijzer {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
+}
 .join__wissel {
   padding: 0;
   border: none;
