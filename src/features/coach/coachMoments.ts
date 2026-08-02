@@ -84,7 +84,7 @@ const OCHTEND_DIP = [
     "Je verliesreeks is zo lang dat zelfs de FIFA-disciplinaire commissie hier geen uitweg in ziet.",
 ] as const;
 const OCHTEND_HYPE = [
-  "Je bent niet te stoppen. Doe the rest een lol en verlies eens.",
+  "Je bent niet te stoppen. Doe de rest een lol en verlies eens.",
   "Op deze reeks durf ik geld op je te zetten. Bijna.",
   "De vorm van je leven — geniet ervan zolang het duurt.",
   "Een winreeks! Zelfs de Belgische voetbalbond zou nu overwegen je contract te verlengen.",
@@ -243,7 +243,7 @@ export const OCHTEND_KELDER = [
   "Hekkensluiter voor nu. Maar met de juiste tactiek klim je er zo weer uit.",
   "De kelderklasse. Laat zien dat je er niet thuishoort vandaag.",
   "Tijd om die rode lantaarn door te geven aan een ander.",
-  "Onderin de tabel. Blijf trainen, the ommekeer begint vandaag.",
+  "Onderin de tabel. Blijf trainen, de ommekeer begint vandaag.",
   "Op de bodem van de lijst. Zorg dat je vandaag de weg omhoog vindt.",
   "Rode lantaarn. Niet getreurd: er zijn legendarische comebacks begonnen vanaf deze positie.",
   "Hekkensluiter voor nu. Maar comebacks vanaf de bodem zijn de allermooiste.",
@@ -578,7 +578,7 @@ const MATCH_WINST = [
   "Punten binnen. Toevallig, maar binnen.",
   "Winst! Ik noteer 'm snel voordat de media er een kritische evaluatie over schrijven.",
   "Winst! Snel een krabbel in het notitieboekje. Zelfs een blinde wissel pakt soms goed uit.",
-  "Winst! Ik knew it, die tactische aanwijzingen op mijn spiekbriefje waren goud waard.",
+  "Winst! Ik wist het, die tactische aanwijzingen op mijn spiekbriefje waren goud waard.",
   "Prachtige zege. Dit vieren we met een extra persconferentie over hoe fantastisch de tactiek werkte.",
   "Winst! Gelukkig speelde je partner mee, anders hadden we hier nu een heel ander (en pijnlijker) verhaal geschreven.",
   "Winst. Geniet ervan, maar je service was nog steeds om te janken.",

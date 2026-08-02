@@ -48,7 +48,7 @@ function isSectionActive(item: NavItem, pathname: string) {
 // op mobiel (#274). Banen blijft bereikbaar bínnen de flow (Spelen-hub/zijbalk).
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
 const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket />, matchPaths: ["/groepen"] };
-const FEED: NavItem = { to: "/feed", label: "Feed", icon: <IconFeed /> };
+const FEED: NavItem = { to: "/clubblad", label: "Clubblad", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };

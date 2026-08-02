@@ -49,7 +49,7 @@ export function FeedFilters({
         className="tabs feed__filters"
         data-schaduw={schaduw}
         role="group"
-        aria-label="Feed filteren"
+        aria-label="Clubblad filteren"
       >
         {FILTER_LABELS.map((label) => {
           const cat = FILTER_CAT[label];

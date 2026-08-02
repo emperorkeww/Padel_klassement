@@ -125,7 +125,8 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/feed" element={<Feed />} />
+              <Route path="/clubblad" element={<Feed />} />
+              <Route path="/feed" element={<Navigate to="/clubblad" replace />} />
               <Route path="/klassement" element={<Leaderboard />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/banen" element={<Availability />} />

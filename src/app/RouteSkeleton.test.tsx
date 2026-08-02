@@ -15,7 +15,7 @@ describe("<RouteSkeleton /> (#949)", () => {
     // Het overzicht opent met de player card; de feed met een reeks smalle
     // rijen. Zelfde placeholder zou beide beloftes breken.
     const overzicht = vorm("/");
-    const feed = vorm("/feed");
+    const feed = vorm("/clubblad");
     expect(overzicht.innerHTML).not.toBe(feed.innerHTML);
     expect(feed.querySelectorAll(".route-skeleton__card").length).toBe(4);
   });
