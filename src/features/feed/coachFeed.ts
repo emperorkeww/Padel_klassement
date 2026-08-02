@@ -79,7 +79,7 @@ export const KAMPIOEN = [
   "De beker glinstert, maar jouw servicetechniek is nog steeds van bedenkelijk niveau.",
   "De ultieme bekerwinnaar! Ik laat je stats in goud graveren.",
   "Kampioen! Geniet van deze glorie, want het is keihard werken om hier te blijven.",
-  "De rest of de club kijkt met snotterige gezichten omhoog naar de kampioen.",
+  "De rest van de club kijkt met snotterige gezichten omhoog naar de kampioen.",
   "De absolute top bereikt. Zelfs Gianni Infantino stuurt felicitaties.",
 ] as const;
 
@@ -156,7 +156,7 @@ const DEGRADATIE = [
 const REEKS = [
   "Niet meer te stoppen, die. Voorlopig.",
   "Op dreef! Iemand moet er een stok tussen steken.",
-  "Reeks na reeks. Geniet, till de harde klap komt.",
+  "Reeks na reeks. Geniet, tot de harde klap komt.",
   "Een winstreak? Dat is puur statistisch toeval, geniet er maar van.",
   "Onverslaanbaar? Laat me niet lachen, je hebt gewoon geluk met je partners.",
   "De winning streak groeit. De arrogantie helaas ook.",
@@ -202,7 +202,7 @@ const BOUNTY_GECLAIMD = [
   "Eindelijk is die nep-koning van z'n troon gepleurd. De premiejagers drinken vanavond gratis bier van zijn geplunderde Elo.",
   "De bounty is geïnd! Zelfs Gianni Infantino kon deze diefstal niet meer voorwaardelijk opschorten.",
   "De koploper heeft betaald. Contant, in tranen en in keiharde Elo-punten. Dag status, hallo schaamte.",
-  "Het zat er al weken aan te komen: de leider is vakkundig geslacht. Z'n reeks ligt in gruffels langs de kooi.",
+  "Het zat er al weken aan te komen: de leider is vakkundig geslacht. Z'n reeks ligt aan gort langs de kooi.",
   "Daar gaat de prijs op z'n hoofd. Nu kan die arrogante kop ook weer gewoon door de deur van de kantine.",
   "Bounty geclaimd. Hij liep rond met een schietschijf op z'n rug en de tegenstanders hebben 'm met sadistisch genoegen doormidden geknald.",
   "Z'n kroon ligt in de modder. De jacht is geslaagd en de buit is binnen. Ga je diep schamen op veld 3.",
@@ -311,7 +311,7 @@ const MONSTER = [
   "Sloopwerkzaamheden op baan 1. Geen spaan heel gelaten van de tegenpartij.",
   "Een slachting! Dat is het soort meedogenloze overgangsspel dat we op het WK hadden moeten laten zien.",
   "Geen spaan heel gelaten. Dit niveau van dominantie is bijna onbeschoft, ik hou er wel van.",
-  "Een walkover! Zelfs mijn meest beruchte tactische WK-moderampen vallen in het niet bij deze totale slachting.",
+  "Een walkover! Zelfs mijn meest beruchte tactische WK-modderrampen vallen in het niet bij deze totale slachting.",
   "Dat was geen wedstrijd, dat was een openbare executie. Ik noteer 'm met gepast sadistisch genoegen.",
   "Een monsterzege! De tegenstander werd volledig overlopen.",
   "Dominantie met hoofdletters. Geen spaan heel gelaten.",
@@ -552,7 +552,7 @@ function lefFeiten(event: Extract<FeedEvent, { kind: "match" }>, ctx: CoachCtx):
         l.push(`${speler} speelde met lef en won. Keurig gedaan.`);
         l.push(`${speler} gokte met lef-multiplier en trok de winst over de streep.`);
       } else {
-        l.push(`${speler} speelde met 'lef' en wint. Gefeliciteerd met je verdubbelde buit, al weet iedereen dat je partner 95% van het zware werk heeft gedaan.`);
+        l.push(`${speler} speelde met 'lef' en won. Gefeliciteerd met je verdubbelde buit, al weet iedereen dat je partner 95% van het zware werk heeft gedaan.`);
         l.push(`Lef-multiplier succesvol voor ${speler}. Twee keer niks is nog steeds niks, maar de database rekent het toch goed.`);
         l.push(`Gokken als een bezetene en dan nog beloond worden ook. ${speler} pakt de dubbele winst, puur op geluk en de fouten van de tegenstander.`);
         l.push(`${speler} drukt op de 'lef'-knop en wint zowaar een keer. Ga nu niet direct een chic pak kopen, dit was pure mazzel.`);
