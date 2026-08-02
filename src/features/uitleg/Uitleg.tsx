@@ -15,13 +15,12 @@
 //     bediening komen uit dezelfde componenten die de app zelf gebruikt, zodat
 //     de uitleg niet stil gaat liegen zodra er een tier of editie bijkomt.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getProfile, displayName } from "@/features/profiles/api";
 import { CoachBubble } from "@/features/coach/components/CoachBubble";
-import { CoachAbout } from "@/features/coach/components/CoachAbout";
 import {
   coachUitlegRegel,
   uitlegMood,
@@ -29,9 +28,8 @@ import {
   type UitlegSleutel,
 } from "@/features/coach/coachUitleg";
 import type { RoastCtx } from "@/features/coach/roastTone";
-import { TierLegend } from "@/features/rating/components/TierLegend";
-import { KaartLegenda } from "@/features/standings/components/KaartLegenda";
-import { SECTIES, sectieHref, type SectieId } from "./secties";
+import { GEVULDE_SECTIES, SECTIE_INHOUD } from "./inhoud";
+import { SECTIES, sectieHref } from "./secties";
 import "./Uitleg.css";
 
 // Eén rondleiding-beurt per bezoek (mount), zoals de buig-rotatie op het
@@ -39,12 +37,11 @@ import "./Uitleg.css";
 // niet exact dezelfde rondleiding krijgt. Stabiel over re-renders.
 let rondleidingBeurt = 0;
 
-// De secties die vandaag een body hebben. SECTIES kent alle vijftien uit #989;
-// wie er nog geen tekst heeft hoort ook niet als lege belofte in de
-// inhoudsopgave te staan. Een sectie invullen is: hier de id bijzetten en in
-// `sectieBody` de inhoud teruggeven.
-const GEVULD: readonly SectieId[] = ["tiers", "kaarten", "rudy"];
-const ZICHTBAAR = SECTIES.filter((s) => GEVULD.includes(s.id));
+// SECTIES kent alle vijftien uit #989; het register in ./inhoud bepaalt welke
+// daarvan vandaag écht inhoud hebben. Wat er nog niet is hoort ook niet als
+// lege belofte in de inhoudsopgave te staan. Een sectie invullen gebeurt dus
+// volledig in ./inhoud — deze pagina hoeft er niets van te weten.
+const ZICHTBAAR = SECTIES.filter((s) => GEVULDE_SECTIES.includes(s.id));
 const SLEUTELS: readonly UitlegSleutel[] = ["intro", ...ZICHTBAAR.map((s) => s.id)];
 
 export function Uitleg() {
@@ -100,40 +97,6 @@ export function Uitleg() {
   const naam = me ? displayName(me) : "Jij";
   const mood = uitlegMood(ctx);
 
-  /** De inhoud van één sectie: bestaande componenten, geen tweede tekstbron. */
-  function sectieBody(id: SectieId): ReactNode {
-    switch (id) {
-      case "tiers":
-        return (
-          <>
-            <p>
-              Je <strong>divisie</strong> volgt je rating: win je, dan klim je,
-              verlies je, dan zak je. Elke divisie onder de top heeft drie
-              treden (III → II → I). Hieronder staat de volledige ladder met de
-              rating die je ervoor nodig hebt.
-            </p>
-            <TierLegend />
-          </>
-        );
-      case "kaarten":
-        return (
-          <>
-            <p>
-              Iedereen heeft een <strong>spelerskaart</strong>: je divisie
-              bepaalt hoe hij eruitziet, en bijzondere prestaties leveren een
-              speciale editie op. Je vindt de kaarten op de Kaarten-tab van het
-              klassement en op je eigen profiel.
-            </p>
-            <KaartLegenda naam={naam} profile={me ?? undefined} />
-          </>
-        );
-      case "rudy":
-        return <CoachAbout showSettingsLink />;
-      default:
-        return null;
-    }
-  }
-
   return (
     <div className="uitleg">
       <h1 className="page-title">Hoe werkt het?</h1>
@@ -168,23 +131,28 @@ export function Uitleg() {
         </ul>
       </nav>
 
-      {ZICHTBAAR.map((s) => (
-        <section
-          key={s.id}
-          id={s.id}
-          className="card uitleg__sectie"
-          aria-labelledby={`${s.id}-kop`}
-          tabIndex={-1}
-        >
-          <h2 className="card__title" id={`${s.id}-kop`}>
-            <span aria-hidden="true">{s.emoji}</span> {s.titel}
-          </h2>
-          <CoachBubble mood={mood} size={30}>
-            <span className="coach-sneer__text">{regels.get(s.id)}</span>
-          </CoachBubble>
-          <div className="uitleg__body">{sectieBody(s.id)}</div>
-        </section>
-      ))}
+      {ZICHTBAAR.map((s) => {
+        const Inhoud = SECTIE_INHOUD[s.id]!;
+        return (
+          <section
+            key={s.id}
+            id={s.id}
+            className="card uitleg__sectie"
+            aria-labelledby={`${s.id}-kop`}
+            tabIndex={-1}
+          >
+            <h2 className="card__title" id={`${s.id}-kop`}>
+              <span aria-hidden="true">{s.emoji}</span> {s.titel}
+            </h2>
+            <CoachBubble mood={mood} size={30}>
+              <span className="coach-sneer__text">{regels.get(s.id)}</span>
+            </CoachBubble>
+            <div className="uitleg__body">
+              <Inhoud naam={naam} profile={me ?? undefined} />
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

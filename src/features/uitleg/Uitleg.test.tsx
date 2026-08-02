@@ -25,9 +25,16 @@ function renderPagina(pad = "/uitleg") {
   );
 }
 
-/** De secties die vandaag gevuld zijn; groeit mee met de pagina. */
+/** De secties die vandaag gevuld zijn, in paginavolgorde; groeit mee met het
+ *  register in ./inhoud. */
 const ZICHTBAAR = [
+  { id: "aan-de-slag", titel: "Aan de slag" },
+  { id: "speeldag", titel: "Een speeldag organiseren" },
+  { id: "banen", titel: "Banen boeken" },
+  { id: "uitslagen", titel: "Uitslagen invoeren" },
+  { id: "rating", titel: "Rating & klassement" },
   { id: "tiers", titel: "Tiers & divisies" },
+  { id: "troon", titel: "De Troon & De Schandpaal" },
   { id: "kaarten", titel: "Spelerskaarten" },
   { id: "rudy", titel: "Coach Rudy" },
 ] as const;
@@ -108,6 +115,31 @@ describe("<Uitleg /> (#989)", () => {
     const intro = container.querySelector(".coach-sneer__text")?.textContent;
     const alle = [...UITLEG_REGELS.intro.zacht, ...UITLEG_REGELS.intro.scherp];
     expect(alle).toContain(intro);
+  });
+
+  // De vraag die het vaakst gesteld wordt, en het antwoord dat het vaakst
+  // verkeerd geraden wordt: 6-0 telt voor de rating hetzelfde als 7-6.
+  it("zegt met zoveel woorden dat de scoremarge niet meetelt voor de rating", async () => {
+    renderPagina();
+    await screen.findByRole("heading", { level: 1 });
+    const rating = document.getElementById("rating") as HTMLElement;
+    expect(rating.textContent).toMatch(/score-?marge telt niet mee/i);
+  });
+
+  it("haalt de rating- en pias-getallen uit de modules die ze afdwingen", async () => {
+    const { BASE_RATING } = await import("@/features/rating/elo");
+    const { TIER_BANDEN } = await import("@/features/rating/tiers");
+    const { AFDROGING_DREMPEL } = await import("@/features/groups/maandpias");
+    renderPagina();
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(document.getElementById("rating")?.textContent).toContain(
+      String(BASE_RATING),
+    );
+    const troon = document.getElementById("troon")?.textContent ?? "";
+    // De dictator-drempel is de ondergrens van de hoogste tier-band.
+    expect(troon).toContain(String(TIER_BANDEN[TIER_BANDEN.length - 1].min));
+    expect(troon).toContain(String(AFDROGING_DREMPEL));
   });
 
   it("rendert de divisies en kaart-edities uit de bestaande legenda's", async () => {
