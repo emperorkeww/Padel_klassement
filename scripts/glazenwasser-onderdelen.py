@@ -1197,6 +1197,19 @@ def compacte_master() -> None:
     doek.putalpha(binnen.filter(ImageFilter.GaussianBlur(1.5)))
     doek.alpha_composite(boven)
 
+    # Grade voor kaartformaat (briefing: "premium, hoog contrast"). Op de
+    # maat van een klassement-kaart vervlakken de referentiekleuren: het ijs
+    # en de spray middelen uit tegen de rails en het geheel leest melkig.
+    # Meer verzadiging en contrast rond het middengrijs geven de rails hun
+    # diepe blauw terug zonder de lichte glaspartij te verduisteren.
+    arr = np.asarray(doek).astype(np.float32)
+    rgb_m = arr[..., :3]
+    grijs = rgb_m.mean(-1, keepdims=True)
+    rgb_m = grijs + (rgb_m - grijs) * 1.3
+    rgb_m = 127.5 + (rgb_m - 127.5) * 1.1
+    arr[..., :3] = np.clip(rgb_m, 0, 255)
+    doek = Image.fromarray(arr.astype(np.uint8), "RGBA")
+
     pad = UIT / "glazenwasser-master.webp"
     doek.save(pad, "WEBP", quality=82, method=6)
     print(f"  {'master (compact)':16s} {doek.width}×{doek.height}px  "
@@ -1223,32 +1236,51 @@ def voormasker(glasvlak_mask: np.ndarray, boven_alpha: np.ndarray) -> None:
     nooit een sliver kaarttekst laat doorschemeren."""
     vol = np.clip(boven_alpha * 1.2, 0.0, 1.0)
     vol = vervaag(vol, 2.0)
+    # Voor- en binnen-masker zijn complementair. Zonder die splitsing tekenden
+    # beide lagen het volledige frame en composit elk halfdoorzichtig ijs- en
+    # spraypixel twee keer — de melkwitte, uitgewassen compacte kaart. Het
+    # frame alléén in de binnen-laag kan ook niet: de keyline-decoraties van
+    # FutKaart schilderen op de zijde zelf en liggen dus over z −1 heen.
+    # Daarom: frame en alles-op-het-glas in de voor-laag, het kale glas in de
+    # binnen-laag (onder de kaartinhoud), elk precies één keer.
     masker = np.where(glasvlak_mask, vol, 1.0)
-    # Op halve resolutie de SVG in: een masker hoeft niet pixelscherp (de rand
-    # is toch zacht) en op volle maat woog de data-URI 125 kB — te veel voor
-    # het bundelbudget van assetBudget.test.ts.
-    beeld = Image.fromarray(
-        np.clip(masker * 255, 0, 255).astype(np.uint8), "L"
-    ).resize((MASTER_DOEK[0] // 2, MASTER_DOEK[1] // 2), Image.LANCZOS)
-    beeld = beeld.convert("LA")
-    # Alfa == luminantie: als PNG met alfakanaal, zodat élke afnemer (CSS-mask,
-    # canvas destination-in) hetzelfde selecteert, hoe hij ook maskeert.
-    la = np.asarray(beeld).copy()
-    la[..., 1] = la[..., 0]
-    png = io.BytesIO()
-    Image.fromarray(la, "LA").save(png, "PNG", optimize=True)
-    data = base64.standard_b64encode(png.getvalue()).decode("ascii")
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" viewBox="0 0 {MASTER_DOEK[0]} {MASTER_DOEK[1]}">
-  <!-- Gegenereerd door scripts/glazenwasser-onderdelen.py (voormasker()): de alfa van
-       ring + voorwerpen boven het glas, met een transparant gat over het kale glas.
+    binnen_masker = vervaag(
+        np.where(glasvlak_mask, 1.0, 0.0).astype(np.float32), 2.0
+    )
+    def schrijf_masker(m: np.ndarray, naam: str, wat: str) -> int:
+        # Op halve resolutie de SVG in: een masker hoeft niet pixelscherp (de
+        # rand is toch zacht) en op volle maat woog de data-URI 125 kB — te
+        # veel voor het bundelbudget van assetBudget.test.ts.
+        beeld = Image.fromarray(
+            np.clip(m * 255, 0, 255).astype(np.uint8), "L"
+        ).resize((MASTER_DOEK[0] // 2, MASTER_DOEK[1] // 2), Image.LANCZOS)
+        # Alfa == luminantie: als PNG met alfakanaal, zodat élke afnemer
+        # (CSS-mask, canvas destination-in) hetzelfde selecteert.
+        la = np.asarray(beeld.convert("LA")).copy()
+        la[..., 1] = la[..., 0]
+        png = io.BytesIO()
+        Image.fromarray(la, "LA").save(png, "PNG", optimize=True)
+        data = base64.standard_b64encode(png.getvalue()).decode("ascii")
+        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" viewBox="0 0 {MASTER_DOEK[0]} {MASTER_DOEK[1]}">
+  <!-- Gegenereerd door scripts/glazenwasser-onderdelen.py (voormasker()): {wat}
        Niet met de hand bijwerken. Expliciete width/height: canvas drawImage heeft een
        intrinsieke maat nodig (de posterrenderer maskeert met dit bestand). -->
   <image width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" href="data:image/png;base64,{data}" />
 </svg>
 """
-    (UIT / "glazenwasser-front-mask.svg").write_text(svg, encoding="utf8")
-    kb = len(svg) // 1024
-    print(f"  {'voormasker':16s} raster-alfa uit de compositie  {kb} kB")
+        (UIT / naam).write_text(svg, encoding="utf8")
+        return len(svg) // 1024
+
+    kb_voor = schrijf_masker(
+        masker, "glazenwasser-front-mask.svg",
+        "frame en alles-op-het-glas voor de voor-laag, gat over het kale glas.",
+    )
+    kb_binnen = schrijf_masker(
+        binnen_masker, "glazenwasser-binnen-mask.svg",
+        "het kale glas voor de binnen-laag, complement van het front-mask.",
+    )
+    print(f"  {'voormasker':16s} raster-alfa uit de compositie  "
+          f"{kb_voor} + {kb_binnen} kB")
 
 
 def naar_kaart_h(h: float) -> float:
