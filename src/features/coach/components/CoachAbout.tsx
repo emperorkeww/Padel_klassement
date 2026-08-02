@@ -35,7 +35,7 @@ export function CoachAbout({
       <ul className="coach-about__controls">
         <li>
           <strong>🛡️ Roast-schild</strong> — zet 'm aan als je liever niet geroast
-          wordt; pias, feed en profiel tonen dan een neutrale variant. Staat bij je{" "}
+          wordt; pias, clubblad en profiel tonen dan een neutrale variant. Staat bij je{" "}
           <Link to="/profiel" onClick={onNavigate}>
             privacy-instellingen
           </Link>
@@ -48,7 +48,7 @@ export function CoachAbout({
           <Link to="/spelen" onClick={onNavigate}>
             groep-instellingen
           </Link>
-          . Voor je eigen feed en dashboard stel je je persoonlijke intensiteit
+          . Voor je eigen clubblad en dashboard stel je je persoonlijke intensiteit
           in bij je{" "}
           <Link to="/profiel" onClick={onNavigate}>
             profiel-instellingen

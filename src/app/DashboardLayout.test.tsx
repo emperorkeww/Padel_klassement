@@ -114,7 +114,7 @@ describe("<DashboardLayout />", () => {
       screen.getAllByRole("link", { name: /vrienden/i }).length,
     ).toBe(1);
     // Feed (#120): zijbalk + mobiele onderbalk; Banen alleen nog in de zijbalk.
-    expect(screen.getAllByRole("link", { name: /^feed$/i }).length).toBe(2);
+    expect(screen.getAllByRole("link", { name: /^clubblad$/i }).length).toBe(2);
     expect(screen.getAllByRole("link", { name: /banen/i }).length).toBe(1);
     expect(
       screen.getAllByRole("link", { name: /naar overzicht/i }).length,
@@ -134,7 +134,7 @@ describe("<DashboardLayout />", () => {
       expect(link).toHaveAttribute("aria-current", "page");
     }
     // Andere secties blijven ongemarkeerd.
-    for (const link of screen.getAllByRole("link", { name: /^feed$/i })) {
+    for (const link of screen.getAllByRole("link", { name: /^clubblad$/i })) {
       expect(link).not.toHaveAttribute("aria-current");
     }
   });

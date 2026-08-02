@@ -17,8 +17,8 @@ describe("usePageTitle (#910)", () => {
       initialProps: { t: "Overzicht" },
     });
     expect(document.title).toBe("Overzicht · Vamos!");
-    rerender({ t: "Feed" });
-    expect(document.title).toBe("Feed · Vamos!");
+    rerender({ t: "Clubblad" });
+    expect(document.title).toBe("Clubblad · Vamos!");
   });
 
   it("laat de titel staan zolang de data nog laadt (null)", () => {

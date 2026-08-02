@@ -74,7 +74,7 @@ import "./Feed.css";
 // verschijnt zodra de kern er is en verrijkt zichzelf daarna.
 
 export function Feed() {
-  usePageTitle("Feed");
+  usePageTitle("Clubblad");
   const { user } = useAuth();
   const myId = user?.id ?? "";
 
@@ -470,7 +470,7 @@ export function Feed() {
   return (
     <div>
       <header className="page-head">
-        <h1 className="page-title">Feed</h1>
+        <h1 className="page-title">Clubblad</h1>
         <p className="page-subtitle">
           Alle roddels, heroïsche zeges en beschamende chokes van je maten op één hoop.
         </p>
@@ -478,7 +478,7 @@ export function Feed() {
 
       {loading && <FeedSkeleton />}
       {!loading && error && (
-        <ErrorRetry melding={`De feed laden mislukte: ${error}`} onRetry={herlaad} />
+        <ErrorRetry melding={`Het clubblad laden mislukte: ${error}`} onRetry={herlaad} />
       )}
 
       {!loading && !error && (
@@ -543,7 +543,7 @@ export function Feed() {
                 </Link>
               }
             >
-              De feed toont wat jij en je vrienden uitspoken. Leg eerst een paar
+              Het clubblad toont wat jij en je vrienden uitspoken. Leg eerst een paar
               connecties, dan komt de actie vanzelf.
             </EmptyState>
           )}
