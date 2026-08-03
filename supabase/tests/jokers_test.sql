@@ -373,67 +373,67 @@ insert into public.matches (id, team_a_id, team_b_id, group_id, status, played_a
 values
   -- MG: de gewone, speelbare match. Maand 8, dus chronologisch ná de matches
   -- van sectie 1 t/m 7 — zie de motivatie daar.
-  ('3a000000-0000-0000-0000-00000000eg01',
+  ('3a000000-0000-0000-0000-00000000ef01',
    '3a000000-0000-0000-0000-000000003001','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled',
    (select ts from jj_maand where n = 8), '2v2'),
   -- MR2: tweede match van dezelfde spelers in dezelfde maand — het maandtegoed.
-  ('3a000000-0000-0000-0000-00000000eg02',
+  ('3a000000-0000-0000-0000-00000000ef02',
    '3a000000-0000-0000-0000-000000003003','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled',
    (select ts from jj_maand where n = 8) + interval '1 day', '2v2'),
   -- MR: met de nog niet ingelopen spelers.
-  ('3a000000-0000-0000-0000-00000000eg03',
+  ('3a000000-0000-0000-0000-00000000ef03',
    '3a000000-0000-0000-0000-000000003003','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled',
    (select ts from jj_maand where n = 8), '2v2'),
   -- MU: met de twee accounts, voor de RLS-test.
-  ('3a000000-0000-0000-0000-00000000eg04',
+  ('3a000000-0000-0000-0000-00000000ef04',
    '3a000000-0000-0000-0000-000000003004','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled',
    (select ts from jj_maand where n = 8), '2v2'),
   -- MS: enkelspel.
-  ('3a000000-0000-0000-0000-00000000eg05',
+  ('3a000000-0000-0000-0000-00000000ef05',
    '3a000000-0000-0000-0000-000000003011','3a000000-0000-0000-0000-000000003012',
    '3a000000-0000-0000-0000-0000000000f3','scheduled',
    (select ts from jj_maand where n = 9), '1v1'),
   -- MN: losse match zonder groep.
-  ('3a000000-0000-0000-0000-00000000eg06',
+  ('3a000000-0000-0000-0000-00000000ef06',
    '3a000000-0000-0000-0000-000000003001','3a000000-0000-0000-0000-000000003002',
    null,'scheduled', (select ts from jj_maand where n = 9), '2v2'),
   -- MP: zonder starttijd.
-  ('3a000000-0000-0000-0000-00000000eg07',
+  ('3a000000-0000-0000-0000-00000000ef07',
    '3a000000-0000-0000-0000-000000003001','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled', null, '2v2'),
   -- MV: starttijd al gepasseerd.
-  ('3a000000-0000-0000-0000-00000000eg08',
+  ('3a000000-0000-0000-0000-00000000ef08',
    '3a000000-0000-0000-0000-000000003001','3a000000-0000-0000-0000-000000003002',
    '3a000000-0000-0000-0000-0000000000f3','scheduled', now() - interval '1 day', '2v2');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000321',
+    values ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000321',
             '3a000000-0000-0000-0000-0000000000f3','schild')$$,
   'P0001', 'alleen spelers uit deze match kunnen een joker spelen',
   'een groepslid dat niet meespeelt kan geen kaart spelen');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg06','3a000000-0000-0000-0000-000000000301',
+    values ('3a000000-0000-0000-0000-00000000ef06','3a000000-0000-0000-0000-000000000301',
             '3a000000-0000-0000-0000-0000000000f3','schild')$$,
   'P0001', 'een joker kan alleen op groepsmatches',
   'een losse match valt buiten het jokerspel');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg07','3a000000-0000-0000-0000-000000000301',
+    values ('3a000000-0000-0000-0000-00000000ef07','3a000000-0000-0000-0000-000000000301',
             '3a000000-0000-0000-0000-0000000000f3','schild')$$,
   'P0001', 'deze match heeft nog geen starttijd',
   'zonder starttijd is er geen maand om op af te rekenen');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg08','3a000000-0000-0000-0000-000000000301',
+    values ('3a000000-0000-0000-0000-00000000ef08','3a000000-0000-0000-0000-000000000301',
             '3a000000-0000-0000-0000-0000000000f3','schild')$$,
   'P0001', 'de match is al begonnen',
   'na de aftrap ligt de kaart vast');
@@ -447,26 +447,26 @@ select throws_ok(
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg05','3a000000-0000-0000-0000-000000000301',
+    values ('3a000000-0000-0000-0000-00000000ef05','3a000000-0000-0000-0000-000000000301',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
   'P0001', 'van kant wisselen kan alleen in het dubbelspel',
   'in een enkel valt er niets te wisselen');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg03','3a000000-0000-0000-0000-000000000311',
+    values ('3a000000-0000-0000-0000-00000000ef03','3a000000-0000-0000-0000-000000000311',
             '3a000000-0000-0000-0000-0000000000f3','schild')$$,
   'P0001', 'je rating is nog niet ingelopen: deze joker kan vanaf 10 gespeelde matches',
   'een niet ingelopen rating valt niet af te schermen');
 
 select lives_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg03','3a000000-0000-0000-0000-000000000311',
+    values ('3a000000-0000-0000-0000-00000000ef03','3a000000-0000-0000-0000-000000000311',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
   'van kant wisselen mag wél zonder ingelopen rating: het raakt de rating niet');
 
 select is((select period_month from public.match_jokers
-    where match_id = '3a000000-0000-0000-0000-00000000eg03'
+    where match_id = '3a000000-0000-0000-0000-00000000ef03'
       and player_id = '3a000000-0000-0000-0000-000000000311'),
   (select date_trunc('month', ts)::date from jj_maand where n = 8),
   'ook de sociale kaart krijgt zijn maand serverside');
@@ -475,44 +475,44 @@ select is((select period_month from public.match_jokers
 -- hier weigert is het tegoed en niet de deelnemerscheck.
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg02','3a000000-0000-0000-0000-000000000311',
+    values ('3a000000-0000-0000-0000-00000000ef02','3a000000-0000-0000-0000-000000000311',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
-  '23505',
+  '23505', null,
   'een tweede kaart in dezelfde maand botst op het maandtegoed');
 
 -- Anti-stapelen, beide richtingen. g3 zet eerst zijn lef in.
 insert into public.match_stakes (match_id, player_id, group_id) values
-  ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000303',
+  ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000303',
    '3a000000-0000-0000-0000-0000000000f3');
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000303',
+    values ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000303',
             '3a000000-0000-0000-0000-0000000000f3','dubbel_of_niets')$$,
   'P0001', 'je lef staat al op deze match: trek die eerst in',
   'dubbel of niets naast een lef-tip zou ×4 opleveren');
 
 select lives_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000303',
+    values ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000303',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
   'de sociale kaart mag wél naast een lef-tip staan');
 
 -- En andersom: g4 speelt eerst zijn schild, daarna wil hij inzetten.
 insert into public.match_jokers (match_id, player_id, group_id, joker) values
-  ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000304',
+  ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000304',
    '3a000000-0000-0000-0000-0000000000f3','schild');
 
 select throws_ok(
   $$insert into public.match_stakes (match_id, player_id, group_id)
-    values ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000304',
+    values ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000304',
             '3a000000-0000-0000-0000-0000000000f3')$$,
   'P0001', 'je joker staat al op deze match: trek die eerst in',
   'een lef-tip naast een schild zou geruisloos verdampen');
 
 select lives_ok(
   $$delete from public.match_jokers
-     where match_id = '3a000000-0000-0000-0000-00000000eg01'
+     where match_id = '3a000000-0000-0000-0000-00000000ef01'
        and player_id = '3a000000-0000-0000-0000-000000000304'$$,
   'vóór de aftrap kun je je kaart weer intrekken');
 
@@ -523,7 +523,7 @@ set local request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-0000000000a2","r
 
 select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
-    values ('3a000000-0000-0000-0000-00000000eg04','3a000000-0000-0000-0000-0000000000a1',
+    values ('3a000000-0000-0000-0000-00000000ef04','3a000000-0000-0000-0000-0000000000a1',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
   '42501', null,
   'je speelt alleen je eigen kaart, niet die van een ander');
@@ -532,16 +532,16 @@ reset role;
 
 -- Na de aftrap staat de kaart vast: g2's schild op de nu afgeronde MG.
 insert into public.match_jokers (match_id, player_id, group_id, joker) values
-  ('3a000000-0000-0000-0000-00000000eg01','3a000000-0000-0000-0000-000000000302',
+  ('3a000000-0000-0000-0000-00000000ef01','3a000000-0000-0000-0000-000000000302',
    '3a000000-0000-0000-0000-0000000000f3','schild');
 
 update public.matches
    set status = 'completed', winner_team_id = '3a000000-0000-0000-0000-000000003002'
- where id = '3a000000-0000-0000-0000-00000000eg01';
+ where id = '3a000000-0000-0000-0000-00000000ef01';
 
 select throws_ok(
   $$delete from public.match_jokers
-     where match_id = '3a000000-0000-0000-0000-00000000eg01'
+     where match_id = '3a000000-0000-0000-0000-00000000ef01'
        and player_id = '3a000000-0000-0000-0000-000000000302'$$,
   'P0001', 'je joker staat vast: de match is al begonnen of afgerond',
   'een gespeelde kaart komt niet meer terug');
@@ -565,7 +565,7 @@ create temp table jj_snap as
     '3a000000-0000-0000-0000-00000000e001','3a000000-0000-0000-0000-00000000e002',
     '3a000000-0000-0000-0000-00000000e003','3a000000-0000-0000-0000-00000000e004',
     '3a000000-0000-0000-0000-00000000e005','3a000000-0000-0000-0000-00000000e006',
-    '3a000000-0000-0000-0000-00000000eg01'
+    '3a000000-0000-0000-0000-00000000ef01'
   );
 
 select is((select count(*)::int from jj_snap),

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { BASE_RATING, K_FACTOR } from "@/features/rating/elo";
+import { NIPT_MARGE, TROOST_MAX } from "@/features/rating/pechvogel";
 import { sectieHref } from "../secties";
 
 /** Sectie 5: Elo in mensentaal (#989).
@@ -7,7 +8,9 @@ import { sectieHref } from "../secties";
  *  De getallen komen uit elo.ts in plaats van uit deze tekst, zodat de uitleg
  *  meebeweegt als de rating-trigger ooit anders wordt afgesteld. Let op de
  *  scoremarge-alinea: die is geen detail maar de vraag die het vaakst gesteld
- *  wordt — de rating kijkt alleen naar wie won, niet naar hoe hard. */
+ *  wordt — de rating kijkt alleen naar wie won, niet naar hoe hard. De
+ *  Pechvogel-meter (#1005) is daar de enige uitzondering op, en hoort er
+ *  daarom pal onder te staan in plaats van bij de badges. */
 export function Rating() {
   return (
     <>
@@ -32,6 +35,18 @@ export function Rating() {
         niets, en één gewonnen tiebreak tegen de beste van de club zegt alles.
         De marge wordt trouwens wel gezien: hij bepaalt mee wie de{" "}
         <Link to={sectieHref("troon")}>pias</Link> wordt.
+      </p>
+      <p>
+        Op die regel is één uitzondering: de{" "}
+        <strong>Pechvogel-meter</strong>. Verlies je met hooguit{" "}
+        {NIPT_MARGE} punten verschil, dan loopt die meter één vakje voller.
+        Drie van zulke nederlagen op rij en hij zit vol: je ratingverlies van
+        die derde partij wordt gehalveerd, tot maximaal {TROOST_MAX} punten
+        zachter, je krijgt de tijdelijke badge <strong>Nét niet</strong>, en
+        Coach Rudy schrijft er iets meelevends over. Daarna staat de meter weer
+        leeg. Eén zege, één gelijkspel of één afdroging (drie of meer punten
+        verschil) veegt hem trouwens ook meteen leeg — hij staat op je profiel
+        zolang er iets in staat.
       </p>
       <p>
         Er zijn twee klassementen. Het <Link to="/klassement">klassement</Link>{" "}

@@ -5,6 +5,7 @@ import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, CHOKE_KONI
 import type { MatchFeiten } from "./badges.facts";
 import { angstgegnerVerslagen, hadComeback, hadRevanche, isGestruikeld, isReuzendoder } from "./badges.streaks";
 import { perfecteWeken } from "@/features/dashboard/missions";
+import { NIPT_MARGE, PECHMETER_DOEL, PECHVOGEL_EMOJI, type PechMeter } from "@/features/rating/pechvogel";
 import type { Match, PlayerRating, Team } from "@/types";
 
 export interface BadgeContext {
@@ -29,6 +30,8 @@ export interface BadgeContext {
   misgetipt: number;
   /** Meeste netrollers in één match (#809); 0 zonder netroller-data. */
   netrollers: number;
+  /** Stand van de Pechvogel-meter (#1005): nipte nederlagen op rij. */
+  pechMeter: PechMeter;
 }
 
 export function buildBadges(ctx: BadgeContext): Badge[] {
@@ -36,6 +39,7 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
     matches, teams, playerId, ratings,
     gespeeld, gewonnen, verloren, reeks, pech, eigenRating,
     feiten, dejaVu, jojo, rust, tweeling, choke, misgetipt, netrollers,
+    pechMeter,
   } = ctx;
 
   const badges: Badge[] = [
@@ -218,6 +222,18 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       emoji: "🌪️",
       omschrijving: `Verlies álle matches op een dag met minstens ${MARATHON_DOEL} partijen.`,
       behaald: feiten.rampdag,
+    },
+    {
+      // Tijdelijke badge (#1005): staat aan zolang de meter vol is en valt bij
+      // de eerstvolgende match vanzelf weer om. Bewust niet in
+      // ZELDZAME_BADGES — een pack-viering voor iets dat je even later weer
+      // kwijt bent, leest als spot in plaats van troost.
+      id: "net-niet",
+      naam: "Nét niet",
+      emoji: PECHVOGEL_EMOJI,
+      omschrijving: `Verlies ${PECHMETER_DOEL} matches op rij met hooguit ${NIPT_MARGE} punten verschil. Coach Rudy heeft medelijden — even.`,
+      behaald: pechMeter.vol,
+      voortgang: { nu: pechMeter.stand, doel: PECHMETER_DOEL },
     },
     {
       id: "zwarte-reeks",

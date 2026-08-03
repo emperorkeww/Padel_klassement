@@ -39,7 +39,12 @@ create table public.rating_history (
   -- voor wie een bounty claimde, negatief voor de verslagen drager, 0 voor
   -- iedereen anders. Ook dit is enkel uitleg achteraf ("+31, waarvan +18
   -- bounty") — en tegelijk de bron waaruit de feed de claim-kaart opbouwt.
-  bounty_delta int not null default 0
+  bounty_delta int not null default 0,
+  -- Troostdemper van de Pechvogel-meter (#1005) die eveneens al in delta
+  -- verwerkt zit: positief bij de derde nipte nederlaag op rij, anders 0.
+  -- Verzacht dus een verlies ("−9, waarvan +4 troost"). Ook dit is uitleg
+  -- achteraf én de bron waaruit de feed de pechvogel-kaart opbouwt.
+  troost_delta int not null default 0
 );
 
 create index rating_history_player_idx on public.rating_history (player_id, played_at);
