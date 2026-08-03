@@ -109,6 +109,15 @@ export type Highlight =
       playerId: string;
       factor: number;
       won: boolean;
+    }
+  | {
+      /** Pechvogel-meter vol (#1005): derde nipte nederlaag op rij, dus een
+       *  demper op het verlies. Net als de bounty volledig uit rating_history
+       *  afgeleid — de positieve troost_delta wíjst de pechvogel aan. */
+      type: "pechvogel";
+      playerId: string;
+      /** Wat de demper hem scheelde, in ratingpunten. */
+      amount: number;
     };
 
 export type FeedEvent =
@@ -125,6 +134,9 @@ export type FeedEvent =
        *  Zit al in myDelta; het staat er los bij om hetzelfde te doen als de
        *  lef-factor — een afwijkend getal verklaren. */
       myBounty?: number;
+      /** Pechvogel-demper (#1005): wat je volle meter je verlies scheelde.
+       *  Zit eveneens al in myDelta, en verklaart een verdacht zacht ▼. */
+      myTroost?: number;
     }
   | { kind: "friendship"; at: string; a: string; b: string }
   | { kind: "planned"; at: string; match: Match }
@@ -234,6 +246,24 @@ export function bountyHighlights(
   for (const [playerId, p] of points) {
     const b = p.bounty_delta ?? 0;
     if (b < 0) uit.push({ type: "bounty", carrierId: playerId, amount: -b });
+  }
+  return uit;
+}
+
+/**
+ * Pechvogel-meter vol (#1005): wie in deze match een demper op zijn verlies
+ * kreeg, en hoeveel die scheelde. Spiegel van bountyHighlights: de positieve
+ * troost_delta staat in de historie van de pechvogel zelf, dus dit is exact wat
+ * de databank verrekend heeft — geen reconstructie uit de uitslag.
+ */
+export function pechvogelHighlights(
+  points: Map<string, RatingPoint> | undefined,
+): Highlight[] {
+  if (!points) return [];
+  const uit: Highlight[] = [];
+  for (const [playerId, p] of points) {
+    const t = p.troost_delta ?? 0;
+    if (t > 0) uit.push({ type: "pechvogel", playerId, amount: t });
   }
   return uit;
 }
@@ -495,6 +525,10 @@ export function buildFeed(input: {
       // grootste nieuws van zo'n match, groter dan een bagel of een upset.
       highlights.push(...bountyHighlights(points));
       highlights.push(...(verdedigd.get(m.id) ?? []));
+      // Pechvogel (#1005) mag ná de bounty maar vóór de uitslag-chips: dat
+      // iemand voor de derde keer op rij nipt onderuitging is meer verhaal dan
+      // de score zelf, maar minder groot nieuws dan een geclaimde bounty.
+      highlights.push(...pechvogelHighlights(points));
       const upset = upsetHighlight(m, teams, points);
       if (upset) highlights.push(upset);
       const score = scoreHighlight(m);
@@ -567,6 +601,7 @@ export function buildFeed(input: {
         myDelta: points?.get(myId)?.delta ?? null,
         myStakeFactor: points?.get(myId)?.stake_factor,
         myBounty: points?.get(myId)?.bounty_delta || undefined,
+        myTroost: points?.get(myId)?.troost_delta || undefined,
       });
     } else if (
       m.status !== "cancelled" &&

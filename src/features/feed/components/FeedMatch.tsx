@@ -39,6 +39,9 @@ export function FeedMatch({
                 zit al in het getal ernaast; dit vertelt waar het vandaan kwam. */}
             {!!event.myBounty &&
               ` · bounty ${event.myBounty > 0 ? "+" : "−"}${Math.abs(event.myBounty)}`}
+            {/* Pechvogel-demper (#1005): idem — dit verklaart waarom deze
+                nederlaag zoveel zachter aankwam dan die van je ploegmaat. */}
+            {!!event.myTroost && ` · troost +${event.myTroost}`}
           </span>
         )}
         {event.highlights.map((h, i) => (

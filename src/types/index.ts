@@ -180,4 +180,8 @@ export interface RatingPoint {
    *  bounty claimde, negatief als je er een betaalde. Optioneel om dezelfde
    *  reden als `stake_factor`. */
   bounty_delta?: number;
+  /** Troostdemper van de Pechvogel-meter (#1005), al in `delta` verwerkt:
+   *  positief bij de derde nipte nederlaag op rij, anders 0. Optioneel om
+   *  dezelfde reden als `stake_factor`. */
+  troost_delta?: number;
 }
