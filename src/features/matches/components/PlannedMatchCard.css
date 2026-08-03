@@ -187,6 +187,12 @@
   border: 1px solid var(--lef-line);
   background: var(--lef-soft);
 }
+/* Joker (#1003): blauw naast het lef-violet — twee spellen van de spelers zelf,
+   herkenbaar zonder de kop te lezen. */
+.bet-tile--joker {
+  border: 1px solid var(--joker-line);
+  background: var(--joker-soft);
+}
 .bet-tile__head {
   display: flex;
   align-items: baseline;
@@ -205,6 +211,9 @@
 }
 .bet-tile--lef .bet-tile__name {
   color: var(--lef);
+}
+.bet-tile--joker .bet-tile__name {
+  color: var(--joker);
 }
 .bet-tile__stat {
   min-width: 0;
