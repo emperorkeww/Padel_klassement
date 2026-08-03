@@ -94,7 +94,7 @@ function fetchMatchHistories(
     const { data, error } = await supabase
       .from("rating_history")
       .select(
-        "player_id, match_id, rating_before, rating_after, delta, played_at, stake_factor, bounty_delta",
+        "player_id, match_id, rating_before, rating_after, delta, played_at, stake_factor, bounty_delta, troost_delta",
       )
       .in("match_id", ids);
     if (error) throw error;

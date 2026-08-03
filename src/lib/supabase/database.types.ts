@@ -1735,6 +1735,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }
         Insert: {
           bounty_delta?: number
@@ -1747,6 +1748,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor?: number
+          troost_delta?: number
         }
         Update: {
           bounty_delta?: number
@@ -1759,6 +1761,7 @@ export type Database = {
           rating_after?: number
           rating_before?: number
           stake_factor?: number
+          troost_delta?: number
         }
         Relationships: [
           {
@@ -2228,8 +2231,10 @@ export type Database = {
           p_bounty: number
           p_delta: number
           p_factor: number
+          p_joker: Database["public"]["Enums"]["joker_type"]
           p_match: string
           p_player: string
+          p_troost: number
           p_ts: string
         }
         Returns: undefined
@@ -2255,6 +2260,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      _effect_factor: {
+        Args: {
+          p_has_winner: boolean
+          p_joker: Database["public"]["Enums"]["joker_type"]
+          p_match: string
+          p_player: string
+        }
+        Returns: number
+      }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
       _group_leader: {
@@ -2265,8 +2279,17 @@ export type Database = {
         Args: { p_guest: string; p_player: string }
         Returns: string
       }
+      _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
+      _player_joker: {
+        Args: { p_match: string; p_player: string }
+        Returns: Database["public"]["Enums"]["joker_type"]
+      }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
+        Returns: number
+      }
+      _troost_delta: {
+        Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
@@ -2406,6 +2429,15 @@ export type Database = {
         Args: { p_team_id: string; p_uid: string }
         Returns: boolean
       }
+      pech_streak: {
+        Args: {
+          p_created?: string
+          p_match?: string
+          p_player: string
+          p_ts?: string
+        }
+        Returns: number
+      }
       prediction_points: { Args: { p_chance: number }; Returns: number }
       prediction_win_chance: {
         Args: { p_match: string; p_team: string }
@@ -2430,6 +2462,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }[]
       }
       recompute_dictator_termijnen: { Args: never; Returns: undefined }

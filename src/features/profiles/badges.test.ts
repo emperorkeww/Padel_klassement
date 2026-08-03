@@ -65,7 +65,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(91);
+    expect(badges).toHaveLength(92);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -989,8 +989,59 @@ describe("ZELDZAME_BADGES (#615)", () => {
   });
 
   it("viert geen pech-badges", () => {
-    for (const id of ["pechvogel", "zwarte-reeks", "rampdag", "afgedroogd"]) {
+    for (const id of [
+      "pechvogel",
+      "zwarte-reeks",
+      "rampdag",
+      "afgedroogd",
+      // Tijdelijk (#1005): een pack-viering voor iets dat je een match later
+      // weer kwijt bent, leest als spot in plaats van troost.
+      "net-niet",
+    ]) {
       expect(ZELDZAME_BADGES.has(id)).toBe(false);
     }
+  });
+});
+
+describe("Nét niet — de Pechvogel-meter (#1005)", () => {
+  // Nipt verlies voor team A (p1/p2).
+  const nipt = (a = 6, b = 7) =>
+    match({ winner_team_id: "tB", score_a: a, score_b: b });
+
+  it("slaat pas om bij de derde nipte nederlaag op rij", () => {
+    const twee = [nipt(), nipt(5, 7)];
+    expect(badge(deriveBadges(twee, teams, "p1"), "net-niet")).toMatchObject({
+      behaald: false,
+      voortgang: { nu: 2, doel: 3 },
+    });
+
+    const drie = [...twee, nipt()];
+    expect(badge(deriveBadges(drie, teams, "p1"), "net-niet")).toMatchObject({
+      behaald: true,
+      voortgang: { nu: 3, doel: 3 },
+    });
+  });
+
+  it("valt weer om zodra er gewonnen wordt — hij is tijdelijk", () => {
+    const ms = [
+      nipt(),
+      nipt(),
+      nipt(),
+      match({ winner_team_id: "tA", score_a: 7, score_b: 5 }),
+    ];
+    expect(badge(deriveBadges(ms, teams, "p1"), "net-niet")).toMatchObject({
+      behaald: false,
+      voortgang: { nu: 0, doel: 3 },
+    });
+  });
+
+  it("telt een afdroging niet mee", () => {
+    const ms = [nipt(), nipt(), match({ winner_team_id: "tB", score_a: 2, score_b: 7 })];
+    expect(badge(deriveBadges(ms, teams, "p1"), "net-niet").behaald).toBe(false);
+  });
+
+  it("laat de winnaar met lege handen achter", () => {
+    const ms = [nipt(), nipt(), nipt()];
+    expect(badge(deriveBadges(ms, teams, "p3"), "net-niet").behaald).toBe(false);
   });
 });
