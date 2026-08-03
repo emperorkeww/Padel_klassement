@@ -21,6 +21,7 @@ import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { MatchBeheer } from "@/features/matches/components/MatchBeheer";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
+import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
 import { getMatchPredictions } from "./predictionsApi";
 import { getMatchNetTouches, setNetTouches } from "./netTouchesApi";
 import { getGroup, getGroupMembers, getMyGroups } from "@/features/groups/api";
@@ -574,6 +575,20 @@ export function MatchDetail() {
           games={0}
         />
       )}
+
+      {/* Drankje-inzet (#1004). Hier en niet alleen in de wizard: gegenereerde
+          rondes komen daar nooit langs, en het afvinken aan de bar gebeurt per
+          definitie ná de match. Het blok verbergt zichzelf als er niets staat
+          en jij er niets aan mag veranderen. Geldt ook buiten een groep — een
+          weddenschap tussen vrienden heeft geen groep nodig. */}
+      <TraktatieBlock
+        match={m}
+        profiles={pmap}
+        magBeheren={
+          amParticipant || beheertGroep || (!!user && m.created_by === user.id)
+        }
+        onSaved={() => match.reload()}
+      />
 
       {showPlanned && (
         <section className="card">

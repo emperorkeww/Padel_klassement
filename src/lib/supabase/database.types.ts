@@ -945,6 +945,10 @@ export type Database = {
           status: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink: string | null
+          wager_drink_qty: number
+          wager_settled_at: string | null
+          wager_settled_by: string | null
           winner_team_id: string | null
         }
         Insert: {
@@ -963,6 +967,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Update: {
@@ -981,6 +989,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id?: string
           team_b_id?: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Relationships: [
@@ -1045,6 +1057,34 @@ export type Database = {
             columns: ["team_b_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2132,6 +2172,16 @@ export type Database = {
         Args: { p_group_id: string; p_player: string; p_uid: string }
         Returns: boolean
       }
+      _can_manage_wager: {
+        Args: {
+          p_created_by: string
+          p_group_id: string
+          p_team_a: string
+          p_team_b: string
+          p_uid: string
+        }
+        Returns: boolean
+      }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
       _group_leader: {
@@ -2203,6 +2253,8 @@ export type Database = {
           p_group_id?: string
           p_played_at?: string
           p_set_scores?: Json
+          p_wager_drink?: string
+          p_wager_drink_qty?: number
         }
         Returns: string
       }
@@ -2350,6 +2402,14 @@ export type Database = {
       }
       set_match_group: {
         Args: { p_group_id?: string; p_match_id: string }
+        Returns: undefined
+      }
+      set_match_wager: {
+        Args: { p_drink: string; p_match_id: string; p_qty?: number }
+        Returns: undefined
+      }
+      settle_match_wager: {
+        Args: { p_match_id: string; p_settled?: boolean }
         Returns: undefined
       }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }

@@ -1,0 +1,178 @@
+% Spelersuitleg bij de drankje-inzet (#1004), verteld door Coach Rudy.
+%
+% Bouwen:  ./scripts/build-uitleg-pdf.sh
+% Dat script zet de webp-avatars uit src/features/coach/components/rudi_avatars
+% om naar png en roept daarna xelatex aan — LaTeX leest zelf geen webp.
+%
+% Bewust zonder emoji: XeLaTeX kan de kleuren-emojifont van macOS niet
+% insluiten. De kleuren spiegelen de app: --dorst (amber van de traktatie),
+% --coach (Rudy's warme amber) en --accent (smaragd) uit src/app/index.css.
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage[dutch]{babel}
+\usepackage[margin=1.2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{parskip}
+\setlength{\parskip}{4pt}
+\usepackage{tikz}
+\usepackage{graphicx}
+
+\tcbuselibrary{skins}
+
+\setmainfont{Avenir Next}
+% Iets strakkere regelval: zo past de hele uitleg op één blad.
+\linespread{0.97}
+
+% Kleuren uit src/app/index.css — dezelfde families als in de app zelf.
+\definecolor{dorst}{HTML}{9A6010}      % --dorst: de traktatie
+\definecolor{dorstsoft}{HTML}{FDF2E0}  % --dorst-soft
+\definecolor{dorstline}{HTML}{ECD4A8}  % --dorst-line
+\definecolor{coachsoft}{HTML}{FDF0DC}  % --coach-soft
+\definecolor{coachline}{HTML}{F0D3A3}  % --coach-line
+\definecolor{coachdiep}{HTML}{5A3410}  % --coach-diep
+\definecolor{inkt}{HTML}{1A2620}       % --ink
+\definecolor{inktzacht}{HTML}{586A60}  % --ink-soft-strong
+\definecolor{smaragd}{HTML}{0C8A5F}    % --accent
+
+\color{inkt}
+\pagestyle{empty}
+\setlist[itemize]{leftmargin=1.2em,itemsep=2.5pt,topsep=3pt}
+
+\newcommand{\kop}[1]{%
+  \vspace{0.35em}%
+  {\color{dorst}\large\bfseries #1}\par\vspace{0.1em}%
+}
+
+% Rudy's ronde avatar. De bron is vierkant met zwarte hoeken, dus wegknippen
+% tot een cirkel — net als .coach-avatar in de app. #2 is de diameter; de
+% straal is de helft daarvan, vandaar \dimexpr en niet ,,2#2'' (dat plakt de
+% cijfers aan elkaar tot 21cm).
+\newcommand{\rudikop}[2][rudi-portret]{%
+  \begin{tikzpicture}
+    \clip (0,0) circle (\dimexpr#2/2\relax);
+    \node[inner sep=0pt] at (0,0) {\includegraphics[width=#2]{#1}};
+  \end{tikzpicture}%
+}
+
+% Eén sneer van de coach: avatar links, tekstballon rechts, in het coach-amber.
+\newcommand{\rudi}[2][rudi-portret]{%
+  \begin{tcolorbox}[colback=coachsoft,colframe=coachline,boxrule=1pt,arc=6pt,
+    left=8pt,right=10pt,top=5pt,bottom=5pt]
+    \noindent
+    \begin{minipage}[c]{1.3cm}\rudikop[#1]{1.15cm}\end{minipage}%
+    \begin{minipage}[c]{\dimexpr\linewidth-1.4cm\relax}
+      {\color{coachdiep}\itshape #2}
+    \end{minipage}
+  \end{tcolorbox}%
+}
+
+\begin{document}
+
+% --- Titelblok -------------------------------------------------------------
+\begin{tcolorbox}[colback=dorstsoft,colframe=dorstline,boxrule=1pt,
+  arc=6pt,left=12pt,right=12pt,top=7pt,bottom=7pt]
+  \noindent
+  \begin{minipage}[c]{\dimexpr\linewidth-2.6cm\relax}
+    {\color{dorst}\LARGE\bfseries Nieuw: de drankje-inzet}\par\vspace{3pt}
+    {\color{inktzacht}Vanaf nu speelt u niet alleen voor uw rating, maar ook
+    voor een pint. De verliezers trakteren.}
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[c]{2.3cm}
+    \hfill\rudikop{2.1cm}
+  \end{minipage}
+\end{tcolorbox}
+
+\rudi{Ik heb veel meegemaakt. Elf man die niet wisten waar ze moesten staan. Een
+watersproeier die mij persoonlijk viseerde. Maar een club die maandenlang
+\emph{om de eer} speelt --- dat is het grootste tactische vacu\"um dat ooit in
+mijn notitieboekje belandde. Vanaf vandaag ligt er iets op tafel. Een glas, om
+precies te zijn.}
+
+% --- Wat is het ------------------------------------------------------------
+\kop{Waar gaat dit over?}
+
+Vroeger eindigde een match met een cijfer. Nu eindigt hij met een
+\textbf{rekening}. Bij het plannen van een wedstrijd kiest u een drankje van de
+Belgische kaart --- van een Jupiler tot een Tripel Karmeliet, of gewoon een Spa
+plat voor wie de dag erna nog wil kunnen bewegen. Wie verliest, trakteert. De
+app zet de afspraak op de wedstrijdkaart en in de feed, en houdt op uw profiel
+bij hoeveel u al hebt weggegeven. Betalen doet u zelf.
+
+% --- Hoe werkt het ---------------------------------------------------------
+\kop{In drie stappen}
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=3pt,topsep=3pt]
+  \item \textbf{Plan uw match} zoals altijd. In stap 2, onder het baantype,
+        staat nu \emph{Drankje-inzet}. Zoeken, aantikken, klaar.
+  \item \textbf{Kies het aantal.} Standaard \'e\'en consumptie per winnaar.
+        Voelt u zich sterk? Zet er twee op. Of drie. Tot tien --- maar dan
+        hebben we het niet meer over padel.
+  \item \textbf{Speel de pot.} Na afloop staat op de match wie wat schuldig is.
+        Aan de bar tikt u op \textbf{,,Traktatie ingelost''} en de rekening is
+        vereffend.
+\end{enumerate}
+
+\rudi[rudi-gemeen]{Stap twee is waar de meesten sneuvelen. Ik zie ze denken:
+,,drie Duvels, dat maakt indruk''. Wat het maakt, is een dure avond voor iemand
+die zijn tweede opslag niet vertrouwt. Zet in naar uw niveau, niet naar uw
+zelfbeeld.}
+
+% --- De kaart --------------------------------------------------------------
+\kop{Wat staat er op de kaart?}
+
+\begin{multicols}{2}
+\textbf{25 Belgische bieren} --- van de klassiekers (Jupiler, Stella, Maes) over
+de trappisten (Westmalle, Chimay, Orval, Rochefort) tot het zware werk
+(Delirium Tremens, Troubadour Magma). Er zit gegarandeerd iets tussen dat uw
+tegenstander niet graag afrekent.
+
+\columnbreak
+
+\textbf{10 frisdranken en waters} --- Cola, Fanta, Sprite, Ice Tea, Spa,
+Chaudfontaine, Perrier, Red Bull, Schweppes en Oasis. Even geldig als inzet, en
+u speelt de week erna beter.
+\end{multicols}
+
+% --- De regels -------------------------------------------------------------
+\kop{De spelregels}
+
+\begin{tcolorbox}[colback=white,colframe=dorstline,boxrule=1pt,arc=6pt,
+  left=11pt,right=11pt,top=6pt,bottom=6pt]
+\begin{itemize}
+  \item \textbf{Tot de aftrap kunt u nog wijzigen.} Daarna ligt de inzet vast.
+        Geen enkele verliezer draait een Westmalle achteraf nog om in een
+        kraantjeswater.
+  \item \textbf{Gelijkspel? Inzet vervallen.} Niemand wint, dus niemand
+        trakteert. Iedereen betaalt zijn eigen glas.
+  \item \textbf{Per winnaar.} Verliest u een dubbelspel met \'e\'en drankje
+        als inzet, dan staat u er twee te betalen. Reken even door voor u stoer
+        doet.
+  \item \textbf{Iedereen die meespeelt mag de inzet zetten}, ook op een ronde
+        die de app zelf inplande --- en afvinken mag ook iedereen.
+  \item \textbf{Uw rating blijft erbuiten.} Dit is een weddenschap tussen
+        vrienden, geen tweede lef-tip. Alleen uw eer (en uw portefeuille) staat
+        op het spel.
+\end{itemize}
+\end{tcolorbox}
+
+% --- Profiel ---------------------------------------------------------------
+\kop{En op uw profiel?}
+
+Onder \emph{,,Aan de bar''} staan twee cijfers: uw \textbf{meest gewonnen
+drankje} en het \textbf{totaal aantal consumpties dat u hebt getrakteerd}.
+
+\rudi[rudi-gemeen]{Dat tweede getal is het eerlijkste klassement van de club.
+Een rating praat u nog goed met ,,ongelukkige loting''. Zeventien getrakteerde
+pinten niet. Dat is geen statistiek, dat is een bekentenis.}
+
+\begin{center}
+{\color{smaragd}\bfseries Proost --- en drink met mate. De winnaar heeft er
+niets aan als u volgende week niet komt opdagen.}
+\end{center}
+
+\end{document}

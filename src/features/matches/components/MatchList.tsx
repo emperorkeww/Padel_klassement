@@ -5,6 +5,7 @@ import { deleteMatch, formatSetScores, readSetScores, teamLabel } from "@/featur
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor, playersOf } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
+import { traktatieRegel } from "@/features/matches/drankkaart";
 import { Avatar } from "@/ui/Avatar";
 import { TierBadge } from "@/features/rating/components/TierBadge";
 import { THIN_GAMES } from "@/features/groups/groupRating";
@@ -43,6 +44,7 @@ export function MatchCard({
   const drew = done && m.winner_team_id === null;
   const scored = m.score_a != null && m.score_b != null;
   const setLine = formatSetScores(readSetScores(m));
+  const traktatie = traktatieRegel(m);
 
   const outcome = perspectiveId ? outcomeFor(m, teams, perspectiveId) : null;
   const outcomeClass =
@@ -89,6 +91,15 @@ export function MatchCard({
         {/* Lef-inzet (#981): blijft ook op de ingeklapte kaart staan, zodat
             wie waar dubbel of niets speelde na de speeldag terug te lezen is. */}
         {lef && <span className="match-card__meta match-card__lef">{lef}</span>}
+        {/* Drankje-inzet (#1004). Bewust hier afgeleid en niet als prop
+            doorgegeven zoals `lef`: die moet uit een aparte tabel komen, dit
+            staat al op de matchrij zelf. Zo verschijnt de traktatie overal waar
+            deze kaart hangt — historie, profiel, uitslagenfeed. */}
+        {traktatie && (
+          <span className="match-card__meta match-card__traktatie">
+            {traktatie}
+          </span>
+        )}
       </span>
       <TeamSide
         team={teams[m.team_b_id]}

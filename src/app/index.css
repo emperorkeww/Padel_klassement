@@ -72,6 +72,16 @@
   --lef-line: #d4c9ec;
   --lef-ink: #ffffff; /* tekst op violet (ingezette lef-knop) */
 
+  /* Dorst (#1004) — het bier-amber van de drankje-inzet. Eigen familie en niet
+     --coach hergebruikt: dat amber is de stem van Coach Rudy, en een traktatie
+     aan de bar is niet iets wat hij zegt. Donkerder dan --coach zodat de twee
+     naast elkaar op één matchkaart uit elkaar te houden blijven. */
+  /* Donker genoeg voor AA op zowel --surface als --dorst-soft (contrast-CI). */
+  --dorst: #9a6010;
+  --dorst-soft: #fdf2e0;
+  --dorst-line: #ecd4a8;
+  --dorst-ink: #ffffff; /* tekst op vol amber (ingeloste traktatie) */
+
   /* Padelveld van de opstelling (#427). Puur decoratieve achtergrond (er staat
      geen lopende tekst direct op het veld), dus buiten de contrast-CI. */
   --court: #0d7a55;
@@ -289,6 +299,12 @@
   --lef-soft: #241d33;
   --lef-line: #3d3357;
   --lef-ink: #14101e;
+
+  /* Dorst-amber, lichter gezet voor leesbare tekst op donkere vlakken. */
+  --dorst: #e0a94d;
+  --dorst-soft: #2b2114;
+  --dorst-line: #4a3a20;
+  --dorst-ink: #1b1207;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
   --court: #1b4636;

@@ -1,0 +1,57 @@
+/* Drankstatistiek op het profiel (#1004): twee tegels plus een korte ranglijst
+   van gewonnen drankjes. Amber uit de --dorst-familie, zodat de bar-rekening
+   overal in de app dezelfde kleur draagt. */
+
+.drankstats__tegels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--sp-2);
+}
+
+.drankstats__tegel {
+  display: grid;
+  gap: 2px;
+  padding: var(--sp-3);
+  border: 1px solid var(--dorst-line);
+  border-radius: var(--radius-sm);
+  background: var(--dorst-soft);
+}
+
+.drankstats__label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft-strong);
+}
+
+.drankstats__waarde {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--dorst);
+}
+
+.drankstats__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft-strong);
+}
+
+.drankstats__lijst {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.drankstats__rij {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+.drankstats__rij-aantal {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--dorst);
+}
