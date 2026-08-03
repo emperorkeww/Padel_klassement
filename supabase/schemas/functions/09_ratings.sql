@@ -8,16 +8,18 @@
 
 -- Past het rating-verschil van één match toe op één speler: werkt
 -- player_ratings bij en logt een rij in rating_history. p_factor is de
--- lef-tip-multiplier (#804) en p_bounty de bounty-verschuiving (#805); allebei
--- zitten ze al in p_delta verwerkt en worden ze meegelogd, zodat een
--- verdubbelde of geclaimde mutatie achteraf uitlegbaar blijft.
+-- lef-tip-multiplier (#804), p_bounty de bounty-verschuiving (#805) en
+-- p_troost de demper van de Pechvogel-meter (#1005); alle drie zitten ze al in
+-- p_delta verwerkt en worden ze meegelogd, zodat een verdubbelde, geclaimde of
+-- gedempte mutatie achteraf uitlegbaar blijft.
 create or replace function public._apply_rating(
   p_player uuid,
   p_match uuid,
   p_delta int,
   p_ts timestamptz,
   p_factor numeric,
-  p_bounty int
+  p_bounty int,
+  p_troost int
 )
 returns void
 language plpgsql
@@ -43,13 +45,14 @@ begin
 
   insert into public.rating_history (
     player_id, match_id, rating_before, rating_after, delta, played_at,
-    stake_factor, bounty_delta
+    stake_factor, bounty_delta, troost_delta
   )
-  values (p_player, p_match, v_before, v_after, p_delta, p_ts, p_factor, p_bounty);
+  values (p_player, p_match, v_before, v_after, p_delta, p_ts, p_factor,
+          p_bounty, p_troost);
 end;
 $$;
 
-revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz, numeric, int) from public;
+revoke execute on function public._apply_rating(uuid, uuid, int, timestamptz, numeric, int, int) from public;
 
 -- Rekenkern: berekent de ELO-delta's van één match op basis van de huidige
 -- player_ratings en past ze toe op de vier betrokken spelers. Wordt door
@@ -73,6 +76,8 @@ declare
   f numeric;                     -- lef-tip-multiplier van de speler in kwestie
   bounties jsonb;                -- bounty-verschuiving per speler (#805)
   bo int;                        -- bounty van de speler in kwestie
+  ru int;                        -- mutatie vóór troost (lef + bounty verwerkt)
+  tr int;                        -- troostdemper van de speler in kwestie (#1005)
 begin
   select mt.id, mt.team_a_id, mt.team_b_id, mt.winner_team_id,
          coalesce(mt.played_at, mt.created_at) as ts
@@ -139,21 +144,33 @@ begin
     into bounties
     from public._bounty_deltas(m.id) x;
 
+  -- Troostdemper (#1005): de derde nipte nederlaag op rij verliest minder hard.
+  -- Gaat over de al door lef en bounty bewerkte mutatie — je wordt getroost
+  -- voor wat je écht inlevert — en komt er als laatste bij, zodat de demper
+  -- nooit verdubbeld wordt door een eigen lef-tip.
   f := public._stake_factor(a1, m.id, winnaar);
   bo := coalesce((bounties ->> a1::text)::int, 0);
-  perform public._apply_rating(a1, m.id, round(da * f)::int + bo, m.ts, f, bo);
+  ru := round(da * f)::int + bo;
+  tr := public._troost_delta(m.id, a1, ru);
+  perform public._apply_rating(a1, m.id, ru + tr, m.ts, f, bo, tr);
   if a2 is not null then
     f := public._stake_factor(a2, m.id, winnaar);
     bo := coalesce((bounties ->> a2::text)::int, 0);
-    perform public._apply_rating(a2, m.id, round(da * f)::int + bo, m.ts, f, bo);
+    ru := round(da * f)::int + bo;
+    tr := public._troost_delta(m.id, a2, ru);
+    perform public._apply_rating(a2, m.id, ru + tr, m.ts, f, bo, tr);
   end if;
   f := public._stake_factor(b1, m.id, winnaar);
   bo := coalesce((bounties ->> b1::text)::int, 0);
-  perform public._apply_rating(b1, m.id, round(db * f)::int + bo, m.ts, f, bo);
+  ru := round(db * f)::int + bo;
+  tr := public._troost_delta(m.id, b1, ru);
+  perform public._apply_rating(b1, m.id, ru + tr, m.ts, f, bo, tr);
   if b2 is not null then
     f := public._stake_factor(b2, m.id, winnaar);
     bo := coalesce((bounties ->> b2::text)::int, 0);
-    perform public._apply_rating(b2, m.id, round(db * f)::int + bo, m.ts, f, bo);
+    ru := round(db * f)::int + bo;
+    tr := public._troost_delta(m.id, b2, ru);
+    perform public._apply_rating(b2, m.id, ru + tr, m.ts, f, bo, tr);
   end if;
 end;
 $$;

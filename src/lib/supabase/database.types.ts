@@ -1624,6 +1624,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }
         Insert: {
           bounty_delta?: number
@@ -1635,6 +1636,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor?: number
+          troost_delta?: number
         }
         Update: {
           bounty_delta?: number
@@ -1646,6 +1648,7 @@ export type Database = {
           rating_after?: number
           rating_before?: number
           stake_factor?: number
+          troost_delta?: number
         }
         Relationships: [
           {
@@ -2281,6 +2284,15 @@ export type Database = {
         Args: { p_team_id: string; p_uid: string }
         Returns: boolean
       }
+      pech_streak: {
+        Args: {
+          p_created?: string
+          p_match?: string
+          p_player: string
+          p_ts?: string
+        }
+        Returns: number
+      }
       prediction_points: { Args: { p_chance: number }; Returns: number }
       prediction_win_chance: {
         Args: { p_match: string; p_team: string }
@@ -2305,6 +2317,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }[]
       }
       recompute_dictator_termijnen: { Args: never; Returns: undefined }
