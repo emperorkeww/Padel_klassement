@@ -33,6 +33,21 @@ create table public.matches (
   format public.match_format not null default '2v2',
   -- optioneel baantype (#471), enkel voor de baanvoorkeuren-statistiek
   court_type public.court_type,
+  -- Drankje-inzet (#1004): waar de verliezers de winnaars na de pot op
+  -- trakteren. Puur sociaal — dit raakt de rating met geen vinger aan, in
+  -- tegenstelling tot de lef-tip (match_stakes, #804) die óók "inzet" heet.
+  --
+  -- Bewust text-slug en geen enum zoals court_type: de drankkaart telt 35
+  -- items en groeit, en een enum zou per nieuw biertje een migratie kosten én
+  -- een union van 35 strings in de gegenereerde types opleveren. De preset in
+  -- src/features/matches/drankkaart.ts is de bron van waarheid voor label en
+  -- icoon; een onbekende slug degradeert daar naar de slug zelf.
+  wager_drink text,
+  -- Aantal consumpties per winnaar; standaard 1, verhoogbaar voor wie durft.
+  wager_drink_qty smallint not null default 1,
+  -- Ingelost aan de bar (#1004): gezet via settle_match_wager, nooit direct.
+  wager_settled_at timestamptz,
+  wager_settled_by uuid references public.profiles (id) on delete set null,
   -- idempotentie-sleutel voor de aanmaak-RPC's (#462): een client-gegenereerde
   -- token maakt het opnieuw afspelen van een offline gequeuede match veilig — een
   -- tweede insert met dezelfde token botst (unieke index) i.p.v. een duplicaat te
@@ -58,6 +73,24 @@ create table public.matches (
   -- rondenummers beginnen bij 1
   constraint matches_round_positive check (
     round_number is null or round_number >= 1
+  ),
+  -- Drankje-inzet (#1004): de slug blijft een slug, het aantal blijft klein
+  -- genoeg om aan de bar waargemaakt te worden, en zonder drankje valt er
+  -- niets in te lossen.
+  constraint matches_wager_drink_slug check (
+    wager_drink is null or wager_drink ~ '^[a-z0-9-]{2,40}$'
+  ),
+  constraint matches_wager_qty_range check (
+    wager_drink_qty between 1 and 10
+  ),
+  -- wager_settled_by mag los leeglopen (profiel verwijderd, on delete set
+  -- null); wager_settled_at blijft dan staan als "is ingelost, door wie weten
+  -- we niet meer". Andersom heeft een inlosser zonder tijdstip geen betekenis.
+  constraint matches_wager_settled_needs_drink check (
+    wager_settled_at is null or wager_drink is not null
+  ),
+  constraint matches_wager_settled_by_needs_at check (
+    wager_settled_by is null or wager_settled_at is not null
   ),
   -- als beide scores zijn ingevuld moet de winnaar bij de score passen:
   -- hoogste score wint, gelijke score = gelijkspel (geen winnaar)

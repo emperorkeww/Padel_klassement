@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   bestWeekday,
   courtPreference,
+  drankTraktaties,
   monthlyWinRate,
   opponentExtremes,
   timeOfDayPreference,
@@ -208,5 +209,83 @@ describe("courtPreference", () => {
       "p1",
     );
     expect(best?.type).toBe("panorama");
+  });
+});
+
+// Drankje-inzet (#1004): "meest gewonnen biertje" en "totaal getrakteerde
+// consumpties". p1 zit in t-a; t-b en t-c zijn de tegenstanders.
+function matchDrank(
+  drank: string | null,
+  qty: number,
+  uitkomst: "W" | "L" | "D",
+): Match {
+  return {
+    id: `m-${seq++}`,
+    team_a_id: "t-a",
+    team_b_id: "t-b",
+    status: "completed",
+    winner_team_id: uitkomst === "W" ? "t-a" : uitkomst === "L" ? "t-b" : null,
+    played_at: "2026-07-01T18:00:00Z",
+    created_at: "2026-07-01T18:00:00Z",
+    wager_drink: drank,
+    wager_drink_qty: qty,
+  } as Match;
+}
+
+describe("drankTraktaties", () => {
+  it("telt gewonnen consumpties per drankje, hoogste eerst", () => {
+    const { gewonnen, favoriet, totaalGewonnen } = drankTraktaties(
+      [
+        matchDrank("duvel", 1, "W"),
+        matchDrank("duvel", 2, "W"),
+        matchDrank("jupiler", 1, "W"),
+        matchDrank(null, 1, "W"), // zonder inzet: telt niet mee
+      ],
+      TEAMS,
+      "p1",
+    );
+    expect(gewonnen.map((d) => `${d.slug}:${d.aantal}`)).toEqual([
+      "duvel:3",
+      "jupiler:1",
+    ]);
+    expect(favoriet?.label).toBe("Duvel");
+    expect(favoriet?.matches).toBe(2);
+    expect(totaalGewonnen).toBe(4);
+  });
+
+  it("rekent een verloren match af per winnaar (dubbel telt dubbel)", () => {
+    // 2v2: het winnende team heeft twee spelers, dus 2× de inzet.
+    const dubbel = drankTraktaties([matchDrank("duvel", 2, "L")], TEAMS, "p1");
+    expect(dubbel.totaalGetrakteerd).toBe(4);
+    // 1v1: één winnaar, dus één keer de inzet.
+    const singles = drankTraktaties(
+      [
+        {
+          ...matchDrank("duvel", 2, "L"),
+          team_a_id: "t-solo-a",
+          team_b_id: "t-solo-b",
+          winner_team_id: "t-solo-b",
+        } as Match,
+      ],
+      {
+        "t-solo-a": { id: "t-solo-a", player1_id: "p1", player2_id: null } as Team,
+        "t-solo-b": { id: "t-solo-b", player1_id: "p3", player2_id: null } as Team,
+      },
+      "p1",
+    );
+    expect(singles.totaalGetrakteerd).toBe(2);
+  });
+
+  it("laat een gelijkspel de inzet vervallen", () => {
+    const stats = drankTraktaties([matchDrank("duvel", 1, "D")], TEAMS, "p1");
+    expect(stats.totaalGewonnen).toBe(0);
+    expect(stats.totaalGetrakteerd).toBe(0);
+    expect(stats.favoriet).toBeNull();
+  });
+
+  it("negeert matches waar deze speler niet in stond", () => {
+    const stats = drankTraktaties([matchDrank("duvel", 1, "W")], TEAMS, "p5");
+    expect(stats.totaalGewonnen).toBe(0);
+    expect(stats.totaalGetrakteerd).toBe(0);
   });
 });

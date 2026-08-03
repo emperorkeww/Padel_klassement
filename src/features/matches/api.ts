@@ -280,6 +280,10 @@ export type CreatePlannedMatchParams = {
   setScores?: SetScore[] | null;
   courtType?: CourtType | null;
   clientToken?: string;
+  /** Drankje-inzet (#1004): slug uit drankkaart.ts; null = nergens om spelen. */
+  wagerDrink?: string | null;
+  /** Consumpties per winnaar; genegeerd zonder wagerDrink. */
+  wagerDrinkQty?: number | null;
 };
 
 /** Plant een match vooraf (status 'scheduled') via de SECURITY DEFINER RPC.
@@ -299,10 +303,50 @@ export async function createPlannedMatch(
     p_set_scores: params.setScores ?? undefined,
     p_court_type: params.courtType ?? undefined,
     p_client_token: params.clientToken ?? undefined,
+    p_wager_drink: params.wagerDrink ?? undefined,
+    p_wager_drink_qty: params.wagerDrink
+      ? (params.wagerDrinkQty ?? 1)
+      : undefined,
   });
   if (error) throw error;
   invalidateMatchData();
   return data as string;
+}
+
+/** Zet of wist de drankje-inzet van een geplande match (#1004). Kan door de
+ *  spelers, de aanmaker en de groepseigenaar, tot aan de aftrap; de RPC
+ *  bewaakt dat. Nodig náást de parameter op createPlannedMatch, omdat
+ *  gegenereerde rondes (americano/mexicano/fair round) nooit langs de wizard
+ *  komen. drink = null haalt de inzet er weer af. */
+export async function setMatchWager(params: {
+  matchId: string;
+  drink: string | null;
+  qty?: number;
+}): Promise<void> {
+  const { error } = await supabase.rpc("set_match_wager", {
+    p_match_id: params.matchId,
+    // De gegenereerde Args kennen geen nullable parameters; de RPC accepteert
+    // null en leest dat als "inzet eraf".
+    p_drink: params.drink as string,
+    p_qty: params.drink ? (params.qty ?? 1) : undefined,
+  });
+  if (error) throw error;
+  invalidateMatchData();
+}
+
+/** Vinkt de traktatie af aan de bar (#1004), of draait dat weer terug. Alleen
+ *  op een afgeronde match met een winnaar — bij gelijkspel vervalt de inzet en
+ *  weigert de RPC. */
+export async function settleMatchWager(params: {
+  matchId: string;
+  settled?: boolean;
+}): Promise<void> {
+  const { error } = await supabase.rpc("settle_match_wager", {
+    p_match_id: params.matchId,
+    p_settled: params.settled ?? true,
+  });
+  if (error) throw error;
+  invalidateMatchData();
 }
 
 /** Zet het resultaat van een bestaande (geplande) match. winnerTeamId null = gelijkspel.

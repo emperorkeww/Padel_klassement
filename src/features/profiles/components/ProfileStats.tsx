@@ -11,6 +11,7 @@ import { displayName } from "@/features/profiles/api";
 import { HighlightTile } from "@/features/profiles/components/HighlightTile";
 import { PartnerSynergyMatrix } from "@/features/profiles/components/PartnerSynergyMatrix";
 import { PreferenceStats } from "@/features/profiles/components/PreferenceStats";
+import { DrankStats } from "@/features/profiles/components/DrankStats";
 import { MilestoneTimeline } from "@/features/profiles/components/MilestoneTimeline";
 import type { ProfileData, H2HRow } from "@/features/profiles/components/types";
 
@@ -321,6 +322,9 @@ export function ProfileStats({ d }: { d: ProfileData }) {
           playerId={id}
         />
         <PreferenceStats matches={scoped} teams={tmap} playerId={id} />
+        {/* Drankje-inzet (#1004): verbergt zichzelf zonder inzetten, net als
+            de blokken ernaast. */}
+        <DrankStats matches={scoped} teams={tmap} playerId={id} />
       </div>
 
       <MilestoneTimeline history={rhist} />

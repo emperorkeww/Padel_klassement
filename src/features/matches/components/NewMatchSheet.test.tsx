@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -62,6 +62,125 @@ describe("<NewMatchSheet /> plannen — mobiel toetsenbord (#358)", () => {
     expect(screen.getByLabelText(/aantal weken/i)).toHaveAttribute(
       "inputmode",
       "numeric",
+    );
+  });
+});
+
+describe("<NewMatchSheet /> drankje-inzet (#1004)", () => {
+  // Concept én rpc-teller schoon per test: de sheet hervat anders het concept
+  // van de vorige test, en .mock.calls zou de rpc-aanroep daarvan terugvinden.
+  beforeEach(async () => {
+    const { supabase } = await import("@/lib/supabase/client");
+    vi.mocked(supabase.rpc).mockClear();
+    localStorage.clear();
+  });
+
+  it("geeft het gekozen drankje en aantal mee aan create_planned_match", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const { supabase } = await import("@/lib/supabase/client");
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+
+    // Zoeken houdt de lijst kort; daarna het drankje en één extra consumptie.
+    await userEvent.type(screen.getByLabelText(/zoek een drankje/i), "karmeliet");
+    await userEvent.click(
+      screen.getByRole("radio", { name: /tripel karmeliet/i }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Eén meer" }));
+    await userEvent.click(screen.getByRole("button", { name: /match plannen/i }));
+
+    await waitFor(() =>
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        "create_planned_match",
+        expect.objectContaining({
+          p_wager_drink: "tripel-karmeliet",
+          p_wager_drink_qty: 2,
+        }),
+      ),
+    );
+  });
+
+  it("laat de inzet weg als er geen drankje gekozen is", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const { supabase } = await import("@/lib/supabase/client");
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+    await userEvent.click(screen.getByRole("button", { name: /match plannen/i }));
+
+    await waitFor(() => expect(supabase.rpc).toHaveBeenCalled());
+    const call = vi
+      .mocked(supabase.rpc)
+      .mock.calls.find(([naam]) => naam === "create_planned_match");
+    const params = call?.[1] as Record<string, unknown>;
+    expect(params.p_wager_drink).toBeUndefined();
+    expect(params.p_wager_drink_qty).toBeUndefined();
+  });
+
+  it("bewaart de inzet in het concept, zodat een gesloten sheet hem terugvindt", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+    await userEvent.type(screen.getByLabelText(/zoek een drankje/i), "duvel");
+    await userEvent.click(screen.getByRole("radio", { name: /duvel/i }));
+
+    await waitFor(() =>
+      expect(readDraft("plan", "g1")?.wagerDrink).toBe("duvel"),
     );
   });
 });

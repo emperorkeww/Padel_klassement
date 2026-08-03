@@ -13,6 +13,8 @@ import {
   emptySet,
   createCompletedMatch,
   createPlannedMatch,
+  setMatchWager,
+  settleMatchWager,
   setMatchResult,
   updateMatchScore,
   createGuestPlayer,
@@ -188,6 +190,92 @@ describe("createPlannedMatch", () => {
     await expect(
       createPlannedMatch({ a1: "a1", a2: null, b1: "b1", b2: null }),
     ).rejects.toThrow("plan stuk");
+  });
+
+  it("geeft de drankje-inzet mee (#1004)", async () => {
+    enqueue({ data: "planned-2" });
+    await createPlannedMatch({
+      a1: "a1",
+      a2: "a2",
+      b1: "b1",
+      b2: "b2",
+      wagerDrink: "tripel-karmeliet",
+      wagerDrinkQty: 2,
+    });
+    const rpc = calls.find((c) => c.method === "rpc");
+    const params = rpc?.args[0] as Record<string, unknown>;
+    expect(params.p_wager_drink).toBe("tripel-karmeliet");
+    expect(params.p_wager_drink_qty).toBe(2);
+  });
+
+  it("laat het aantal weg zonder drankje — dan zegt het niets", async () => {
+    enqueue({ data: "planned-3" });
+    await createPlannedMatch({
+      a1: "a1",
+      a2: null,
+      b1: "b1",
+      b2: null,
+      wagerDrinkQty: 5,
+    });
+    const rpc = calls.find((c) => c.method === "rpc");
+    const params = rpc?.args[0] as Record<string, unknown>;
+    expect(params.p_wager_drink).toBeUndefined();
+    expect(params.p_wager_drink_qty).toBeUndefined();
+  });
+});
+
+// --- Drankje-inzet (#1004) ---------------------------------------------------
+
+describe("setMatchWager", () => {
+  it("roept set_match_wager met slug en aantal", async () => {
+    enqueue({ data: null });
+    await setMatchWager({ matchId: "m1", drink: "duvel", qty: 3 });
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "set_match_wager",
+      args: [
+        expect.objectContaining({
+          p_match_id: "m1",
+          p_drink: "duvel",
+          p_qty: 3,
+        }),
+      ],
+    });
+  });
+
+  it("haalt de inzet eraf met drink = null", async () => {
+    enqueue({ data: null });
+    await setMatchWager({ matchId: "m1", drink: null });
+    const rpc = calls.find((c) => c.method === "rpc");
+    const params = rpc?.args[0] as Record<string, unknown>;
+    expect(params.p_drink).toBeNull();
+    expect(params.p_qty).toBeUndefined();
+  });
+
+  it("gooit door bij een fout", async () => {
+    enqueue({ error: new Error("inzet ligt vast") });
+    await expect(
+      setMatchWager({ matchId: "m1", drink: "duvel" }),
+    ).rejects.toThrow("inzet ligt vast");
+  });
+});
+
+describe("settleMatchWager", () => {
+  it("vinkt standaard af als ingelost", async () => {
+    enqueue({ data: null });
+    await settleMatchWager({ matchId: "m1" });
+    expect(calls).toContainEqual({
+      method: "rpc",
+      name: "settle_match_wager",
+      args: [expect.objectContaining({ p_match_id: "m1", p_settled: true })],
+    });
+  });
+
+  it("kan de afvinking terugdraaien", async () => {
+    enqueue({ data: null });
+    await settleMatchWager({ matchId: "m1", settled: false });
+    const rpc = calls.find((c) => c.method === "rpc");
+    expect((rpc?.args[0] as Record<string, unknown>).p_settled).toBe(false);
   });
 });
 

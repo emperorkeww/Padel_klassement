@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { readSetScores, teamLabel } from "@/features/matches/api";
+import { traktatieRegel } from "@/features/matches/drankkaart";
 import { formatTime } from "@/lib/utils/format";
 import type { Profile, Team } from "@/types";
 import type { FeedEvent } from "../feedLogic";
@@ -25,6 +26,7 @@ export function FeedMatch({
   const bWon = done && m.winner_team_id === m.team_b_id;
   const scored = m.score_a != null && m.score_b != null;
   const sets = readSetScores(m) ?? [];
+  const traktatie = traktatieRegel(m);
   const teamLbl = (tid: string) => teamLabel(tmap[tid], pmap);
   return (
     <Link className="fmatch" to={`/matches/${m.id}`}>
@@ -75,6 +77,10 @@ export function FeedMatch({
           ))}
         </div>
       )}
+      {/* Drankje-inzet (#1004): de uitslagenfeed is precies waar de openstaande
+          rekening thuishoort — wie er nog een pint moet halen leest hier terug,
+          en na het afvinken staat er dat het ingelost is. */}
+      {traktatie && <p className="fmatch__traktatie">{traktatie}</p>}
     </Link>
   );
 }

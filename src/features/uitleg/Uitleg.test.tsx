@@ -37,7 +37,7 @@ const ZICHTBAAR = [
   { id: "troon", titel: "De Troon & De Schandpaal" },
   { id: "kaarten", titel: "Spelerskaarten" },
   { id: "badges", titel: "Badges & mijlpalen" },
-  { id: "toto", titel: "Toto & Lef" },
+  { id: "toto", titel: "Toto, Lef & drankjes" },
   { id: "rudy", titel: "Coach Rudy" },
   { id: "feed", titel: "Feed & vrienden" },
   { id: "seizoen", titel: "Seizoen & Wrapped" },

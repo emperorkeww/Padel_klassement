@@ -22,6 +22,7 @@ import {
   savePlannedMatch,
 } from "@/features/matches/outbox";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
+import { DrankPicker } from "@/features/matches/components/DrankPicker";
 import { COURT_TYPES } from "@/features/matches/courtType";
 import {
   readDraft,
@@ -86,6 +87,10 @@ export function NewMatchSheet({
   const [when, setWhen] = useState(""); // datetime-local; "" = zonder tijdstip
   // Optioneel baantype (#471); null = niet opgegeven.
   const [courtType, setCourtType] = useState<CourtType | null>(null);
+  // Drankje-inzet (#1004); null = er wordt nergens om gespeeld. Alleen bij
+  // plannen: de inzet hoort vóór de wedstrijd afgesproken te worden.
+  const [wagerDrink, setWagerDrink] = useState<string | null>(null);
+  const [wagerQty, setWagerQty] = useState(1);
   const [repeat, setRepeat] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
@@ -125,6 +130,8 @@ export function NewMatchSheet({
     setSets([emptySet()]);
     setWhen("");
     setCourtType(null);
+    setWagerDrink(null);
+    setWagerQty(1);
     setRepeat(false);
     setRepeatWeeks(4);
     setPickedGroupId("");
@@ -154,6 +161,9 @@ export function NewMatchSheet({
       setSets(draft.sets);
       setWhen(draft.when);
       setCourtType(draft.courtType);
+      // Concepten van vóór #1004 kennen deze velden niet.
+      setWagerDrink(draft.wagerDrink ?? null);
+      setWagerQty(draft.wagerQty ?? 1);
       setRepeat(draft.repeat);
       setRepeatWeeks(draft.repeatWeeks);
       setPickedGroupId(draft.pickedGroupId);
@@ -184,6 +194,8 @@ export function NewMatchSheet({
       sets,
       when,
       courtType,
+      wagerDrink,
+      wagerQty,
       repeat,
       repeatWeeks,
       pickedGroupId,
@@ -209,6 +221,8 @@ export function NewMatchSheet({
     sets,
     when,
     courtType,
+    wagerDrink,
+    wagerQty,
     repeat,
     repeatWeeks,
     pickedGroupId,
@@ -352,6 +366,11 @@ export function NewMatchSheet({
           playedAt,
           groupId: effectiveGroupId,
           courtType,
+          // Bij wekelijks herhalen staat dezelfde inzet op elke match: je
+          // spreekt één weddenschap af voor de hele reeks. Per match bijstellen
+          // kan achteraf op de matchpagina (set_match_wager).
+          wagerDrink,
+          wagerDrinkQty: wagerQty,
         });
         if (result.status === "queued") queued++;
       }
@@ -736,6 +755,17 @@ export function NewMatchSheet({
             )}
 
             <CourtPicker value={courtType} onChange={setCourtType} />
+
+            {/* Drankje-inzet (#1004): alleen hier, in de plan-modus. Een
+                weddenschap spreek je vóór de wedstrijd af — bij het loggen van
+                een al gespeelde match is het te laat. */}
+            <DrankPicker
+              value={wagerDrink}
+              aantal={wagerQty}
+              onChange={setWagerDrink}
+              onAantalChange={setWagerQty}
+              disabled={busy}
+            />
 
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>

@@ -1,11 +1,21 @@
 import { predictionPoints } from "@/features/matches/predictions";
 import { MIN_GAMES, STAKE_FACTOR } from "@/features/matches/stakes";
+import {
+  BIEREN,
+  DRANK_MAX_AANTAL,
+  FRISDRANKEN,
+} from "@/features/matches/drankkaart";
 
 /** Sectie 10: het gokwerk — de toto voor kijkers, Lef voor spelers (#989).
  *
  *  De puntenstaffel komt uit `predictionPoints` (de spiegel van
  *  public.prediction_points) in plaats van uit deze tekst, en de lef-regels uit
- *  stakes.ts. Zo blijft de uitleg kloppen als de staffel ooit verschuift. */
+ *  stakes.ts. Zo blijft de uitleg kloppen als de staffel ooit verschuift.
+ *
+ *  De drankje-inzet (#1004) hangt er als derde blok onder: ook een inzet, maar
+ *  eentje die aan de bar wordt afgerekend in plaats van in je rating. De
+ *  aantallen komen uit drankkaart.ts, zodat een extra biertje op de kaart hier
+ *  vanzelf meetelt. */
 export function Toto() {
   // Dezelfde functie die de punten ook echt toekent — geen tweede staffel.
   const staffel = [
@@ -61,6 +71,38 @@ export function Toto() {
       <p className="uitleg__noot">
         Wie er lef had blijft geheim tot de match begint — anders kon iedereen
         gewoon meeliften op de durfal. Daarna is het opschepmateriaal.
+      </p>
+
+      <h3 className="uitleg__kop">🍻 Drankje-inzet — voor aan de bar</h3>
+      <p>
+        Bij het plannen van een match kies je waar er om gespeeld wordt: een
+        drankje van de Belgische kaart ({BIEREN.length} bieren en{" "}
+        {FRISDRANKEN.length} frisdranken en waters). De{" "}
+        <strong>verliezers trakteren de winnaars</strong> — standaard één
+        consumptie per winnaar, tot {DRANK_MAX_AANTAL} als je durft.
+      </p>
+      <ul className="uitleg__lijst-kaal">
+        <li>
+          De inzet staat op de matchkaart en in de feed, zodat niemand hem "even
+          vergeet".
+        </li>
+        <li>
+          Tot de aftrap kun je hem nog wijzigen; daarna ligt hij vast. Dat kan
+          ook op een match die de app zelf inplande.
+        </li>
+        <li>
+          Bij <strong>gelijkspel vervalt de inzet</strong>: iedereen betaalt zijn
+          eigen glas.
+        </li>
+        <li>
+          Aan de bar tik je op <strong>"Traktatie ingelost 🍻"</strong>. Op je
+          profiel zie je daarna je meest gewonnen drankje en hoeveel consumpties
+          je al hebt weggegeven.
+        </li>
+      </ul>
+      <p className="uitleg__noot">
+        Dit is puur een weddenschap tussen jullie: aan je rating verandert er
+        niets. De app houdt alleen de rekening bij — betalen doe je zelf.
       </p>
     </>
   );

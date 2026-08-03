@@ -13,7 +13,12 @@ create or replace function public.create_planned_match(
   p_court_type public.court_type default null,
   -- optionele idempotentie-sleutel (#462): een client-gegenereerde token maakt
   -- het opnieuw afspelen van een offline gequeuede match veilig
-  p_client_token uuid default null
+  p_client_token uuid default null,
+  -- optionele drankje-inzet (#1004): slug uit de drankkaart + aantal per
+  -- winnaar. Achteraf wijzigbaar via set_match_wager, zolang de match nog niet
+  -- begonnen is.
+  p_wager_drink text default null,
+  p_wager_drink_qty smallint default 1
 )
 returns uuid
 language plpgsql
@@ -66,11 +71,15 @@ begin
 
   insert into public.matches (
     team_a_id, team_b_id, status, played_at, created_by, group_id, set_scores, format,
-    court_type, client_token
+    court_type, client_token, wager_drink, wager_drink_qty
   )
   values (
     v_team_a, v_team_b, 'scheduled', p_played_at, v_uid, p_group_id, p_set_scores, v_format,
-    p_court_type, p_client_token
+    p_court_type, p_client_token,
+    -- Zonder drankje heeft een aantal geen betekenis; de kolom is not null, dus
+    -- val terug op 1 in plaats van de check te laten struikelen over een null.
+    p_wager_drink,
+    case when p_wager_drink is null then 1 else coalesce(p_wager_drink_qty, 1) end
   )
   -- Idempotente replay (#462): een tweede insert met dezelfde token botst op de
   -- partiële unieke index en voegt niets in (RETURNING geeft dan geen rij).
@@ -91,4 +100,4 @@ begin
 end;
 $$;
 
-grant execute on function public.create_planned_match(uuid, uuid, uuid, uuid, timestamptz, uuid, jsonb, public.court_type, uuid) to authenticated;
+grant execute on function public.create_planned_match(uuid, uuid, uuid, uuid, timestamptz, uuid, jsonb, public.court_type, uuid, text, smallint) to authenticated;

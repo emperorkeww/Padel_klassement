@@ -817,6 +817,16 @@
   border: 1px solid var(--line);
   color: var(--ink-soft);
 }
+/* Drankje-inzet onder de uitslag (#1004): de openstaande rekening van de
+   avond, in het dorst-amber van de traktatie-tegel. */
+.fmatch__traktatie {
+  margin: 0;
+  padding: 0 var(--sp-3) var(--sp-3);
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--dorst);
+}
 
 /* Filterchips als losse pills (mockup-layout, #232): één scrollrij. */
 .feed__filterbar {
