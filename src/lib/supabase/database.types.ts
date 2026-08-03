@@ -540,29 +540,6 @@ export type Database = {
           },
         ]
       }
-      match_lef_notices: {
-        Row: {
-          match_id: string
-          sent_at: string
-        }
-        Insert: {
-          match_id: string
-          sent_at?: string
-        }
-        Update: {
-          match_id?: string
-          sent_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "match_lef_notices_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: true
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       match_jokers: {
         Row: {
           created_at: string
@@ -629,6 +606,29 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_lef_notices: {
+        Row: {
+          match_id: string
+          sent_at: string
+        }
+        Insert: {
+          match_id: string
+          sent_at?: string
+        }
+        Update: {
+          match_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lef_notices_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
             referencedColumns: ["id"]
           },
         ]
@@ -2657,6 +2657,7 @@ export const Constants = {
   public: {
     Enums: {
       court_type: ["binnen", "buiten", "panorama", "muur"],
+      joker_type: ["schild", "dubbel_of_niets", "wissel_van_kant"],
       match_format: ["1v1", "2v2"],
       match_status: ["scheduled", "in_progress", "completed", "cancelled"],
       roast_intensiteit: ["mild", "gemeen", "radioactief"],
