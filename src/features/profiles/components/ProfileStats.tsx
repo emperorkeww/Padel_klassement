@@ -12,6 +12,7 @@ import { HighlightTile } from "@/features/profiles/components/HighlightTile";
 import { PartnerSynergyMatrix } from "@/features/profiles/components/PartnerSynergyMatrix";
 import { PreferenceStats } from "@/features/profiles/components/PreferenceStats";
 import { DrankStats } from "@/features/profiles/components/DrankStats";
+import { JokerInventaris } from "@/features/profiles/components/JokerInventaris";
 import { MilestoneTimeline } from "@/features/profiles/components/MilestoneTimeline";
 import type { ProfileData, H2HRow } from "@/features/profiles/components/types";
 
@@ -36,6 +37,7 @@ export function ProfileStats({ d }: { d: ProfileData }) {
     tmap,
     pmap,
     id,
+    isMe,
     matchesLoading,
     h2h,
     nemesis,
@@ -325,6 +327,10 @@ export function ProfileStats({ d }: { d: ProfileData }) {
         {/* Drankje-inzet (#1004): verbergt zichzelf zonder inzetten, net als
             de blokken ernaast. */}
         <DrankStats matches={scoped} teams={tmap} playerId={id} />
+        {/* Jokervoorraad (#1003): alleen op je eigen profiel — andermans nog
+            liggende kaart verklapt wat er aan kan komen, en dat is precies wat
+            de matchkaart tot de aftrap afschermt. */}
+        <JokerInventaris matches={scoped} playerId={id} isMij={isMe} />
       </div>
 
       <MilestoneTimeline history={rhist} />

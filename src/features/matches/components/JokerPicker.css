@@ -1,0 +1,82 @@
+/* Jokerkeuze in de wizard (#1003), in dezelfde vorm als de andere velden van
+   stap 2. Het jokerblauw houdt hem herkenbaar naast de drankje-inzet (amber)
+   die er vlak boven staat. */
+
+.joker-picker {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.joker-picker__legend {
+  padding: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+.joker-picker__intro {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.joker-picker__lijst {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joker-picker__kaart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2);
+  border: 1px solid var(--joker-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.joker-picker__kaart:hover:not(:disabled) {
+  border-color: var(--joker);
+}
+.joker-picker__kaart--on {
+  background: var(--joker);
+  border-color: var(--joker);
+  color: var(--joker-ink);
+}
+.joker-picker:disabled .joker-picker__kaart {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.joker-picker__icoon {
+  flex: none;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.joker-picker__tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.joker-picker__effect {
+  font-size: var(--fs-sm);
+}
+.joker-picker__prijs {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+/* Op de gekozen (volle) kaart is --ink-soft niet meer afgestemd op de
+   achtergrond; daar wint de kaartinkt. */
+.joker-picker__kaart--on .joker-picker__prijs {
+  color: var(--joker-ink);
+  opacity: 0.85;
+}

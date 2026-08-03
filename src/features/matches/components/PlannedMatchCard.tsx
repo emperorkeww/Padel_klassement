@@ -44,6 +44,8 @@ import { serveerTeam } from "@/features/matches/serve";
 import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 import { getMatchStakes } from "@/features/matches/stakesApi";
+import { jokerIcoon, jokerLabel, zichtbareJokers } from "@/features/matches/jokers";
+import { getMatchJokers } from "@/features/matches/jokersApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
@@ -272,6 +274,21 @@ export function PlannedMatchCard({
   const lefInzetters = (kaartStakes.data ?? []).map((s) =>
     displayName(profiles[s.player_id]),
   );
+  // Joker op de kaartkop (#1003), langs dezelfde route als de lef-pil: vóór de
+  // aftrap alleen je eigen kaart plus de sociale kaarten van anderen (die
+  // veranderen hoe er gespeeld wordt), daarna alles. zichtbareJokers draagt die
+  // regel, zodat kop en tegel niet uit elkaar kunnen lopen.
+  const jokersRev = useCacheRevision("match-jokers");
+  const kaartJokers = useAsync(
+    () => (isGroupMatch ? getMatchJokers(m.id) : Promise.resolve([])),
+    [m.id, isGroupMatch, jokersRev],
+  );
+  const zichtbareKaarten = zichtbareJokers({
+    match: m,
+    jokers: kaartJokers.data ?? [],
+    myId,
+    now,
+  });
 
   const predictions = useAsync(
     () => (isGroupMatch ? getMatchPredictions(m.id) : Promise.resolve([])),
@@ -596,6 +613,24 @@ export function PlannedMatchCard({
                         : lefInzetters[0]
                     }`
                   : "jouw lef"}
+              </span>
+            )}
+            {/* Joker op de kop (#1003): dezelfde afweging als de lef-pil. Van
+                kant wisselen staat er dus meteen op — daar moet de tegenstander
+                zijn opstelling op aanpassen. */}
+            {zichtbareKaarten.length > 0 && (
+              <span
+                className="planned-card__jokerpil"
+                title={zichtbareKaarten
+                  .map(
+                    (j) =>
+                      `${displayName(profiles[j.player_id])}: ${jokerLabel(j.joker)}`,
+                  )
+                  .join(" · ")}
+              >
+                {zichtbareKaarten.length === 1
+                  ? `${jokerIcoon(zichtbareKaarten[0].joker)} ${jokerLabel(zichtbareKaarten[0].joker)}`
+                  : `🃏 ${zichtbareKaarten.length} jokers`}
               </span>
             )}
             {/* Drankje-inzet (#1004): waar om gespeeld wordt hoort iedereen te

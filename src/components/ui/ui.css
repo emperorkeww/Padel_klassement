@@ -1272,6 +1272,14 @@ textarea {
   color: var(--lef);
   font-weight: 700;
 }
+/* Joker op de matchkaart (#1003): welke kaart er lag en hoe het afliep, in het
+   jokerblauw — dezelfde kleur als de jokertegel, zodat het spel herkenbaar
+   blijft. Mag over meer regels: drie namen met hun kaart passen niet op één. */
+.match-card__joker {
+  color: var(--joker);
+  font-weight: 700;
+  white-space: normal;
+}
 /* Drankje-inzet op de matchkaart (#1004): wie wie nog een pint schuldig is,
    in het dorst-amber. Ingelost of vervallen leest hier ook terug — de tekst
    komt kant-en-klaar uit traktatieRegel(). */

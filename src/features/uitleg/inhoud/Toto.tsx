@@ -1,5 +1,6 @@
 import { predictionPoints } from "@/features/matches/predictions";
 import { MIN_GAMES, STAKE_FACTOR } from "@/features/matches/stakes";
+import { JOKERS } from "@/features/matches/jokers";
 import {
   BIEREN,
   DRANK_MAX_AANTAL,
@@ -15,7 +16,12 @@ import {
  *  De drankje-inzet (#1004) hangt er als derde blok onder: ook een inzet, maar
  *  eentje die aan de bar wordt afgerekend in plaats van in je rating. De
  *  aantallen komen uit drankkaart.ts, zodat een extra biertje op de kaart hier
- *  vanzelf meetelt. */
+ *  vanzelf meetelt.
+ *
+ *  De jokers (#1003) sluiten de rij: geen inzet maar een voorraad — één kaart
+ *  per maand die je op één match uitspeelt. De drie kaarten komen uit
+ *  jokers.ts (dezelfde preset die de tegel en de wizard tonen), zodat een
+ *  gewijzigde tekst hier niet apart bijgewerkt hoeft te worden. */
 export function Toto() {
   // Dezelfde functie die de punten ook echt toekent — geen tweede staffel.
   const staffel = [
@@ -103,6 +109,49 @@ export function Toto() {
       <p className="uitleg__noot">
         Dit is puur een weddenschap tussen jullie: aan je rating verandert er
         niets. De app houdt alleen de rekening bij — betalen doe je zelf.
+      </p>
+
+      <h3 className="uitleg__kop">🃏 Jokers — één kaart per maand</h3>
+      <p>
+        Bovenop je dagelijkse lef krijg je <strong>één joker per
+        kalendermaand</strong>. Je speelt hem vóór de aftrap uit op een geplande
+        groepsmatch waarin je zelf meedoet:
+      </p>
+      <ul className="uitleg__lijst-kaal">
+        {JOKERS.map((kaart) => (
+          <li key={kaart.id}>
+            <strong>
+              {kaart.icoon} {kaart.label}
+            </strong>{" "}
+            — {kaart.effect} {kaart.prijs}
+          </li>
+        ))}
+      </ul>
+      <p>
+        Dat het schild ook je winst afneemt is geen fout: een bescherming die
+        alleen uitkeert en nooit iets kost, zou je elke maand blind opspelen en
+        het hele klassement laten oplopen. Zo blijft het een keuze.
+      </p>
+      <ul className="uitleg__lijst-kaal">
+        <li>
+          Schild en dubbel-of-niets kunnen pas vanaf{" "}
+          <strong>{MIN_GAMES} matches</strong>; van kant wisselen mag altijd,
+          want dat raakt je rating niet.
+        </li>
+        <li>
+          <strong>Niet stapelen:</strong> op een match waar je lef al staat kan
+          er geen rating-joker meer bij.
+        </li>
+        <li>
+          Tot de aftrap kun je hem wisselen of intrekken. Daarna is de kaart
+          verspeeld — en op de eerste van de volgende maand ligt er een nieuwe.
+        </li>
+      </ul>
+      <p className="uitleg__noot">
+        Je schild of dubbel-of-niets blijft geheim tot de aftrap, net als je lef.
+        Van kant wisselen ziet iedereen meteen: daar moeten je tegenstanders hun
+        opstelling op aanpassen. Bovenaan het scherm zie je aan het 🃏 of je
+        kaart van deze maand nog klaarligt.
       </p>
     </>
   );

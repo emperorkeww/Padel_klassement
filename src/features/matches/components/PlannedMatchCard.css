@@ -56,6 +56,17 @@
 /* Lef op de kaartkop (#981): zelfde pilvorm als de deadline, in het
    lef-violet. Vóór de aftrap ("jouw lef") open; vanaf de onthulling gevuld,
    zodat "wie had er lef" ook op een dichte kaart in één oogopslag leest. */
+/* Jokerpil op de kaartkop (#1003): welke kaart er ligt, zonder uitklappen. */
+.planned-card__jokerpil {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--joker-line);
+  border-radius: 999px;
+  background: var(--joker-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--joker);
+  white-space: nowrap;
+}
 .planned-card__lefpil {
   padding: 2px var(--sp-2);
   border: 1px solid var(--lef-line);
