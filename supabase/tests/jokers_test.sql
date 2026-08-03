@@ -477,7 +477,7 @@ select throws_ok(
   $$insert into public.match_jokers (match_id, player_id, group_id, joker)
     values ('3a000000-0000-0000-0000-00000000ef02','3a000000-0000-0000-0000-000000000311',
             '3a000000-0000-0000-0000-0000000000f3','wissel_van_kant')$$,
-  '23505',
+  '23505', null,
   'een tweede kaart in dezelfde maand botst op het maandtegoed');
 
 -- Anti-stapelen, beide richtingen. g3 zet eerst zijn lef in.
