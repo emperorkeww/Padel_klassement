@@ -997,13 +997,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "matches_wager_settled_by_fkey"
-            columns: ["wager_settled_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "matches_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1064,6 +1057,34 @@ export type Database = {
             columns: ["team_b_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2149,6 +2170,16 @@ export type Database = {
       }
       _can_add_player: {
         Args: { p_group_id: string; p_player: string; p_uid: string }
+        Returns: boolean
+      }
+      _can_manage_wager: {
+        Args: {
+          p_created_by: string
+          p_group_id: string
+          p_team_a: string
+          p_team_b: string
+          p_uid: string
+        }
         Returns: boolean
       }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
