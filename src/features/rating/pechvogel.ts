@@ -1,6 +1,6 @@
 // Pechvogel-meter (#1005): client-side evenknie van de databank-logica.
 // NIPT_MARGE spiegelt public._is_nipt, PECHMETER_DOEL en TROOST_MAX spiegelen
-// _troost_delta (supabase/schemas/functions/33_pechvogel.sql).
+// _troost_delta (supabase/schemas/functions/34_pechvogel.sql).
 //
 // De databank blijft de enige die de demper uitkeert; dit bestand bestaat zodat
 // het profiel kan tonen hoe vol de meter staat, met exact dezelfde telling als

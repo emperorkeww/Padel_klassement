@@ -1,6 +1,6 @@
 -- #1005 Pechvogel-meter: drie nipte nederlagen op rij leveren een demper op het
 -- ratingverlies van de derde. Spiegel van
--- supabase/schemas/functions/33_pechvogel.sql (detectie + demper),
+-- supabase/schemas/functions/34_pechvogel.sql (detectie + demper),
 -- supabase/schemas/functions/09_ratings.sql (wiring in de Elo-kern),
 -- supabase/schemas/tables/08_ratings.sql (kolom) en
 -- supabase/schemas/functions/29_rating_history.sql (lees-RPC).
