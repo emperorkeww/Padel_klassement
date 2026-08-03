@@ -72,6 +72,20 @@
   color: var(--lef-ink);
 }
 
+/* Drankje-inzet op de kaartkop (#1004): zelfde pilvorm, in het dorst-amber.
+   Waar om gespeeld wordt is geen geheim, dus deze staat er meteen — anders dan
+   de lef-pil, die pas na de aftrap onthult. */
+.planned-card__inzetpil {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--dorst-line);
+  border-radius: 999px;
+  background: var(--dorst-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--dorst);
+  white-space: nowrap;
+}
+
 /* Gedeelde winkansbalk tussen de twee teamrijen: één feit, één balk. */
 .planned-card__prob {
   display: grid;

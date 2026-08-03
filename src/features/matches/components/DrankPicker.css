@@ -1,0 +1,133 @@
+/* Drankje-inzet kiezen (#1004). Amber van de --dorst-familie, zodat de
+   traktatie zich onderscheidt van het groene toto-accent en het violette lef. */
+
+.drank-picker {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.drank-picker__label {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drank-picker__intro,
+.drank-picker__leeg {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.drank-picker__search {
+  max-width: 22rem;
+}
+
+.drank-groep {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.drank-groep__titel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.drank-groep__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.drank-chip {
+  min-height: 40px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.drank-chip:hover:not(:disabled) {
+  border-color: var(--dorst-line);
+  box-shadow: var(--shadow-sm);
+}
+.drank-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.drank-chip.is-active {
+  border-color: var(--dorst);
+  background: var(--dorst-soft);
+  color: var(--dorst);
+  font-weight: 700;
+}
+
+.drank-picker__meer {
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--dorst);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Het aantal verschijnt pas ná een keuze; zonder drankje zegt het niets. */
+.drank-picker__aantal {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border: 1px solid var(--dorst-line);
+  border-radius: var(--radius-sm);
+  background: var(--dorst-soft);
+}
+
+.drank-picker__aantal-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drank-picker__stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.drank-picker__step {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--dorst-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--dorst);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+.drank-picker__step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.drank-picker__aantal-waarde {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.drank-picker__samenvatting {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft-strong);
+}

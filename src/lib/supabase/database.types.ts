@@ -945,6 +945,10 @@ export type Database = {
           status: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink: string | null
+          wager_drink_qty: number
+          wager_settled_at: string | null
+          wager_settled_by: string | null
           winner_team_id: string | null
         }
         Insert: {
@@ -963,6 +967,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Update: {
@@ -981,9 +989,20 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id?: string
           team_b_id?: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "matches_created_by_fkey"
             columns: ["created_by"]
@@ -2203,6 +2222,8 @@ export type Database = {
           p_group_id?: string
           p_played_at?: string
           p_set_scores?: Json
+          p_wager_drink?: string
+          p_wager_drink_qty?: number
         }
         Returns: string
       }
@@ -2350,6 +2371,14 @@ export type Database = {
       }
       set_match_group: {
         Args: { p_group_id?: string; p_match_id: string }
+        Returns: undefined
+      }
+      set_match_wager: {
+        Args: { p_drink: string; p_match_id: string; p_qty?: number }
+        Returns: undefined
+      }
+      settle_match_wager: {
+        Args: { p_match_id: string; p_settled?: boolean }
         Returns: undefined
       }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }

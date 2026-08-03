@@ -42,6 +42,7 @@ import {
 } from "@/features/matches/api";
 import { serveerTeam } from "@/features/matches/serve";
 import { lefGestart, stakeSwing } from "@/features/matches/stakes";
+import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 import { getMatchStakes } from "@/features/matches/stakesApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
@@ -594,6 +595,18 @@ export function PlannedMatchCard({
                         : lefInzetters[0]
                     }`
                   : "jouw lef"}
+              </span>
+            )}
+            {/* Drankje-inzet (#1004): waar om gespeeld wordt hoort iedereen te
+                zien zonder de kaart uit te klappen — net als de lef-pil
+                hierboven. Wijzigen kan op de matchpagina. */}
+            {m.wager_drink && (
+              <span
+                className="planned-card__inzetpil"
+                title="De verliezers trakteren de winnaars"
+              >
+                {drankIcon(m.wager_drink)}{" "}
+                {m.wager_drink_qty ?? 1}× {drankLabel(m.wager_drink)}
               </span>
             )}
           </span>

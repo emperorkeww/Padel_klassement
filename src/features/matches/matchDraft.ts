@@ -22,6 +22,10 @@ export type MatchDraft = {
   sets: SetPair[];
   when: string;
   courtType: CourtType | null;
+  /** Drankje-inzet (#1004); optioneel omdat concepten van vóór die feature
+   *  nog in localStorage kunnen staan. */
+  wagerDrink?: string | null;
+  wagerQty?: number;
   repeat: boolean;
   repeatWeeks: number;
   pickedGroupId: string;
@@ -35,7 +39,8 @@ function key(mode: NewMatchMode, groupId: string | null): string {
 }
 
 /** Een concept is pas het bewaren/hervatten waard als er echt iets is ingevuld:
- *  minstens één speler, een score, een tijdstip, een baantype of een set-stand. */
+ *  minstens één speler, een score, een tijdstip, een baantype, een drankje-inzet
+ *  of een set-stand. */
 export function isDraftMeaningful(d: MatchDraft): boolean {
   return (
     d.teamA.length > 0 ||
@@ -44,6 +49,7 @@ export function isDraftMeaningful(d: MatchDraft): boolean {
     d.scoreB !== "" ||
     d.when !== "" ||
     d.courtType !== null ||
+    (d.wagerDrink ?? null) !== null ||
     d.sets.some((s) => s.a !== "" || s.b !== "")
   );
 }

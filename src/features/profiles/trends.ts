@@ -1,6 +1,7 @@
 import type { CourtType, Match, Team } from "@/types";
-import { headToHead, outcomeFor } from "@/features/rating/results";
+import { headToHead, outcomeFor, playersOf } from "@/features/rating/results";
 import { COURT_TYPES, type CourtTypeInfo } from "@/features/matches/courtType";
+import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 
 // Trends voor het spelersprofiel (#58): win% per maand, sterkste/lastigste
 // tegenstander en de beste weekdag — allemaal afgeleid uit de al opgehaalde
@@ -232,4 +233,81 @@ export function courtPreference(
       .filter((c) => c.played >= minGames)
       .sort((a, b) => b.rate - a.rate || b.played - a.played)[0] ?? null;
   return { courts, best };
+}
+
+export interface DrankTrend {
+  slug: string;
+  label: string;
+  icon: string;
+  /** Aantal consumpties dat deze speler op dit drankje won. */
+  aantal: number;
+  /** Aantal matches waarin dat gebeurde. */
+  matches: number;
+}
+
+export interface DrankStats {
+  /** Gewonnen consumpties per drankje, hoogste eerst. */
+  gewonnen: DrankTrend[];
+  /** Het drankje waar deze speler er het meest van won, of null. */
+  favoriet: DrankTrend | null;
+  /** Totaal aantal gewonnen consumpties. */
+  totaalGewonnen: number;
+  /** Totaal aantal consumpties dat deze speler moest trakteren. */
+  totaalGetrakteerd: number;
+}
+
+/**
+ * Drankje-inzet op het profiel (#1004): "meest gewonnen biertje" en "totaal
+ * getrakteerde consumpties". Alleen afgeronde matches mét inzet én een winnaar
+ * tellen mee — bij gelijkspel vervalt de traktatie.
+ *
+ * Getrakteerd wordt geteld als aantal × het aantal winnaars, want de inzet is
+ * "N per winnaar": een verloren dubbelspel kost je twee consumpties, een
+ * verloren single één. Er wordt niet gekeken naar wager_settled_at: dat vinkje
+ * zegt of het glas al aan de bar geschonken is, niet of je de weddenschap
+ * verloor. De statistiek gaat over het tweede.
+ */
+export function drankTraktaties(
+  matches: Match[],
+  teams: Record<string, Team>,
+  playerId: string,
+): DrankStats {
+  const perDrank = new Map<string, { aantal: number; matches: number }>();
+  let totaalGetrakteerd = 0;
+  for (const m of matches) {
+    if (!m.wager_drink) continue;
+    const o = outcomeFor(m, teams, playerId);
+    // "D" hoort hier ook bij: gelijkspel = inzet vervallen.
+    if (o !== "W" && o !== "L") continue;
+    const perWinnaar = Math.max(1, m.wager_drink_qty ?? 1);
+    if (o === "W") {
+      const s = perDrank.get(m.wager_drink) ?? { aantal: 0, matches: 0 };
+      s.aantal += perWinnaar;
+      s.matches++;
+      perDrank.set(m.wager_drink, s);
+    } else {
+      // Het winnende team betaalt niets; jij betaalt elk van hen. 1v1 kent één
+      // winnaar, 2v2 twee — de teamgrootte lezen we uit het team zelf, zodat
+      // een half gevuld team (gast verwijderd) niet stiekem dubbel telt.
+      const winnaars = m.winner_team_id
+        ? playersOf(teams[m.winner_team_id]).length || 1
+        : 1;
+      totaalGetrakteerd += perWinnaar * winnaars;
+    }
+  }
+  const gewonnen: DrankTrend[] = [...perDrank.entries()]
+    .map(([slug, s]) => ({
+      slug,
+      label: drankLabel(slug),
+      icon: drankIcon(slug),
+      aantal: s.aantal,
+      matches: s.matches,
+    }))
+    .sort((a, b) => b.aantal - a.aantal || a.label.localeCompare(b.label));
+  return {
+    gewonnen,
+    favoriet: gewonnen[0] ?? null,
+    totaalGewonnen: gewonnen.reduce((n, d) => n + d.aantal, 0),
+    totaalGetrakteerd,
+  };
 }

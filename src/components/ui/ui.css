@@ -1272,6 +1272,14 @@ textarea {
   color: var(--lef);
   font-weight: 700;
 }
+/* Drankje-inzet op de matchkaart (#1004): wie wie nog een pint schuldig is,
+   in het dorst-amber. Ingelost of vervallen leest hier ook terug — de tekst
+   komt kant-en-klaar uit traktatieRegel(). */
+.match-card__traktatie {
+  color: var(--dorst);
+  font-weight: 700;
+  white-space: normal;
+}
 
 /* Compacte badge-strook (gelijk / ronde). */
 .match-card__tags {
