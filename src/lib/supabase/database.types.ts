@@ -2120,6 +2120,7 @@ export type Database = {
           p_factor: number
           p_match: string
           p_player: string
+          p_troost: number
           p_ts: string
         }
         Returns: undefined
@@ -2145,8 +2146,13 @@ export type Database = {
         Args: { p_guest: string; p_player: string }
         Returns: string
       }
+      _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
+        Returns: number
+      }
+      _troost_delta: {
+        Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
