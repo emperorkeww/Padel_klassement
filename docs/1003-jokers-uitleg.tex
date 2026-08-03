@@ -1,0 +1,194 @@
+% Spelersuitleg bij de maandelijkse jokers (#1003), verteld door Coach Rudy.
+%
+% Bouwen:  ./scripts/build-uitleg-pdf.sh
+% Dat script zet de webp-avatars uit src/features/coach/components/rudi_avatars
+% om naar png en roept daarna xelatex aan — LaTeX leest zelf geen webp.
+%
+% Bewust zonder emoji: XeLaTeX kan de kleuren-emojifont van macOS niet
+% insluiten. De kleuren spiegelen de app: --lef (violet) voor het risicospel van
+% de spelers, --coach (Rudy's warme amber) en --accent (smaragd) uit
+% src/app/index.css. De jokers krijgen bij de bouw hun eigen familie; tot die er
+% is volgt dit blad het lef-violet, want een joker hoort naast de lef-tip thuis.
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage[dutch]{babel}
+\usepackage[margin=1.1cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{parskip}
+\setlength{\parskip}{3pt}
+\usepackage{tikz}
+\usepackage{graphicx}
+
+\tcbuselibrary{skins}
+
+\setmainfont{Avenir Next}
+% Iets strakkere regelval: zo past de hele uitleg op één blad. Krapper dan het
+% blad van #1004 (0,97), want hier staan er drie jokerkaarten naast elkaar.
+\linespread{0.94}
+
+% Kleuren uit src/app/index.css — dezelfde families als in de app zelf.
+\definecolor{lef}{HTML}{6F56A8}        % --lef: het risicospel van de spelers
+\definecolor{lefsoft}{HTML}{EFEAF8}    % --lef-soft
+\definecolor{lefline}{HTML}{D4C9EC}    % --lef-line
+\definecolor{coachsoft}{HTML}{FDF0DC}  % --coach-soft
+\definecolor{coachline}{HTML}{F0D3A3}  % --coach-line
+\definecolor{coachdiep}{HTML}{5A3410}  % --coach-diep
+\definecolor{inkt}{HTML}{1A2620}       % --ink
+\definecolor{inktzacht}{HTML}{586A60}  % --ink-soft-strong
+\definecolor{smaragd}{HTML}{0C8A5F}    % --accent
+\definecolor{dorst}{HTML}{9A6010}      % --dorst: de traktatie (#1004)
+
+\color{inkt}
+\pagestyle{empty}
+\setlist[itemize]{leftmargin=1.2em,itemsep=2.5pt,topsep=3pt}
+
+\newcommand{\kop}[1]{%
+  \vspace{0.35em}%
+  {\color{lef}\large\bfseries #1}\par\vspace{0.1em}%
+}
+
+% Rudy's ronde avatar. De bron is vierkant met zwarte hoeken, dus wegknippen
+% tot een cirkel — net als .coach-avatar in de app. #2 is de diameter; de
+% straal is de helft daarvan, vandaar \dimexpr en niet ,,2#2'' (dat plakt de
+% cijfers aan elkaar tot 21cm).
+\newcommand{\rudikop}[2][rudi-portret]{%
+  \begin{tikzpicture}
+    \clip (0,0) circle (\dimexpr#2/2\relax);
+    \node[inner sep=0pt] at (0,0) {\includegraphics[width=#2]{#1}};
+  \end{tikzpicture}%
+}
+
+% Eén sneer van de coach: avatar links, tekstballon rechts, in het coach-amber.
+\newcommand{\rudi}[2][rudi-portret]{%
+  \begin{tcolorbox}[colback=coachsoft,colframe=coachline,boxrule=1pt,arc=6pt,
+    left=8pt,right=10pt,top=5pt,bottom=5pt]
+    \noindent
+    \begin{minipage}[c]{1.3cm}\rudikop[#1]{1.15cm}\end{minipage}%
+    \begin{minipage}[c]{\dimexpr\linewidth-1.4cm\relax}
+      {\color{coachdiep}\itshape #2}
+    \end{minipage}
+  \end{tcolorbox}%
+}
+
+% Eén jokerkaart: naam, ondertitel en wat hij doet, in een eigen kader.
+\newcommand{\jokerkaart}[3]{%
+  \begin{tcolorbox}[colback=white,colframe=lefline,boxrule=1pt,arc=6pt,
+    left=9pt,right=9pt,top=5pt,bottom=5pt]
+    {\color{lef}\bfseries #1}\par
+    {\color{inktzacht}\footnotesize #2}\par\vspace{2pt}
+    #3
+  \end{tcolorbox}%
+}
+
+\begin{document}
+
+% --- Titelblok -------------------------------------------------------------
+\begin{tcolorbox}[colback=lefsoft,colframe=lefline,boxrule=1pt,
+  arc=6pt,left=12pt,right=12pt,top=7pt,bottom=7pt]
+  \noindent
+  \begin{minipage}[c]{\dimexpr\linewidth-2.6cm\relax}
+    {\color{lef}\LARGE\bfseries Nieuw: uw geheim wapen}\par\vspace{3pt}
+    {\color{inktzacht}\'E\'en joker per maand. U kiest zelf welke, en op welke
+    match u hem laat vallen.}
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[c]{2.3cm}
+    \hfill\rudikop{2.1cm}
+  \end{minipage}
+\end{tcolorbox}
+
+\rudi{Elke maand krijgt u van mij \'e\'en kaart in handen. \'E\'en. Niet drie,
+niet ,,nog eentje want vorige week ging het niet door''. Sommigen sparen hem tot
+de laatste speeldag; de rest speelt hem op een dinsdag tegen iemand die net
+leert serveren. Ik noteer allebei.}
+
+% --- Wat is het ------------------------------------------------------------
+\kop{Waar gaat dit over?}
+
+Bovenop uw dagelijkse lef-tip krijgt u vanaf nu \textbf{\'e\'en joker per
+kalendermaand}. U speelt hem \emph{v\'o\'or} de aftrap uit op een geplande
+groepsmatch waarin u zelf meedoet, en hij verandert de inzet of de
+omstandigheden van die ene partij. Ongebruikt vervalt hij op de eerste van de
+volgende maand --- hij rolt niet door.
+
+% --- De drie kaarten -------------------------------------------------------
+\kop{De drie kaarten}
+
+\begin{multicols}{3}
+\jokerkaart{Schild}{Deze match telt niet}{Verliest u, dan blijft uw rating
+staan. \textbf{Wint u ook.} Uw partner en uw tegenstanders spelen gewoon door
+voor hun volle mutatie --- alleen u staat er die partij naast.}
+
+\columnbreak
+
+\jokerkaart{Dubbel of niets}{Uw mutatie maal twee}{Precies de lef-tip, maar
+betaald uit uw joker in plaats van uit uw dagtegoed. U kunt dus \'e\'en dag per
+maand \textbf{twee keer} dubbel spelen. Winst telt dubbel, verlies ook.}
+
+\columnbreak
+
+\jokerkaart{Wissel van kant}{De tegenstanders draaien om}{Forehand naar
+backhand: uw tegenstanders spelen deze match aan de andere kant van het veld.
+Alleen in het dubbelspel, en het kost geen enkel ratingpunt --- alleen hun
+houvast.}
+\end{multicols}
+
+\rudi[rudi-gemeen]{Ja, het schild neemt ook uw winst af. Nee, dat is geen fout.
+Een verzekering die alleen uitkeert en nooit iets kost, heet een cadeau --- en
+dan speelt iedereen hem elke maand blind op. Nu moet u kiezen, en kiezen is
+precies waar de meesten van u niet goed in zijn.}
+
+% --- Hoe ------------------------------------------------------------------
+\kop{Zo speelt u hem uit}
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=3pt,topsep=3pt]
+  \item \textbf{Plan de match} (of open een ronde die de app zelf inplande).
+        Jokers werken alleen op groepsmatches met een starttijd.
+  \item \textbf{Tik op de jokertegel} op de wedstrijdkaart, naast de lef-tip:
+        daar staat of uw kaart van deze maand nog vrij is.
+  \item \textbf{Bedenk u gerust} --- tot de eerste bal kunt u hem weer
+        intrekken. Daarna ligt hij vast en is hij verbruikt.
+\end{enumerate}
+
+% --- Regels ---------------------------------------------------------------
+\kop{De spelregels}
+
+\begin{tcolorbox}[colback=white,colframe=lefline,boxrule=1pt,arc=6pt,
+  left=11pt,right=11pt,top=6pt,bottom=6pt]
+\begin{itemize}
+  \item \textbf{E\'en joker per kalendermaand.} Per speler, over al uw groepen
+        samen. Op de eerste van de maand ligt er een verse kaart klaar.
+  \item \textbf{Schild en Dubbel of niets pas vanaf tien matches.} Zolang uw
+        rating nog inloopt, valt er niets zinnigs te verdubbelen of af te
+        schermen.
+  \item \textbf{Niemand ziet uw kaart v\'o\'or de aftrap} --- behalve
+        \emph{Wissel van kant}, die moet iedereen weten. De rest wordt onthuld
+        zodra de match begint, zodat niemand kan meeliften.
+  \item \textbf{Niet stapelen.} Zet u Dubbel of niets, dan kan de gewone
+        lef-tip er op diezelfde match niet meer bij.
+  \item \textbf{Gelijkspel?} Dan telt Dubbel of niets niet mee --- een
+        onbesliste partij is geen gewonnen gok. Het schild blijft wel staan.
+\end{itemize}
+\end{tcolorbox}
+
+% --- Zichtbaarheid --------------------------------------------------------
+\kop{Waar ziet u het terug?}
+
+Op de \textbf{wedstrijdkaart} en in de \textbf{feed} draagt de match het merk van
+de gespeelde joker, met wie hem uitspeelde en hoe het afliep. Op uw
+\textbf{profiel} staat uw voorraad en wat u de vorige maanden hebt uitgespeeld.
+
+\rudi[rudi-gemeen]{En ja, dat blijft staan. Ook die keer dat u dubbel inzette
+tegen het sterkste koppel van de club omdat u ,,een goed gevoel'' had. Uw goede
+gevoel heeft geen rating. Uw tegenstanders wel.}
+
+\begin{center}
+{\color{smaragd}\bfseries \'E\'en kaart, \'e\'en maand, uw keuze ---}
+{\color{dorst}\bfseries en zet er meteen een drankje bij.}
+\end{center}
+
+\end{document}

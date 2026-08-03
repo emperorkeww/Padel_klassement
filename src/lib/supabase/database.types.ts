@@ -563,6 +563,76 @@ export type Database = {
           },
         ]
       }
+      match_jokers: {
+        Row: {
+          created_at: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          joker?: Database["public"]["Enums"]["joker_type"]
+          match_id?: string
+          period_month?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_jokers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_net_touches: {
         Row: {
           aantal: number
@@ -1658,6 +1728,7 @@ export type Database = {
           bounty_delta: number
           delta: number
           id: string
+          joker: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
@@ -1669,6 +1740,7 @@ export type Database = {
           bounty_delta?: number
           delta: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
@@ -1680,6 +1752,7 @@ export type Database = {
           bounty_delta?: number
           delta?: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id?: string
           played_at?: string
           player_id?: string
@@ -2416,6 +2489,7 @@ export type Database = {
     }
     Enums: {
       court_type: "binnen" | "buiten" | "panorama" | "muur"
+      joker_type: "schild" | "dubbel_of_niets" | "wissel_van_kant"
       match_format: "1v1" | "2v2"
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       roast_intensiteit: "mild" | "gemeen" | "radioactief"

@@ -8,6 +8,7 @@ grant select on table
   public.group_members,
   public.groups,
   public.guest_claims,
+  public.match_jokers,
   public.match_net_touches,
   public.match_predictions,
   public.match_smoesjes,
