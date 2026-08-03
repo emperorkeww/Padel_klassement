@@ -1077,6 +1077,69 @@ describe("buildFeed — bounty (#805)", () => {
   });
 });
 
+describe("buildFeed — pechvogel-meter (#1005)", () => {
+  /** rating_history-punt met een troostdemper erin. */
+  const punt = (
+    matchId: string,
+    at: string,
+    before: number,
+    after: number,
+    troost?: number,
+  ): RatingPoint =>
+    ({
+      match_id: matchId,
+      rating_before: before,
+      rating_after: after,
+      delta: after - before,
+      played_at: at,
+      ...(troost == null ? {} : { troost_delta: troost }),
+    }) as RatingPoint;
+
+  it("wijst de pechvogel aan uit de positieve troost_delta", () => {
+    const at = "2026-08-10T18:00:00Z";
+    const m = match(at);
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p3",
+      histories: {
+        p1: [punt(m.id, at, 1000, 1012)],
+        p2: [punt(m.id, at, 1000, 1012)],
+        // p3 en p4 gingen voor de derde keer op rij nipt onderuit.
+        p3: [punt(m.id, at, 1000, 992, 4)],
+        p4: [punt(m.id, at, 1000, 992, 4)],
+      },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights).toContainEqual({
+      type: "pechvogel",
+      playerId: "p3",
+      amount: 4,
+    });
+    // Je eigen demper staat er los bij, net als de lef-factor en de bounty:
+    // hij verklaart waarom dit verlies zachter aankwam dan dat van anderen.
+    expect(matchEvent.myTroost).toBe(4);
+  });
+
+  it("zwijgt als er niets gedempt is", () => {
+    const at = "2026-08-10T18:00:00Z";
+    const m = match(at);
+    const feed = buildFeed({
+      matches: [m],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      histories: { p1: [punt(m.id, at, 1000, 988)] },
+    });
+    const matchEvent = feed.find((e) => e.kind === "match");
+    if (!matchEvent) throw new Error("verwacht match-event");
+    expect(matchEvent.highlights.some((h) => h.type === "pechvogel")).toBe(false);
+    expect(matchEvent.myTroost).toBeUndefined();
+  });
+});
+
 // Acht keer "X en Y zijn nu vrienden" met hetzelfde tijdstip verdrinkt de rest
 // van de feed (#944).
 describe("bundelVriendschappen", () => {

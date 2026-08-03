@@ -6,6 +6,7 @@ import type { TierProgress } from "@/features/rating/tiers";
 import type { Regeerduur } from "@/features/standings/dictatorApi";
 import type { Editie } from "@/features/standings/edities";
 import type { Upset } from "@/features/matches/upset";
+import type { PechMeter } from "@/features/rating/pechvogel";
 import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "@/features/rating/components/RatingChart";
 
@@ -67,6 +68,11 @@ export interface ProfileData {
   isDictator: boolean;
   /** Regeerduur-samenvatting (#545); null als de speler nooit dictator was. */
   regeerduur: Regeerduur | null;
+  /** Stand van de Pechvogel-meter (#1005). Bewust over de volledige historie,
+   *  los van het seizoensfilter: de meter gaat over hoe het nú loopt, en een
+   *  kwartaalgrens midden in een pechreeks zou hem onterecht leegvegen.
+   *  Optioneel zodat een halfgevulde ProfileData (tests) blijft werken. */
+  pechMeter?: PechMeter;
   /** Speciale editie op de hero-kaart (#497/#621): Icon (Big Daddy) of
    *  In-Form (speler van de week) — dezelfde regels als het klassement,
    *  zodat één speler overal dezelfde kaart draagt. Optioneel zodat een

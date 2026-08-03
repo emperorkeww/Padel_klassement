@@ -10,7 +10,11 @@ export const REUZENDODER_ZWAAR_DREMPEL = 150;
  *  dan een volledige 6-0 (dat is al Broodje bal): 6-2 / 6-1 telt ook. */
 export const MONSTERZEGE_DREMPEL = 4;
 
-/** Verliesreeks die de (ludieke) Pechvogel-badge oplevert. */
+/** Verliesreeks die de (ludieke) Pechvogel-badge oplevert. Let op: dit is de
+ *  oude verzamelbadge voor vijf nederlagen op rij, níét de Pechvogel-meter
+ *  (#1005). Die telt alleen nípte nederlagen en levert de badge "Nét niet" op;
+ *  zijn drempel staat in features/rating/pechvogel.ts, want de databank rekent
+ *  met hetzelfde getal. */
 export const PECHVOGEL_DREMPEL = 5;
 
 /** Verliezen op rij waarna een winst als "comeback" telt. */

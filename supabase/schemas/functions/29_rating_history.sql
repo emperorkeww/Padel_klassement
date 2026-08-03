@@ -43,17 +43,21 @@ returns table (
   -- Bounty-verschuiving (#805): positief voor wie een bounty claimde, negatief
   -- voor de verslagen drager. Zit eveneens al in delta verwerkt; hieruit
   -- reconstrueert de feed wie de reeks brak en voor hoeveel.
-  bounty_delta int
+  bounty_delta int,
+  -- Troostdemper van de Pechvogel-meter (#1005): positief bij de derde nipte
+  -- nederlaag op rij. Zit eveneens al in delta verwerkt; de feed legt er een
+  -- ongewoon zacht ▼-getal mee uit.
+  troost_delta int
 )
 language sql
 stable
 set search_path = ''
 as $$
   select h.player_id, h.match_id, h.rating_before, h.rating_after, h.delta,
-    h.played_at, h.stake_factor, h.bounty_delta
+    h.played_at, h.stake_factor, h.bounty_delta, h.troost_delta
   from (
     select r.player_id, r.match_id, r.rating_before, r.rating_after, r.delta,
-      r.played_at, r.stake_factor, r.bounty_delta,
+      r.played_at, r.stake_factor, r.bounty_delta, r.troost_delta,
       row_number() over (
         partition by r.player_id
         order by r.played_at desc, r.id desc

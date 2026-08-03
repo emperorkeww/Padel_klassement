@@ -1,4 +1,5 @@
 import { BOUNTY_EMOJI } from "@/features/rating/bounty";
+import { PECHVOGEL_EMOJI } from "@/features/rating/pechvogel";
 import type { FeedEvent, Highlight } from "./feedLogic";
 
 /** Ruim venster aan recente uitslagen om de feed uit te filteren. */
@@ -119,5 +120,7 @@ export function highlightText(
       return `${BOUNTY_EMOJI} ${name(h.carrierId)} verdedigt z'n bounty · nu ${h.pool}`;
     case "lef":
       return `🎲 ${name(h.playerId)} speelde met lef (x${h.factor}) · ${h.won ? "winst!" : "verlies"}`;
+    case "pechvogel":
+      return `${PECHVOGEL_EMOJI} Pechvogel-meter van ${name(h.playerId)} vol · +${h.amount} troost`;
   }
 }

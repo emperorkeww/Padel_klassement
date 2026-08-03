@@ -50,6 +50,7 @@ import {
 import { headToHead as onderlingeBalans, bestPartner } from "./headToHead";
 import { vsKaartVoor } from "./compare";
 import { deriveBadges } from "@/features/profiles/badges";
+import { pechMeter } from "@/features/rating/pechvogel";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { getPlayerPredictions } from "@/features/matches/predictionsApi";
 import { getPlayerNetTouches } from "@/features/matches/netTouchesApi";
@@ -294,6 +295,10 @@ export function PlayerProfile() {
     netrollers,
   };
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined, badgeExtras);
+  // Pechvogel-meter (#1005) over de volledige historie: hij gaat over hoe het
+  // nú loopt, en een seizoensgrens midden in een pechreeks zou hem onterecht
+  // leegvegen.
+  const meter = pechMeter(mlist, tmap, id);
   // Eerstvolgende (niet-behaalde) badge met telbare voortgang, het verst
   // gevorderd — voedt de "volgende badge"-highlight op Overzicht.
   const nextBadge =
@@ -529,6 +534,7 @@ export function PlayerProfile() {
     nextBadge,
     isDictator,
     regeerduur: regeerduur.data ?? null,
+    pechMeter: meter,
     editie,
     editieTekst,
     hasRating,
