@@ -26,7 +26,10 @@ export function Badges() {
       </p>
       <p className="uitleg__noot">
         Niet elke badge is een compliment. Sommige krijg je juist voor een
-        indrukwekkende reeks nederlagen, en die tellen net zo hard.
+        indrukwekkende reeks nederlagen, en die tellen net zo hard. Eentje is
+        zelfs tijdelijk: <strong>Nét niet</strong> staat op je profiel zolang je{" "}
+        <Link to={sectieHref("rating")}>Pechvogel-meter</Link> vol is, en
+        verdwijnt zodra je weer wint.
       </p>
     </>
   );

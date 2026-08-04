@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { coachOpmerking, coachStemming, type CoachCtx, KAMPIOEN } from "./coachFeed";
+import {
+  coachOpmerking,
+  coachStemming,
+  type CoachCtx,
+  KAMPIOEN,
+  PECHVOGEL_TROOST,
+  PECHVOGEL_TROOST_MILD,
+} from "./coachFeed";
 import { LOF } from "@/features/coach/roastTone";
 import type { FeedEvent, Highlight } from "@/features/feed/feedLogic";
 import type { Match, Profile, Team } from "@/types";
@@ -570,6 +577,61 @@ describe("Coach Rudy over de bounty (#805)", () => {
   it("kiest de gemene mood — leedvermaak, geen hype", () => {
     expect(coachStemming(geclaimd, () => "gemeen")).toBe("gemeen");
     expect(coachStemming(verdedigd, () => "gemeen")).toBe("gemeen");
+  });
+});
+
+describe("Coach Rudy over de Pechvogel-meter (#1005)", () => {
+  // matchStub laat team "ta" winnen, dus "tb" (p1/p2) is de verliezende kant.
+  const teams: Record<string, Team> = {
+    ta: { id: "ta", name: null, player1_id: "p3", player2_id: "p4", created_at: "" },
+    tb: { id: "tb", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },
+  };
+  const pechEvent = (highlights: Highlight[]): FeedEvent => ({
+    kind: "match",
+    at: "2026-08-10T18:00:00Z",
+    match: matchStub,
+    highlights,
+    myDelta: null,
+  });
+
+  const vol = pechEvent([{ type: "pechvogel", playerId: "p1", amount: 4 }]);
+
+  it("troost wie drie keer op rij nipt verloor", () => {
+    expect(PECHVOGEL_TROOST).toContain(coachOpmerking(vol, { ...ctx, teams }));
+  });
+
+  it("laat de sneer weg bij een verliezer met een schild", () => {
+    const beschermd: CoachCtx = {
+      intensiteitVoor: () => "radioactief",
+      profiles: { p1: { roast_schild: true } as Profile },
+      teams,
+    };
+    expect(PECHVOGEL_TROOST_MILD).toContain(coachOpmerking(vol, beschermd));
+  });
+
+  it("geeft de bounty voorrang — die is groter nieuws", () => {
+    const gemengd = pechEvent([
+      { type: "pechvogel", playerId: "p1", amount: 4 },
+      { type: "bounty", carrierId: "p1", amount: 8 },
+    ]);
+    const alleenBounty = pechEvent([{ type: "bounty", carrierId: "p1", amount: 8 }]);
+    expect(coachOpmerking(gemengd, { ...ctx, teams })).toBe(
+      coachOpmerking(alleenBounty, { ...ctx, teams }),
+    );
+  });
+
+  it("gaat vóór een gewone score-highlight", () => {
+    const gemengd = pechEvent([
+      { type: "score", label: "nagelbijter" },
+      { type: "pechvogel", playerId: "p1", amount: 4 },
+    ]);
+    expect(coachOpmerking(gemengd, { ...ctx, teams })).toBe(
+      coachOpmerking(vol, { ...ctx, teams }),
+    );
+  });
+
+  it("kiest de milde mood — dit is troost, geen leedvermaak", () => {
+    expect(coachStemming(vol, () => "gemeen")).toBe("mild");
   });
 });
 

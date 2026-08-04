@@ -11,6 +11,7 @@ import type { MatchRatings } from "@/features/groups/maandpias";
 import type { MatchPrediction } from "@/features/matches/predictions";
 import { valseProfeetReeks } from "./badges.toto";
 import { longestLossStreak, longestStreak, outcomeFor } from "@/features/rating/results";
+import { pechMeter } from "@/features/rating/pechvogel";
 import { verzamelFeiten } from "./badges.facts";
 import {
   chokeAantal,
@@ -90,6 +91,7 @@ export function deriveBadges(
   const misgetipt = valseProfeetReeks(matches, extras?.predictions);
   // Beste enkele match; 0 zonder netroller-data.
   const netrollers = Math.max(0, ...Object.values(extras?.netrollers ?? {}));
+  const meter = pechMeter(matches, teams, playerId);
 
   const ctx: BadgeContext = {
     matches,
@@ -110,6 +112,7 @@ export function deriveBadges(
     choke,
     misgetipt,
     netrollers,
+    pechMeter: meter,
   };
   return buildBadges(ctx);
 }

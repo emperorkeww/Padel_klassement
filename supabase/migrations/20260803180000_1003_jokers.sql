@@ -1,6 +1,6 @@
 -- #1003 Geheim wapen: één joker per kalendermaand. Spiegel van het nieuwe
 -- supabase/schemas/tables/24_match_jokers.sql en
--- supabase/schemas/functions/34_match_jokers.sql, plus de aanpassingen aan
+-- supabase/schemas/functions/35_match_jokers.sql, plus de aanpassingen aan
 -- tables/05_matches.sql (het enum), tables/08_ratings.sql (rating_history),
 -- functions/09_ratings.sql (de Elo-kern), functions/30_match_stakes.sql (de
 -- anti-stapel-check) en policies/zz_client_read_grants.sql; zie die bestanden
@@ -286,8 +286,12 @@ alter table public.rating_history
 
 -- _apply_rating krijgt er een parameter bij. create or replace zou een overload
 -- maken in plaats van een vervanging, dus eerst droppen; de revoke execute moet
--- daarna opnieuw (rechten verdwijnen mee met de functie).
+-- daarna opnieuw (rechten verdwijnen mee met de functie). Beide eerdere
+-- signaturen worden gedropt: die van vóór de Pechvogel-meter (#1005) en die
+-- mét p_troost, zodat er geen overload achterblijft ongeacht welke van de twee
+-- in deze databank staat.
 drop function if exists public._apply_rating(uuid, uuid, int, timestamptz, numeric, int);
+drop function if exists public._apply_rating(uuid, uuid, int, timestamptz, numeric, int, int);
 
 create or replace function public._apply_rating(
   p_player uuid,
@@ -296,6 +300,7 @@ create or replace function public._apply_rating(
   p_ts timestamptz,
   p_factor numeric,
   p_bounty int,
+  p_troost int,
   p_joker public.joker_type
 )
 returns void
@@ -322,17 +327,17 @@ begin
 
   insert into public.rating_history (
     player_id, match_id, rating_before, rating_after, delta, played_at,
-    stake_factor, bounty_delta, joker
+    stake_factor, bounty_delta, troost_delta, joker
   )
   values (
     p_player, p_match, v_before, v_after, p_delta, p_ts,
-    p_factor, p_bounty, p_joker
+    p_factor, p_bounty, p_troost, p_joker
   );
 end;
 $$;
 
 revoke execute on function public._apply_rating(
-  uuid, uuid, int, timestamptz, numeric, int, public.joker_type
+  uuid, uuid, int, timestamptz, numeric, int, int, public.joker_type
 ) from public;
 
 -- Rekenkern: identiek aan #805, met _stake_factor vervangen door de
@@ -357,6 +362,8 @@ declare
   jk public.joker_type;          -- gespeelde joker van die speler (#1003)
   bounties jsonb;                -- bounty-verschuiving per speler (#805)
   bo int;                        -- bounty van de speler in kwestie
+  ru int;                        -- mutatie vóór troost (lef, joker en bounty verwerkt)
+  tr int;                        -- troostdemper van de speler in kwestie (#1005)
 begin
   select mt.id, mt.team_a_id, mt.team_b_id, mt.winner_team_id,
          coalesce(mt.played_at, mt.created_at) as ts
@@ -418,25 +425,36 @@ begin
     into bounties
     from public._bounty_deltas(m.id) x;
 
+  -- Troostdemper (#1005) komt er als laatste bij, over de al door lef, joker en
+  -- bounty bewerkte mutatie. Wie een schild speelde levert niets in en krijgt
+  -- dus ook geen troost: _troost_delta geeft bij een niet-negatieve mutatie 0.
   jk := public._player_joker(a1, m.id);
   f := public._effect_factor(a1, m.id, winnaar, jk);
   bo := coalesce((bounties ->> a1::text)::int, 0);
-  perform public._apply_rating(a1, m.id, round(da * f)::int + bo, m.ts, f, bo, jk);
+  ru := round(da * f)::int + bo;
+  tr := public._troost_delta(m.id, a1, ru);
+  perform public._apply_rating(a1, m.id, ru + tr, m.ts, f, bo, tr, jk);
   if a2 is not null then
     jk := public._player_joker(a2, m.id);
     f := public._effect_factor(a2, m.id, winnaar, jk);
     bo := coalesce((bounties ->> a2::text)::int, 0);
-    perform public._apply_rating(a2, m.id, round(da * f)::int + bo, m.ts, f, bo, jk);
+    ru := round(da * f)::int + bo;
+    tr := public._troost_delta(m.id, a2, ru);
+    perform public._apply_rating(a2, m.id, ru + tr, m.ts, f, bo, tr, jk);
   end if;
   jk := public._player_joker(b1, m.id);
   f := public._effect_factor(b1, m.id, winnaar, jk);
   bo := coalesce((bounties ->> b1::text)::int, 0);
-  perform public._apply_rating(b1, m.id, round(db * f)::int + bo, m.ts, f, bo, jk);
+  ru := round(db * f)::int + bo;
+  tr := public._troost_delta(m.id, b1, ru);
+  perform public._apply_rating(b1, m.id, ru + tr, m.ts, f, bo, tr, jk);
   if b2 is not null then
     jk := public._player_joker(b2, m.id);
     f := public._effect_factor(b2, m.id, winnaar, jk);
     bo := coalesce((bounties ->> b2::text)::int, 0);
-    perform public._apply_rating(b2, m.id, round(db * f)::int + bo, m.ts, f, bo, jk);
+    ru := round(db * f)::int + bo;
+    tr := public._troost_delta(m.id, b2, ru);
+    perform public._apply_rating(b2, m.id, ru + tr, m.ts, f, bo, tr, jk);
   end if;
 end;
 $$;

@@ -1011,3 +1011,54 @@
   font-size: 1.1rem;
   line-height: 1;
 }
+
+/* ---------- Pechvogel-meter (#1005) ---------- */
+/* Drie vakjes die vollopen bij elke nipte nederlaag op rij. Bewust het warme
+   coach-amber en niet het rood van --danger: dit is een troostprijs met een
+   knipoog, geen waarschuwing. */
+.pechmeter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.pechmeter--vol {
+  border-color: var(--coach-line);
+  background: var(--coach-soft);
+}
+.pechmeter__emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.pechmeter__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+.pechmeter__vakjes {
+  display: flex;
+  gap: var(--sp-1);
+}
+.pechmeter__vakje {
+  width: 2.2rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.pechmeter__vakje--aan {
+  background: var(--coach);
+}
+.pechmeter__tekst {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.pechmeter--vol .pechmeter__tekst {
+  color: var(--coach-diep);
+  font-weight: 600;
+}
