@@ -41,6 +41,21 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
   play_poll_options: ["play-poll-options"],
   play_poll_votes: ["play-poll-votes"],
   match_smoesjes: ["smoesjes"],
+  // Rudy's VAR (#1025). Een uitspraak kan de uitslag verschuiven, dus een
+  // wijziging aan een beroep raakt álles wat aan een match hangt — vandaar de
+  // matches-prefixes erbij, in de pas met invalidateNaUitspraak in appealApi.
+  point_appeals: [
+    "appeals",
+    "matches",
+    "standings",
+    "ratings",
+    "match-predictions",
+    "prediction-standings",
+    "pias",
+    "shame",
+    "bounties",
+  ],
+  point_appeal_votes: ["appeals"],
 };
 
 // Kanaalnamen moeten uniek zijn per abonnee: twee hooks met dezelfde tabel en

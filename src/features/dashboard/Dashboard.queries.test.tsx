@@ -145,7 +145,13 @@ describe("Dashboard: queries bij mount (#736)", () => {
     try {
       const per = await tellQueries();
       expect(per["rpc:recent_rating_history"]).toBe(1);
-      expect(som(per)).toBe(19);
+      // Eén query erbij op zo'n avond: de fixture-match is dan acht uur oud en
+      // valt dus binnen het VAR-venster van 24 u (#1025), waardoor de
+      // stemkaart mag kijken of er een zaak op jouw stem wacht. Op elke andere
+      // dag staat die gate uit en blijft het bij de 19 hierboven — precies wat
+      // de eerste test bewaakt.
+      expect(per.point_appeals).toBe(1);
+      expect(som(per)).toBe(20);
     } finally {
       vi.useRealTimers();
     }

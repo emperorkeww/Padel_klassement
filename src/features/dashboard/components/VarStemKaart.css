@@ -1,0 +1,78 @@
+/* VAR-zaak op het overzicht (#1025). Coach-amber, zoals het VAR-blok op de
+   matchpagina — Rudy's terrein, herkenbaar naast de smaragden poll-banner. */
+
+.varkaart {
+  border-color: var(--coach-line);
+  background: var(--coach-soft);
+}
+
+.varkaart__zaak {
+  display: grid;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+.varkaart__zaak + .varkaart__zaak {
+  border-top: 1px solid var(--coach-line);
+}
+
+.varkaart__claim {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+.varkaart__score {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.varkaart__score-oud {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.varkaart__score-nieuw {
+  font-weight: 700;
+  color: var(--coach-diep);
+}
+.varkaart__waarschuwing {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.varkaart__acties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.varkaart__knop {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--coach);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.varkaart__knop:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.varkaart__knop--voor {
+  border-color: var(--success-line);
+  background: var(--success-soft);
+  color: var(--success);
+}
+.varkaart__knop--tegen {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.varkaart__foot {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

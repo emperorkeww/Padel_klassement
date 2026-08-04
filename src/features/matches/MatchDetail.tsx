@@ -23,6 +23,7 @@ import { MatchBeheer } from "@/features/matches/components/MatchBeheer";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
+import { VarBlock } from "@/features/matches/components/VarBlock";
 import { getMatchPredictions } from "./predictionsApi";
 import { getMatchNetTouches, setNetTouches } from "./netTouchesApi";
 import { getGroup, getGroupMembers, getMyGroups } from "@/features/groups/api";
@@ -608,6 +609,18 @@ export function MatchDetail() {
           amParticipant || beheertGroep || (!!user && m.created_by === user.id)
         }
         onSaved={() => match.reload()}
+      />
+
+      {/* Rudy's VAR (#1025): één punt betwisten, de rest stemt. Het blok
+          verbergt zichzelf als er geen zaak loopt en jij er geen kunt beginnen
+          — op een oude match of voor wie niet meespeelde staat er dus niets.
+          Een toekenning verschuift de uitslag, vandaar de reload. */}
+      <VarBlock
+        match={m}
+        teams={tmap}
+        profiles={pmap}
+        myId={user?.id ?? null}
+        onChanged={() => match.reload()}
       />
 
       {showPlanned && (
