@@ -8,6 +8,13 @@ import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { getPlayerStandings, getPlayerStanding } from "@/features/standings/api";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
 import {
+  bekendeSpelerIds,
+  zichtbareSpelers,
+} from "@/features/profiles/visibility";
+import { getMyFriendships } from "@/features/friends/api";
+import { getMyGroups } from "@/features/groups/api";
+import { useAuth } from "@/features/auth/AuthProvider";
+import {
   getPlayerMatches,
   getTeamsMap,
   teamLabel,
@@ -63,12 +70,17 @@ export function ComparisonSheet({
 }) {
   const [leftId, setLeftId] = useState(defaultLeftId);
   const [rightId, setRightId] = useState(defaultRightId);
+  const { user } = useAuth();
+  const myId = user?.id ?? "";
 
   // App-brede data (achter de cached()-laag, dus geen dubbele netwerkcalls).
   const ratings = useAsync(getPlayerRatings, []);
   const standings = useAsync(getPlayerStandings, []);
   const profiles = useAsync(getProfilesMap, []);
   const teams = useAsync(getTeamsMap, []);
+  // Voor de privacy-uitzondering hieronder: wie ik al ken mag ik blijven kiezen.
+  const friendships = useAsync(getMyFriendships, []);
+  const groups = useAsync(getMyGroups, []);
 
   // Per kant: de historie (ruime limiet, pariteit met het profiel) en de
   // serverstand — herladen alleen wanneer de gekozen speler wijzigt.
@@ -86,13 +98,24 @@ export function ComparisonSheet({
     [standings.data, ratings.data],
   );
 
-  // Kiesbare spelers: alle echte profielen (geen gasten), op naam gesorteerd.
+  const bekend = useMemo(
+    () => bekendeSpelerIds(friendships.data ?? [], groups.data ?? [], myId),
+    [friendships.data, groups.data, myId],
+  );
+
+  // Kiesbare spelers: echte profielen (geen gasten), op naam gesorteerd. Wie
+  // zich verborgen heeft gezet valt hier weg — deze lijst is precies zo'n
+  // "iemand aangeboden krijgen"-plek (#1014). Uitzondering: mezelf, vrienden en
+  // groepsgenoten, plus de twee spelers waarmee de sheet geopend is, want die
+  // heb je niet ontdékt maar al voor je staan.
   const spelers = useMemo(
     () =>
-      Object.values(profiles.data ?? {})
-        .filter((p) => !p.is_guest)
-        .sort((a, b) => displayName(a).localeCompare(displayName(b), "nl")),
-    [profiles.data],
+      zichtbareSpelers(
+        Object.values(profiles.data ?? {}).filter((p) => !p.is_guest),
+        bekend,
+        [defaultLeftId, defaultRightId],
+      ).sort((a, b) => displayName(a).localeCompare(displayName(b), "nl")),
+    [profiles.data, bekend, defaultLeftId, defaultRightId],
   );
 
   const basisLaadt =

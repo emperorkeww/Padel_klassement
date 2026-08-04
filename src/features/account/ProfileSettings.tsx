@@ -720,14 +720,14 @@ function PrivacyCard({ userId }: { userId: string }) {
         <div className="stack">
           <Toggle
             label="Vindbaar in zoeken"
-            hint="Anderen kunnen je op gebruikersnaam vinden."
+            hint="Uit = je verschijnt niet in zoekresultaten, vriendsuggesties of keuzelijsten waarin iemand je zou kunnen ontdekken. Je blijft zichtbaar waar je al meedoet — klassement, je matches en je groepen — en voor je vrienden en groepsgenoten."
             checked={p.discoverable}
             disabled={busy}
             onChange={(aan) => set({ discoverable: aan })}
           />
           <Toggle
             label="Vriendschapsverzoeken toestaan"
-            hint="Zet uit om geen nieuwe verzoeken te ontvangen."
+            hint="Zet uit om geen nieuwe verzoeken te ontvangen. Je verdwijnt dan ook uit “Misschien ken je” bij anderen, zodat niemand op een knop drukt die toch afketst."
             checked={p.allow_friend_requests}
             disabled={busy}
             onChange={(aan) => set({ allow_friend_requests: aan })}

@@ -11,7 +11,6 @@ import {
   getAllProfiles,
   getProfile,
   getProfilesMap,
-  searchProfiles,
   updateProfile,
   uploadAvatar,
 } from "./api";
@@ -58,20 +57,8 @@ describe("getProfilesMap", () => {
   });
 });
 
-describe("searchProfiles", () => {
-  it("geeft [] terug zonder query, zonder supabase te raken", async () => {
-    expect(await searchProfiles("   ", "me")).toEqual([]);
-    expect(calls).toHaveLength(0);
-  });
-
-  it("zoekt op username en sluit jezelf uit", async () => {
-    enqueue({ data: [{ id: "p2", username: "bob" }] });
-    const res = await searchProfiles("bo", "me");
-    expect(res).toHaveLength(1);
-    expect(calls.some((c) => c.method === "ilike")).toBe(true);
-    expect(calls.some((c) => c.method === "neq")).toBe(true);
-  });
-});
+// Zoeken op username is verhuisd naar searchDiscoverableProfiles()
+// (features/friends/api.test.ts) — die filtert wél op discoverable (#1014).
 
 describe("updateProfile", () => {
   it("stuurt de patch mee naar update", async () => {

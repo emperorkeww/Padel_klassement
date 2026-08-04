@@ -54,23 +54,10 @@ export async function getProfilesMap(): Promise<Record<string, Profile>> {
   return Object.fromEntries(list.map((p) => [p.id, p]));
 }
 
-/** Zoek spelers op username (voor vrienden toevoegen). */
-export async function searchProfiles(
-  query: string,
-  excludeId: string,
-): Promise<Profile[]> {
-  const q = query.trim();
-  if (!q) return [];
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .ilike("username", `%${q}%`)
-    .neq("id", excludeId)
-    .order("username", { ascending: true })
-    .limit(10);
-  if (error) throw error;
-  return data ?? [];
-}
+// Zoeken op username gaat via searchDiscoverableProfiles() in
+// features/friends/api.ts — die respecteert de privacy-instelling. De oude,
+// ongefilterde searchProfiles() is met #1014 verwijderd: hij had geen callers
+// meer en was een uitnodiging om de filter opnieuw te omzeilen.
 
 // Accepteert elke rij met username/full_name (Profile, PlayerStanding, ...).
 export async function updateProfile(
