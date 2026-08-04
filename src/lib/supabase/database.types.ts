@@ -1586,6 +1586,147 @@ export type Database = {
           },
         ]
       }
+      point_appeal_votes: {
+        Row: {
+          akkoord: boolean
+          appeal_id: string
+          created_at: string
+          voter_id: string
+        }
+        Insert: {
+          akkoord: boolean
+          appeal_id: string
+          created_at?: string
+          voter_id: string
+        }
+        Update: {
+          akkoord?: boolean
+          appeal_id?: string
+          created_at?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_appeal_votes_appeal_id_fkey"
+            columns: ["appeal_id"]
+            isOneToOne: false
+            referencedRelation: "point_appeals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_appeal_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeal_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeal_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeal_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_appeals: {
+        Row: {
+          claimant_id: string
+          created_at: string
+          id: string
+          match_id: string
+          play_date: string
+          reden: string
+          resolved_at: string | null
+          set_number: number | null
+          snapshot_a: number
+          snapshot_b: number
+          status: string
+          toelichting: string | null
+          votes_close_at: string
+        }
+        Insert: {
+          claimant_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          play_date: string
+          reden: string
+          resolved_at?: string | null
+          set_number?: number | null
+          snapshot_a: number
+          snapshot_b: number
+          status?: string
+          toelichting?: string | null
+          votes_close_at: string
+        }
+        Update: {
+          claimant_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          play_date?: string
+          reden?: string
+          resolved_at?: string | null
+          set_number?: number | null
+          snapshot_a?: number
+          snapshot_b?: number
+          status?: string
+          toelichting?: string | null
+          votes_close_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_appeals_claimant_id_fkey"
+            columns: ["claimant_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeals_claimant_id_fkey"
+            columns: ["claimant_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeals_claimant_id_fkey"
+            columns: ["claimant_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "point_appeals_claimant_id_fkey"
+            columns: ["claimant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_appeals_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           allow_friend_requests: boolean
@@ -2239,6 +2380,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      _beroep_stemgerechtigden: {
+        Args: { p_claimant: string; p_match: string }
+        Returns: string[]
+      }
       _bounty_deltas: {
         Args: { p_match: string }
         Returns: {
@@ -2279,7 +2424,15 @@ export type Database = {
         Args: { p_guest: string; p_player: string }
         Returns: string
       }
+      _is_match_deelnemer: {
+        Args: { p_match: string; p_player: string }
+        Returns: boolean
+      }
       _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
+      _mag_beroep_zien: {
+        Args: { p_match: string; p_uid: string }
+        Returns: boolean
+      }
       _player_joker: {
         Args: { p_match: string; p_player: string }
         Returns: Database["public"]["Enums"]["joker_type"]
@@ -2355,6 +2508,7 @@ export type Database = {
         Returns: string
       }
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
+      expire_point_appeals: { Args: never; Returns: number }
       first_match_date: { Args: never; Returns: string }
       generate_americano_round: {
         Args: { p_group_id: string; p_played_at?: string }
@@ -2477,6 +2631,10 @@ export type Database = {
       }
       request_guest_claim: {
         Args: { p_guest_id: string; p_player_id: string }
+        Returns: string
+      }
+      resolve_point_appeal: {
+        Args: { p_appeal_id: string; p_venster_verlopen?: boolean }
         Returns: string
       }
       season_player_standings: {
