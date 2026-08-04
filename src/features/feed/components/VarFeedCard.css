@@ -1,0 +1,81 @@
+/* VAR-uitspraak in de feed (#1025). Coach-amber, zoals het VAR-blok op de
+   matchpagina en de stemkaart op het overzicht — één herkenbare familie. */
+
+.varfeed {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--coach-line);
+  border-radius: var(--radius-sm);
+  background: var(--coach-soft);
+}
+
+.varfeed__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.varfeed__kop {
+  font-weight: 700;
+  color: var(--coach-diep);
+}
+
+.varfeed__status {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft-strong);
+}
+.varfeed__status.is-toegekend {
+  color: var(--success);
+}
+.varfeed__status.is-afgewezen {
+  color: var(--danger);
+}
+
+.varfeed__claim {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+.varfeed__score {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.varfeed__score-oud {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.varfeed__score-nieuw {
+  font-weight: 700;
+  color: var(--coach-diep);
+}
+
+.varfeed__omdraai {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.varfeed__rudy {
+  margin: 0;
+  padding: var(--sp-2);
+  border-left: 3px solid var(--coach);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink);
+}
+
+.varfeed__link {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--coach-diep);
+}

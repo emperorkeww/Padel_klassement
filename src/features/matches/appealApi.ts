@@ -143,3 +143,21 @@ export async function castAppealVote(params: {
   if (error) throw error;
   invalidateNaUitspraak();
 }
+
+/**
+ * De laatste afgehandelde zaken, voor de feed. RLS beperkt de lijst al tot je
+ * eigen matches en je groepen; de limiet houdt hem klein — een VAR-uitspraak is
+ * nieuws van die week, niet van vorig seizoen.
+ */
+export function getRecentAppeals(limit = 30): Promise<PointAppeal[]> {
+  return cached(`appeals:recent:${limit}`, async () => {
+    const { data, error } = await supabase
+      .from("point_appeals")
+      .select(KOLOMMEN)
+      .neq("status", "open")
+      .order("resolved_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as PointAppeal[];
+  });
+}

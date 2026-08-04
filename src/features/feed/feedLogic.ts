@@ -154,6 +154,7 @@ export type FeedEvent =
   | { kind: "in-form"; at: string; playerId: string; delta: number; matches: number; weekStart: string }
   | { kind: "on-fire"; at: string; playerId: string; streak: number; matchId: string }
   | { kind: "smoes"; at: string; matchId: string; groupId: string; groupName: string; playerId: string; smoes: string; match: Match | null }
+  | { kind: "var"; at: string; appealId: string; matchId: string; match: Match | null; claimantId: string; reden: string; toelichting: string | null; status: "toegekend" | "afgewezen" | "verlopen" | "tegoed-op"; setNumber: number | null; snapshotA: number; snapshotB: number; winnaarDraaitOm: boolean }
   | { kind: "vendetta"; at: string; sub: "gestart" | "omgeslagen" | "beslist"; groupId: string; groupName: string; challengerId: string; rivalId: string; winsChallenger: number; winsRival: number; doel: number; matchId: string | null };
 
 /** Zoveel gebeurtenissen toont de feed per "pagina" ("Toon meer" laadt bij). */
@@ -183,6 +184,22 @@ export interface FeedSmoes {
   player_id: string;
   group_id: string;
   smoes: string;
+  created_at: string;
+}
+/** Een afgehandelde VAR-zaak (#1025). Structurele invoer (point_appeals-rij),
+ *  zodat lib los blijft van de feature-API. Alleen zaken mét uitspraak horen in
+ *  de feed: een lopende stemming staat op het dashboard, niet in de historie. */
+export interface FeedAppeal {
+  id: string;
+  match_id: string;
+  claimant_id: string;
+  reden: string;
+  toelichting: string | null;
+  status: string;
+  set_number: number | null;
+  snapshot_a: number;
+  snapshot_b: number;
+  resolved_at: string | null;
   created_at: string;
 }
 /** Een vendetta-contract (#169). Structurele invoer (vendettas-rij); de stand
@@ -368,6 +385,8 @@ export function buildFeed(input: {
   smoesjes?: FeedSmoes[];
   /** Vendetta-contracten in je groepen (#169) → verhaallijn-items + chips. */
   vendettas?: FeedVendetta[];
+  /** Afgehandelde VAR-zaken (#1025) → Rudy's uitspraak in de feed. */
+  appeals?: FeedAppeal[];
   profiles?: Record<string, Profile>;
   now?: Date;
   /** Client-side soortfilter (filterchips); werkt vóór de limiet. */
@@ -390,6 +409,7 @@ export function buildFeed(input: {
     shameTransfers = [],
     smoesjes = [],
     vendettas = [],
+    appeals = [],
     profiles = {},
     now = new Date(),
     filter,
@@ -796,6 +816,38 @@ export function buildFeed(input: {
       // De verloren match zelf (indien binnen het feed-venster), zodat de kaart
       // toont bij wélke nederlaag de smoes hoort — tegenstander + score.
       match: matchById.get(s.match_id) ?? null,
+    });
+  }
+
+  // ── VAR-zaken (#1025): Rudy's uitspraak over een betwist punt. Alleen
+  //    afgehandelde zaken; een lopende stemming hoort op het dashboard, waar je
+  //    er nog iets aan kunt doen. Zonder de match in het feed-venster laten we
+  //    hem weg: een uitspraak zonder de wedstrijd erbij zegt niets. ──
+  for (const a of appeals) {
+    if (a.status === "open") continue;
+    const match = matchById.get(a.match_id);
+    if (!match) continue;
+    // Of de winnaar omdraaide volgt uit de snapshot (de stand vóór de
+    // correctie) tegenover de stand nu. Bij alles behalve een toekenning is er
+    // per definitie niets gecorrigeerd.
+    const winnaarDraaitOm =
+      a.status === "toegekend" &&
+      a.snapshot_a > a.snapshot_b !==
+        (match.score_a ?? 0) > (match.score_b ?? 0);
+    events.push({
+      kind: "var",
+      at: a.resolved_at ?? a.created_at,
+      appealId: a.id,
+      matchId: a.match_id,
+      match,
+      claimantId: a.claimant_id,
+      reden: a.reden,
+      toelichting: a.toelichting,
+      status: a.status as "toegekend" | "afgewezen" | "verlopen" | "tegoed-op",
+      setNumber: a.set_number,
+      snapshotA: a.snapshot_a,
+      snapshotB: a.snapshot_b,
+      winnaarDraaitOm,
     });
   }
 

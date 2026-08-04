@@ -173,3 +173,35 @@
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+
+/* Rudy's uitspraak (#1025): zijn eigen bubbel binnen het blok, met de dempknop
+   voor het fluitsignaal ernaast. De tekst draagt de uitspraak — het geluid is
+   versiering, en dat mag je uitzetten. */
+.varblok__uitspraak {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-left: 3px solid var(--coach);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.varblok__rudy {
+  margin: 0;
+  flex: 1;
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--ink);
+}
+
+.varblok__demp {
+  flex: none;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}

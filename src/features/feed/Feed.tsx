@@ -19,6 +19,7 @@ import { CoachComment } from "@/features/feed/components/CoachComment";
 import { EveningCard } from "@/features/feed/components/EveningCard";
 import { FeedItem } from "@/features/feed/components/FeedItem";
 import { SmoesCard } from "@/features/feed/components/SmoesCard";
+import { VarFeedCard } from "@/features/feed/components/VarFeedCard";
 import {
   buildFeed,
   bundelVriendschappen,
@@ -42,6 +43,7 @@ import { celebrate } from "@/lib/utils/confetti";
 import { formatRelativeDay, aantalTekst } from "@/lib/utils/format";
 import { getGroupMatches, getRecentMatches, getTeamsMap } from "@/features/matches/api";
 import { getMySmoesjes } from "@/features/matches/smoesjesApi";
+import { getRecentAppeals } from "@/features/matches/appealApi";
 import { getMyVendettas } from "@/features/groups/vendettaApi";
 import { getActiveBounties } from "@/features/standings/bountyApi";
 import { getProfilesMap, displayName } from "@/features/profiles/api";
@@ -131,6 +133,10 @@ export function Feed() {
   // Geplaatste smoezen in je groepen (#296), voor de smoes-items op de feed.
   const smoesjes = useAsync(getMySmoesjes, []);
   useRealtime("match_smoesjes", smoesjes.reload);
+  // Afgehandelde VAR-zaken (#1025): Rudy's uitspraken in de historie. RLS
+  // levert alleen zaken uit je eigen matches en groepen.
+  const appeals = useAsync(getRecentAppeals, []);
+  useRealtime("point_appeals", appeals.reload);
   // Vendetta-contracten in je groepen (#169), voor de verhaallijn-items.
   const vendettas = useAsync(getMyVendettas, []);
   // Actieve bounty's (#805): nodig voor de "verdedigd"-chip. Een geclaimde
@@ -303,6 +309,7 @@ export function Feed() {
             shameTransfers: Object.values(shame.data ?? {}),
             smoesjes: smoesjes.data ?? [],
             vendettas: vendettas.data ?? [],
+            appeals: appeals.data ?? [],
             bounties: bounties.data ?? [],
             profiles: profiles.data ?? {},
             // Respecteer 'discoverable': verberg vriendschapsitems van niet-
@@ -325,6 +332,7 @@ export function Feed() {
       shame.data,
       smoesjes.data,
       vendettas.data,
+      appeals.data,
       bounties.data,
       profiles.data,
     ],
@@ -420,6 +428,17 @@ export function Feed() {
                           tmap={tmap}
                           name={name}
                           onInfo={() => setCoachAboutOpen(true)}
+                        />
+                      ) : event.kind === "var" ? (
+                        <VarFeedCard
+                          event={event}
+                          profiles={pmap}
+                          ctx={{
+                            intensiteit: mijnIntensiteit,
+                            schild:
+                              pmap[event.claimantId]?.roast_schild ?? false,
+                          }}
+                          gebruikt={gebruiktCoach}
                         />
                       ) : event.kind === "smoes" ? (
                         <SmoesCard

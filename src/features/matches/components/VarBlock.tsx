@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useFluit } from "@/lib/hooks/useFluit";
 import { useToast } from "@/ui/ToastProvider";
 import { tap } from "@/lib/utils/haptics";
 import { displayName } from "@/features/profiles/api";
@@ -25,7 +26,9 @@ import {
   getMatchAppeals,
   getPlayerAppeals,
 } from "@/features/matches/appealApi";
-import type { Match, Profile, Team } from "@/types";
+import { roastCtx } from "@/features/coach/roastTone";
+import { varUitspraak, type VarUitkomst } from "@/features/coach/varUitspraak";
+import type { Group, Match, Profile, Team } from "@/types";
 import "./VarBlock.css";
 
 /**
@@ -48,15 +51,19 @@ export function VarBlock({
   teams,
   profiles,
   myId,
+  group,
   onChanged,
 }: {
   match: Match;
   teams: Record<string, Team>;
   profiles: Record<string, Profile>;
   myId: string | null;
+  /** Groep van de match — bepaalt de roast-toon van Rudy's uitspraak. */
+  group?: Pick<Group, "roast_intensiteit"> | null;
   onChanged?: () => void;
 }) {
   const toast = useToast();
+  const { fluit, muted, toggleMute } = useFluit();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reden, setReden] = useState<AppealReden>("ons-punt");
@@ -75,6 +82,16 @@ export function VarBlock({
     () => (myId ? getPlayerAppeals(myId) : Promise.resolve([])),
     [myId ?? ""],
   );
+
+  // Rudy's fluitsignaal bij de uitspraak: één keer per zaak, zodra die niet
+  // meer openstaat. Bewust hier, vóór de vroege returns verderop — hooks mogen
+  // niet achter een conditie staan.
+  const zaakId = zaak?.id ?? null;
+  const uitkomst: VarUitkomst | null =
+    zaak && zaak.status !== "open" ? (zaak.status as VarUitkomst) : null;
+  useEffect(() => {
+    if (zaakId && uitkomst) fluit(zaakId);
+  }, [zaakId, uitkomst, fluit]);
 
   const naam = (id: string) =>
     profiles[id] ? displayName(profiles[id]) : "iemand";
@@ -188,6 +205,24 @@ export function VarBlock({
     "tegoed-op": "gelijk gekregen, maar het VAR-tegoed was op",
   };
 
+  // Rudy spreekt pas als de zaak beslist is. Bij een toekenning is de uitslag
+  // al gecorrigeerd, dus of de winnaar omdraaide lezen we aan het beroep: de
+  // snapshot is de stand van vóór de correctie.
+  const winnaarDraaideOm =
+    uitkomst === "toegekend" && zaak
+      ? (zaak.snapshot_a > zaak.snapshot_b) !==
+        ((m.score_a ?? 0) > (m.score_b ?? 0))
+      : false;
+  const uitspraak =
+    uitkomst && zaak
+      ? varUitspraak({
+          appealId: zaak.id,
+          status: uitkomst,
+          winnaarDraaitOm: winnaarDraaideOm,
+          ctx: roastCtx(group, profiles[zaak.claimant_id]),
+        })
+      : null;
+
   return (
     <section className="varblok" aria-label="Rudy's VAR">
       <header className="varblok__head">
@@ -224,6 +259,32 @@ export function VarBlock({
                 </span>
               )}
             </p>
+          )}
+
+          {/* De uitspraak zelf. De tekst draagt hem — de fluit is versiering,
+              en wie hem niet wil dempt hem hier. */}
+          {uitspraak && (
+            <div className="varblok__uitspraak">
+              <p className="varblok__rudy">
+                <span aria-hidden="true">🎙️</span> {uitspraak}
+              </p>
+              <button
+                type="button"
+                className="varblok__demp"
+                aria-pressed={muted}
+                onClick={toggleMute}
+                title={
+                  muted
+                    ? "Fluitsignaal weer aanzetten"
+                    : "Fluitsignaal dempen"
+                }
+              >
+                {muted ? "🔇" : "🔊"}
+                <span className="sr-only">
+                  {muted ? "Fluitsignaal aanzetten" : "Fluitsignaal dempen"}
+                </span>
+              </button>
+            </div>
           )}
 
           {(votes.data ?? []).length > 0 && (

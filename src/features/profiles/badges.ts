@@ -45,6 +45,9 @@ export interface BadgeExtras {
   predictions?: readonly MatchPrediction[];
   /** Netrollers van deze speler per match-id — voedt de Netroller. */
   netrollers?: Readonly<Record<string, number>>;
+  /** VAR-beroepen van deze speler (#1025) — voedt Onbetwist en Kansloos
+   *  beroep. Alleen de status telt; een lopende zaak telt nog niet mee. */
+  appeals?: readonly { status: string }[];
 }
 
 export interface Badge {
@@ -91,6 +94,15 @@ export function deriveBadges(
   const misgetipt = valseProfeetReeks(matches, extras?.predictions);
   // Beste enkele match; 0 zonder netroller-data.
   const netrollers = Math.max(0, ...Object.values(extras?.netrollers ?? {}));
+  // 'tegoed-op' telt als gelijk: de groep gaf je gelijk, alleen je tegoed was
+  // op. 'verlopen' telt naar geen van beide kanten — daar deed de groep geen
+  // uitspraak over.
+  const varGelijk = (extras?.appeals ?? []).filter(
+    (a) => a.status === "toegekend" || a.status === "tegoed-op",
+  ).length;
+  const varOngelijk = (extras?.appeals ?? []).filter(
+    (a) => a.status === "afgewezen",
+  ).length;
   const meter = pechMeter(matches, teams, playerId);
 
   const ctx: BadgeContext = {
@@ -112,6 +124,8 @@ export function deriveBadges(
     choke,
     misgetipt,
     netrollers,
+    varGelijk,
+    varOngelijk,
     pechMeter: meter,
   };
   return buildBadges(ctx);

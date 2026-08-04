@@ -1,7 +1,7 @@
 // De volledige badge-catalogus: één (bewust lange) lijst badge-definities in
 // vaste volgorde. Puur data + behaald-checks op de vooraf berekende context.
 import type { Badge } from "./badges";
-import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, CHOKE_KONING_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, NETROLLER_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, REUZENDODER_ZWAAR_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VALSE_PROFEET_DOEL, VASTE_GAST_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
+import { ANGSTGEGNER_DREMPEL, BACK_TO_BACK_MINUTEN, BAGELBAKKER_DOEL, CHOKE_KONING_DOEL, COMEBACK_DREMPEL, DEJAVU_DOEL, DIEPZEE_DREMPEL, DUBBELE_CIJFERS_DREMPEL, FOTOFINISH_DOEL, IRONMAN_DOEL, JOJO_DOEL, KALENDER_DOEL, KLOKVAST_DOEL, MARATHON_DOEL, MIJLPALEN, MONSTERZEGE_DREMPEL, NACHTWACHT_DOEL, NETROLLER_DOEL, PECHVOGEL_DREMPEL, PERFECTE_WEKEN, PERFECTIONIST_DOEL, PUNTENMACHINE_DOEL, RATINGTIERS, REEKSEN, REUZENDODER_DREMPEL, REUZENDODER_ZWAAR_DREMPEL, RIVAAL_DOEL, ROESTVRIJ_DAGEN, SNIPER_DOEL, SOCIALE_VLINDER_DOEL, TROUWE_ZIEL_DOEL, TWEELING_DOEL, VALSE_PROFEET_DOEL, VAR_GELIJK_DOEL, VAR_ONGELIJK_DOEL, VASTE_GAST_DOEL, VERLOREN_ZOON_DAGEN, WEEKRITME_DOEL, WINSTEN, YINYANG_DOEL, ZWARTE_REEKS_DREMPEL, ZWITSERLAND_DOEL } from "./badges.constants";
 import type { MatchFeiten } from "./badges.facts";
 import { angstgegnerVerslagen, hadComeback, hadRevanche, isGestruikeld, isReuzendoder } from "./badges.streaks";
 import { perfecteWeken } from "@/features/dashboard/missions";
@@ -30,6 +30,10 @@ export interface BadgeContext {
   misgetipt: number;
   /** Meeste netrollers in één match (#809); 0 zonder netroller-data. */
   netrollers: number;
+  /** Toegekende VAR-beroepen (#1025); 0 zonder beroep-data. */
+  varGelijk: number;
+  /** Afgewezen VAR-beroepen (#1025); 0 zonder beroep-data. */
+  varOngelijk: number;
   /** Stand van de Pechvogel-meter (#1005): nipte nederlagen op rij. */
   pechMeter: PechMeter;
 }
@@ -39,6 +43,7 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
     matches, teams, playerId, ratings,
     gespeeld, gewonnen, verloren, reeks, pech, eigenRating,
     feiten, dejaVu, jojo, rust, tweeling, choke, misgetipt, netrollers,
+    varGelijk, varOngelijk,
     pechMeter,
   } = ctx;
 
@@ -645,6 +650,25 @@ export function buildBadges(ctx: BadgeContext): Badge[] {
       omschrijving: `Scoor ${NETROLLER_DOEL} netrollers in één match — puur talent, uiteraard.`,
       behaald: netrollers >= NETROLLER_DOEL,
       voortgang: { nu: netrollers, doel: NETROLLER_DOEL },
+    },
+    // Rudy's VAR (#1025). De twee kanten van hetzelfde gedrag: wie durft te
+    // betwisten én de groep overtuigt, tegenover wie blijft roepen zonder ooit
+    // gelijk te krijgen.
+    {
+      id: "var-onbetwist",
+      naam: "Onbetwist",
+      emoji: "📺",
+      omschrijving: `Krijg ${VAR_GELIJK_DOEL} VAR-beroepen toegekend — de groep gaf je elke keer gelijk.`,
+      behaald: varGelijk >= VAR_GELIJK_DOEL,
+      voortgang: { nu: varGelijk, doel: VAR_GELIJK_DOEL },
+    },
+    {
+      id: "var-drammer",
+      naam: "Kansloos beroep",
+      emoji: "🙅",
+      omschrijving: `Laat ${VAR_ONGELIJK_DOEL} VAR-beroepen stranden. Blijven roepen helpt niet.`,
+      behaald: varOngelijk >= VAR_ONGELIJK_DOEL,
+      voortgang: { nu: varOngelijk, doel: VAR_ONGELIJK_DOEL },
     },
   );
 
