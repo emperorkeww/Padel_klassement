@@ -14,6 +14,14 @@ vi.mock("@/lib/supabase/client", () => ({
         { id: "f1", requester_id: "p2", addressee_id: "p1", status: "pending" },
         { id: "f2", requester_id: "p1", addressee_id: "p3", status: "accepted" },
         { id: "f3", requester_id: "p1", addressee_id: "p5", status: "pending" },
+        // Dave en Frank zijn met elkaar bevriend, niet met Alice. Zulke rijen
+        // zijn sinds #326 leesbaar voor de feed en mogen Dave dus niet als
+        // "al gekoppeld" laten gelden (#1013).
+        { id: "f4", requester_id: "p4", addressee_id: "p6", status: "accepted" },
+        // Frank vroeg Alice, Alice weigerde -> Alice mag alsnog toevoegen.
+        { id: "f5", requester_id: "p6", addressee_id: "p1", status: "declined" },
+        // Alice vroeg Gerd, Gerd weigerde -> dat blijft staan.
+        { id: "f6", requester_id: "p1", addressee_id: "p7", status: "declined" },
       ],
       // Drie afgeronde duels Alice vs Carol: genoeg voor MIN_DUELS, zodat de
       // H2H-sneer (en dus de schakelaar) er is (#919).
@@ -43,6 +51,7 @@ vi.mock("@/lib/supabase/client", () => ({
         { id: "p4", username: "dave", full_name: "Dave De Vos" },
         { id: "p5", username: "eva", full_name: "Eva Evers" },
         { id: "p6", username: "frank", full_name: "Frank Feyen" },
+        { id: "p7", username: "gerd", full_name: "Gerd Gijs" },
       ],
     },
     // get_friend_suggestions: dave heeft 2 gemeenschappelijke vrienden (carol + frank).
@@ -74,6 +83,29 @@ async function openTab(naam: RegExp) {
   await userEvent.click(await screen.findByRole("tab", { name: naam }));
 }
 
+/** Typt een zoekterm in "Speler zoeken" (de mock filtert niet: alle profielen komen terug). */
+async function zoek(term: string) {
+  await userEvent.type(
+    await screen.findByPlaceholderText(/zoek op gebruikersnaam/i),
+    term,
+  );
+}
+
+/**
+ * De actieknop in de zoekresultaat-rij van één speler. Scopet op de sectie
+ * "Speler zoeken", want dezelfde namen staan op deze tab ook onder
+ * "Misschien ken je".
+ */
+async function zoekKnop(naam: RegExp): Promise<HTMLElement> {
+  const sectie = (
+    await screen.findByRole("heading", { name: /speler zoeken/i })
+  ).closest("section") as HTMLElement;
+  const rij = (await within(sectie).findByText(naam)).closest(
+    ".person-row",
+  ) as HTMLElement;
+  return within(rij).getByRole("button");
+}
+
 describe("<Friends />", () => {
   it("toont inkomend verzoek en bestaande vriend", async () => {
     renderPage();
@@ -100,26 +132,76 @@ describe("<Friends />", () => {
   it("zoekt spelers en stuurt een verzoek naar een nieuwe speler", async () => {
     renderPage();
     await openTab(/^ontdekken/i);
-    await userEvent.type(
-      await screen.findByPlaceholderText(/zoek op gebruikersnaam/i),
-      "dave",
-    );
+    await zoek("dave");
     // Geen "Zoek"-knop meer (#919): typen zoekt al, met debounce.
     expect(screen.queryByRole("button", { name: /^zoek$/i })).toBeNull();
-    // Dave heeft nog geen relatie: verzoek-knop is actief; Bob wel: "Al gekoppeld".
-    const sturen = await screen.findAllByRole("button", {
-      name: /verzoek sturen/i,
-    });
-    expect(sturen.length).toBeGreaterThan(0);
-    expect(
-      (await screen.findAllByRole("button", { name: /al gekoppeld/i })).length,
-    ).toBeGreaterThan(0);
-    await userEvent.click(sturen[0]);
+    // Dave heeft nog geen relatie met Alice: zijn knop is actief.
+    const daveKnop = await zoekKnop(/dave de vos/i);
+    expect(daveKnop).toHaveTextContent(/verzoek sturen/i);
+    expect(daveKnop).toBeEnabled();
+    await userEvent.click(daveKnop);
     // De bevestiging spreekt nu met Coach Rudy's stem (#294): deterministisch
     // geseed op het doelwit-id (dave = p4), mijn eigen intensiteit/schild.
     const rivaalQuip = coachVrienden({
       situatie: "nieuw",
       seed: "p4",
+      ctx: { intensiteit: "gemeen", schild: false },
+    });
+    expect(await screen.findByText(rivaalQuip)).toBeInTheDocument();
+  });
+
+  // ── #1013 ───────────────────────────────────────────────────────────────
+  // De vriendschap Dave–Frank gaat niet over Alice, maar was sinds #326 wel
+  // zichtbaar. Dave gold daardoor als "al gekoppeld": uit de suggesties én
+  // met een uitgeschakelde knop in de zoekresultaten.
+
+  it("laat een vriendschap tussen twee derden de suggesties niet filteren", async () => {
+    renderPage();
+    await openTab(/^ontdekken/i);
+    expect(
+      await within(
+        (
+          await screen.findByRole("heading", { name: /misschien ken je/i })
+        ).closest("section") as HTMLElement,
+      ).findByText(/dave de vos/i),
+    ).toBeInTheDocument();
+  });
+
+  it("benoemt per zoekresultaat wat de relatie is", async () => {
+    renderPage();
+    await openTab(/^ontdekken/i);
+    await zoek("er");
+
+    // Carol is een vriend, Bob vroeg mij, Eva kreeg mijn verzoek.
+    expect(await zoekKnop(/carol claes/i)).toHaveTextContent(/al vrienden/i);
+    expect(await zoekKnop(/bob boers/i)).toHaveTextContent(/verzoek ontvangen/i);
+    expect(await zoekKnop(/eva evers/i)).toHaveTextContent(/verzoek verstuurd/i);
+    // Het generieke label is weg; het zei niets over waar je op wacht.
+    expect(screen.queryByRole("button", { name: /al gekoppeld/i })).toBeNull();
+  });
+
+  it("heropent een verzoek dat ik zelf geweigerd heb", async () => {
+    renderPage();
+    await openTab(/^ontdekken/i);
+    await zoek("er");
+
+    // Gerd weigerde mij: dat blijft staan.
+    const gerd = await zoekKnop(/gerd gijs/i);
+    expect(gerd).toHaveTextContent(/verzoek geweigerd/i);
+    expect(gerd).toBeDisabled();
+
+    // Frank vroeg mij en ik weigerde: geen doodlopende weg meer.
+    const frank = await zoekKnop(/frank feyen/i);
+    expect(frank).toHaveTextContent(/alsnog toevoegen/i);
+    expect(frank).toBeEnabled();
+
+    // Dat de heropening een delete + een verse insert is, staat in api.test.ts;
+    // hier telt dat de knop werkt en Rudy de nieuwe rivaal begroet.
+    await userEvent.click(frank);
+    expect(supabase.from).toHaveBeenCalledWith("friendships");
+    const rivaalQuip = coachVrienden({
+      situatie: "nieuw",
+      seed: "p6",
       ctx: { intensiteit: "gemeen", schild: false },
     });
     expect(await screen.findByText(rivaalQuip)).toBeInTheDocument();

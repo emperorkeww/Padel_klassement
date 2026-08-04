@@ -112,3 +112,62 @@ export function categorize(list: Friendship[], myId: string) {
 export function otherId(f: Friendship, myId: string): string {
   return f.requester_id === myId ? f.addressee_id : f.requester_id;
 }
+
+/** Mijn relatie met één andere speler, met de rij erbij (om op te reageren). */
+export type MijnRelatie =
+  | { soort: "vrienden"; rij: Friendship }
+  | { soort: "verzoek-verstuurd"; rij: Friendship }
+  | { soort: "verzoek-ontvangen"; rij: Friendship }
+  /** Ik was de ontvanger en heb geweigerd — heropenen mag. */
+  | { soort: "geweigerd-door-mij"; rij: Friendship }
+  /** Zij weigerden mijn verzoek — dat blijft staan. */
+  | { soort: "geweigerd-door-hen"; rij: Friendship };
+
+/**
+ * Map van speler-id → mijn relatie met die speler.
+ *
+ * Sinds #326 levert getMyFriendships() ook geaccepteerde vriendschappen tussen
+ * twee dérden (leesbaar zodra één van beiden in mijn netwerk zit — de feed
+ * heeft dat nodig). Wie daarop "elke zichtbare rij gaat over mij" aanneemt,
+ * ziet vreemden als "al gekoppeld" (#1013). Vandaar: alleen eigen betrokkenheid.
+ */
+export function mijnRelaties(
+  list: Friendship[],
+  myId: string,
+): Map<string, MijnRelatie> {
+  const map = new Map<string, MijnRelatie>();
+  for (const rij of list) {
+    const ikBenVerzoeker = rij.requester_id === myId;
+    if (!ikBenVerzoeker && rij.addressee_id !== myId) continue;
+    const soort: MijnRelatie["soort"] =
+      rij.status === "accepted"
+        ? "vrienden"
+        : rij.status === "pending"
+          ? ikBenVerzoeker
+            ? "verzoek-verstuurd"
+            : "verzoek-ontvangen"
+          : ikBenVerzoeker
+            ? "geweigerd-door-hen"
+            : "geweigerd-door-mij";
+    map.set(otherId(rij, myId), { soort, rij } as MijnRelatie);
+  }
+  return map;
+}
+
+/**
+ * Heropent een verzoek dat ík geweigerd heb. De unique index
+ * friendships_unique_pair laat geen tweede rij per paar toe, en de UPDATE-policy
+ * hoort bij de addressee terwijl een nieuw verzoek van de requester moet komen.
+ * Dus: oude rij weg, vers pending-verzoek erin. Beide stappen mogen onder de
+ * bestaande policies ("Betrokkene kan vriendschap verwijderen" + "Verzoek sturen
+ * als verzoeker"). Faalt de tweede stap, dan is er simpelweg geen relatie meer
+ * en staat de knop weer op "Verzoek sturen".
+ */
+export async function reopenFriendRequest(
+  rowId: string,
+  myId: string,
+  addresseeId: string,
+): Promise<void> {
+  await removeFriendship(rowId);
+  await sendFriendRequest(myId, addresseeId);
+}
