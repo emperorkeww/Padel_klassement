@@ -82,6 +82,16 @@
   --dorst-line: #ecd4a8;
   --dorst-ink: #ffffff; /* tekst op vol amber (ingeloste traktatie) */
 
+  /* Joker (#1003) — eigen blauw naast het lef-violet. De twee tegels staan op
+     dezelfde matchkaart onder elkaar en moeten zonder de kop te lezen uit
+     elkaar te houden zijn: de lef-tip is je dagelijkse zenuwspel, de joker is
+     de ene kaart die je per maand hebt. Donker genoeg voor AA op zowel
+     --surface als --joker-soft (contrast-CI). */
+  --joker: #16638f;
+  --joker-soft: #e8f2f8;
+  --joker-line: #bfd9e8;
+  --joker-ink: #ffffff; /* tekst op vol blauw (gespeelde kaart) */
+
   /* Padelveld van de opstelling (#427). Puur decoratieve achtergrond (er staat
      geen lopende tekst direct op het veld), dus buiten de contrast-CI. */
   --court: #0d7a55;
@@ -305,6 +315,12 @@
   --dorst-soft: #2b2114;
   --dorst-line: #4a3a20;
   --dorst-ink: #1b1207;
+
+  /* Jokerblauw, lichter gezet voor leesbare tekst op donkere vlakken. */
+  --joker: #6fb6e0;
+  --joker-soft: #101f29;
+  --joker-line: #234455;
+  --joker-ink: #0a1620;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
   --court: #1b4636;

@@ -1,0 +1,92 @@
+/* Jokers (#1003): open tegel in het jokerblauw, naast de toto (smaragd) en de
+   lef-tip (violet). De tegelvorm zelf (.bet-tile) staat in PlannedMatchCard.css;
+   hier alleen de joker-eigen onderdelen.
+
+   Eigen kleurfamilie en niet het lef-violet hergebruikt: de lef-tip is je
+   dagelijkse zenuwspel, de joker is de ene kaart die je per maand hebt. Twee
+   spellen die op dezelfde kaart naast elkaar staan moeten uit elkaar te houden
+   zijn zonder de kop te lezen. */
+
+/* Drie kaarten onder elkaar: het zijn geen ja/nee-knoppen zoals de lef-tip
+   maar een keuze uit drie, en elke kaart draagt zijn eigen kleine letters. */
+.joker__kaarten {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joker__kaart {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2);
+  border: 1px solid var(--joker);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.joker__kaart:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+.joker__kaart:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.joker__kaart--on {
+  background: var(--joker);
+  border-color: var(--joker);
+  color: var(--joker-ink);
+}
+
+.joker__icoon {
+  flex: none;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.joker__tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.joker__naam {
+  font-weight: 700;
+}
+.joker__effect {
+  font-size: var(--fs-sm);
+}
+.joker__prijs,
+.joker__swing,
+.joker__blok {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.joker__swing {
+  font-variant-numeric: tabular-nums;
+}
+/* Op de gekozen (volle) kaart moet ook de kleine letter leesbaar blijven:
+   --ink-soft is afgestemd op --surface, niet op vol jokerblauw. */
+.joker__kaart--on .joker__prijs,
+.joker__kaart--on .joker__swing,
+.joker__kaart--on .joker__blok {
+  color: var(--joker-ink);
+  opacity: 0.85;
+}
+.joker__blok {
+  color: var(--danger);
+}
+
+.joker__anderen,
+.joker__reveal {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

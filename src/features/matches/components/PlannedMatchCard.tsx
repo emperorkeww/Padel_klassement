@@ -45,6 +45,7 @@ import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 import { getMatchStakes } from "@/features/matches/stakesApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
+import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
@@ -780,6 +781,16 @@ export function PlannedMatchCard({
                 mijnKans={mijnKans}
                 games={(myId && ratings.data?.[myId]?.games) || 0}
                 matches={history}
+              />
+              {/* Joker (#1003): de kaart van de maand, onder de lef-tip. Eerst
+                  je dagelijkse zenuwspel, dan de zwaardere keuze. */}
+              <JokerBlock
+                match={m}
+                profiles={profiles}
+                myId={myId}
+                isDeelnemer={mijnTeam != null}
+                mijnKans={mijnKans}
+                games={(myId && ratings.data?.[myId]?.games) || 0}
               />
             </div>
           )}

@@ -136,8 +136,10 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     });
     renderCard();
     await openPlannedCards();
+    // Specifiek op de lef-zin: sinds de jokers (#1003) staat dezelfde drempel
+    // ook op de jokertegel eronder, met een eigen vervolg ("deze kaart kan …").
     expect(
-      await screen.findByText(/nog 6 matches te gaan/i),
+      await screen.findByText(/nog 6 matches te gaan: inzetten kan/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /zet je lef in/i })).toBeDisabled();
   });

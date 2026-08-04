@@ -21,6 +21,7 @@ import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { MatchBeheer } from "@/features/matches/components/MatchBeheer";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
+import { JokerBlock } from "@/features/matches/components/JokerBlock";
 import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
 import { getMatchPredictions } from "./predictionsApi";
 import { getMatchNetTouches, setNetTouches } from "./netTouchesApi";
@@ -562,6 +563,25 @@ export function MatchDetail() {
           zit het inzetblok in de PlannedMatchCard hieronder. */}
       {m.group_id != null && done && (
         <LefTipBlock
+          match={m}
+          profiles={pmap}
+          myId={user?.id ?? null}
+          isDeelnemer={
+            !!user?.id &&
+            [teamA, teamB].some(
+              (t) => t && (t.player1_id === user.id || t.player2_id === user.id),
+            )
+          }
+          mijnKans={null}
+          games={0}
+        />
+      )}
+
+      {/* Joker (#1003): net als de lef-tip blijft op een gespeelde match alleen
+          de onthulling over — welke kaart er lag en hoe het afliep. Kiezen doe
+          je in de PlannedMatchCard hieronder. */}
+      {m.group_id != null && done && (
+        <JokerBlock
           match={m}
           profiles={pmap}
           myId={user?.id ?? null}
