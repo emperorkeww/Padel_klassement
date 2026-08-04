@@ -92,12 +92,18 @@ select throws_ok(
 --    Drie keer d1 wint van d2: 1000→1012→1023→1033 (K=24). Met een
 --    fantoom-1000-partner in het gemiddelde zou de tweede stap +12 i.p.v.
 --    +11 zijn (1024) — dat is de regressie die we hier vastpinnen.
+--
+--    De uitslagen zijn bewust 6-1 en dus niet nípt (#1005): drie nipte
+--    nederlagen op rij zouden d2's derde verlies dempen, en dan pint dit
+--    bestand de pechvogel-meter vast in plaats van de Elo zonder fantoom-
+--    partner. De marge raakt de Elo zelf niet — die kijkt alleen naar de
+--    winnaar — dus de ketens hieronder blijven ongewijzigd.
 ------------------------------------------------------------------------
 create temp table m1 as
   select public.create_completed_match(
     'd0000000-0000-0000-0000-000000000001', null,
     'd0000000-0000-0000-0000-000000000002', null,
-    'a', 6::smallint, 4::smallint, null) as id;
+    'a', 6::smallint, 1::smallint, null) as id;
 update public.matches set played_at = now() + interval '1 day'
  where id = (select id from m1);
 
@@ -124,7 +130,7 @@ create temp table m2 as
   select public.create_completed_match(
     'd0000000-0000-0000-0000-000000000001', null,
     'd0000000-0000-0000-0000-000000000002', null,
-    'a', 6::smallint, 4::smallint, null) as id;
+    'a', 6::smallint, 1::smallint, null) as id;
 update public.matches set played_at = now() + interval '2 days'
  where id = (select id from m2);
 
@@ -139,7 +145,7 @@ create temp table m3 as
   select public.create_completed_match(
     'd0000000-0000-0000-0000-000000000001', null,
     'd0000000-0000-0000-0000-000000000002', null,
-    'a', 6::smallint, 4::smallint, null) as id;
+    'a', 6::smallint, 1::smallint, null) as id;
 update public.matches set played_at = now() + interval '3 days'
  where id = (select id from m3);
 

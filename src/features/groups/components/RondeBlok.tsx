@@ -3,6 +3,8 @@ import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard
 import { teamLabel } from "@/features/matches/api";
 import { lefKaartRegel } from "@/features/matches/stakes";
 import { getStakesForMatches } from "@/features/matches/stakesApi";
+import { jokerKaartRegel } from "@/features/matches/jokers";
+import { getJokersForMatches } from "@/features/matches/jokersApi";
 import { displayName } from "@/features/profiles/api";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
@@ -74,6 +76,12 @@ export function RondeBlok({
     () => getStakesForMatches(ids ? ids.split(",") : []),
     [ids, stakesRev],
   );
+  // Jokers langs dezelfde route en om dezelfde reden (#1003).
+  const jokersRev = useCacheRevision("match-jokers");
+  const jokers = useAsync(
+    () => getJokersForMatches(ids ? ids.split(",") : []),
+    [ids, jokersRev],
+  );
 
   return (
     <div
@@ -133,6 +141,13 @@ export function RondeBlok({
                     stakes: stakes.data ?? [],
                     teams,
                     naam: (id) => displayName(profiles[id]),
+                  })}
+                  joker={jokerKaartRegel({
+                    match: m,
+                    jokers: jokers.data ?? [],
+                    teams,
+                    naam: (id) => displayName(profiles[id]),
+                    myId,
                   })}
                   canManage={isOwner}
                   onDeleted={onMatches}

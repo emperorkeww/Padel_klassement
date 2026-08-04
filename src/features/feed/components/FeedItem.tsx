@@ -14,12 +14,15 @@ export function FeedItem({
   tmap,
   myId,
   name,
+  joker,
 }: {
   event: FeedEvent;
   pmap: Record<string, Profile>;
   tmap: Record<string, Team>;
   myId: string;
   name: (pid: string) => string;
+  /** Jokerregel (#1003) van een match-event; doorgegeven aan FeedMatch. */
+  joker?: string | null;
 }) {
   switch (event.kind) {
     case "smoes":
@@ -27,7 +30,15 @@ export function FeedItem({
     case "evening":
       return null; // speelavonden renderen via EveningCard, niet via FeedItem
     case "match":
-      return <FeedMatch event={event} tmap={tmap} pmap={pmap} name={name} />;
+      return (
+        <FeedMatch
+          event={event}
+          tmap={tmap}
+          pmap={pmap}
+          name={name}
+          joker={joker}
+        />
+      );
     case "friendship": {
       // Eigen vriendschap: "Jij en X"; die van groepsgenoten: "X en Y".
       const involvesMe = event.a === myId || event.b === myId;

@@ -16,6 +16,7 @@ import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
+import { JokerKnop } from "@/features/matches/components/JokerKnop";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
 import "./DashboardLayout.css";
@@ -127,6 +128,10 @@ export function DashboardLayout() {
           <span>Vamos!</span>
         </Link>
         <div className="topbar__acties">
+          {/* Jokerstatus (#1003): ligt je kaart van deze maand er nog? Vast in
+              de shell, want daarop plan je je speeldag — niet iets waarvoor je
+              eerst een wedstrijdkaart moet openen. */}
+          <JokerKnop myId={myId || null} />
           <HelpKnop />
           <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
@@ -168,6 +173,10 @@ export function DashboardLayout() {
         </nav>
 
         <div className="sidebar__foot">
+          {/* Dezelfde status op desktop, zodat de voorraad geen mobiel-only
+              kennis wordt — net als de ?-knop, die hierboven in de navigatie
+              staat. */}
+          <JokerKnop myId={myId || null} className="sidebar__joker" />
           <Link to="/profiel" className="sidebar__user">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={36} />
             {/* Zolang het profiel nog laadt is de naam het e-mailadres, en

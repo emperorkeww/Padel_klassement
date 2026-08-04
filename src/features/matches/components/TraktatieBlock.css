@@ -1,0 +1,83 @@
+/* Drankje-inzet (#1004): amber blok in de --dorst-familie, naast de toto
+   (smaragd) en de lef-tip (violet). Dezelfde tegelvorm als .bet-tile, maar met
+   een eigen klasse: dit blok staat óók op afgeronde matches, waar de andere
+   twee al lang uitgespeeld zijn. */
+
+.traktatie {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--dorst-line);
+  border-radius: var(--radius-sm);
+  background: var(--dorst-soft);
+}
+
+.traktatie__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1);
+}
+
+.traktatie__name {
+  font-weight: 700;
+  color: var(--dorst);
+}
+
+.traktatie__stat {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.traktatie__uitkomst {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.traktatie__uitkomst--ok {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.traktatie__acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.traktatie__knop {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--dorst);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--dorst);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.traktatie__knop:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+.traktatie__knop:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.traktatie__knop--vol {
+  background: var(--dorst);
+  border-color: var(--dorst);
+  color: var(--dorst-ink);
+}
+
+.traktatie__foot {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* De kiezer zit hier al in een amber vlak; z'n eigen aantal-kader zou dan een
+   vlak-op-vlak worden. */
+.traktatie .drank-picker__aantal {
+  background: var(--surface);
+}

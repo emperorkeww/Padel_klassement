@@ -8,6 +8,7 @@ import { winRate } from "@/features/rating/results";
 import { displayName } from "@/features/profiles/api";
 import { HighlightTile } from "@/features/profiles/components/HighlightTile";
 import { VersusKaarten } from "@/features/profiles/components/VersusKaarten";
+import { PechMeter } from "@/features/profiles/components/PechMeter";
 import { regeerduurZin } from "@/features/dashboard/dictator";
 import type { ProfileData } from "@/features/profiles/components/types";
 import type { VsKaart } from "@/features/profiles/compare";
@@ -48,6 +49,7 @@ export function ProfileOverview({
     nextBadge,
     isDictator,
     regeerduur,
+    pechMeter,
     favoriet,
     balans,
     vsGespeeld,
@@ -108,6 +110,10 @@ export function ProfileOverview({
           )}
         </p>
       )}
+
+      {/* Pechvogel-meter (#1005): staat er alleen als er iets te troosten valt,
+          en verdwijnt vanzelf zodra er weer gewonnen wordt. */}
+      {pechMeter && <PechMeter meter={pechMeter} />}
 
       {isMe ? (
         <ProfileHighlights

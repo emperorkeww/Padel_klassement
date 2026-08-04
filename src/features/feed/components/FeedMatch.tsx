@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { readSetScores, teamLabel } from "@/features/matches/api";
+import { traktatieRegel } from "@/features/matches/drankkaart";
 import { formatTime } from "@/lib/utils/format";
 import type { Profile, Team } from "@/types";
 import type { FeedEvent } from "../feedLogic";
@@ -13,11 +14,16 @@ export function FeedMatch({
   tmap,
   pmap,
   name,
+  joker,
 }: {
   event: Extract<FeedEvent, { kind: "match" }>;
   tmap: Record<string, Team>;
   pmap: Record<string, Profile>;
   name: (pid: string) => string;
+  /** Jokerregel (#1003), kant-en-klaar via jokerKaartRegel; null = geen kaart
+   *  (of nog niet onthuld). Als prop en niet hier afgeleid: de kaarten staan in
+   *  een aparte tabel en de feed haalt ze in één bulk-query op. */
+  joker?: string | null;
 }) {
   const m = event.match;
   const done = m.status === "completed";
@@ -25,6 +31,7 @@ export function FeedMatch({
   const bWon = done && m.winner_team_id === m.team_b_id;
   const scored = m.score_a != null && m.score_b != null;
   const sets = readSetScores(m) ?? [];
+  const traktatie = traktatieRegel(m);
   const teamLbl = (tid: string) => teamLabel(tmap[tid], pmap);
   return (
     <Link className="fmatch" to={`/matches/${m.id}`}>
@@ -39,6 +46,9 @@ export function FeedMatch({
                 zit al in het getal ernaast; dit vertelt waar het vandaan kwam. */}
             {!!event.myBounty &&
               ` · bounty ${event.myBounty > 0 ? "+" : "−"}${Math.abs(event.myBounty)}`}
+            {/* Pechvogel-demper (#1005): idem — dit verklaart waarom deze
+                nederlaag zoveel zachter aankwam dan die van je ploegmaat. */}
+            {!!event.myTroost && ` · troost +${event.myTroost}`}
           </span>
         )}
         {event.highlights.map((h, i) => (
@@ -72,6 +82,13 @@ export function FeedMatch({
           ))}
         </div>
       )}
+      {/* Drankje-inzet (#1004): de uitslagenfeed is precies waar de openstaande
+          rekening thuishoort — wie er nog een pint moet halen leest hier terug,
+          en na het afvinken staat er dat het ingelost is. */}
+      {traktatie && <p className="fmatch__traktatie">{traktatie}</p>}
+      {/* Joker (#1003): welke kaart er lag. Hoort naast de uitslag, want een
+          schild verklaart waarom de mutatie ontbreekt die je zou verwachten. */}
+      {joker && <p className="fmatch__joker">{joker}</p>}
     </Link>
   );
 }

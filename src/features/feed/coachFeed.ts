@@ -232,6 +232,34 @@ const BOUNTY_VERDEDIGD = [
   "Bounty verdedigd. De uitdagers speelden alsof hun rackets van natte kranten waren gemaakt. Kansloos.",
 ] as const;
 
+// Pechvogel-meter vol (#1005): drie keer op rij nipt onderuit. Coach Rudy
+// troost — op zijn manier, dus met een weerhaakje erin. Voor wie een
+// roast-schild draagt staat de milde pool eronder.
+export const PECHVOGEL_TROOST = [
+  "Drie keer op rij nét niet. Als pech een discipline was, stond je op het podium.",
+  "Weer een paar punten tekort. Ik geef je wat Elo terug, puur uit medelijden — niet omdat je het verdiende.",
+  "Driemaal nipt verloren. Statistisch gezien moet je binnenkort een keer winnen, maar de statistiek kent jou nog niet.",
+  "De Pechvogel-meter zit vol. Gefeliciteerd met de enige meter die je dit seizoen hebt volgekregen.",
+  "Zo dichtbij, en toch weer niks. Hier heb je een pleister voor je rating. Blijf van m'n schouder af.",
+  "Drie keer een paar punten tekort. Ergens is er een tennisgod die je heel persoonlijk niet mag.",
+  "Je verliest tenminste met stijl: kort. Dat is meer dan ik van je backhand kan zeggen.",
+  "Meter vol. Ik druk je wat troost-Elo in de hand, want zo zielig heb ik het nog niet vaak gezien.",
+  "Drie nederlagen, samen goed voor vijf punten verschil. Iemand moet je leren hoe je een wedstrijd uitspeelt.",
+  "De pechvogel is geland. Volgende keer gewoon één punt méér scoren dan de tegenstander, hè.",
+] as const;
+
+// Milde variant: dezelfde troost zonder de sneer, voor wie een roast-schild
+// draagt. Plagen, geen kwetsen (#183) — en juist bij drie nederlagen op rij
+// telt dat dubbel.
+export const PECHVOGEL_TROOST_MILD = [
+  "Drie keer op rij nipt verloren. Dat is geen gebrek aan niveau, dat is pure pech.",
+  "Zo dichtbij, drie keer achter elkaar. Je krijgt wat Elo terug — verdiend.",
+  "De Pechvogel-meter zit vol. Het spel zat goed, de uitslag niet. Dat draait vanzelf.",
+  "Drie nederlagen met een paar punten verschil. Blijf zo spelen, dan komt die winst er.",
+  "Nét niet, en dat drie keer. Ik heb spelers met minder karakter zien afhaken.",
+  "Meter vol, moraal hopelijk nog niet. De volgende is er een van jou.",
+] as const;
+
 const UPSET = [
   "Daar gaan de favorieten. Héérlijk om te zien.",
   "Papieren favorieten, opgelet: het papier scheurt.",
@@ -726,6 +754,19 @@ export function coachOpmerking(event: FeedEvent, ctx: CoachCtx): string | null {
         return kiesUniek(BOUNTY_VERDEDIGD, seed, g);
       }
 
+      // Pechvogel (#1005) meteen daarna: drie keer op rij nipt verliezen is een
+      // groter verhaal dan de uitslag van déze partij. Anders dan bij de
+      // bounty gaat het schild hier niet naar lof voor de winnaars — het
+      // moment hoort bij de verliezer — maar naar dezelfde troost zonder de
+      // sneer.
+      if (h.some((x) => x.type === "pechvogel")) {
+        return kiesUniek(
+          magRoasten ? PECHVOGEL_TROOST : PECHVOGEL_TROOST_MILD,
+          seed,
+          g,
+        );
+      }
+
       if (h.some((x) => x.type === "lef")) {
         const feit = kiesFeit(lefFeiten(event, ctx), seed, g);
         if (feit) return feit;
@@ -801,6 +842,9 @@ export function coachStemming(
       // jagers — allebei de gemene mood (#805).
       if (h.some((x) => x.type === "bounty" || x.type === "bounty-verdedigd"))
         return "gemeen";
+      // Een volle Pechvogel-meter is troost, geen leedvermaak: de milde kop
+      // hoort bij de tekst, ook in de snerende variant (#1005).
+      if (h.some((x) => x.type === "pechvogel")) return "mild";
       const lefH = h.find((x) => x.type === "lef");
       if (lefH && lefH.type === "lef") {
         return lefH.won ? "trots" : "gemeen";

@@ -7,6 +7,7 @@
 
 import type { CourtType, MatchFormat } from "@/types";
 import type { SetPair } from "@/features/matches/api";
+import type { JokerId } from "@/features/matches/jokers";
 import type { NewMatchMode } from "@/features/matches/components/NewMatchSheet";
 
 /** De persisteerbare velden van een lopende match-invoer. Bewust géén gasten
@@ -22,6 +23,13 @@ export type MatchDraft = {
   sets: SetPair[];
   when: string;
   courtType: CourtType | null;
+  /** Drankje-inzet (#1004); optioneel omdat concepten van vóór die feature
+   *  nog in localStorage kunnen staan. */
+  wagerDrink?: string | null;
+  wagerQty?: number;
+  /** Jokerkeuze (#1003); optioneel omdat concepten van vóór die feature nog in
+   *  localStorage kunnen staan. */
+  joker?: JokerId | null;
   repeat: boolean;
   repeatWeeks: number;
   pickedGroupId: string;
@@ -35,7 +43,8 @@ function key(mode: NewMatchMode, groupId: string | null): string {
 }
 
 /** Een concept is pas het bewaren/hervatten waard als er echt iets is ingevuld:
- *  minstens één speler, een score, een tijdstip, een baantype of een set-stand. */
+ *  minstens één speler, een score, een tijdstip, een baantype, een drankje-inzet,
+ *  een joker of een set-stand. */
 export function isDraftMeaningful(d: MatchDraft): boolean {
   return (
     d.teamA.length > 0 ||
@@ -44,6 +53,8 @@ export function isDraftMeaningful(d: MatchDraft): boolean {
     d.scoreB !== "" ||
     d.when !== "" ||
     d.courtType !== null ||
+    (d.wagerDrink ?? null) !== null ||
+    (d.joker ?? null) !== null ||
     d.sets.some((s) => s.a !== "" || s.b !== "")
   );
 }

@@ -95,6 +95,16 @@ export interface Match {
   set_scores?: unknown;
   /** Baantype (#471); null/afwezig = niet opgegeven. */
   court_type?: CourtType | null;
+  /** Drankje-inzet (#1004): slug uit features/matches/drankkaart.ts;
+   *  null/afwezig = er wordt nergens om gespeeld. Puur sociaal — dit staat los
+   *  van de lef-tip (match_stakes, #804) die de rating verdubbelt. */
+  wager_drink?: string | null;
+  /** Aantal consumpties per winnaar; afwezig = 1 (de DB-default). */
+  wager_drink_qty?: number;
+  /** Wanneer de traktatie aan de bar is afgevinkt; null = nog te betalen. */
+  wager_settled_at?: string | null;
+  /** Wie afvinkte; kan null zijn terwijl _at gevuld is (profiel verwijderd). */
+  wager_settled_by?: string | null;
 }
 
 export interface MatchPoint {
@@ -180,4 +190,8 @@ export interface RatingPoint {
    *  bounty claimde, negatief als je er een betaalde. Optioneel om dezelfde
    *  reden als `stake_factor`. */
   bounty_delta?: number;
+  /** Troostdemper van de Pechvogel-meter (#1005), al in `delta` verwerkt:
+   *  positief bij de derde nipte nederlaag op rij, anders 0. Optioneel om
+   *  dezelfde reden als `stake_factor`. */
+  troost_delta?: number;
 }

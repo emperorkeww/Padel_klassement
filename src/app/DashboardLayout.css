@@ -119,6 +119,11 @@
   padding-top: 1rem;
   border-top: 1px solid var(--line);
 }
+/* Jokerstatus in de zijbalkvoet (#1003): links uitgelijnd boven de eigen
+   naam, zodat hij in de kolom staat en niet over de volle breedte rekt. */
+.sidebar__joker {
+  align-self: flex-start;
+}
 .sidebar__user {
   display: flex;
   align-items: center;

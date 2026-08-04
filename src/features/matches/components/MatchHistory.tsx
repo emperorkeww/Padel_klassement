@@ -11,6 +11,8 @@ import {
 } from "@/features/matches/matchFilter";
 import { lefKaartRegel } from "@/features/matches/stakes";
 import { getStakesForMatches } from "@/features/matches/stakesApi";
+import { jokerKaartRegel } from "@/features/matches/jokers";
+import { getJokersForMatches } from "@/features/matches/jokersApi";
 import { displayName } from "@/features/profiles/api";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
@@ -82,6 +84,13 @@ export function MatchHistory({
   const stakes = useAsync(
     () => getStakesForMatches(stakeIds ? stakeIds.split(",") : []),
     [stakeIds, stakesRev],
+  );
+  // Jokers langs dezelfde route en om dezelfde reden (#1003): één bulk-query
+  // voor de hele historie in plaats van een fetch per kaart.
+  const jokersRev = useCacheRevision("match-jokers");
+  const jokers = useAsync(
+    () => getJokersForMatches(stakeIds ? stakeIds.split(",") : []),
+    [stakeIds, jokersRev],
   );
 
   // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
@@ -161,6 +170,13 @@ export function MatchHistory({
                       stakes: stakes.data ?? [],
                       teams,
                       naam: (id) => displayName(profiles[id]),
+                    })}
+                    joker={jokerKaartRegel({
+                      match: m,
+                      jokers: jokers.data ?? [],
+                      teams,
+                      naam: (id) => displayName(profiles[id]),
+                      myId,
                     })}
                     canManage={canManage}
                     onDeleted={onChanged}

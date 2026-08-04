@@ -540,6 +540,76 @@ export type Database = {
           },
         ]
       }
+      match_jokers: {
+        Row: {
+          created_at: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          joker?: Database["public"]["Enums"]["joker_type"]
+          match_id?: string
+          period_month?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_jokers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_lef_notices: {
         Row: {
           match_id: string
@@ -945,6 +1015,10 @@ export type Database = {
           status: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink: string | null
+          wager_drink_qty: number
+          wager_settled_at: string | null
+          wager_settled_by: string | null
           winner_team_id: string | null
         }
         Insert: {
@@ -963,6 +1037,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id: string
           team_b_id: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Update: {
@@ -981,6 +1059,10 @@ export type Database = {
           status?: Database["public"]["Enums"]["match_status"]
           team_a_id?: string
           team_b_id?: string
+          wager_drink?: string | null
+          wager_drink_qty?: number
+          wager_settled_at?: string | null
+          wager_settled_by?: string | null
           winner_team_id?: string | null
         }
         Relationships: [
@@ -1045,6 +1127,34 @@ export type Database = {
             columns: ["team_b_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "matches_wager_settled_by_fkey"
+            columns: ["wager_settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1618,34 +1728,40 @@ export type Database = {
           bounty_delta: number
           delta: number
           id: string
+          joker: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }
         Insert: {
           bounty_delta?: number
           delta: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
           rating_after: number
           rating_before: number
           stake_factor?: number
+          troost_delta?: number
         }
         Update: {
           bounty_delta?: number
           delta?: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id?: string
           played_at?: string
           player_id?: string
           rating_after?: number
           rating_before?: number
           stake_factor?: number
+          troost_delta?: number
         }
         Relationships: [
           {
@@ -2115,8 +2231,10 @@ export type Database = {
           p_bounty: number
           p_delta: number
           p_factor: number
+          p_joker: Database["public"]["Enums"]["joker_type"]
           p_match: string
           p_player: string
+          p_troost: number
           p_ts: string
         }
         Returns: undefined
@@ -2132,6 +2250,25 @@ export type Database = {
         Args: { p_group_id: string; p_player: string; p_uid: string }
         Returns: boolean
       }
+      _can_manage_wager: {
+        Args: {
+          p_created_by: string
+          p_group_id: string
+          p_team_a: string
+          p_team_b: string
+          p_uid: string
+        }
+        Returns: boolean
+      }
+      _effect_factor: {
+        Args: {
+          p_has_winner: boolean
+          p_joker: Database["public"]["Enums"]["joker_type"]
+          p_match: string
+          p_player: string
+        }
+        Returns: number
+      }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
       _group_leader: {
@@ -2142,8 +2279,17 @@ export type Database = {
         Args: { p_guest: string; p_player: string }
         Returns: string
       }
+      _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
+      _player_joker: {
+        Args: { p_match: string; p_player: string }
+        Returns: Database["public"]["Enums"]["joker_type"]
+      }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
+        Returns: number
+      }
+      _troost_delta: {
+        Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
@@ -2203,6 +2349,8 @@ export type Database = {
           p_group_id?: string
           p_played_at?: string
           p_set_scores?: Json
+          p_wager_drink?: string
+          p_wager_drink_qty?: number
         }
         Returns: string
       }
@@ -2281,6 +2429,15 @@ export type Database = {
         Args: { p_team_id: string; p_uid: string }
         Returns: boolean
       }
+      pech_streak: {
+        Args: {
+          p_created?: string
+          p_match?: string
+          p_player: string
+          p_ts?: string
+        }
+        Returns: number
+      }
       prediction_points: { Args: { p_chance: number }; Returns: number }
       prediction_win_chance: {
         Args: { p_match: string; p_team: string }
@@ -2305,6 +2462,7 @@ export type Database = {
           rating_after: number
           rating_before: number
           stake_factor: number
+          troost_delta: number
         }[]
       }
       recompute_dictator_termijnen: { Args: never; Returns: undefined }
@@ -2352,10 +2510,19 @@ export type Database = {
         Args: { p_group_id?: string; p_match_id: string }
         Returns: undefined
       }
+      set_match_wager: {
+        Args: { p_drink: string; p_match_id: string; p_qty?: number }
+        Returns: undefined
+      }
+      settle_match_wager: {
+        Args: { p_match_id: string; p_settled?: boolean }
+        Returns: undefined
+      }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
     }
     Enums: {
       court_type: "binnen" | "buiten" | "panorama" | "muur"
+      joker_type: "schild" | "dubbel_of_niets" | "wissel_van_kant"
       match_format: "1v1" | "2v2"
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       roast_intensiteit: "mild" | "gemeen" | "radioactief"
@@ -2490,6 +2657,7 @@ export const Constants = {
   public: {
     Enums: {
       court_type: ["binnen", "buiten", "panorama", "muur"],
+      joker_type: ["schild", "dubbel_of_niets", "wissel_van_kant"],
       match_format: ["1v1", "2v2"],
       match_status: ["scheduled", "in_progress", "completed", "cancelled"],
       roast_intensiteit: ["mild", "gemeen", "radioactief"],

@@ -58,6 +58,17 @@ begin
       'je rating is nog niet ingelopen: inzetten kan vanaf % gespeelde matches',
       min_games;
   end if;
+  -- Andere kant van het anti-stapelen uit match_jokers_guard (#1003): naast een
+  -- schild zou de lef-tip geruisloos verdampen (factor 0 wint van alles) en
+  -- naast dubbel_of_niets zou hij ×4 opleveren. Eén risicokeuze per match.
+  if exists (
+       select 1 from public.match_jokers j
+       where j.match_id = new.match_id
+         and j.player_id = new.player_id
+         and j.joker in ('schild', 'dubbel_of_niets')
+     ) then
+    raise exception 'je joker staat al op deze match: trek die eerst in';
+  end if;
 
   new.play_date := (m.played_at at time zone tz)::date;
   return new;

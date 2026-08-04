@@ -97,9 +97,10 @@ export const SECTIES: readonly UitlegSectie[] = [
   },
   {
     id: "toto",
-    titel: "Toto & Lef",
+    titel: "Toto, Lef, drankjes & jokers",
     emoji: "🎲",
-    samenvatting: "Voorspellen, inzetten en het toto-klassement.",
+    samenvatting:
+      "Voorspellen, dubbel-of-niets, waar de verliezers op trakteren en je kaart van de maand.",
   },
   {
     id: "rudy",

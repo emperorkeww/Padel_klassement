@@ -1,0 +1,65 @@
+/* Jokerstatus in de app-shell (#1003), naast de ?-knop. Zelfde maat en tapvlak
+   als .help-knop, zodat de rij in de topbalk één ritme houdt (#374).
+
+   De drie toestanden verschillen niet alleen in kleur maar ook in vulling en
+   icoon: gevuld = klaar, leeg-gestreept = gespeeld, slotje = nog niet
+   vrijgespeeld. Kleur alleen zou de contrast-CI halen maar niet de speler die
+   geen kleur ziet. */
+
+.joker-knop {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--joker-line);
+  background: var(--surface);
+  font-size: 0.95rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+/* Onzichtbaar groter tapvlak rond de 32px-knop. */
+.joker-knop::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+/* Kaart ligt klaar: vol jokerblauw, de enige gevulde staat van de drie. */
+.joker-knop--klaar {
+  border-color: var(--joker);
+  background: var(--joker-soft);
+}
+
+/* Gespeeld: gedempt, met een streep erdoor zodat het ook zonder kleur leest. */
+.joker-knop--op {
+  border-color: var(--line-strong);
+  opacity: 0.6;
+}
+.joker-knop--op::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink-soft);
+  transform: rotate(-45deg);
+}
+
+/* Nog niet vrijgespeeld: rustig, met het slotje als icoon. */
+.joker-knop--vroeg {
+  border-color: var(--line-strong);
+  opacity: 0.75;
+}
+
+.joker-knop:hover,
+.joker-knop:focus-visible {
+  border-color: var(--joker);
+  background: var(--joker-soft);
+}

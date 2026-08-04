@@ -56,6 +56,17 @@
 /* Lef op de kaartkop (#981): zelfde pilvorm als de deadline, in het
    lef-violet. Vóór de aftrap ("jouw lef") open; vanaf de onthulling gevuld,
    zodat "wie had er lef" ook op een dichte kaart in één oogopslag leest. */
+/* Jokerpil op de kaartkop (#1003): welke kaart er ligt, zonder uitklappen. */
+.planned-card__jokerpil {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--joker-line);
+  border-radius: 999px;
+  background: var(--joker-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--joker);
+  white-space: nowrap;
+}
 .planned-card__lefpil {
   padding: 2px var(--sp-2);
   border: 1px solid var(--lef-line);
@@ -70,6 +81,20 @@
   border-color: var(--lef);
   background: var(--lef);
   color: var(--lef-ink);
+}
+
+/* Drankje-inzet op de kaartkop (#1004): zelfde pilvorm, in het dorst-amber.
+   Waar om gespeeld wordt is geen geheim, dus deze staat er meteen — anders dan
+   de lef-pil, die pas na de aftrap onthult. */
+.planned-card__inzetpil {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--dorst-line);
+  border-radius: 999px;
+  background: var(--dorst-soft);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--dorst);
+  white-space: nowrap;
 }
 
 /* Gedeelde winkansbalk tussen de twee teamrijen: één feit, één balk. */
@@ -173,6 +198,12 @@
   border: 1px solid var(--lef-line);
   background: var(--lef-soft);
 }
+/* Joker (#1003): blauw naast het lef-violet — twee spellen van de spelers zelf,
+   herkenbaar zonder de kop te lezen. */
+.bet-tile--joker {
+  border: 1px solid var(--joker-line);
+  background: var(--joker-soft);
+}
 .bet-tile__head {
   display: flex;
   align-items: baseline;
@@ -191,6 +222,9 @@
 }
 .bet-tile--lef .bet-tile__name {
   color: var(--lef);
+}
+.bet-tile--joker .bet-tile__name {
+  color: var(--joker);
 }
 .bet-tile__stat {
   min-width: 0;

@@ -1,0 +1,61 @@
+/* Jokervoorraad op het profiel (#1003). Eén opvallende rij voor de maand die
+   nu telt, daaronder een rustige lijst met wat je eerder speelde — de voorraad
+   is de kop, de historie de voetnoot. */
+
+.jokerinv__nu {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--joker-line);
+  border-radius: var(--radius-sm);
+  background: var(--joker-soft);
+}
+/* Gespeeld: gedempt, zodat "er ligt nog iets" en "die is op" ook zonder de
+   tekst te lezen uit elkaar te houden zijn. */
+.jokerinv__nu--op {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.jokerinv__icoon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.jokerinv__tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+.jokerinv__nu--klaar .jokerinv__tekst strong {
+  color: var(--joker);
+}
+
+.jokerinv__historie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+}
+.jokerinv__historie li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-1);
+  border-bottom: 1px solid var(--line);
+}
+.jokerinv__historie li:last-child {
+  border-bottom: none;
+}
+.jokerinv__maand {
+  color: var(--ink-soft);
+}
+.jokerinv__kaart {
+  font-weight: 700;
+  color: var(--joker);
+}
