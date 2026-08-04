@@ -104,6 +104,33 @@ type PiasRecord = {
   week_start: string; // YYYY-MM-DD (maandag van de ISO-week)
 };
 
+/** Rij uit public.point_appeals (#1025). */
+type AppealRecord = {
+  id: string;
+  match_id: string;
+  claimant_id: string;
+  reden: string;
+  status: string;
+};
+
+/** Labels van de redenen; in de pas met REDENEN in src/features/matches/appeal.ts. */
+const APPEAL_REDEN: Record<string, string> = {
+  "ons-punt": "dat punt was van ons",
+  "dubbele-stuit": "dubbele stuit",
+  net: "het net geraakt",
+  buiten: "buiten",
+  "verkeerd-ingetikt": "verkeerd ingetikt",
+};
+
+/** Eén regel per uitkomst; de volledige uitspraak van Rudy staat in de app. */
+const APPEAL_UITSLAG: Record<string, string> = {
+  toegekend: "Het beroep is toegekend — het punt is verschoven.",
+  afgewezen: "Het beroep is afgewezen. De uitslag blijft staan.",
+  verlopen: "De zaak verviel: de uitslag was intussen al gewijzigd.",
+  "tegoed-op":
+    "De groep ging akkoord, maar het VAR-tegoed van die speeldag was op.",
+};
+
 type WebhookPayload = {
   type: "INSERT" | "UPDATE" | "DELETE";
   table: string;
@@ -150,6 +177,38 @@ async function playersByTeam(
   const byTeam: Record<string, string[]> = {};
   for (const t of data ?? []) byTeam[t.id] = [t.player1_id, t.player2_id];
   return byTeam;
+}
+
+/** De stemgerechtigden van een VAR-zaak (#1025): de andere deelnemers, gasten
+ *  niet meegerekend — die loggen nooit in. Spiegelt
+ *  public._beroep_stemgerechtigden; de guard blijft de echte poort. */
+async function appealVoters(appeal: AppealRecord): Promise<string[]> {
+  const { data: match } = await supabase
+    .from("matches")
+    .select("team_a_id, team_b_id")
+    .eq("id", appeal.match_id)
+    .maybeSingle();
+  if (!match) return [];
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("player1_id, player2_id")
+    .in("id", [match.team_a_id, match.team_b_id]);
+  const spelers = [
+    ...new Set(
+      (teams ?? [])
+        .flatMap((t) => [t.player1_id, t.player2_id])
+        .filter((id): id is string => !!id && id !== appeal.claimant_id),
+    ),
+  ];
+  if (spelers.length === 0) return [];
+  const { data: profielen } = await supabase
+    .from("profiles")
+    .select("id, is_guest")
+    .in("id", spelers);
+  const gasten = new Set(
+    (profielen ?? []).filter((p) => p.is_guest).map((p) => p.id as string),
+  );
+  return spelers.filter((id) => !gasten.has(id));
 }
 
 async function nameOf(playerId: string): Promise<string> {
@@ -219,6 +278,59 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
     const old = payload.old_record as unknown as MatchRecord | null;
     if (rec.status !== "completed" || old?.status === "completed") return [];
     return await matchResultMessages(rec);
+  }
+
+  // Rudy's VAR (#1025): een nieuw beroep vraagt om stemmen, een uitspraak wil
+  // gehoord worden. Die uitspraak kan van een stem komen of van de klok
+  // (appeal-deadline); deze webhook ziet beide als dezelfde status-UPDATE.
+  if (payload.table === "point_appeals") {
+    const rec = payload.record as unknown as AppealRecord;
+    const old = payload.old_record as { status?: string } | null;
+
+    if (payload.type === "INSERT") {
+      const kiezers = await appealVoters(rec);
+      if (kiezers.length === 0) return [];
+      const naam = await nameOf(rec.claimant_id);
+      return [{
+        recipients: kiezers,
+        title: "📺 VAR: er wordt een punt betwist",
+        body:
+          `${naam} betwist één punt (${APPEAL_REDEN[rec.reden] ?? rec.reden}). Jouw stem telt mee.`,
+        url: `/matches/${rec.match_id}`,
+        kind: null,
+        tag: `var-${rec.id}`,
+      }];
+    }
+
+    if (
+      payload.type === "UPDATE" &&
+      old?.status === "open" &&
+      rec.status !== "open"
+    ) {
+      // Naar de klager én naar wie gestemd heeft: die wachten allemaal op de
+      // uitkomst. Rudy's volledige uitspraak staat in de app — een pushmelding
+      // is geen podium.
+      const { data: stemmers } = await supabase
+        .from("point_appeal_votes")
+        .select("voter_id")
+        .eq("appeal_id", rec.id);
+      const ontvangers = [
+        ...new Set([
+          rec.claimant_id,
+          ...(stemmers ?? []).map((v) => v.voter_id as string),
+        ]),
+      ];
+      return [{
+        recipients: ontvangers,
+        title: "📺 De VAR heeft gesproken",
+        body: APPEAL_UITSLAG[rec.status] ?? "De zaak is afgehandeld.",
+        url: `/matches/${rec.match_id}`,
+        kind: null,
+        tag: `var-${rec.id}`,
+      }];
+    }
+
+    return [];
   }
 
   // Speeldag-polls: nieuwe poll → hele groep; gelockt/geboekt → de stemmers.

@@ -178,6 +178,23 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
             : `${naam(ctx, e.playerId)} degradeerde naar ${e.naarLabel}`,
         to: `/matches/${e.matchId}`,
       };
+    // De compacte regel benoemt de omgedraaide winnaar mee: ook in een
+    // samenvatting mag dat niet stilletjes voorbijgaan (#1025).
+    case "var":
+      return {
+        icon: "📺",
+        tekst:
+          e.status === "toegekend"
+            ? `${naam(ctx, e.claimantId)} kreeg zijn punt terug van de VAR${
+                e.winnaarDraaitOm ? " — en de winnaar draaide om" : ""
+              }`
+            : e.status === "afgewezen"
+              ? `${naam(ctx, e.claimantId)} kreeg de VAR niet mee`
+              : e.status === "verlopen"
+                ? `Het VAR-beroep van ${naam(ctx, e.claimantId)} verviel`
+                : `${naam(ctx, e.claimantId)} kreeg gelijk, maar zijn VAR-tegoed was op`,
+        to: `/matches/${e.matchId}`,
+      };
     case "smoes": {
       const tegen =
         e.match && e.match.winner_team_id

@@ -1332,3 +1332,90 @@ describe("buildFeed — In-Form en On Fire (#986)", () => {
     }
   });
 });
+
+describe("buildFeed — VAR-zaken (#1025)", () => {
+  const zaak = (over: Record<string, unknown> = {}) => ({
+    id: "va-1",
+    match_id: "m-var",
+    claimant_id: "p3",
+    reden: "ons-punt",
+    toelichting: "die bal was binnen",
+    status: "toegekend",
+    set_number: null,
+    snapshot_a: 16,
+    snapshot_b: 15,
+    resolved_at: "2026-07-12T21:00:00Z",
+    created_at: "2026-07-12T20:30:00Z",
+    ...over,
+  });
+
+  // De correctie is al doorgevoerd, dus de match staat op de nieuwe stand; de
+  // snapshot draagt de oude. Zo weet de feed dat de winnaar omdraaide.
+  const gecorrigeerd = () =>
+    match("2026-07-12T19:30:00Z", "t-ab", "t-cd", "completed", {
+      id: "m-var",
+      winner_team_id: "t-cd",
+      score_a: 15,
+      score_b: 16,
+    });
+
+  it("emit een var-item met de claim en de omgedraaide winnaar", () => {
+    const feed = buildFeed({
+      matches: [gecorrigeerd()],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      appeals: [zaak()],
+    });
+    const ev = feed.find((e) => e.kind === "var");
+    if (!ev || ev.kind !== "var") throw new Error("verwacht var-item");
+    expect(ev.appealId).toBe("va-1");
+    expect(ev.claimantId).toBe("p3");
+    expect(ev.status).toBe("toegekend");
+    expect(ev.snapshotA).toBe(16);
+    expect(ev.winnaarDraaitOm).toBe(true);
+    // Gedateerd op de uitspraak, niet op het indienen.
+    expect(ev.at).toBe("2026-07-12T21:00:00Z");
+  });
+
+  it("meldt geen omgedraaide winnaar als de uitslag dezelfde kant op blijft", () => {
+    const ruim = match("2026-07-12T19:30:00Z", "t-ab", "t-cd", "completed", {
+      id: "m-var",
+      winner_team_id: "t-ab",
+      score_a: 19,
+      score_b: 11,
+    });
+    const feed = buildFeed({
+      matches: [ruim],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      appeals: [zaak({ snapshot_a: 20, snapshot_b: 10 })],
+    });
+    const ev = feed.find((e) => e.kind === "var");
+    if (!ev || ev.kind !== "var") throw new Error("verwacht var-item");
+    expect(ev.winnaarDraaitOm).toBe(false);
+  });
+
+  it("laat een lopende zaak uit de feed: die hoort op het dashboard", () => {
+    const feed = buildFeed({
+      matches: [gecorrigeerd()],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      appeals: [zaak({ status: "open", resolved_at: null })],
+    });
+    expect(feed.some((e) => e.kind === "var")).toBe(false);
+  });
+
+  it("laat een zaak weg waarvan de match buiten het venster valt", () => {
+    const feed = buildFeed({
+      matches: [],
+      teams: TEAMS,
+      friendships: [],
+      myId: "p1",
+      appeals: [zaak()],
+    });
+    expect(feed.some((e) => e.kind === "var")).toBe(false);
+  });
+});

@@ -54,6 +54,7 @@ import { pechMeter } from "@/features/rating/pechvogel";
 import { buildMatchRatings } from "@/features/groups/maandpias";
 import { getPlayerPredictions } from "@/features/matches/predictionsApi";
 import { getPlayerNetTouches } from "@/features/matches/netTouchesApi";
+import { getPlayerAppeals } from "@/features/matches/appealApi";
 import {
   afgeslotenSeizoenen,
   listSeasons,
@@ -159,6 +160,10 @@ export function PlayerProfile() {
   const predictions = useAsync(() => getPlayerPredictions(id), [id]);
   // Netrollers van deze speler (#809): voedt de Netroller-badge.
   const netTouches = useAsync(() => getPlayerNetTouches(id), [id]);
+  // VAR-beroepen van deze speler (#1025): voeden Onbetwist en Kansloos beroep.
+  // RLS levert alleen zaken uit matches en groepen die je met hem deelt —
+  // genoeg voor de badge, en de ontbrekende rest houdt 'm hooguit onbehaald.
+  const appeals = useAsync(() => getPlayerAppeals(id), [id]);
   const netrollers = useMemo(
     () =>
       Object.fromEntries(
@@ -293,6 +298,7 @@ export function PlayerProfile() {
     matchRatings,
     predictions: predictions.data ?? undefined,
     netrollers,
+    appeals: appeals.data ?? undefined,
   };
   const badges = deriveBadges(scoped, tmap, id, ratings.data ?? undefined, badgeExtras);
   // Pechvogel-meter (#1005) over de volledige historie: hij gaat over hoe het
