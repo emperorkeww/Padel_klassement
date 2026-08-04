@@ -19,6 +19,8 @@ grant select on table
   public.play_poll_votes,
   public.play_polls,
   public.player_ratings,
+  public.point_appeal_votes,
+  public.point_appeals,
   public.profiles,
   public.push_subscriptions,
   public.rating_history,
