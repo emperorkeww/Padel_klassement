@@ -1,0 +1,175 @@
+/* Rudy's VAR (#1025): het beroep tegen één punt. Amber uit de coach-familie,
+   want dit is Rudy's terrein — naast de toto (smaragd), de lef-tip (violet) en
+   de traktatie (dorst). Zelfde tegelvorm als .traktatie: het blok staat op
+   afgeronde matches, waar de andere inzetten al uitgespeeld zijn. */
+
+.varblok {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--coach-line);
+  border-radius: var(--radius-sm);
+  background: var(--coach-soft);
+}
+
+.varblok__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1);
+}
+
+.varblok__naam {
+  font-weight: 700;
+  color: var(--coach-diep);
+}
+
+.varblok__stat {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.varblok__claim {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+/* De correctie in cijfers: oud doorgestreept, nieuw in het accent. Zonder dit
+   moet je zelf uitrekenen wat "één punt" met de uitslag doet. */
+.varblok__score {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.varblok__score-oud {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.varblok__score-nieuw {
+  font-weight: 700;
+  color: var(--coach-diep);
+}
+/* Een omgedraaide winnaar mag nooit terloops langskomen. */
+.varblok__waarschuwing {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.varblok__stemmen {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+}
+.varblok__stemmen li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.varblok__stemmer {
+  color: var(--ink);
+}
+.varblok__stem {
+  font-weight: 700;
+}
+.varblok__stem.is-voor {
+  color: var(--success);
+}
+.varblok__stem.is-tegen {
+  color: var(--danger);
+}
+
+.varblok__form {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.varblok__redenen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.varblok__chip {
+  min-height: 36px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--coach-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft-strong);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.varblok__chip.is-actief {
+  border-color: var(--coach);
+  color: var(--coach-diep);
+  font-weight: 700;
+}
+
+.varblok__veld {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+.varblok__veld input,
+.varblok__veld select {
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.varblok__acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.varblok__knop {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--coach);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--coach-diep);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.varblok__knop:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+.varblok__knop:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.varblok__knop--vol {
+  background: var(--coach);
+  border-color: var(--coach);
+  color: var(--coach-ink);
+}
+.varblok__knop--voor {
+  border-color: var(--success-line);
+  background: var(--success-soft);
+  color: var(--success);
+}
+.varblok__knop--tegen {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.varblok__foot {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}

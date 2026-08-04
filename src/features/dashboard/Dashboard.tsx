@@ -24,6 +24,8 @@ import { heroOverlay, heroPermanent } from "./heroThema";
 import { DashboardPrompts } from "./components/DashboardPrompts";
 import { EveningCard } from "./components/EveningCard";
 import { PollBanner } from "./components/PollBanner";
+import { VarStemKaart } from "./components/VarStemKaart";
+import { VENSTER_UREN } from "@/features/matches/appeal";
 import { NextMatchCard } from "./components/NextMatchCard";
 import { StatsRow } from "./components/StatsRow";
 import { CourtTeaser } from "./components/CourtTeaser";
@@ -186,6 +188,16 @@ export function Dashboard() {
   }, [myProfile, myId]);
 
   const myGames = myMatches.data ?? [];
+  // Rudy's VAR (#1025): een zaak kan alleen bestaan op een match die je zélf
+  // speelde en die minder dan 24 uur oud is — dat is het venster dat
+  // point_appeals_guard afdwingt. Is er zo'n match niet, dan hoeft het overzicht
+  // die query helemaal niet af te vuren en blijft de meetlat uit #736 staan.
+  const varVenster = myGames.some(
+    (g) =>
+      g.status === "completed" &&
+      g.played_at != null &&
+      Date.now() - new Date(g.played_at).getTime() < VENSTER_UREN * 3600_000,
+  );
   const form = recentForm(myGames, tmap, myId);
   const streak = winStreak(myGames, tmap, myId);
   // Verliesreeks (alleen relevant zonder lopende winstreak) voor een
@@ -381,6 +393,12 @@ export function Dashboard() {
         hasPlayed={hasPlayed}
         loading={coreLoading}
       />
+
+      {/* Rudy's VAR (#1025): een zaak die op jóuw stem wacht. Bewust bóven de
+          Vandaag-zone en niet erin: het stemvenster loopt maar 12 uur, en die
+          zone verschijnt alleen als er ook een poll, match of avond is. De
+          kaart geeft null terug zodra er niets op je stem wacht. */}
+      <VarStemKaart myId={myId} enabled={varVenster} />
 
       {/* Wat vandaag speelt, als één zone (#911). Poll, volgende match en
           avondkaart komen elk uit een eigen bron en vielen daardoor gespreid
