@@ -320,8 +320,53 @@
 @media (max-width: 480px) {
   .ranklist__meta {
     flex-wrap: nowrap;
+    /* Nowrap zonder rem: de divisienaam plús de vormreeks liepen zo de
+       puntenkolom binnen en tekenden dwars door "76 ptn" heen (#1033). Wat er
+       na alle inkorting hieronder nóg niet past, kapt af in plaats van te
+       overlappen. */
+    overflow: hidden;
   }
   .ranklist__record {
+    display: none;
+  }
+  /* De divisienaam is hier veruit de dikste post: ~110px van de ~135px die deze
+     kolom op een 360px-telefoon heeft. Zelfde recept als op het podium (#943):
+     alleen het tekentje en het niveau. De volle naam blijft in de `title` én in
+     de DOM staan, dus een screenreader leest hem gewoon voor. */
+  .ranklist__meta .tier-badge {
+    font-size: 0;
+    padding: 0 0.35rem;
+    gap: 3px;
+  }
+  .ranklist__meta .tier-badge__icon {
+    font-size: 0.6875rem;
+  }
+  .ranklist__meta .tier-badge::after {
+    content: attr(data-niveau);
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+  /* De laatste centimeters: een krappere kolomgoot en iets kleinere bolletjes.
+     Samen goed voor ~12px lucht tot de puntenkolom op 360px. */
+  .ranklist__link {
+    column-gap: var(--sp-2);
+  }
+  .ranklist__meta .formchips--sm {
+    gap: 3px;
+  }
+  .ranklist__meta .formchips--sm .formchip {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+  }
+}
+/* Onder 360px (buitenscherm van een Fold, oude SE) is zelfs dát te krap: dan
+   valt het niveau weg en gaat de oudste match uit de vormreeks eraf. */
+@media (max-width: 359px) {
+  .ranklist__meta .tier-badge::after {
+    content: none;
+  }
+  .ranklist__meta .formchips--sm .formchip:first-child {
     display: none;
   }
 }
