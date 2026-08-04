@@ -4,9 +4,9 @@ import type { Friendship, FriendshipStatus, Profile } from "@/types";
 
 /**
  * Zoekt spelers op gebruikersnaam, maar toont alleen wie zich vindbaar heeft
- * gesteld (profiles.discoverable). Vervangt searchProfiles voor de vrienden-
- * flow, zodat de privacy-instelling gerespecteerd wordt. Default 'discoverable'
- * is true, dus voor bestaande gebruikers verandert er niets.
+ * gesteld (profiles.discoverable). Dit is sinds #1014 de enige zoekfunctie op
+ * username in de app — de ongefilterde searchProfiles() is verwijderd. Default
+ * 'discoverable' is true, dus voor bestaande gebruikers verandert er niets.
  */
 export async function searchDiscoverableProfiles(
   query: string,
