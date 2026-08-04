@@ -2,7 +2,7 @@
 -- Simuleert gebruikers via request.jwt.claims (auth.uid()) en role-switches.
 begin;
 
-select plan(23);
+select plan(25);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -21,11 +21,13 @@ values
   ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000005','authenticated','authenticated','t5@test.nl','x',now(),'{}','{"username":"t5"}',now(),now(),'','','',''),
   ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000006','authenticated','authenticated','t6@test.nl','x',now(),'{}','{"username":"t6"}',now(),now(),'','','',''),
   -- t7: niet-vindbaar profiel voor discoverable-test (issue #564)
-  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000007','authenticated','authenticated','t7@test.nl','x',now(),'{}','{"username":"t7"}',now(),now(),'','','','');
+  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000007','authenticated','authenticated','t7@test.nl','x',now(),'{}','{"username":"t7"}',now(),now(),'','','',''),
+  -- t8: wél vindbaar, maar ontvangt geen verzoeken (issue #1014)
+  ('00000000-0000-0000-0000-000000000000','a0000000-0000-0000-0000-000000000008','authenticated','authenticated','t8@test.nl','x',now(),'{}','{"username":"t8"}',now(),now(),'','','','');
 
--- t1 is bevriend met t2, t3, t4 én t6 (geaccepteerd); t5 niet. t6 zit NIET in de
--- groep — bewust, om de netwerk-regel (#326) te onderscheiden van de oude
--- beide-partijen-regel.
+-- t1 is bevriend met t2, t3, t4, t6, t7 én t8 (geaccepteerd); t5 niet. t6 zit
+-- NIET in de groep — bewust, om de netwerk-regel (#326) te onderscheiden van de
+-- oude beide-partijen-regel.
 insert into public.friendships (requester_id, addressee_id, status)
 values
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000002','accepted'),
@@ -33,7 +35,9 @@ values
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000004','accepted'),
   ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000006','accepted'),
   -- t7 is bevriend met t1 voor discoverable-test (issue #564)
-  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000007','accepted');
+  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000007','accepted'),
+  -- t8 is bevriend met t1 voor allow_friend_requests-test (issue #1014)
+  ('a0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000008','accepted');
 
 -- Groep met t1 als eigenaar (trigger voegt t1 toe) + t2,t3,t4 als leden.
 insert into public.groups (id, name, created_by)
@@ -46,6 +50,11 @@ values
 
 -- t7 is niet vindbaar (discoverable=false) voor issue #564
 update public.profiles set discoverable = false where id = 'a0000000-0000-0000-0000-000000000007';
+
+-- t8 blijft vindbaar maar ontvangt geen verzoeken (issue #1014). Deze update
+-- staat bewust ná de friendships-insert hierboven: de trigger
+-- friendships_privacy_check zou een nieuw verzoek aan t8 anders weigeren.
+update public.profiles set allow_friend_requests = false where id = 'a0000000-0000-0000-0000-000000000008';
 
 ------------------------------------------------------------------------
 -- are_friends
@@ -133,28 +142,28 @@ select is(
 ------------------------------------------------------------------------
 set local role authenticated;
 
--- t1 is partij in alle 5 z'n vriendschappen (t2,t3,t4,t6,t7).
+-- t1 is partij in alle 6 z'n vriendschappen (t2,t3,t4,t6,t7,t8).
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  5, 't1 ziet de eigen 5 vriendschappen'
+  6, 't1 ziet de eigen 6 vriendschappen'
 );
 
--- t2 zit met t1 in de groep. Netwerk-regel: t2 ziet ook t1-t6/t1-t7 (deelt een
--- groep met t1, één partij), terwijl de oude beide-partijen-regel dat verborg.
+-- t2 zit met t1 in de groep. Netwerk-regel: t2 ziet ook t1-t6/t1-t7/t1-t8 (deelt
+-- een groep met t1, één partij), terwijl de oude beide-partijen-regel dat verborg.
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  5, 't2 ziet alle 5 vriendschappen (netwerk via gedeelde groep met t1)'
+  6, 't2 ziet alle 6 vriendschappen (netwerk via gedeelde groep met t1)'
 );
 
 -- t6 zit in geen enkele groep, maar is bevriend met t1. Via de is_accepted_friend-
--- tak ziet t6 alle vriendschappen waarin t1 partij is (t1-t2/t3/t4/t7) plus de
+-- tak ziet t6 alle vriendschappen waarin t1 partij is (t1-t2/t3/t4/t7/t8) plus de
 -- eigen t1-t6. Oude regel zou enkel t1-t6 tonen.
 set local request.jwt.claims = '{"sub":"a0000000-0000-0000-0000-000000000006","role":"authenticated"}';
 select is(
   (select count(*)::int from public.friendships),
-  5, 't6 ziet t1s vriendschappen via de vriend-tak (#326)'
+  6, 't6 ziet t1s vriendschappen via de vriend-tak (#326)'
 );
 
 -- t5 heeft geen netwerkband: geen groep, geen vrienden → ziet niets.
@@ -238,6 +247,23 @@ select is(
   (select count(*)::int from public.get_friend_suggestions(12)
      where id = 'a0000000-0000-0000-0000-000000000007'),
   0, 'get_friend_suggestions: discoverable=false-profiel (t7) wordt niet voorgesteld (issue #564)'
+);
+
+-- t8 is wél vindbaar en heeft t1 als gemeenschappelijke vriend met t2, maar
+-- ontvangt geen verzoeken. Een suggestie zou een knop opleveren die gegarandeerd
+-- afketst op enforce_friend_request_privacy — dus geen suggestie.
+select is(
+  (select count(*)::int from public.get_friend_suggestions(12)
+     where id = 'a0000000-0000-0000-0000-000000000008'),
+  0, 'get_friend_suggestions: allow_friend_requests=false-profiel (t8) wordt niet voorgesteld (issue #1014)'
+);
+
+-- Maar t8 verdwijnt niet uit de app: het profiel blijft gewoon leesbaar, zodat
+-- klassement, matches en groepen ongemoeid blijven.
+select is(
+  (select count(*)::int from public.profiles
+     where id = 'a0000000-0000-0000-0000-000000000008'),
+  1, 'profiles: t8 blijft leesbaar, alleen de suggestie vervalt (issue #1014)'
 );
 
 reset role;
