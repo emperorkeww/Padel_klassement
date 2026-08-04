@@ -22,10 +22,19 @@ create table public.rating_history (
   rating_after int not null,
   delta int not null,
   played_at timestamptz not null,
-  -- Lef-tip-multiplier (#804) die al in delta verwerkt zit: 2.00 als deze
-  -- speler op deze match had ingezet, anders 1.00. Puur voor uitleg achteraf
-  -- ("+24, lef ×2"); de rating zelf zit al in delta.
+  -- De multiplier die al in delta verwerkt zit: 2.00 bij een lef-tip (#804) of
+  -- de joker dubbel_of_niets, 0.00 bij een schild (#1003), anders 1.00. Puur
+  -- voor uitleg achteraf ("+24, lef ×2"); de rating zelf zit al in delta. De
+  -- kolomnaam dateert van vóór de jokers en bleef staan — hernoemen zou de
+  -- historie-RPC's en hun cliëntspiegel raken zonder dat er iets mee gewonnen
+  -- wordt; de kolom joker hieronder zegt waar de factor vandaan kwam.
   stake_factor numeric(3, 2) not null default 1.0,
+  -- Welke joker (#1003) deze speler op deze match speelde, of null. Verklaart
+  -- een stake_factor van 0.00 of 2.00 die niet van de lef-tip kwam, en voedt
+  -- de jokerregel op de kaart en in de feed. wissel_van_kant komt hier ook in:
+  -- die raakt de rating niet (factor 1.00), maar hoort wel bij het verhaal van
+  -- de match.
+  joker public.joker_type,
   -- Bounty-verschuiving (#805) die eveneens al in delta verwerkt zit: positief
   -- voor wie een bounty claimde, negatief voor de verslagen drager, 0 voor
   -- iedereen anders. Ook dit is enkel uitleg achteraf ("+31, waarvan +18

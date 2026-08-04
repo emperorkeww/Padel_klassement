@@ -540,6 +540,76 @@ export type Database = {
           },
         ]
       }
+      match_jokers: {
+        Row: {
+          created_at: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          joker: Database["public"]["Enums"]["joker_type"]
+          match_id: string
+          period_month: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          joker?: Database["public"]["Enums"]["joker_type"]
+          match_id?: string
+          period_month?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_jokers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "match_jokers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_lef_notices: {
         Row: {
           match_id: string
@@ -1658,6 +1728,7 @@ export type Database = {
           bounty_delta: number
           delta: number
           id: string
+          joker: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
@@ -1670,6 +1741,7 @@ export type Database = {
           bounty_delta?: number
           delta: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id: string
           played_at: string
           player_id: string
@@ -1682,6 +1754,7 @@ export type Database = {
           bounty_delta?: number
           delta?: number
           id?: string
+          joker?: Database["public"]["Enums"]["joker_type"] | null
           match_id?: string
           played_at?: string
           player_id?: string
@@ -2158,6 +2231,7 @@ export type Database = {
           p_bounty: number
           p_delta: number
           p_factor: number
+          p_joker: Database["public"]["Enums"]["joker_type"]
           p_match: string
           p_player: string
           p_troost: number
@@ -2186,6 +2260,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      _effect_factor: {
+        Args: {
+          p_has_winner: boolean
+          p_joker: Database["public"]["Enums"]["joker_type"]
+          p_match: string
+          p_player: string
+        }
+        Returns: number
+      }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
       _group_leader: {
@@ -2197,6 +2280,10 @@ export type Database = {
         Returns: string
       }
       _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
+      _player_joker: {
+        Args: { p_match: string; p_player: string }
+        Returns: Database["public"]["Enums"]["joker_type"]
+      }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
         Returns: number
@@ -2435,6 +2522,7 @@ export type Database = {
     }
     Enums: {
       court_type: "binnen" | "buiten" | "panorama" | "muur"
+      joker_type: "schild" | "dubbel_of_niets" | "wissel_van_kant"
       match_format: "1v1" | "2v2"
       match_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       roast_intensiteit: "mild" | "gemeen" | "radioactief"
@@ -2569,6 +2657,7 @@ export const Constants = {
   public: {
     Enums: {
       court_type: ["binnen", "buiten", "panorama", "muur"],
+      joker_type: ["schild", "dubbel_of_niets", "wissel_van_kant"],
       match_format: ["1v1", "2v2"],
       match_status: ["scheduled", "in_progress", "completed", "cancelled"],
       roast_intensiteit: ["mild", "gemeen", "radioactief"],

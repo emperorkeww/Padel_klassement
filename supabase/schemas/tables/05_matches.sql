@@ -10,6 +10,18 @@ create type public.match_format as enum ('1v1', '2v2');
 -- de gegenereerde types een nette union opleveren (zie match_format).
 create type public.court_type as enum ('binnen', 'buiten', 'panorama', 'muur');
 
+-- Maandelijkse joker (#1003). De tabel en de volledige motivatie staan in
+-- 24_match_jokers.sql; het type staat hier omdat rating_history hem al in
+-- 08_ratings.sql gebruikt en de schema-bestanden op naam worden ingelezen
+-- (config.toml, schema_paths). Als enum en niet als slug zoals wager_drink:
+-- dit is een gesloten lijst van drie met gevolgen voor de Elo-kern, geen
+-- groeiende kaart.
+create type public.joker_type as enum (
+  'schild',
+  'dubbel_of_niets',
+  'wissel_van_kant'
+);
+
 -- Matches: wedstrijden tussen twee teams, optioneel binnen een groep/ronde
 create table public.matches (
   id uuid primary key default gen_random_uuid(),
