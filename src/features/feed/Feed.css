@@ -828,6 +828,18 @@
   color: var(--dorst);
 }
 
+/* Gespeelde joker onder de uitslag (#1003): verklaart waarom er bij een schild
+   geen mutatie staat waar je er een verwacht. Zelfde vorm als de traktatie
+   erboven, in het jokerblauw. */
+.fmatch__joker {
+  margin: 0;
+  padding: 0 var(--sp-3) var(--sp-3);
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--joker);
+}
+
 /* Filterchips als losse pills (mockup-layout, #232): één scrollrij. */
 .feed__filterbar {
   display: flex;

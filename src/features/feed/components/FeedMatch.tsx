@@ -14,11 +14,16 @@ export function FeedMatch({
   tmap,
   pmap,
   name,
+  joker,
 }: {
   event: Extract<FeedEvent, { kind: "match" }>;
   tmap: Record<string, Team>;
   pmap: Record<string, Profile>;
   name: (pid: string) => string;
+  /** Jokerregel (#1003), kant-en-klaar via jokerKaartRegel; null = geen kaart
+   *  (of nog niet onthuld). Als prop en niet hier afgeleid: de kaarten staan in
+   *  een aparte tabel en de feed haalt ze in één bulk-query op. */
+  joker?: string | null;
 }) {
   const m = event.match;
   const done = m.status === "completed";
@@ -81,6 +86,9 @@ export function FeedMatch({
           rekening thuishoort — wie er nog een pint moet halen leest hier terug,
           en na het afvinken staat er dat het ingelost is. */}
       {traktatie && <p className="fmatch__traktatie">{traktatie}</p>}
+      {/* Joker (#1003): welke kaart er lag. Hoort naast de uitslag, want een
+          schild verklaart waarom de mutatie ontbreekt die je zou verwachten. */}
+      {joker && <p className="fmatch__joker">{joker}</p>}
     </Link>
   );
 }

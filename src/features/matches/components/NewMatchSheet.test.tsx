@@ -185,6 +185,91 @@ describe("<NewMatchSheet /> drankje-inzet (#1004)", () => {
   });
 });
 
+// De joker (#1003) is geen kolom op de match maar een rij op jouw naam, dus hij
+// gaat er ná create_planned_match op. De keuze verschijnt alleen als er ook echt
+// een kaart te spelen valt: een groepsmatch met een starttijd waarin je meedoet.
+describe("<NewMatchSheet /> joker (#1003)", () => {
+  async function planMet(joker?: RegExp) {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText(/wanneer/i), {
+      target: { value: "2026-12-17T20:00" },
+    });
+    if (joker) {
+      await userEvent.click(await screen.findByRole("button", { name: joker }));
+      await userEvent.click(screen.getByRole("button", { name: /match plannen/i }));
+    }
+    return userEvent;
+  }
+
+  it("legt de gekozen kaart op de zojuist geplande match", async () => {
+    const { supabase } = await import("@/lib/supabase/client");
+    await planMet(/schild/i);
+    await waitFor(() =>
+      expect(supabase.from).toHaveBeenCalledWith("match_jokers"),
+    );
+  });
+
+  it("toont de keuze pas zodra er een starttijd staat", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+    // Zonder starttijd is er geen maand om op af te rekenen, dus geen keuze.
+    expect(
+      screen.queryByRole("button", { name: /wissel van kant/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("bewaart de keuze in het concept", async () => {
+    await planMet();
+    const userEvent = (await import("@testing-library/user-event")).default;
+    await userEvent.click(
+      await screen.findByRole("button", { name: /dubbel of niets/i }),
+    );
+    await waitFor(() =>
+      expect(readDraft("plan", "g1")?.joker).toBe("dubbel_of_niets"),
+    );
+  });
+});
+
 describe("<NewMatchSheet /> speelvorm 1v1 (#279)", () => {
   it("logt een 1v1 met één speler per team en null als tweede speler", async () => {
     const userEvent = (await import("@testing-library/user-event")).default;

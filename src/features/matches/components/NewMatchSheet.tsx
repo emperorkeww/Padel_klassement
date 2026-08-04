@@ -23,6 +23,9 @@ import {
 } from "@/features/matches/outbox";
 import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
 import { DrankPicker } from "@/features/matches/components/DrankPicker";
+import { JokerPicker } from "@/features/matches/components/JokerPicker";
+import { setJoker } from "@/features/matches/jokersApi";
+import type { JokerId } from "@/features/matches/jokers";
 import { COURT_TYPES } from "@/features/matches/courtType";
 import {
   readDraft,
@@ -91,6 +94,10 @@ export function NewMatchSheet({
   // plannen: de inzet hoort vóór de wedstrijd afgesproken te worden.
   const [wagerDrink, setWagerDrink] = useState<string | null>(null);
   const [wagerQty, setWagerQty] = useState(1);
+  // Joker (#1003); null = geen kaart op deze match. Anders dan het drankje is
+  // dit geen kolom op de match maar een rij op jouw naam, dus hij gaat er ná
+  // het plannen op — zie plan().
+  const [joker, setJokerKeuze] = useState<JokerId | null>(null);
   const [repeat, setRepeat] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [busy, setBusy] = useState(false);
@@ -117,6 +124,19 @@ export function NewMatchSheet({
   // De groep die daadwerkelijk meegaat in de submit: vast (prop) of gekozen.
   const effectiveGroupId = groupId ?? (pickedGroupId || null);
 
+  // Valt er hier überhaupt een joker te spelen (#1003)? Spiegel van de eerste
+  // drie checks van match_jokers_guard: een groepsmatch met een starttijd
+  // waarin je zelf meedoet. De rest (tegoed, drempel, speelvorm) laat de guard
+  // beslissen — die kent je historie, de wizard niet. Bij een wekelijkse reeks
+  // blijft de keuze weg: één kaart per maand landt dan op de eerste match en op
+  // de rest niet, en dat verwacht niemand.
+  const jokerKiesbaar =
+    !!effectiveGroupId &&
+    when !== "" &&
+    !repeat &&
+    !!myId &&
+    (teamA.includes(myId) || teamB.includes(myId));
+
   /** Zet alle invoervelden terug op hun beginwaarden (verse start). Gasten en
    *  zoekterm horen bij de sessie, niet bij het concept — die altijd leeg. */
   function resetFields() {
@@ -132,6 +152,7 @@ export function NewMatchSheet({
     setCourtType(null);
     setWagerDrink(null);
     setWagerQty(1);
+    setJokerKeuze(null);
     setRepeat(false);
     setRepeatWeeks(4);
     setPickedGroupId("");
@@ -164,6 +185,8 @@ export function NewMatchSheet({
       // Concepten van vóór #1004 kennen deze velden niet.
       setWagerDrink(draft.wagerDrink ?? null);
       setWagerQty(draft.wagerQty ?? 1);
+      // Idem voor concepten van vóór #1003.
+      setJokerKeuze(draft.joker ?? null);
       setRepeat(draft.repeat);
       setRepeatWeeks(draft.repeatWeeks);
       setPickedGroupId(draft.pickedGroupId);
@@ -196,6 +219,7 @@ export function NewMatchSheet({
       courtType,
       wagerDrink,
       wagerQty,
+      joker,
       repeat,
       repeatWeeks,
       pickedGroupId,
@@ -223,6 +247,7 @@ export function NewMatchSheet({
     courtType,
     wagerDrink,
     wagerQty,
+    joker,
     repeat,
     repeatWeeks,
     pickedGroupId,
@@ -373,6 +398,36 @@ export function NewMatchSheet({
           wagerDrinkQty: wagerQty,
         });
         if (result.status === "queued") queued++;
+        // Joker (#1003): een rij op jouw naam, dus pas te leggen zodra de match
+        // een id heeft — en alleen op de eerste van een reeks, want je hebt er
+        // één per maand. Mislukt hij (te weinig matches, kaart al gespeeld,
+        // lef staat er al), dan blijft de match gewoon staan en zegt de toast
+        // waarom; de wedstrijdkaart is er nog om het opnieuw te proberen.
+        if (
+          i === 0 &&
+          joker &&
+          jokerKiesbaar &&
+          effectiveGroupId &&
+          result.status === "saved"
+        ) {
+          try {
+            await setJoker({
+              matchId: result.matchId,
+              groupId: effectiveGroupId,
+              playerId: myId,
+              joker,
+            });
+          } catch (err) {
+            toast.error(`Match gepland, maar je joker niet: ${errorMessage(err)}`);
+          }
+        }
+      }
+      // Zonder verbinding bestaat de match nog niet, dus valt er ook niets op
+      // te leggen. Eerlijk zeggen in plaats van de keuze stil laten vallen.
+      if (joker && jokerKiesbaar && queued > 0) {
+        toast.error(
+          "Je joker is niet gelegd: dat lukt pas als de match echt bestaat. Speel hem straks op de wedstrijdkaart.",
+        );
       }
       tap();
       if (queued > 0) {
@@ -766,6 +821,19 @@ export function NewMatchSheet({
               onAantalChange={setWagerQty}
               disabled={busy}
             />
+
+            {/* Joker (#1003): alleen als er ook echt een kaart te spelen valt —
+                een groepsmatch met een starttijd waarin je zelf meedoet. Bij een
+                wekelijkse reeks blijft hij weg: je hebt er één per maand, dus
+                dan zou hij op de eerste match landen en op de rest niet, wat
+                niemand hier verwacht. */}
+            {jokerKiesbaar && (
+              <JokerPicker
+                value={joker}
+                onChange={setJokerKeuze}
+                disabled={busy}
+              />
+            )}
 
             <footer className="sheet__foot">
               <button className="btn" onClick={() => setStep(1)} disabled={busy}>

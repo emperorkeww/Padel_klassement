@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
 import { useRealtime } from "@/lib/hooks/useRealtime";
 import { FeedSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
@@ -59,6 +60,8 @@ import { coachOpmerking, coachStemming } from "./coachFeed";
 import { coachAvond } from "./coachEvening";
 import { eveningSummary, type EveningSummary } from "@/features/feed/eveningSummary";
 import { getZwartePiet } from "@/features/groups/zwartePietApi";
+import { jokerKaartRegel } from "@/features/matches/jokers";
+import { getJokersForMatches } from "@/features/matches/jokersApi";
 import type {
   GroupMember,
   Match,
@@ -99,6 +102,15 @@ export function Feed() {
     [matches.data],
   );
   const feedMatchKey = feedMatchIds.join(",");
+  // Jokers van de matches in de feed (#1003): één bulk-query voor het hele
+  // scherm in plaats van een fetch per kaart, net als in de historie en de
+  // rondelijst. De cache-revisie trekt de regels bij als er elders een kaart
+  // gespeeld of ingetrokken wordt.
+  const jokersRev = useCacheRevision("match-jokers");
+  const feedJokers = useAsync(
+    () => getJokersForMatches(feedMatchKey ? feedMatchKey.split(",") : []),
+    [feedMatchKey, jokersRev],
+  );
   const matchHistories = useAsync(
     () => getRatingHistoriesForMatches(feedMatchIds),
     [feedMatchKey],
@@ -425,6 +437,17 @@ export function Feed() {
                             tmap={tmap}
                             myId={myId}
                             name={name}
+                            joker={
+                              event.kind === "match"
+                                ? jokerKaartRegel({
+                                    match: event.match,
+                                    jokers: feedJokers.data ?? [],
+                                    teams: tmap,
+                                    naam: name,
+                                    myId,
+                                  })
+                                : null
+                            }
                           />
                           <CoachComment
                             tekst={coachOpmerking(event, {

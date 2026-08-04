@@ -148,11 +148,13 @@ export const UITLEG_REGELS: Record<UitlegSleutel, Pools> = {
       "Voorspellen mag. Goed gokken levert punten op, meer risico levert meer op.",
       "Zet je voorspelling in, kijk hoe het afloopt. Kost je niks.",
       "De toto is voor wie het leuk vindt om vooraf al gelijk te hebben.",
+      "En één joker per maand. Eén. Kies je moment.",
     ],
     scherp: [
       "Voorspellen kan iedereen. Goed voorspellen, dát is het probleem.",
       "Lef is een mooie eigenschap. Tot je erop afgerekend wordt in het toto-klassement.",
       "Durf eens tegen de favoriet in te gokken. Of blijf veilig, past ook bij je spel.",
+      "Je joker van deze maand: één kaart. Sommigen sparen hem, de rest speelt hem op een dinsdag.",
     ],
   },
   rudy: {

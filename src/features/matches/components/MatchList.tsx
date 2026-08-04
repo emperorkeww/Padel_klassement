@@ -26,6 +26,7 @@ export function MatchCard({
   perspectiveId,
   upset,
   lef,
+  joker,
 }: {
   match: Match;
   teams: Record<string, Team>;
@@ -37,6 +38,10 @@ export function MatchCard({
    *  niets speelde en hoe dat afliep. null/undefined = geen inzet (of nog
    *  niet onthuld) en dus geen regel. */
   lef?: string | null;
+  /** Jokerregel (#1003), kant-en-klaar via jokerKaartRegel. Zelfde route als
+   *  `lef` en om dezelfde reden een prop: de kaarten staan in een aparte tabel
+   *  en worden per lijst in bulk opgehaald, niet per matchkaart. */
+  joker?: string | null;
 }) {
   const done = m.status === "completed";
   const aWon = done && m.winner_team_id === m.team_a_id;
@@ -91,6 +96,12 @@ export function MatchCard({
         {/* Lef-inzet (#981): blijft ook op de ingeklapte kaart staan, zodat
             wie waar dubbel of niets speelde na de speeldag terug te lezen is. */}
         {lef && <span className="match-card__meta match-card__lef">{lef}</span>}
+        {/* Joker (#1003): net als de lef-regel blijft de gespeelde kaart op de
+            ingeklapte kaart staan — een schild dat een nederlaag wegnam hoort
+            terug te lezen te zijn naast de uitslag die het niet veranderde. */}
+        {joker && (
+          <span className="match-card__meta match-card__joker">{joker}</span>
+        )}
         {/* Drankje-inzet (#1004). Bewust hier afgeleid en niet als prop
             doorgegeven zoals `lef`: die moet uit een aparte tabel komen, dit
             staat al op de matchrij zelf. Zo verschijnt de traktatie overal waar
@@ -120,6 +131,7 @@ export function DeletableMatchCard({
   perspectiveId,
   upset,
   lef,
+  joker,
   canManage = false,
   onDeleted,
 }: {
@@ -130,6 +142,8 @@ export function DeletableMatchCard({
   upset?: Upset | null;
   /** Lef-regel (#981), doorgegeven aan de onderliggende MatchCard. */
   lef?: string | null;
+  /** Jokerregel (#1003), idem. */
+  joker?: string | null;
   /** True voor de groepseigenaar: mag ook matches van anderen verwijderen. */
   canManage?: boolean;
   onDeleted: () => void;
@@ -180,6 +194,7 @@ export function DeletableMatchCard({
         perspectiveId={perspectiveId}
         upset={upset}
         lef={lef}
+        joker={joker}
       />
     );
   }
@@ -193,6 +208,7 @@ export function DeletableMatchCard({
         perspectiveId={perspectiveId}
         upset={upset}
         lef={lef}
+        joker={joker}
       />
       <button
         type="button"
