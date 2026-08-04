@@ -20,7 +20,10 @@ import {
   searchDiscoverableProfiles,
   categorize,
   otherId,
+  mijnRelaties,
+  reopenFriendRequest,
   type FriendSuggestion,
+  type MijnRelatie,
 } from "./api";
 import {
   getMyGuestClaims,
@@ -59,6 +62,37 @@ const LIJST_STAP = 12;
 
 /** localStorage-sleutel voor het dempen van de H2H-bubbels. */
 const H2H_UIT = "vrienden-h2h-uit";
+
+/**
+ * Wat de knop naast een zoekresultaat zegt en doet. Eén generiek "Al gekoppeld"
+ * dekte vier verschillende situaties (#1013); nu benoemt het label waar je op
+ * wacht. Een verzoek dat ík geweigerd heb is geen doodlopende weg meer:
+ * `heropenId` wijst naar de rij die daarvoor plaats moet maken.
+ */
+function zoekActie(relatie: MijnRelatie | undefined): {
+  label: string;
+  disabled: boolean;
+  heropenId: string | null;
+} {
+  switch (relatie?.soort) {
+    case undefined:
+      return { label: "Verzoek sturen", disabled: false, heropenId: null };
+    case "vrienden":
+      return { label: "Al vrienden", disabled: true, heropenId: null };
+    case "verzoek-verstuurd":
+      return { label: "Verzoek verstuurd", disabled: true, heropenId: null };
+    case "verzoek-ontvangen":
+      return { label: "Verzoek ontvangen", disabled: true, heropenId: null };
+    case "geweigerd-door-mij":
+      return {
+        label: "Alsnog toevoegen",
+        disabled: false,
+        heropenId: relatie.rij.id,
+      };
+    case "geweigerd-door-hen":
+      return { label: "Verzoek geweigerd", disabled: true, heropenId: null };
+  }
+}
 
 export function Friends() {
   usePageTitle("Vrienden");
@@ -120,14 +154,17 @@ export function Friends() {
   const nieuweRivaalQuip = (addresseeId: string) =>
     coachVrienden({ situatie: "nieuw", seed: addresseeId, ctx: myCtx });
 
-  // ids die al een relatie hebben (om dubbele verzoeken te voorkomen in de zoekresultaten)
-  const relatedIds = new Set(
-    (friendships.data ?? []).flatMap((f) => [f.requester_id, f.addressee_id]),
-  );
+  // Mijn eigen relaties, per speler-id — strikt de rijen waar ik zelf bij zit.
+  // Dit stond hier ooit als "alle ids uit alle rijen", maar sinds #326 zijn ook
+  // vriendschappen tússen twee anderen leesbaar; die maakten vreemden onterecht
+  // "al gekoppeld" en filterden ze uit de suggesties (#1013).
+  const relaties = mijnRelaties(friendships.data ?? [], myId);
 
-  // Suggesties waarvan we het profiel kennen en die nog geen relatie hebben.
+  // Suggesties waarvan we het profiel kennen. De RPC sluit bestaande relaties
+  // al server-side uit; deze filter dekt enkel nog een suggestielijst die net
+  // achterloopt op een zojuist verstuurd verzoek.
   const visibleSuggestions = (suggestions.data ?? []).filter(
-    (s) => !relatedIds.has(s.id) && pmap[s.id],
+    (s) => !relaties.has(s.id) && pmap[s.id],
   );
 
   // Lange lijsten stap voor stap (#919): een volle vriendenlijst maakte de tab
@@ -589,21 +626,26 @@ export function Friends() {
                           </p>
                         )}
                         {results.map((p) => {
-                          const already = relatedIds.has(p.id);
+                          const { label, disabled, heropenId } = zoekActie(
+                            relaties.get(p.id),
+                          );
                           return (
                             <div key={p.id} className="person-row">
                               <PersonCell profile={p} to={`/spelers/${p.id}`} />
                               <button
                                 className="btn btn--sm"
-                                disabled={already}
+                                disabled={disabled}
                                 onClick={() =>
                                   act(
-                                    () => sendFriendRequest(myId, p.id),
+                                    () =>
+                                      heropenId
+                                        ? reopenFriendRequest(heropenId, myId, p.id)
+                                        : sendFriendRequest(myId, p.id),
                                     nieuweRivaalQuip(p.id),
                                   )
                                 }
                               >
-                                {already ? "Al gekoppeld" : "Verzoek sturen"}
+                                {label}
                               </button>
                             </div>
                           );
