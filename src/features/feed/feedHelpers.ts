@@ -20,7 +20,16 @@ export const FILTERS = {
     "in-form",
     "on-fire",
   ]),
-  Roast: new Set<FeedEvent["kind"]>(["pias-week", "maand-pias", "zwarte-piet", "smoes", "vendetta"]),
+  // De VAR hoort bij Roast en niet bij Matches: het is een sociaal ritueel met
+  // Rudy als scheidsrechter, geen uitslag (#1025).
+  Roast: new Set<FeedEvent["kind"]>([
+    "pias-week",
+    "maand-pias",
+    "zwarte-piet",
+    "smoes",
+    "vendetta",
+    "var",
+  ]),
   Groepen: new Set<FeedEvent["kind"]>([
     "group-created",
     "group-joined",
@@ -82,6 +91,8 @@ export function eventKey(event: FeedEvent): string {
       return `sm-${event.matchId}-${event.playerId}`;
     case "vendetta":
       return `v-${event.groupId}-${event.challengerId}-${event.rivalId}-${event.sub}-${event.at}`;
+    case "var":
+      return `var-${event.appealId}`;
   }
 }
 

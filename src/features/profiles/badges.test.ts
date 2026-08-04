@@ -65,7 +65,7 @@ function badge(badges: Badge[], id: string): Badge {
 describe("deriveBadges — lege input", () => {
   it("geeft de volledige set terug, niets behaald, voortgang 0", () => {
     const badges = deriveBadges([], teams, "p1");
-    expect(badges).toHaveLength(92);
+    expect(badges).toHaveLength(94);
     expect(badges.every((b) => !b.behaald)).toBe(true);
     expect(badge(badges, "matches-10").voortgang).toEqual({ nu: 0, doel: 10 });
     expect(badge(badges, "reeks-3").voortgang).toEqual({ nu: 0, doel: 3 });
@@ -1043,5 +1043,52 @@ describe("Nét niet — de Pechvogel-meter (#1005)", () => {
   it("laat de winnaar met lege handen achter", () => {
     const ms = [nipt(), nipt(), nipt()];
     expect(badge(deriveBadges(ms, teams, "p3"), "net-niet").behaald).toBe(false);
+  });
+});
+
+// --- Rudy's VAR (#1025) ------------------------------------------------------
+
+describe("VAR-badges", () => {
+  const zaak = (status: string) => ({ status });
+
+  it("telt toegekende beroepen voor Onbetwist", () => {
+    const b = badge(
+      deriveBadges([], {}, "p1", undefined, {
+        appeals: [zaak("toegekend"), zaak("toegekend"), zaak("toegekend")],
+      }),
+      "var-onbetwist",
+    );
+    expect(b.behaald).toBe(true);
+    expect(b.voortgang).toEqual({ nu: 3, doel: 3 });
+  });
+
+  it("rekent een zaak waarin het tegoed op was ook als gelijk", () => {
+    // De groep gaf gelijk; alleen de uitslag bleef staan. Dat is geen
+    // afwijzing, en het zou oneerlijk zijn om het als ongelijk te tellen.
+    const b = badge(
+      deriveBadges([], {}, "p1", undefined, {
+        appeals: [zaak("toegekend"), zaak("tegoed-op")],
+      }),
+      "var-onbetwist",
+    );
+    expect(b.voortgang).toEqual({ nu: 2, doel: 3 });
+  });
+
+  it("telt afwijzingen voor de anti-badge", () => {
+    const b = badge(
+      deriveBadges([], {}, "p1", undefined, {
+        appeals: [zaak("afgewezen"), zaak("afgewezen"), zaak("afgewezen")],
+      }),
+      "var-drammer",
+    );
+    expect(b.behaald).toBe(true);
+  });
+
+  it("laat een vervallen of lopende zaak beide kanten ongemoeid", () => {
+    const badges = deriveBadges([], {}, "p1", undefined, {
+      appeals: [zaak("verlopen"), zaak("open")],
+    });
+    expect(badge(badges, "var-onbetwist").voortgang).toEqual({ nu: 0, doel: 3 });
+    expect(badge(badges, "var-drammer").voortgang).toEqual({ nu: 0, doel: 3 });
   });
 });

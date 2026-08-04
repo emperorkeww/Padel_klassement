@@ -52,6 +52,18 @@ create trigger push_on_friendship_insert
   after insert on public.friendships
   for each row execute function public.notify_send_push();
 
+-- Rudy's VAR (#1025): een nieuw beroep (naar de stemgerechtigden) en de
+-- uitspraak (naar de klager + wie gestemd heeft). De uitspraak komt van een
+-- stem óf van de cron (appeal-deadline); allebei zijn het een status-UPDATE,
+-- dus één trigger volstaat. Zie de point_appeals-handler in send-push.
+create trigger push_on_point_appeal_insert
+  after insert on public.point_appeals
+  for each row execute function public.notify_send_push();
+
+create trigger push_on_point_appeal_update
+  after update on public.point_appeals
+  for each row execute function public.notify_send_push();
+
 -- Speeldag-polls: nieuwe poll (naar de groep) en gelockt/geboekt (naar de
 -- stemmers) — zie de play_polls-handlers in send-push.
 create trigger push_on_poll_insert

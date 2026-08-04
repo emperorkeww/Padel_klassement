@@ -110,6 +110,13 @@ export const VALSE_PROFEET_DOEL = 5;
 /** Netrollers in één match voor de Netroller (#809). */
 export const NETROLLER_DOEL = 3;
 
+/** Toegekende VAR-beroepen voor de Onbetwist-badge (#1025). Drie keer de groep
+ *  overtuigen dat jij gelijk had is geen toeval meer. */
+export const VAR_GELIJK_DOEL = 3;
+/** Afgewezen VAR-beroepen voor de anti-badge. Even hoog: één afwijzing is pech,
+ *  drie is een karaktertrek. */
+export const VAR_ONGELIJK_DOEL = 3;
+
 export const WINSTEN: Array<{ doel: number; naam: string; emoji: string }> = [
   { doel: 25, naam: "Winnaarstype", emoji: "🏅" },
   { doel: 50, naam: "Halve eeuw zeges", emoji: "🏆" },

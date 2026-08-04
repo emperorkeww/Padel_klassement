@@ -620,6 +620,7 @@ export function MatchDetail() {
         teams={tmap}
         profiles={pmap}
         myId={user?.id ?? null}
+        group={group.data}
         onChanged={() => match.reload()}
       />
 
