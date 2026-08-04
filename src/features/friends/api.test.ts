@@ -5,9 +5,13 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: h.build() };
 });
 
-import { reset, calls } from "@/test/apiHarness";
+import { enqueue, reset, calls } from "@/test/apiHarness";
 import { invalidateAll } from "@/lib/supabase/queryCache";
-import { mijnRelaties, reopenFriendRequest } from "./api";
+import {
+  mijnRelaties,
+  reopenFriendRequest,
+  searchDiscoverableProfiles,
+} from "./api";
 import type { Friendship } from "@/types";
 
 beforeEach(() => {
@@ -90,9 +94,45 @@ describe("reopenFriendRequest", () => {
   });
 
   it("stuurt geen verzoek als het verwijderen faalt", async () => {
-    const { enqueue } = await import("@/test/apiHarness");
     enqueue({ error: { message: "boem" } });
     await expect(reopenFriendRequest("f5", "p1", "p6")).rejects.toBeTruthy();
     expect(calls.some((c) => c.method === "insert")).toBe(false);
+  });
+});
+
+describe("searchDiscoverableProfiles", () => {
+  it("geeft [] terug zonder query, zonder supabase te raken", async () => {
+    expect(await searchDiscoverableProfiles("   ", "me")).toEqual([]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("zoekt op username en sluit jezelf uit", async () => {
+    enqueue({ data: [{ id: "p2", username: "bob" }] });
+    const res = await searchDiscoverableProfiles("bo", "me");
+    expect(res).toHaveLength(1);
+    expect(calls.some((c) => c.method === "ilike")).toBe(true);
+    expect(calls.some((c) => c.method === "neq")).toBe(true);
+  });
+
+  // De kern van de privacy-belofte (#564/#1014): verborgen spelers mogen niet
+  // op naam op te diepen zijn.
+  it("filtert op discoverable = true", async () => {
+    enqueue({ data: [] });
+    await searchDiscoverableProfiles("bo", "me");
+    expect(
+      calls.some(
+        (c) =>
+          c.method === "eq" &&
+          c.args[0] === "discoverable" &&
+          c.args[1] === true,
+      ),
+    ).toBe(true);
+  });
+
+  it("gooit bij een fout", async () => {
+    enqueue({ error: { message: "stuk" } });
+    await expect(searchDiscoverableProfiles("bo", "me")).rejects.toEqual({
+      message: "stuk",
+    });
   });
 });

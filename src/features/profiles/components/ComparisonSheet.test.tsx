@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { Match, PlayerRating, PlayerStanding, Profile, Team } from "@/types";
 
 // Vier spelers; p1 & p2 zijn zowel partners (m1) als tegenstanders (m2, m3)
-// geweest, zodat balans + historie beide takken raken.
+// geweest, zodat balans + historie beide takken raken. p5-p7 staan er voor de
+// privacy-regel (#1014): alle drie verborgen, maar alleen p5 is een vreemde.
 const PROFILES: Record<string, Profile> = {
   p1: { id: "p1", username: "alice", full_name: "Alice", avatar_url: null, created_at: "" },
   p2: { id: "p2", username: "bob", full_name: "Bob", avatar_url: null, created_at: "" },
   p3: { id: "p3", username: "carol", full_name: "Carol", avatar_url: null, created_at: "" },
   p4: { id: "p4", username: "dave", full_name: "Dave", avatar_url: null, created_at: "" },
+  p5: { id: "p5", username: "eve", full_name: "Eve", avatar_url: null, created_at: "", discoverable: false },
+  p6: { id: "p6", username: "frank", full_name: "Frank", avatar_url: null, created_at: "", discoverable: false },
+  p7: { id: "p7", username: "grace", full_name: "Grace", avatar_url: null, created_at: "", discoverable: false },
 };
 const TEAMS: Record<string, Team> = {
   tAB: { id: "tAB", name: null, player1_id: "p1", player2_id: "p2", created_at: "" },
@@ -72,8 +76,52 @@ vi.mock("@/features/matches/api", async (orig) => ({
   getTeamsMap: vi.fn(() => Promise.resolve(TEAMS)),
   getPlayerMatches: (...args: [string, number?]) => getPlayerMatches(args[0]),
 }));
+// p1 (de ingelogde speler) is bevriend met p6 en zit met p7 in een groep; p5
+// kent hij niet. Zo raakt de privacy-regel al haar takken.
+vi.mock("@/features/friends/api", async (orig) => ({
+  ...(await orig<typeof import("@/features/friends/api")>()),
+  getMyFriendships: vi.fn(() =>
+    Promise.resolve([
+      {
+        id: "f1",
+        requester_id: "p1",
+        addressee_id: "p6",
+        status: "accepted",
+        created_at: "",
+        updated_at: "",
+      },
+    ]),
+  ),
+}));
+vi.mock("@/features/groups/api", async (orig) => ({
+  ...(await orig<typeof import("@/features/groups/api")>()),
+  getMyGroups: vi.fn(() =>
+    Promise.resolve([{ id: "g1", name: "Groep", member_ids: ["p1", "p7"] }]),
+  ),
+}));
+vi.mock("@/features/auth/api", () => ({
+  getSession: () => Promise.resolve({ data: { session: { user: { id: "p1" } } } }),
+  onAuthStateChange: () => ({
+    data: { subscription: { unsubscribe: () => {} } },
+  }),
+  signOut: () => Promise.resolve(),
+}));
 
+import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ComparisonSheet } from "./ComparisonSheet";
+
+function renderSheet(leftId = "p1", rightId = "p2") {
+  return render(
+    <AuthProvider>
+      <ComparisonSheet
+        open
+        onClose={() => {}}
+        defaultLeftId={leftId}
+        defaultRightId={rightId}
+      />
+    </AuthProvider>,
+  );
+}
 
 beforeEach(() => {
   getPlayerMatches.mockClear();
@@ -81,9 +129,7 @@ beforeEach(() => {
 
 describe("ComparisonSheet", () => {
   it("toont beide spelers, laat de hogere Elo oplichten en de onderlinge balans zien", async () => {
-    render(
-      <ComparisonSheet open onClose={() => {}} defaultLeftId="p1" defaultRightId="p2" />,
-    );
+    renderSheet();
 
     // Namen boven de vergelijking (de dropdown-opties heten ook zo, dus
     // scopen we op de kop-spans).
@@ -111,9 +157,7 @@ describe("ComparisonSheet", () => {
   });
 
   it("herlaadt de matches wanneer een speler gewisseld wordt", async () => {
-    render(
-      <ComparisonSheet open onClose={() => {}} defaultLeftId="p1" defaultRightId="p2" />,
-    );
+    renderSheet();
     await screen.findByText("Alice", { selector: ".vs-names__name" });
     getPlayerMatches.mockClear();
 
@@ -129,11 +173,42 @@ describe("ComparisonSheet", () => {
   });
 
   it("vraagt om twee verschillende spelers bij een gelijke keuze", async () => {
-    render(
-      <ComparisonSheet open onClose={() => {}} defaultLeftId="p1" defaultRightId="p1" />,
-    );
+    renderSheet("p1", "p1");
     expect(
       await screen.findByText(/Kies twee verschillende spelers/),
     ).toBeInTheDocument();
+  });
+
+  // #1014: de keuzelijst is precies zo'n plek waar je iemand "aangeboden"
+  // krijgt, dus de privacy-toggle hoort er te gelden — met de uitzondering dat
+  // wie je al kent gewoon kiesbaar blijft.
+  describe("privacy (#1014)", () => {
+    async function opties(label: "Speler links" | "Speler rechts") {
+      await screen.findByText("Alice", { selector: ".vs-names__name" });
+      const select = await screen.findByLabelText(label);
+      return within(select as HTMLElement)
+        .getAllByRole("option")
+        .map((o) => o.textContent);
+    }
+
+    it("laat een verborgen vreemde weg uit beide keuzelijsten", async () => {
+      renderSheet();
+      expect(await opties("Speler links")).not.toContain("Eve");
+      expect(await opties("Speler rechts")).not.toContain("Eve");
+    });
+
+    it("houdt een verborgen vriend en groepsgenoot wél kiesbaar", async () => {
+      renderSheet();
+      const namen = await opties("Speler rechts");
+      expect(namen).toContain("Frank");
+      expect(namen).toContain("Grace");
+    });
+
+    it("houdt een verborgen speler kiesbaar als de sheet met hem geopend is", async () => {
+      renderSheet("p1", "p5");
+      // p5 is een vreemde en zou normaal wegvallen, maar je hebt zijn profiel
+      // al voor je — hem uit zijn eigen vergelijking filteren helpt niemand.
+      expect(await opties("Speler rechts")).toContain("Eve");
+    });
   });
 });

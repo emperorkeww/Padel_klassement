@@ -1,7 +1,14 @@
--- RPC: stel vrienden voor aan de ingelogde gebruiker.
--- Prioriteit op gemeenschappelijke vrienden (mutual_count desc), daarna willekeurig aangevuld.
--- SECURITY DEFINER omdat vrienden-van-vrienden buiten de eigen RLS-zichtbaarheid vallen.
--- mutual_ids bevat de id's van de gemeenschappelijke vrienden (de client toont hun namen).
+-- Fix voor issue #1014: wie geen vriendschapsverzoeken ontvangt, hoort niet in
+-- "Misschien ken je" te staan. De RPC filterde al op discoverable (#564), maar
+-- niet op allow_friend_requests. Zo'n suggestie kwam mét een actieve
+-- "Verzoek sturen"-knop, die vervolgens onvermijdelijk afketste op de trigger
+-- enforce_friend_request_privacy ("Deze speler ontvangt geen
+-- vriendschapsverzoeken.") — een knop die per definitie faalt.
+--
+-- Deze migratie vervangt de RPC met een versie die ook op
+-- allow_friend_requests filtert. De speler zelf verdwijnt nergens anders uit:
+-- klassement, matches en groepen blijven ongewijzigd.
+
 create or replace function public.get_friend_suggestions(p_limit int default 12)
 returns table (id uuid, mutual_count int, mutual_ids uuid[])
 language sql
