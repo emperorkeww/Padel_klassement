@@ -53,7 +53,21 @@ const ASSETS = pad("../../../dist/assets");
 // aankondigingsregio van #924 (~600 byte) was de eerste die er tegenaan liep.
 // Nu 10,75 MB, met ~150 kB echte lucht. Meet de stand vóór het verhogen; de
 // tekst hierboven ging uit van een reserve die er niet was.
-const TOTAAL_MAX_MB = 10.75;
+//
+// Die ~150 kB was er alwéér niet: `main` stond gemeten op 10,7171 MB, dus 33 kB
+// onder de grens — de raming ging uit van de stand op het moment van verhogen en
+// niet van wat er daarna nog bij kwam. De release erna liep er meteen tegenaan,
+// 8,6 kB over. Opbouw van die 42,3 kB groei, gemeten door de assetlijsten van
+// main en develop naast elkaar te leggen:
+//   glazenwasser.webp   +39,9 kB  (herbouwde FUT-kaart, PR #1040)
+//   AdminPaneel.js/.css  +8,1 kB  (adminpaneel #1036, een lazy route)
+//   index.css/compare.js -5,7 kB  netto
+// Het artwork is dus opnieuw de post die telt, en die staat al op zijn
+// compressiegrens. Nu 11,0 MB, gemeten vanaf 10,7584 MB: ~248 kB echte lucht,
+// nog steeds ruim onder de per-bestandsgrens die een ongecomprimeerde bron vangt.
+// Voor de volgende die dit leest: méét, en verhoog vanaf de gemeten stand — niet
+// vanaf de vorige grens.
+const TOTAAL_MAX_MB = 11.0;
 // Bovengrens per bestand: de twee audiofragmenten (2,14 MB) zijn de zwaarste
 // die hier thuishoren.
 const BESTAND_MAX_MB = 2.5;
