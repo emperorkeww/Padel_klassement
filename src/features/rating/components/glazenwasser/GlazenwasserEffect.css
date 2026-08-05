@@ -4,12 +4,15 @@
    (x 72..952, y 160..1383) volgt exact uit deze drie waarden, en
    scripts/glazenwasser-master.py rekent ze uit dezelfde constanten. */
 
-.fut-kaart.fut-kaart--platina {
+.fut-kaart.fut-kaart--glazenwasser {
   --glazenwasser-master-left: -8.18%;
   --glazenwasser-master-top: -13.08%;
   --glazenwasser-master-width: 116.36%;
   --glazenwasser-master-scale: 1;
   --glazenwasser-master-rotate: 0deg;
+  --glazenwasser-laag-achter: 0;
+  --glazenwasser-laag-kaart: 2;
+  --glazenwasser-laag-voor: 4;
   --glazenwasser-master-inset: calc(
     var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
       var(--kaart-keyline-dikte, 1px)
@@ -47,13 +50,13 @@
 /* Expliciete paintvolgorde binnen de preserve-3d-flipper. De Glazenwasser heeft
    geen losse vectorornamenten meer: crest, klemmen, veegbogen en medaillon leven
    in de master (de canvas-/posterroute tekent ze nog wel). */
-.fut-kaart.fut-kaart--platina .fut-kaart__zijde--voor {
+.fut-kaart.fut-kaart--glazenwasser .fut-kaart__zijde--voor {
   position: relative;
-  z-index: 2;
+  z-index: var(--glazenwasser-laag-kaart);
 }
 
 .glazenwasser-effect--achter {
-  z-index: 0;
+  z-index: var(--glazenwasser-laag-achter, 0);
 }
 
 /* De negatieve inset herstelt de volledige 100×139-kaartstage nadat de
@@ -78,7 +81,10 @@
 /* Crest, hoekschuim, trekkers, sopemmer, badge en de onderste helft van de
    waterexplosie liggen vóór het frame. */
 .glazenwasser-effect--voor {
-  z-index: 3;
+  /* Expliciet boven voor- én achterkant van de flipper. Het WebP-masker laat
+     hier alleen crest, frame, gereedschap, schuim en water door; de transparante
+     zones blijven klikbaar via de onderliggende kaartknop. */
+  z-index: var(--glazenwasser-laag-voor, 4);
 }
 
 .glazenwasser-effect--voor .glazenwasser-effect__master {
