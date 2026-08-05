@@ -2504,6 +2504,32 @@ export type Database = {
           id: number
         }[]
       }
+      admin_gasten_overzicht: {
+        Args: never
+        Returns: {
+          aantal_matches: number
+          created_at: string
+          full_name: string
+          id: string
+          open_claim: Json
+          owner_id: string
+          owner_username: string
+          username: string
+        }[]
+      }
+      admin_groepen_overzicht: {
+        Args: never
+        Returns: {
+          aantal_leden: number
+          aantal_matches: number
+          created_at: string
+          created_by: string
+          eigenaar_username: string
+          id: string
+          laatste_match: string
+          name: string
+        }[]
+      }
       admin_trek_sessies_in: { Args: { p_uid: string }; Returns: number }
       admin_user_detail: { Args: { p_uid: string }; Returns: Json }
       admin_users_overzicht: {
