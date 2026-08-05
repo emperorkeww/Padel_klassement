@@ -1,7 +1,8 @@
-import { useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { updateUser } from "./api";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { updateUser, verifyOtp } from "./api";
 import { useAuth } from "./AuthProvider";
+import { invalidate } from "@/lib/supabase/queryCache";
 import {
   authErrorMessage,
   authErrorVeld,
@@ -21,7 +22,14 @@ type Veld = "wachtwoord" | "bevestig";
 export function ResetPassword() {
   usePageTitle("Nieuw wachtwoord");
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, loading, signOut } = useAuth();
+  const [params] = useSearchParams();
+  // Herstel-link uit het adminpaneel (#1036): die draagt het token in de URL
+  // i.p.v. via /auth/v1/verify, zodat een link-preview-bot hem niet opbrandt.
+  // Verzilveren gebeurt daarom hier, in JavaScript dat zo'n bot niet uitvoert.
+  const tokenHash = params.get("token_hash");
+  const verplicht = params.get("verplicht") === "1";
+  const [tokenBezig, setTokenBezig] = useState(tokenHash !== null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -30,6 +38,25 @@ export function ResetPassword() {
   const [fouten, setFouten] = useState<Partial<Record<Veld, string>>>({});
   const [capsLock, setCapsLock] = useState(false);
   const velden = useRef<Partial<Record<Veld, HTMLInputElement | null>>>({});
+
+  useEffect(() => {
+    if (!tokenHash) return;
+    let actief = true;
+    verifyOtp({ type: "recovery", token_hash: tokenHash })
+      .then(({ error }) => {
+        if (!actief) return;
+        if (error) {
+          setStatus("error");
+          setMessage("Deze herstellink is ongeldig of verlopen. Vraag een nieuwe aan.");
+        }
+      })
+      .finally(() => {
+        if (actief) setTokenBezig(false);
+      });
+    return () => {
+      actief = false;
+    };
+  }, [tokenHash]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -67,6 +94,10 @@ export function ResetPassword() {
     }
     setStatus("success");
     setMessage("Wachtwoord gewijzigd — je wordt doorgestuurd.");
+    // Zónder deze regel is dit een lus (#1036): de trigger heeft
+    // moet_wachtwoord_wijzigen intussen gewist, maar getProfile serveert nog de
+    // oude rij uit de cache, en ProtectedRoute stuurt je meteen terug hierheen.
+    invalidate("profiles:one:");
     setTimeout(() => navigate("/", { replace: true }), 1200);
   }
 
@@ -88,10 +119,14 @@ export function ResetPassword() {
 
         <header className="login-head">
           <h1 className="login-title">Nieuw wachtwoord</h1>
-          <p className="login-subtitle">Kies een nieuw wachtwoord voor je account.</p>
+          <p className="login-subtitle">
+            {verplicht
+              ? "Je hebt een tijdelijk wachtwoord gekregen. Kies nu je eigen wachtwoord."
+              : "Kies een nieuw wachtwoord voor je account."}
+          </p>
         </header>
 
-        {loading ? (
+        {loading || tokenBezig ? (
           <p className="login-subtitle">Laden…</p>
         ) : !session ? (
           <>
@@ -186,6 +221,25 @@ export function ResetPassword() {
             >
               {status === "loading" ? "Bezig…" : "Wachtwoord opslaan"}
             </button>
+
+            {verplicht && (
+              // De uitweg. Zonder deze knop zit iemand die zijn tijdelijke
+              // wachtwoord kwijt is vast in een scherm dat hij niet kan
+              // invullen en niet kan verlaten: elke andere route stuurt hem
+              // hierheen terug. Uitloggen wist de sessie en dan is /login weer
+              // gewoon bereikbaar.
+              <p className="login-foot">
+                <button
+                  type="button"
+                  className="login-link"
+                  onClick={() => {
+                    void signOut();
+                  }}
+                >
+                  Uitloggen en later opnieuw proberen
+                </button>
+              </p>
+            )}
           </form>
         )}
       </main>

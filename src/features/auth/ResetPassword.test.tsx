@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Mock } from "vitest";
@@ -79,5 +79,80 @@ describe("<ResetPassword />", () => {
     expect(
       await screen.findByText(/herstellink is ongeldig of verlopen/i),
     ).toBeInTheDocument();
+  });
+});
+
+// Herstel-link uit het adminpaneel en de gedwongen wissel (#1036).
+describe("<ResetPassword /> en het adminpaneel (#1036)", () => {
+  function renderMet(zoek: string) {
+    return render(
+      <MemoryRouter initialEntries={[`/reset-wachtwoord${zoek}`]}>
+        <AuthProvider>
+          <ResetPassword />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it("verzilvert een token_hash uit de URL met verifyOtp", async () => {
+    // De link uit het paneel draagt het token in de URL i.p.v. via
+    // /auth/v1/verify; anders brandt een link-preview-bot hem op zodra je hem
+    // in een chat plakt. Verzilveren gebeurt daarom hier, in JavaScript.
+    renderMet("?token_hash=abc123&type=recovery");
+    await waitFor(() =>
+      expect(supabase.auth.verifyOtp as Mock).toHaveBeenCalledWith({
+        type: "recovery",
+        token_hash: "abc123",
+      }),
+    );
+  });
+
+  it("meldt een verlopen link in plaats van een leeg formulier", async () => {
+    (supabase.auth.verifyOtp as Mock).mockResolvedValueOnce({
+      data: { session: null, user: null },
+      error: { message: "Token has expired" },
+    });
+    renderMet("?token_hash=oud&type=recovery");
+    expect(await screen.findByText(/ongeldig of verlopen/i)).toBeInTheDocument();
+  });
+
+  it("toont bij ?verplicht=1 de tijdelijk-wachtwoordtekst én een uitweg", async () => {
+    renderMet("?verplicht=1");
+    expect(
+      await screen.findByText(/tijdelijk wachtwoord gekregen/i),
+    ).toBeInTheDocument();
+    // Zonder deze knop zit iemand die zijn tijdelijke wachtwoord kwijt is vast:
+    // elke andere route stuurt hem hierheen terug.
+    expect(screen.getByRole("button", { name: /uitloggen/i })).toBeInTheDocument();
+  });
+
+  it("toont zonder ?verplicht de gewone tekst en géén uitlogknop", async () => {
+    renderMet("");
+    expect(
+      await screen.findByText(/kies een nieuw wachtwoord voor je account/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /uitloggen/i })).toBeNull();
+  });
+
+  it("leegt de profielcache na een geslaagde wijziging", async () => {
+    const { cached, cacheSize, invalidateAll } = await import(
+      "@/lib/supabase/queryCache"
+    );
+    invalidateAll();
+    await cached("profiles:one:abc", async () => ({ moet_wachtwoord_wijzigen: true }));
+    expect(cacheSize()).toBeGreaterThan(0);
+
+    renderMet("?verplicht=1");
+    // Het formulier verschijnt pas als de sessie geladen is.
+    await userEvent.type(
+      await screen.findByLabelText(/nieuw wachtwoord/i),
+      "geheim123",
+    );
+    await userEvent.type(screen.getByLabelText(/bevestig wachtwoord/i), "geheim123");
+    await userEvent.click(screen.getByRole("button", { name: /opslaan/i }));
+
+    // Zónder dit serveert getProfile de oude rij met de vlag nog aan, en stuurt
+    // ProtectedRoute je meteen terug hierheen — een strakke lus.
+    await waitFor(() => expect(cacheSize()).toBe(0));
   });
 });

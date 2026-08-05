@@ -191,3 +191,30 @@ $$;
 
 revoke execute on function public.admin_audit_voor(uuid) from public, anon, authenticated;
 grant execute on function public.admin_audit_voor(uuid) to service_role;
+
+-- "Overal uitloggen" voor een ander account (#1036). De admin-API van GoTrue kan
+-- dit niet vanaf de serverkant: auth.admin.signOut(jwt) vraagt een geldig
+-- access-token ván die gebruiker, en dat heeft een beheerder per definitie niet.
+--
+-- Sessies verwijderen is het equivalent: auth.refresh_tokens hangt via session_id
+-- met on delete cascade aan auth.sessions, dus één delete trekt de keten door.
+-- Lopende access-tokens blijven geldig tot ze verlopen (jwt_expiry, één uur) —
+-- inherent aan JWT's, niet iets wat hier te forceren valt. Vermeld dat in de UI
+-- in plaats van te doen alsof de deur meteen dicht is.
+create or replace function public.admin_trek_sessies_in(p_uid uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_aantal integer;
+begin
+  delete from auth.sessions where user_id = p_uid;
+  get diagnostics v_aantal = row_count;
+  return v_aantal;
+end;
+$$;
+
+revoke execute on function public.admin_trek_sessies_in(uuid) from public, anon, authenticated;
+grant execute on function public.admin_trek_sessies_in(uuid) to service_role;

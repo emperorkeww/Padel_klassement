@@ -3,14 +3,15 @@ import { Sheet } from "@/ui/Sheet";
 import { Skeleton } from "@/ui/Skeleton";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { displayName } from "@/features/profiles/api";
-import { gebruikerDetail } from "../api";
+import { auditVoor, gebruikerDetail } from "../api";
+import { GebruikerActies } from "./GebruikerActies";
 import type { AdminGebruiker } from "../types";
 
-// Detail van één gebruiker (#1036). In PR 1 alleen-lezen: dit is het beeld dat
-// je nodig hebt vóór je iets doet — zit hij in een groep, speelt hij, beheert
-// hij gasten, staat er een pushabonnement open. De actieknoppen (herstel-link,
-// tijdelijk wachtwoord, e-mail corrigeren, overal uitloggen, verwijderen) en de
-// auditgeschiedenis komen in PR 2 onder deze blokken.
+// Detail van één gebruiker (#1036). Eerst het beeld dat je nodig hebt vóór je
+// iets doet — zit hij in een groep, speelt hij, beheert hij gasten, staat er een
+// pushabonnement open — dan pas de acties, en onderaan wat er eerder met dit
+// account gebeurd is. Die volgorde is opzet: je kijkt voordat je iets doet, en
+// je ziet daarna dat het genoteerd staat.
 
 function datumTijd(iso: string | null): string {
   if (!iso) return "—";
@@ -26,14 +27,15 @@ function datumTijd(iso: string | null): string {
 export function GebruikerPaneel({
   gebruiker,
   onSluit,
+  onGewijzigd,
 }: {
   gebruiker: AdminGebruiker;
   onSluit: () => void;
+  /** Na een muterende actie: de lijst erachter klopt dan niet meer. */
+  onGewijzigd: () => void;
 }) {
-  const detail = useAsync(
-    () => gebruikerDetail(gebruiker.id),
-    [gebruiker.id],
-  );
+  const detail = useAsync(() => gebruikerDetail(gebruiker.id), [gebruiker.id]);
+  const audit = useAsync(() => auditVoor(gebruiker.id), [gebruiker.id]);
 
   return (
     <Sheet open onClose={onSluit} title={displayName(gebruiker)}>
@@ -120,6 +122,49 @@ export function GebruikerPaneel({
           </p>
         </>
       )}
+
+      {/* Niet wachten op het detail: de acties werken los daarvan. Het detail
+          voedt alleen de waarschuwing over verweesde groepen bij verwijderen. */}
+      <GebruikerActies
+        gebruiker={gebruiker}
+        detail={detail.data}
+        onVerwijderd={() => {
+          onGewijzigd();
+          onSluit();
+        }}
+      />
+
+      <section className="admin-detail__blok">
+        <h3 className="card__title">Historie</h3>
+        {audit.loading && <Skeleton rows={2} />}
+        {audit.data && audit.data.length === 0 && (
+          <p className="empty">Nog niets met dit account gedaan.</p>
+        )}
+        {audit.data && audit.data.length > 0 && (
+          <ul className="person-list">
+            {audit.data.map((r) => (
+              <li key={r.id} className="person-row">
+                <span>{AUDIT_LABEL[r.action] ?? r.action}</span>
+                <span className="admin-audit__meta">
+                  {datumTijd(r.created_at)}
+                  {r.actor_username ? ` · ${r.actor_username}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </Sheet>
   );
 }
+
+// De acties heten in de databank zoals de edge function ze kent; in het paneel
+// lees je liever wat er gebeurd is.
+const AUDIT_LABEL: Record<string, string> = {
+  recovery_link: "Herstel-link uitgedeeld",
+  temp_password: "Tijdelijk wachtwoord gezet",
+  resend_reset: "Herstelmail opnieuw verstuurd",
+  fix_email: "E-mailadres gecorrigeerd",
+  sign_out_all: "Overal uitgelogd",
+  delete_user: "Account verwijderd",
+};
