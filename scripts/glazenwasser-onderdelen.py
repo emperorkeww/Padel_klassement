@@ -31,6 +31,7 @@ PREVIEW = WORTEL / "screenshots/glazenwasser/onderdelen.png"
 KAART_RATIO = 139 / 100
 MASTER_DOEK = (1024, 1440)
 MASTER_VAK = (72, 160, 880, 1223)
+MASKER_DOEK = (512, 720)
 
 
 def vervaag(masker: np.ndarray, straal: float) -> np.ndarray:
@@ -173,9 +174,9 @@ def bouw() -> dict[str, dict]:
         },
     }
 
-    # Compacte master: exact dezelfde stage in het bestaande kaartvak. Het
-    # frontmask is rechtstreeks de alfa van de ring, zodat alleen frame en props
-    # vóór het echte FutKaart-frame worden geschilderd.
+    # Compacte master: exact dezelfde stage in het bestaande kaartvak. De
+    # voorselectie bevat bewust alleen de frame-breakers. Het metalen frame zelf
+    # blijft in de binnenlaag en dus achter emmer, spons, trekker en badges.
     vx, vy, vw, vh = MASTER_VAK
     master = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
     # De referentie is een poster met vrije marge rond het eigenlijke schild.
@@ -195,12 +196,22 @@ def bouw() -> dict[str, dict]:
     # maatcorrectie het globale productie-assetbudget onder de grens.
     master.save(master_pad, "WEBP", quality=76, method=6)
 
+    props_stage = Image.new("L", (stage_w, h), 0)
+    props_stage.paste(
+        Image.fromarray(np.clip(props * 255, 0, 255).astype(np.uint8), "L"),
+        (xoff, 0),
+    )
+    props_k = props_stage.resize((kb, kh), Image.Resampling.LANCZOS)
     masker = Image.new("L", MASTER_DOEK, 0)
-    masker.paste(ring_k.getchannel("A"), (kx, ky))
+    masker.paste(props_k, (kx, ky))
     masker_pad = UIT / "glazenwasser-front-mask.webp"
-    # Als masker telt alleen de luminantie. Een lossless WebP was ruim 90 kB;
-    # Q60 houdt de geveerde alfarand intact en bespaart het grootste deel daarvan.
-    masker.save(masker_pad, "WEBP", quality=60, method=6)
+    # CSS gebruikt voor rastermaskers het alfakanaal. Een kale L-WebP is volledig
+    # opaak en zou daardoor de complete master (inclusief de rand) vooraan zetten.
+    # Schrijf dus een echte RGBA-maskerasset met uitsluitend props in alpha.
+    masker_rgba = Image.new("RGBA", MASTER_DOEK, (255, 255, 255, 0))
+    masker_rgba.putalpha(masker)
+    masker_web = masker_rgba.resize(MASKER_DOEK, Image.Resampling.LANCZOS)
+    masker_web.save(masker_pad, "WEBP", quality=60, method=6)
 
     (UIT / "gw-onderdelen.json").write_text(json.dumps(delen, indent=2) + "\n", encoding="utf8")
     print(f"referentie {w}x{h}; stage {stage_w}x{h}; x-offset {xoff}")

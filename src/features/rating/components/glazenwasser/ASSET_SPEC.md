@@ -18,7 +18,7 @@ terwijl de kaartbox exact dezelfde dimensies houdt als elke andere FUT-kaart.
 | `gw-ring.webp` | zilver/marine/cyaan frame, topbadge, rechtertrekker, emmer met spray/doek, spons en onderbadge | `GlazenwasserKaart`, vóór frame en inhoud |
 | `gw-glas.webp` | naadloze, halftransparante natglastegel | geclipt kaartvlak |
 | `glazenwasser-master.webp` | dezelfde achter- en ringlagen geregistreerd op de compacte kaartstage | `GlazenwasserEffect` in `FutKaart` |
-| `glazenwasser-front-mask.webp` | exacte alfa van de ringlaag | voorselectie van het compacte effect |
+| `glazenwasser-front-mask.webp` | half-size RGBA-alfamasker van uitsluitend crest, badges, trekker, emmer, spons en schuim | voorselectie boven het compacte frame; CSS/canvas schaalt naar mastermaat |
 | `gw-onderdelen.json` | maten, alfa, dekking en bestandsgrootte | layout- en assettests |
 
 ## Laagcontract
@@ -31,7 +31,8 @@ De grote kaart en de compacte kaart delen hetzelfde beeldmateriaal:
 4. `cardRing` staat vóór de lijst en bevat alleen referentie-artwork buiten de
    veilige datazones;
 5. de compacte `FutKaart` rendert één master achter, binnen en vóór; het
-   frontmask laat uitsluitend de ring en geïntegreerde props door.
+   frontmask laat uitsluitend de frame-breakers door. De metalen ring blijft in
+   de binnenlaag, zodat hij nooit over emmer, spons of trekker heen schildert.
 
 De profielafbeelding, rating, naam, divisietekst en waarden worden nooit uit de
 referentie overgenomen. Zij blijven dynamisch. De vaste divisietekst op de grote

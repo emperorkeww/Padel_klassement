@@ -10,6 +10,8 @@
 // uitkomst in gw-onderdelen.json vast. Deze test leest dat manifest, zodat een
 // kapotte uitsnede in de testuitvoer opvalt in plaats van pas op de kaart.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import DOZEN from "./assets/gw-onderdelen.json";
 import { GW_LAGEN } from "./glazenwasserLayout";
@@ -42,6 +44,20 @@ const ONDERDELEN = Object.entries(DOZEN) as [string, Onderdeel][];
 const CANVAS = { breedte: 1105, hoogte: 1536 };
 
 describe("Glazenwasser-onderdelen", () => {
+  it("gebruikt voor de voorlaag een echt alfamasker", () => {
+    const masker = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/features/rating/components/glazenwasser/assets/glazenwasser-front-mask.webp",
+      ),
+    );
+    expect(masker.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(masker.toString("ascii", 12, 16)).toBe("VP8X");
+    // Bit 4 van de VP8X-featureflags betekent dat het bestand een alfakanaal
+    // bevat. Zonder dit bit ziet CSS het hele rechthoekige masker als opaak.
+    expect(masker[20] & 0x10).toBe(0x10);
+  });
+
   it("levert elk onderdeel dat de layout opvraagt", () => {
     const gevraagd = new Set(GW_LAGEN.map((l) => l.bron));
     const geleverd = new Set(ONDERDELEN.map(([naam]) => naam));

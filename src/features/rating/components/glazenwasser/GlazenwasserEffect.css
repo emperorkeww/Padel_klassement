@@ -82,7 +82,8 @@
    waterexplosie liggen vóór het frame. */
 .glazenwasser-effect--voor {
   /* Expliciet boven voor- én achterkant van de flipper. Het WebP-masker laat
-     hier alleen crest, frame, gereedschap, schuim en water door; de transparante
+     hier alleen crest, badges, gereedschap en schuim door; de metalen ring
+     blijft in de kaartlaag eronder. De transparante
      zones blijven klikbaar via de onderliggende kaartknop. */
   z-index: var(--glazenwasser-laag-voor, 4);
 }
