@@ -623,7 +623,15 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
       try {
         const { container } = renderPage();
         await screen.findAllByText(/alice anders/i);
-        expect(container.querySelector(".ranklist")).not.toBeNull();
+        // Zolang useContainerBreedte nog niets gemeten heeft is switchBreedte
+        // null, en dan toont Leaderboard bewust de tabel (zie de toelichting
+        // bij `breedeLijst`). De omschakeling naar de ranglijst komt dus pas ná
+        // een effect; direct asserteren is een race die er onder CI-load
+        // uitkomt als "expected null not to be null". Zelfde wachtpatroon als
+        // in "rating als hoofdgetal in de mobiele ranglijst" hierboven.
+        await waitFor(() =>
+          expect(container.querySelector(".ranklist")).not.toBeNull(),
+        );
         expect(container.querySelector(".leaderboard-table")).toBeNull();
       } finally {
         herstel();
