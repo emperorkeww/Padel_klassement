@@ -309,12 +309,13 @@ wachtwoord of de herstel-link zelf.
 > supabase secrets set ADMIN_SITE_URL=https://vamos-padel.net --project-ref <ref>
 > ```
 
-De **herstel-link** wijst naar `/reset-wachtwoord?token_hash=…` en niet naar
+De **herstel-link** wijst naar `/auth/bevestigen?token_hash=…&type=recovery` —
+dezelfde landingspagina die de auth-mails sinds #1037 gebruiken — en niet naar
 Supabase's eigen `/auth/v1/verify`. Dat is opzet: elke link-preview-bot
 (WhatsApp, Slack, een mailscanner) doet een GET op een gedeelde URL en zou zo'n
-eenmalige verify-link opbranden vóór de ontvanger klikt — precies in het kanaal
-waarvoor de knop bedoeld is. Het verzilveren gebeurt nu in de app, met
-`verifyOtp`, in JavaScript dat een bot niet uitvoert.
+eenmalige verify-link opbranden vóór de ontvanger klikt, precies in het kanaal
+waarvoor de knop bedoeld is. Het verzilveren gebeurt in de app met `verifyOtp`,
+in JavaScript dat een bot niet uitvoert.
 
 Bij een **tijdelijk wachtwoord** zet de function `profiles.moet_wachtwoord_wijzigen`.
 Die gebruiker komt daarna niet verder dan `/reset-wachtwoord`. De vlag gaat alleen

@@ -13,7 +13,7 @@ vi.mock("@/lib/supabase/client", async () => {
           const { action } = body as { action: string };
           if (action === "recovery_link") {
             return {
-              link: "https://vamos.test/reset-wachtwoord?token_hash=xyz&type=recovery",
+              link: "https://vamos.test/auth/bevestigen?token_hash=xyz&type=recovery",
               vervalt_over_minuten: 60,
             };
           }
@@ -95,7 +95,7 @@ describe("<GebruikerActies /> (#1036)", () => {
 
     const veld = await screen.findByLabelText("Herstel-link");
     expect(veld).toHaveValue(
-      "https://vamos.test/reset-wachtwoord?token_hash=xyz&type=recovery",
+      "https://vamos.test/auth/bevestigen?token_hash=xyz&type=recovery",
     );
     expect(screen.getByRole("button", { name: "Kopieer" })).toBeInTheDocument();
   });

@@ -82,7 +82,8 @@ describe("<ResetPassword />", () => {
   });
 });
 
-// Herstel-link uit het adminpaneel en de gedwongen wissel (#1036).
+// De gedwongen wachtwoordwissel (#1036). Het verzilveren van een herstel-link
+// gebeurt niet hier maar op /auth/bevestigen (#1037); zie AuthBevestigen.test.
 describe("<ResetPassword /> en het adminpaneel (#1036)", () => {
   function renderMet(zoek: string) {
     return render(
@@ -94,27 +95,7 @@ describe("<ResetPassword /> en het adminpaneel (#1036)", () => {
     );
   }
 
-  it("verzilvert een token_hash uit de URL met verifyOtp", async () => {
-    // De link uit het paneel draagt het token in de URL i.p.v. via
-    // /auth/v1/verify; anders brandt een link-preview-bot hem op zodra je hem
-    // in een chat plakt. Verzilveren gebeurt daarom hier, in JavaScript.
-    renderMet("?token_hash=abc123&type=recovery");
-    await waitFor(() =>
-      expect(supabase.auth.verifyOtp as Mock).toHaveBeenCalledWith({
-        type: "recovery",
-        token_hash: "abc123",
-      }),
-    );
-  });
 
-  it("meldt een verlopen link in plaats van een leeg formulier", async () => {
-    (supabase.auth.verifyOtp as Mock).mockResolvedValueOnce({
-      data: { session: null, user: null },
-      error: { message: "Token has expired" },
-    });
-    renderMet("?token_hash=oud&type=recovery");
-    expect(await screen.findByText(/ongeldig of verlopen/i)).toBeInTheDocument();
-  });
 
   it("toont bij ?verplicht=1 de tijdelijk-wachtwoordtekst én een uitweg", async () => {
     renderMet("?verplicht=1");

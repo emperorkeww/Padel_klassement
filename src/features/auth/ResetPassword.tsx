@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { updateUser, verifyOtp } from "./api";
+import { updateUser } from "./api";
 import { useAuth } from "./AuthProvider";
 import { invalidate } from "@/lib/supabase/queryCache";
 import {
@@ -24,12 +24,10 @@ export function ResetPassword() {
   const navigate = useNavigate();
   const { session, loading, signOut } = useAuth();
   const [params] = useSearchParams();
-  // Herstel-link uit het adminpaneel (#1036): die draagt het token in de URL
-  // i.p.v. via /auth/v1/verify, zodat een link-preview-bot hem niet opbrandt.
-  // Verzilveren gebeurt daarom hier, in JavaScript dat zo'n bot niet uitvoert.
-  const tokenHash = params.get("token_hash");
+  // Een herstel-link (uit een mail of uit het adminpaneel) komt hier binnen via
+  // /auth/bevestigen (#1037), dat het token al voor een sessie ingewisseld
+  // heeft. Dit scherm hoeft dus alleen nog het formulier te tonen.
   const verplicht = params.get("verplicht") === "1";
-  const [tokenBezig, setTokenBezig] = useState(tokenHash !== null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -38,25 +36,6 @@ export function ResetPassword() {
   const [fouten, setFouten] = useState<Partial<Record<Veld, string>>>({});
   const [capsLock, setCapsLock] = useState(false);
   const velden = useRef<Partial<Record<Veld, HTMLInputElement | null>>>({});
-
-  useEffect(() => {
-    if (!tokenHash) return;
-    let actief = true;
-    verifyOtp({ type: "recovery", token_hash: tokenHash })
-      .then(({ error }) => {
-        if (!actief) return;
-        if (error) {
-          setStatus("error");
-          setMessage("Deze herstellink is ongeldig of verlopen. Vraag een nieuwe aan.");
-        }
-      })
-      .finally(() => {
-        if (actief) setTokenBezig(false);
-      });
-    return () => {
-      actief = false;
-    };
-  }, [tokenHash]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -126,7 +105,7 @@ export function ResetPassword() {
           </p>
         </header>
 
-        {loading || tokenBezig ? (
+        {loading ? (
           <p className="login-subtitle">Laden…</p>
         ) : !session ? (
           <>

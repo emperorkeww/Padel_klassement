@@ -30,8 +30,17 @@ export const updateUser = (
   ...args: Parameters<typeof supabase.auth.updateUser>
 ) => supabase.auth.updateUser(...args);
 
-/** Verzilvert een e-mail-OTP (bv. het `token_hash` uit een herstel-link die het
- *  adminpaneel uitdeelde, #1036) en levert bij succes een sessie op. */
+/**
+ * Wisselt de `token_hash` uit een auth-mail in voor een sessie. Anders dan de
+ * PKCE-code uit `{{ .ConfirmationURL }}` heeft dit geen `code_verifier` uit
+ * localStorage nodig, dus het werkt óók als je de mail op een ander apparaat
+ * opent dan waar je hem aanvroeg.
+ *
+ * Dezelfde weg loopt de herstel-link uit het adminpaneel (#1036): die wijst
+ * naar /auth/bevestigen en niet naar Supabase' verify-endpoint, zodat een
+ * link-preview-bot het eenmalige token niet opbrandt in de chat waarin je hem
+ * plakt.
+ */
 export const verifyOtp = (
   ...args: Parameters<typeof supabase.auth.verifyOtp>
 ) => supabase.auth.verifyOtp(...args);

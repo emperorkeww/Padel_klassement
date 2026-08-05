@@ -19,9 +19,34 @@ dat niet: wat daar staat is het resultaat van de laatste `config push`.
 | `wachtwoord-gewijzigd.html` | `password_changed` | notificatie | Je wachtwoord is gewijzigd |
 | `adres-gewijzigd.html` | `email_changed` | notificatie | Je e-mailadres is gewijzigd |
 
-**Actiesjablonen** hebben een knop en `{{ .ConfirmationURL }}`; er valt iets te
-bevestigen. **Notificaties** zijn meldingen achteraf: geen knop, wel een weg
-terug voor wie de wijziging niet zelf deed.
+**Actiesjablonen** hebben een knop en een actielink; er valt iets te bevestigen.
+**Notificaties** zijn meldingen achteraf: geen knop, wel een weg terug voor wie
+de wijziging niet zelf deed.
+
+### De actielink gaat naar ons eigen domein, niet naar Supabase
+
+```
+{{ .SiteURL }}/auth/bevestigen?token_hash={{ .TokenHash }}&type=<type>
+```
+
+**Niet** `{{ .ConfirmationURL }}`. De client draait op `flowType: "pkce"`
+(`src/lib/supabase/client.ts`), en die flow wisselt de code in met een
+`code_verifier` uit de localStorage van de browser die de mail aanvroeg. Vraag
+je herstel aan op je laptop en open je de mail op je telefoon, dan bestaat die
+verifier daar niet: *"Deze herstellink is ongeldig of verlopen"* — terwijl er
+niets mis is met de link. Dat is precies wat mensen doen, dus dat is fataal.
+
+`verifyOtp` met een `token_hash` heeft die verifier niet nodig en werkt op elk
+apparaat. `src/features/auth/AuthBevestigen.tsx` vangt de link op, wisselt het
+token in en stuurt door op basis van `type`.
+
+Bijvangst: de link wijst naar ons eigen domein, dus een linkscanner die de URL
+alleen ophaalt zonder JavaScript uit te voeren verbruikt het eenmalige token
+niet. Dat was het SafeLinks-risico.
+
+Let op: het `type` in de link is niet altijd de config-sleutel. Het blok heet
+`confirmation` maar `verifyOtp` verwacht `signup`; `magic_link` wordt
+`magiclink`. `scripts/mail-templates.test.mjs` bewaakt die koppeling.
 
 `magic_link` gebruiken we niet — we loggen in met e-mail + wachtwoord. Het
 sjabloon ligt er zodat er niet stilletjes een Engelse standaardmail uitgaat als
@@ -125,7 +150,7 @@ Die laatste geeft een clientcompatibiliteitsscore; de huidige sjablonen halen
 ~94% ondersteund. Het `raw`-endpoint is quoted-printable — grep op de ruwe bytes
 geeft valse negatieven, decodeer eerst.
 
-## 4. Twee vallen die stille schade geven
+## 4. Vallen die stille schade geven
 
 **GoTrue strippt álle HTML-commentaar.** Het rendert met Go's `html/template`.
 Een Outlook-knop in `<!--[if mso]>…<![endif]-->` bereikt de mail dus nooit: de
@@ -137,6 +162,15 @@ zonder trucs, alleen de afronding valt daar weg.
 gebruikt `{{ .OldEmail }}` en `{{ .Email }}` (niet `{{ .NewEmail }}`), en
 `wachtwoord-gewijzigd` gebruikt er bewust geen enkele. Een variabele die niet
 bestaat rendert als `<no value>`, zichtbaar in de mail.
+
+**`{{ .TokenHashNew }}` en `{{ .TokenNew }}` bestaan niet.** Ze renderen leeg.
+Bij een adreswissel gaan er twee mails uit en krijgt **elke ontvanger zijn eigen
+`{{ .TokenHash }}`** — één sjabloon volstaat dus voor allebei.
+
+**De dev-server bepaalt `site_url` lokaal.** De sjablonen bouwen hun link met
+`{{ .SiteURL }}`, dus die moet op `http://localhost:5173` staan (vite-default).
+Draait er al iets op 5173, dan pakt vite 5174 en wijzen de maillinks naar de
+verkeerde app — controleer de poort in de uitvoer van `npm run dev`.
 
 ## 5. Wat CI bewaakt
 

@@ -176,12 +176,16 @@ async function voerMutatieUit(
       // /auth/v1/verify?token=… en dat is een eenmalige verzilvering: elke
       // link-preview-bot (WhatsApp, Slack, een mailscanner) doet een GET zodra
       // je hem plakt en brandt het token op — precies in het kanaal waarvoor
-      // deze knop bestaat. We bouwen de link zelf uit hashed_token; het
-      // verzilveren gebeurt dan in de app, met verifyOtp, in JavaScript dat een
-      // bot niet uitvoert.
+      // deze knop bestaat.
+      //
+      // We bouwen de link daarom zelf uit hashed_token, naar dezelfde
+      // landingspagina die de auth-mails sinds #1037 gebruiken. Die wisselt het
+      // token in met verifyOtp — in JavaScript, dat een bot niet uitvoert — en
+      // stuurt bij type=recovery door naar /reset-wachtwoord. Eén route voor
+      // alle herstelpaden; geen tweede verzilvering die apart kan gaan afwijken.
       const hash = data?.properties?.hashed_token;
       if (!hash) return json({ error: "Geen herstel-token ontvangen" }, 500);
-      const link = `${SITE_URL}/reset-wachtwoord?token_hash=${encodeURIComponent(hash)}&type=recovery`;
+      const link = `${SITE_URL}/auth/bevestigen?token_hash=${encodeURIComponent(hash)}&type=recovery`;
 
       antwoord = { link, vervalt_over_minuten: OTP_GELDIG_MINUTEN };
       auditPayload = { vervalt_over_minuten: OTP_GELDIG_MINUTEN };
