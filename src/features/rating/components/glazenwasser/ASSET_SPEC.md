@@ -1,76 +1,60 @@
 # Glazenwasser-artwork
 
-Twee generaties artwork naast elkaar, met elk hun eigen afnemer:
-
-| asset | afnemer | script |
-| --- | --- | --- |
-| `gw-*.webp` — losse onderdelen | `GlazenwasserKaart` (kaart-modal, `/dev/glazenwasser`) | `scripts/glazenwasser-onderdelen.py` |
-| `glazenwasser-master.webp` + `glazenwasser-front-mask.svg` | `GlazenwasserEffect` op `FutKaart` (klassement, opstelling, legenda) | `scripts/glazenwasser-onderdelen.py` |
-
-Beide worden gegenereerd uit
-[`docs/fut-kaarten/referentie_glazenwasser.png`](../../../../../docs/fut-kaarten/referentie_glazenwasser.png).
-Die scripts zijn de bron van waarheid: bij een gewijzigde referentie of een andere
-uitsnede draai je ze opnieuw in plaats van een WebP met de hand bij te werken.
+De actuele bron van waarheid is
+`docs/fut-kaarten/referentie_glazenwasser.png` (1024 × 1536). Alle productie-
+assets worden reproduceerbaar gebouwd met:
 
 ```bash
-python3 scripts/glazenwasser-onderdelen.py --preview   # losse onderdelen + contactblad
-python3 scripts/glazenwasser-master.py --preview       # master + voormasker
+python3 scripts/glazenwasser-onderdelen.py --preview
 ```
 
-## De losse onderdelen (`gw-*.webp`)
+De generator vult de 2:3-referentie horizontaal transparant op tot een
+100:139-stage. Daardoor blijven alle pixels in hun oorspronkelijke verhouding,
+terwijl de kaartbox exact dezelfde dimensies houdt als elke andere FUT-kaart.
 
-Elk onderdeel is een eigen, strak op zijn alfa bijgesneden WebP — geen
-transparante rand, geen gedeeld canvas. Dat is het verschil met de master: die is
-één platte compositie, dus elke rechthoekige uitsnede eruit sleepte de buren en de
-natte-glastextuur mee. Losse onderdelen kunnen los worden geschaald, gedraaid en
-geplaatst.
-
-| bestand | inhoud | plek in de referentie (fractie van het kaartvak) |
+| asset | inhoud | afnemer |
 | --- | --- | --- |
-| `gw-crest.webp` | raamcrest met koperen raam | 0,408 · −0,081 · 0,172 × 0,142 |
-| `gw-trekker-boven.webp` | trekker met blad, ferrule, steel en schuim | −0,017 · 0,365 · 0,325 × 0,271 |
-| `gw-ophanging.webp` | haak met ketting | 0,870 · 0,189 · 0,116 × 0,336 |
-| `gw-emmer.webp` | sopemmer met beugel, schuim en druppels | 0,802 · 0,413 · 0,194 × 0,238 |
-| `gw-water-onder.webp` | waterexplosie, schuim en zeepbellen over de volle breedte | −0,013 · 0,688 · 1,028 × 0,338 |
-| `gw-badge.webp` | onderschild met raamicoon | 0,345 · 0,808 · 0,289 × 0,186 |
-| `gw-trekker-onder.webp` | tweede trekker | 0,337 · 0,740 · 0,404 × 0,207 |
-| `gw-schuim-links/rechts.webp` | ijs en schuim over de bovenhoeken | −0,001 / 0,693 · −0,026 |
-| `gw-glas.webp` | natte glaswand: strepen, condens, druppels | 0,109 · 0,052 · 0,780 × 0,582 |
+| `gw-water-back.webp` | buitenste bellen en waterspatten | `GlazenwasserKaart`, achter het schild |
+| `gw-ring.webp` | zilver/marine/cyaan frame, topbadge, rechtertrekker, emmer met spray/doek, spons en onderbadge | `GlazenwasserKaart`, vóór frame en inhoud |
+| `gw-glas.webp` | naadloze, halftransparante natglastegel | geclipt kaartvlak |
+| `glazenwasser-master.webp` | dezelfde achter- en ringlagen geregistreerd op de compacte kaartstage | `GlazenwasserEffect` in `FutKaart` |
+| `glazenwasser-front-mask.webp` | exacte alfa van de ringlaag | voorselectie van het compacte effect |
+| `gw-onderdelen.json` | maten, alfa, dekking en bestandsgrootte | layout- en assettests |
 
-Drie regels die het script afdwingt en die bij een volgende kaart terugkomen:
+## Laagcontract
 
-- **kaartinhoud van de referentie is verboden gebied.** Rating, subniveau,
-  avatarcirkel, glaslat, naam, divisieregel, statblok en het losse raampje zitten
-  in het bronbeeld ingebakken. `INHOUD` snijdt ze uit élk onderdeel, anders staat
-  er een spookkopie naast de echte tekst;
-- **een onderdeel dat als eigen asset terugkomt, hoort niet in de uitsnede van
-  zijn buurman.** `water-onder` wordt daarom gesneden mét de badge en de tweede
-  trekker eruit (`zonder=`), en `gw-glas.webp` zonder álle voorwerpen. Zonder dat
-  verschijnt elk onderdeel twee keer zodra de lagen los worden geplaatst;
-- **massieve voorwerpen volgen hun eigen silhouet, niet de handgetrokken lijn.**
-  Binnen de contour bepaalt de afwijking tegenover een lokaal achtergrondmodel
-  welke pixels bij het voorwerp horen, met gaten dicht (`vul_gaten`). Een dunne
-  steel vraagt daarbij een fijnere ontkorreling (`korrel=1`) — op de grove stand
-  knipte hij de steel van de trekker weg.
+De grote kaart en de compacte kaart delen hetzelfde beeldmateriaal:
 
-De plek van elk onderdeel op de kaart staat in `glazenwasserLayout.ts`; de `doos`
-hierboven is het vertrekpunt, `schaal` en `verzet` daarin zijn de bewuste
-afwijkingen (grotere crest, lagere trekker, emmer verder over de rand).
+1. `waterBack` staat achter de echte kaartzijde;
+2. de natglastegel wordt door het echte Glazenwasser-schild geclipt;
+3. avatar en dynamische data blijven React-inhoud;
+4. `cardRing` staat vóór de lijst en bevat alleen referentie-artwork buiten de
+   veilige datazones;
+5. de compacte `FutKaart` rendert één master achter, binnen en vóór; het
+   frontmask laat uitsluitend de ring en geïntegreerde props door.
 
-## De master (`glazenwasser-master.webp`)
+De profielafbeelding, rating, naam, divisietekst en waarden worden nooit uit de
+referentie overgenomen. Zij blijven dynamisch. De vaste divisietekst op de grote
+kaart is `GLAZENWASSER`; de statlabels zijn `PAC`, `SHO`, `PAS`, `DRI`, `DEF` en
+`PHY`, met waarden uit `glazenwasserStats.ts`.
 
-> Deze master komt sinds de artworkpass uit `scripts/glazenwasser-onderdelen.py`
-> (`compacte_master()`), niet meer uit `scripts/glazenwasser-master.py`. Hij wordt
-> opgebouwd uit dezelfde ring en dezelfde losse voorwerpen als de brede kaart,
-> zodat wat spelers in de app zien hetzelfde artwork is. Het kaartvak in dit doek
-> heeft dezelfde 100:139 als het stelsel van de ring, dus de lagen gaan er één op
-> één in. Eén verschil met de brede kaart: hier dooft de ring naar het midden toe
-> uit, want de compacte kaart tekent zijn rating, naam en divisieregel eróver.
+## Clipping en schaal
 
-De compacte kaart in het klassement blijft de drie-lagenbreakout gebruiken: één
-master op drie diepten, met `glazenwasser-front-mask.svg` als voorselectie. Canvas
-1024 × 1440, kaartvak x 72..952 / y 160..1383 — dat volgt exact uit
-`--glazenwasser-master-left: -8.18%`, `--glazenwasser-master-top: -13.08%` en
-`--glazenwasser-master-width: 116.36%` in `GlazenwasserEffect.css`. Wijzigt een van
-die drie, dan moet het canvas opnieuw worden opgebouwd; het script rekent ze uit
-dezelfde constanten en print ze.
+`gwSchildPad()` is de gedeelde contour voor `GlazenwasserKaartDefs` en
+`FutKaartDefs` (`#fut-schild-glazenwasser`). De stage en alle bestaande
+kaartweergaven houden `aspect-ratio: 100 / 139`; alleen de clip heeft de gebogen
+schouders, centrale badge-recess en bredere referentiepunt. Frame-breakers leven
+buiten de clip, maar binnen de geïsoleerde kaartstage. De eigenaar van showcase,
+modal of carousel begrenst documentoverflow.
+
+## Kwaliteitscontrole
+
+`glazenwasserAssets.test.ts` controleert aanwezigheid, maten, alfa en
+stage-registratie. `GlazenwasserEffect.test.tsx` borgt dezelfde masterbron voor
+achter/binnen/voor en de montage van de binnenlaag in het echte kaartvlak.
+Visuele controle gebeurt via `/dev/glazenwasser` en:
+
+```bash
+scripts/glazenwasser-screenshot.sh final-desktop http://127.0.0.1:5178 desktop
+scripts/glazenwasser-screenshot.sh final-mobile http://127.0.0.1:5178 mobile
+```

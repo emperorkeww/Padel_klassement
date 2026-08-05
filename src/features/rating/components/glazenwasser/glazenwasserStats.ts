@@ -55,32 +55,32 @@ export function glazenwasserStats(
 
   return [
     {
-      label: "Streepen",
+      label: "PAC",
       waarde: gespeeld > 0 ? String(gespeeld) : geen,
       uitleg: "Gespeelde matches",
     },
     {
-      label: "Glans",
+      label: "SHO",
       waarde: winst != null ? `${winst}%` : geen,
       uitleg: "Aandeel gewonnen matches",
     },
     {
-      label: "Uithouding",
+      label: "PAS",
       waarde: gespeeld > 0 ? String(punten) : geen,
       uitleg: "Klassementpunten",
     },
     {
-      label: "Hoogte",
+      label: "DRI",
       waarde: rang != null ? `#${rang}` : geen,
       uitleg: "Positie in het klassement",
     },
     {
-      label: "Precisie",
+      label: "DEF",
       waarde: gespeeld > 0 ? `${saldo > 0 ? "+" : ""}${saldo}` : geen,
       uitleg: "Gamesaldo over alle matches",
     },
     {
-      label: "Concentratie",
+      label: "PHY",
       waarde: vorm.length > 0 ? `${vormWinst}/${vorm.length}` : geen,
       uitleg: `Gewonnen van de laatste ${vorm.length || VORM_VENSTER} matches`,
     },

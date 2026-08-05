@@ -1,6 +1,9 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { FutKaart } from "@/features/rating/components/FutKaart";
+import {
+  FutKaart,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import { tierFor } from "@/features/rating/tiers";
 
 const GLAZENWASSER = tierFor(1150);
@@ -63,6 +66,25 @@ describe("Glazenwasser-mastereffect", () => {
       container.querySelector('use[href="#fut-div-platina-voor"]'),
     ).toBeNull();
     expect(container.querySelector(".fut-kaart__motief")).toBeNull();
+  });
+
+  it("gebruikt de vaste divisienaam zonder het niveau dubbel te zetten", () => {
+    const { getByText, queryByText } = render(
+      <FutKaart
+        tier={GLAZENWASSER}
+        voor={
+          <FutKaartVoorkant
+            elo={1150}
+            tier={GLAZENWASSER}
+            naam="Alice"
+            avatar={<span>AA</span>}
+          />
+        }
+      />,
+    );
+
+    expect(getByText("GLAZENWASSER")).toBeInTheDocument();
+    expect(queryByText("Glazenwasser II")).toBeNull();
   });
 
   it("wijkt voor een editie: die skin wint van de divisie", () => {

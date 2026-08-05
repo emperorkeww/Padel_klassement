@@ -414,21 +414,21 @@ export const DIVISIE_PLATINA: DivisieKaart = {
     // Vier stops met twee glanspunten: geoxideerd aluminium met een frosted
     // hooglicht — hetzelfde ritme als de metaalladder, in zeegroen.
     frame: [
-      [0, "#eef8f9"],
-      [0.42, "#2c5a64"],
-      [0.68, "#d6ecee"],
-      [1, "#1b414a"],
+      [0, "#f7fbff"],
+      [0.42, "#0c3154"],
+      [0.68, "#7fdcf1"],
+      [1, "#041b35"],
     ],
-    liner: "#123840",
-    keyline: "#cfe8ea",
-    vlak: ["#eaf5f5", "#c8dedf", "#a4c1c2"],
+    liner: "#082a4b",
+    keyline: "#bcefff",
+    vlak: ["#d8edf7", "#e8f5fa", "#b5d8e7"],
     glow: "rgba(255, 255, 255, 0.5)",
     // Brede, zachte sheen i.p.v. de smalle metaalstreep: over frosted glas
     // loopt licht uit, het spiegelt niet in één baan.
     sheenSpreiding: 0.12,
-    ink: "#15404a",
-    inkSoft: "#2a545e",
-    lijn: "#7ba5ab",
+    ink: "#0d315b",
+    inkSoft: "#137f98",
+    lijn: "#65b7d8",
     // Transparantie-illusie (#710): het schildsilhouet nog eens, een fractie
     // verschoven in ijl aqua — de tweede glaslaag achter de eerste.
     echo: [[0.018, 0.022, "rgba(163, 214, 219, 0.6)"]],

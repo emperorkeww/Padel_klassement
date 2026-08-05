@@ -27,12 +27,12 @@
      Dat verschil is precies wat de kaart van nat glas naar wit plastic duwde — de
      donkerblauwe inkt verloor er zijn contrast door, en het paneel had geen diepte
      meer naar de randen toe. */
-  --gw-hi: #c1d5e9;
-  --gw-mid: #97b1cd;
-  --gw-lo: #7b98b7;
-  --gw-ink: #10294a;
-  --gw-ink-soft: #214d78;
-  --gw-lijn: #7ea6c8;
+  --gw-hi: #d8edf7;
+  --gw-mid: #e8f5fa;
+  --gw-lo: #b5d8e7;
+  --gw-ink: #0d315b;
+  --gw-ink-soft: #137f98;
+  --gw-lijn: #65b7d8;
 
   width: var(--gw-kw);
   margin-inline: auto;
@@ -139,12 +139,18 @@
 .gw-kaart__vlak {
   position: relative;
   height: 100%;
-  background: linear-gradient(
-    170deg,
-    var(--gw-hi) 0%,
-    var(--gw-mid) 56%,
-    var(--gw-lo) 100%
-  );
+  background:
+    radial-gradient(
+      ellipse at 52% 43%,
+      rgba(255, 255, 255, 0.42),
+      transparent 48%
+    ),
+    linear-gradient(
+      170deg,
+      var(--gw-hi) 0%,
+      var(--gw-mid) 54%,
+      var(--gw-lo) 100%
+    );
   /* Witte glasrand, donkere sponning, lichte tweede ruit — een glaspaneel in een
      sponning toont altijd twéé randen. Zelfde recept als divisies/platina.css. */
   box-shadow:
@@ -212,8 +218,8 @@
 .gw-kaart__laag[data-laag="wetGlassSurface"] {
   background-repeat: repeat, repeat;
   background-size:
-    13% auto,
-    21% auto;
+    42% auto,
+    67% auto;
   background-position:
     0 0,
     37% 61%;
@@ -223,7 +229,25 @@
      de tegel aan fijne korrel verliest, hoort hier ook niet — de scherpe
      details op de referentie zijn de druppels en het schuim, en die zijn eigen
      lagen. */
-  opacity: 0.92;
+  opacity: 0.38;
+}
+
+.gw-kaart__laag[data-laag="waterBack"],
+.gw-kaart__laag[data-laag="cardRing"] {
+  overflow: visible;
+  /* De bron is een 1024 × 1536 poster met circa 8% vrije marge per flank.
+     Andere FUT-masters benutten nagenoeg het hele 100 × 139-vak. Met 1,18
+     vult de echte metalen contour dezelfde breedte, zonder de kaartcontainer
+     of klikzone zelf groter te maken. */
+  transform: scale(1.18);
+  transform-origin: 50% 50%;
+}
+
+.gw-kaart__laag[data-laag="cardRing"] img {
+  filter: drop-shadow(
+    0 calc(var(--gw-kw) * 0.008) calc(var(--gw-kw) * 0.012)
+      rgba(3, 17, 34, 0.42)
+  );
 }
 
 /* Géén randlicht en géén glow op de voorwerpen meer.
@@ -297,6 +321,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: 0 calc(var(--gw-kw) * 0.004) calc(var(--gw-kw) * 0.008)
+    rgba(255, 255, 255, 0.68);
 }
 
 .gw-kaart__divisie {
@@ -360,7 +386,7 @@
   width: 100%;
   white-space: nowrap;
   font-weight: 800;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.08em;
   line-height: 1.15;
   text-transform: uppercase;
   color: var(--gw-ink);

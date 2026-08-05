@@ -28,7 +28,7 @@ import blaaskaakMaster from "./blaaskaak/assets/blaaskaak-master.webp";
 import dictatorMaster from "./dictator/assets/dictator-master.webp";
 import dictatorVoorMasker from "./dictator/assets/dictator-front-mask.svg";
 import glazenwasserMaster from "./glazenwasser/assets/glazenwasser-master.webp";
-import glazenwasserVoorMasker from "./glazenwasser/assets/glazenwasser-front-mask.svg";
+import glazenwasserVoorMasker from "./glazenwasser/assets/glazenwasser-front-mask.webp";
 import goatMaster from "./goat/assets/goat-master.webp";
 import goatBinnenMasker from "./goat/assets/goat-inside-mask.svg";
 import goatVoorMasker from "./goat/assets/goat-front-mask.svg";

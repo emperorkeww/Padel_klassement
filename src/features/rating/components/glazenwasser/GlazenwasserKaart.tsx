@@ -16,11 +16,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
 import ring from "./assets/gw-ring.webp";
+import waterBack from "./assets/gw-water-back.webp";
 import glas from "./assets/gw-glas.webp";
-import trekkerBoven from "./assets/gw-trekker-boven.webp";
-import ophanging from "./assets/gw-ophanging.webp";
-import emmer from "./assets/gw-emmer.webp";
-import onderschild from "./assets/gw-onderschild.webp";
 import {
   GW_INHOUD,
   GW_LAGEN,
@@ -36,11 +33,8 @@ import "./GlazenwasserKaart.css";
 /** De losse onderdelen. Eén plek waar een sleutel aan een bestand hangt. */
 const GW_BRONNEN: Record<GwBron, string> = {
   ring,
+  "water-back": waterBack,
   glas,
-  "trekker-boven": trekkerBoven,
-  ophanging,
-  emmer,
-  onderschild,
 };
 
 /** Fractie van de kaartbreedte als CSS-lengte. Eén helper, zodat geen enkele maat
@@ -257,7 +251,7 @@ export function GlazenwasserKaart({
                 className="gw-kaart__divisie-tekst"
                 style={{ transform: `scaleX(${divisie.smal})` }}
               >
-                {tier.label}
+                GLAZENWASSER
               </span>
               <span
                 className="gw-kaart__divisie-lijn"

@@ -245,6 +245,7 @@ import {
   GlazenwasserEffectBinnen,
   GlazenwasserEffectVoor,
 } from "./glazenwasser/GlazenwasserEffect";
+import { gwSchildPad } from "./glazenwasser/glazenwasserLayout";
 import {
   BlaaskaakEffectAchter,
   BlaaskaakEffectBinnen,
@@ -933,6 +934,15 @@ export function FutKaartDefs() {
         </clipPath>
         <clipPath id="fut-schild-punt" clipPathUnits="objectBoundingBox">
           <path d="M 0.035 0.01 L 0.44 0.04 C 0.47 0.042 0.48 0.058 0.5 0.058 C 0.52 0.058 0.53 0.042 0.56 0.04 L 0.965 0.01 L 1 0.075 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.075 Z" />
+        </clipPath>
+        {/* Glazenwasser: dezelfde gebogen schouders, centrale badge-recess en
+            brede onderste punt als de referentiegestuurde grote kaart. Het
+            compacte master-artwork en de echte kaartclip delen zo één contour. */}
+        <clipPath
+          id="fut-schild-glazenwasser"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d={gwSchildPad()} />
         </clipPath>
         <clipPath id="fut-schild-kroon" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
@@ -2513,7 +2523,11 @@ export function FutKaartVoorkant({
         </span>
       )}
       <span className="fut-kaart__naam">{naam}</span>
-      {tier && <span className="fut-kaart__divisie">{tier.label}</span>}
+      {tier && (
+        <span className="fut-kaart__divisie">
+          {tier.key === "platina" ? "GLAZENWASSER" : tier.label}
+        </span>
+      )}
       {editie && (
         <span className="fut-kaart__editie" title={editieTitel ?? undefined}>
           {editie}

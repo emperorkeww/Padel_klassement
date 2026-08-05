@@ -20,12 +20,12 @@
      editie-regel, ~87% hoogte) staat op #aec9ca: ink 6,44:1, inkSoft 4,75:1 —
      ook daar boven de 4,5:1 van AA voor kleine tekst. De --kaart-lo-stop zelf
      ligt in de lege schildpunt, waar geen inkt komt. */
-  --kaart-hi: #eaf5f5;
-  --kaart-mid: #c8dedf;
-  --kaart-lo: #a4c1c2;
-  --kaart-ink: #15404a;
-  --kaart-ink-soft: #2a545e;
-  --kaart-lijn: #7ba5ab;
+  --kaart-hi: #d8edf7;
+  --kaart-mid: #e8f5fa;
+  --kaart-lo: #b5d8e7;
+  --kaart-ink: #0d315b;
+  --kaart-ink-soft: #137f98;
+  --kaart-lijn: #65b7d8;
   /* Transparantie-illusie: het schildsilhouet nog eens, een fractie verschoven
      in ijl aqua — de tweede glaslaag áchter de eerste. Een filter werkt ná de
      clip, dus de echo volgt het schild exact. Ruimer verschoven dan de andere
@@ -46,19 +46,19 @@
 .fut-kaart--platina .fut-kaart__zijde {
   background: linear-gradient(
     160deg,
-    #eef8f9 0%,
-    #2c5a64 42%,
-    #d6ecee 68%,
-    #1b414a 100%
+    #f7fbff 0%,
+    #0c3154 42%,
+    #7fdcf1 68%,
+    #041b35 100%
   );
 }
 .fut-kaart--platina .fut-kaart__liner {
-  background: #123840;
+  background: #082a4b;
 }
 /* Lichter dan de afgeleide keyline (75% van --kaart-lijn richting warm wit):
    die trekt het randje crème, en dat vloekt op koud glas. */
 .fut-kaart--platina .fut-kaart__keyline {
-  background: #cfe8ea;
+  background: #bcefff;
 }
 /* Brede, zachte glansbaan i.p.v. de smalle metaalstreep van de basiskaart
    (38/50/62 tegen 42/50/58): over frosted glas loopt licht uit, het spiegelt
