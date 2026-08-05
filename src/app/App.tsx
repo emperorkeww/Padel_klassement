@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/ui/ErrorBoundary";
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
 const LoginScreen = lazy(() => import("@/features/auth/LoginScreen"));
 const ResetPassword = lazy(() => import("@/features/auth/ResetPassword"));
+const AuthBevestigen = lazy(() => import("@/features/auth/AuthBevestigen"));
 const Dashboard = lazy(() => import("@/features/dashboard/Dashboard"));
 const Feed = lazy(() => import("@/features/feed/Feed"));
 const Leaderboard = lazy(() => import("@/features/standings/Leaderboard"));
@@ -121,6 +122,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/reset-wachtwoord" element={<ResetPassword />} />
+          {/* Landingspagina van elke auth-mail (#1037). Buiten ProtectedRoute:
+              er ís nog geen sessie — die ontstaat hier juist. */}
+          <Route path="/auth/bevestigen" element={<AuthBevestigen />} />
 
           {/* Beschermde routes delen de dashboard-shell (topbar + navigatie). */}
           <Route element={<ProtectedRoute />}>
