@@ -143,7 +143,7 @@
                       "
                     >
                       <a
-                        href="{{ .ConfirmationURL }}"
+                        href="{{ .SiteURL }}/auth/bevestigen?token_hash={{ .TokenHash }}&type=signup"
                         style="
                           display: inline-block;
                           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
@@ -176,13 +176,13 @@
               >
                 Werkt de knop niet? Kopieer dan deze link naar je browser:<br />
                 <a
-                  href="{{ .ConfirmationURL }}"
+                  href="{{ .SiteURL }}/auth/bevestigen?token_hash={{ .TokenHash }}&type=signup"
                   style="
                     color: #0c8a5f;
                     overflow-wrap: break-word;
                     word-break: break-all;
                   "
-                  >{{ .ConfirmationURL }}</a
+                  >{{ .SiteURL }}/auth/bevestigen?token_hash={{ .TokenHash }}&type=signup</a
                 >
               </td>
             </tr>
