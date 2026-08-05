@@ -406,29 +406,28 @@ export const DIVISIE_PLATINA: DivisieKaart = {
   naam: "Glazenwasser — frosted aqua glas, zeegroen en geoxideerd aluminium",
 
   // Spiegel van het `.fut-kaart--platina`-blok in platina.css.
-  // Leesbaarheid: de inkt (#15404a) haalt 7,3:1 op de naamplaat-achtergrond en
-  // 5,9:1 op de donkerste vlak-stop; de zachte inkt (#2a545e) van sub-niveau
-  // en divisieregel haalt 5,0:1 daar waar die regel staat (~76% hoogte). Beide
-  // ruim boven de 4,5:1 van AA voor kleine tekst.
+  // Leesbaarheid: de inkt haalt 10,81:1 op de lichte stop en 11,74:1 op de
+  // middenstop. De zachte inkt haalt daar respectievelijk 4,76:1 en 5,17:1;
+  // beide tekstzones blijven dus boven 4,5:1 van AA voor kleine tekst.
   register: {
     // Vier stops met twee glanspunten: geoxideerd aluminium met een frosted
     // hooglicht — hetzelfde ritme als de metaalladder, in zeegroen.
     frame: [
-      [0, "#eef8f9"],
-      [0.42, "#2c5a64"],
-      [0.68, "#d6ecee"],
-      [1, "#1b414a"],
+      [0, "#f7fbff"],
+      [0.42, "#0c3154"],
+      [0.68, "#7fdcf1"],
+      [1, "#041b35"],
     ],
-    liner: "#123840",
-    keyline: "#cfe8ea",
-    vlak: ["#eaf5f5", "#c8dedf", "#a4c1c2"],
+    liner: "#082a4b",
+    keyline: "#bcefff",
+    vlak: ["#d8edf7", "#e8f5fa", "#b5d8e7"],
     glow: "rgba(255, 255, 255, 0.5)",
     // Brede, zachte sheen i.p.v. de smalle metaalstreep: over frosted glas
     // loopt licht uit, het spiegelt niet in één baan.
     sheenSpreiding: 0.12,
-    ink: "#15404a",
-    inkSoft: "#2a545e",
-    lijn: "#7ba5ab",
+    ink: "#0d315b",
+    inkSoft: "#126f87",
+    lijn: "#65b7d8",
     // Transparantie-illusie (#710): het schildsilhouet nog eens, een fractie
     // verschoven in ijl aqua — de tweede glaslaag achter de eerste.
     echo: [[0.018, 0.022, "rgba(163, 214, 219, 0.6)"]],

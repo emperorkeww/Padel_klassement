@@ -249,11 +249,23 @@ content_path = "./supabase/templates/uitnodiging.html"
 subject = "Je inloglink voor Vamos!"
 content_path = "./supabase/templates/inloglink.html"
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+# Notificatiemails (#1037 deel 2). Deze twee stonden in productie áán en gingen
+# in het Engels uit — ze zaten niet in de lijst van vijf uit de issue. Zonder
+# deze blokken krijgt iemand na de nette Nederlandse herstelmail alsnog een
+# Engelse "Your password was changed" achteraan.
+#
+# Geen actiesjablonen: er valt niets te bevestigen, dus geen knop en geen
+# ConfirmationURL. De andere notificaties (identity_linked, mfa_*,
+# phone_changed) staan in productie uit en laten we uit.
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Je wachtwoord is gewijzigd"
+content_path = "./templates/wachtwoord-gewijzigd.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Je e-mailadres is gewijzigd"
+content_path = "./templates/adres-gewijzigd.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
@@ -432,3 +444,76 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# ---------------------------------------------------------------------------
+# Productie-overrides (#1037 deel 2).
+#
+# `supabase config push` duwt de volledige berekende config naar het gehoste
+# project — niet alleen wat je hier wijzigde. Alles wat hierboven staat is op de
+# lokale stack gericht (localhost, rate limits van 2), dus zonder dit blok zet
+# een push productie om. Er is géén `config pull`, dus dit blok is met de hand
+# gelijkgetrokken met de Management API:
+#
+#   curl -H "Authorization: Bearer <pat>" \
+#     https://api.supabase.com/v1/projects/fuxjxorbbebbxxgsnyon/config/auth
+#
+# Wijkt er iets in het dashboard af van wat hier staat, dan wint dit blok bij de
+# eerstvolgende push. Zie docs/auth-mails.md.
+#
+# De sjabloonblokken hierboven staan bewust in de basisconfig: die zijn voor
+# beide omgevingen gelijk en hoeven niet gedupliceerd.
+# ---------------------------------------------------------------------------
+[remotes.production]
+project_id = "fuxjxorbbebbxxgsnyon"
+
+[remotes.production.auth]
+site_url = "https://vamos-padel.net"
+# Exact de lijst die in het dashboard stond. De wildcard dekt
+# /reset-wachtwoord al; de workers.dev-URL is de directe Worker-hostname en de
+# localhost-entries zijn voor lokaal ontwikkelen tegen productie-auth.
+additional_redirect_urls = [
+  "https://vamos.remco-marien.workers.dev/**",
+  "http://localhost:5173/**",
+  "http://localhost:5174/**",
+  "https://vamos-padel.net/**",
+]
+
+[remotes.production.auth.rate_limit]
+# Productie staat op 50 per uur. Lokaal staat 2 — die waarde hierheen laten
+# lekken zou het adminpaneel (#1036) meteen onbruikbaar maken.
+email_sent = 50
+
+[remotes.production.auth.email]
+# Productie vereist e-mailbevestiging; lokaal staat dat uit zodat je in een test
+# niet elke keer een mailbox nodig hebt. Dit is de belangrijkste afwijking:
+# zonder deze regel zou een push nieuwe accounts zonder verificatie toelaten.
+enable_confirmations = true
+double_confirm_changes = true
+secure_password_change = false
+# Anti-spamrem tussen twee mails naar hetzelfde adres. Lokaal 1s om te kunnen
+# testen, in productie 60s.
+max_frequency = "60s"
+otp_length = 8
+otp_expiry = 3600
+
+[remotes.production.auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+# Nooit in de repo: moet als omgevingsvariabele in de shell staan op het moment
+# van pushen. Staat hij er niet, dan duwt de push een lege waarde en ligt alle
+# uitgaande mail plat.
+pass = "env(RESEND_API_KEY)"
+admin_email = "noreply@vamos-padel.net"
+# Bewuste wijziging: in het dashboard stond "vamos!" met kleine letter.
+sender_name = "Vamos!"
+
+# MFA via authenticator-app staat in productie áán en lokaal uit. Zonder deze
+# override zou een push hem uitzetten — en dat sluit gebruikers buiten die hem
+# al ingeschakeld hebben. Kwam pas boven water uit de diff van `config push`,
+# niet uit het uitlezen van de auth-config: een reden om die diff altijd te
+# lezen in plaats van blind te bevestigen.
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

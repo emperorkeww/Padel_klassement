@@ -2,9 +2,11 @@
 // canvas delen.
 //
 // Sinds #834 tekenen de specials hun decoratie niet meer als vector, maar als
-// één transparant master-artwork dat drie keer op exact dezelfde coördinaten
-// wordt gerenderd: achter de kaart, ín het kaartvlak (door de schildclip) en
-// plaatselijk vóór het frame (door een frontmasker). Zie
+// transparant artwork dat op exact dezelfde coördinaten wordt gerenderd: achter
+// de kaart, ín het kaartvlak (door de schildclip) en plaatselijk vóór het frame.
+// Gewoonlijk selecteert een frontmasker dezelfde master; Glazenwasser gebruikt
+// een fysiek afzonderlijke frontbron omdat frame en props in de vlakke
+// referentie anders niet betrouwbaar te scheiden zijn. Zie
 // docs/fut-kaarten/special-card-visual-effects-architecture.md.
 //
 // Die architectuur zat alleen in de DOM: de deelposters tekenden nog de oude
@@ -27,8 +29,8 @@ import bigdaddyVoorMasker from "./bigdaddy/assets/bigdaddy-front-mask.webp";
 import blaaskaakMaster from "./blaaskaak/assets/blaaskaak-master.webp";
 import dictatorMaster from "./dictator/assets/dictator-master.webp";
 import dictatorVoorMasker from "./dictator/assets/dictator-front-mask.svg";
+import glazenwasserFront from "./glazenwasser/assets/glazenwasser-front.webp";
 import glazenwasserMaster from "./glazenwasser/assets/glazenwasser-master.webp";
-import glazenwasserVoorMasker from "./glazenwasser/assets/glazenwasser-front-mask.svg";
 import goatMaster from "./goat/assets/goat-master.webp";
 import goatBinnenMasker from "./goat/assets/goat-inside-mask.svg";
 import goatVoorMasker from "./goat/assets/goat-front-mask.svg";
@@ -69,6 +71,9 @@ export interface MasterRegistratie {
   css: string;
   /** Het transparante master-artwork. */
   bron: string;
+  /** Optionele afzonderlijke transparante voorgrondbron. Alleen nodig wanneer
+   *  frame en props in de vlakke referentie fysiek van elkaar gescheiden zijn. */
+  voorBron?: string;
   /** `--…-master-left`, als fractie van de kaartbreedte. */
   links: number;
   /** `--…-master-top`, als fractie van de kaarthóógte (zo rekent `top` in CSS). */
@@ -213,13 +218,13 @@ export const KAART_MASTERS: Readonly<Record<MasterNaam, MasterRegistratie>> = {
     prefix: "glazenwasser",
     css: "glazenwasser/GlazenwasserEffect.css",
     bron: glazenwasserMaster,
+    voorBron: glazenwasserFront,
     links: -0.0818,
     boven: -0.1308,
     breedte: 1.1636,
     schaal: 1,
     rotatie: 0,
     binnenAlpha: 0.94,
-    voorMasker: glazenwasserVoorMasker,
     voorSchaduw: [0, 0.008, 0.014, "rgba(4, 16, 30, 0.72)"],
     onderdruktDivisie: true,
     onderdruktMotief: true,
@@ -296,6 +301,7 @@ export interface GeladenMaster {
   naam: MasterNaam;
   registratie: MasterRegistratie;
   master: HTMLImageElement;
+  voorMaster: HTMLImageElement | null;
   binnenMasker: HTMLImageElement | null;
   voorMasker: HTMLImageElement | null;
 }
@@ -342,14 +348,19 @@ export function laadKaartMaster(
   const registratie = KAART_MASTERS[naam];
   const beurt = Promise.all([
     laadAfbeelding(registratie.bron),
+    registratie.voorBron
+      ? laadAfbeelding(registratie.voorBron)
+      : Promise.resolve(null),
     registratie.binnenMasker
       ? laadAfbeelding(registratie.binnenMasker)
       : Promise.resolve(null),
     registratie.voorMasker
       ? laadAfbeelding(registratie.voorMasker)
       : Promise.resolve(null),
-  ]).then(([master, binnenMasker, voorMasker]) =>
-    master ? { naam, registratie, master, binnenMasker, voorMasker } : null,
+  ]).then(([master, voorMaster, binnenMasker, voorMasker]) =>
+    master
+      ? { naam, registratie, master, voorMaster, binnenMasker, voorMasker }
+      : null,
   );
   cache.set(naam, beurt);
   return beurt;

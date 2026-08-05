@@ -245,6 +245,7 @@ import {
   GlazenwasserEffectBinnen,
   GlazenwasserEffectVoor,
 } from "./glazenwasser/GlazenwasserEffect";
+import { gwSchildPad } from "./glazenwasser/glazenwasserLayout";
 import {
   BlaaskaakEffectAchter,
   BlaaskaakEffectBinnen,
@@ -933,6 +934,15 @@ export function FutKaartDefs() {
         </clipPath>
         <clipPath id="fut-schild-punt" clipPathUnits="objectBoundingBox">
           <path d="M 0.035 0.01 L 0.44 0.04 C 0.47 0.042 0.48 0.058 0.5 0.058 C 0.52 0.058 0.53 0.042 0.56 0.04 L 0.965 0.01 L 1 0.075 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.075 Z" />
+        </clipPath>
+        {/* Glazenwasser: dezelfde gebogen schouders, centrale badge-recess en
+            brede onderste punt als de referentiegestuurde grote kaart. Het
+            compacte master-artwork en de echte kaartclip delen zo één contour. */}
+        <clipPath
+          id="fut-schild-glazenwasser"
+          clipPathUnits="objectBoundingBox"
+        >
+          <path d={gwSchildPad()} />
         </clipPath>
         <clipPath id="fut-schild-kroon" clipPathUnits="objectBoundingBox">
           <path d="M 0.085 0.035 L 0.38 0.035 C 0.43 0.035 0.44 0 0.5 0 C 0.56 0 0.57 0.035 0.62 0.035 L 0.915 0.035 C 0.962 0.035 1 0.062 1 0.095 L 1 0.60 C 1 0.74 0.955 0.795 0.865 0.838 L 0.565 0.972 C 0.545 0.982 0.523 1 0.5 1 C 0.477 1 0.455 0.982 0.435 0.972 L 0.135 0.838 C 0.045 0.795 0 0.74 0 0.60 L 0 0.095 C 0 0.062 0.038 0.035 0.085 0.035 Z" />
@@ -2114,6 +2124,10 @@ export function FutKaart({
   glansZaad?: string;
 }) {
   const layout = divisieLayout(tier?.key, editie);
+  // Alleen de kale platina-divisie is de Glazenwasser. Tijdelijke edities
+  // behouden hun eigen schild en zetting, ook wanneer de speler toevallig in
+  // de platina-ratingband zit (bijvoorbeeld Big Daddy in MatchDetail).
+  const glazenwasserMaster = tier?.key === "platina" && !editie;
   // Premium glans (#773): een editie met eigen glans wint van de tier-glans —
   // dezelfde cascade als bij het ornament. Is er een tijdelijke overlay actief
   // (In-Form, On Fire), dan houdt die de visuele voorrang en valt de permanente
@@ -2128,6 +2142,7 @@ export function FutKaart({
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
+    glazenwasserMaster ? "fut-kaart--glazenwasser" : "",
     layout?.eigenSilhouet ? "fut-kaart--eigen-silhouet" : "",
     layout?.className ?? "",
     omgedraaid ? "is-omgedraaid" : "",
@@ -2176,7 +2191,6 @@ export function FutKaart({
   // Glazenwasser (#834): de platina-divisie om dezelfde reden uit
   // glazenwasser-master.webp — raamcrest, paneelklemmen, veegbogen, medaillon en
   // het paneelraster-watermerk zitten daar in één natte glaswand.
-  const glazenwasserMaster = tier?.key === "platina" && !editie;
   const divisieLive =
     wannabeMaster || blaaskaakMaster || glazenwasserMaster
       ? undefined
@@ -2389,9 +2403,6 @@ export function FutKaart({
             pijlen, de splinter, het kroontje met krassen en de inktdruipers
             liggen vóór het frame. */}
         {wannabeMaster && <WannabeEffectVoor />}
-        {/* Raamcrest, hoekschuim, beide trekkers, de sopemmer, de schildbadge en
-            de onderste helft van de waterexplosie liggen vóór het frame. */}
-        {glazenwasserMaster && <GlazenwasserEffectVoor />}
         {blaaskaakMaster && <BlaaskaakEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
@@ -2406,6 +2417,11 @@ export function FutKaart({
           {editie === "inform" && <InformStormVoor />}
           {layout && <KaartOnderdelen layout={layout} slot="voor" />}
         </div>
+        {/* De Glazenwasser-voorwerpen staan bewust buiten de preserve-3d-
+            flipper. Sommige browsers vlakken een gemaskerde sibling daarin
+            achter de geclipte kaartzijde af. Op de kaartroot blijft de laag
+            gegarandeerd vóór het frame; CSS laat hem tijdens de flip weg. */}
+        {glazenwasserMaster && <GlazenwasserEffectVoor />}
       </div>
     </KaartLayoutContext.Provider>
   );
@@ -2513,7 +2529,11 @@ export function FutKaartVoorkant({
         </span>
       )}
       <span className="fut-kaart__naam">{naam}</span>
-      {tier && <span className="fut-kaart__divisie">{tier.label}</span>}
+      {tier && (
+        <span className="fut-kaart__divisie">
+          {tier.key === "platina" && !editie ? "GLAZENWASSER" : tier.label}
+        </span>
+      )}
       {editie && (
         <span className="fut-kaart__editie" title={editieTitel ?? undefined}>
           {editie}

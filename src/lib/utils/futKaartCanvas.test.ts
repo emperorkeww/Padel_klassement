@@ -1205,6 +1205,7 @@ function nepMaster(naam: MasterNaam): GeladenMaster {
     naam,
     registratie,
     master: beeld(),
+    voorMaster: registratie.voorBron ? beeld() : null,
     binnenMasker: registratie.binnenMasker ? beeld() : null,
     voorMasker: registratie.voorMasker ? beeld() : null,
   };

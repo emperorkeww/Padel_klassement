@@ -47,36 +47,32 @@ describe("Glazenwasser-layout", () => {
     }
   });
 
-  it("laat het onderschild dezelfde afbeelding volgen als de ring", () => {
-    // De waterexplosie zat als eigen laag op een afwijkend anker, samen met het
-    // onderschild dat erin ligt. Sinds het water in de ring zit, is de ring de
-    // baas over die hoogte: hij is in het assetscript met exact dezelfde
-    // stuksgewijze afbeelding herbemonsterd. Een eigen anker op het onderschild
-    // zou het 1,8% kaarthoogte boven zijn eigen plas leggen.
-    const schild = GW_LAGEN.find((l) => l.naam === "bottomShield");
-    expect(schild, "onderschild ontbreekt").toBeDefined();
-    expect(schild?.ankerY, "onderschild hoort geen eigen anker te hebben")
-      .toBeUndefined();
-    expect(GW_LAGEN.some((l) => l.naam === "bottomWater")).toBe(false);
-    expect(GW_LAGEN.some((l) => l.naam === "bottomSqueegee")).toBe(false);
+  it("houdt achterwater, frame en props in aparte dieptelagen", () => {
+    expect(GW_LAGEN.find((l) => l.naam === "waterBack")?.z).toBeLessThan(20);
+    const frame = GW_LAGEN.find((l) => l.naam === "cardFrame");
+    const props = GW_LAGEN.find((l) => l.naam === "frontProps");
+    expect(frame?.z).toBeLessThan(50);
+    expect(props?.z).toBeGreaterThan(60);
+    expect(props!.z).toBeGreaterThan(frame!.z);
   });
 
-  it("rekent de ring niet twee keer om", () => {
-    // De ring staat al in kaartfracties; `laagVensterStijl` mag hem dus niet nóg
+  it("rekent frame en props niet twee keer om", () => {
+    // De assets staan al in kaartfracties; `laagVensterStijl` mag ze dus niet nóg
     // een keer door `naarKaartY` halen.
-    const ringLaag = GW_LAGEN.find((l) => l.naam === "cardRing");
-    expect(ringLaag?.voorbewerkt, "ring mist de voorbewerkt-vlag").toBe(true);
-    const stijl = laagVensterStijl(ringLaag!) as unknown as Record<string, string>;
-    expect(stijl.top).toBe(`${ringLaag!.doel[1] * 100}%`);
+    for (const naam of ["cardFrame", "frontProps"]) {
+      const laag = GW_LAGEN.find((l) => l.naam === naam);
+      expect(laag?.voorbewerkt, `${naam} mist de voorbewerkt-vlag`).toBe(true);
+      const stijl = laagVensterStijl(laag!) as unknown as Record<string, string>;
+      expect(stijl.top).toBe(`${laag!.doel[1] * 100}%`);
+    }
   });
 
-  it("verdeelt de extra kaarthoogte in plaats van hem uit te rekken", () => {
-    // Boven blijft aan de bovenrand hangen, onder aan de onderrand, en het midden
-    // houdt zijn relatieve hoogte.
-    expect(naarKaartY(0.05)).toBeLessThan(0.05);
-    expect(naarKaartY(0.5)).toBeCloseTo(0.5, 3);
-    expect(naarKaartY(0.95)).toBeGreaterThan(0.95);
-    // Een maat krimpt altijd met dezelfde factor: artwork blijft in verhouding.
+  it("registreert de referentie zonder het artwork uit te rekken", () => {
+    // De 2:3-referentie is horizontaal opgevuld tot de bestaande 100:139-stage.
+    // Daardoor blijft iedere y-positie gelijk en behoudt elke maat zijn verhouding.
+    expect(naarKaartY(0.05)).toBeCloseTo(0.05, 6);
+    expect(naarKaartY(0.5)).toBeCloseTo(0.5, 6);
+    expect(naarKaartY(0.95)).toBeCloseTo(0.95, 6);
     expect(naarKaartH(0.2) / 0.2).toBeCloseTo(naarKaartH(0.5) / 0.5, 6);
   });
 });
@@ -117,8 +113,8 @@ describe("Glazenwasser-kaart", () => {
 
     expect(screen.getByText("1150")).toBeInTheDocument();
     expect(screen.getByText("Papapadel")).toBeInTheDocument();
-    expect(screen.getByText("Glazenwasser II")).toBeInTheDocument();
-    expect(screen.getByText("Concentratie")).toBeInTheDocument();
+    expect(screen.getByText("GLAZENWASSER")).toBeInTheDocument();
+    expect(screen.getByText("PHY")).toBeInTheDocument();
     expect(screen.getByText("4/5")).toBeInTheDocument();
   });
 

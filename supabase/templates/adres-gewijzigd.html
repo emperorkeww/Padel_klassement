@@ -1,0 +1,193 @@
+<!doctype html>
+<!--
+  Supabase auth-sjabloon `email_changed` (notificatie, #1037 deel 2).
+
+  Geen actiesjabloon: de wissel is op dit moment al bevestigd via
+  bevestig-nieuw-adres.html. Dit is de melding achteraf, dus geen knop en geen
+  {{ .ConfirmationURL }} — wel een weg terug voor wie dit níét zelf deed.
+
+  {{ .OldEmail }} en {{ .Email }} zijn de variabelen die Supabase hier
+  meegeeft (afgelezen van het standaardsjabloon in het gehoste project);
+  {{ .Email }} is het níeuwe adres.
+
+  Mail-HTML: tabelgebaseerd, alle styling inline, geen externe
+  stylesheet/script/webfont, geen conditional comments (die worden gestript —
+  zie de toelichting bij de knop in de actiesjablonen).
+-->
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Licht ontworpen: Apple Mail volgt prefers-color-scheme, Gmail inverteert
+         eigenmachtig. Elk vlak heeft daarom een expliciete achtergrondkleur. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Je e-mailadres is gewijzigd</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f4f7f4">
+    <!-- Voorbeeldtekst in de inbox, verborgen in de mail zelf. -->
+    <div
+      style="
+        display: none;
+        max-height: 0;
+        max-width: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: #f4f7f4;
+        font-size: 1px;
+        line-height: 1px;
+      "
+    >
+      Was jij dit niet? Dan moet je nu iets doen.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f4f7f4"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border: 1px solid #e4eae4;
+              border-radius: 12px;
+            "
+          >
+            <!-- Kopband -->
+            <tr>
+              <td
+                style="
+                  background-color: #0c8a5f;
+                  padding: 20px 28px;
+                  border-radius: 12px 12px 0 0;
+                "
+              >
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding-right: 12px">
+                      <img
+                        src="https://vamos-padel.net/mail-logo.png"
+                        width="32"
+                        height="32"
+                        alt=""
+                        style="display: block; border: 0"
+                      />
+                    </td>
+                    <td
+                      style="
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                          Helvetica, Arial, sans-serif;
+                        font-size: 22px;
+                        font-weight: bold;
+                        color: #ffffff;
+                      "
+                    >
+                      Vamos!
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Kop -->
+            <tr>
+              <td
+                style="
+                  padding: 32px 28px 12px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 20px;
+                  font-weight: bold;
+                  color: #1a2620;
+                "
+              >
+                Je e-mailadres is gewijzigd
+              </td>
+            </tr>
+            <!-- Alinea -->
+            <tr>
+              <td
+                style="
+                  padding: 0 28px 28px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 16px;
+                  line-height: 24px;
+                  color: #1a2620;
+                "
+              >
+                Het e-mailadres van je Vamos!-account is gewijzigd van
+                <strong>{{ .OldEmail }}</strong> naar <strong>{{ .Email }}</strong>. Was
+                jij dat? Dan hoef je verder niets te doen — je logt voortaan in met het
+                nieuwe adres.
+              </td>
+            </tr>
+            <!-- Voettekst. Geen knop: de wissel is op dit moment al bevestigd.
+                 Wel een weg terug voor wie dit niet zelf deed. -->
+            <tr>
+              <td
+                style="
+                  border-top: 1px solid #e4eae4;
+                  padding: 20px 28px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 13px;
+                  line-height: 20px;
+                  color: #64756c;
+                "
+              >
+                Je krijgt deze mail omdat het e-mailadres van dit account op
+                vamos-padel.net gewijzigd is. Was jij dit niet? Stel dan meteen een nieuw
+                wachtwoord in via
+                <a
+                  href="https://vamos-padel.net/login"
+                  style="
+                    color: #0c8a5f;
+                    overflow-wrap: break-word;
+                    word-break: break-all;
+                  "
+                  >https://vamos-padel.net/login</a
+                >
+                — vraag de herstelmail aan op het adres waar je deze melding kreeg.
+              </td>
+            </tr>
+          </table>
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width: 100%; max-width: 600px"
+          >
+            <tr>
+              <td
+                align="center"
+                style="
+                  padding: 16px 12px 0;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 12px;
+                  line-height: 18px;
+                  color: #64756c;
+                "
+              >
+                Vamos! · vamos-padel.net
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

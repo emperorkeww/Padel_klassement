@@ -1,0 +1,136 @@
+/* Adminpaneel (#1036). Zes kolommen passen op geen enkele telefoon, dus onder
+   700px vouwt dezelfde tabel om tot kaartjes: elke cel krijgt zijn koptekst
+   terug via data-label. Eén opmaak voor beide breedtes, in plaats van twee
+   lijsten die uit elkaar groeien. */
+
+.admin {
+  padding: var(--sp-4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3, 0.75rem);
+}
+
+.admin__titel {
+  margin: 0;
+}
+
+.admin__intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin__zoek {
+  display: block;
+}
+
+.admin__telling {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.admin-tabel__naam {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.admin-tabel__naam:hover .admin-tabel__volnaam,
+.admin-tabel__naam:focus-visible .admin-tabel__volnaam {
+  text-decoration: underline;
+}
+
+.admin-tabel__volnaam {
+  display: block;
+}
+
+.admin-tabel__username,
+.admin-tabel__leeg {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.admin-tabel .badge {
+  margin-left: 0.375rem;
+}
+
+.admin-detail__blok {
+  margin-top: var(--sp-3, 0.75rem);
+}
+
+.admin-detail__feiten {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.admin-detail__feiten dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.admin-detail__feiten dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .admin-tabel thead {
+    /* Niet display:none — dan verdwijnt de kopregel ook voor screenreaders,
+       terwijl data-label alleen visueel werkt. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .admin-tabel,
+  .admin-tabel tbody,
+  .admin-tabel tr,
+  .admin-tabel td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-tabel tr {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md, 0.5rem);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .admin-tabel td {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: 0;
+    padding: 0.125rem 0;
+  }
+
+  .admin-tabel td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    flex: 0 0 auto;
+  }
+
+  /* De naamcel is de kop van het kaartje en heeft geen label nodig. */
+  .admin-tabel td:first-child {
+    display: block;
+    padding-bottom: 0.375rem;
+  }
+
+  .admin-tabel td:first-child::before {
+    content: none;
+  }
+}

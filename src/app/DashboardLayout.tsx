@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import { Suspense, useMemo, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -17,6 +17,7 @@ import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { JokerKnop } from "@/features/matches/components/JokerKnop";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
 import "./DashboardLayout.css";
@@ -58,6 +59,11 @@ const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserP
 // De uitlegpagina (#989) hoort op desktop bij de vaste navigatie in plaats van
 // als losse knop: de topbalk waarin de ?-knop op mobiel staat is hier verborgen.
 const UITLEG: NavItem = { to: "/uitleg", label: "Hoe werkt het?", icon: <IconHelp /> };
+// Beheer (#1036): alleen zichtbaar voor wie in app_admins staat. Enige plek in
+// de navigatie met een voorwaarde; houd het bij deze ene vorm in plaats van er
+// een generiek `zichtbaarAls`-mechanisme voor te bouwen. Verbergen is géén
+// beveiliging — de route en de edge function weigeren zelfstandig.
+const BEHEER: NavItem = { to: "/admin", label: "Beheer", icon: <IconShield /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -84,6 +90,20 @@ export function DashboardLayout() {
     [myId],
   );
   const me = profile.data ?? null;
+  // Beheer-ingang (#1036). Eén whoami per sessie (gecachet in ./admin/api),
+  // niet-blokkerend: zolang het antwoord uitblijft is `isAdmin` null en staat
+  // het item er gewoon niet. Deze layout mount één keer per sessie, dus dit is
+  // de enige plek in de app die het vraagt.
+  const isAdmin = useIsAdmin();
+  const sidebarGroepen = useMemo(
+    () =>
+      isAdmin
+        ? SIDEBAR_GROUPS.map((g) =>
+            g.title === "Ik" ? { ...g, items: [...g.items, BEHEER] } : g,
+          )
+        : SIDEBAR_GROUPS,
+    [isAdmin],
+  );
   // Tier-promotie/degradatie (#127): één app-brede melding zodra een uitslag
   // je rating over een divisiegrens tilt. Een promotie komt sinds #500 als
   // pack-opening (overlay onderaan deze layout); degradatie blijft een toast.
@@ -150,7 +170,7 @@ export function DashboardLayout() {
         </Link>
 
         <nav className="sidebar__nav" aria-label="Hoofdnavigatie">
-          {SIDEBAR_GROUPS.map((group) => (
+          {sidebarGroepen.map((group) => (
             <div key={group.title} className="sidebar__group">
               <span className="sidebar__group-title">{group.title}</span>
               {group.items.map((item) => {
@@ -324,6 +344,15 @@ function IconHelp() {
       <circle cx="12" cy="12" r="9" />
       <path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.9" />
       <path d="M12 17.2h.01" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3.2 19 6v5.4c0 4.2-2.8 7.5-7 9.4-4.2-1.9-7-5.2-7-9.4V6z" />
+      <path d="M9.4 12.2l1.9 1.9 3.5-3.7" />
     </svg>
   );
 }

@@ -14,18 +14,17 @@
 // y van de kaarthoogte), zodat er één stabiel coördinatenstelsel is en de kaart
 // als geheel schaalt. Er staat nergens een pixelwaarde of een breakpoint.
 //
-// De artworklagen komen uit het bestaande `glazenwasser-master.webp`: elke laag
-// is een uitsnede uit dát canvas, geen nieuw bestand. `bron` is die uitsnede in
-// canvaspixels, `doel` is waar hetzelfde onderdeel in de referentie staat. Beide
-// reeksen komen uit `python3 scripts/glazenwasser-master.py --layout`; wie het
-// artwork opnieuw genereert, kopieert die uitvoer hierheen.
+// De artworklagen worden reproduceerbaar uit de referentie gebouwd door
+// `scripts/glazenwasser-onderdelen.py`. Achterwater, metalen frame en voorste
+// schoonmaakprops gebruiken hetzelfde volledige 100:139-register, zodat hun
+// positie nooit door afzonderlijke uitsnedes of transforms uit elkaar loopt.
 
 /** Canvasmaat van glazenwasser-master.webp. */
-export const GW_CANVAS = { breedte: 1024, hoogte: 1440 } as const;
+export const GW_CANVAS = { breedte: 1105, hoogte: 1536 } as const;
 
 /** Verhouding van het schild in de referentie (hoogte / breedte): 975 × 1114
  *  pixels in het bronbeeld. Alle y-maten hieronder staan in dít stelsel. */
-const REF_RATIO = 1114 / 975;
+const REF_RATIO = 139 / 100;
 
 /** Verhouding van de kaart in de app. Dezelfde als élke andere kaart, zodat de
  *  Glazenwasser naast een GOAT of een Wannabe niet als een afgeknot blokje leest.
@@ -107,10 +106,9 @@ export interface GwLaag {
   /** Hoogte waarop deze laag met zijn groep meeschuift. */
   ankerY?: number;
   /** `doel` staat al in kaartfracties in plaats van in referentiefracties: de
-   *  verticale afbeelding is dan al in de pixels gebakken. Alleen de ring, die
-   *  in `scripts/glazenwasser-onderdelen.py` met exact dezelfde stuksgewijze
-   *  afbeelding is herbemonsterd — hem hier nóg een keer verschuiven zou hem
-   *  dubbel verrekenen. */
+   *  volledige stage-registratie is dan al in de pixels gebakken. Frame,
+   *  achterwater en frontprops nogmaals verschuiven zou die registratie dubbel
+   *  verrekenen. */
   voorbewerkt?: boolean;
   /** Contactschaduw: een tweede, zwart geblurde kopie van hetzelfde onderdeel
    *  eronder. Dat is wat een voorwerp op de lijst laat rusten in plaats van
@@ -123,12 +121,10 @@ export interface GwLaag {
 import DOZEN from "./assets/gw-onderdelen.json";
 
 export type GwBron =
-  | "ring"
-  | "glas"
-  | "trekker-boven"
-  | "ophanging"
-  | "emmer"
-  | "onderschild";
+  | "frame"
+  | "front-props"
+  | "water-back"
+  | "glas";
 
 /** De lagen, in paintvolgorde. `doel` komt uit
  *  `python3 scripts/glazenwasser-onderdelen.py`; `schaal` en `verzet` zijn de
@@ -140,6 +136,13 @@ const doos = (naam: GwBron) =>
   DOZEN[naam].doos as unknown as readonly [number, number, number, number];
 
 export const GW_LAGEN: readonly GwLaag[] = [
+  {
+    naam: "waterBack",
+    bron: "water-back",
+    doel: doos("water-back"),
+    voorbewerkt: true,
+    z: 10,
+  },
   // Natte glaswand op het kaartvlak: strepen, condens en druppels. Een
   // herhalende tegel, geen uitsnede — zie `tegel` hierboven. Niet uitrekken
   // dus: de tegel houdt op elke kaartmaat dezelfde korrel.
@@ -151,71 +154,24 @@ export const GW_LAGEN: readonly GwLaag[] = [
     tegel: true,
     z: 30,
   },
-  // De hele omlijsting als één illustratie: lijst, ijs, flankdruppels, schuim,
-  // bellen, condens en de waterexplosie onderin. Dit verving vijf losse lagen
-  // (topFoamLeft/Right, sideDripsLeft/Right, bottomWater) én de in CSS gebouwde
-  // lijst. Op de referentie zijn dat geen aparte dingen — het ijs ligt op de
-  // rail, het water loopt van de bovenhoek langs de flank naar de plas onderin —
-  // en elke knip daartussen was een zichtbare naad. In één stuk is er niets om
-  // naadloos te maken, en het licht klopt overal met zichzelf omdat het uit één
-  // render komt.
+  // De metalen rail met de geïntegreerde boven- en onderbadge. Deze laag staat
+  // boven het glas maar onder content en schoonmaakprops.
   {
-    naam: "cardRing",
-    bron: "ring",
-    doel: doos("ring"),
+    naam: "cardFrame",
+    bron: "frame",
+    doel: doos("frame"),
     voorbewerkt: true,
     z: 40,
   },
-  // Trekker schuin langs de linkerflank: lager en forser dan op de referentie,
-  // zodat hij de langere flank vult en zijn blad buiten het schild komt.
+  // Echte frame-breakers: trekker, voorste schuimlaag, emmer/doek en spons.
+  // Zij hebben een eigen transparante bron zonder metalen railpixels.
   {
-    naam: "leftSqueegee",
-    schaduw: 0.004,
-    bron: "trekker-boven",
-    doel: doos("trekker-boven"),
-    // Op referentiemaat en -plek. De vergroting en de verschuiving omlaag
-    // compenseerden een uitsnede die bij de ferrule ophield; met de steel erbij
-    // zet dat het blad juist bovenop de glaslat en de naam. De hoek zit al in de
-    // pixels, dus er hoeft ook niets gedraaid te worden.
-    verzet: [0.0, 0.012],
+    naam: "frontProps",
+    bron: "front-props",
+    doel: doos("front-props"),
+    voorbewerkt: true,
+    schaduw: 0.008,
     z: 70,
-  },
-  // Haak met ketting waar de emmer aan hangt; die moet aan de lijst vastzitten,
-  // dus hij schuift met de emmer mee naar buiten.
-  {
-    naam: "bucketHanger",
-    bron: "ophanging",
-    doel: doos("ophanging"),
-    // Vóór de lijst, niet erachter: op de referentie is de klem op de rail
-    // geschroefd en ligt de ketting er zichtbaar overheen. Achter de lijst
-    // (z 19) verdween hij eronder en hing de emmer nergens aan.
-    z: 66,
-  },
-  // Sopemmer: groter, lager en verder over de rechterrand dan op de referentie.
-  {
-    naam: "rightBucket",
-    bron: "emmer",
-    doel: doos("emmer"),
-    // Op referentiemaat: op 1,22 dekte de emmer de rechterhelft van de
-    // divisieregel en de kolom CONCENTRATIE af. Iets omhoog, zodat de ketting
-    // uit de ophanging de beugel raakt in plaats van er een gat boven te laten:
-    // een emmer die náást zijn ketting hangt leest als los plaatje.
-    verzet: [0.004, -0.022],
-    z: 70,
-  },
-  // Onderschild mét de tweede trekker: op de referentie is dat één brandpunt, dus
-  // het is ook één asset. Het water eromheen loopt er in dezelfde uitsnede
-  // overheen, zodat er geen naad tussen crest, trekker en splash overblijft.
-  {
-    naam: "bottomShield",
-    schaduw: 0.01,
-    bron: "onderschild",
-    doel: doos("onderschild"),
-    verzet: [0, 0.012],
-    // Geen eigen anker meer: het water waar dit schild in ligt zit nu in de ring,
-    // en die is met de gewone afbeelding herbemonsterd. Een afwijkend anker zou
-    // het schild 1,8% kaarthoogte boven zijn eigen plas leggen.
-    z: 100,
   },
 ];
 
@@ -226,32 +182,28 @@ export const GW_LAGEN: readonly GwLaag[] = [
  *  lagen, zodat de vorm meegroeit met de langere kaart in plaats van uit te
  *  rekken — de kap blijft even diep, de flanken worden langer. */
 const SCHILD_PUNTEN: ReadonlyArray<readonly number[]> = [
-  // Linkerschouder: gehoekt omhoog, niet afgerond.
-  [0.072, 0.062],
-  [0.108, 0.028, 0.170, 0.010, 0.286, 0.008],
-  [0.330, 0.008, 0.362, 0.008, 0.392, 0.009],
-  // Verzonken inkeping: de rand duikt hier diep het kaartvlak in, zodat de
-  // raamcrest erín valt en de lijst er aan beide kanten omheen loopt. Zonder
-  // deze recess blijft elke crest een badge die op de kaart is geplakt.
-  [0.404, 0.052, 0.412, 0.086, 0.436, 0.092],
-  [0.472, 0.098, 0.528, 0.098, 0.564, 0.092],
-  [0.588, 0.086, 0.596, 0.052, 0.608, 0.009],
-  // Rechterschouder, gespiegeld.
-  [0.638, 0.008, 0.670, 0.008, 0.714, 0.008],
-  [0.830, 0.010, 0.892, 0.028, 0.928, 0.062],
-  [0.952, 0.076, 0.972, 0.100, 0.974, 0.170],
-  [0.978, 0.330, 0.978, 0.520, 0.972, 0.640],
-  [0.968, 0.720, 0.960, 0.780, 0.952, 0.820],
-  [0.900, 0.910, 0.700, 0.965, 0.500, 1.000],
-  [0.300, 0.965, 0.100, 0.910, 0.048, 0.820],
-  [0.040, 0.780, 0.032, 0.720, 0.028, 0.640],
-  [0.022, 0.520, 0.022, 0.330, 0.026, 0.170],
-  [0.028, 0.100, 0.048, 0.076, 0.072, 0.062],
+  [0.104, 0.185],
+  [0.145, 0.135, 0.26, 0.098, 0.39, 0.085],
+  [0.43, 0.13, 0.47, 0.16, 0.5, 0.175],
+  [0.53, 0.16, 0.57, 0.13, 0.61, 0.085],
+  [0.74, 0.098, 0.855, 0.135, 0.896, 0.185],
+  [0.915, 0.34, 0.915, 0.62, 0.9, 0.79],
+  [0.84, 0.9, 0.66, 0.955, 0.5, 0.988],
+  [0.34, 0.955, 0.16, 0.9, 0.1, 0.79],
+  [0.085, 0.62, 0.085, 0.34, 0.104, 0.185],
 ];
 
 export function gwSchildPad(): string {
+  /* De referentie laat rondom veel vrije poster-marge staan. Die marge hoort
+   * niet bij het schild: in een rij met de gedeelde FUT-kaarten zou de
+   * Glazenwasser daardoor circa 17% smaller lezen, hoewel zijn DOM-vak exact
+   * even breed is. Trek alleen de x-coordinaten rond het midden open. De
+   * karakteristieke schouders en taille blijven zo identiek, maar de uiterste
+   * flanken komen — net als bij de andere schilden — vrijwel tegen de rand van
+   * het 100 x 139-kaartvak. */
+  const naarKaartX = (x: number) => 0.5 + (x - 0.5) * 1.18;
   const paar = (x: number, y: number) =>
-    `${x.toFixed(4)} ${naarKaartY(y).toFixed(4)}`;
+    `${naarKaartX(x).toFixed(4)} ${naarKaartY(y).toFixed(4)}`;
   const delen = SCHILD_PUNTEN.map((seg, i) => {
     const paren: string[] = [];
     for (let k = 0; k < seg.length; k += 2) paren.push(paar(seg[k], seg[k + 1]));
@@ -269,45 +221,45 @@ export const GW_INHOUD = {
    *  38% van de kaart); --font-rounded is breder dan het cijferbeeld daar, dus op
    *  zijn hoogte gezet zou "1150" tot over de portretcirkel lopen. */
   ratinggroep: {
-    left: 0.1,
-    top: 0.075,
-    breedte: 0.42,
-    ratingFont: 0.17,
-    subFont: 0.078,
-    subMarge: 0.014,
-    icoonFont: 0.1,
-    icoonMarge: 0.022,
+    left: 0.14,
+    top: 0.215,
+    breedte: 0.29,
+    ratingFont: 0.135,
+    subFont: 0.042,
+    subMarge: 0.012,
+    icoonFont: 0.062,
+    icoonMarge: 0.018,
   },
   /** Portretcirkel rechtsboven: middelpunt (0,704 · 0,190) met een buitenmaat van
    *  34% van de kaartbreedte — ruim drie keer de generieke avatar. De ringen zijn
    *  opgemeten op de horizontale as: 0,8% blauw en 1,6% wit rond de foto. */
-  portret: { left: 0.5333, top: 0.058, breedte: 0.3405, blauw: 0.009, wit: 0.016 },
+  portret: { left: 0.505, top: 0.235, breedte: 0.305, blauw: 0.009, wit: 0.014 },
   /** Horizontale glaslat tussen identiteit en naam. */
-  scheiding: { left: 0.193, top: 0.433, breedte: 0.611, dikte: 0.012 },
+  scheiding: { left: 0.18, top: 0.477, breedte: 0.64, dikte: 0.006 },
   /** Naam tussen de trekker (tot 33%) en de emmer (vanaf 77%): een lange naam mag
    *  nooit ónder een prop verdwijnen, en de props staan bewust vóór de tekst. */
-  naam: { left: 0.16, breedte: 0.62, top: 0.455, font: 0.09 },
+  naam: { left: 0.14, breedte: 0.72, top: 0.515, font: 0.075 },
   divisie: {
-    top: 0.554,
-    font: 0.052,
-    lijn: 0.1,
+    top: 0.587,
+    font: 0.034,
+    lijn: 0.12,
     /** Zelfde versmalling als de statistieklabels: de divisieregel van de
      *  referentie is 33% kaartbreedte breed, en ongeknepen schuift hij hier onder
      *  de trekker door. */
-    smal: 0.8,
+    smal: 0.88,
   },
   /** Statistiekenrij: zes kolommen. Iets breder dan de referentie (78% tegen
    *  75,7%), omdat de labels hier in een niet-condensed lettertype staan. */
   stats: {
-    left: 0.105,
-    breedte: 0.755,
-    top: 0.674,
-    labelFont: 0.026,
+    left: 0.295,
+    breedte: 0.505,
+    top: 0.684,
+    labelFont: 0.025,
     /** De labels van de referentie staan in een sterk versmald lettertype: twaalf
      *  tekens in één kolom van 13% kaartbreedte. --font-rounded kan dat niet, dus
      *  ze worden horizontaal geschaald — precies wat een condensed snit doet. */
-    labelSmal: 0.42,
-    waardeFont: 0.062,
+    labelSmal: 0.82,
+    waardeFont: 0.048,
   },
 } as const;
 
