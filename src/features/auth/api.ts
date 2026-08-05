@@ -29,3 +29,13 @@ export const resetPasswordForEmail = (
 export const updateUser = (
   ...args: Parameters<typeof supabase.auth.updateUser>
 ) => supabase.auth.updateUser(...args);
+
+/**
+ * Wisselt de `token_hash` uit een auth-mail in voor een sessie. Anders dan de
+ * PKCE-code uit `{{ .ConfirmationURL }}` heeft dit geen `code_verifier` uit
+ * localStorage nodig, dus het werkt óók als je de mail op een ander apparaat
+ * opent dan waar je hem aanvroeg.
+ */
+export const verifyOtp = (
+  ...args: Parameters<typeof supabase.auth.verifyOtp>
+) => supabase.auth.verifyOtp(...args);

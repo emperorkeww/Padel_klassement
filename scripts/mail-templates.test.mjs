@@ -23,15 +23,21 @@ const lees = (pad) => readFileSync(join(process.cwd(), pad), "utf8");
 const configToml = lees("supabase/config.toml");
 const css = lees("src/app/index.css");
 
-// Actiesjablonen: de gebruiker moet iets bevestigen, dus knop + ConfirmationURL.
-// Gekoppeld via [auth.email.template.<sleutel>], met een pad vanaf de
-// projectroot.
+// Actiesjablonen: de gebruiker moet iets bevestigen, dus een knop met een
+// actielink. Gekoppeld via [auth.email.template.<sleutel>], met een pad vanaf
+// de projectroot.
+//
+// De derde waarde is het `type` in de link. Dat is níet altijd gelijk aan de
+// config-sleutel — Supabase heet het blok `confirmation` maar verifyOtp
+// verwacht `signup`, en `magic_link` wordt `magiclink`. Precies het soort
+// verschil dat je bij vijf bijna-identieke bestanden een keer verkeerd
+// overtypt, dus het staat hier expliciet en wordt hieronder gecontroleerd.
 const ACTIE = {
-  recovery: "wachtwoord-herstellen.html",
-  confirmation: "bevestig-aanmelding.html",
-  email_change: "bevestig-nieuw-adres.html",
-  invite: "uitnodiging.html",
-  magic_link: "inloglink.html",
+  recovery: ["wachtwoord-herstellen.html", "recovery"],
+  confirmation: ["bevestig-aanmelding.html", "signup"],
+  email_change: ["bevestig-nieuw-adres.html", "email_change"],
+  invite: ["uitnodiging.html", "invite"],
+  magic_link: ["inloglink.html", "magiclink"],
 };
 
 // Notificatiesjablonen (#1037 deel 2): meldingen achteraf, er valt niets te
@@ -44,9 +50,18 @@ const NOTIFICATIE = {
   email_changed: "adres-gewijzigd.html",
 };
 
-const SJABLONEN = { ...ACTIE, ...NOTIFICATIE };
+/** sleutel -> bestandsnaam, voor beide soorten. */
+const SJABLONEN = {
+  ...Object.fromEntries(Object.entries(ACTIE).map(([k, [naam]]) => [k, naam])),
+  ...NOTIFICATIE,
+};
 const BESTANDEN = Object.entries(SJABLONEN);
-const ACTIE_BESTANDEN = Object.entries(ACTIE);
+/** [sleutel, bestandsnaam, type] */
+const ACTIE_BESTANDEN = Object.entries(ACTIE).map(([k, [naam, type]]) => [
+  k,
+  naam,
+  type,
+]);
 const NOTIFICATIE_BESTANDEN = Object.entries(NOTIFICATIE);
 
 const html = Object.fromEntries(
@@ -97,15 +112,33 @@ describe("auth-mailsjablonen", () => {
     }
   });
 
-  it.each(ACTIE_BESTANDEN)("%s bevat de actielink twee keer: knop én platte tekst", (
-    sleutel,
-  ) => {
-    const voorkomens = html[sleutel].match(/\{\{ \.ConfirmationURL \}\}/g) ?? [];
-    // De knop, de href van de platte link en die link als zichtbare tekst.
-    expect(voorkomens.length).toBeGreaterThanOrEqual(3);
-    expect(platteTekst(html[sleutel])).toContain(
-      "Werkt de knop niet? Kopieer dan deze link naar je browser",
-    );
+  // De actielink draagt een token_hash naar onze eigen landingspagina, niet de
+  // PKCE-code uit {{ .ConfirmationURL }}. Die laatste is alleen in te wisselen
+  // met een code_verifier uit de localStorage van de aanvragende browser, dus
+  // hij faalde zodra je de mail op een ánder apparaat opende — precies wat
+  // mensen doen: aanvragen op de laptop, klikken op de telefoon.
+  it.each(ACTIE_BESTANDEN)(
+    "%s linkt met token_hash naar /auth/bevestigen (type=%s)",
+    (sleutel, _naam, type) => {
+      const link = `{{ .SiteURL }}/auth/bevestigen?token_hash={{ .TokenHash }}&type=${type}`;
+      const voorkomens = html[sleutel].split(link).length - 1;
+      // De knop, de href van de platte link en die link als zichtbare tekst.
+      expect(voorkomens).toBeGreaterThanOrEqual(3);
+      expect(platteTekst(html[sleutel])).toContain(
+        "Werkt de knop niet? Kopieer dan deze link naar je browser",
+      );
+    },
+  );
+
+  it.each(ACTIE_BESTANDEN)("%s gebruikt nergens meer de PKCE-link", (sleutel) => {
+    expect(zonderToelichting(html[sleutel])).not.toContain("{{ .ConfirmationURL }}");
+  });
+
+  it("geeft geen twee sjablonen hetzelfde type", () => {
+    // Vijf bijna-identieke bestanden: een kopieerfout in het type levert een
+    // mail op die naar de verkeerde flow verwijst en dus stilletjes faalt.
+    const types = ACTIE_BESTANDEN.map(([, , type]) => type);
+    expect(new Set(types).size).toBe(types.length);
   });
 
   it.each(NOTIFICATIE_BESTANDEN)("%s is een melding, geen actie", (sleutel) => {
@@ -223,10 +256,11 @@ describe("auth-mailsjablonen", () => {
     );
     expect(knopTd, "knop-td met bgcolor niet gevonden").not.toBeNull();
     expect(knopTd[0]).toContain("padding: 14px 28px"); // ≥44px raakvlak
-    expect(knopTd[0]).toContain("{{ .ConfirmationURL }}");
+    expect(knopTd[0]).toContain("/auth/bevestigen?token_hash={{ .TokenHash }}");
   });
 
   it("koppelt de actiesjablonen precies één keer in config.toml", () => {
+    const actieNamen = ACTIE_BESTANDEN.map(([, naam]) => naam);
     for (const [sleutel, naam] of ACTIE_BESTANDEN) {
       expect(configToml).toContain(`[auth.email.template.${sleutel}]`);
       const pad = `content_path = "./supabase/templates/${naam}"`;
@@ -239,7 +273,7 @@ describe("auth-mailsjablonen", () => {
     const gekoppeld = [
       ...configToml.matchAll(/^content_path = "\.\/supabase\/templates\/(.+)"$/gm),
     ].map((m) => m[1]);
-    expect(gekoppeld.sort()).toEqual(Object.values(ACTIE).sort());
+    expect(gekoppeld.sort()).toEqual([...actieNamen].sort());
   });
 
   it("koppelt de notificatiesjablonen en zet ze aan", () => {
