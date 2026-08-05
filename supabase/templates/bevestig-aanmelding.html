@@ -1,0 +1,236 @@
+<!doctype html>
+<!--
+  Supabase auth-sjabloon `confirmation` (#1037).
+
+  Mail-HTML, geen React: tabelgebaseerd, alle styling inline, geen externe
+  stylesheet/script/webfont. De vijf sjablonen in deze map zijn bewust letterlijk
+  parallel opgebouwd — Supabase kent geen partials, dus delen kan niet.
+  scripts/mail-templates.test.mjs bewaakt dat ze niet uit elkaar lopen en dat de
+  kleuren de tokens uit src/app/index.css blijven volgen.
+-->
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Licht ontworpen: Apple Mail volgt prefers-color-scheme, Gmail inverteert
+         eigenmachtig. Elk vlak heeft daarom een expliciete achtergrondkleur. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Welkom bij Vamos! — bevestig je e-mailadres</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f4f7f4">
+    <!-- Voorbeeldtekst in de inbox, verborgen in de mail zelf. -->
+    <div
+      style="
+        display: none;
+        max-height: 0;
+        max-width: 0;
+        overflow: hidden;
+        opacity: 0;
+        color: #f4f7f4;
+        font-size: 1px;
+        line-height: 1px;
+      "
+    >
+      Nog één klik en je account staat klaar.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f4f7f4"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              background-color: #ffffff;
+              border: 1px solid #e4eae4;
+              border-radius: 12px;
+            "
+          >
+            <!-- Kopband -->
+            <tr>
+              <td
+                style="
+                  background-color: #0c8a5f;
+                  padding: 20px 28px;
+                  border-radius: 12px 12px 0 0;
+                "
+              >
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding-right: 12px">
+                      <img
+                        src="https://vamos-padel.net/mail-logo.png"
+                        width="32"
+                        height="32"
+                        alt=""
+                        style="display: block; border: 0"
+                      />
+                    </td>
+                    <td
+                      style="
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                          Helvetica, Arial, sans-serif;
+                        font-size: 22px;
+                        font-weight: bold;
+                        color: #ffffff;
+                      "
+                    >
+                      Vamos!
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Kop -->
+            <tr>
+              <td
+                style="
+                  padding: 32px 28px 12px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 20px;
+                  font-weight: bold;
+                  color: #1a2620;
+                "
+              >
+                Welkom bij Vamos!
+              </td>
+            </tr>
+            <!-- Alinea -->
+            <tr>
+              <td
+                style="
+                  padding: 0 28px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 16px;
+                  line-height: 24px;
+                  color: #1a2620;
+                "
+              >
+                Je account is bijna klaar. Bevestig je e-mailadres met de knop hieronder,
+                dan kun je meteen matches loggen en het klassement in.
+              </td>
+            </tr>
+            <!-- Knop als tabel, niet als VML-conditional: GoTrue rendert met
+                 Go's html/template en dat strippt alle HTML-commentaar, dus een
+                 mso-conditional haalt de mail nooit (lokaal nagemeten in Mailpit).
+                 bgcolor + padding op de td geeft Outlook wél een echte knop;
+                 daar valt alleen de afronding weg. -->
+            <tr>
+              <td align="center" style="padding: 28px">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      align="center"
+                      bgcolor="#0c8a5f"
+                      style="
+                        background-color: #0c8a5f;
+                        border-radius: 8px;
+                        padding: 14px 28px;
+                      "
+                    >
+                      <a
+                        href="{{ .ConfirmationURL }}"
+                        style="
+                          display: inline-block;
+                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                            Helvetica, Arial, sans-serif;
+                          font-size: 16px;
+                          font-weight: bold;
+                          line-height: 20px;
+                          color: #ffffff;
+                          text-decoration: none;
+                        "
+                        >E-mailadres bevestigen</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Platte link: knoppen renderen niet overal, en een deel van de
+                 mensen kopieert de link liever zelf. -->
+            <tr>
+              <td
+                style="
+                  padding: 0 28px 28px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 13px;
+                  line-height: 20px;
+                  color: #64756c;
+                "
+              >
+                Werkt de knop niet? Kopieer dan deze link naar je browser:<br />
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="
+                    color: #0c8a5f;
+                    overflow-wrap: break-word;
+                    word-break: break-all;
+                  "
+                  >{{ .ConfirmationURL }}</a
+                >
+              </td>
+            </tr>
+            <!-- Voettekst -->
+            <tr>
+              <td
+                style="
+                  border-top: 1px solid #e4eae4;
+                  padding: 20px 28px;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 13px;
+                  line-height: 20px;
+                  color: #64756c;
+                "
+              >
+                Je krijgt deze mail omdat dit adres is gebruikt om een account aan te
+                maken op vamos-padel.net. Heb je dit niet zelf gedaan? Dan kun je deze
+                mail negeren — zonder bevestiging wordt er geen account actief.
+              </td>
+            </tr>
+          </table>
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width: 100%; max-width: 600px"
+          >
+            <tr>
+              <td
+                align="center"
+                style="
+                  padding: 16px 12px 0;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    Helvetica, Arial, sans-serif;
+                  font-size: 12px;
+                  line-height: 18px;
+                  color: #64756c;
+                "
+              >
+                Vamos! · vamos-padel.net
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
