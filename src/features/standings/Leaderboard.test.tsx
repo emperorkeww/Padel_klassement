@@ -605,13 +605,22 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
     });
   });
 
+  // De keuze tabel ↔ ranglijst valt in een effect dat de containerbreedte meet,
+  // en dat loopt pas ná de mount van de lijstcontainer. `findAllByText` wacht op
+  // de eerste naam, niet op die meting — wie daarna meteen assert, gokt erop dat
+  // het effect al gedraaid heeft. Lokaal gaat dat goed, op de tragere CI-runner
+  // niet (#1043). Wachten tot de omschakeling er écht is, zoals de rating-test
+  // hierboven al deed; de breedte-stub moet zolang blijven staan, anders meet
+  // het effect de jsdom-breedte 0 en valt de tabel terug.
   describe("één lijstweergave in de DOM (#913)", () => {
     it("toont bij een brede kaart de tabel en géén ranglijst", async () => {
       const herstel = metContainerBreedte(1200);
       try {
         const { container } = renderPage();
         await screen.findAllByText(/alice anders/i);
-        expect(container.querySelector(".leaderboard-table")).not.toBeNull();
+        await waitFor(() =>
+          expect(container.querySelector(".leaderboard-table")).not.toBeNull(),
+        );
         expect(container.querySelector(".ranklist")).toBeNull();
       } finally {
         herstel();
@@ -623,7 +632,9 @@ describe("Kaarten-tab en kaart-preview (#497)", () => {
       try {
         const { container } = renderPage();
         await screen.findAllByText(/alice anders/i);
-        expect(container.querySelector(".ranklist")).not.toBeNull();
+        await waitFor(() =>
+          expect(container.querySelector(".ranklist")).not.toBeNull(),
+        );
         expect(container.querySelector(".leaderboard-table")).toBeNull();
       } finally {
         herstel();
