@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -410,15 +410,23 @@ describe("<PlanTab />", () => {
       value: scrollIntoView,
       configurable: true,
     });
-    renderTab([], "?tab=plannen&poll=poll-open");
+    try {
+      renderTab([], "?tab=plannen&poll=poll-open");
 
-    const kop = await screen.findByRole("heading", { name: /speeldag-poll/i });
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    // De stemrijen, niet de kaartkop: de vraag is "wanneer kun jij?".
-    expect(scrollIntoView.mock.instances[0]).toHaveClass("poll-rows");
-    expect(kop.closest(".card")).toHaveClass("is-spotlight");
-
-    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+      const kop = await screen.findByRole("heading", { name: /speeldag-poll/i });
+      // De scroll zit in een effect dat pas vuurt als de stemrijen gemonteerd
+      // zijn (PollCard: stemRijenRef ?? kaartRef); de kop staat er eerder.
+      // Direct asserteren is dus een race, die op CI omviel met "expected
+      // vi.fn() to be called 1 times, but got 0 times".
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+      // De stemrijen, niet de kaartkop: de vraag is "wanneer kun jij?".
+      expect(scrollIntoView.mock.instances[0]).toHaveClass("poll-rows");
+      expect(kop.closest(".card")).toHaveClass("is-spotlight");
+    } finally {
+      // In een finally: viel de assertie hierboven om, dan bleef de stub
+      // anders prototype-breed staan en sleepte hij de volgende tests mee.
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 
   it("scrolt niet bij een gewoon bezoek zonder gedeelde link", async () => {
