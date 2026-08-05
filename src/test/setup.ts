@@ -1,8 +1,20 @@
 // Voegt jest-dom matchers toe (toBeInTheDocument, toHaveTextContent, ...).
 // Geladen via `setupFiles` in vite.config.ts.
 import "@testing-library/jest-dom/vitest";
+import { configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { invalidateAll } from "@/lib/supabase/queryCache";
+
+// findBy*/waitFor wachten standaard maar 1 seconde (asyncUtilTimeout van
+// Testing Library — los van vitests testTimeout van 5s). Op een runner die 269
+// testbestanden parallel draait haalt een render die lokaal 50ms kost die
+// seconde niet, en dan valt een gezonde test om met "Unable to find ...".
+// Het trof steeds een andere test — meestal in src/features/matches/ — wat het
+// op willekeurige flakiness liet lijken in plaats van op één te krappe limiet.
+// 4s blijft onder de testTimeout van 5s, zodat een écht kapotte test nog altijd
+// de bruikbare fout van Testing Library geeft (mét DOM-dump) en niet een kale
+// vitest-timeout.
+configure({ asyncUtilTimeout: 4000 });
 
 // Node 22+ definieert een eigen globale localStorage die zonder
 // --localstorage-file geen werkende methodes heeft (getItem/setItem zijn geen
