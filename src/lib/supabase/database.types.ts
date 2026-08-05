@@ -34,6 +34,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json
+          id: number
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_admins: {
+        Row: {
+          added_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           date: string
@@ -2445,6 +2490,38 @@ export type Database = {
         Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
+      admin_audit_voor: {
+        Args: { p_uid: string }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_username: string
+          created_at: string
+          details: Json
+          id: number
+        }[]
+      }
+      admin_user_detail: { Args: { p_uid: string }; Returns: Json }
+      admin_users_overzicht: {
+        Args: never
+        Returns: {
+          aantal_gasten: number
+          aantal_groepen: number
+          aantal_matches: number
+          avatar_url: string
+          banned_until: string
+          created_at: string
+          email: string
+          email_confirmed_at: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          is_guest: boolean
+          last_sign_in_at: string
+          owner_id: string
+          username: string
+        }[]
+      }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
       bounty_streak: {
         Args: {
@@ -2567,6 +2644,7 @@ export type Database = {
         Args: { p_a: string; p_b: string }
         Returns: boolean
       }
+      is_app_admin: { Args: { p_uid: string }; Returns: boolean }
       is_group_member: {
         Args: { p_group_id: string; p_uid: string }
         Returns: boolean

@@ -46,10 +46,18 @@ export function makeQuery(result: { data: unknown; error: unknown }) {
 // (#461): de mock filtert zelf niet, dus de test levert de venster-afhankelijke
 // rijen.
 type RpcMap = Record<string, unknown | ((args: unknown) => unknown)>;
+
+// Edge-function-mock (#1036): map functienaam → data, of een functie
+// (body) => data zodat een test op de meegestuurde `action` kan reageren. Geef
+// een Error terug om een 4xx uit de function na te bootsen; die komt als
+// { data: null, error } binnen, precies zoals functions.invoke doet.
+type FunctionsMap = Record<string, unknown | ((body: unknown) => unknown)>;
+
 type MockOptions = {
   session?: { user: { id: string; email?: string } } | null;
   tables?: Record<string, unknown[]>;
   rpc?: unknown;
+  functions?: FunctionsMap;
 };
 
 function isRpcMap(rpc: unknown): rpc is RpcMap {
@@ -107,7 +115,7 @@ function afgeleideRpc(
 
 /** Maakt een nep-`supabase` client voor de tests. */
 export function makeSupabaseMock(opts: MockOptions = {}) {
-  const { session = null, tables = {}, rpc = [] } = opts;
+  const { session = null, tables = {}, rpc = [], functions } = opts;
   const rpcData = (name: string, args: unknown) => {
     const expliciet = isRpcMap(rpc) ? rpc[name] : undefined;
     if (expliciet === undefined) {
@@ -141,6 +149,28 @@ export function makeSupabaseMock(opts: MockOptions = {}) {
     rpc: vi.fn((name: string, args?: unknown) =>
       makeQuery({ data: rpcData(name, args), error: null }),
     ),
+    // Edge functions (#1036), en ALLEEN als de test erom vraagt. Zonder
+    // `functions` blijft `supabase.functions` net als voorheen undefined.
+    // Dat is geen slordigheid maar noodzaak: een altijd aanwezige stub laat
+    // aiPortret.ts — dat fire-and-forget invoket — ineens slágen in tests die
+    // dat pad nooit bedoeld hadden te nemen, en de klassementstest van #913
+    // kreeg daardoor een andere lijstweergave. Een mock hoort geen gedrag toe
+    // te voegen aan tests die er niet om gevraagd hebben.
+    ...(functions
+      ? {
+          functions: {
+            invoke: vi.fn(async (naam: string, opties?: { body?: unknown }) => {
+              const bron = functions[naam];
+              const waarde =
+                typeof bron === "function"
+                  ? (bron as (b: unknown) => unknown)(opties?.body)
+                  : bron;
+              if (waarde instanceof Error) return { data: null, error: waarde };
+              return { data: waarde ?? null, error: null };
+            }),
+          },
+        }
+      : {}),
     // Realtime: chainable stub (channel().on().subscribe()).
     channel: vi.fn(() => {
       const ch: Record<string, unknown> = {};
