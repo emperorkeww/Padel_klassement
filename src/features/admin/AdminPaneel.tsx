@@ -18,18 +18,26 @@ import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
+import { PageTabs, TabPanel } from "@/ui/PageTabs";
 import { lijstGebruikers } from "./api";
-import { zoekGebruikers } from "./adminFilters";
+import { pasFiltersToe, zoekGebruikers, type AdminFilterId } from "./adminFilters";
 import { useIsAdmin } from "./useIsAdmin";
 import { GebruikersTabel } from "./components/GebruikersTabel";
 import { GebruikerPaneel } from "./components/GebruikerPaneel";
+import { AdminFilters } from "./components/AdminFilters";
+import { GastenTab } from "./components/GastenTab";
+import { GroepenTab } from "./components/GroepenTab";
 import type { AdminGebruiker } from "./types";
 import "./AdminPaneel.css";
+
+type Tab = "gebruikers" | "gasten" | "groepen";
 
 export function AdminPaneel() {
   usePageTitle("Beheer");
   const isAdmin = useIsAdmin();
+  const [tab, setTab] = useState<Tab>("gebruikers");
   const [zoek, setZoek] = useState("");
+  const [filters, setFilters] = useState<AdminFilterId[]>([]);
   const [gekozen, setGekozen] = useState<AdminGebruiker | null>(null);
 
   // `enabled` houdt de aanroep tegen zolang we geen beheerder zijn. Dat is de
@@ -37,10 +45,24 @@ export function AdminPaneel() {
   // deze vlag zou useAsync bij mount al fetchen en pas daarna afgewezen worden.
   const gebruikers = useAsync(lijstGebruikers, [], { enabled: isAdmin === true });
 
+  const alle = useMemo(() => gebruikers.data ?? [], [gebruikers.data]);
+
   const zichtbaar = useMemo(
-    () => zoekGebruikers(gebruikers.data ?? [], zoek),
-    [gebruikers.data, zoek],
+    // Het ijkmoment komt hier vandaan en niet uit een gedeelde state: het enige
+    // datumfilter is "laatste 7 dagen", en of die grens een paar milliseconden
+    // verschilt tussen de lijst en een chipteller maakt niets uit.
+    () => pasFiltersToe(zoekGebruikers(alle, zoek), filters, Date.now()),
+    [alle, zoek, filters],
   );
+
+  // De teller op een chip toont wat dát filter alléén zou overhouden, los van
+  // de andere chips — anders lees je op een aangevinkte chip een 0 zodra een
+  // ander filter de lijst al leeggetrokken heeft, en lijkt hij kapot.
+  const telFilter = (id: AdminFilterId) =>
+    pasFiltersToe(alle, [id], Date.now()).length;
+
+  const wisselFilter = (id: AdminFilterId) =>
+    setFilters((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
   if (isAdmin === null) {
     return (
@@ -65,42 +87,69 @@ export function AdminPaneel() {
   return (
     <main className="admin">
       <h1 className="admin__titel">Beheer</h1>
-      <p className="admin__intro">
-        Alle accounts van de app: wie zich aanmeldde, wie er nooit in kwam en wie
-        nog nergens meespeelt.
-      </p>
+      <PageTabs
+        tabs={[
+          { id: "gebruikers", label: "Gebruikers", count: alle.length },
+          { id: "gasten", label: "Gasten" },
+          { id: "groepen", label: "Groepen" },
+        ]}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Beheeronderdelen"
+        idPrefix="admin"
+      />
 
-      <label className="admin__zoek">
-        <span className="sr-only">Zoek op naam, gebruikersnaam of e-mail</span>
-        <input
-          className="input"
-          type="search"
-          placeholder="Zoek op naam, gebruikersnaam of e-mail…"
-          value={zoek}
-          onChange={(e) => setZoek(e.target.value)}
-        />
-      </label>
+      <TabPanel id={tab} idPrefix="admin">
+        {tab === "gebruikers" && (
+          <>
+            <label className="admin__zoek">
+              <span className="sr-only">
+                Zoek op naam, gebruikersnaam of e-mail
+              </span>
+              <input
+                className="input"
+                type="search"
+                placeholder="Zoek op naam, gebruikersnaam of e-mail…"
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+              />
+            </label>
 
-      {gebruikers.loading && <Skeleton rows={6} />}
+            <AdminFilters
+              actief={filters}
+              onWissel={wisselFilter}
+              telFilter={telFilter}
+            />
 
-      {gebruikers.error && (
-        <ErrorRetry melding={gebruikers.error} onRetry={gebruikers.reload} />
-      )}
+            {gebruikers.loading && <Skeleton rows={6} />}
 
-      {!gebruikers.loading && !gebruikers.error && (
-        <>
-          <p className="admin__telling" role="status">
-            {zichtbaar.length} van {gebruikers.data?.length ?? 0} accounts
-          </p>
-          {zichtbaar.length === 0 ? (
-            <EmptyState icon="🔍" title="Niemand gevonden">
-              Geen account dat op “{zoek}” lijkt.
-            </EmptyState>
-          ) : (
-            <GebruikersTabel gebruikers={zichtbaar} onKies={setGekozen} />
-          )}
-        </>
-      )}
+            {gebruikers.error && (
+              <ErrorRetry melding={gebruikers.error} onRetry={gebruikers.reload} />
+            )}
+
+            {!gebruikers.loading && !gebruikers.error && (
+              <>
+                <p className="admin__telling" role="status">
+                  {zichtbaar.length} van {alle.length} accounts
+                </p>
+                {zichtbaar.length === 0 ? (
+                  <EmptyState icon="🔍" title="Niemand gevonden">
+                    Geen account dat aan deze zoekterm en filters voldoet.
+                  </EmptyState>
+                ) : (
+                  <GebruikersTabel gebruikers={zichtbaar} onKies={setGekozen} />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* De tabbladen laden hun eigen data, en pas als je ze opent: op een
+            telefoon is dit paneel geen plek waar je drie lijsten tegelijk
+            binnenhaalt. */}
+        {tab === "gasten" && <GastenTab />}
+        {tab === "groepen" && <GroepenTab />}
+      </TabPanel>
 
       {gekozen && (
         <GebruikerPaneel

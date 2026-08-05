@@ -64,3 +64,32 @@ export type AdminAuditRegel = {
   details: Record<string, unknown>;
   created_at: string;
 };
+
+export type AdminGast = {
+  id: string;
+  username: string;
+  full_name: string | null;
+  created_at: string;
+  owner_id: string | null;
+  owner_username: string | null;
+  aantal_matches: number;
+  /** Openstaand koppelverzoek (#681), of null. */
+  open_claim: {
+    player_id: string;
+    player_username: string;
+    requested_by: string;
+    created_at: string;
+  } | null;
+};
+
+export type AdminGroep = {
+  id: string;
+  name: string;
+  created_at: string;
+  /** Null = deze groep heeft geen eigenaar meer en is daarmee onbeheerbaar. */
+  created_by: string | null;
+  eigenaar_username: string | null;
+  aantal_leden: number;
+  aantal_matches: number;
+  laatste_match: string | null;
+};

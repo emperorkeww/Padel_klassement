@@ -1,7 +1,13 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import { errorMessage } from "@/lib/utils/errors";
-import type { AdminAuditRegel, AdminDetail, AdminGebruiker } from "./types";
+import type {
+  AdminAuditRegel,
+  AdminDetail,
+  AdminGast,
+  AdminGebruiker,
+  AdminGroep,
+} from "./types";
 
 // Clientkant van het adminpaneel (#1036). Eén ingang: de edge function
 // `admin-users`. Er staat hier bewust geen enkele directe tabel- of RPC-query —
@@ -157,4 +163,20 @@ export async function verwijderAccount(
   );
   verversAdmin();
   return uit;
+}
+
+export function lijstGasten(): Promise<AdminGast[]> {
+  return cached(
+    "admin:gasten",
+    async () => (await roepAdmin<{ gasten: AdminGast[] }>("list_guests")).gasten,
+    30_000,
+  );
+}
+
+export function lijstGroepen(): Promise<AdminGroep[]> {
+  return cached(
+    "admin:groepen",
+    async () => (await roepAdmin<{ groepen: AdminGroep[] }>("list_groups")).groepen,
+    30_000,
+  );
 }

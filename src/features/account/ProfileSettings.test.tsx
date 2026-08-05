@@ -414,3 +414,46 @@ describe("<ProfileSettings /> — tabs (#70)", () => {
     ).toBeInTheDocument();
   });
 });
+
+// Mobiele ingang naar het beheerpaneel (#1036 deel 3).
+//
+// Op desktop staat "Beheer" in de zijbalkgroep "Ik". Op een telefoon bestaat
+// die zijbalk niet en is de tabbalk vol met vijf vaste tabs, dus daar was
+// /admin alleen bereikbaar door de URL in te tikken. De profielpagina is de
+// mobiele tegenhanger van diezelfde groep: je komt er via de avatar in de
+// topbalk.
+describe("<ProfileSettings /> — ingang naar Beheer (#1036)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("toont de beheerkaart voor een beheerder", async () => {
+    const adminMod = await import("@/features/admin/useIsAdmin");
+    vi.spyOn(adminMod, "useIsAdmin").mockReturnValue(true);
+    renderPage();
+    await openTab(/account/i);
+    const kaart = await screen.findByRole("heading", { name: "Beheer" });
+    expect(kaart).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /openen/i })).toHaveAttribute(
+      "href",
+      "/admin",
+    );
+  });
+
+  it("toont hem niet voor een gewone gebruiker", async () => {
+    const adminMod = await import("@/features/admin/useIsAdmin");
+    vi.spyOn(adminMod, "useIsAdmin").mockReturnValue(false);
+    renderPage();
+    await openTab(/account/i);
+    // Wachten tot de tab er echt staat, anders is de afwezigheid nietszeggend.
+    await screen.findByRole("heading", { name: "Sessie" });
+    expect(screen.queryByRole("heading", { name: "Beheer" })).toBeNull();
+  });
+
+  it("toont hem niet zolang onbekend is of je beheerder bent", async () => {
+    const adminMod = await import("@/features/admin/useIsAdmin");
+    vi.spyOn(adminMod, "useIsAdmin").mockReturnValue(null);
+    renderPage();
+    await openTab(/account/i);
+    await screen.findByRole("heading", { name: "Sessie" });
+    expect(screen.queryByRole("heading", { name: "Beheer" })).toBeNull();
+  });
+});
