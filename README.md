@@ -270,6 +270,33 @@ supabase link --project-ref <project-ref-id>
 supabase db push --linked
 ```
 
+### Beheerders van de app (`/admin`, #1036)
+
+Het adminpaneel op `/admin` is zichtbaar voor wie in `public.app_admins` staat.
+Die tabel heeft **geen enkele schrijf-policy voor `authenticated`**: niemand
+maakt zichzelf beheerder. De eerste beheerder zet je daarom met de hand, in de
+SQL-editor van het Supabase-dashboard (productie) of via `psql` (lokaal):
+
+```sql
+insert into public.app_admins (user_id, note)
+select id, 'eerste beheerder'
+from auth.users
+where email = 'jouw@adres.nl'
+on conflict (user_id) do nothing;
+```
+
+Bewust géén migratie en dus geen user-id of e-mailadres in de repo. Verdere
+beheerders komen erbij via het paneel zelf. Weghalen gaat net zo:
+
+```sql
+delete from public.app_admins
+where user_id = (select id from auth.users where email = 'iemand@adres.nl');
+```
+
+Elke muterende actie uit het paneel laat een rij achter in
+`public.admin_audit_log`, met wie het deed en voor wie — nooit het uitgedeelde
+wachtwoord of de herstel-link zelf.
+
 ---
 
 ## ⚡ Edge Functions & Cron Jobs
@@ -283,6 +310,7 @@ Asynchrone processen en integraties buiten de client om worden afgehandeld via *
 | `poll-deadline` | `pg_cron` / webhook. Beheert de speeldag-polls: stuurt herinneringen naar niet-stemmers, sluit de poll automatisch op de deadline en zet op de ochtend van een geboekte speeldag (`POLL_ROUNDS_AT`, standaard 08:00 clubtijd) de Americano-rondes klaar als er nog geen zijn (per groep uit te zetten met `auto_rondes`). |
 | `remind-group` | Client-aanroep. Handmatige actie om groepsleden via een pushnotificatie te porren om te stemmen. |
 | `playtomic-availability` | Aangeroepen door de Cloudflare Worker (`env.PLAYTOMIC_EGRESS`). Egress-hop voor de baanbeschikbaarheid: Playtomic's WAF blokkeert Cloudflare-IP's maar laat Supabase-egress door (#385). Deployen met `--no-verify-jwt`. |
+| `admin-users` | Client-aanroep vanuit het adminpaneel (`/admin`, #1036). Valideert de user-JWT, checkt `public.is_app_admin()` met de service-role en voert pas dán de gevraagde actie uit. Deployen **mét** JWT-verificatie (de standaard, dus géén entry in `config.toml`). |
 
 *De definities voor database webhooks en de cron-schedules (`pg_cron`) zijn als SQL-snippets terug te vinden in `supabase/snippets/`.*
 

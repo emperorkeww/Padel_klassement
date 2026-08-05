@@ -34,6 +34,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json
+          id: number
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_admins: {
+        Row: {
+          added_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           date: string
@@ -2337,6 +2382,27 @@ export type Database = {
           },
         ]
       }
+      pg_all_foreign_keys: {
+        Row: {
+          fk_columns: unknown[] | null
+          fk_constraint_name: unknown
+          fk_schema_name: unknown
+          fk_table_name: unknown
+          fk_table_oid: unknown
+          is_deferrable: boolean | null
+          is_deferred: boolean | null
+          match_type: string | null
+          on_delete: string | null
+          on_update: string | null
+          pk_columns: unknown[] | null
+          pk_constraint_name: unknown
+          pk_index_name: unknown
+          pk_schema_name: unknown
+          pk_table_name: unknown
+          pk_table_oid: unknown
+        }
+        Relationships: []
+      }
       player_standings: {
         Row: {
           drawn: number | null
@@ -2361,6 +2427,24 @@ export type Database = {
           team_id: string | null
           team_name: string | null
           won: number | null
+        }
+        Relationships: []
+      }
+      tap_funky: {
+        Row: {
+          args: string | null
+          is_definer: boolean | null
+          is_strict: boolean | null
+          is_visible: boolean | null
+          kind: unknown
+          langoid: unknown
+          name: unknown
+          oid: unknown
+          owner: unknown
+          returns: string | null
+          returns_set: boolean | null
+          schema: unknown
+          volatility: string | null
         }
         Relationships: []
       }
@@ -2405,6 +2489,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      _cleanup: { Args: never; Returns: boolean }
+      _contract_on: { Args: { "": string }; Returns: unknown }
+      _currtest: { Args: never; Returns: number }
+      _db_privs: { Args: never; Returns: unknown[] }
       _effect_factor: {
         Args: {
           p_has_winner: boolean
@@ -2415,6 +2503,10 @@ export type Database = {
         Returns: number
       }
       _ensure_team: { Args: { p_a: string; p_b: string }; Returns: string }
+      _extensions: { Args: never; Returns: unknown[] }
+      _get: { Args: { "": string }; Returns: number }
+      _get_latest: { Args: { "": string }; Returns: number[] }
+      _get_note: { Args: { "": string }; Returns: string }
       _grade_completed_match: { Args: { p_match: string }; Returns: undefined }
       _group_leader: {
         Args: { p_group: string; p_min_games: number }
@@ -2429,6 +2521,7 @@ export type Database = {
         Returns: boolean
       }
       _is_nipt: { Args: { p_a: number; p_b: number }; Returns: boolean }
+      _is_verbose: { Args: never; Returns: boolean }
       _mag_beroep_zien: {
         Args: { p_match: string; p_uid: string }
         Returns: boolean
@@ -2437,13 +2530,52 @@ export type Database = {
         Args: { p_match: string; p_player: string }
         Returns: Database["public"]["Enums"]["joker_type"]
       }
+      _prokind: { Args: { p_oid: unknown }; Returns: unknown }
+      _query: { Args: { "": string }; Returns: string }
+      _refine_vol: { Args: { "": string }; Returns: string }
+      _retval: { Args: { "": string }; Returns: string }
       _stake_factor: {
         Args: { p_has_winner: boolean; p_match: string; p_player: string }
         Returns: number
       }
+      _table_privs: { Args: never; Returns: unknown[] }
+      _temptypes: { Args: { "": string }; Returns: string }
+      _todo: { Args: never; Returns: string }
       _troost_delta: {
         Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
+      }
+      admin_audit_voor: {
+        Args: { p_uid: string }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_username: string
+          created_at: string
+          details: Json
+          id: number
+        }[]
+      }
+      admin_user_detail: { Args: { p_uid: string }; Returns: Json }
+      admin_users_overzicht: {
+        Args: never
+        Returns: {
+          aantal_gasten: number
+          aantal_groepen: number
+          aantal_matches: number
+          avatar_url: string
+          banned_until: string
+          created_at: string
+          email: string
+          email_confirmed_at: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          is_guest: boolean
+          last_sign_in_at: string
+          owner_id: string
+          username: string
+        }[]
       }
       are_friends: { Args: { p_a: string; p_b: string }; Returns: boolean }
       bounty_streak: {
@@ -2461,6 +2593,42 @@ export type Database = {
         Args: { p_guest_id: string; p_player_id: string }
         Returns: Json
       }
+      col_is_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
+      col_not_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
       create_completed_match: {
         Args: {
           p_a1: string
@@ -2508,8 +2676,31 @@ export type Database = {
         Returns: string
       }
       delete_match: { Args: { p_match_id: string }; Returns: undefined }
+      diag:
+        | {
+            Args: { msg: unknown }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { msg: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+      diag_test_name: { Args: { "": string }; Returns: string }
+      do_tap:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
       expire_point_appeals: { Args: never; Returns: number }
+      fail:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
+      findfuncs: { Args: { "": string }; Returns: string[] }
+      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
       first_match_date: { Args: never; Returns: string }
+      format_type_string: { Args: { "": string }; Returns: string }
       generate_americano_round: {
         Args: { p_group_id: string; p_played_at?: string }
         Returns: string[]
@@ -2563,10 +2754,14 @@ export type Database = {
           status: string
         }[]
       }
+      has_unique: { Args: { "": string }; Returns: string }
+      in_todo: { Args: never; Returns: boolean }
       is_accepted_friend: {
         Args: { p_a: string; p_b: string }
         Returns: boolean
       }
+      is_app_admin: { Args: { p_uid: string }; Returns: boolean }
+      is_empty: { Args: { "": string }; Returns: string }
       is_group_member: {
         Args: { p_group_id: string; p_uid: string }
         Returns: boolean
@@ -2583,6 +2778,14 @@ export type Database = {
         Args: { p_team_id: string; p_uid: string }
         Returns: boolean
       }
+      isnt_empty: { Args: { "": string }; Returns: string }
+      lives_ok: { Args: { "": string }; Returns: string }
+      no_plan: { Args: never; Returns: boolean[] }
+      num_failed: { Args: never; Returns: number }
+      os_name: { Args: never; Returns: string }
+      pass:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
       pech_streak: {
         Args: {
           p_created?: string
@@ -2592,6 +2795,9 @@ export type Database = {
         }
         Returns: number
       }
+      pg_version: { Args: never; Returns: string }
+      pg_version_num: { Args: never; Returns: number }
+      pgtap_version: { Args: never; Returns: number }
       prediction_points: { Args: { p_chance: number }; Returns: number }
       prediction_win_chance: {
         Args: { p_match: string; p_team: string }
@@ -2637,6 +2843,9 @@ export type Database = {
         Args: { p_appeal_id: string; p_venster_verlopen?: boolean }
         Returns: string
       }
+      runtests:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
       season_player_standings: {
         Args: { p_end: string; p_start: string }
         Returns: {
@@ -2677,6 +2886,19 @@ export type Database = {
         Returns: undefined
       }
       shares_group: { Args: { p_a: string; p_b: string }; Returns: boolean }
+      skip:
+        | { Args: { "": string }; Returns: string }
+        | { Args: { how_many: number; why: string }; Returns: string }
+      throws_ok: { Args: { "": string }; Returns: string }
+      todo:
+        | { Args: { how_many: number }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+        | { Args: { why: string }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+      todo_end: { Args: never; Returns: boolean[] }
+      todo_start:
+        | { Args: never; Returns: boolean[] }
+        | { Args: { "": string }; Returns: boolean[] }
     }
     Enums: {
       court_type: "binnen" | "buiten" | "panorama" | "muur"
@@ -2686,7 +2908,9 @@ export type Database = {
       roast_intensiteit: "mild" | "gemeen" | "radioactief"
     }
     CompositeTypes: {
-      [_ in never]: never
+      _time_trial_type: {
+        a_time: number | null
+      }
     }
   }
 }

@@ -21,6 +21,7 @@ const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
 const Uitleg = lazy(() => import("@/features/uitleg/Uitleg"));
+const AdminPaneel = lazy(() => import("@/features/admin/AdminPaneel"));
 const NotFound = lazy(() => import("@/features/misc/NotFound"));
 
 // Dev-showcase (#664): alle FUT-kaartvarianten naast elkaar. Alleen in
@@ -145,6 +146,12 @@ function App() {
               <Route path="/vrienden" element={<Friends />} />
               <Route path="/spelers/:id" element={<PlayerProfile />} />
               <Route path="/profiel" element={<ProfileSettings />} />
+              {/* Beheer (#1036). Gewoon een route binnen de shell: het
+                  verbergen van het menu-item is geen beveiliging, dus wie het
+                  pad intikt zonder rechten krijgt "Geen toegang" te zien en
+                  laadt geen enkele gebruiker — de edge function erachter
+                  weigert hem sowieso. */}
+              <Route path="/admin" element={<AdminPaneel />} />
               {/* Onbekend pad: een echte 404 binnen de shell (#910), zodat de
                   navigatie blijft staan en je ziet wát er misging. Staat
                   binnen ProtectedRoute, dus uitgelogd kom je nog steeds eerst
