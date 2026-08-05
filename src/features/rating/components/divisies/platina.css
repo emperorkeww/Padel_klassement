@@ -15,16 +15,15 @@
    de synctest in platina.test.ts leest dít bestand in en houdt de twee gelijk. */
 .fut-kaart--platina {
   /* Frosted aqua glas. Contrast (sRGB, berekend over de vlak-gradient):
-     ink 10,13:1 op --kaart-hi en 5,89:1 op --kaart-lo, inkSoft 7,47:1 op
-     --kaart-hi. De laagste regel die de kaart ooit zet (divisie- of
-     editie-regel, ~87% hoogte) staat op #aec9ca: ink 6,44:1, inkSoft 4,75:1 —
-     ook daar boven de 4,5:1 van AA voor kleine tekst. De --kaart-lo-stop zelf
-     ligt in de lege schildpunt, waar geen inkt komt. */
+     ink 10,81:1 op --kaart-hi en 11,74:1 op --kaart-mid; inkSoft 4,76:1 en
+     5,17:1 op diezelfde tekstzones. Beide blijven dus boven de 4,5:1 van AA
+     voor kleine tekst. De --kaart-lo-stop zelf ligt in de lege schildpunt,
+     waar geen inkt komt. */
   --kaart-hi: #d8edf7;
   --kaart-mid: #e8f5fa;
   --kaart-lo: #b5d8e7;
   --kaart-ink: #0d315b;
-  --kaart-ink-soft: #137f98;
+  --kaart-ink-soft: #126f87;
   --kaart-lijn: #65b7d8;
   /* Transparantie-illusie: het schildsilhouet nog eens, een fractie verschoven
      in ijl aqua — de tweede glaslaag áchter de eerste. Een filter werkt ná de
