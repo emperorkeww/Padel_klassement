@@ -1,24 +1,4 @@
 {
-  "emmer": {
-    "doos": [
-      0.8031,
-      0.4022,
-      0.2246,
-      0.3564
-    ],
-    "pixels": [
-      827,
-      566,
-      219,
-      397
-    ],
-    "alfa": 0.5078,
-    "dekking": 0.5314,
-    "kB": 37,
-    "overlap": {
-      "ophanging": 0.0312
-    }
-  },
   "glas": {
     "doos": [
       0.0,
@@ -38,43 +18,24 @@
     "tegel": true,
     "overlap": {}
   },
-  "onderschild": {
+  "glasvlak": {
     "doos": [
-      0.3251,
-      0.7424,
-      0.4267,
-      0.2765
+      0.0,
+      0.0,
+      1.0,
+      1.0
     ],
     "pixels": [
-      361,
-      945,
-      416,
-      308
+      0,
+      0,
+      880,
+      1223
     ],
-    "alfa": 0.3633,
-    "dekking": 0.4042,
-    "kB": 56,
+    "alfa": 1.0,
+    "dekking": 1.0,
+    "kB": 51,
+    "voorbewerkt": true,
     "overlap": {}
-  },
-  "ophanging": {
-    "doos": [
-      0.7805,
-      0.2926,
-      0.2062,
-      0.1589
-    ],
-    "pixels": [
-      805,
-      444,
-      201,
-      177
-    ],
-    "alfa": 0.2292,
-    "dekking": 0.2157,
-    "kB": 16,
-    "overlap": {
-      "emmer": 0.0312
-    }
   },
   "ring": {
     "doos": [
@@ -89,28 +50,67 @@
       1072,
       1533
     ],
-    "alfa": 0.6368,
-    "dekking": 0.6336,
-    "kB": 364,
+    "alfa": 0.2294,
+    "dekking": 0.226,
+    "kB": 340,
     "overlap": {},
     "voorbewerkt": true
   },
-  "trekker-boven": {
+  "strip-emmer": {
     "doos": [
-      -0.0133,
-      0.368,
-      0.2308,
-      0.2756
+      0.7442,
+      0.1366,
+      0.2658,
+      0.8223
     ],
     "pixels": [
-      31,
-      528,
-      225,
-      307
+      774,
+      341,
+      259,
+      1114
     ],
-    "alfa": 0.277,
-    "dekking": 0.2473,
-    "kB": 26,
-    "overlap": {}
+    "alfa": 0.3387,
+    "dekking": 0.3321,
+    "kB": 102,
+    "overlap": {},
+    "voorbewerkt": true
+  },
+  "strip-ondergroep": {
+    "doos": [
+      0.2794,
+      0.7876,
+      0.4053,
+      0.2288
+    ],
+    "pixels": [
+      321,
+      1223,
+      395,
+      310
+    ],
+    "alfa": 0.6192,
+    "dekking": 0.6127,
+    "kB": 63,
+    "overlap": {},
+    "voorbewerkt": true
+  },
+  "strip-trekker": {
+    "doos": [
+      -0.0459,
+      0.3654,
+      0.4207,
+      0.2665
+    ],
+    "pixels": [
+      4,
+      651,
+      410,
+      361
+    ],
+    "alfa": 0.2693,
+    "dekking": 0.2649,
+    "kB": 36,
+    "overlap": {},
+    "voorbewerkt": true
   }
 }

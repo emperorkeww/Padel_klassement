@@ -63,11 +63,17 @@
   z-index: -1;
 }
 
-/* Binnen het schild is er geen apart masker: het artwork houdt de zones van
-   rating, avatar, naamplaat en divisieregel zelf vrij, dus de echte
-   `clip-path: var(--schild)` doet het werk. Wel iets rustiger, zodat de inkt
-   zijn contrast houdt. */
+/* De binnen-laag toont alléén het kale glas (het complement van het
+   front-mask): frame, ijs en alles wat óp het glas ligt komen uit de
+   voor-laag. Zonder deze splitsing tekenden beide lagen het frame en composit
+   elk halfdoorzichtig ijs-pixel twee keer — een melkwitte kaart. Deze laag
+   ligt onder de kaartinhoud, dus rating, naam en divisieregel staan eróp —
+   iets rustiger gezet, zodat de inkt zijn contrast houdt. */
 .glazenwasser-effect--binnen .glazenwasser-effect__master {
+  -webkit-mask: url("./assets/glazenwasser-binnen-mask.svg") center / 100% 100%
+    no-repeat;
+  mask: url("./assets/glazenwasser-binnen-mask.svg") center / 100% 100%
+    no-repeat;
   opacity: 0.94;
 }
 

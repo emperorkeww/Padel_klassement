@@ -199,31 +199,14 @@
   opacity: 0.24;
 }
 
-/* De natte glaswand: een herhalende tegel over het hele kaartvlak.
-
-   Twee keer dezelfde tegel op een verschillende maat en een verschillende plek.
-   Er is maar één stuk onbedekt glas van formaat in de referentie (92 × 160 px),
-   dus de tegel is klein en zou op één maat als behang gaan lezen. Twee maten die
-   niet in elkaar passen, maken de periode van het patroon vele malen langer dan
-   de kaart breed is — daarmee ziet het oog textuur in plaats van herhaling.
-
-   De maten staan in procenten van de laag, niet in pixels: zo houdt de korrel
-   dezelfde verhouding tot de kaart op elk formaat. */
+/* De natte glaswand: één samengesteld, dekkend vlak (gw-glasvlak.webp) met
+   toonveld, condens, druppels en waterstrepen uit schone referentiedelen.
+   Dit verving de kleine geweven tegel: die las op kaartmaat als behang en
+   droeg geen strepen — zie `glasvlak()` in scripts/glazenwasser-onderdelen.py. */
 .gw-kaart__laag[data-laag="wetGlassSurface"] {
-  background-repeat: repeat, repeat;
-  background-size:
-    13% auto,
-    21% auto;
-  background-position:
-    0 0,
-    37% 61%;
-  /* Ruim opgeschaald en zacht gehouden: op referentiemaat legt de tegel een
-     regelmatige ruit over het glas, want zijn periode is dan een fractie van de
-     kaart. Groter is de periode langer dan het oog als patroon herkent, en wat
-     de tegel aan fijne korrel verliest, hoort hier ook niet — de scherpe
-     details op de referentie zijn de druppels en het schuim, en die zijn eigen
-     lagen. */
-  opacity: 0.92;
+  /* Dekkend: dit ís het glas, geen waas over een CSS-verloop. Het verloop
+     eronder blijft staan als vangnet zolang het WebP laadt. */
+  opacity: 1;
 }
 
 /* Géén randlicht en géén glow op de voorwerpen meer.

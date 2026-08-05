@@ -124,11 +124,10 @@ import DOZEN from "./assets/gw-onderdelen.json";
 
 export type GwBron =
   | "ring"
-  | "glas"
-  | "trekker-boven"
-  | "ophanging"
-  | "emmer"
-  | "onderschild";
+  | "glasvlak"
+  | "strip-trekker"
+  | "strip-emmer"
+  | "strip-ondergroep";
 
 /** De lagen, in paintvolgorde. `doel` komt uit
  *  `python3 scripts/glazenwasser-onderdelen.py`; `schaal` en `verzet` zijn de
@@ -140,15 +139,17 @@ const doos = (naam: GwBron) =>
   DOZEN[naam].doos as unknown as readonly [number, number, number, number];
 
 export const GW_LAGEN: readonly GwLaag[] = [
-  // Natte glaswand op het kaartvlak: strepen, condens en druppels. Een
-  // herhalende tegel, geen uitsnede — zie `tegel` hierboven. Niet uitrekken
-  // dus: de tegel houdt op elke kaartmaat dezelfde korrel.
+  // Het natte glasvlak: één samengesteld, dekkend vlak op kaartmaat —
+  // toonveld, condens, druppels en waterstrepen uit schone referentiedelen
+  // (scripts/glazenwasser-onderdelen.py, `glasvlak()`). Dit verving de kleine
+  // geweven tegel: die las op kaartmaat als behang en droeg geen strepen. Al
+  // in kaartfracties opgebouwd, dus `voorbewerkt`.
   {
     naam: "wetGlassSurface",
-    bron: "glas",
-    doel: [0.02, 0.03, 0.96, 0.95],
+    bron: "glasvlak",
+    doel: [0, 0, 1, 1],
     clip: true,
-    tegel: true,
+    voorbewerkt: true,
     z: 30,
   },
   // De hele omlijsting als één illustratie: lijst, ijs, flankdruppels, schuim,
@@ -166,55 +167,32 @@ export const GW_LAGEN: readonly GwLaag[] = [
     voorbewerkt: true,
     z: 40,
   },
-  // Trekker schuin langs de linkerflank: lager en forser dan op de referentie,
-  // zodat hij de langere flank vult en zijn blad buiten het schild komt.
+  // Voorstrips (herbouw): trekker, emmer-met-ophanging en de ondergroep zijn
+  // ín de ring gebakken — gemonteerd, beschaduwd en nat zoals de referentie
+  // ze schilderde. Maar de kaartinhoud (z 50) tekent bóven de ring (z 40), en
+  // deze drie horen vóór de tekst (de emmer hangt op de referentie over de
+  // statkolom). Daarom worden exact deze zones uit hetzelfde ringdoek nóg een
+  // keer geplaatst: dezelfde pixels op dezelfde plek, dus per constructie
+  // zonder naad of dubbeling zichtbaar.
   {
     naam: "leftSqueegee",
-    schaduw: 0.004,
-    bron: "trekker-boven",
-    doel: doos("trekker-boven"),
-    // Op referentiemaat en -plek. De vergroting en de verschuiving omlaag
-    // compenseerden een uitsnede die bij de ferrule ophield; met de steel erbij
-    // zet dat het blad juist bovenop de glaslat en de naam. De hoek zit al in de
-    // pixels, dus er hoeft ook niets gedraaid te worden.
-    verzet: [0.0, 0.012],
+    bron: "strip-trekker",
+    doel: doos("strip-trekker"),
+    voorbewerkt: true,
     z: 70,
   },
-  // Haak met ketting waar de emmer aan hangt; die moet aan de lijst vastzitten,
-  // dus hij schuift met de emmer mee naar buiten.
-  {
-    naam: "bucketHanger",
-    bron: "ophanging",
-    doel: doos("ophanging"),
-    // Vóór de lijst, niet erachter: op de referentie is de klem op de rail
-    // geschroefd en ligt de ketting er zichtbaar overheen. Achter de lijst
-    // (z 19) verdween hij eronder en hing de emmer nergens aan.
-    z: 66,
-  },
-  // Sopemmer: groter, lager en verder over de rechterrand dan op de referentie.
   {
     naam: "rightBucket",
-    bron: "emmer",
-    doel: doos("emmer"),
-    // Op referentiemaat: op 1,22 dekte de emmer de rechterhelft van de
-    // divisieregel en de kolom CONCENTRATIE af. Iets omhoog, zodat de ketting
-    // uit de ophanging de beugel raakt in plaats van er een gat boven te laten:
-    // een emmer die náást zijn ketting hangt leest als los plaatje.
-    verzet: [0.004, -0.022],
+    bron: "strip-emmer",
+    doel: doos("strip-emmer"),
+    voorbewerkt: true,
     z: 70,
   },
-  // Onderschild mét de tweede trekker: op de referentie is dat één brandpunt, dus
-  // het is ook één asset. Het water eromheen loopt er in dezelfde uitsnede
-  // overheen, zodat er geen naad tussen crest, trekker en splash overblijft.
   {
     naam: "bottomShield",
-    schaduw: 0.01,
-    bron: "onderschild",
-    doel: doos("onderschild"),
-    verzet: [0, 0.012],
-    // Geen eigen anker meer: het water waar dit schild in ligt zit nu in de ring,
-    // en die is met de gewone afbeelding herbemonsterd. Een afwijkend anker zou
-    // het schild 1,8% kaarthoogte boven zijn eigen plas leggen.
+    bron: "strip-ondergroep",
+    doel: doos("strip-ondergroep"),
+    voorbewerkt: true,
     z: 100,
   },
 ];

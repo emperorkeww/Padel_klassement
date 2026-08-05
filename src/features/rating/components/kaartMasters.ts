@@ -29,6 +29,7 @@ import dictatorMaster from "./dictator/assets/dictator-master.webp";
 import dictatorVoorMasker from "./dictator/assets/dictator-front-mask.svg";
 import glazenwasserMaster from "./glazenwasser/assets/glazenwasser-master.webp";
 import glazenwasserVoorMasker from "./glazenwasser/assets/glazenwasser-front-mask.svg";
+import glazenwasserBinnenMasker from "./glazenwasser/assets/glazenwasser-binnen-mask.svg";
 import goatMaster from "./goat/assets/goat-master.webp";
 import goatBinnenMasker from "./goat/assets/goat-inside-mask.svg";
 import goatVoorMasker from "./goat/assets/goat-front-mask.svg";
@@ -219,6 +220,7 @@ export const KAART_MASTERS: Readonly<Record<MasterNaam, MasterRegistratie>> = {
     schaal: 1,
     rotatie: 0,
     binnenAlpha: 0.94,
+    binnenMasker: glazenwasserBinnenMasker,
     voorMasker: glazenwasserVoorMasker,
     voorSchaduw: [0, 0.008, 0.014, "rgba(4, 16, 30, 0.72)"],
     onderdruktDivisie: true,

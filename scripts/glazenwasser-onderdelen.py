@@ -41,6 +41,8 @@ diff niet te lezen, deze cijfers wel.
 
 from __future__ import annotations
 
+import base64
+import io
 import json
 import sys
 from pathlib import Path
@@ -171,7 +173,12 @@ INHOUD = [
     (226, 580, 834, 624),      # glaslat boven de naamplaat
     (274, 628, 826, 748),      # PAPAPADEL
     (210, 744, 854, 806),      # GLAZENWASSER II
-    (170, 826, 914, 942),      # statblok
+    (140, 826, 930, 948),      # statblok — tot 930: de laatste E van
+                               # CONCENTRATIE steekt voorbij 914 uit; vanaf
+                               # 140: de app zet zijn STREEPEN-kolom net links
+                               # van de referentie, en de waterbewaarzone
+                               # (WATER_ONDER begint op één rechte lijn op
+                               # y 872) dekte die S via de voorstrip af
     (268, 428, 402, 584),      # het losse raampje bij de rating
 ]
 
@@ -368,9 +375,27 @@ def snijd(
     silhouet: float = 0.42,
     halo: int = 6,
     aanhechting: float = 0.55,
+    licht_aanhechting: bool = False,
+    vul: float = 0.08,
+    forceer: tuple = (),
     zonder=(),
 ) -> None:
-    """Snijdt één onderdeel vrij, bijgesneden op zijn eigen alfa."""
+    """Snijdt één onderdeel vrij, bijgesneden op zijn eigen alfa.
+
+    `vul` is de maat van vul_gaten: het schuim ín de sopemmer is een groot,
+    licht binnengat (geen van beide voorwerpsleutels pakt het) en valt met de
+    standaard 8% buiten de vulling — dan kijk je op de kaart dwars door de
+    emmer heen.
+
+    `licht_aanhechting` poort het aangehechte materiaal op helderheid: schuim
+    en druppels zijn licht, maar de afwijkingssleutel is tekenloos en nam ook
+    donkere raildelen mee die binnen de contour vielen — de halfdoorzichtige
+    brokstukken die om de trekker hingen.
+
+    `forceer` is een reeks (punten, krimp): contouren die hoe dan ook dekkend
+    meegaan, een aantal pixels naar binnen geërodeerd. Voor massieve delen die
+    over een donkere ondergrond lopen (het trekkerblad over de linkerrail)
+    faalt elke lokale sleutel — het silhouet ís daar het antwoord."""
     contour = BRON.contour(punten, feather)
     if sleutel == "zwart":
         alpha = np.clip((BRON.luma - 8.0) / 42.0, 0, 1) * contour
@@ -381,18 +406,21 @@ def snijd(
             # of verzadigd tegenover de omgeving. De contour bakent alleen af
             # wáár gezocht wordt; hij is niet zelf het masker.
             kern = (contour > 0.5) & (BRON.voorwerp > silhouet)
-            kern = vul_gaten(ontkorrel(kern, korrel))
+            kern = vul_gaten(ontkorrel(kern, korrel), maxdeel=vul)
             # Aangehecht schuim en water: dat hangt áán het voorwerp en hoort
             # erbij, maar alleen vlak ertegenaan. Zonder die begrenzing komt de
             # halve glaswand mee, want die is net zo getextureerd.
             nabij = dilate(kern, halo)
-            alpha = np.maximum(
-                vervaag(kern.astype(np.float32), zacht),
-                ruw * nabij * aanhechting,
-            )
+            hecht = ruw * nabij * aanhechting
+            if licht_aanhechting:
+                hecht *= np.clip((BRON.luma - 150.0) / 60.0, 0, 1)
+            alpha = np.maximum(vervaag(kern.astype(np.float32), zacht), hecht)
             alpha = alpha * np.clip(contour * 1.6, 0, 1)
         else:
             alpha = ruw * contour
+    for fpunten, krimp in forceer:
+        vast = erode(BRON.contour(fpunten, 0.0) > 0.5, krimp)
+        alpha = np.maximum(alpha, vervaag(vast.astype(np.float32), 1.2))
     alpha = np.clip(alpha * versterk, 0, 1)
     if inhoudvrij:
         vrij = BRON.vrij
@@ -508,6 +536,41 @@ def natglas(overlap: int = 24) -> None:
     DELEN["glas"]["tegel"] = True
 
 
+def inpaint_verticaal(rgb: np.ndarray, bekend: np.ndarray,
+                      zacht: float = 2.5) -> np.ndarray:
+    """Vult onbekende plekken per kolom, uit wat er boven en onder staat.
+
+    De gaten van de weggeknipte voorwerpen liggen grotendeels op de rails, en
+    een rail is een verticale extrusie: de dichtstbijzijnde-buur-vulling van
+    `inpaint` pakte zijwaarts het bleke glas en smeerde dat over de lijst —
+    de witte veeg naast de emmer. Boven-onder mengen naar afstand zet de rail
+    (en de verticale glasstrepen) gewoon door."""
+    h, w = bekend.shape
+    rijen = np.arange(h)[:, None].repeat(w, 1)
+    boven_i = np.where(bekend, rijen, -1)
+    boven_i = np.maximum.accumulate(boven_i, axis=0)
+    onder_i = np.where(bekend, rijen, 2 * h)
+    onder_i = np.minimum.accumulate(onder_i[::-1], axis=0)[::-1]
+    kol = np.arange(w)[None, :].repeat(h, 0)
+    b_ok, o_ok = boven_i >= 0, onder_i < h
+    b_i = np.clip(boven_i, 0, h - 1)
+    o_i = np.clip(onder_i, 0, h - 1)
+    d_b = np.abs(rijen - b_i).astype(np.float32)
+    d_o = np.abs(o_i - rijen).astype(np.float32)
+    # Gewicht naar afstand; een kant zonder bekende pixel telt niet mee.
+    w_b = np.where(b_ok, 1.0 / (d_b + 1.0), 0.0)
+    w_o = np.where(o_ok, 1.0 / (d_o + 1.0), 0.0)
+    som = np.maximum(w_b + w_o, 1e-6)
+    vul = (
+        rgb[b_i, kol] * (w_b / som)[..., None]
+        + rgb[o_i, kol] * (w_o / som)[..., None]
+    )
+    week = np.stack(
+        [vervaag(vul[..., k] / 255.0, zacht) * 255.0 for k in range(3)], -1
+    )
+    return np.where(bekend[..., None], rgb, week)
+
+
 def inpaint(rgb: np.ndarray, bekend: np.ndarray, zacht: float = 40.0) -> np.ndarray:
     """Vult onbekende plekken met de dichtstbijzijnde omgeving, ruim uitgesmeerd.
 
@@ -562,12 +625,12 @@ def kaartring() -> None:
     naad en leest het geheel als plaatjes op een kaart. In één stuk is er niets
     om naadloos te maken.
 
-    De vier massieve voorwerpen (crest, trekker, emmer, onderschild) horen er niet
-    in: de kaart is hoger dan de referentie, dus de ring rekt verticaal 1,22×.
-    Voor een rail, voor glas en voor water is dat onzichtbaar — een rail ís een
-    extrusie — maar een emmer wordt er zichtbaar uitgetrokken. Die worden dus uit
-    de ring geknipt, het gat erachter wordt gevuld, en ze komen op ware
-    verhouding weer bovenop.
+    Sinds de herbouw blijven ook de massieve voorwerpen erin: elke uitsnede
+    was een naad (gat + vulling + losse plaatsing + nagebouwde schaduw), en in
+    de referentiepixels klopt de montage al. Het rek dat de uitsnedes ooit
+    rechtvaardigde — de kaart is hoger dan de referentie, dus de ring rekt
+    verticaal 1,22× — wordt in de herbemonstering opgelost met
+    aspect-behoudende kolombanden over trekker en emmer.
     """
     luma = BRON.luma
     # Silhouet: buiten de kaart is de referentie zwart. Binnenin worden donkere
@@ -598,35 +661,24 @@ def kaartring() -> None:
     # er in één stuk omheen de inkeping in.
     crest_metaal = BRON.contour(CREST, 6.0) * (luma > 55.0)
 
-    # De voorwerpen die wél rekken worden eruit geknipt. Het gat is hun échte
-    # silhouet en niet de ruime handcontour: die contour is een stuk groter dan
-    # het voorwerp, dus dan blijft er rondom een opgevulde rand over die het
-    # voorwerp niet afdekt — een bleke schim in de vorm van het gereedschap. Het
-    # gat schuift bovendien mee met de verschuiving die de laag in
-    # `glazenwasserLayout.ts` krijgt, zodat voorwerp en gat samenvallen.
-    VERZET = {                      # kaartfracties, gelijk aan GW_LAGEN
-        "trekker-boven": (0.0, 0.012),
-        "ophanging": (0.0, 0.0),
-        "emmer": (0.004, -0.022),
-        "onderschild": (0.0, 0.012),
-    }
-    weg = np.zeros_like(luma)
-    for naam, (dx, dy) in VERZET.items():
-        # Krap om het voorwerp: het gat moet kleiner zijn dan wat er overheen
-        # komt. Ruimer betekent een opgevulde rand die het voorwerp niet afdekt,
-        # en dat is precies de bleke halo die eromheen bleef hangen.
-        vorm = dilate(VOL_ALFA[naam] > 0.25, 2).astype(np.float32)
-        vorm = np.roll(vorm, (int(round(dy * RH)), int(round(dx * RW))), (0, 1))
-        weg = np.maximum(weg, vervaag(vorm, 2.0))
+    # Sinds de herbouw (referentie = enige waarheid) blijven álle voorwerpen in
+    # de ring gebakken: trekker, ophanging, emmer en onderschild worden niet
+    # meer uitgesneden en teruggeplakt. Elke knip was een naad — een gat dat
+    # gevuld moest worden, een voorwerp dat los op de kaart kwam te staan, een
+    # contactschaduw die nagebouwd moest worden. In de referentiepixels zelf
+    # klopt dat allemaal al. Het rek-probleem dat de uitsnedes ooit
+    # rechtvaardigde wordt nu in de herbemonstering opgelost: de flankzones met
+    # een massief voorwerp krijgen een aspect-behoudende verticale afbeelding
+    # (zie de banden hieronder).
 
-    # De ingebakken kaarttekst. Die werd eerder wéggevaagd, waardoor er lichte
-    # rechthoeken met halve dekking over het glas lagen — precies de vage vlekken
-    # die de kaart goedkoop maakten. Nu wordt hij gevuld in plaats van uitgedoofd:
-    # de lage frequenties uit de omgeving (dus de juiste toon en belichting) plus
-    # de hoge frequenties van de glastegel (dus echte strepen en condens). De ring
-    # blijft daarmee overal volledig dekkend.
-    binnen = vervaag(erode(BRON.contour(GLAS_BINNEN, 0.0) > 0.5, 6)
-                     .astype(np.float32), 10.0)
+    # De ingebakken kaarttekst. De poort is het glaspaneel zónder erosie en
+    # zónder blur: de eerdere, naar binnen geërodeerde poort liet tekst vlak
+    # langs de rand (de laatste E van CONCENTRATIE naast de emmer) buiten
+    # schot, en een zachte poort lekte de tekstzone tot óver de glasrand — dat
+    # sloeg een gat in de rail en de waterhuid naast de emmer, met een harde
+    # streep als onderrand.
+    kern_glas = BRON.contour(GLAS_BINNEN, 0.0) > 0.5
+    binnen = kern_glas.astype(np.float32)
     tekst = np.zeros_like(luma)
     for (x0, y0, x1, y1) in INHOUD:
         blok = np.zeros_like(luma)
@@ -634,8 +686,10 @@ def kaartring() -> None:
         tekst = np.maximum(tekst, vervaag(blok, 16.0))
     tekst = tekst * binnen * (1.0 - crest_metaal)
 
-    onbekend = np.maximum(weg, tekst) > 0.35
-    laag = inpaint(BRON.rgb, ~onbekend)
+    onbekend = tekst > 0.35
+    # Verticaal gevuld: de gaten liggen op rails en gestreept glas, allebei
+    # verticale structuren — zijwaarts vullen smeerde glas over de lijst.
+    laag = inpaint_verticaal(BRON.rgb, ~onbekend)
     tegel = np.asarray(
         Image.open(UIT / "gw-glas.webp").convert("RGB")
     ).astype(np.float32)
@@ -659,28 +713,107 @@ def kaartring() -> None:
         (alpha > 0.02)[..., None], np.clip(rgb / veilig, 0, 255), rgb
     )
 
-    # Verticaal herbemonsteren met dezelfde stuksgewijze afbeelding die de layout
-    # gebruikt: de kap en de punt houden hun maat, het middenveld rekt mee.
+    # Het kale glasinterieur gaat uit de ring; het glas komt uit `glasvlak()`
+    # (schoon, zonder ingebakken tekst). Wat binnen de glascontour wél blijft
+    # staan is alles wat op de referentie óp het glas ligt:
+    #
+    # * de waterexplosie — haar bogen spatten tot diep over het glas;
+    # * de voorwerpen mét hun directe omgeving (contactschaduw, sopstrepen,
+    #   druppels): de contourzones houden de referentiepixels vast, zodat elk
+    #   voorwerp gemonteerd blijft zoals de referentie hem monteert.
+    #
+    # De tekstzones worden uit die uitzonderingen weggehouden: waar de
+    # ingebakken statregel onder de watercontour of naast de emmer doorloopt,
+    # wint de snede — geen spookletters.
+    # Krappe marge: de contouren volgen de silhouetten al; een ruime feather
+    # sleepte een plaat referentieglas mee die als bleek vlak op het
+    # samengestelde glas lag (en de S van STREEPEN afdekte via de voorstrip).
+    voorwerpen = np.zeros_like(luma)
+    for punten in (TREKKER_BOVEN, OPHANGING, EMMER,
+                   ONDERSCHILD, TREKKER_ONDER, BADGE):
+        voorwerpen = np.maximum(voorwerpen, BRON.contour(punten, 5.0))
+    houd = np.clip(BRON.contour(WATER_ONDER, 10.0) + voorwerpen, 0, 1)
+    houd = houd * (1.0 - vervaag((tekst > 0.35).astype(np.float32), 3.0))
+    binnenvlak = vervaag(kern_glas.astype(np.float32), 4.0) * (1.0 - houd)
+    alpha = alpha * (1.0 - np.clip(binnenvlak, 0.0, 1.0))
+
+    # Verticaal herbemonsteren met dezelfde stuksgewijze afbeelding die de
+    # layout gebruikt: de kap en de punt houden hun maat, het middenveld rekt
+    # mee. In dat middenveld hangen wél twee massieve voorwerpen aan de
+    # flanken (trekker en emmer): die kolombanden krijgen een eigen afbeelding
+    # met een aspect-behoudende helling over de hoogte van het voorwerp — het
+    # rek gaat naar het glas en de rail erboven en eronder, waar het als
+    # extrusie onzichtbaar is. De banden mengen horizontaal zacht in de
+    # globale afbeelding; rails zijn verticaal, dus die menging verschuift
+    # alleen, hij buigt niets om.
     breedte = int(round((RING_X1 - RING_X0) * RW))
     ky0, ky1 = _naar_kaart_y(RING_Y0), _naar_kaart_y(RING_Y1)
     hoogte = int(round((ky1 - ky0) * RW * (139.0 / 100.0)))
     ref = np.linspace(-0.4, 1.4, 6000)
-    kaart = np.array([_naar_kaart_y(float(v)) for v in ref])
-    rij_ref = np.interp(ky0 + (np.arange(hoogte) + 0.5) / hoogte * (ky1 - ky0),
-                        kaart, ref)
-    bron_y = RY0 + rij_ref * RH
+    kaart_glob = np.array([_naar_kaart_y(float(v)) for v in ref])
+    kaartrijen = ky0 + (np.arange(hoogte) + 0.5) / hoogte * (ky1 - ky0)
+    rij_glob = np.interp(kaartrijen, kaart_glob, ref)
     kol_x = RX0 + (RING_X0 + (np.arange(breedte) + 0.5) / breedte
                    * (RING_X1 - RING_X0)) * RW
+    kol_frac = (kol_x - RX0) / RW
+
+    krimp_c = (1114.0 / 975.0) / (139.0 / 100.0)
+
+    def band_inverse(y0: float, y1: float, anker: str) -> np.ndarray:
+        """Inverse afbeelding voor één kolomband.
+
+        Buiten [0,15 .. 0,85] is de band exact de globale afbeelding: de kap,
+        de schouders, de punt en de waterrand liggen vast, dus aan de
+        bandgrenzen kan daar niets verspringen. Binnen dat venster krijgt het
+        voorwerp [y0, y1] de aspect-behoudende helling `krimp_c`; het rek gaat
+        naar het glas ertussen. `anker` bepaalt waar het voorwerp aan
+        vastzit: 'onder' voor de emmer (die tot in de onderzone doorloopt,
+        waar de helling al krimp_c ís), 'midden' voor de trekker."""
+        A0, A1 = 0.15, 0.85
+        g0, g1 = _naar_kaart_y(A0), _naar_kaart_y(A1)
+        k0, k1 = max(y0, A0), min(y1, A1)
+        if anker == "onder":
+            f1 = g1 - (A1 - k1) * krimp_c
+            f0 = f1 - (k1 - k0) * krimp_c
+        else:
+            c = (k0 + k1) / 2.0
+            fc = _naar_kaart_y(c)
+            f0 = fc - (c - k0) * krimp_c
+            f1 = fc + (k1 - c) * krimp_c
+        f = np.array([_naar_kaart_y(float(v)) for v in ref])
+        m = (ref >= A0) & (ref <= A1)
+        f[m] = np.interp(ref[m], [A0, k0, k1, A1], [g0, f0, f1, g1])
+        return np.interp(kaartrijen, f, ref)
+
+    # Banden in referentiefracties: (x0, x1, y0, y1, anker) — de y-span is het
+    # massieve deel van het voorwerp; kettingen en druppels mogen rekken.
+    BANDEN = (
+        # Trekker: blad, kop en steel.
+        (-0.04, 0.365, 0.343, 0.705, "midden"),
+        # Emmer: romp met beugel; de ophangketting erboven is verticaal.
+        (0.745, 1.005, 0.576, 0.913, "onder"),
+    )
+    rij_2d = np.repeat(rij_glob[:, None], breedte, axis=1)
+    for bx0, bx1, by0, by1, anker in BANDEN:
+        w = np.clip(
+            (np.minimum(kol_frac - bx0, bx1 - kol_frac)) / 0.05, 0, 1
+        ).astype(np.float32)
+        rij_band = band_inverse(by0, by1, anker)
+        rij_2d = rij_2d * (1 - w)[None, :] + rij_band[:, None] * w[None, :]
+
+    bron_y2 = np.clip(RY0 + rij_2d * RH, 0, BRON.h - 1.001)
+    bron_x2 = np.clip(kol_x, 0, BRON.w - 1.001)
 
     def bemonster(vlak: np.ndarray) -> np.ndarray:
-        y = np.clip(bron_y, 0, vlak.shape[0] - 1.001)
-        x = np.clip(kol_x, 0, vlak.shape[1] - 1.001)
-        y0i, x0i = y.astype(int), x.astype(int)
-        fy, fx = (y - y0i)[:, None], (x - x0i)[None, :]
-        a = vlak[np.ix_(y0i, x0i)]
-        b = vlak[np.ix_(y0i + 1, x0i)]
-        c = vlak[np.ix_(y0i, x0i + 1)]
-        d = vlak[np.ix_(y0i + 1, x0i + 1)]
+        y0i = bron_y2.astype(int)
+        x0i = bron_x2.astype(int)[None, :].repeat(hoogte, 0)
+        fy = bron_y2 - y0i
+        fx = (bron_x2 - bron_x2.astype(int))[None, :]
+        a = vlak[y0i, x0i]
+        b = vlak[np.minimum(y0i + 1, vlak.shape[0] - 1), x0i]
+        c = vlak[y0i, np.minimum(x0i + 1, vlak.shape[1] - 1)]
+        d = vlak[np.minimum(y0i + 1, vlak.shape[0] - 1),
+                 np.minimum(x0i + 1, vlak.shape[1] - 1)]
         return (a * (1 - fy) * (1 - fx) + b * fy * (1 - fx)
                 + c * (1 - fy) * fx + d * fy * fx)
 
@@ -707,6 +840,46 @@ def kaartring() -> None:
         "voorbewerkt": True,
     }
 
+    # Voorstrips: op de brede kaart staat de kaartinhoud (z 50) bóven de ring
+    # (z 40), maar trekker, emmer en ondergroep horen vóór de tekst — de
+    # referentie laat de emmer over de statkolom hangen. Die drie zones worden
+    # als strips uit exact dit doek gesneden en op z 70/100 nóg een keer
+    # geplaatst: dezelfde pixels op dezelfde plek, dus per constructie naadloos.
+    def strip(naam: str, fx0: float, fx1: float, ry0: float, ry1: float,
+              z_zone: tuple[float, float] | None = None) -> None:
+        x0o = int((fx0 - RING_X0) / (RING_X1 - RING_X0) * breedte)
+        x1o = int((fx1 - RING_X0) / (RING_X1 - RING_X0) * breedte)
+        xc = (x0o + x1o) // 2
+        kol = rij_2d[:, min(max(xc, 0), breedte - 1)]
+        y0o = int(np.searchsorted(kol, ry0))
+        y1o = int(np.searchsorted(kol, ry1))
+        uitsnede = rgba[y0o:y1o, x0o:x1o]
+        pad_s = UIT / f"gw-strip-{naam}.webp"
+        Image.fromarray(uitsnede, "RGBA").save(pad_s, "WEBP", quality=82,
+                                               method=6)
+        DELEN[f"strip-{naam}"] = {
+            "doos": [
+                round(RING_X0 + x0o / breedte * (RING_X1 - RING_X0), 4),
+                round(ky0 + y0o / hoogte * (ky1 - ky0), 4),
+                round((x1o - x0o) / breedte * (RING_X1 - RING_X0), 4),
+                round((y1o - y0o) / hoogte * (ky1 - ky0), 4),
+            ],
+            "pixels": [x0o, y0o, x1o - x0o, y1o - y0o],
+            "alfa": round(float((uitsnede[..., 3] / 255).mean()), 4),
+            "dekking": round(float((uitsnede[..., 3] >= 128).mean()), 4),
+            "kB": pad_s.stat().st_size // 1024,
+            "overlap": {},
+            "voorbewerkt": True,
+        }
+
+    # Zones in referentiefracties (x) en -fracties (y, vóór de afbeelding).
+    # Krap rond de voorwerpen: elke rij te veel draagt óók het glas-sliver
+    # tussen lijst en glascontour mee, en dat hoort onder de kaartinhoud —
+    # de trekker-strip tot 0,72 dekte de S van STREEPEN af.
+    strip("trekker", -0.045, 0.375, 0.335, 0.655)
+    strip("emmer", 0.745, 1.01, 0.15, 0.95)
+    strip("ondergroep", 0.28, 0.685, 0.76, 1.02)
+
 
 # Doek en kaartvak van de compacte master, exact zoals GlazenwasserEffect.css ze
 # registreert (--glazenwasser-master-left/-top/-width). Het kaartvak erin is
@@ -714,16 +887,200 @@ def kaartring() -> None:
 MASTER_DOEK = (1024, 1440)
 MASTER_VAK = (72, 160, 880, 1223)
 
-# Verschuiving per voorwerp, gelijk aan `verzet` in GW_LAGEN. Zelfde tabel als in
-# `kaartring()`; staat hier apart zodat de compacte master exact dezelfde
-# compositie oplevert als de brede kaart.
-MASTER_LAGEN = (
-    # naam, z-volgorde
-    ("ophanging", (0.0, 0.0)),
-    ("trekker-boven", (0.0, 0.012)),
-    ("emmer", (0.004, -0.022)),
-    ("onderschild", (0.0, 0.012)),
-)
+# Sinds de herbouw zitten alle voorwerpen ín de ring gebakken (zie
+# kaartring()): er is geen aparte weergavetabel meer — wat de referentie
+# monteert, staat gemonteerd.
+
+
+def glasvlak() -> None:
+    """Het volledige natte glasvlak van de kaart, zonder spoken (#briefing).
+
+    Waarom niet gewoon het glas van de referentie uitsnijden: daar staat de
+    kaartinhoud in gebakken, en elke poging het gat te vullen liet bleke wolken
+    en donkere schimmen achter — de "faded / washed out"-vlekken. Dit vlak wordt
+    daarom *samengesteld* uit uitsluitend schone stukken referentieglas:
+
+    * het toonveld (de lage frequenties: toon, belichting, het donker weglopen
+      naar de randen) komt uit het échte glas, met alle inhoud- en
+      voorwerpzones weggelaten en de gaten breed gevuld;
+    * de condens en de druppels zijn honderden echte detail-patches uit het
+      schone glas, met een venster gestrooid zodat er nergens een naad of een
+      herhaalritme ontstaat — het behang-effect van de kleine tegel;
+    * de waterstrepen zijn getrokken, niet gesampled: lange verticale banen met
+      een lichte kern en een donkere zoom, dichter aan de flanken en bovenaan,
+      precies zoals de referentie ze toont. De vaste seed houdt de uitkomst
+      reproduceerbaar.
+
+    Het vlak is dekkend: het ís het glas, geen waas erover. De kaart klemt het
+    onder de ring en de voorwerpen, dus alles wat hier middenin staat blijft
+    onder de echte tekstlaag."""
+    W, H = 880, 1223
+    rng = np.random.default_rng(834)
+
+    # -- toonveld ------------------------------------------------------------
+    schoon = schoon_glas()
+    toon = inpaint(BRON.rgb, schoon, zacht=36.0)
+    # Breed genoeg vervaagd dat de vulzones (avatarcirkel, statblok) geen
+    # herkenbare wolk achterlaten — op 28 tekende de cirkel zich nog af.
+    toon = np.stack(
+        [vervaag(toon[..., k] / 255.0, 42.0) * 255.0 for k in range(3)], -1
+    )
+
+    # Kaartraster → referentieraster, met dezelfde stuksgewijze verticale
+    # afbeelding als de ring: het toonveld schuift mee met de langere kaart.
+    ref = np.linspace(-0.2, 1.2, 4000)
+    kaart = np.array([_naar_kaart_y(float(v)) for v in ref])
+    vy = np.interp((np.arange(H) + 0.5) / H, kaart, ref)
+    bron_y = np.clip(RY0 + vy * RH, 0, BRON.h - 1.001)
+    bron_x = np.clip(RX0 + (np.arange(W) + 0.5) / W * RW, 0, BRON.w - 1.001)
+    y0i, x0i = bron_y.astype(int), bron_x.astype(int)
+    fy = (bron_y - y0i)[:, None, None]
+    fx = (bron_x - x0i)[None, :, None]
+    veld = (
+        toon[np.ix_(y0i, x0i)] * (1 - fy) * (1 - fx)
+        + toon[np.ix_(y0i + 1, x0i)] * fy * (1 - fx)
+        + toon[np.ix_(y0i, x0i + 1)] * (1 - fy) * fx
+        + toon[np.ix_(y0i + 1, x0i + 1)] * fy * fx
+    )
+    # Iets meer toonverschil dan het vervaagde veld overhoudt: zonder deze
+    # uitvergroting rond het gemiddelde leest het vlak als één egale plaat,
+    # terwijl de referentie zichtbaar donker wegloopt naar de flanken.
+    veld = np.clip(veld.mean((0, 1), keepdims=True)
+                   + (veld - veld.mean((0, 1), keepdims=True)) * 1.18, 0, 255)
+
+    # -- condens en druppels: echte patches, gestrooid ------------------------
+    detail = BRON.rgb - np.stack(
+        [vervaag(BRON.rgb[..., k] / 255.0, 9.0) * 255.0 for k in range(3)], -1
+    )
+
+    def patches_van(maat: int, aantal: int) -> list[np.ndarray]:
+        ok = erode(schoon, maat // 2 + 2)
+        ys, xs = np.where(ok)
+        keuze = rng.choice(len(ys), size=min(aantal, len(ys)), replace=False)
+        return [
+            detail[ys[i] - maat // 2:ys[i] + maat // 2,
+                   xs[i] - maat // 2:xs[i] + maat // 2]
+            for i in keuze
+        ]
+
+    def strooi(doel: np.ndarray, patches: list[np.ndarray], rondes: int,
+               schaal: tuple[float, float], sterk: tuple[float, float],
+               demp: np.ndarray | None = None) -> None:
+        for _ in range(rondes):
+            p = patches[int(rng.integers(len(patches)))]
+            s = rng.uniform(*schaal)
+            m = max(8, int(round(p.shape[0] * s)))
+            beeld = Image.fromarray(
+                np.clip(p + 128.0, 0, 255).astype(np.uint8)
+            ).resize((m, m), Image.LANCZOS)
+            stuk = np.asarray(beeld).astype(np.float32) - 128.0
+            w = np.hanning(m)[:, None] * np.hanning(m)[None, :]
+            x = int(rng.integers(0, W - m))
+            y = int(rng.integers(0, H - m))
+            kracht = rng.uniform(*sterk)
+            if demp is not None:
+                kracht *= float(demp[min(y + m // 2, H - 1),
+                                     min(x + m // 2, W - 1)])
+            doel[y:y + m, x:x + m] += stuk * w[..., None] * kracht
+
+    # Iets rustiger achter naam, divisieregel en statblok — ook de referentie
+    # houdt het daar kalmer, en de inkt houdt zo zijn contrast.
+    yy = (np.arange(H) + 0.5) / H
+    demp_v = 1.0 - 0.3 * np.clip(1.0 - np.abs(yy - 0.585) / 0.21, 0, 1)
+    demp = np.repeat(demp_v[:, None], W, axis=1).astype(np.float32)
+
+    # Randzone: waar het glas de lijst nadert. De natte overgang komt sinds de
+    # smalle ringband uit dit vlak zelf — condens en druppels verdichten naar
+    # de rand toe, en de toon koelt er een fractie af, zodat glas en lijst in
+    # elkaar grijpen in plaats van langs elkaar heen te schuiven.
+    poly = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(poly).polygon(
+        [
+            ((x - RX0) / RW * W, _naar_kaart_y((y - RY0) / RH) * H)
+            for x, y in GLAS_BINNEN
+        ],
+        fill=255,
+    )
+    pm = np.asarray(poly) > 127
+    rand = vervaag((pm & ~erode(pm, 64)).astype(np.float32), 16.0)
+    demp = np.clip(demp * (1.0 + 1.3 * rand), 0, 2.2).astype(np.float32)
+
+    cond = np.zeros((H, W, 3), np.float32)
+    strooi(cond, patches_van(44, 26), 900, (0.85, 1.9), (0.7, 1.3), demp)
+    # Kleinere, scherpere patches: losse druppels en spetters.
+    strooi(cond, patches_van(20, 22), 650, (0.8, 1.7), (1.1, 1.9), demp)
+    # Extra druppels in de randzone alleen: op de referentie zitten de dichtste
+    # druppels tegen de lijst aan.
+    strooi(cond, patches_van(20, 22), 260, (0.7, 1.3), (1.0, 1.7),
+           rand.astype(np.float32))
+    veld = np.clip(
+        veld - (rand * 9.0)[..., None] * np.array([1.0, 0.55, 0.15], np.float32),
+        0, 255,
+    )
+
+    # -- verticale waterstrepen ----------------------------------------------
+    licht = np.zeros((H, W), np.float32)
+    donker = np.zeros((H, W), np.float32)
+
+    def streep(xc: float, ytop: float, lengte: float, breed: float,
+               sterk: float) -> None:
+        yy_ = np.arange(int(max(0, ytop)), int(min(H, ytop + lengte)))
+        if len(yy_) == 0:
+            return
+        slinger = xc + np.cumsum(rng.normal(0.0, 0.06, len(yy_)))
+        halve = max(1, int(round(breed))) // 2
+        for j, y in enumerate(yy_):
+            x = int(round(slinger[j]))
+            if 1 + halve <= x < W - halve - 2:
+                # Uitlopende staart: een streep eindigt dun, niet abrupt.
+                duik = 1.0 - 0.7 * (j / len(yy_)) ** 2
+                licht[y, x - halve:x + halve + 1] += sterk * duik
+                donker[y, x + halve + 1:x + halve + 2] += sterk * 0.55 * duik
+
+    # Dunne druipsporen: dichter aan de flanken (beta-verdeling met een kuil in
+    # het midden) en beginnend in de bovenhelft, zoals op de referentie.
+    for _ in range(150):
+        streep(rng.beta(0.55, 0.55) * W, rng.uniform(-40, H * 0.45),
+               rng.uniform(H * 0.12, H * 0.85), rng.uniform(1, 3),
+               rng.uniform(7, 22))
+    # Brede, zachte waterlopen daaronder.
+    for _ in range(26):
+        streep(rng.beta(0.7, 0.7) * W, rng.uniform(-40, H * 0.3),
+               rng.uniform(H * 0.3, H * 0.9), rng.uniform(6, 14),
+               rng.uniform(3.5, 7.0))
+    licht = vervaag(licht / 32.0, 0.8) * 32.0
+    donker = vervaag(donker / 32.0, 1.3) * 32.0
+
+    # -- glasdiepte: één zachte diagonale reflectiebaan ------------------------
+    xx = (np.arange(W) + 0.5) / W
+    baan = np.clip(
+        1.0 - np.abs(xx[None, :] * 0.62 - yy[:, None] * 0.44 - 0.08) / 0.11,
+        0, 1,
+    ).astype(np.float32)
+    baan = vervaag(baan, 30.0)
+
+    rgb = (
+        veld
+        + cond
+        + licht[..., None] * np.array([0.9, 1.0, 1.08], np.float32)
+        - donker[..., None] * np.array([0.9, 0.8, 0.66], np.float32)
+        + (baan * 5.5)[..., None]
+    )
+    rgba = np.zeros((H, W, 4), np.uint8)
+    rgba[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    rgba[..., 3] = 255
+    pad = UIT / "gw-glasvlak.webp"
+    Image.fromarray(rgba, "RGBA").save(pad, "WEBP", quality=80, method=6)
+    DELEN["glasvlak"] = {
+        # Samengesteld op kaartmaat: de doos is de hele kaart, en de
+        # uitsnedecontroles gelden er niet voor (zie glazenwasserAssets.test.ts).
+        "doos": [0.0, 0.0, 1.0, 1.0],
+        "pixels": [0, 0, W, H],
+        "alfa": 1.0,
+        "dekking": 1.0,
+        "kB": pad.stat().st_size // 1024,
+        "voorbewerkt": True,
+    }
 
 
 def compacte_master() -> None:
@@ -738,25 +1095,92 @@ def compacte_master() -> None:
     FutKaart.
 
     Het kaartvak in dit doek heeft dezelfde verhouding als de kaart zelf, dus de
-    lagen worden hier één op één ingezet: geen tweede afbeelding, geen rek."""
-    doek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    lagen worden hier één op één ingezet: geen tweede afbeelding, geen rek.
+
+    Sinds de referentiepass draagt de master ook het glas zelf: het interieur
+    was leeg omdat het voormasker als alfamasker overal dekkend was (zwart is
+    net zo ondoorzichtig als wit) en de `voor`-laag dus de héle master over
+    rating en naam legde. Dat masker komt nu uit dit script, mét een echt
+    transparant gat boven het glas — de `voor`-laag toont alleen lijst, band en
+    voorwerpen, en de `binnen`-laag (onder de tekst) mag het volle natte glas
+    laten zien. Zo leest de klassement-kaart eindelijk als de referentie in
+    plaats van als een leeg platina-vlak met een natte rand."""
     vx, vy, vw, vh = MASTER_VAK
 
-    def plaats(pad: Path, vak: tuple[float, float, float, float]) -> None:
+    # Ring + voorwerpen eerst op een eigen doek: dat is precies wat er bóven
+    # het glas ligt, en dus ook precies wat de voor-laag mag tonen. Het
+    # voormasker wordt uit deze alfa afgeleid in plaats van uit ruime
+    # handcontouren — binnen zo'n contour zou anders ook het (dekkende) glas
+    # vóór de kaartinhoud komen.
+    boven = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+
+    def plaats(pad: Path, vak: tuple[float, float, float, float],
+               masker: np.ndarray | None = None) -> None:
         left, top, breedte, hoogte = vak
         b = max(1, int(round(breedte * vw)))
         h = max(1, int(round(hoogte * vh)))
         laag = Image.open(pad).convert("RGBA").resize((b, h), Image.LANCZOS)
-        doek.alpha_composite(
-            laag, (int(round(vx + left * vw)), int(round(vy + top * vh)))
-        )
+        px, py = int(round(vx + left * vw)), int(round(vy + top * vh))
+        if masker is None:
+            boven.alpha_composite(laag, (px, py))
+            return
+        # Masker op doekmaat: eerst op een eigen doek zetten (PIL knipt de
+        # overloop), dan de doek-alfa vermenigvuldigen.
+        tdoek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+        tdoek.alpha_composite(laag, (max(0, px), max(0, py)))
+        a = np.asarray(tdoek.split()[3]).astype(np.float32) * masker
+        tdoek.putalpha(Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)))
+        boven.alpha_composite(tdoek)
 
-    # De ring naar binnen toe laten uitdoven. De compacte kaart tekent zijn tekst
-    # ín de `voor`-laag, dus alles wat het artwork midden op het vlak zet, komt
-    # over rating, naam en divisieregel te liggen; FutKaart tekent daar bovendien
-    # zijn eigen glasvlak al. Rechthoeken uitknippen langs de tekstzones geeft
-    # zichtbare blokken — een uitdoving vanaf de lijst niet, en die houdt precies
-    # vast wat de kaart wél moet erven: de lijst, het ijs, het water en de bellen.
+    def master_poly(reeks) -> np.ndarray:
+        beeld = Image.new("L", MASTER_DOEK, 0)
+        ImageDraw.Draw(beeld).polygon(
+            [
+                (vx + (x - RX0) / RW * vw,
+                 vy + _naar_kaart_y((y - RY0) / RH) * vh)
+                for x, y in reeks
+            ],
+            fill=255,
+        )
+        return np.asarray(beeld) > 127
+
+    # De ring — met alle voorwerpen erin gebakken — komt hier met de
+    # leesbaarheidssnede van de compacte kaart: binnen de glascontour alleen
+    # wat op het glas ligt, en de waterexplosie alleen ónder 80% kaarthoogte.
+    # Boven die lijn spatten de bogen op de brede kaart vol over het glas —
+    # maar hier tekent FutKaart daar zijn divisieregel, en op 0,72 was
+    # "GLAZENWASSER" al eens onleesbaar.
+    pm = master_poly(GLAS_BINNEN)
+    snede = pm.astype(np.float32)
+    snede[int(vy + 0.80 * vh):] = 0.0
+    # Heldere zone achter de divisieregel (briefing §1): het water blijft aan
+    # de flanken en onder de punt, maar wijkt in het midden waar FutKaart
+    # "GLAZENWASSER II" zet. De ondergroep (schild, tweede trekker) is van de
+    # opening uitgezonderd — die hoort als voorwerp gewoon te blijven staan.
+    xs = (np.arange(MASTER_DOEK[0]) - (vx + 0.5 * vw)) / (0.30 * vw)
+    ys = (np.arange(MASTER_DOEK[1]) - (vy + 0.872 * vh)) / (0.085 * vh)
+    helder = np.exp(-(xs[None, :] ** 2 + ys[:, None] ** 2) / 2.0)
+    ondergroep = (
+        master_poly(ONDERSCHILD) | master_poly(TREKKER_ONDER)
+        | master_poly(BADGE)
+    )
+    helder = helder * (1.0 - vervaag(ondergroep.astype(np.float32), 6.0))
+    # De voorwerpen op de flanken (trekker, emmer, ophanging) blijven ook in
+    # de snedezone staan: zij liggen óp het glas en horen vóór de inhoud.
+    voorwerpen = (
+        master_poly(TREKKER_BOVEN) | master_poly(OPHANGING)
+        | master_poly(EMMER)
+    )
+    snede = snede * (1.0 - vervaag(voorwerpen.astype(np.float32), 4.0))
+    snede = np.clip(snede + 0.9 * helder.astype(np.float32), 0, 1)
+    snede = np.asarray(
+        Image.fromarray((snede * 255).astype(np.uint8), "L")
+        .filter(ImageFilter.GaussianBlur(7.0))
+    ).astype(np.float32) / 255.0
+    plaats(UIT / "gw-ring.webp", DELEN["ring"]["doos"], masker=1.0 - snede)
+
+    # Het natte glas als onderste laag, strak binnen de glascontour; ring en
+    # voorwerpen eroverheen — dezelfde stapeling als de brede kaart.
     binnen = Image.new("L", MASTER_DOEK, 0)
     ImageDraw.Draw(binnen).polygon(
         [
@@ -765,51 +1189,98 @@ def compacte_master() -> None:
         ],
         fill=255,
     )
-    # Strak wegsnijden op de glasrand in plaats van naar binnen uitdoven. De
-    # `voor`-laag toont de master ongemaskeerd (het front-mask-SVG is in CSS een
-    # alfamasker en is overal ondoorzichtig, dus het selecteert niets), dus alles
-    # wat hier op het kaartvlak staat komt over rating, naam en divisieregel.
-    # Een uitdoving over 17% kaartbreedte las als een grote bleke gradiënt midden
-    # op de kaart; een korte snede valt weg onder de binnenrand van de lijst.
-    # De onderste waterexplosie blijft staan: die hoort op de referentie óver het
-    # vlak te lopen en zat ook in de oude master.
-    vlak = np.asarray(binnen).astype(np.float32) / 255.0
-    onder = np.zeros_like(vlak)
-    # Tot 0,80 wegsnijden: op 0,72 liep de waterexplosie over de divisieregel
-    # van FutKaart heen en was 'GLAZENWASSER' niet meer te lezen.
-    onder[int(vy + 0.80 * vh):] = 1.0
-    snede = np.clip(vlak - onder, 0, 1)
-    snede = np.asarray(
-        Image.fromarray((snede * 255).astype(np.uint8), "L")
-        .filter(ImageFilter.GaussianBlur(7.0))
-    ).astype(np.float32) / 255.0
-    verval = 1.0 - snede
-
-    ringdoos = DELEN["ring"]["doos"]
-    ringlaag = Image.open(UIT / "gw-ring.webp").convert("RGBA")
-    rb = max(1, int(round(ringdoos[2] * vw)))
-    rh = max(1, int(round(ringdoos[3] * vh)))
-    ringlaag = ringlaag.resize((rb, rh), Image.LANCZOS)
-    ringdoek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
-    ringdoek.alpha_composite(
-        ringlaag,
-        (int(round(vx + ringdoos[0] * vw)), int(round(vy + ringdoos[1] * vh))),
+    glas = Image.open(UIT / "gw-glasvlak.webp").convert("RGBA").resize(
+        (vw, vh), Image.LANCZOS
     )
-    ra = np.asarray(ringdoek.split()[3]).astype(np.float32) * verval
-    ringdoek.putalpha(Image.fromarray(np.clip(ra, 0, 255).astype(np.uint8), "L"))
-    doek.alpha_composite(ringdoek)
+    doek = Image.new("RGBA", MASTER_DOEK, (0, 0, 0, 0))
+    doek.paste(glas, (vx, vy))
+    doek.putalpha(binnen.filter(ImageFilter.GaussianBlur(1.5)))
+    doek.alpha_composite(boven)
 
-    for naam, (dx, dy) in MASTER_LAGEN:
-        left, top, breedte, hoogte = DELEN[naam]["doos"]
-        plaats(
-            UIT / f"gw-{naam}.webp",
-            (left + dx, _naar_kaart_y(top) + dy, breedte, naar_kaart_h(hoogte)),
-        )
+    # Grade voor kaartformaat (briefing: "premium, hoog contrast"). Op de
+    # maat van een klassement-kaart vervlakken de referentiekleuren: het ijs
+    # en de spray middelen uit tegen de rails en het geheel leest melkig.
+    # Meer verzadiging en contrast rond het middengrijs geven de rails hun
+    # diepe blauw terug zonder de lichte glaspartij te verduisteren.
+    arr = np.asarray(doek).astype(np.float32)
+    rgb_m = arr[..., :3]
+    grijs = rgb_m.mean(-1, keepdims=True)
+    rgb_m = grijs + (rgb_m - grijs) * 1.3
+    rgb_m = 127.5 + (rgb_m - 127.5) * 1.1
+    arr[..., :3] = np.clip(rgb_m, 0, 255)
+    doek = Image.fromarray(arr.astype(np.uint8), "RGBA")
 
     pad = UIT / "glazenwasser-master.webp"
     doek.save(pad, "WEBP", quality=82, method=6)
     print(f"  {'master (compact)':16s} {doek.width}×{doek.height}px  "
           f"{pad.stat().st_size // 1024} kB")
+    voormasker(np.asarray(binnen) > 127,
+               np.asarray(boven.split()[3]).astype(np.float32) / 255.0)
+
+
+def voormasker(glasvlak_mask: np.ndarray, boven_alpha: np.ndarray) -> None:
+    """Schrijft glazenwasser-front-mask.svg met een écht transparant glasgat.
+
+    Zowel de CSS (`mask: url(...)`) als de canvasrenderer (`destination-in`)
+    maskeren op álfa. De oude SVG had een zwarte achtergrond met witte lobes:
+    als luminantiemasker correct, als alfamasker overal dekkend — en dus
+    selecteerde hij niets en lag de hele master over de kaarttekst. Daarom
+    moest het glasinterieur destijds uit de master worden gesneden.
+
+    Dit masker is de exacte selectie "wat ligt er boven het glas": buiten de
+    glascontour alles, erbinnen alleen waar ring en voorwerpen echt pixels
+    hebben. Handcontouren waren hier te ruim — binnen zo'n contour kwam ook
+    het (voortaan dekkende) glas vóór de kaartinhoud te liggen, dwars over de
+    naamregel. De alfa komt daarom uit de compositie zelf en gaat als raster
+    de SVG in; iets verruimd en zacht gemaakt, zodat de rand van een voorwerp
+    nooit een sliver kaarttekst laat doorschemeren."""
+    vol = np.clip(boven_alpha * 1.2, 0.0, 1.0)
+    vol = vervaag(vol, 2.0)
+    # Voor- en binnen-masker zijn complementair. Zonder die splitsing tekenden
+    # beide lagen het volledige frame en composit elk halfdoorzichtig ijs- en
+    # spraypixel twee keer — de melkwitte, uitgewassen compacte kaart. Het
+    # frame alléén in de binnen-laag kan ook niet: de keyline-decoraties van
+    # FutKaart schilderen op de zijde zelf en liggen dus over z −1 heen.
+    # Daarom: frame en alles-op-het-glas in de voor-laag, het kale glas in de
+    # binnen-laag (onder de kaartinhoud), elk precies één keer.
+    masker = np.where(glasvlak_mask, vol, 1.0)
+    binnen_masker = vervaag(
+        np.where(glasvlak_mask, 1.0, 0.0).astype(np.float32), 2.0
+    )
+    def schrijf_masker(m: np.ndarray, naam: str, wat: str) -> int:
+        # Op halve resolutie de SVG in: een masker hoeft niet pixelscherp (de
+        # rand is toch zacht) en op volle maat woog de data-URI 125 kB — te
+        # veel voor het bundelbudget van assetBudget.test.ts.
+        beeld = Image.fromarray(
+            np.clip(m * 255, 0, 255).astype(np.uint8), "L"
+        ).resize((MASTER_DOEK[0] // 2, MASTER_DOEK[1] // 2), Image.LANCZOS)
+        # Alfa == luminantie: als PNG met alfakanaal, zodat élke afnemer
+        # (CSS-mask, canvas destination-in) hetzelfde selecteert.
+        la = np.asarray(beeld.convert("LA")).copy()
+        la[..., 1] = la[..., 0]
+        png = io.BytesIO()
+        Image.fromarray(la, "LA").save(png, "PNG", optimize=True)
+        data = base64.standard_b64encode(png.getvalue()).decode("ascii")
+        svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" viewBox="0 0 {MASTER_DOEK[0]} {MASTER_DOEK[1]}">
+  <!-- Gegenereerd door scripts/glazenwasser-onderdelen.py (voormasker()): {wat}
+       Niet met de hand bijwerken. Expliciete width/height: canvas drawImage heeft een
+       intrinsieke maat nodig (de posterrenderer maskeert met dit bestand). -->
+  <image width="{MASTER_DOEK[0]}" height="{MASTER_DOEK[1]}" href="data:image/png;base64,{data}" />
+</svg>
+"""
+        (UIT / naam).write_text(svg, encoding="utf8")
+        return len(svg) // 1024
+
+    kb_voor = schrijf_masker(
+        masker, "glazenwasser-front-mask.svg",
+        "frame en alles-op-het-glas voor de voor-laag, gat over het kale glas.",
+    )
+    kb_binnen = schrijf_masker(
+        binnen_masker, "glazenwasser-binnen-mask.svg",
+        "het kale glas voor de binnen-laag, complement van het front-mask.",
+    )
+    print(f"  {'voormasker':16s} raster-alfa uit de compositie  "
+          f"{kb_voor} + {kb_binnen} kB")
 
 
 def naar_kaart_h(h: float) -> float:
@@ -820,25 +1291,14 @@ def naar_kaart_h(h: float) -> float:
 def main() -> int:
     UIT.mkdir(parents=True, exist_ok=True)
 
-    # De crest wordt niet meer los gesneden: hij zit in de ring, waar hij bij de
-    # lijst hoort zoals op de referentie. Zijn contour blijft nodig om hem daar
-    # tegen het tekstmasker te beschermen.
-    # Dunne, hooggekleurde steel: een grovere ontkorreling knipt hem weg.
-    # Krappere aanhechting: het schuim aan het blad hoort erbij, de losse
-    # glasvlekken rechts ernaast niet.
-    snijd("trekker-boven", TREKKER_BOVEN, "vast", feather=5.0, drempel=14.0,
-          korrel=1, zacht=1.0, halo=5, aanhechting=0.42)
-    snijd("ophanging", OPHANGING, "glas", feather=6.0, drempel=11.0,
-          spreiding=24.0, versterk=1.15, zonder=(EMMER,))
-    snijd("emmer", EMMER, "vast", feather=5.0, drempel=14.0, zacht=1.0,
-          vrij_vanaf_x=900)
-    snijd("onderschild", ONDERSCHILD, "vast", feather=6.0, drempel=14.0,
-          zacht=1.2)
-    # Waterexplosie, hoekijs en flankdruppels zijn geen losse onderdelen meer:
-    # ze zitten in de ring, waar ze in één doorlopende waterhuid om het schild
-    # lopen zoals op de referentie. Hun contouren blijven hierboven staan omdat
-    # `schoon_glas()` ze nodig heeft om te weten waar géén water staat.
+    # Sinds de herbouw wordt er geen enkel voorwerp meer los gesneden: crest,
+    # trekker, ophanging, emmer en ondergroep zitten in de ring gebakken zoals
+    # de referentie ze monteert, en de voorstrips (voor de z-volgorde op de
+    # brede kaart) komen uit exact datzelfde doek. De contouren hierboven
+    # blijven in gebruik voor `schoon_glas()`, de houd-zones in `kaartring()`
+    # en de leesbaarheidssnede van de compacte master.
     natglas()
+    glasvlak()
     kaartring()
     meet_overlap()
 
@@ -856,7 +1316,9 @@ def main() -> int:
     if "--preview" in sys.argv:
         blad = Image.new("RGB", (1065, 1477), (12, 16, 24))
         for naam in DELEN:
-            beeld = Image.open(UIT / f"gw-{naam}.webp")
+            # Dekkende WebP's (het glasvlak) opent Pillow als RGB; als masker
+            # moet het RGBA zijn.
+            beeld = Image.open(UIT / f"gw-{naam}.webp").convert("RGBA")
             x, y = DELEN[naam]["pixels"][:2]
             blad.paste(beeld, (x, y), beeld)
         pad = WORTEL / "screenshots" / "glazenwasser" / "onderdelen.png"
