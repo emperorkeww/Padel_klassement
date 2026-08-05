@@ -2124,6 +2124,10 @@ export function FutKaart({
   glansZaad?: string;
 }) {
   const layout = divisieLayout(tier?.key, editie);
+  // Alleen de kale platina-divisie is de Glazenwasser. Tijdelijke edities
+  // behouden hun eigen schild en zetting, ook wanneer de speler toevallig in
+  // de platina-ratingband zit (bijvoorbeeld Big Daddy in MatchDetail).
+  const glazenwasserMaster = tier?.key === "platina" && !editie;
   // Premium glans (#773): een editie met eigen glans wint van de tier-glans —
   // dezelfde cascade als bij het ornament. Is er een tijdelijke overlay actief
   // (In-Form, On Fire), dan houdt die de visuele voorrang en valt de permanente
@@ -2138,6 +2142,7 @@ export function FutKaart({
     "fut-kaart",
     tier ? `fut-kaart--${tier.key}` : "",
     editie ? `fut-kaart--${editie}` : "",
+    glazenwasserMaster ? "fut-kaart--glazenwasser" : "",
     layout?.eigenSilhouet ? "fut-kaart--eigen-silhouet" : "",
     layout?.className ?? "",
     omgedraaid ? "is-omgedraaid" : "",
@@ -2186,7 +2191,6 @@ export function FutKaart({
   // Glazenwasser (#834): de platina-divisie om dezelfde reden uit
   // glazenwasser-master.webp — raamcrest, paneelklemmen, veegbogen, medaillon en
   // het paneelraster-watermerk zitten daar in één natte glaswand.
-  const glazenwasserMaster = tier?.key === "platina" && !editie;
   const divisieLive =
     wannabeMaster || blaaskaakMaster || glazenwasserMaster
       ? undefined
@@ -2525,7 +2529,7 @@ export function FutKaartVoorkant({
       <span className="fut-kaart__naam">{naam}</span>
       {tier && (
         <span className="fut-kaart__divisie">
-          {tier.key === "platina" ? "GLAZENWASSER" : tier.label}
+          {tier.key === "platina" && !editie ? "GLAZENWASSER" : tier.label}
         </span>
       )}
       {editie && (
