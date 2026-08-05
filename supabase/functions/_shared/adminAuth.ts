@@ -8,9 +8,40 @@
 // Fail-closed: elk pad dat niet expliciet "voer-uit" oplevert, weigert.
 
 /** Alle acties die de function kent. Alles daarbuiten is een 400. */
-export const ADMIN_ACTIES = ["whoami", "list_users", "user_detail"] as const;
+export const ADMIN_ACTIES = [
+  "whoami",
+  "list_users",
+  "user_detail",
+  "audit_log",
+  // Muterend vanaf hier (#1036 deel 2).
+  "recovery_link",
+  "temp_password",
+  "resend_reset",
+  "fix_email",
+  "sign_out_all",
+  "delete_user",
+] as const;
 
 export type AdminActie = (typeof ADMIN_ACTIES)[number];
+
+/**
+ * Acties die iets aan een account veranderen en dus een auditrij moeten
+ * achterlaten. Losse lijst in plaats van "alles behalve de leesacties": een
+ * nieuwe actie valt zo standaard buiten het logboek in plaats van er stilzwijgend
+ * in te vallen met een lege details — de dispatcher dwingt af dat je kiest.
+ */
+export const MUTERENDE_ACTIES: readonly AdminActie[] = [
+  "recovery_link",
+  "temp_password",
+  "resend_reset",
+  "fix_email",
+  "sign_out_all",
+  "delete_user",
+];
+
+export function isMuterend(actie: AdminActie): boolean {
+  return MUTERENDE_ACTIES.includes(actie);
+}
 
 export type Toegang =
   | { soort: "voer-uit"; actie: AdminActie; uid: string }

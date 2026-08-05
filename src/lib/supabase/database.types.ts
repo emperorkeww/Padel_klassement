@@ -1785,6 +1785,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_guest: boolean
+          moet_wachtwoord_wijzigen: boolean
           notify_friend_request: boolean
           notify_match_reminder: boolean
           notify_new_round: boolean
@@ -1811,6 +1812,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_guest?: boolean
+          moet_wachtwoord_wijzigen?: boolean
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
@@ -1837,6 +1839,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_guest?: boolean
+          moet_wachtwoord_wijzigen?: boolean
           notify_friend_request?: boolean
           notify_match_reminder?: boolean
           notify_new_round?: boolean
@@ -2501,6 +2504,7 @@ export type Database = {
           id: number
         }[]
       }
+      admin_trek_sessies_in: { Args: { p_uid: string }; Returns: number }
       admin_user_detail: { Args: { p_uid: string }; Returns: Json }
       admin_users_overzicht: {
         Args: never

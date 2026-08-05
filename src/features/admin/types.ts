@@ -55,3 +55,12 @@ export type AdminDetail = {
   gasten: AdminDetailGast[];
   push_subscripties: number;
 };
+
+export type AdminAuditRegel = {
+  id: number;
+  actor_id: string;
+  actor_username: string | null;
+  action: string;
+  details: Record<string, unknown>;
+  created_at: string;
+};

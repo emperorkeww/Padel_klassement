@@ -297,6 +297,32 @@ Elke muterende actie uit het paneel laat een rij achter in
 `public.admin_audit_log`, met wie het deed en voor wie — nooit het uitgedeelde
 wachtwoord of de herstel-link zelf.
 
+> [!IMPORTANT]
+> De function heeft de secret **`ADMIN_SITE_URL`** nodig — de basis waarop de
+> herstel-link gebouwd wordt (bv. `https://vamos-padel.net`, zonder slash op het
+> eind). Staat hij er niet, dan valt de link terug op `http://localhost:5173` en
+> is hij voor de ontvanger waardeloos. Bewust een secret en niet iets uit de
+> request-body: dat laatste zou van deze knop een open redirect maken die een
+> geldig hersteltoken naar een vreemde host stuurt.
+>
+> ```bash
+> supabase secrets set ADMIN_SITE_URL=https://vamos-padel.net --project-ref <ref>
+> ```
+
+De **herstel-link** wijst naar `/auth/bevestigen?token_hash=…&type=recovery` —
+dezelfde landingspagina die de auth-mails sinds #1037 gebruiken — en niet naar
+Supabase's eigen `/auth/v1/verify`. Dat is opzet: elke link-preview-bot
+(WhatsApp, Slack, een mailscanner) doet een GET op een gedeelde URL en zou zo'n
+eenmalige verify-link opbranden vóór de ontvanger klikt, precies in het kanaal
+waarvoor de knop bedoeld is. Het verzilveren gebeurt in de app met `verifyOtp`,
+in JavaScript dat een bot niet uitvoert.
+
+Bij een **tijdelijk wachtwoord** zet de function `profiles.moet_wachtwoord_wijzigen`.
+Die gebruiker komt daarna niet verder dan `/reset-wachtwoord`. De vlag gaat alleen
+uit via de trigger `on_auth_password_changed` op `auth.users` — dus pas als er
+écht een nieuw wachtwoord staat, en niet doordat iemand hem zelf uitzet: de kolom
+staat bewust niet in de `grant update`-lijst van `profiles`.
+
 ---
 
 ## ⚡ Edge Functions & Cron Jobs
@@ -310,7 +336,7 @@ Asynchrone processen en integraties buiten de client om worden afgehandeld via *
 | `poll-deadline` | `pg_cron` / webhook. Beheert de speeldag-polls: stuurt herinneringen naar niet-stemmers, sluit de poll automatisch op de deadline en zet op de ochtend van een geboekte speeldag (`POLL_ROUNDS_AT`, standaard 08:00 clubtijd) de Americano-rondes klaar als er nog geen zijn (per groep uit te zetten met `auto_rondes`). |
 | `remind-group` | Client-aanroep. Handmatige actie om groepsleden via een pushnotificatie te porren om te stemmen. |
 | `playtomic-availability` | Aangeroepen door de Cloudflare Worker (`env.PLAYTOMIC_EGRESS`). Egress-hop voor de baanbeschikbaarheid: Playtomic's WAF blokkeert Cloudflare-IP's maar laat Supabase-egress door (#385). Deployen met `--no-verify-jwt`. |
-| `admin-users` | Client-aanroep vanuit het adminpaneel (`/admin`, #1036). Valideert de user-JWT, checkt `public.is_app_admin()` met de service-role en voert pas dán de gevraagde actie uit. Deployen **mét** JWT-verificatie (de standaard, dus géén entry in `config.toml`). |
+| `admin-users` | Client-aanroep vanuit het adminpaneel (`/admin`, #1036). Valideert de user-JWT, checkt `public.is_app_admin()` met de service-role en voert pas dán de gevraagde actie uit: gebruikerslijst, herstel-link, tijdelijk wachtwoord, e-mail corrigeren, overal uitloggen, account verwijderen. Deployen **mét** JWT-verificatie (de standaard, dus géén entry in `config.toml`). Vereist de secret `ADMIN_SITE_URL`. |
 
 *De definities voor database webhooks en de cron-schedules (`pg_cron`) zijn als SQL-snippets terug te vinden in `supabase/snippets/`.*
 

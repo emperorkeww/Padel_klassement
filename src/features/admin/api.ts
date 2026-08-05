@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { cached, invalidate } from "@/lib/supabase/queryCache";
 import { errorMessage } from "@/lib/utils/errors";
-import type { AdminDetail, AdminGebruiker } from "./types";
+import type { AdminAuditRegel, AdminDetail, AdminGebruiker } from "./types";
 
 // Clientkant van het adminpaneel (#1036). Eén ingang: de edge function
 // `admin-users`. Er staat hier bewust geen enkele directe tabel- of RPC-query —
@@ -82,4 +82,79 @@ export function gebruikerDetail(userId: string): Promise<AdminDetail> {
  *  beheerder bijgezet, dan klopt de cache van die sessie niet meer. */
 export function verversAdmin(): void {
   invalidate("admin:");
+}
+
+// ---- Muterende acties (#1036 deel 2) ---------------------------------------
+//
+// Geen van deze functies cachet: het antwoord is eenmalig (een link, een
+// wachtwoord) of het effect zit elders. Ze verversen wel het paneel, zodat de
+// lijst en het auditspoor meteen kloppen.
+
+/** Genereert een eenmalige herstel-link naar /reset-wachtwoord. */
+export async function herstelLink(
+  userId: string,
+): Promise<{ link: string; vervalt_over_minuten: number }> {
+  const uit = await roepAdmin<{ link: string; vervalt_over_minuten: number }>(
+    "recovery_link",
+    { user_id: userId },
+  );
+  verversAdmin();
+  return uit;
+}
+
+/** Zet een tijdelijk wachtwoord en dwingt een wissel af bij de volgende login.
+ *  Het wachtwoord komt hier één keer langs en wordt nergens bewaard. */
+export async function tijdelijkWachtwoord(userId: string): Promise<string> {
+  const { wachtwoord } = await roepAdmin<{ wachtwoord: string }>("temp_password", {
+    user_id: userId,
+  });
+  verversAdmin();
+  return wachtwoord;
+}
+
+/** Stuurt de gewone herstelmail opnieuw. Vangnet, geen hoofdweg: de ingebouwde
+ *  SMTP is stevig gerate-limit. */
+export async function herstelmailOpnieuw(userId: string): Promise<void> {
+  await roepAdmin<{ ok: true }>("resend_reset", { user_id: userId });
+  verversAdmin();
+}
+
+/** Corrigeert een verkeerd ingetikt e-mailadres en bevestigt het meteen. */
+export async function corrigeerEmail(userId: string, email: string): Promise<void> {
+  await roepAdmin<{ ok: true }>("fix_email", { user_id: userId, email });
+  verversAdmin();
+}
+
+/** Trekt alle sessies van een gebruiker in. */
+export async function trekSessiesIn(userId: string): Promise<number> {
+  const { sessies } = await roepAdmin<{ ok: true; sessies: number }>("sign_out_all", {
+    user_id: userId,
+  });
+  verversAdmin();
+  return sessies;
+}
+
+export function auditVoor(userId: string): Promise<AdminAuditRegel[]> {
+  return cached(
+    `admin:audit:${userId}`,
+    async () =>
+      (await roepAdmin<{ regels: AdminAuditRegel[] }>("audit_log", { user_id: userId }))
+        .regels,
+    30_000,
+  );
+}
+
+/** Verwijdert een account definitief. `username` moet exact kloppen; de edge
+ *  function controleert dat zelf opnieuw — de dialoog is ergonomie, de
+ *  servercheck is de grendel. */
+export async function verwijderAccount(
+  userId: string,
+  username: string,
+): Promise<{ groepen_zonder_eigenaar: number }> {
+  const uit = await roepAdmin<{ ok: true; groepen_zonder_eigenaar: number }>(
+    "delete_user",
+    { user_id: userId, username },
+  );
+  verversAdmin();
+  return uit;
 }

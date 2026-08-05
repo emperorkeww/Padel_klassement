@@ -141,6 +141,11 @@ export function makeSupabaseMock(opts: MockOptions = {}) {
         .fn()
         .mockResolvedValue({ data: { user: {}, session: null }, error: null }),
       resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+      // Herstel-link uit het adminpaneel (#1036): het token zit in de URL en
+      // wordt door ResetPassword zelf verzilverd.
+      verifyOtp: vi
+        .fn()
+        .mockResolvedValue({ data: { session: null, user: null }, error: null }),
     },
     from: vi.fn((table: string) =>
       makeQuery({ data: tables[table] ?? [], error: null }),

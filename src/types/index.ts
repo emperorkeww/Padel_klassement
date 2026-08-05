@@ -23,6 +23,12 @@ export interface Profile {
    *  speler kiest zelf hoe hard Coach Rudy hém in zijn eigen feed toespreekt,
    *  los van de groep-instelling van een eigenaar. Ontbreekt = 'gemeen'. */
   roast_intensiteit?: RoastIntensiteit;
+  /** Verplichte wachtwoordwissel (#1036): staat dit aan, dan kreeg deze speler
+   *  een tijdelijk wachtwoord van een beheerder en stuurt ProtectedRoute hem
+   *  naar /reset-wachtwoord tot hij zelf een nieuw wachtwoord kiest. Alleen de
+   *  edge function zet hem; uit gaat hij via een trigger op auth.users.
+   *  Ontbreekt/false = niets aan de hand. */
+  moet_wachtwoord_wijzigen?: boolean;
   /** Cosmetische weergavevoorkeur (#542): toont het klassement de waarnemend
    *  dictator (Kylian Mbappé, #530) bovenaan zolang niemand de El Padelissimo-
    *  tier haalt? Ontbreekt/true = zichtbaar (bestaand gedrag). */
