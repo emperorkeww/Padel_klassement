@@ -14,11 +14,10 @@
 // y van de kaarthoogte), zodat er één stabiel coördinatenstelsel is en de kaart
 // als geheel schaalt. Er staat nergens een pixelwaarde of een breakpoint.
 //
-// De artworklagen komen uit het bestaande `glazenwasser-master.webp`: elke laag
-// is een uitsnede uit dát canvas, geen nieuw bestand. `bron` is die uitsnede in
-// canvaspixels, `doel` is waar hetzelfde onderdeel in de referentie staat. Beide
-// reeksen komen uit `python3 scripts/glazenwasser-master.py --layout`; wie het
-// artwork opnieuw genereert, kopieert die uitvoer hierheen.
+// De artworklagen worden reproduceerbaar uit de referentie gebouwd door
+// `scripts/glazenwasser-onderdelen.py`. Achterwater, metalen frame en voorste
+// schoonmaakprops gebruiken hetzelfde volledige 100:139-register, zodat hun
+// positie nooit door afzonderlijke uitsnedes of transforms uit elkaar loopt.
 
 /** Canvasmaat van glazenwasser-master.webp. */
 export const GW_CANVAS = { breedte: 1105, hoogte: 1536 } as const;
@@ -107,10 +106,9 @@ export interface GwLaag {
   /** Hoogte waarop deze laag met zijn groep meeschuift. */
   ankerY?: number;
   /** `doel` staat al in kaartfracties in plaats van in referentiefracties: de
-   *  verticale afbeelding is dan al in de pixels gebakken. Alleen de ring, die
-   *  in `scripts/glazenwasser-onderdelen.py` met exact dezelfde stuksgewijze
-   *  afbeelding is herbemonsterd — hem hier nóg een keer verschuiven zou hem
-   *  dubbel verrekenen. */
+   *  volledige stage-registratie is dan al in de pixels gebakken. Frame,
+   *  achterwater en frontprops nogmaals verschuiven zou die registratie dubbel
+   *  verrekenen. */
   voorbewerkt?: boolean;
   /** Contactschaduw: een tweede, zwart geblurde kopie van hetzelfde onderdeel
    *  eronder. Dat is wat een voorwerp op de lijst laat rusten in plaats van
@@ -123,7 +121,8 @@ export interface GwLaag {
 import DOZEN from "./assets/gw-onderdelen.json";
 
 export type GwBron =
-  | "ring"
+  | "frame"
+  | "front-props"
   | "water-back"
   | "glas";
 
@@ -155,19 +154,23 @@ export const GW_LAGEN: readonly GwLaag[] = [
     tegel: true,
     z: 30,
   },
-  // De hele omlijsting als één illustratie: lijst, ijs, flankdruppels, schuim,
-  // bellen, condens en de waterexplosie onderin. Dit verving vijf losse lagen
-  // (topFoamLeft/Right, sideDripsLeft/Right, bottomWater) én de in CSS gebouwde
-  // lijst. Op de referentie zijn dat geen aparte dingen — het ijs ligt op de
-  // rail, het water loopt van de bovenhoek langs de flank naar de plas onderin —
-  // en elke knip daartussen was een zichtbare naad. In één stuk is er niets om
-  // naadloos te maken, en het licht klopt overal met zichzelf omdat het uit één
-  // render komt.
+  // De metalen rail met de geïntegreerde boven- en onderbadge. Deze laag staat
+  // boven het glas maar onder content en schoonmaakprops.
   {
-    naam: "cardRing",
-    bron: "ring",
-    doel: doos("ring"),
+    naam: "cardFrame",
+    bron: "frame",
+    doel: doos("frame"),
     voorbewerkt: true,
+    z: 40,
+  },
+  // Echte frame-breakers: trekker, voorste schuimlaag, emmer/doek en spons.
+  // Zij hebben een eigen transparante bron zonder metalen railpixels.
+  {
+    naam: "frontProps",
+    bron: "front-props",
+    doel: doos("front-props"),
+    voorbewerkt: true,
+    schaduw: 0.008,
     z: 70,
   },
 ];

@@ -1,5 +1,5 @@
 {
-  "ring": {
+  "frame": {
     "doos": [
       0.0,
       0.0,
@@ -9,12 +9,31 @@
     "pixels": [
       0,
       0,
-      1105,
-      1536
+      553,
+      768
     ],
-    "alfa": 0.2897,
-    "dekking": 0.2896,
-    "kB": 346,
+    "alfa": 0.1912,
+    "dekking": 0.192,
+    "kB": 77,
+    "overlap": {},
+    "voorbewerkt": true
+  },
+  "front-props": {
+    "doos": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+    ],
+    "pixels": [
+      0,
+      0,
+      553,
+      768
+    ],
+    "alfa": 0.1676,
+    "dekking": 0.1674,
+    "kB": 83,
     "overlap": {},
     "voorbewerkt": true
   },
@@ -31,9 +50,9 @@
       1105,
       1536
     ],
-    "alfa": 0.0462,
-    "dekking": 0.0298,
-    "kB": 181,
+    "alfa": 0.0443,
+    "dekking": 0.028,
+    "kB": 179,
     "overlap": {},
     "voorbewerkt": true
   },

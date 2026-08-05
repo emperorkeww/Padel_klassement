@@ -1,8 +1,8 @@
-/* De drie instanties delen bewust één register. Selectie gebeurt met de
-   bestaande schildclip en het voormasker, nooit met een afwijkende transform.
+/* De drie instanties delen bewust één register. Back/inside gebruiken de base-
+   master; front gebruikt een transparante props-master zonder framepixels.
    Het canvas van glazenwasser-master.webp is 1024 × 1440; het kaartvak daarin
    (x 72..952, y 160..1383) volgt exact uit deze drie waarden, en
-   scripts/glazenwasser-master.py rekent ze uit dezelfde constanten. */
+   scripts/glazenwasser-onderdelen.py rekent ze uit dezelfde constanten. */
 
 .fut-kaart.fut-kaart--glazenwasser {
   --glazenwasser-master-left: -8.18%;
@@ -78,13 +78,12 @@
   filter: none;
 }
 
-/* Crest, hoekschuim, trekkers, sopemmer, badge en de onderste helft van de
-   waterexplosie liggen vóór het frame. */
+/* Hoekschuim, trekker, sopemmer/doek, spons en voorste druppels liggen vóór het
+   frame. De geïntegreerde badges blijven bewust onderdeel van de framelaag. */
 .glazenwasser-effect--voor {
-  /* Expliciet boven voor- én achterkant van de flipper. Het WebP-masker laat
-     hier alleen crest, badges, gereedschap en schuim door; de metalen ring
-     blijft in de kaartlaag eronder. De transparante
-     zones blijven klikbaar via de onderliggende kaartknop. */
+  /* Expliciet boven voor- én achterkant van de flipper. De bron zelf bevat
+     uitsluitend gereedschap en schuim; er is geen runtime-masker meer dat per
+     browser anders kan worden afgevlakt. */
   z-index: var(--glazenwasser-laag-voor, 4);
 }
 
@@ -112,9 +111,6 @@
 }
 
 .glazenwasser-effect--voor .glazenwasser-effect__master {
-  -webkit-mask: url("./assets/glazenwasser-front-mask.webp") center / 100% 100%
-    no-repeat;
-  mask: url("./assets/glazenwasser-front-mask.webp") center / 100% 100% no-repeat;
   filter: drop-shadow(
     0 calc(var(--fut-kw) * 0.008) calc(var(--fut-kw) * 0.014)
       rgba(4, 16, 30, 0.72)

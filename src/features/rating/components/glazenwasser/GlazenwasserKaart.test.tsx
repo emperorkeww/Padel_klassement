@@ -47,18 +47,24 @@ describe("Glazenwasser-layout", () => {
     }
   });
 
-  it("houdt achterwater en de voorste ring in aparte dieptelagen", () => {
+  it("houdt achterwater, frame en props in aparte dieptelagen", () => {
     expect(GW_LAGEN.find((l) => l.naam === "waterBack")?.z).toBeLessThan(20);
-    expect(GW_LAGEN.find((l) => l.naam === "cardRing")?.z).toBeGreaterThan(60);
+    const frame = GW_LAGEN.find((l) => l.naam === "cardFrame");
+    const props = GW_LAGEN.find((l) => l.naam === "frontProps");
+    expect(frame?.z).toBeLessThan(50);
+    expect(props?.z).toBeGreaterThan(60);
+    expect(props!.z).toBeGreaterThan(frame!.z);
   });
 
-  it("rekent de ring niet twee keer om", () => {
-    // De ring staat al in kaartfracties; `laagVensterStijl` mag hem dus niet nóg
+  it("rekent frame en props niet twee keer om", () => {
+    // De assets staan al in kaartfracties; `laagVensterStijl` mag ze dus niet nóg
     // een keer door `naarKaartY` halen.
-    const ringLaag = GW_LAGEN.find((l) => l.naam === "cardRing");
-    expect(ringLaag?.voorbewerkt, "ring mist de voorbewerkt-vlag").toBe(true);
-    const stijl = laagVensterStijl(ringLaag!) as unknown as Record<string, string>;
-    expect(stijl.top).toBe(`${ringLaag!.doel[1] * 100}%`);
+    for (const naam of ["cardFrame", "frontProps"]) {
+      const laag = GW_LAGEN.find((l) => l.naam === naam);
+      expect(laag?.voorbewerkt, `${naam} mist de voorbewerkt-vlag`).toBe(true);
+      const stijl = laagVensterStijl(laag!) as unknown as Record<string, string>;
+      expect(stijl.top).toBe(`${laag!.doel[1] * 100}%`);
+    }
   });
 
   it("registreert de referentie zonder het artwork uit te rekken", () => {

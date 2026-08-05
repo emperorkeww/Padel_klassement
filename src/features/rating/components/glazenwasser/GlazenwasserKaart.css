@@ -233,7 +233,8 @@
 }
 
 .gw-kaart__laag[data-laag="waterBack"],
-.gw-kaart__laag[data-laag="cardRing"] {
+.gw-kaart__laag[data-laag="cardFrame"],
+.gw-kaart__laag[data-laag="frontProps"] {
   overflow: visible;
   /* De bron is een 1024 × 1536 poster met circa 8% vrije marge per flank.
      Andere FUT-masters benutten nagenoeg het hele 100 × 139-vak. Met 1,18
@@ -243,7 +244,8 @@
   transform-origin: 50% 50%;
 }
 
-.gw-kaart__laag[data-laag="cardRing"] img {
+.gw-kaart__laag[data-laag="cardFrame"] img,
+.gw-kaart__laag[data-laag="frontProps"] img {
   filter: drop-shadow(
     0 calc(var(--gw-kw) * 0.008) calc(var(--gw-kw) * 0.012)
       rgba(3, 17, 34, 0.42)

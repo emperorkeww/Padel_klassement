@@ -9,7 +9,7 @@ import { tierFor } from "@/features/rating/tiers";
 const GLAZENWASSER = tierFor(1150);
 
 describe("Glazenwasser-mastereffect", () => {
-  it("gebruikt één bron voor achter, binnen en voor", () => {
+  it("deelt het register maar houdt frame en voorgrond fysiek apart", () => {
     const { container } = render(
       <FutKaart tier={GLAZENWASSER} voor={<span>Alice</span>} />,
     );
@@ -27,8 +27,10 @@ describe("Glazenwasser-mastereffect", () => {
       "voor",
     ]);
     expect(bronnen).toHaveLength(3);
-    expect(new Set(bronnen).size).toBe(1);
+    expect(new Set(bronnen).size).toBe(2);
     expect(bronnen[0]).toContain("glazenwasser-master");
+    expect(bronnen[1]).toBe(bronnen[0]);
+    expect(bronnen[2]).toContain("glazenwasser-front");
   });
 
   it("monteert de binneninstantie in het echte kaartvlak", () => {

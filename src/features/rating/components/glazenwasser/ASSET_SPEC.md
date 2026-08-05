@@ -15,10 +15,11 @@ terwijl de kaartbox exact dezelfde dimensies houdt als elke andere FUT-kaart.
 | asset | inhoud | afnemer |
 | --- | --- | --- |
 | `gw-water-back.webp` | buitenste bellen en waterspatten | `GlazenwasserKaart`, achter het schild |
-| `gw-ring.webp` | zilver/marine/cyaan frame, topbadge, rechtertrekker, emmer met spray/doek, spons en onderbadge | `GlazenwasserKaart`, vóór frame en inhoud |
+| `gw-frame.webp` | zilver/marine/cyaan frame met geïntegreerde top- en onderbadge | `GlazenwasserKaart`, boven glas en onder content/props |
+| `gw-front-props.webp` | rechtertrekker, emmer met spray/doek, spons en voorste schuim | `GlazenwasserKaart`, vóór het frame |
 | `gw-glas.webp` | naadloze, halftransparante natglastegel | geclipt kaartvlak |
-| `glazenwasser-master.webp` | dezelfde achter- en ringlagen geregistreerd op de compacte kaartstage | `GlazenwasserEffect` in `FutKaart` |
-| `glazenwasser-front-mask.webp` | half-size RGBA-alfamasker van uitsluitend crest, badges, trekker, emmer, spons en schuim | voorselectie boven het compacte frame; CSS/canvas schaalt naar mastermaat |
+| `glazenwasser-master.webp` | achterwater en metalen frame geregistreerd op de compacte kaartstage | achter-/binnenlaag van `GlazenwasserEffect` |
+| `glazenwasser-front.webp` | half-size transparante master met uitsluitend trekker, emmer/doek, spons en voorste schuim | voorlaag van DOM en canvas; CSS/canvas schaalt naar mastermaat |
 | `gw-onderdelen.json` | maten, alfa, dekking en bestandsgrootte | layout- en assettests |
 
 ## Laagcontract
@@ -28,11 +29,12 @@ De grote kaart en de compacte kaart delen hetzelfde beeldmateriaal:
 1. `waterBack` staat achter de echte kaartzijde;
 2. de natglastegel wordt door het echte Glazenwasser-schild geclipt;
 3. avatar en dynamische data blijven React-inhoud;
-4. `cardRing` staat vóór de lijst en bevat alleen referentie-artwork buiten de
-   veilige datazones;
-5. de compacte `FutKaart` rendert één master achter, binnen en vóór; het
-   frontmask laat uitsluitend de frame-breakers door. De metalen ring blijft in
-   de binnenlaag, zodat hij nooit over emmer, spons of trekker heen schildert.
+4. `cardFrame` staat boven het glas maar onder de dynamische inhoud;
+5. `frontProps` staat als zelfstandige transparante bron vóór frame en inhoud,
+   met `pointer-events: none`;
+6. de compacte `FutKaart` gebruikt een base-master voor achter/binnen en een
+   fysiek afzonderlijke front-master. Geen runtime-masker kan daardoor alsnog
+   framepixels over emmer, spons of trekker selecteren.
 
 De profielafbeelding, rating, naam, divisietekst en waarden worden nooit uit de
 referentie overgenomen. Zij blijven dynamisch. De vaste divisietekst op de grote
@@ -51,8 +53,8 @@ modal of carousel begrenst documentoverflow.
 ## Kwaliteitscontrole
 
 `glazenwasserAssets.test.ts` controleert aanwezigheid, maten, alfa en
-stage-registratie. `GlazenwasserEffect.test.tsx` borgt dezelfde masterbron voor
-achter/binnen/voor en de montage van de binnenlaag in het echte kaartvlak.
+stage-registratie. `GlazenwasserEffect.test.tsx` borgt de gedeelde registratie,
+de afzonderlijke frontbron en de montage buiten de 3D-flipper.
 Visuele controle gebeurt via `/dev/glazenwasser` en:
 
 ```bash

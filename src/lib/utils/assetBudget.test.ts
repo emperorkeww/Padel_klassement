@@ -24,7 +24,7 @@ const ASSETS = pad("../../../dist/assets");
 // wordt eroverheen getekend) zakte hij van 0,35 naar 0,19 MB en staat het
 // geheel op 9,99 MB. Terug naar 10,5 — genoeg lucht voor een volgende master,
 // krap genoeg om er een te vangen die niet gecomprimeerd is. Het
-// grote-kaartartwork (gw-ring.webp e.a.) telt hier níét in mee: dat hangt achter
+// grote-kaartartwork (gw-frame.webp e.a.) telt hier níét in mee: dat hangt achter
 // een DEV-only route en valt bij een productiebuild weg. De kaarteffect-masters (dictator, on fire,
 // storm, big daddy, ballenraper, wannabe, goat, pias, piet, blaaskaak) zijn
 // samen ~2,6 MB en zijn de enige structurele groei sinds #732. Ze staan al op

@@ -15,7 +15,8 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { tierTitle, type Tier } from "@/features/rating/tiers";
-import ring from "./assets/gw-ring.webp";
+import frame from "./assets/gw-frame.webp";
+import frontProps from "./assets/gw-front-props.webp";
 import waterBack from "./assets/gw-water-back.webp";
 import glas from "./assets/gw-glas.webp";
 import {
@@ -32,7 +33,8 @@ import "./GlazenwasserKaart.css";
 
 /** De losse onderdelen. Eén plek waar een sleutel aan een bestand hangt. */
 const GW_BRONNEN: Record<GwBron, string> = {
-  ring,
+  frame,
+  "front-props": frontProps,
   "water-back": waterBack,
   glas,
 };

@@ -44,18 +44,18 @@ const ONDERDELEN = Object.entries(DOZEN) as [string, Onderdeel][];
 const CANVAS = { breedte: 1105, hoogte: 1536 };
 
 describe("Glazenwasser-onderdelen", () => {
-  it("gebruikt voor de voorlaag een echt alfamasker", () => {
-    const masker = readFileSync(
+  it("gebruikt voor de voorlaag een eigen transparante WebP", () => {
+    const voorgrond = readFileSync(
       resolve(
         process.cwd(),
-        "src/features/rating/components/glazenwasser/assets/glazenwasser-front-mask.webp",
+        "src/features/rating/components/glazenwasser/assets/glazenwasser-front.webp",
       ),
     );
-    expect(masker.toString("ascii", 0, 4)).toBe("RIFF");
-    expect(masker.toString("ascii", 12, 16)).toBe("VP8X");
+    expect(voorgrond.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(voorgrond.toString("ascii", 12, 16)).toBe("VP8X");
     // Bit 4 van de VP8X-featureflags betekent dat het bestand een alfakanaal
-    // bevat. Zonder dit bit ziet CSS het hele rechthoekige masker als opaak.
-    expect(masker[20] & 0x10).toBe(0x10);
+    // bevat. De voorgrondbron mag nooit een dichte rechthoek worden.
+    expect(voorgrond[20] & 0x10).toBe(0x10);
   });
 
   it("levert elk onderdeel dat de layout opvraagt", () => {

@@ -1,11 +1,9 @@
-// Glazenwasser-breakout: één transparant master-artwork in drie pixelmatig
-// geregistreerde lagen. Alleen clipping en zichtselectie verschillen. Het artwork
-// draagt de raamcrest, het schuim over de bovenhoeken, de trekker met sopstrepen,
-// de ophanging met sopemmer, de schildbadge met de tweede trekker, de
-// waterexplosie langs de onderrand en de natte glaswand in het kaartvlak — de
-// vroegere vector-crest, paneelklemmen, veegbogen en het glasmedaillon zijn
-// daarmee vervangen door één samenhangende bron.
+// Glazenwasser-breakout met één gedeeld register en fysiek gescheiden bronnen:
+// back/inside dragen achterwater en frame, front draagt uitsluitend de
+// frame-breakers. Daardoor kan de metalen rail nooit in de voorgrondpixels van
+// emmer, spons, schuim of trekker terechtkomen.
 
+import glazenwasserFront from "./assets/glazenwasser-front.webp";
 import glazenwasserMaster from "./assets/glazenwasser-master.webp";
 import "./GlazenwasserEffect.css";
 
@@ -21,6 +19,11 @@ function debugActief(): boolean {
 
 function GlazenwasserMaster({ laag }: { laag: GlazenwasserLaag }) {
   const debug = debugActief() ? " glazenwasser-effect--debug" : "";
+  const voor = laag === "voor";
+  const bron = voor ? glazenwasserFront : glazenwasserMaster;
+  const bestandsnaam = voor
+    ? "glazenwasser-front.webp"
+    : "glazenwasser-master.webp";
 
   return (
     <span
@@ -30,10 +33,10 @@ function GlazenwasserMaster({ laag }: { laag: GlazenwasserLaag }) {
     >
       <span
         className="glazenwasser-effect__master"
-        data-naam="glazenwasser-master.webp"
+        data-naam={bestandsnaam}
       >
         <img
-          src={glazenwasserMaster}
+          src={bron}
           alt=""
           draggable={false}
           decoding="sync"
