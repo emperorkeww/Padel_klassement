@@ -103,7 +103,11 @@ export function AdminPaneel() {
       )}
 
       {gekozen && (
-        <GebruikerPaneel gebruiker={gekozen} onSluit={() => setGekozen(null)} />
+        <GebruikerPaneel
+          gebruiker={gekozen}
+          onSluit={() => setGekozen(null)}
+          onGewijzigd={gebruikers.reload}
+        />
       )}
     </main>
   );

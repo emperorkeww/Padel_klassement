@@ -56,6 +56,15 @@ create table public.profiles (
   notify_result boolean not null default true,
   notify_friend_request boolean not null default true,
   notify_match_reminder boolean not null default true,
+  -- Verplichte wachtwoordwissel (#1036): gezet door de edge function admin-users
+  -- nadat een beheerder een tijdelijk wachtwoord heeft uitgedeeld. Staat hij aan,
+  -- dan komt die gebruiker niet verder dan /reset-wachtwoord.
+  --
+  -- Deze kolom hoort NIET in de grant-update-lijst van policies/profiles.sql: wie
+  -- zijn eigen vlag kan uitzetten, kan met een tijdelijk wachtwoord blijven
+  -- rondlopen. Uit gaat hij alleen via de trigger on_auth_password_changed
+  -- hieronder — dus pas als er écht een nieuw wachtwoord staat.
+  moet_wachtwoord_wijzigen boolean not null default false,
   -- Gastspeler zonder account, en (voor een gast) de speler die hem aanmaakte.
   is_guest boolean not null default false,
   owner_id uuid references auth.users (id) on delete cascade,
@@ -128,6 +137,40 @@ $$;
 create trigger on_auth_user_deleted
   after delete on auth.users
   for each row execute function public.handle_deleted_user();
+
+-- Verplichte wachtwoordwissel afvinken (#1036). Zodra er écht een nieuw
+-- wachtwoord staat, valt de vlag weg.
+--
+-- Waarom een trigger en geen RPC die de client na updateUser() aanroept: zo'n
+-- RPC zou `execute` aan authenticated moeten geven, en daarmee is de vlag alsnog
+-- zelf uit te zetten — precies wat de ontbrekende kolom-grant wilde voorkomen.
+-- De trigger dekt bovendien élke weg waarlangs een wachtwoord verandert: het
+-- adminpaneel, een gewone self-service herstelmail, of de instellingen.
+--
+-- SECURITY DEFINER is hier noodzakelijk: GoTrue schrijft als supabase_auth_admin
+-- en die rol heeft geen rechten op public.profiles.
+create function public.handle_password_changed()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = ''
+as $$
+begin
+  update public.profiles
+     set moet_wachtwoord_wijzigen = false
+   where id = new.id and moet_wachtwoord_wijzigen;
+  return null;
+end;
+$$;
+
+-- `of encrypted_password` + de when-clausule: zonder allebei zou élke update op
+-- auth.users (een login schrijft last_sign_in_at) de vlag wissen, en dan is de
+-- gedwongen wissel precies één login lang geldig.
+create trigger on_auth_password_changed
+  after update of encrypted_password on auth.users
+  for each row
+  when (new.encrypted_password is distinct from old.encrypted_password)
+  execute function public.handle_password_changed();
 
 -- Guard op de gegenereerde portret-kolommen: dictator (#554) én pias (#682) in
 -- één function, want twee guards met bijna-gelijke regels op dezelfde tabel

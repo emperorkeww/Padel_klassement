@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Mock } from "vitest";
@@ -79,5 +79,61 @@ describe("<ResetPassword />", () => {
     expect(
       await screen.findByText(/herstellink is ongeldig of verlopen/i),
     ).toBeInTheDocument();
+  });
+});
+
+// De gedwongen wachtwoordwissel (#1036). Het verzilveren van een herstel-link
+// gebeurt niet hier maar op /auth/bevestigen (#1037); zie AuthBevestigen.test.
+describe("<ResetPassword /> en het adminpaneel (#1036)", () => {
+  function renderMet(zoek: string) {
+    return render(
+      <MemoryRouter initialEntries={[`/reset-wachtwoord${zoek}`]}>
+        <AuthProvider>
+          <ResetPassword />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+  }
+
+
+
+  it("toont bij ?verplicht=1 de tijdelijk-wachtwoordtekst én een uitweg", async () => {
+    renderMet("?verplicht=1");
+    expect(
+      await screen.findByText(/tijdelijk wachtwoord gekregen/i),
+    ).toBeInTheDocument();
+    // Zonder deze knop zit iemand die zijn tijdelijke wachtwoord kwijt is vast:
+    // elke andere route stuurt hem hierheen terug.
+    expect(screen.getByRole("button", { name: /uitloggen/i })).toBeInTheDocument();
+  });
+
+  it("toont zonder ?verplicht de gewone tekst en géén uitlogknop", async () => {
+    renderMet("");
+    expect(
+      await screen.findByText(/kies een nieuw wachtwoord voor je account/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /uitloggen/i })).toBeNull();
+  });
+
+  it("leegt de profielcache na een geslaagde wijziging", async () => {
+    const { cached, cacheSize, invalidateAll } = await import(
+      "@/lib/supabase/queryCache"
+    );
+    invalidateAll();
+    await cached("profiles:one:abc", async () => ({ moet_wachtwoord_wijzigen: true }));
+    expect(cacheSize()).toBeGreaterThan(0);
+
+    renderMet("?verplicht=1");
+    // Het formulier verschijnt pas als de sessie geladen is.
+    await userEvent.type(
+      await screen.findByLabelText(/nieuw wachtwoord/i),
+      "geheim123",
+    );
+    await userEvent.type(screen.getByLabelText(/bevestig wachtwoord/i), "geheim123");
+    await userEvent.click(screen.getByRole("button", { name: /opslaan/i }));
+
+    // Zónder dit serveert getProfile de oude rij met de vlag nog aan, en stuurt
+    // ProtectedRoute je meteen terug hierheen — een strakke lus.
+    await waitFor(() => expect(cacheSize()).toBe(0));
   });
 });

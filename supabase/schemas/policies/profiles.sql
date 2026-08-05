@@ -29,6 +29,12 @@ create policy "Gebruiker kan eigen profiel bijwerken"
 -- kolom bij, voeg die hier én in de migratie toe. anon (geen UPDATE-policy) en
 -- service_role: ongemoeid. De portret-opt-outs (dictator_portret #554,
 -- pias_portret #682) staan er wél in — de gegenereerde *_avatar_url/-bron niet.
+--
+-- moet_wachtwoord_wijzigen (#1036) hoort hier bewust NIET bij, en dat is geen
+-- vergetelheid: wie zijn eigen vlag kan uitzetten, kan met een door een
+-- beheerder uitgedeeld tijdelijk wachtwoord blijven rondlopen. De vlag gaat
+-- alleen uit via de trigger on_auth_password_changed, dus pas als er écht een
+-- nieuw wachtwoord staat. Zie supabase/tests/verplichte_wachtwoordwissel_test.sql.
 revoke update on table public.profiles from authenticated;
 grant update (username, full_name, avatar_url, discoverable, allow_friend_requests,
               featured_badges, roast_schild, roast_intensiteit,

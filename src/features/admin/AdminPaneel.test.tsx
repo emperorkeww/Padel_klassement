@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { Mock } from "vitest";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ToastProvider } from "@/ui/ToastProvider";
 
 // De function-mock beslist per `action` wat er terugkomt, zodat één test kan
 // nagaan dat er ná een afwijzende whoami niets meer gevraagd wordt.
@@ -57,6 +58,7 @@ vi.mock("@/lib/supabase/client", async () => {
           const actie = (body as { action?: string }).action;
           if (actie === "whoami") return { admin: isAdminAntwoord };
           if (actie === "list_users") return { users: GEBRUIKERS };
+          if (actie === "audit_log") return { regels: [] };
           if (actie === "user_detail") {
             return {
               detail: {
@@ -90,7 +92,9 @@ function renderPaneel() {
   return render(
     <MemoryRouter>
       <AuthProvider>
-        <AdminPaneel />
+        <ToastProvider>
+          <AdminPaneel />
+        </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
   );

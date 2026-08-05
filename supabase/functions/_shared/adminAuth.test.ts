@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ADMIN_ACTIES, bepaalToegang, isAdminActie } from "./adminAuth.ts";
+import {
+  ADMIN_ACTIES,
+  bepaalToegang,
+  isAdminActie,
+  isMuterend,
+  MUTERENDE_ACTIES,
+} from "./adminAuth.ts";
 
 const UID = "d0000000-0000-0000-0000-000000000002";
 
@@ -70,6 +76,33 @@ describe("bepaalToegang", () => {
         actie,
         uid: UID,
       });
+    }
+  });
+});
+
+describe("MUTERENDE_ACTIES", () => {
+  it("bevat elke actie die een account verandert, en geen enkele leesactie", () => {
+    // Deze lijst bepaalt wat er in het auditspoor terechtkomt. Valt er een
+    // muterende actie buiten, dan gebeurt er iets met iemands account zonder
+    // spoor — en dat is precies wat het logboek moest voorkomen.
+    expect([...MUTERENDE_ACTIES].sort()).toEqual(
+      [
+        "delete_user",
+        "fix_email",
+        "recovery_link",
+        "resend_reset",
+        "sign_out_all",
+        "temp_password",
+      ].sort(),
+    );
+    for (const lees of ["whoami", "list_users", "user_detail", "audit_log"] as const) {
+      expect(isMuterend(lees)).toBe(false);
+    }
+  });
+
+  it("noemt alleen acties die de function ook echt kent", () => {
+    for (const actie of MUTERENDE_ACTIES) {
+      expect(isAdminActie(actie)).toBe(true);
     }
   });
 });

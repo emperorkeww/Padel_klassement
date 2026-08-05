@@ -521,6 +521,17 @@ textarea {
   font-size: var(--fs-md);
   line-height: 1.5;
 }
+/* Type-to-confirm (#1036): het veld waarin je de naam moet overtypen vóór de
+   bevestigknop aangaat. */
+.confirm__bevestig {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.confirm__bevestig code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .confirm__actions {
   display: flex;
   justify-content: flex-end;
