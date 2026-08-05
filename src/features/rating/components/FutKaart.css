@@ -1684,86 +1684,80 @@
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 .fut-kaart.fut-kaart--piet {
-  /* Het perkament van referentie_zwarte_piet.png is warmer en donkerder dan
-     deze stops. Bewust niet meegegaan (#834): .hero--piet spiegelt deze
-     materiaalwaarden (bewaakt door futKaartCanvas.test.ts, #644) en op een
-     donkerder onderstop haalt het lakrood #8e2117 van de hero nog maar 3,8:1.
-     De rook uit piet-master.webp is in plaats daarvan aan de assetkant
-     versterkt, zodat hij op dit lichtere vlak nog als roet leest. */
-  --kaart-hi: #f4eedb;
-  --kaart-mid: #e6ddc2;
-  --kaart-lo: #cfc4a4;
-  --kaart-ink: #201d16;
-  --kaart-ink-soft: #5d5645;
-  --kaart-lijn: #a2977a;
-  --editie-kleur: #a8271b;
-  --kaart-frame-hi: #23211d;
-  --kaart-frame-lo: #131211;
+  /* Zwart-goud, naar de referentie (#834). Het vlak is geen verloop meer maar
+     de gewatteerde ruit uit piet-vlak.webp (PietEffect.css); deze drie stops
+     blijven staan als materiaalwaarden — de canvas-/posterroute tekent er zijn
+     vlak mee en .hero--piet spiegelt ze (bewaakt door futKaartCanvas.test.ts,
+     #644).
+
+     De inkt is antiek goud in plaats van zwart. Dat is geen smaak maar
+     noodzaak: op #17140f haalt het oude #201d16 nog geen 1,1:1. #e7cf95 haalt
+     11,9:1 op de donkerste stop, en het zachte #b9a271 nog 6,4:1 — allebei ruim
+     boven AA, ook op de hero, waar dezelfde waarden landen. */
+  --kaart-hi: #23201a;
+  --kaart-mid: #17140f;
+  --kaart-lo: #0b0906;
+  --kaart-ink: #e7cf95;
+  --kaart-ink-soft: #b9a271;
+  --kaart-lijn: #8d7539;
+  --editie-kleur: #e0554a;
+  --kaart-frame-hi: #1a1610;
+  --kaart-frame-lo: #080706;
   --kaart-frame-dikte: clamp(3px, calc(var(--fut-kw) * 0.02), 4.5px);
   --kaart-liner-dikte: clamp(1.5px, calc(var(--fut-kw) * 0.01), 2.2px);
   --kaart-keyline-dikte: clamp(1px, calc(var(--fut-kw) * 0.005), 1.2px);
-  --kaart-avatar-ring: #23211d;
-  --kaart-avatar-ring-buiten: rgba(255, 250, 235, 0.78);
+  --kaart-avatar-ring: #14120d;
+  --kaart-avatar-ring-buiten: rgba(232, 208, 149, 0.86);
   --kaart-naamplaat: linear-gradient(
     90deg,
     transparent,
-    rgba(45, 42, 36, 0.1) 14%,
-    rgba(255, 250, 235, 0.28) 50%,
-    rgba(168, 39, 27, 0.08) 86%,
+    rgba(141, 117, 57, 0.16) 14%,
+    rgba(231, 207, 149, 0.22) 50%,
+    rgba(141, 117, 57, 0.16) 86%,
     transparent
   );
   --kaart-naamplaat-reliëf:
-    inset 0 1px rgba(255, 255, 255, 0.38),
-    inset 0 -1px rgba(45, 42, 36, 0.14);
+    inset 0 1px rgba(231, 207, 149, 0.24),
+    inset 0 -1px rgba(0, 0, 0, 0.5);
   --kaart-ornament-schaduw:
-    drop-shadow(0 3px 2px rgba(15, 14, 12, 0.62))
-    drop-shadow(0 0 calc(var(--fut-kw) * 0.01) rgba(85, 81, 74, 0.24));
+    drop-shadow(0 3px 2px rgba(3, 2, 1, 0.7))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.01) rgba(219, 164, 54, 0.22));
   --kaart-ornament-voor-schaduw:
-    drop-shadow(0 1px 1px rgba(15, 14, 12, 0.72))
-    drop-shadow(0 0 calc(var(--fut-kw) * 0.008) rgba(168, 39, 27, 0.16));
-  /* #834: een koele gunmetal-waas maakt van zwart frame naar ivoor een
-     materiaalovergang; onderaan blijft een heel klein lakrood accent. */
+    drop-shadow(0 1px 1px rgba(3, 2, 1, 0.78))
+    drop-shadow(0 0 calc(var(--fut-kw) * 0.008) rgba(219, 164, 54, 0.2));
+  /* #834: het frame is nu zelf bijna zwart en de gouden lijst komt uit het
+     artwork. De randgloed is daarom warm in plaats van gunmetal — hij zet het
+     goud van die lijst door tot net buiten de kaart. */
   --kaart-randgloed: drop-shadow(
-    0 0 calc(var(--fut-kw) * 0.012) rgba(85, 81, 74, 0.24)
+    0 0 calc(var(--fut-kw) * 0.012) rgba(178, 134, 48, 0.3)
   );
-  --kaart-randwaas-links: rgba(45, 42, 36, 0.12);
-  --kaart-randwaas-rechts: rgba(85, 81, 74, 0.1);
-  --kaart-randwaas-boven: rgba(255, 250, 235, 0.24);
-  --kaart-randwaas-onder: rgba(168, 39, 27, 0.1);
-  /* Gelaagde rand (#710): het lakframe krijgt een stalen onderplaat die
-     rechtsonder een fractie uitsteekt — dezelfde echo-truc als de GOAT, maar
-     mat en klein: dit moet als materiaaldikte lezen, niet als slagschaduw. */
+  --kaart-randwaas-links: rgba(0, 0, 0, 0.34);
+  --kaart-randwaas-rechts: rgba(0, 0, 0, 0.28);
+  --kaart-randwaas-boven: rgba(219, 164, 54, 0.14);
+  --kaart-randwaas-onder: rgba(0, 0, 0, 0.4);
+  /* Gelaagde rand (#710): een matzwarte onderplaat die rechtsonder een fractie
+     uitsteekt. Op het zwarte frame moet dat als materiaaldikte lezen, dus geen
+     staalgrijs meer — dat werd op dit register een lichte streep naast de
+     kaart. */
   --kaart-echo: drop-shadow(
-    calc(var(--fut-kw) * 0.013) calc(var(--fut-kw) * 0.017) 0 #55514a
+    calc(var(--fut-kw) * 0.013) calc(var(--fut-kw) * 0.017) 0 #14110b
   );
-  /* En binnen het vlak de omgekeerde volgorde: een gunmetal haarlijn tegen het
-     ivoor, met een bleke opstaande rand erachter. Samen met de bone liner en de
-     zandkleurige keyline geeft dat de vier lagen van de referentie
-     (matzwart · zwart staal · gunmetal · geoxideerd zilver). */
+  /* En binnen het vlak de omgekeerde volgorde: een donkere haarlijn tegen het
+     paneel, met een gouden opstaande rand erachter. Samen met liner en keyline
+     geeft dat de vier lagen van de referentie (matzwart · zwart staal ·
+     donker goud · antiek goud). */
   --kaart-binnenlijn:
-    inset 0 0 0 1.5px rgba(45, 42, 36, 0.5),
-    inset 0 0 0 2.5px rgba(255, 250, 235, 0.5);
+    inset 0 0 0 1.5px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 2.5px rgba(178, 134, 48, 0.42);
   /* Watermerk (#710): groot en laag in het vlak, achter de gegevens. */
   --motief-b: 80;
   --motief-pos: 36%;
 }
                                                                                                                                                                                                                                                                                                                                                                     
-.fut-kaart.fut-kaart--piet .fut-kaart__naam {
-  position: relative;
-  padding-right: 9%;
-}
-.fut-kaart.fut-kaart--piet .fut-kaart__naam::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 7%;
-  aspect-ratio: 1;
-  transform: translateY(-50%);
-  pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ctext x='6' y='10.5' text-anchor='middle' font-size='12' font-family='serif' fill='%23201d16'%3E%E2%99%A3%3C/text%3E%3C/svg%3E")
-    center / contain no-repeat;
-}
+/* De speelkaart-klaver achter de naam is met de referentie meegegaan (#834). De
+   nieuwe kaart is geen speelkaart meer maar een schandbord: de flankering die
+   daarbij hoort staat naast de divisieregel (hieronder), niet naast de naam. */
+
 /* De kettingen wiegen heel licht — een hangend gewicht staat nooit helemaal
    stil. Bewust géén glans-animatie: schande glimt niet (#705), en de laag vóór
    de kaart (crest, zegel) blijft dus ook stil staan. */
@@ -1789,59 +1783,39 @@
     var(--kaart-frame-lo) 100%
   );
 }
-/* #834: geen bone liner. In de referentie loopt de lijst van ornament naar
-   perkament door bijna-zwart naar goud; een lichte tussenlijn is daar het enige
-   wat je ziet, en dan lijken de randornamenten er los tegenaan geplakt. Liner en
-   keyline zijn daarom donker, zodat ze de moulure uit het artwork voortzetten
-   in plaats van hem te doorsnijden. */
+/* #834: geen bone liner. De zichtbare lijst van deze kaart komt uit het artwork
+   (piet-master.webp) en is dubbel goud op zwart. De drie
+   CSS-randlagen liggen daar precies onder: ze lopen van bijna zwart naar donker
+   goud, zodat ze de moulure uit het artwork voortzetten in plaats van hem te
+   doorsnijden. Een lichte tussenlijn zou de lijst juist opsplitsen en de
+   randornamenten er losgeplakt tegenaan laten lijken. */
 .fut-kaart.fut-kaart--piet .fut-kaart__liner {
-  background: #16140e;
+  background: #0e0c08;
 }
                                                                                                                                                                                                                                                                                                        
 .fut-kaart.fut-kaart--piet .fut-kaart__keyline {
-  background: #241f16;
+  background: #3c3018;
 }
                                                                                                                                                     
-.fut-kaart.fut-kaart--piet .fut-kaart__vlak::before {
-  background: none;
+/* De divisieregel krijgt de schedelflankering van de referentie ("💀 SCHAND
+   MIDDEL 💀"). Alleen op de maten waar de kaart groot genoeg is: op de veldmaat
+   (96–132px) is die regel al de kleinste tekst op de kaart en duwen twee
+   emoji's hem uit balans. */
+@container fut-kaart (min-width: 168px) {
+  .fut-kaart.fut-kaart--piet .fut-kaart__divisie::before,
+  .fut-kaart.fut-kaart--piet .fut-kaart__divisie::after {
+    content: "💀";
+    font-size: 0.85em;
+    opacity: 0.72;
+    padding: 0 0.4em;
+    vertical-align: baseline;
+  }
 }
                                                                                                                                                                                                                                                                                                                                                                    
-.fut-kaart.fut-kaart--piet .fut-kaart__vlak {
-  background:
-    radial-gradient(
-      115% 88% at 50% 42%,
-      transparent 52%,
-      rgba(46, 38, 24, 0.16) 100%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 139'%3E%3Cg font-size='13' font-family='serif'%3E%3Ctext x='11' y='28' fill='rgba(32,29,24,0.2)'%3E%E2%99%A0%3C/text%3E%3Ctext x='77' y='42' fill='rgba(168,39,27,0.22)'%3E%E2%99%A5%3C/text%3E%3Ctext x='16' y='100' fill='rgba(168,39,27,0.22)'%3E%E2%99%A6%3C/text%3E%3Ctext x='77' y='90' fill='rgba(32,29,24,0.2)'%3E%E2%99%A3%3C/text%3E%3C/g%3E%3C/svg%3E")
-      center / 100% 100% no-repeat,
-    repeating-linear-gradient(
-      0deg,
-      rgba(32, 29, 24, 0.04) 0 1px,
-      transparent 1px 6px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(32, 29, 24, 0.04) 0 1px,
-      transparent 1px 6px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(32, 29, 24, 0.045) 0 1px,
-      transparent 1px 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(32, 29, 24, 0.045) 0 1px,
-      transparent 1px 3px
-    ),
-    linear-gradient(
-      172deg,
-      var(--kaart-hi) 0%,
-      var(--kaart-mid) 56%,
-      var(--kaart-lo) 100%
-    );
-}
+/* Het kaartvlak van deze editie is geen CSS-materiaal meer maar de gewatteerde
+   ruit uit piet-vlak.webp. Die regel staat in PietEffect.css, bij het artwork
+   waar hij bij hoort; hier stond de vezeltegel van de speelkaart (#705/#644),
+   en die is met de referentie meegegaan. */
 
 /* ─── Premium glans (#773) ────────────────────────────────────────────────────
 

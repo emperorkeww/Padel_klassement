@@ -13,7 +13,7 @@ een kaart die verder alleen zwart en champagnegoud draagt is dat het verschil
 tussen een storm en een blauwe wolk.
 
 De referentie staat op vrijwel zwart (#0d0d10), dus dit is het luminantieregime
-van pias-master.py en piet-master.py: alfa volgt de helderheid, en de kleur wordt
+van pias-master.py en piet-onderdelen.py: alfa volgt de helderheid, en de kleur wordt
 teruggerekend uit de compositie over zwart (unpremultiply). Wat daaruit komt is
 per constructie identiek aan de referentie zodra het wéér op zwart landt — en dat
 is precies waar het naartoe gaat, want het kaartvlak van deze kaart ís #0d0d10.

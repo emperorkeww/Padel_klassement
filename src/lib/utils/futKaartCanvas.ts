@@ -445,13 +445,13 @@ export function schildPad(
 
 /** Vlak-textuur (#664/#666) — spiegel van de ::after-laag in FutKaart.css:
  *  "satijn" is het fijne weefsel dat élk vlak draagt, terwijl de pias
- *  (kraftkarton met confetti) en de Piet (speelkaart met suit-pips) een eigen
+ *  (kraftkarton met confetti) en de Piet (de gewatteerde ruit) een eigen
  *  weefsel meebrengen en het satijn juist uitzetten — dubbel weefsel wordt
  *  druk (de `background: none`-regel in de CSS). */
 export type VlakTextuur =
   | "satijn"
   | "confetti"
-  | "speelkaart"
+  | "ruit"
   | "brokaat"
   | "matelas"
   | "titanium"
@@ -793,7 +793,7 @@ export function drawKaartSchild(
   // ::before erbovenop. Het satijn hoort juist bij de ::after-laag en komt
   // daarom pas ná de stralenkrans, onderaan deze functie.
   if (kleuren.textuur === "confetti") drawConfetti(ctx, fx, fy, fw, fh);
-  if (kleuren.textuur === "speelkaart") drawSpeelkaart(ctx, fx, fy, fw, fh);
+  if (kleuren.textuur === "ruit") drawRuit(ctx, fx, fy, fw, fh);
   if (kleuren.textuur === "titanium") drawTitanium(ctx, fx, fy, fw, fh);
 
   const glow = ctx.createRadialGradient(
@@ -2772,61 +2772,54 @@ function drawTitanium(
  *  ~1,4×-kalibratie: lijn 1,5, periode 4. Pip-coördinaten en tekengrootte
  *  komen 1-op-1 uit de inline-SVG-laag in FutKaart.css (viewBox 100×139 —
  *  precies de kaartverhouding, dus één schaalfactor volstaat). */
-function drawSpeelkaart(
+function drawRuit(
   ctx: CanvasRenderingContext2D,
   fx: number,
   fy: number,
   fw: number,
   fh: number,
 ) {
-  ctx.lineWidth = 1.5;
-  for (const [periode, kleur] of [
-    [4, "rgba(32, 29, 24, 0.045)"],
-    [8, "rgba(32, 29, 24, 0.04)"],
-  ] as const) {
-    ctx.strokeStyle = kleur;
-    for (let i = 0; i < fh; i += periode) {
-      ctx.beginPath();
-      ctx.moveTo(fx, fy + i);
-      ctx.lineTo(fx + fw, fy + i);
-      ctx.stroke();
-    }
-    for (let i = 0; i < fw; i += periode) {
+  // De gewatteerde ruit van de Zwarte Piet — spiegel van de tegel
+  // piet-vlak.webp die de DOM als achtergrond herhaalt (PietEffect.css). Daar
+  // is het een foto van het paneel; hier de twee diagonale rasters die de ruit
+  // dragen, met dezelfde periode: 0,1312 × kaartbreedte, gemeten met
+  // autocorrelatie op de referentie (scripts/piet-onderdelen.py).
+  //
+  // Twee lijnen per naad, want dat is wat de watteernaad in het bronbeeld doet:
+  // een donkere groef met een smalle goudlichte kam ernaast. Op de kaartmaat
+  // van de poster is dat het verschil tussen "leer" en "vlak zwart".
+  const periode = Math.max(7, fw * 0.1312);
+  ctx.save();
+  ctx.lineWidth = Math.max(1, fw * 0.0045);
+  for (const richting of [1, -1]) {
+    for (let i = -fh; i < fw + fh; i += periode) {
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.42)";
       ctx.beginPath();
       ctx.moveTo(fx + i, fy);
-      ctx.lineTo(fx + i, fy + fh);
+      ctx.lineTo(fx + i + richting * fh, fy + fh);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(198, 168, 104, 0.09)";
+      ctx.beginPath();
+      ctx.moveTo(fx + i + ctx.lineWidth * 1.3, fy);
+      ctx.lineTo(fx + i + ctx.lineWidth * 1.3 + richting * fh, fy + fh);
       ctx.stroke();
     }
-  }
-  const pips: ReadonlyArray<readonly [number, number, string, string]> = [
-    [11, 28, "♠", "rgba(32, 29, 24, 0.2)"],
-    [77, 42, "♥", "rgba(168, 39, 27, 0.22)"],
-    [16, 100, "♦", "rgba(168, 39, 27, 0.22)"],
-    [77, 90, "♣", "rgba(32, 29, 24, 0.2)"],
-  ];
-  const s = fw / 100;
-  ctx.save();
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.font = `${13 * s}px serif`;
-  for (const [px, py, glyph, kleur] of pips) {
-    ctx.fillStyle = kleur;
-    ctx.fillText(glyph, fx + px * s, fy + py * (fh / 139));
   }
   ctx.restore();
 
-  // Vignette (#710): het papier vangt licht in het midden en loopt naar de
-  // randen weg — spiegel van de radial-gradient bovenaan de vlak-stack
-  // (115% 88% at 50% 42%, transparant tot 52% van de straal). De ellips wordt
-  // met een scale getekend, zoals drawMottling dat ook doet.
-  const rx = fw * 1.15;
-  const ry = fh * 0.88;
+  // Vignette: het paneel vangt licht linksboven en loopt naar de randen weg —
+  // spiegel van de radial-gradient bovenaan de vlak-stack in PietEffect.css
+  // (120% 92% at 34% 24%). De ellips wordt met een scale getekend, zoals
+  // drawMottling dat ook doet.
+  const rx = fw * 1.2;
+  const ry = fh * 0.92;
   ctx.save();
-  ctx.translate(fx + fw / 2, fy + fh * 0.42);
+  ctx.translate(fx + fw * 0.34, fy + fh * 0.24);
   ctx.scale(1, ry / rx);
   const vignette = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-  vignette.addColorStop(0.52, "rgba(46, 38, 24, 0)");
-  vignette.addColorStop(1, "rgba(46, 38, 24, 0.16)");
+  vignette.addColorStop(0, "rgba(38, 33, 26, 0.3)");
+  vignette.addColorStop(0.46, "rgba(10, 9, 7, 0.16)");
+  vignette.addColorStop(1, "rgba(4, 3, 2, 0.52)");
   ctx.fillStyle = vignette;
   ctx.fillRect(-rx, -rx, rx * 2, rx * 2);
   ctx.restore();
@@ -3240,37 +3233,38 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       [1, "rgba(105, 47, 39, 0)"],
     ],
   },
-  // Zwarte Piet (#645/#705/#710): speelkaart-wit met vlak mat lakframe; de bone
-  // liner is de witte snijkant van het kaartkarton. Sheen uit. Sinds #710 de
-  // enige editie met een eigen ornamentlaag (kettingen achter, crest/zegel voor),
-  // een watermerk en een gelaagde rand — spiegel van .fut-kaart--piet.
+  // Zwarte Piet (#645/#705/#710/#834): zwart-goud naar de nieuwe referentie —
+  // een gewatteerd donker paneel in een bijna zwarte lijst, met antiek goud als
+  // inkt. Sheen uit: schande glimt niet. Sinds #710 de enige editie met een
+  // eigen ornamentlaag (kettingen achter, crest/medaille voor), een watermerk
+  // en een gelaagde rand — spiegel van .fut-kaart--piet.
   piet: {
     frame: [
-      [0, "#23211d"],
-      [1, "#131211"],
+      [0, "#1a1610"],
+      [1, "#080706"],
     ],
-    liner: "#efe7d2",
-    vlak: ["#f4eedb", "#e6ddc2", "#cfc4a4"],
+    liner: "#0e0c08",
+    vlak: ["#23201a", "#17140f", "#0b0906"],
     vlakMid: 0.56,
     glow: "rgba(255, 255, 255, 0)",
     sheen: "rgba(255, 255, 255, 0)",
-    ink: "#201d16",
-    inkSoft: "#5d5645",
-    lijn: "#a2977a",
-    editieKleur: "#a8271b",
-    textuur: "speelkaart",
-    randGloed: [0.012, "rgba(85, 81, 74, 0.24)"],
+    ink: "#e7cf95",
+    inkSoft: "#b9a271",
+    lijn: "#8d7539",
+    editieKleur: "#e0554a",
+    textuur: "ruit",
+    randGloed: [0.012, "rgba(178, 134, 48, 0.3)"],
     randWaas: {
-      links: "rgba(45, 42, 36, 0.12)",
-      rechts: "rgba(85, 81, 74, 0.1)",
-      boven: "rgba(255, 250, 235, 0.24)",
-      onder: "rgba(168, 39, 27, 0.1)",
+      links: "rgba(0, 0, 0, 0.34)",
+      rechts: "rgba(0, 0, 0, 0.28)",
+      boven: "rgba(219, 164, 54, 0.14)",
+      onder: "rgba(0, 0, 0, 0.4)",
     },
     randDiktes: [0.02, 0.01, 0.005],
-    echo: [[0.013, 0.017, "#55514a"]],
+    echo: [[0.013, 0.017, "#14110b"]],
     binnenlijn: [
-      [1.5, "rgba(45, 42, 36, 0.5)"],
-      [2.5, "rgba(255, 250, 235, 0.5)"],
+      [1.5, "rgba(0, 0, 0, 0.62)"],
+      [2.5, "rgba(178, 134, 48, 0.42)"],
     ],
     motief: {
       paden: PIET_WATERMERK,
@@ -3281,11 +3275,11 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
     ornament: "piet",
     ornamentVoor: "piet",
     naamplaat: [
-      [0, "rgba(45, 42, 36, 0)"],
-      [0.14, "rgba(45, 42, 36, 0.1)"],
-      [0.5, "rgba(255, 250, 235, 0.28)"],
-      [0.86, "rgba(168, 39, 27, 0.08)"],
-      [1, "rgba(168, 39, 27, 0)"],
+      [0, "rgba(141, 117, 57, 0)"],
+      [0.14, "rgba(141, 117, 57, 0.16)"],
+      [0.5, "rgba(231, 207, 149, 0.22)"],
+      [0.86, "rgba(141, 117, 57, 0.16)"],
+      [1, "rgba(141, 117, 57, 0)"],
     ],
   },
 };

@@ -188,21 +188,15 @@ export function drawKaart(
   ctx.stroke();
   ctx.fillStyle = ink;
   ctx.font = `800 ${Math.round(w * 0.093)}px Outfit, system-ui, sans-serif`;
-  // Klaverteken naast de naam op de Piet (#710): de naamplaat staat dan 9% van
-  // haar breedte af aan het teken, precies zoals de padding-right in de CSS —
-  // dus schuift de naam mee naar links en kapt hij eerder af i.p.v. eronder
-  // door te lopen.
-  const klaver = d.editie === "piet";
-  const naamRuimte = klaver ? 0.75 : 0.84;
+  // Het klaverteken naast de naam op de Piet (#710) is met de referentie
+  // meegegaan (#834): die kaart is geen speelkaart meer maar een schandbord.
+  // De naam heeft daarmee weer de volle plaatbreedte, net als elke andere
+  // editie.
   ctx.fillText(
-    ellipsize(ctx, d.name.toUpperCase(), fw * naamRuimte),
-    fx + fw * (klaver ? 0.46 : 0.5),
+    ellipsize(ctx, d.name.toUpperCase(), fw * 0.84),
+    fx + fw * 0.5,
     nY + fh * 0.078,
   );
-  if (klaver) {
-    ctx.font = `${Math.round(w * 0.075)}px serif`;
-    ctx.fillText("♣", fx + fw * 0.9, nY + fh * 0.084);
-  }
   // Onderrand van de naamplaat: de lijnkleur op 55%, zoals de border-bottom
   // van .fut-kaart__naam — vóór #666 een vaste zandtint met een uitzondering
   // voor de special-toptiers, wat op een roze of speelkaart-witte editie niet

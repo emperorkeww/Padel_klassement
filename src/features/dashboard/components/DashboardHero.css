@@ -1171,81 +1171,75 @@
   color: #fbe9d8;
 }
 
-/* Zwarte Piet: de speelkaart van de 🃏-editie — mat kaartwit met linnen-finish,
-   een vlak zwart lakframe en de bleke snijkant van het kaartkarton ertussen,
-   met ♠♥♦♣ op de vier hoeken zoals op een kaartgezicht. Op de FUT-kaart passen
-   de pips in één uitgerekte SVG-laag; een hero is veel breder dan hoog, dus
-   staan ze hier als vier losse hoeklagen op vaste maat — anders trekt de tekening
-   scheef. Contrast: --kaart-ink 14,5:1 bovenaan en 9,7:1 op de donkerste stop,
-   --kaart-ink-soft 5,2:1 daar, kaartrood 5,1:1, bot-op-lak 13,9:1. */
+/* Zwarte Piet: het schandbord van de 🃏-editie — een gewatteerd donker paneel in
+   een bijna zwarte lijst, met antiek goud als inkt. Sinds #834 volgt dit thema
+   de nieuwe referentie; de speelkaart met ♠♥♦♣ die hier stond is met die
+   referentie meegegaan. De ruit komt uit dezelfde tegel als de FUT-kaart
+   (piet-vlak.webp), zodat hero en kaart letterlijk hetzelfde materiaal dragen —
+   op een hero staat hij op een vaste pixelmaat, want die is veel breder dan
+   hoog en zou de ruit anders uitrekken.
+
+   De materiaalwaarden hi/mid/lo/ink/lijn en lak/lak-diep zijn byte-gelijk aan
+   .fut-kaart--piet; futKaartCanvas.test.ts bewaakt dat. Contrast op de donkerste
+   stop: --kaart-ink 13,0:1, --kaart-ink-soft 8,0:1, --kaart-rood 5,3:1, en
+   bot-op-lak 11,8:1. */
 .hero--piet {
-  --kaart-hi: #f4eedb;
-  --kaart-mid: #e6ddc2;
-  --kaart-lo: #cfc4a4;
-  --kaart-ink: #201d16;
-  --kaart-ink-soft: #4f483a;
-  --kaart-lijn: #a2977a;
-  --kaart-lak: #23211d;
-  --kaart-lak-diep: #131211;
-  /* Iets dieper dan de --editie-kleur van de kaart (#a8271b): hier moet het
-     rood ook onderaan het verloop nog AA halen. */
-  --kaart-rood: #8e2117;
-  --kaart-bone: #efe7d2;
+  --kaart-hi: #23201a;
+  --kaart-mid: #17140f;
+  --kaart-lo: #0b0906;
+  --kaart-ink: #e7cf95;
+  --kaart-ink-soft: #b9a271;
+  --kaart-lijn: #8d7539;
+  --kaart-lak: #1a1610;
+  --kaart-lak-diep: #080706;
+  --kaart-rood: #e0554a;
+  --kaart-bone: #e8d095;
 
   /* Token-eiland, zie de kop hierboven. */
-  --surface: #faf6ea;
+  --surface: #14110c;
   --surface-2: var(--kaart-mid);
   --ink: var(--kaart-ink);
   --ink-soft: var(--kaart-ink-soft);
-  --ink-soft-strong: var(--kaart-ink-soft);
+  --ink-soft-strong: var(--kaart-ink);
   --line: var(--kaart-lijn);
   --line-strong: var(--kaart-lijn);
-  --accent: var(--kaart-lak);
-  --accent-hover: var(--kaart-lak-diep);
-  --accent-ink: var(--kaart-hi);
-  --success: #1f5c40;
-  --success-soft: #e6e0cb;
-  --success-line: var(--kaart-lijn);
+  --accent: var(--kaart-bone);
+  --accent-hover: var(--kaart-ink);
+  --accent-ink: var(--kaart-lak-diep);
+  --success: #63c497;
+  --success-soft: #12241b;
+  --success-line: #2f6b4e;
   --danger: var(--kaart-rood);
-  --danger-soft: #eee3d0;
-  --danger-line: var(--kaart-lijn);
-  --warn: #7a5a1d;
-  --warn-soft: #eee3d0;
-  --warn-line: var(--kaart-lijn);
-  --skeleton-hi: #f0e9d6;
+  --danger-soft: #2a1210;
+  --danger-line: #7c2b25;
+  --warn: #dcb163;
+  --warn-soft: #241c0d;
+  --warn-line: #6d5522;
+  --skeleton-hi: #241f16;
 
   color: var(--kaart-ink);
   border-color: var(--kaart-lak);
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A0%3C/text%3E%3C/svg%3E")
-      left 14px top 12px / 30px 30px no-repeat,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A5%3C/text%3E%3C/svg%3E")
-      right 14px top 12px / 30px 30px no-repeat,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(142,33,23,0.18)'%3E%E2%99%A6%3C/text%3E%3C/svg%3E")
-      left 14px bottom 12px / 30px 30px no-repeat,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ctext x='10' y='16' font-size='17' font-family='serif' text-anchor='middle' fill='rgba(32,29,24,0.16)'%3E%E2%99%A3%3C/text%3E%3C/svg%3E")
-      right 14px bottom 12px / 30px 30px no-repeat,
-    repeating-linear-gradient(
-      0deg,
-      rgba(32, 29, 24, 0.045) 0 1px,
-      transparent 1px 3px
+    radial-gradient(
+      120% 160% at 22% 12%,
+      rgba(56, 48, 36, 0.34) 0%,
+      rgba(10, 9, 7, 0.3) 46%,
+      rgba(3, 2, 1, 0.66) 100%
     ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(32, 29, 24, 0.045) 0 1px,
-      transparent 1px 3px
-    ),
+    url("../../rating/components/piet/assets/piet-vlak.webp") 0 0 / 92px 84px
+      repeat,
     linear-gradient(
       172deg,
       var(--kaart-hi) 0%,
       var(--kaart-mid) 56%,
       var(--kaart-lo) 100%
     );
-  /* De bone liner als binnenring: precies de opbouw van de kaart, waar de
-     witte kern van het karton tussen lakframe en vlak zichtbaar is. */
+  /* De gouden keyline als binnenring: precies de opbouw van de kaart, waar de
+     dubbele lijst tussen frame en vlak zichtbaar is. */
   box-shadow:
-    inset 0 0 0 4px var(--kaart-bone),
-    0 8px 24px color-mix(in srgb, var(--kaart-lak) 30%, transparent);
+    inset 0 0 0 2px color-mix(in srgb, var(--kaart-bone) 62%, transparent),
+    inset 0 0 0 5px var(--kaart-lak-diep),
+    0 8px 24px rgba(3, 2, 1, 0.5);
 }
 .hero--piet .hero__eyebrow,
 .hero--piet .hero__me-label,
@@ -1256,11 +1250,13 @@
   background: color-mix(in srgb, var(--kaart-lijn) 70%, transparent);
 }
 /* Zelfde regel als bij de pias: de winnende crest wordt het materiaal zelf —
-   hier de zwarte rugzijde van de kaart die je doorgeeft. */
+   hier de gouden lijst van het schandbord dat je doorgeeft. Op het donkere
+   thema moet dat omkeren: goud vlak met donkere inkt, anders verdwijnt de
+   winnende crest juist in de kaart. */
 .hero--piet .hero-crest--piet {
-  background: var(--kaart-lak);
-  border-color: var(--kaart-lak-diep);
-  color: var(--kaart-hi);
+  background: var(--kaart-bone);
+  border-color: var(--kaart-ink);
+  color: var(--kaart-lak-diep);
 }
 
 /* ---- Ornamenten van de twee schande-thema's (#771) ----

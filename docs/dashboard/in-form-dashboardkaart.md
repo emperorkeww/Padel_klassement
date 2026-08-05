@@ -188,7 +188,7 @@ Twee bezwaren, allebei eerlijk te noemen:
 
 **B. Een eigen kolom uit de referentie snijden.** De storm staat op vrijwel zwart
 en is dus met een luminantiekey vrij te stellen — precies het regime van
-`pias-master.py` en `piet-master.py`, en makkelijker dan de Glazenwasser en de
+`pias-master.py` en `piet-onderdelen.py`, en makkelijker dan de Glazenwasser en de
 slof, die tegen een lokaal gefit achtergrondmodel moesten werken. Levert exact de
 referentie, kost naar schatting 100–150 kB. `dist/assets` staat na de Big Daddy
 op 10,14 van de 11 MB, dus dat past — met minder lucht dan prettig is.

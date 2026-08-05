@@ -1,0 +1,35 @@
+{
+  "master": {
+    "pixels": [
+      782,
+      1042
+    ],
+    "alfa": 0.0834,
+    "dekking": 0.0807,
+    "kB": 158,
+    "restVlak": 0.0
+  },
+  "front": {
+    "pixels": [
+      597,
+      796
+    ],
+    "alfa": 0.1955,
+    "dekking": 0.1942,
+    "kB": 173,
+    "restVlak": 0.00034
+  },
+  "vlak": {
+    "pixels": [
+      103,
+      94
+    ],
+    "bytes": 724,
+    "tegel": true
+  },
+  "registratie": {
+    "links": -0.186,
+    "boven": -0.1219,
+    "breedte": 1.3834
+  }
+}

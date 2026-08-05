@@ -38,8 +38,8 @@ import onfireMaster from "./onfire/assets/onfire-master.webp";
 import onfireVoorMasker from "./onfire/assets/onfire-front-mask.svg";
 import piasMaster from "./pias/assets/pias-master.webp";
 import piasVoorMasker from "./pias/assets/pias-front-mask.svg";
+import pietFront from "./piet/assets/piet-front.webp";
 import pietMaster from "./piet/assets/piet-master.webp";
-import pietVoorMasker from "./piet/assets/piet-front-mask.svg";
 import stormMaster from "./storm/assets/in-form/storm-master.webp";
 import stormVoorMasker from "./storm/assets/in-form/storm-front-mask.svg";
 import wannabeMaster from "./wannabe/assets/wannabe-master.webp";
@@ -170,17 +170,17 @@ export const KAART_MASTERS: Readonly<Record<MasterNaam, MasterRegistratie>> = {
     prefix: "piet",
     css: "piet/PietEffect.css",
     bron: pietMaster,
-    links: -0.1939,
-    boven: -0.078,
-    breedte: 1.3852,
+    voorBron: pietFront,
+    links: -0.186,
+    boven: -0.1219,
+    breedte: 1.3834,
     schaal: 1,
     rotatie: 0,
     binnenAlpha: 1,
-    voorMasker: pietVoorMasker,
     voorSchaduw: [0, 0.014, 0.014, "rgba(3, 2, 1, 0.9)"],
     onderdruktOrnament: true,
-    // De stadssilhouet uit de master staat precies waar de vectorpion stond;
-    // twee watermerken over elkaar leest als vervuiling (FutKaart.tsx).
+    // Het kaartvlak komt sinds #834 uit piet-vlak.webp; een vectorwatermerk
+    // erover leest als vervuiling (FutKaart.tsx).
     onderdruktMotief: true,
   },
 

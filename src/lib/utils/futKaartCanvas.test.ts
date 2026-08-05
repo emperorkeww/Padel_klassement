@@ -34,6 +34,8 @@ const SCHANDPAAL_CSS = lees("../../features/standings/components/Schandpaal.css"
 // Sinds #771 staat de kaart-CSS van het dashboard in zijn eigen bestand naast de
 // component, niet meer in de stylesheet van de hele pagina.
 const HERO_CSS = lees("../../features/dashboard/components/DashboardHero.css");
+// De Piet houdt zijn eigen registratie- en vlakregels bij het artwork (#834).
+const PIET_CSS = lees("../../features/rating/components/piet/PietEffect.css");
 
 // De negen divisieregisters, als [naam, css]-paren voor de cascadetest.
 const DIVISIE_CSS: ReadonlyArray<readonly [string, string]> = [
@@ -250,7 +252,7 @@ describe("kaartSkin", () => {
     expect(pias.kleuren.stralen).toBe(false);
     expect(pias.kleuren.textuur).toBe("confetti");
     expect(piet.kleuren.stralen).toBe(false);
-    expect(piet.kleuren.textuur).toBe("speelkaart");
+    expect(piet.kleuren.textuur).toBe("ruit");
     // En geen radiale topgloed: die hebben ze in de CSS niet.
     expect(pias.kleuren.glow).toBe("rgba(255, 255, 255, 0)");
     // Mat materiaal (#705): ook geen witte specular-baan. De pias draagt een
@@ -371,10 +373,17 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       if (editie === "pias") {
         expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
       } else {
-        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
-        // witte kern van het kaartkarton.
+        // De Piet heeft geen aparte snijkant-laag: zijn liner is de donkere
+        // binnenband waar de gouden lijst uit het artwork op landt. De waarde
+        // komt uit de CSS-regel zelf, niet uit een letterlijke kleur hier —
+        // anders drift de canvasroute stil weg zodra het register verschuift.
         expect(kleuren.snijkant).toBeUndefined();
-        expect(kleuren.liner).toBe("#efe7d2");
+        const linerRegel = /\.fut-kaart--piet \.fut-kaart__liner\s*\{[^}]*\}/.exec(
+          FUT_CSS,
+        )?.[0];
+        expect(kleuren.liner).toBe(
+          /background:\s*(#[0-9a-f]{3,8});/.exec(linerRegel ?? "")?.[1],
+        );
       }
     },
   );
@@ -515,10 +524,17 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       if (editie === "pias") {
         expect(kleuren.snijkant).toBe(token(blok, "--kaart-snijkant"));
       } else {
-        // De Piet heeft geen aparte snijkant-laag: zijn bone liner ís de
-        // witte kern van het kaartkarton.
+        // De Piet heeft geen aparte snijkant-laag: zijn liner is de donkere
+        // binnenband waar de gouden lijst uit het artwork op landt. De waarde
+        // komt uit de CSS-regel zelf, niet uit een letterlijke kleur hier —
+        // anders drift de canvasroute stil weg zodra het register verschuift.
         expect(kleuren.snijkant).toBeUndefined();
-        expect(kleuren.liner).toBe("#efe7d2");
+        const linerRegel = /\.fut-kaart--piet \.fut-kaart__liner\s*\{[^}]*\}/.exec(
+          FUT_CSS,
+        )?.[0];
+        expect(kleuren.liner).toBe(
+          /background:\s*(#[0-9a-f]{3,8});/.exec(linerRegel ?? "")?.[1],
+        );
       }
     },
   );
@@ -994,21 +1010,27 @@ describe("editie-registers spiegelen FutKaart.css", () => {
         `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
       );
 
-    // Papierraster (fijn linnen + grover raster) en vignette in het vlak: de
-    // canvas-spiegel zit in drawSpeelkaart, dus als de CSS-lagen verdwijnen
-    // moet dat hier opvallen.
-    const vlak = /\.fut-kaart--piet \.fut-kaart__vlak\s*\{[^}]*\}/.exec(FUT_CSS)?.[0];
-    expect(vlak).toContain("radial-gradient");
-    expect(vlak?.match(/transparent 1px 3px/g)).toHaveLength(2);
-    expect(vlak?.match(/transparent 1px 6px/g)).toHaveLength(2);
-
-    // En het klaverteken op de naamplaat (de poster tekent hetzelfde teken in
-    // profielPoster.drawKaart).
-    const naam = /\.fut-kaart--piet \.fut-kaart__naam::after\s*\{[^}]*\}/.exec(
-      FUT_CSS,
+    // De gewatteerde ruit en het vignet in het vlak: sinds #834 een tegel uit
+    // de referentie, en de CSS-regel staat bij het artwork (PietEffect.css).
+    // De canvas-spiegel zit in drawRuit; verdwijnt de tegel of de radiale
+    // verdonkering, dan lopen DOM en poster uit elkaar.
+    const vlak = /\.fut-kaart--piet \.fut-kaart__vlak\s*\{[^}]*\}/.exec(
+      PIET_CSS,
     )?.[0];
-    expect(naam, "Piet mist het klaverteken naast de naam").toBeDefined();
-    expect(naam).toContain("%E2%99%A3");
+    expect(vlak, "Piet mist de vlakregel in PietEffect.css").toBeDefined();
+    expect(vlak).toContain("radial-gradient");
+    expect(vlak).toContain("piet-vlak.webp");
+    // De tegelmaat is één periode van de ruit, als fractie van de kaartbreedte
+    // — dezelfde 0,1312 die drawRuit als lijnperiode gebruikt.
+    expect(vlak).toContain("0.1312");
+    expect(CANVAS_TS).toContain("fw * 0.1312");
+
+    // En de schedelflankering naast de divisieregel ("💀 SCHAND MIDDEL 💀"),
+    // alleen op de maten waar de kaart groot genoeg is.
+    const schedels =
+      /\.fut-kaart--piet \.fut-kaart__divisie::after\s*\{[^}]*\}/.exec(FUT_CSS)?.[0];
+    expect(schedels, "Piet mist de schedelflankering").toBeDefined();
+    expect(schedels).toContain("💀");
   });
 
   it("de ornamentcascade: editie boven tier boven divisie (#710)", () => {
