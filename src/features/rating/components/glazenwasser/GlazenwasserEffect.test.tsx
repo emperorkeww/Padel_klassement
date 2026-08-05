@@ -1,12 +1,15 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { FutKaart } from "@/features/rating/components/FutKaart";
+import {
+  FutKaart,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import { tierFor } from "@/features/rating/tiers";
 
 const GLAZENWASSER = tierFor(1150);
 
 describe("Glazenwasser-mastereffect", () => {
-  it("gebruikt één bron voor achter, binnen en voor", () => {
+  it("deelt het register maar houdt frame en voorgrond fysiek apart", () => {
     const { container } = render(
       <FutKaart tier={GLAZENWASSER} voor={<span>Alice</span>} />,
     );
@@ -24,8 +27,10 @@ describe("Glazenwasser-mastereffect", () => {
       "voor",
     ]);
     expect(bronnen).toHaveLength(3);
-    expect(new Set(bronnen).size).toBe(1);
+    expect(new Set(bronnen).size).toBe(2);
     expect(bronnen[0]).toContain("glazenwasser-master");
+    expect(bronnen[1]).toBe(bronnen[0]);
+    expect(bronnen[2]).toContain("glazenwasser-front");
   });
 
   it("monteert de binneninstantie in het echte kaartvlak", () => {
@@ -35,6 +40,23 @@ describe("Glazenwasser-mastereffect", () => {
 
     const binnen = container.querySelector(".glazenwasser-effect--binnen");
     expect(binnen?.parentElement).toHaveClass("fut-kaart__vlak");
+  });
+
+  it("monteert de voorlaag buiten de 3D-flipper en vóór het frame", () => {
+    const { container } = render(
+      <FutKaart tier={GLAZENWASSER} voor={<span>Alice</span>} />,
+    );
+
+    const kaart = container.querySelector<HTMLElement>(".fut-kaart");
+    const flipper = container.querySelector<HTMLElement>(
+      ".fut-kaart__flipper",
+    );
+    const voor = container.querySelector<HTMLElement>(
+      ".glazenwasser-effect--voor",
+    );
+
+    expect(voor?.parentElement).toBe(kaart);
+    expect(flipper).not.toContainElement(voor);
   });
 
   it("houdt de lagen decoratief en niet-interactief", () => {
@@ -63,6 +85,25 @@ describe("Glazenwasser-mastereffect", () => {
       container.querySelector('use[href="#fut-div-platina-voor"]'),
     ).toBeNull();
     expect(container.querySelector(".fut-kaart__motief")).toBeNull();
+  });
+
+  it("gebruikt de vaste divisienaam zonder het niveau dubbel te zetten", () => {
+    const { getByText, queryByText } = render(
+      <FutKaart
+        tier={GLAZENWASSER}
+        voor={
+          <FutKaartVoorkant
+            elo={1150}
+            tier={GLAZENWASSER}
+            naam="Alice"
+            avatar={<span>AA</span>}
+          />
+        }
+      />,
+    );
+
+    expect(getByText("GLAZENWASSER")).toBeInTheDocument();
+    expect(queryByText("Glazenwasser II")).toBeNull();
   });
 
   it("wijkt voor een editie: die skin wint van de divisie", () => {

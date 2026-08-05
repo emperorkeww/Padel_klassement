@@ -767,6 +767,75 @@
   --schild: url(#fut-schild-punt);
 }
 
+.fut-kaart--glazenwasser {
+  --schild: url(#fut-schild-glazenwasser);
+  --fut-avatar: 0.31;
+}
+
+/* De Glazenwasser-voorkant volgt de compositie van de referentie in plaats van
+   de generieke verticale flexverdeling. Alleen de voorkant wijkt af: de stats-
+   achterkant blijft de gedeelde, gecentreerde kaartarchitectuur gebruiken. */
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__vlak {
+  display: block;
+  padding: 0;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__boven {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__eloblok {
+  position: absolute;
+  top: 21.5%;
+  left: 17.5%;
+  width: 28%;
+  padding: 0;
+  border: 0;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__elo {
+  font-size: calc(var(--fut-kw) * 0.145);
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__sub {
+  font-size: calc(var(--fut-kw) * 0.052);
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__tier {
+  font-size: calc(var(--fut-kw) * 0.072);
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__avatar {
+  position: absolute;
+  top: 23%;
+  left: 53%;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__naam {
+  position: absolute;
+  top: 52%;
+  left: 13%;
+  width: 74%;
+  margin: 0;
+  padding-block: 2.5%;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__divisie {
+  position: absolute;
+  top: 63%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__playstyles {
+  position: absolute;
+  top: 70%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+}
+.fut-kaart--glazenwasser .fut-kaart__zijde--voor .fut-kaart__editie {
+  position: absolute;
+  top: 79%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+}
+
 /* GOAT (#710, hertekend in #772): het monument — een eigen register, niet
    langer een kleurvariant van de dictator. Vast rosé-frame met geborsteld
    metaal (conic-ribbels stralen uit het kaartmidden en staan dus rondom

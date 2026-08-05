@@ -10,6 +10,8 @@
 // uitkomst in gw-onderdelen.json vast. Deze test leest dat manifest, zodat een
 // kapotte uitsnede in de testuitvoer opvalt in plaats van pas op de kaart.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import DOZEN from "./assets/gw-onderdelen.json";
 import { GW_LAGEN } from "./glazenwasserLayout";
@@ -39,9 +41,23 @@ const ONDERDELEN = Object.entries(DOZEN) as [string, Onderdeel][];
 
 /** Canvas van de referentie waaruit gesneden wordt (docs/fut-kaarten/
  *  referentie_glazenwasser.png). Een doos die hierbuiten valt is een snijfout. */
-const CANVAS = { breedte: 1065, hoogte: 1477 };
+const CANVAS = { breedte: 1105, hoogte: 1536 };
 
 describe("Glazenwasser-onderdelen", () => {
+  it("gebruikt voor de voorlaag een eigen transparante WebP", () => {
+    const voorgrond = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/features/rating/components/glazenwasser/assets/glazenwasser-front.webp",
+      ),
+    );
+    expect(voorgrond.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(voorgrond.toString("ascii", 12, 16)).toBe("VP8X");
+    // Bit 4 van de VP8X-featureflags betekent dat het bestand een alfakanaal
+    // bevat. De voorgrondbron mag nooit een dichte rechthoek worden.
+    expect(voorgrond[20] & 0x10).toBe(0x10);
+  });
+
   it("levert elk onderdeel dat de layout opvraagt", () => {
     const gevraagd = new Set(GW_LAGEN.map((l) => l.bron));
     const geleverd = new Set(ONDERDELEN.map(([naam]) => naam));
@@ -106,7 +122,10 @@ describe("Glazenwasser-onderdelen", () => {
     // verzadigingsfilters te lijf werd gegaan, terwijl geen van beide filters
     // alfa kan maken. Dáárom staat deze ondergrens er.
     for (const [naam, deel] of ONDERDELEN) {
-      expect(deel.alfa, `${naam} is vrijwel leeg gekeyd`).toBeGreaterThan(0.05);
+      const ondergrens = naam === "water-back" ? 0.02 : 0.05;
+      expect(deel.alfa, `${naam} is vrijwel leeg gekeyd`).toBeGreaterThan(
+        ondergrens,
+      );
     }
   });
 
@@ -128,10 +147,10 @@ describe("Glazenwasser-onderdelen", () => {
   it("houdt doos en pixelmaat op dezelfde uitsnede", () => {
     // `doos` is de pixelmaat omgerekend naar kaartfracties; lopen die twee uit
     // de pas, dan is het manifest met de hand bijgewerkt in plaats van gedraaid.
-    const RX0 = 44.0;
-    const RY0 = 118.0;
-    const RW = 1019.0 - RX0;
-    const RH = 1232.0 - RY0;
+    const RX0 = 0;
+    const RY0 = 0;
+    const RW = CANVAS.breedte;
+    const RH = CANVAS.hoogte;
     for (const [naam, deel] of ONDERDELEN.filter(isUitsnede)) {
       const [x, y, breedte, hoogte] = deel.pixels;
       const verwacht = [

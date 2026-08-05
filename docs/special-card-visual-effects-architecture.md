@@ -54,10 +54,10 @@ Belangrijkste implementatiebestanden:
   een master die uit de referentie zelf wordt gesneden.
 - [`GlazenwasserEffect.tsx`](../../src/features/rating/components/glazenwasser/GlazenwasserEffect.tsx),
   [`GlazenwasserEffect.css`](../../src/features/rating/components/glazenwasser/GlazenwasserEffect.css)
-  en [`../../scripts/glazenwasser-master.py`](../../scripts/glazenwasser-master.py) —
-  dezelfde architectuur toegepast op raamcrest, twee trekkers, sopemmer,
-  schildbadge, waterexplosie en een natte glaswand, met master én voormasker uit
-  één script.
+  en [`../../scripts/glazenwasser-onderdelen.py`](../../scripts/glazenwasser-onderdelen.py) —
+  dezelfde registratie toegepast op raamcrest, trekker, sopemmer, spons,
+  waterexplosie en een natte glaswand, met een fysiek gescheiden basis- en
+  voorgrondbron uit één script.
 - [`WannabeEffect.tsx`](../../src/features/rating/components/wannabe/WannabeEffect.tsx),
   [`WannabeEffect.css`](../../src/features/rating/components/wannabe/WannabeEffect.css)
   en [`../../scripts/wannabe-master.py`](../../scripts/wannabe-master.py) — dezelfde
@@ -1420,7 +1420,7 @@ De gedeelde `FutKaart` blijft in gebruik waar de kaart klein is (klassement,
 opstelling, legenda) — daar is de compacte breakout juist beter leesbaar. De brede
 kaart staat op de plekken waar hij groot is: de kaart-modal en `/dev/glazenwasser`.
 
-### Losse onderdelen in plaats van vensters op één master
+### Fysiek gescheiden frame- en voorgrondbronnen
 
 De eerste versie sneed elk onderdeel als *venster* uit `glazenwasser-master.webp`.
 Die master is een platte compositie, dus elke rechthoekige uitsnede sleepte de
@@ -1430,25 +1430,31 @@ onderschild en trekker omdat hun uitsnedes elkaar overlappen. Zichtbaar bleef: e
 tweede, verschoven trekker in de glaslaag, en een onderschild dat 36% te groot
 uitviel omdat het de schaal van het water moest volgen.
 
-`scripts/glazenwasser-onderdelen.py` snijdt daarom élk onderdeel als eigen, strak
-op zijn alfa bijgesneden WebP. Geen transparante rand, geen gedeeld canvas, geen
-masker: elk onderdeel wordt los geschaald en geplaatst. Drie regels dwingt het
-script af, en die gelden voor elke volgende kaart die uit een platte referentie
-wordt gesneden:
+`scripts/glazenwasser-onderdelen.py` bouwt daarom drie compositorische bronnen
+in exact hetzelfde 100:139-register: `gw-water-back.webp` achter het schild,
+`gw-frame.webp` met alleen rail en geïntegreerde badges, en
+`gw-front-props.webp` met alleen trekker, emmer/doek, spons en voorste schuim.
+De compacte kaart gebruikt dezelfde scheiding via
+`glazenwasser-master.webp` (achterwater plus frame) en
+`glazenwasser-front.webp` (alleen frame-breakers). Daardoor kan geen
+z-indexcorrectie of runtime-masker per ongeluk opnieuw metaalpixels over een prop
+leggen. Drie regels dwingt het script af, en die gelden voor elke volgende kaart
+die uit een platte referentie wordt gesneden:
 
 - kaartinhoud van de referentie (rating, avatarcirkel, naam, statblok) gaat uit élk
   onderdeel — anders staat er een spookkopie naast de echte tekst;
-- een onderdeel dat als eigen asset terugkomt, hoort niet in de uitsnede van zijn
-  buurman: het water wordt gesneden mét badge en trekker eruit, de glaswand zonder
-  álle voorwerpen;
+- een onderdeel dat in de voorgrond terugkomt, hoort niet in het frame: het
+  achterwater wordt zonder massieve props opgebouwd, en de framebron bevat geen
+  emmer, doek, spons of trekker;
 - massieve voorwerpen volgen hun eigen silhouet (afwijking tegenover een lokaal
   achtergrondmodel, gaten dicht) in plaats van de handgetrokken contour. Een dunne
   steel vraagt daarbij een fijnere ontkorreling — op de grove stand verdween de
   steel van de trekker.
 
-De lijst is geen enkele omtrek meer maar vijf geneste, identiek geclipte vlakken
-(rail, bevel, liner, keyline, glas) met elk een eigen materiaal en een slagschaduw
-eronder: dát is wat een gefabriceerde lijst van een blauwe rand onderscheidt.
+De volledige rail blijft één coherent beeld met metaal, bevel, liner, keyline en
+geïntegreerde badges. Alleen de objecten die hem werkelijk kruisen staan in de
+latere voorgrondlaag, met een alfa-volgende contactschaduw. Zo blijft de lijst
+materieel coherent zonder dat hij emmer of spons visueel doorsnijdt.
 
 ### Referentiecompositie op een kaart met normale lengte
 

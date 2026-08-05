@@ -1,15 +1,18 @@
-/* De drie instanties delen bewust één register. Selectie gebeurt met de
-   bestaande schildclip en het voormasker, nooit met een afwijkende transform.
+/* De drie instanties delen bewust één register. Back/inside gebruiken de base-
+   master; front gebruikt een transparante props-master zonder framepixels.
    Het canvas van glazenwasser-master.webp is 1024 × 1440; het kaartvak daarin
    (x 72..952, y 160..1383) volgt exact uit deze drie waarden, en
-   scripts/glazenwasser-master.py rekent ze uit dezelfde constanten. */
+   scripts/glazenwasser-onderdelen.py rekent ze uit dezelfde constanten. */
 
-.fut-kaart.fut-kaart--platina {
+.fut-kaart.fut-kaart--glazenwasser {
   --glazenwasser-master-left: -8.18%;
   --glazenwasser-master-top: -13.08%;
   --glazenwasser-master-width: 116.36%;
   --glazenwasser-master-scale: 1;
   --glazenwasser-master-rotate: 0deg;
+  --glazenwasser-laag-achter: 0;
+  --glazenwasser-laag-kaart: 2;
+  --glazenwasser-laag-voor: 4;
   --glazenwasser-master-inset: calc(
     var(--kaart-frame-dikte, 3px) + var(--kaart-liner-dikte, 1.5px) +
       var(--kaart-keyline-dikte, 1px)
@@ -47,13 +50,13 @@
 /* Expliciete paintvolgorde binnen de preserve-3d-flipper. De Glazenwasser heeft
    geen losse vectorornamenten meer: crest, klemmen, veegbogen en medaillon leven
    in de master (de canvas-/posterroute tekent ze nog wel). */
-.fut-kaart.fut-kaart--platina .fut-kaart__zijde--voor {
+.fut-kaart.fut-kaart--glazenwasser .fut-kaart__zijde--voor {
   position: relative;
-  z-index: 2;
+  z-index: var(--glazenwasser-laag-kaart);
 }
 
 .glazenwasser-effect--achter {
-  z-index: 0;
+  z-index: var(--glazenwasser-laag-achter, 0);
 }
 
 /* De negatieve inset herstelt de volledige 100×139-kaartstage nadat de
@@ -75,16 +78,39 @@
   filter: none;
 }
 
-/* Crest, hoekschuim, trekkers, sopemmer, badge en de onderste helft van de
-   waterexplosie liggen vóór het frame. */
+/* Hoekschuim, trekker, sopemmer/doek, spons en voorste druppels liggen vóór het
+   frame. De geïntegreerde badges blijven bewust onderdeel van de framelaag. */
 .glazenwasser-effect--voor {
-  z-index: 3;
+  /* Expliciet boven voor- én achterkant van de flipper. De bron zelf bevat
+     uitsluitend gereedschap en schuim; er is geen runtime-masker meer dat per
+     browser anders kan worden afgevlakt. */
+  z-index: var(--glazenwasser-laag-voor, 4);
+}
+
+/* De voorlaag is een direct kind van de kaartroot, buiten de 3D-flipper. Zo kan
+   WebKit/Chromium hem in een getransformeerd raster niet achter de geclipte
+   kaartzijde afvlakken. Bij de achterkant hoort dit artwork niet zichtbaar te
+   blijven. */
+.fut-kaart.fut-kaart--glazenwasser.is-omgedraaid
+  > .glazenwasser-effect--voor {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart.fut-kaart--glazenwasser > .glazenwasser-effect--voor {
+    transition:
+      opacity 0.14s ease,
+      visibility 0s linear 0.14s;
+  }
+
+  .fut-kaart.fut-kaart--glazenwasser:not(.is-omgedraaid)
+    > .glazenwasser-effect--voor {
+    transition-delay: 0.16s, 0s;
+  }
 }
 
 .glazenwasser-effect--voor .glazenwasser-effect__master {
-  -webkit-mask: url("./assets/glazenwasser-front-mask.svg") center / 100% 100%
-    no-repeat;
-  mask: url("./assets/glazenwasser-front-mask.svg") center / 100% 100% no-repeat;
   filter: drop-shadow(
     0 calc(var(--fut-kw) * 0.008) calc(var(--fut-kw) * 0.014)
       rgba(4, 16, 30, 0.72)

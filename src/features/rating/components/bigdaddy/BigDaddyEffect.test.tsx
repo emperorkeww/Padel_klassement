@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { FutKaart } from "@/features/rating/components/FutKaart";
+import {
+  FutKaart,
+  FutKaartVoorkant,
+} from "@/features/rating/components/FutKaart";
 import { tierFor } from "@/features/rating/tiers";
 
 const lees = (pad: string) => readFileSync(resolve(process.cwd(), pad), "utf8");
@@ -21,6 +24,31 @@ function webpMaat(pad: string): { breedte: number; hoogte: number } {
 }
 
 describe("Big Daddy-mastereffect", () => {
+  it("houdt op platina de Big Daddy-layout en divisietekst intact", () => {
+    const tier = tierFor(1150);
+    const { container, getByText, queryByText } = render(
+      <FutKaart
+        tier={tier}
+        editie="icon"
+        voor={
+          <FutKaartVoorkant
+            elo={1150}
+            tier={tier}
+            naam="Alice"
+            avatar={<span>AA</span>}
+            editie="👑 Big Daddy"
+          />
+        }
+      />,
+    );
+
+    expect(getByText(tier!.label)).toBeInTheDocument();
+    expect(queryByText("GLAZENWASSER")).toBeNull();
+    expect(container.querySelector(".fut-kaart--icon")).not.toHaveClass(
+      "fut-kaart--glazenwasser",
+    );
+  });
+
   it("gebruikt één bron voor achter, binnen en voor", () => {
     const { container } = render(
       <FutKaart

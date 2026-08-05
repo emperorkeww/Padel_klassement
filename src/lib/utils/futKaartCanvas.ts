@@ -3767,16 +3767,16 @@ function masterDoos(
 }
 
 /**
- * Eén van de drie masterlagen. De geometrie is voor alle drie identiek — dat
- * ís de architectuur: hetzelfde artwork, alleen andere clipping — dus alleen
- * het masker, de dekking en de schaduw verschillen.
+ * Eén van de drie masterlagen. De geometrie is voor alle drie identiek. De
+ * meeste kaarten delen één artworkbron en verschillen alleen in clipping;
+ * Glazenwasser gebruikt vooraan een aparte props-bron zonder framepixels.
  *
  *   achter — het volledige artwork; de caller tekent er kaart en frame
  *            overheen.
  *   binnen — hetzelfde artwork binnen de al actieve schildclip van het vlak,
  *            eventueel door een extra binnenmasker (GOAT, Big Daddy).
- *   voor   — hetzelfde artwork door het frontmasker, met de contactschaduw uit
- *            de CSS.
+ *   voor   — dezelfde master door het frontmasker óf een aparte transparante
+ *            frontbron, met de contactschaduw uit de CSS.
  *
  * Een masker is een alfamasker, net als `mask-image` met een SVG- of
  * WebP-bron: het wordt over de master heen op de mastermaat geschaald en de
@@ -3794,6 +3794,11 @@ function tekenMasterLaag(
   laag: "achter" | "binnen" | "voor",
 ) {
   const { registratie, master } = geladen;
+  const beeld =
+    laag === "voor"
+      ? (geladen.voorMaster ?? (registratie.voorBron ? null : master))
+      : master;
+  if (!beeld) return;
   const masker =
     laag === "binnen"
       ? geladen.binnenMasker
@@ -3823,17 +3828,17 @@ function tekenMasterLaag(
   if (masker) {
     const buffer = maakBuffer(dw, dh);
     if (buffer) {
-      buffer.drawImage(master, 0, 0, dw, dh);
+      buffer.drawImage(beeld, 0, 0, dw, dh);
       buffer.globalCompositeOperation = "destination-in";
       buffer.drawImage(masker, 0, 0, dw, dh);
       ctx.drawImage(buffer.canvas, 0, 0, dw, dh);
     } else {
       // Geen tussencanvas beschikbaar: liever het artwork ongemaskeerd dan een
       // gat in de kaart.
-      ctx.drawImage(master, 0, 0, dw, dh);
+      ctx.drawImage(beeld, 0, 0, dw, dh);
     }
   } else {
-    ctx.drawImage(master, 0, 0, dw, dh);
+    ctx.drawImage(beeld, 0, 0, dw, dh);
   }
   ctx.restore();
 }

@@ -181,10 +181,25 @@ describe("<Lineup />", () => {
   });
 
   it("draagt de Icon-editie (Big Daddy) op het veld, net als op het klassement (#621)", () => {
-    const { container } = renderLineup({ edities: ctx({ iconKey: "p1" }) });
+    // Regressie: een Big Daddy in de platina-band mag niet de schildvorm en
+    // absolute inhoudspositie van de Glazenwasser erven. Zonder historie leest
+    // Lineup de hieronder geforceerde actuele rating.
+    const ratingPlatina = {
+      ...RATINGS_MAP,
+      p1: { ...RATINGS_MAP.p1, rating: 1150 },
+    };
+    const { container } = renderLineup({
+      histories: {},
+      ratings: ratingPlatina,
+      edities: ctx({ iconKey: "p1" }),
+    });
     // p1 is de Big Daddy → zijn kaart krijgt de icon-rand en de editie-regel.
     const p1Kaart = container.querySelector(".lineup-kaart") as HTMLElement;
     expect(p1Kaart).toHaveClass("fut-kaart--icon");
+    expect(p1Kaart).toHaveClass("fut-kaart--platina");
+    expect(p1Kaart).not.toHaveClass("fut-kaart--glazenwasser");
+    expect(screen.getByText("Glazenwasser II")).toBeInTheDocument();
+    expect(screen.queryByText("GLAZENWASSER")).toBeNull();
     expect(screen.getByText("👑 Big Daddy")).toBeInTheDocument();
     // De rest van het veld blijft zonder editie.
     expect(container.querySelectorAll(".fut-kaart--icon")).toHaveLength(1);

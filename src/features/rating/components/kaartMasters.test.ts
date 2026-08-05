@@ -99,6 +99,20 @@ describe("kaartMasters ↔ *Effect.css (#895)", () => {
       expect(IMPORTS).toContain(bestandsnaam(bron![1]));
     }
   });
+
+  it("een afzonderlijke frontbron wordt ook door de DOM-component geïmporteerd", () => {
+    for (const naam of NAMEN) {
+      const r = KAART_MASTERS[naam];
+      if (!r.voorBron) continue;
+      const component = lees(`./${r.css.replace(/\.css$/, ".tsx")}`);
+      const front = /import\s+\w+\s+from\s+"([^"]*-front\.webp)"/.exec(
+        component,
+      );
+      expect(front, `${naam}: frontbron ontbreekt in de component`).not.toBeNull();
+      expect(IMPORTS).toContain(bestandsnaam(front![1]));
+      expect(r.voorMasker).toBeUndefined();
+    }
+  });
 });
 
 describe("masterVoor: de cascade van FutKaart.tsx", () => {
