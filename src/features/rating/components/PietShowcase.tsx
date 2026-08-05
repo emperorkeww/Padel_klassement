@@ -9,6 +9,11 @@ import "./PietShowcase.css";
 
 const NAAM = "Alice Anders";
 const ELO = 1050;
+// Vaste spreuk in plaats van editieSpreuk(): de dev-stage heeft geen
+// editie-context, en een regel die per drager wisselt maakt een
+// screenshotvergelijking met de referentie onbruikbaar. Dit is er letterlijk
+// een uit de pool die de échte kaart gebruikt (SNEER.gemeen, ≤72 tekens).
+const SPREUK = "Mijn oma reageert een stuk sneller op een diepe lob.";
 
 export function PietShowcase() {
   const tier = tierFor(ELO);
@@ -37,6 +42,7 @@ export function PietShowcase() {
               naam={NAAM}
               avatar={<Avatar name={NAAM} size={160} />}
               editie="🃏 Piet · 28/6"
+              spreuk={SPREUK}
             />
           }
         />

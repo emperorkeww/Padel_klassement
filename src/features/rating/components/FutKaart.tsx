@@ -2451,6 +2451,7 @@ export function FutKaartVoorkant({
   playstyles,
   nieuwPlaystyleId,
   statBron,
+  spreuk,
 }: {
   elo: number | null;
   tier: Tier | null;
@@ -2458,6 +2459,11 @@ export function FutKaartVoorkant({
   naam: string;
   /** Editie-regel onder de divisie (#497), bv. "⚡ In-Form · +48". */
   editie?: ReactNode;
+  /** Spreuk onder de editieregel (#834): de spotregel die de Zwarte Piet in
+   *  zijn referentie draagt. Komt van `editieSpreuk` en is null zodra er niets
+   *  te spotten valt of het roast-schild opstaat. Alleen zichtbaar op de
+   *  kaartmaten vanaf 168px — zie FutKaart.css. */
+  spreuk?: string | null;
   /** Hover-uitleg bij de editie-regel (#655, editieUitleg): alleen gezet
    *  wanneer het label uitleg nodig heeft, zoals de club-scope van de pias. */
   editieTitel?: string | null;
@@ -2537,6 +2543,7 @@ export function FutKaartVoorkant({
           {editie}
         </span>
       )}
+      {spreuk && <span className="fut-kaart__spreuk">{`“${spreuk}”`}</span>}
     </>
   );
 }

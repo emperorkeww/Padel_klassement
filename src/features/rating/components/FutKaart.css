@@ -549,6 +549,36 @@
   white-space: nowrap;
 }
 
+/* Spreuk (#834): de spotregel onder de editieregel, zoals de Zwarte Piet hem in
+   zijn referentie draagt. Standaard weg — pas vanaf 168px kaartbreedte is er
+   ruimte voor. Op de veld- en rastermaten (96–132px) is de editieregel al de
+   kleinste tekst op de kaart; een tweede regel eronder wordt daar een grijze
+   veeg. Twee regels is het maximum: `editieSpreuk` levert alleen zinnen die
+   daarbinnen passen, en de clamp is het vangnet voor een smalle container. */
+.fut-kaart__spreuk {
+  display: none;
+}
+
+@container fut-kaart (min-width: 168px) {
+  .fut-kaart__spreuk {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    margin-top: 3px;
+    padding: 0 4%;
+    text-align: center;
+    font-size: max(7px, calc(var(--fut-kw) * 0.052));
+    font-style: italic;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    color: var(--kaart-ink-soft, var(--kaart-ink));
+    text-wrap: balance;
+  }
+}
+
 /* Compact-zetting (#625) voor de kleine maten — het veld (96–124px) en de
    raster-wand (130px). Met chips én editie-regel tegelijk gevuld wordt het
    vlak daar druk: de chips overlappen licht (FC-stijl), de editie-regel

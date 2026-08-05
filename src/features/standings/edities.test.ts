@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   EDITIE_PRIORITEIT,
   editieLabel,
+  editieSpreuk,
   editieUitleg,
   editieVoor,
   editieVoorwaarde,
@@ -250,6 +251,50 @@ describe("editieUitleg (#655/#665)", () => {
     expect(editieUitleg("piet")).toMatch(/sinds/);
     for (const editie of ["icon", "kampioen", "inform", "onfire", null] as const) {
       expect(editieUitleg(editie)).toBeNull();
+    }
+  });
+});
+
+describe("editieSpreuk (#834) — de spotregel van de Piet", () => {
+  const SNEER_LIMIET = 72;
+
+  it("geeft alleen de Piet een spreuk", () => {
+    const c = ctx({ piet, pias, inForm, kampioen, iconKey: "p1" });
+    expect(editieSpreuk("piet", c)).toBeTypeOf("string");
+    for (const editie of ["icon", "kampioen", "inform", "onfire", "pias", null] as const) {
+      expect(editieSpreuk(editie, c)).toBeNull();
+    }
+  });
+
+  it("zwijgt zonder zittende Piet", () => {
+    expect(editieSpreuk("piet", ctx())).toBeNull();
+  });
+
+  it("blijft dezelfde regel zolang dezelfde speler hem draagt", () => {
+    // De kaart staat dagenlang op het klassement en het profiel; een regel die
+    // per render wisselt leest als ruis.
+    const c = ctx({ piet });
+    const eerste = editieSpreuk("piet", c);
+    expect(editieSpreuk("piet", ctx({ piet }))).toBe(eerste);
+    // Andere drager of andere overnamedatum → andere kans op een andere regel,
+    // maar in elk geval een eigen trekking uit dezelfde pool.
+    expect(
+      editieSpreuk("piet", ctx({ piet: { ...piet, playerId: "p9" } })),
+    ).toBeTypeOf("string");
+  });
+
+  it("past binnen het regelbudget van de kaart", () => {
+    // De spreuk krijgt twee regels op 168px kaartbreedte. De sneer-pools zijn
+    // geschreven voor de feed en lopen tot ver over de honderd tekens; komt er
+    // hier zo'n regel uit, dan wordt hij op de kaart afgekapt.
+    for (const speler of ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]) {
+      const regel = editieSpreuk(
+        "piet",
+        ctx({ piet: { ...piet, playerId: speler } }),
+      );
+      expect(regel!.length, `${speler}: "${regel}"`).toBeLessThanOrEqual(
+        SNEER_LIMIET,
+      );
     }
   });
 });

@@ -21,6 +21,7 @@ import {
 } from "../leaderboardHelpers";
 import {
   editieLabel,
+  editieSpreuk,
   editieUitleg,
   editieVoor,
   type EditieContext,
@@ -101,6 +102,7 @@ export function KaartPreview({
               }
               editie={editieLabel(editie, edities, row.key)}
               editieTitel={editieUitleg(editie)}
+              spreuk={editieSpreuk(editie, edities)}
               // PlayStyles (#500) ook in de preview (#621): dezelfde chips
               // als op de profielkaart.
               playstyles={featuredPlaystyles(row.profile?.featured_badges)}

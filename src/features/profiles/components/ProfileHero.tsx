@@ -69,6 +69,7 @@ export function ProfileHero({ d, action }: { d: ProfileData; action?: ReactNode 
               playstyles={d.featuredBadges ?? []}
               editie={d.editieTekst ?? null}
               editieTitel={editieUitleg(d.editie ?? null)}
+              spreuk={d.editieSpreuk ?? null}
             />
           }
           achterOverlay={

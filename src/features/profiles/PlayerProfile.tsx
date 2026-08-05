@@ -25,6 +25,7 @@ import { getGlobaleZwartePiet } from "@/features/groups/zwartePietApi";
 import { currentPias } from "@/features/standings/pias";
 import {
   editieLabel,
+  editieSpreuk,
   editieVoor,
   iconKeyVoor,
   type EditieContext,
@@ -448,6 +449,10 @@ export function PlayerProfile() {
   // tot nu toe helemaal niet, waardoor de Big Daddy op zijn poster als gewone
   // tierkaart verscheen.
   const editieTekst = editieLabel(editie, editieCtx, id);
+  // Spreuk (#834): alleen de Zwarte Piet draagt er een, en alleen de hero-kaart
+  // is breed genoeg om hem te tonen (170–210px). De poster laat hem staan: daar
+  // is de naamplaat al krap en zou een tweede regel op de divisietekst botsen.
+  const editieSpreukTekst = editieSpreuk(editie, editieCtx);
   // Head-to-Head versus-kaarten (#499): dezelfde editie-context als
   // hierboven, voor de bekeken speler ("hunKaart") én — mét reeds app-breed
   // geladen data, dus zonder extra fetch — de ingelogde gebruiker
@@ -543,6 +548,7 @@ export function PlayerProfile() {
     pechMeter: meter,
     editie,
     editieTekst,
+    editieSpreuk: editieSpreukTekst,
     hasRating,
     rhist,
     scoped,
