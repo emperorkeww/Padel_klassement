@@ -177,3 +177,10 @@
   font-size: 0.8125rem;
   text-align: right;
 }
+
+/* Filterchips (#1036 deel 3). Erven de .tabs/.tab-opmaak van de feedfilters;
+   alleen de marge eromheen is hier anders, want ze staan tussen het zoekveld
+   en de lijst in plaats van bovenaan een pagina. */
+.admin__filters {
+  margin: 0 0 0.25rem;
+}

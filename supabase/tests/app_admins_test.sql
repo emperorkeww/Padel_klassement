@@ -10,7 +10,7 @@
 -- onopgemerkt bij kan sluipen.
 begin;
 
-select plan(19);
+select plan(21);
 
 ------------------------------------------------------------------------
 -- Fixtures (als superuser). De trigger handle_new_user maakt de profielen.
@@ -107,6 +107,19 @@ select throws_ok(
 select throws_ok(
   $$ select public.is_app_admin('d0000000-0000-0000-0000-000000000001') $$,
   '42501', null, 'gewone gebruiker kan is_app_admin() niet uitvoeren (#1036)'
+);
+
+-- Idem voor de overzichten van deel 3: gasten en groepen zijn óók service-role-
+-- only. Zonder deze revoke zou elke ingelogde gebruiker via rpc() de volledige
+-- gasten- en groepenlijst kunnen ophalen, buiten elke RLS om.
+select throws_ok(
+  $$ select * from public.admin_gasten_overzicht() $$,
+  '42501', null, 'gewone gebruiker kan admin_gasten_overzicht() niet uitvoeren (#1036)'
+);
+
+select throws_ok(
+  $$ select * from public.admin_groepen_overzicht() $$,
+  '42501', null, 'gewone gebruiker kan admin_groepen_overzicht() niet uitvoeren (#1036)'
 );
 
 ------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import { Toggle } from "@/ui/Toggle";
 import { AvatarCropper } from "./components/AvatarCropper";
 import { snijUit, type Uitsnede } from "./components/avatarCrop";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
@@ -69,6 +70,7 @@ function tabFrom(value: string | null): SettingsTab {
 }
 
 export function ProfileSettings() {
+  const isAdmin = useIsAdmin();
   const { user, signOut } = useAuth();
   const myId = user?.id ?? "";
   const profile = useAsync(() => getProfile(myId), [myId]);
@@ -196,6 +198,29 @@ export function ProfileSettings() {
               <EmailCard currentEmail={user?.email ?? ""} />
               <PasswordCard email={user?.email ?? ""} />
             </div>
+
+            {/* Beheer (#1036). Op desktop staat dit in de zijbalkgroep "Ik";
+                op een telefoon bestaat die zijbalk niet en is de tabbalk vol,
+                dus daar was /admin alleen bereikbaar door de URL in te tikken.
+                De profielpagina is de mobiele tegenhanger van diezelfde groep —
+                je komt er via de avatar in de topbalk. Alleen zichtbaar voor
+                beheerders; verbergen is geen beveiliging, de route en de edge
+                function weigeren zelfstandig. */}
+            {isAdmin && (
+              <section className="card">
+                <div className="row-between">
+                  <div>
+                    <h2 className="card__title card__title--tight">Beheer</h2>
+                    <p className="empty empty--bare">
+                      Gebruikers opvolgen, gasten en groepen bekijken.
+                    </p>
+                  </div>
+                  <Link className="btn" to="/admin">
+                    Openen
+                  </Link>
+                </div>
+              </section>
+            )}
 
             <section className="card">
               <div className="row-between">

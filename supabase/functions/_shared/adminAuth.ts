@@ -13,6 +13,8 @@ export const ADMIN_ACTIES = [
   "list_users",
   "user_detail",
   "audit_log",
+  "list_guests",
+  "list_groups",
   // Muterend vanaf hier (#1036 deel 2).
   "recovery_link",
   "temp_password",

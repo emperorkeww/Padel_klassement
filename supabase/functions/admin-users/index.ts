@@ -113,6 +113,18 @@ Deno.serve(async (req) => {
       return json({ detail: data });
     }
 
+    case "list_guests": {
+      const { data, error } = await admin.rpc("admin_gasten_overzicht");
+      if (error) return json({ error: error.message }, 500);
+      return json({ gasten: data ?? [] });
+    }
+
+    case "list_groups": {
+      const { data, error } = await admin.rpc("admin_groepen_overzicht");
+      if (error) return json({ error: error.message }, 500);
+      return json({ groepen: data ?? [] });
+    }
+
     case "audit_log": {
       const targetId = body.user_id;
       if (typeof targetId !== "string" || targetId === "") {
