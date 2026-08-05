@@ -88,6 +88,29 @@
   z-index: var(--glazenwasser-laag-voor, 4);
 }
 
+/* De voorlaag is een direct kind van de kaartroot, buiten de 3D-flipper. Zo kan
+   WebKit/Chromium hem in een getransformeerd raster niet achter de geclipte
+   kaartzijde afvlakken. Bij de achterkant hoort dit artwork niet zichtbaar te
+   blijven. */
+.fut-kaart.fut-kaart--glazenwasser.is-omgedraaid
+  > .glazenwasser-effect--voor {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fut-kaart.fut-kaart--glazenwasser > .glazenwasser-effect--voor {
+    transition:
+      opacity 0.14s ease,
+      visibility 0s linear 0.14s;
+  }
+
+  .fut-kaart.fut-kaart--glazenwasser:not(.is-omgedraaid)
+    > .glazenwasser-effect--voor {
+    transition-delay: 0.16s, 0s;
+  }
+}
+
 .glazenwasser-effect--voor .glazenwasser-effect__master {
   -webkit-mask: url("./assets/glazenwasser-front-mask.webp") center / 100% 100%
     no-repeat;

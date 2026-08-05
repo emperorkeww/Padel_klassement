@@ -2403,9 +2403,6 @@ export function FutKaart({
             pijlen, de splinter, het kroontje met krassen en de inktdruipers
             liggen vóór het frame. */}
         {wannabeMaster && <WannabeEffectVoor />}
-        {/* Raamcrest, hoekschuim, beide trekkers, de sopemmer, de schildbadge en
-            de onderste helft van de waterexplosie liggen vóór het frame. */}
-        {glazenwasserMaster && <GlazenwasserEffectVoor />}
         {blaaskaakMaster && <BlaaskaakEffectVoor />}
         {editie === "piet" && <PietEffectVoor />}
         {/* Kroon, klaver, pion, speelkaarten, narrenkop, bagel, rozet en lint
@@ -2420,6 +2417,11 @@ export function FutKaart({
           {editie === "inform" && <InformStormVoor />}
           {layout && <KaartOnderdelen layout={layout} slot="voor" />}
         </div>
+        {/* De Glazenwasser-voorwerpen staan bewust buiten de preserve-3d-
+            flipper. Sommige browsers vlakken een gemaskerde sibling daarin
+            achter de geclipte kaartzijde af. Op de kaartroot blijft de laag
+            gegarandeerd vóór het frame; CSS laat hem tijdens de flip weg. */}
+        {glazenwasserMaster && <GlazenwasserEffectVoor />}
       </div>
     </KaartLayoutContext.Provider>
   );

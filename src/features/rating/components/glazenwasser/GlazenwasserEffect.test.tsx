@@ -40,6 +40,23 @@ describe("Glazenwasser-mastereffect", () => {
     expect(binnen?.parentElement).toHaveClass("fut-kaart__vlak");
   });
 
+  it("monteert de voorlaag buiten de 3D-flipper en vóór het frame", () => {
+    const { container } = render(
+      <FutKaart tier={GLAZENWASSER} voor={<span>Alice</span>} />,
+    );
+
+    const kaart = container.querySelector<HTMLElement>(".fut-kaart");
+    const flipper = container.querySelector<HTMLElement>(
+      ".fut-kaart__flipper",
+    );
+    const voor = container.querySelector<HTMLElement>(
+      ".glazenwasser-effect--voor",
+    );
+
+    expect(voor?.parentElement).toBe(kaart);
+    expect(flipper).not.toContainElement(voor);
+  });
+
   it("houdt de lagen decoratief en niet-interactief", () => {
     const { container } = render(
       <FutKaart tier={GLAZENWASSER} voor={<span>Alice</span>} />,
