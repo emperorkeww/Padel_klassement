@@ -222,10 +222,32 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Auth-mails in de huisstijl (#1037). De HTML in supabase/templates/ is de bron
+# van waarheid; deze blokken hangen ze aan de lokale stack. Hoe ze naar het
+# gehoste project komen staat in docs/auth-mails.md.
+#
+# magic_link gebruiken we niet (alleen e-mail + wachtwoord), maar het sjabloon
+# ligt er zodat er niet stilletjes een Engelse standaardmail uitgaat als die
+# login-methode ooit aangezet wordt.
+[auth.email.template.recovery]
+subject = "Je wachtwoord opnieuw instellen"
+content_path = "./supabase/templates/wachtwoord-herstellen.html"
+
+[auth.email.template.confirmation]
+subject = "Welkom bij Vamos! — bevestig je e-mailadres"
+content_path = "./supabase/templates/bevestig-aanmelding.html"
+
+[auth.email.template.email_change]
+subject = "Bevestig je nieuwe e-mailadres"
+content_path = "./supabase/templates/bevestig-nieuw-adres.html"
+
+[auth.email.template.invite]
+subject = "Je bent uitgenodigd voor Vamos!"
+content_path = "./supabase/templates/uitnodiging.html"
+
+[auth.email.template.magic_link]
+subject = "Je inloglink voor Vamos!"
+content_path = "./supabase/templates/inloglink.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
