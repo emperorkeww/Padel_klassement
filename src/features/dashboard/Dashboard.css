@@ -94,11 +94,18 @@
 
 /* "Jouw volgende match": de meest actionable kaart — zachte accent-gloed en
    accentrand zodat hij als enige uit de kaartenrij springt. */
+/* Sinds #1062 staat die gloed op glas (.glas .glas--standaard). De kaart ligt
+   hoog op de pagina en dus bovenop de lime-wash van .dashboard::before — daar
+   valt echt iets doorheen te zien. De gloed is nu een doorschijnende laag vóór
+   het materiaal in plaats van een verloop op een dicht vlak; anders zou de
+   linkerbovenhoek het enige ondoorzichtige stuk van de kaart zijn. */
 .card--next {
+  --glas-laag: radial-gradient(
+    110% 130% at 0% 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+    transparent 55%
+  );
   border-color: var(--accent-line);
-  background:
-    radial-gradient(110% 130% at 0% 0%, var(--accent-soft) 0%, transparent 55%),
-    var(--surface);
 }
 
 /* Het secundaire cijfer-blok achter één inklapper (#276, verbreed in #911):

@@ -80,6 +80,43 @@ eigen hoeken.
 - `glas--scrollbaar` — voor een vlak met `overflow-y: auto`. Absoluut
   gepositioneerde lagen schuiven daar mee met de inhoud, dus het randlicht komt
   uit een inset-schaduw die wél op de border-box blijft staan.
+- `glas--balk` — voor een navigatiebalk van schermrand tot schermrand: geen
+  afronding, geen zijranden, geen haarlijn rondom. De rand naar de pagina toe
+  zet de balk zelf.
+
+### Een eigen kleur meebrengen
+
+`--glas-laag` is een laag vóór het materiaal, standaard leeg. Zo hoeft niemand
+de materiaalformule te kopiëren om er iets overheen te leggen:
+
+```css
+.card--next {
+  --glas-laag: radial-gradient(
+    110% 130% at 0% 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+    transparent 55%
+  );
+}
+```
+
+Houd die laag doorschijnend. Een dekkende laag maakt van het glas weer een
+gewone kaart — behalve waar dat expres is, zoals bij de positie-chip hieronder.
+
+### Waar het materiaal zich koest houdt
+
+Twee dingen die `.glas` bewust *niet* met gewicht oplegt, omdat het bestaande
+vlakken zou breken:
+
+- **`position`** staat in een `:where(.glas)`, dus zonder gewicht. `.glas` komt
+  ná `ui.css` in de cascade; met gewicht zou de zwevende "Jouw positie"-knop
+  (`position: fixed`) gewoon terugvallen in de pagina.
+- **`overflow: hidden`** hangt aan de vórm-modifiers, niet aan `.glas`. De
+  onderbalk heeft een bal die bewust bóven de balk uitsteekt.
+
+De decoratieve lagen staan om dezelfde reden op `z-index: -1`: de meeste
+vlakken dragen alleen de classes en hebben geen `.glas__inhoud`, dus hun tekst
+staat er los in. Binnen de eigen stapelcontext schildert een laag op -1 wél
+over de achtergrond van het vlak, maar niet over die tekst.
 
 ## Toegankelijkheid
 
@@ -133,6 +170,36 @@ Moet er iets vervagen, doe het dan op een laag die het glas niet omsluit.
   hook lege handlers terug: geen listener, geen werk.
 - `will-change` staat er bewust niet op. Dat pas toevoegen als een profiel laat
   zien dat het helpt.
+
+### Wat de app er nu voor betaalt
+
+Zes glasvlakken, waarvan er hooguit drie tegelijk in beeld staan:
+
+| Vlak | Variant | Blur | Kost per frame? |
+|---|---|---|---|
+| `.topbar` (mobiel) | sterk | 14px | ja, plakt tijdens scrollen |
+| `.tabbar` (mobiel) | sterk | 14px | ja, staat vast tijdens scrollen |
+| `.sheet` | sterk + scrollbaar | 22px | alleen zolang hij open is |
+| `.card--next` | standaard | 16px | nee, scrollt gewoon mee |
+| `.me-chip` | interactief + pil | uit | nee |
+
+De twee balken zijn de enige die de blur elke scrollframe opnieuw laten
+uitrekenen; daarom staan ze op 14px in plaats van de 22px die `sterk` normaal
+geeft. Op de positie-chip staat de blur helemaal uit: die heeft een dekkende
+vulling, dus er zou toch niets van te zien zijn.
+
+Waar meerdere glasvlakken elkaar overlappen — een geopend sheet boven de
+balken — kost dat geen dubbele blur: de balken vallen onder de scrim en worden
+gewoon meegeblurd als achtergrond.
+
+### De uitzondering: dekkend glas op de positie-chip
+
+De "Jouw positie"-chip draagt het materiaal, maar met een **dekkende**
+accentvulling. Wit op `--accent` haalt net AA; laat je daar ook maar tien
+procent achtergrond doorheen schijnen, dan zakt het eronder. Op zo'n vlak zit
+het glas dus in de rand, het hooglicht en de indrukbeweging — niet in de
+doorkijk. Dat is de regel, niet de uitzondering: leesbaarheid wint van
+transparantie, en dat is precies wat de `@media`-terugvallen ook doen.
 
 ## Wat er mist
 

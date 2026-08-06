@@ -36,16 +36,22 @@
   --glas-rand-laag: rgb(
     var(--glas-glans) / calc(0.12 * var(--glas-rand-kracht) * var(--glas-glans-kracht))
   );
+  /* Een eigen laag vóór het materiaal, voor vlakken die een kleur willen
+     meebrengen — de accentgloed op "Jouw volgende match", de accentvulling van
+     de positie-chip. Standaard leeg, zodat het materiaal onaangeroerd blijft.
+     Zo hoeft niemand de materiaalformule te kopiëren om er iets over te leggen. */
+  --glas-laag: linear-gradient(rgb(0 0 0 / 0) 0 0);
 
-  position: relative;
   /* Eigen stapelcontext, zodat de lagen hieronder niet met de pagina vechten. */
   isolation: isolate;
 
-  background: linear-gradient(
-    140deg,
-    rgb(var(--glas-tint) / var(--glas-dekking)),
-    rgb(var(--glas-tint) / calc(var(--glas-dekking) - 0.14))
-  );
+  background:
+    var(--glas-laag),
+    linear-gradient(
+      140deg,
+      rgb(var(--glas-tint) / var(--glas-dekking)),
+      rgb(var(--glas-tint) / calc(var(--glas-dekking) - 0.14))
+    );
 
   /* De rand is de terugval voor browsers zonder mask-compositing; waar dat wél
      kan, tekent ::before er een verlopende refractierand overheen. Hij staat
@@ -72,6 +78,14 @@
     var(--glas-schaduw);
 }
 
+/* De lagen hieronder staan absoluut, dus het vlak moet een positie hebben —
+   maar `:where` en dus zonder gewicht. Een vlak dat zelf al ergens hangt houdt
+   zijn eigen positie: `.zwevende-actie` is `fixed`, en een `relative` uit dit
+   bestand zou die zwevende knop gewoon in de pagina laten vallen. */
+:where(.glas) {
+  position: relative;
+}
+
 /* De refractierand: een verlopende 1px-ring, geknipt met mask-compositing.
    Buiten dit @supports-blok blijft de gewone `border` hierboven staan. */
 @supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
@@ -79,7 +93,12 @@
     content: "";
     position: absolute;
     inset: 0;
-    z-index: 0;
+    /* Achter de inhoud maar vóór het materiaal: `.glas` is door `isolation`
+       altijd een eigen stapelcontext, en daarin schildert een laag op -1 wél
+       over de achtergrond van het element maar niet over zijn inhoud. Dat is
+       wat de vlakken zónder `.glas__inhoud` nodig hebben — de balken, de chip
+       en de kaarten dragen alleen de classes, en hun tekst staat er los in. */
+    z-index: -1;
     pointer-events: none;
     border-radius: inherit;
     padding: 1px;
@@ -109,7 +128,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: -1;
   pointer-events: none;
   border-radius: inherit;
 
