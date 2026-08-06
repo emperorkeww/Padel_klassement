@@ -83,6 +83,23 @@ describe("glas.css", () => {
     expect(blok("\n.glas--paneel {")).toMatch(/overflow:\s*hidden/);
   });
 
+  it("legt geen positie op aan een vlak dat er al een heeft", () => {
+    // glas.css komt ná ui.css in de cascade. Zou `.glas` hier met gewicht
+    // `position: relative` zetten, dan viel de zwevende "Jouw positie"-knop
+    // (fixed) gewoon terug in de pagina. Vandaar `:where`, dat niets weegt.
+    expect(blok("\n.glas {")).not.toMatch(/position:/);
+    expect(blok("\n:where(.glas) {")).toMatch(/position:\s*relative/);
+  });
+
+  it("houdt de decoratieve lagen achter de inhoud", () => {
+    // De meeste vlakken dragen alleen de classes en hebben geen
+    // `.glas__inhoud`; hun tekst staat er los in. Een laag op z-index -1
+    // schildert binnen de eigen stapelcontext wél over de achtergrond van het
+    // vlak, maar niet over die tekst.
+    expect(blok(".glas::after {")).toMatch(/z-index:\s*-1/);
+    expect(blok(".glas::before {")).toMatch(/z-index:\s*-1/);
+  });
+
   it("houdt de rand overeind waar mask-compositing ontbreekt", () => {
     // De verlopende refractierand zit ín het @supports-blok; de gewone border
     // op `.glas` is wat er overblijft als dat niet kan.

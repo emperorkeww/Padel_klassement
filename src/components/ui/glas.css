@@ -36,16 +36,22 @@
   --glas-rand-laag: rgb(
     var(--glas-glans) / calc(0.12 * var(--glas-rand-kracht) * var(--glas-glans-kracht))
   );
+  /* Een eigen laag vóór het materiaal, voor vlakken die een kleur willen
+     meebrengen — de accentgloed op "Jouw volgende match", de accentvulling van
+     de positie-chip. Standaard leeg, zodat het materiaal onaangeroerd blijft.
+     Zo hoeft niemand de materiaalformule te kopiëren om er iets over te leggen. */
+  --glas-laag: linear-gradient(rgb(0 0 0 / 0) 0 0);
 
-  position: relative;
   /* Eigen stapelcontext, zodat de lagen hieronder niet met de pagina vechten. */
   isolation: isolate;
 
-  background: linear-gradient(
-    140deg,
-    rgb(var(--glas-tint) / var(--glas-dekking)),
-    rgb(var(--glas-tint) / calc(var(--glas-dekking) - 0.14))
-  );
+  background:
+    var(--glas-laag),
+    linear-gradient(
+      140deg,
+      rgb(var(--glas-tint) / var(--glas-dekking)),
+      rgb(var(--glas-tint) / calc(var(--glas-dekking) - 0.14))
+    );
 
   /* De rand is de terugval voor browsers zonder mask-compositing; waar dat wél
      kan, tekent ::before er een verlopende refractierand overheen. Hij staat
@@ -72,6 +78,14 @@
     var(--glas-schaduw);
 }
 
+/* De lagen hieronder staan absoluut, dus het vlak moet een positie hebben —
+   maar `:where` en dus zonder gewicht. Een vlak dat zelf al ergens hangt houdt
+   zijn eigen positie: `.zwevende-actie` is `fixed`, en een `relative` uit dit
+   bestand zou die zwevende knop gewoon in de pagina laten vallen. */
+:where(.glas) {
+  position: relative;
+}
+
 /* De refractierand: een verlopende 1px-ring, geknipt met mask-compositing.
    Buiten dit @supports-blok blijft de gewone `border` hierboven staan. */
 @supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
@@ -79,7 +93,12 @@
     content: "";
     position: absolute;
     inset: 0;
-    z-index: 0;
+    /* Achter de inhoud maar vóór het materiaal: `.glas` is door `isolation`
+       altijd een eigen stapelcontext, en daarin schildert een laag op -1 wél
+       over de achtergrond van het element maar niet over zijn inhoud. Dat is
+       wat de vlakken zónder `.glas__inhoud` nodig hebben — de balken, de chip
+       en de kaarten dragen alleen de classes, en hun tekst staat er los in. */
+    z-index: -1;
     pointer-events: none;
     border-radius: inherit;
     padding: 1px;
@@ -109,7 +128,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: -1;
   pointer-events: none;
   border-radius: inherit;
 
@@ -210,9 +229,11 @@
 
 /* De focusring is bewust géén glasrand: die verandert al bij hover, en een
    toetsenbordgebruiker moet één ondubbelzinnig signaal krijgen. Zelfde
-   vormgeving als het blok "Toegankelijke focus-states" in ui.css. */
+   vormgeving als het blok "Toegankelijke focus-states" in ui.css — en dus ook
+   --focus-ring en niet --accent: sinds #1074 wijst dat token op donker naar
+   --lime, waar het accent te weinig van het glas afsteekt. */
 .glas--interactief:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -247,6 +268,20 @@
     inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
     inset 0 0 0 1px var(--glas-rand-laag),
     inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    var(--glas-schaduw);
+}
+
+/* ---------- Volvlakse balken ---------- */
+/* Een navigatiebalk loopt van schermrand tot schermrand. De haarlijn rondom en
+   de zijranden zouden daar als losse streepjes langs het scherm staan; alleen
+   de rand naar de pagina toe heeft betekenis, en die zet de balk zelf.
+   `--glas-schaduw` bepaalt of de balk naar boven of naar beneden schaduwt. */
+.glas--balk {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
     var(--glas-schaduw);
 }
 

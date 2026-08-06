@@ -245,18 +245,18 @@
     gap: var(--sp-3);
     padding: 0.5rem var(--sp-4);
     padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
-    background: var(--bar-glass);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    /* Materiaal komt van .glas .glas--sterk .glas--balk (#1062). Deze balk had
+       al glas; nieuw is dat het hetzelfde glas is als de rest van de app.
+       Minder blur dan de variant standaard doet: dit vlak plakt aan de
+       bovenkant en wordt dus bij elke scrollframe opnieuw geblurd.
+       De dekkende terugval voor browsers zonder blur is dezelfde balkkleur die
+       hier eerder in een eigen @supports-blok stond (#1074); dat blok is
+       vervallen, want die terugval zit nu in het materiaal zelf. */
+    --glas-blur: 14px;
+    --glas-schaduw: var(--shadow-sm);
+    --glas-vast: var(--sidebar-bg);
+    border-top: 0;
     border-bottom: 1px solid var(--divider);
-  }
-  /* Zonder backdrop-filter is --bar-glass een half-doorzichtig vlak waar de
-     content dwars doorheen schuift. Val dan terug op de dekkende balkkleur —
-     dezelfde die de onderbalk draagt, dus de twee blijven één familie. */
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .topbar {
-      background: var(--sidebar-bg);
-    }
   }
   .topbar__brand {
     position: relative;
@@ -304,9 +304,16 @@
     display: flex;
     align-items: stretch;
     padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
-    background: var(--sidebar-bg);
+    /* Materiaal komt van .glas .glas--sterk .glas--balk (#1062). Deze balk was
+       tot nu toe dicht, terwijl haar tegenhanger bovenaan al glas was. Zelfde
+       lage blur om dezelfde reden: de balk staat vast en wordt bij elke
+       scrollframe opnieuw geblurd. --glas-schaduw wijst omhoog, richting de
+       inhoud die eronderdoor schuift. */
+    --glas-blur: 14px;
+    --glas-schaduw: var(--shadow-up);
+    --glas-vast: var(--sidebar-bg);
+    border-bottom: 0;
     border-top: 1px solid var(--divider);
-    box-shadow: var(--shadow-up);
   }
   .tabbar__link {
     flex: 1;

@@ -430,7 +430,7 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: var(--overlay);
+  background-color: var(--overlay);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -444,12 +444,17 @@ textarea {
      zodat de onderkant van de sheet niet achter de browser-chrome valt. */
   max-height: calc(100dvh - 3rem);
   overflow-y: auto;
-  /* Een sheet ligt bóven de pagina, en op donker moet je dat aan het vlak zien:
-     de schaduw eronder valt daar weg tegen het donkere canvas (#1074). */
-  background: var(--surface-elevated);
+  /* Materiaal en schaduw komen van .glas .glas--sterk .glas--scrollbaar
+     (#1062). Die scrollbaar-variant is er precies voor dit geval: het paneel
+     scrollt, en dan zouden de losse rand- en hooglichtlagen met de inhoud
+     meeschuiven. Het randlicht komt hier dus uit een inset-schaduw.
+     De dekkende terugval is --surface-elevated in plaats van de standaard
+     --surface: een sheet ligt bóven de pagina, en op donker moet je dat aan
+     het vlak zelf zien, want de schaduw eronder valt weg tegen het donkere
+     canvas (#1074). */
+  --glas-vast: var(--surface-elevated);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
-  box-shadow: var(--shadow-lg);
   animation: sheet-up 0.2s ease-out;
 }
 .sheet--compact {
@@ -464,22 +469,30 @@ textarea {
     border-radius: var(--radius-lg);
   }
 }
+/* Het paneel schuift omhoog, maar vervaagt niet meer mee (#1062). Om dezelfde
+   reden als hierboven: een element met opacity < 1 wordt een backdrop root, en
+   Chrome houdt die laag ook ná de animatie vast. Zolang deze keyframe opacity
+   aanraakte, deed de backdrop-filter van het paneel niets — de pagina las
+   scherp door de sheet heen. De 24px omhoog draagt de beweging prima alleen. */
 @keyframes sheet-up {
   from {
     transform: translateY(24px);
-    opacity: 0.6;
   }
   to {
     transform: none;
-    opacity: 1;
   }
 }
+/* De scrim vervaagt via zijn kleur en niet via opacity (#1062). Een element
+   met opacity < 1 is een "backdrop root": alles daarbinnen kan niet meer door
+   de scrim heen kijken. Zolang die animatie op opacity stond, deed de
+   backdrop-filter van het paneel erin dus letterlijk niets — het paneel was
+   alleen doorschijnend, zonder blur, en de pagina las er dwars doorheen. */
 @keyframes sheet-fade {
   from {
-    opacity: 0;
+    background-color: transparent;
   }
   to {
-    opacity: 1;
+    background-color: var(--overlay);
   }
 }
 @media (prefers-reduced-motion: reduce) {

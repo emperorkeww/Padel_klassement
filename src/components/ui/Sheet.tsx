@@ -66,7 +66,7 @@ export function Sheet({
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div
-        className={`sheet${compact ? " sheet--compact" : ""}${className ? ` ${className}` : ""}`}
+        className={`sheet glas glas--sterk glas--scrollbaar${compact ? " sheet--compact" : ""}${className ? ` ${className}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title}

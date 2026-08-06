@@ -415,14 +415,27 @@
 /* ---------- "Jouw positie"-knop ---------- */
 /* Plaatsing en uitwijkgedrag komen sinds #942 van .zwevende-actie (ui.css),
    gedeeld met de "+ Match loggen"-knop op Matches. */
+/* Sinds #1062 draagt de chip het glasmateriaal (.glas .glas--interactief
+   .glas--pil): randlicht, een hooglicht dat de aanwijzer volgt, en een
+   indrukbeweging.
+
+   De vulling blijft wél dekkend accent, en dat is een bewuste rem. Wit op
+   --accent haalt net AA; laat je daar ook maar tien procent achtergrond
+   doorheen schijnen, dan zakt het eronder — en de leesbaarheid van de tekst
+   weegt hier zwaarder dan de doorkijk. Op dit vlak zit het glas dus in de rand
+   en het licht, niet in het materiaal. Daarom staat de blur hier ook uit: hij
+   zou onder een dekkende laag toch niet te zien zijn en alleen werk kosten. */
 .me-chip {
+  --glas-laag: linear-gradient(var(--accent) 0 0);
+  --glas-schaduw: var(--shadow-lg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: var(--sp-2) var(--sp-4);
   border: 1px solid var(--accent);
-  border-radius: 999px;
-  background: var(--accent);
   color: var(--accent-ink);
   font-family: inherit;
   font-size: var(--fs-sm);
@@ -432,16 +445,19 @@
   /* De transform-overgang (ook die van de hover-lift) komt van
      .zwevende-actie; twee transition-regels op één element vechten anders om
      dezelfde eigenschap. */
-  transition: background 0.15s;
 }
 .me-chip:hover {
-  background: var(--accent-hover);
+  /* De vulling wisselt via dezelfde laag, anders zou een `background` hier het
+     hele materiaal eronder wegvegen. */
+  --glas-laag: linear-gradient(var(--accent-hover) 0 0);
   transform: translateY(-1px);
 }
+/* De indrukbeweging van .glas--interactief zou hier boven op de hover-lift
+   komen; één van de twee is genoeg. */
+.me-chip:active {
+  transform: none;
+}
 @media (prefers-reduced-motion: reduce) {
-  .me-chip {
-    transition: none;
-  }
   .me-chip:hover {
     transform: none;
   }
