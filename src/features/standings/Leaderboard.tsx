@@ -17,6 +17,7 @@ import {
 } from "./components/LeaderboardFilters";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
+import { useGlasAanwijzer } from "@/lib/hooks/useGlasAanwijzer";
 import { useContainerBreedte } from "@/lib/hooks/useContainerBreedte";
 import { Avatar } from "@/ui/Avatar";
 import { recentForm, type Outcome } from "@/features/rating/results";
@@ -125,6 +126,9 @@ export function Leaderboard() {
   usePageTitle("Klassement");
   // De "Jouw positie"-chip wijkt bij vooruitscrollen (#942).
   const chipVerborgen = useVerbergBijScrollen();
+  // …en het glashooglicht op die chip volgt de muis (#1062). Zonder muis geeft
+  // de hook lege handlers terug, dus op een telefoon kost dit niets.
+  const chipAanwijzer = useGlasAanwijzer();
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const club = useClub();
@@ -1184,10 +1188,11 @@ export function Leaderboard() {
       {tab !== "team" && myRankIdx >= 0 && rows.length > 8 && !nq &&
         !throneRow?.isMe && (
         <button
-          className={`me-chip zwevende-actie${
+          className={`me-chip zwevende-actie glas glas--interactief glas--pil${
             chipVerborgen ? " is-verborgen" : ""
           }`}
           onClick={scrollToMe}
+          {...chipAanwijzer}
         >
           Jouw positie · #{myRankIdx + 1}
         </button>
