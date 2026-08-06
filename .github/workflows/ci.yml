@@ -4,6 +4,12 @@ on:
   push:
     branches: [main, develop]
   pull_request:
+  # Handmatig starten. Nodig gebleken tijdens de Actions-storing van 6 augustus
+  # 2026: GitHub kneep webhooks af tot ~15%, waardoor pushes en PR-events uren
+  # lang geen run meer opleverden en een release-PR bleef hangen op checks die
+  # nooit kwamen. Een dispatch is een directe API-call en gaat niet door die
+  # throttle heen. Zelfde ontsnappingsluik als deploy.yml al had.
+  workflow_dispatch:
 
 # Een nieuwere push op dezelfde branch/PR vervangt een lopende run.
 concurrency:
