@@ -270,6 +270,23 @@ supabase link --project-ref <project-ref-id>
 supabase db push --linked
 ```
 
+### Backups (#1059)
+
+De workflow `.github/workflows/backup.yml` maakt elke nacht een **versleutelde**
+momentopname van productie — database én de `avatars`-bucket — en hangt die als
+artifact aan de run. De platform-backups van Supabase volstaan niet: die hebben
+hooguit 7 dagen retentie (en op Free helemaal geen restore-punt) en bevatten geen
+Storage-bestanden.
+
+Vereist één extra repo-secret: **`BACKUP_PASSPHRASE`**. De repo is publiek en
+artifacts van een publieke repo zijn door iedereen te downloaden, dus het archief
+gaat door `gpg --symmetric` (AES256). Raakt de passphrase kwijt, dan zijn de
+backups onbruikbaar — bewaar hem in een wachtwoordmanager.
+
+De herstelprocedure staat in **[`docs/backup-restore.md`](docs/backup-restore.md)**,
+inclusief wat er bewust níet in de backup zit en hoe je een herstel oefent zonder
+je dev-stack te raken.
+
 ### Beheerders van de app (`/admin`, #1036)
 
 Het adminpaneel op `/admin` is zichtbaar voor wie in `public.app_admins` staat.
