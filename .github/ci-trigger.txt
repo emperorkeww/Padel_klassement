@@ -1,7 +1,0 @@
-Dit bestand bestaat alleen om een push-event te forceren.
-
-Op 6 augustus 2026 lag GitHub Actions plat (major outage) en werden webhooks
-tot ~15% afgeknepen, waardoor merges op develop geen CI-run meer opleverden en
-release-PR #1082 op ontbrekende required checks bleef staan.
-
-Weghalen zodra CI weer normaal draait.
