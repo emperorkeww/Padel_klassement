@@ -39,7 +39,7 @@
 }
 
 .eregalerij-podium__rij:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
   border-color: var(--line-strong);
   transform: translateY(-1px);
 }
@@ -296,7 +296,7 @@
 }
 
 a.eregalerij-record:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
   border-color: var(--line-strong);
   transform: translateY(-1px);
 }
