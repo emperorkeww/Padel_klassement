@@ -263,6 +263,24 @@
 
   /* Frosted navigatiebalk (DashboardLayout): licht glas op licht thema. */
   --bar-glass: rgba(255, 255, 255, 0.88);
+
+  /* ---- Liquid Glass-materiaal (#1062) ----
+     De grondstof voor `.glas` in src/components/ui/glas.css. --glas-tint is de
+     kleur van het materiaal zelf, --glas-glans die van rand- en
+     aanwijzerlicht, --glas-diep die van de binnenschaduw. Alle drie staan als
+     losse rgb-kanalen genoteerd, zodat elke variant er zijn eigen dekking op
+     kan zetten zonder een tweede kleurtoken nodig te hebben.
+     --glas-vast is de ondoorzichtige terugval voor browsers zonder
+     backdrop-filter en voor wie minder transparantie of meer contrast vraagt. */
+  --glas-tint: 255 255 255;
+  --glas-glans: 255 255 255;
+  --glas-diep: 20 40 28;
+  --glas-dekking: 0.86;
+  --glas-glans-kracht: 1;
+  --glas-blur: 16px;
+  --glas-saturatie: 165%;
+  --glas-helderheid: 1.04;
+  --glas-vast: var(--surface);
 }
 
 /* ---- Donker thema (issue #125) ----
@@ -419,6 +437,16 @@
   --toast-close-bg-hover: rgba(0, 0, 0, 0.28);
 
   --bar-glass: rgba(18, 24, 20, 0.88);
+
+  /* Glas op donker (#1062): het materiaal wordt donker, het randlicht blijft
+     wit maar zwakker — een felle witte rand op een donkere pagina leest als
+     een streep neon, niet als glas. --glas-vast erft automatisch --surface. */
+  --glas-tint: 22 30 25;
+  --glas-glans: 255 255 255;
+  --glas-diep: 0 0 0;
+  --glas-dekking: 0.8;
+  --glas-glans-kracht: 0.5;
+  --glas-helderheid: 1.12;
 
   color-scheme: dark;
 }

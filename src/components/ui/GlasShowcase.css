@@ -1,0 +1,153 @@
+/* Dev-showcase voor het glasmateriaal (#1062). Alleen in development geladen. */
+
+.glas-showcase {
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.glas-showcase__kop h1 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-2xl);
+  letter-spacing: -0.03em;
+}
+.glas-showcase__kop p {
+  margin: 0 0 var(--sp-3);
+  max-width: 60ch;
+  color: var(--ink-soft);
+}
+.glas-showcase__schakelaar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+.glas-showcase__scene {
+  padding: var(--sp-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+/* Het scenelabel moet leesbaar blijven, ook op de strepen-achtergrond — dat is
+   de enige plek in deze pagina waar dat niet vanzelf gaat. */
+.glas-showcase__scene-naam {
+  margin: 0;
+  align-self: flex-start;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.glas-showcase__scene-naam span {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.glas-showcase__rij {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  align-items: flex-start;
+}
+.glas-showcase__rij--vormen {
+  align-items: center;
+}
+
+.glas-showcase__paneel {
+  flex: 1 1 180px;
+  min-width: 160px;
+  padding: var(--sp-4);
+}
+.glas-showcase__paneel .glas__inhoud {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+}
+
+.glas-showcase__pil {
+  padding: var(--sp-2) var(--sp-5);
+  min-height: 44px;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+.glas-showcase__cirkel {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-xl);
+  color: inherit;
+  cursor: pointer;
+}
+.glas-showcase__breed {
+  flex: 1 1 320px;
+  padding: var(--sp-5);
+}
+.glas-showcase__breed h2 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-lg);
+}
+.glas-showcase__breed p {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+/* ---------- De zes achtergronden ---------- */
+.glas-showcase__scene--vlak {
+  background: var(--bg);
+}
+.glas-showcase__scene--wash {
+  background:
+    radial-gradient(60% 100% at 50% 0%, var(--lime-soft), transparent 70%),
+    var(--bg);
+}
+.glas-showcase__scene--accent {
+  background:
+    radial-gradient(110% 130% at 0% 0%, var(--accent-soft), transparent 60%),
+    var(--surface);
+}
+/* Bewust géén lichte tekstkleur op de scene: die zou de panelen in erven, en
+   lichte tekst op licht glas is precies de fout die deze pagina moet helpen
+   voorkomen. */
+.glas-showcase__scene--kaart {
+  background: linear-gradient(160deg, #0d2c4c, #123f6b 45%, #06182b);
+}
+/* Harde randen: hier valt meteen op of de refractierand het materiaal nog van
+   de achtergrond scheidt, of dat het vlak erin oplost. */
+.glas-showcase__scene--streep {
+  background: repeating-linear-gradient(
+    54deg,
+    #101418 0 34px,
+    #f3f6f2 34px 68px
+  );
+}
+.glas-showcase__scene--tekst {
+  position: relative;
+  background: var(--surface);
+}
+/* Een lap tekst áchter het glas, zodat je ziet hoeveel de blur echt wegneemt —
+   en of er per ongeluk nog iets van te lezen valt waar dat niet hoort. */
+.glas-showcase__scene--tekst::before {
+  content: "Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel Padel";
+  position: absolute;
+  inset: var(--sp-5);
+  z-index: 0;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  word-spacing: 0.4em;
+}
+.glas-showcase__scene--tekst > * {
+  position: relative;
+  z-index: 1;
+}
