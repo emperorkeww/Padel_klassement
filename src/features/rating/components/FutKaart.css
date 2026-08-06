@@ -1735,20 +1735,11 @@
   --kaart-randwaas-rechts: rgba(0, 0, 0, 0.28);
   --kaart-randwaas-boven: rgba(219, 164, 54, 0.14);
   --kaart-randwaas-onder: rgba(0, 0, 0, 0.4);
-  /* Gelaagde rand (#710): een matzwarte onderplaat die rechtsonder een fractie
-     uitsteekt. Op het zwarte frame moet dat als materiaaldikte lezen, dus geen
-     staalgrijs meer — dat werd op dit register een lichte streep naast de
-     kaart. */
-  --kaart-echo: drop-shadow(
-    calc(var(--fut-kw) * 0.013) calc(var(--fut-kw) * 0.017) 0 #14110b
-  );
-  /* En binnen het vlak de omgekeerde volgorde: een donkere haarlijn tegen het
-     paneel, met een gouden opstaande rand erachter. Samen met liner en keyline
-     geeft dat de vier lagen van de referentie (matzwart · zwart staal ·
-     donker goud · antiek goud). */
-  --kaart-binnenlijn:
-    inset 0 0 0 1.5px rgba(0, 0, 0, 0.62),
-    inset 0 0 0 2.5px rgba(178, 134, 48, 0.42);
+  /* Geen --kaart-echo en geen --kaart-binnenlijn (#834). De gelaagde rand van
+     #710 was er voor een kaart die zijn lijst zelf tekende; deze kaart krijgt
+     hem uit het artwork, en een uitstekende onderplaat of een haarlijn ernaast
+     leest dan als een tweede, dunnere lijst. Zie de nul-randdiktes op
+     .fut-kaart--piet .fut-kaart__zijde--voor. */
   /* Watermerk (#710): groot en laag in het vlak, achter de gegevens. */
   --motief-b: 80;
   --motief-pos: 36%;

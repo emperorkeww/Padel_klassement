@@ -1096,6 +1096,45 @@ Blijft er een `mask: url(...)` naar een verwijderd bestand staan, dan is de hél
 voorlaag onzichtbaar; ook dat gebeurde tijdens de herbouw, en het leest als "de
 laag rendert niet" in plaats van als "het masker is leeg".
 
+### De kaart geeft zijn eigen lijst op
+
+De laatste en beslissende correctie zat niet in het artwork maar in de kaart
+eronder, en ze geldt voor élke volgende kaart die zijn lijst uit een referentie
+haalt. De gedeelde kaart bouwt zijn rand als vier geneste vlakken (`zijde` ›
+`liner` › `keyline` › `vlak`), elk met een eigen padding én elk met
+`clip-path: var(--schild)` op zíjn eigen doos. Op 450px kaartbreedte is dat samen
+~7,9px, dus het schild van het vlak is een paar procent kleiner dan dat van de
+kaart. Artwork is geregistreerd op de kaartdoos; de gouden lijst werd binnen de
+kaart dus precies die paar procent te vroeg afgesneden, en in de strook die
+overbleef schilderde de kaart zijn eigen liner met een keyline erop. Resultaat:
+een tweede, dunnere lijst náást de echte — "het artwork sluit niet aan".
+
+`.fut-kaart--piet .fut-kaart__zijde--voor` zet frame, liner en keyline daarom op
+nul. Dan vallen de vier dozen samen en landt de lijst uit het artwork exact op de
+kaartrand. `--kaart-echo` en `--kaart-binnenlijn` zijn om dezelfde reden van deze
+editie verdwenen. Alleen de vóórkant: de achterkant draagt geen artwork.
+
+Twee dingen die daarbij horen:
+
+- **de lijst moet dekkend zijn waar hij op het vlak ligt.** Op de 0,85 die de
+  zwartkey gaf scheen de ruit erdoorheen en las hij als sluier in plaats van als
+  metaal. Binnen het schild gaat de alfa in de lijstring op een steilere key;
+- **de inhoud schuift naar binnen.** `padding: 21% 11,5% 16%` in plaats van de
+  gedeelde `12% 9% 24%`, want de crest hangt over het paneel, de ogeeboog duikt
+  aan de flanken het vlak in, en de voorgrondband van het artwork reikt tot 9,9%
+  van de kaartbreedte naar binnen — op de gedeelde 9% viel de eerste letter van
+  de naam achter de kolen. De referentie doet hetzelfde: daar loopt de inhoud van
+  u 0,13 tot 0,90.
+
+### De poster deelt het silhouet via het kleurregister
+
+`schildVorm()` kent alleen tiers, geen edities, dus de poster zette de Piet in het
+gedeelde `notch`-schild terwijl het artwork op de ogeeboog geregistreerd is.
+`FutKaartKleuren.vorm` lost dat op zonder één posteraanroep te wijzigen: een
+register mag de doorgegeven vorm overschrijven, en `drawKaartSchild` geeft die
+voorrang. Langs dezelfde weg lopen `randDiktes: [0, 0, 0]` en `vlakInzet` — de
+canvas-spiegels van de nul-randdiktes en de ruimere padding hierboven.
+
 ### Avatarregister
 
 De avatar staat absoluut, in hetzelfde coördinatenstelsel als het artwork: alle
@@ -1464,13 +1503,11 @@ Twee dingen blijven staan:
 - **Blaaskaak is vereenvoudigd.** De DOM ponst met een `clip-path` de megafoon
   uit de decorlaag en zet hem in de voorlaag 6% lager terug, plus een
   tekstburst; de poster tekent de drie lagen zonder die verfijning.
-- **De Piet houdt twee afwijkingen.** `schildVorm()` kent alleen tiers, geen
-  edities, dus de poster zet deze kaart in het gedeelde `notch`-schild terwijl
-  de DOM de gemeten ogeeboog met de brede punt gebruikt; het artwork dekt de
-  randen af, maar onder de medaille steekt de punt van het posterschild verder
-  door. En de avatar staat in de DOM absoluut op de gemeten referentiepositie
-  (`PietEffect.css`), terwijl de canvasroute de gedeelde gridplek houdt. Beide
-  verschillen bestonden al vóór de herbouw van #834 en veranderen er niet door.
+- **De Piet houdt één afwijking.** Zijn silhouet, lijstdiktes en contentinzet
+  deelt de poster sinds #834 via het kleurregister, maar de avatar niet: de DOM
+  zet die absoluut op de gemeten referentiepositie (`PietEffect.css`), terwijl de
+  canvasroute de gedeelde gridplek houdt en hem dus hoger en dichter tegen de
+  rating zet. Dat verschil bestond al vóór de herbouw en verandert er niet door.
 
 Verder blijft gelden: laad het artwork vóór het tekenen en wacht op `decode()`.
 Een `HTMLImageElement` dat nog niet gedecodeerd is tekent op canvas als niets —

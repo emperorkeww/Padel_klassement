@@ -25,6 +25,32 @@
   );
 }
 
+/* De kaart geeft zijn eigen lijst op — de voorkant heeft er al een (#834).
+   Dit is de belangrijkste correctie van de herbouw, en hij zit niet in het
+   artwork maar in de kaart eronder.
+
+   De gedeelde kaart bouwt zijn rand als vier geneste vlakken (zijde › liner ›
+   keyline › vlak), elk met een eigen padding en elk met `clip-path: var(--schild)`
+   op zíjn eigen doos. Op 450px kaartbreedte is dat samen ~7,9px, dus het schild
+   van het vlak is een paar procent kleiner dan dat van de kaart. Het artwork is
+   geregistreerd op de kaartdoos, dus de gouden lijst werd binnen de kaart precies
+   die paar procent te vroeg afgesneden — en in de strook die overbleef schilderde
+   de kaart zijn eigen donkere liner met een gouden keyline erop. Dat leest als een
+   tweede, dunnere lijst náást de echte: het artwork "sluit niet aan".
+
+   Op nul vallen die vier dozen samen. Het vlak draagt dan het échte schild, de
+   lijst uit het artwork landt exact op de kaartrand, en er is nog maar één rand
+   te zien — die van de referentie. --piet-master-inset wordt daarmee vanzelf 0,
+   dus binnenlaag en avatar rekenen in dezelfde doos.
+
+   Alleen de vóórkant: de achterkant (statvlak) draagt geen artwork en houdt zijn
+   gewone gelaagde rand. */
+.fut-kaart.fut-kaart--piet .fut-kaart__zijde--voor {
+  --kaart-frame-dikte: 0px;
+  --kaart-liner-dikte: 0px;
+  --kaart-keyline-dikte: 0px;
+}
+
 .piet-effect {
   position: absolute;
   inset: 0;
@@ -194,17 +220,26 @@
       rgba(8, 6, 3, 0.46);
 }
 
-/* De ogeeboog duikt aan de linkerkant tot v 0,115 het vlak in, en dáár begint
-   het ratingblok. Met de gedeelde bovenpadding (12% van de kaartbreedte, dus
-   8,6% van de hoogte) loopt "1050" tegen de boog aan. 18% zet de rating waar de
-   referentie hem heeft (v 0,135, ofwel 18,5% van de kaartbreedte).
+/* De inhoud staat op deze kaart verder naar binnen dan op de gedeelde kaart, en
+   dat is niet cosmetisch: rondom het vlak liggen voorwerpen die de lijst kruisen
+   en een stuk het paneel op komen — de zak, de kolen, de staf, de crest. In de
+   referentie staat de inhoud dáárom al binnen die zone: de titel en het statblok
+   lopen daar van u 0,13 tot 0,90, niet van rand tot rand.
 
-   De onderkant loopt weer naar een punt, maar een veel bredere dan de gedeelde
-   kaart: op 16% blijft de editieregel boven de taille zonder dat er een leeg
-   stuk paneel onder komt te staan. */
+   Boven: de crest hangt met zijn punt tot v 0,146 over het paneel, en de ogeeboog
+   duikt aan de flanken tot v 0,115 het vlak in. Met de gedeelde bovenpadding
+   (12% van de kaartbreedte, dus 8,6% van de hoogte) loopt "1050" tegen allebei
+   aan; op 21% staat de rating er net onder.
+
+   Zijkant: 11,5% houdt de naam los van de voorgrondband van het artwork (die
+   reikt tot 9,9% van de kaartbreedte naar binnen). Op de gedeelde 9% viel de
+   eerste letter achter de kolen.
+
+   Onder: de kaart loopt weer naar een punt, maar een veel bredere dan de
+   gedeelde kaart — op 16% blijft de spreukregel boven de taille zonder dat er
+   een leeg stuk paneel onder komt te staan. */
 .fut-kaart.fut-kaart--piet .fut-kaart__vlak {
-  padding-top: 18%;
-  padding-bottom: 16%;
+  padding: 21% 11.5% 16%;
 }
 
 /* Contentzones (#834). Vier gerichte correcties op de gedeelde zetting, zodat

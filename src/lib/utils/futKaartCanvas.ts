@@ -298,7 +298,8 @@ export type SchildVorm =
   | "punt"
   | "kroon"
   | "goat"
-  | "troon";
+  | "troon"
+  | "piet";
 
 /** Bovenrand per divisiegroep — zelfde mapping als FutKaart.css. */
 export function schildVorm(key: TierKey | undefined): SchildVorm {
@@ -401,6 +402,34 @@ export function schildPad(
     C(0.605, 0.006, 0.62, 0.022, 0.65, 0.022);
     C(0.74, 0.018, 0.84, 0.014, 0.925, 0.045);
     C(0.972, 0.061, 1, 0.078, 1, 0.108);
+  } else if (vorm === "piet") {
+    // De ogeeboog van de Zwarte Piet — dezelfde punten als #fut-schild-piet in
+    // FutKaart.tsx, afgedrukt door scripts/piet_schild.py. Zonder deze tak zet
+    // de poster het gedeelde notch-schild onder een artwork dat op de boog is
+    // geregistreerd, en dan sluit de gouden lijst daar juist níet aan.
+    ctx.moveTo(X(0), Y(0.1549));
+  L(0.0306, 0.1384);
+  L(0.0688, 0.1210);
+  L(0.1197, 0.0971);
+  L(0.1707, 0.0761);
+  L(0.2217, 0.0587);
+  L(0.2726, 0.0431);
+  L(0.3236, 0.0302);
+  L(0.3745, 0.0183);
+  L(0.4255, 0.0092);
+  L(0.4764, 0.0037);
+  L(0.4994, 0.0018);
+  L(0.5236, 0.0037);
+  L(0.5745, 0.0092);
+  L(0.6255, 0.0183);
+  L(0.6764, 0.0302);
+  L(0.7274, 0.0431);
+  L(0.7783, 0.0587);
+  L(0.8293, 0.0761);
+  L(0.8803, 0.0971);
+  L(0.9312, 0.1210);
+  L(0.9694, 0.1384);
+  L(1.0000, 0.1549);
   } else if (vorm === "troon") {
     ctx.moveTo(X(0.16), Y(0.012));
     L(0.4, 0.012);
@@ -415,6 +444,19 @@ export function schildPad(
     C(0.56, 0, 0.57, 0.035, 0.62, 0.035);
     L(0.915, 0.035);
     C(0.962, 0.035, 1, 0.062, 1, 0.095);
+  }
+  if (vorm === "piet") {
+    // Eigen onderkant: het paneel blijft vol tot 80% hoogte (daar staan het
+    // statblok en de badge-rij nog in) en loopt dan naar een brede, late punt.
+    L(1, 0.6);
+    L(1, 0.8);
+    C(1, 0.918, 0.945, 0.961, 0.86, 0.982);
+    C(0.73, 0.997, 0.6, 1, 0.5, 1);
+    C(0.4, 1, 0.27, 0.997, 0.14, 0.982);
+    C(0.055, 0.961, 0, 0.918, 0, 0.8);
+    L(0, 0.1549);
+    ctx.closePath();
+    return;
   }
   // Gedeelde onderkant: rechterzijde → taille → punt → linkerzijde.
   L(1, 0.6);
@@ -503,6 +545,18 @@ export interface FutKaartKleuren {
   stralenPeriode?: number;
   /** Vlak-textuur; default "satijn". */
   textuur?: VlakTextuur;
+  /** Eigen kaartsilhouet (#834). Normaal komt de vorm van `schildVorm(tier)` en
+   *  wisselt hij niet met de editie — de Piet is de uitzondering, want zijn
+   *  artwork is op de gemeten ogeeboog van de referentie geregistreerd. Zonder
+   *  deze override zet de poster dat artwork om een gedeeld notch-schild, en dan
+   *  sluit de gouden lijst er juist niet op aan. Via het kleurregister in plaats
+   *  van via `schildVorm()`: dan hoeft geen enkele posteraanroep zijn editie
+   *  door te geven. */
+  vorm?: SchildVorm;
+  /** Extra inzet voor de kaartinhoud, als fractie van de kaartbreedte (#834).
+   *  Bovenop de lijstdiktes; alleen registers waarvan het artwork het vlak
+   *  binnendringt zetten hem. */
+  vlakInzet?: number;
   /** Satijn-alpha (#710): GOAT zet zijn weefsel ijler (CSS 0.045 → hier
    *  0.04, dezelfde ~0.875-kalibratie als de sheen). Default 0.06. */
   satijnAlpha?: number;
@@ -1068,7 +1122,20 @@ export function drawKaartSchild(
 
 
 
-  return { fx, fy, fw, fh };
+  // Contentinzet (#834): een register kan zijn ínhoud verder naar binnen zetten
+  // dan zijn vlak. De Piet heeft dat nodig — rondom zijn paneel liggen
+  // voorwerpen die het vlak op komen, en zijn ogeeboog duikt aan de flanken het
+  // vlak in; zonder deze inzet loopt het eerste cijfer van de rating tegen die
+  // boog aan. Bewust pas hier, ná het schilderen: het vlak zelf vult wél het
+  // hele schild, anders staat er een lichte ring tussen lijst en paneel.
+  // Spiegel van de ruimere padding op .fut-kaart--piet .fut-kaart__vlak.
+  const inzet = (kleuren.vlakInzet ?? 0) * w;
+  return {
+    fx: fx + inzet,
+    fy: fy + inzet,
+    fw: fw - inzet * 2,
+    fh: fh - inzet * 2,
+  };
 }
 
 
@@ -2885,6 +2952,8 @@ interface EditieRegister {
   editieKleur: string;
   naamplaat?: KaartSkin["naamplaat"];
   textuur?: VlakTextuur;
+  vorm?: SchildVorm;
+  vlakInzet?: number;
   feestFacetten?: FutKaartKleuren["feestFacetten"];
   /** Rand- en ornamentmechanismen (#710) die een editie kan meebrengen. Tot
    *  #710 hing dit alleen aan de tier (de GOAT); de editie-registers hebben ze
@@ -3260,12 +3329,13 @@ const EDITIE_REGISTERS: Record<KaartEditie, EditieRegister> = {
       boven: "rgba(219, 164, 54, 0.14)",
       onder: "rgba(0, 0, 0, 0.4)",
     },
-    randDiktes: [0.02, 0.01, 0.005],
-    echo: [[0.013, 0.017, "#14110b"]],
-    binnenlijn: [
-      [1.5, "rgba(0, 0, 0, 0.62)"],
-      [2.5, "rgba(178, 134, 48, 0.42)"],
-    ],
+    // Geen eigen lijst, geen echo en geen binnenlijn: alle drie komen sinds
+    // #834 uit het artwork. De gedeelde randdiktes tekenden een gouden keyline
+    // náást de gouden lijst van de referentie, en de binnenlijn een tweede
+    // haarlijn daar weer binnen — precies de dubbeling die de DOM-kaart ook
+    // had. Spiegel van de nul-diktes op .fut-kaart--piet .fut-kaart__zijde--voor.
+    randDiktes: [0, 0, 0],
+    vlakInzet: 0.055,
     motief: {
       paden: PIET_WATERMERK,
       kleur: PIET_WATERMERK_KLEUR,
@@ -3402,6 +3472,8 @@ export function kaartSkin(
         // weefsel mee en winnen wél — hun ::after staat ná het toptier-blok
         // in de CSS.
         textuur: r.textuur ?? (key === "dictator" ? "brokaat" : undefined),
+        vorm: r.vorm,
+        vlakInzet: r.vlakInzet,
         satijnAlpha: key === "legende" ? 0.04 : undefined,
         satijnBaan:
           key === "legende"

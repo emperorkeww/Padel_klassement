@@ -429,21 +429,42 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       // #834 een zwaardere goud-magenta lijst — maar CSS en canvas moeten wél
       // dezelfde fracties van de kaartbreedte gebruiken, anders wijkt de
       // deel-poster van de kaart af.
-      const cssDiktes = (
-        [
+      // De Piet heeft sinds #834 helemaal geen eigen lijst meer: die komt uit
+      // zijn artwork, en de kaart zet frame, liner en keyline op nul (zie
+      // PietEffect.css). Canvas en CSS moeten dat allebei doen — anders tekent
+      // de poster een gouden keyline náást de gouden lijst van de referentie.
+      if (naam === "piet") {
+        expect(kleuren.randDiktes, "Piet: canvas tekent nog een lijst").toEqual([
+          0, 0, 0,
+        ]);
+        const nul = /\.fut-kaart--piet \.fut-kaart__zijde--voor\s*\{[^}]*\}/.exec(
+          PIET_CSS,
+        )?.[0];
+        expect(nul, "Piet: de nul-randdiktes ontbreken").toBeDefined();
+        for (const eigenschap of [
           "--kaart-frame-dikte",
           "--kaart-liner-dikte",
           "--kaart-keyline-dikte",
-        ] as const
-      ).map((eigenschap) => {
-        const waarde = token(blok, eigenschap) ?? "";
-        const fractie = /\*\s*([\d.]+)\)/.exec(waarde);
-        expect(fractie, `${naam}: geen kw-fractie in ${eigenschap}`).not.toBeNull();
-        return Number(fractie![1]);
-      });
-      expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual(
-        cssDiktes,
-      );
+        ]) {
+          expect(nul).toContain(`${eigenschap}: 0px`);
+        }
+      } else {
+        const cssDiktes = (
+          [
+            "--kaart-frame-dikte",
+            "--kaart-liner-dikte",
+            "--kaart-keyline-dikte",
+          ] as const
+        ).map((eigenschap) => {
+          const waarde = token(blok, eigenschap) ?? "";
+          const fractie = /\*\s*([\d.]+)\)/.exec(waarde);
+          expect(fractie, `${naam}: geen kw-fractie in ${eigenschap}`).not.toBeNull();
+          return Number(fractie![1]);
+        });
+        expect(kleuren.randDiktes, `${naam}: zware lijst ontbreekt`).toEqual(
+          cssDiktes,
+        );
+      }
       expect(skin.naamplaat, `${naam}: naamplaatverloop ontbreekt`).toHaveLength(5);
 
       const [blur, gloed] = kleuren.randGloed!;
@@ -997,18 +1018,15 @@ describe("editie-registers spiegelen FutKaart.css", () => {
       Number(token(blok, "--motief-pos")!.replace("%", "")) / 100,
     );
 
-    // Echo en binnenlijnen: dezelfde fracties, spreidingen en kleuren als de
-    // CSS-vars.
-    const echo = /--kaart-echo:([^;]+);/.exec(blok)?.[1] ?? "";
-    const [dx, dy, kleur] = kleuren.echo![0];
-    expect(echo).toContain(`* ${dx})`);
-    expect(echo).toContain(`* ${dy})`);
-    expect(echo.replace(/\s+/g, " ")).toContain(kleur);
-    const binnenlijn = /--kaart-binnenlijn:([^;]+);/.exec(blok)?.[1] ?? "";
-    for (const [spreiding, lijnKleur] of kleuren.binnenlijn!)
-      expect(binnenlijn.replace(/\s+/g, " ")).toContain(
-        `inset 0 0 0 ${spreiding}px ${lijnKleur}`,
-      );
+    // Echo en binnenlijnen: allebei weg sinds #834, in beide lezers. De
+    // gelaagde rand van #710 hoorde bij een kaart die zijn lijst zelf tekende;
+    // deze krijgt hem uit het artwork, en een uitstekende onderplaat of een
+    // haarlijn ernaast leest als een tweede, dunnere lijst. Blijft er één van
+    // de twee staan, dan komt die dubbeling stilletjes terug.
+    expect(blok).not.toContain("--kaart-echo:");
+    expect(blok).not.toContain("--kaart-binnenlijn:");
+    expect(kleuren.echo).toBeUndefined();
+    expect(kleuren.binnenlijn).toBeUndefined();
 
     // De gewatteerde ruit en het vignet in het vlak: sinds #834 een tegel uit
     // de referentie, en de CSS-regel staat bij het artwork (PietEffect.css).

@@ -108,6 +108,50 @@ Twee dingen die daaruit volgden:
 Er is geen frontmask meer (`piet-front-mask.svg` is vervallen): de fysiek
 gescheiden voorgrondbron ís het masker. Hetzelfde contract als de Glazenwasser.
 
+## De kaart geeft zijn eigen lijst op
+
+Dit is de correctie waar het uiteindelijk op vastliep, en hij zit niet in het
+artwork maar in de kaart eronder.
+
+De gedeelde kaart bouwt zijn rand als vier geneste vlakken (`zijde` › `liner` ›
+`keyline` › `vlak`), elk met een eigen padding en elk met
+`clip-path: var(--schild)` op zíjn eigen doos. Op 450 px kaartbreedte is dat
+samen ~7,9 px, dus het schild van het vlak is een paar procent kleiner dan dat
+van de kaart. Het artwork is geregistreerd op de kaartdoos, dus de gouden lijst
+werd binnen de kaart precies die paar procent te vroeg afgesneden — en in de
+strook die overbleef schilderde de kaart zijn eigen donkere liner met een gouden
+keyline erop. Dat leest als een tweede, dunnere lijst náást de echte.
+
+`.fut-kaart--piet .fut-kaart__zijde--voor` zet die drie diktes daarom op nul.
+Dan vallen de vier dozen samen, draagt het vlak het échte schild en landt de
+lijst uit het artwork exact op de kaartrand. `--piet-master-inset` wordt daarmee
+vanzelf 0. Alleen de vóórkant: de achterkant (statvlak) draagt geen artwork en
+houdt zijn gewone gelaagde rand.
+
+Om dezelfde reden zijn `--kaart-echo` en `--kaart-binnenlijn` van deze editie
+verdwenen: de uitstekende onderplaat en de haarlijn binnen het vlak waren er
+voor een kaart die zijn lijst zelf tekende.
+
+De lijst moet daar dan ook dekkend zijn. Binnen het schild wordt de alfa in de
+lijstring op een steilere key gezet; op de 0,85 die de gewone zwartkey gaf,
+scheen de ruit er doorheen en las de lijst als een sluier over het paneel in
+plaats van als metaal erop.
+
+## De inhoud staat verder naar binnen
+
+`.fut-kaart--piet .fut-kaart__vlak` heeft `padding: 21% 11,5% 16%` in plaats van
+de gedeelde `12% 9% 24%`. Dat is geen smaak:
+
+- **boven** hangt de crest met zijn punt tot v 0,146 over het paneel en duikt de
+  ogeeboog aan de flanken tot v 0,115 het vlak in; op de gedeelde bovenpadding
+  liep "1050" tegen allebei aan;
+- **opzij** reikt de voorgrondband van het artwork tot 9,9% van de kaartbreedte
+  naar binnen. Op de gedeelde 9% viel de eerste letter van de naam achter de
+  kolen. De referentie doet hetzelfde: zijn titel en statblok lopen van u 0,13
+  tot 0,90, niet van rand tot rand;
+- **onder** loopt de kaart naar een veel bredere punt dan de gedeelde kaart, dus
+  de 24% bodem liet een leeg stuk paneel staan.
+
 ## Avatarregister
 
 De avatarpositie is gemeten, niet gekozen. De lichte portretschijf van de
@@ -137,13 +181,16 @@ tot de referentie.
 
 ## Bekende afwijking: canvas en poster
 
-De canvasroute (`futKaartCanvas.ts`) tekent hetzelfde artwork en dezelfde
-kleuren, maar zijn kaartsilhouet komt van `schildVorm(tier)` en kent geen
-editie-specifieke vorm. De poster zet de Piet dus in het gedeelde `notch`-schild
-met een smalle punt, terwijl de DOM de ogeeboog met de brede punt gebruikt. Het
-artwork dekt de randen af, maar onder de medaille steekt de punt van het
-posterschild verder door. Dat verschil bestond al vóór deze herbouw en verandert
-er niet door; het staat in
+De canvasroute (`futKaartCanvas.ts`) tekent hetzelfde artwork, dezelfde kleuren
+én sinds deze herbouw hetzelfde silhouet. `schildVorm()` kent alleen tiers, dus
+de vorm komt hier uit het kleurregister: `FutKaartKleuren.vorm` mag de doorgegeven
+vorm overschrijven, en de Piet zet `"piet"`. Zo hoeft geen enkele posteraanroep
+zijn editie door te geven. Hetzelfde geldt voor `randDiktes: [0, 0, 0]` en
+`vlakInzet`, de spiegels van de nul-randdiktes en de ruimere padding hierboven.
+
+Wat wél verschilt: de avatar. De DOM zet hem absoluut op de gemeten
+referentiepositie, de canvasroute houdt de gedeelde gridplek en zet hem daardoor
+hoger en dichter tegen de rating. Dat verschil bestond al vóór deze herbouw; het
+staat in
 [`docs/special-card-visual-effects-architecture.md`](../../../../../docs/special-card-visual-effects-architecture.md)
-§14. Hetzelfde geldt voor de avatarplaatsing: de DOM zet hem absoluut op de
-gemeten referentiepositie, de canvasroute houdt de gedeelde gridplek.
+§14.

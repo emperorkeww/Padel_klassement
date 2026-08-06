@@ -4,9 +4,9 @@
       782,
       1042
     ],
-    "alfa": 0.0834,
-    "dekking": 0.0807,
-    "kB": 158,
+    "alfa": 0.0876,
+    "dekking": 0.0849,
+    "kB": 160,
     "restVlak": 0.0
   },
   "front": {
@@ -14,10 +14,10 @@
       597,
       796
     ],
-    "alfa": 0.1955,
-    "dekking": 0.1942,
-    "kB": 173,
-    "restVlak": 0.00034
+    "alfa": 0.1868,
+    "dekking": 0.185,
+    "kB": 172,
+    "restVlak": 0.00022
   },
   "vlak": {
     "pixels": [

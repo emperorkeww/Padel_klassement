@@ -182,6 +182,16 @@ def bouw() -> dict[str, dict]:
     solide = blur(solide * 255, 3.0) / 255.0
     poort = np.clip((gray - 7.0) / 8.0, 0.0, 1.0)
     alpha = np.clip(a_lum + 0.85 * solide * poort, 0.0, 1.0)
+    # Bínnen de kaart is de lijst geen halftransparant ornament maar de rand
+    # zelf: daar ligt het kaartvlak onder, en op 0,85 alfa schijnt de ruit er
+    # doorheen. Dan leest de lijst als een sluier over het paneel in plaats van
+    # als metaal erop — en dat is precies wat "het artwork sluit niet aan"
+    # betekent. In de lijstring wordt de alfa daarom op een steilere key gezet;
+    # buiten het schild verandert er niets, want daar hoort de zachte franje van
+    # rook en goudstof juist te blijven.
+    ring = schild & (dist_in <= LIJST + 6.0)
+    dekkend = np.clip((gray - 6.0) / 16.0, 0.0, 1.0)
+    alpha = np.where(ring, np.maximum(alpha, dekkend), alpha)
 
     # ── 3. killzones: de ingebakken kaartinhoud van de referentie ──────────
     # Het meeste hiervan verdwijnt al met het kaartvlak uit stap 1. Toch staan
@@ -229,9 +239,17 @@ def bouw() -> dict[str, dict]:
     # geknipt. De rest van de voorgrond volgt uit de band × het silhouet — zo
     # gaan staf, cadeau, zak, kolen en kettingen mee waar ze de rand raken, maar
     # blijft de rook eromheen in de master staan.
+    # De crest, strak om zijn eigen vorm. Een ruimer blok is hier niet gratis:
+    # alles wat erin valt gaat naar de voorlaag, dus vóór de kaartinhoud, en de
+    # rating staat er vlak onder. Gemeten: de veren lopen tot x[457, 657] y<150,
+    # het gouden schild staat op x[488, 613] en loopt naar een punt op y=277.
     crest = stempel(
         (h, w),
-        polys=[[(404, 18), (700, 18), (712, 190), (628, 306), (466, 306), (392, 190)]],
+        polys=[[
+            (448, 10), (672, 10), (672, 120), (622, 152), (622, 218),
+            (592, 258), (566, 292), (534, 292), (508, 258), (478, 218),
+            (478, 152), (428, 120),
+        ]],
     )
     medaille = stempel(
         (h, w),
