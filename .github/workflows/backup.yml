@@ -1,0 +1,175 @@
+# Nachtelijke, versleutelde momentopname van de productie-Supabase (#1059).
+#
+# Wat Supabase zelf doet dekt ons risico niet: de platform-backups gaan over de
+# database (op Pro met 7 dagen retentie, op Free helemaal niet) en laten de
+# avatars-bucket links liggen. Deze workflow zet database én Storage samen in
+# één versleuteld archief.
+#
+# De repo is PUBLIEK en artifacts van een publieke repo zijn door iedereen te
+# downloaden. Een kale dump bevat e-mailadressen uit auth.users, dus het archief
+# gaat door `gpg --symmetric` (AES256) vóór de upload. Raakt de passphrase kwijt,
+# dan zijn de backups onbruikbaar — bewaar hem in een wachtwoordmanager, niet
+# alleen als repo-secret.
+#
+# Herstellen: zie docs/backup-restore.md.
+#
+# NB: een `schedule` draait alleen vanaf de default branch (main). Deze workflow
+# maakt dus pas nachten na de release develop -> main, en de knop "Run workflow"
+# verschijnt pas op main.
+name: Backup
+
+on:
+  schedule:
+    - cron: "20 3 * * *" # elke nacht 03:20 UTC
+  workflow_dispatch:
+
+# Nooit twee dumps door elkaar, en een lopende backup nooit afkappen.
+concurrency:
+  group: backup-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_TELEMETRY_DISABLED: 1
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      # Zonder wachtwoord blijft de CLI om invoer vragen en hangt de job.
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.75.0
+
+      # Vroege, leesbare stop: zonder deze secrets faalt de CLI verderop met een
+      # cryptische usage-melding (zie deploy.yml, dat kostte een halve release).
+      - name: Controleer secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          for naam in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD \
+                      BACKUP_PASSPHRASE VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            if [ -z "${!naam}" ]; then
+              echo "::error::$naam ontbreekt in de repository-secrets — zie docs/backup-restore.md."
+              exit 1
+            fi
+          done
+
+      # `db dump` werkt op het gelinkte project; linken is een eigen stap.
+      - name: Link productieproject
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      # Vier dumps, terug te zetten in deze volgorde: rollen, schema, auth, data.
+      # `--use-copy` geeft COPY i.p.v. INSERT: kleiner archief en een restore die
+      # niet uren duurt.
+      #
+      # Waarom auth apart en niet in één data-dump (nagemeten 2026-08-06,
+      # CLI 2.75.0): het auth-schema is GoTrue's interne schema en verschilt per
+      # versie. Loopt het doelproject achter op de bron, dan klapt de restore op
+      # `relation "auth.<tabel>" does not exist`. In een eigen bestand raakt dat
+      # de app-data niet, en kun je het gericht bijsnijden. Zie
+      # docs/backup-restore.md.
+      #
+      # Het storage-schema zit er BEWUST niet in. `-s storage` loopt bij het
+      # terugzetten stuk op "permission denied for table buckets_vectors" (alle
+      # storage-tabellen zijn van supabase_storage_admin), en de metadata is
+      # overbodig: de Storage-API schrijft storage.objects zelf opnieuw zodra de
+      # bestanden terug geüpload worden. Nagemeten: na een restore stond de rij
+      # er weer, met de juiste grootte. De policies zijn padgebaseerd
+      # (foldername(name)[1] = auth.uid()), niet eigenaargebaseerd, dus er gaat
+      # geen toegangscontrole verloren.
+      - name: Dump database
+        run: |
+          set -euo pipefail
+          mkdir -p backup/db
+          supabase db dump --linked --role-only -f backup/db/roles.sql
+          supabase db dump --linked -f backup/db/schema.sql
+          supabase db dump --linked --data-only --use-copy -s auth -f backup/db/auth.sql
+          supabase db dump --linked --data-only --use-copy \
+            -s public,supabase_functions -f backup/db/data.sql
+
+      - name: Dump Storage
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: node scripts/backup-storage.mjs backup/storage
+
+      # Een backup die stilletjes leeg is, is erger dan geen backup: hij ziet er
+      # groen uit tot het moment dat je hem nodig hebt.
+      # De dump quote elke identifier, dus zoeken op `auth.users` levert niets
+      # op — dat moet `"auth"."users"` zijn. Precies zo'n stille misser laat een
+      # controle altijd slagen (of altijd falen) zonder dat je het merkt.
+      - name: Controleer de dump op leegte
+        run: |
+          set -euo pipefail
+          grep -q 'CREATE TABLE' backup/db/schema.sql \
+            || { echo "::error::schema.sql bevat geen enkele CREATE TABLE."; exit 1; }
+          grep -q '^COPY "auth"."users"' backup/db/auth.sql \
+            || { echo "::error::auth.sql bevat geen auth.users — accounts ontbreken."; exit 1; }
+          grep -q '^COPY "public"."matches"' backup/db/data.sql \
+            || { echo "::error::data.sql bevat geen public.matches — de matchhistorie ontbreekt."; exit 1; }
+          if [ "$(stat -c%s backup/db/data.sql)" -lt 1024 ]; then
+            echo "::error::data.sql is kleiner dan 1 KB — vrijwel zeker een lege dump."
+            exit 1
+          fi
+          du -sh backup/*
+
+      - name: Noteer de herkomst
+        run: |
+          {
+            echo "commit:  ${{ github.sha }}"
+            echo "run:     ${{ github.run_id }}"
+            echo "project: ${SUPABASE_PROJECT_REF}"
+            echo "gemaakt: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } > backup/HERKOMST.txt
+
+      - name: Versleutel
+        run: |
+          set -euo pipefail
+          tar -czf backup.tar.gz -C backup .
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --symmetric \
+            --cipher-algo AES256 --passphrase-fd 0 --pinentry-mode loopback \
+            -o backup.tar.gz.gpg backup.tar.gz
+          # Het onversleutelde archief én de losse dumps mogen de artifact niet
+          # halen; alleen het .gpg-bestand wordt straks geüpload.
+          rm -rf backup backup.tar.gz
+
+      # Pas als hij aantoonbaar te openen is, is het een backup.
+      - name: Verifieer dat het archief te ontsleutelen is
+        run: |
+          set -euo pipefail
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --decrypt \
+            --passphrase-fd 0 --pinentry-mode loopback backup.tar.gz.gpg \
+            | tar -tzf - > /dev/null
+          echo "Archief opent en bevat een leesbare tar."
+
+      - name: Bepaal de artifactnaam
+        id: naam
+        run: echo "naam=supabase-backup-$(date -u +'%Y-%m-%d')-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.naam.outputs.naam }}
+          path: backup.tar.gz.gpg
+          if-no-files-found: error
+          # 90 dagen is het maximum voor artifacts. Wil je verder terug kunnen,
+          # download dan periodiek een archief en bewaar het buiten GitHub.
+          retention-days: 90
