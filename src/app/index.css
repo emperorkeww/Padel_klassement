@@ -36,6 +36,23 @@
   --bg: #f4f7f4; /* app-achtergrond (licht groenig off-white) */
   --surface: #ffffff; /* kaarten */
   --surface-2: #eef3ee; /* subtiel vlak / tracks */
+  /* ---- Surface-ladder (#1074) ----
+     Vier rollen die als token ontbraken terwijl de componenten ze wél nodig
+     hadden: die grepen daarvoor naar --surface-2 (hover) en --accent-soft
+     (gekozen), waardoor "een subtiel vlak", "je zweeft hier overheen" en "dit
+     item is gekozen" één kleur deelden. Op licht viel dat nauwelijks op; op
+     donker liep daardoor de hele hiërarchie in elkaar.
+     De lichte waarden zijn expres gelijk aan wat de componenten hiervóór al
+     gebruikten, zodat het lichte thema geen pixel verschuift. */
+  --surface-elevated: #ffffff; /* hero, sheets, popovers */
+  --surface-hover: #eef3ee; /* hover op kaarten, nav-items, knoppen */
+  --surface-active: #e6f5ee; /* gekozen nav-item, pressed */
+  --divider: #e4eae4; /* separator — zwakker dan een kaartrand */
+  /* De voorgrond die bij --surface-active hoort: het label van een gekozen
+     item, en de markering (icoon, accentstaafje) ernaast. Op licht zijn ze
+     allebei smaragd — precies wat er stond — zodat er niets verschuift. */
+  --selected-ink: var(--accent);
+  --selected-mark: var(--accent);
   --ink: #1a2620; /* tekst */
   --ink-soft: #64756c; /* gedempte tekst (≥AA op wit/bg) */
   /* Donkerdere gedempte tint voor kleine tekst op --surface-2 (badges e.d.),
@@ -215,6 +232,10 @@
   --shadow-ball: 0 6px 18px rgba(20, 40, 28, 0.22); /* zwevende home-bal */
   --overlay: rgba(20, 40, 28, 0.45); /* gedimde achtergrond (sheets/backdrops) */
   --ring: 0 0 0 3px var(--accent-soft); /* focusring op invoervelden */
+  /* Kleur van de focus-outline (#1074). Stond hardcoded als var(--accent) in
+     het gedeelde focusblok van ui.css; als eigen rol kan het donkere thema er
+     lime van maken zonder aan de knopkleur te komen. Licht blijft smaragd. */
+  --focus-ring: var(--accent);
 
   /* Toasts: tekst op de gekleurde vlakken (succes/fout/info). Licht thema:
      wit op verzadigde kleuren; donker thema draait dit om (donkere tekst op
@@ -289,55 +310,85 @@
    radius en typografie zijn thema-onafhankelijk. De resolver (inline script in
    index.html + src/lib/theme.ts) zet altijd expliciet data-theme="light|dark"
    op <html>, dus een @media-duplicaat van dit blok is niet nodig.
-   AA-contrast van de paren wordt bewaakt door scripts/contrast-check.mjs. */
-:root[data-theme="dark"] {
-  --bg: #0f1512; /* groen-zwarte app-achtergrond */
-  --surface: #171f1a; /* kaarten */
-  --surface-2: #1f2922; /* subtiel vlak / tracks */
-  /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
-  --ink: #dde5df;
-  --ink-soft: #9fb0a6;
-  --ink-soft-strong: #b3c2b8;
-  --line: #2a352e;
-  --line-strong: #3a473f;
+   AA-contrast van de paren wordt bewaakt door scripts/contrast-check.mjs.
 
-  /* Gedempte salie-smaragd: rustig op donker maar nog ≥AA als tekstkleur;
-     knoppen krijgen donkere tekst (--accent-ink) zodat ook die AA halen. */
-  --accent: #4b9474;
-  --accent-hover: #57a282;
-  --accent-strong: #3f7d61;
-  --accent-soft: #10231b;
-  --accent-line: #27453a;
-  --accent-ink: #0f1512;
+   Herijkt in #1074. Het oude palet haalde zijn tekstcontrasten ruimschoots,
+   maar de vlakken lagen allemaal binnen 1,1:1 van elkaar — kaart, pagina,
+   zijbalk en "subtiel vlak" waren praktisch één kleur, en de hele app las als
+   één modderig groengrijs oppervlak. Twee dingen zijn veranderd:
+
+   1. De ladder wordt nu op wáárneembare lichtheid gelegd (CIE L*), niet op de
+      WCAG-verhouding. Vlak bij zwart loopt die verhouding tegen een plafond:
+      #0a1d1b → #102a27 is 1,15:1 en dus "onvoldoende" volgens WCAG, terwijl
+      het een duidelijk zichtbare stap van 5,8 L* is. WCAG-ratio's blijven de
+      maat voor tékst; voor vlak-op-vlak bewaakt contrast-check.mjs sinds #1074
+      een minimale L*-stap. Zie daar voor de gemeten waarden.
+   2. De ondertoon is blauwgroen (a* ≈ -8…-13) in plaats van olijf, zodat de
+      donkere vlakken als petrol lezen en niet als vuilgroen.
+
+   De zachte badge-vlakken (--*-soft) zijn mee opgeschoven: die stonden op ~13
+   L*, onder de nieuwe kaartkleur, en een badge die donkerder is dan zijn eigen
+   kaart leest als een gat. Ze liggen nu net erboven, op ~21,5 L*. */
+:root[data-theme="dark"] {
+  /* Canvas → kaart → verhoogd: elke stap ≈ 4–6 L*, zie de kop hierboven. */
+  --bg: #0a1d1b; /* bijna-zwart petrol — de app-achtergrond */
+  --surface: #102a27; /* kaarten */
+  --surface-2: #183531; /* subtiel vlak / tracks */
+  --surface-elevated: #1b3b37; /* hero, sheets, popovers */
+  --surface-hover: #244440; /* hover op kaarten, nav-items, knoppen */
+  --surface-active: #124634; /* gekozen nav-item — smaragd getint */
+  /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
+  --ink: #f2f6f4;
+  --ink-soft: #b4c2bd;
+  --ink-soft-strong: #c6d2cd;
+  /* Randen dragen op donker de hiërarchie mee, dus ze mogen gezien worden:
+     --line haalde 1,32:1 op de kaart en verdween daarmee gewoon. */
+  --line: #334b48;
+  --line-strong: #465e5b;
+  --divider: #283d3a;
+
+  /* Smaragd, helderder dan de oude salietint (#4b9474): die haalde 4,6:1 op de
+     kaart en werd op een verhoogd vlak grijzig. Knoppen houden donkere tekst
+     (--accent-ink), zodat ook die ruim AA halen. */
+  --accent: #1fb47e;
+  --accent-hover: #2ac48b;
+  --accent-strong: #16966a;
+  --accent-soft: #123c2d;
+  --accent-line: #2a614b;
+  --accent-ink: #04140f;
 
   /* Coach Rudy — warm amber, iets lichter op donker. */
   --coach: #e6a34d;
-  --coach-soft: #2e2313;
-  --coach-line: #4a3a1f;
+  --coach-soft: #3e3221;
+  --coach-line: #5a4a30;
   --coach-ink: #241606;
   --coach-diep: #f0c489;
 
-  /* Lime (padelbal) een tint stiller — accentje, geen schreeuw. */
-  --lime: #a9bd55;
-  --lime-deep: #93a848;
-  --lime-soft: #252e14;
+  /* Lime (padelbal). Sinds #1074 wél de volle padelbal-lime: hij is het enige
+     token dat energie mag dragen (rating, grafieklijn, gekozen icoon, focus),
+     en juist door hem schaars te houden mag hij fel zijn. --lime-deep is op
+     donker de lichtste van de twee — omgekeerd aan het lichte thema, waar
+     "deep" de donkere leesbare variant is. */
+  --lime: #a8e63f;
+  --lime-deep: #c2f45f;
+  --lime-soft: #2e371c;
 
   /* Lef-violet, lichter gezet voor leesbare tekst op donkere vlakken. */
-  --lef: #a48fd4;
-  --lef-soft: #241d33;
-  --lef-line: #3d3357;
+  --lef: #b6a2e4;
+  --lef-soft: #383047;
+  --lef-line: #4e4463;
   --lef-ink: #14101e;
 
   /* Dorst-amber, lichter gezet voor leesbare tekst op donkere vlakken. */
   --dorst: #e0a94d;
-  --dorst-soft: #2b2114;
-  --dorst-line: #4a3a20;
+  --dorst-soft: #3d3224;
+  --dorst-line: #584736;
   --dorst-ink: #1b1207;
 
   /* Jokerblauw, lichter gezet voor leesbare tekst op donkere vlakken. */
   --joker: #6fb6e0;
-  --joker-soft: #101f29;
-  --joker-line: #234455;
+  --joker-soft: #273540;
+  --joker-line: #3b5160;
   --joker-ink: #0a1620;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
@@ -349,54 +400,57 @@
   --chem-laag: #e08585;
   --chem-onbekend: #93a89b;
 
-  /* Donkere zijbalk / mobiele onderbalk, net los van de achtergrond. */
-  --sidebar-bg: #121814;
-  --sidebar-ink: #9fb0a6;
-  --sidebar-ink-strong: #dde5df;
+  /* Structurele navigatie (zijbalk, mobiele onderbalk, glasbalk): dónkerder
+     dan de content, niet lichter. Zo staat de app-inhoud vooraan en zakt het
+     meubilair naar achteren — vóór #1074 lag de zijbalk op 1,03:1 van de
+     achtergrond en was er dus geen zijbalk te zien. */
+  --sidebar-bg: #031513;
+  --sidebar-ink: #b4c2bd;
+  --sidebar-ink-strong: #f2f6f4;
 
   /* Statuskleuren gedempt: duidelijk, niet fluorescerend. */
-  --success: #4fa46c;
-  --success-soft: #12291b;
-  --success-line: #29513a;
-  --danger: #d18a8a;
-  --danger-soft: #331b1b;
-  --danger-line: #5c2f2f;
-  --warn: #cb9750;
-  --warn-soft: #32260f;
-  --warn-line: #5f4c24;
+  --success: #4bc98a;
+  --success-soft: #1a3d2c;
+  --success-line: #2d6349;
+  --danger: #ef8f95;
+  --danger-soft: #472d2d;
+  --danger-line: #6b4344;
+  --warn: #eac45b;
+  --warn-soft: #3f321a;
+  --warn-line: #5f4c2a;
 
   /* Tiers op donker (#664): zelfde materiaalladder, lichter gezet voor
      leesbare badge-tekst op donkere vlakken. */
   --slof: #a69d8c;
-  --slof-soft: #262219;
+  --slof-soft: #38332a;
   --karton: #c9a061;
-  --karton-soft: #2c2417;
+  --karton-soft: #3b3225;
   --hout: #c08a58;
-  --hout-soft: #281d14;
+  --hout-soft: #3e3128;
   --gold: #c09b4e;
-  --gold-soft: #322810;
+  --gold-soft: #3d321a;
   --silver: #a8b2bd;
-  --silver-soft: #232930;
+  --silver-soft: #2e343b;
   --bronze: #cc8447;
-  --bronze-soft: #331f10;
+  --bronze-soft: #452f20;
   --platina: #74c9e2;
-  --platina-soft: #16303a;
+  --platina-soft: #1d3741;
   --diamant: #8faaf2;
-  --diamant-soft: #1b2440;
+  --diamant-soft: #2a3250;
   --meester: #c4b5fd;
-  --meester-soft: #241d3a;
+  --meester-soft: #372f4e;
   --legende: #f7869f;
-  --legende-soft: #3a1a24;
+  --legende-soft: #4b2a34;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #e6b34d;
-  --dictator-soft: #3a1421;
+  --dictator-soft: #4f2734;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #f0c766;
   --dictator-wine: #7a1a34;
   --dictator-deep: #2a0d16;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #f288bc;
-  --bigdaddy-soft: #40213a;
+  --bigdaddy-soft: #492942;
   --bigdaddy-ink: #37101f;
   --bigdaddy-text: #f6b3d2;
 
@@ -417,8 +471,8 @@
   --avatar-h6-bg: #37301a; --avatar-h6-fg: #dfc687;
   --avatar-h7-bg: #262d36; --avatar-h7-fg: #b9c4d1;
 
-  --placeholder: #8a9a90;
-  --skeleton-hi: #26312a;
+  --placeholder: #97a8a1;
+  --skeleton-hi: #243e3a;
 
   /* Op donker dragen randen de hiërarchie; schaduwen dieper en subtieler. */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -428,15 +482,27 @@
   --shadow-up: 0 -6px 24px rgba(0, 0, 0, 0.4);
   --shadow-up-lg: 0 -8px 30px rgba(0, 0, 0, 0.55);
   --shadow-ball: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --overlay: rgba(0, 0, 0, 0.6);
+  --overlay: rgba(2, 8, 7, 0.66);
 
   /* Toasts: donkere tekst op de gedempte statuskleuren (die zijn hier licht
      genoeg als vlak), anders wit-op-licht bij --ink/--danger. */
-  --toast-ink: #0f1512;
+  --toast-ink: #04140f;
   --toast-close-bg: rgba(0, 0, 0, 0.15);
   --toast-close-bg-hover: rgba(0, 0, 0, 0.28);
 
-  --bar-glass: rgba(18, 24, 20, 0.88);
+  --bar-glass: rgba(3, 21, 19, 0.86);
+
+  /* Gekozen navigatie: het label leest als gewone tekst (smaragd haalt op het
+     gekozen vlak geen AA), de markering ernaast is lime. Zo draagt de kleur
+     het accent en de tekst de leesbaarheid — in plaats van één smaragd dat
+     allebei half doet. */
+  --selected-ink: var(--ink);
+  --selected-mark: var(--lime);
+
+  /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥10:1
+     op de kaart), waar het smaragd van de knoppen op een gekozen nav-item juist
+     wegviel. Licht houdt smaragd — daar is de ring op wit al duidelijk. */
+  --focus-ring: var(--lime);
 
   /* Glas op donker (#1062): het materiaal wordt donker, het randlicht blijft
      wit maar zwakker — een felle witte rand op een donkere pagina leest als
@@ -494,7 +560,7 @@ body {
   text-decoration-color: currentColor;
 }
 :where(a:not([class]):focus-visible) {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 4px;
 }

@@ -26,7 +26,7 @@
   gap: 0.5rem;
   padding: 1.5rem 1rem;
   background: var(--sidebar-bg);
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--divider);
 }
 
 .sidebar__brand {
@@ -80,16 +80,19 @@
   font-weight: 600;
   transition: background 0.15s, color 0.15s;
 }
+/* Hover heeft sinds #1074 een eigen vlak. Het leende --surface-2, en dat is de
+   kleur van "een subtiel vlak binnen een kaart" — twee rollen op één token, en
+   op donker daardoor geen van beide zichtbaar. */
 .sidebar__link:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
   color: var(--ink);
 }
 .sidebar__link:hover .sidebar__icon {
   color: var(--accent);
 }
 .sidebar__link.is-active {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface-active);
+  color: var(--selected-ink);
 }
 /* Afgerond accentstaafje i.p.v. een harde inset-rand. */
 .sidebar__link.is-active::before {
@@ -101,7 +104,7 @@
   width: 3px;
   height: 55%;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--selected-mark);
 }
 .sidebar__icon {
   display: inline-flex;
@@ -109,7 +112,7 @@
   transition: color 0.15s;
 }
 .sidebar__link.is-active .sidebar__icon {
-  color: var(--accent);
+  color: var(--selected-mark);
 }
 
 .sidebar__foot {
@@ -117,7 +120,7 @@
   flex-direction: column;
   gap: 0.6rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--divider);
 }
 /* Jokerstatus in de zijbalkvoet (#1003): links uitgelijnd boven de eigen
    naam, zodat hij in de kolom staat en niet over de volle breedte rekt. */
@@ -136,7 +139,7 @@
   transition: background 0.15s;
 }
 .sidebar__user:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .sidebar__user-text {
   display: grid;
@@ -170,7 +173,7 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .sidebar__signout:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
   border-color: var(--ink-soft);
 }
 
@@ -245,7 +248,15 @@
     background: var(--bar-glass);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--divider);
+  }
+  /* Zonder backdrop-filter is --bar-glass een half-doorzichtig vlak waar de
+     content dwars doorheen schuift. Val dan terug op de dekkende balkkleur —
+     dezelfde die de onderbalk draagt, dus de twee blijven één familie. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .topbar {
+      background: var(--sidebar-bg);
+    }
   }
   .topbar__brand {
     position: relative;
@@ -294,7 +305,7 @@
     align-items: stretch;
     padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
     background: var(--sidebar-bg);
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--divider);
     box-shadow: var(--shadow-up);
   }
   .tabbar__link {
@@ -321,7 +332,8 @@
     transition: background 0.15s;
   }
   .tabbar__link.is-active:not(.tabbar__link--home) .tabbar__icon {
-    background: var(--accent-soft);
+    background: var(--surface-active);
+    color: var(--selected-mark);
   }
   .tabbar__icon svg {
     width: 24px;
@@ -378,7 +390,9 @@
     height: 30px;
   }
   .tabbar__link--home.is-active .tabbar__icon {
-    box-shadow: 0 0 0 3px var(--accent), 0 6px 18px rgba(20, 40, 28, 0.22);
+    /* De tweede schaduw stond hardcoded op de lichte waarde en gaf de bal op
+       donker een grijze halo; --shadow-ball is per thema al de juiste. */
+    box-shadow: 0 0 0 3px var(--selected-mark), var(--shadow-ball);
   }
   /* De uitstekende bal is een cirkel; leg de focus-ring om de bal zelf i.p.v.
      een hoekige rechthoek om de (lage) tab-cel. De hele 58px-cirkel is de
@@ -387,7 +401,7 @@
     outline: none;
   }
   .tabbar__link--home:focus-visible .tabbar__icon {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 

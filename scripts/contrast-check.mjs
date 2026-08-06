@@ -19,21 +19,72 @@ function tokensOf(block) {
 
 const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
 const darkBlock = css.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
-const light = tokensOf(rootBlock);
-const dark = { ...light, ...tokensOf(darkBlock) };
+// Eén niveau var()-indirectie oplossen, zodat een token dat naar een ander
+// token wijst (--focus-ring: var(--lime)) ook gemeten wordt en niet stil
+// wegvalt. Per thema, want de verwijzing wijst per thema een andere kant op.
+function resolve(tokens) {
+  const out = { ...tokens };
+  for (const [k, v] of Object.entries(out)) {
+    const ref = /^var\((--[\w-]+)\)$/.exec(v);
+    if (ref) out[k] = out[ref[1].slice(2)] ?? v;
+  }
+  return out;
+}
 
-function luminance(hex) {
-  const h = hex.replace("#", "");
-  const full = h.length === 3 ? [...h].map((c) => c + c).join("") : h;
-  const [r, g, b] = [0, 2, 4].map((i) => {
-    const v = parseInt(full.slice(i, i + 2), 16) / 255;
+const light = resolve(tokensOf(rootBlock));
+const dark = resolve({ ...tokensOf(rootBlock), ...tokensOf(darkBlock) });
+
+// Een kleurwaarde → [r, g, b, a] in 0–255 / 0–1. Kent hex (#rgb, #rrggbb) en
+// rgb()/rgba(). Tot #1074 kende het script alleen hex, en sloeg het al het
+// andere stilletjes over — precies de randen en overlays die op donker de
+// hiërarchie dragen, dus die vielen buiten de bewaking.
+function parseColor(value) {
+  const v = value.trim();
+  if (v.startsWith("#")) {
+    const h = v.slice(1);
+    const full = h.length === 3 ? [...h].map((c) => c + c).join("") : h;
+    if (full.length !== 6) return null;
+    return [...[0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16)), 1];
+  }
+  const m = /^rgba?\(([^)]+)\)$/.exec(v);
+  if (!m) return null;
+  const parts = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+  if (parts.length < 3 || parts.some(Number.isNaN)) return null;
+  return [parts[0], parts[1], parts[2], parts[3] ?? 1];
+}
+
+/** Een half-doorzichtige kleur op zijn ondergrond leggen (alpha-compositing). */
+function composite(fg, bg) {
+  if (fg[3] >= 1) return fg;
+  return [0, 1, 2].map((i) => fg[i] * fg[3] + bg[i] * (1 - fg[3])).concat(1);
+}
+
+function luminanceOf(rgb) {
+  const [r, g, b] = rgb.slice(0, 3).map((c) => {
+    const v = c / 255;
     return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+function luminance(hex) {
+  return luminanceOf(parseColor(hex) ?? [0, 0, 0, 1]);
+}
+
+/** Waarneembare lichtheid (CIE L*, 0–100) — de maat voor vlak-op-vlak. */
+function lightness(value) {
+  const Y = luminance(value);
+  return Y > 216 / 24389 ? 116 * Math.cbrt(Y) - 16 : (24389 / 27) * Y;
+}
+
 function contrast(fg, bg) {
-  const [a, b] = [luminance(fg), luminance(bg)].sort((x, y) => y - x);
+  const bgRgb = parseColor(bg);
+  const fgRgb = parseColor(fg);
+  if (!bgRgb || !fgRgb) return 0;
+  // Een doorzichtige voorgrond (rand, overlay) meet je op zijn ondergrond.
+  const [a, b] = [luminanceOf(composite(fgRgb, bgRgb)), luminanceOf(bgRgb)].sort(
+    (x, y) => y - x,
+  );
   return (a + 0.05) / (b + 0.05);
 }
 
@@ -79,6 +130,18 @@ const PAIRS = [
   ["cat-roast", "surface", 3.0, "feed-categorie roast (groot/UI)"],
   ["sidebar-ink", "sidebar-bg", 4.5, "navigatielabels"],
   ["sidebar-ink-strong", "sidebar-bg", 4.5, "actief navigatielabel"],
+  // Nieuwe surface-rollen (#1074): wat er op de verhoogde en gekozen vlakken
+  // staat, moet daar net zo goed leesbaar zijn als op een gewone kaart.
+  ["ink", "surface-elevated", 4.5, "tekst op verhoogd vlak (hero, sheets)"],
+  ["ink-soft", "surface-elevated", 4.5, "gedempte tekst op verhoogd vlak"],
+  ["ink", "surface-hover", 4.5, "tekst op een vlak onder de muis"],
+  ["sidebar-ink-strong", "surface-active", 4.5, "label van het gekozen nav-item"],
+  ["lime", "surface-active", 4.5, "icoon van het gekozen nav-item"],
+  ["accent", "surface-elevated", 4.5, "accent als tekst/link op de hero"],
+  ["focus-ring", "surface", 3.0, "focusring op een kaart (groot/UI)"],
+  ["focus-ring", "bg", 3.0, "focusring op de achtergrond (groot/UI)"],
+  ["focus-ring", "sidebar-bg", 3.0, "focusring in de navigatie (groot/UI)"],
+  ["focus-ring", "surface-active", 3.0, "focusring op een gekozen nav-item"],
   ["toast-ink", "success", 3.0, "toast-tekst op succes-toast (groot/UI)"],
   ["toast-ink", "danger", 4.5, "toast-tekst op fout-toast (blijft staan)"],
   ["toast-ink", "ink", 4.5, "toast-tekst op info-toast"],
@@ -96,12 +159,52 @@ for (const [name, tokens, strict] of [
   for (const [fg, bg, min, label] of PAIRS) {
     const f = tokens[fg];
     const b = tokens[bg];
-    if (!f?.startsWith("#") || !b?.startsWith("#")) continue;
+    if (!f || !b || !parseColor(f) || !parseColor(b)) continue;
     const c = contrast(f, b);
     const ok = c >= min;
     if (!ok && strict) darkFailures++;
     console.log(
       `${ok ? "  ok  " : strict ? "  FAIL" : "  let-op"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${fg} op ${bg} (${label})`,
+    );
+  }
+}
+
+// ---- Surface-ladder (#1074) ----
+// Vlak-op-vlak is een andere vraag dan tekst-op-vlak, en de WCAG-verhouding is
+// er het verkeerde gereedschap voor: vlak bij zwart domineert de +0,05 in de
+// formule, waardoor twee duidelijk verschillende donkere vlakken altijd rond
+// 1,1:1 uitkomen. Daarom meten we hier de waarneembare lichtheid (CIE L*): een
+// stap van ±4 L* is met het blote oog te zien, ook onderin het bereik.
+//
+// Dit is precies de categorie die vóór #1074 ontbrak — de tekstparen hierboven
+// stonden ruim op groen terwijl kaart, pagina en zijbalk in elkaar overliepen.
+// [lichter, donkerder, minimale stap in L*, omschrijving]
+const LADDER = [
+  ["surface", "bg", 4, "kaart tilt op van de pagina"],
+  ["bg", "sidebar-bg", 3, "navigatie zakt weg onder de pagina"],
+  ["surface-2", "surface", 3, "subtiel vlak binnen een kaart"],
+  ["surface-elevated", "surface", 3, "verhoogd vlak (hero, sheets)"],
+  ["surface-hover", "surface", 4, "hover is voelbaar"],
+  ["surface-active", "surface", 4, "gekozen item is voelbaar"],
+  ["line", "surface", 6, "kaartrand is zichtbaar"],
+  ["line-strong", "surface", 12, "sterke rand is duidelijk"],
+  ["divider", "surface", 3, "separator blijft zwakker dan een kaartrand"],
+];
+
+for (const [name, tokens, strict] of [
+  ["licht", light, false],
+  ["donker", dark, true],
+]) {
+  console.log(`\n— Surface-ladder: ${name}${strict ? "" : " (informatief)"} —`);
+  for (const [hi, lo, min, label] of LADDER) {
+    const a = tokens[hi];
+    const b = tokens[lo];
+    if (!a || !b || !parseColor(a) || !parseColor(b)) continue;
+    const d = lightness(a) - lightness(b);
+    const ok = d >= min;
+    if (!ok && strict) darkFailures++;
+    console.log(
+      `${ok ? "  ok  " : strict ? "  FAIL" : "  let-op"} ${d.toFixed(1).padStart(5)} L* ≥ ${min}  ${hi} boven ${lo} (${label})`,
     );
   }
 }

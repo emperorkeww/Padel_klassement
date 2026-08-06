@@ -125,7 +125,7 @@
   opacity: 0.45;
 }
 .pick-chip:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* Gastspeler zonder account: subtiel gestippelde rand + label. */
