@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { useState } from "react";
 import { Sheet } from "@/ui/Sheet";
 
@@ -61,6 +62,41 @@ describe("<Sheet />", () => {
     fireEvent.click(opener);
     fireEvent.click(screen.getByRole("dialog"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("draagt het glasmateriaal in de scrollbare variant (#1062)", () => {
+    render(
+      <Sheet open onClose={() => {}} title="Titel" className="eigen">
+        <p>Inhoud</p>
+      </Sheet>,
+    );
+
+    const paneel = screen.getByRole("dialog");
+    expect(paneel).toHaveClass("glas", "glas--sterk");
+    // Het paneel scrollt; met de gewone lagen zou de rand na één schermhoogte
+    // scrollen ergens in het niets komen te staan.
+    expect(paneel).toHaveClass("glas--scrollbaar");
+    // Geen vorm-class: de sheet houdt zijn eigen hoeken (alleen bovenaan rond
+    // op mobiel, helemaal rond op desktop).
+    expect(paneel.className).not.toMatch(/glas--paneel|glas--pil|glas--cirkel/);
+    expect(paneel).toHaveClass("eigen");
+  });
+
+  // Deze regel is met een render niet te betrappen — jsdom rekent geen CSS uit
+  // en kent geen backdrop root — maar hij breekt het glas volledig zodra
+  // iemand hem terugdraait, en dan zie je het alleen in de browser.
+  it("houdt opacity uit de sheet-animaties (#1062)", () => {
+    const css = readFileSync("src/components/ui/ui.css", "utf8");
+    const keyframes = css.match(/@keyframes sheet-(up|fade)\s*\{[\s\S]*?\n\}/g);
+
+    expect(keyframes).toHaveLength(2);
+    for (const blok of keyframes!) {
+      // Een element met opacity < 1 is een backdrop root: de backdrop-filter
+      // van het paneel erin ziet dan niets meer van de pagina, en Chrome houdt
+      // die laag ook ná de animatie vast. De sheet wordt dan een doorzichtig
+      // vlak zonder blur, met de pagina scherp leesbaar er dwars doorheen.
+      expect(blok).not.toMatch(/opacity/);
+    }
   });
 
   it("roept extra onKeyDown aan op de dialoog (bv. pijltjes)", () => {

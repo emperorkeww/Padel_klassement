@@ -106,6 +106,12 @@ const SlofShowcase = import.meta.env.DEV
   ? lazy(() => import("@/features/rating/components/SlofShowcase"))
   : null;
 
+// Dev-stage voor het glasmateriaal (#1062): de vier varianten op zes
+// achtergronden, want glas beoordeel je alleen aan wat eronder ligt.
+const GlasShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/ui/GlasShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -209,6 +215,9 @@ function App() {
           )}
           {SlofShowcase && (
             <Route path="/dev/slof" element={<SlofShowcase />} />
+          )}
+          {GlasShowcase && (
+            <Route path="/dev/glas" element={<GlasShowcase />} />
           )}
         </Routes>
       </Suspense>

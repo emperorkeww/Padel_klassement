@@ -26,7 +26,7 @@ export function NextMatchCard({
   profiles: Record<string, Profile>;
 }) {
   return (
-    <section className="card card--next">
+    <section className="card card--next glas glas--standaard">
       <div className="card__head">
         <h2 className="card__title">Jouw volgende match</h2>
         <Link className="profile-link" to={`/matches/${match.id}`}>

@@ -18,7 +18,10 @@ import {
 } from "./authErrors";
 import { FieldError } from "./FieldError";
 import { SterkteBalk } from "./SterkteBalk";
-import { BallIcon } from "@/ui/BallIcon";
+import { AuthHeader } from "./components/AuthHeader";
+import { AuthLayout } from "./components/AuthLayout";
+import { AuthModeSwitch } from "./components/AuthModeSwitch";
+import { AuthSubmitButton } from "./components/AuthSubmitButton";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import "./LoginScreen.css";
 
@@ -241,13 +244,29 @@ export function LoginScreen() {
     setFouten({});
   }
 
-  const submitLabel = loading
-    ? "Bezig…"
+  const submitLabel = isForgot
+    ? "Stuur herstellink"
+    : isSignup
+      ? "Account aanmaken"
+      : "Inloggen";
+
+  const title = mailNaar
+    ? "Check je mail"
     : isForgot
-      ? "Stuur herstellink"
+      ? "Wachtwoord herstellen"
       : isSignup
-        ? "Account aanmaken"
-        : "Inloggen";
+        ? "Maak een account"
+        : "Welkom terug";
+
+  const subtitle = mailNaar
+    ? "Nog één stap: bevestig je e-mailadres."
+    : isForgot
+      ? "Vul je e-mailadres in en we sturen je een herstellink."
+      : isSignup
+        ? "Word lid, leg je matches vast en klim in het klassement."
+        : "Log in en zie waar je staat in het klassement.";
+
+  const brandMode = isSignup || mailNaar ? "signup" : "signin";
 
   // Alles wat onder het wachtwoordveld hangt, in leesvolgorde.
   const wachtwoordUitleg =
@@ -269,13 +288,8 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="login">
+    <AuthLayout brandMode={brandMode}>
       <main className="login-card" role="main">
-        <div className="login-brand">
-          <BallIcon />
-          <span className="login-brand__name">Vamos!</span>
-        </div>
-
         {isForgot && !mailNaar && (
           <button
             type="button"
@@ -286,29 +300,11 @@ export function LoginScreen() {
           </button>
         )}
 
-        <header className="login-head">
-          {isForgot && !mailNaar && (
-            <span className="login-eyebrow">Wachtwoord vergeten</span>
-          )}
-          <h1 className="login-title">
-            {mailNaar
-              ? "Check je mail"
-              : isForgot
-                ? "Wachtwoord herstellen"
-                : isSignup
-                  ? "Maak een account"
-                  : "Welkom terug"}
-          </h1>
-          <p className="login-subtitle">
-            {mailNaar
-              ? "Nog één stap: bevestig je e-mailadres."
-              : isForgot
-                ? "Vul je e-mailadres in en we sturen je een herstellink."
-                : isSignup
-                  ? "Word lid, leg je matches vast en klim in het klassement."
-                  : "Log in en zie waar je staat in het klassement."}
-          </p>
-        </header>
+        <AuthHeader
+          title={title}
+          subtitle={subtitle}
+          eyebrow={isForgot && !mailNaar ? "Wachtwoord vergeten" : undefined}
+        />
 
         {mailNaar ? (
           <div className="login-mailcheck">
@@ -332,38 +328,28 @@ export function LoginScreen() {
         ) : (
           <>
             {!isForgot && (
-              <div
-                className="login-tabs"
-                role="tablist"
-                aria-label="Inloggen of registreren"
-              >
-                <button
-                  role="tab"
-                  aria-selected={mode === "signin"}
-                  className={`login-tab ${mode === "signin" ? "is-active" : ""}`}
-                  onClick={() => switchMode("signin")}
-                  type="button"
-                >
-                  Inloggen
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={mode === "signup"}
-                  className={`login-tab ${mode === "signup" ? "is-active" : ""}`}
-                  onClick={() => switchMode("signup")}
-                  type="button"
-                >
-                  Registreren
-                </button>
-              </div>
+              <AuthModeSwitch
+                active={mode}
+                onChange={switchMode}
+                panelId="auth-form-panel"
+              />
             )}
 
+            <div
+              className="login-panel"
+              id="auth-form-panel"
+              role={!isForgot ? "tabpanel" : undefined}
+              aria-labelledby={!isForgot ? `auth-tab-${mode}` : undefined}
+            >
             <form className="login-form" onSubmit={handleSubmit} noValidate>
               {isSignup && (
                 <>
-                  <label className="field">
-                    <span className="field__label">Naam</span>
+                  <div className="field">
+                    <label className="field__label" htmlFor="auth-full-name">
+                      Naam
+                    </label>
                     <input
+                      id="auth-full-name"
                       className="field__input"
                       type="text"
                       autoComplete="name"
@@ -371,14 +357,17 @@ export function LoginScreen() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                     />
-                  </label>
-                  <label className="field">
-                    <span className="field__label">Gebruikersnaam</span>
+                  </div>
+                  <div className="field">
+                    <label className="field__label" htmlFor="auth-username">
+                      Gebruikersnaam <span className="field__optional">(optioneel)</span>
+                    </label>
                     <input
+                      id="auth-username"
                       className="field__input"
                       type="text"
                       autoComplete="username"
-                      placeholder="bijv. remco (optioneel)"
+                      placeholder="bijv. remco"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       ref={(el) => {
@@ -408,13 +397,16 @@ export function LoginScreen() {
                         </span>
                       )
                     )}
-                  </label>
+                  </div>
                 </>
               )}
 
-              <label className="field">
-                <span className="field__label">E-mailadres</span>
+              <div className="field">
+                <label className="field__label" htmlFor="auth-email">
+                  E-mailadres
+                </label>
                 <input
+                  id="auth-email"
                   className="field__input"
                   type="email"
                   autoComplete="email"
@@ -433,13 +425,16 @@ export function LoginScreen() {
                   required
                 />
                 <FieldError id="fout-email" text={fouten.email} />
-              </label>
+              </div>
 
               {!isForgot && (
-                <label className="field">
-                  <span className="field__label">Wachtwoord</span>
+                <div className="field">
+                  <label className="field__label" htmlFor="auth-password">
+                    Wachtwoord
+                  </label>
                   <div className="field__wrap">
                     <input
+                      id="auth-password"
                       className="field__input"
                       type={showPassword ? "text" : "password"}
                       autoComplete={isSignup ? "new-password" : "current-password"}
@@ -493,13 +488,16 @@ export function LoginScreen() {
                     </>
                   )}
                   <FieldError id="fout-wachtwoord" text={fouten.wachtwoord} />
-                </label>
+                </div>
               )}
 
               {isSignup && (
-                <label className="field">
-                  <span className="field__label">Bevestig wachtwoord</span>
+                <div className="field">
+                  <label className="field__label" htmlFor="auth-confirm">
+                    Bevestig wachtwoord
+                  </label>
                   <input
+                    id="auth-confirm"
                     className="field__input"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
@@ -524,7 +522,7 @@ export function LoginScreen() {
                     required
                   />
                   <FieldError id="fout-bevestig" text={fouten.bevestig} />
-                </label>
+                </div>
               )}
 
               {mode === "signin" && (
@@ -542,15 +540,17 @@ export function LoginScreen() {
               {/* Alleen nog voor wat het hele formulier betreft: rate limits,
                   onbekende fouten en de succesmeldingen. */}
               {message && (
-                <p className={`login-message login-message--${status}`} role="status">
+                <p
+                  className={`login-message login-message--${status}`}
+                  role={status === "error" ? "alert" : "status"}
+                >
                   {message}
                 </p>
               )}
 
-              <button className="login-submit" type="submit" disabled={loading}>
-                {submitLabel}
-              </button>
+              <AuthSubmitButton label={submitLabel} loading={loading} />
             </form>
+            </div>
           </>
         )}
 
@@ -591,7 +591,7 @@ export function LoginScreen() {
           )}
         </footer>
       </main>
-    </div>
+    </AuthLayout>
   );
 }
 

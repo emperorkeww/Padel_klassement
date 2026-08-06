@@ -24,6 +24,41 @@ function renderPage() {
 }
 
 describe("<LoginScreen />", () => {
+  it("koppelt de zichtbare labels expliciet aan de invoervelden", async () => {
+    renderPage();
+    expect(await screen.findByLabelText("E-mailadres")).toHaveAttribute(
+      "autocomplete",
+      "email",
+    );
+    expect(screen.getByLabelText("Wachtwoord")).toHaveAttribute(
+      "autocomplete",
+      "current-password",
+    );
+
+    await userEvent.click(screen.getByRole("tab", { name: "Registreren" }));
+    expect(screen.getByLabelText("Naam")).toHaveAttribute("autocomplete", "name");
+    expect(screen.getByLabelText(/Gebruikersnaam/)).toHaveAttribute(
+      "autocomplete",
+      "username",
+    );
+    expect(screen.getByLabelText("Bevestig wachtwoord")).toHaveAttribute(
+      "autocomplete",
+      "new-password",
+    );
+  });
+
+  it("wisselt de authmodus met de pijltjestoetsen", async () => {
+    renderPage();
+    const inloggen = await screen.findByRole("tab", { name: "Inloggen" });
+    inloggen.focus();
+    await userEvent.keyboard("{ArrowRight}");
+
+    const registreren = screen.getByRole("tab", { name: "Registreren" });
+    expect(registreren).toHaveAttribute("aria-selected", "true");
+    expect(registreren).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Maak een account" })).toBeInTheDocument();
+  });
+
   it("logt in met e-mail en wachtwoord", async () => {
     renderPage();
     await userEvent.type(
@@ -37,6 +72,37 @@ describe("<LoginScreen />", () => {
       email: "alice@example.com",
       password: "geheim123",
     });
+  });
+
+  it("houdt de submitactie stabiel en blokkeert dubbel submitten tijdens loading", async () => {
+    vi.mocked(supabase.auth.signInWithPassword).mockClear();
+    let rondAf!: (result: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>) => void;
+    vi.mocked(supabase.auth.signInWithPassword).mockReturnValueOnce(
+      new Promise((resolve) => {
+        rondAf = resolve;
+      }),
+    );
+    renderPage();
+    await userEvent.type(
+      await screen.findByLabelText("E-mailadres"),
+      "alice@example.com",
+    );
+    await userEvent.type(screen.getByLabelText("Wachtwoord"), "geheim123");
+    await userEvent.click(screen.getByRole("button", { name: "Inloggen" }));
+
+    const loading = screen.getByRole("button", { name: /inloggen.*bezig/i });
+    expect(loading).toBeDisabled();
+    expect(loading).toHaveAttribute("aria-busy", "true");
+    expect(loading).toHaveTextContent("Bezig…");
+    await userEvent.click(loading);
+    expect(supabase.auth.signInWithPassword).toHaveBeenCalledTimes(1);
+
+    rondAf(
+      { data: { user: {}, session: null }, error: null } as unknown as Awaited<
+        ReturnType<typeof supabase.auth.signInWithPassword>
+      >,
+    );
+    expect(await screen.findByText("Welkom terug!")).toBeInTheDocument();
   });
 
   it("weigert registratie met niet-overeenkomende wachtwoorden", async () => {

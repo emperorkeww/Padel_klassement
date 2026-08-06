@@ -1,0 +1,343 @@
+/* Liquid Glass-materiaal (#1062).
+
+   Eén gedeelde definitie van een doorschijnend materiaal dat dieper leest dan
+   gewone glassmorphism: een geblurde backdrop, een materiaalverloop, een
+   binnengloed, een refractieve rand en — alleen op interactieve vlakken — een
+   hooglicht dat de aanwijzer volgt.
+
+   Dit is CSS-eerst en niet component-eerst. De topbalk, de onderbalk en het
+   sheet-paneel bestaan al; die in een React-wrapper hijsen zou de DOM en de
+   layout veranderen. Ze krijgen dus gewoon `.glas`-classes erbij.
+   `LiquidGlass.tsx` stelt dezelfde classes samen voor nieuwe plekken.
+
+   De grondstof (--glas-tint / --glas-glans / --glas-diep en de dekkingen)
+   staat in src/app/index.css, per thema. Hier staat alleen wat je met die
+   grondstof doet.
+
+   Twee regels die niet gebroken mogen worden:
+   - Nooit `backdrop-filter` of `filter` animeren; alleen `opacity` en
+     `transform`. Zelfde afspraak als de premium-glans op de FUT-kaart (#773).
+   - `overflow: hidden` hoort bij de vórm-modifiers, niet bij `.glas` zelf: de
+     onderbalk heeft een bal die bewust bóven de balk uitsteekt.
+*/
+
+.glas {
+  /* Middenpositie tot de aanwijzer iets anders zegt; useGlasAanwijzer schrijft
+     hier pixels in. 0% verticaal laat het hooglicht van bovenaf komen, wat
+     dichter bij daglicht ligt dan een hooglicht midden op het vlak. */
+  --glas-aanwijzer-x: 50%;
+  --glas-aanwijzer-y: 0%;
+  --glas-straal: 180px;
+  --glas-rand-kracht: 0.55;
+  --glas-schaduw: var(--shadow-md);
+  --glas-rand-hoog: rgb(
+    var(--glas-glans) / calc(0.9 * var(--glas-rand-kracht) * var(--glas-glans-kracht))
+  );
+  --glas-rand-laag: rgb(
+    var(--glas-glans) / calc(0.12 * var(--glas-rand-kracht) * var(--glas-glans-kracht))
+  );
+  /* Een eigen laag vóór het materiaal, voor vlakken die een kleur willen
+     meebrengen — de accentgloed op "Jouw volgende match", de accentvulling van
+     de positie-chip. Standaard leeg, zodat het materiaal onaangeroerd blijft.
+     Zo hoeft niemand de materiaalformule te kopiëren om er iets over te leggen. */
+  --glas-laag: linear-gradient(rgb(0 0 0 / 0) 0 0);
+
+  /* Eigen stapelcontext, zodat de lagen hieronder niet met de pagina vechten. */
+  isolation: isolate;
+
+  background:
+    var(--glas-laag),
+    linear-gradient(
+      140deg,
+      rgb(var(--glas-tint) / var(--glas-dekking)),
+      rgb(var(--glas-tint) / calc(var(--glas-dekking) - 0.14))
+    );
+
+  /* De rand is de terugval voor browsers zonder mask-compositing; waar dat wél
+     kan, tekent ::before er een verlopende refractierand overheen. Hij staat
+     altijd in de box, dus het formaat verspringt niet tussen die twee gevallen. */
+  border: 1px solid
+    rgb(var(--glas-glans) / calc(0.5 * var(--glas-rand-kracht) * var(--glas-glans-kracht)));
+
+  -webkit-backdrop-filter: blur(var(--glas-blur)) saturate(var(--glas-saturatie))
+    brightness(var(--glas-helderheid));
+  backdrop-filter: blur(var(--glas-blur)) saturate(var(--glas-saturatie))
+    brightness(var(--glas-helderheid));
+
+  box-shadow:
+    /* Haarlijn naar buiten. Het randlicht is wit; op een lichte pagina in een
+       licht thema is dat onzichtbaar, en dan zweeft het vlak nergens meer in.
+       Deze donkere lijn geeft de vorm altijd een grens. */
+    0 0 0 1px rgb(var(--glas-diep) / 0.07),
+    /* bovenlicht */ inset 0 1px 0
+      rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
+    /* binnengloed vanaf de bovenrand */
+      inset 0 14px 28px -16px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    /* diepte langs de onderrand */
+      inset 0 -16px 26px -20px rgb(var(--glas-diep) / 0.38),
+    var(--glas-schaduw);
+}
+
+/* De lagen hieronder staan absoluut, dus het vlak moet een positie hebben —
+   maar `:where` en dus zonder gewicht. Een vlak dat zelf al ergens hangt houdt
+   zijn eigen positie: `.zwevende-actie` is `fixed`, en een `relative` uit dit
+   bestand zou die zwevende knop gewoon in de pagina laten vallen. */
+:where(.glas) {
+  position: relative;
+}
+
+/* De refractierand: een verlopende 1px-ring, geknipt met mask-compositing.
+   Buiten dit @supports-blok blijft de gewone `border` hierboven staan. */
+@supports ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+  .glas::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* Achter de inhoud maar vóór het materiaal: `.glas` is door `isolation`
+       altijd een eigen stapelcontext, en daarin schildert een laag op -1 wél
+       over de achtergrond van het element maar niet over zijn inhoud. Dat is
+       wat de vlakken zónder `.glas__inhoud` nodig hebben — de balken, de chip
+       en de kaarten dragen alleen de classes, en hun tekst staat er los in. */
+    z-index: -1;
+    pointer-events: none;
+    border-radius: inherit;
+    padding: 1px;
+
+    background: linear-gradient(
+      140deg,
+      var(--glas-rand-hoog),
+      var(--glas-rand-laag) 34%,
+      var(--glas-rand-laag) 62%,
+      var(--glas-rand-hoog)
+    );
+
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+}
+
+/* Het hooglicht dat de aanwijzer volgt. Staat standaard uit; alleen een
+   interactief vlak met een echte muis zet 'm aan. */
+.glas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+
+  background: radial-gradient(
+    var(--glas-straal) circle at var(--glas-aanwijzer-x) var(--glas-aanwijzer-y),
+    rgb(var(--glas-glans) / calc(0.4 * var(--glas-glans-kracht))),
+    rgb(var(--glas-glans) / calc(0.12 * var(--glas-glans-kracht))) 38%,
+    transparent 72%
+  );
+
+  opacity: 0;
+}
+
+/* De inhoud moet bóven de rand- en hooglichtlagen staan; daarvoor heeft ze een
+   eigen positie nodig. Het is een <span> zodat het component ook in een knop of
+   een link mag zitten, waar een <div> niet hoort. */
+.glas__inhoud {
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+.glas--pil > .glas__inhoud,
+.glas--cirkel > .glas__inhoud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+/* ---------- Vormen ---------- */
+/* Alleen deze knippen; zie de kop van dit bestand. `.glas--eigen` laat de
+   afronding aan het element zelf, voor bestaande vlakken met eigen hoeken. */
+.glas--paneel {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.glas--pil {
+  border-radius: 999px;
+  overflow: hidden;
+}
+.glas--cirkel {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+/* ---------- Varianten ---------- */
+/* Grote vlakken: net genoeg materiaal om zich van de pagina te scheiden. */
+.glas--subtiel {
+  --glas-blur: 8px;
+  --glas-dekking: 0.9;
+  --glas-rand-kracht: 0.3;
+  --glas-schaduw: var(--shadow-sm);
+}
+/* Kaarten en panelen. */
+.glas--standaard {
+  --glas-blur: 16px;
+  --glas-dekking: 0.86;
+  --glas-rand-kracht: 0.55;
+  --glas-schaduw: var(--shadow-md);
+}
+/* Overlays en zwevende navigatie: het materiaal moet duidelijk vóór de pagina
+   liggen, dus meer blur, meer saturatie en een diepere slagschaduw. */
+.glas--sterk {
+  --glas-blur: 22px;
+  --glas-saturatie: 185%;
+  --glas-dekking: 0.8;
+  --glas-rand-kracht: 0.8;
+  --glas-schaduw: var(--shadow-lg);
+}
+/* Knoppen en chips. */
+.glas--interactief {
+  --glas-blur: 16px;
+  --glas-dekking: 0.86;
+  --glas-rand-kracht: 0.7;
+  --glas-schaduw: var(--shadow-md);
+}
+
+/* ---------- Toestanden ---------- */
+/* De rand- en schaduwwissels zijn bewust een sprong en geen animatie: alleen
+   opacity en transform mogen bewegen. */
+@media (hover: hover) and (pointer: fine) {
+  .glas--interactief:hover {
+    --glas-rand-kracht: 1;
+    --glas-schaduw: var(--shadow-lg);
+  }
+  .glas--interactief:hover::after {
+    opacity: 1;
+  }
+}
+.glas--interactief:active {
+  --glas-rand-kracht: 0.6;
+  --glas-schaduw: var(--shadow-sm);
+  transform: translateY(1px);
+}
+.glas--interactief:active::after {
+  opacity: 0.45;
+}
+
+/* De focusring is bewust géén glasrand: die verandert al bij hover, en een
+   toetsenbordgebruiker moet één ondubbelzinnig signaal krijgen. Zelfde
+   vormgeving als het blok "Toegankelijke focus-states" in ui.css — en dus ook
+   --focus-ring en niet --accent: sinds #1074 wijst dat token op donker naar
+   --lime, waar het accent te weinig van het glas afsteekt. */
+.glas--interactief:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Uitgeschakeld: dof materiaal, geen hooglicht, geen indrukbeweging. Staat na
+   de hover-regels, want de specificiteit is gelijk. */
+.glas[aria-disabled="true"],
+.glas:disabled {
+  --glas-saturatie: 70%;
+  --glas-rand-kracht: 0.25;
+  --glas-schaduw: var(--shadow-sm);
+}
+.glas[aria-disabled="true"]::after,
+.glas:disabled::after {
+  opacity: 0;
+}
+.glas[aria-disabled="true"]:active,
+.glas:disabled:active {
+  transform: none;
+}
+
+/* ---------- Scrollende glasvlakken ---------- */
+/* In een element met `overflow-y: auto` schuiven absoluut gepositioneerde
+   lagen mee met de inhoud: na één schermhoogte scrollen staat de rand ergens
+   in het niets. Een inset-schaduw blijft wél op de border-box staan, dus
+   scrollende vlakken (het sheet-paneel) ruilen de pseudo-lagen daarvoor in. */
+.glas--scrollbaar::before,
+.glas--scrollbaar::after {
+  display: none;
+}
+.glas--scrollbaar {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
+    inset 0 0 0 1px var(--glas-rand-laag),
+    inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    var(--glas-schaduw);
+}
+
+/* ---------- Volvlakse balken ---------- */
+/* Een navigatiebalk loopt van schermrand tot schermrand. De haarlijn rondom en
+   de zijranden zouden daar als losse streepjes langs het scherm staan; alleen
+   de rand naar de pagina toe heeft betekenis, en die zet de balk zelf.
+   `--glas-schaduw` bepaalt of de balk naar boven of naar beneden schaduwt. */
+.glas--balk {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
+    var(--glas-schaduw);
+}
+
+/* ---------- Beweging ---------- */
+/* Opt-in, zoals de rest van de repo: bewegen mag alleen als erom gevraagd is. */
+@media (prefers-reduced-motion: no-preference) {
+  .glas--interactief {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .glas::after {
+    transition: opacity 0.18s ease;
+  }
+}
+
+/* ---------- Terugval en voorkeuren ---------- */
+/* Zonder backdrop-filter zou het materiaal een halftransparant vlak worden en
+   zou de tekst op de pagina eronder gaan liggen. Dan liever een dicht vlak. */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .glas {
+    background: var(--glas-vast);
+    border-color: var(--line-strong);
+  }
+  .glas::before {
+    display: none;
+  }
+}
+
+/* Wie minder transparantie vraagt, krijgt hetzelfde dichte vlak. */
+@media (prefers-reduced-transparency: reduce) {
+  .glas {
+    background: var(--glas-vast);
+    border-color: var(--line-strong);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glas::before,
+  .glas::after {
+    display: none;
+  }
+}
+
+/* Meer contrast: dicht vlak plus een rand die je écht ziet. */
+@media (prefers-contrast: more) {
+  .glas {
+    background: var(--glas-vast);
+    border-color: var(--line-strong);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: var(--glas-schaduw);
+  }
+  .glas::before,
+  .glas::after {
+    display: none;
+  }
+}

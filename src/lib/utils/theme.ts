@@ -7,9 +7,12 @@
 export type ThemePreference = "system" | "light" | "dark";
 
 const STORAGE_KEY = "theme";
-const THEME_COLOR: Record<"light" | "dark", string> = {
+/** Kleur van de browser-/systeembalk rond de app. Moet gelijk blijven aan de
+ *  twee waarden in het inline script van index.html — theme.test.ts leest dat
+ *  bestand en faalt zodra de twee uit elkaar lopen (#1074). */
+export const THEME_COLOR: Record<"light" | "dark", string> = {
   light: "#0c8a5f", // smaragd, zoals de statische meta
-  dark: "#121814", // donkere zijbalk-tint
+  dark: "#031513", // --sidebar-bg: sluit aan op de mobiele topbalk (#1074)
 };
 
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");

@@ -11,7 +11,7 @@ describe("<RatingChart />", () => {
   it("tekent een doorlopende lijn bovenop het gevulde vlak", () => {
     render(<RatingChart history={RATING_HISTORY} />);
     const svg = screen.getByRole("img", {
-      name: "Rating-verloop: van 1000 naar 1012",
+      name: "Rating-verloop: gestegen van 1000 naar 1012",
     });
 
     const line = svg.querySelector("path.rating-chart__line");
@@ -35,5 +35,21 @@ describe("<RatingChart />", () => {
     render(<RatingChart history={[RATING_HISTORY[0]]} />);
     expect(screen.getByText(/te weinig matches/i)).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();
+  });
+
+  // De lijnkleur codeert of je rating steeg of daalde. Kleur alleen is geen
+  // signaal (WCAG 1.4.1), dus het toegankelijke label zegt het er sinds #1074
+  // ook in woorden bij — en dat moet met de reeks meebewegen.
+  it("noemt de richting van de reeks in het toegankelijke label", () => {
+    const gedaald = RATING_HISTORY.map((h) => ({
+      ...h,
+      rating_before: 2000 - (h.rating_before - 1000),
+      rating_after: 2000 - (h.rating_after - 1000),
+      delta: -h.delta,
+    }));
+    render(<RatingChart history={gedaald} />);
+    expect(
+      screen.getByRole("img", { name: /^Rating-verloop: gedaald van/ }),
+    ).toBeInTheDocument();
   });
 });
