@@ -102,6 +102,23 @@ Contrast van tekst óp glas is niet door CI te bewaken:
 wat eronder ligt. Meet het daarom op `/dev/glas`, waar het materiaal op zes
 achtergronden naast elkaar staat.
 
+## De valkuil: opacity in de buurt van glas
+
+Een element met `opacity < 1` — ook maar even, in een animatie — is een
+**backdrop root**. Wat daarbinnen staat kan niet meer voorbij die grens kijken,
+en Chrome houdt die laag ook ná de animatie vast. Een `backdrop-filter`
+erbinnen doet dan letterlijk niets: het vlak wordt alleen doorschijnend, zónder
+blur, en de pagina leest er scherp doorheen.
+
+Het sheet liep er meteen tegenaan: zowel de scrim (`sheet-fade`) als het paneel
+(`sheet-up`) vervaagde via `opacity`. Beide animaties zijn daarom omgebouwd —
+de scrim vervaagt nu via zijn `background-color`, het paneel schuift alleen nog
+omhoog. `Sheet.test.tsx` bewaakt dat, want in jsdom is het onzichtbaar en in de
+browser zie je het pas als het glas al kapot is.
+
+Zet dus geen `opacity`-animatie op een glasvlak of op een van zijn voorouders.
+Moet er iets vervagen, doe het dan op een laag die het glas niet omsluit.
+
 ## Performance-afwegingen
 
 - `backdrop-filter` is de dure kant. Daarom: geen stapels geblurde lagen over

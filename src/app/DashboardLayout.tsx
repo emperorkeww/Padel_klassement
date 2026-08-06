@@ -20,6 +20,11 @@ import { JokerKnop } from "@/features/matches/components/JokerKnop";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import "@/ui/ui.css";
+// Vóór DashboardLayout.css (#1062): de balken zetten hieronder een paar dingen
+// van het glasmateriaal recht, en dat werkt alleen als hun eigen regels later
+// komen. Dit is meteen de plek waar glas.css in de hoofdbundel belandt, zodat
+// vlakken die alleen de classes gebruiken geen React-component nodig hebben.
+import "@/ui/glas.css";
 import "./DashboardLayout.css";
 
 // `matchPaths`: extra padprefixen die dezelfde sectie zijn maar buiten `to`
@@ -142,7 +147,7 @@ export function DashboardLayout() {
           De ?-knop is de vaste ingang naar "Hoe werkt het?" (#989) en springt
           waar mogelijk naar de sectie van het scherm waar je nú staat. Op
           desktop staat diezelfde ingang in de zijbalk hieronder. */}
-      <header className="topbar">
+      <header className="topbar glas glas--sterk glas--balk">
         <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
           <BallIcon size={22} />
           <span>Vamos!</span>
@@ -250,7 +255,10 @@ export function DashboardLayout() {
       />
 
       {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}
-      <nav className="tabbar" aria-label="Hoofdnavigatie">
+      <nav
+        className="tabbar glas glas--sterk glas--balk"
+        aria-label="Hoofdnavigatie"
+      >
         {TABBAR.map((item) => {
           const actief = isSectionActive(item, pathname);
           return (
