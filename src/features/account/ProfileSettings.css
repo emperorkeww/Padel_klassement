@@ -157,7 +157,7 @@
   transform: translate(1.2rem, -50%);
 }
 .toggle-row__switch:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .toggle-row__switch:disabled {

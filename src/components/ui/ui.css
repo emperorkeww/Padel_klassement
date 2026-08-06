@@ -1179,7 +1179,7 @@ textarea {
 }
 .match-card__del:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .match-card__undo {
@@ -1654,14 +1654,14 @@ textarea {
 .tabbar__link:focus-visible,
 .topbar__brand:focus-visible,
 .match-card:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 8px;
 }
 /* Ronde targets: de outline volgt de cirkel i.p.v. een hoekige 8px-rand. */
 .topbar__profile:focus-visible,
 .sheet__close:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 50%;
 }
