@@ -144,6 +144,13 @@ const PAIRS = [
   ["focus-ring", "bg", 3.0, "focusring op de achtergrond (groot/UI)"],
   ["focus-ring", "sidebar-bg", 3.0, "focusring in de navigatie (groot/UI)"],
   ["focus-ring", "surface-active", 3.0, "focusring op een gekozen nav-item"],
+  // Ratinggrafiek (#1074). De lijn is een UI-element, dus 3,0; de tooltip
+  // draagt lopende tekst en een gekleurd delta-cijfer.
+  ["chart-up", "surface", 3.0, "stijgende ratinglijn op de kaart (groot/UI)"],
+  ["chart-down", "surface", 3.0, "dalende ratinglijn op de kaart (groot/UI)"],
+  ["tip-ink", "tip-bg", 4.5, "tekst in de grafiek-tooltip"],
+  ["lime", "tip-bg", 3.0, "stijging in de grafiek-tooltip"],
+  ["danger-bright", "tip-bg", 3.0, "daling in de grafiek-tooltip"],
   ["toast-ink", "success", 3.0, "toast-tekst op succes-toast (groot/UI)"],
   ["toast-ink", "danger", 4.5, "toast-tekst op fout-toast (blijft staan)"],
   ["toast-ink", "ink", 4.5, "toast-tekst op info-toast"],

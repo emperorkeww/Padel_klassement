@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   applyTheme,
   getThemePreference,
   resolveTheme,
   setThemePreference,
+  THEME_COLOR,
   watchSystemTheme,
 } from "@/lib/utils/theme";
 
@@ -91,13 +94,13 @@ describe("applyTheme / setThemePreference", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(
       document.querySelector('meta[name="theme-color"]')?.getAttribute("content"),
-    ).toBe("#121814");
+    ).toBe(THEME_COLOR.dark);
 
     applyTheme("light");
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(
       document.querySelector('meta[name="theme-color"]')?.getAttribute("content"),
-    ).toBe("#0c8a5f");
+    ).toBe(THEME_COLOR.light);
   });
 
   it("setThemePreference bewaart de keuze én past haar direct toe", () => {
@@ -124,5 +127,30 @@ describe("watchSystemTheme", () => {
     fireSystemChange();
     expect(document.documentElement.dataset.theme).toBe("light");
     stop();
+  });
+});
+
+// De themekleur van de browserbalk staat noodgedwongen twee keer in de app:
+// hier in THEME_COLOR, en in het inline script van index.html dat vóór de
+// eerste paint draait (en dus geen module kan importeren). Het commentaar in
+// beide bestanden vroeg om ze in sync te houden; sinds #1074 doet deze test
+// dat, want zo'n verzoek is geen garantie — na de herijking stond de donkere
+// kleur in index.html nog op de oude zijbalk-tint.
+describe("themekleur van de browserbalk", () => {
+  // Vitest draait vanuit de projectroot; import.meta.url is er onder jsdom
+  // geen file:-URL, dus readFileSync krijgt een pad in plaats van een URL.
+  const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+
+  it("index.html gebruikt exact de kleuren uit THEME_COLOR", () => {
+    const script = /dark \? "(#[0-9a-f]{6})" : "(#[0-9a-f]{6})"/.exec(html);
+    expect(script, "inline theme-color-script niet gevonden").not.toBeNull();
+    expect(script![1]).toBe(THEME_COLOR.dark);
+    expect(script![2]).toBe(THEME_COLOR.light);
+  });
+
+  it("de statische meta-tag draagt de lichte kleur", () => {
+    const meta = /<meta name="theme-color" content="(#[0-9a-f]{6})"/.exec(html);
+    expect(meta, "statische theme-color-meta niet gevonden").not.toBeNull();
+    expect(meta![1]).toBe(THEME_COLOR.light);
   });
 });

@@ -64,6 +64,23 @@
      en blijft de rand een haarlijn; op donker doet de schaduw niets en moet de
      rand het werk doen. Vandaar een eigen rol i.p.v. --line/--line-strong. */
   --border-elevated: var(--line);
+  /* Grafiek (#1074). De lijn codeert of je rating steeg of daalde — dat is
+     informatie, geen sier, dus de twee kanten houden elk een eigen kleur. Op
+     licht blijven dat de statuskleuren die er stonden; het donkere thema mag
+     ervan afwijken zolang de positieve merkkleur nooit een daling voorstelt. */
+  --chart-up: var(--success);
+  --chart-down: var(--danger);
+  /* Maat van de gloed om het actuele datapunt — géén complete drop-shadow(),
+     want een var() binnen een custom property wordt opgelost dáár waar hij
+     staat: `drop-shadow(… var(--chart-trend))` op :root verwijst naar een
+     token dat pas op de grafiek zelf bestaat, en het hele token viel daardoor
+     stil weg. Alleen de lengtes hier, de kleur komt in RatingChart.css.
+     Nul op licht: een gloed op een wit vlak is toch niet te zien. */
+  --chart-point-glow: 0 0 0;
+  /* Tooltip van de grafiek. Op licht is dat een omgekeerd vlak (donkere doos
+     op een lichte pagina) — precies wat er stond. */
+  --tip-bg: var(--ink);
+  --tip-ink: var(--surface);
   --ink: #1a2620; /* tekst */
   --ink-soft: #64756c; /* gedempte tekst (≥AA op wit/bg) */
   /* Donkerdere gedempte tint voor kleine tekst op --surface-2 (badges e.d.),
@@ -515,6 +532,23 @@
   --wash-warm: rgba(168, 230, 63, 0.07);
   --wash-cool: rgba(31, 180, 126, 0.12);
   --border-elevated: var(--line-strong);
+
+  /* Stijgen is lime — de energie van het merk, en het enige token dat op de
+     kaart fel mag zijn. Dalen krijgt koraal in plaats van het oude zalmroze
+     (--danger): dat botste met de groene huisstijl én las als "er is iets
+     stuk", terwijl een gezakte rating gewoon een gezakte rating is. Koraal
+     ligt ver genoeg van lime om ook naast elkaar herkenbaar te blijven. */
+  --chart-up: var(--lime);
+  --chart-down: #f0845f;
+  --chart-point-glow: 0 0 5px;
+
+  /* Het omkeren van het lichte thema pakte hier verkeerd uit: de tooltip werd
+     een bijna-witte doos, en de delta erin staat in --lime (stijging) of
+     --danger-bright (daling). Lime op gebroken wit is ±1,3:1 — het cijfer was
+     in het donkere thema domweg onleesbaar. Op donker is de tooltip dus een
+     verhoogd vlak met gewone inkt, net als elke andere zwevende laag. */
+  --tip-bg: var(--surface-elevated);
+  --tip-ink: var(--ink);
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥10:1
      op de kaart), waar het smaragd van de knoppen op een gekozen nav-item juist
