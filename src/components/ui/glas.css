@@ -229,9 +229,11 @@
 
 /* De focusring is bewust géén glasrand: die verandert al bij hover, en een
    toetsenbordgebruiker moet één ondubbelzinnig signaal krijgen. Zelfde
-   vormgeving als het blok "Toegankelijke focus-states" in ui.css. */
+   vormgeving als het blok "Toegankelijke focus-states" in ui.css — en dus ook
+   --focus-ring en niet --accent: sinds #1074 wijst dat token op donker naar
+   --lime, waar het accent te weinig van het glas afsteekt. */
 .glas--interactief:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 

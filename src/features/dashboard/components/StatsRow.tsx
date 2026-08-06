@@ -22,7 +22,12 @@ export function StatsRow({
   if (loading) return <StatsSkeleton />;
   return (
     <div className="stats">
-      <div className="stat stat--accent">
+      {/* Zelfde vlak als de andere drie (#1074). Deze tegel droeg als enige
+          --accent-soft als achtergrond, waardoor de rij van vier las als één
+          gekozen tegel plus drie gewone — terwijl "Divisie" niet actief of
+          belangrijker is dan "Positie". De TierBadge erin draagt de divisie-
+          identiteit al, en dóét dat met zijn eigen kleur per divisie. */}
+      <div className="stat">
         <span className="stat__value stat__value--tier">
           {tierFor(rating) ? <TierBadge rating={rating} /> : "—"}
         </span>

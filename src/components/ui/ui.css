@@ -110,11 +110,16 @@
   transition: background 0.15s, border-color 0.15s, transform 0.05s, opacity 0.15s, box-shadow 0.15s;
 }
 .btn:hover:not(:disabled) {
-  background: var(--surface-2);
+  background: var(--surface-hover);
   border-color: var(--ink-soft);
 }
+/* Ingedrukt: naast het duwtje ook een vlak, want op touch is er geen hover die
+   de knop al had opgelicht — daar was het duwtje de énige terugkoppeling
+   (#1074). Bewust dezelfde kleur als hover: dat introduceert op licht geen
+   nieuwe tint, en op desktop onderscheidt het duwtje de twee al. */
 .btn:active:not(:disabled) {
   transform: translateY(1px);
+  background: var(--surface-hover);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -139,6 +144,14 @@
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   box-shadow: var(--shadow-md);
+}
+/* De primaire knop houdt zijn eigen ingedrukte kleur: het grijze vlak van
+   .btn:active zou hem midden in een klik van smaragd naar neutraal laten
+   springen. --accent-strong is de donkerste van de drie, dus hij zakt in. */
+.btn--primary:active:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  box-shadow: var(--shadow-sm);
 }
 .btn--danger {
   color: var(--danger);
@@ -256,7 +269,7 @@ textarea {
   border-bottom: none;
 }
 .table tbody tr:not(.is-me):hover td {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .table tr.is-me td {
   background: var(--accent-soft);
@@ -434,7 +447,12 @@ textarea {
   /* Materiaal en schaduw komen van .glas .glas--sterk .glas--scrollbaar
      (#1062). Die scrollbaar-variant is er precies voor dit geval: het paneel
      scrollt, en dan zouden de losse rand- en hooglichtlagen met de inhoud
-     meeschuiven. Het randlicht komt hier dus uit een inset-schaduw. */
+     meeschuiven. Het randlicht komt hier dus uit een inset-schaduw.
+     De dekkende terugval is --surface-elevated in plaats van de standaard
+     --surface: een sheet ligt bóven de pagina, en op donker moet je dat aan
+     het vlak zelf zien, want de schaduw eronder valt weg tegen het donkere
+     canvas (#1074). */
+  --glas-vast: var(--surface-elevated);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
   animation: sheet-up 0.2s ease-out;
@@ -720,7 +738,7 @@ textarea {
   transition: background 0.15s;
 }
 .person-row:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .person-list > .person-row + .person-row {
   border-top: 1px solid var(--line);
@@ -1189,7 +1207,7 @@ textarea {
 }
 .match-card__del:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .match-card__undo {
@@ -1664,14 +1682,14 @@ textarea {
 .tabbar__link:focus-visible,
 .topbar__brand:focus-visible,
 .match-card:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 8px;
 }
 /* Ronde targets: de outline volgt de cirkel i.p.v. een hoekige 8px-rand. */
 .topbar__profile:focus-visible,
 .sheet__close:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 50%;
 }

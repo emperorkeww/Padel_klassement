@@ -557,7 +557,7 @@
   display: none;
 }
 .lb-menu__btn:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .lb-menu[open] .lb-menu__btn,
 .lb-menu__btn:focus-visible {
@@ -898,7 +898,7 @@
   color: var(--ink);
 }
 .lb-search__clear:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* "Ook gevonden": vindbare spelers buiten de ranglijst, met profiel-link. */
@@ -929,7 +929,7 @@
   transition: background 0.15s;
 }
 .lb-extra__item:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .lb-extra__name {
   flex: 1;
@@ -1068,7 +1068,7 @@
   cursor: pointer;
 }
 .cell-player__kaartknop:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .ranklist__link--preview {
@@ -1085,7 +1085,7 @@
   border-radius: inherit;
 }
 .ranklist__kaartknop:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
   border-radius: var(--radius-sm);
 }

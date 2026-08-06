@@ -117,7 +117,7 @@
 }
 
 .club-picker__option:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 
 .club-picker__option.is-active {

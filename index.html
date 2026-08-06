@@ -13,7 +13,9 @@
       Thema vóór de eerste paint toepassen (geen lichte flits bij donker
       thema). Zelfde resolutie als src/lib/theme.ts: localStorage["theme"]
       (system|light|dark, default system), waarbij "system" de OS-voorkeur
-      volgt. Houd dit script en theme.ts samen in sync.
+      volgt. Houd dit script en theme.ts samen in sync — de twee kleuren
+      hieronder worden sinds #1074 door theme.test.ts vergeleken met
+      THEME_COLOR, dus ze kunnen niet meer stilletjes uit elkaar lopen.
     -->
     <script>
       (function () {
@@ -29,7 +31,7 @@
             window.matchMedia("(prefers-color-scheme: dark)").matches);
         document.documentElement.dataset.theme = dark ? "dark" : "light";
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", dark ? "#121814" : "#0c8a5f");
+        if (meta) meta.setAttribute("content", dark ? "#031513" : "#0c8a5f");
       })();
     </script>
 

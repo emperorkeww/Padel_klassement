@@ -68,7 +68,7 @@
   transition: background-color 0.15s;
 }
 .feed-line:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .feed-line__icon {
   width: 1.8rem;

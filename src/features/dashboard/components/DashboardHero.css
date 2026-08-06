@@ -38,11 +38,16 @@
   padding: calc(var(--hero-pad-y) + var(--hero-inzet))
     calc(var(--hero-pad-x) + var(--hero-inzet));
   border-radius: var(--radius-lg);
+  /* Het verhoogde vlak van de pagina (#1074): de hero is de kop van je
+     startpagina en hoort een niveau boven de gewone kaarten te staan, met een
+     rand die dat bevestigt. De twee wassingen lopen sinds #1074 via
+     --wash-warm/--wash-cool: op licht zijn dat dezelfde zachte vlakken als
+     hiervoor, op donker doorschijnende glimpen in plaats van dekt materiaal. */
   background:
-    radial-gradient(120% 140% at 100% 0%, var(--lime-soft) 0%, transparent 55%),
-    radial-gradient(90% 120% at 0% 100%, var(--accent-soft) 0%, transparent 55%),
-    var(--surface);
-  border: 1px solid var(--line);
+    radial-gradient(120% 140% at 100% 0%, var(--wash-warm) 0%, transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, var(--wash-cool) 0%, transparent 55%),
+    var(--surface-elevated);
+  border: 1px solid var(--border-elevated);
   box-shadow: var(--shadow-sm);
 }
 
