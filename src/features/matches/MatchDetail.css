@@ -303,7 +303,7 @@
   transform: rotate(-135deg);
 }
 .md-beheer__summary:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .md-beheer__title {
   font-size: 1rem;

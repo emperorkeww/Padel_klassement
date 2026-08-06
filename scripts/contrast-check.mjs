@@ -100,6 +100,8 @@ const PAIRS = [
   ["accent", "surface", 4.5, "accent als tekst/link op kaart"],
   ["accent", "accent-soft", 4.5, "accenttekst op accentvlak (badges)"],
   ["accent-ink", "accent", 4.5, "knoptekst op accentknop"],
+  ["accent-ink", "accent-hover", 4.5, "knoptekst op de knop onder de muis"],
+  ["accent-ink", "accent-strong", 4.5, "knoptekst op de ingedrukte knop"],
   ["lef", "surface", 4.5, "lef-tekst op kaart"],
   ["lef", "lef-soft", 4.5, "lef-tekst op lef-vlak"],
   ["lef-ink", "lef", 4.5, "knoptekst op ingezette lef-knop"],
@@ -189,6 +191,7 @@ const LADDER = [
   ["line", "surface", 6, "kaartrand is zichtbaar"],
   ["line-strong", "surface", 12, "sterke rand is duidelijk"],
   ["divider", "surface", 3, "separator blijft zwakker dan een kaartrand"],
+  ["border-elevated", "surface-elevated", 6, "rand van een verhoogd vlak"],
 ];
 
 for (const [name, tokens, strict] of [

@@ -541,7 +541,7 @@
   display: none;
 }
 .lb-menu__btn:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .lb-menu[open] .lb-menu__btn,
 .lb-menu__btn:focus-visible {
@@ -913,7 +913,7 @@
   transition: background 0.15s;
 }
 .lb-extra__item:hover {
-  background: var(--surface-2);
+  background: var(--surface-hover);
 }
 .lb-extra__name {
   flex: 1;

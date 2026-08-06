@@ -53,6 +53,17 @@
      allebei smaragd — precies wat er stond — zodat er niets verschuift. */
   --selected-ink: var(--accent);
   --selected-mark: var(--accent);
+  /* Decoratieve wassingen: de zachte verlopen achter de hero, de bovenkant van
+     het overzicht en de eerstvolgende match. Op licht zijn dit de zachte
+     vlakken zelf (precies wat er stond); op donker moeten het doorschijnende
+     glimpen zijn, want een dekt zacht vlak over een donkere kaart geeft geen
+     gloed maar een grijze waas. */
+  --wash-warm: var(--lime-soft); /* lime — energie */
+  --wash-cool: var(--accent-soft); /* smaragd — merk */
+  /* Rand van een verhoogd vlak. Op licht draagt de schaduw het hoogteverschil
+     en blijft de rand een haarlijn; op donker doet de schaduw niets en moet de
+     rand het werk doen. Vandaar een eigen rol i.p.v. --line/--line-strong. */
+  --border-elevated: var(--line);
   --ink: #1a2620; /* tekst */
   --ink-soft: #64756c; /* gedempte tekst (≥AA op wit/bg) */
   /* Donkerdere gedempte tint voor kleine tekst op --surface-2 (badges e.d.),
@@ -480,6 +491,12 @@
      allebei half doet. */
   --selected-ink: var(--ink);
   --selected-mark: var(--lime);
+
+  /* Doorschijnend i.p.v. dekkend (zie het licht-blok): --lime-soft over de
+     hero gaf op donker precies de olijfgrijze waas waar #1074 mee begon. */
+  --wash-warm: rgba(168, 230, 63, 0.07);
+  --wash-cool: rgba(31, 180, 126, 0.12);
+  --border-elevated: var(--line-strong);
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥10:1
      op de kaart), waar het smaragd van de knoppen op een gekozen nav-item juist
