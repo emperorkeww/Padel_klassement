@@ -75,35 +75,31 @@ export function RatingChart({ history }: { history: RatingPoint[] }) {
   const tip = hover != null ? tipFor(hover) : null;
 
   return (
-    <div className="rating-chart">
+    <div className={`rating-chart ${up ? "is-up" : "is-down"}`}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VW} ${VH}`}
         className="rating-chart__svg"
         role="img"
-        aria-label={`Rating-verloop: van ${first} naar ${last}`}
+        /* De richting staat er sinds #1074 met zoveel woorden bij: in beeld
+           draagt de lijnkleur die betekenis, en kleur alleen is geen signaal
+           (WCAG 1.4.1). De twee getallen zeggen het impliciet, maar wie de
+           grafiek alleen voorgelezen krijgt, moet ze dan zelf vergelijken. */
+        aria-label={`Rating-verloop: ${up ? "gestegen" : "gedaald"} van ${first} naar ${last}`}
         preserveAspectRatio="none"
         onPointerMove={pointFromEvent}
         onPointerDown={pointFromEvent}
         onPointerLeave={() => setHover(null)}
       >
         <defs>
-          {/* Gradient onder de lijn; kleur volgt het palet via CSS-variabelen. */}
+          {/* Gradient onder de lijn. Kleur en dekking staan sinds #1074 in
+              RatingChart.css: hier stond een hardcoded stopColor per richting,
+              en dat was de enige plek in de app waar een themakleur buiten de
+              stylesheets om werd gekozen. De richting komt binnen als klasse op
+              .rating-chart, die --chart-trend zet. */}
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0"
-              style={{
-                stopColor: up ? "var(--success)" : "var(--danger)",
-                stopOpacity: 0.22,
-              }}
-            />
-            <stop
-              offset="1"
-              style={{
-                stopColor: up ? "var(--success)" : "var(--danger)",
-                stopOpacity: 0.02,
-              }}
-            />
+            <stop offset="0" className="rating-chart__stop--top" />
+            <stop offset="1" className="rating-chart__stop--bottom" />
           </linearGradient>
         </defs>
 
@@ -127,13 +123,9 @@ export function RatingChart({ history }: { history: RatingPoint[] }) {
           d={areaPath}
           fill={`url(#${gradId})`}
         />
-        <path
-          className={`rating-chart__line ${up ? "is-up" : "is-down"}`}
-          d={linePath}
-          pathLength={1}
-        />
+        <path className="rating-chart__line" d={linePath} pathLength={1} />
         <circle
-          className={`rating-chart__dot ${up ? "is-up" : "is-down"}`}
+          className="rating-chart__dot rating-chart__dot--eind"
           cx={x(n - 1)}
           cy={y(last)}
           r={3}
@@ -150,7 +142,7 @@ export function RatingChart({ history }: { history: RatingPoint[] }) {
               y2={VH - PAD.bottom}
             />
             <circle
-              className={`rating-chart__dot ${up ? "is-up" : "is-down"}`}
+              className="rating-chart__dot"
               cx={x(hover)}
               cy={y(values[hover])}
               r={4}

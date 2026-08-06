@@ -3,6 +3,16 @@
   /* Ankerpunt voor de zwevende tooltip. */
   position: relative;
 }
+/* De richting van de reeks als één lokale variabele (#1074). Lijn, vlak en
+   punt volgden hem elk apart via een eigen is-up/is-down-regel, en de kleur van
+   het vlak stond zelfs hardcoded in de TSX. Nu zet de wrapper hem één keer en
+   erven de drie hem. */
+.rating-chart.is-up {
+  --chart-trend: var(--chart-up);
+}
+.rating-chart.is-down {
+  --chart-trend: var(--chart-down);
+}
 .rating-chart__svg {
   width: 100%;
   height: auto;
@@ -24,25 +34,32 @@
 }
 .rating-chart__line {
   fill: none;
+  stroke: var(--chart-trend);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
-.rating-chart__line.is-up {
-  stroke: var(--success);
-}
-.rating-chart__line.is-down {
-  stroke: var(--danger);
-}
 .rating-chart__area {
   stroke: none;
 }
-.rating-chart__dot.is-up {
-  fill: var(--success);
+/* De stops van het verloop onder de lijn (voorheen inline in de TSX). */
+.rating-chart__stop--top {
+  stop-color: var(--chart-trend);
+  stop-opacity: 0.22;
 }
-.rating-chart__dot.is-down {
-  fill: var(--danger);
+.rating-chart__stop--bottom {
+  stop-color: var(--chart-trend);
+  stop-opacity: 0.02;
+}
+.rating-chart__dot {
+  fill: var(--chart-trend);
+}
+/* Alleen het actuele punt gloeit — de enige gloed in de grafiek. De maat komt
+   uit het thema (op licht 0 0 0, dus onzichtbaar), de kleur volgt de richting
+   van de reeks. */
+.rating-chart__dot--eind {
+  filter: drop-shadow(var(--chart-point-glow) var(--chart-trend));
 }
 
 /* Teken-animatie bij verschijnen (pathLength=1 op de lijn). De zichtbare
@@ -85,8 +102,8 @@
   transform: translate(-50%, calc(-100% - 10px));
   padding: var(--sp-1) var(--sp-2);
   border-radius: var(--radius-sm);
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--tip-bg);
+  color: var(--tip-ink);
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
