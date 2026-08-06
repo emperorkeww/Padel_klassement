@@ -80,6 +80,9 @@ export interface ProfileData {
   editie?: Editie;
   /** Editie-regel op het kaartvlak, bv. "⚡ In-Form · +48". */
   editieTekst?: string | null;
+  /** Spreuk onder de editieregel (#834). Alleen de Zwarte Piet draagt er een;
+   *  de kaart toont hem pas vanaf 168px kaartbreedte. */
+  editieSpreuk?: string | null;
 
   // Grafieken. Het positie-verloop is in #918 opgeruimd: de bron stond sinds
   // #461 hard op een lege lijst, dus die tak draaide nooit meer.

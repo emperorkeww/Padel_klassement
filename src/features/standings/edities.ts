@@ -53,6 +53,7 @@
 // troonkaart is al de sterkste special (tier-gedreven, #545); een editie
 // erbovenop zou dubbelop zijn.
 
+import { kaartSneer, roastSeed } from "@/features/coach/roastTone";
 import { byRank } from "@/features/rating/standings";
 import type { PlayerRating, PlayerStanding } from "@/types";
 import type { InForm } from "./spelerVanDeWeek";
@@ -195,6 +196,35 @@ export function editieLabel(
   if (editie === "piet")
     return ctx.piet ? `🃏 Piet · ${pietDatum(ctx.piet)}` : "🃏 Zwarte Piet";
   return null;
+}
+
+/**
+ * Spreuk onder de editieregel (#834), of null.
+ *
+ * De referentie van de Zwarte Piet draagt een spotregel onder zijn ondertitel,
+ * en die hoort bij deze editie: het schande-token is het enige dat de kaart met
+ * zoveel woorden een oordeel laat vellen. De regel komt uit Coach Rudy's
+ * bestaande sneer-corpus (`kaartSneer`), niet uit een tweede lijst ernaast.
+ *
+ * Drie keuzes die erin zitten:
+ *
+ * — **Toon `gemeen`, niet de standaard `radioactief`.** In de feed staat een
+ *   sneer één avond; op een kaart staat hij dagenlang, op elke plek waar die
+ *   speler langskomt. De harde pool is voor een moment, niet voor een etiket.
+ * — **Seed op drager + overnamedatum.** De regel blijft dus staan zolang deze
+ *   speler de Piet draagt en wisselt pas als het token doorschuift. Een seed op
+ *   de klok zou de kaart elke render iets anders laten zeggen.
+ * — **Geen extra schild-plumbing.** `isDrager` geeft de piet-editie al niet af
+ *   zodra `ctx.piet.beschermd` waar is (server-side autoritair), dus wie de
+ *   kaart überhaupt ziet, heeft geen roast-schild op. De ctx hieronder zet
+ *   `schild: false` dan ook expliciet in plaats van het te raden.
+ */
+export function editieSpreuk(editie: Editie, ctx: EditieContext): string | null {
+  if (editie !== "piet" || !ctx.piet) return null;
+  return kaartSneer(
+    { intensiteit: "gemeen", schild: false },
+    roastSeed(ctx.piet.playerId, ctx.piet.since),
+  );
 }
 
 /** Tooltip bij de editie-regel (#655). Alleen de twee schand-edities hebben er

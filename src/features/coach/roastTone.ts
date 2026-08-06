@@ -607,6 +607,31 @@ export function coachSneer(
 }
 
 /**
+ * Een sneer die in één kaartregel past (#834), of null bij een roast-schild.
+ *
+ * De FUT-kaart van de Zwarte Piet draagt in zijn referentie een spotregel onder
+ * de editieregel. Die plek heeft een vast budget van twee regels, en de pools
+ * hierboven zijn daar niet op geschreven: ze lopen tot ver over de honderd
+ * tekens, want in de feed staat een sneer op een volle bubbelbreedte. Filteren
+ * op lengte is daarom geen kunstgreep maar de enige manier om dezelfde corpus
+ * te blijven gebruiken in plaats van er een tweede naast te zetten.
+ *
+ * `maxLengte` staat op 72: dat is de langste regel die op de kleinste maat waar
+ * de spreuk verschijnt (168px kaartbreedte) nog binnen twee regels blijft. Op
+ * `gemeen` houdt dat een kwart van de pool over — ruim genoeg om niet bij elke
+ * drager dezelfde regel te zien.
+ */
+export function kaartSneer(
+  ctx: RoastCtx,
+  seed: number,
+  maxLengte = 72,
+): string | null {
+  if (ctx.schild) return null;
+  const pool = SNEER[ctx.intensiteit].filter((l) => l.length <= maxLengte);
+  return pool.length > 0 ? kiesUniek(pool, seed) : null;
+}
+
+/**
  * Coach Rudy's hype bij een prestatie (#199) — het spiegelbeeld van coachSneer,
  * met één verschil: lof is geen spot, dus het roast-schild blokkeert hem niet.
  * Het tempert hem alleen tot het oprechte mild-niveau, want gênant-overdreven
