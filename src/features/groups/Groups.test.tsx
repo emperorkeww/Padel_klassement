@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -153,14 +153,19 @@ describe("<Groups />", () => {
   // onder de strook, zodra je die groep kiest. De statusstip ín de chip volgt
   // in een aparte stap.
   it("toont de reisstatus van de gekozen groep", async () => {
-    renderPage();
+    const { container } = renderPage();
     await userEvent.click(
       await screen.findByRole("button", { name: /vrijdagavond padel/i }),
     );
-    // De fixture-poll staat open → er wordt een stem gevraagd.
+    // De fixture-poll staat open → er wordt een stem gevraagd. Het label staat
+    // zichtbaar in de regel onder de strook; in de chip zelf staat dezelfde
+    // status alleen voor de screenreader (#1123), vandaar de scope.
+    const regel = await screen.findByText(/4 leden/i).then((el) => el.closest(".groep-regel")!);
+    expect(within(regel as HTMLElement).getByText(/poll loopt — stem mee/i)).toBeInTheDocument();
+    // En in de chip hoor je hem, zonder hem twee keer te zien.
     expect(
-      await screen.findByText(/poll loopt — stem mee/i),
-    ).toBeInTheDocument();
+      container.querySelectorAll(".groep-strook .sr-only"),
+    ).toHaveLength(1);
   });
 
   it("laat het aanmaakformulier weer sluiten", async () => {
