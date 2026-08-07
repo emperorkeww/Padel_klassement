@@ -9,6 +9,7 @@ import {
   traktatieOpen,
   traktatieRegel,
   traktatieTekst,
+  traktatieVervallen,
   zoekDranken,
 } from "@/features/matches/drankkaart";
 import { MATCH_DONE, MATCH_PLANNED } from "@/test/fixtures";
@@ -111,6 +112,50 @@ describe("traktatieRegel — de stand van zaken (#1004)", () => {
       wager_drink_qty: 1,
     };
     expect(traktatieRegel(m)).toContain("vervallen");
+  });
+});
+
+describe("traktatieVervallen — valt er nog iets te halen? (#1151)", () => {
+  it("nee bij een afgelaste match", () => {
+    expect(
+      traktatieVervallen({ ...gepland, status: "cancelled", wager_drink: "duvel" }),
+    ).toBe(true);
+  });
+
+  it("nee bij gelijkspel", () => {
+    expect(
+      traktatieVervallen({ ...gespeeld, winner_team_id: null, wager_drink: "duvel" }),
+    ).toBe(true);
+  });
+
+  it("ja zolang er gewonnen is — ook als er al betaald is", () => {
+    expect(traktatieVervallen({ ...gespeeld, wager_drink: "duvel" })).toBe(false);
+    expect(
+      traktatieVervallen({
+        ...gespeeld,
+        wager_drink: "duvel",
+        wager_settled_at: "2026-08-01T22:00:00.000Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("is niet vervallen als er nooit een drankje op stond", () => {
+    expect(traktatieVervallen({ ...gepland, status: "cancelled" })).toBe(false);
+  });
+
+  it("dekt exact de gevallen waarin traktatieRegel 'vervallen' zegt", () => {
+    // De regel en de vlag mogen niet uit elkaar lopen: dat is precies waarom de
+    // conditie uit traktatieRegel getrokken is in plaats van gekopieerd.
+    for (const m of [
+      { ...gepland, status: "cancelled" as const, wager_drink: "duvel" },
+      { ...gespeeld, winner_team_id: null, wager_drink: "duvel" },
+      { ...gespeeld, wager_drink: "duvel" },
+      { ...gepland, wager_drink: "duvel" },
+    ]) {
+      expect(traktatieVervallen(m)).toBe(
+        traktatieRegel(m)?.includes("vervallen") ?? false,
+      );
+    }
   });
 });
 

@@ -202,6 +202,24 @@ export function traktatieOpen(match: Match): boolean {
 }
 
 /**
+ * Is de inzet vervallen? Twee gevallen: de match ging niet door, of hij eindigde
+ * gelijk. In beide gevallen haalt niemand iets — de traktatie bestaat dan nog
+ * wel als tekst ("Inzet vervallen — …"), maar er staat niets meer open.
+ *
+ * Apart van traktatieRegel() omdat er ook niet-tekstuele beslissingen aan deze
+ * vraag hangen (#1151: de amberen swirl blijft weg op een vervallen inzet). Die
+ * conditie een tweede keer opschrijven is precies hoe twee plekken uit elkaar
+ * gaan lopen; traktatieRegel gebruikt hem daarom hieronder zelf.
+ */
+export function traktatieVervallen(match: Match): boolean {
+  if (!match.wager_drink) return false;
+  return (
+    match.status === "cancelled" ||
+    (match.status === "completed" && match.winner_team_id == null)
+  );
+}
+
+/**
  * Eén regel voor de matchkaart, het matchdetail en de feed. Volgt de stand van
  * zaken: vooraf de inzet, achteraf de afrekening. Null = er staat geen drankje
  * op deze match.

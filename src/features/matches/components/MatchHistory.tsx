@@ -9,13 +9,7 @@ import {
   FILTER_TABS,
   type Filter,
 } from "@/features/matches/matchFilter";
-import { lefKaartRegel } from "@/features/matches/stakes";
-import { getStakesForMatches } from "@/features/matches/stakesApi";
-import { jokerKaartRegel } from "@/features/matches/jokers";
-import { getJokersForMatches } from "@/features/matches/jokersApi";
-import { displayName } from "@/features/profiles/api";
-import { useAsync } from "@/lib/hooks/useAsync";
-import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
+import { useMatchEffecten } from "@/features/matches/useMatchEffecten";
 import { useClub } from "@/features/availability/club";
 import type { Upset } from "@/features/matches/upset";
 import type { Match, Profile, Team } from "@/types";
@@ -68,30 +62,11 @@ export function MatchHistory({
     return groupByDay(sorted, club.timezone);
   }, [matches, teams, myId, filter, club.timezone]);
 
-  // Lef-regels op de kaarten (#981): één bulk-query over de getoonde lijst —
-  // alleen groepsmatches, want daarbuiten bestaat er geen inzet. De query is
-  // gecacht en in stukken gehakt, dus ook een lange historie blijft één ronde
-  // vragen; de cache-revisie trekt de regels bij na een inzet elders (#907).
-  const stakesRev = useCacheRevision("match-stakes");
-  const stakeIds = useMemo(
-    () =>
-      matches
-        .filter((m) => m.group_id != null)
-        .map((m) => m.id)
-        .join(","),
-    [matches],
-  );
-  const stakes = useAsync(
-    () => getStakesForMatches(stakeIds ? stakeIds.split(",") : []),
-    [stakeIds, stakesRev],
-  );
-  // Jokers langs dezelfde route en om dezelfde reden (#1003): één bulk-query
-  // voor de hele historie in plaats van een fetch per kaart.
-  const jokersRev = useCacheRevision("match-jokers");
-  const jokers = useAsync(
-    () => getJokersForMatches(stakeIds ? stakeIds.split(",") : []),
-    [stakeIds, jokersRev],
-  );
+  // Lef- en jokerregels op de kaarten (#981/#1003), plus de effectvlaggen voor
+  // de achtergrond (#1151). Eén bulk-query per soort over de hele getoonde
+  // lijst, gecacht en in stukken gehakt — ook een lange historie blijft dus één
+  // ronde vragen. Stond hier tot #1151 uitgeschreven, net als in RondeBlok.
+  const extras = useMatchEffecten({ matches, teams, profiles, myId });
 
   // Tellers per filtertab, zodat je zonder klikken ziet wat elk filter oplevert.
   const counts = useMemo(() => {
@@ -165,19 +140,8 @@ export function MatchHistory({
                     profiles={profiles}
                     perspectiveId={myId}
                     upset={upsets.get(m.id) ?? null}
-                    lef={lefKaartRegel({
-                      match: m,
-                      stakes: stakes.data ?? [],
-                      teams,
-                      naam: (id) => displayName(profiles[id]),
-                    })}
-                    joker={jokerKaartRegel({
-                      match: m,
-                      jokers: jokers.data ?? [],
-                      teams,
-                      naam: (id) => displayName(profiles[id]),
-                      myId,
-                    })}
+                    lef={extras(m).lef}
+                    joker={extras(m).joker}
                     canManage={canManage}
                     onDeleted={onChanged}
                   />
