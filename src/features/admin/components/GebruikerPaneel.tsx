@@ -4,6 +4,7 @@ import { Skeleton } from "@/ui/Skeleton";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { displayName } from "@/features/profiles/api";
 import { auditVoor, gebruikerDetail } from "../api";
+import { auditLabel } from "../auditLabels";
 import { GebruikerActies } from "./GebruikerActies";
 import type { AdminGebruiker } from "../types";
 
@@ -144,7 +145,7 @@ export function GebruikerPaneel({
           <ul className="person-list">
             {audit.data.map((r) => (
               <li key={r.id} className="person-row">
-                <span>{AUDIT_LABEL[r.action] ?? r.action}</span>
+                <span>{auditLabel(r.action)}</span>
                 <span className="admin-audit__meta">
                   {datumTijd(r.created_at)}
                   {r.actor_username ? ` · ${r.actor_username}` : ""}
@@ -157,14 +158,3 @@ export function GebruikerPaneel({
     </Sheet>
   );
 }
-
-// De acties heten in de databank zoals de edge function ze kent; in het paneel
-// lees je liever wat er gebeurd is.
-const AUDIT_LABEL: Record<string, string> = {
-  recovery_link: "Herstel-link uitgedeeld",
-  temp_password: "Tijdelijk wachtwoord gezet",
-  resend_reset: "Herstelmail opnieuw verstuurd",
-  fix_email: "E-mailadres gecorrigeerd",
-  sign_out_all: "Overal uitgelogd",
-  delete_user: "Account verwijderd",
-};

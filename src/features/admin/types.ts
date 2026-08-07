@@ -63,6 +63,12 @@ export type AdminAuditRegel = {
   action: string;
   details: Record<string, unknown>;
   created_at: string;
+  /** Alleen gevuld door audit_recent (#1159); het per-gebruiker-logboek laat ze
+   *  weg, want daar is de gebruiker zelf het onderwerp. */
+  target_user_id?: string | null;
+  target_username?: string | null;
+  target_type?: "match" | "group" | "poll" | null;
+  target_id?: string | null;
 };
 
 export type AdminGast = {
@@ -92,4 +98,54 @@ export type AdminGroep = {
   aantal_leden: number;
   aantal_matches: number;
   laatste_match: string | null;
+};
+
+// ---- Inhoud (#1159) ---------------------------------------------------------
+
+export type AdminMatch = {
+  id: string;
+  played_at: string | null;
+  created_at: string;
+  status: string;
+  score_a: number | null;
+  score_b: number | null;
+  /** Rauwe jsonb uit de kolom: paren [a, b] per set, of null. */
+  set_scores: number[][] | null;
+  winner_team_id: string | null;
+  team_a_id: string;
+  team_b_id: string;
+  /** Null voor een match buiten elke groep. */
+  group_id: string | null;
+  groep_naam: string | null;
+  /** Gebruikersnamen; één bij een 1v1. */
+  team_a_spelers: string[];
+  team_b_spelers: string[];
+  created_by: string | null;
+  aanmaker_username: string | null;
+  /** Aantal matches dat aan het filter voldoet, vóór de limiet. */
+  totaal: number;
+};
+
+export type AdminPoll = {
+  id: string;
+  group_id: string;
+  groep_naam: string;
+  status: string;
+  created_at: string;
+  created_by: string;
+  aanmaker_username: string | null;
+  /** Het vastgelegde moment als "DD-MM-JJJJ HH:MM"; null zolang er geen is. */
+  vastgelegd_op: string | null;
+  aantal_opties: number;
+  aantal_stemmen: number;
+};
+
+export type AdminGroepLid = {
+  player_id: string;
+  username: string;
+  full_name: string | null;
+  role: string;
+  is_guest: boolean;
+  joined_at: string;
+  is_eigenaar: boolean;
 };

@@ -1,20 +1,23 @@
+import { useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { Skeleton } from "@/ui/Skeleton";
 import { lijstGroepen } from "../api";
+import { GroepActies } from "./GroepActies";
+import type { AdminGroep } from "../types";
 
-// Groepen (#1036 deel 3). Bewust **alleen lezen**: groepsbeheer blijft bij de
-// eigenaar (GroupLedenTab, #978). Dit paneel is voor het appniveau en hoort
-// niet de plek te worden waar je even iemands groep hernoemt.
+// Groepen (#1036 deel 3, acties uit #1159).
 //
-// De uitzondering die hier wél thuishoort is een groep zónder eigenaar.
-// `groups.created_by` is `on delete set null`, en alle vier de groepspolicies
-// vergelijken `auth.uid() = created_by`. Wordt die null, dan is de groep voor
-// niemand meer te hernoemen, te verwijderen, en zijn uitslagen niet meer te
-// corrigeren — permanent. Dat is niets wat een groepseigenaar zelf kan zien of
-// oplossen, dus het hoort hier in beeld. Het overdragen van eigenaarschap komt
-// in #1049.
+// Het dagelijkse groepsbeheer blijft bij de eigenaar (GroupLedenTab, #978); dit
+// paneel is voor het appniveau. Wat hier hoort, is precies wat de eigenaar
+// zélf niet kan: een groep zónder eigenaar. `groups.created_by` is `on delete
+// set null` en alle vier de groepspolicies vergelijken `auth.uid() =
+// created_by`. Wordt die null, dan is de groep voor niemand meer te hernoemen,
+// te verwijderen, en zijn uitslagen niet meer te corrigeren — permanent.
+//
+// Sinds #1159 kan het paneel er ook iets aan doen: een eigenaar aanwijzen, en
+// als het echt op is de groep opruimen.
 
 function datum(iso: string | null): string {
   if (!iso) return "—";
@@ -27,6 +30,7 @@ function datum(iso: string | null): string {
 
 export function GroepenTab() {
   const groepen = useAsync(lijstGroepen, []);
+  const [gekozen, setGekozen] = useState<AdminGroep | null>(null);
 
   if (groepen.loading) return <Skeleton rows={5} />;
   if (groepen.error) {
@@ -53,7 +57,8 @@ export function GroepenTab() {
           {stuurloos.length} groep{stuurloos.length === 1 ? "" : "en"} zonder
           eigenaar. Die {stuurloos.length === 1 ? "is" : "zijn"} niet meer te
           hernoemen of te verwijderen, en de uitslagen erin kunnen niet meer
-          gecorrigeerd worden.
+          gecorrigeerd worden. Wijs er via <em>Beheren</em> een nieuwe eigenaar
+          aan.
         </p>
       )}
 
@@ -70,13 +75,22 @@ export function GroepenTab() {
                 Matches
               </th>
               <th scope="col">Laatste match</th>
+              <th scope="col">
+                <span className="sr-only">Acties</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {groepen.data.map((g) => (
               <tr key={g.id}>
                 <td data-label="Groep">
-                  <span className="admin-tabel__volnaam">{g.name}</span>
+                  <button
+                    type="button"
+                    className="admin-tabel__naam"
+                    onClick={() => setGekozen(g)}
+                  >
+                    <span className="admin-tabel__volnaam">{g.name}</span>
+                  </button>
                 </td>
                 <td data-label="Eigenaar">
                   {g.eigenaar_username ? (
@@ -92,11 +106,28 @@ export function GroepenTab() {
                   {g.aantal_matches}
                 </td>
                 <td data-label="Laatste match">{datum(g.laatste_match)}</td>
+                <td data-label="Beheer">
+                  <button
+                    type="button"
+                    className="btn btn--sm"
+                    onClick={() => setGekozen(g)}
+                  >
+                    Beheren
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {gekozen && (
+        <GroepActies
+          groep={gekozen}
+          onSluit={() => setGekozen(null)}
+          onGewijzigd={groepen.reload}
+        />
+      )}
     </>
   );
 }

@@ -45,6 +45,77 @@ const GEBRUIKERS = [
   },
 ];
 
+// Inhoud (#1159): één afgeronde match in een groep waar de beheerder niet in
+// zit — precies het geval dat via de gewone RLS onzichtbaar blijft.
+const MATCHES = [
+  {
+    id: "m1",
+    played_at: "2026-08-01T18:00:00Z",
+    created_at: "2026-08-01T17:00:00Z",
+    status: "completed",
+    score_a: 6,
+    score_b: 3,
+    set_scores: null,
+    winner_team_id: "ta",
+    team_a_id: "ta",
+    team_b_id: "tb",
+    group_id: "grp1",
+    groep_naam: "Vrijdagavond Padel",
+    team_a_spelers: ["alice", "bob"],
+    team_b_spelers: ["carol", "dave"],
+    created_by: "u2",
+    aanmaker_username: "bob",
+    totaal: 743,
+  },
+];
+
+const LEDEN = [
+  {
+    player_id: "u2",
+    username: "bob",
+    full_name: "Bob Bakker",
+    role: "owner",
+    is_guest: false,
+    joined_at: "2026-01-01T10:00:00Z",
+    is_eigenaar: true,
+  },
+  {
+    player_id: "u1",
+    username: "stil",
+    full_name: "Stille Sien",
+    role: "member",
+    is_guest: false,
+    joined_at: "2026-02-01T10:00:00Z",
+    is_eigenaar: false,
+  },
+  {
+    player_id: "g1",
+    username: "gastje",
+    full_name: "Gastje G",
+    role: "member",
+    is_guest: true,
+    joined_at: "2026-03-01T10:00:00Z",
+    is_eigenaar: false,
+  },
+];
+
+const AUDIT = [
+  {
+    id: 9,
+    actor_id: "u2",
+    actor_username: "bob",
+    action: "update_match_score",
+    target_user_id: null,
+    target_username: null,
+    target_type: "match",
+    target_id: "m1",
+    details: { groep: "Vrijdagavond Padel", oude_uitslag: "6-3", nieuwe_uitslag: "3-6" },
+    created_at: "2026-08-02T10:00:00Z",
+  },
+];
+
+const inhoudCalls: Record<string, unknown>[] = [];
+
 let isAdminAntwoord = true;
 
 vi.mock("@/lib/supabase/client", async () => {
@@ -125,6 +196,21 @@ vi.mock("@/lib/supabase/client", async () => {
             };
           }
           return null;
+        },
+        // De tweede beheerfunction (#1159): matches, groepen en polls.
+        "admin-content": (body: unknown) => {
+          const { action, ...rest } = body as Record<string, unknown>;
+          if (action === "list_matches") {
+            return { matches: MATCHES, totaal: 743 };
+          }
+          if (action === "list_group_members") return { leden: LEDEN };
+          if (action === "list_polls") return { polls: [] };
+          if (action === "audit_recent") return { regels: AUDIT };
+          // De mutaties: onthouden wát er gevraagd is, zodat een test kan
+          // nagaan dat de winnaar uit de score volgt in plaats van los
+          // meegestuurd te worden.
+          inhoudCalls.push({ action: String(action), ...rest });
+          return { ok: true };
         },
       },
     }),
@@ -266,14 +352,129 @@ describe("<AdminPaneel /> tabbladen en filters (#1036)", () => {
     expect(screen.getByText("geen eigenaar")).toBeInTheDocument();
   });
 
-  it("toont in het groepenoverzicht geen enkele muterende knop", async () => {
+  it("toont in het groepenoverzicht geen hernoem-knop — dat blijft bij de eigenaar", async () => {
     renderPaneel();
     await screen.findByText("Bob Bakker");
     await userEvent.click(screen.getByRole("tab", { name: /groepen/i }));
     await screen.findByText("Verweesde Club");
-    // Groepsbeheer blijft bij de eigenaar (#978); dit tabblad is alleen lezen.
-    for (const naam of [/verwijderen/i, /hernoemen/i, /overdragen/i]) {
-      expect(screen.queryByRole("button", { name: naam })).toBeNull();
-    }
+    // Het dagelijkse groepsbeheer blijft bij de eigenaar (#978). Wat #1159
+    // toevoegt, is precies wat de eigenaar zélf niet kan; hernoemen hoort daar
+    // niet bij en mag hier dus ook niet opduiken.
+    expect(screen.queryByRole("button", { name: /hernoemen/i })).toBeNull();
+  });
+});
+
+// Inhoudsbeheer (#1159).
+describe("<AdminPaneel /> matches, groepsacties en logboek (#1159)", () => {
+  beforeEach(() => {
+    invalidateAll();
+    (supabase.functions.invoke as Mock).mockClear();
+    inhoudCalls.length = 0;
+    isAdminAntwoord = true;
+  });
+
+  it("laadt de matches pas als je dat tabblad opent, en meldt wat er níet getoond wordt", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    const acties = () =>
+      (supabase.functions.invoke as Mock).mock.calls.map(
+        (c) => (c[1] as { body: { action: string } }).body.action,
+      );
+    expect(acties()).not.toContain("list_matches");
+
+    await userEvent.click(screen.getByRole("tab", { name: /matches/i }));
+    expect(await screen.findByText(/alice & bob vs carol & dave/i)).toBeInTheDocument();
+    // Ook in de groepenkeuze staat die naam; het gaat hier om de cel in de rij.
+    expect(screen.getByRole("cell", { name: "Vrijdagavond Padel" })).toBeInTheDocument();
+    // Geen stille afkap: 1 van 743 moet als zodanig te lezen zijn.
+    expect(screen.getByText(/1 van 743 getoond/)).toBeInTheDocument();
+  });
+
+  it("leidt bij een correctie de winnaar af uit de score", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    await userEvent.click(screen.getByRole("tab", { name: /matches/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /alice & bob vs carol & dave/i }),
+    );
+
+    // 6-3 wordt 3-6: de winnaar moet meeschuiven naar team B, anders staat er
+    // een uitslag in het klassement die niet bij de winnaar hoort.
+    // spinbutton en niet getByLabelText: de ±-knoppen van de stepper dragen
+    // hetzelfde label als voorvoegsel.
+    const scoreA = screen.getByRole("spinbutton", { name: "Score alice & bob" });
+    await userEvent.clear(scoreA);
+    await userEvent.type(scoreA, "3");
+    const scoreB = screen.getByRole("spinbutton", { name: "Score carol & dave" });
+    await userEvent.clear(scoreB);
+    await userEvent.type(scoreB, "6");
+    await userEvent.click(screen.getByRole("button", { name: /uitslag opslaan/i }));
+
+    const call = inhoudCalls.find((c) => c.action === "update_match_score");
+    expect(call).toMatchObject({
+      match_id: "m1",
+      score_a: 3,
+      score_b: 6,
+      winner_team_id: "tb",
+    });
+  });
+
+  it("zegt er in het matchpaneel bij dat je als beheerder ingrijpt", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    await userEvent.click(screen.getByRole("tab", { name: /matches/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /alice & bob vs carol & dave/i }),
+    );
+    // Onzichtbaar ingrijpen in andermans groep is precies wat je niet wilt.
+    expect(
+      screen.getByText(/als beheerder van de app, niet als deelnemer/i),
+    ).toBeInTheDocument();
+  });
+
+  it("biedt een stuurloze groep een nieuwe eigenaar aan, en gasten niet", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    await userEvent.click(screen.getByRole("tab", { name: /groepen/i }));
+    await userEvent.click(await screen.findByRole("button", { name: "Verweesde Club" }));
+
+    expect(
+      await screen.findByText(/geen eigenaar en is daardoor onbeheerbaar/i),
+    ).toBeInTheDocument();
+    // Een gast heeft geen account en zou de groep meteen weer stuurloos maken.
+    const opties = screen
+      .getAllByRole("option")
+      .map((o) => o.textContent ?? "");
+    expect(opties.some((t) => t.includes("@stil"))).toBe(true);
+    expect(opties.some((t) => t.includes("@gastje"))).toBe(false);
+    // En de eigenaar zelf staat er niet tussen — die ís het al.
+    expect(opties.some((t) => t.includes("@bob"))).toBe(false);
+  });
+
+  it("draagt het eigenaarschap over via de function", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    await userEvent.click(screen.getByRole("tab", { name: /groepen/i }));
+    await userEvent.click(await screen.findByRole("button", { name: "Verweesde Club" }));
+
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox"),
+      "u1",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /eigenaar maken/i }));
+
+    expect(inhoudCalls.find((c) => c.action === "set_group_owner")).toMatchObject({
+      group_id: "grp2",
+      user_id: "u1",
+    });
+  });
+
+  it("toont het logboek met de leesbare actienaam en de details", async () => {
+    renderPaneel();
+    await screen.findByText("Bob Bakker");
+    await userEvent.click(screen.getByRole("tab", { name: /logboek/i }));
+
+    expect(await screen.findByText("Uitslag gecorrigeerd")).toBeInTheDocument();
+    expect(screen.getByText(/oude uitslag: 6-3/)).toBeInTheDocument();
   });
 });

@@ -12,7 +12,7 @@ import { displayName } from "@/features/profiles/api";
 // verhuist ook bij elke uitslag, #185). Moet in de pas lopen met
 // CACHE_PREFIXES.matches in useRealtime.ts, anders blijven pias/piet op de
 // invoerende client stale tot de cache-TTL verloopt (#603).
-function invalidateMatchData() {
+export function invalidateMatchData() {
   invalidate(
     "matches",
     "standings",
