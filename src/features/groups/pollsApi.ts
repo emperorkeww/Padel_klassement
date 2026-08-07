@@ -508,11 +508,19 @@ export async function reopenPoll(pollId: string): Promise<void> {
   invalidate("play-poll");
 }
 
-/** Annuleert een poll (maker of eigenaar); stemmen blijven bewaard. */
+/**
+ * Annuleert een poll (maker of eigenaar); stemmen blijven bewaard.
+ *
+ * Het vastgelegde moment blijft óók staan (#1099). Vroeger wiste het annuleren
+ * `locked_option_id`, en daarmee de enige aanwijzing wélke speeldag afgelast
+ * werd — precies wat je nodig hebt om hem uit iemands agenda te halen. Alle
+ * lezers van die kolom kijken eerst naar de status (`activePolls`, `dagStatus`,
+ * de feed), dus een geannuleerde poll komt er nergens door terug.
+ */
 export async function cancelPoll(pollId: string): Promise<void> {
   const { error } = await supabase
     .from("play_polls")
-    .update({ status: "cancelled", locked_option_id: null })
+    .update({ status: "cancelled" })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");

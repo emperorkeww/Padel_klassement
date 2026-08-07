@@ -32,6 +32,10 @@ import {
   optionState,
   tallyOption,
 } from "@/features/groups/pollLogic";
+import {
+  downloadSpeeldagIcs,
+  type SpeeldagAgenda,
+} from "@/features/groups/speeldagIcs";
 import { shareOrCopyText } from "@/lib/utils/shareText";
 import type { GroupMember, Profile } from "@/types";
 import { openPollShareText } from "../pollShareText";
@@ -248,6 +252,22 @@ export function PollCard({
   const locked = poll.locked_option_id
     ? options.find((o) => o.id === poll.locked_option_id) ?? null
     : null;
+
+  /**
+   * De speeldag als agenda-event (#1099). Alleen zinvol met een vastgelegd
+   * moment: zonder dat is er niets om in of uit een agenda te zetten.
+   */
+  const agendaDag: SpeeldagAgenda | null = locked && {
+    pollId: poll.id,
+    groupName,
+    clubName: poll.club_name,
+    date: locked.date,
+    startTime: locked.start_time,
+    duration: locked.duration,
+    courts: poll.courts,
+    accessCode: poll.access_code,
+    changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
+  };
 
   /** ± prijs per persoon voor een optie, uit de Playtomic-slotdata. */
   function perPersonAt(o: PollOption): string | null {
@@ -487,7 +507,20 @@ export function PollCard({
             ↩ Heropen stemmen
           </button>
         )}
-        {isManager && (
+        {/* Een afgelaste speeldag verdwijnt niet vanzelf uit de agenda waarin
+            iemand hem ooit zette: die kant kent geen abonnement (#1099). Dit
+            bestand wist hem bij het openen — voor élk lid, niet enkel de
+            beheerder, want iedereen kan hem erin gezet hebben. */}
+        {poll.status === "cancelled" && agendaDag && (
+          <button
+            className="btn btn--sm"
+            title="Downloadt een bestand dat deze speeldag uit je agenda haalt"
+            onClick={() => downloadSpeeldagIcs(agendaDag, "CANCELLED")}
+          >
+            Haal uit je agenda
+          </button>
+        )}
+        {isManager && poll.status !== "cancelled" && (
           <button
             className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
             disabled={busy}
@@ -496,6 +529,10 @@ export function PollCard({
                 setConfirmCancel(true);
                 return;
               }
+              // Het annuleerbestand meteen aanbieden: wie het pas bij een
+              // volgend bezoek zou downloaden, laat de afspraak intussen in
+              // ieders agenda staan.
+              if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
               run(
                 () => cancelPoll(poll.id),
                 poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",

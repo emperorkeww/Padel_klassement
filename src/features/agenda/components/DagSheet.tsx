@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { Avatar } from "@/ui/Avatar";
-import { downloadIcs, icsEvent } from "@/lib/utils/ics";
+import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
 import { courtsLabel, longDay } from "@/features/groups/planPollHelpers";
 import { pollSharePath } from "@/features/groups/pollsApi";
 import type { Profile } from "@/types";
@@ -153,35 +153,13 @@ function Speeldag({
           <button
             type="button"
             className="btn dagsheet__actie"
-            onClick={() => zetInAgenda(marker)}
+            onClick={() => downloadSpeeldagIcs(marker)}
           >
             Zet in je agenda
           </button>
         )}
       </div>
     </article>
-  );
-}
-
-function zetInAgenda(m: AgendaMarker) {
-  const details = [
-    m.groupName,
-    m.courts ? courtsLabel(m.courts) : null,
-    m.accessCode ? `Toegangscode ${m.accessCode}` : null,
-  ].filter(Boolean);
-  downloadIcs(
-    `speeldag-${m.date}.ics`,
-    icsEvent({
-      title: `Padel: ${m.groupName}`,
-      description: details.join(" · "),
-      location: m.clubName,
-      date: m.date,
-      startTime: m.startTime,
-      durationMin: m.duration,
-      // Stabiel per speeldag: opnieuw importeren werkt het event bij in plaats
-      // van er een tweede naast te zetten.
-      uid: `speeldag-${m.pollId}@vamos-padel`,
-    }),
   );
 }
 

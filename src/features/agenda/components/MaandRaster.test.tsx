@@ -25,6 +25,7 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     yesVoterIds: [],
     courts: null,
     accessCode: null,
+    changedAt: "2026-08-01T18:00:00.000Z",
     ...overrides,
   };
 }
