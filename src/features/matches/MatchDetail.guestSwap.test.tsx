@@ -42,6 +42,7 @@ vi.mock("@/lib/supabase/client", async () => {
   };
 });
 
+import { openBeheer } from "@/test/matchBeheer";
 import MatchDetail from "./MatchDetail";
 
 function renderPage() {
@@ -61,6 +62,7 @@ function renderPage() {
 describe("<MatchDetail /> — gast vervangen (#681)", () => {
   it("vervangt de gast door de speler die er echt stond", async () => {
     renderPage();
+    await openBeheer(/gast vervangen/i);
     // De sectie verschijnt pas als de profielen geladen zijn en er een gast
     // tussen blijkt te zitten. De standaard 1s van findBy was daarvoor krap:
     // met het lef-blok erbij (#804) laadt de detailpagina één bron meer, en
@@ -89,8 +91,11 @@ describe("<MatchDetail /> — gast vervangen (#681)", () => {
     await userEvent.selectOptions(select, "p5");
     await userEvent.click(knop);
 
-    // Onomkeerbaar: eerst bevestigen.
-    const dialoog = await screen.findByRole("dialog");
+    // Onomkeerbaar: eerst bevestigen. Scopen op de bevestigingsdialoog: sinds
+    // #1144 staat de beheersheet er als tweede dialoog omheen.
+    const dialoog = await screen.findByRole("dialog", {
+      name: /gast vervangen\?/i,
+    });
     expect(dialoog).toHaveTextContent(/niet ongedaan/i);
     await userEvent.click(
       await screen.findByRole("button", { name: /^vervangen$/i }),

@@ -1,11 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
-import { getMatch, getPlayerMatches, getTeamsByIds } from "./api";
+import { useToast } from "@/ui/ToastProvider";
+import { tap } from "@/lib/utils/haptics";
+import {
+  getMatch,
+  getPlayerMatches,
+  getTeamsByIds,
+  teamLabel,
+  updateMatchScore,
+} from "./api";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
-import { MatchBeheer } from "@/features/matches/components/MatchBeheer";
-import { MatchScorebord } from "@/features/matches/components/MatchScorebord";
+import {
+  MatchMetaRegel,
+  MatchScorebord,
+} from "@/features/matches/components/MatchScorebord";
+import {
+  MatchManagementSheet,
+  type BeheerActie,
+} from "@/features/matches/components/MatchManagementSheet";
+import { ScoreSheet } from "@/features/matches/components/ScoreSheet";
 import { GroupLinkSection } from "@/features/matches/components/GroupLinkSection";
 import { GuestSwapSection } from "@/features/matches/components/GuestSwapSection";
 import { NetTouchesSection } from "@/features/matches/components/NetTouchesSection";
@@ -25,7 +40,7 @@ import { ShareMatch } from "@/features/matches/components/ShareMatch";
 import { SmoesjesMachine } from "@/features/matches/components/SmoesjesMachine";
 import { Lineup } from "@/features/matches/components/Lineup";
 import { CHEMIE_MATCH_LIMIT } from "@/features/matches/chemistry";
-import { matchRechten } from "@/features/matches/matchState";
+import { heeftUitslag, matchRechten } from "@/features/matches/matchState";
 import { roastCtx } from "@/features/coach/roastTone";
 import {
   getRatingHistoriesForMatches,
@@ -52,6 +67,9 @@ export function MatchDetail() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [beheerOpen, setBeheerOpen] = useState(false);
+  const [corrigeren, setCorrigeren] = useState(false);
   const match = useAsync(() => getMatch(id), [id]);
   // Bij een deeplink uit een pushbericht of gedeelde link is er geen vorige
   // pagina om naar terug te gaan (#910). Het vangnet is de groep waar deze
@@ -68,7 +86,9 @@ export function MatchDetail() {
   );
   // Alleen de twee teams en vier spelers van déze match ophalen, niet de
   // volledige teams- en profielentabellen.
-  const teamIds = match.data ? [match.data.team_a_id, match.data.team_b_id] : [];
+  const teamIds = match.data
+    ? [match.data.team_a_id, match.data.team_b_id]
+    : [];
   const teamKey = teamIds.join(",");
   const teams = useAsync(() => getTeamsByIds(teamIds), [teamKey]);
   const playerIds = teamIds.flatMap((tid) => playersOf(teams.data?.[tid]));
@@ -227,20 +247,11 @@ export function MatchDetail() {
   const iLost = !!user && outcomeFor(m, tmap, user.id) === "L";
   // De aanmaker en de groepseigenaar kunnen de score corrigeren.
   const canEdit = done && rechten.magCorrigeren;
-  // Geplande match: dezelfde inline invoer als op de kaart, mits je meedoet,
-  // hem hebt aangemaakt of de groep beheert — precies de kring die de
-  // RLS-policies toestaan (#413, #978).
-  const showPlanned = !done && rechten.magInvullen;
   // Gasten in deze match (#681). Alleen als er één is heeft de vervang-sectie
   // zin — zo betaalt een gewone match niet voor de extra queries daarin.
   const gastenInMatch = [teamA, teamB]
     .flatMap((t) => playersOf(t))
     .filter((pid) => pmap[pid]?.is_guest);
-  // Grove poort voor de beheer-inklapper (#915): zonder sessie en op een nog
-  // niet gespeelde match valt er sowieso niets te beheren. Of er daarna écht
-  // iets in staat beslist MatchBeheer zelf — de secties erin geven pas ná hun
-  // eigen query null terug.
-  const toonBeheer = done || !!user;
 
   // Wie voerde deze uitslag in? (#915) Die persoon en de groepsbeheerder (#978)
   // kunnen hem corrigeren; zonder dat te zeggen leest het ontbreken van de knop
@@ -249,6 +260,62 @@ export function MatchDetail() {
   const invoerderNaam = invoerder
     ? displayName(invoerder)
     : "degene die hem invoerde";
+
+  // Elke actie zijn eigen poort — zie MatchManagementSheet voor waarom dat
+  // geen samengevoegde vlag kan zijn.
+  const beheerActies: BeheerActie[] = [];
+  if (canEdit) {
+    beheerActies.push({
+      sleutel: "corrigeren",
+      label: heeftUitslag(m) ? "Score corrigeren" : "Score invoeren",
+      hint: "De winnaar volgt uit de score; de sets kun je meteen bijwerken.",
+      onClick: () => setCorrigeren(true),
+    });
+  }
+  if (done && rechten.isDeelnemer) {
+    beheerActies.push({
+      sleutel: "netrollers",
+      label: "Netrollers",
+      hint: "Alleen jij weet er hoeveel je er had.",
+      inhoud: <NetTouchesSection match={m} profiles={pmap} magInvoeren />,
+    });
+  }
+  if (user) {
+    beheerActies.push({
+      sleutel: "groep",
+      label: "Groep wijzigen",
+      hint: m.group_id
+        ? "Verhang de match, of maak er een losse match van."
+        : "Koppel hem aan een groep zodat hij meetelt voor de stand.",
+      inhoud: (
+        <GroupLinkSection
+          key={m.group_id ?? "los"}
+          match={m}
+          onSaved={() => match.reload()}
+        />
+      ),
+    });
+  }
+  // Dezelfde kring die replace_match_player afdwingt — en die GuestSwapSection
+  // zelf ook hanteert: aanmaker of groepseigenaar. Zonder deze poort stond er
+  // een actie die een leeg paneel opent.
+  if (done && user && gastenInMatch.length > 0 && rechten.magCorrigeren) {
+    beheerActies.push({
+      sleutel: "gast",
+      label: "Gast vervangen",
+      hint: "Speelde er iemand anders onder deze gastnaam?",
+      inhoud: (
+        <GuestSwapSection
+          match={m}
+          guestIds={gastenInMatch}
+          matchPlayerIds={playerIds}
+          profiles={pmap}
+          myId={user.id}
+          onSaved={() => match.reload()}
+        />
+      ),
+    });
+  }
 
   return (
     <div>
@@ -259,154 +326,44 @@ export function MatchDetail() {
           <button className="btn btn--sm" onClick={terug}>
             ← Terug
           </button>
-          {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
+          <div className="md-kopacties">
+            {done && <ShareMatch match={m} teams={tmap} profiles={pmap} />}
+            {beheerActies.length > 0 && (
+              <button
+                type="button"
+                className="iconbtn"
+                aria-label="Meer acties"
+                aria-haspopup="dialog"
+                onClick={() => setBeheerOpen(true)}
+              >
+                ⋯
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
-      <MatchScorebord
-        match={m}
-        teams={tmap}
-        profiles={pmap}
-        histories={hmap}
-        derby={derby}
-        upset={upset}
-        scoreHi={scoreHi}
-        canEdit={canEdit}
-        benIkInvoerder={m.created_by === user?.id}
-        invoerderNaam={invoerderNaam}
-        onSaved={() => match.reload()}
-      />
-
-      <Lineup
-        match={m}
-        teams={tmap}
-        profiles={pmap}
-        histories={hmap}
-        ratings={ratings.data ?? {}}
-        matchesA={matchesA.data ?? []}
-        matchesB={matchesB.data ?? []}
-        edities={editieCtx}
-      />
-
-      {/* Beheer & correcties achter één inklapper (#915): administratie die je
-          hooguit één keer per match doet, en die anders als drie gelijkwaardige
-          kaarten met de wedstrijd zelf concurreerde. Alleen renderen als er ook
-          echt iets in zit — de secties erin geven zelf null terug wanneer ze
-          niet van toepassing zijn, dus zonder deze check bleef er een lege balk
-          over. */}
-      {toonBeheer && (
-        <MatchBeheer>
-          {/* Netrollers (#809): alleen de speler zelf weet er zijn aantal van,
-              dus invoer achteraf op de matchpagina in plaats van in de
-              invoerwizard — die wordt vaak door iemand anders ingevuld. */}
-          {done && (
-            <NetTouchesSection
-              match={m}
-              profiles={pmap}
-              magInvoeren={rechten.isDeelnemer}
-            />
-          )}
-
-          {/* #648: losse match achteraf aan een groep koppelen (of verhangen/
-              loskoppelen). key reset de lokale select-state na een geslaagde
-              wijziging, wanneer de match herlaadt met de nieuwe group_id. */}
-          {user && (
-            <GroupLinkSection
-              key={m.group_id ?? "los"}
-              match={m}
-              onSaved={() => match.reload()}
-            />
-          )}
-
-          {done && user && gastenInMatch.length > 0 && (
-            <GuestSwapSection
-              match={m}
-              guestIds={gastenInMatch}
-              matchPlayerIds={playerIds}
-              profiles={pmap}
-              myId={user.id}
-              onSaved={() => match.reload()}
-            />
-          )}
-        </MatchBeheer>
-      )}
-
-      {iLost && (
-        <SmoesjesMachine
-          matchId={m.id}
-          ctx={roastCtx(group.data, user ? pmap[user.id] : null)}
-          groupId={m.group_id}
-          playerId={user?.id}
+      {/* Een afgeronde match krijgt het scorebord; een geplande krijgt de kaart,
+          die hetzelfde zegt én meer (winkans, bounty, opties, de knop om in te
+          vullen). Ze stonden tot #1144 allebei op deze pagina — dezelfde match,
+          twee keer onder elkaar. De metaregel met de groepsbadge blijft in beide
+          gevallen staan. */}
+      {done ? (
+        <MatchScorebord
+          match={m}
+          teams={tmap}
+          profiles={pmap}
+          histories={hmap}
+          derby={derby}
+          upset={upset}
+          scoreHi={scoreHi}
+          canEdit={canEdit}
+          benIkInvoerder={m.created_by === user?.id}
+          invoerderNaam={invoerderNaam}
         />
-      )}
-
-      {m.group_id != null && (
-        <TotoSection match={m} teams={tmap} teamProfiles={pmap} />
-      )}
-
-      {/* Lef-tip (#804) en joker (#1003): op een gespeelde match blijft alleen
-          de onthulling over — wie er dubbel of niets speelde, welke kaart er
-          lag en hoe het afliep. Op een nog te spelen match zitten de keuzes in
-          de PlannedMatchCard hieronder. */}
-      {m.group_id != null && done && (
-        <>
-          <LefTipBlock
-            match={m}
-            profiles={pmap}
-            myId={user?.id ?? null}
-            isDeelnemer={rechten.isDeelnemer}
-            mijnKans={null}
-            games={0}
-          />
-          <JokerBlock
-            match={m}
-            profiles={pmap}
-            myId={user?.id ?? null}
-            isDeelnemer={rechten.isDeelnemer}
-            mijnKans={null}
-            games={0}
-          />
-        </>
-      )}
-
-      {/* Drankje-inzet (#1004). Hier en niet alleen in de wizard: gegenereerde
-          rondes komen daar nooit langs, en het afvinken aan de bar gebeurt per
-          definitie ná de match. Het blok verbergt zichzelf als er niets staat
-          en jij er niets aan mag veranderen. Geldt ook buiten een groep — een
-          weddenschap tussen vrienden heeft geen groep nodig. */}
-      <TraktatieBlock
-        match={m}
-        profiles={pmap}
-        magBeheren={rechten.magInvullen}
-        onSaved={() => match.reload()}
-      />
-
-      {/* Rudy's VAR (#1025): één punt betwisten, de rest stemt. Het blok
-          verbergt zichzelf als er geen zaak loopt en jij er geen kunt beginnen
-          — op een oude match of voor wie niet meespeelde staat er dus niets.
-          Een toekenning verschuift de uitslag, vandaar de reload. */}
-      <VarBlock
-        match={m}
-        teams={tmap}
-        profiles={pmap}
-        myId={user?.id ?? null}
-        group={group.data}
-        onChanged={() => match.reload()}
-      />
-
-      {showPlanned && (
-        <section className="card">
-          <div className="card__head">
-            {/* Blijft "Uitslag invullen" tot de score-invoer zelf herzien is;
-                de nieuwe primaire actie uit matchState landt in een volgende
-                stap van #1144, samen met de sheet die erbij hoort. */}
-            <h2 className="card__title">Uitslag invullen</h2>
-          </div>
-          {/* Dezelfde inline invoer als bij "Te spelen": score/sets opslaan,
-              agenda, tijd wijzigen en verwijderen. Rechten worden serverzijdig
-              afgedwongen. Na verwijderen gaan we naar het matchoverzicht:
-              "terug" naar een zojuist verwijderde match slaat nergens op, dus
-              hier bewust géén useBackTo maar een harde vervanging (#910). */}
+      ) : (
+        <section className="card md-gepland">
+          <MatchMetaRegel match={m} />
           <PlannedMatchCard
             match={m}
             teams={tmap}
@@ -417,6 +374,131 @@ export function MatchDetail() {
           />
         </section>
       )}
+
+      <div className="md-kolommen">
+        <div className="md-kolom">
+          <Lineup
+            match={m}
+            teams={tmap}
+            profiles={pmap}
+            histories={hmap}
+            ratings={ratings.data ?? {}}
+            matchesA={matchesA.data ?? []}
+            matchesB={matchesB.data ?? []}
+            edities={editieCtx}
+          />
+
+          {/* Beheer & correcties achter één inklapper (#915): administratie die je
+          hooguit één keer per match doet, en die anders als drie gelijkwaardige
+          kaarten met de wedstrijd zelf concurreerde. Alleen renderen als er ook
+          echt iets in zit — de secties erin geven zelf null terug wanneer ze
+          niet van toepassing zijn, dus zonder deze check bleef er een lege balk
+          over. */}
+        </div>
+        <div className="md-kolom">
+          {iLost && (
+            <SmoesjesMachine
+              matchId={m.id}
+              ctx={roastCtx(group.data, user ? pmap[user.id] : null)}
+              groupId={m.group_id}
+              playerId={user?.id}
+            />
+          )}
+
+          {m.group_id != null && (
+            <TotoSection match={m} teams={tmap} teamProfiles={pmap} />
+          )}
+
+          {/* Lef-tip (#804) en joker (#1003): op een gespeelde match blijft alleen
+          de onthulling over — wie er dubbel of niets speelde, welke kaart er
+          lag en hoe het afliep. Op een nog te spelen match zitten de keuzes in
+          de PlannedMatchCard hieronder. */}
+          {m.group_id != null && done && (
+            <>
+              <LefTipBlock
+                match={m}
+                profiles={pmap}
+                myId={user?.id ?? null}
+                isDeelnemer={rechten.isDeelnemer}
+                mijnKans={null}
+                games={0}
+              />
+              <JokerBlock
+                match={m}
+                profiles={pmap}
+                myId={user?.id ?? null}
+                isDeelnemer={rechten.isDeelnemer}
+                mijnKans={null}
+                games={0}
+              />
+            </>
+          )}
+
+          {/* Drankje-inzet (#1004). Hier en niet alleen in de wizard: gegenereerde
+          rondes komen daar nooit langs, en het afvinken aan de bar gebeurt per
+          definitie ná de match. Het blok verbergt zichzelf als er niets staat
+          en jij er niets aan mag veranderen. Geldt ook buiten een groep — een
+          weddenschap tussen vrienden heeft geen groep nodig. */}
+          <TraktatieBlock
+            match={m}
+            profiles={pmap}
+            magBeheren={rechten.magInvullen}
+            onSaved={() => match.reload()}
+          />
+
+          {/* Rudy's VAR (#1025): één punt betwisten, de rest stemt. Het blok
+          verbergt zichzelf als er geen zaak loopt en jij er geen kunt beginnen
+          — op een oude match of voor wie niet meespeelde staat er dus niets.
+          Een toekenning verschuift de uitslag, vandaar de reload. */}
+          <VarBlock
+            match={m}
+            teams={tmap}
+            profiles={pmap}
+            myId={user?.id ?? null}
+            group={group.data}
+            onChanged={() => match.reload()}
+          />
+        </div>
+      </div>
+
+      {/* Eén beheermenu (#1144). Elke actie draagt zijn eigen poort: die
+          verschillen echt, en één samengevoegde "mag beheren" zou er drie van
+          de vier verkeerd hebben. */}
+      <MatchManagementSheet
+        open={beheerOpen}
+        onClose={() => setBeheerOpen(false)}
+        acties={beheerActies}
+      />
+
+      {/* Corrigeren gebeurt in dezelfde sheet als invullen. Deze kant slaat
+          blokkerend op: een correctie hoort pas te gelden als de server hem
+          heeft aangenomen. */}
+      <ScoreSheet
+        open={corrigeren}
+        match={m}
+        labelA={teamLabel(teamA, pmap)}
+        labelB={teamLabel(teamB, pmap)}
+        titel="Uitslag corrigeren"
+        opslaanLabel="Score opslaan"
+        onClose={() => setCorrigeren(false)}
+        onSave={async (invoer) => {
+          await updateMatchScore({
+            matchId: m.id,
+            winnerTeamId:
+              invoer.scoreA === invoer.scoreB
+                ? null
+                : invoer.scoreA > invoer.scoreB
+                  ? m.team_a_id
+                  : m.team_b_id,
+            scoreA: invoer.scoreA,
+            scoreB: invoer.scoreB,
+            setScores: invoer.setScores,
+          });
+          tap();
+          toast.success("Score bijgewerkt.");
+          match.reload();
+        }}
+      />
     </div>
   );
 }

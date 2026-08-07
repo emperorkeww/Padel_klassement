@@ -55,9 +55,6 @@ export function GroupLinkSection({
 
   return (
     <section className="card">
-      <div className="card__head">
-        <h2 className="card__title">Groep</h2>
-      </div>
       <p className="md-toto__note">
         {isLos
           ? "Losse match — telt nergens mee. Koppel hem aan een groep zodat hij meetelt voor de groepsstand."

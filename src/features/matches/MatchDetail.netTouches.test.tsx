@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 
+import { openBeheer } from "@/test/matchBeheer";
 import MatchDetail from "./MatchDetail";
 
 // De sessie is p1, die in team t-ab (m-done) speelde. p2 staat in de fixtures
@@ -31,12 +32,14 @@ function renderPage(id: string) {
 describe("<MatchDetail /> — netrollers (#809)", () => {
   it("toont de getelde netrollers van de deelnemers", async () => {
     renderPage("m-done");
-    expect(await screen.findByText(/netrollers/i)).toBeInTheDocument();
+    // Netrollers zitten sinds #1144 in het ⋯-beheermenu.
+    await openBeheer(/netrollers/i);
     expect(await screen.findByText("2×")).toBeInTheDocument();
   });
 
   it("biedt een deelnemer een teller aan om zijn eigen netrollers in te vullen", async () => {
     renderPage("m-done");
+    await openBeheer(/netrollers/i);
     // ScoreStepper labelt ook zijn ±-knoppen ("Mijn netrollers: één meer"),
     // dus exact matchen op het invoerveld zelf.
     expect(await screen.findByLabelText("Mijn netrollers")).toBeInTheDocument();
@@ -46,6 +49,7 @@ describe("<MatchDetail /> — netrollers (#809)", () => {
     renderPage("m-planned");
     // Wacht tot de pagina geladen is voor we de afwezigheid vaststellen.
     await screen.findByText(/gepland/i);
-    expect(screen.queryByLabelText("Mijn netrollers")).not.toBeInTheDocument();
+    // Geen netrollers-actie in het menu: die bestaat pas na afloop.
+    expect(screen.queryByRole("button", { name: /netrollers/i })).toBeNull();
   });
 });
