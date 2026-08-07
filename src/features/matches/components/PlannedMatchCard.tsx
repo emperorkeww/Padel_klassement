@@ -24,11 +24,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { predictionPoints } from "@/features/matches/predictions";
-import {
-  clearPrediction,
-  getMatchPredictions,
-  setPrediction,
-} from "@/features/matches/predictionsApi";
+import { getMatchPredictions } from "@/features/matches/predictionsApi";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import {
   deleteMatch,
@@ -40,10 +36,24 @@ import { serveerTeam } from "@/features/matches/serve";
 import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 import { getMatchStakes } from "@/features/matches/stakesApi";
-import { jokerIcoon, jokerLabel, zichtbareJokers } from "@/features/matches/jokers";
+import {
+  eigenSwing,
+  jokerIcoon,
+  jokerLabel,
+  zichtbareJokers,
+} from "@/features/matches/jokers";
 import { getMatchJokers } from "@/features/matches/jokersApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { JokerBlock } from "@/features/matches/components/JokerBlock";
+import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
+import {
+  MatchOptions,
+  type MatchOptie,
+} from "@/features/matches/components/MatchOptions";
+import {
+  TotoTegel,
+  totoSamenvatting,
+} from "@/features/matches/components/TotoTegel";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
 import { TeamSide } from "@/features/matches/components/TeamSide";
@@ -319,45 +329,6 @@ export function PlannedMatchCard({
     m.status === "scheduled" &&
     (!m.played_at || new Date(m.played_at).getTime() > Date.now());
   const showTips = isGroupMatch && !!myId && (tippingOpen || preds.length > 0);
-  const [busyTip, setBusyTip] = useState(false);
-
-  async function tip(teamId: string) {
-    if (!myId || !m.group_id || busyTip || !tippingOpen) return;
-    setBusyTip(true);
-    try {
-      if (myPrediction?.predicted_team_id === teamId) {
-        await clearPrediction(m.id, myId);
-        toast.success("Tip ingetrokken.");
-      } else {
-        await setPrediction({
-          matchId: m.id,
-          groupId: m.group_id,
-          playerId: myId,
-          predictedTeamId: teamId,
-        });
-        toast.success(`Tip geplaatst op ${teamLabel(teams[teamId], profiles)}.`);
-      }
-      tap();
-      predictions.reload();
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusyTip(false);
-    }
-  }
-
-  /** Chip-gegevens per team: tippers, of het mijn tip is en de te winnen
-   *  punten volgens de huidige winkans (de server bevriest de definitieve). */
-  function tipChipFor(teamId: string, teamChance: number | null) {
-    const tippers = preds.filter((p) => p.predicted_team_id === teamId);
-    return {
-      teamId,
-      mine: myPrediction?.predicted_team_id === teamId,
-      count: tippers.length,
-      names: tippers.map((p) => displayName(profiles[p.player_id])),
-      pts: teamChance != null ? predictionPoints(teamChance) : null,
-    };
-  }
 
   // Wie wat mag, in één keer afgeleid (#1144). De regels zelf — en waarom
   // beheer op `perspectiveId` hangt en invullen op `myId` — staan in
@@ -371,6 +342,124 @@ export function PlannedMatchCard({
   });
   const canManage = rechten.magBeheren;
   const canScore = rechten.magInvullen;
+  const mijnGames = (myId && ratings.data?.[myId]?.games) || 0;
+
+  // Matchopties (#1144): elke rij zegt hoe het ervoor staat en opent het
+  // bestaande blok in een sheet. Rijen die niet van toepassing zijn verschijnen
+  // niet — buiten een groep bestaan toto, lef en joker gewoon niet.
+  const opties: MatchOptie[] = [];
+  if (showTips) {
+    opties.push({
+      sleutel: "toto",
+      icoon: "🎯",
+      naam: "Toto",
+      waarde: totoSamenvatting({ preds, myId, teams, profiles, tippingOpen }),
+      inhoud: (
+        <TotoTegel
+          match={m}
+          teams={teams}
+          profiles={profiles}
+          myId={myId}
+          preds={preds}
+          chance={chance}
+          pctA={pctA}
+          tippingOpen={tippingOpen}
+          onChanged={predictions.reload}
+        />
+      ),
+    });
+  }
+  // Deelnemers zien deze twee altijd; anderen alleen als er iets te zien is —
+  // dezelfde regel die JokerBlock en LefTipBlock zelf hanteren. Zonder deze
+  // spiegel zou er een rij staan die een leeg blok opent.
+  if (isGroupMatch && (mijnTeam != null || zichtbareKaarten.length > 0)) {
+    opties.push({
+      sleutel: "joker",
+      icoon: "🃏",
+      naam: "Speciale kaart",
+      // Volgt zichtbareJokers: vóór de aftrap dus alleen je eigen kaart en de
+      // sociale kaarten van anderen. De anti-meelift-garantie mag hier niet
+      // alsnog uit lekken.
+      waarde: mijnJoker
+        ? jokerLabel(mijnJoker)
+        : zichtbareKaarten.length > 0
+          ? `${zichtbareKaarten.length} gespeeld`
+          : "Geen",
+      inhoud: (
+        <JokerBlock
+          match={m}
+          profiles={profiles}
+          myId={myId}
+          isDeelnemer={mijnTeam != null}
+          mijnKans={mijnKans}
+          games={mijnGames}
+        />
+      ),
+    });
+  }
+  if (isGroupMatch && (mijnTeam != null || lefOnthuld)) {
+    opties.push({
+      sleutel: "lef",
+      icoon: "🎲",
+      naam: "Lef",
+      waarde: mijnLefOpDezeMatch
+        ? "Jouw lef staat erop"
+        : lefOnthuld
+          ? `${lefInzetters.length} ${lefInzetters.length === 1 ? "inzet" : "inzetten"}`
+          : "Geen",
+      inhoud: (
+        <LefTipBlock
+          match={m}
+          profiles={profiles}
+          myId={myId}
+          isDeelnemer={mijnTeam != null}
+          mijnKans={mijnKans}
+          games={mijnGames}
+          matches={history}
+        />
+      ),
+    });
+  }
+  // TraktatieBlock verbergt zichzelf als er niets staat en jij er niets aan mag
+  // veranderen; de rij volgt dat.
+  if (m.wager_drink || canScore) {
+    opties.push({
+        sleutel: "inzet",
+      icoon: "🍻",
+      naam: "Inzet",
+      waarde: m.wager_drink
+        ? `${m.wager_drink_qty ?? 1}× ${drankLabel(m.wager_drink)}`
+        : "Nog niets afgesproken",
+      inhoud: (
+        <TraktatieBlock
+          match={m}
+          profiles={profiles}
+          magBeheren={canScore}
+          onSaved={() => onSaved?.()}
+        />
+      ),
+    });
+  }
+  if (mijnTeam != null && mijnKans != null) {
+    const swing = eigenSwing({
+      mijnKans,
+      staked: mijnLefOpDezeMatch,
+      joker: mijnJoker,
+    });
+    opties.push({
+      sleutel: "rating",
+      icoon: "📊",
+      naam: "Rating",
+      waarde: `+${swing.winst} / ${swing.verlies}`,
+      inhoud: (
+        <RatingPreview
+          mijnKans={mijnKans}
+          staked={mijnLefOpDezeMatch}
+          joker={mijnJoker}
+        />
+      ),
+    });
+  }
 
   /** Slaat de uitslag op. Optimistisch: de kaart klapt meteen om naar de
    *  uitslag — mét wat je toto-tip en lef-inzet opleverden — en draait alleen
@@ -582,6 +671,51 @@ export function PlannedMatchCard({
         : null;
   const meerLabel = actie === "tippen" ? "Tippen" : "Details";
 
+  // Welke modifier de ene plek in de kop verdient. Volgorde: de joker weegt het
+  // zwaarst (één per maand, en "wissel van kant" verandert zelfs de opstelling),
+  // dan de lef-inzet (één per dag, verdubbelt je mutatie), dan het drankje —
+  // sociaal, en de enige die de rating niet raakt.
+  const modifierPil = (() => {
+    if (zichtbareKaarten.length > 0) {
+      const eerste = zichtbareKaarten[0];
+      return {
+        soort: "joker" as const,
+        tekst:
+          zichtbareKaarten.length === 1
+            ? `${jokerIcoon(eerste.joker)} ${jokerLabel(eerste.joker)}`
+            : `🃏 ${zichtbareKaarten.length} jokers`,
+        titel: zichtbareKaarten
+          .map(
+            (j) => `${displayName(profiles[j.player_id])}: ${jokerLabel(j.joker)}`,
+          )
+          .join(" · "),
+      };
+    }
+    if (mijnLefHier || lefOnthuld) {
+      return {
+        soort: "lef" as const,
+        tekst: lefOnthuld
+          ? `🎲 Lef: ${
+              lefInzetters.length > 1
+                ? `${lefInzetters[0]} +${lefInzetters.length - 1}`
+                : lefInzetters[0]
+            }`
+          : "🎲 jouw lef",
+        titel: lefOnthuld
+          ? `Lef getoond door ${lefInzetters.join(", ")}`
+          : "Jouw lef staat op deze match",
+      };
+    }
+    if (m.wager_drink) {
+      return {
+        soort: "inzet" as const,
+        tekst: `${drankIcon(m.wager_drink)} ${m.wager_drink_qty ?? 1}× ${drankLabel(m.wager_drink)}`,
+        titel: "De verliezers trakteren de winnaars",
+      };
+    }
+    return null;
+  })();
+
   // Scorebord-layout: per rij een team met zijn eigen stepper; de verwachte
   // winkans als één gedeelde balk tussen de twee rijen.
   return (
@@ -608,60 +742,19 @@ export function PlannedMatchCard({
                 {deadline.label}
               </span>
             )}
-            {/* Lef op de kop (#981): vóór de aftrap alleen je eigen inzet,
-                daarna de onthulling — zichtbaar terwijl de kaart dicht staat. */}
-            {(mijnLefHier || lefOnthuld) && (
+            {/* Hoogstens één modifier-pil (#1144). Er konden er drie naast
+                elkaar staan — lef, joker en drankje — die op telefoonbreedte
+                naar drie regels wrapten en de kop lieten concurreren met de
+                namen eronder. De rest staat als optierij achter "Details", dus
+                er verdwijnt niets; er staat alleen niet alles tegelijk. */}
+            {modifierPil && (
               <span
-                className={`planned-card__lefpil${
-                  lefOnthuld ? " planned-card__lefpil--vol" : ""
-                }`}
-                title={
-                  lefOnthuld
-                    ? `Lef getoond door ${lefInzetters.join(", ")}`
-                    : "Jouw lef staat op deze match"
-                }
+                className={`planned-card__pil planned-card__pil--${modifierPil.soort}`}
+                title={modifierPil.titel}
               >
-                🎲{" "}
-                {lefOnthuld
-                  ? `Lef: ${
-                      lefInzetters.length > 1
-                        ? `${lefInzetters[0]} +${lefInzetters.length - 1}`
-                        : lefInzetters[0]
-                    }`
-                  : "jouw lef"}
+                {modifierPil.tekst}
               </span>
-            )}
-            {/* Joker op de kop (#1003): dezelfde afweging als de lef-pil. Van
-                kant wisselen staat er dus meteen op — daar moet de tegenstander
-                zijn opstelling op aanpassen. */}
-            {zichtbareKaarten.length > 0 && (
-              <span
-                className="planned-card__jokerpil"
-                title={zichtbareKaarten
-                  .map(
-                    (j) =>
-                      `${displayName(profiles[j.player_id])}: ${jokerLabel(j.joker)}`,
-                  )
-                  .join(" · ")}
-              >
-                {zichtbareKaarten.length === 1
-                  ? `${jokerIcoon(zichtbareKaarten[0].joker)} ${jokerLabel(zichtbareKaarten[0].joker)}`
-                  : `🃏 ${zichtbareKaarten.length} jokers`}
-              </span>
-            )}
-            {/* Drankje-inzet (#1004): waar om gespeeld wordt hoort iedereen te
-                zien zonder de kaart uit te klappen — net als de lef-pil
-                hierboven. Wijzigen kan op de matchpagina. */}
-            {m.wager_drink && (
-              <span
-                className="planned-card__inzetpil"
-                title="De verliezers trakteren de winnaars"
-              >
-                {drankIcon(m.wager_drink)}{" "}
-                {m.wager_drink_qty ?? 1}× {drankLabel(m.wager_drink)}
-              </span>
-            )}
-          </span>
+            )}          </span>
           {whereLine && <span className="planned-card__where">{whereLine}</span>}
         </div>
         <MatchCalendarButton match={m} teams={teams} profiles={profiles} />
@@ -718,71 +811,10 @@ export function PlannedMatchCard({
             </p>
           )}
 
-          {/* Inzetten: toto (kijkersspel, smaragd) en lef (risicospel van de
-              spelers, violet) als twee open tegels naast elkaar — direct tikbaar,
-              zonder accordeons. */}
-          {isGroupMatch && (
-            <div className="planned-card__bets">
-              {showTips && (
-                <section className="bet-tile bet-tile--toto" aria-label="Toto">
-                  <header className="bet-tile__head">
-                    <span className="bet-tile__name">🎯 Toto</span>
-                    {!tippingOpen && (
-                      <span className="bet-tile__stat">
-                        {predictions.data == null
-                          ? "tippen gesloten"
-                          : `tippen gesloten · ${preds.length} ${preds.length === 1 ? "tip" : "tips"}`}
-                      </span>
-                    )}
-                  </header>
-                  <div className="bet-tile__options">
-                    <TipOption
-                      {...tipChipFor(m.team_a_id, chance)}
-                      teamName={labelA}
-                      pct={pctA}
-                      disabled={!tippingOpen || busyTip}
-                      onClick={() => tip(m.team_a_id)}
-                    />
-                    <TipOption
-                      {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
-                      teamName={labelB}
-                      pct={pctA != null ? 100 - pctA : null}
-                      disabled={!tippingOpen || busyTip}
-                      onClick={() => tip(m.team_b_id)}
-                    />
-                  </div>
-                  {tippingOpen && (
-                    <p className="bet-tile__foot">
-                      {myPrediction
-                        ? "Je kunt je tip nog wijzigen tot de starttijd."
-                        : "Tip de winnaar — hoe kleiner de winkans, hoe meer punten (+1 tot +4). Tippen kan tot de starttijd."}
-                    </p>
-                  )}
-                </section>
-              )}
-              {/* Lef-tip (#804): dubbel-of-niets voor de spelers zelf, naast de
-                  toto voor de toeschouwers. */}
-              <LefTipBlock
-                match={m}
-                profiles={profiles}
-                myId={myId}
-                isDeelnemer={mijnTeam != null}
-                mijnKans={mijnKans}
-                games={(myId && ratings.data?.[myId]?.games) || 0}
-                matches={history}
-              />
-              {/* Joker (#1003): de kaart van de maand, onder de lef-tip. Eerst
-                  je dagelijkse zenuwspel, dan de zwaardere keuze. */}
-              <JokerBlock
-                match={m}
-                profiles={profiles}
-                myId={myId}
-                isDeelnemer={mijnTeam != null}
-                mijnKans={mijnKans}
-                games={(myId && ratings.data?.[myId]?.games) || 0}
-              />
-            </div>
-          )}
+          {/* Matchopties (#1144): toto, speciale kaart, inzet en rating als
+              compacte rijen in plaats van drie gekleurde tegels onder elkaar.
+              De blokken erachter zijn ongewijzigd — alleen hun verpakking. */}
+          <MatchOptions opties={opties} />
 
           {/* Coach en rivaliteit gegroepeerd als rustig tussenblok. */}
           {(coachPre || rivalry) && (
@@ -948,71 +980,6 @@ function LefSavedLine({
         </strong>
       )}
     </p>
-  );
-}
-
-/** Risico-etiket bij een winkans: de underdog levert de meeste toto-punten. */
-function tipTier(pct: number | null): string | null {
-  if (pct == null) return null;
-  if (pct >= 60) return "favoriet";
-  if (pct <= 40) return "underdog";
-  return "fifty-fifty";
-}
-
-/** Grote, tapbare tip-keuze per team: teamnaam, de te winnen punten met hun
- *  risico-etiket (favoriet/underdog), en hoeveel groepsleden dit team tippen.
- *  Nogmaals tikken op je eigen keuze trekt de tip in. */
-function TipOption({
-  teamName,
-  mine,
-  count,
-  names,
-  pts,
-  pct,
-  disabled,
-  onClick,
-}: {
-  teamName: string;
-  mine: boolean;
-  count: number;
-  names: string[];
-  pts: number | null;
-  pct: number | null;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  const tier = tipTier(pct);
-  return (
-    <button
-      type="button"
-      className={`toto-opt ${mine ? "toto-opt--mine" : ""}`}
-      disabled={disabled}
-      aria-pressed={mine}
-      aria-label={`Tip ${teamName}`}
-      onClick={onClick}
-      title={
-        count > 0
-          ? `Getipt door ${names.join(", ")}`
-          : `Tip ${teamName} als winnaar`
-      }
-    >
-      <span className="toto-opt__top">
-        <span className="toto-opt__team">{teamName}</span>
-        {mine && <span className="toto-opt__mine-flag">jouw tip ✓</span>}
-      </span>
-      <span className="toto-opt__reward">
-        {pts != null && (
-          <span className="toto-opt__pts">
-            +{pts}
-            <span className="toto-opt__pts-unit"> pt</span>
-          </span>
-        )}
-        {tier && <span className="toto-opt__tier">{tier}</span>}
-      </span>
-      <span className="toto-opt__count">
-        {count > 0 ? `${count}× getipt` : "nog niemand"}
-      </span>
-    </button>
   );
 }
 

@@ -1,0 +1,90 @@
+/* Matchopties als rijen (#1144). Structuur uit haarlijnen en spacing, niet uit
+   een gekleurd vlak per feature — dat was juist wat de kaart onrustig maakte. */
+
+.matchopties {
+  display: grid;
+  gap: var(--sp-2);
+}
+.matchopties__titel {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.matchopties__lijst {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.matchopties__lijst > li + li {
+  border-top: 1px solid var(--divider);
+}
+
+.matchopties__rij {
+  width: 100%;
+  min-height: 48px; /* tap-target ≥44px (WCAG 2.5.5) */
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.matchopties__rij:hover {
+  background: var(--surface-hover);
+}
+.matchopties__rij:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.matchopties__icoon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.matchopties__naam {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+}
+/* De stand van zaken rechts uitgelijnd en gedempt: je scant de namen, je leest
+   de waarde pas als je er iets mee wil. Lange waarden kappen af — de sheet
+   erachter heeft het volledige verhaal. */
+.matchopties__waarde {
+  justify-self: end;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.matchopties__pijl {
+  color: var(--ink-soft);
+  font-size: var(--fs-lg);
+  line-height: 1;
+}
+
+/* Op smalle schermen wint de naam van de waarde: die mag naar een eigen regel
+   in plaats van tot een ellipsis te verschrompelen. */
+@media (max-width: 380px) {
+  .matchopties__rij {
+    grid-template-columns: auto 1fr auto;
+    row-gap: 0;
+  }
+  .matchopties__waarde {
+    grid-column: 2 / 3;
+    justify-self: start;
+    white-space: normal;
+  }
+}

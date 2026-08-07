@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "@/types";
-import { deleteMatch, formatSetScores, readSetScores } from "@/features/matches/api";
+import { deleteMatch } from "@/features/matches/api";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
-import { traktatieRegel } from "@/features/matches/drankkaart";
+import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
@@ -46,8 +46,9 @@ export function MatchCard({
   const bWon = done && m.winner_team_id === m.team_b_id;
   const drew = done && m.winner_team_id === null;
   const scored = m.score_a != null && m.score_b != null;
-  const setLine = formatSetScores(readSetScores(m));
-  const traktatie = traktatieRegel(m);
+  // Eén extra regel, met een teller voor de rest (#1144). De volgorde en het
+  // waarom staan in matchMeta.ts; hier alleen de weergave.
+  const meta = historieMeta({ match: m, upset, joker, lef });
 
   const outcome = perspectiveId ? outcomeFor(m, teams, perspectiveId) : null;
   const outcomeClass =
@@ -75,38 +76,27 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {/* Speelvorm blijft een eigen chipje en telt niet mee als "moment":
+            het zegt wát voor match dit is, niet wat er gebeurde. */}
         {m.format === "1v1" && (
           <span className="match-card__meta match-card__format" title="Singles">
             1v1
           </span>
         )}
-        {done && upset && (
+        {meta && (
           <span
-            className="match-card__meta match-card__upset"
-            title="Underdog won — winkans vooraf lager dan 35%"
+            className={`match-card__meta match-card__${meta.sleutel}`}
+            title={
+              meta.sleutel === "upset"
+                ? "Underdog won — winkans vooraf lager dan 35%"
+                : undefined
+            }
           >
-            🎯 upset · {Math.round(upset.chance * 100)}% kans
-          </span>
-        )}
-        {setLine && (
-          <span className="match-card__meta match-card__sets">{setLine}</span>
-        )}
-        {/* Lef-inzet (#981): blijft ook op de ingeklapte kaart staan, zodat
-            wie waar dubbel of niets speelde na de speeldag terug te lezen is. */}
-        {lef && <span className="match-card__meta match-card__lef">{lef}</span>}
-        {/* Joker (#1003): net als de lef-regel blijft de gespeelde kaart op de
-            ingeklapte kaart staan — een schild dat een nederlaag wegnam hoort
-            terug te lezen te zijn naast de uitslag die het niet veranderde. */}
-        {joker && (
-          <span className="match-card__meta match-card__joker">{joker}</span>
-        )}
-        {/* Drankje-inzet (#1004). Bewust hier afgeleid en niet als prop
-            doorgegeven zoals `lef`: die moet uit een aparte tabel komen, dit
-            staat al op de matchrij zelf. Zo verschijnt de traktatie overal waar
-            deze kaart hangt — historie, profiel, uitslagenfeed. */}
-        {traktatie && (
-          <span className="match-card__meta match-card__traktatie">
-            {traktatie}
+            {meta.tekst}
+            {/* Eerlijk over wat er niet past: tikken opent de volledige match. */}
+            {meta.rest > 0 && (
+              <span className="match-card__meer"> +{meta.rest}</span>
+            )}
           </span>
         )}
       </span>
