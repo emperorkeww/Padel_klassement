@@ -15,7 +15,7 @@ import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard
 import { supabase } from "@/lib/supabase/client";
 import { MATCH_PLANNED, PROFILES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openMatchOptie, openPlannedCards } from "@/test/plannedCard";
 
 const tmap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<
   string,
@@ -43,7 +43,7 @@ describe("<PlannedMatchCard /> toto", () => {
     renderCard(MATCH_PLANNED as Match);
     // De toto zit sinds #941 achter de uitklapknop; open tegel bínnen de kaart:
     // beide teams direct tapbaar, geen accordeon.
-    await openPlannedCards();
+    await openMatchOptie(/toto/i);
     const chipA = await screen.findByRole("button", {
       name: /^tip alice anders & bob boers$/i,
     });
@@ -59,7 +59,7 @@ describe("<PlannedMatchCard /> toto", () => {
 
   it("plaatst een tip via de chip", async () => {
     renderCard(MATCH_PLANNED as Match);
-    await openPlannedCards();
+    await openMatchOptie(/toto/i);
     await userEvent.click(
       await screen.findByRole("button", {
         name: /^tip carol claes & dave de vos$/i,
@@ -74,10 +74,10 @@ describe("<PlannedMatchCard /> toto", () => {
   it("toont geen tip-chips op een match zonder groep", async () => {
     renderCard({ ...MATCH_PLANNED, group_id: null } as Match);
     await openPlannedCards();
-    // De kaart is er wel — de uitslag kun je invullen — maar zonder toto-tegel:
-    // tippen bestaat alleen binnen een groep.
+    // De kaart is er wel — de uitslag kun je invullen — maar er is geen
+    // toto-rij: tippen bestaat alleen binnen een groep.
     await screen.findByRole("button", { name: /^uitslag invullen$/i });
-    expect(screen.queryByText(/🎯 toto/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /toto/i })).toBeNull();
     expect(
       screen.queryByRole("button", { name: /^tip / }),
     ).not.toBeInTheDocument();
@@ -88,7 +88,7 @@ describe("<PlannedMatchCard /> toto", () => {
       ...MATCH_PLANNED,
       played_at: "2026-07-01T18:00:00.000Z",
     } as Match);
-    await openPlannedCards();
+    await openMatchOptie(/toto/i);
     // Kopregel van de tegel: gesloten + teller (Carol's fixture-tip).
     expect(
       await screen.findByText(/tippen gesloten · 1 tip/i),
