@@ -20,6 +20,7 @@ export function FairTeamsCard({
   playerIds,
   profiles,
   playedAt,
+  ingebed = false,
 }: {
   /** Groep waarbinnen de matches gepland worden. */
   groupId: string;
@@ -28,11 +29,16 @@ export function FairTeamsCard({
   profiles: Record<string, Profile>;
   /** Starttijd (ISO) van deze ronde (#827); null zonder speeldag-poll. */
   playedAt?: string | null;
+  /** Onder de speelformaat-kaart (#1089): daar staan de titel, de uitleg en de
+   *  knop "Stel eerlijke teams voor" al, en de kaart ís de reactie op die knop.
+   *  Herhaalt hij ze, dan lees je hetzelfde drie keer. */
+  ingebed?: boolean;
 }) {
   const toast = useToast();
   const ratings = useAsync(getPlayerRatings, []);
   // null = nog geen voorstel; 0 = eerlijkst, 1 = op één na eerlijkst, …
-  const [variant, setVariant] = useState<number | null>(null);
+  // Ingebed is de kaart zelf al het antwoord op de knop, dus dan meteen 0.
+  const [variant, setVariant] = useState<number | null>(ingebed ? 0 : null);
   // Bankbeurten per speler tot nu toe — zodat "Opnieuw" de reserve laat
   // rouleren i.p.v. steeds dezelfde (laagst geratede) speler op de bank te zetten.
   const [benched, setBenched] = useState<Record<string, number>>({});
@@ -86,23 +92,29 @@ export function FairTeamsCard({
 
   return (
     <section className="card">
-      <h2 className="card__title card__title--tight">Eerlijke teams</h2>
-      <p className="card__subtitle">
-        Verdeelt de aanwezige spelers per baan in teams met een zo gelijk
-        mogelijke rating.
-      </p>
+      {!ingebed && (
+        <>
+          <h2 className="card__title card__title--tight">Eerlijke teams</h2>
+          <p className="card__subtitle">
+            Verdeelt de aanwezige spelers per baan in teams met een zo gelijk
+            mogelijke rating.
+          </p>
+        </>
+      )}
 
       <div className="fair-teams__actions">
-        <button
-          className="btn btn--primary"
-          disabled={!enough || !ratings.data}
-          onClick={() => {
-            tap();
-            setVariant(0);
-          }}
-        >
-          Stel eerlijke teams voor
-        </button>
+        {!ingebed && (
+          <button
+            className="btn btn--primary"
+            disabled={!enough || !ratings.data}
+            onClick={() => {
+              tap();
+              setVariant(0);
+            }}
+          >
+            Stel eerlijke teams voor
+          </button>
+        )}
         {proposal && (
           <button className="btn" onClick={reshuffle}>
             Andere verdeling

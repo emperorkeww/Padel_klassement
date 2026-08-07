@@ -38,8 +38,11 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
   // Play-polls (voorheen "proposals"): de "play-poll"-prefix dekt alle drie de
   // cache-sleutels (play-polls: / play-poll-options: / play-poll-votes:).
   play_polls: ["play-poll"],
-  play_poll_options: ["play-poll-options"],
-  play_poll_votes: ["play-poll-votes"],
+  // Het agendavenster (#1091) bundelt momenten, polls én stemmen onder één
+  // sleutel, dus alle drie de tabellen moeten hem kunnen invalideren. Bij
+  // play_polls zit hij al in de brede "play-poll"-prefix.
+  play_poll_options: ["play-poll-options", "play-poll-agenda"],
+  play_poll_votes: ["play-poll-votes", "play-poll-agenda"],
   match_smoesjes: ["smoesjes"],
   // Rudy's VAR (#1025). Een uitspraak kan de uitslag verschuiven, dus een
   // wijziging aan een beroep raakt álles wat aan een match hangt — vandaar de
@@ -56,6 +59,9 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
     "bounties",
   ],
   point_appeal_votes: ["appeals"],
+  // Meldingen-inbox (#1090): de lijst in het paneel en de ongelezen-teller in
+  // de balk. Eén prefix dekt beide sleutels (meldingen:lijst / meldingen:ongelezen).
+  notifications: ["meldingen"],
 };
 
 // Kanaalnamen moeten uniek zijn per abonnee: twee hooks met dezelfde tabel en

@@ -31,12 +31,22 @@ vi.mock("@/lib/utils/confetti", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/utils/confetti")>()),
   celebrate: vi.fn(),
 }));
+// Meldingen (#1090): de shell leest de lijst én een aparte count. De query-mock
+// levert geen `count`, dus die twee komen hier rechtstreeks uit de api-module.
+vi.mock("@/features/meldingen/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/meldingen/api")>()),
+  getMeldingen: vi.fn().mockResolvedValue([]),
+  getOngelezenAantal: vi.fn().mockResolvedValue(0),
+  markeerGelezen: vi.fn().mockResolvedValue(undefined),
+  markeerAllesGelezen: vi.fn().mockResolvedValue(undefined),
+}));
 
 import DashboardLayout from "@/app/DashboardLayout";
 import { supabase } from "@/lib/supabase/client";
 import { getRatingHistory, getPlayerRatings } from "@/features/standings/ratingsApi";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { celebrate } from "@/lib/utils/confetti";
+import { getMeldingen, getOngelezenAantal } from "@/features/meldingen/api";
 
 // Node's globale localStorage (zonder --localstorage-file) is een kreupele
 // stub die ook window.localStorage overschaduwt; vervang hem door een simpele
@@ -93,6 +103,8 @@ beforeEach(() => {
   vi.mocked(getPlayerMatches).mockReset().mockResolvedValue([]);
   vi.mocked(getTeamsMap).mockReset().mockResolvedValue({});
   vi.mocked(celebrate).mockClear();
+  vi.mocked(getMeldingen).mockReset().mockResolvedValue([]);
+  vi.mocked(getOngelezenAantal).mockReset().mockResolvedValue(0);
 });
 
 describe("<DashboardLayout />", () => {
@@ -188,6 +200,89 @@ describe("snelkoppeling naar de uitleg (#989)", () => {
       .getAllByRole("link", { name: /hoe werkt het/i })
       .find((el) => el.classList.contains("sidebar__link"));
     expect(zijbalk).toHaveAttribute("href", "/uitleg");
+  });
+});
+
+// Meldingen (#1090). Net als de uitleg-ingang uit #989 zit dit in de shell en
+// dus in de DOM ongeacht de viewport: de bel in de mobiele topbalk, dezelfde
+// ingang als zijbalkregel op desktop — één paneel voor allebei.
+describe("meldingen-ingang (#1090)", () => {
+  const ingangen = () => screen.getAllByRole("button", { name: /^meldingen/i });
+
+  it("staat op élk scherm in de shell, mobiel én desktop", async () => {
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    // De bel uit de topbalk plus de zijbalkregel.
+    expect(ingangen()).toHaveLength(2);
+    expect(
+      ingangen().some((el) => el.classList.contains("bel-knop")),
+    ).toBe(true);
+    expect(
+      ingangen().some((el) => el.classList.contains("sidebar__link")),
+    ).toBe(true);
+  });
+
+  it("zet het aantal ongelezen voluit in de naam, niet alleen als cijfer", async () => {
+    vi.mocked(getOngelezenAantal).mockResolvedValue(3);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    await vi.waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: "Meldingen, 3 ongelezen meldingen" }),
+      ).toHaveLength(2),
+    );
+  });
+
+  it("kapt de zichtbare teller af op 9+ maar niet de naam", async () => {
+    vi.mocked(getOngelezenAantal).mockResolvedValue(23);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+    await vi.waitFor(() =>
+      expect(screen.getAllByText("9+").length).toBe(2),
+    );
+    expect(
+      screen.getAllByRole("button", { name: "Meldingen, 23 ongelezen meldingen" }),
+    ).toHaveLength(2);
+  });
+
+  it("toont geen teller zolang het aantal nog niet bekend is", async () => {
+    // Nooit oplossende belofte: de shell hoort dan géén 0-badge te tonen die
+    // een tel later naar 3 springt.
+    vi.mocked(getOngelezenAantal).mockReturnValue(new Promise(() => {}));
+    const { container } = renderShell();
+    await screen.findByText("pagina-inhoud");
+    expect(container.querySelector(".bel-knop__teller")).toBeNull();
+    expect(container.querySelector(".sidebar__teller")).toBeNull();
+  });
+
+  it("opent hetzelfde paneel vanuit beide ingangen", async () => {
+    vi.mocked(getMeldingen).mockResolvedValue([
+      {
+        id: "n1",
+        soort: "uitslag",
+        title: "Uitslag ingevoerd",
+        body: "Jullie wonnen.",
+        url: "/matches/m1",
+        tag: "uitslag-m1",
+        created_at: new Date().toISOString(),
+        read_at: null,
+      },
+    ]);
+    renderShell();
+    await screen.findByText("pagina-inhoud");
+
+    for (const klasse of ["bel-knop", "sidebar__link"]) {
+      const ingang = ingangen().find((el) => el.classList.contains(klasse))!;
+      await userEvent.click(ingang);
+      expect(
+        await screen.findByRole("dialog", { name: "Meldingen" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Uitslag ingevoerd")).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Sluiten" }));
+      await vi.waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Meldingen" })).toBeNull(),
+      );
+    }
   });
 });
 

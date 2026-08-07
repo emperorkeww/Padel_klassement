@@ -7,11 +7,15 @@
 // Deploy MET JWT-verificatie (de standaard): we hebben de gebruiker nodig om te
 // controleren dat hij lid van de groep is.
 //
+// De melding loopt via de gedeelde bezorger (#1090,
+// ../_shared/meldingenBezorger.ts): eerst de rij in public.notifications, dan
+// pas de push. Wie geen abonnement heeft, ziet het porren dus toch in de app.
+//
 // Vereiste secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…).
 // SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY worden automatisch meegegeven.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
+import { bezorg } from "../_shared/meldingenBezorger.ts";
 import {
   GROEP_HERINNERING,
   kiesTitel,
@@ -27,12 +31,6 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 // Service-role client: leest ledenlijst + push-abonnementen zonder RLS-hindernis.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:beheer@vamos.example",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
-);
-
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -44,33 +42,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...CORS, "content-type": "application/json" },
   });
-}
-
-async function pushTo(recipients: string[], payload: unknown): Promise<number> {
-  if (recipients.length === 0) return 0;
-  const { data: subs } = await admin
-    .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .in("user_id", recipients);
-
-  let sent = 0;
-  await Promise.all(
-    (subs ?? []).map(async (s) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify(payload),
-        );
-        sent += 1;
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
-          await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
-        }
-      }
-    }),
-  );
-  return sent;
 }
 
 Deno.serve(async (req) => {
@@ -142,12 +113,14 @@ Deno.serve(async (req) => {
   // wie de groep een tweede keer aanstoot nadat er iemand gestemd heeft, stuurt
   // een andere regel de deur uit in plaats van exact dezelfde melding.
   const seed = roastSeed(pollId, uid, String(responded.size));
-  const sent = await pushTo(recipients, {
+  const { sent } = await bezorg(admin, [{
+    recipients,
     title: kiesTitel(TITEL_GROEP_HERINNERING, pollId, String(responded.size)),
     body: kiesUit(GROEP_HERINNERING, seed),
     url: `/groepen/${groupId}?tab=plannen&poll=${pollId}`,
+    soort: "poll",
     tag: `poll-${pollId}`,
-  });
+  }]);
 
   return json({ reminded: recipients.length, sent });
 });

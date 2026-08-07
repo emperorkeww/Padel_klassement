@@ -1,0 +1,95 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Sheet } from "@/ui/Sheet";
+import { EmptyState } from "@/ui/EmptyState";
+import { Skeleton } from "@/ui/Skeleton";
+import { markeerAllesGelezen, type Melding } from "../api";
+import { MeldingenLijst } from "./MeldingenLijst";
+import "./MeldingenPaneel.css";
+
+/**
+ * Het meldingenpaneel (#1090). Eén component, twee ingangen: de bel in de
+ * mobiele topbalk en de zijbalkregel op desktop. Sheet is vanaf 640px al een
+ * gecentreerd paneel in plaats van een bottom-sheet, dus er is geen tweede
+ * vorm nodig — en hij draagt het glasmateriaal (#1062/#1083) al.
+ *
+ * Het paneel openen markeert bewust niets als gelezen: anders is één keer
+ * kijken genoeg om alles kwijt te zijn, en verdwijnt juist de melding die je
+ * wilde onthouden. De rijen zelf staan in MeldingenLijst, gedeeld met de route
+ * /meldingen.
+ */
+export function MeldingenPaneel({
+  open,
+  onClose,
+  meldingen,
+  laadt,
+  limiet,
+  onVeranderd,
+}: {
+  open: boolean;
+  onClose: () => void;
+  meldingen: Melding[];
+  laadt: boolean;
+  /** Hoeveel er hoogstens in dit paneel passen; bepaalt of de voet naar de
+   *  volledige lijst wijst. */
+  limiet: number;
+  /** Na een leesmarkering: de teller in de balk moet meteen meebewegen. */
+  onVeranderd: () => void;
+}) {
+  const [bezig, setBezig] = useState(false);
+  const ongelezen = meldingen.filter((m) => !m.read_at).length;
+
+  async function allesGelezen() {
+    setBezig(true);
+    try {
+      await markeerAllesGelezen();
+      onVeranderd();
+    } finally {
+      setBezig(false);
+    }
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Meldingen" className="meldingen-sheet">
+      {ongelezen > 0 && (
+        <div className="meldingen__acties">
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={allesGelezen}
+            disabled={bezig}
+          >
+            {bezig ? "Bezig…" : "Alles gelezen"}
+          </button>
+        </div>
+      )}
+
+      {laadt && meldingen.length === 0 ? (
+        <Skeleton rows={4} />
+      ) : meldingen.length === 0 ? (
+        <EmptyState icon="🔔" title="Nog niets te melden">
+          Zodra er een ronde klaarstaat, een uitslag binnenkomt of iemand je een
+          verzoek stuurt, staat het hier.
+        </EmptyState>
+      ) : (
+        <MeldingenLijst
+          meldingen={meldingen}
+          onGeopend={onClose}
+          onVeranderd={onVeranderd}
+        />
+      )}
+
+      {/* Alleen als er méér is dan hier past — anders belooft de knop een
+          langere lijst die niet bestaat. */}
+      {meldingen.length >= limiet && (
+        <p className="meldingen__voet">
+          <Link className="btn btn--sm" to="/meldingen" onClick={onClose}>
+            Alles bekijken →
+          </Link>
+        </p>
+      )}
+    </Sheet>
+  );
+}
+
+export default MeldingenPaneel;

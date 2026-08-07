@@ -1,0 +1,234 @@
+/* "Wie speelt er mee?" — de deelnemersselectie van de speeldag (#1089).
+
+   Maatvoering, spacing en interactiestates volgen de design-handoff; kleur en
+   letter komen uit de tokens van de app, zodat het donkere thema en de
+   contrast-CI meebewegen. De kaartradius blijft die van `.card`: één kaart met
+   een eigen ronding leest als een fout, niet als een accent. */
+
+.kiezer__kop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.kiezer__eyebrow {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.kiezer__titel {
+  margin: var(--sp-1) 0 0;
+  font-size: 1.3125rem; /* 21px */
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* De teller is de kern van de kaart: één getal dat zegt hoeveel er meedoen. */
+.kiezer__teller {
+  margin: 0;
+  padding-top: var(--sp-1);
+  text-align: right;
+  /* Voorkomt dat "van 20 aan" naast het getal belandt. */
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.kiezer__teller-getal {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.kiezer__teller-uit {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.kiezer__balk {
+  height: 6px;
+  margin-top: var(--sp-3);
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.kiezer__balk-vul {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiezer__balk-vul {
+    transition: none;
+  }
+}
+
+.kiezer__zoekrij {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.kiezer__zoek {
+  flex: 1;
+  min-width: 0;
+}
+/* De handoff vult dit veld met het lichte vlak (--surface-2). Dat is hier niet
+   overgenomen: --placeholder haalt op --surface-2 in het lichte thema 4,14:1
+   en zakt daarmee onder AA. Het veld houdt dus de gewone `.input`-vorm — dat
+   is bovendien hoe elk ander invoerveld in de app eruitziet. */
+
+/* Zachte accentknop: dezelfde familie als de "+ Nieuw"-pil op de vendettakaart. */
+.kiezer__alles {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.kiezer__alles:hover:not(:disabled) {
+  background: var(--surface-active);
+}
+.kiezer__alles:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kiezer .tabs--segment {
+  margin-top: var(--sp-3);
+}
+
+.kiezer__herkomst {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.kiezer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+/* Staat de herkomstregel er, dan draagt die de ruimte al. */
+.kiezer__herkomst + [role="tabpanel"] .kiezer__chips {
+  margin-top: var(--sp-3);
+}
+
+/* De chip is visueel ~36px hoog; de min-height maakt er een volwaardig
+   tap-target van (WCAG 2.5.5) zonder de pil op te blazen. */
+.kiezer__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-1);
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  /* --ink-soft komt op --surface-2 nét onder AA uit; voor tekst op dit kleine
+     formaat is --ink-soft-strong de bewaakte rol (zie contrast-check.mjs). */
+  color: var(--ink-soft-strong);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.kiezer__chip[aria-checked="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+  font-weight: 700;
+}
+.kiezer__chip:hover {
+  border-color: var(--line-strong);
+}
+.kiezer__chip[aria-checked="true"]:hover {
+  border-color: var(--accent);
+}
+/* Afwezig dempt ook de avatar: de chip mag niet alleen op tekstkleur uit
+   elkaar te houden zijn, maar het gezicht mag er ook niet even fel bij staan. */
+.kiezer__chip[aria-checked="false"] .avatar {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.kiezer__chip-naam {
+  /* Lange namen breken de pil niet open maar kappen af. */
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* De markering is het niet-kleur-signaal van de chip; hij moet dus even goed
+   leesbaar zijn als het label. Vandaar currentColor in plaats van de bleke
+   grijstint uit de handoff — die haalt op een licht vlak geen 3:1. */
+.kiezer__chip-merk {
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: currentColor;
+}
+
+.kiezer__leeg {
+  margin: 0;
+  padding: var(--sp-5) 0 var(--sp-1);
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.kiezer__voet {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--divider);
+}
+.kiezer__afwezig {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kiezer__afwezig b {
+  color: var(--ink-soft-strong);
+  font-weight: 700;
+}
+.kiezer__herstel {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-1);
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.kiezer__herstel:hover {
+  color: var(--accent-hover);
+}

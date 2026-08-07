@@ -4,6 +4,7 @@ import {
   aantalTekst,
   formatDate,
   formatPlannedDay,
+  formatRelatieveTijd,
   formatRelativeDay,
 } from "@/lib/utils/format";
 
@@ -61,6 +62,41 @@ describe("formatPlannedDay", () => {
     );
   });
 });
+// De tijdstempel in de meldingenlijst (#1090).
+describe("formatRelatieveTijd", () => {
+  const nu = new Date("2026-08-07T12:00:00.000Z");
+  const geleden = (ms: number) => new Date(nu.getTime() - ms).toISOString();
+
+  it("geeft een lege string bij ontbrekende datum", () => {
+    expect(formatRelatieveTijd(null, nu)).toBe("");
+    expect(formatRelatieveTijd(undefined, nu)).toBe("");
+  });
+
+  it("noemt het eerste minuutje gewoon 'nu'", () => {
+    expect(formatRelatieveTijd(geleden(0), nu)).toBe("nu");
+    expect(formatRelatieveTijd(geleden(59_000), nu)).toBe("nu");
+  });
+
+  it("telt in minuten, uren en dagen", () => {
+    expect(formatRelatieveTijd(geleden(60_000), nu)).toBe("1 min geleden");
+    expect(formatRelatieveTijd(geleden(45 * 60_000), nu)).toBe("45 min geleden");
+    expect(formatRelatieveTijd(geleden(2 * 3_600_000), nu)).toBe("2 u geleden");
+    expect(formatRelatieveTijd(geleden(23 * 3_600_000), nu)).toBe("23 u geleden");
+    expect(formatRelatieveTijd(geleden(86_400_000), nu)).toBe("1 dag geleden");
+    expect(formatRelatieveTijd(geleden(3 * 86_400_000), nu)).toBe("3 dgn geleden");
+  });
+
+  it("valt vanaf een week terug op een korte datum", () => {
+    const oud = geleden(9 * 86_400_000);
+    expect(formatRelatieveTijd(oud, nu)).toBe(formatDate(oud));
+  });
+
+  // Een serverklok die een seconde voorloopt mag geen "in 1 min" opleveren.
+  it("houdt een toekomstige tijdstempel op 'nu'", () => {
+    expect(formatRelatieveTijd(geleden(-30_000), nu)).toBe("nu");
+  });
+});
+
 describe("aantalTekst", () => {
   it("kiest enkelvoud, meervoud en nul", () => {
     expect(aantalTekst(0, "speler", "spelers")).toBe("geen spelers");

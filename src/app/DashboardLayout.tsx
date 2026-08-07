@@ -1,4 +1,4 @@
-import { Suspense, useMemo, type ReactNode } from "react";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -17,6 +17,12 @@ import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { JokerKnop } from "@/features/matches/components/JokerKnop";
+import { AgendaKnop } from "@/features/agenda/components/AgendaKnop";
+import { BelKnop } from "@/features/meldingen/components/BelKnop";
+import { IconBel } from "@/features/meldingen/components/IconBel";
+import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel";
+import { belLabel, tellerTekst } from "@/features/meldingen/bel";
+import { useMeldingen } from "@/features/meldingen/useMeldingen";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import { useGlasScrollLicht } from "@/lib/hooks/useGlasScrollLicht";
@@ -60,6 +66,10 @@ const FEED: NavItem = { to: "/clubblad", label: "Clubblad", icon: <IconFeed /> }
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
 const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };
+// Agenda (#1091): alle speeldagen in de tijd, over je groepen heen. Op desktop
+// een volwaardig zijbalk-item; mobiel hangt hij in de topbalk (AgendaKnop),
+// zodat de onderbalk zijn vijf symmetrische slots houdt (#106/#274).
+const AGENDA: NavItem = { to: "/agenda", label: "Agenda", icon: <IconCalendar /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
 // De uitlegpagina (#989) hoort op desktop bij de vaste navigatie in plaats van
@@ -73,7 +83,7 @@ const BEHEER: NavItem = { to: "/admin", label: "Beheer", icon: <IconShield /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
-  { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, MATCHES, BANEN] },
+  { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, AGENDA, MATCHES, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
   { title: "Ik", items: [VRIENDEN, IK, UITLEG] },
 ];
@@ -140,6 +150,11 @@ export function DashboardLayout() {
   // Offline-wachtrij legen (#462): één keer bij opstarten en bij elke
   // herverbinding worden gequeuede matches alsnog verstuurd.
   useOutboxFlush();
+  // Meldingen-inbox (#1090). De hook hangt hier en niet in de knop, want twee
+  // ingangen — de bel op mobiel, de zijbalkregel op desktop — moeten dezelfde
+  // teller tonen en hetzelfde paneel openen. Eén paneelinstantie onderaan.
+  const meldingen = useMeldingen(myId);
+  const [meldingenOpen, setMeldingenOpen] = useState(false);
 
   return (
     <div className="shell">
@@ -164,6 +179,16 @@ export function DashboardLayout() {
               de shell, want daarop plan je je speeldag — niet iets waarvoor je
               eerst een wedstrijdkaart moet openen. */}
           <JokerKnop myId={myId || null} />
+          {/* Agenda (#1091): mobiel is dit de enige vaste ingang, want de
+              onderbalk houdt zijn vijf slots. */}
+          <AgendaKnop />
+          {/* Meldingen (#1090): om dezelfde reden hoort de bel hier en niet in
+              de onderbalk. Op desktop is deze balk verborgen en staat dezelfde
+              ingang in de zijbalk. */}
+          <BelKnop
+            ongelezen={meldingen.ongelezen}
+            onOpen={() => setMeldingenOpen(true)}
+          />
           <HelpKnop />
           <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
@@ -185,6 +210,29 @@ export function DashboardLayout() {
           {sidebarGroepen.map((group) => (
             <div key={group.title} className="sidebar__group">
               <span className="sidebar__group-title">{group.title}</span>
+              {/* Meldingen op desktop (#1090). Geen NavItem maar een knop: hij
+                  opent hetzelfde paneel als de bel op mobiel in plaats van te
+                  navigeren. Zelfde uitzonderingsvorm als BEHEER hierboven —
+                  liever twee zichtbare bijzonderheden dan een generiek
+                  mechanisme voor twee gevallen. */}
+              {group.title === "Ik" && (
+                <button
+                  type="button"
+                  className="sidebar__link sidebar__link--knop"
+                  onClick={() => setMeldingenOpen(true)}
+                  aria-label={belLabel(meldingen.ongelezen)}
+                >
+                  <span className="sidebar__icon">
+                    <IconBel />
+                  </span>
+                  <span className="sidebar__label">Meldingen</span>
+                  {!!meldingen.ongelezen && (
+                    <span className="sidebar__teller" aria-hidden="true">
+                      {tellerTekst(meldingen.ongelezen)}
+                    </span>
+                  )}
+                </button>
+              )}
               {group.items.map((item) => {
                 const actief = isSectionActive(item, pathname);
                 return (
@@ -250,6 +298,16 @@ export function DashboardLayout() {
         </div>
       </main>
 
+      {/* Eén paneel voor beide ingangen (#1090). */}
+      <MeldingenPaneel
+        open={meldingenOpen}
+        onClose={() => setMeldingenOpen(false)}
+        meldingen={meldingen.meldingen}
+        laadt={meldingen.laadt}
+        limiet={meldingen.limiet}
+        onVeranderd={meldingen.herlaad}
+      />
+
       {/* Pack-opening bij hoofdtier-promotie (#500) of zeldzame badge (#615). */}
       <PackOpening
         pack={pack}
@@ -303,6 +361,16 @@ function IconRacket() {
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="9.5" cy="9.5" r="6" />
       <path d="M5.3 13.7 3 21M9.5 5.5v8M5.5 9.5h8" />
+    </svg>
+  );
+}
+// Agenda: een kalenderblad met de ophangringen — leest ook op 20px nog als
+// "datum", anders dan het baan-rechthoekje eronder.
+function IconCalendar() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2.5" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
     </svg>
   );
 }

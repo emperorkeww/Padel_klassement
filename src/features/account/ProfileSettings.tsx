@@ -14,6 +14,7 @@ import { ErrorRetry } from "@/ui/ErrorRetry";
 import { useConfirm } from "@/ui/ConfirmDialog";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { UITLEG_PAD } from "@/features/uitleg/secties";
+import { PUSH_BELOFTE } from "@/features/meldingen/pushBelofte";
 import {
   getProfile,
   updateProfile,
@@ -436,7 +437,12 @@ function NameCard({
   );
 }
 
-/* ---------- Meldingen (web push) ---------- */
+/* ---------- Pushmeldingen ---------- */
+// Wat deze schakelaars sinds #1090 sturen: of je toestel piept. De gebeurtenis
+// zelf belandt hoe dan ook in je meldingen in de app (public.notifications
+// wordt geschreven vóór deze filter). De teksten hieronder zeiden nog "als er
+// X gebeurt, krijg je bericht" — dat las als "anders hoor je het niet", en dat
+// klopt niet meer.
 const NOTIFY_OPTIES: {
   key: keyof NotificationPrefs;
   label: string;
@@ -445,27 +451,27 @@ const NOTIFY_OPTIES: {
   {
     key: "notify_new_round",
     label: "Nieuwe ronde",
-    hint: "Als er een nieuwe wedstrijd voor jou gegenereerd is.",
+    hint: "Push als er een nieuwe wedstrijd voor jou gegenereerd is.",
   },
   {
     key: "notify_result",
     label: "Uitslagen",
-    hint: "Als de uitslag van jouw match is ingevoerd.",
+    hint: "Push als de uitslag van jouw match is ingevoerd.",
   },
   {
     key: "notify_friend_request",
     label: "Vriendschapsverzoeken",
-    hint: "Als iemand je een verzoek stuurt.",
+    hint: "Push als iemand je een verzoek stuurt.",
   },
   {
     key: "notify_match_reminder",
     label: "Match-herinneringen",
-    hint: "Een paar uur vóór een geplande match.",
+    hint: "Push een paar uur vóór een geplande match.",
   },
   {
     key: "notify_rank_change",
     label: "Promotie & degradatie",
-    hint: "Als je stijgt of zakt in het klassement (troon, top-3, kelder).",
+    hint: "Push als je stijgt of zakt in het klassement (troon, top-3, kelder).",
   },
 ];
 
@@ -483,7 +489,7 @@ function NotificationsCard({ userId }: { userId: string }) {
     setPrefsBusy(true);
     try {
       await updateNotificationPrefs(userId, patch);
-      toast.success("Meldingen bijgewerkt.");
+      toast.success("Pushmeldingen bijgewerkt.");
       prefs.reload();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -505,11 +511,11 @@ function NotificationsCard({ userId }: { userId: string }) {
       if (enabled) {
         await disablePush();
         setEnabled(false);
-        toast.success("Meldingen uitgeschakeld op dit apparaat.");
+        toast.success("Pushmeldingen uitgeschakeld op dit apparaat.");
       } else {
         await enablePush(userId);
         setEnabled(true);
-        toast.success("Meldingen staan aan — vamos!");
+        toast.success("Pushmeldingen staan aan — vamos!");
       }
     } catch (err) {
       toast.error(errorMessage(err));
@@ -526,26 +532,32 @@ function NotificationsCard({ userId }: { userId: string }) {
   return (
     <>
     <section className="card">
-      <h2 className="card__title card__title--tight">Meldingen op dit apparaat</h2>
+      <h2 className="card__title card__title--tight">
+        Pushmeldingen op dit apparaat
+      </h2>
       <p className="card__subtitle">
-        Nieuwe wedstrijden, uitslagen van jouw matches en vriendschapsverzoeken —
-        ook als de app dicht is.
+        {PUSH_BELOFTE} Alles staat sowieso onder{" "}
+        <Link to="/meldingen">Meldingen</Link> in de app.
       </p>
       {availability === "needs-install" ? (
         <p className="empty">
-          Op iPhone en iPad werken meldingen alleen als de app op je beginscherm
+          Op iPhone en iPad werkt push alleen als de app op je beginscherm
           staat. Tik in Safari op Deel (het vierkantje met pijl) en kies "Zet op
-          beginscherm". Open de app daarna vanaf je beginscherm en zet meldingen
-          hier aan.
+          beginscherm". Open de app daarna vanaf je beginscherm en zet ze hier
+          aan. Tot die tijd staan je meldingen gewoon in de app zelf.
         </p>
       ) : availability === "denied" ? (
         <p className="empty">
-          Je hebt meldingen voor deze app geweigerd. Zet ze weer aan via
+          Je hebt pushmeldingen voor deze app geweigerd. Zet ze weer aan via
           Instellingen → Meldingen op je iPhone, of via de site-instellingen van
-          je browser, en herlaad daarna de app.
+          je browser, en herlaad daarna de app. De meldingen zelf blijf je in de
+          app gewoon zien.
         </p>
       ) : availability === "unsupported" ? (
-        <p className="empty">Meldingen worden in deze browser niet ondersteund.</p>
+        <p className="empty">
+          Pushmeldingen werken niet in deze browser. Je meldingen staan wél in de
+          app zelf.
+        </p>
       ) : (
         <button
           className={`btn ${enabled ? "" : "btn--primary"}`}
@@ -555,19 +567,25 @@ function NotificationsCard({ userId }: { userId: string }) {
           {enabled == null
             ? "Controleren…"
             : enabled
-              ? "Meldingen uitzetten"
-              : "Meldingen aanzetten"}
+              ? "Pushmeldingen uitzetten"
+              : "Pushmeldingen aanzetten"}
         </button>
       )}
     </section>
 
     {/* Per-type voorkeuren (#57): server-side, dus voor ál je apparaten —
-        daarom ook zichtbaar als push op dít apparaat niet kan of uit staat. */}
+        daarom ook zichtbaar als push op dít apparaat niet kan of uit staat.
+        Sinds #1090 sturen ze alléén de push; de gebeurtenis zelf komt hoe dan
+        ook in je meldingen te staan. Dat verschil hoort in de kop en niet in
+        een voetnoot: het is precies wat mensen fout inschatten. */}
     <section className="card">
       <h2 className="card__title card__title--tight">
-        Welke meldingen wil je?
+        Waarvoor mag je toestel piepen?
       </h2>
-      <p className="card__subtitle">Geldt voor al je apparaten.</p>
+      <p className="card__subtitle">
+        Geldt voor al je apparaten. Zet je er een uit, dan krijg je géén push
+        meer — de melding zelf blijft gewoon in de app staan.
+      </p>
       {prefs.loading || !np ? (
         <Skeleton rows={4} />
       ) : (

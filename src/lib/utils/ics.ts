@@ -15,7 +15,16 @@ export type IcsEventInput = {
   durationMin?: number;
   /** Stabiele id: opnieuw importeren werkt het event bij i.p.v. dupliceren. */
   uid: string;
+  /** Versie van dít event (#1099). Agenda-clients verwerken een herimport
+   *  alleen als de SEQUENCE hoger ligt dan wat ze al hebben; zonder dit veld
+   *  blijft een verzette of afgelaste speeldag staan zoals hij stond.
+   *  Weglaten = het moment van uitgeven (zie `minuutStempel`). */
+  sequence?: number;
+  /** CANCELLED wist de afspraak bij herimport i.p.v. hem te laten staan. */
+  status?: IcsStatus;
 };
+
+export type IcsStatus = "CONFIRMED" | "CANCELLED";
 
 const CRLF = "\r\n";
 const TZID = "Europe/Brussels";
@@ -70,6 +79,20 @@ function localEnd(date: string, startTime: string, durationMin: number): string 
   );
 }
 
+/**
+ * SEQUENCE-waarde uit een tijdstip: hele minuten sinds epoch (#1099).
+ *
+ * RFC 5545 wil een oplopend geheel getal, en clients vergelijken niets anders
+ * dan groter/kleiner. Minuten sinds epoch is monotoon, blijft tot ver na 4000
+ * binnen de int32 die de spec toestaat, en vraagt geen extra kolom: het moment
+ * van de laatste wijziging aan een speeldag is al bekend, en een annulering
+ * komt per definitie ná die wijziging.
+ */
+export function minuutStempel(moment: Date | string | null | undefined): number {
+  const ms = moment == null ? Date.now() : new Date(moment).getTime();
+  return Math.max(0, Math.floor(ms / 60_000));
+}
+
 /** Lokale kalenderdatum ("YYYY-MM-DD") van een tijdstip. */
 export function localDate(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -110,6 +133,10 @@ export function icsEvent(event: IcsEventInput, now: Date = new Date()): string {
     `SUMMARY:${escapeText(event.title)}`,
     ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
+    // SEQUENCE + STATUS maken een herimport tot een wijziging i.p.v. een
+    // tweede afspraak ernaast (#1099).
+    `SEQUENCE:${event.sequence ?? minuutStempel(now)}`,
+    `STATUS:${event.status ?? "CONFIRMED"}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ];

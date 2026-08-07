@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { downloadIcs, icsEvent, localDate, localTime } from "@/lib/utils/ics";
+import {
+  downloadIcs,
+  icsEvent,
+  localDate,
+  localTime,
+  minuutStempel,
+} from "@/lib/utils/ics";
 
 const NOW = new Date("2026-07-03T09:15:30.000Z");
 
@@ -80,6 +86,40 @@ describe("icsEvent", () => {
     expect(icsEvent(base, NOW).split("\r\n")).toContain(
       "UID:match-m1@vamos-padel",
     );
+  });
+
+  // #1099: zonder SEQUENCE en STATUS legt een agenda-app een herimport naast
+  // het bestaande event neer i.p.v. het bij te werken.
+  it("schrijft standaard een SEQUENCE uit `now` en STATUS:CONFIRMED", () => {
+    const lines = icsEvent(base, NOW).split("\r\n");
+    expect(lines).toContain(`SEQUENCE:${Math.floor(NOW.getTime() / 60_000)}`);
+    expect(lines).toContain("STATUS:CONFIRMED");
+  });
+
+  it("neemt een meegegeven SEQUENCE en STATUS over", () => {
+    const lines = icsEvent(
+      { ...base, sequence: 42, status: "CANCELLED" },
+      NOW,
+    ).split("\r\n");
+    expect(lines).toContain("SEQUENCE:42");
+    expect(lines).toContain("STATUS:CANCELLED");
+  });
+});
+
+describe("minuutStempel", () => {
+  it("rekent een tijdstip om naar hele minuten sinds epoch", () => {
+    // 09:15:30 valt binnen dezelfde minuut als 09:15:00.
+    expect(minuutStempel(NOW)).toBe(minuutStempel("2026-07-03T09:15:00.000Z"));
+    expect(minuutStempel("2026-07-03T09:16:00.000Z")).toBe(
+      minuutStempel(NOW) + 1,
+    );
+  });
+
+  it("loopt op met de tijd en blijft binnen de int32 van RFC 5545", () => {
+    expect(minuutStempel("2026-01-01T00:00:00.000Z")).toBeLessThan(
+      minuutStempel("2027-01-01T00:00:00.000Z"),
+    );
+    expect(minuutStempel("2999-01-01T00:00:00.000Z")).toBeLessThan(2 ** 31);
   });
 });
 

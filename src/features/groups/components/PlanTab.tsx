@@ -2,16 +2,12 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAsync, type AsyncState } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
-import { useToast } from "@/ui/ToastProvider";
 import { PollSkeleton } from "@/ui/Skeleton";
 import { dateInZone } from "@/lib/utils/time";
-import { getWeekAvailability, type WeekDay } from "@/features/availability/api";
 import { useClub, type Club } from "@/features/availability/club";
-import { ClubPicker } from "@/features/availability/components/ClubPicker";
 import { displayName } from "@/features/profiles/api";
 import {
   getGroupPollVotes,
-  createPoll,
   type PlayPoll,
   type PollOption,
   type PollVote,
@@ -36,8 +32,7 @@ import type { GroupMember, Match, Profile } from "@/types";
 import { shortDay } from "../planPollHelpers";
 import { PlanPhaseHeader, type PlanAction } from "./PlanPhaseHeader";
 import { PlanSection } from "./PlanSection";
-import { PollWizard } from "./PollWizard";
-import { PollWizardSheet } from "./PollWizardSheet";
+import { NieuweSpeeldagSheet } from "./NieuweSpeeldagSheet";
 import { SuggestionsCard } from "./SuggestionsCard";
 import "@/features/groups/Proposals.css";
 
@@ -77,7 +72,6 @@ export function PlanTab({
   options: AsyncState<PollOption[]>;
 }) {
   const globalClub = useClub();
-  const toast = useToast();
   // Locatie voor een nieuwe poll (#322): start op de globale clubkeuze, maar de
   // maker kan hem per poll overschrijven. De keuze wordt op de poll opgeslagen,
   // dus een latere globale clubwissel raakt bestaande polls niet meer.
@@ -113,13 +107,6 @@ export function PlanTab({
     [groupId],
   );
   useRealtime("play_poll_votes", votes.reload, `group_id=eq.${groupId}`);
-
-  // Vrije banen (7-daags venster) van de gekozen nieuwe-poll-club: voedt de
-  // aanmaak-wizard. Bestaande polls halen hun eigen club-beschikbaarheid op.
-  const week = useAsync<WeekDay[]>(
-    () => getWeekAvailability(today, 7, newPollClub),
-    [today, newPollClub.id],
-  );
 
   const allOptions = options.data ?? [];
   const allVotes = votes.data ?? [];
@@ -338,39 +325,18 @@ export function PlanTab({
         onStarted={reloadAll}
       />
 
-      {/* Wizard als bottom-sheet (#349): geen layout-shift op de tab. */}
-      <PollWizardSheet
+      {/* Wizard als bottom-sheet (#349): geen layout-shift op de tab. Sinds
+          #1091 gedeeld met de agenda, die dezelfde flow start vanaf een dag. */}
+      <NieuweSpeeldagSheet
         open={wizardOpen}
+        groupId={groupId}
+        myId={myId}
+        club={newPollClub}
+        onClub={setNewPollClub}
+        storageKey={wizardStorageKey}
         onClose={closeWizard}
-        title="Nieuwe speeldag"
-        headerExtra={
-          // Locatie voor deze nieuwe poll — los van de globale clubvoorkeur.
-          <ClubPicker value={newPollClub} onPick={setNewPollClub} allowManual />
-        }
-      >
-        <PollWizard
-          today={today}
-          week={week.data ?? []}
-          weekLoading={week.loading}
-          club={newPollClub}
-          storageKey={wizardStorageKey}
-          submitLabel={(n) => `Start poll (${n})`}
-          onSubmit={async (opts) => {
-            await createPoll({
-              groupId,
-              createdBy: myId,
-              club: newPollClub,
-              options: opts,
-            });
-            toast.success("Poll gestart — de groep kan stemmen.");
-          }}
-          onClose={closeWizard}
-          onDone={() => {
-            closeWizard();
-            reloadAll();
-          }}
-        />
-      </PollWizardSheet>
+        onCreated={reloadAll}
+      />
     </>
   );
 }

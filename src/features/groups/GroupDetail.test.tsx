@@ -150,7 +150,7 @@ describe("<GroupDetail />", () => {
       screen.queryByRole("heading", { name: /suggesties/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: /maak teams/i }),
+      screen.queryByRole("heading", { name: /speelformaat/i }),
     ).not.toBeInTheDocument();
 
     // De sheet openen geeft de volle teamgenerator.
@@ -158,18 +158,18 @@ describe("<GroupDetail />", () => {
       screen.getByRole("button", { name: /volgende ronde/i }),
     );
     expect(
-      await screen.findByRole("heading", { name: /maak teams/i }),
+      await screen.findByRole("heading", { name: /speelformaat/i }),
     ).toBeInTheDocument();
     // De standaard-selectie (alle deelnemers aangetikt) wordt één tick ná het
-    // verschijnen van de "Maak teams"-kop gezet; wacht dus tot aria-pressed
+    // verschijnen van de "Speelformaat"-kop gezet; wacht dus tot aria-checked
     // settelt i.p.v. het synchroon te lezen (voorheen flaky, #292).
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /alice anders \(jij\)/i }),
-      ).toHaveAttribute("aria-pressed", "true"),
+        screen.getByRole("switch", { name: /alice anders \(jij\)/i }),
+      ).toBeChecked(),
     );
     for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
-      expect(screen.getByRole("button", { name: f })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: f })).toBeInTheDocument();
     }
 
     // Op de Plannen-tab staan de suggesties nu bovenaan, boven de poll.
@@ -213,10 +213,10 @@ describe("<GroupDetail />", () => {
       screen.getByRole("button", { name: /volgende ronde/i }),
     );
     await userEvent.click(
-      await screen.findByRole("button", { name: /^mexicano$/i }),
+      await screen.findByRole("tab", { name: /^mexicano$/i }),
     );
     expect(
-      screen.getByRole("button", { name: /genereer mexicano-ronde/i }),
+      screen.getByRole("button", { name: /start mexicano/i }),
     ).toBeDisabled();
     expect(
       screen.getByText(/vul eerst alle uitslagen van ronde 2 in/i),
@@ -231,10 +231,10 @@ describe("<GroupDetail />", () => {
     );
     // Formaat kiezen in de ene teamgenerator, dan genereren.
     await userEvent.click(
-      await screen.findByRole("button", { name: /^americano$/i }),
+      await screen.findByRole("tab", { name: /^americano$/i }),
     );
     await userEvent.click(
-      screen.getByRole("button", { name: /genereer americano-ronde/i }),
+      screen.getByRole("button", { name: /start americano/i }),
     );
     // De ronde wordt client-side ingedeeld (geschiedenis-bewust) en via
     // create_fair_round weggeschreven: g1 heeft 4 leden → één baan van vier.

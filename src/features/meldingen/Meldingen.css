@@ -1,0 +1,10 @@
+/* De route /meldingen (#1090). De rijen komen uit MeldingenLijst.css; hier
+   staat alleen wat de pagina eromheen nodig heeft. */
+
+.meldingen-pagina__meer {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}

@@ -1,0 +1,318 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Sheet } from "@/ui/Sheet";
+import { Avatar } from "@/ui/Avatar";
+import { useToast } from "@/ui/ToastProvider";
+import { errorMessage } from "@/lib/utils/errors";
+import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
+import { courtsLabel, longDay, shortDay } from "@/features/groups/planPollHelpers";
+import {
+  clearPollVote,
+  pollSharePath,
+  setPollVote,
+  type PollVoteStatus,
+} from "@/features/groups/pollsApi";
+import type { Profile } from "@/types";
+import {
+  momentVoorbij,
+  statusLabel,
+  tijdvak,
+  type AgendaMarker,
+} from "../agendaLogic";
+import { StatusGlyph } from "./StatusGlyph";
+import { StemRij } from "./StemRij";
+// De stemknoppen zijn dezelfde als op de Plannen-tab en wonen in Proposals.css;
+// dezelfde weg die PlanTab, MakeTeams en SuggestionsCard nemen. Die regels
+// kopiëren zou ze uit het zicht van de contrast- en glascheck halen.
+import "@/features/groups/Proposals.css";
+
+/** Hoeveel avatars de stemmersrij toont voordat de rest een telling wordt. */
+const MAX_AVATARS = 6;
+
+/** Hoe vaak het sheet opnieuw kijkt of een moment intussen voorbij is. Een
+ *  minuut is fijn genoeg: het gaat om de laatste minuten vóór een slot. */
+const TIK_MS = 60_000;
+
+/**
+ * Wat er op een aangetikte dag staat (#1091).
+ *
+ * Meerdere speeldagen op één dag is normaal — twee groepen die los van elkaar
+ * plannen weten niet van elkaar. Het sheet toont ze daarom als lijst, elk met
+ * eigen groep, status en boekingsgegevens, en niet als één samengevoegde dag.
+ */
+export function DagSheet({
+  datum,
+  markers,
+  momentenPerPoll,
+  ledenPerGroep,
+  profielen,
+  myId,
+  onGestemd,
+  onPlan,
+  onClose,
+}: {
+  /** ISO-datum; null = dicht. */
+  datum: string | null;
+  markers: AgendaMarker[];
+  /** Alle momenten van het maandvenster, per poll. Een poll strekt zich over
+   *  meerdere dagen uit; wie hier stemt, moet hem in één keer kunnen
+   *  beantwoorden (#1104). */
+  momentenPerPoll: Record<string, AgendaMarker[]>;
+  /** Aantal leden per groep — de noemer van "gestemd — 6 van 8". */
+  ledenPerGroep: Record<string, number>;
+  profielen: Record<string, Profile>;
+  myId: string;
+  /** Stem geland: het maandvenster mag opnieuw geladen worden. */
+  onGestemd: () => void;
+  /** Ook op deze dag een speeldag starten (#1104). Ontbreekt voor een dag die
+   *  geweest is: daar valt niets meer te plannen. */
+  onPlan?: () => void;
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  // Optimistisch stemmen: de tik is meteen zichtbaar, de server volgt. Hier op
+  // sheet-niveau, want één dag kan meerdere polls dragen.
+  const [overlay, setOverlay] = useState<Map<string, PollVoteStatus | null>>(
+    new Map(),
+  );
+  const [nu, setNu] = useState(() => Date.now());
+
+  // Bij een andere dag begint het sheet schoon: de overlay is een echo van jóuw
+  // laatste tik en mag geen serverwaarheid overschrijven die je nog niet zag.
+  useEffect(() => setOverlay(new Map()), [datum]);
+
+  // Zolang het sheet openstaat blijft de klok lopen. Een slot dat tijdens het
+  // kijken afloopt, is daarna niet meer te bestemmen.
+  useEffect(() => {
+    if (datum == null) return;
+    setNu(Date.now());
+    const id = setInterval(() => setNu(Date.now()), TIK_MS);
+    return () => clearInterval(id);
+  }, [datum]);
+
+  function stemVan(m: AgendaMarker): PollVoteStatus | null {
+    return overlay.has(m.optionId) ? (overlay.get(m.optionId) ?? null) : m.myVote;
+  }
+
+  /** Stem zetten of wissen; opnieuw tikken op je eigen keuze haalt hem weg. */
+  function stem(m: AgendaMarker, status: PollVoteStatus) {
+    const vorige = stemVan(m);
+    const volgende = vorige === status ? null : status;
+    setOverlay((cur) => new Map(cur).set(m.optionId, volgende));
+    const call =
+      volgende === null
+        ? clearPollVote(m.optionId, myId)
+        : setPollVote(m.optionId, m.groupId, myId, volgende);
+    call.then(onGestemd).catch((err) => {
+      setOverlay((cur) => new Map(cur).set(m.optionId, vorige));
+      toast.error(errorMessage(err));
+    });
+  }
+
+  return (
+    <Sheet
+      open={datum != null}
+      onClose={onClose}
+      ariaLabel={datum ? longDay(datum) : "Dag"}
+      className="sheet--agenda"
+    >
+      {datum && (
+        <div className="dagsheet">
+          <p className="dagsheet__datum">{longDay(datum)}</p>
+          {markers.length === 0 ? (
+            // Alleen een dag in het verleden komt hier terecht: een lege dag
+            // vanaf vandaag opent het plan-sheet.
+            <>
+              <p className="dagsheet__titel">Niets gespeeld</p>
+              <p className="dagsheet__leeg">
+                Deze dag is geweest en er stond geen speeldag op.
+              </p>
+            </>
+          ) : (
+            markers.map((m) => (
+              <Speeldag
+                key={m.optionId}
+                marker={m}
+                andere={andereMomenten(m, momentenPerPoll, nu)}
+                leden={ledenPerGroep[m.groupId] ?? 0}
+                profielen={profielen}
+                stemVan={stemVan}
+                onStem={stem}
+                nu={nu}
+              />
+            ))
+          )}
+
+          {/* Een dag die al iets draagt kon tot nu toe niets nieuws krijgen:
+              kiesDag stuurde 'm hierheen en hier stond geen uitweg. Twee
+              groepen die los van elkaar plannen weten niet van elkaar, dus een
+              bezette donderdag is juist een dag waar je naar kijkt (#1104). */}
+          {onPlan && markers.length > 0 && (
+            <button type="button" className="btn dagsheet__ookplannen" onClick={onPlan}>
+              Plan hier ook een speeldag
+            </button>
+          )}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+/**
+ * De overige momenten van dezelfde poll, op volgorde. Alleen wat nog te spelen
+ * valt: een verlopen kandidaat is geen vraag meer.
+ *
+ * Dit komt uit het maandvenster, dus een moment net buiten het raster staat er
+ * niet bij — daarvoor blijft "Open speeldag" staan.
+ */
+function andereMomenten(
+  marker: AgendaMarker,
+  momentenPerPoll: Record<string, AgendaMarker[]>,
+  nowMs: number,
+): AgendaMarker[] {
+  if (marker.status !== "open") return [];
+  return (momentenPerPoll[marker.pollId] ?? [])
+    .filter((m) => m.optionId !== marker.optionId && !momentVoorbij(m, nowMs))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+}
+
+function Speeldag({
+  marker,
+  andere,
+  leden,
+  profielen,
+  stemVan,
+  onStem,
+  nu,
+}: {
+  marker: AgendaMarker;
+  /** De overige momenten van dezelfde poll die nog te spelen zijn. */
+  andere: AgendaMarker[];
+  leden: number;
+  profielen: Record<string, Profile>;
+  stemVan: (m: AgendaMarker) => PollVoteStatus | null;
+  onStem: (m: AgendaMarker, status: PollVoteStatus) => void;
+  nu: number;
+}) {
+  const geboekt = marker.status === "booked" && !marker.past;
+  const toonBoeking = geboekt && (marker.courts || marker.accessCode);
+  const stemmers = marker.yesVoterIds;
+  // Niet `marker.past`: dat bevroor toen het venster laadde, en dit sheet kan
+  // over het einde van het slot heen openstaan.
+  const stembaar = marker.status === "open" && !momentVoorbij(marker, nu);
+  return (
+    <article className="dagsheet__speeldag">
+      <header className="dagsheet__kop">
+        <p className="dagsheet__tijd">{tijdvak(marker.startTime, marker.duration)}</p>
+        <span className={`dagsheet__badge dagsheet__badge--${marker.past ? "past" : marker.status}`}>
+          <StatusGlyph status={marker.status} past={marker.past} size={9} />
+          {statusLabel(marker.status, marker.past)}
+        </span>
+      </header>
+
+      <p className="dagsheet__chips">
+        <span className="dagsheet__chip dagsheet__chip--groep">{marker.groupName}</span>
+        <span className="dagsheet__chip">{marker.clubName}</span>
+      </p>
+
+      {toonBoeking ? (
+        <div className="dagsheet__tegels">
+          {marker.courts && (
+            <div className="dagsheet__tegel">
+              <span className="dagsheet__tegel-label">Banen</span>
+              <span className="dagsheet__tegel-waarde">{courtsLabel(marker.courts)}</span>
+            </div>
+          )}
+          {marker.accessCode && (
+            <div className="dagsheet__tegel">
+              <span className="dagsheet__tegel-label">Toegangscode</span>
+              <span className="dagsheet__tegel-waarde dagsheet__code">
+                {marker.accessCode}
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        marker.status === "locked" && (
+          <p className="dagsheet__nogboeken">
+            Het moment ligt vast — de baan moet nog geboekt worden.
+          </p>
+        )
+      )}
+
+      {stemmers.length > 0 && (
+        <div className="dagsheet__stemmers">
+          <span className="dagsheet__tegel-label">
+            Ik kan{leden > 0 ? ` — ${stemmers.length} van ${leden}` : ` — ${stemmers.length}`}
+          </span>
+          <p className="dagsheet__avatars">
+            {stemmers.slice(0, MAX_AVATARS).map((id) => (
+              <Avatar key={id} profile={profielen[id]} size={28} short />
+            ))}
+            {leden > stemmers.length && (
+              <span className="dagsheet__rest">
+                +{leden - stemmers.length} nog niet
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {stembaar && (
+        <div className="dagsheet__stemmen">
+          <StemRij
+            titel="Jouw stem"
+            omschrijving={`${longDay(marker.date)} ${marker.startTime}`}
+            aantal={null}
+            mine={stemVan(marker)}
+            onVote={(s) => onStem(marker, s)}
+          />
+          {/* Een poll is meer dan deze dag: zonder de rest lijkt één tik de
+              hele vraag te beantwoorden. Wat hier staat komt uit het
+              maandvenster — een moment daarbuiten zit in de poll zelf. */}
+          {andere.length > 0 && (
+            <>
+              <span className="dagsheet__tegel-label">
+                Andere momenten in deze poll
+              </span>
+              {andere.map((m) => (
+                <StemRij
+                  key={m.optionId}
+                  titel={`${shortDay(m.date)} · ${m.startTime}`}
+                  omschrijving={`${longDay(m.date)} ${m.startTime}`}
+                  aantal={m.yesVoterIds.length}
+                  mine={stemVan(m)}
+                  onVote={(s) => onStem(m, s)}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="dagsheet__acties">
+        <Link
+          className="btn btn--primary dagsheet__actie"
+          to={pollSharePath(marker.groupId, marker.pollId)}
+        >
+          Open speeldag
+        </Link>
+        {/* Een geboekte speeldag is precies hetzelfde soort event als een
+            match (MatchCalendarButton/WinnerCard) — dus dezelfde helper. Een
+            open poll krijgt deze knop niet: er valt nog niets in je agenda te
+            zetten. */}
+        {!marker.past && marker.status !== "open" && (
+          <button
+            type="button"
+            className="btn dagsheet__actie"
+            onClick={() => downloadSpeeldagIcs(marker)}
+          >
+            Zet in je agenda
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
+export default DagSheet;

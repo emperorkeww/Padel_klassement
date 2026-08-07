@@ -107,6 +107,19 @@ function vormVoor(pathname: string) {
   if (pathname.startsWith("/profiel")) return <Rij n={2} h="12rem" />;
   // Banen: het rooster als één breed blok.
   if (pathname.startsWith("/banen")) return <Blok h="20rem" />;
+  // Meldingen (#1090): één kaart met een reeks korte rijen.
+  if (pathname.startsWith("/meldingen")) return <Blok h="18rem" />;
+  // Agenda (#1091): maandnavigatie, weekstrook en dan het raster. Het raster
+  // krijgt de hoogte van vijf weken, zodat de echte kalender er niet overheen
+  // ploft — de laadstaat ín de pagina houdt daarna dezelfde vorm vast.
+  if (pathname.startsWith("/agenda"))
+    return (
+      <>
+        <Blok h="2.5rem" />
+        <Blok h="4.5rem" />
+        <Blok h="25rem" />
+      </>
+    );
   return (
     <>
       <Blok h="8rem" />

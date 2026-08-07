@@ -9,6 +9,11 @@
 // zijn lef inzette een melding dat er naast hem dubbel of niets gespeeld wordt.
 // Vóór de aftrap blijft die inzet verborgen; dedup via public.match_lef_notices.
 //
+// Beide meldingen lopen via de gedeelde bezorger (#1090,
+// ../_shared/meldingenBezorger.ts): die schrijft eerst de rij in
+// public.notifications en filtert pas daarna op notify_match_reminder, zodat de
+// herinnering ook in de app staat voor wie geen push (meer) krijgt.
+//
 // Deploy ZONDER JWT-verificatie:
 //   supabase functions deploy match-reminders --no-verify-jwt
 // en beveilig met een gedeeld geheim:
@@ -20,7 +25,7 @@
 // SUPABASE_SERVICE_ROLE_KEY worden automatisch meegegeven.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
+import { bezorg, type Melding } from "../_shared/meldingenBezorger.ts";
 import {
   JOUW_BEURT,
   JOUW_BEURT_NEUTRAAL,
@@ -39,12 +44,6 @@ import { onthullingenVoorPartners } from "../_shared/lefOnthulling.ts";
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
-
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:beheer@vamos.example",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
 );
 
 const REMINDER_HOURS = Number(Deno.env.get("REMINDER_HOURS") ?? "3");
@@ -71,48 +70,6 @@ async function playersOf(match: MatchRow): Promise<string[]> {
     .select("player1_id, player2_id")
     .in("id", [match.team_a_id, match.team_b_id]);
   return (data ?? []).flatMap((t) => [t.player1_id, t.player2_id]);
-}
-
-/** Notificatie-voorkeuren (#57): laat alleen spelers over die
- *  match-herinneringen niet hebben uitgezet. Fail-open: bij een queryfout of
- *  een ontbrekend profiel sturen we gewoon, zoals vóór #57. */
-async function withReminderPref(recipients: string[]): Promise<string[]> {
-  if (recipients.length === 0) return recipients;
-  const { data } = await admin
-    .from("profiles")
-    .select("id, notify_match_reminder")
-    .in("id", recipients);
-  const uit = new Set(
-    (data ?? []).filter((p) => p.notify_match_reminder === false).map((p) => p.id),
-  );
-  return recipients.filter((id) => !uit.has(id));
-}
-
-async function pushTo(recipients: string[], payload: unknown): Promise<number> {
-  if (recipients.length === 0) return 0;
-  const { data: subs } = await admin
-    .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .in("user_id", recipients);
-
-  let sent = 0;
-  await Promise.all(
-    (subs ?? []).map(async (s) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify(payload),
-        );
-        sent += 1;
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
-          await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
-        }
-      }
-    }),
-  );
-  return sent;
 }
 
 Deno.serve(async (req) => {
@@ -146,11 +103,13 @@ Deno.serve(async (req) => {
   );
 
   let reminded = 0;
-  let sent = 0;
   let onderdrukt = 0;
+  // De meldingen van alle bundels samen; bezorg() schrijft ze en filtert daarna
+  // pas op notify_match_reminder (#1090).
+  const meldingen: Melding[] = [];
   for (const bundel of bundels) {
     const m = bundel.herinner;
-    const players = await withReminderPref(await playersOf(m));
+    const players = await playersOf(m);
     const when = new Date(m.played_at);
     // Zonder tijdzone rekent Deno in UTC en meldt een match van 20:00 als
     // "18:00" (#795).
@@ -177,12 +136,14 @@ Deno.serve(async (req) => {
           JOUW_BEURT[(p.roast_intensiteit ?? "radioactief") as RoastIntensiteit],
           seed,
         );
-      sent += await pushTo([pid], {
+      meldingen.push({
+        recipients: [pid],
         // Titel per speler uit een pool (#189): vier spelers in dezelfde ronde
         // kregen anders vier identieke meldingen te zien.
         title: kiesTitel(TITEL_JOUW_BEURT, m.id, pid),
         body: `Om ${time} sta je op de baan. ${quip}`,
         url,
+        soort: "speeldag_herinnering",
         // Eén tag per speeldag: een tweede herinnering vervangt de eerste.
         tag: `speeldag-${m.group_id ?? m.id}`,
       });
@@ -195,6 +156,8 @@ Deno.serve(async (req) => {
     reminded += 1;
     onderdrukt += bundel.onderdruk.length;
   }
+
+  const { sent } = await bezorg(admin, meldingen);
 
   // ── Lef-onthulling bij de aftrap (#804) ───────────────────────────────────
   // Vóór de aftrap houdt de app een inzet verborgen, anders kun je erop
@@ -234,11 +197,6 @@ Deno.serve(async (req) => {
         stakes ?? [],
       );
       if (onthullingen.length > 0) {
-        // Dezelfde voorkeur als de herinnering zelf (#57): wie match-meldingen
-        // uitzette, krijgt ook deze niet.
-        const mag = new Set(
-          await withReminderPref(onthullingen.map((o) => o.partnerId)),
-        );
         const { data: namen } = await admin
           .from("profiles")
           .select("id, username, full_name")
@@ -249,18 +207,23 @@ Deno.serve(async (req) => {
             (p.full_name?.trim() || p.username) as string,
           ]),
         );
-        for (const o of onthullingen) {
-          if (!mag.has(o.partnerId)) continue;
+        // De voorkeur (#57) zit in het soort: 'lef' hangt aan dezelfde
+        // notify_match_reminder-schakelaar als de herinnering zelf, en bezorg()
+        // past hem toe ná het schrijven van de rij.
+        const lefMeldingen: Melding[] = onthullingen.map((o) => {
           const naam = naamVan.get(o.inzetterId) ?? "Je partner";
-          lefSent += await pushTo([o.partnerId], {
+          return {
+            recipients: [o.partnerId],
             title: kiesTitel(TITEL_LEF_PARTNER, o.matchId, o.partnerId),
             body: `${naam} zette lef in: dubbel of niets. ${
               kiesUit(LEF_PARTNER, roastSeed(o.matchId, o.partnerId))
             }`,
             url: `/matches/${o.matchId}`,
+            soort: "lef",
             tag: `lef-${o.matchId}`,
-          });
-        }
+          };
+        });
+        lefSent = (await bezorg(admin, lefMeldingen)).sent;
       }
       // Ook matches zonder inzet afvinken: dan valt er niets te melden en hoeft
       // de volgende crontik er niet meer naar te kijken.

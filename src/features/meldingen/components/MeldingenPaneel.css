@@ -1,0 +1,23 @@
+/* Het meldingenpaneel (#1090). Het vlak zelf is de gedeelde .sheet — glas,
+   scrollbaar, en op mobiel een bottom-sheet. De rijen erin staan in
+   MeldingenLijst.css, want die deelt hij met de route /meldingen. */
+
+.meldingen-sheet {
+  /* Smaller dan een volle sheet: dit is een lijst korte regels, geen formulier.
+     Ruimer dan .sheet--compact, want de body van een melding is een hele zin. */
+  max-width: 460px;
+}
+
+.meldingen__acties {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--sp-2);
+}
+
+.meldingen__voet {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}

@@ -228,6 +228,70 @@ export function getPollVotesForGroups(
   });
 }
 
+/** Alles wat één agendavenster nodig heeft, plat en niet per groep gebundeld:
+ *  de agenda ordent op dag, niet op groep. */
+export type PollWindow = {
+  polls: PlayPoll[];
+  options: PollOption[];
+  votes: PollVote[];
+};
+
+/**
+ * Polls, momenten en stemmen binnen één datumvenster (#1091).
+ *
+ * De gebundelde varianten hierboven halen álle polls van al je groepen op,
+ * zonder datumgrens. Voor de banner op het overzicht — één poll — is dat prima;
+ * een agenda die maanden vooruit en achteruit bladert zou zo een steeds groter
+ * antwoord binnentrekken voor een raster dat er hooguit 31 dagen van toont.
+ *
+ * Vandaar de omgekeerde volgorde: eerst de momenten binnen het venster, dan
+ * alleen de polls en stemmen die daarbij horen. Drie queries, alle drie
+ * begrensd — ook de tweede en derde, want hun `in(...)` komt uit de eerste.
+ *
+ * `from`/`to` zijn kalenderdata in clubtijd, precies zoals ze in de kolom
+ * staan; er is hier dus geen tijdzone-conversie nodig (en zou er ook geen
+ * moeten zijn — zie agendaLogic).
+ */
+export function getPollWindow(
+  groupIds: string[],
+  from: string,
+  to: string,
+): Promise<PollWindow> {
+  if (groupIds.length === 0) {
+    return Promise.resolve({ polls: [], options: [], votes: [] });
+  }
+  // Prefix "play-poll-agenda": CACHE_PREFIXES koppelt hem aan alle drie de
+  // poll-tabellen, zodat een realtime-event het venster ook echt vervangt.
+  const key = `${groupsKey("play-poll-agenda", groupIds)}:${from}:${to}`;
+  return cached(key, async () => {
+    const { data: optionRows, error: optionError } = await supabase
+      .from("play_poll_options")
+      .select("*")
+      .in("group_id", groupIds)
+      .gte("date", from)
+      .lte("date", to)
+      .order("date")
+      .order("start_time");
+    if (optionError) throw optionError;
+    const options = (optionRows ?? []) as PollOption[];
+    if (options.length === 0) return { polls: [], options: [], votes: [] };
+
+    const pollIds = [...new Set(options.map((o) => o.poll_id))];
+    const optionIds = options.map((o) => o.id);
+    const [pollRes, voteRes] = await Promise.all([
+      supabase.from("play_polls").select("*").in("id", pollIds),
+      supabase.from("play_poll_votes").select("*").in("option_id", optionIds),
+    ]);
+    if (pollRes.error) throw pollRes.error;
+    if (voteRes.error) throw voteRes.error;
+    return {
+      polls: (pollRes.data ?? []) as PlayPoll[],
+      options,
+      votes: (voteRes.data ?? []) as PollVote[],
+    };
+  });
+}
+
 export type NewPollOption = {
   date: string;
   startTime: string;
@@ -315,6 +379,16 @@ export async function removePollOption(optionId: string): Promise<void> {
   invalidate("play-poll");
 }
 
+/**
+ * Prefixes die een gewijzigde stem raakt. `play-poll-votes` voedt de
+ * Plannen-tab, `play-poll-agenda` het maandvenster van de agenda (#1104) —
+ * dezelfde twee die `CACHE_PREFIXES.play_poll_votes` bij een realtime-event
+ * leegt. Alleen de eerste invalideren laat een `reload()` na je eigen stem de
+ * oude promise serveren, de hele TTL lang; dat viel niet op zolang realtime
+ * het overnam, maar zonder verbinding wél.
+ */
+const STEM_PREFIXES = ["play-poll-votes", "play-poll-agenda"] as const;
+
 /** Zet (of wijzig) je eigen stem op één optie. */
 export async function setPollVote(
   optionId: string,
@@ -333,7 +407,7 @@ export async function setPollVote(
     { onConflict: "option_id,player_id" },
   );
   if (error) throw error;
-  invalidate("play-poll-votes");
+  invalidate(...STEM_PREFIXES);
 }
 
 /** Haalt je eigen stem op één optie weg. */
@@ -347,7 +421,7 @@ export async function clearPollVote(
     .eq("option_id", optionId)
     .eq("player_id", playerId);
   if (error) throw error;
-  invalidate("play-poll-votes");
+  invalidate(...STEM_PREFIXES);
 }
 
 /**
@@ -444,11 +518,19 @@ export async function reopenPoll(pollId: string): Promise<void> {
   invalidate("play-poll");
 }
 
-/** Annuleert een poll (maker of eigenaar); stemmen blijven bewaard. */
+/**
+ * Annuleert een poll (maker of eigenaar); stemmen blijven bewaard.
+ *
+ * Het vastgelegde moment blijft óók staan (#1099). Vroeger wiste het annuleren
+ * `locked_option_id`, en daarmee de enige aanwijzing wélke speeldag afgelast
+ * werd — precies wat je nodig hebt om hem uit iemands agenda te halen. Alle
+ * lezers van die kolom kijken eerst naar de status (`activePolls`, `dagStatus`,
+ * de feed), dus een geannuleerde poll komt er nergens door terug.
+ */
 export async function cancelPoll(pollId: string): Promise<void> {
   const { error } = await supabase
     .from("play_polls")
-    .update({ status: "cancelled", locked_option_id: null })
+    .update({ status: "cancelled" })
     .eq("id", pollId);
   if (error) throw error;
   invalidate("play-poll");

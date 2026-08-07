@@ -68,7 +68,7 @@ function renderTab(
   const onMatches = vi.fn();
   const onGuestCreated = vi.fn();
   const onShowStand = vi.fn();
-  render(
+  const { unmount } = render(
     <MemoryRouter>
       <AuthProvider>
         <ToastProvider>
@@ -101,13 +101,14 @@ function renderTab(
       </AuthProvider>
     </MemoryRouter>,
   );
-  return { onMatches, onGuestCreated, onShowStand };
+  return { onMatches, onGuestCreated, onShowStand, unmount };
 }
 
-/** Wacht tot MakeTeams zijn default-selectie heeft gezet (#292). */
+/** Wacht tot MakeTeams zijn default-selectie heeft gezet (#292). Sinds #1089
+ *  zijn de deelnemers schakelaars (role="switch") in plaats van drukknoppen. */
 async function waitForSelection() {
   await waitFor(() => {
-    const toggles = screen.getAllByRole("button", { pressed: true });
+    const toggles = screen.getAllByRole("switch", { checked: true });
     expect(toggles.length).toBeGreaterThanOrEqual(4);
   });
 }
@@ -170,7 +171,7 @@ describe("<VandaagTab />", () => {
     renderTab();
 
     const generator = await screen.findByRole("heading", {
-      name: /maak teams/i,
+      name: /speelformaat/i,
     });
     // Geen doorverwijzing meer naar een andere tab, en geen lege
     // wedstrijdenkaart die erboven staat.
@@ -245,13 +246,34 @@ describe("<VandaagTab />", () => {
     ).toBeInTheDocument();
   });
 
+  // #1089: de selectie werd bij elke mount opnieuw uit de poll afgeleid, dus
+  // wie vier namen had uitgetikt mocht na een refresh opnieuw beginnen.
+  it("houdt een uitgetikte speler uitgetikt na opnieuw laden", async () => {
+    const { unmount } = renderTab();
+    await waitForSelection();
+
+    await userEvent.click(screen.getByRole("switch", { name: /bob boers/i }));
+    expect(screen.getByRole("switch", { name: /bob boers/i })).not.toBeChecked();
+
+    unmount();
+    renderTab();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("switch", { name: /bob boers/i }),
+      ).not.toBeChecked(),
+    );
+    // De rest volgt nog gewoon de poll.
+    expect(screen.getByRole("switch", { name: /carol claes/i })).toBeChecked();
+  });
+
   it("genereert een Americano-ronde en meldt dat via onMatches", async () => {
     const { onMatches } = renderTab();
     await waitForSelection();
 
-    await userEvent.click(screen.getByRole("button", { name: /^americano$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^americano$/i }));
     const genBtn = screen.getByRole("button", {
-      name: /genereer americano-ronde/i,
+      name: /start americano/i,
     });
     await waitFor(() => expect(genBtn).toBeEnabled());
     await userEvent.click(genBtn);
@@ -358,7 +380,7 @@ describe("<VandaagTab />", () => {
     const knop = screen.getByRole("button", { name: /volgende ronde/i });
     // Dicht: de generator staat niet in de weg van de uitslagen.
     expect(
-      screen.queryByRole("heading", { name: /maak teams/i }),
+      screen.queryByRole("heading", { name: /speelformaat/i }),
     ).not.toBeInTheDocument();
     // De actie sluit de wedstrijdenlijst af, dus staat hij eronder.
     expect(
@@ -384,7 +406,7 @@ describe("<VandaagTab />", () => {
       name: /volgende ronde/i,
     });
     expect(
-      within(sheet).getByRole("heading", { name: /maak teams/i }),
+      within(sheet).getByRole("heading", { name: /speelformaat/i }),
     ).toBeInTheDocument();
     // De sheet benoemt het verschil met de automaat (#827): drie routes naar
     // dezelfde ronde, met verschillende uitkomst.
@@ -400,9 +422,9 @@ describe("<VandaagTab />", () => {
       screen.getByRole("button", { name: /volgende ronde/i }),
     );
     await waitForSelection();
-    await userEvent.click(screen.getByRole("button", { name: /^mexicano$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^mexicano$/i }));
     expect(
-      screen.getByRole("button", { name: /genereer mexicano-ronde/i }),
+      screen.getByRole("button", { name: /start mexicano/i }),
     ).toBeDisabled();
     expect(
       screen.getByText(/vul eerst alle uitslagen van ronde 2 in/i),
