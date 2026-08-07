@@ -122,6 +122,23 @@ describe("glas.css", () => {
     }
   });
 
+  it("geeft een scrollend vlak een verlopende rand en een contour (#1083)", () => {
+    // `.glas--scrollbaar` moet ::before/::after uitzetten — absolute lagen
+    // schuiven mee met de inhoud — maar de vervanging was één uniforme ring op
+    // de zwakste randwaarde, en omdat deze box-shadow die van `.glas` volledig
+    // overschrijft verdween ook de buitenhaarlijn. Het sheet was daarmee het
+    // enige grote vlak zonder verlopende rand en zonder contour.
+    const regels = blok("\n.glas--scrollbaar {");
+    // De buitencontour: zonder deze lijn zweeft een licht vlak op een lichte
+    // pagina nergens meer in.
+    expect(regels).toMatch(/\n\s*0 0 0 1px rgb\(var\(--glas-diep\)/);
+    // Twee hoekschaduwen op de sterke randwaarde, waar ::before het licht ook
+    // zet: linksboven en rechtsonder.
+    expect(aantal(regels, /inset -?\d+px[^,]*var\(--glas-rand-hoog\)/g)).toBe(2);
+    // En de flanken op de zwakke waarde.
+    expect(regels).toMatch(/inset 0 0 0 1px var\(--glas-rand-laag\)/);
+  });
+
   it("houdt de rand overeind waar mask-compositing ontbreekt", () => {
     // De verlopende refractierand zit ín het @supports-blok; de gewone border
     // op `.glas` is wat er overblijft als dat niet kan.

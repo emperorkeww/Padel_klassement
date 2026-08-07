@@ -99,6 +99,21 @@ describe("<Sheet />", () => {
     }
   });
 
+  it("stelt zijn materiaal bij met genoeg gewicht (#1083)", () => {
+    const css = readFileSync("src/components/ui/ui.css", "utf8");
+
+    // glas.css komt ná ui.css in de cascade, dus `.sheet { --glas-dekking }`
+    // verliest van `.glas--sterk` en doet niets. Dit kostte een meetronde:
+    // de afstelling stond er, en er kwam gewoon niets van aan.
+    expect(css).toMatch(/\.sheet\.glas \{[^}]*--glas-dekking:/);
+    expect(css).not.toMatch(/\n\.sheet \{[^}]*--glas-dekking:/);
+
+    // De scrim onder een glazen paneel is lichter dan die van de lightboxen:
+    // scrim én materiaal dempten allebei, en dan blijft er van de pagina niets
+    // herkenbaars over. De lightboxen houden --overlay.
+    expect(css).toMatch(/\.sheet-backdrop \{[^}]*--scrim: var\(--overlay-glas\)/);
+  });
+
   it("roept extra onKeyDown aan op de dialoog (bv. pijltjes)", () => {
     const onKey = vi.fn();
     render(
