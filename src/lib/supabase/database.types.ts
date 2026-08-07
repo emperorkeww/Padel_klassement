@@ -41,6 +41,8 @@ export type Database = {
           created_at: string
           details: Json
           id: number
+          target_id: string | null
+          target_type: string | null
           target_user_id: string | null
         }
         Insert: {
@@ -49,6 +51,8 @@ export type Database = {
           created_at?: string
           details?: Json
           id?: never
+          target_id?: string | null
+          target_type?: string | null
           target_user_id?: string | null
         }
         Update: {
@@ -57,6 +61,8 @@ export type Database = {
           created_at?: string
           details?: Json
           id?: never
+          target_id?: string | null
+          target_type?: string | null
           target_user_id?: string | null
         }
         Relationships: []
@@ -2608,6 +2614,21 @@ export type Database = {
         Args: { p_delta: number; p_match: string; p_player: string }
         Returns: number
       }
+      admin_audit_recent: {
+        Args: { p_limit?: number }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_username: string
+          created_at: string
+          details: Json
+          id: number
+          target_id: string
+          target_type: string
+          target_user_id: string
+          target_username: string
+        }[]
+      }
       admin_audit_voor: {
         Args: { p_uid: string }
         Returns: {
@@ -2632,6 +2653,18 @@ export type Database = {
           username: string
         }[]
       }
+      admin_groep_leden: {
+        Args: { p_group: string }
+        Returns: {
+          full_name: string
+          is_eigenaar: boolean
+          is_guest: boolean
+          joined_at: string
+          player_id: string
+          role: string
+          username: string
+        }[]
+      }
       admin_groepen_overzicht: {
         Args: never
         Returns: {
@@ -2643,6 +2676,59 @@ export type Database = {
           id: string
           laatste_match: string
           name: string
+        }[]
+      }
+      admin_matches_overzicht: {
+        Args: {
+          p_group?: string
+          p_limit?: number
+          p_match?: string
+          p_status?: string
+          p_tot?: string
+          p_van?: string
+          p_zoek?: string
+        }
+        Returns: {
+          aanmaker_username: string
+          created_at: string
+          created_by: string
+          groep_naam: string
+          group_id: string
+          id: string
+          played_at: string
+          score_a: number
+          score_b: number
+          set_scores: Json
+          status: string
+          team_a_id: string
+          team_a_spelers: string[]
+          team_b_id: string
+          team_b_spelers: string[]
+          totaal: number
+          winner_team_id: string
+        }[]
+      }
+      admin_polls_overzicht: {
+        Args: { p_group?: string; p_limit?: number; p_poll?: string }
+        Returns: {
+          aanmaker_username: string
+          aantal_opties: number
+          aantal_stemmen: number
+          created_at: string
+          created_by: string
+          groep_naam: string
+          group_id: string
+          id: string
+          status: string
+          vastgelegd_op: string
+        }[]
+      }
+      admin_set_group_owner: {
+        Args: { p_group: string; p_uid: string }
+        Returns: {
+          groep: string
+          nieuwe_eigenaar: string
+          oude_eigenaar: string
         }[]
       }
       admin_trek_sessies_in: { Args: { p_uid: string }; Returns: number }
