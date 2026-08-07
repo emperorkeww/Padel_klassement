@@ -74,8 +74,8 @@ function bookingPatch(details: BookingDetails) {
  * publieke oppervlakte; voor iemand buiten de groep is de groepsuitnodiging
  * (/groepen/join/:token) de weg.
  */
-export function pollShareUrl(groupId: string, pollId: string): string {
-  return `${window.location.origin}${pollSharePath(groupId, pollId)}`;
+export function pollShareUrl(pollId: string): string {
+  return `${window.location.origin}${pollSharePath(pollId)}`;
 }
 
 /**
@@ -83,10 +83,13 @@ export function pollShareUrl(groupId: string, pollId: string): string {
  * react-router `<Link to>` wil een relatief pad — een absolute url zou de hele
  * app opnieuw laten laden. De edge functions bouwen hun push-url zelf op; die
  * draaien in Deno en kunnen hier niet bij.
+ *
+ * Sinds #1121 een eigen route in plaats van ?tab=plannen&poll= op de
+ * groepspagina: een speeldag is een pagina geworden, geen tab-toestand. De
+ * groep zit in de poll zelf, dus die hoeft er niet meer bij.
  */
-export function pollSharePath(groupId: string, pollId: string): string {
-  const params = new URLSearchParams({ tab: "plannen", poll: pollId });
-  return `/groepen/${groupId}?${params.toString()}`;
+export function pollSharePath(pollId: string): string {
+  return `/speeldag/${encodeURIComponent(pollId)}`;
 }
 
 /** De op een poll opgeslagen locatie als Club-object (voor de UI/availability). */
@@ -118,6 +121,29 @@ export type PollVote = {
   status: PollVoteStatus;
   updated_at: string;
 };
+
+/**
+ * Eén poll op id (#1121). De speeldagpagina krijgt alleen een poll-id uit de
+ * URL en moet daaruit de groep afleiden voordat ze de rest kan ophalen.
+ *
+ * De sleutel begint met "play-poll", dus de bestaande `invalidate("play-poll")`
+ * van elke schrijver — en CACHE_PREFIXES.play_polls bij een realtime-event —
+ * ruimt hem mee op; er is geen aparte invalidatie nodig.
+ *
+ * `maybeSingle` en niet `single`: een poll uit een groep waar je niet in zit is
+ * voor RLS gewoon onvindbaar, en dat is geen fout maar een lege uitkomst.
+ */
+export function getPoll(pollId: string): Promise<PlayPoll | null> {
+  return cached(`play-poll-one:${pollId}`, async () => {
+    const { data, error } = await supabase
+      .from("play_polls")
+      .select("*")
+      .eq("id", pollId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as PlayPoll | null) ?? null;
+  });
+}
 
 /** Alle polls van een groep, nieuwste eerst (RLS: alleen eigen groepen). */
 export function getGroupPolls(groupId: string): Promise<PlayPoll[]> {

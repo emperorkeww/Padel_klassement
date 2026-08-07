@@ -120,6 +120,14 @@ function vormVoor(pathname: string) {
         <Blok h="25rem" />
       </>
     );
+  // Speeldag (#1121): de terugbalk en daaronder één kaart met de momenten.
+  if (pathname.startsWith("/speeldag"))
+    return (
+      <>
+        <Blok h="2rem" />
+        <Blok h="16rem" />
+      </>
+    );
   return (
     <>
       <Blok h="8rem" />

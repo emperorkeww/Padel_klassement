@@ -176,7 +176,7 @@ export function WinnerCard({
         // Deep-link naar déze speeldag (#675) — als los url-veld, zodat het
         // deelvenster er een nette preview van maakt en het klembord 'm onder
         // de tekst zet. Alleen bruikbaar voor groepsleden; dat is de bedoeling.
-        url: pollShareUrl(poll.group_id, poll.id),
+        url: pollShareUrl(poll.id),
       });
       if (outcome === "clipboard") toast.success("Tekst gekopieerd naar klembord.");
     } catch (err) {
@@ -364,7 +364,7 @@ export function WinnerCard({
               profiles={profiles}
               bestand={`padel-${o.date}.png`}
               accessCode={code}
-              shareUrl={pollShareUrl(poll.group_id, poll.id)}
+              shareUrl={pollShareUrl(poll.id)}
               onShareText={shareWinner}
             />
           </section>

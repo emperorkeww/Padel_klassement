@@ -352,7 +352,7 @@ describe("<PlanTab />", () => {
     expect(share).toHaveBeenCalledTimes(1);
     const arg = share.mock.calls[0][0];
     expect(arg.url).toBe(
-      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-open`,
+      `${window.location.origin}/speeldag/poll-open`,
     );
     expect(arg.text).toContain("🗳 Stem mee");
     expect(arg.text).toContain("Vrijdagavond padel");

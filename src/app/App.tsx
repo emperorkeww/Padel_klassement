@@ -22,6 +22,7 @@ const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
 const Agenda = lazy(() => import("@/features/agenda/Agenda"));
+const SpeeldagPagina = lazy(() => import("@/features/groups/SpeeldagPagina"));
 const Uitleg = lazy(() => import("@/features/uitleg/Uitleg"));
 const Meldingen = lazy(() => import("@/features/meldingen/Meldingen"));
 const AdminPaneel = lazy(() => import("@/features/admin/AdminPaneel"));
@@ -145,6 +146,10 @@ function App() {
               <Route path="/banen" element={<Availability />} />
               {/* Agenda (#1091): de speeldagen van al je groepen in de tijd. */}
               <Route path="/agenda" element={<Agenda />} />
+              {/* Eén speeldag (#1121): de plek waar je hem beheert, en de
+                  bestemming van elke deel-link en elk pushbericht erover. De
+                  groep hoeft niet in het pad — die staat in de poll. */}
+              <Route path="/speeldag/:id" element={<SpeeldagPagina />} />
               {/* "Hoe werkt het?" (#989): de centrale uitleg, bereikbaar via
                   de ?-knop in de shell op elk scherm. */}
               <Route path="/uitleg" element={<Uitleg />} />

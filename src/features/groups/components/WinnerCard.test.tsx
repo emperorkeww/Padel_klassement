@@ -203,7 +203,7 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
 
     const arg = share.mock.calls[0][0];
     expect(arg.url).toBe(
-      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-1`,
+      `${window.location.origin}/speeldag/poll-1`,
     );
     // De code staat in de tekst zelf — die lees je vóór je verstuurt.
     expect(arg.text).toContain("🔑 Code velden: 1234");

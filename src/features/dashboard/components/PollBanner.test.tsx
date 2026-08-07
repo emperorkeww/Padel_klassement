@@ -66,7 +66,7 @@ describe("<PollBanner />", () => {
 
     expect(screen.getByRole("link", { name: /stem nu/i })).toHaveAttribute(
       "href",
-      "/groepen/g1?tab=plannen&poll=poll-open",
+      "/speeldag/poll-open",
     );
   });
 
@@ -87,7 +87,7 @@ describe("<PollBanner />", () => {
 
     expect(screen.getByRole("link", { name: /bekijk/i })).toHaveAttribute(
       "href",
-      "/groepen/g1?tab=plannen&poll=poll-vast",
+      "/speeldag/poll-vast",
     );
   });
 
