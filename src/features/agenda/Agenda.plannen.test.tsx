@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -197,6 +197,52 @@ describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
     // moet één tik blijven vanaf de dag die je al bekeek.
     await openDag(/donderdag 20 augustus, niets gepland/);
     expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+  });
+
+  it("wijst vanaf een lege dag naar de eerstvolgende speeldag", async () => {
+    toon();
+    // Vandaag (7 augustus) is leeg; 13 augustus is de eerstvolgende.
+    const rij = await screen.findByRole("button", {
+      name: /do 13 aug, 20:00, Vamos!/,
+    });
+    await userEvent.click(rij);
+    expect(
+      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("bladert met het toetsenbord door, ook al halen we verder op dan het raster", async () => {
+    // Het ophaalvenster loopt zes weken voorbij het raster (#1112). Als de
+    // toetsenbordnavigatie díe grens zou gebruiken in plaats van de
+    // rastergrens, blijft de focus hangen op een dag die niet getekend is.
+    toon();
+    const raster = await screen.findByRole("grid");
+    fireEvent.keyDown(raster, { key: "PageDown" });
+    // findBy: het nieuwe maandvenster laadt, en dat is een async update.
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
+      "September 2026",
+    );
+  });
+
+  it("laat de gekozen dag meebladeren met de maand", async () => {
+    toon();
+    // 13 augustus kiezen, dan naar september. Zou de keuze blijven staan, dan
+    // praat het paneel over een dag buiten het opgehaalde venster — en meldt
+    // het "Nog niets gepland" voor een dag met een geboekte speeldag erop.
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: /donderdag 13 augustus, speeldag geboekt/,
+      }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /volgende maand/i }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: /dinsdag 1 september/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /13 augustus/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("bladert mee naar de maand van een aangetikte randdag", async () => {

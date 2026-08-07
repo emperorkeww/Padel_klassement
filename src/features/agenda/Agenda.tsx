@@ -20,9 +20,11 @@ import {
   markersByDay,
   metHoofdletter,
   monthGrid,
+  ophaalVenster,
   schuifMaand,
   statusChip,
   telInMaand,
+  volgendeSpeeldagen,
   windowFor,
   zelfdeMaand,
   type AgendaMarker,
@@ -81,7 +83,12 @@ export function Agenda() {
   const lijst = useMemo(() => groepen.data ?? [], [groepen.data]);
   const groepSleutel = lijst.map((g) => g.id).join(",");
 
-  const { from, to } = windowFor(maand);
+  // Twee vensters, met opzet. `raster` is wat je ziet staan en bepaalt wanneer
+  // de toetsenbordnavigatie een maand doorbladert; `from`/`to` is wat we ophalen
+  // en loopt zes weken verder, zodat "Hierna" ook in een lege maand iets te
+  // wijzen heeft (#1112).
+  const raster = windowFor(maand);
+  const { from, to } = ophaalVenster(maand);
   const venster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), from, to),
     [groepSleutel, from, to],
@@ -98,6 +105,10 @@ export function Agenda() {
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
   const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
+  const volgende = useMemo(
+    () => volgendeSpeeldagen(markers, gekozenDag),
+    [markers, gekozenDag],
+  );
   // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
   // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
   const perPoll = useMemo(() => {
@@ -131,7 +142,7 @@ export function Agenda() {
    */
   function verplaatsFocus(date: string) {
     setFocusDag(date);
-    if (date < from || date > to) setMaand(maandVan(date));
+    if (date < raster.from || date > raster.to) setMaand(maandVan(date));
   }
 
   /**
@@ -158,15 +169,29 @@ export function Agenda() {
     else if (date >= vandaag) setPlanDag(date);
   }
 
+  /** Naar een dag springen vanuit "Hierna": de maand schuift mee en de tab-stop
+   *  blijft niet achter in de maand die je verlaat. */
+  function springNaar(date: string) {
+    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
+    setGekozenDag(date);
+    setFocusDag(date);
+  }
+
   function naarMaand(delta: number) {
     const nieuw = schuifMaand(maand, delta);
     setMaand(nieuw);
     // De tab-stop mag niet achterblijven in een maand die je niet meer ziet.
-    setFocusDag(
-      zelfdeMaand(nieuw, maandVan(vandaag))
-        ? vandaag
-        : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`,
-    );
+    const doel = zelfdeMaand(nieuw, maandVan(vandaag))
+      ? vandaag
+      : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`;
+    setFocusDag(doel);
+    // En de gekozen dag schuift mee. Het ontwerp liet die staan bij het
+    // bladeren, maar dat kan hier niet: we halen per maand op, dus zodra de
+    // gekozen dag buiten het nieuwe venster valt kent het paneel zijn
+    // speeldagen niet meer en meldt het "Nog niets gepland" voor een dag die
+    // wél iets draagt. Een paneel dat over een dag praat die je niet ziet
+    // staan is bovendien sowieso raar — het staat er pal onder.
+    setGekozenDag(doel);
   }
 
   return (
@@ -271,12 +296,14 @@ export function Agenda() {
               datum={gekozenDag}
               vandaag={vandaag}
               markers={perDag[gekozenDag] ?? []}
+              volgende={volgende}
               ledenPerGroep={ledenPerGroep}
               profielen={profielen.data ?? {}}
               onOpen={() => setOpen(gekozenDag)}
               onPlan={
                 gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
               }
+              onKiesDag={springNaar}
             />
           )}
 

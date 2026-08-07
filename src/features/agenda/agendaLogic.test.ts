@@ -9,16 +9,19 @@ import {
   markersByDay,
   metHoofdletter,
   monthGrid,
+  ophaalVenster,
   schuifMaand,
   splitMarkers,
   statusChip,
   telInMaand,
   tijdvak,
   toetsStap,
+  volgendeSpeeldagen,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
 } from "./agendaLogic";
+import type { AgendaMarker } from "./agendaLogic";
 import type { GroupSummary } from "@/features/groups/api";
 import type {
   PlayPoll,
@@ -156,6 +159,73 @@ describe("maandvenster", () => {
     expect(maandVan("2026-08-13")).toEqual({ jaar: 2026, maand: 8 });
   });
 
+});
+
+describe("ophaalVenster (#1112)", () => {
+  it("loopt zes weken voorbij het raster", () => {
+    // Het raster van augustus 2026 eindigt op 6 september; "Hierna" moet ook in
+    // een lege maand nog iets kunnen wijzen, dus we halen verder op.
+    expect(ophaalVenster({ jaar: 2026, maand: 8 })).toEqual({
+      from: "2026-07-27",
+      to: "2026-10-18",
+    });
+  });
+
+  it("begint waar het raster begint", () => {
+    // Achteruit is er geen staart: wat geweest is hoort niet in "Hierna", en
+    // een dag vóór het raster is er nooit een om naartoe te springen.
+    const m = { jaar: 2026, maand: 8 };
+    expect(ophaalVenster(m).from).toBe(windowFor(m).from);
+  });
+});
+
+describe("volgendeSpeeldagen (#1112)", () => {
+  const m = (date: string, extra: Partial<AgendaMarker> = {}) =>
+    ({ date, optionId: date, startTime: "20:00", groupName: "A", past: false, ...extra }) as AgendaMarker;
+
+  it("geeft de eerstvolgende drie, op volgorde", () => {
+    const uit = volgendeSpeeldagen(
+      [m("2026-09-01"), m("2026-08-20"), m("2026-08-25"), m("2026-08-30")],
+      "2026-08-10",
+    );
+    expect(uit.map((x) => x.date)).toEqual([
+      "2026-08-20",
+      "2026-08-25",
+      "2026-08-30",
+    ]);
+  });
+
+  it("laat de gekozen dag zelf weg", () => {
+    // Die staat al in het paneel erboven; twee keer tonen leest als twee
+    // verschillende afspraken.
+    const uit = volgendeSpeeldagen([m("2026-08-10"), m("2026-08-20")], "2026-08-10");
+    expect(uit.map((x) => x.date)).toEqual(["2026-08-20"]);
+  });
+
+  it("laat wat geweest is weg, ook als de datum later valt", () => {
+    // `past` hangt aan de klok van de club, niet aan de kalender: een moment
+    // van vanochtend heeft een datum die nog "vooruit" oogt.
+    const uit = volgendeSpeeldagen(
+      [m("2026-08-20", { past: true }), m("2026-08-25")],
+      "2026-08-10",
+    );
+    expect(uit.map((x) => x.date)).toEqual(["2026-08-25"]);
+  });
+
+  it("sorteert twee speeldagen op dezelfde dag op tijd", () => {
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-20", { optionId: "laat", startTime: "20:00" }),
+        m("2026-08-20", { optionId: "vroeg", startTime: "11:00" }),
+      ],
+      "2026-08-10",
+    );
+    expect(uit.map((x) => x.optionId)).toEqual(["vroeg", "laat"]);
+  });
+
+  it("geeft een lege lijst als er niets meer komt", () => {
+    expect(volgendeSpeeldagen([m("2026-08-01")], "2026-08-10")).toEqual([]);
+  });
 });
 
 describe("labels van het dagpaneel (#1112)", () => {
