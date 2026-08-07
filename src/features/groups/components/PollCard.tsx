@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
@@ -73,10 +73,7 @@ export function PollCard({
   isOwner,
   onChanged,
   spotlight,
-  roundsExist,
-  rondesVandaag,
-  wedstrijdenAnker,
-  onRoundsMade,
+  klaarzetActie,
 }: {
   poll: PlayPoll;
   groupName: string;
@@ -90,15 +87,10 @@ export function PollCard({
   /** Je landde op deze kaart via een gedeelde link (#886): breng 'm in beeld
    *  en markeer 'm kort, zodat duidelijk is wélke speeldag bedoeld werd. */
   spotlight?: boolean;
-  /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
-  roundsExist?: boolean;
-  /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
-  rondesVandaag?: number;
-  /** Anker naar het wedstrijdenblok op dezelfde pagina (#1133); doorgegeven
-   *  aan de winner-card, die er zijn CTA en toast op afstemt. */
-  wedstrijdenAnker?: string;
-  /** Rondes klaargezet vanuit deze kaart — voedt de Klaar-fase (#349). */
-  onRoundsMade?: () => void;
+  /** Knop die de wedstrijden van deze speeldag klaarzet (#1141); doorgegeven
+   *  aan de winner-card. Komt van de pagina, want de generator heeft de leden
+   *  en de historie van de groep nodig. */
+  klaarzetActie?: ReactNode;
 }) {
   const toast = useToast();
   // De op de poll opgeslagen locatie (#322), niet de globale clubvoorkeur. De
@@ -444,10 +436,7 @@ export function PollCard({
                 isManager={isManager}
                 busy={busy}
                 run={run}
-                roundsExist={roundsExist}
-                rondesVandaag={rondesVandaag}
-                wedstrijdenAnker={wedstrijdenAnker}
-                onRoundsMade={onRoundsMade}
+                klaarzetActie={klaarzetActie}
               />
             );
           }

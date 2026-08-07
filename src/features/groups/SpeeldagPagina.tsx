@@ -22,7 +22,6 @@ import {
   matchesVoorSpeeldag,
   speeldagMoment,
 } from "@/features/groups/speeldagMatches";
-import { rondesOpDag } from "@/features/groups/speeldagRondes";
 import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
@@ -137,10 +136,6 @@ export function SpeeldagPagina() {
   // "Eerlijk" verscheen pas na een refresh — die kaart meldt zelf niets terug.
   useRealtime("matches", herlaadMatches, filter);
 
-  // Rondes die in deze sessie zijn klaargezet: laat de kaart meteen de
-  // Klaar-fase tonen, nog vóór de matches-reload landt (zoals PlanTab deed).
-  const [rondesGezet, setRondesGezet] = useState(false);
-
   // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
   // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
   // uitslagen blijft open — zelfde afspraak als op de Spelen-tab.
@@ -204,12 +199,6 @@ export function SpeeldagPagina() {
   }
 
   const eigenOpties = pollOptions(speeldag, alleOpties);
-  // Rondes die op deze dag klaarstaan. Dit verving de oude afleiding uit
-  // planFlowLogic ("aangemaakt ná booked_at"), die twee speeldagen in dezelfde
-  // week door elkaar haalde; de dag zelf is een scherpere sleutel.
-  const rondesKlaar = moment
-    ? rondesOpDag(dagMatches, moment.tz, moment.dag)
-    : 0;
   const rondes = groupByRound(dagMatches);
   const intensiteit = groep.roast_intensiteit ?? "radioactief";
   // Een ronde van deze dag met openstaande uitslagen blokkeert Mexicano: die
@@ -232,6 +221,28 @@ export function SpeeldagPagina() {
   // geweest is log je hem. De clubdag van de speeldag beslist, niet die van de
   // browser.
   const nogTeGaan = moment != null && moment.dag > dateInZone(moment.tz);
+
+  // De teamgenerator voor déze speeldag (#1141): dezelfde als op de Spelen-tab,
+  // maar met de dag, het moment en de ja-stemmers van deze poll als vertrekpunt
+  // — anders zouden nieuwe rondes op het uur van vandaag landen. Hij duikt op
+  // twee plekken op: in de kaart zolang er niets staat, onder de wedstrijden
+  // zodra ze er zijn.
+  const generatorProps = moment && {
+    groupId,
+    members: leden,
+    profiles: profiles.data ?? {},
+    myId,
+    matches: matches.data ?? [],
+    teams: teams.data ?? {},
+    openRound: openRonde,
+    speeldag: {
+      dag: moment.dag,
+      option: moment.option,
+      poll: speeldag,
+      yes: tallyOption(moment.option, alleStemmen).yes,
+    },
+    onGenerated: herlaadMatches,
+  };
 
   return (
     <div>
@@ -262,10 +273,19 @@ export function SpeeldagPagina() {
         myId={myId}
         isOwner={groep.created_by === myId}
         onChanged={herlaad}
-        roundsExist={rondesKlaar > 0 || rondesGezet}
-        rondesVandaag={rondesKlaar}
-        wedstrijdenAnker={rondes.length > 0 ? "#speeldag-wedstrijden" : undefined}
-        onRoundsMade={() => setRondesGezet(true)}
+        klaarzetActie={
+          // Alleen zolang er nog niets staat: zodra de rondes er zijn, staat
+          // dezelfde knop onder de wedstrijden als "+ Volgende ronde". Dezelfde
+          // tweedeling die de Spelen-tab maakt tussen een dag die nog moet
+          // beginnen en een dag die loopt.
+          generatorProps && rondes.length === 0 ? (
+            <VolgendeRonde
+              {...generatorProps}
+              label="⚡ Wedstrijden klaarzetten"
+              kaal
+            />
+          ) : undefined
+        }
       />
 
       {/* Losse partij op deze speeldag (#1133): buiten de rondes om gespeeld of
@@ -323,29 +343,11 @@ export function SpeeldagPagina() {
             ))}
           </div>
 
-          {/* Een ronde toevoegen aan déze speeldag (#1133). De eerste ronde
-              komt uit de kaart hierboven (Elo, in één tik); dit is dezelfde
-              generator als op de Spelen-tab, met de speeldag meegegeven zodat
-              de nieuwe rondes de starttijd van die avond krijgen in plaats van
-              die van vandaag. */}
-          {moment && (
-            <VolgendeRonde
-              groupId={groupId}
-              members={leden}
-              profiles={profiles.data ?? {}}
-              myId={myId}
-              matches={matches.data ?? []}
-              teams={teams.data ?? {}}
-              openRound={openRonde}
-              speeldag={{
-                dag: moment.dag,
-                option: moment.option,
-                poll: speeldag,
-                yes: tallyOption(moment.option, alleStemmen).yes,
-              }}
-              onGenerated={herlaadMatches}
-            />
-          )}
+          {/* Nog een ronde aan déze speeldag toevoegen (#1133). Dezelfde
+              generator en dezelfde sheet als de knop in de kaart hierboven —
+              alleen verhuist hij hierheen zodra er wedstrijden staan, want dan
+              is dit de plek waar je kijkt. */}
+          {generatorProps && <VolgendeRonde {...generatorProps} />}
         </section>
       )}
     </div>
