@@ -20,6 +20,9 @@ export interface Melding {
  *  /meldingen. */
 export const PANEEL_LIMIET = 20;
 
+/** Hoeveel meldingen /meldingen per keer bijlaadt. */
+export const PAGINA = 50;
+
 /** De recentste meldingen. RLS beperkt tot je eigen rijen — er is geen filter
  *  op user_id nodig en die zou ook niets extra's afschermen. */
 export function getMeldingen(limiet = PANEEL_LIMIET): Promise<Melding[]> {
@@ -31,6 +34,37 @@ export function getMeldingen(limiet = PANEEL_LIMIET): Promise<Melding[]> {
       .limit(limiet);
     if (error) throw error;
     return (data ?? []) as Melding[];
+  });
+}
+
+/**
+ * De volledige lijst voor /meldingen, in stappen van PAGINA.
+ *
+ * Bewust het venster vanaf nul opnieuw ophalen in plaats van pagina's aan
+ * elkaar te plakken: de lijst staat op created_at desc, en met realtime erbij
+ * schuift er tijdens het bladeren zomaar een nieuwe melding bovenaan bij. Losse
+ * pagina's zouden dan een rij dubbel tonen of er een overslaan. Dit venster is
+ * hooguit een paar honderd rijen (de retentie ruimt op na 90 dagen), dus dat
+ * kost niets.
+ *
+ * Retourneert ook of er nog meer ís: precies een volle pagina betekent
+ * "waarschijnlijk meer", en dan verschijnt de knop.
+ */
+export function getMeldingenVenster(
+  paginas: number,
+): Promise<{ meldingen: Melding[]; meer: boolean }> {
+  const tot = paginas * PAGINA;
+  return cached(`meldingen:venster:${paginas}`, async () => {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("id, soort, title, body, url, tag, created_at, read_at")
+      .order("created_at", { ascending: false })
+      // +1 om te wéten of er meer is, in plaats van het te gokken aan een
+      // volle pagina. De extra rij wordt hieronder weer afgeknipt.
+      .range(0, tot);
+    if (error) throw error;
+    const rijen = (data ?? []) as Melding[];
+    return { meldingen: rijen.slice(0, tot), meer: rijen.length > tot };
   });
 }
 

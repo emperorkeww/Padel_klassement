@@ -6,6 +6,10 @@ import {
   getPushSubscription,
 } from "@/lib/supabase/push";
 import { errorMessage } from "@/lib/utils/errors";
+import {
+  PUSH_BELOFTE,
+  PUSH_BELOFTE_TITEL,
+} from "@/features/meldingen/pushBelofte";
 import { readFlag, writeFlag } from "../flags";
 
 /** Eenmalige, wegklikbare uitnodiging om pushmeldingen aan te zetten. Toont
@@ -48,7 +52,7 @@ export function PushPrompt({ userId }: { userId: string }) {
     setBusy(true);
     try {
       await enablePush(userId);
-      toast.success("Meldingen staan aan — vamos!");
+      toast.success("Pushmeldingen staan aan — vamos!");
       setDone(true);
     } catch (err) {
       toast.error(errorMessage(err));
@@ -69,11 +73,10 @@ export function PushPrompt({ userId }: { userId: string }) {
           🔔
         </span>
         <div>
-          <h2 className="card__title card__title--tight">Mis niks</h2>
-          <p className="card__subtitle push-prompt__sub">
-            Krijg een seintje bij nieuwe wedstrijden, uitslagen van jouw matches en
-            vriendschapsverzoeken — ook als de app dicht is.
-          </p>
+          <h2 className="card__title card__title--tight">
+            {PUSH_BELOFTE_TITEL}
+          </h2>
+          <p className="card__subtitle push-prompt__sub">{PUSH_BELOFTE}</p>
         </div>
       </div>
       <div className="push-prompt__actions">
@@ -82,7 +85,7 @@ export function PushPrompt({ userId }: { userId: string }) {
           onClick={enable}
           disabled={busy}
         >
-          {busy ? "Aanzetten…" : "Meldingen aanzetten"}
+          {busy ? "Aanzetten…" : "Pushmeldingen aanzetten"}
         </button>
         <button className="btn btn--sm" onClick={dismiss}>
           Niet nu

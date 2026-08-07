@@ -117,12 +117,21 @@ describe("<MeldingenPaneel /> (#1090)", () => {
     expect(screen.getByText(/zodra er een ronde klaarstaat/i)).toBeInTheDocument();
   });
 
-  it("meldt dat de lijst afgekapt is zodra hij vol zit", () => {
+  it("wijst naar de volledige lijst zodra het paneel vol zit", () => {
     toon(
       Array.from({ length: 3 }, (_, i) => melding({ id: `n${i}`, tag: `t${i}` })),
       { limiet: 3 },
     );
-    expect(screen.getByText(/laatste 3 meldingen/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /alles bekijken/i }),
+    ).toHaveAttribute("href", "/meldingen");
+  });
+
+  it("belooft geen langere lijst als alles al in het paneel staat", () => {
+    toon([melding()], { limiet: 20 });
+    expect(
+      screen.queryByRole("link", { name: /alles bekijken/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("markeert ongelezen items ook voor wie geen kleur ziet", () => {

@@ -124,7 +124,7 @@ export const SECTIES: readonly UitlegSectie[] = [
     id: "meldingen",
     titel: "Meldingen & installeren",
     emoji: "🔔",
-    samenvatting: "Push aanzetten en de app op je beginscherm zetten.",
+    samenvatting: "De bel in de app, push aanzetten en de app installeren.",
   },
   {
     id: "privacy",
