@@ -8,6 +8,17 @@
 
 export type Speelvorm = "eerlijk" | "americano" | "mexicano";
 
+/** Grenzen van de rondekeuze bij Americano. Tien is gelijk aan de winner-card
+ *  op de Plannen-tab (#727), zodat dezelfde keuze overal hetzelfde bereik heeft. */
+export const RONDES_MIN = 1;
+export const RONDES_MAX = 10;
+
+/** Houdt een gestapte of ingetypte waarde binnen het bereik. */
+export function klemRondes(aantal: number): number {
+  if (!Number.isFinite(aantal)) return RONDES_MIN;
+  return Math.min(RONDES_MAX, Math.max(RONDES_MIN, Math.round(aantal)));
+}
+
 /** Volle banen bij dit aantal aanwezigen — vier spelers per baan. */
 export function banen(aanwezig: number): number {
   return Math.floor(aanwezig / 4);
@@ -42,12 +53,20 @@ export function beschrijving(vorm: Speelvorm, aanwezig: number): string {
   }
 }
 
-export function ctaLabel(vorm: Speelvorm): string {
+/**
+ * Wat de knop gaat doen. Bij meer dan één ronde staat het aantal in het label.
+ * De handoff schrijft kaal "Start Americano" voor, maar dan zegt niets je dat
+ * je op het punt staat vijf rondes tegelijk weg te schrijven — en dat is nu
+ * juist waar de keuze ernaast over gaat.
+ */
+export function ctaLabel(vorm: Speelvorm, aantalRondes = RONDES_MIN): string {
   switch (vorm) {
     case "eerlijk":
       return "Stel eerlijke teams voor";
     case "americano":
-      return "Start Americano";
+      return aantalRondes > 1
+        ? `Start ${aantalRondes} Americano-rondes`
+        : "Start Americano";
     case "mexicano":
       return "Start Mexicano";
   }

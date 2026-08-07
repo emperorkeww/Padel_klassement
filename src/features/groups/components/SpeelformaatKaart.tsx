@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
 import { Sheet } from "@/ui/Sheet";
 import { tap } from "@/lib/utils/haptics";
@@ -6,10 +6,14 @@ import {
   banen,
   beschrijving,
   ctaLabel,
+  klemRondes,
   reserves,
   rondes,
+  RONDES_MAX,
+  RONDES_MIN,
   type Speelvorm,
 } from "@/features/groups/speelformaat";
+import "@/components/ui/ScoreStepper.css";
 import "./SpeelformaatKaart.css";
 
 // "Speelformaat" — de keuze tussen Eerlijk, Americano en Mexicano (#1089).
@@ -47,7 +51,10 @@ export function SpeelformaatKaart({
   /** Aantal aangevinkte spelers — voedt de beschrijving en de meta-rij. */
   aanwezig: number;
   americanoRondes: number;
-  onAmericanoRondes: (n: number) => void;
+  /** Een state-setter, geen kale callback: de stappers rekenen vanuit de vorige
+   *  waarde. Twee tikken vlak na elkaar landen anders in dezelfde render en
+   *  lezen allebei hetzelfde getal, waarna er één verhoging verdwijnt. */
+  onAmericanoRondes: Dispatch<SetStateAction<number>>;
   bezig: boolean;
   /** Reden waarom starten nu niet kan, of null. Blokkeert ook de knop. */
   blokkade: string | null;
@@ -103,32 +110,64 @@ export function SpeelformaatKaart({
             <dd>{banen(aanwezig)}</dd>
           </div>
           <div>
-            <dt>
-              <label htmlFor="speelvorm-rondes">Rondes</label>
-            </dt>
-            <dd>
-              {/* Bij Americano ís het getal de keuze: de generator draait de
-                  rotatie zo vaak als je vraagt. De andere twee kunnen er maar
-                  één tegelijk, dus daar staat het getal er als feit. */}
-              {vorm === "americano" ? (
-                <select
-                  id="speelvorm-rondes"
-                  className="speelvorm__rondes"
-                  value={americanoRondes}
-                  onChange={(e) => onAmericanoRondes(Number(e.target.value))}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                rondes(vorm, americanoRondes)
-              )}
-            </dd>
+            <dt>Rondes</dt>
+            <dd>{rondes(vorm, americanoRondes)}</dd>
           </div>
         </dl>
+
+        {/* De rondekeuze stond eerst als select ín de meta-rij hierboven. Daar
+            was hij onvindbaar: tussen twee vette uitkomsten leest een klein
+            keuzevakje als nóg een uitkomst, niet als iets wat je kunt zetten.
+            Nu een eigen regel met dezelfde ±-stappers als de score-invoer, en
+            het aantal staat ook in de knop.
+            Alleen bij Americano: Mexicano deelt per ronde in op de laatste
+            stand en kan er dus maar één tegelijk, en bij Eerlijk staan de teams
+            vast — meer rondes zou daar hetzelfde duo herhalen. */}
+        {vorm === "americano" && (
+          <div className="speelvorm__keuzerij">
+            <label className="speelvorm__keuzelabel" htmlFor="speelvorm-rondes">
+              Hoeveel rondes?
+            </label>
+            <span className="stepper">
+              <button
+                type="button"
+                className="stepper__btn"
+                aria-label="Eén ronde minder"
+                disabled={americanoRondes <= RONDES_MIN}
+                onClick={() => {
+                  tap();
+                  onAmericanoRondes((n) => klemRondes(n - 1));
+                }}
+              >
+                −
+              </button>
+              <input
+                id="speelvorm-rondes"
+                className="input input--score"
+                type="number"
+                inputMode="numeric"
+                min={RONDES_MIN}
+                max={RONDES_MAX}
+                value={americanoRondes}
+                onChange={(e) =>
+                  onAmericanoRondes(klemRondes(Number(e.target.value)))
+                }
+              />
+              <button
+                type="button"
+                className="stepper__btn"
+                aria-label="Eén ronde meer"
+                disabled={americanoRondes >= RONDES_MAX}
+                onClick={() => {
+                  tap();
+                  onAmericanoRondes((n) => klemRondes(n + 1));
+                }}
+              >
+                +
+              </button>
+            </span>
+          </div>
+        )}
 
         {blokkade && <p className="speelvorm__waarschuwing">{blokkade}</p>}
 
@@ -141,7 +180,7 @@ export function SpeelformaatKaart({
             onStart();
           }}
         >
-          {bezig ? "Bezig…" : ctaLabel(vorm)}
+          {bezig ? "Bezig…" : ctaLabel(vorm, americanoRondes)}
         </button>
       </TabPanel>
 

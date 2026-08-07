@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { banen, beschrijving, ctaLabel, reserves, rondes } from "./speelformaat";
+import {
+  banen,
+  beschrijving,
+  ctaLabel,
+  klemRondes,
+  reserves,
+  rondes,
+} from "./speelformaat";
 
 describe("banen en reserves", () => {
   it("rekent vier spelers per baan", () => {
@@ -52,5 +59,34 @@ describe("ctaLabel", () => {
     expect(ctaLabel("eerlijk")).toBe("Stel eerlijke teams voor");
     expect(ctaLabel("americano")).toBe("Start Americano");
     expect(ctaLabel("mexicano")).toBe("Start Mexicano");
+  });
+});
+
+describe("klemRondes", () => {
+  it("houdt de waarde tussen één en tien", () => {
+    expect(klemRondes(0)).toBe(1);
+    expect(klemRondes(-3)).toBe(1);
+    expect(klemRondes(5)).toBe(5);
+    expect(klemRondes(99)).toBe(10);
+  });
+
+  // Een leeg invoerveld geeft Number("") === 0, en een gewiste NaN-waarde mag
+  // de knop niet op "Start NaN Americano-rondes" zetten.
+  it("valt terug op het minimum bij een onbruikbaar getal", () => {
+    expect(klemRondes(Number.NaN)).toBe(1);
+    expect(klemRondes(Number("")))
+      .toBe(1);
+  });
+});
+
+describe("ctaLabel met een aantal rondes", () => {
+  it("noemt het aantal zodra het er meer dan één zijn", () => {
+    expect(ctaLabel("americano", 1)).toBe("Start Americano");
+    expect(ctaLabel("americano", 4)).toBe("Start 4 Americano-rondes");
+  });
+
+  it("laat de andere vormen ongemoeid", () => {
+    expect(ctaLabel("mexicano", 4)).toBe("Start Mexicano");
+    expect(ctaLabel("eerlijk", 4)).toBe("Stel eerlijke teams voor");
   });
 });

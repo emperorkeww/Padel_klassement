@@ -108,18 +108,45 @@
   color: var(--paneel-om-ink-soft);
 }
 
-/* Het rondegetal ís hier de keuze, dus de select draagt de vorm van de waarde
-   ernaast in plaats van die van een formulierveld. */
-.speelvorm__rondes {
-  padding: 2px var(--sp-1);
-  border: 1px solid var(--paneel-om-lijn);
-  border-radius: var(--radius-sm);
-  background: var(--paneel-om-vlak);
+/* Rondekeuze: een eigen regel, geen keuzevakje verstopt in de meta-rij. Label
+   links, stappers rechts — met de duim te bedienen zonder in te zoomen. */
+.speelvorm__keuzerij {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.speelvorm__keuzelabel {
+  font-size: var(--fs-md);
+  font-weight: 700;
   color: var(--paneel-om-ink);
-  font-family: inherit;
-  font-size: var(--fs-base);
-  font-weight: 800;
-  cursor: pointer;
+}
+/* De stappers zelf komen uit ScoreStepper.css; hier alleen de kleuren van het
+   omgekeerde vlak eroverheen. */
+.speelvorm .stepper__btn {
+  background: var(--paneel-om-vlak);
+  border-color: var(--paneel-om-lijn);
+  color: var(--paneel-om-ink);
+}
+.speelvorm .stepper__btn:hover:not(:disabled) {
+  background: var(--paneel-om-ink);
+  border-color: var(--paneel-om-ink);
+  color: var(--paneel-om);
+}
+.speelvorm .stepper__btn:focus-visible {
+  outline-color: var(--lime);
+}
+.speelvorm .input--score {
+  width: 56px;
+  background: var(--paneel-om-vlak);
+  border-color: var(--paneel-om-lijn);
+  color: var(--paneel-om-ink);
+}
+.speelvorm .input--score:focus {
+  border-color: var(--lime);
+  /* --ring is smaragd op een lichte ondergrond; op dit vlak zie je die niet. */
+  box-shadow: 0 0 0 3px rgb(199 230 58 / 0.25);
 }
 
 .speelvorm__waarschuwing {
