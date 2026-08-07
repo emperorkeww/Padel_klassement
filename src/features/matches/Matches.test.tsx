@@ -113,9 +113,8 @@ describe("<Matches />", () => {
 
   it("logt een match via de wizard (spelers → score → opslaan)", async () => {
     renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /match loggen/i }),
-    );
+    // Eén zwevende knop (#1123); loggen is de stand waarin het sheet opent.
+    await userEvent.click(await screen.findByRole("button", { name: /^match$/i }));
     const sheet = within(await screen.findByRole("dialog"));
     expect(sheet.getByText(/wie speelden er/i)).toBeInTheDocument();
 
@@ -153,10 +152,11 @@ describe("<Matches />", () => {
 
   it("plant een match via de wizard (spelers → tijdstip → plannen)", async () => {
     renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /^match plannen$/i }),
-    );
+    await userEvent.click(await screen.findByRole("button", { name: /^match$/i }));
     const sheet = within(await screen.findByRole("dialog"));
+    // Plannen is sinds #1123 een keuze ín het sheet, niet een tweede knop op
+    // de pagina.
+    await userEvent.click(sheet.getByRole("radio", { name: /match plannen/i }));
     expect(sheet.getByText(/wie spelen er/i)).toBeInTheDocument();
 
     for (const naam of [/alice anders/i, /bob boers/i, /carol claes/i, /dave de vos/i]) {
@@ -179,10 +179,9 @@ describe("<Matches />", () => {
 
   it("plant een match gekoppeld aan een groep (#361)", async () => {
     renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /^match plannen$/i }),
-    );
+    await userEvent.click(await screen.findByRole("button", { name: /^match$/i }));
     const sheet = within(await screen.findByRole("dialog"));
+    await userEvent.click(sheet.getByRole("radio", { name: /match plannen/i }));
     await userEvent.selectOptions(
       await sheet.findByLabelText(/koppel aan groep/i),
       "g1",
@@ -202,9 +201,7 @@ describe("<Matches />", () => {
 
   it("sluit de wizard met Escape", async () => {
     renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /match loggen/i }),
-    );
+    await userEvent.click(await screen.findByRole("button", { name: /^match$/i }));
     await screen.findByRole("dialog");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -212,23 +209,28 @@ describe("<Matches />", () => {
 
   // ── #914 ────────────────────────────────────────────────────────────────
 
-  it("heeft één primaire actie: loggen zweeft, plannen staat in de kop", async () => {
+  it("heeft één primaire actie: de zwevende knop, met de keuze in het sheet", async () => {
     const { container } = renderPage();
     await screen.findByText(/recente matches/i);
 
-    const log = screen.getByRole("button", { name: /match loggen/i });
-    expect(log).toHaveClass("matches__fab");
+    const knop = screen.getByRole("button", { name: /^match$/i });
+    expect(knop).toHaveClass("matches__fab");
     // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942): dezelfde
     // die de "Jouw positie"-chip van het klassement draagt.
-    expect(log).toHaveClass("zwevende-actie");
-    // De kop draagt alleen nog de secundaire actie.
+    expect(knop).toHaveClass("zwevende-actie");
+    // De kop draagt geen actie meer (#1123): loggen én plannen lopen allebei
+    // via deze ene knop, zodat op telefoonbreedte niet twee knoppen om de
+    // hoofdrol concurreren.
     const kop = container.querySelector(".page-head")!;
+    expect(within(kop as HTMLElement).queryByRole("button")).toBeNull();
+
+    // De keuze tussen loggen en plannen staat in stap 1 van het sheet.
+    await userEvent.click(knop);
+    const sheet = within(await screen.findByRole("dialog"));
     expect(
-      within(kop as HTMLElement).getByRole("button", { name: /match plannen/i }),
-    ).toBeInTheDocument();
-    expect(
-      within(kop as HTMLElement).queryByRole("button", { name: /match loggen/i }),
-    ).toBeNull();
+      sheet.getByRole("radio", { name: /uitslag loggen/i }),
+    ).toBeChecked();
+    expect(sheet.getByRole("radio", { name: /match plannen/i })).toBeInTheDocument();
   });
 
   it("reserveert de ruimte van 'Te spelen' tijdens het laden", async () => {
@@ -245,6 +247,19 @@ describe("<Matches />", () => {
     expect(
       await screen.findByLabelText(/^score alice anders & bob boers$/i),
     ).toBeInTheDocument();
+  });
+
+  // #106/#1123: de hub linkt met "?log=1" naar deze pagina om meteen te kunnen
+  // loggen. Sinds #1123 loopt dat via de sectie en ruimt de pagina de parameter
+  // op — anders opent het sheet opnieuw bij elke refresh.
+  it("opent het log-sheet meteen bij ?log=1 en houdt de groepsfilter heel", async () => {
+    renderPage("/?log=1&periode=7d");
+    const sheet = within(await screen.findByRole("dialog"));
+    // Vast op loggen: wie hierheen komt om te loggen krijgt geen keuzevraag.
+    expect(sheet.getByText(/wie speelden er/i)).toBeInTheDocument();
+    expect(sheet.queryByRole("radio", { name: /match plannen/i })).toBeNull();
+    // De andere parameter blijft staan; alleen "log" wordt verbruikt.
+    expect(screen.getByLabelText("Periode")).toHaveValue("7d");
   });
 
   it("filtert op periode en bewaart de keuze in de URL", async () => {

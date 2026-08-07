@@ -97,11 +97,18 @@ describe("keuzebanen in het match-sheet (#1083)", () => {
   const tsx = lees("src/features/matches/components/NewMatchSheet.tsx");
 
   it("zet de baan op glas, maar alleen binnen het sheet", () => {
-    // Speelvorm en baantype liggen op een glazen sheet; een dekkende
-    // --surface-2 las daar als een grijze plaat. Elders in de app ligt .tabs
-    // op een dichte pagina en blijft hij zoals hij is — vandaar per instantie
-    // en niet in de gedeelde .tabs-regel.
-    expect(tsx.match(/tabs[^"`]*glas glas--subtiel glas--pil/g) ?? []).toHaveLength(2);
+    // Speelvorm, baantype en sinds #1123 de keuze loggen/plannen liggen op een
+    // glazen sheet; een dekkende --surface-2 las daar als een grijze plaat.
+    // Elders in de app ligt .tabs op een dichte pagina en blijft hij zoals hij
+    // is — vandaar per instantie en niet in de gedeelde .tabs-regel.
+    //
+    // Geteld tegen het totaal in plaats van tegen een vast getal: een nieuwe
+    // keuzebaan in dit sheet moet mee op glas, en dat is precies wat hier
+    // misgaat als iemand hem vergeet.
+    const alle = tsx.match(/className="tabs\b/g) ?? [];
+    const opGlas = tsx.match(/tabs[^"`]*glas glas--subtiel glas--pil/g) ?? [];
+    expect(alle.length).toBeGreaterThan(0);
+    expect(opGlas).toHaveLength(alle.length);
   });
 });
 
