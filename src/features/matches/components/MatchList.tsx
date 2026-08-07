@@ -7,6 +7,7 @@ import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
 import type { MatchExtras } from "@/features/matches/useMatchEffecten";
 import { traktatieRegel } from "@/features/matches/drankkaart";
+import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
@@ -60,8 +61,22 @@ export function MatchCard({
           ? "match-card--draw"
           : "";
 
+  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie CSS-lagen
+  // die optellen. Bewust geen samengestelde klasse per combinatie — `data-fx`
+  // zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk zijn eigen
+  // laag aan. Bij een vierde effect komt er één attribuut en één regel CSS bij.
+  const fx = matchEffecten({ match: m, lef, joker });
+  const vlag = (aan: boolean) => (aan ? "" : undefined);
+
   return (
-    <Link className={`match-card ${outcomeClass}`} to={`/matches/${m.id}`}>
+    <Link
+      className={`match-card ${outcomeClass}`}
+      to={`/matches/${m.id}`}
+      data-fx={vlag(heeftEffect(fx))}
+      data-fx-lef={vlag(fx.lef)}
+      data-fx-joker={vlag(fx.joker)}
+      data-fx-inzet={vlag(fx.inzet)}
+    >
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
       <span className="match-card__mid">
         <span className="match-card__score">
