@@ -29,6 +29,7 @@ const GEEN: MatchRechten = {
   magInvullen: false,
   magCorrigeren: false,
   magBeheren: false,
+  alsBeheerder: false,
 };
 
 describe("matchFase", () => {
@@ -144,6 +145,7 @@ describe("matchRechten", () => {
       magInvullen: false,
       magCorrigeren: false,
       magBeheren: false,
+      alsBeheerder: false,
     });
   });
 
@@ -151,6 +153,63 @@ describe("matchRechten", () => {
     const r = matchRechten({ match: gepland, teams: tmap, myId: null });
     expect(r.magInvullen).toBe(false);
     expect(r.magCorrigeren).toBe(false);
+  });
+
+  // De beheerder van de app (#1159). Zijn rechten staan bewust niet in de
+  // RLS-policies — hij schrijft via de edge function `admin-content` — dus
+  // `alsBeheerder` moet zeggen wélke route de knop neemt.
+  describe("beheerder van de app (#1159)", () => {
+    it("geeft een buitenstaander die beheerder is alles, gemarkeerd als beheerdaad", () => {
+      const r = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p9",
+        isAppAdmin: true,
+      });
+      expect(r.magInvullen).toBe(true);
+      expect(r.magCorrigeren).toBe(true);
+      expect(r.magBeheren).toBe(true);
+      expect(r.alsBeheerder).toBe(true);
+      // Hij speelt nog steeds niet mee; dat blijft een feit en geen recht.
+      expect(r.isDeelnemer).toBe(false);
+    });
+
+    it("markeert het níet als beheerdaad wanneer de aanmaker toevallig ook beheerder is", () => {
+      // Wie op eigen titel mag, schrijft rechtstreeks over RLS en hoeft niet in
+      // het auditlogboek te belanden.
+      const r = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p1",
+        isAppAdmin: true,
+      });
+      expect(r.magCorrigeren).toBe(true);
+      expect(r.alsBeheerder).toBe(false);
+    });
+
+    it("markeert het níet als beheerdaad voor de groepseigenaar", () => {
+      const r = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: "p9",
+        isGroupOwner: true,
+        isAppAdmin: true,
+      });
+      expect(r.magBeheren).toBe(true);
+      expect(r.alsBeheerder).toBe(false);
+    });
+
+    it("geeft een uitgelogde kijker niets, ook niet met de vlag aan", () => {
+      const r = matchRechten({
+        match: gepland,
+        teams: tmap,
+        myId: null,
+        isAppAdmin: true,
+      });
+      expect(r.magInvullen).toBe(false);
+      expect(r.magCorrigeren).toBe(false);
+      expect(r.alsBeheerder).toBe(false);
+    });
   });
 
   // Dit is de valkuil waarvoor deze module bestaat: `magBeheren` hangt op

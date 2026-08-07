@@ -25,12 +25,13 @@ import { useClub } from "@/features/availability/club";
 import { predictionPoints } from "@/features/matches/predictions";
 import { getMatchPredictions } from "@/features/matches/predictionsApi";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
+import { teamLabel } from "@/features/matches/api";
+import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import {
-  deleteMatch,
-  setMatchResult,
-  teamLabel,
-  updatePlannedMatchTime,
-} from "@/features/matches/api";
+  verwijderMatchSlim,
+  verzetTijdstip,
+  vulUitslagIn,
+} from "@/features/admin/matchBeheer";
 import { serveerTeam } from "@/features/matches/serve";
 import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
@@ -332,12 +333,16 @@ export function PlannedMatchCard({
   // Wie wat mag, in één keer afgeleid (#1144). De regels zelf — en waarom
   // beheer op `perspectiveId` hangt en invullen op `myId` — staan in
   // matchState.ts, zodat kaart, detail en groepsronde niet uit elkaar lopen.
+  // De beheerder van de app mag overal aan (#1159); useIsAdmin cachet per
+  // sessie, dus een lijst met twintig kaarten kost één vraag.
+  const isAppAdmin = useIsAdmin() === true;
   const rechten = matchRechten({
     match: m,
     teams,
     myId,
     perspectiveId,
     isGroupOwner,
+    isAppAdmin,
   });
   const canManage = rechten.magBeheren;
   const canScore = rechten.magInvullen;
@@ -489,13 +494,16 @@ export function PlannedMatchCard({
 
     setSaved({ a, b, rivalryLine }); // optimistisch: meteen als uitslag tonen
     try {
-      await setMatchResult({
-        matchId: m.id,
-        winnerTeamId: a === b ? null : a > b ? m.team_a_id : m.team_b_id,
-        scoreA: a,
-        scoreB: b,
-        setScores: invoer.setScores,
-      });
+      await vulUitslagIn(
+        {
+          matchId: m.id,
+          winnerTeamId: a === b ? null : a > b ? m.team_a_id : m.team_b_id,
+          scoreA: a,
+          scoreB: b,
+          setScores: invoer.setScores,
+        },
+        rechten.alsBeheerder,
+      );
       const iWon =
         !!perspectiveId &&
         !!winnerTeam &&
@@ -522,10 +530,11 @@ export function PlannedMatchCard({
   async function saveTime() {
     setBusyTime(true);
     try {
-      await updatePlannedMatchTime({
-        matchId: m.id,
-        playedAt: timeVal ? new Date(timeVal).toISOString() : null,
-      });
+      await verzetTijdstip(
+        m.id,
+        timeVal ? new Date(timeVal).toISOString() : null,
+        rechten.alsBeheerder,
+      );
       tap();
       toast.success("Tijdstip bijgewerkt.");
       onSaved?.();
@@ -540,7 +549,7 @@ export function PlannedMatchCard({
     setPendingDelete(true);
     deleteTimer.current = setTimeout(async () => {
       try {
-        await deleteMatch(m.id);
+        await verwijderMatchSlim(m.id, rechten.alsBeheerder);
         tap();
         (onDeleted ?? onSaved)?.();
       } catch (err) {
@@ -560,7 +569,11 @@ export function PlannedMatchCard({
   if (pendingDelete) {
     return (
       <div className="planned-card__undo" role="status">
-        <span>Match verwijderd.</span>
+        <span>
+          {rechten.alsBeheerder
+            ? "Match verwijderd als beheerder."
+            : "Match verwijderd."}
+        </span>
         <button className="btn btn--sm" onClick={undoDelete}>
           Ongedaan maken
         </button>

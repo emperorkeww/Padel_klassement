@@ -57,6 +57,12 @@ export function heeftUitslag(match: Match): boolean {
  *   * deelnemer           — alleen de overgang naar 'completed' (#413)
  *   * groepseigenaar      — mag een groepsmatch volledig bijwerken (#978)
  *
+ * En sinds #1159 de beheerder van de app, die overal aan mag. Die staat níet in
+ * de policies: hij schrijft met de service-role via de edge function
+ * `admin-content`, juist omdat een ruimere policy hem de matches van alle
+ * vreemde groepen in zijn eigen feed en kwartaalstand zou geven. Vandaar
+ * `alsBeheerder` hieronder — de aanroeper moet weten welke route hij neemt.
+ *
  * De rechten zijn bewust *niet* met de fase vermengd: `magCorrigeren` zegt
  * "deze persoon mag een uitslag rechtzetten", niet "er valt nu iets recht te
  * zetten". Dat combineren doet `primaireActie` hieronder.
@@ -70,6 +76,16 @@ export interface MatchRechten {
   magCorrigeren: boolean;
   /** Mag het tijdstip verzetten en de match verwijderen. */
   magBeheren: boolean;
+  /**
+   * Komt dit recht *alleen* uit de beheerdersrol (#1159)? Dan loopt het
+   * schrijfpad via `admin-content` in plaats van rechtstreeks over RLS, en
+   * hoort de UI te tonen dat je als beheerder ingrijpt.
+   *
+   * False voor de aanmaker, de deelnemer en de groepseigenaar — ook als die
+   * toevallig óók beheerder is. Wie op eigen recht mag, hoeft niet als
+   * beheerder te loggen.
+   */
+  alsBeheerder: boolean;
 }
 
 export function matchRechten(opts: {
@@ -92,21 +108,35 @@ export function matchRechten(opts: {
   perspectiveId?: string | null;
   /** Beheert de kijker de groep waarin deze match hangt? */
   isGroupOwner?: boolean;
+  /** Is de kijker beheerder van de app (#1159)? */
+  isAppAdmin?: boolean;
 }): MatchRechten {
   const { match: m, teams, myId, perspectiveId = null } = opts;
   const isGroupOwner = opts.isGroupOwner ?? false;
+  const isAppAdmin = opts.isAppAdmin ?? false;
 
   const isDeelnemer =
     !!myId &&
     [teams[m.team_a_id], teams[m.team_b_id]].some((t) => inTeam(t, myId));
   const benIkAanmaker = !!myId && m.created_by === myId;
 
+  // Het eigen recht, los van de beheerdersrol: dat bepaalt of het schrijfpad
+  // over RLS loopt of over de edge function.
+  const eigenBeheer =
+    (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner;
+  const eigenCorrectie = !!myId && (benIkAanmaker || isGroupOwner);
+
+  // Een beheerder zonder sessie bestaat niet, maar de check is gratis en houdt
+  // de regel "alles hangt aan myId" overeind.
+  const beheerder = !!myId && isAppAdmin;
+
   return {
     isDeelnemer,
-    magInvullen: !!myId && (benIkAanmaker || isGroupOwner || isDeelnemer),
-    magCorrigeren: !!myId && (benIkAanmaker || isGroupOwner),
-    magBeheren:
-      (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner,
+    magInvullen:
+      (!!myId && (benIkAanmaker || isGroupOwner || isDeelnemer)) || beheerder,
+    magCorrigeren: eigenCorrectie || beheerder,
+    magBeheren: eigenBeheer || beheerder,
+    alsBeheerder: beheerder && !eigenCorrectie && !eigenBeheer,
   };
 }
 
