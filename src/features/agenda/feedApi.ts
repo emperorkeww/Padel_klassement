@@ -45,10 +45,30 @@ export function feedUrl(token: string, base = import.meta.env.VITE_SUPABASE_URL)
 }
 
 /**
- * Dezelfde URL met het webcal-schema. Eén tik op mobiel opent daarmee meteen
- * de agenda-app met de abonneervraag, in plaats van het bestand te downloaden
- * — precies het verschil tussen "volgt vanzelf" en "één momentopname".
+ * Dezelfde URL met het webcal-schema. Eén tik opent op iOS meteen Apple Agenda
+ * met de abonneervraag, in plaats van het bestand te downloaden — precies het
+ * verschil tussen "volgt vanzelf" en "één momentopname".
+ *
+ * Alleen op iOS: Android kent `webcal:` niet, daar doet een tik hier niets
+ * (#1117). Voor dat pad is `googleCalendarUrl()` er.
  */
 export function webcalUrl(token: string, base = import.meta.env.VITE_SUPABASE_URL): string {
   return feedUrl(token, base).replace(/^https?:/, "webcal:");
+}
+
+/**
+ * Google's eigen "agenda via URL toevoegen"-route (#1117).
+ *
+ * Dit is wat Android redt: de Google Agenda-app claimt `webcal:` niet, maar
+ * vangt deze https-link wél af — en anders opent de web-UI met dezelfde vraag.
+ *
+ * `cid` krijgt bewust de https-vorm mee. Google haalt de feed serverside op en
+ * slikt beide schema's, maar dit is de vorm uit hun eigen documentatie en hij
+ * overleeft het url-encoden zonder verrassingen.
+ */
+export function googleCalendarUrl(
+  token: string,
+  base = import.meta.env.VITE_SUPABASE_URL,
+): string {
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl(token, base))}`;
 }

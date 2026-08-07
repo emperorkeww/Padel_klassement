@@ -5,6 +5,7 @@ import { errorMessage } from "@/lib/utils/errors";
 import {
   feedUrl,
   getMyFeedToken,
+  googleCalendarUrl,
   rotateFeedToken,
   webcalUrl,
 } from "../feedApi";
@@ -19,6 +20,12 @@ import {
 /* Twee dingen moeten hier in gewone taal staan, want ze verrassen      */
 /* mensen anders: dat de agenda-app zelf bepaalt hoe vaak hij ophaalt   */
 /* (bij Google uren), en dat de link zelf het wachtwoord is.            */
+/*                                                                     */
+/* Elk platform heeft een eigen weg naar binnen (#1117): één generieke  */
+/* knop kán dit niet, want `webcal:` doet op Android niets. Daarom drie */
+/* expliciete acties, en géén platformdetectie — user-agent-sniffing    */
+/* faalt stil op precies de randgevallen (iPad met desktop-UA,          */
+/* in-app-browsers) waar iemand die knop het hardst nodig heeft.        */
 /* ------------------------------------------------------------------ */
 
 export function AgendaAbonnement() {
@@ -61,7 +68,7 @@ export function AgendaAbonnement() {
       setGekopieerd(true);
       setTimeout(() => setGekopieerd(false), 2000);
     } catch {
-      // Geen toast: het veld ernaast staat er nog, en "selecteer en kopieer"
+      // Geen toast: het veld erboven staat er nog, en "selecteer en kopieer"
       // is dan de weg.
     }
   }
@@ -98,25 +105,40 @@ export function AgendaAbonnement() {
               onFocus={(e) => e.currentTarget.select()}
               aria-describedby={hintId}
             />
-            <button type="button" className="btn btn--sm" onClick={kopieer}>
-              {gekopieerd ? "Gekopieerd" : "Kopieer"}
-            </button>
           </div>
           <p className="agenda-abo__hint" id={hintId}>
             Wie deze link heeft, ziet wanneer je speelt. Deel hem niet — hij is
             je wachtwoord.
           </p>
 
-          <div className="agenda-abo__acties">
-            {/* webcal:// opent op een telefoon meteen de agenda-app met de
-                abonneervraag; https zou het bestand downloaden, en dan is het
-                weer één momentopname. */}
+          <div className="agenda-abo__apps">
+            {/* Google claimt webcal:// niet, maar vangt deze https-link wél af;
+                zonder deze knop gebeurt er op Android niets (#1117). Nieuw
+                tabblad, want dit is een website — geen app-overdracht. */}
             <a
               className="btn btn--primary agenda-abo__actie"
-              href={webcalUrl(token)}
+              href={googleCalendarUrl(token)}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Abonneer in je agenda-app
+              Google Agenda
             </a>
+            {/* webcal:// draagt over aan Apple Agenda, met de abonneervraag er
+                al in; https zou het bestand downloaden en dan is het weer één
+                momentopname. Bewust géén target: dit verlaat de browser. */}
+            <a className="btn agenda-abo__actie" href={webcalUrl(token)}>
+              Apple / iPhone
+            </a>
+            <button type="button" className="btn agenda-abo__actie" onClick={kopieer}>
+              {gekopieerd ? "Gekopieerd" : "Kopieer link"}
+            </button>
+          </div>
+          <p className="agenda-abo__hint">
+            Andere agenda — Outlook, Samsung, Thunderbird? Kopieer de link en
+            plak hem daar bij "Agenda via URL toevoegen".
+          </p>
+
+          <div className="agenda-abo__acties">
             <button
               type="button"
               className={`btn btn--sm agenda-abo__nieuw${bevestig ? " is-confirm" : ""}`}
