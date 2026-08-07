@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildMarkers,
+  filterOpGroepen,
+  leesGroepKeuze,
   dagLabel,
   daysInMonth,
   duurLabel,
@@ -17,6 +19,7 @@ import {
   tijdvak,
   toetsStap,
   volgendeSpeeldagen,
+  volgendeStap,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
@@ -608,5 +611,121 @@ describe("splitMarkers", () => {
     const { shown, extra } = splitMarkers(fake(5), 2);
     expect(shown).toHaveLength(2);
     expect(extra).toBe(3);
+  });
+});
+
+/* ---- #1121: de agenda neemt het werk van de Plannen-tab over ---- */
+
+function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
+  return {
+    pollId: "poll-1",
+    optionId: "opt-1",
+    groupId: "g1",
+    groupName: "Vamos!",
+    clubName: "Padel De Panne",
+    clubId: "club-1",
+    clubCity: "De Panne",
+    clubTimezone: "Europe/Brussels",
+    date: "2026-08-13",
+    startTime: "20:00",
+    duration: 90,
+    status: "open",
+    past: false,
+    iVoted: false,
+    myVote: null,
+    voterCount: 0,
+    yesVoterIds: [],
+    maybeVoterIds: [],
+    nietGestemdIds: [],
+    courts: null,
+    accessCode: null,
+    changedAt: "2026-08-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("volgendeStap (#1121)", () => {
+  // Jouw eigen stem gaat vóór alles: dat is het enige waar jij iets aan kunt
+  // doen, en het is de reden dat de Plannen-tab een next-action-zin had.
+  it("vraagt eerst jouw stem, ook als de rest ook nog moet", () => {
+    expect(
+      volgendeStap(marker({ myVote: null, nietGestemdIds: ["p2", "p3"] })),
+    ).toBe("Jij moet nog stemmen.");
+  });
+
+  it("wijst daarna naar wie er nog niets zei", () => {
+    expect(volgendeStap(marker({ myVote: "yes", nietGestemdIds: ["p2"] }))).toBe(
+      "Wacht op 1 lid van de groep.",
+    );
+  });
+
+  it("meldt het als iedereen gestemd heeft", () => {
+    expect(volgendeStap(marker({ myVote: "yes" }))).toBe(
+      "Alle stemmen zijn binnen — het moment wordt gekozen.",
+    );
+  });
+
+  it("stuurt een vastgelegde speeldag naar het boeken", () => {
+    expect(volgendeStap(marker({ status: "locked" }))).toBe(
+      "De baan moet nog geboekt worden.",
+    );
+  });
+
+  it("telt bij een geboekte speeldag af naar vier spelers", () => {
+    expect(
+      volgendeStap(marker({ status: "booked", yesVoterIds: ["a", "b", "c"] })),
+    ).toBe("Nog 1 bevestigde speler nodig voor wedstrijden.");
+    expect(
+      volgendeStap(
+        marker({ status: "booked", yesVoterIds: ["a", "b", "c", "d"] }),
+      ),
+    ).toBe("Alles staat vast.");
+  });
+
+  // Een dag die geweest is wacht nergens meer op; daar hoort geen aansporing.
+  it("zwijgt over een speeldag die geweest is", () => {
+    expect(volgendeStap(marker({ status: "booked", past: true }))).toBeNull();
+  });
+});
+
+describe("groepsfilter (#1121)", () => {
+  const m1 = marker({ groupId: "g1" });
+  const m2 = marker({ optionId: "opt-2", groupId: "g2" });
+
+  it("laat alles staan zonder keuze", () => {
+    expect(filterOpGroepen([m1, m2], [])).toEqual([m1, m2]);
+  });
+
+  it("houdt alleen de gekozen groepen over", () => {
+    expect(filterOpGroepen([m1, m2], ["g2"])).toEqual([m2]);
+  });
+
+  // Zonder deze zeef zou een verlaten groep de agenda leeg houden, terwijl er
+  // geen chip meer staat om hem uit te zetten.
+  it("vergeet groepen die je intussen verliet", () => {
+    expect(leesGroepKeuze("g1,weg", ["g1", "g2"])).toEqual(["g1"]);
+    expect(leesGroepKeuze("weg", ["g1"])).toEqual([]);
+    expect(leesGroepKeuze(null, ["g1"])).toEqual([]);
+  });
+});
+
+describe("buildMarkers — twijfelaars en stille leden (#1121)", () => {
+  it("splitst de stemmen uit en houdt over wie niets zei", () => {
+    const groepen = [{ ...groep("g1", "Vamos!"), member_ids: ["p1", "p2", "p3", "p4"] }];
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [option()],
+        votes: [vote("p1", "yes"), vote("p2", "maybe")],
+      }),
+      groepen,
+      "p1",
+      at("2026-08-01T10:00:00Z"),
+    );
+
+    expect(markers[0].yesVoterIds).toEqual(["p1"]);
+    expect(markers[0].maybeVoterIds).toEqual(["p2"]);
+    // p3 en p4 zeiden niets — dat is per poll, niet per moment.
+    expect(markers[0].nietGestemdIds).toEqual(["p3", "p4"]);
   });
 });

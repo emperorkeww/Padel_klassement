@@ -90,6 +90,52 @@
   color: var(--ink);
 }
 
+/* ---- Groepsfilter (#1121) ---- */
+
+/* Eén rij chips die horizontaal mag schuiven in plaats van te wrappen: het
+   raster eronder heeft de hoogte nodig, en een tweede rij chips duwt precies
+   de laatste week onder de vouw. */
+.agenda-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  /* De focusring van een chip mag niet door de schuifrand gekapt worden. */
+  padding: 3px 0;
+  scrollbar-width: none;
+}
+.agenda-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.agenda-filter__chip {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.agenda-filter__chip:hover {
+  border-color: var(--accent-line);
+}
+.agenda-filter__chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Aan of uit hangt niet aan kleur alleen: de actieve chip krijgt ook een
+   accentrand en een vlak eronder (WCAG 1.4.1). */
+.agenda-filter__chip[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 /* ---- Statusglyphs ---- */
 
 /* Rond voor wat vastligt, vierkant voor wat nog een vraag is. Bij zes pixels is
@@ -550,6 +596,37 @@
   color: var(--ink-soft);
 }
 
+/* De volgende stap van déze speeldag (#1121). Gedempt, want het is een
+   toelichting — behalve wanneer het op jou wacht: dan is het de reden dat je
+   deze kaart aantikt. */
+.speeldag__stap {
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.speeldag__stap.is-jij {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- Suggesties onder het dagpaneel (#1121) ---- */
+
+.agenda-suggesties {
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: start;
+}
+
+.agenda-suggesties__kies {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* De kaart die de knop oplevert vult de breedte; de knop zelf niet. */
+.agenda-suggesties > .card {
+  width: 100%;
+}
+
 /* ---- Laadvorm ---- */
 
 /* Zelfde maat en radius als een echte dagcel, zodat het raster niet krimpt
@@ -696,7 +773,19 @@
   letter-spacing: 1px;
 }
 
-.dagsheet__nogboeken {
+/* Waar deze speeldag op wacht (#1121). Zelfde toon als de oude
+   "nog boeken"-regel die hij vervangt: één zin, geen alarm. */
+.dagsheet__stap {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+/* Twijfelaars en stille leden bij naam (#1121). Het labelkopje staat op een
+   eigen regel, zodat een lange namenlijst niet om het label heen breekt. */
+.dagsheet__namenrij {
+  display: grid;
+  gap: 2px;
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--ink-soft-strong);
@@ -751,6 +840,17 @@
 .stemrij__aantal {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
+}
+
+/* Vrije banen per moment (#1121): een stil getal naast de stemtelling, maar
+   "vol" mag opvallen — dat is het enige dat je keuze meteen verandert. */
+.stemrij__banen {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.stemrij__banen.is-vol {
+  color: var(--warn);
 }
 
 /* Knoppen rechts uitlijnen, ook als de telling ontbreekt. */

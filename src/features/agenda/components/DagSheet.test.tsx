@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import type { Profile } from "@/types";
 import type { AgendaMarker } from "../agendaLogic";
 
 vi.mock("@/lib/supabase/client", async () => {
@@ -34,6 +35,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     groupId: "g1",
     groupName: "Vamos!",
     clubName: "Padel De Panne",
+    clubId: "club-1",
+    clubCity: "Beveren",
     clubTimezone: "Europe/Brussels",
     date: "2026-08-13",
     startTime: "20:00",
@@ -44,6 +47,8 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     myVote: null,
     voterCount: 6,
     yesVoterIds: [],
+    maybeVoterIds: [],
+    nietGestemdIds: [],
     courts: "3 & 4",
     accessCode: "4821",
     changedAt: "2026-08-01T18:00:00.000Z",
@@ -63,6 +68,7 @@ function toon(
   extra: AgendaMarker[] = [],
   /** Zoals Agenda hem doorgeeft: afwezig voor een dag die geweest is. */
   onPlan: (() => void) | undefined = undefined,
+  profielen: Record<string, Profile> = {},
 ) {
   const onGestemd = vi.fn();
   render(
@@ -73,7 +79,7 @@ function toon(
           markers={markers}
           momentenPerPoll={perPoll([...markers, ...extra])}
           ledenPerGroep={{ g1: 8 }}
-          profielen={{}}
+          profielen={profielen}
           myId="me"
           onGestemd={onGestemd}
           onPlan={onPlan}
@@ -251,5 +257,55 @@ describe("<DagSheet />", () => {
     // via het plan-sheet en een tweede ingang zou de lege staat tegenspreken.
     toon([], [], vi.fn());
     expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
+  });
+});
+
+/* ---- #1121: wat de Plannen-tab wél toonde en de agenda niet ---- */
+
+describe("<DagSheet /> — twijfelaars en stille leden (#1121)", () => {
+  const PROFIELEN = {
+    p2: { id: "p2", username: "bob", full_name: "Bob Boers", avatar_url: null, created_at: "2026-01-01T00:00:00Z" },
+    p3: { id: "p3", username: "carol", full_name: "Carol Claes", avatar_url: null, created_at: "2026-01-01T00:00:00Z" },
+  } as unknown as Record<string, Profile>;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  // Bij "nog één speler nodig" is dit de vraag: wie kan ik nog porren? De
+  // agenda gaf tot nu toe alleen het aantal ja-stemmers.
+  it("noemt de twijfelaars bij naam", () => {
+    toon(
+      [marker({ status: "open", maybeVoterIds: ["p2"] })],
+      [],
+      undefined,
+      PROFIELEN,
+    );
+    expect(screen.getByText("Misschien")).toBeInTheDocument();
+    expect(screen.getByText("Bob Boers")).toBeInTheDocument();
+  });
+
+  it("noemt wie er nog helemaal niets zei", () => {
+    toon(
+      [marker({ status: "open", myVote: "yes", nietGestemdIds: ["p3"] })],
+      [],
+      undefined,
+      PROFIELEN,
+    );
+    expect(screen.getByText("Nog niets gezegd")).toBeInTheDocument();
+    expect(screen.getByText("Carol Claes")).toBeInTheDocument();
+  });
+
+  // Een vastgelegde dag stelt de vraag niet meer, dus dan blijft die rij weg.
+  it("laat de stille leden weg zodra het moment vastligt", () => {
+    toon([marker({ status: "locked", nietGestemdIds: ["p3"] })], [], undefined, PROFIELEN);
+    expect(screen.queryByText("Nog niets gezegd")).not.toBeInTheDocument();
+  });
+
+  it("zegt waar de speeldag op wacht", () => {
+    toon([marker({ status: "open", myVote: null })]);
+    expect(screen.getByText("Jij moet nog stemmen.")).toBeInTheDocument();
   });
 });

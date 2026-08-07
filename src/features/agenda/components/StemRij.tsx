@@ -8,15 +8,17 @@ import { PollJaIcon, PollNeeIcon } from "@/features/groups/components/pollIconen
 /* Dezelfde handeling als op de Plannen-tab, dus dezelfde knoppen:      */
 /* VOTE_SEGMENTS en de `seg`-klassen uit Proposals.css, precies zoals   */
 /* PollOptionRow ze gebruikt. Bewust niet PollOptionRow zélf: die hangt */
-/* aan een PollOption met tally, haalbaarheid en vrije-banen-data, en   */
-/* dat haalt de agenda niet op — de haalbaarheid blijft het werk van de */
-/* Plannen-tab, die één tik weg is (#1104).                             */
+/* aan een PollOption met tally en haalbaarheid, en dat is meer dan een */
+/* rij in een sheet moet dragen. De vrije banen komen er sinds #1121    */
+/* wél bij: zonder dat getal kies je tussen twee momenten op stemmen    */
+/* alleen, terwijl er op één ervan geen baan meer is.                   */
 /* ------------------------------------------------------------------ */
 
 export function StemRij({
   titel,
   omschrijving,
   aantal,
+  banen,
   mine,
   onVote,
 }: {
@@ -27,6 +29,8 @@ export function StemRij({
   omschrijving: string;
   /** Aantal spelers met "ik kan"; null laat de telling weg. */
   aantal: number | null;
+  /** Vrije banen op dit moment; null zolang (of omdat) we het niet weten. */
+  banen?: number | null;
   mine: PollVoteStatus | null;
   onVote: (status: PollVoteStatus) => void;
 }) {
@@ -36,6 +40,13 @@ export function StemRij({
       {aantal != null && (
         <span className="stemrij__aantal">
           {aantal} {aantal === 1 ? "kan" : "kunnen"}
+        </span>
+      )}
+      {banen != null && (
+        <span
+          className={`stemrij__banen${banen === 0 ? " is-vol" : ""}`}
+        >
+          {banen === 0 ? "vol" : `${banen} vrij`}
         </span>
       )}
       <span className="seg" role="group" aria-label={`Jouw stem — ${omschrijving}`}>

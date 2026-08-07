@@ -15,6 +15,8 @@ import { getProfilesMap } from "@/features/profiles/api";
 import { getPollWindow, type PollWindow } from "@/features/groups/pollsApi";
 import {
   buildMarkers,
+  filterOpGroepen,
+  leesGroepKeuze,
   maandLabel,
   maandVan,
   markersByDay,
@@ -37,6 +39,8 @@ import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
 import { StatusGlyph } from "./components/StatusGlyph";
 import { AgendaAbonnement } from "./components/AgendaAbonnement";
+import { GroepFilter } from "./components/GroepFilter";
+import { AgendaSuggesties } from "./components/AgendaSuggesties";
 import "./Agenda.css";
 
 const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
@@ -44,6 +48,9 @@ const LEEG_VENSTER: PollWindow = { polls: [], options: [], votes: [] };
 /** Onthoudt voor welke groep je het laatst plande — bij drie groepen scheelt
  *  dat elke keer dezelfde keuze opnieuw maken. */
 const LAATSTE_GROEP = "agenda-laatste-groep";
+
+/** De gekozen filterchips (#1121), komma-gescheiden; leeg = alle groepen. */
+const GROEP_FILTER = "agenda-groepen";
 
 /* ------------------------------------------------------------------ */
 /* Agenda (#1091): alle speeldagen van al je groepen in de tijd.       */
@@ -76,6 +83,9 @@ export function Agenda() {
   const [planGroep, setPlanGroep] = useState<string | null>(() =>
     readFlag(LAATSTE_GROEP),
   );
+  const [bewaardFilter, setBewaardFilter] = useState<string | null>(() =>
+    readFlag(GROEP_FILTER),
+  );
   const [nieuwClub, setNieuwClub] = useState<Club>(globaleClub);
 
   const groepen = useAsync(getMyGroups, []);
@@ -99,9 +109,20 @@ export function Agenda() {
   useRealtime("play_poll_options", venster.reload);
   useRealtime("play_poll_votes", venster.reload);
 
-  const markers = useMemo(
+  const alleMarkers = useMemo(
     () => buildMarkers(venster.data ?? LEEG_VENSTER, lijst, myId, Date.now()),
     [venster.data, lijst, myId],
+  );
+  // De filterkeuze staat in localStorage, maar wordt elke render gezeefd langs
+  // de groepen die je nú hebt: een groep die je verliet zou de agenda anders
+  // leeg houden zonder dat er nog een chip staat om hem uit te zetten.
+  const groepFilter = useMemo(
+    () => leesGroepKeuze(bewaardFilter, lijst.map((g) => g.id)),
+    [bewaardFilter, lijst],
+  );
+  const markers = useMemo(
+    () => filterOpGroepen(alleMarkers, groepFilter),
+    [alleMarkers, groepFilter],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
   const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
@@ -127,6 +148,19 @@ export function Agenda() {
   const planGroepId =
     lijst.find((g) => g.id === planGroep)?.id ??
     (lijst.length === 1 ? lijst[0].id : null);
+
+  /** Groepskeuze onthouden; leeg wist de vlag, zodat "alles" de standaard is. */
+  function kiesGroepen(ids: string[]) {
+    const waarde = ids.length > 0 ? ids.join(",") : null;
+    setBewaardFilter(waarde);
+    writeFlag(GROEP_FILTER, waarde);
+  }
+
+  /** De groep waarvoor we plannen én suggesties tonen; onthouden voor later. */
+  function kiesPlanGroep(id: string) {
+    setPlanGroep(id);
+    writeFlag(LAATSTE_GROEP, id);
+  }
 
   // Alleen de eerste keer een skeleton. Bij het bladeren blijft het raster
   // staan en vullen de markers zich bij: een leeg raster laten flitsen is
@@ -265,6 +299,15 @@ export function Agenda() {
         </EmptyState>
       ) : (
         <>
+          {/* Boven het raster (#1121): met meerdere groepen draagt een dag al
+              snel drie stippen over evenveel clubs. Bij één groep valt de rij
+              vanzelf weg. */}
+          <GroepFilter
+            groepen={lijst}
+            gekozen={groepFilter}
+            onWissel={kiesGroepen}
+          />
+
           {laadt ? (
             <RasterSkeleton rijen={weeks.length} />
           ) : (
@@ -307,6 +350,16 @@ export function Agenda() {
             />
           )}
 
+          {/* De instap die op de Plannen-tab onderaan stond (#1121): eerst wat
+              er staat, dan pas het voorstel voor wat er nog bij kan. */}
+          <AgendaSuggesties
+            groepen={lijst}
+            groepId={planGroepId}
+            onGroep={kiesPlanGroep}
+            myId={myId}
+            onGestart={venster.reload}
+          />
+
           {/* Onder het raster: eerst zien wat er gepland staat, dan pas de
               vraag of je het in je eigen agenda wil (#1099). */}
           <AgendaAbonnement />
@@ -339,10 +392,7 @@ export function Agenda() {
         datum={planDag}
         groepen={lijst}
         gekozenGroep={planGroep}
-        onGroep={(id) => {
-          setPlanGroep(id);
-          writeFlag(LAATSTE_GROEP, id);
-        }}
+        onGroep={kiesPlanGroep}
         club={nieuwClub}
         onClub={setNieuwClub}
         vensterEinde={addDays(vandaag, 6)}

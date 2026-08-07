@@ -232,11 +232,13 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
 
     expect(click).toHaveBeenCalled();
     const ics = await createObjectURL.mock.calls[0][0].text();
-    // RFC 5545 escapet de newline tot \n binnen DESCRIPTION.
-    expect(ics).toContain("Toegangscode: b3: 1234");
+    expect(ics).toContain("Toegangscode b3: 1234");
     expect(ics).toContain("Baan 3 & 4");
     // De baan hoort ook bij de locatie: die staat in de agendamelding zelf.
     expect(ics).toContain("LOCATION:Sporthal De Kaai · Baan 3 & 4");
+    // Sinds #1121 dezelfde UID als "haal uit je agenda" (speeldagIcs): met een
+    // eigen UID wiste een annulering dit item nooit.
+    expect(ics).toContain("UID:speeldag-poll-1@vamos-padel");
   });
 
   it("laat de beheerder baan en code ook ná het boeken nog toevoegen", async () => {
