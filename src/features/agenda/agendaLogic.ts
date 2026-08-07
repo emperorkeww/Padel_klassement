@@ -3,6 +3,7 @@ import { longDay } from "@/features/groups/planPollHelpers";
 import type {
   PlayPoll,
   PollOption,
+  PollVoteStatus,
   PollWindow,
 } from "@/features/groups/pollsApi";
 import type { GroupSummary } from "@/features/groups/api";
@@ -34,6 +35,10 @@ export type AgendaMarker = {
   past: boolean;
   /** Stemde ik al op deze poll? Alleen zinvol bij een open poll. */
   iVoted: boolean;
+  /** Mijn stem op dít moment; null als ik er niets over zei (#1104). Los van
+   *  `iVoted`, dat over de hele poll gaat: op een poll met drie kandidaten kun
+   *  je twee momenten beantwoord hebben en het derde niet. */
+  myVote: PollVoteStatus | null;
   /** Aantal spelers dat op deze poll stemde (open-poll-hint). */
   voterCount: number;
   /** Spelers met "ik kan" op dít moment — de avatarstapel in het detail. */
@@ -91,10 +96,12 @@ export function buildMarkers(
     window.polls.map((p) => [p.id, p]),
   );
 
-  // Stemmen per moment, en per poll wie er stemde: twee doorlopen i.p.v. een
-  // filter per marker (een maandvenster kan honderden stemmen dragen).
+  // Stemmen per moment, per poll wie er stemde, en mijn eigen stem per moment:
+  // één doorloop i.p.v. een filter per marker (een maandvenster kan honderden
+  // stemmen dragen).
   const yesByOption = new Map<string, string[]>();
   const votersByPoll = new Map<string, Set<string>>();
+  const mineByOption = new Map<string, PollVoteStatus>();
   const optionPoll = new Map(window.options.map((o) => [o.id, o.poll_id]));
   for (const vote of window.votes) {
     if (vote.status === "yes") {
@@ -102,6 +109,7 @@ export function buildMarkers(
       if (list) list.push(vote.player_id);
       else yesByOption.set(vote.option_id, [vote.player_id]);
     }
+    if (vote.player_id === myId) mineByOption.set(vote.option_id, vote.status);
     const pollId = optionPoll.get(vote.option_id);
     if (pollId == null) continue;
     const voters = votersByPoll.get(pollId);
@@ -136,6 +144,7 @@ export function buildMarkers(
       status: vastgelegd ? (poll.status as AgendaStatus) : "open",
       past,
       iVoted: voters?.has(myId) ?? false,
+      myVote: mineByOption.get(option.id) ?? null,
       voterCount: voters?.size ?? 0,
       yesVoterIds: yesByOption.get(option.id) ?? [],
       courts: poll.courts,
@@ -325,8 +334,15 @@ export function dagLabel(
       ? `${dag}, niets gespeeld`
       : `${dag}, niets gepland, plan een speeldag`;
   }
+  // Bij een open poll hoort de stemstand erbij: de brede cel zegt "stem" of
+  // "jij ✓" (markerHint), en een naam die dat verzwijgt spreekt de cel tegen.
   const beschrijf = (m: AgendaMarker) =>
-    `speeldag ${statusLabel(m.status, m.past)} om ${m.startTime}, ${m.groupName}, ${m.clubName}`;
+    `speeldag ${statusLabel(m.status, m.past)} om ${m.startTime}, ${m.groupName}, ${m.clubName}` +
+    (m.status === "open" && !m.past
+      ? m.myVote
+        ? ", jij stemde al"
+        : ", jij stemde nog niet"
+      : "");
   if (markers.length === 1) return `${dag}, ${beschrijf(markers[0])}`;
   return `${dag}, ${markers.length} speeldagen: ${markers.map(beschrijf).join("; ")}`;
 }

@@ -379,6 +379,16 @@ export async function removePollOption(optionId: string): Promise<void> {
   invalidate("play-poll");
 }
 
+/**
+ * Prefixes die een gewijzigde stem raakt. `play-poll-votes` voedt de
+ * Plannen-tab, `play-poll-agenda` het maandvenster van de agenda (#1104) —
+ * dezelfde twee die `CACHE_PREFIXES.play_poll_votes` bij een realtime-event
+ * leegt. Alleen de eerste invalideren laat een `reload()` na je eigen stem de
+ * oude promise serveren, de hele TTL lang; dat viel niet op zolang realtime
+ * het overnam, maar zonder verbinding wél.
+ */
+const STEM_PREFIXES = ["play-poll-votes", "play-poll-agenda"] as const;
+
 /** Zet (of wijzig) je eigen stem op één optie. */
 export async function setPollVote(
   optionId: string,
@@ -397,7 +407,7 @@ export async function setPollVote(
     { onConflict: "option_id,player_id" },
   );
   if (error) throw error;
-  invalidate("play-poll-votes");
+  invalidate(...STEM_PREFIXES);
 }
 
 /** Haalt je eigen stem op één optie weg. */
@@ -411,7 +421,7 @@ export async function clearPollVote(
     .eq("option_id", optionId)
     .eq("player_id", playerId);
   if (error) throw error;
-  invalidate("play-poll-votes");
+  invalidate(...STEM_PREFIXES);
 }
 
 /**

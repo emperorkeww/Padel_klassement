@@ -21,12 +21,26 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     status: "booked",
     past: false,
     iVoted: false,
+    myVote: null,
     voterCount: 6,
     yesVoterIds: [],
     courts: null,
     accessCode: null,
     changedAt: "2026-08-01T18:00:00.000Z",
     ...overrides,
+  };
+}
+
+/** Dwingt de gemeten containerbreedte af: zonder layout meet de hook in jsdom
+ *  niets en valt het raster terug op de smalle cel, zónder markertekst. Geeft
+ *  een herstelfunctie terug (patroon uit Leaderboard.test). */
+function metContainerBreedte(px: number) {
+  const origRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    return { ...origRect.call(this), width: px } as DOMRect;
+  };
+  return () => {
+    Element.prototype.getBoundingClientRect = origRect;
   };
 }
 
@@ -96,6 +110,29 @@ describe("<MaandRaster />", () => {
     const { onPick } = toon();
     fireEvent.click(screen.getByRole("button", { name: /donderdag 13 augustus/ }));
     expect(onPick).toHaveBeenCalledWith("2026-08-13");
+  });
+
+  it("laat de stem-hint over dít moment gaan, niet over de poll (#1104)", () => {
+    const herstel = metContainerBreedte(900);
+    try {
+      toon({
+        perDag: {
+          // Twee momenten van dezelfde poll: het ene beantwoord, het andere
+          // niet. Vroeger las de hint `iVoted` en zei hij overal "jij ✓".
+          "2026-08-13": [
+            marker({ optionId: "a", status: "open", startTime: "18:00", iVoted: true, myVote: "yes" }),
+            marker({ optionId: "b", status: "open", startTime: "20:00", iVoted: true, myVote: null }),
+          ],
+        },
+      });
+      const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
+      expect(dag.textContent).toContain("jij ✓");
+      expect(dag.textContent).toContain("stem");
+      expect(dag).toHaveAccessibleName(/jij stemde al/);
+      expect(dag).toHaveAccessibleName(/jij stemde nog niet/);
+    } finally {
+      herstel();
+    }
   });
 
   it("kondigt aan wat er niet in een cel past", () => {
