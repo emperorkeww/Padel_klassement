@@ -59,3 +59,32 @@ describe("'Jouw positie'-chip", () => {
     expect(blok).not.toMatch(/border-radius/);
   });
 });
+
+describe("sticky selectiebalk van de poll-wizard (#1083)", () => {
+  const tsx = lees("src/features/groups/components/PollWizard.tsx");
+  const css = lees("src/features/groups/Proposals.css");
+  const blok = css.match(/\n\.wizard-footer \{([\s\S]*?)\n\}/)![1];
+
+  it("draagt het materiaal als balk", () => {
+    expect(tsx).toMatch(/className="wizard-footer glas glas--sterk glas--balk"/);
+  });
+
+  it("heeft geen dekkende vulling meer", () => {
+    // Dit is de bug uit #1083: op een glazen sheet werd `background: --surface`
+    // een wit blok met rechte hoeken en een strook glas ernaast. De balk moet
+    // frosten wat eronderdoor scrolt, niet dichtplakken.
+    expect(blok).not.toMatch(/^\s*background:/m);
+    expect(blok).toMatch(/--glas-schaduw:\s*var\(--shadow-up\)/);
+  });
+
+  it("loopt in het sheet van rand tot rand", () => {
+    // Zonder deze negatieve marge blijft de zijpadding van .sheet als glasstrook
+    // naast de balk staan — precies wat de screenshot in #1083 laat zien.
+    const inSheet = css.match(/\.sheet--wizard \.wizard-footer \{([\s\S]*?)\n\}/)![1];
+    expect(inSheet).toMatch(/margin-inline:\s*calc\(var\(--sp-5\) \* -1\)/);
+    expect(inSheet).toMatch(/padding-inline:\s*var\(--sp-5\)/);
+    // De scheidingslijn moet donker zijn: het witte bovenlicht van .glas--balk
+    // is op het lichte thema onzichtbaar.
+    expect(inSheet).toMatch(/border-top:\s*1px solid rgb\(var\(--glas-diep\)/);
+  });
+});

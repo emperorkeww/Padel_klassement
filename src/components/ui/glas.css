@@ -175,33 +175,44 @@
 }
 
 /* ---------- Varianten ---------- */
+/* Dekking en blur zijn hier factoren op --glas-dekking-basis en
+   --glas-blur-basis uit index.css, en geen kale getallen (#1083). Een custom
+   property die op het element zelf staat wint van dezelfde property op :root;
+   zolang elke variant hier een eigen getal neerzette, kon een thema het
+   materiaal dus helemaal niet bijstellen — de donkere `--glas-dekking: 0.8`
+   uit #1062 kwam nergens aan en donker draaide gewoon op de lichte dekking.
+   Op het lichte thema geven de factoren hieronder exact dezelfde waarden als
+   voorheen; het verschil is dat het thema nu bepaalt hoevéél materiaal er is
+   en de variant alleen nog de verhouding tussen de varianten onderling. */
+
 /* Grote vlakken: net genoeg materiaal om zich van de pagina te scheiden. */
 .glas--subtiel {
-  --glas-blur: 8px;
-  --glas-dekking: 0.9;
+  --glas-blur: calc(var(--glas-blur-basis) * 0.5);
+  /* min(), want boven 1 is een dekking geen dekking meer. */
+  --glas-dekking: min(1, calc(var(--glas-dekking-basis) * 1.05));
   --glas-rand-kracht: 0.3;
   --glas-schaduw: var(--shadow-sm);
 }
-/* Kaarten en panelen. */
+/* Kaarten en panelen: de basis zelf. */
 .glas--standaard {
-  --glas-blur: 16px;
-  --glas-dekking: 0.86;
+  --glas-blur: var(--glas-blur-basis);
+  --glas-dekking: var(--glas-dekking-basis);
   --glas-rand-kracht: 0.55;
   --glas-schaduw: var(--shadow-md);
 }
 /* Overlays en zwevende navigatie: het materiaal moet duidelijk vóór de pagina
    liggen, dus meer blur, meer saturatie en een diepere slagschaduw. */
 .glas--sterk {
-  --glas-blur: 22px;
+  --glas-blur: calc(var(--glas-blur-basis) * 1.375);
   --glas-saturatie: 185%;
-  --glas-dekking: 0.8;
+  --glas-dekking: calc(var(--glas-dekking-basis) * 0.93);
   --glas-rand-kracht: 0.8;
   --glas-schaduw: var(--shadow-lg);
 }
 /* Knoppen en chips. */
 .glas--interactief {
-  --glas-blur: 16px;
-  --glas-dekking: 0.86;
+  --glas-blur: var(--glas-blur-basis);
+  --glas-dekking: var(--glas-dekking-basis);
   --glas-rand-kracht: 0.7;
   --glas-schaduw: var(--shadow-md);
 }

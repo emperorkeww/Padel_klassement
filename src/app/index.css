@@ -320,13 +320,25 @@
      losse rgb-kanalen genoteerd, zodat elke variant er zijn eigen dekking op
      kan zetten zonder een tweede kleurtoken nodig te hebben.
      --glas-vast is de ondoorzichtige terugval voor browsers zonder
-     backdrop-filter en voor wie minder transparantie of meer contrast vraagt. */
+     backdrop-filter en voor wie minder transparantie of meer contrast vraagt.
+
+     Dekking en blur staan hier als *basis* (#1083). De varianten in glas.css
+     rekenen daar met een factor op door, in plaats van er een eigen getal voor
+     te zetten. Dat was namelijk stuk: een custom property die op het element
+     zelf staat wint altijd van dezelfde property op :root, dus zolang elke
+     variant `--glas-dekking` letterlijk zette, kon een thema er niets meer aan
+     veranderen — het donkere blok hieronder zette 0.8 en dat kwam nooit ergens
+     aan. Nu bepaalt het thema hoeveel materiaal er is en de variant alleen nog
+     de verhouding tussen de varianten onderling. */
   --glas-tint: 255 255 255;
   --glas-glans: 255 255 255;
   --glas-diep: 20 40 28;
-  --glas-dekking: 0.86;
+  --glas-dekking-basis: 0.86;
+  --glas-blur-basis: 16px;
+  /* Terugval voor een `.glas` zonder variant; die zetten normaal allebei. */
+  --glas-dekking: var(--glas-dekking-basis);
+  --glas-blur: var(--glas-blur-basis);
   --glas-glans-kracht: 1;
-  --glas-blur: 16px;
   --glas-saturatie: 165%;
   --glas-helderheid: 1.04;
   --glas-vast: var(--surface);
@@ -561,7 +573,10 @@
   --glas-tint: 22 30 25;
   --glas-glans: 255 255 255;
   --glas-diep: 0 0 0;
-  --glas-dekking: 0.8;
+  /* Deze 0.8 stond er al sinds #1062, maar deed tot #1083 niets: elke variant
+     zette --glas-dekking op het element zelf en dat wint van :root. Donker
+     draaide dus gewoon op de lichte dekking. Nu telt hij weer mee. */
+  --glas-dekking-basis: 0.8;
   --glas-glans-kracht: 0.5;
   --glas-helderheid: 1.12;
 
