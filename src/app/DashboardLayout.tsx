@@ -19,6 +19,7 @@ import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { JokerKnop } from "@/features/matches/components/JokerKnop";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { OfflineBanner } from "@/ui/OfflineBanner";
+import { useGlasScrollLicht } from "@/lib/hooks/useGlasScrollLicht";
 import "@/ui/ui.css";
 // Vóór DashboardLayout.css (#1062): de balken zetten hieronder een paar dingen
 // van het glasmateriaal recht, en dat werkt alleen als hun eigen regels later
@@ -100,6 +101,12 @@ export function DashboardLayout() {
   // het item er gewoon niet. Deze layout mount één keer per sessie, dus dit is
   // de enige plek in de app die het vraagt.
   const isAdmin = useIsAdmin();
+  // Hooglicht op de vaste balken (#1083). Het aanwijzer-hooglicht bestaat op
+  // een telefoon niet — geen muis, geen hover — terwijl dit een mobile-first
+  // app is. Deze twee balken staan altijd in beeld en de pagina schuift
+  // eronderdoor, dus daar is de scrollpositie een eerlijke lichtbron.
+  const topbarRef = useGlasScrollLicht<HTMLElement>();
+  const tabbarRef = useGlasScrollLicht<HTMLElement>();
   const sidebarGroepen = useMemo(
     () =>
       isAdmin
@@ -147,7 +154,7 @@ export function DashboardLayout() {
           De ?-knop is de vaste ingang naar "Hoe werkt het?" (#989) en springt
           waar mogelijk naar de sectie van het scherm waar je nú staat. Op
           desktop staat diezelfde ingang in de zijbalk hieronder. */}
-      <header className="topbar glas glas--sterk glas--balk">
+      <header className="topbar glas glas--sterk glas--balk glas--levend" ref={topbarRef}>
         <Link to="/" className="topbar__brand" aria-label="Naar overzicht">
           <BallIcon size={22} />
           <span>Vamos!</span>
@@ -256,8 +263,9 @@ export function DashboardLayout() {
 
       {/* Mobiele onderbalk: vijf tabs met labels, bal in het midden. */}
       <nav
-        className="tabbar glas glas--sterk glas--balk"
+        className="tabbar glas glas--sterk glas--balk glas--levend"
         aria-label="Hoofdnavigatie"
+        ref={tabbarRef}
       >
         {TABBAR.map((item) => {
           const actief = isSectionActive(item, pathname);

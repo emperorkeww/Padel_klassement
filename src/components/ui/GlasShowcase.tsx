@@ -97,6 +97,20 @@ export function GlasShowcase() {
             >
               +
             </LiquidGlass>
+            {/* Levend licht (#1083): dezelfde pil, maar met het hooglicht aan
+                zónder aanwijzer. Naast de gewone pil hierboven, want het
+                verschil is klein en alleen naast elkaar te beoordelen — het
+                mag glans zijn en geen spotlight. */}
+            <LiquidGlass
+              as="button"
+              type="button"
+              variant="interactief"
+              vorm="pil"
+              uitgeschakeld={uitgeschakeld}
+              className="glas-showcase__pil glas--levend"
+            >
+              Levend
+            </LiquidGlass>
             <LiquidGlass
               variant="sterk"
               vorm="paneel"
