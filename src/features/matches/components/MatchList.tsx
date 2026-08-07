@@ -6,7 +6,6 @@ import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
 import type { MatchExtras } from "@/features/matches/useMatchEffecten";
-import { traktatieRegel } from "@/features/matches/drankkaart";
 import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
 import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
