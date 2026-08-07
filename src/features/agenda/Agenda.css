@@ -712,3 +712,87 @@
     display: none;
   }
 }
+
+/* ---- Agenda-abonnement (#1099) ---- */
+
+/* Staat onder het raster en de legenda: eerst zien wat er gepland staat, dan
+   pas de vraag of je het in je eigen agenda wil. Zelfde kaartvorm als de
+   instap-kaart, maar met de neutrale lijn — dit is geen uitnodiging om iets
+   te doen, het is een voorziening die er staat. */
+.agenda-abo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.agenda-abo__titel {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--fs-md);
+  font-weight: 800;
+}
+
+.agenda-abo__tekst {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.agenda-abo__knop {
+  align-self: flex-start;
+}
+
+.agenda-abo__label {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.agenda-abo__rij {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* Monospace: een token lees je teken voor teken, en zo valt een half
+   geselecteerde link meteen op. */
+.agenda-abo__waarde {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--fs-xs);
+}
+
+.agenda-abo__hint,
+.agenda-abo__traag {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+.agenda-abo__acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+/* Een nieuwe link breekt elk lopend abonnement; de bevestigingsstand kleurt
+   daarom zoals het annuleren van een speeldag. */
+.agenda-abo__nieuw.is-confirm {
+  color: var(--danger);
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+
+.agenda-abo__waarschuwing {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--danger);
+}
