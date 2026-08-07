@@ -13,6 +13,7 @@ vi.mock("@/lib/supabase/client", async () => {
 import {
   feedUrl,
   getMyFeedToken,
+  googleCalendarUrl,
   rotateFeedToken,
   revokeFeedTokens,
   webcalUrl,
@@ -21,7 +22,7 @@ import {
 const BASE = "https://abc123.supabase.co";
 const TOKEN = "11111111-2222-3333-4444-555555555555";
 
-describe("feedUrl / webcalUrl", () => {
+describe("feedUrl / webcalUrl / googleCalendarUrl", () => {
   it("bouwt de feed-URL op de edge function", () => {
     expect(feedUrl(TOKEN, BASE)).toBe(
       `${BASE}/functions/v1/calendar-feed/${TOKEN}.ics`,
@@ -38,6 +39,28 @@ describe("feedUrl / webcalUrl", () => {
     expect(webcalUrl(TOKEN, BASE)).toBe(
       `webcal://abc123.supabase.co/functions/v1/calendar-feed/${TOKEN}.ics`,
     );
+  });
+
+  /* Android kent webcal:// niet; daar is Google's eigen "agenda via URL
+     toevoegen" de enige tik die iets doet (#1117). Die route wil de feed
+     ge-encodeerd in cid= hebben, anders kapt Google hem af op de query-scheiding. */
+  it("zet de feed url-encoded in Google's cid-parameter", () => {
+    const link = googleCalendarUrl(TOKEN, BASE);
+    expect(link).toBe(
+      `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl(TOKEN, BASE))}`,
+    );
+    expect(link).toContain("%3A%2F%2F");
+    expect(new URL(link).searchParams.get("cid")).toBe(feedUrl(TOKEN, BASE));
+  });
+
+  // Google haalt de feed serverside op: webcal: zou daar een schema zijn dat
+  // hun fetcher niet hoeft te kennen, dus de https-vorm gaat mee.
+  it("geeft Google de https-vorm, niet webcal", () => {
+    expect(googleCalendarUrl(TOKEN, BASE)).not.toContain("webcal");
+  });
+
+  it("laat ook hier een afsluitende slash geen dubbele slash worden", () => {
+    expect(googleCalendarUrl(TOKEN, `${BASE}/`)).toBe(googleCalendarUrl(TOKEN, BASE));
   });
 });
 

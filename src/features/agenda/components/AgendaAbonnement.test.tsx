@@ -41,7 +41,7 @@ describe("<AgendaAbonnement /> (#1099)", () => {
     expect(screen.queryByLabelText(/persoonlijke link/i)).not.toBeInTheDocument();
   });
 
-  it("toont de URL en de abonneerlink zodra je er een maakt", async () => {
+  it("toont de URL en de drie wegen naar je agenda zodra je er een maakt", async () => {
     rpc.mockResolvedValue({ data: NIEUW, error: null });
     toon();
 
@@ -53,11 +53,47 @@ describe("<AgendaAbonnement /> (#1099)", () => {
       /persoonlijke link/i,
     );
     expect(veld.value).toContain(`/functions/v1/calendar-feed/${NIEUW}.ics`);
-    // webcal:// opent op een telefoon meteen de agenda-app; https zou het
-    // bestand downloaden en dan is het weer één momentopname.
+    // webcal:// draagt op iOS over aan Apple Agenda; https zou het bestand
+    // downloaden en dan is het weer één momentopname.
     expect(
-      screen.getByRole("link", { name: /abonneer in je agenda-app/i }),
+      screen.getByRole("link", { name: /apple \/ iphone/i }),
     ).toHaveAttribute("href", expect.stringContaining("webcal://"));
+    expect(
+      screen.getByRole("button", { name: /kopieer link/i }),
+    ).toBeInTheDocument();
+  });
+
+  /* Zonder deze knop gebeurt er op Android niets: de Google Agenda-app claimt
+     webcal:// niet, dus de Apple-link valt daar in het niets (#1117). */
+  it("stuurt Android via Google's eigen agenda-via-URL, in een nieuw tabblad", async () => {
+    tables.calendar_feeds = [
+      { token: TOKEN, player_id: "p1", created_at: "2026-08-01T10:00:00Z", revoked_at: null },
+    ];
+    toon();
+
+    const google = await screen.findByRole("link", { name: /google agenda/i });
+    const href = google.getAttribute("href") ?? "";
+    expect(href).toContain("https://calendar.google.com/calendar/r?cid=");
+    expect(new URL(href).searchParams.get("cid")).toContain(
+      `/functions/v1/calendar-feed/${TOKEN}.ics`,
+    );
+    // Een website, geen app-overdracht: de agenda-tab moet blijven staan.
+    expect(google).toHaveAttribute("target", "_blank");
+    expect(google).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  });
+
+  /* Geen platformdetectie: user-agent-sniffing faalt stil op iPad met
+     desktop-UA en in-app-browsers, en verbergt dan net de werkende weg. */
+  it("toont alle drie de wegen, ongeacht het toestel", async () => {
+    vi.stubGlobal("navigator", { ...navigator, userAgent: "Mozilla/5.0 (Linux; Android 14)" });
+    tables.calendar_feeds = [
+      { token: TOKEN, player_id: "p1", created_at: "2026-08-01T10:00:00Z", revoked_at: null },
+    ];
+    toon();
+
+    expect(await screen.findByRole("link", { name: /google agenda/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /apple \/ iphone/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /kopieer link/i })).toBeInTheDocument();
   });
 
   it("kopieert de link naar het klembord", async () => {
