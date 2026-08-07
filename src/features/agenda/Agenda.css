@@ -994,11 +994,31 @@
   color: var(--ink-soft);
 }
 
-.agenda-abo__acties {
+/* De drie wegen naar je eigen agenda (#1117). Elk platform heeft er een
+   andere: Google vangt een https-link af, Apple luistert naar webcal://, en
+   de rest doet het met kopiëren en plakken. Ze staan naast elkaar zonder
+   platformdetectie, dus op smalle telefoons moeten ze mogen wikkelen — drie
+   knoppen op één regel persen maakt ze onleesbaar én te klein om te raken. */
+.agenda-abo__apps {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin-top: var(--sp-1);
+}
+
+/* Meegroeien met de regel waarop ze belanden: na het wikkelen blijft een
+   eenzame knop anders halfbreed achter. Centreren doet .btn zelf al. */
+.agenda-abo__apps .agenda-abo__actie {
+  flex: 1 1 auto;
+}
+
+/* Een nieuwe link maken staat apart van de drie hierboven: het is geen weg
+   naar je agenda maar het breken van elk lopend abonnement. */
+.agenda-abo__acties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
 }
 
 /* Een nieuwe link breekt elk lopend abonnement; de bevestigingsstand kleurt
