@@ -52,7 +52,7 @@ const OFFLINE_SUBMIT_MESSAGE =
 export function NewMatchSheet({
   open,
   players,
-  mode = "score",
+  mode,
   groupId,
   intensiteit = "gemeen",
   onClose,
@@ -61,6 +61,9 @@ export function NewMatchSheet({
 }: {
   open: boolean;
   players: Profile[];
+  /** Als gezet: de sheet staat vast op loggen of plannen en de keuze verschijnt
+   *  niet — dezelfde afspraak als `groupId` hieronder. Zonder waarde kiest de
+   *  gebruiker zelf in stap 1 (#1123); dan begint hij op "score". */
   mode?: NewMatchMode;
   /** Als gezet: de match wordt vast aan deze groep gekoppeld (telt mee in de
    *  groepsstand en avondsamenvatting) en de groep-keuze verschijnt niet.
@@ -82,6 +85,11 @@ export function NewMatchSheet({
   // Speelvorm (#279): dubbel (standaard) of singles; bepaalt de teamgrootte.
   const [format, setFormat] = useState<MatchFormat>("2v2");
   const [step, setStep] = useState<1 | 2>(1);
+  // Loggen of plannen (#1123). Vast wanneer de aanroeper een `mode` meegeeft;
+  // anders kiest de gebruiker in stap 1 en onthoudt de sheet die keuze voor de
+  // volgende keer — zo blijft het concept dat bij die modus hoort erbij horen.
+  const [gekozenModus, setGekozenModus] = useState<NewMatchMode>("score");
+  const modus = mode ?? gekozenModus;
   const [query, setQuery] = useState("");
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
@@ -160,7 +168,7 @@ export function NewMatchSheet({
 
   /** "Opnieuw beginnen": wis het bewaarde concept en start met een schone lei. */
   function startFresh() {
-    clearDraft(mode, groupId ?? null);
+    clearDraft(modus, groupId ?? null);
     resetFields();
     setResumed(false);
     tap();
@@ -170,7 +178,7 @@ export function NewMatchSheet({
   // beginnen. Gasten/zoekterm zijn sessie-state en starten altijd leeg.
   useEffect(() => {
     if (!open) return;
-    const draft = readDraft(mode, groupId ?? null);
+    const draft = readDraft(modus, groupId ?? null);
     if (draft) {
       setTeamA(draft.teamA);
       setTeamB(draft.teamB);
@@ -199,6 +207,12 @@ export function NewMatchSheet({
     setExtraGuests([]);
     setGuestName("");
     setAddingGuest(false);
+    // Bewust op de prop `mode` en niet op `modus`: wisselt de gebruiker zélf
+    // van loggen naar plannen (#1123), dan mag dit effect niet opnieuw draaien
+    // — het zou het concept van de ándere modus inlezen en de zojuist gekozen
+    // spelers overschrijven. Een aanroeper die de modus vastzet, opent de sheet
+    // sowieso opnieuw, en dan draait dit effect via `open` alsnog.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, groupId]);
 
   // Concept debounced bewaren zolang de sheet open is en er iets is ingevuld;
@@ -226,14 +240,14 @@ export function NewMatchSheet({
       savedAt: Date.now(),
     };
     if (!isDraftMeaningful(draft)) {
-      clearDraft(mode, groupId ?? null);
+      clearDraft(modus, groupId ?? null);
       return;
     }
-    const t = setTimeout(() => writeDraft(mode, groupId ?? null, draft), 400);
+    const t = setTimeout(() => writeDraft(modus, groupId ?? null, draft), 400);
     return () => clearTimeout(t);
   }, [
     open,
-    mode,
+    modus,
     groupId,
     teamA,
     teamB,
@@ -441,7 +455,7 @@ export function NewMatchSheet({
             : "Match gepland — je vindt hem bij Te spelen.",
         );
       }
-      clearDraft(mode, groupId ?? null);
+      clearDraft(modus, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
@@ -511,7 +525,7 @@ export function NewMatchSheet({
           );
         }
       }
-      clearDraft(mode, groupId ?? null);
+      clearDraft(modus, groupId ?? null);
       onCreated();
       onClose();
     } catch (err) {
@@ -525,15 +539,15 @@ export function NewMatchSheet({
     <Sheet
       open
       onClose={onClose}
-      ariaLabel={mode === "plan" ? "Match plannen" : "Match loggen"}
+      ariaLabel={modus === "plan" ? "Match plannen" : "Match loggen"}
     >
         <header className="sheet__head">
           <h2 className="sheet__title">
             {step === 1
-              ? mode === "plan"
+              ? modus === "plan"
                 ? "Wie spelen er?"
                 : "Wie speelden er?"
-              : mode === "plan"
+              : modus === "plan"
                 ? "Wanneer spelen jullie?"
                 : "Wat was de eindscore?"}
           </h2>
@@ -558,7 +572,7 @@ export function NewMatchSheet({
             <span className="steps__dot" aria-hidden="true">
               2
             </span>
-            {mode === "plan" ? "Plannen" : "Score"}
+            {modus === "plan" ? "Plannen" : "Score"}
           </li>
         </ol>
 
@@ -577,6 +591,39 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
+            {/* Loggen of plannen (#1123). Sinds de matchsectie nog maar één
+                zwevende knop heeft, valt de keuze hier — in stap 1, want de
+                spelers kies je voor allebei hetzelfde en pas stap 2 verschilt.
+                Bewust alleen zichtbaar als de aanroeper de modus niet vastzet:
+                vanaf de Vandaag-tab weet je al dat je een uitslag invult. */}
+            {mode === undefined && (
+              <div
+                className="tabs glas glas--subtiel glas--pil"
+                role="radiogroup"
+                aria-label="Wat wil je doen?"
+              >
+                {(
+                  [
+                    { value: "score", label: "Uitslag loggen" },
+                    { value: "plan", label: "Match plannen" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={modus === o.value}
+                    className={`tab ${modus === o.value ? "is-active" : ""}`}
+                    onClick={() => {
+                      setGekozenModus(o.value);
+                      tap();
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* Speelvorm kiezen (#279): dubbel of singles. De baan van de
                 keuze staat sinds #1083 op glas — dit sheet ís glas, en een
                 dekkende --surface-2 erop las als een grijze plaat. Elders in
@@ -752,13 +799,13 @@ export function NewMatchSheet({
                 disabled={!full}
                 onClick={() => setStep(2)}
               >
-                {mode === "plan" ? "Naar plannen →" : "Naar de score →"}
+                {modus === "plan" ? "Naar plannen →" : "Naar de score →"}
               </button>
             </footer>
           </>
         )}
 
-        {step === 2 && mode === "plan" && (
+        {step === 2 && modus === "plan" && (
           <>
             <div className="pick-teams pick-teams--stacked">
               <div className="pick-teams__team pick-teams__team--a">
@@ -864,7 +911,7 @@ export function NewMatchSheet({
           </>
         )}
 
-        {step === 2 && mode === "score" && (
+        {step === 2 && modus === "score" && (
           <>
             <div className="score-entry">
               <div

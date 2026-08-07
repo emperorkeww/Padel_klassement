@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardLayout } from "@/app/DashboardLayout";
 import { ScrollRestore } from "@/app/ScrollRestore";
+import { RedirectMetQuery } from "@/app/RedirectMetQuery";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
@@ -162,7 +163,7 @@ function App() {
                   naar ?hub=1, omdat kaal /spelen je bij één groep meteen die
                   groep in stuurde — die uitzondering is er niet meer. */}
               <Route path="/spelen" element={<Groups />} />
-              <Route path="/groepen" element={<Navigate to="/spelen" replace />} />
+              <Route path="/groepen" element={<RedirectMetQuery to="/spelen" />} />
               <Route path="/groepen/join/:token" element={<JoinGroup />} />
               <Route path="/groepen/:id" element={<GroupDetail />} />
               <Route path="/vrienden" element={<Friends />} />
