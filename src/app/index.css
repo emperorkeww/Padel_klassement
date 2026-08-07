@@ -453,12 +453,17 @@
       gekozen nav-item (dat is nu het merkgroen zelf), maar uitsluitend
       prestatie — streak, ratingwinst, bijzondere klassementsstatus.
 
-   De ladder ligt bewust ~2,5 L* hóger dan de aangeleverde ontwerpwaarden
-   (#0b1016/#121922). Onder L* 4,5 kan de zijbalk niet meer de ≥3 L* onder de
-   pagina liggen die regel 2 van de ladder in contrast-check.mjs vraagt, zonder
-   praktisch zwart te worden — en "geen puur zwart" is juist het uitgangspunt.
-   Door de hele trap op te tillen blijft die regel staan en hoefde er aan het
-   script niets te veranderen.
+   De trap is bewust géén bijna-zwart geworden. Een canvas rond L* 4 dwingt de
+   zijbalk naar praktisch zwart (die moet ≥3 L* onder de pagina blijven), en
+   dan verdwijnt precies de diepte waar dit thema het van moet hebben: een
+   bijna-zwarte zijbalk, een blauw-charcoal canvas en kaarten die daar zichtbaar
+   bovenop liggen. Vandaar sidebar #070b0d → canvas #10161e → kaart #1a212b →
+   verhoogd #252e3a. Er hoefde aan contrast-check.mjs dan ook geen drempel te
+   worden aangepast.
+
+   Blauw-charcoal en niet groengetint: de FUT- en divisiekaarten zijn zelf al
+   verzadigd goud, bordeaux en roze. Een groene pagina gaat daarmee concurreren;
+   een neutrale pagina geeft ze het podium.
 
    De zachte vlakken (--*-soft) zijn opnieuw gemengd: elk is zijn eigen
    voorgrondkleur op ~12% over de nieuwe kaart. Zo liggen ze net bóven de kaart
@@ -467,27 +472,27 @@
    te blijven staan. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: elke stap ≈ 4–7 L*, zie de kop hierboven. */
-  --bg: #0f161f; /* bijna-zwart blauwgrijs — de app-achtergrond */
-  --surface: #18212c; /* kaarten */
-  --surface-2: #1f2935; /* subtiel vlak / tracks */
-  --surface-elevated: #212c39; /* hero, sheets, popovers */
-  --surface-hover: #26313e; /* hover op kaarten, nav-items, knoppen */
+  --bg: #10161e; /* bijna-zwart blauwgrijs — de app-achtergrond */
+  --surface: #1a212b; /* kaarten */
+  --surface-2: #212934; /* subtiel vlak / tracks */
+  --surface-elevated: #252e3a; /* hero, sheets, popovers */
+  --surface-hover: #28313c; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #173d31; /* gekozen nav-item — mint getint */
-  --background-navigation: #06090d;
+  --background-navigation: #070b0d;
   --navigation-ink: #f4f7f9;
   --navigation-muted: #a7b2bd;
   /* Het gekozen nav-item is een getinte pil, geen vol groen blok: de kleur zit
      in het label en het icoon, het vlak eronder blijft een hint. */
   --navigation-surface: rgba(110, 231, 168, 0.1);
   /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
-  --ink: #f4f7f9;
-  --ink-soft: #a7b2bd;
-  --ink-soft-strong: #c2cbd4;
+  --ink: #f5f7f9;
+  --ink-soft: #a9b2bc;
+  --ink-soft-strong: #c4ccd4;
   /* Randen dragen op donker de hiërarchie mee, dus ze mogen gezien worden:
      --line haalde 1,32:1 op de kaart en verdween daarmee gewoon. */
-  --line: #25313d;
-  --line-strong: #344250;
-  --divider: #232e3a;
+  --line: #303a46;
+  --line-strong: #37424f;
+  --divider: #262f3b;
 
   /* Padelgroen: de lichte mint van de huisstijl, met bijna-zwarte tekst erop
      (--accent-ink haalt 12,3:1). Dít is de enige interactiekleur — primaire
@@ -496,49 +501,51 @@
   --accent: #6ee7a8;
   --accent-hover: #82ecb5;
   --accent-strong: #55d998; /* ingedrukt: iets dieper, niet donkerder ink */
-  --accent-soft: #22393b;
-  --accent-line: #356456;
+  --accent-soft: #24393a;
+  --accent-line: #376456;
   --accent-ink: #08130e;
 
   /* Coach Rudy — warm amber, iets lichter op donker. */
   --coach: #e6a34d;
-  --coach-soft: #313130;
-  --coach-line: #5e4d37;
+  --coach-soft: #32312f;
+  --coach-line: #5f4d37;
   --coach-ink: #241606;
   --coach-diep: #f0c489;
 
   /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
      inzakken; zelfde omkering als --lime-deep en --dorst. */
   --poll: #e8ad57;
-  --poll-soft: #313231;
+  --poll-soft: #333230;
   --poll-diep: #f2c68d;
 
   /* Lime (padelbal). Het enige token dat fel mag zijn, en sinds #1128 alléén
      nog voor prestatie: streak, ratingwinst, bijzondere klassementsstatus. De
      focusring en het gekozen nav-item die hij in #1074 kreeg, zijn terug naar
      het merkgroen — anders draagt lime twee betekenissen tegelijk en zegt hij
-     er geen één meer. --lime-deep is op donker de lichtste van de twee,
-     omgekeerd aan het lichte thema waar "deep" de donkere variant is. */
-  --lime: #b8e94e;
-  --lime-deep: #c9f06f;
-  --lime-soft: #2b3930;
+     er geen één meer. De tint volgt sinds #1128 de bal in het VAMOS-logo
+     (#c2e868) in plaats van de fellere #a8e63f. --lime-deep is op donker de
+     lichtste van de twee, omgekeerd aan het lichte thema waar "deep" de
+     donkere variant is. */
+  --lime: #c2e868;
+  --lime-deep: #d3f085;
+  --lime-soft: #2e3932;
 
   /* Lef-violet, lichter gezet voor leesbare tekst op donkere vlakken. */
   --lef: #b6a2e4;
-  --lef-soft: #2b3042;
-  --lef-line: #4e4d6b;
+  --lef-soft: #2d3041;
+  --lef-line: #4f4d6a;
   --lef-ink: #14101e;
 
   /* Dorst-amber, lichter gezet voor leesbare tekst op donkere vlakken. */
   --dorst: #e0a94d;
-  --dorst-soft: #303130;
-  --dorst-line: #5c4f37;
+  --dorst-soft: #32312f;
+  --dorst-line: #5d4f37;
   --dorst-ink: #1b1207;
 
   /* Jokerblauw, lichter gezet voor leesbare tekst op donkere vlakken. */
   --joker: #6fb6e0;
-  --joker-soft: #223342;
-  --joker-line: #365469;
+  --joker-soft: #243341;
+  --joker-line: #375469;
   --joker-ink: #0a1620;
 
   /* Padelveld (#427): gedempt donkergroen, lijnen zachter. */
@@ -554,7 +561,7 @@
      dan de content, niet lichter. Zo staat de app-inhoud vooraan en zakt het
      meubilair naar achteren — vóór #1074 lag de zijbalk op 1,03:1 van de
      achtergrond en was er dus geen zijbalk te zien. */
-  --sidebar-bg: #06090d;
+  --sidebar-bg: #070b0d;
   --sidebar-ink: #a7b2bd;
   --sidebar-ink-strong: #f4f7f9;
 
@@ -564,21 +571,21 @@
      een primaire knop) en moeten daar uit elkaar te houden blijven. Wie ze weer
      naar elkaar toe trekt, maakt "gelukt" en "doe dit" hetzelfde. */
   --success: #65d69e;
-  --success-soft: #21373a;
-  --success-line: #325f53;
+  --success-soft: #233739;
+  --success-line: #345f52;
   --danger: #eb7277;
-  --danger-soft: #2d2934;
-  --danger-line: #603d46;
+  --danger-soft: #2d2832;
+  --danger-line: #613d45;
   --warn: #e5b35d;
-  --warn-soft: #313332;
-  --warn-line: #5e533d;
+  --warn-soft: #323331;
+  --warn-line: #5f533c;
   /* Informatief blauw (#1128). De familie miste deze rol: een neutrale melding
      leende --joker of --cat-rank, en die coderen allebei iets anders (de
      jokerkaart, de klassement-categorie in de feed). Het lichte blok heeft hem
      ook, zodat .msg in beide thema's dezelfde bron heeft. */
   --info: #6ca7e3;
-  --info-soft: #223142;
-  --info-line: #354f6a;
+  --info-soft: #243141;
+  --info-line: #364f6a;
   /* Lichtrode tekst op een donker vlak (grafiek-tooltip). Volgt sinds #1128 de
      nieuwe koraaltint van --danger in plaats van het oude zalmroze. */
   --danger-bright: #f3a0a4;
@@ -589,35 +596,35 @@
      zijn in #1128 opnieuw gemengd (tierkleur op 16% over de nieuwe kaart), zodat
      een rij badges niet als warme vlekken op koele neutralen ligt. */
   --slof: #a69d8c;
-  --slof-soft: #2f353b;
+  --slof-soft: #30353b;
   --karton: #c9a061;
-  --karton-soft: #343534;
+  --karton-soft: #363534;
   --hout: #c08a58;
-  --hout-soft: #333233;
+  --hout-soft: #353232;
   --gold: #c09b4e;
-  --gold-soft: #333531;
+  --gold-soft: #353531;
   --silver: #a8b2bd;
-  --silver-soft: #2f3843;
+  --silver-soft: #313842;
   --bronze: #cc8447;
-  --bronze-soft: #353130;
+  --bronze-soft: #36312f;
   --platina: #74c9e2;
-  --platina-soft: #273c49;
+  --platina-soft: #283c48;
   --diamant: #8faaf2;
-  --diamant-soft: #2b374c;
+  --diamant-soft: #2d374b;
   --meester: #c4b5fd;
-  --meester-soft: #34394d;
+  --meester-soft: #35394d;
   --legende: #f7869f;
-  --legende-soft: #3c313e;
+  --legende-soft: #3d313e;
   /* El Padelissimo (#527): warm goud op diepbordeaux (zie light-blok). */
   --dictator: #e6b34d;
-  --dictator-soft: #393831;
+  --dictator-soft: #3b3830;
   /* De Troon (#528): warm goud op nog dieper bordeaux (zie light-blok). */
   --dictator-gold: #f0c766;
   --dictator-wine: #7a1a34;
   --dictator-deep: #2a0d16;
   /* Big Daddy (#1 van het klassement): zacht pastelroze (zie light-blok). */
   --bigdaddy: #f288bc;
-  --bigdaddy-soft: #3b3143;
+  --bigdaddy-soft: #3d3142;
   --bigdaddy-ink: #37101f;
   --bigdaddy-text: #f6b3d2;
 
@@ -632,17 +639,17 @@
      initiaalkleur op 16% over de kaart — de acht families blijven onderling te
      onderscheiden, maar een rij avatars leest nu als één materiaal.
      Initialen houden ≥6:1 op hun eigen vlak. */
-  --avatar-h0-bg: #2f3e41; --avatar-h0-fg: #a7d4b0;
-  --avatar-h1-bg: #2f3b4c; --avatar-h1-fg: #a9c4f5;
-  --avatar-h2-bg: #39393b; --avatar-h2-fg: #e6b98a;
-  --avatar-h3-bg: #34394b; --avatar-h3-fg: #c6b6ee;
-  --avatar-h4-bg: #3a3745; --avatar-h4-fg: #eaaccb;
-  --avatar-h5-bg: #2c3d49; --avatar-h5-fg: #93d3e0;
-  --avatar-h6-bg: #383b3b; --avatar-h6-fg: #dfc687;
-  --avatar-h7-bg: #323b46; --avatar-h7-fg: #b9c4d1;
+  --avatar-h0-bg: #313e40; --avatar-h0-fg: #a7d4b0;
+  --avatar-h1-bg: #313b4b; --avatar-h1-fg: #a9c4f5;
+  --avatar-h2-bg: #3b393a; --avatar-h2-fg: #e6b98a;
+  --avatar-h3-bg: #36394a; --avatar-h3-fg: #c6b6ee;
+  --avatar-h4-bg: #3b3745; --avatar-h4-fg: #eaaccb;
+  --avatar-h5-bg: #2d3d48; --avatar-h5-fg: #93d3e0;
+  --avatar-h6-bg: #3a3b3a; --avatar-h6-fg: #dfc687;
+  --avatar-h7-bg: #333b46; --avatar-h7-fg: #b9c4d1;
 
-  --placeholder: #8592a0;
-  --skeleton-hi: #26313e;
+  --placeholder: #85909c;
+  --skeleton-hi: #28313c;
 
   /* Op donker dragen randen de hiërarchie; schaduwen dieper en subtieler. */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -652,11 +659,11 @@
   --shadow-up: 0 -6px 24px rgba(0, 0, 0, 0.4);
   --shadow-up-lg: 0 -8px 30px rgba(0, 0, 0, 0.55);
   --shadow-ball: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --overlay: rgba(4, 7, 10, 0.66);
+  --overlay: rgba(3, 5, 7, 0.66);
   /* Zie het lichte blok. Op donker mag de scrim zwaarder blijven dan op licht:
      het materiaal is er zelf donker, dus het verschil tussen paneel en pagina
      moet ergens vandaan komen. */
-  --overlay-glas: rgba(4, 7, 10, 0.55);
+  --overlay-glas: rgba(3, 5, 7, 0.55);
   /* Lager dan op licht (zie daar): donker glas mag dunner, want de inkt erop
      houdt hoe dan ook ≥15:1 — wat er achter ligt maakt nauwelijks uit. */
   --glas-sheet-factor: 0.72;
@@ -667,7 +674,7 @@
   --toast-close-bg: rgba(0, 0, 0, 0.15);
   --toast-close-bg-hover: rgba(0, 0, 0, 0.28);
 
-  --bar-glass: rgba(6, 9, 13, 0.86);
+  --bar-glass: rgba(7, 11, 13, 0.86);
 
   /* Gekozen navigatie: het label leest als gewone tekst (op het gekozen vlak
      haalt een gekleurd label geen AA), de markering ernaast draagt de kleur.
@@ -678,7 +685,7 @@
 
   /* Doorschijnend i.p.v. dekkend (zie het licht-blok): --lime-soft over de
      hero gaf op donker precies de olijfgrijze waas waar #1074 mee begon. */
-  --wash-warm: rgba(184, 233, 78, 0.07);
+  --wash-warm: rgba(194, 232, 104, 0.07);
   --wash-cool: rgba(110, 231, 168, 0.1);
   --border-elevated: var(--line-strong);
 
@@ -708,8 +715,8 @@
   --paneel-om-ink: var(--ink);
   --paneel-om-ink-soft: var(--ink-soft);
   --paneel-om-label: var(--ink-soft);
-  --paneel-om-vlak: #26313e; /* gelijk aan surface-hover — een stap hoger */
-  --paneel-om-lijn: #33404e;
+  --paneel-om-vlak: #28313c; /* gelijk aan surface-hover — een stap hoger */
+  --paneel-om-lijn: #37424f;
 
   /* Focuskleur (#1074, herzien in #1128). Lime deed dit werk zolang het accent
      een middendonker smaragd was dat op een gekozen nav-item wegviel; het nieuwe
@@ -721,7 +728,7 @@
      wit maar zwakker — een felle witte rand op een donkere pagina leest als
      een streep neon, niet als glas. --glas-vast erft automatisch --surface.
      Tint sinds #1128 blauwgrijs i.p.v. groen, gelijk met de vlakken eronder. */
-  --glas-tint: 18 25 34;
+  --glas-tint: 20 27 36;
   --glas-glans: 255 255 255;
   --glas-diep: 0 0 0;
   /* Deze 0.8 stond er al sinds #1062, maar deed tot #1083 niets: elke variant
