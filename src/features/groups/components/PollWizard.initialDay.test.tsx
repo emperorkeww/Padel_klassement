@@ -53,7 +53,7 @@ function week(): WeekDay[] {
   });
 }
 
-function toon(initialDay?: string) {
+function toon(initialDay?: string, club = CLUB) {
   render(
     <MemoryRouter>
       <ToastProvider>
@@ -61,7 +61,7 @@ function toon(initialDay?: string) {
           today={TODAY}
           week={week()}
           weekLoading={false}
-          club={CLUB}
+          club={club}
           initialDay={initialDay}
           submitLabel={(n) => `Start poll (${n})`}
           onSubmit={() => Promise.resolve()}
@@ -98,15 +98,34 @@ describe("<PollWizard initialDay />", () => {
       .not.toHaveAttribute("open");
   });
 
-  it("landt voor een dag daarbuiten in het handmatige pad", () => {
-    // 26 augustus valt ver buiten de zeven dagen waarvoor we banen kennen; de
-    // dag-navigator kent hem dus niet en zou hem stil negeren (#1091).
+  it("houdt een dag daarbuiten vast in de navigator", () => {
+    // 26 augustus valt ver buiten de zeven dagen waarvoor we banen kennen. De
+    // navigator viel daarvoor terug op vandaag (#1091), en dan stonden de vrije
+    // uren van vandáág groot in beeld onder een dag die je nooit koos — één tik
+    // en de poll stond op de verkeerde dag.
     toon("2026-08-26");
+    expect(screen.getByRole("tab", { selected: true })).toHaveAccessibleName(
+      "woensdag 26 augustus",
+    );
+    // Zonder banengegevens valt er niets aan te tikken; het uur zet je hieronder.
+    expect(
+      screen.getByText(/Zo ver vooruit zijn de vrije banen nog niet bekend/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^20:00/ })).toBeNull();
     expect(manueleDatum().value).toBe("2026-08-26");
     expect(screen.getByText("Ander moment (verder vooruit)").closest("details"))
       .toHaveAttribute("open");
-    // De navigator valt terug op vandaag in plaats van op een lege selectie.
-    expect(screen.getByRole("tab", { selected: true })).toHaveTextContent("7");
+  });
+
+  it("maakt een dag daarbuiten wél kiesbaar bij een handmatige locatie", () => {
+    // Zonder Playtomic-tenant komen de uren uit het synthetische halfuur-raster
+    // (#322), en dat kent elke datum — de dag voorbij het venster is dus meteen
+    // aan te tikken in plaats van alleen via het handmatige paneel.
+    toon("2026-08-26", { ...CLUB, id: "" });
+    expect(screen.getByRole("tab", { selected: true })).toHaveAccessibleName(
+      "woensdag 26 augustus",
+    );
+    expect(screen.getByRole("button", { name: /^20:00/ })).toBeInTheDocument();
   });
 
   it("negeert een dag in het verleden", () => {
