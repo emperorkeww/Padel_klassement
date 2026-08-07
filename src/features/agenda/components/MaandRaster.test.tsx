@@ -47,6 +47,7 @@ function toon(props: Partial<Parameters<typeof MaandRaster>[0]> = {}) {
       weeks={monthGrid({ jaar: 2026, maand: 8 })}
       perDag={{ "2026-08-13": [marker()] }}
       vandaag="2026-08-07"
+      gekozenDag="2026-08-07"
       focusDag="2026-08-07"
       onFocusDag={onFocusDag}
       onPick={onPick}

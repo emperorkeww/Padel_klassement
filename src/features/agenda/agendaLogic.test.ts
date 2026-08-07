@@ -3,12 +3,15 @@ import {
   buildMarkers,
   dagLabel,
   daysInMonth,
+  duurLabel,
   maandLabel,
   maandVan,
   markersByDay,
+  metHoofdletter,
   monthGrid,
   schuifMaand,
   splitMarkers,
+  statusChip,
   telInMaand,
   tijdvak,
   toetsStap,
@@ -153,6 +156,31 @@ describe("maandvenster", () => {
     expect(maandVan("2026-08-13")).toEqual({ jaar: 2026, maand: 8 });
   });
 
+});
+
+describe("labels van het dagpaneel (#1112)", () => {
+  it("zet alleen de eerste letter groot", () => {
+    // `text-transform: capitalize` maakte hier "Zondag 9 Augustus" van, en van
+    // de statuschip "Open Poll". In het Nederlands blijft dat tweede woord klein.
+    expect(metHoofdletter("zondag 9 augustus")).toBe("Zondag 9 augustus");
+    expect(metHoofdletter("augustus 2026")).toBe("Augustus 2026");
+    expect(metHoofdletter("")).toBe("");
+  });
+
+  it("geeft het statuswoord voor een chip", () => {
+    expect(statusChip("booked")).toBe("Geboekt");
+    expect(statusChip("locked")).toBe("Vastgelegd");
+    expect(statusChip("open")).toBe("Open poll");
+    expect(statusChip("booked", true)).toBe("Gespeeld");
+  });
+
+  it("leest hele uren als uren en de rest als minuten", () => {
+    expect(duurLabel(90)).toBe("90 min");
+    expect(duurLabel(60)).toBe("1 uur");
+    expect(duurLabel(120)).toBe("2 uur");
+    // Niet "1,5 uur": dat is precies de omrekening die je niet wil maken.
+    expect(duurLabel(45)).toBe("45 min");
+  });
 });
 
 describe("telInMaand", () => {

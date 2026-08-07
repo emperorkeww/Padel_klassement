@@ -18,8 +18,10 @@ import {
   maandLabel,
   maandVan,
   markersByDay,
+  metHoofdletter,
   monthGrid,
   schuifMaand,
+  statusChip,
   telInMaand,
   windowFor,
   zelfdeMaand,
@@ -27,6 +29,7 @@ import {
   type Maand,
 } from "./agendaLogic";
 import { MaandRaster } from "./components/MaandRaster";
+import { DagPaneel } from "./components/DagPaneel";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
@@ -58,6 +61,10 @@ export function Agenda() {
   const vandaag = dateInZone(globaleClub.timezone);
 
   const [maand, setMaand] = useState<Maand>(() => maandVan(vandaag));
+  // De dag waar het paneel onder het raster over gaat (#1112). Los van
+  // `focusDag`: met de pijltjes loop je door het raster zonder telkens iets te
+  // kiezen, precies zoals je met de muis kunt rondkijken zonder te klikken.
+  const [gekozenDag, setGekozenDag] = useState(vandaag);
   const [focusDag, setFocusDag] = useState(vandaag);
   const [open, setOpen] = useState<string | null>(null);
   // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
@@ -114,7 +121,6 @@ export function Agenda() {
   // staan en vullen de markers zich bij: een leeg raster laten flitsen is
   // erger dan de vorige maand nog even zien.
   const laadt = groepen.loading || (venster.loading && venster.data == null);
-  const bezig = groepen.loading || venster.loading;
   const geenGroepen = !groepen.loading && lijst.length === 0;
 
   /**
@@ -129,14 +135,27 @@ export function Agenda() {
   }
 
   /**
-   * Een aangetikte dag. Staat er iets op, dan opent het detail; een lege dag
-   * vanaf vandaag is de uitnodiging om er een speeldag voor te starten. Een
-   * lege dag in het verleden valt terug op het detail, dat dan gewoon meldt
-   * dat er niets gespeeld is — plannen kan daar niet meer.
+   * Een aangetikte dag kiest die dag: het paneel eronder werkt bij (#1112).
+   *
+   * Tikken op de dag die al gekozen ís, opent meteen — het detail als er iets
+   * op staat, anders het plan-sheet. Zonder die tweede betekenis zou plannen
+   * van één tik naar twee gaan, en juist dat was de belofte van deze tab.
+   *
+   * Een randdag van een buurmaand laat het raster meebladeren; anders kies je
+   * een dag die je meteen daarna niet meer ziet staan.
    */
   function kiesDag(date: string) {
-    if ((perDag[date] ?? []).length === 0 && date >= vandaag) setPlanDag(date);
-    else setOpen(date);
+    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
+    if (date === gekozenDag) openDag(date);
+    else setGekozenDag(date);
+  }
+
+  /** Het sheet bij een dag met speeldagen, het plan-sheet bij een lege dag die
+   *  nog komt. Een lege dag die geweest is heeft niets te openen — het paneel
+   *  zegt daar al dat er niet gespeeld is. */
+  function openDag(date: string) {
+    if ((perDag[date] ?? []).length > 0) setOpen(date);
+    else if (date >= vandaag) setPlanDag(date);
   }
 
   function naarMaand(delta: number) {
@@ -158,8 +177,11 @@ export function Agenda() {
       <header className="agenda-kop">
         <div className="agenda-kop__titel">
           {/* aria-live: met het toetsenbord bladeren zegt anders niets. */}
+          {/* maandLabel houdt de gewone Nederlandse schrijfwijze ("augustus
+              2026") voor de plekken waar hij midden in een zin staat; als
+              paginatitel krijgt hij een hoofdletter. */}
           <h1 className="agenda-kop__maand" aria-live="polite">
-            {maandLabel(maand)}
+            {metHoofdletter(maandLabel(maand))}
           </h1>
           <p className="agenda-kop__telling">
             {laadt
@@ -176,6 +198,7 @@ export function Agenda() {
             onClick={() => {
               setMaand(maandVan(vandaag));
               setFocusDag(vandaag);
+              setGekozenDag(vandaag);
             }}
           >
             Vandaag
@@ -217,17 +240,6 @@ export function Agenda() {
         </EmptyState>
       ) : (
         <>
-          {!bezig && markers.length === 0 && (
-            // "Nog niets gepland" staat al onder de maandtitel; deze kaart zegt
-            // wat je eraan doet, niet nog eens hetzelfde.
-            <section className="agenda-instap">
-              <h2 className="agenda-instap__titel">Plan een speeldag</h2>
-              <p className="agenda-instap__tekst">
-                Tik een dag in het raster aan om er een speeldag op te zetten.
-              </p>
-            </section>
-          )}
-
           {laadt ? (
             <RasterSkeleton rijen={weeks.length} />
           ) : (
@@ -235,6 +247,7 @@ export function Agenda() {
               weeks={weeks}
               perDag={perDag}
               vandaag={vandaag}
+              gekozenDag={gekozenDag}
               focusDag={focusDag}
               onFocusDag={verplaatsFocus}
               onPick={kiesDag}
@@ -245,10 +258,27 @@ export function Agenda() {
             {(["booked", "locked", "open"] as const).map((status) => (
               <li key={status} className="agenda-legenda__item">
                 <StatusGlyph status={status} size={8} />
-                {LEGENDA[status]}
+                {statusChip(status)}
               </li>
             ))}
           </ul>
+
+          {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
+              hier stond legde uit dat je een dag kon aantikken; dit paneel
+              laat het gewoon zien. */}
+          {!laadt && (
+            <DagPaneel
+              datum={gekozenDag}
+              vandaag={vandaag}
+              markers={perDag[gekozenDag] ?? []}
+              ledenPerGroep={ledenPerGroep}
+              profielen={profielen.data ?? {}}
+              onOpen={() => setOpen(gekozenDag)}
+              onPlan={
+                gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
+              }
+            />
+          )}
 
           {/* Onder het raster: eerst zien wat er gepland staat, dan pas de
               vraag of je het in je eigen agenda wil (#1099). */}
@@ -323,12 +353,6 @@ export function Agenda() {
     </div>
   );
 }
-
-const LEGENDA = {
-  booked: "Geboekt",
-  locked: "Vastgelegd",
-  open: "Open poll",
-} as const;
 
 function IconChevron({ kant }: { kant: "links" | "rechts" }) {
   return (

@@ -129,6 +129,8 @@
      blijven op zowel de kaart als het subtiele vlak eronder (≥3:1, zie
      scripts/contrast-check.mjs). */
   --poll: #b06a10;
+  --poll-soft: #fbf1df; /* vlak van de "Open poll"-chip */
+  --poll-diep: #7a4a0c; /* tekst op dat zachte vlak */
 
   --lime: #c7e63a; /* padelbal */
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
@@ -458,6 +460,8 @@
   /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
      inzakken; zelfde omkering als --lime-deep en --dorst. */
   --poll: #e8ad57;
+  --poll-soft: #3d3018;
+  --poll-diep: #f2c68d;
 
   /* Lime (padelbal). Sinds #1074 wél de volle padelbal-lime: hij is het enige
      token dat energie mag dragen (rating, grafieklijn, gekozen icoon, focus),

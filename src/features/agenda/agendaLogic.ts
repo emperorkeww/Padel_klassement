@@ -337,6 +337,33 @@ export function statusLabel(status: AgendaStatus, past = false): string {
 }
 
 /**
+ * Alleen de eerste letter groot (#1112).
+ *
+ * Nadrukkelijk niet `text-transform: capitalize`: dat maakt van "open poll"
+ * "Open Poll" en van "zondag 9 augustus" "Zondag 9 Augustus" — in het
+ * Nederlands blijven maandnamen en het tweede woord gewoon klein.
+ */
+export function metHoofdletter(tekst: string): string {
+  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+}
+
+/** Het statuswoord zoals het in een chip of legenda staat: "Open poll". */
+export function statusChip(status: AgendaStatus, past = false): string {
+  return metHoofdletter(statusLabel(status, past));
+}
+
+/**
+ * Hoe lang een speeldag duurt, als losse regel naast de begintijd (#1112).
+ * Hele uren lezen als uren ("2 uur"), de rest blijft in minuten ("90 min") —
+ * "1,5 uur" is precies de omrekening die je niet wil moeten maken.
+ */
+export function duurLabel(duration: number): string {
+  if (duration % 60 !== 0) return `${duration} min`;
+  const uren = duration / 60;
+  return uren === 1 ? "1 uur" : `${uren} uur`;
+}
+
+/**
  * De toegankelijke naam van een dagknop. Het raster is een raster: elke dag
  * vertelt zelf wat erop staat, inclusief de status in woorden — de glyph-vorm
  * alleen is geen naam (WCAG 1.4.1 én 4.1.2).
