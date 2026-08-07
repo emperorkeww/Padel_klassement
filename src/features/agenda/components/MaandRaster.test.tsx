@@ -31,17 +31,12 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
   };
 }
 
-/** Dwingt de gemeten containerbreedte af: zonder layout meet de hook in jsdom
- *  niets en valt het raster terug op de smalle cel, zónder markertekst. Geeft
- *  een herstelfunctie terug (patroon uit Leaderboard.test). */
-function metContainerBreedte(px: number) {
-  const origRect = Element.prototype.getBoundingClientRect;
-  Element.prototype.getBoundingClientRect = function () {
-    return { ...origRect.call(this), width: px } as DOMRect;
-  };
-  return () => {
-    Element.prototype.getBoundingClientRect = origRect;
-  };
+/** De stippen van één dagknop, op volgorde. Sinds #1112 is dat alles wat een
+ *  cel visueel draagt; de woorden zitten in de toegankelijke naam. */
+function stippenVan(dag: HTMLElement): string[] {
+  return [...dag.querySelectorAll(".agenda-glyph")].map(
+    (g) => g.className.replace("agenda-glyph agenda-glyph--", ""),
+  );
 }
 
 function toon(props: Partial<Parameters<typeof MaandRaster>[0]> = {}) {
@@ -112,42 +107,61 @@ describe("<MaandRaster />", () => {
     expect(onPick).toHaveBeenCalledWith("2026-08-13");
   });
 
-  it("laat de stem-hint over dít moment gaan, niet over de poll (#1104)", () => {
-    const herstel = metContainerBreedte(900);
-    try {
-      toon({
-        perDag: {
-          // Twee momenten van dezelfde poll: het ene beantwoord, het andere
-          // niet. Vroeger las de hint `iVoted` en zei hij overal "jij ✓".
-          "2026-08-13": [
-            marker({ optionId: "a", status: "open", startTime: "18:00", iVoted: true, myVote: "yes" }),
-            marker({ optionId: "b", status: "open", startTime: "20:00", iVoted: true, myVote: null }),
-          ],
-        },
-      });
-      const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
-      expect(dag.textContent).toContain("jij ✓");
-      expect(dag.textContent).toContain("stem");
-      expect(dag).toHaveAccessibleName(/jij stemde al/);
-      expect(dag).toHaveAccessibleName(/jij stemde nog niet/);
-    } finally {
-      herstel();
-    }
-  });
-
-  it("kondigt aan wat er niet in een cel past", () => {
+  it("laat de stemstand over dít moment gaan, niet over de poll (#1104)", () => {
     toon({
       perDag: {
+        // Twee momenten van dezelfde poll: het ene beantwoord, het andere niet.
+        // De cel toont sinds #1112 geen tekst meer, dus dit onderscheid leeft
+        // volledig in de toegankelijke naam — daar moet het dus staan.
         "2026-08-13": [
-          marker({ optionId: "a", startTime: "18:00" }),
-          marker({ optionId: "b", startTime: "19:00" }),
-          marker({ optionId: "c", startTime: "20:00" }),
+          marker({ optionId: "a", status: "open", startTime: "18:00", iVoted: true, myVote: "yes" }),
+          marker({ optionId: "b", status: "open", startTime: "20:00", iVoted: true, myVote: null }),
         ],
       },
     });
     const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
-    // Twee zichtbare markers plus "+1"; de naam noemt alle drie de speeldagen.
-    expect(dag.textContent).toContain("+1");
-    expect(dag).toHaveAccessibleName(/3 speeldagen/);
+    expect(dag).toHaveAccessibleName(/jij stemde al/);
+    expect(dag).toHaveAccessibleName(/jij stemde nog niet/);
+  });
+
+  it("draagt de status in de vorm van de stip, niet alleen in kleur (#1112)", () => {
+    toon({
+      perDag: {
+        "2026-08-13": [
+          marker({ optionId: "a", status: "booked", startTime: "18:00" }),
+          marker({ optionId: "b", status: "locked", startTime: "19:00" }),
+          marker({ optionId: "c", status: "open", startTime: "20:00" }),
+        ],
+      },
+    });
+    const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
+    expect(stippenVan(dag)).toEqual(["booked", "locked", "open"]);
+  });
+
+  it("kapt de stippen af maar niet de naam", () => {
+    toon({
+      perDag: {
+        "2026-08-13": [
+          marker({ optionId: "a", startTime: "17:00" }),
+          marker({ optionId: "b", startTime: "18:00" }),
+          marker({ optionId: "c", startTime: "19:00" }),
+          marker({ optionId: "d", startTime: "20:00" }),
+        ],
+      },
+    });
+    const dag = screen.getByRole("button", { name: /donderdag 13 augustus/ });
+    // Drie stippen passen er in een cel van deze maat; het echte aantal staat
+    // voluit in de naam, dus er gaat niets verloren.
+    expect(stippenVan(dag)).toHaveLength(3);
+    expect(dag).toHaveAccessibleName(/4 speeldagen/);
+  });
+
+  it("houdt de stippenrij ook leeg op zijn plek", () => {
+    toon();
+    const leeg = screen.getByRole("button", { name: /woensdag 26 augustus/ });
+    // De rij staat er altijd: zonder die vaste hoogte zijn de cellen van een
+    // week met en zonder speeldag verschillend hoog en golft het raster.
+    expect(leeg.querySelector(".agenda-dag__stippen")).toBeInTheDocument();
+    expect(stippenVan(leeg)).toHaveLength(0);
   });
 });

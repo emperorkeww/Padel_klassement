@@ -9,9 +9,9 @@ import {
   monthGrid,
   schuifMaand,
   splitMarkers,
+  telInMaand,
   tijdvak,
   toetsStap,
-  weekVan,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
@@ -153,18 +153,25 @@ describe("maandvenster", () => {
     expect(maandVan("2026-08-13")).toEqual({ jaar: 2026, maand: 8 });
   });
 
-  it("geeft de week van maandag tot zondag", () => {
-    expect(weekVan("2026-08-13")).toEqual([
-      "2026-08-10",
-      "2026-08-11",
-      "2026-08-12",
-      "2026-08-13",
-      "2026-08-14",
-      "2026-08-15",
-      "2026-08-16",
-    ]);
-    // Een zondag hoort bij de wéék die eraan voorafgaat, niet aan de volgende.
-    expect(weekVan("2026-08-16")[0]).toBe("2026-08-10");
+});
+
+describe("telInMaand", () => {
+  const inAug = (date: string) => ({ date }) as never;
+
+  it("telt de speeldagen van de zichtbare maand", () => {
+    const markers = [inAug("2026-08-03"), inAug("2026-08-08"), inAug("2026-08-08")];
+    expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(3);
+  });
+
+  it("telt de randdagen van de buurmaanden niet mee", () => {
+    // Het raster van augustus 2026 begint op 27 juli en eindigt op 6 september;
+    // die dagen tonen hun markers wel, maar horen niet in "deze maand".
+    const markers = [inAug("2026-07-27"), inAug("2026-08-08"), inAug("2026-09-06")];
+    expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(1);
+  });
+
+  it("verwart een maand niet met dezelfde maand in een ander jaar", () => {
+    expect(telInMaand([inAug("2025-08-08")], { jaar: 2026, maand: 8 })).toBe(0);
   });
 });
 

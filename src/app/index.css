@@ -122,6 +122,14 @@
      op donkerbruin. Zelfde rol als --lime-deep voor lime. */
   --coach-diep: #5a3410;
 
+  /* Open poll in de agenda (#1112). Amber, want het is de enige status die iets
+     van je vraagt — maar bewust niet het coach-amber (dat is de stem van Rudy)
+     en niet het warn-amber (een openstaande vraag is geen waarschuwing).
+     Donkerder dan coach, omdat dit een merkteken van 6px is dat zichtbaar moet
+     blijven op zowel de kaart als het subtiele vlak eronder (≥3:1, zie
+     scripts/contrast-check.mjs). */
+  --poll: #b06a10;
+
   --lime: #c7e63a; /* padelbal */
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
   --lime-soft: #f4fadb;
@@ -446,6 +454,10 @@
   --coach-line: #5a4a30;
   --coach-ink: #241606;
   --coach-diep: #f0c489;
+
+  /* Open poll (#1112) — op donker moet hij juist oplichten in plaats van
+     inzakken; zelfde omkering als --lime-deep en --dorst. */
+  --poll: #e8ad57;
 
   /* Lime (padelbal). Sinds #1074 wél de volle padelbal-lime: hij is het enige
      token dat energie mag dragen (rating, grafieklijn, gekozen icoon, focus),
