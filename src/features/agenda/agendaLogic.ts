@@ -70,6 +70,19 @@ function isPast(option: PollOption, timeZone: string, nowMs: number): boolean {
 }
 
 /**
+ * Dezelfde vraag, maar voor een marker die al gebouwd is (#1104). `past` is
+ * bevroren op het moment dat het venster geladen werd, en een dag-sheet kan
+ * lang openstaan — over dat ene moment heen dat er nog te stemmen viel. Wie
+ * stemknoppen toont, moet de vraag opnieuw stellen in plaats van `past` te
+ * geloven.
+ */
+export function momentVoorbij(m: AgendaMarker, nowMs: number): boolean {
+  return (
+    clubEpoch(m.date, m.startTime, m.clubTimezone) + m.duration * 60_000 < nowMs
+  );
+}
+
+/**
  * Markers van één venster.
  *
  * Vastgelegde en geboekte speeldagen leveren precies hun gekozen moment; een

@@ -22,6 +22,7 @@ import {
   schuifMaand,
   windowFor,
   zelfdeMaand,
+  type AgendaMarker,
   type Maand,
 } from "./agendaLogic";
 import { MaandRaster } from "./components/MaandRaster";
@@ -89,6 +90,13 @@ export function Agenda() {
     [venster.data, lijst, myId],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
+  // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
+  const perPoll = useMemo(() => {
+    const out: Record<string, AgendaMarker[]> = {};
+    for (const m of markers) (out[m.pollId] ??= []).push(m);
+    return out;
+  }, [markers]);
   const weeks = useMemo(() => monthGrid(maand), [maand]);
   const ledenPerGroep = useMemo(
     () => Object.fromEntries(lijst.map((g) => [g.id, g.member_ids.length])),
@@ -255,8 +263,11 @@ export function Agenda() {
       <DagSheet
         datum={open}
         markers={open ? (perDag[open] ?? []) : []}
+        momentenPerPoll={perPoll}
         ledenPerGroep={ledenPerGroep}
         profielen={profielen.data ?? {}}
+        myId={myId}
+        onGestemd={venster.reload}
         onClose={() => setOpen(null)}
       />
 
