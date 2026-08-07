@@ -41,6 +41,9 @@ export type AgendaMarker = {
   /** Geboekte banen (#802) en toegangscode (#675); null zolang onbekend. */
   courts: string | null;
   accessCode: string | null;
+  /** Laatste wijziging aan deze speeldag — voedt de SEQUENCE van de .ics
+   *  (#1099), zodat een herimport het bestaande event bijwerkt. */
+  changedAt: string;
 };
 
 /**
@@ -137,6 +140,9 @@ export function buildMarkers(
       yesVoterIds: yesByOption.get(option.id) ?? [],
       courts: poll.courts,
       accessCode: poll.access_code,
+      // Boeken is de laatste stap, vastleggen de stap ervoor; zonder beide is
+      // de poll sinds het aanmaken niet meer van fase veranderd.
+      changedAt: poll.booked_at ?? poll.locked_at ?? poll.created_at,
     });
   }
   return markers;
