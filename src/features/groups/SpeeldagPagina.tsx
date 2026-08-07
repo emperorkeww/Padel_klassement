@@ -27,7 +27,9 @@ import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
 import { VolgendeRonde } from "@/features/groups/components/VolgendeRonde";
-import type { Match } from "@/types";
+import { LossePartij } from "@/features/groups/components/LossePartij";
+import { dateInZone } from "@/lib/utils/time";
+import type { Match, Profile } from "@/types";
 import "@/features/groups/Proposals.css";
 
 /* ------------------------------------------------------------------ */
@@ -210,6 +212,21 @@ export function SpeeldagPagina() {
     rondes.find(({ list }) => list.some((m) => m.status !== "completed")) ??
     null;
 
+  // Groepsleden als profiel: de kiesbare spelers bij een losse partij.
+  const groepSpelers = leden
+    .map((m) => profiles.data?.[m.player_id])
+    .filter(Boolean) as Profile[];
+  // Datum en starttijd staan al in clubtijd, dus het datetime-local-veld kan
+  // ze rechtstreeks overnemen — geen conversie, en niets dat op een DST-grens
+  // een uur verschuift.
+  const momentVeld = moment
+    ? `${moment.option.date}T${moment.option.start_time}`
+    : null;
+  // Op een dag die nog moet komen plan je een partij, op een dag die loopt of
+  // geweest is log je hem. De clubdag van de speeldag beslist, niet die van de
+  // browser.
+  const nogTeGaan = moment != null && moment.dag > dateInZone(moment.tz);
+
   return (
     <div>
       <header className="page-head">
@@ -241,8 +258,25 @@ export function SpeeldagPagina() {
         onChanged={herlaad}
         roundsExist={rondesKlaar > 0 || rondesGezet}
         rondesVandaag={rondesKlaar}
+        wedstrijdenAnker={rondes.length > 0 ? "#speeldag-wedstrijden" : undefined}
         onRoundsMade={() => setRondesGezet(true)}
       />
+
+      {/* Losse partij op deze speeldag (#1133): buiten de rondes om gespeeld of
+          nog in te plannen. Voorgevuld met het uur van deze avond, want dat is
+          waar je bent — niet "nu". Alleen zodra het moment vastligt: zonder
+          datum is er geen avond om iets bij te zetten. */}
+      {moment && (
+        <LossePartij
+          groupId={groupId}
+          players={groepSpelers}
+          intensiteit={intensiteit}
+          moment={momentVeld}
+          standaardModus={nogTeGaan ? "plan" : "score"}
+          onCreated={herlaadMatches}
+          onGuestCreated={() => profiles.reload()}
+        />
+      )}
 
       {/* De wedstrijden van deze dag (#1133) — dezelfde rondeblokken als op de
           Spelen-tab, zodat een uitslag invullen overal hetzelfde werkt. Losse

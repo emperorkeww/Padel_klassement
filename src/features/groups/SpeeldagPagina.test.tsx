@@ -297,6 +297,34 @@ describe("<SpeeldagPagina />", () => {
     });
   });
 
+  // De CTA onder het klaarzetten zei "zie Vandaag" en linkte naar de
+  // Spelen-tab — precies wég van de wedstrijden die hier gewoon staan (#1133).
+  it("wijst de wedstrijden-CTA naar het blok op deze pagina", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch()];
+    renderPagina("poll-booked");
+
+    expect(
+      await screen.findByRole("link", { name: /bekijk de wedstrijden/i }),
+    ).toHaveAttribute("href", "#speeldag-wedstrijden");
+  });
+
+  // Een losse partij hoort bij de avond waar je op staat. Op een speeldag die
+  // nog moet komen is plannen de voor de hand liggende actie, niet loggen.
+  it("zet bij een toekomstige speeldag het plannen vooraan", async () => {
+    tables.play_polls = [bookedPoll];
+    renderPagina("poll-booked");
+
+    const knoppen = await screen.findAllByRole("button", {
+      name: /match plannen|\+ match loggen/i,
+    });
+    expect(knoppen.map((k) => k.textContent)).toEqual([
+      "Match plannen",
+      "+ Match loggen",
+    ]);
+  });
+
   // Zolang er geen moment vastligt is er geen dag, en dus ook geen dagfilter
   // die zinnig is. Dan hoort er geen wedstrijdenblok te staan.
   it("houdt het wedstrijdenblok weg zolang er niets vastligt", async () => {

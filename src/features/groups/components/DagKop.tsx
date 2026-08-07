@@ -3,7 +3,13 @@ import { Link } from "react-router-dom";
 import { formatTime } from "@/lib/utils/format";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { displayName } from "@/features/profiles/api";
-import { automaatStatus, dagVoortgang, type Automaat } from "../dagStatus";
+import {
+  automaatStatus,
+  dagVoortgang,
+  speeldagVoorDag,
+  type Automaat,
+} from "../dagStatus";
+import { pollSharePath } from "../pollsApi";
 import { longDay } from "../planPollHelpers";
 import type { PlayPoll, PollOption } from "../pollsApi";
 import type { Match, Profile } from "@/types";
@@ -73,6 +79,12 @@ export function DagKop({
 
   const pct = v.totaal > 0 ? Math.round((v.gespeeld / v.totaal) * 100) : 0;
 
+  // De speeldag van vandaag als pagina (#1133): daar staan de wedstrijden van
+  // deze dag óók, samen met het moment, de banen en de code — en daar beheer je
+  // hem. Zonder deze link was dat verkeer eenrichting: de speeldagpagina wees
+  // hierheen, maar niet andersom.
+  const speeldag = speeldagVoorDag(polls, pollOptions, today);
+
   return (
     <section
       className={`card dagkop${dayDone ? " dagkop--done" : ""}`}
@@ -108,11 +120,18 @@ export function DagKop({
         </p>
       )}
 
-      {dayDone && (
+      {(dayDone || speeldag) && (
         <div className="dagkop__actions">
-          <button className="btn btn--sm btn--primary" onClick={onShowStand}>
-            Bekijk de stand →
-          </button>
+          {dayDone && (
+            <button className="btn btn--sm btn--primary" onClick={onShowStand}>
+              Bekijk de stand →
+            </button>
+          )}
+          {speeldag && (
+            <Link className="btn btn--sm" to={pollSharePath(speeldag.id)}>
+              Open de speeldag →
+            </Link>
+          )}
         </div>
       )}
     </section>
