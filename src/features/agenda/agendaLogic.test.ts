@@ -352,6 +352,47 @@ describe("buildMarkers", () => {
     expect(markers[1].yesVoterIds).toEqual(["p3"]);
   });
 
+  it("draagt mijn eigen stem per moment, los van iVoted (#1104)", () => {
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [
+          option({ id: "opt-1" }),
+          option({ id: "opt-2", date: "2026-08-20" }),
+          option({ id: "opt-3", date: "2026-08-21" }),
+        ],
+        votes: [
+          vote("me", "yes", "opt-1"),
+          vote("me", "maybe", "opt-2"),
+          // Op opt-3 zei ik niets; iemand anders wel.
+          vote("p2", "yes", "opt-3"),
+        ],
+      }),
+      GROEPEN,
+      "me",
+      nu,
+    );
+    expect(markers.map((m) => m.myVote)).toEqual(["yes", "maybe", null]);
+    // Deze poll raakte ik aan, dus iVoted staat overal aan — juist daarom is
+    // myVote nodig om te weten wélk moment nog open staat.
+    expect(markers.every((m) => m.iVoted)).toBe(true);
+  });
+
+  it("laat de stem van iemand anders niet als de mijne tellen", () => {
+    const markers = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [option({ id: "opt-1" })],
+        votes: [vote("p2", "yes", "opt-1"), vote("p3", "no", "opt-1")],
+      }),
+      GROEPEN,
+      "me",
+      nu,
+    );
+    expect(markers[0].myVote).toBeNull();
+    expect(markers[0].iVoted).toBe(false);
+  });
+
   it("negeert een moment waarvan de poll buiten het venster viel", () => {
     const markers = buildMarkers(
       venster({ polls: [], options: [option()] }),
@@ -410,6 +451,25 @@ describe("dagLabel", () => {
     const vastgelegd = markerVoor({}, { status: "locked", locked_option_id: "opt-1" });
     expect(dagLabel("2026-08-13", vastgelegd)).toContain("speeldag vastgelegd om 20:00");
     expect(dagLabel("2026-08-13", markerVoor({}))).toContain("speeldag open poll om 20:00");
+  });
+
+  it("zegt bij een open poll of jij al stemde (#1104)", () => {
+    const stil = markerVoor({});
+    expect(dagLabel("2026-08-13", stil)).toContain("jij stemde nog niet");
+    const gestemd = buildMarkers(
+      venster({
+        polls: [poll()],
+        options: [option()],
+        votes: [vote("me", "maybe", "opt-1")],
+      }),
+      GROEPEN,
+      "me",
+      nu,
+    );
+    expect(dagLabel("2026-08-13", gestemd)).toContain("jij stemde al");
+    // Een geboekte dag vraagt niets van je; daar hoort de zin niet.
+    const geboekt = markerVoor({}, { status: "booked", locked_option_id: "opt-1" });
+    expect(dagLabel("2026-08-13", geboekt)).not.toContain("jij stemde");
   });
 
   it("somt meerdere speeldagen op één dag op", () => {

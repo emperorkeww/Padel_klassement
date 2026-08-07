@@ -163,7 +163,10 @@ export function MaandRaster({
 function markerHint(m: AgendaMarker): string {
   if (m.past) return "gespeeld";
   if (m.status === "locked") return "nog boeken";
-  if (m.status === "open") return m.iVoted ? "jij ✓" : "stem";
+  // Per moment, niet per poll (#1104): een cel gaat over díe dag. Een poll met
+  // drie kandidaten mag dus "stem" tonen op de dag die je oversloeg, ook als je
+  // de andere twee al beantwoordde — dat is precies de dag waar je nog moet zijn.
+  if (m.status === "open") return m.myVote ? "jij ✓" : "stem";
   return "";
 }
 

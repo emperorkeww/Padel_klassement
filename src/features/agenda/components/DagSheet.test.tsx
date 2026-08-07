@@ -32,6 +32,7 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
     status: "booked",
     past: false,
     iVoted: false,
+    myVote: null,
     voterCount: 6,
     yesVoterIds: [],
     courts: "3 & 4",
