@@ -148,10 +148,7 @@
 }
 
 /* Groepskaarten op de hub (#949). */
-.sk-groups {
-  display: grid;
-  gap: var(--sp-3);
-}
+/* Eén groepskaart; de breedte komt van de rij waarin hij staat (#1134). */
 .sk-group {
   display: grid;
   gap: var(--sp-2);
@@ -165,9 +162,6 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-}
-.sk-group__kop {
-  justify-content: space-between;
 }
 
 /* Uitnodigingskaart (#923). */
