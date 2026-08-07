@@ -28,6 +28,7 @@ import { rondesOpDag } from "@/features/groups/speeldagRondes";
 import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
+import { MakeTeams } from "@/features/groups/components/MakeTeams";
 import { VolgendeRonde } from "@/features/groups/components/VolgendeRonde";
 import { LossePartij } from "@/features/groups/components/LossePartij";
 import { dateInZone } from "@/lib/utils/time";
@@ -302,20 +303,15 @@ export function SpeeldagPagina() {
         myId={myId}
         isOwner={groep.created_by === myId}
         onChanged={herlaad}
-        klaarzetActie={
-          // Alleen zolang er nog niets staat: zodra de rondes er zijn, staat
-          // dezelfde knop onder de wedstrijden als "+ Volgende ronde". Dezelfde
-          // tweedeling die de Spelen-tab maakt tussen een dag die nog moet
-          // beginnen en een dag die loopt.
-          generatorProps && rondes.length === 0 ? (
-            <VolgendeRonde
-              {...generatorProps}
-              label="⚡ Wedstrijden klaarzetten"
-              kaal
-            />
-          ) : undefined
-        }
       />
+
+      {/* Staat er nog geen wedstrijd, dan is indelen waarvoor je hier bent:
+          het paneel staat open in plaats van achter een knop (#1146). Zodra de
+          rondes er zijn verhuist de generator naar "+ Volgende ronde" onder de
+          wedstrijden — dezelfde tweedeling als op de Spelen-tab. */}
+      {generatorProps && rondes.length === 0 && (
+        <MakeTeams {...generatorProps} />
+      )}
 
       {/* Losse partij op deze speeldag (#1133): buiten de rondes om gespeeld of
           nog in te plannen. Voorgevuld met het uur van deze avond, want dat is

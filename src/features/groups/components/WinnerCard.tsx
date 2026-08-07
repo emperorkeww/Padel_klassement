@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
@@ -45,7 +45,6 @@ export function WinnerCard({
   isManager,
   busy,
   run,
-  klaarzetActie,
   compact = false,
 }: {
   poll: PlayPoll;
@@ -63,11 +62,6 @@ export function WinnerCard({
    *  twijfelaars, boekgegevens, agenda — staat achter "Details" op de kaart
    *  eromheen. */
   compact?: boolean;
-  /** De knop die de wedstrijden van deze speeldag klaarzet (#1141). Komt van
-   *  de pagina, want de generator heeft de leden, de teams en de historie van
-   *  de groep nodig — dingen die deze kaart niet kent. Ontbreekt hij, dan
-   *  toont de kaart die sectie niet. */
-  klaarzetActie?: ReactNode;
 }) {
   const toast = useToast();
   const name = (id: string) => displayName(profiles[id]);
@@ -238,10 +232,7 @@ export function WinnerCard({
             {o.duration} min · {club.name}
           </p>
           <div className="winner-card__code-row">{baanEnCode}</div>
-          <div className="winner-card__actions">
-            {klaarzetActie}
-            {deelKnop}
-          </div>
+          <div className="winner-card__actions">{deelKnop}</div>
         </div>
       </li>
     );
@@ -330,28 +321,15 @@ export function WinnerCard({
           )}
         </section>
 
-        {/* Delen is de stap zolang er niets klaar te zetten valt: te weinig
-            bevestigingen, of de wedstrijden staan er al — dan geeft de pagina
-            geen klaarzet-actie meer mee. */}
+        {/* Delen is de stap die in deze kaart overblijft: indelen gebeurt in
+            het speelformaat-paneel op de pagina zelf (#1146). */}
         {poll.status === "booked" && (
-          <section
-            className={`winner-card__section${t.yes.length < 4 || !klaarzetActie ? " is-current" : ""}`}
-          >
+          <section className="winner-card__section is-current">
             <h3 className="winner-card__section-title">Delen & agenda</h3>
             <div className="winner-card__actions">{deelKnop}</div>
           </section>
         )}
 
-        {/* Klaarzetten (#1141): de knop komt van de pagina en opent overal
-            hetzelfde speelformaat-paneel — wie speelt er mee, en in welke
-            vorm. Deze kaart had daar een eigen Elo-generator voor staan,
-            zonder spelerselectie en zonder vormkeuze. */}
-        {klaarzetActie && (
-          <section className="winner-card__section is-current">
-            <h3 className="winner-card__section-title">Klaarzetten</h3>
-            <div className="winner-card__actions">{klaarzetActie}</div>
-          </section>
-        )}
       </div>
 
       {boekSheet !== null && (

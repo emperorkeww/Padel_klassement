@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
@@ -73,7 +73,6 @@ export function PollCard({
   isOwner,
   onChanged,
   spotlight,
-  klaarzetActie,
 }: {
   poll: PlayPoll;
   groupName: string;
@@ -87,10 +86,6 @@ export function PollCard({
   /** Je landde op deze kaart via een gedeelde link (#886): breng 'm in beeld
    *  en markeer 'm kort, zodat duidelijk is wélke speeldag bedoeld werd. */
   spotlight?: boolean;
-  /** Knop die de wedstrijden van deze speeldag klaarzet (#1141); doorgegeven
-   *  aan de winner-card. Komt van de pagina, want de generator heeft de leden
-   *  en de historie van de groep nodig. */
-  klaarzetActie?: ReactNode;
 }) {
   const toast = useToast();
   // De op de poll opgeslagen locatie (#322), niet de globale clubvoorkeur. De
@@ -457,7 +452,6 @@ export function PollCard({
                 isManager={isManager}
                 busy={busy}
                 run={run}
-                klaarzetActie={klaarzetActie}
                 compact={dicht}
               />
             );
