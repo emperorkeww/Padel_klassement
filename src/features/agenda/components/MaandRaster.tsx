@@ -1,38 +1,26 @@
 import { useEffect, useRef } from "react";
-import { useContainerBreedte } from "@/lib/hooks/useContainerBreedte";
-import {
-  dagLabel,
-  splitMarkers,
-  toetsStap,
-  type AgendaMarker,
-  type RasterDag,
-} from "../agendaLogic";
+import { dagLabel, splitMarkers, toetsStap, type AgendaMarker, type RasterDag } from "../agendaLogic";
 import { StatusGlyph } from "./StatusGlyph";
 
 /* ------------------------------------------------------------------ */
-/* Het maandraster (#1091).                                            */
+/* Het maandraster (#1091, hervormd in #1112).                         */
 /*                                                                     */
 /* Een kalenderraster is een raster: elke dag is een knop met een echte */
 /* naam, de pijltjes lopen erdoorheen en er is één tab-stop (roving     */
 /* tabindex). De glyph-vorm draagt de status, de naam draagt hem in     */
 /* woorden — kleur is nergens het enige onderscheid.                    */
+/*                                                                     */
+/* Wat #1112 veranderde: de cel toonde tijd, groepsnaam en een hint als */
+/* tekst, en op mobiel paste daar niets van ("20:00 / Ball…"). Nu is de */
+/* cel puur overzicht — dagnummer plus stippen — en staat de leesbare   */
+/* tekst eronder. Het raster is daarmee ruim gehalveerd in hoogte.      */
 /* ------------------------------------------------------------------ */
 
-/** Vanaf deze *containerbreedte* past de volledige markertekst op één regel.
- *  Gemeten aan de container en niet aan het venster: met de zijbalk ernaast is
- *  de inhoud smaller dan het scherm (#913). */
-const BREED_VANAF = 620;
+/** Hoeveel stippen een dag toont. Meer past niet in een cel van deze maat, en
+ *  het exacte aantal staat toch in de toegankelijke naam ("3 speeldagen"). */
+const MAX_STIPPEN = 3;
 
 const WEEKDAGEN = ["ma", "di", "wo", "do", "vr", "za", "zo"];
-const WEEKDAGEN_LANG = [
-  "maandag",
-  "dinsdag",
-  "woensdag",
-  "donderdag",
-  "vrijdag",
-  "zaterdag",
-  "zondag",
-];
 
 export function MaandRaster({
   weeks,
@@ -52,10 +40,6 @@ export function MaandRaster({
   onFocusDag: (date: string, viaToetsenbord: boolean) => void;
   onPick: (date: string) => void;
 }) {
-  const { ref, breedte } = useContainerBreedte();
-  const breed = breedte != null && breedte >= BREED_VANAF;
-  const maxMarkers = breed ? 3 : 2;
-
   // De focus verhuizen ná de render die de nieuwe dag neerzet. Alleen als de
   // verplaatsing van het toetsenbord kwam: anders kaapt het raster de focus
   // zodra de pagina laadt of iemand ergens anders klikt.
@@ -74,9 +58,9 @@ export function MaandRaster({
   }
 
   return (
-    <div className="agenda-raster" ref={ref}>
+    <div className="agenda-raster">
       <div className="agenda-raster__koppen" aria-hidden="true">
-        {(breed ? WEEKDAGEN_LANG : WEEKDAGEN).map((d) => (
+        {WEEKDAGEN.map((d) => (
           <span key={d} className="agenda-raster__kop">
             {d}
           </span>
@@ -98,9 +82,8 @@ export function MaandRaster({
           <div className="agenda-raster__week" role="row" key={week[0].date}>
             {week.map((dag) => {
               const markers = perDag[dag.date] ?? [];
-              const { shown, extra } = splitMarkers(markers, maxMarkers);
+              const { shown } = splitMarkers(markers, MAX_STIPPEN);
               const isVandaag = dag.date === vandaag;
-              const leeg = markers.length === 0;
               const dagnummer = Number(dag.date.slice(8));
               return (
                 <div role="gridcell" key={dag.date} className="agenda-raster__cel">
@@ -118,10 +101,12 @@ export function MaandRaster({
                     aria-current={isVandaag ? "date" : undefined}
                     className={[
                       "agenda-dag",
-                      leeg && "agenda-dag--leeg",
+                      markers.length > 0 && "agenda-dag--bezet",
                       isVandaag && "agenda-dag--vandaag",
                       !dag.inMonth && "agenda-dag--buiten",
-                      markers.length > 0 && markers.every((m) => m.past) && "agenda-dag--verleden",
+                      markers.length > 0 &&
+                        markers.every((m) => m.past) &&
+                        "agenda-dag--verleden",
                     ]
                       .filter(Boolean)
                       .join(" ")}
@@ -129,25 +114,13 @@ export function MaandRaster({
                     <span className="agenda-dag__nummer" aria-hidden="true">
                       {dagnummer}
                     </span>
-                    {shown.map((m) => (
-                      <span
-                        key={m.optionId}
-                        className={`agenda-marker agenda-marker--${m.past ? "past" : m.status}`}
-                        aria-hidden="true"
-                      >
-                        <StatusGlyph status={m.status} past={m.past} size={breed ? 10 : 8} />
-                        <span className="agenda-marker__tekst">
-                          <span className="agenda-marker__tijd">{m.startTime}</span>
-                          <span className="agenda-marker__groep">{m.groupName}</span>
-                          {breed && <span className="agenda-marker__hint">{markerHint(m)}</span>}
-                        </span>
-                      </span>
-                    ))}
-                    {extra > 0 && (
-                      <span className="agenda-dag__meer" aria-hidden="true">
-                        +{extra}
-                      </span>
-                    )}
+                    {/* Vaste hoogte, ook zonder stippen: anders springen de
+                        cellen van een week met en zonder speeldag uit elkaar. */}
+                    <span className="agenda-dag__stippen" aria-hidden="true">
+                      {shown.map((m) => (
+                        <StatusGlyph key={m.optionId} status={m.status} past={m.past} />
+                      ))}
+                    </span>
                   </button>
                 </div>
               );
@@ -157,17 +130,6 @@ export function MaandRaster({
       </div>
     </div>
   );
-}
-
-/** De staart van een brede marker: waar wacht deze speeldag op? */
-function markerHint(m: AgendaMarker): string {
-  if (m.past) return "gespeeld";
-  if (m.status === "locked") return "nog boeken";
-  // Per moment, niet per poll (#1104): een cel gaat over díe dag. Een poll met
-  // drie kandidaten mag dus "stem" tonen op de dag die je oversloeg, ook als je
-  // de andere twee al beantwoordde — dat is precies de dag waar je nog moet zijn.
-  if (m.status === "open") return m.myVote ? "jij ✓" : "stem";
-  return "";
 }
 
 export default MaandRaster;

@@ -20,13 +20,13 @@ import {
   markersByDay,
   monthGrid,
   schuifMaand,
+  telInMaand,
   windowFor,
   zelfdeMaand,
   type AgendaMarker,
   type Maand,
 } from "./agendaLogic";
 import { MaandRaster } from "./components/MaandRaster";
-import { WeekStrook } from "./components/WeekStrook";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
@@ -90,6 +90,7 @@ export function Agenda() {
     [venster.data, lijst, myId],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
   // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
   // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
   const perPoll = useMemo(() => {
@@ -109,7 +110,6 @@ export function Agenda() {
     lijst.find((g) => g.id === planGroep)?.id ??
     (lijst.length === 1 ? lijst[0].id : null);
 
-  const dezeMaand = zelfdeMaand(maand, maandVan(vandaag));
   // Alleen de eerste keer een skeleton. Bij het bladeren blijft het raster
   // staan en vullen de markers zich bij: een leeg raster laten flitsen is
   // erger dan de vorige maand nog even zien.
@@ -152,40 +152,27 @@ export function Agenda() {
 
   return (
     <div className="agenda">
-      <header className="page-head">
-        <h1 className="page-title">Agenda</h1>
-        <p className="page-subtitle">
-          Alle speeldagen van je groepen. Tik een lege dag om er een te plannen.
-        </p>
-      </header>
-
-      <div className="agenda-nav">
-        <div className="agenda-nav__stap">
-          <button
-            type="button"
-            className="agenda-nav__knop"
-            onClick={() => naarMaand(-1)}
-            aria-label="Vorige maand"
-          >
-            <IconChevron kant="links" />
-          </button>
-          <button
-            type="button"
-            className="agenda-nav__knop"
-            onClick={() => naarMaand(1)}
-            aria-label="Volgende maand"
-          >
-            <IconChevron kant="rechts" />
-          </button>
+      {/* De maand ís de paginatitel (#1112). Een aparte "Agenda"-kop erboven
+          herhaalde alleen wat de tabbalk al zegt en kostte de hoogte die het
+          raster nodig heeft. */}
+      <header className="agenda-kop">
+        <div className="agenda-kop__titel">
+          {/* aria-live: met het toetsenbord bladeren zegt anders niets. */}
+          <h1 className="agenda-kop__maand" aria-live="polite">
+            {maandLabel(maand)}
+          </h1>
+          <p className="agenda-kop__telling">
+            {laadt
+              ? " "
+              : inMaand === 0
+                ? "Nog niets gepland"
+                : `${inMaand} ${inMaand === 1 ? "activiteit" : "activiteiten"} deze maand`}
+          </p>
         </div>
-        {/* aria-live: met het toetsenbord bladeren zegt anders niets. */}
-        <h2 className="agenda-nav__maand" aria-live="polite">
-          {maandLabel(maand)}
-        </h2>
-        {!dezeMaand && (
+        <div className="agenda-kop__acties">
           <button
             type="button"
-            className="agenda-nav__vandaag"
+            className="agenda-kop__vandaag"
             onClick={() => {
               setMaand(maandVan(vandaag));
               setFocusDag(vandaag);
@@ -193,8 +180,24 @@ export function Agenda() {
           >
             Vandaag
           </button>
-        )}
-      </div>
+          <button
+            type="button"
+            className="agenda-kop__stap"
+            onClick={() => naarMaand(-1)}
+            aria-label="Vorige maand"
+          >
+            <IconChevron kant="links" />
+          </button>
+          <button
+            type="button"
+            className="agenda-kop__stap"
+            onClick={() => naarMaand(1)}
+            aria-label="Volgende maand"
+          >
+            <IconChevron kant="rechts" />
+          </button>
+        </div>
+      </header>
 
       {groepen.error && <ErrorRetry melding={groepen.error} onRetry={groepen.reload} />}
       {venster.error && <ErrorRetry melding={venster.error} onRetry={venster.reload} />}
@@ -214,20 +217,13 @@ export function Agenda() {
         </EmptyState>
       ) : (
         <>
-          {dezeMaand && !laadt && <WeekStrook vandaag={vandaag} perDag={perDag} />}
-
           {!bezig && markers.length === 0 && (
+            // "Nog niets gepland" staat al onder de maandtitel; deze kaart zegt
+            // wat je eraan doet, niet nog eens hetzelfde.
             <section className="agenda-instap">
-              <h2 className="agenda-instap__titel">Nog niets gepland</h2>
+              <h2 className="agenda-instap__titel">Plan een speeldag</h2>
               <p className="agenda-instap__tekst">
-                Deze maand staat er nog geen speeldag. Tik een dag met een
-                streepjesrand aan om er een te plannen.
-              </p>
-              <p className="agenda-instap__wijs">
-                <span className="agenda-instap__cel" aria-hidden="true">
-                  +
-                </span>
-                zoals hieronder
+                Tik een dag in het raster aan om er een speeldag op te zetten.
               </p>
             </section>
           )}
@@ -248,7 +244,7 @@ export function Agenda() {
           <ul className="agenda-legenda">
             {(["booked", "locked", "open"] as const).map((status) => (
               <li key={status} className="agenda-legenda__item">
-                <StatusGlyph status={status} size={9} />
+                <StatusGlyph status={status} size={8} />
                 {LEGENDA[status]}
               </li>
             ))}

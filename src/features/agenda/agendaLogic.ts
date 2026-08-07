@@ -257,18 +257,24 @@ export function schuifMaand({ jaar, maand }: Maand, delta: number): Maand {
 export const zelfdeMaand = (a: Maand, b: Maand) =>
   a.jaar === b.jaar && a.maand === b.maand;
 
+/**
+ * Hoeveel speeldagen er in de zichtbare maand staan (#1112) — de subregel onder
+ * de maandtitel.
+ *
+ * Telt op de máánd en niet op het venster: het raster toont ook de randdagen van
+ * de buurmaanden, en die horen niet mee in "3 activiteiten deze maand".
+ */
+export function telInMaand(markers: AgendaMarker[], m: Maand): number {
+  const prefix = `${m.jaar}-${pad(m.maand)}-`;
+  return markers.filter((x) => x.date.startsWith(prefix)).length;
+}
+
 /** "augustus 2026" — de kop boven het raster. */
 export function maandLabel({ jaar, maand }: Maand): string {
   return new Intl.DateTimeFormat("nl-BE", {
     month: "long",
     year: "numeric",
   }).format(new Date(`${jaar}-${pad(maand)}-01T12:00:00`));
-}
-
-/** De week (ma t/m zo) waarin een datum valt — voedt de weekstrook. */
-export function weekVan(date: string): string[] {
-  const start = addDays(date, -weekdayIndex(date));
-  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
 /** Zelfde dagnummer een maand verder of terug; een kortere maand kapt af
