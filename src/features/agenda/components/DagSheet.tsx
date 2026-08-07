@@ -293,7 +293,7 @@ function Speeldag({
       <div className="dagsheet__acties">
         <Link
           className="btn btn--primary dagsheet__actie"
-          to={pollSharePath(marker.groupId, marker.pollId)}
+          to={pollSharePath(marker.pollId)}
         >
           Open speeldag
         </Link>

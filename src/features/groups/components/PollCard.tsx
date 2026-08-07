@@ -214,7 +214,7 @@ export function PollCard({
         }),
         // Als los url-veld: het deelvenster maakt er een nette preview van en
         // het klembord zet 'm onder de tekst.
-        url: pollShareUrl(poll.group_id, poll.id),
+        url: pollShareUrl(poll.id),
       });
       if (outcome === "clipboard") toast.success("Tekst gekopieerd naar klembord.");
     } catch (err) {

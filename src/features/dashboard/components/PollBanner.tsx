@@ -39,7 +39,7 @@ export function PollBanner({
         </p>
         <Link
           className={`btn btn--sm${pick.iVoted ? "" : " btn--primary"}`}
-          to={pollSharePath(pick.group.id, pick.pollId)}
+          to={pollSharePath(pick.pollId)}
         >
           {pick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
         </Link>
@@ -81,7 +81,7 @@ export function PollBanner({
       )}
       <Link
         className={`btn btn--sm${pick.booked ? "" : " btn--primary"}`}
-        to={pollSharePath(pick.group.id, pick.pollId)}
+        to={pollSharePath(pick.pollId)}
       >
         {pick.booked ? "Bekijk →" : "Regel de baan →"}
       </Link>
