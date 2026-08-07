@@ -48,6 +48,7 @@ export function DagSheet({
   profielen,
   myId,
   onGestemd,
+  onPlan,
   onClose,
 }: {
   /** ISO-datum; null = dicht. */
@@ -63,6 +64,9 @@ export function DagSheet({
   myId: string;
   /** Stem geland: het maandvenster mag opnieuw geladen worden. */
   onGestemd: () => void;
+  /** Ook op deze dag een speeldag starten (#1104). Ontbreekt voor een dag die
+   *  geweest is: daar valt niets meer te plannen. */
+  onPlan?: () => void;
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -137,6 +141,16 @@ export function DagSheet({
                 nu={nu}
               />
             ))
+          )}
+
+          {/* Een dag die al iets draagt kon tot nu toe niets nieuws krijgen:
+              kiesDag stuurde 'm hierheen en hier stond geen uitweg. Twee
+              groepen die los van elkaar plannen weten niet van elkaar, dus een
+              bezette donderdag is juist een dag waar je naar kijkt (#1104). */}
+          {onPlan && markers.length > 0 && (
+            <button type="button" className="btn dagsheet__ookplannen" onClick={onPlan}>
+              Plan hier ook een speeldag
+            </button>
           )}
         </div>
       )}

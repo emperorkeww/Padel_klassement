@@ -58,7 +58,12 @@ function perPoll(markers: AgendaMarker[]): Record<string, AgendaMarker[]> {
   return out;
 }
 
-function toon(markers: AgendaMarker[], extra: AgendaMarker[] = []) {
+function toon(
+  markers: AgendaMarker[],
+  extra: AgendaMarker[] = [],
+  /** Zoals Agenda hem doorgeeft: afwezig voor een dag die geweest is. */
+  onPlan: (() => void) | undefined = undefined,
+) {
   const onGestemd = vi.fn();
   render(
     <MemoryRouter>
@@ -71,6 +76,7 @@ function toon(markers: AgendaMarker[], extra: AgendaMarker[] = []) {
           profielen={{}}
           myId="me"
           onGestemd={onGestemd}
+          onPlan={onPlan}
           onClose={() => {}}
         />
       </ToastProvider>
@@ -221,5 +227,29 @@ describe("<DagSheet />", () => {
     // De klok in het sheet tikt door; `past` op de marker staat nog op false.
     act(() => void vi.advanceTimersByTime(2 * 60_000));
     expect(screen.queryByRole("group", { name: /Jouw stem/ })).not.toBeInTheDocument();
+  });
+
+  /* -------- Plannen op een dag die al bezet is (#1104) -------- */
+
+  const PLAN = "Plan hier ook een speeldag";
+
+  it("biedt een tweede speeldag aan op een dag die al iets draagt", async () => {
+    const onPlan = vi.fn();
+    toon([marker()], [], onPlan);
+    await userEvent.click(screen.getByRole("button", { name: PLAN }));
+    expect(onPlan).toHaveBeenCalledOnce();
+  });
+
+  it("laat de plan-knop weg voor een dag die geweest is", () => {
+    // Agenda geeft `onPlan` dan niet door; het sheet toont niets uit zichzelf.
+    toon([marker({ past: true })]);
+    expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
+  });
+
+  it("houdt de plan-knop weg bij een lege dag in het verleden", () => {
+    // Die dag komt hier alleen terecht als er niets stond; plannen loopt dan al
+    // via het plan-sheet en een tweede ingang zou de lege staat tegenspreken.
+    toon([], [], vi.fn());
+    expect(screen.queryByRole("button", { name: PLAN })).not.toBeInTheDocument();
   });
 });
