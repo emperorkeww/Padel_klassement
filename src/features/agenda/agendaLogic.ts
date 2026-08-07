@@ -1,4 +1,4 @@
-import { addDays, clubEpoch } from "@/lib/utils/time";
+import { addDays, clubEpoch, fromMinutes, toMinutes } from "@/lib/utils/time";
 import { longDay } from "@/features/groups/planPollHelpers";
 import type {
   PlayPoll,
@@ -243,6 +243,43 @@ export function weekVan(date: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
+/** Zelfde dagnummer een maand verder of terug; een kortere maand kapt af
+ *  (31 maart → PageDown → 30 april). */
+export function zelfdeDagAndereMaand(date: string, delta: number): string {
+  const m = schuifMaand(maandVan(date), delta);
+  const dag = Math.min(Number(date.slice(8)), daysInMonth(m));
+  return `${m.jaar}-${pad(m.maand)}-${pad(dag)}`;
+}
+
+/**
+ * Toetsenbordnavigatie door het raster: links/rechts ±1 dag, boven/onder ±1
+ * week, Home/End naar de rand van de week, PageUp/PageDown een maand. Geeft
+ * null voor een toets die het raster niet kent, zodat de aanroeper hem gewoon
+ * doorlaat.
+ */
+export function toetsStap(date: string, key: string): string | null {
+  switch (key) {
+    case "ArrowLeft":
+      return addDays(date, -1);
+    case "ArrowRight":
+      return addDays(date, 1);
+    case "ArrowUp":
+      return addDays(date, -7);
+    case "ArrowDown":
+      return addDays(date, 7);
+    case "Home":
+      return addDays(date, -weekdayIndex(date));
+    case "End":
+      return addDays(date, 6 - weekdayIndex(date));
+    case "PageUp":
+      return zelfdeDagAndereMaand(date, -1);
+    case "PageDown":
+      return zelfdeDagAndereMaand(date, 1);
+    default:
+      return null;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Labels.                                                             */
 /* ------------------------------------------------------------------ */
@@ -252,6 +289,12 @@ const STATUS_WOORD: Record<AgendaStatus, string> = {
   locked: "vastgelegd, nog te boeken",
   open: "open poll",
 };
+
+/** "20:00 — 21:30": het tijdvak van een moment. Een slot dat over middernacht
+ *  loopt telt gewoon door naar de kleine uurtjes. */
+export function tijdvak(startTime: string, duration: number): string {
+  return `${startTime} — ${fromMinutes((toMinutes(startTime) + duration) % 1440)}`;
+}
 
 /** Het statuswoord zoals het in badges en legenda staat. */
 export function statusLabel(status: AgendaStatus, past = false): string {
