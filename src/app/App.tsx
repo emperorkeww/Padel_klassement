@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DashboardLayout } from "@/app/DashboardLayout";
 import { ScrollRestore } from "@/app/ScrollRestore";
+import { RedirectMetQuery } from "@/app/RedirectMetQuery";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
 
 // Routes lazy laden zodat elke pagina zijn eigen chunk krijgt.
@@ -12,7 +13,6 @@ const AuthBevestigen = lazy(() => import("@/features/auth/AuthBevestigen"));
 const Dashboard = lazy(() => import("@/features/dashboard/Dashboard"));
 const Feed = lazy(() => import("@/features/feed/Feed"));
 const Leaderboard = lazy(() => import("@/features/standings/Leaderboard"));
-const Matches = lazy(() => import("@/features/matches/Matches"));
 const Groups = lazy(() => import("@/features/groups/Groups"));
 const GroupDetail = lazy(() => import("@/features/groups/GroupDetail"));
 const JoinGroup = lazy(() => import("@/features/groups/JoinGroup"));
@@ -22,6 +22,7 @@ const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
 const Agenda = lazy(() => import("@/features/agenda/Agenda"));
+const SpeeldagPagina = lazy(() => import("@/features/groups/SpeeldagPagina"));
 const Uitleg = lazy(() => import("@/features/uitleg/Uitleg"));
 const Meldingen = lazy(() => import("@/features/meldingen/Meldingen"));
 const AdminPaneel = lazy(() => import("@/features/admin/AdminPaneel"));
@@ -141,10 +142,17 @@ function App() {
               <Route path="/clubblad" element={<Feed />} />
               <Route path="/feed" element={<Navigate to="/clubblad" replace />} />
               <Route path="/klassement" element={<Leaderboard />} />
-              <Route path="/matches" element={<Matches />} />
+              {/* De Matches-tab is opgegaan in Spelen (#1123). Deze redirect
+                  blijft permanent staan: al verstuurde pushmeldingen dragen
+                  "/matches" in hun payload, en die leven door op telefoons. */}
+              <Route path="/matches" element={<RedirectMetQuery to="/spelen" />} />
               <Route path="/banen" element={<Availability />} />
               {/* Agenda (#1091): de speeldagen van al je groepen in de tijd. */}
               <Route path="/agenda" element={<Agenda />} />
+              {/* Eén speeldag (#1121): de plek waar je hem beheert, en de
+                  bestemming van elke deel-link en elk pushbericht erover. De
+                  groep hoeft niet in het pad — die staat in de poll. */}
+              <Route path="/speeldag/:id" element={<SpeeldagPagina />} />
               {/* "Hoe werkt het?" (#989): de centrale uitleg, bereikbaar via
                   de ?-knop in de shell op elk scherm. */}
               <Route path="/uitleg" element={<Uitleg />} />
@@ -157,7 +165,7 @@ function App() {
                   naar ?hub=1, omdat kaal /spelen je bij één groep meteen die
                   groep in stuurde — die uitzondering is er niet meer. */}
               <Route path="/spelen" element={<Groups />} />
-              <Route path="/groepen" element={<Navigate to="/spelen" replace />} />
+              <Route path="/groepen" element={<RedirectMetQuery to="/spelen" />} />
               <Route path="/groepen/join/:token" element={<JoinGroup />} />
               <Route path="/groepen/:id" element={<GroupDetail />} />
               <Route path="/vrienden" element={<Friends />} />

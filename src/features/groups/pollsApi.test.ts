@@ -338,30 +338,29 @@ describe("reopenPoll", () => {
   });
 });
 
-// Deep-link naar één speeldag (#675): spiegel van slotShareUrl.
+// Deep-link naar één speeldag (#675): spiegel van slotShareUrl. Sinds #1121
+// een eigen route in plaats van een tab-toestand op de groepspagina.
 describe("pollShareUrl", () => {
-  it("bouwt een absolute link met tab en poll-id", () => {
-    expect(pollShareUrl("g1", "poll-1")).toBe(
-      `${window.location.origin}/groepen/g1?tab=plannen&poll=poll-1`,
+  it("bouwt een absolute link naar de speeldagpagina", () => {
+    expect(pollShareUrl("poll-1")).toBe(
+      `${window.location.origin}/speeldag/poll-1`,
     );
   });
 
   it("codeert id's die niet URL-veilig zijn", () => {
-    expect(pollShareUrl("g1", "a b&c")).toContain("poll=a+b%26c");
+    expect(pollShareUrl("a b&c")).toContain("/speeldag/a%20b%26c");
   });
 });
 
 // Zelfde pad zonder origin (#886), voor links binnen de app.
 describe("pollSharePath", () => {
   it("geeft een relatief pad — een absolute url herlaadt de hele app", () => {
-    expect(pollSharePath("g1", "poll-1")).toBe(
-      "/groepen/g1?tab=plannen&poll=poll-1",
-    );
+    expect(pollSharePath("poll-1")).toBe("/speeldag/poll-1");
   });
 
   it("is precies het pad-deel van pollShareUrl", () => {
-    expect(pollShareUrl("g1", "poll-1")).toBe(
-      `${window.location.origin}${pollSharePath("g1", "poll-1")}`,
+    expect(pollShareUrl("poll-1")).toBe(
+      `${window.location.origin}${pollSharePath("poll-1")}`,
     );
   });
 });

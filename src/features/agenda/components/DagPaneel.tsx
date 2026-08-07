@@ -6,9 +6,10 @@ import {
   metHoofdletter,
   statusChip,
   statusLabel,
+  volgendeStap,
   type AgendaMarker,
 } from "../agendaLogic";
-import { StatusGlyph } from "./StatusGlyph";
+import { StatusGlyph } from "@/ui/StatusGlyph";
 
 /* ------------------------------------------------------------------ */
 /* Het dagpaneel onder het raster (#1112).                             */
@@ -196,6 +197,11 @@ function SpeeldagKaart({
 }) {
   const status = marker.past ? "past" : marker.status;
   const kanners = marker.yesVoterIds;
+  // Waar deze speeldag op wacht (#1121). De Plannen-tab zei dit in een balk
+  // bovenaan, over precies één speeldag; hier hoort het bij de kaart waar het
+  // over gaat — er kunnen er drie tegelijk lopen, elk in een andere fase.
+  const stap = volgendeStap(marker);
+  const opJou = marker.status === "open" && !marker.past && marker.myVote == null;
   return (
     <button type="button" className="speeldag" onClick={onOpen}>
       {/* Het staafje links draagt dezelfde status als de stip in het raster —
@@ -219,6 +225,13 @@ function SpeeldagKaart({
               ))}
             </span>
             <span className="speeldag__telling">{spelersLabel(marker, leden)}</span>
+          </span>
+        )}
+        {stap && (
+          <span
+            className={`speeldag__stap${opJou ? " is-jij" : ""}`}
+          >
+            {stap}
           </span>
         )}
       </span>

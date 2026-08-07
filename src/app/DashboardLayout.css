@@ -3,7 +3,7 @@
   /* dvh: échte zichtbare hoogte op mobiel (url-balk schuift mee). */
   min-height: 100dvh;
   display: flex;
-  background: var(--bg);
+  background: var(--background-canvas);
 }
 
 /* ---------- Mobiele topbalk (verborgen op desktop) ---------- */
@@ -19,14 +19,40 @@
   top: 0;
   align-self: flex-start;
   height: 100vh;
-  width: 248px;
+  width: clamp(232px, 17vw, 264px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1.5rem 1rem;
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--divider);
+  padding: 1.5rem 1rem 1.125rem;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--background-navigation);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 12px 0 36px rgba(3, 21, 19, 0.09);
+}
+
+/* De baanfoto uit de auth-flow wordt op desktop de onderste helft van het
+   app-meubilair (#1120). Twee verlopen houden zowel navigatie als profielvoet
+   leesbaar; de witte court line blijft als merkdetail zichtbaar. */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: auto 0 0;
+  height: 49%;
+  background:
+    linear-gradient(180deg, var(--background-navigation) 0%, rgba(3, 21, 19, 0.58) 34%, rgba(3, 21, 19, 0.2) 68%),
+    linear-gradient(0deg, rgba(3, 21, 19, 0.78), transparent 52%),
+    url("../features/auth/assets/auth-court.webp") 50% 72% / cover no-repeat;
+}
+.sidebar::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(3, 21, 19, 0.06), rgba(3, 21, 19, 0.28));
+  pointer-events: none;
 }
 
 .sidebar__brand {
@@ -34,7 +60,7 @@
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-1) var(--sp-2) var(--sp-5);
-  color: var(--ink);
+  color: var(--navigation-ink);
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -64,7 +90,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--ink-soft);
+  color: var(--navigation-muted);
+  opacity: 0.82;
 }
 
 .sidebar__link {
@@ -74,7 +101,7 @@
   gap: var(--sp-3);
   padding: var(--sp-3);
   border-radius: var(--radius-sm);
-  color: var(--sidebar-ink);
+  color: var(--navigation-muted);
   text-decoration: none;
   font-size: var(--fs-base);
   font-weight: 600;
@@ -117,15 +144,15 @@
    kleur van "een subtiel vlak binnen een kaart" — twee rollen op één token, en
    op donker daardoor geen van beide zichtbaar. */
 .sidebar__link:hover {
-  background: var(--surface-hover);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--navigation-ink);
 }
 .sidebar__link:hover .sidebar__icon {
-  color: var(--accent);
+  color: var(--lime);
 }
 .sidebar__link.is-active {
-  background: var(--surface-active);
-  color: var(--selected-ink);
+  background: var(--navigation-surface);
+  color: var(--navigation-ink);
 }
 /* Afgerond accentstaafje i.p.v. een harde inset-rand. */
 .sidebar__link.is-active::before {
@@ -137,15 +164,15 @@
   width: 3px;
   height: 55%;
   border-radius: 999px;
-  background: var(--selected-mark);
+  background: var(--lime);
 }
 .sidebar__icon {
   display: inline-flex;
-  color: var(--ink-soft);
+  color: var(--navigation-muted);
   transition: color 0.15s;
 }
 .sidebar__link.is-active .sidebar__icon {
-  color: var(--selected-mark);
+  color: var(--lime);
 }
 
 .sidebar__foot {
@@ -153,7 +180,7 @@
   flex-direction: column;
   gap: 0.6rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 /* Jokerstatus in de zijbalkvoet (#1003): links uitgelijnd boven de eigen
    naam, zodat hij in de kolom staat en niet over de volle breedte rekt. */
@@ -172,7 +199,7 @@
   transition: background 0.15s;
 }
 .sidebar__user:hover {
-  background: var(--surface-hover);
+  background: rgba(255, 255, 255, 0.08);
 }
 .sidebar__user-text {
   display: grid;
@@ -181,24 +208,24 @@
 .sidebar__user-name {
   font-size: var(--fs-md);
   font-weight: 700;
-  color: var(--ink);
+  color: var(--navigation-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sidebar__user-mail {
   font-size: var(--fs-xs);
-  color: var(--ink-soft);
+  color: var(--navigation-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .sidebar__signout {
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
+  background: rgba(3, 21, 19, 0.42);
+  color: var(--navigation-ink);
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 600;
@@ -206,8 +233,8 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .sidebar__signout:hover {
-  background: var(--surface-hover);
-  border-color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.42);
 }
 
 /* ---------- Content ---------- */
@@ -222,9 +249,9 @@
   overflow-x: clip;
 }
 .content__inner {
-  max-width: 940px;
+  max-width: 1184px;
   margin: 0 auto;
-  padding: var(--sp-8) var(--sp-8) 3rem;
+  padding: 1.75rem var(--sp-8) 3.5rem;
 }
 
 /* Zachte enter-animatie bij paginawissel (het Outlet-kind wordt vers gemount). */
@@ -290,6 +317,7 @@
     --glas-vast: var(--sidebar-bg);
     border-top: 0;
     border-bottom: 1px solid var(--divider);
+    min-height: var(--topbar-h);
   }
   .topbar__brand {
     position: relative;
@@ -371,6 +399,7 @@
     color: var(--sidebar-ink);
     text-decoration: none;
     transition: color 0.15s;
+    touch-action: manipulation;
   }
   .tabbar__icon {
     display: inline-flex;
@@ -401,7 +430,7 @@
     white-space: nowrap;
   }
   .tabbar__link.is-active {
-    color: var(--accent);
+    color: var(--selected-ink);
   }
   .tabbar__link.is-active .tabbar__label {
     font-weight: 700;
@@ -429,12 +458,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 58px;
-    height: 58px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: var(--surface);
     border: 4px solid var(--sidebar-bg);
     box-shadow: var(--shadow-ball);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   }
   .tabbar__link--home .tabbar__icon svg {
     width: 30px;
@@ -444,6 +474,9 @@
     /* De tweede schaduw stond hardcoded op de lichte waarde en gaf de bal op
        donker een grijze halo; --shadow-ball is per thema al de juiste. */
     box-shadow: 0 0 0 3px var(--selected-mark), var(--shadow-ball);
+  }
+  .tabbar__link--home:active .tabbar__icon {
+    transform: translate(-50%, -50%) translateY(-14px) scale(0.94);
   }
   /* De uitstekende bal is een cirkel; leg de focus-ring om de bal zelf i.p.v.
      een hoekige rechthoek om de (lage) tab-cel. De hele 58px-cirkel is de
@@ -460,6 +493,12 @@
     /* Onderrand vrijhouden van de vaste onderbalk (+ home-indicator). */
     padding: var(--sp-5) var(--sp-4)
       calc(var(--tabbar-h) + var(--sp-6) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1040px) {
+  .content__inner {
+    padding-inline: var(--sp-5);
   }
 }
 

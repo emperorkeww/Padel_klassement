@@ -19,12 +19,30 @@ describe("speeldagIcs", () => {
   it("bouwt het event met groep, club, banen en code", () => {
     const lines = speeldagIcs(speeldag, "CONFIRMED", NU).split("\r\n");
     expect(lines).toContain("SUMMARY:Padel: Vrijdagavond padel");
-    expect(lines).toContain("LOCATION:LAGO CLUB Padel Beveren");
+    // De baan hoort bij de plek (#1121): zo staat hij in de agenda-melding
+    // zelf, zonder dat je het item hoeft te openen.
+    expect(lines).toContain("LOCATION:LAGO CLUB Padel Beveren · Baan 3");
     expect(lines).toContain("UID:speeldag-poll-1@vamos-padel");
     expect(lines).toContain("STATUS:CONFIRMED");
     expect(
       lines.find((l) => l.startsWith("DESCRIPTION:")),
     ).toContain("Toegangscode 1234");
+  });
+
+  // #1121: de poll-kaart bouwde hiervoor een eigen event met de deelnemers
+  // erin. Nu draagt deze helper ze, zodat beide kanten hetzelfde item maken.
+  it("zet de deelnemers op een eigen regel in de beschrijving", () => {
+    const ics = speeldagIcs(
+      { ...speeldag, deelnemers: ["Alice", "Bob"] },
+      "CONFIRMED",
+      NU,
+    );
+    // RFC 5545 escapet de newline tot \n en de komma tot \, binnen DESCRIPTION.
+    expect(ics).toContain("\\nDeelnemers: Alice\\, Bob");
+  });
+
+  it("laat de deelnemersregel weg als ze niet bekend zijn", () => {
+    expect(speeldagIcs(speeldag, "CONFIRMED", NU)).not.toContain("Deelnemers");
   });
 
   it("hangt de SEQUENCE aan de laatste wijziging van de speeldag", () => {

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
@@ -7,18 +6,15 @@ import { EmptyState } from "@/ui/EmptyState";
 import { Aankondiging } from "@/ui/Aankondiging";
 import { aantalTekst } from "@/lib/utils/format";
 import { MatchListSkeleton } from "@/ui/Skeleton";
-import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
-import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { MatchFilters } from "@/features/matches/components/MatchFilters";
 import {
   filterOpGroep,
   filterOpPeriode,
-  periodeFromParam,
   type Periode,
 } from "@/features/matches/matchFilter";
 import { getRatingHistoriesForMatches } from "@/features/standings/ratingsApi";
@@ -34,30 +30,62 @@ import "./Matches.css";
 /** Hoeveel matches per keer geladen worden; "toon oudere" telt er zoveel bij. */
 const PAGINA = 100;
 
-export function Matches() {
-  usePageTitle("Matches");
+/**
+ * Het matchoverzicht als sectie: "Te spelen", de historie en de zwevende
+ * knop om een match te loggen of te plannen (#1123).
+ *
+ * Stond tot #1123 als hele pagina in `Matches.tsx`; die is nu een dunne
+ * omhulling eromheen, zodat dezelfde sectie straks onder de groepskeuze op de
+ * Spelen-hub past. De sectie bezit zijn eigen data en het sheet, maar **niet**
+ * de URL: filters en `?log=1` komen van de pagina erboven, want twee schrijvers
+ * op dezelfde querystring overschrijven elkaar (zie `speelParams.ts`).
+ */
+export function MatchesSectie({
+  groepId,
+  periode,
+  onPeriode,
+  onWisFilters,
+  logDirect = false,
+  onLogVerbruikt,
+  verbergActie = false,
+}: {
+  /** "" = alle groepen. Komt sinds #1123 van de chipstrook op de hub; losse
+   *  matches (zonder groep) vallen daarmee buiten een gekozen groep. */
+  groepId: string;
+  periode: Periode;
+  onPeriode: (p: Periode) => void;
+  /** Wist groep én periode in één keer — bewust één callback, geen twee. */
+  onWisFilters: () => void;
+  /** Opent bij het monteren meteen de log-sheet ("?log=1"). */
+  logDirect?: boolean;
+  /** Meldt dat `?log=1` verwerkt is, zodat de pagina hem uit de URL haalt. */
+  onLogVerbruikt?: () => void;
+  /** Houdt de zwevende knop uit beeld zolang de pagina erboven zelf iets
+   *  belangrijkers open heeft staan (#1123): op telefoonbreedte ligt hij
+   *  anders precies over de knop van het aanmaakformulier. */
+  verbergActie?: boolean;
+}) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const club = useClub();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<NewMatchMode>("score");
+  // `undefined` = de gebruiker kiest zelf in het sheet tussen loggen en
+  // plannen; een expliciete waarde legt de modus vast (#1123).
+  const [sheetMode, setSheetMode] = useState<NewMatchMode | undefined>(undefined);
 
-  function openSheet(mode: NewMatchMode) {
+  function openSheet(mode?: NewMatchMode) {
     setSheetMode(mode);
     setSheetOpen(true);
   }
 
-  // Vanuit de Spelen-hub: "/matches?log=1" opent meteen de log-sheet (#106).
-  const [params, setParams] = useSearchParams();
+  // Vanuit de hub: "?log=1" opent meteen de log-sheet (#106). Het opruimen van
+  // de parameter doet de pagina; hier alleen het openen, één keer.
   useEffect(() => {
-    if (params.has("log")) {
-      openSheet("score");
-      const next = new URLSearchParams(params);
-      next.delete("log");
-      setParams(next, { replace: true });
-    }
+    if (!logDirect) return;
+    openSheet("score");
+    onLogVerbruikt?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [logDirect]);
 
   // Oudere matches bereikbaar (#914): 100 was een hard plafond zonder "meer
   // laden" en zonder melding dat de lijst afgekapt was — alles daarvoor viel
@@ -70,7 +98,6 @@ export function Matches() {
   // achter. Minder betekent: dit is alles.
   const afgekapt = (matches.data?.length ?? 0) >= limiet;
   const teams = useAsync(getTeamsMap, []);
-  const groups = useAsync(getMyGroups, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
   // Upsets rekenen met de échte pre-match ratings van precies deze matches
@@ -134,23 +161,6 @@ export function Matches() {
     [plannedMine],
   );
 
-  // Groep en periode uit de URL (#914): deelbaar en refresh-bestendig, net als
-  // de filters elders in de app.
-  const groupFilter = params.get("groep") ?? "";
-  const periode = periodeFromParam(params.get("periode"));
-  const patchParam = (sleutel: string, waarde: string) => {
-    const next = new URLSearchParams(params);
-    if (waarde) next.set(sleutel, waarde);
-    else next.delete(sleutel);
-    setParams(next, { replace: true });
-  };
-  const wisFilters = () => {
-    const next = new URLSearchParams(params);
-    next.delete("groep");
-    next.delete("periode");
-    setParams(next, { replace: true });
-  };
-
   // De recente-lijst toont alles behalve mijn eigen geplande matches — die
   // staan al bovenaan onder "Te spelen" — en daarna gefilterd op groep en
   // periode. Dat filteren gebeurt op de geladen lijst, dus wie ver terug zoekt
@@ -160,46 +170,27 @@ export function Matches() {
       filterOpPeriode(
         filterOpGroep(
           (matches.data ?? []).filter((m) => !plannedIds.has(m.id)),
-          groupFilter,
+          groepId,
         ),
         periode,
         club.timezone,
       ),
-    [matches.data, plannedIds, groupFilter, periode, club.timezone],
+    [matches.data, plannedIds, groepId, periode, club.timezone],
   );
 
   return (
-    <div className="heeft-zwevende-actie">
-      <header className="page-head">
-        <div className="row-between">
-          <div>
-            <h1 className="page-title">Matches</h1>
-            <p className="page-subtitle">
-              Alle veldslagen uit het verleden en de toekomst op één plek.
-            </p>
-          </div>
-          {/* Loggen is naar de zwevende knop onderaan verhuisd (#914): twee
-              knoppen naast elkaar concurreerden, en op telefoonbreedte was niet
-              te zien welke de hoofdactie was. */}
-          <button className="btn" onClick={() => openSheet("plan")}>
-            Match plannen
-          </button>
-        </div>
-      </header>
-
+    <>
       <MatchFilters
-        groups={groups.data ?? []}
-        groupId={groupFilter}
-        onGroup={(id) => patchParam("groep", id)}
         periode={periode}
-        onPeriode={(p: Periode) => patchParam("periode", p)}
-        onWis={wisFilters}
+        onPeriode={onPeriode}
+        onWis={onWisFilters}
+        extraFilterActief={!!groepId}
       />
 
       {/* Filteren op groep of periode herschikt de historie zonder dat iets
           verraadt hoeveel er overblijft (#924). */}
       <Aankondiging
-        sleutel={`${groupFilter}|${periode}`}
+        sleutel={`${groepId}|${periode}`}
         bericht={`${aantalTekst(recent.length, "match", "matches")} in de historie.`}
       />
 
@@ -295,21 +286,21 @@ export function Matches() {
         </div>
       )}
 
-      {/* Eén primaire actie op de pagina (#914): loggen is het meest gebruikte
-          pad en blijft ook onderaan een lange lijst bereikbaar. Hij wijkt bij
+      {/* Eén primaire actie (#914): de knop opent het sheet, waarin je kiest of
+          je een uitslag logt of een match plant (#1123). Hij wijkt bij
           vooruitscrollen (#942) — anders ligt hij over de steppers en de
           Opslaan-knop van de kaart eronder. */}
       <button
         type="button"
         className={`btn btn--primary matches__fab zwevende-actie${
-          fabVerborgen ? " is-verborgen" : ""
+          fabVerborgen || verbergActie ? " is-verborgen" : ""
         }`}
-        onClick={() => openSheet("score")}
+        onClick={() => openSheet()}
       >
         <span className="matches__fab-plus" aria-hidden="true">
           +
         </span>
-        <span className="matches__fab-label">Match loggen</span>
+        <span className="matches__fab-label">Match</span>
       </button>
 
       <NewMatchSheet
@@ -320,8 +311,8 @@ export function Matches() {
         onCreated={reloadAll}
         onGuestCreated={profiles.reload}
       />
-    </div>
+    </>
   );
 }
 
-export default Matches;
+export default MatchesSectie;

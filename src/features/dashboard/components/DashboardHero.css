@@ -24,7 +24,9 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 1.125rem;
+  width: 100%;
+  min-width: 0;
   margin-bottom: var(--sp-6);
   /* De binnenmarge in twee delen (#939): de maat van de kaart, plus de dikte van
      een eventueel lijstprofiel. Een thema met een lijst zet alleen `--hero-inzet`
@@ -32,23 +34,23 @@
      kunnen overschrijven. Vóór #939 deed de mobiele `padding` dat wél: de
      compensatie van Big Daddy en In-Form viel weg en de avatar belandde op hun
      gouden band. */
-  --hero-pad-y: var(--sp-6);
-  --hero-pad-x: var(--sp-7);
+  --hero-pad-y: 1.75rem;
+  --hero-pad-x: var(--sp-8);
   --hero-inzet: 0px;
   padding: calc(var(--hero-pad-y) + var(--hero-inzet))
     calc(var(--hero-pad-x) + var(--hero-inzet));
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   /* Het verhoogde vlak van de pagina (#1074): de hero is de kop van je
      startpagina en hoort een niveau boven de gewone kaarten te staan, met een
      rand die dat bevestigt. De twee wassingen lopen sinds #1074 via
      --wash-warm/--wash-cool: op licht zijn dat dezelfde zachte vlakken als
      hiervoor, op donker doorschijnende glimpen in plaats van dekt materiaal. */
   background:
-    radial-gradient(120% 140% at 100% 0%, var(--wash-warm) 0%, transparent 55%),
-    radial-gradient(90% 120% at 0% 100%, var(--wash-cool) 0%, transparent 55%),
-    var(--surface-elevated);
+    radial-gradient(90% 130% at 100% 0%, var(--wash-warm) 0%, transparent 62%),
+    radial-gradient(75% 120% at 0% 100%, var(--wash-cool) 0%, transparent 64%),
+    var(--surface-highlighted);
   border: 1px solid var(--border-elevated);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 /* De decoratieve lagen (HeroLagen). Geklipt op de kaartvorm zodat materiaal en
@@ -154,6 +156,77 @@
 :root[data-theme="dark"] .hero__watermerk {
   filter: invert(1);
   opacity: 0.16;
+}
+
+/* Vamos!-merkanker voor de neutrale/divisiekaart (#1120). Het bestaande
+   divisiemotief blijft als gravure staan; deze racket/ballijn is de grotere
+   compositie uit de dashboardreferentie. Speciale skins renderen hem niet. */
+.hero__court-watermark {
+  position: absolute;
+  top: 50%;
+  right: -1.5%;
+  width: min(56%, 560px);
+  height: 132%;
+  transform: translateY(-50%);
+  color: color-mix(in srgb, var(--accent) 76%, var(--lime));
+  opacity: 0.2;
+  mask-image: linear-gradient(to left, #000 52%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, #000 52%, transparent 100%);
+}
+.court-watermark__arc,
+.court-watermark__court-line,
+.court-watermark__racket ellipse,
+.court-watermark__throat,
+.court-watermark__handle,
+.court-watermark__grip,
+.court-watermark__ball circle,
+.court-watermark__ball path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.court-watermark__arc {
+  stroke-width: 4;
+  stroke-dasharray: 10 13;
+  opacity: 0.42;
+}
+.court-watermark__court-line {
+  stroke-width: 3;
+  opacity: 0.38;
+}
+.court-watermark__racket > ellipse:first-child {
+  stroke-width: 8;
+  opacity: 0.72;
+}
+.court-watermark__racket > ellipse:nth-child(2) {
+  stroke-width: 2;
+  opacity: 0.54;
+}
+.court-watermark__perforations circle {
+  fill: currentColor;
+  opacity: 0.58;
+}
+.court-watermark__throat {
+  stroke-width: 7;
+}
+.court-watermark__handle {
+  stroke-width: 18;
+}
+.court-watermark__grip {
+  stroke-width: 3;
+  opacity: 0.62;
+}
+.court-watermark__ball circle {
+  fill: color-mix(in srgb, var(--lime) 34%, transparent);
+  stroke-width: 4;
+}
+.court-watermark__ball path {
+  stroke-width: 2.5;
+}
+:root[data-theme="dark"] .hero__court-watermark {
+  color: var(--lime);
+  opacity: 0.11;
 }
 /* De twee toptiers (#773): GOAT en El Padelissimo hebben geen divisieregister
    maar wél een premium glans. De hero toont daarvan de státische stand — exact
@@ -2107,6 +2180,7 @@
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin: 0;
+  min-width: 0;
 }
 /* De overige titels blijven onderling op één rij: ze zijn samen de "en verder"
    van de statusbadge en horen niet elk een eigen regel te krijgen (#939). */
@@ -2294,9 +2368,9 @@
    zakken, met een vaste tussenruimte en nette afbreek naar een eigen regel. */
 .hero__name {
   margin: 0 0 var(--sp-1);
-  font-size: var(--fs-2xl);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.75rem, 2.6vw, 2.125rem);
+  font-weight: 850;
+  letter-spacing: -0.045em;
   color: var(--ink);
   display: flex;
   align-items: center;
@@ -2322,6 +2396,10 @@
   align-items: flex-start;
   gap: var(--sp-2);
   margin: calc(var(--sp-3) - var(--sp-5)) 0 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--coach) 24%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--coach-soft) 58%, transparent);
   font-size: var(--fs-sm);
   font-style: italic;
   color: var(--ink-soft);
@@ -2481,7 +2559,7 @@
 /* Dunne scheidslijn tussen het begroetingsblok en de voetregel (#317). */
 .hero__divide {
   height: 1px;
-  background: var(--line);
+  background: var(--divider);
 }
 /* Voetregel: vorm links, acties rechts. */
 .hero__foot {
@@ -2496,6 +2574,14 @@
   gap: var(--sp-2);
   flex-wrap: wrap;
 }
+.hero__actions .btn {
+  min-height: 44px;
+  min-width: 0;
+  padding-inline: var(--sp-5);
+}
+.hero__actions .btn--primary {
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 20%, transparent);
+}
 
 /* ---------- Mobiel: hero gestapeld, knoppen op volle breedte ---------- */
 @media (max-width: 640px) {
@@ -2503,11 +2589,12 @@
     gap: var(--sp-4);
     /* Alleen de maat, niet de lijstcompensatie — zie `--hero-inzet` bovenaan. */
     --hero-pad-y: var(--sp-5);
-    --hero-pad-x: var(--sp-5);
+    --hero-pad-x: var(--sp-4);
     margin-bottom: var(--sp-5);
   }
   .hero__name {
     font-size: var(--fs-xl);
+    letter-spacing: -0.035em;
   }
   .hero__sub {
     font-size: var(--fs-md);
@@ -2520,6 +2607,7 @@
   .hero__coach {
     order: 1;
     margin-top: calc(var(--sp-2) - var(--sp-4));
+    padding: var(--sp-2) var(--sp-3);
   }
   /* Voetregel gestapeld: vorm boven de knoppen. */
   .hero__foot {
@@ -2536,6 +2624,17 @@
   }
   .hero__actions .btn--primary {
     grid-column: 1 / -1;
+  }
+  .hero__actions .btn {
+    padding-inline: var(--sp-3);
+  }
+  .hero__court-watermark {
+    right: -46%;
+    width: 112%;
+    height: 82%;
+    opacity: 0.09;
+    mask-image: linear-gradient(to left, #000 32%, transparent 86%);
+    -webkit-mask-image: linear-gradient(to left, #000 32%, transparent 86%);
   }
   /* De overige titels krimpen tot hun icoon (#939). Vier statussen pasten
      anders alleen onder elkaar: "Kampioen Q2 2026" alleen is al breder dan de
@@ -2593,5 +2692,20 @@
   .hero__lagen--voor.is-overlay .hero__crest--pion,
   .hero__lagen--voor.is-overlay .hero__crest--kampioen {
     display: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .hero__main {
+    column-gap: var(--sp-3);
+  }
+  .hero__name {
+    font-size: 1.35rem;
+  }
+  .hero__actions {
+    grid-template-columns: 1fr;
+  }
+  .hero__actions .btn--primary {
+    grid-column: auto;
   }
 }

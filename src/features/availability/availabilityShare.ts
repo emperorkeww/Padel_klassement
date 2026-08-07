@@ -12,6 +12,7 @@ import {
   minutesNowInZone,
   toMinutes,
 } from "@/lib/utils/time";
+import { floorHalfHour } from "@/features/groups/planPollHelpers";
 import type { DayAvailability, WeekDay } from "./api";
 
 /** Eén boekbare starttijd met de banen die dan vrij zijn (rastervolgorde). */
@@ -67,6 +68,52 @@ export function dayStarts(day: WeekDay, duration: number | null): FreeStart[] {
   const isToday = day.date === dateInZone(day.data.timeZone);
   const cutoff = isToday ? minutesNowInZone(day.data.timeZone) : null;
   return freeStartTimes(day.data, duration, cutoff);
+}
+
+/**
+ * Hoeveel banen er op dít moment nog vrij zijn (#1121).
+ *
+ * Stond als `liveFree` in PollCard; sinds de agenda hetzelfde getal toont, zou
+ * een tweede kopie van deze afleiding gegarandeerd uit elkaar gaan lopen.
+ * `null` betekent "niet te zeggen" — de dag zit niet in het opgehaalde venster
+ * of de beschikbaarheid ontbreekt; de aanroeper valt dan terug op de
+ * momentopname in `courts_free`.
+ *
+ * De starttijd gaat op het halve uur omlaag omdat het slotraster dat ook doet:
+ * een moment van 20:15 hoort bij het slot van 20:00.
+ */
+export function vrijeBanenOpSlot(
+  week: WeekDay[],
+  date: string,
+  startTime: string,
+  duration: number,
+): number | null {
+  const day = week.find((d) => d.date === date);
+  if (!day?.data) return null;
+  const slot = dayStarts(day, duration).find(
+    (s) => floorHalfHour(s.time) === floorHalfHour(startTime),
+  );
+  return slot ? slot.courts.length : 0;
+}
+
+/**
+ * ± prijs per persoon voor een moment, uit de Playtomic-slotdata (#1121; stond
+ * als `perPersonAt` in PollCard). Null zodra de dag of die duur er niet bij zit.
+ */
+export function prijsPerPersoon(
+  week: WeekDay[],
+  date: string,
+  startTime: string,
+  duration: number,
+): string | null {
+  const day = week.find((d) => d.date === date);
+  if (!day?.data) return null;
+  for (const row of day.data.courts) {
+    const opties = row.free.get(startTime);
+    const match = opties?.find((s) => s.duration === duration);
+    if (match?.perPerson) return match.perPerson;
+  }
+  return null;
 }
 
 /** Openingsvenster voor het synthetische raster van een handmatige locatie. */

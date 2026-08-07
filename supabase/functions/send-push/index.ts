@@ -249,7 +249,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
       pool: NIEUWE_MATCH,
       seedKey: `nieuwe-match|${rec.id}`,
       titelPool: TITEL_NIEUWE_RONDE,
-      url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
+      url: rec.group_id ? `/groepen/${rec.group_id}` : "/spelen",
       soort: "nieuwe_ronde",
       // Eén tag per groep: worden er in één klap vier rondes klaargezet (#827),
       // dan houdt de speler één melding over in plaats van vier trillingen.
@@ -341,7 +341,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
         body: `${await nameOf(rec.created_by)} stelt momenten voor. ${
           kiesUit(POLL_NIEUW, roastSeed(rec.id, "poll-nieuw"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
+        url: `/speeldag/${rec.id}`,
         soort: "poll",
         tag: `poll-${rec.id}`,
       }];
@@ -361,7 +361,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
         body: `De groep speelt ${moment}. ${
           kiesUit(POLL_MOMENT, roastSeed(rec.id, "locked"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
+        url: `/speeldag/${rec.id}`,
         soort: "poll",
         tag: `poll-${rec.id}`,
       }];
@@ -381,7 +381,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
         body: `Jullie spelen ${moment}. ${
           kiesUit(POLL_GEBOEKT, roastSeed(rec.id, "booked"))
         }`,
-        url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
+        url: `/speeldag/${rec.id}`,
         soort: "poll",
         tag: `poll-${rec.id}`,
       }];

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { courtsLabel } from "@/features/groups/planPollHelpers";
 import { pollSharePath } from "@/features/groups/pollsApi";
 import { pickPollBanner, pollDay, type OpenPollBundle } from "../dashboardHelpers";
+import { PollCourtWatermark } from "./DashboardWatermarks";
 
 // Speeldag op het overzicht: een lopende poll om op te stemmen, of de
 // vastgelegde/geboekte datum als reminder bij het inloggen. Uit Dashboard.tsx
@@ -22,6 +23,7 @@ export function PollBanner({
   if (pick.kind === "open") {
     return (
       <section className="card poll-banner">
+        <PollCourtWatermark />
         <div className="card__head">
           <h2 className="card__title card__title--tight">
             📆 Speeldag-poll loopt · {pick.group.name}
@@ -39,7 +41,7 @@ export function PollBanner({
         </p>
         <Link
           className={`btn btn--sm${pick.iVoted ? "" : " btn--primary"}`}
-          to={pollSharePath(pick.group.id, pick.pollId)}
+          to={pollSharePath(pick.pollId)}
         >
           {pick.iVoted ? "Bekijk de poll →" : "Stem nu →"}
         </Link>
@@ -49,6 +51,7 @@ export function PollBanner({
 
   return (
     <section className="card poll-banner poll-banner--fixed">
+      <PollCourtWatermark />
       <div className="card__head">
         <h2 className="card__title card__title--tight">
           🎾 Speeldag {pick.booked ? "geboekt" : "gekozen"} · {pick.group.name}
@@ -81,7 +84,7 @@ export function PollBanner({
       )}
       <Link
         className={`btn btn--sm${pick.booked ? "" : " btn--primary"}`}
-        to={pollSharePath(pick.group.id, pick.pollId)}
+        to={pollSharePath(pick.pollId)}
       >
         {pick.booked ? "Bekijk →" : "Regel de baan →"}
       </Link>

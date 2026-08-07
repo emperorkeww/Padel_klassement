@@ -1,4 +1,5 @@
 import { activePolls } from "./pollLogic";
+import type { GlyphStatus } from "@/ui/StatusGlyph";
 import { shortDay } from "./planPollHelpers";
 import type { PlayPoll, PollOption } from "./pollsApi";
 
@@ -6,8 +7,12 @@ import type { PlayPoll, PollOption } from "./pollsApi";
 // Stond eerst alleen in Groups.tsx voor de badges op de hub; sinds #674 (A3)
 // bepaalt dezelfde logica ook waar je landt als je een groep rechtstreeks
 // opent — voorheen kwam je altijd op Vandaag, ook op een dag zonder plan.
+//
+// Sinds #1121 wijst alles wat over plannen gaat naar de agenda: de Plannen-tab
+// van de groepspagina bestaat niet meer. Het label is een aansporing ("stem
+// mee", "boek de baan"), dus het moet je brengen waar je dat kunt doen.
 
-export type JourneyTab = "plannen" | "vandaag";
+export type JourneyTab = "agenda" | "vandaag";
 
 export type Journey = {
   /** Decoratief icoon vóór het label; los van de tekst zodat de screenreader
@@ -16,6 +21,11 @@ export type Journey = {
   label: string;
   /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
   tone: "act" | "info" | "idle";
+  /** De stand van de speeldag zelf, los van de urgentie: "act" dekt zowel een
+   *  lopende poll als een gekozen dag, en daar kan een statusglyph niets mee.
+   *  Null = er loopt niets. Zelfde waardes als het agendaraster (#1112), zodat
+   *  beide plekken dezelfde vormtaal spreken. */
+  status: GlyphStatus | null;
   tab: JourneyTab;
 };
 
@@ -40,7 +50,8 @@ export function journeyFor(
       icon: "📊",
       label: "Poll loopt — stem mee",
       tone: "act",
-      tab: "plannen",
+      status: "open",
+      tab: "agenda",
     };
   }
   if (active?.status === "locked" && locked) {
@@ -48,7 +59,8 @@ export function journeyFor(
       icon: "📆",
       label: `${shortDay(locked.date)} gekozen — boek de baan`,
       tone: "act",
-      tab: "plannen",
+      status: "locked",
+      tab: "agenda",
     };
   }
   if (active?.status === "booked" && locked) {
@@ -56,13 +68,15 @@ export function journeyFor(
       icon: "🎾",
       label: `${shortDay(locked.date)} · ${locked.start_time} geboekt`,
       tone: "info",
-      tab: locked.date === today ? "vandaag" : "plannen",
+      status: "booked",
+      tab: locked.date === today ? "vandaag" : "agenda",
     };
   }
   return {
     icon: null,
     label: "Plan een speeldag →",
     tone: "idle",
-    tab: "plannen",
+    status: null,
+    tab: "agenda",
   };
 }

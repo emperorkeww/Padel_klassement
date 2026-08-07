@@ -115,7 +115,7 @@ export function FeedItem({
       return (
         <FeedLine
           icon="🗳️"
-          to={`/groepen/${event.groupId}?tab=plannen`}
+          to="/agenda"
           pmap={pmap}
           at={event.at}
         >
@@ -128,7 +128,7 @@ export function FeedItem({
       return (
         <FeedLine
           icon={event.kind === "poll-locked" ? "📌" : "✅"}
-          to={`/groepen/${event.groupId}?tab=plannen`}
+          to="/agenda"
           pmap={pmap}
           at={event.at}
         >

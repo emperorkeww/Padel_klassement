@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     recipients,
     title: kiesTitel(TITEL_GROEP_HERINNERING, pollId, String(responded.size)),
     body: kiesUit(GROEP_HERINNERING, seed),
-    url: `/groepen/${groupId}?tab=plannen&poll=${pollId}`,
+    url: `/speeldag/${pollId}`,
     soort: "poll",
     tag: `poll-${pollId}`,
   }]);

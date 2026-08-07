@@ -17,7 +17,6 @@ import { RouteSkeleton } from "./RouteSkeleton";
 import { GithubRibbon } from "@/app/GithubRibbon";
 import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { JokerKnop } from "@/features/matches/components/JokerKnop";
-import { AgendaKnop } from "@/features/agenda/components/AgendaKnop";
 import { BelKnop } from "@/features/meldingen/components/BelKnop";
 import { IconBel } from "@/features/meldingen/components/IconBel";
 import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel";
@@ -57,18 +56,18 @@ function isSectionActive(item: NavItem, pathname: string) {
 }
 
 // Taakgerichte navigatie (#106): vier taken i.p.v. zeven datatabellen.
-// Matches is het primaire schrijf-scherm (plannen + loggen + "Te spelen"), dus
-// het heet gewoon "Matches" — gelijk aan de pagina-H1 — en staat als vaste tab
-// op mobiel (#274). Banen blijft bereikbaar bínnen de flow (Spelen-hub/zijbalk).
+// Sinds #1123 draagt Spelen ook de matches: de groepskeuze staat bovenaan die
+// pagina en de matchlijst eronder. "/matches" bestaat nog als redirect, dus hij
+// hoort bij dezelfde sectie — vandaar dat pad in matchPaths, zodat ook een
+// matchdetail "Spelen" markeert. Banen blijft bereikbaar bínnen de flow.
 const OVERZICHT: NavItem = { to: "/", label: "Overzicht", end: true, icon: <BallIcon size={22} /> };
-const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket />, matchPaths: ["/groepen"] };
+const SPELEN: NavItem = { to: "/spelen", label: "Spelen", icon: <IconRacket />, matchPaths: ["/groepen", "/matches"] };
 const FEED: NavItem = { to: "/clubblad", label: "Clubblad", icon: <IconFeed /> };
 const KLASSEMENT: NavItem = { to: "/klassement", label: "Klassement", icon: <IconTrophy /> };
 const IK: NavItem = { to: "/profiel", label: "Ik", icon: <IconUser /> };
-const MATCHES: NavItem = { to: "/matches", label: "Matches", icon: <IconMatch /> };
-// Agenda (#1091): alle speeldagen in de tijd, over je groepen heen. Op desktop
-// een volwaardig zijbalk-item; mobiel hangt hij in de topbalk (AgendaKnop),
-// zodat de onderbalk zijn vijf symmetrische slots houdt (#106/#274).
+// Agenda (#1091): alle speeldagen in de tijd, over je groepen heen. Zat mobiel
+// als knop in de topbalk omdat de onderbalk vol was; met het verdwijnen van de
+// Matches-tab (#1123) is daar een vaste plek vrijgekomen.
 const AGENDA: NavItem = { to: "/agenda", label: "Agenda", icon: <IconCalendar /> };
 const BANEN: NavItem = { to: "/banen", label: "Banen", icon: <IconCourt /> };
 const VRIENDEN: NavItem = { to: "/vrienden", label: "Vrienden", icon: <IconUserPlus /> };
@@ -83,17 +82,20 @@ const BEHEER: NavItem = { to: "/admin", label: "Beheer", icon: <IconShield /> };
 
 // Desktop: gegroepeerde zijbalk, met de secundaire routes erbij.
 const SIDEBAR_GROUPS: { title: string; items: NavItem[] }[] = [
-  { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, AGENDA, MATCHES, BANEN] },
+  { title: "Spelen", items: [OVERZICHT, FEED, SPELEN, AGENDA, BANEN] },
   { title: "Competitie", items: [KLASSEMENT] },
   { title: "Ik", items: [VRIENDEN, IK, UITLEG] },
 ];
 
 // Mobiel: vijf tabs, symmetrisch rond de uitstekende padelbal in het midden
-// (2 links · bal · 2 rechts). Links de speel-acties (Spelen · Matches), rechts
-// competitie/sociaal (Klassement · Feed). Matches krijgt hier een vaste plek
-// als primair schrijf-scherm (#274); Vrienden schuift naar de zijbalk en is nog
-// één tik weg via de avatar/profiel en de "verzoeken"-chip op het overzicht.
-const TABBAR: NavItem[] = [SPELEN, MATCHES, OVERZICHT, KLASSEMENT, FEED];
+// (2 links · bal · 2 rechts). Links plannen en spelen (Agenda · Spelen), rechts
+// competitie/sociaal (Klassement · Feed). Matches had hier tot #1123 een vaste
+// plek als schrijf-scherm (#274); die taak zit nu ín Spelen, en de vrijgekomen
+// plek gaat naar de Agenda — die hing als losse knop in de topbalk. Vrienden
+// blijft in de zijbalk en is één tik weg via de avatar en de "verzoeken"-chip.
+// Overzicht moet op de middelste plek blijven staan: de uitstekende bal hangt
+// aan `item.end`.
+const TABBAR: NavItem[] = [AGENDA, SPELEN, OVERZICHT, KLASSEMENT, FEED];
 
 export function DashboardLayout() {
   const { user, signOut } = useAuth();
@@ -179,9 +181,6 @@ export function DashboardLayout() {
               de shell, want daarop plan je je speeldag — niet iets waarvoor je
               eerst een wedstrijdkaart moet openen. */}
           <JokerKnop myId={myId || null} />
-          {/* Agenda (#1091): mobiel is dit de enige vaste ingang, want de
-              onderbalk houdt zijn vijf slots. */}
-          <AgendaKnop />
           {/* Meldingen (#1090): om dezelfde reden hoort de bel hier en niet in
               de onderbalk. Op desktop is deze balk verborgen en staat dezelfde
               ingang in de zijbalk. */}
@@ -379,18 +378,6 @@ function IconCourt() {
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="5" width="18" height="14" rx="1.5" />
       <path d="M12 5v14M3 12h18M7 9.5v5M17 9.5v5" />
-    </svg>
-  );
-}
-// Matches: twee gekruiste rackets — "een duel/wedstrijd", duidelijk anders dan
-// de enkele racket (Spelen) en de mens-iconen (Vrienden).
-function IconMatch() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <ellipse cx="8" cy="8" rx="3.4" ry="4" transform="rotate(-30 8 8)" />
-      <path d="m9.7 11 4.3 8" />
-      <ellipse cx="16" cy="8" rx="3.4" ry="4" transform="rotate(30 16 8)" />
-      <path d="m14.3 11-4.3 8" />
     </svg>
   );
 }

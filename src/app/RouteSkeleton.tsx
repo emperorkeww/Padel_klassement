@@ -69,9 +69,11 @@ function vormVoor(pathname: string) {
         <Blok h="16rem" />
       </>
     );
-  // Matchdetail: één groot scorebord; de lijst is een rij matchkaarten.
+  // Matchdetail: één groot scorebord. De lijstvorm zit sinds #1123 bij /spelen;
+  // kaal /matches is nog maar een redirect en komt hier niet voorbij.
   if (pathname.startsWith("/matches/")) return <Blok h="18rem" />;
-  if (pathname.startsWith("/matches"))
+  // Spelen: de groepsstrook, en daaronder de matchlijst (#1123).
+  if (pathname.startsWith("/spelen"))
     return (
       <>
         <Blok h="2.5rem" />
@@ -80,8 +82,8 @@ function vormVoor(pathname: string) {
         <Blok h="5rem" />
       </>
     );
-  // Spelen en Vrienden: kaarten/rijen onder elkaar.
-  if (pathname.startsWith("/spelen") || pathname.startsWith("/groepen"))
+  // Groepsdetail en Vrienden: kaarten/rijen onder elkaar.
+  if (pathname.startsWith("/groepen"))
     return (
       <>
         <Blok h="7rem" />
@@ -118,6 +120,14 @@ function vormVoor(pathname: string) {
         <Blok h="2.5rem" />
         <Blok h="4.5rem" />
         <Blok h="25rem" />
+      </>
+    );
+  // Speeldag (#1121): de terugbalk en daaronder één kaart met de momenten.
+  if (pathname.startsWith("/speeldag"))
+    return (
+      <>
+        <Blok h="2rem" />
+        <Blok h="16rem" />
       </>
     );
   return (
