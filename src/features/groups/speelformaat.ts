@@ -8,9 +8,9 @@
 
 export type Speelvorm = "eerlijk" | "americano" | "mexicano";
 
-/** Grenzen van de rondekeuze bij Americano. Tien is gelijk aan de winner-card
- *  bij het aanmaken van een speeldag (#727), zodat dezelfde keuze overal
- *  hetzelfde bereik heeft. */
+/** Grenzen van de rondekeuze. Tien is gelijk aan de winner-card bij het
+ *  aanmaken van een speeldag (#727), zodat dezelfde keuze overal hetzelfde
+ *  bereik heeft. */
 export const RONDES_MIN = 1;
 export const RONDES_MAX = 10;
 
@@ -33,12 +33,16 @@ export function reserves(aanwezig: number): number {
 /**
  * Het aantal rondes dat de knop nu echt aanmaakt.
  *
- * Alleen Americano kent een keuze (de generator draait de rotatie zo vaak als
- * je vraagt); Mexicano deelt per ronde in op de laatste stand en kan er dus
- * maar één tegelijk, en Eerlijk zet één ronde vaste teams neer.
+ * Eerlijk en Americano kennen een keuze: allebei kunnen ze een hele avond in
+ * één tik neerzetten, elke ronde met een eigen verdeling. Mexicano niet — die
+ * deelt per ronde in op de laatste stand en heeft de uitslagen van de vorige
+ * ronde dus nodig.
+ *
+ * Eerlijk kon dat tot #1141 niet, terwijl de knop op de speeldagkaart het wél
+ * deed. Die knop is weg; deze keuze neemt het over.
  */
-export function rondes(vorm: Speelvorm, americanoRondes: number): number {
-  return vorm === "americano" ? americanoRondes : 1;
+export function rondes(vorm: Speelvorm, aantalRondes: number): number {
+  return vorm === "mexicano" ? 1 : aantalRondes;
 }
 
 export function beschrijving(vorm: Speelvorm, aanwezig: number): string {
@@ -63,7 +67,9 @@ export function beschrijving(vorm: Speelvorm, aanwezig: number): string {
 export function ctaLabel(vorm: Speelvorm, aantalRondes = RONDES_MIN): string {
   switch (vorm) {
     case "eerlijk":
-      return "Stel eerlijke teams voor";
+      return aantalRondes > 1
+        ? `Stel ${aantalRondes} eerlijke rondes voor`
+        : "Stel eerlijke teams voor";
     case "americano":
       return aantalRondes > 1
         ? `Start ${aantalRondes} Americano-rondes`

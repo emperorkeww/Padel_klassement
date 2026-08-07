@@ -3,31 +3,30 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
-import { GroupListSkeleton } from "@/ui/Skeleton";
 import { EmptyState } from "@/ui/EmptyState";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { errorMessage } from "@/lib/utils/errors";
 import { dateInZone } from "@/lib/utils/time";
 import { useClub } from "@/features/availability/club";
+import { getProfilesMap } from "@/features/profiles/api";
 import { MatchesSectie } from "@/features/matches/MatchesSectie";
 import { useSpeelParams } from "@/features/matches/speelParams";
 import { getMyGroups, createGroup, type GroupSummary } from "./api";
 import { getPollsForGroups, getPollOptionsForGroups } from "./pollsApi";
 import { journeyFor, type Journey } from "./journey";
-import { ledenLabel } from "./groepHelpers";
-import { GroepStrook } from "./components/GroepStrook";
+import { MijnGroepen } from "./components/MijnGroepen";
 import "./Groups.css";
 
 // "Spelen": de hub van de kernreis (#106), en sinds #1123 ook de plek waar de
-// matches staan. Bovenaan kies je een groep; alles daaronder — te spelen,
-// historie, loggen — kijkt naar die keuze. "Alle" is de standaard.
+// matches staan. Bovenaan staan je groepen — plekken waar je binnenloopt, met
+// hun eigen pagina (#1134). Daaronder de volledige matchhistorie, met een eigen
+// filterrij die desgewenst op één groep inzoomt. Dat is een andere handeling en
+// dus een andere bediening.
 
-// De reisstatus van álle groepen tegelijk: de strook toont per chip een stip,
-// dus dit is geen bijzaak meer die per kaart mag nadruppelen. Twee queries in
-// totaal in plaats van twee per groep (#674 C1 liet dat TODO staan; met de
-// chips is het moment daar). De votes blijven ongehaald — journeyFor leest ze
-// niet.
+// De reisstatus van álle groepen tegelijk. Twee queries in totaal in plaats van
+// twee per groep (#674 C1 liet dat TODO staan; #1123 loste het op). De votes
+// blijven ongehaald — journeyFor leest ze niet.
 async function loadJourneys(
   groups: GroupSummary[],
   today: string,
@@ -51,6 +50,9 @@ export function Groups() {
   const { user } = useAuth();
   const myId = user?.id ?? "";
   const groups = useAsync(getMyGroups, []);
+  // Voor de lid-avatars op de kaarten. Dezelfde gecachte lijst die de
+  // matchsectie hieronder toch al ophaalt, dus dit kost geen extra ronde (#1134).
+  const profiles = useAsync(getProfilesMap, []);
   const toast = useToast();
   const navigate = useNavigate();
   const club = useClub();
@@ -68,12 +70,11 @@ export function Groups() {
   );
 
   const list = groups.data ?? [];
-  // De gekozen groep is afgeleid, niet opgeslagen: een ?groep= die niet (meer)
-  // bij jouw groepen hoort valt vanzelf terug op "Alle". Bewust niet
-  // rechtzetten door de URL te herschrijven — dat zou een tweede schrijver zijn
-  // én een extra history-entry opleveren.
+  // De gefilterde groep is afgeleid, niet opgeslagen: een ?groep= die niet
+  // (meer) bij jouw groepen hoort valt vanzelf terug op "alle groepen". Bewust
+  // niet rechtzetten door de URL te herschrijven — dat zou een tweede schrijver
+  // zijn én een extra history-entry opleveren.
   const gekozen = list.find((g) => g.id === speel.groep) ?? null;
-  const gekozenJourney = gekozen ? (journeys.data?.[gekozen.id] ?? null) : null;
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -87,7 +88,8 @@ export function Groups() {
   const noGroups = !groups.loading && !groups.error && list.length === 0;
   // Zelf uitklappen zet de cursor meteen in het naamveld; bij een lege hub
   // niet, want dan zou de pagina bij het laden je focus kapen. Sluiten geeft
-  // de focus terug aan de "+"-knop in de strook (#916).
+  // de focus terug aan de knop waar je vandaan kwam (#916) — sinds #1134 is dat
+  // "+ Groep maken" in de paginakop.
   const wasOpen = useRef(false);
   useEffect(() => {
     if (newOpen) nameRef.current?.focus();
@@ -115,14 +117,27 @@ export function Groups() {
     // De ruimte voor de zwevende knop hoort op de pagina-root, niet op de
     // matchsectie: anders landt de padding halverwege de pagina.
     <div className="heeft-zwevende-actie">
-      <header className="page-head">
-        <h1 className="page-title">Spelen</h1>
-        <p className="page-subtitle">
-          Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
-        </p>
+      <header className="page-head page-head--met-actie">
+        <div className="page-head__tekst">
+          <h1 className="page-title">Spelen</h1>
+          <p className="page-subtitle">
+            Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
+          </p>
+        </div>
+        {/* Een groep maken is de hoofdactie van deze pagina en hoort dus in de
+            kop, niet als naamloze "+" achteraan een rij chips (#1134). Met nul
+            groepen staat het formulier al open in de lege staat; de knop zet dan
+            alleen de cursor in het naamveld. */}
+        <button
+          type="button"
+          ref={nieuwKnopRef}
+          className="btn btn--primary page-head__actie"
+          onClick={() => setNewOpen(true)}
+        >
+          <span aria-hidden="true">+</span> Groep maken
+        </button>
       </header>
 
-      {groups.loading && <GroupListSkeleton count={2} />}
       {groups.error && (
         <ErrorRetry
           melding={`Je groepen laden mislukte: ${groups.error}`}
@@ -131,8 +146,8 @@ export function Groups() {
       )}
 
       {noGroups && (
-        // Eén kaart met één actie (#916). Zonder groep valt er niets te kiezen,
-        // dus staat hier het formulier in plaats van de strook.
+        // Eén kaart met één actie (#916). Zonder groep valt er niets te tonen,
+        // dus staat hier het formulier in plaats van de groepensectie.
         <div className="card">
           <EmptyState icon="👥" title="Geen groep, geen glorie.">
             Start je eigen padelgroep, nodig je vrienden uit en hou jullie
@@ -162,51 +177,22 @@ export function Groups() {
         </div>
       )}
 
-      {!groups.loading && !groups.error && list.length > 0 && (
-        <>
-          <GroepStrook
-            groepen={list}
-            gekozen={gekozen?.id ?? ""}
-            onKies={speel.zetGroep}
-            onNieuw={() => setNewOpen(true)}
-            nieuwRef={nieuwKnopRef}
-            journeys={journeys.data ?? undefined}
-          />
-
-          {/* De regel onder de strook draagt wat niet in een chip past: hoe
-              groot de groep is, waar hij in de kernreis zit, en de weg naar
-              binnen. Bij "Alle" staat hier niets — dan gaat de pagina over al
-              je matches, niet over één groep. */}
-          {gekozen && (
-            <p className="groep-regel">
-              <span className="groep-regel__naam">{gekozen.name}</span>
-              {gekozen.created_by === myId && (
-                <span className="badge badge--accent">eigenaar</span>
-              )}
-              <span>· {ledenLabel(gekozen.member_ids.length)}</span>
-              {/* Het reis-label is een aansporing ("stem mee", "boek de baan"),
-                  dus het brengt je waar je dat kunt doen. Sinds #1121 is dat de
-                  agenda; alleen een speeldag van vandaag hoort bij de groep
-                  zelf, en daarvoor staat "Open groep" er al. */}
-              {gekozenJourney &&
-                (gekozenJourney.tab === "agenda" ? (
-                  <Link to="/agenda">· {gekozenJourney.label}</Link>
-                ) : (
-                  <span>· {gekozenJourney.label}</span>
-                ))}
-              <Link
-                className="btn btn--sm groep-regel__open"
-                to={`/groepen/${gekozen.id}`}
-              >
-                Open groep →
-              </Link>
-            </p>
-          )}
-        </>
+      {/* De groepen zelf (#1134). Tijdens het laden staat de sectie er al met
+          skeletons: hem pas tonen zodra de data er is, laat de kop en de
+          filterrij eronder verspringen. Alleen bij nul groepen valt hij weg —
+          dan staat de lege staat hierboven. */}
+      {!groups.error && !noGroups && (
+        <MijnGroepen
+          groepen={list}
+          myId={myId}
+          profiles={profiles.data ?? {}}
+          journeys={journeys.data ?? undefined}
+          laadt={groups.loading}
+        />
       )}
 
       {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
-          even zwaar als de groepen zelf (#674 A5). Achter de "+" in de strook
+          even zwaar als de groepen zelf (#674 A5). Achter de knop in de kop
           dus. Met nul groepen zit het formulier ín de lege staat hierboven. */}
       {!noGroups && newOpen && (
         <section className="card">
@@ -254,6 +240,8 @@ export function Groups() {
           filter die client-side gebeurt. */}
       <MatchesSectie
         groepId={gekozen?.id ?? ""}
+        onGroep={speel.zetGroep}
+        groepen={list}
         periode={speel.periode}
         onPeriode={speel.zetPeriode}
         onWisFilters={speel.wisFilters}

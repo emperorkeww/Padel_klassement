@@ -21,8 +21,9 @@ vi.mock("@/features/auth/AuthProvider", () => ({
   useAuth: () => ({ user: { id: "p1" } }),
 }));
 
+import { supabase } from "@/lib/supabase/client";
 import { SpeeldagPagina } from "./SpeeldagPagina";
-import { GROUP_MEMBERS, GROUPS, PROFILES } from "@/test/fixtures";
+import { GROUP_MEMBERS, GROUPS, PROFILES, TEAMS } from "@/test/fixtures";
 
 const baseClub = {
   club_id: "91d8d419-3736-498e-90be-362de786d588",
@@ -74,6 +75,24 @@ const bookedOption = {
   date: "2030-01-10",
   start_time: "19:00",
 };
+
+/** Een wedstrijd van de geboekte speeldag: 19:00 clubtijd op 10 jan 2030. */
+const dagMatch = (overrides: Record<string, unknown> = {}) => ({
+  id: "m-dag",
+  team_a_id: "t-ab",
+  team_b_id: "t-cd",
+  status: "scheduled",
+  winner_team_id: null,
+  played_at: "2030-01-10T18:00:00.000Z",
+  created_by: "p1",
+  created_at: NOW,
+  group_id: "g1",
+  round_number: 1,
+  score_a: null,
+  score_b: null,
+  format: "2v2",
+  ...overrides,
+});
 
 const vote = (optionId: string, playerId: string, status = "yes") => ({
   option_id: optionId,
@@ -212,9 +231,159 @@ describe("<SpeeldagPagina />", () => {
     expect(
       screen.getByRole("button", { name: /toegangscode 1234 kopiëren/i }),
     ).toBeInTheDocument();
+    // Indelen is waarvoor je hier bent zolang er niets staat, dus het paneel
+    // staat open op de pagina in plaats van achter een knop (#1146).
     expect(
-      screen.getByRole("button", { name: /genereer wedstrijden/i }),
+      screen.getByRole("heading", { name: /wie speelt er mee/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /speelformaat/i }),
+    ).toBeInTheDocument();
+  });
+
+  // De kern van #1133: de wedstrijden van die dag horen op de pagina waar je
+  // ze klaarzet. Ze stonden alleen op de Spelen-tab, en die toont uitsluitend
+  // vandaag — een speeldag volgende week was dus nergens te zien.
+  it("toont de wedstrijden van deze speeldag", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [
+      dagMatch(),
+      dagMatch({ id: "m-los", round_number: null }),
+      // Een andere dag: hoort hier niet thuis, ook al zit hij in dezelfde groep.
+      dagMatch({ id: "m-andere-dag", played_at: "2030-01-11T18:00:00.000Z" }),
+    ];
+    renderPagina("poll-booked");
+
+    expect(
+      await screen.findByRole("heading", { name: /^wedstrijden$/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /ronde 1/i })).toBeInTheDocument();
+    // Losse partijen van diezelfde avond horen erbij, net als in de Spelen-tab.
+    expect(
+      screen.getByRole("heading", { name: /losse matches/i }),
+    ).toBeInTheDocument();
+    // Twee rondeblokken (ronde 1 + los), niet drie: de match van de dag erna
+    // valt buiten deze speeldag.
+    expect(screen.getAllByText(/0\/1 uitslagen/i)).toHaveLength(2);
+  });
+
+  // De reden dat de generator een speeldag meekrijgt (#1133): hij zocht zelf
+  // de poll van vandáág op. Een ronde die je hier toevoegt hoort op het uur van
+  // déze speeldag te beginnen, niet op dat van vandaag.
+  it("geeft een nieuwe ronde de starttijd van deze speeldag mee", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch()];
+    renderPagina("poll-booked");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /\+ volgende ronde/i }),
+    );
+    // De deelnemers komen uit de poll van deze speeldag, niet uit die van
+    // vandaag of uit "alle leden".
+    expect(
+      await screen.findByText(/deelnemers uit de poll van deze speeldag/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: /americano/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^start americano$/i }),
+    );
+
+    const call = vi
+      .mocked(supabase.rpc)
+      .mock.calls.find(([naam]) => naam === "create_fair_round");
+    // Ronde 1 staat er al, dus de nieuwe begint tien minuten later: 19:00 +
+    // 10 min clubtijd op 10 januari 2030.
+    expect(call?.[1]).toMatchObject({
+      p_group_id: "g1",
+      p_played_at: "2030-01-10T18:10:00.000Z",
+    });
+  });
+
+  // Eén knop tegelijk (#1141): zolang er niets staat is klaarzetten de actie
+  // van de kaart; zodra de wedstrijden er zijn verhuist dezelfde knop naar
+  // "+ Volgende ronde" onder die wedstrijden, waar je op dat moment kijkt.
+  it("verhuist de klaarzet-knop naar de wedstrijden zodra die er zijn", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch()];
+    renderPagina("poll-booked");
+
+    expect(
+      await screen.findByRole("button", { name: /\+ volgende ronde/i }),
+    ).toBeInTheDocument();
+    // Het paneel staat dan niet meer open bovenaan: de wedstrijden zijn waar je
+    // naar kijkt, en de generator hoort daaronder.
+    expect(
+      screen.queryByRole("heading", { name: /speelformaat/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Een losse partij hoort bij de avond waar je op staat. Op een speeldag die
+  // nog moet komen is plannen de voor de hand liggende actie, niet loggen.
+  it("zet bij een toekomstige speeldag het plannen vooraan", async () => {
+    tables.play_polls = [bookedPoll];
+    renderPagina("poll-booked");
+
+    const knoppen = await screen.findAllByRole("button", {
+      name: /match plannen|\+ match loggen/i,
+    });
+    expect(knoppen.map((k) => k.textContent)).toEqual([
+      "Match plannen",
+      "+ Match loggen",
+    ]);
+  });
+
+  // Een groep kan er twee op één datum hebben: een ochtendsessie en een
+  // avondsessie. Tot #1146 rekende de pagina met de kalenderdag, dus toonde ze
+  // elkaars wedstrijden — en begon de avondsessie zijn rondes na die van de
+  // ochtend.
+  it("houdt twee speeldagen op dezelfde datum uit elkaar", async () => {
+    const ochtendPoll = {
+      ...bookedPoll,
+      id: "poll-ochtend",
+      locked_option_id: "opt-ochtend",
+    };
+    const ochtendOptie = {
+      ...bookedOption,
+      id: "opt-ochtend",
+      poll_id: "poll-ochtend",
+      start_time: "10:00",
+    };
+    // De mock geeft voor `maybeSingle` de eerste rij terug, dus de poll waar
+    // deze test over gaat staat vooraan.
+    tables.play_polls = [bookedPoll, ochtendPoll];
+    tables.play_poll_options = [openOption, bookedOption, ochtendOptie];
+    tables.teams = TEAMS;
+    tables.matches = [
+      // 09:00 UTC = 11:00 clubtijd: bij de ochtendsessie van 10:00.
+      dagMatch({ id: "m-ochtend", played_at: "2030-01-10T09:00:00.000Z" }),
+      // 18:00 UTC = 19:00 clubtijd: de avondsessie zelf.
+      dagMatch({ id: "m-avond", round_number: 2 }),
+    ];
+    renderPagina("poll-booked");
+
+    await screen.findByRole("heading", { name: /^wedstrijden$/i });
+    // Alleen de eigen ronde: één blok, en dat is ronde 2.
+    expect(screen.getByRole("heading", { name: /ronde 2/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /ronde 1/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Zolang er geen moment vastligt is er geen dag, en dus ook geen dagfilter
+  // die zinnig is. Dan hoort er geen wedstrijdenblok te staan.
+  it("houdt het wedstrijdenblok weg zolang er niets vastligt", async () => {
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch({ played_at: "2030-01-05T19:00:00.000Z" })];
+    renderPagina("poll-open");
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByRole("heading", { name: /^wedstrijden$/i }),
+    ).not.toBeInTheDocument();
   });
 
   // RLS maakt een poll uit een vreemde groep onvindbaar; dat is hetzelfde

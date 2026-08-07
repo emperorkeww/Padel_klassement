@@ -1,34 +1,42 @@
 import { PERIODE_OPTIES, type Periode } from "../matchFilter";
 
 /**
- * Het periodefilter boven de matchhistorie (#914).
+ * De filters boven de matchhistorie (#914).
  *
- * De pagina toonde één ongefilterde lijst; bij een actieve club is daar binnen
- * een maand niets meer in terug te vinden. De keuze leeft in de URL, net als
- * elders in de app: deelbaar en refresh-bestendig.
+ * De keuzes leven in de URL, net als elders in de app: deelbaar en
+ * refresh-bestendig.
  *
- * Het groepsfilter stond hier tot #1123 als tweede `<select>`. Dat is nu de
- * chipstrook bovenaan de Spelen-hub — twee bedieningen voor dezelfde keuze was
- * precies het probleem dat dat issue oploste. "Wis filters" blijft wél allebei
- * wissen: de groep hoort net zo goed bij wat je ingesteld hebt staan.
+ * Het groepsfilter stond hier tot #1123 al eens als `<select>`. Dat issue haalde
+ * het weg omdat de chipstrook bovenaan de hub dezelfde keuze maakte — twee
+ * bedieningen voor één ding. #1134 draait dat gedeeltelijk terug, met een ander
+ * onderscheid: het waren nooit dezelfde keuze. Een groep aantikken is
+ * *navigeren* (je gaat de groep in), een groep filteren is *filteren* (de
+ * historie eronder krimpt). De groepskaarten doen straks het eerste, dit filter
+ * het tweede — en dan is er weer precies één bediening per rol.
  */
 export function MatchFilters({
   periode,
   onPeriode,
+  groep,
+  onGroep,
+  groepen,
   onWis,
-  /** Staat er buiten de periode nog een filter aan (de groepskeuze)? Bepaalt
-   *  samen met de periode of de wis-knop iets te doen heeft. */
-  extraFilterActief = false,
 }: {
   periode: Periode;
   onPeriode: (p: Periode) => void;
+  /** Gekozen groep-id, "" = alle groepen. */
+  groep: string;
+  onGroep: (id: string) => void;
+  /** Waar je uit kunt kiezen; komt van de pagina, die de groepen toch al laadt.
+   *  Leeg = geen groepen, dan heeft het filter niets te kiezen en verschijnt het
+   *  ook niet. */
+  groepen: { id: string; name: string }[];
   /** Wist groep én periode tegelijk. Bewust géén twee losse aanroepen: die
    *  lezen elk dezelfde URLSearchParams en zouden elkaars wijziging
    *  overschrijven (zie speelParams.ts). */
   onWis: () => void;
-  extraFilterActief?: boolean;
 }) {
-  const actief = !!periode || extraFilterActief;
+  const actief = !!periode || !!groep;
 
   return (
     <div className="match-filters" role="group" aria-label="Matches filteren">
@@ -47,6 +55,27 @@ export function MatchFilters({
           ))}
         </select>
       </label>
+
+      {groepen.length > 0 && (
+        <label className="match-filters__field">
+          <span>Groep</span>
+          <select
+            className="select select--filter"
+            aria-label="Groep"
+            value={groep}
+            onChange={(e) => onGroep(e.target.value)}
+          >
+            {/* "" en niet "alle": de afwezigheid van een groep is geen waarde
+                die je in de URL schrijft (zie speelParams.ts). */}
+            <option value="">Alle groepen</option>
+            {groepen.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {actief && (
         <button

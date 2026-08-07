@@ -99,3 +99,60 @@ describe("<FairTeamsCard /> speel eerlijke teams (#62)", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("<FairTeamsCard /> meerdere rondes (#1141)", () => {
+  beforeEach(() => {
+    rpcState.createFairRound = ["m1", "m2"];
+    vi.clearAllMocks();
+  });
+
+  // De knop op de speeldagkaart zette 1–10 Elo-rondes in één tik klaar en gaat
+  // weg; die mogelijkheid hoort hier terug te komen — met per ronde een eigen
+  // verdeling en een eigen starttijd (#827), niet drie keer hetzelfde uur.
+  it("schrijft evenveel rondes weg als gevraagd, met oplopende starttijden", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const { supabase } = await import("@/lib/supabase/client");
+    const onGenerated = vi.fn();
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <FairTeamsCard
+            groupId="g1"
+            playerIds={PLAYER_IDS}
+            profiles={PROFILE_MAP}
+            aantal={3}
+            startVoor={(i) =>
+              new Date(Date.UTC(2030, 0, 10, 19, i * 10)).toISOString()
+            }
+            onGenerated={onGenerated}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+
+    const voorstel = await screen.findByRole("button", {
+      name: /stel eerlijke teams voor/i,
+    });
+    await waitFor(() => expect(voorstel).toBeEnabled());
+    await userEvent.click(voorstel);
+    // Het label zegt wat er gaat gebeuren: niet "deze teams" maar drie rondes.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /speel deze 3 rondes/i }),
+    );
+
+    await waitFor(() => {
+      const calls = vi
+        .mocked(supabase.rpc)
+        .mock.calls.filter(([naam]) => naam === "create_fair_round");
+      expect(calls).toHaveLength(3);
+      expect(calls.map((c) => (c[1] as { p_played_at: string }).p_played_at)).toEqual([
+        "2030-01-10T19:00:00.000Z",
+        "2030-01-10T19:10:00.000Z",
+        "2030-01-10T19:20:00.000Z",
+      ]);
+    });
+    // De ouder hoort te horen dat er iets bij kwam: de speeldagpagina luisterde
+    // nergens mee en toonde de nieuwe rondes anders pas na een refresh.
+    expect(onGenerated).toHaveBeenCalled();
+  });
+});

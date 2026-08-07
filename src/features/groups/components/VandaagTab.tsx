@@ -1,15 +1,12 @@
 import { useState } from "react";
-import { Sheet } from "@/ui/Sheet";
 import { DagKop } from "./DagKop";
 import { DayStats } from "./DayStats";
 import { MakeTeams } from "./MakeTeams";
+import { VolgendeRonde } from "./VolgendeRonde";
 import { RondeBlok } from "./RondeBlok";
 import { ShareEvening } from "./ShareEvening";
 import { VendettaCard } from "./VendettaCard";
-import {
-  NewMatchSheet,
-  type NewMatchMode,
-} from "@/features/matches/components/NewMatchSheet";
+import { LossePartij } from "./LossePartij";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { Upset } from "@/features/matches/upset";
@@ -21,7 +18,6 @@ import type {
   RatingPoint,
   Team,
 } from "@/types";
-import "./VandaagTab.css";
 
 // De Vandaag-tab van de groepspagina: één tab voor de hele speeldag (#674 A2).
 // Teams maken stond eerst op een aparte Teams-tab (#364) en spelen/uitslagen
@@ -109,12 +105,6 @@ export function VandaagTab({
   onGuestCreated,
   onShowStand,
 }: VandaagTabProps) {
-  // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
-  const [logOpen, setLogOpen] = useState(false);
-  const [logMode, setLogMode] = useState<NewMatchMode>("score");
-  // De teamgenerator voor de volgende ronde, als sheet (#839).
-  const [volgendeOpen, setVolgendeOpen] = useState(false);
-
   // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
   // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
   // uitslagen blijft open — dáár hoor je te kijken.
@@ -145,58 +135,32 @@ export function VandaagTab({
     />
   );
 
-  const makeTeams = (
-    <MakeTeams
-      groupId={groupId}
-      members={members}
-      profiles={profiles}
-      myId={myId}
-      matches={matches}
-      teams={teams}
-      openRound={openRound}
-      onGenerated={onMatches}
-    />
-  );
+  // Dezelfde generator in twee vormen: kaal als de dag nog moet beginnen, en
+  // achter "+ Volgende ronde" zodra hij loopt. Zonder `speeldag`-prop zoekt hij
+  // zelf de poll van vandaag op — precies wat deze tab wil (#1133).
+  const generatorProps = {
+    groupId,
+    members,
+    profiles,
+    myId,
+    matches,
+    teams,
+    openRound,
+    onGenerated: onMatches,
+  };
 
-  // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
-  // het bleef hetzelfde ding, maar het heette hier anders en had als enige
-  // blok geen titel. Sinds #722 het eerste blok van de tab: dit is de enige
-  // manier om binnen een groep een partij buiten de rondes om te loggen, dus
-  // hij hoort niet onder de generator of in een inklapper te liggen.
+  // Losse partij binnen de groep (#722): buiten de rondes om gespeeld of
+  // gepland. Sinds #1133 een eigen component, want de speeldagpagina zet
+  // hetzelfde blok — daar met het moment van die speeldag voorgevuld.
   const losseMatch = (
-    <section className="group-log" aria-labelledby="group-log-title">
-      <div className="group-log__intro">
-        <h3 className="group-log__title" id="group-log-title">
-          Losse partij
-        </h3>
-        <p className="group-log__hint">
-          Buiten de rondes om gespeeld of eentje inplannen? Telt gewoon mee in
-          de groepsstand en de avondsamenvatting.
-        </p>
-      </div>
-      <div className="group-log__actions">
-        <button
-          className="btn btn--sm"
-          disabled={busy}
-          onClick={() => {
-            setLogMode("score");
-            setLogOpen(true);
-          }}
-        >
-          + Match loggen
-        </button>
-        <button
-          className="btn btn--sm"
-          disabled={busy}
-          onClick={() => {
-            setLogMode("plan");
-            setLogOpen(true);
-          }}
-        >
-          Match plannen
-        </button>
-      </div>
-    </section>
+    <LossePartij
+      groupId={groupId}
+      players={groupPlayers}
+      intensiteit={intensiteit}
+      busy={busy}
+      onCreated={onMatches}
+      onGuestCreated={onGuestCreated}
+    />
   );
 
   return (
@@ -258,42 +222,13 @@ export function VandaagTab({
             ))}
           </div>
 
-          {/* De volgende ronde starten is een kernactie, geen instelling. Hij
-              zat achter <details> "Nog een ronde maken" — dezelfde low-key
-              behandeling als een lade, terwijl de rest van de tab alles direct
-              zichtbaar houdt. Nu een echte knop, met de generator als sheet
-              zodat hij de rondes niet omlaag duwt. */}
-          <div className="rondes__acties">
-            <button
-              className="btn btn--primary"
-              onClick={() => setVolgendeOpen(true)}
-            >
-              + Volgende ronde
-            </button>
-          </div>
+          <VolgendeRonde {...generatorProps} />
         </section>
       )}
 
       {/* Staat 1: de teamgenerator is de inhoud van de tab. Zodra de dag
           loopt verhuist hij naar de sheet achter "+ Volgende ronde". */}
-      {!dayStarted && makeTeams}
-
-      {dayStarted && (
-        <Sheet
-          open={volgendeOpen}
-          onClose={() => setVolgendeOpen(false)}
-          title="Volgende ronde"
-        >
-          {/* De drie routes naar een volgende ronde (deze generator, de
-              winner-card op Plannen en sinds #827 de cron) deelden niet
-              dezelfde vorm zonder dat de UI dat ergens zei. */}
-          <p className="card__subtitle">
-            De automaat deelt 's ochtends Americano; hier kies je zelf de vorm
-            voor deze ronde.
-          </p>
-          {makeTeams}
-        </Sheet>
-      )}
+      {!dayStarted && <MakeTeams {...generatorProps} />}
 
       {/* Vendetta's horen bij het spelen/de onderlinge duels (#524), niet bij
           de Stand — daar drukten ze de eigenlijke ranglijst weg. */}
@@ -316,17 +251,6 @@ export function VandaagTab({
         zwartePiet={zwartePiet}
         today={today}
         timezone={timezone}
-      />
-
-      <NewMatchSheet
-        open={logOpen}
-        players={groupPlayers}
-        mode={logMode}
-        groupId={groupId}
-        intensiteit={intensiteit}
-        onClose={() => setLogOpen(false)}
-        onCreated={onMatches}
-        onGuestCreated={onGuestCreated}
       />
     </>
   );

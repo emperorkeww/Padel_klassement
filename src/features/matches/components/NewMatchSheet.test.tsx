@@ -480,3 +480,38 @@ describe("<NewMatchSheet /> offline opslaan (#462)", () => {
     expect(getCount()).toBe(1);
   });
 });
+
+describe("<NewMatchSheet /> voorgevuld moment (#1133)", () => {
+  beforeEach(() => localStorage.clear());
+
+  // De speeldagpagina opent deze sheet vanuit een avond die al een uur heeft.
+  // Zonder voorvulling begon het veld leeg en moest je de datum van de
+  // speeldag waarop je stond met de hand overtikken.
+  it("vult het wanneer-veld met het meegegeven moment", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    render(
+      <AuthProvider>
+        <ToastProvider>
+          <NewMatchSheet
+            open
+            mode="plan"
+            players={PROFILES}
+            groupId="g1"
+            whenDefault="2030-01-10T19:00"
+            onClose={() => {}}
+            onCreated={() => {}}
+          />
+        </ToastProvider>
+      </AuthProvider>,
+    );
+
+    for (const p of PROFILES) {
+      await userEvent.click(
+        await screen.findByRole("button", { name: new RegExp(p.full_name, "i") }),
+      );
+    }
+    await userEvent.click(screen.getByRole("button", { name: /naar plannen/i }));
+
+    expect(screen.getByLabelText(/wanneer/i)).toHaveValue("2030-01-10T19:00");
+  });
+});

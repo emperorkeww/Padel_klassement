@@ -1,64 +1,7 @@
-/* Vandaag-tab (#377, sinds #674 ook de teamgenerator van de oude Teams-tab).
-   De dagkop bovenaan staat in DagKop.css. */
-
-/* De volgende ronde starten sluit de wedstrijdenlijst af als echte actie
-   (#839). Hij zat achter een <details> "Nog een ronde maken" — een kernactie
-   met dezelfde behandeling als een instelling, terwijl de rest van de tab
-   alles direct zichtbaar houdt. De generator zelf opent nu als sheet, zodat
-   hij de rondes niet omlaag duwt. */
-.rondes__acties {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-top: var(--sp-5);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--line);
-}
-
-/* Losse match loggen/plannen binnen de groep. Stond als gedempte voetnoot
-   onder de teamgenerator (#364) en verdween zodra de dag liep in de inklapper
-   "Nog een ronde maken"; sinds #722 het eerste blok van de tab. De gestippelde,
-   gedempte stijl blijft — hij mag opvallen door zijn plek, niet door zijn
-   kleur, zodat de wedstrijden eronder het accent houden. */
-.group-log {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  /* Zelfde tussenruimte als .card + .card aan beide kanten, want dit blok is
-     zelf geen .card: de dagkop erboven (#839) en de kaart eronder zouden die
-     afstand anders geen van beide krijgen. */
-  margin-top: var(--sp-5);
-  margin-bottom: var(--sp-5);
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-.group-log__intro {
-  flex: 1;
-  min-width: 12rem;
-}
-/* Kop zoals de andere blokken die hebben (#674 B5) — dit was het enige blok
-   zonder titel, terwijl het op de hub wél "Losse match" heet. */
-.group-log__title {
-  margin: 0 0 var(--sp-1);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-soft);
-}
-.group-log__hint {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--ink-soft);
-}
-.group-log__actions {
-  display: flex;
-  gap: var(--sp-2);
-}
+/* Rondes met hun wedstrijdkaarten (#839). Stond tot #1133 in VandaagTab.css,
+   terwijl RondeBlok de component is die deze klassen zet — waardoor een tweede
+   plek die rondes toont (de speeldagpagina) ze ongestyled kreeg. Nu importeert
+   RondeBlok zijn eigen stijl, dus elke pagina die hem rendert krijgt hem mee. */
 
 /* Rondeblokken: inzetlijn links + ruimere tussenafstand, zodat rondes bij
    het scrollen als eenheden lezen. De open ronde krijgt de accentkleur en
@@ -217,7 +160,3 @@
   background: none;
   box-shadow: none;
 }
-
-/* De afsluitkaart die hier stond ging op in de dagkop (#839): de stand-CTA en
-   de deelposter staan nu in DagKop.css, zodat dezelfde actie niet verhuist
-   zodra de laatste uitslag binnen is. */

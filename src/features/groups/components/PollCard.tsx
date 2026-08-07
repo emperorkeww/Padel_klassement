@@ -73,9 +73,6 @@ export function PollCard({
   isOwner,
   onChanged,
   spotlight,
-  roundsExist,
-  rondesVandaag,
-  onRoundsMade,
 }: {
   poll: PlayPoll;
   groupName: string;
@@ -89,12 +86,6 @@ export function PollCard({
   /** Je landde op deze kaart via een gedeelde link (#886): breng 'm in beeld
    *  en markeer 'm kort, zodat duidelijk is wélke speeldag bedoeld werd. */
   spotlight?: boolean;
-  /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
-  roundsExist?: boolean;
-  /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
-  rondesVandaag?: number;
-  /** Rondes klaargezet vanuit deze kaart — voedt de Klaar-fase (#349). */
-  onRoundsMade?: () => void;
 }) {
   const toast = useToast();
   // De op de poll opgeslagen locatie (#322), niet de globale clubvoorkeur. De
@@ -112,6 +103,16 @@ export function PollCard({
   const [remindedDone, setRemindedDone] = useState(false);
   const [openDetail, setOpenDetail] = useState<string | null>(null);
   const [showLosers, setShowLosers] = useState(false);
+  // Dichtgeklapt zodra de baan geboekt is (#1141). Dan is het kiezen voorbij en
+  // blijven er nog twee dingen over: wedstrijden klaarzetten en delen. De rest
+  // van de kaart — deelnemers, twijfelaars, boekgegevens, agenda, annuleren —
+  // staat achter "Details".
+  const [dicht, setDicht] = useState(poll.status === "booked");
+  // Ook ter plekke, op het moment dat iemand "Baan geboekt ✓" tikt: dan is de
+  // kaart klaar met wat hij te zeggen had.
+  useEffect(() => {
+    if (poll.status === "booked") setDicht(true);
+  }, [poll.status]);
   // "Dagen aanpassen" (#128): wizard heropent met de bestaande momenten.
   const [editing, setEditing] = useState(false);
   // Optimistisch stemmen: de tik is meteen zichtbaar, de server volgt.
@@ -368,6 +369,17 @@ export function PollCard({
       <div className="card__head">
         <h2 className="card__title">{CARD_TITLE[poll.status]}</h2>
         <div className="proposal__links">
+          {/* Alleen bij een geboekte speeldag: daarvoor ben je nog aan het
+              kiezen en boeken, en dan is er niets om weg te vouwen. */}
+          {poll.status === "booked" && (
+            <button
+              className="btn btn--sm"
+              aria-expanded={!dicht}
+              onClick={() => setDicht((d) => !d)}
+            >
+              {dicht ? "Details ⌄" : "Details ⌃"}
+            </button>
+          )}
           {/* Locatie (#322): wijzigbaar zolang de poll niet geboekt is; daarna
               een vaste weergave, want de baan ligt dan vast. */}
           {isManager && poll.status !== "booked" ? (
@@ -377,7 +389,7 @@ export function PollCard({
               allowManual
               align="right"
             />
-          ) : (
+          ) : dicht ? null : (
             <span className="poll-card__club" title="Locatie">
               📍 {club.name}
               {club.city ? ` · ${club.city}` : ""}
@@ -440,9 +452,7 @@ export function PollCard({
                 isManager={isManager}
                 busy={busy}
                 run={run}
-                roundsExist={roundsExist}
-                rondesVandaag={rondesVandaag}
-                onRoundsMade={onRoundsMade}
+                compact={dicht}
               />
             );
           }
@@ -475,69 +485,74 @@ export function PollCard({
         </button>
       )}
 
-      <div className="proposal__actions poll-card__footer">
-        {poll.status === "open" && isManager && bestOption && (
-          <button
-            className="btn btn--sm btn--primary"
-            disabled={busy}
-            onClick={() =>
-              run(() => lockPoll(poll.id, bestOption.id), "Moment vastgelegd.")
-            }
-          >
-            Kies {shortDay(bestOption.date)} · {bestOption.start_time}
-          </button>
-        )}
-        {isManager && poll.status === "locked" && (
-          <button
-            className="btn btn--sm"
-            disabled={busy}
-            title="Terug naar de stemfase; het gekozen moment vervalt"
-            onClick={() => run(() => reopenPoll(poll.id), "Stemmen heropend.")}
-          >
-            ↩ Heropen stemmen
-          </button>
-        )}
-        {/* Een afgelaste speeldag verdwijnt niet vanzelf uit de agenda waarin
-            iemand hem ooit zette: die kant kent geen abonnement (#1099). Dit
-            bestand wist hem bij het openen — voor élk lid, niet enkel de
-            beheerder, want iedereen kan hem erin gezet hebben. */}
-        {poll.status === "cancelled" && agendaDag && (
-          <button
-            className="btn btn--sm"
-            title="Downloadt een bestand dat deze speeldag uit je agenda haalt"
-            onClick={() => downloadSpeeldagIcs(agendaDag, "CANCELLED")}
-          >
-            Haal uit je agenda
-          </button>
-        )}
-        {isManager && poll.status !== "cancelled" && (
-          <button
-            className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
-            disabled={busy}
-            onClick={() => {
-              if (!confirmCancel) {
-                setConfirmCancel(true);
-                return;
+      {/* De voet draagt de zware knoppen (heropenen, annuleren). Op een
+          dichtgeklapte kaart hoort daar niet per ongeluk op getikt te worden;
+          hij komt terug met "Details". */}
+      {!dicht && (
+        <div className="proposal__actions poll-card__footer">
+          {poll.status === "open" && isManager && bestOption && (
+            <button
+              className="btn btn--sm btn--primary"
+              disabled={busy}
+              onClick={() =>
+                run(() => lockPoll(poll.id, bestOption.id), "Moment vastgelegd.")
               }
-              // Het annuleerbestand meteen aanbieden: wie het pas bij een
-              // volgend bezoek zou downloaden, laat de afspraak intussen in
-              // ieders agenda staan.
-              if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
-              run(
-                () => cancelPoll(poll.id),
-                poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
-              );
-            }}
-            onBlur={() => setConfirmCancel(false)}
-          >
-            {confirmCancel
-              ? "Zeker? Tik nogmaals"
-              : poll.status === "open"
-                ? "Annuleer poll"
-                : "Annuleer speeldag"}
-          </button>
-        )}
-      </div>
+            >
+              Kies {shortDay(bestOption.date)} · {bestOption.start_time}
+            </button>
+          )}
+          {isManager && poll.status === "locked" && (
+            <button
+              className="btn btn--sm"
+              disabled={busy}
+              title="Terug naar de stemfase; het gekozen moment vervalt"
+              onClick={() => run(() => reopenPoll(poll.id), "Stemmen heropend.")}
+            >
+              ↩ Heropen stemmen
+            </button>
+          )}
+          {/* Een afgelaste speeldag verdwijnt niet vanzelf uit de agenda waarin
+              iemand hem ooit zette: die kant kent geen abonnement (#1099). Dit
+              bestand wist hem bij het openen — voor élk lid, niet enkel de
+              beheerder, want iedereen kan hem erin gezet hebben. */}
+          {poll.status === "cancelled" && agendaDag && (
+            <button
+              className="btn btn--sm"
+              title="Downloadt een bestand dat deze speeldag uit je agenda haalt"
+              onClick={() => downloadSpeeldagIcs(agendaDag, "CANCELLED")}
+            >
+              Haal uit je agenda
+            </button>
+          )}
+          {isManager && poll.status !== "cancelled" && (
+            <button
+              className={`btn btn--sm proposal__withdraw${confirmCancel ? " is-confirm" : ""}`}
+              disabled={busy}
+              onClick={() => {
+                if (!confirmCancel) {
+                  setConfirmCancel(true);
+                  return;
+                }
+                // Het annuleerbestand meteen aanbieden: wie het pas bij een
+                // volgend bezoek zou downloaden, laat de afspraak intussen in
+                // ieders agenda staan.
+                if (agendaDag) downloadSpeeldagIcs(agendaDag, "CANCELLED");
+                run(
+                  () => cancelPoll(poll.id),
+                  poll.status === "open" ? "Poll geannuleerd." : "Speeldag geannuleerd.",
+                );
+              }}
+              onBlur={() => setConfirmCancel(false)}
+            >
+              {confirmCancel
+                ? "Zeker? Tik nogmaals"
+                : poll.status === "open"
+                  ? "Annuleer poll"
+                  : "Annuleer speeldag"}
+            </button>
+          )}
+        </div>
+      )}
 
       {editSheet}
     </section>

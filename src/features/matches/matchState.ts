@@ -1,0 +1,177 @@
+// De staat van één match, als pure functies (#1144).
+//
+// Tot nu toe leidde elk matchscherm zijn eigen staat af uit een reeks losse
+// ternaries: PlannedMatchCard bepaalde `canScore`/`canManage` en het label van
+// zijn uitklapknop, MatchDetail rekende `canEdit`/`showPlanned`/`speeltMee`
+// apart uit, en RondeBlok deed het nog eens over. Dezelfde regels, drie keer
+// opgeschreven — en dus drie plekken waar ze konden gaan afwijken.
+//
+// Hier staat het één keer, zonder React, zodat de staat te toetsen is zonder
+// een pagina te renderen. Zelfde opzet en zelfde reden als matchFilter.ts,
+// stakes.ts en jokers.ts: de databank blijft de enige echte poort (RLS +
+// guards), dit bestand is de spiegel die de UI vooraf laat kloppen.
+
+import { inTeam } from "@/features/rating/results";
+import type { Match, Team } from "@/types";
+
+/**
+ * De fase waarin een match verkeert.
+ *
+ * Let op het gat tussen enum en werkelijkheid: `public.match_status` kent vier
+ * waarden, maar de app schrijft er twee. `createPlannedMatch` zet 'scheduled',
+ * `setMatchResult` zet 'completed'. `in_progress` wordt nergens geschreven én
+ * nergens gelezen — die valt hier daarom onder "gepland" in plaats van een
+ * eigen fase te krijgen die nooit voorkomt. `cancelled` wordt evenmin ergens
+ * geschreven, maar wél gelezen (drankkaart, LefTipBlock, JokerBlock, rivalry,
+ * americano), dus die houdt zijn eigen fase.
+ */
+export type MatchFase =
+  | "gepland"
+  | "gepland-zonder-tijd"
+  | "gespeeld"
+  | "gespeeld-zonder-score"
+  | "afgelast";
+
+export function matchFase(match: Match): MatchFase {
+  if (match.status === "cancelled") return "afgelast";
+  if (match.status === "completed") {
+    // Beide cijfers moeten er staan; de check-constraint matches_result_consistent
+    // laat "allebei leeg" toe en dat komt voor bij oude, half ingevoerde matches.
+    return match.score_a == null || match.score_b == null
+      ? "gespeeld-zonder-score"
+      : "gespeeld";
+  }
+  return match.played_at ? "gepland" : "gepland-zonder-tijd";
+}
+
+/** Is er een uitslag om te tonen? Korter dan de fase-check op twee plekken. */
+export function heeftUitslag(match: Match): boolean {
+  return match.score_a != null && match.score_b != null;
+}
+
+/**
+ * Wat de kijker met deze match mag. Spiegel van de policies op public.matches
+ * (supabase/schemas/policies/matches.sql):
+ *
+ *   * aanmaker            — mag alles
+ *   * deelnemer           — alleen de overgang naar 'completed' (#413)
+ *   * groepseigenaar      — mag een groepsmatch volledig bijwerken (#978)
+ *
+ * De rechten zijn bewust *niet* met de fase vermengd: `magCorrigeren` zegt
+ * "deze persoon mag een uitslag rechtzetten", niet "er valt nu iets recht te
+ * zetten". Dat combineren doet `primaireActie` hieronder.
+ */
+export interface MatchRechten {
+  /** Staat de ingelogde kijker zelf op het veld? */
+  isDeelnemer: boolean;
+  /** Mag de uitslag van een nog niet afgeronde match invullen. */
+  magInvullen: boolean;
+  /** Mag een reeds afgeronde uitslag corrigeren. */
+  magCorrigeren: boolean;
+  /** Mag het tijdstip verzetten en de match verwijderen. */
+  magBeheren: boolean;
+}
+
+export function matchRechten(opts: {
+  match: Match;
+  teams: Record<string, Team>;
+  /**
+   * De **ingelogde** gebruiker. Alles wat je echt kunt indrukken hangt hieraan.
+   */
+  myId: string | null;
+  /**
+   * Vanuit wiens oogpunt de kaart getekend wordt. Op een profielpagina is dat
+   * de profieleigenaar, niet de kijker.
+   *
+   * Dit onderscheid is geen slordigheid maar de kern van `magBeheren`: die tak
+   * hing altijd al op `perspectiveId` (zie de comment bij `canManage` in de
+   * oude PlannedMatchCard), terwijl `magInvullen` op `myId` hing. Trek die twee
+   * gelijk en een profielbezoeker krijgt beheerknoppen die de server weigert —
+   * of de eigenaar van een profiel verliest ze juist. Laat dus staan.
+   */
+  perspectiveId?: string | null;
+  /** Beheert de kijker de groep waarin deze match hangt? */
+  isGroupOwner?: boolean;
+}): MatchRechten {
+  const { match: m, teams, myId, perspectiveId = null } = opts;
+  const isGroupOwner = opts.isGroupOwner ?? false;
+
+  const isDeelnemer =
+    !!myId &&
+    [teams[m.team_a_id], teams[m.team_b_id]].some((t) => inTeam(t, myId));
+  const benIkAanmaker = !!myId && m.created_by === myId;
+
+  return {
+    isDeelnemer,
+    magInvullen: !!myId && (benIkAanmaker || isGroupOwner || isDeelnemer),
+    magCorrigeren: !!myId && (benIkAanmaker || isGroupOwner),
+    magBeheren:
+      (!!perspectiveId && m.created_by === perspectiveId) || isGroupOwner,
+  };
+}
+
+/**
+ * Staat het tipvenster nog open? Alleen groepsmatches zijn tipbaar; de
+ * guard-trigger dwingt dat serverside ook af. Een geplande match zonder
+ * starttijd blijft tipbaar — er is geen deadline om te passeren.
+ *
+ * Losse regel, net als `lefGestart` en `jokerGestart`, zodat kaart, tegel en
+ * detail niet uit elkaar kunnen lopen.
+ */
+export function tippenOpen(match: Match, now?: number): boolean {
+  return (
+    match.group_id != null &&
+    match.status === "scheduled" &&
+    (match.played_at == null ||
+      new Date(match.played_at).getTime() > (now ?? Date.now()))
+  );
+}
+
+/**
+ * De ene dominante actie van deze match, voor deze kijker.
+ *
+ * Precies één per staat — dat is het hele punt van #1144. Alles wat hier niet
+ * uitkomt hoort in het ⋯-menu of achter een matchoptie, niet als tweede knop
+ * naast de eerste.
+ */
+export type PrimaireActie =
+  | "uitslag-invullen"
+  | "score-invoeren"
+  | "match-vervolledigen"
+  | "tippen"
+  | "bekijken";
+
+export function primaireActie(opts: {
+  fase: MatchFase;
+  rechten: MatchRechten;
+  /** Uit `tippenOpen()`; bepaalt of "Tippen" een zinnige belofte is. */
+  tippenOpen: boolean;
+}): PrimaireActie {
+  const { fase, rechten } = opts;
+
+  if (fase === "afgelast") return "bekijken";
+  if (fase === "gespeeld") return "bekijken";
+  // Afgerond maar zonder cijfers: dat is geen correctie maar een gat vullen.
+  if (fase === "gespeeld-zonder-score")
+    return rechten.magCorrigeren ? "score-invoeren" : "bekijken";
+
+  // Vanaf hier: nog te spelen.
+  if (rechten.magInvullen) return "uitslag-invullen";
+  // Een organisator die niet zelf meespeelt en de uitslag niet mag invullen,
+  // kan wél de match afmaken die hij half heeft klaargezet. Bewust ná
+  // `magInvullen`: voor wie de uitslag kan invullen blijft dát de hoofdzaak —
+  // een tijdstip zetten is administratie, en die hoort in het ⋯-menu.
+  if (fase === "gepland-zonder-tijd" && rechten.magBeheren)
+    return "match-vervolledigen";
+  if (opts.tippenOpen) return "tippen";
+  return "bekijken";
+}
+
+/** Het opschrift van de primaire knop. Eén plek, zodat kaart en detail gelijk lopen. */
+export const ACTIE_LABEL: Record<PrimaireActie, string> = {
+  "uitslag-invullen": "Uitslag invullen",
+  "score-invoeren": "Score invoeren",
+  "match-vervolledigen": "Match vervolledigen",
+  tippen: "Tippen",
+  bekijken: "Details",
+};

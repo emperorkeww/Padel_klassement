@@ -27,6 +27,8 @@ function Harnas() {
   return (
     <MatchesSectie
       groepId={speel.groep}
+      onGroep={speel.zetGroep}
+      groepen={[{ id: "g1", name: "Vrijdagavond padel" }]}
       periode={speel.periode}
       onPeriode={speel.zetPeriode}
       onWisFilters={speel.wisFilters}
@@ -332,6 +334,47 @@ describe("<MatchesSectie />", () => {
       expect(
         await screen.findByText(/1 match in de historie\./),
       ).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  // #1134: filteren op groep is iets anders dan een groep binnengaan, en heeft
+  // dus een eigen bediening. Tot #1123 stond dit filter hier al; dat issue gaf
+  // de rol aan de chipstrook, die hem naast het navigeren droeg.
+  it("filtert op groep en wist met de periode mee", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "in-groep", group_id: "g1" },
+      { ...MATCH_DONE, id: "los", score_a: 1, score_b: 6, group_id: null },
+    ]);
+    try {
+      renderPage();
+      await screen.findByText("6–3");
+      expect(screen.getByText("1–6")).toBeInTheDocument();
+
+      await userEvent.selectOptions(screen.getByLabelText("Groep"), "g1");
+      expect(screen.getByText("6–3")).toBeInTheDocument();
+      // Een losse match hoort bij geen enkele groep en valt dus buiten de keuze.
+      expect(screen.queryByText("1–6")).toBeNull();
+
+      await userEvent.click(screen.getByRole("button", { name: /wis filters/i }));
+      expect(screen.getByLabelText("Groep")).toHaveValue("");
+      expect(screen.getByText("1–6")).toBeInTheDocument();
+    } finally {
+      herstel();
+    }
+  });
+
+  it("leest het groepsfilter uit de URL", async () => {
+    const herstel = metMatches([
+      { ...MATCH_DONE, id: "in-groep", group_id: "g1" },
+      { ...MATCH_DONE, id: "los", score_a: 1, score_b: 6, group_id: null },
+    ]);
+    try {
+      renderPage("/?groep=g1");
+      expect(await screen.findByText("6–3")).toBeInTheDocument();
+      expect(screen.getByLabelText("Groep")).toHaveValue("g1");
+      expect(screen.queryByText("1–6")).toBeNull();
     } finally {
       herstel();
     }

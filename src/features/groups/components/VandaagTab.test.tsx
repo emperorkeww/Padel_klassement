@@ -403,7 +403,7 @@ describe("<VandaagTab />", () => {
 
     await userEvent.click(knop);
     const sheet = await screen.findByRole("dialog", {
-      name: /volgende ronde/i,
+      name: /wedstrijden klaarzetten/i,
     });
     expect(
       within(sheet).getByRole("heading", { name: /speelformaat/i }),
@@ -509,6 +509,28 @@ describe("<VandaagTab />", () => {
 
     // De pil spreekt namens Coach Rudy i.p.v. een robot-emoji (#975).
     expect(screen.getByText(/rudy zette ze klaar om/i)).toBeInTheDocument();
+  });
+
+  // Het verkeer was eenrichting (#1133): de speeldagpagina wees naar de groep,
+  // maar vanuit de dag van vandaag kwam je er niet.
+  it("wijst vanuit de dagkop naar de speeldagpagina van vandaag", () => {
+    renderTab({
+      ...DAG_ONDERWEG,
+      polls: [autoPoll()],
+      pollOptions: [AUTO_OPTION],
+    });
+
+    expect(
+      screen.getByRole("link", { name: /open de speeldag/i }),
+    ).toHaveAttribute("href", "/speeldag/poll-vandaag");
+  });
+
+  it("laat die link weg als er vandaag geen vastgelegde speeldag is", () => {
+    renderTab({ ...DAG_ONDERWEG, polls: [], pollOptions: [] });
+
+    expect(
+      screen.queryByRole("link", { name: /open de speeldag/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("vertelt op een lege dag dat de automaat nog moet komen", () => {

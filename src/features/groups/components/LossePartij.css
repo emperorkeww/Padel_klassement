@@ -1,0 +1,47 @@
+/* Het blok "Losse partij" (#722). Verhuisd uit VandaagTab.css bij #1133:
+   ook de speeldagpagina zet dit blok, dus het hoort bij de component. */
+
+/* Losse match loggen/plannen binnen de groep. Stond als gedempte voetnoot
+   onder de teamgenerator (#364) en verdween zodra de dag liep in de inklapper
+   "Nog een ronde maken"; sinds #722 het eerste blok van de tab. De gestippelde,
+   gedempte stijl blijft — hij mag opvallen door zijn plek, niet door zijn
+   kleur, zodat de wedstrijden eronder het accent houden. */
+.group-log {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  /* Zelfde tussenruimte als .card + .card aan beide kanten, want dit blok is
+     zelf geen .card: de dagkop erboven (#839) en de kaart eronder zouden die
+     afstand anders geen van beide krijgen. */
+  margin-top: var(--sp-5);
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.group-log__intro {
+  flex: 1;
+  min-width: 12rem;
+}
+/* Kop zoals de andere blokken die hebben (#674 B5) — dit was het enige blok
+   zonder titel, terwijl het op de hub wél "Losse match" heet. */
+.group-log__title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.group-log__hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.group-log__actions {
+  display: flex;
+  gap: var(--sp-2);
+}

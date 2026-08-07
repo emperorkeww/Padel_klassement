@@ -16,24 +16,6 @@ vi.mock("@/features/groups/pollsApi", async (importOriginal) => ({
   setPollBookingDetails,
 }));
 
-// Rondes klaarzetten (#727) raakt twee endpoints; de indeling zelf komt uit
-// de echte fairTeams, zodat de test ook ziet dát elke ronde anders wordt.
-const createFairRound = vi.hoisted(() =>
-  vi.fn(async (_groupId: string, courts: unknown[]) =>
-    courts.map((_, i) => `m-${i}`),
-  ),
-);
-const getPlayerRatings = vi.hoisted(() => vi.fn(async () => ({})));
-
-vi.mock("@/features/groups/api", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/groups/api")>()),
-  createFairRound,
-}));
-vi.mock("@/features/standings/ratingsApi", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/standings/ratingsApi")>()),
-  getPlayerRatings,
-}));
-
 import { WinnerCard } from "./WinnerCard";
 import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { OptionTally } from "@/features/groups/pollLogic";
@@ -84,7 +66,6 @@ function renderCard(
   poll: Partial<PlayPoll> = {},
   extra: {
     tally?: OptionTally;
-    roundsExist?: boolean;
     profiles?: Record<string, Profile>;
   } = {},
 ) {
@@ -96,7 +77,6 @@ function renderCard(
             poll={{ ...POLL, ...poll }}
             option={OPTION}
             tally={extra.tally ?? TALLY}
-            roundsExist={extra.roundsExist}
             perPerson={null}
             club={CLUB}
             groupName="Vrijdagavond padel"
@@ -199,6 +179,8 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
       access_code: "1234",
       courts: "3 & 4",
     });
+    // Delen zit sinds #1141 achter één knop, met de opt-ins in de sheet.
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
     await userEvent.click(screen.getByRole("button", { name: /↗ tekst/i }));
 
     const arg = share.mock.calls[0][0];
@@ -228,6 +210,7 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
       access_code: "b3: 1234",
       courts: "3 & 4",
     });
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
     await userEvent.click(screen.getByRole("button", { name: /zet in agenda/i }));
 
     expect(click).toHaveBeenCalled();
@@ -258,10 +241,10 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
   });
 });
 
-// ── Wedstrijden klaarzetten (#727) ────────────────────────────────────
-// De reis-CTA linkte naar het kale groepspad, maar dat is de route waar je
-// al op staat — dus de tab wisselde niet. En een hele avond vooruit plannen
-// kostte evenveel tikken als rondes.
+// ── Klaarzetten (#1146) ──────────────────────────────────────────────
+// De kaart had een eigen Elo-generator (#727), daarna een slot voor de knop
+// van de pagina (#1141). Nu staat het speelformaat-paneel open op de pagina
+// zelf, dus de kaart heeft er niets meer over te zeggen.
 
 const ACHT_YES: OptionTally = {
   yes: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
@@ -273,48 +256,53 @@ const ACHT_YES: OptionTally = {
 
 const GEBOEKT = { status: "booked" as const, booked_at: "2026-07-08T12:00:00Z" };
 
-describe("<WinnerCard /> wedstrijden klaarzetten (#727)", () => {
-  beforeEach(() => {
-    createFairRound.mockClear();
-    getPlayerRatings.mockClear();
-  });
+describe("<WinnerCard /> delen & agenda (#1141)", () => {
+  // Twee knoppen, twee vinkjes en een agenda-knop stonden open in de kaart:
+  // vijf regels waarvan de vinkjes het meeste gewicht droegen. Achter één knop
+  // krijgen de keuzes juist ruimte om uit te leggen wat ze doen.
+  it("zet delen, de poster-opt-ins en de agenda-export in één sheet", async () => {
+    renderCard({
+      status: "booked",
+      booked_at: "2026-07-08T12:00:00Z",
+      access_code: "1234",
+    });
 
-  it("stuurt 'Bekijk de wedstrijden' naar de Vandaag-tab, niet naar het kale pad", () => {
-    renderCard(GEBOEKT, { tally: ACHT_YES, roundsExist: true });
+    // Dicht in de kaart: alleen de knop.
+    expect(
+      screen.queryByRole("button", { name: /↗ tekst/i }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
+    const sheet = await screen.findByRole("dialog", { name: /delen & agenda/i });
 
     expect(
-      screen.getByRole("link", { name: /bekijk de wedstrijden/i }),
-    ).toHaveAttribute("href", "/groepen/g1?tab=spelen");
+      within(sheet).getByRole("button", { name: /↗ tekst/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("button", { name: /🖼 afbeelding/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("checkbox", { name: /toegangscode op de poster/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("checkbox", { name: /qr naar de speeldag/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("button", { name: /zet in agenda/i }),
+    ).toBeInTheDocument();
   });
+});
 
-  it("laat het aantal rondes kiezen tot 10 en zet ze in één tik klaar", async () => {
+describe("<WinnerCard /> klaarzetten (#1146)", () => {
+  it("laat het indelen aan de pagina", () => {
     renderCard(GEBOEKT, { tally: ACHT_YES });
 
-    const keuze = screen.getByLabelText(/rondes/i);
-    expect(within(keuze).getAllByRole("option")).toHaveLength(10);
-
-    // Twee volle banen × drie rondes = zes matches; de knop zegt het ook.
-    await userEvent.selectOptions(keuze, "3");
-    const knop = screen.getByRole("button", { name: /genereer 3 rondes/i });
-    expect(knop).toHaveTextContent("6 matches");
-
-    await userEvent.click(knop);
-    expect(createFairRound).toHaveBeenCalledTimes(3);
-    // Elke ronde krijgt een eigen indeling (oplopende variant), anders zou
-    // je drie keer exact dezelfde teams op de baan zetten.
-    const indelingen = createFairRound.mock.calls.map(([, courts]) =>
-      JSON.stringify(courts),
-    );
-    expect(new Set(indelingen).size).toBeGreaterThan(1);
-  });
-
-  it("houdt één ronde de standaard", async () => {
-    renderCard(GEBOEKT, { tally: ACHT_YES });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: /genereer wedstrijden/i }),
-    );
-    expect(createFairRound).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("heading", { name: /klaarzetten/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /wedstrijden klaarzetten/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

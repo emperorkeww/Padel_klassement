@@ -98,6 +98,31 @@ export type Automaat =
   | { soort: "uit" }
   | null;
 
+/**
+ * De speeldag van een kalenderdag: de poll met een vastgelegd moment op die
+ * dag, of null. Een geboekte wint van een enkel gelockte — die eerste stuurt
+ * de cron.
+ *
+ * Geëxporteerd sinds #1133: de dagkop wijst ook naar de speeldagpagina van
+ * vandaag, en dat mag geen tweede definitie van "welke speeldag is dit" worden.
+ */
+export function speeldagVoorDag(
+  polls: PlayPoll[],
+  options: PollOption[],
+  dag: string,
+): PlayPoll | null {
+  return (
+    polls
+      .filter((p) => p.status === "booked" || p.status === "locked")
+      .filter((p) =>
+        options.some((o) => o.id === p.locked_option_id && o.date === dag),
+      )
+      .sort((a, b) =>
+        a.status === "booked" ? -1 : b.status === "booked" ? 1 : 0,
+      )[0] ?? null
+  );
+}
+
 export function automaatStatus(opts: {
   /** Alle polls van de groep. */
   polls: PlayPoll[];
@@ -126,17 +151,7 @@ export function automaatStatus(opts: {
     now = Date.now(),
   } = opts;
 
-  // De speeldag van vandaag: de poll met een vastgelegd moment op deze dag.
-  // Een geboekte wint van een enkel gelockte — die eerste stuurt de cron.
-  const speeldag =
-    polls
-      .filter((p) => p.status === "booked" || p.status === "locked")
-      .filter((p) =>
-        options.some((o) => o.id === p.locked_option_id && o.date === today),
-      )
-      .sort((a, b) =>
-        a.status === "booked" ? -1 : b.status === "booked" ? 1 : 0,
-      )[0] ?? null;
+  const speeldag = speeldagVoorDag(polls, options, today);
 
   if (rondes > 0) {
     return speeldag?.rounds_generated_at

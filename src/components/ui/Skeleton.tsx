@@ -119,26 +119,27 @@ export function StatsSkeleton() {
   );
 }
 
-/** Groepskaart op de Spelen-hub: avatarrij, naam en een statuspil (#949).
- *  De hub toonde tot dan drie kale regels in één kaart — de vorm van wat er
- *  komt (een stapel groepskaarten) zag je pas als het er stond. */
-export function GroupListSkeleton({ count = 2 }: { count?: number }) {
+/** Eén groepskaart op de Spelen-hub: avatar met naam, de ledenrij en de
+ *  statusregel (#949, hervormd in #1134).
+ *
+ *  Was een stapel van `count` kaarten in een eigen grid; sinds #1134 staan de
+ *  groepen in een horizontale rij die zijn eigen breedtes bepaalt, dus levert
+ *  dit blad één kaart en herhaalt de rij hem. De maten volgen de echte kaart:
+ *  een skeleton die kleiner is dan wat erop volgt, verplaatst de pagina alsnog. */
+export function GroupCardSkeleton() {
   return (
-    <div className="skeleton sk-groups" aria-hidden="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="sk-group">
-          <span className="sk-group__kop">
-            <Line w="45%" h={16} />
-            <span className="sk sk--pill" />
-          </span>
-          <span className="sk-group__leden">
-            <Circle size={22} />
-            <Circle size={22} />
-            <Circle size={22} />
-            <Line w="30%" h={11} />
-          </span>
-        </div>
-      ))}
+    <div className="skeleton sk-group" aria-hidden="true">
+      <span className="sk-group__kop">
+        <Circle size={40} />
+        <Line w="55%" h={16} />
+      </span>
+      <span className="sk-group__leden">
+        <Circle size={20} />
+        <Circle size={20} />
+        <Circle size={20} />
+        <Line w="30%" h={11} />
+      </span>
+      <Line w="45%" h={11} />
     </div>
   );
 }

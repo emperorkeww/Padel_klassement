@@ -688,6 +688,21 @@
   gap: var(--sp-2);
 }
 
+/* Dichtgeklapte geboekte speeldag (#1141): moment, baan, code en de twee
+   acties die er dan nog zijn. De kaart hield na het boeken elke fase open —
+   deelnemers, boekgegevens, agenda, deelvinkjes, generator — terwijl alles
+   waarvoor je de pagina opende (de wedstrijden) daaronder stond. De body mag
+   daarom strakker: hij draagt drie regels, geen vijf blokken. */
+.winner-card--compact .winner-card__body {
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+/* Baan en code staan hier zonder omhullende sectie, dus de rij zelf zorgt voor
+   de ademruimte naar de actieknoppen eronder. */
+.winner-card--compact .winner-card__code-row {
+  margin: 0;
+}
+
 /* Fase-secties in de winner-card (#349): kiezen → boeken → klaarzetten.
    De actuele stap krijgt een accentrand, de rest blijft een compact blok. */
 .winner-card__section {

@@ -1,92 +1,190 @@
-/* De groepskeuze als strook chips (#1123). Was een stapel kaarten die alleen
-   kon navigeren; nu een filter over de matchlijst eronder. Losse pillen in
-   plaats van de dichte .tabs-balk: dit is een keuze over de pagina-inhoud, geen
-   paginanavigatie. Scrollen en de fade komen van .tabs--page. */
-.groep-strook {
+/* ---------- Mijn groepen (#1134) ----------
+   De groepen stonden tot #1123 als kaartenstapel op de hub en daarna als chips
+   in een filterstrook. Die chipvorm zei "ik ben een filter", terwijl een groep
+   een plek is waar je binnenloopt. Dus weer kaarten — maar horizontaal, want de
+   matchhistorie eronder mag er niet door van het scherm geduwd worden. */
+.mijn-groepen {
+  margin-bottom: var(--sp-5);
+}
+.mijn-groepen__kop {
   display: flex;
-  flex-wrap: nowrap;
-  max-width: 100%;
-  padding: 0;
-  background: transparent;
-  border: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
   margin-bottom: var(--sp-3);
 }
-.groep-strook .tab {
-  flex: 0 0 auto;
-  padding: var(--sp-1) var(--sp-3);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  font-size: var(--fs-sm);
+.mijn-groepen__titel {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
-.groep-strook .tab:hover:not(.is-active) {
-  border-color: var(--accent-line);
-}
-/* De actieve chip is een vol accentvlak, net als de filterchips van het
-   clubblad. --accent-ink is de gemeten tegenhanger van --accent (zie
-   scripts/contrast-check.mjs); een kale #fff zou buiten die meting vallen. */
-.groep-strook .tab.is-active {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-  box-shadow: none;
-}
-/* De statusstip vóór de groepsnaam (#1123). De huls houdt zijn breedte ook
-   leeg vast: de reisstatus komt uit een tweede query, en zonder gereserveerde
-   ruimte schuiven de chips horizontaal zodra die binnenvalt. */
-.groep-strook__stip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 6px;
-  margin-right: var(--sp-2);
-  flex: none;
-}
-/* Op het accentvlak van de actieve chip zou een accentkleurige stip
-   verdwijnen; de vorm blijft het onderscheid dragen, alleen de kleur wisselt
-   mee. Zelfde ingreep als bij de gekozen dag in het agendaraster. */
-.groep-strook .tab.is-active .agenda-glyph--booked,
-.groep-strook .tab.is-active .agenda-glyph--open {
-  background: var(--accent-ink);
-}
-.groep-strook .tab.is-active .agenda-glyph--locked {
-  border-color: var(--accent-ink);
-}
-
-/* De "+"-knop is geen groep: vierkanter, rustiger, en hij mag niet meegroeien
-   met een lange groepsnaam. */
-.groep-strook__nieuw {
-  min-width: 44px;
-  padding-inline: var(--sp-2);
-  color: var(--accent);
-  font-size: var(--fs-md);
-  font-weight: 700;
-}
-
-/* De gekozen groep in één regel onder de strook: waar zit deze groep in de
-   kernreis, en hoe kom je er binnen (#1123). Bij "Alle" staat hier niets. */
-.groep-regel {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--sp-4);
-  font-size: var(--fs-sm);
-  color: var(--ink-soft);
-}
-.groep-regel__naam {
-  font-weight: 700;
-  color: var(--ink);
-}
-.groep-regel__open {
-  margin-left: auto;
+.mijn-groepen__alles {
   flex-shrink: 0;
 }
 
-/* Nieuwe groep: zeldzame actie, dus een knop in plaats van een altijd open
-   formulier (#674 A5). */
-.hub-new {
-  width: 100%;
-  margin-bottom: var(--sp-5);
+/* Dezelfde kaarten in het sheet, maar onder elkaar: daar is de volle breedte
+   beschikbaar en telt overzicht zwaarder dan compactheid. */
+.mijn-groepen__lijst {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+/* Telefoon: een rij die per kaart snapt met de volgende kaart half in beeld —
+   dát is wat verraadt dat er meer groepen zijn. De negatieve marge laat de rij
+   tot aan de schermrand lopen, zodat een kaart aan de rand niet lijkt te
+   stoppen; de padding erbinnen houdt de kaarten zelf op hun plek en geeft de
+   focusring lucht (die valt anders buiten de scrollcontainer). */
+.mijn-groepen__rij {
+  display: flex;
+  gap: var(--sp-3);
+  margin-inline: calc(-1 * var(--sp-4));
+  padding: var(--sp-1) var(--sp-4);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--sp-4);
+  scrollbar-width: none;
+  /* Fade aan de kant waar nog kaarten staan (#912), gestuurd door
+     useScrollSchaduw: een fade die er altijd staat liegt zodra je aan het einde
+     bent. Een overlay met een achtergrondkleur zou over de kaarten heen liggen
+     en per thema bijgehouden moeten worden. */
+  --fade: 20px;
+}
+.mijn-groepen__rij::-webkit-scrollbar {
+  display: none;
+}
+.mijn-groepen__rij[data-schaduw="rechts"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+}
+.mijn-groepen__rij[data-schaduw="links"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - var(--fade)), transparent);
+}
+.mijn-groepen__rij[data-schaduw="beide"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade),
+    #000 calc(100% - var(--fade)),
+    transparent
+  );
+}
+/* Eén breedte voor de echte kaart én zijn skeleton: verschillen ze, dan
+   verspringt de rij precies op het moment dat de data binnenvalt. Ruim onder de
+   volle schermbreedte, zodat de volgende kaart altijd aankondigt dat hij er is. */
+.mijn-groepen__rij > * {
+  flex: 0 0 clamp(15rem, 78vw, 18.5rem);
+  scroll-snap-align: start;
+}
+
+/* Vanaf tabletbreedte is er plek voor een raster: scrollen en snappen vervallen,
+   en met één groep eindigt de rij gewoon met witruimte in plaats van dat die ene
+   kaart over de volle breedte uitrekt. */
+@media (min-width: 720px) {
+  .mijn-groepen__rij {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    mask-image: none;
+  }
+  .mijn-groepen__rij > * {
+    flex: initial;
+  }
+}
+
+/* ---------- De groepskaart ---------- */
+.groep-kaart {
+  display: grid;
+  gap: var(--sp-2);
+  align-content: start;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.groep-kaart:hover {
+  border-color: var(--accent-line);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.groep-kaart:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .groep-kaart {
+    transition: none;
+  }
+  .groep-kaart:hover {
+    transform: none;
+  }
+}
+
+.groep-kaart__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.groep-kaart__titel {
+  display: grid;
+  justify-items: start;
+  gap: 0.125rem;
+  min-width: 0;
+}
+.groep-kaart__naam {
+  max-width: 100%;
+  font-weight: 700;
+  font-size: var(--fs-base);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* De chevron is de enige plek waar de kaart zegt "ik ga ergens heen"; hij hoort
+   dus rechts en niet mee te schuiven met een lange naam. */
+.groep-kaart__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.groep-kaart__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+/* De statusregel houdt zijn hoogte ook leeg vast: de reisstatus komt uit een
+   tweede query, en zonder gereserveerde ruimte groeit elke kaart een halve regel
+   zodra die binnenvalt (#916). Vorm draagt de status (StatusGlyph), de tekst
+   ernaast zegt hem voluit — kleur is nergens de enige drager (WCAG 1.4.1). */
+.groep-kaart__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 1.25em;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Vrije banen blijft wél een rustige verwijzing: één regel onderaan. */

@@ -8,8 +8,9 @@
 
 /* ---------- Groepskop met identiteit (#917) ----------
    De kop droeg alleen naam plus badge, terwijl de kaart op de hub avatar,
-   ledenrij én reisstatus toont. Dezelfde bouwstenen dus; de journey-pil erft
-   haar kleuren van .group-card__journey--* uit Groups.css. */
+   ledenrij én reisstatus toont. Dezelfde bouwstenen dus. De journey-pil erfde
+   haar kleuren ooit van .group-card__journey--* uit Groups.css; die regels zijn
+   met #1123 verdwenen, dus ze staan hieronder zelfstandig. */
 .group-head__id {
   display: flex;
   align-items: center;

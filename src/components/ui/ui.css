@@ -17,6 +17,36 @@
   color: var(--ink-soft);
   font-size: var(--fs-base);
 }
+/* Paginakop met een primaire actie ernaast (#1134). Drie pagina's tekenden zoiets
+   al met een eigen klasse (.group-head, .profile-head, .settings-head); dit is
+   de gedeelde vorm, zodat de vierde er geen vierde variant bij zet.
+
+   De knop staat rechts náást het titelblok zolang er ruimte is en zakt daaronder
+   zodra die op is — flex-wrap in plaats van een breakpoint, want wat "genoeg
+   ruimte" is hangt af van de lengte van het label, niet van de schermbreedte. */
+.page-head--met-actie {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.page-head__tekst {
+  /* Zonder dit duwt een lange ondertitel de knop van de regel af in plaats van
+     zelf af te breken. */
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.page-head__actie {
+  flex: 0 0 auto;
+}
+@media (max-width: 480px) {
+  /* Eenmaal onder de titel is een knop op halve breedte een weesje: dan liever
+     de volle regel, net als de knoppen in de formulieren eronder. */
+  .page-head__actie {
+    flex: 1 0 100%;
+  }
+}
 
 /* ---------- Kaarten ---------- */
 .card {
