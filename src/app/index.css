@@ -453,13 +453,20 @@
       gekozen nav-item (dat is nu het merkgroen zelf), maar uitsluitend
       prestatie — streak, ratingwinst, bijzondere klassementsstatus.
 
-   De trap is bewust géén bijna-zwart geworden. Een canvas rond L* 4 dwingt de
-   zijbalk naar praktisch zwart (die moet ≥3 L* onder de pagina blijven), en
-   dan verdwijnt precies de diepte waar dit thema het van moet hebben: een
-   bijna-zwarte zijbalk, een blauw-charcoal canvas en kaarten die daar zichtbaar
-   bovenop liggen. Vandaar sidebar #070b0d → canvas #10161e → kaart #1a212b →
-   verhoogd #252e3a. Er hoefde aan contrast-check.mjs dan ook geen drempel te
-   worden aangepast.
+   De trap zoekt de diepte op zonder puur zwart te worden: de canvas ligt dicht
+   bij de zijbalk, de kaart tilt daar duidelijk bovenuit.
+
+     #05080a  zijbalk / diepste chroom
+     #0d1219  app-canvas          (3,3 L* boven de zijbalk)
+     #1a212b  kaarten             (7,2 L* boven de canvas)
+     #212934  subtiel vlak in een kaart
+     #252e3a  verhoogd: hero, sheets, popovers
+     #28313c  hover / gekozen neutraal vlak
+
+   Verder dan dit kan de canvas niet zakken: de zijbalk moet ≥3 L* eronder
+   blijven (regel 2 van de ladder in contrast-check.mjs, want anders zie je geen
+   zijbalk meer), en die zit met #05080a al tegen zwart aan. Er hoefde aan het
+   script dan ook geen drempel te worden aangepast.
 
    Blauw-charcoal en niet groengetint: de FUT- en divisiekaarten zijn zelf al
    verzadigd goud, bordeaux en roze. Een groene pagina gaat daarmee concurreren;
@@ -472,13 +479,13 @@
    te blijven staan. */
 :root[data-theme="dark"] {
   /* Canvas → kaart → verhoogd: elke stap ≈ 4–7 L*, zie de kop hierboven. */
-  --bg: #10161e; /* bijna-zwart blauwgrijs — de app-achtergrond */
+  --bg: #0d1219; /* bijna-zwart blauwgrijs — de app-achtergrond */
   --surface: #1a212b; /* kaarten */
   --surface-2: #212934; /* subtiel vlak / tracks */
   --surface-elevated: #252e3a; /* hero, sheets, popovers */
   --surface-hover: #28313c; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #173d31; /* gekozen nav-item — mint getint */
-  --background-navigation: #070b0d;
+  --background-navigation: #05080a;
   --navigation-ink: #f4f7f9;
   --navigation-muted: #a7b2bd;
   /* Het gekozen nav-item is een getinte pil, geen vol groen blok: de kleur zit
@@ -561,7 +568,7 @@
      dan de content, niet lichter. Zo staat de app-inhoud vooraan en zakt het
      meubilair naar achteren — vóór #1074 lag de zijbalk op 1,03:1 van de
      achtergrond en was er dus geen zijbalk te zien. */
-  --sidebar-bg: #070b0d;
+  --sidebar-bg: #05080a;
   --sidebar-ink: #a7b2bd;
   --sidebar-ink-strong: #f4f7f9;
 
@@ -659,11 +666,11 @@
   --shadow-up: 0 -6px 24px rgba(0, 0, 0, 0.4);
   --shadow-up-lg: 0 -8px 30px rgba(0, 0, 0, 0.55);
   --shadow-ball: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --overlay: rgba(3, 5, 7, 0.66);
+  --overlay: rgba(2, 4, 6, 0.66);
   /* Zie het lichte blok. Op donker mag de scrim zwaarder blijven dan op licht:
      het materiaal is er zelf donker, dus het verschil tussen paneel en pagina
      moet ergens vandaan komen. */
-  --overlay-glas: rgba(3, 5, 7, 0.55);
+  --overlay-glas: rgba(2, 4, 6, 0.55);
   /* Lager dan op licht (zie daar): donker glas mag dunner, want de inkt erop
      houdt hoe dan ook ≥15:1 — wat er achter ligt maakt nauwelijks uit. */
   --glas-sheet-factor: 0.72;
@@ -674,7 +681,7 @@
   --toast-close-bg: rgba(0, 0, 0, 0.15);
   --toast-close-bg-hover: rgba(0, 0, 0, 0.28);
 
-  --bar-glass: rgba(7, 11, 13, 0.86);
+  --bar-glass: rgba(5, 8, 10, 0.86);
 
   /* Gekozen navigatie: het label leest als gewone tekst (op het gekozen vlak
      haalt een gekleurd label geen AA), de markering ernaast draagt de kleur.
