@@ -1,0 +1,228 @@
+/* Match-effecten volgens de visuele referentie: een neutrale kaart met brede,
+   organische kleurstromen eroverheen. Elke ribbon is een zelfstandig SVG-laagje
+   met dezelfde vaste kleuridentiteit. Combinaties zijn dus letterlijk meerdere
+   SVG's boven elkaar; er bestaan geen samengestelde CSS-varianten. */
+.match-effect-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.match-effect-ribbon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--effect-color);
+  opacity: var(--effect-opacity, 1);
+  /* Alleen een eindfade; de gekleurde vorm zelf wordt door de Bézierpaden
+     bepaald, niet door een links-naar-rechts achtergrondgradient. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 4%,
+    #000 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 4%,
+    #000 88%,
+    transparent 100%
+  );
+}
+
+.match-effect-ribbon--lef {
+  --effect-color: var(--effect-lef);
+  --effect-opacity: 1;
+}
+.match-effect-ribbon--joker {
+  --effect-color: var(--effect-joker);
+  --effect-opacity: 0.96;
+}
+.match-effect-ribbon--inzet {
+  --effect-color: var(--effect-inzet);
+  --effect-opacity: 0.94;
+}
+
+.match-effect-ribbon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.match-effect-ribbon__mist {
+  stroke-width: 52px;
+  opacity: 0.028;
+}
+.match-effect-ribbon__body {
+  stroke-width: 31px;
+  opacity: 0.035;
+}
+.match-effect-ribbon__core {
+  stroke-width: 11px;
+  opacity: 0.046;
+}
+.match-effect-ribbon__glint {
+  stroke-width: 2px;
+  opacity: 0.03;
+}
+.match-effect-ribbon .is-echo {
+  opacity: 0.72;
+}
+
+/* Een smalle effectlijn binnen de bestaande uitslagrand. De buitenste rand
+   blijft winst/verlies/gelijkspel coderen; dit tweede lijntje codeert alleen
+   het primaire effect en vervangt de winnaarstyling dus niet. */
+.match-effect-surface::after {
+  content: "";
+  position: absolute;
+  inset: 5px auto 5px 2px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--effect-edge, transparent);
+  opacity: 0.82;
+}
+.match-card[data-fx-inzet] .match-effect-surface {
+  --effect-edge: var(--effect-inzet);
+}
+.match-card[data-fx-joker] .match-effect-surface {
+  --effect-edge: var(--effect-joker);
+}
+.match-card[data-fx-lef] .match-effect-surface {
+  --effect-edge: var(--effect-lef);
+}
+
+/* Eén rustige pill, met binnenin één kleur per actief effect. Een dekkend vlak
+   houdt tekst en iconen leesbaar waar twee of drie ribbons elkaar kruisen. */
+.match-effect-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(34ch, 38vw);
+  min-width: 0;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 1px 2px rgba(20, 40, 28, 0.04);
+  font-family: var(--font-rounded);
+  font-size: 0.675rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.match-effect-badge__group,
+.match-effect-badge__part {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.match-effect-badge__part {
+  gap: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.match-effect-badge__part--lef {
+  color: var(--lef);
+}
+.match-effect-badge__part--joker {
+  color: var(--joker);
+}
+.match-effect-badge__part--inzet {
+  color: var(--dorst);
+}
+.match-effect-badge__icon {
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.match-effect-badge__plus {
+  margin-inline: 0.3rem;
+  color: var(--ink-soft-strong);
+  font-weight: 700;
+}
+
+/* De score krijgt de tint van het primaire effect, zoals in de referentie.
+   Winnaar (trofee + vet team + buitenste statusrand) blijft een aparte laag.
+   Cascade = lef > joker > inzet, gelijk aan de kleine effectrand. */
+.match-card[data-fx-inzet] .match-card__score {
+  color: var(--dorst);
+  border-color: var(--dorst-line);
+  background: var(--dorst-soft);
+}
+.match-card[data-fx-joker] .match-card__score {
+  color: var(--joker);
+  border-color: var(--joker-line);
+  background: var(--joker-soft);
+}
+.match-card[data-fx-lef] .match-card__score {
+  color: var(--lef);
+  border-color: var(--lef-line);
+  background: var(--lef-soft);
+}
+
+:root[data-theme="dark"] .match-effect-ribbon {
+  opacity: 0.78;
+}
+:root[data-theme="dark"] .match-effect-badge {
+  background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .match-card:hover .match-effect-ribbon {
+    opacity: 1;
+  }
+  :root[data-theme="dark"] .match-card:hover .match-effect-ribbon {
+    opacity: 0.86;
+  }
+}
+
+@media (max-width: 720px) {
+  .match-effect-badge {
+    max-width: min(25ch, 48vw);
+    padding-inline: 0.4rem;
+    font-size: 0.625rem;
+  }
+  .match-effect-badge__plus {
+    margin-inline: 0.2rem;
+  }
+  .match-effect-ribbon {
+    /* Op een smalle kaart niet alleen het middelste stukje van het brede pad
+       tonen: iets samenpersen houdt begin, kruising en staart tegelijk in beeld. */
+    transform: scaleX(1.08);
+    transform-origin: center;
+  }
+}
+
+/* Op telefoonbreedte krijgt de badge zijn eigen onderste strook. Absoluut
+   positioneren haalt zijn breedte uit de middenkolom: de score blijft compact,
+   lange namen houden ruimte en zelfs drie effecten passen volledig in de kaart. */
+@media (max-width: 480px) {
+  .match-card[data-fx] {
+    min-height: 98px;
+    padding-bottom: 2rem;
+  }
+  .match-card[data-fx] .match-effect-badge {
+    position: absolute;
+    top: calc(100% + 0.28rem);
+    left: 50%;
+    z-index: 2;
+    width: max-content;
+    max-width: calc(100vw - 3.5rem);
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-effect-ribbon {
+    transition: none;
+  }
+}
