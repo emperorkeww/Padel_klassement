@@ -1,8 +1,8 @@
 // Adminpaneel (#1036): één scherm om gebruikers op te volgen.
 //
-// PR 1 is bewust alleen-lezen. De acties (herstel-link, tijdelijk wachtwoord,
-// e-mail corrigeren, uitloggen, verwijderen) en de tabbladen Gasten/Groepen
-// volgen in PR 2 en 3; wat hier staat is het fundament waar die op landen.
+// Vijf tabbladen: gebruikers, gasten en groepen (accounts, #1036) plus matches
+// en het logboek (inhoud, #1159). De eerste drie praten met de edge function
+// `admin-users`, de laatste twee met `admin-content`; zie ./api.
 //
 // Twee dingen om in het oog te houden bij het uitbreiden:
 //  1. Geen enkele query loopt buiten ./api om. app_admins en admin_audit_log
@@ -27,10 +27,12 @@ import { GebruikerPaneel } from "./components/GebruikerPaneel";
 import { AdminFilters } from "./components/AdminFilters";
 import { GastenTab } from "./components/GastenTab";
 import { GroepenTab } from "./components/GroepenTab";
+import { MatchesTab } from "./components/MatchesTab";
+import { LogboekTab } from "./components/LogboekTab";
 import type { AdminGebruiker } from "./types";
 import "./AdminPaneel.css";
 
-type Tab = "gebruikers" | "gasten" | "groepen";
+type Tab = "gebruikers" | "gasten" | "groepen" | "matches" | "logboek";
 
 export function AdminPaneel() {
   usePageTitle("Beheer");
@@ -92,6 +94,8 @@ export function AdminPaneel() {
           { id: "gebruikers", label: "Gebruikers", count: alle.length },
           { id: "gasten", label: "Gasten" },
           { id: "groepen", label: "Groepen" },
+          { id: "matches", label: "Matches" },
+          { id: "logboek", label: "Logboek" },
         ]}
         value={tab}
         onChange={setTab}
@@ -149,6 +153,8 @@ export function AdminPaneel() {
             binnenhaalt. */}
         {tab === "gasten" && <GastenTab />}
         {tab === "groepen" && <GroepenTab />}
+        {tab === "matches" && <MatchesTab />}
+        {tab === "logboek" && <LogboekTab />}
       </TabPanel>
 
       {gekozen && (
