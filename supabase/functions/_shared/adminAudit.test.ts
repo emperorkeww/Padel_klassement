@@ -46,6 +46,65 @@ describe("veiligeDetails", () => {
   });
 });
 
+describe("veiligeDetails voor de inhoudsacties (#1159)", () => {
+  it("bewaart wat er veranderde en niets daarbuiten", () => {
+    expect(
+      veiligeDetails("update_match_score", {
+        groep: "Vrijdagavond Padel",
+        oude_uitslag: "6-3",
+        nieuwe_uitslag: "6-4",
+        // Niet in de allow-list: valt weg.
+        match_id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      }),
+    ).toEqual({
+      groep: "Vrijdagavond Padel",
+      oude_uitslag: "6-3",
+      nieuwe_uitslag: "6-4",
+    });
+  });
+
+  it("maskeert alleen bij de acties waar het om adressen gáát", () => {
+    // De maskering hangt aan de actie en niet aan de veldnaam. Zou ze naar
+    // "van"/"naar" kijken, dan was elke niet-e-mailwaarde in zo'n veld
+    // "onbekend" geworden — een logboek dat niets meer vertelt.
+    expect(
+      veiligeDetails("set_group_owner", {
+        groep: "De Radioactieve Rakkers",
+        oude_eigenaar: "bob",
+        nieuwe_eigenaar: "dave",
+      }),
+    ).toEqual({
+      groep: "De Radioactieve Rakkers",
+      oude_eigenaar: "bob",
+      nieuwe_eigenaar: "dave",
+    });
+
+    expect(
+      veiligeDetails("move_match", {
+        groep: "Vrijdagavond Padel",
+        oud_moment: "2026-08-01T18:00:00Z",
+        nieuw_moment: "2026-08-02T18:00:00Z",
+      }),
+    ).toMatchObject({ oud_moment: "2026-08-01T18:00:00Z" });
+  });
+
+  it("houdt bij een verwijdering vast wat er weg is", () => {
+    expect(
+      veiligeDetails("delete_match", {
+        groep: "Vrijdagavond Padel",
+        status: "completed",
+        uitslag: "6-3",
+        spelers: "alice & bob vs carol & dave",
+      }),
+    ).toEqual({
+      groep: "Vrijdagavond Padel",
+      status: "completed",
+      uitslag: "6-3",
+      spelers: "alice & bob vs carol & dave",
+    });
+  });
+});
+
 describe("maskeerEmail", () => {
   it("houdt het domein leesbaar en de rest niet", () => {
     expect(maskeerEmail("remco@voorbeeld.be")).toBe("r***@voorbeeld.be");

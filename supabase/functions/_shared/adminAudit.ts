@@ -23,6 +23,29 @@ const TOEGESTAAN: Record<string, readonly string[]> = {
   // daarna niet meer, dus username en de aantallen zijn het enige wat nog
   // vertelt wie dit was en hoeveel er meeging.
   delete_user: ["username", "gasten", "groepen_zonder_eigenaar"],
+
+  // Inhoudsacties (#1159). Wélke match, groep of poll het was, staat in de
+  // kolommen target_type/target_id; hier staat wat er veranderde. Bij de
+  // verwijderingen is dit opnieuw het enige wat overblijft — de rij zelf is dan
+  // weg, dus de groep, de uitslag en de deelnemers staan erbij.
+  update_match_score: ["groep", "oude_uitslag", "nieuwe_uitslag"],
+  move_match: ["groep", "oud_moment", "nieuw_moment"],
+  delete_match: ["groep", "status", "uitslag", "spelers"],
+  set_poll_status: ["groep", "moment", "oude_status", "nieuwe_status"],
+  delete_poll: ["groep", "moment", "status", "stemmen"],
+  set_group_owner: ["groep", "oude_eigenaar", "nieuwe_eigenaar"],
+  remove_group_member: ["groep", "lid"],
+  delete_group: ["groep", "leden", "matches", "polls"],
+};
+
+/**
+ * Velden die als e-mailadres gemaskeerd het logboek in gaan — per actie, niet
+ * per veldnaam. Dat scheelt een valkuil: "van" en "naar" zijn bij fix_email
+ * adressen, maar bij een score-correctie of een verplaatsing juist niet, en een
+ * naamgebaseerde regel zou die stilzwijgend tot "onbekend" verminken.
+ */
+const MASKEER_ALS_EMAIL: Record<string, readonly string[]> = {
+  fix_email: ["van", "naar"],
 };
 
 /**
@@ -48,14 +71,16 @@ export function veiligeDetails(
   const toegestaan = TOEGESTAAN[actie];
   if (!toegestaan) return {};
 
+  const maskeren = MASKEER_ALS_EMAIL[actie] ?? [];
   const uit: Record<string, unknown> = {};
   for (const veld of toegestaan) {
     const waarde = payload[veld];
     if (waarde === undefined || waarde === null) continue;
     // E-mailvelden gaan altijd gemaskeerd het logboek in, ook als de aanroeper
     // het volledige adres meegeeft.
-    uit[veld] =
-      veld === "van" || veld === "naar" ? maskeerEmail(waarde) ?? "onbekend" : waarde;
+    uit[veld] = maskeren.includes(veld)
+      ? maskeerEmail(waarde) ?? "onbekend"
+      : waarde;
   }
   return uit;
 }
