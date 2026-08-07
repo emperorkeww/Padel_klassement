@@ -115,6 +115,14 @@ const GlasShowcase = import.meta.env.DEV
   ? lazy(() => import("@/ui/GlasShowcase"))
   : null;
 
+// Dev-stage voor de effect-swirls (#1151): de acht toestanden van de matchkaart
+// naast elkaar. Drie effecten op één match komen in seed-data zelden samen en
+// nooit in alle combinaties, dus zonder dit raster is een visuele review niet
+// reproduceerbaar. Zelfde voorwaarden als de showcases hierboven.
+const MatchEffectShowcase = import.meta.env.DEV
+  ? lazy(() => import("@/features/matches/components/MatchEffectShowcase"))
+  : null;
+
 function App() {
   const { pathname } = useLocation();
   return (
@@ -233,6 +241,9 @@ function App() {
           )}
           {GlasShowcase && (
             <Route path="/dev/glas" element={<GlasShowcase />} />
+          )}
+          {MatchEffectShowcase && (
+            <Route path="/dev/matcheffecten" element={<MatchEffectShowcase />} />
           )}
         </Routes>
       </Suspense>

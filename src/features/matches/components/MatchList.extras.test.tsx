@@ -31,14 +31,21 @@ function toon(extras?: (m: Match) => MatchExtras) {
 }
 
 describe("<MatchList /> met effect-extras (#1151)", () => {
-  it("toont de lef- en jokerregel die de hook aanlevert", () => {
-    toon(() => ({
+  it("toont de regel die de hook aanlevert, met een teller voor de rest", () => {
+    const { container } = toon(() => ({
       lef: "🎲 lef ×2 · Carol — verlies",
       joker: "🃏 Bob — 🛡️ Schild, winst",
       effecten: { lef: true, joker: true, inzet: false },
     }));
-    expect(screen.getByText(/lef ×2 · carol — verlies/i)).toBeInTheDocument();
+    // Sinds #1144 wint er één regel en telt de rest mee als "+n": de joker gaat
+    // vóór de lef-tip (één kaart per maand tegen één inzet per dag). Beide
+    // effecten blijven wél als kleurlaag zichtbaar — dat is precies wat de
+    // swirl toevoegt aan een kaart die maar één regel tekst overheeft.
     expect(screen.getByText(/schild, winst/i)).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    const kaart = container.querySelector(".match-card") as HTMLElement;
+    expect(kaart.hasAttribute("data-fx-lef")).toBe(true);
+    expect(kaart.hasAttribute("data-fx-joker")).toBe(true);
   });
 
   it("zwijgt wanneer de onthullingspoort de regels nog tegenhoudt", () => {
