@@ -1,4 +1,4 @@
-import { Suspense, useMemo, type ReactNode } from "react";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -18,6 +18,11 @@ import { GithubRibbon } from "@/app/GithubRibbon";
 import { HelpKnop } from "@/features/uitleg/components/HelpKnop";
 import { JokerKnop } from "@/features/matches/components/JokerKnop";
 import { AgendaKnop } from "@/features/agenda/components/AgendaKnop";
+import { BelKnop } from "@/features/meldingen/components/BelKnop";
+import { IconBel } from "@/features/meldingen/components/IconBel";
+import { MeldingenPaneel } from "@/features/meldingen/components/MeldingenPaneel";
+import { belLabel, tellerTekst } from "@/features/meldingen/bel";
+import { useMeldingen } from "@/features/meldingen/useMeldingen";
 import { useIsAdmin } from "@/features/admin/useIsAdmin";
 import { OfflineBanner } from "@/ui/OfflineBanner";
 import { useGlasScrollLicht } from "@/lib/hooks/useGlasScrollLicht";
@@ -145,6 +150,11 @@ export function DashboardLayout() {
   // Offline-wachtrij legen (#462): één keer bij opstarten en bij elke
   // herverbinding worden gequeuede matches alsnog verstuurd.
   useOutboxFlush();
+  // Meldingen-inbox (#1090). De hook hangt hier en niet in de knop, want twee
+  // ingangen — de bel op mobiel, de zijbalkregel op desktop — moeten dezelfde
+  // teller tonen en hetzelfde paneel openen. Eén paneelinstantie onderaan.
+  const meldingen = useMeldingen(myId);
+  const [meldingenOpen, setMeldingenOpen] = useState(false);
 
   return (
     <div className="shell">
@@ -172,6 +182,13 @@ export function DashboardLayout() {
           {/* Agenda (#1091): mobiel is dit de enige vaste ingang, want de
               onderbalk houdt zijn vijf slots. */}
           <AgendaKnop />
+          {/* Meldingen (#1090): om dezelfde reden hoort de bel hier en niet in
+              de onderbalk. Op desktop is deze balk verborgen en staat dezelfde
+              ingang in de zijbalk. */}
+          <BelKnop
+            ongelezen={meldingen.ongelezen}
+            onOpen={() => setMeldingenOpen(true)}
+          />
           <HelpKnop />
           <Link to="/profiel" className="topbar__profile" aria-label="Naar profiel">
             <Avatar profile={me} name={me ? undefined : (user?.email ?? "?")} size={32} />
@@ -193,6 +210,29 @@ export function DashboardLayout() {
           {sidebarGroepen.map((group) => (
             <div key={group.title} className="sidebar__group">
               <span className="sidebar__group-title">{group.title}</span>
+              {/* Meldingen op desktop (#1090). Geen NavItem maar een knop: hij
+                  opent hetzelfde paneel als de bel op mobiel in plaats van te
+                  navigeren. Zelfde uitzonderingsvorm als BEHEER hierboven —
+                  liever twee zichtbare bijzonderheden dan een generiek
+                  mechanisme voor twee gevallen. */}
+              {group.title === "Ik" && (
+                <button
+                  type="button"
+                  className="sidebar__link sidebar__link--knop"
+                  onClick={() => setMeldingenOpen(true)}
+                  aria-label={belLabel(meldingen.ongelezen)}
+                >
+                  <span className="sidebar__icon">
+                    <IconBel />
+                  </span>
+                  <span className="sidebar__label">Meldingen</span>
+                  {!!meldingen.ongelezen && (
+                    <span className="sidebar__teller" aria-hidden="true">
+                      {tellerTekst(meldingen.ongelezen)}
+                    </span>
+                  )}
+                </button>
+              )}
               {group.items.map((item) => {
                 const actief = isSectionActive(item, pathname);
                 return (
@@ -257,6 +297,16 @@ export function DashboardLayout() {
           </ErrorBoundary>
         </div>
       </main>
+
+      {/* Eén paneel voor beide ingangen (#1090). */}
+      <MeldingenPaneel
+        open={meldingenOpen}
+        onClose={() => setMeldingenOpen(false)}
+        meldingen={meldingen.meldingen}
+        laadt={meldingen.laadt}
+        limiet={meldingen.limiet}
+        onVeranderd={meldingen.herlaad}
+      />
 
       {/* Pack-opening bij hoofdtier-promotie (#500) of zeldzame badge (#615). */}
       <PackOpening

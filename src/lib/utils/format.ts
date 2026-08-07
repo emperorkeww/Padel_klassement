@@ -63,6 +63,35 @@ export function formatPlannedDay(
   return formatDate(iso);
 }
 
+/**
+ * Hoe lang geleden, kort: "nu", "5 min geleden", "2 u geleden", "3 dgn
+ * geleden", en vanaf een week een korte datum (#1090).
+ *
+ * Een meldingenlijst leest op tijdsafstand, niet op klokstand: "2 u geleden"
+ * zegt wat "14:32" pas zegt nadat je zelf hebt nagerekend hoe laat het is. Voor
+ * alles ouder dan een week draait dat om — dan is de datum juist concreter.
+ *
+ * Bewust geen Intl.RelativeTimeFormat: die maakt van 90 minuten "2 uur geleden"
+ * (afgerond) of "90 minuten geleden" (niet afgerond), en de eenheidkeuze zou
+ * hier alsnog met de hand moeten. `now` is injecteerbaar voor tests.
+ */
+export function formatRelatieveTijd(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!iso) return "";
+  const ms = now.getTime() - new Date(iso).getTime();
+  // Een klok die een seconde voorloopt op de server mag geen "in 1 min" tonen.
+  const minuten = Math.max(0, Math.floor(ms / 60_000));
+  if (minuten < 1) return "nu";
+  if (minuten < 60) return `${minuten} min geleden`;
+  const uren = Math.floor(minuten / 60);
+  if (uren < 24) return `${uren} u geleden`;
+  const dagen = Math.floor(uren / 24);
+  if (dagen < 7) return `${dagen} ${dagen === 1 ? "dag" : "dgn"} geleden`;
+  return formatDate(iso);
+}
+
 /** "12 spelers" / "1 speler" / "geen spelers" — de kern van een telmelding
  *  voor een screenreader (#924). */
 export function aantalTekst(

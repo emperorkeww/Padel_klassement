@@ -80,6 +80,39 @@
   font-weight: 600;
   transition: background 0.15s, color 0.15s;
 }
+/* De meldingenregel (#1090) is een <button> en geen link: hij opent een paneel
+   in plaats van te navigeren. Een knop erft geen font en brengt eigen rand- en
+   achtergrondregels mee, dus die worden hier teruggezet op wat .sidebar__link
+   al doet. */
+.sidebar__link--knop {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+/* De teller rechts op de regel, in hetzelfde vlak als de badge op de bel:
+   accent-ink op --accent-strong haalt 5,79 (licht) en 5,04 (donker) — zie de
+   nagerekende alternatieven in BelKnop.css. */
+.sidebar__teller {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--sp-1);
+  border-radius: 999px;
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 /* Hover heeft sinds #1074 een eigen vlak. Het leende --surface-2, en dat is de
    kleur van "een subtiel vlak binnen een kaart" — twee rollen op één token, en
    op donker daardoor geen van beide zichtbaar. */
@@ -281,6 +314,17 @@
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+  }
+  /* Vijf knoppen sinds de bel erbij kwam (#1090): joker, agenda, bel, ?, avatar.
+     Nagemeten in een iframe op echte telefoonbreedtes — merk (90) + acties (208)
+     + padding (32) is 330, dus onder ~330px liep de balk over en verdween de
+     avatar buiten beeld. Met --sp-2 past het tot 320. De vergrote tapvlakken
+     overlappen elkaar dan met een paar pixels; dat weegt niet op tegen een knop
+     die je helemaal niet kunt raken. */
+  @media (max-width: 359px) {
+    .topbar__acties {
+      gap: var(--sp-2);
+    }
   }
   .topbar__profile {
     position: relative;

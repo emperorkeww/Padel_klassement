@@ -59,6 +59,9 @@ export const CACHE_PREFIXES: Record<string, string[]> = {
     "bounties",
   ],
   point_appeal_votes: ["appeals"],
+  // Meldingen-inbox (#1090): de lijst in het paneel en de ongelezen-teller in
+  // de balk. Eén prefix dekt beide sleutels (meldingen:lijst / meldingen:ongelezen).
+  notifications: ["meldingen"],
 };
 
 // Kanaalnamen moeten uniek zijn per abonnee: twee hooks met dezelfde tabel en
