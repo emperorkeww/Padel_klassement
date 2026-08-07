@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
 import { GroupCardSkeleton } from "@/ui/Skeleton";
+import { Sheet } from "@/ui/Sheet";
 import type { AvatarSource } from "@/ui/Avatar";
 import { GroepKaart } from "./GroepKaart";
 import type { Journey } from "../journey";
@@ -18,6 +19,12 @@ import type { GroupSummary } from "../api";
  * filterchips van het clubblad en de paginatabs: een fade die er altijd staat
  * liegt zodra je aan het einde bent.
  */
+
+/** Vanaf hoeveel groepen "Alles bekijken" verschijnt. Tot en met vier kaarten
+ *  veeg je in één beweging door de rij; daarboven is de rij lang genoeg dat een
+ *  volledig overzicht sneller is dan zoeken. */
+export const ALLES_DREMPEL = 4;
+
 export function MijnGroepen({
   groepen,
   myId,
@@ -34,6 +41,17 @@ export function MijnGroepen({
 }) {
   const rijRef = useRef<HTMLDivElement>(null);
   const schaduw = useScrollSchaduw(rijRef);
+  const [allesOpen, setAllesOpen] = useState(false);
+
+  const kaart = (g: GroupSummary) => (
+    <GroepKaart
+      key={g.id}
+      groep={g}
+      eigenaar={g.created_by === myId}
+      profiles={profiles}
+      journey={journeys?.[g.id]}
+    />
+  );
 
   return (
     <section className="mijn-groepen" aria-labelledby="mijn-groepen-titel">
@@ -41,6 +59,20 @@ export function MijnGroepen({
         <h2 className="mijn-groepen__titel" id="mijn-groepen-titel">
           Mijn groepen
         </h2>
+        {/* Bewust een sheet en geen eigen route: /groepen is al een redirect
+            naar deze pagina, en een tweede scherm met dezelfde kaarten is een
+            tweede plek om te onderhouden. Het aantal staat ín het label, zodat
+            de toegankelijke naam de zichtbare tekst blijft bevatten (WCAG
+            2.5.3). */}
+        {!laadt && groepen.length > ALLES_DREMPEL && (
+          <button
+            type="button"
+            className="btn btn--sm mijn-groepen__alles"
+            onClick={() => setAllesOpen(true)}
+          >
+            Alles bekijken ({groepen.length})
+          </button>
+        )}
       </div>
 
       <div ref={rijRef} className="mijn-groepen__rij" data-schaduw={schaduw}>
@@ -52,17 +84,19 @@ export function MijnGroepen({
             <GroupCardSkeleton />
           </>
         ) : (
-          groepen.map((g) => (
-            <GroepKaart
-              key={g.id}
-              groep={g}
-              eigenaar={g.created_by === myId}
-              profiles={profiles}
-              journey={journeys?.[g.id]}
-            />
-          ))
+          groepen.map(kaart)
         )}
       </div>
+
+      {/* Dezelfde kaarten, onder elkaar. Geen tweede voorstelling van een groep
+          die uit de pas kan gaan lopen met de eerste. */}
+      <Sheet
+        open={allesOpen}
+        onClose={() => setAllesOpen(false)}
+        title="Mijn groepen"
+      >
+        <div className="mijn-groepen__lijst">{groepen.map(kaart)}</div>
+      </Sheet>
     </section>
   );
 }

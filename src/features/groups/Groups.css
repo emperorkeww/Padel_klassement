@@ -19,6 +19,16 @@
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+.mijn-groepen__alles {
+  flex-shrink: 0;
+}
+
+/* Dezelfde kaarten in het sheet, maar onder elkaar: daar is de volle breedte
+   beschikbaar en telt overzicht zwaarder dan compactheid. */
+.mijn-groepen__lijst {
+  display: grid;
+  gap: var(--sp-3);
+}
 
 /* Telefoon: een rij die per kaart snapt met de volgende kaart half in beeld —
    dát is wat verraadt dat er meer groepen zijn. De negatieve marge laat de rij
