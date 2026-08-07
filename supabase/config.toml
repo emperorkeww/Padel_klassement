@@ -404,6 +404,9 @@ deno_version = 2
 # hun authenticatie in de handler. Leg dit hier vast zodat CI-deploys hun
 # productiegedrag niet stilzwijgend veranderen. remind-group gebruikt juist
 # de platform-JWT-gate en houdt daarom de standaardwaarde `true`.
+[functions.calendar-feed]
+verify_jwt = false
+
 [functions.club-page]
 verify_jwt = false
 
