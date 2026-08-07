@@ -139,6 +139,56 @@ export type Database = {
           },
         ]
       }
+      calendar_feeds: {
+        Row: {
+          created_at: string
+          player_id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          player_id: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          player_id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_feeds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "calendar_feeds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "calendar_feeds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "calendar_feeds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       court_availability_snapshots: {
         Row: {
           date: string
@@ -2628,6 +2678,10 @@ export type Database = {
         Returns: number
       }
       bounty_value: { Args: { p_streak: number }; Returns: number }
+      calendar_feed_events: {
+        Args: { p_from: string; p_to: string; p_token: string }
+        Returns: Json
+      }
       cancel_guest_claim: { Args: { p_claim_id: string }; Returns: undefined }
       claim_guest_player: {
         Args: { p_guest_id: string; p_player_id: string }
@@ -2812,6 +2866,8 @@ export type Database = {
         Args: { p_appeal_id: string; p_venster_verlopen?: boolean }
         Returns: string
       }
+      revoke_calendar_feeds: { Args: never; Returns: undefined }
+      rotate_calendar_feed: { Args: never; Returns: string }
       season_player_standings: {
         Args: { p_end: string; p_start: string }
         Returns: {

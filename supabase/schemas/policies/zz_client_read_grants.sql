@@ -2,6 +2,7 @@
 -- worden door de client gelezen; RLS bepaalt vervolgens welke rijen zichtbaar
 -- zijn. De grant omzeilt dus geen privacy-policy.
 grant select on table
+  public.calendar_feeds,
   public.court_availability_snapshots,
   public.dictator_termijnen,
   public.friendships,
