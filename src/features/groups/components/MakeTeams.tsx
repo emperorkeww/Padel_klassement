@@ -22,6 +22,12 @@ import {
 import { tallyOption } from "@/features/groups/pollLogic";
 import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
+import {
+  bewaarKeuzes,
+  leesKeuzes,
+  pasKeuzesToe,
+  type AanwezigKeuzes,
+} from "@/features/groups/aanwezigOpslag";
 import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
 import { SpeelformaatKaart } from "@/features/groups/components/SpeelformaatKaart";
 import type { KiesbareSpeler } from "@/features/groups/spelersKiezer";
@@ -127,19 +133,42 @@ export function MakeTeams({
 
   // Handmatig bij te sturen selectie; nieuwe stemmen zijn de bron van
   // waarheid, de toggles een last-minute correctie.
+  //
+  // Sinds #1089 overleven die correcties een refresh. Wat we bewaren zijn niet
+  // de aanwezigen maar de afwijkingen per speler, zodat de poll de bron blijft
+  // voor iedereen die je nog niet hebt aangeraakt — zie aanwezigOpslag.ts.
   const defaultKey = (tonightYes ?? members.map((m) => m.player_id)).join(",");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const ledenKey = members.map((m) => m.player_id).join(",");
+  const [keuzes, setKeuzes] = useState<AanwezigKeuzes>({});
   useEffect(() => {
-    setSelected(new Set(defaultKey ? defaultKey.split(",") : []));
-  }, [defaultKey]);
+    setKeuzes(leesKeuzes(groupId, today));
+  }, [groupId, today]);
+
+  const selected = useMemo(
+    () =>
+      pasKeuzesToe(
+        ledenKey ? ledenKey.split(",") : [],
+        defaultKey ? defaultKey.split(",") : [],
+        keuzes,
+      ),
+    [ledenKey, defaultKey, keuzes],
+  );
+
+  /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt. */
+  const kiesAnders = (volgende: AanwezigKeuzes) => {
+    setKeuzes(volgende);
+    bewaarKeuzes(groupId, today, volgende);
+  };
 
   const toggle = (id: string) => {
-    setSelected((cur) => {
-      const next = new Set(cur);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    kiesAnders({ ...keuzes, [id]: !selected.has(id) });
+  };
+
+  /** Alles aan of alles uit: een expliciete keuze over iedereen tegelijk. */
+  const kiesAllen = (aan: boolean) => {
+    kiesAnders(
+      Object.fromEntries(members.map((m) => [m.player_id, aan])),
+    );
   };
 
   // De kiesbare spelers zoals ze in de chips komen te staan. De naam is ook
@@ -211,12 +240,8 @@ export function MakeTeams({
             : "Geen poll voor vandaag — alle leden staan aan."
         }
         onToggle={toggle}
-        onAlles={(aan) =>
-          setSelected(new Set(aan ? members.map((m) => m.player_id) : []))
-        }
-        onHerstel={() =>
-          setSelected(new Set(members.map((m) => m.player_id)))
-        }
+        onAlles={kiesAllen}
+        onHerstel={() => kiesAllen(true)}
       />
 
       {/* "Speelformaat" (#1089): de vormkeuze was drie tabs in een kaartkop met

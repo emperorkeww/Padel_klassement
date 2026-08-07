@@ -111,27 +111,6 @@
   margin-bottom: var(--sp-3);
 }
 
-/* Ronde-generator: rondekeuze + genereer-knop als één nette rij. */
-.gen-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-
-.gen-controls__rounds {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.gen-controls__rounds .select {
-  width: auto;
-}
-
 /* ---- "Wie speelt er?" (aanwezigheid per speeldag) ---- */
 .attendance-date {
   max-width: 170px;
