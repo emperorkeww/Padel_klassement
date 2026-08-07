@@ -154,6 +154,17 @@ const PAIRS = [
   ["toast-ink", "success", 3.0, "toast-tekst op succes-toast (groot/UI)"],
   ["toast-ink", "danger", 4.5, "toast-tekst op fout-toast (blijft staan)"],
   ["toast-ink", "ink", 4.5, "toast-tekst op info-toast"],
+  // Omgekeerd paneel (#1089): de speelformaat-kaart draait de pagina om, dus
+  // alles wat erop staat heeft een eigen ondergrond en valt buiten de
+  // surface-paren hierboven. De actieve tab is het eerste paar omgekeerd — het
+  // paneel als tekst op --paneel-om-ink — en heeft dus geen eigen regel nodig.
+  ["paneel-om-ink", "paneel-om", 4.5, "titel en waarden op het omgekeerde paneel"],
+  ["paneel-om-ink-soft", "paneel-om", 4.5, "beschrijving op het omgekeerde paneel"],
+  ["paneel-om-label", "paneel-om", 4.5, "meta-label op het omgekeerde paneel"],
+  ["paneel-om-ink-soft", "paneel-om-vlak", 4.5, "inactieve tab op het omgekeerde paneel"],
+  ["lime", "paneel-om", 4.5, "aanbevolen-badge op het omgekeerde paneel"],
+  ["lime-ink", "lime", 4.5, "knoptekst op de lime CTA"],
+  ["lime-ink", "lime-hover", 4.5, "knoptekst op de lime CTA onder de aanwijzer"],
 ];
 
 // Licht is de bestaande huisstijl: tekorten daar zijn bekend en rapporteren we

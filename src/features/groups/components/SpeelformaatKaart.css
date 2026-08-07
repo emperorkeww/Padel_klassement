@@ -1,0 +1,206 @@
+/* "Speelformaat" — het omgekeerde paneel met de vormkeuze en de start-CTA
+   (#1089). Maatvoering volgt de design-handoff; kleur komt uit de
+   --paneel-om-familie in index.css, die per thema de goede kant op draait. */
+
+.paneel-om {
+  background: var(--paneel-om);
+  color: var(--paneel-om-ink);
+  border: 1px solid var(--paneel-om-lijn);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-md);
+}
+/* .paneel-om is geen .card, dus het ritme tussen de kaarten valt hier weg. */
+.card + .paneel-om,
+.paneel-om + .card {
+  margin-top: var(--sp-5);
+}
+
+.speelvorm__kop {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.speelvorm__titel {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--paneel-om-ink);
+}
+
+/* De badge blijft staan en fade't alleen; verdwijnt hij helemaal, dan
+   verspringt de titelrij bij elke tabwissel. */
+.speelvorm__badge {
+  padding: 3px var(--sp-2);
+  border: 1px solid var(--lime);
+  border-radius: 999px;
+  color: var(--lime);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.speelvorm__badge[data-aan="ja"] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .speelvorm__badge {
+    transition: none;
+  }
+}
+
+/* De segment-tabs staan hier op het omgekeerde vlak: dezelfde vorm, andere
+   ondergrond. */
+.speelvorm .tabs--segment {
+  margin-top: var(--sp-3);
+  background: var(--paneel-om-vlak);
+  border-color: transparent;
+}
+.speelvorm .tab {
+  color: var(--paneel-om-ink-soft);
+}
+.speelvorm .tab:hover:not(.is-active) {
+  color: var(--paneel-om-ink);
+}
+.speelvorm .tab.is-active {
+  background: var(--paneel-om-ink);
+  color: var(--paneel-om);
+}
+
+.speelvorm__uitleg {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--paneel-om-ink-soft);
+}
+
+.speelvorm__meta {
+  display: flex;
+  gap: var(--sp-4);
+  margin: var(--sp-4) 0 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--paneel-om-lijn);
+}
+.speelvorm__meta > div {
+  flex: 1;
+  min-width: 0;
+}
+.speelvorm__meta dt {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--paneel-om-label);
+}
+.speelvorm__meta dd {
+  margin: 3px 0 0;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  color: var(--paneel-om-ink);
+}
+.speelvorm__bank {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--paneel-om-ink-soft);
+}
+
+/* Het rondegetal ís hier de keuze, dus de select draagt de vorm van de waarde
+   ernaast in plaats van die van een formulierveld. */
+.speelvorm__rondes {
+  padding: 2px var(--sp-1);
+  border: 1px solid var(--paneel-om-lijn);
+  border-radius: var(--radius-sm);
+  background: var(--paneel-om-vlak);
+  color: var(--paneel-om-ink);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.speelvorm__waarschuwing {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--paneel-om-ink-soft);
+}
+
+.speelvorm__cta {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.speelvorm__cta:hover:not(:disabled) {
+  background: var(--lime-hover);
+}
+.speelvorm__cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.speelvorm__verschil {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--sp-3);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--paneel-om-ink-soft);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.speelvorm__verschil:hover {
+  color: var(--lime);
+}
+.speelvorm__vraag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--paneel-om-lijn);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+/* De focusring van de app is smaragd op licht; op dit donkere vlak valt die
+   weg. Lime is precies waarvoor --focus-ring op donker al gekozen is. */
+.speelvorm__cta:focus-visible,
+.speelvorm__verschil:focus-visible,
+.speelvorm .tab:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (max-width: 380px) {
+  /* Drie kolommen met een uppercase label passen op 320px niet naast elkaar. */
+  .speelvorm__meta {
+    gap: var(--sp-3);
+  }
+  .speelvorm__meta dt {
+    letter-spacing: 0.04em;
+  }
+}

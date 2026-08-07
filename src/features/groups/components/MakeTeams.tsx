@@ -23,7 +23,9 @@ import { tallyOption } from "@/features/groups/pollLogic";
 import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
 import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
+import { SpeelformaatKaart } from "@/features/groups/components/SpeelformaatKaart";
 import type { KiesbareSpeler } from "@/features/groups/spelersKiezer";
+import type { Speelvorm } from "@/features/groups/speelformaat";
 import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -33,13 +35,7 @@ import "@/features/groups/Proposals.css";
 // partners) of Mexicano (paren op de stand). Vervangt de losse "Vanavond"-,
 // eerlijke-teams- en Americano/Mexicano-kaarten.
 
-type Format = "eerlijk" | "americano" | "mexicano";
-
-const FORMAT_LABEL: Record<Format, string> = {
-  eerlijk: "Eerlijk",
-  americano: "Americano",
-  mexicano: "Mexicano",
-};
+type Format = Speelvorm;
 
 export function MakeTeams({
   groupId,
@@ -67,6 +63,9 @@ export function MakeTeams({
   const [format, setFormat] = useState<Format>("eerlijk");
   const [roundsToGen, setRoundsToGen] = useState(1);
   const [busy, setBusy] = useState(false);
+  // Eerlijk levert geen ronde maar een voorstel; dat verschijnt pas als je erom
+  // vraagt, zodat het paneel niet meteen een half scherm aan teams uitrolt.
+  const [eerlijkGevraagd, setEerlijkGevraagd] = useState(false);
 
   const polls = useAsync<PlayPoll[]>(() => getGroupPolls(groupId), [groupId]);
   const options = useAsync<PollOption[]>(
@@ -220,119 +219,44 @@ export function MakeTeams({
         }
       />
 
-      <section className="card">
-        <div className="card__head">
-          <h2 className="card__title card__title--tight">Maak teams</h2>
-          <div className="tabs tabs--head" role="group" aria-label="Spelvorm">
-            {(Object.keys(FORMAT_LABEL) as Format[]).map((f) => (
-              <button
-                key={f}
-                className={`tab ${format === f ? "is-active" : ""}`}
-                onClick={() => setFormat(f)}
-              >
-                {FORMAT_LABEL[f]}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="card__subtitle">
-          {format === "eerlijk" &&
-            "Elo-gebalanceerde teams: wij berekenen de meest evenwichtige teams op basis van jullie Elo. Klaar voor een eerlijke strijd?"}
-          {format === "americano" &&
-            "Americano: iedereen speelt met en tegen iedereen. De ultieme mix-and-match vorm!"}
-          {format === "mexicano" &&
-            "Mexicano: dynamische paringen op basis van de live tussenstand — hoe beter je speelt, hoe zwaarder de tegenstand."}
-        </p>
-
-        <SpelvormUitleg />
-
-        {format !== "eerlijk" && (
-          <div className="gen-controls">
-            {format === "americano" && (
-              <label className="gen-controls__rounds">
-                <span>Rondes</span>
-                <select
-                  className="select"
-                  value={roundsToGen}
-                  onChange={(e) => setRoundsToGen(Number(e.target.value))}
-                >
-                  {/* Tot 10, gelijk aan de winner-card op de Plannen-tab (#727). */}
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <button
-              className="btn btn--primary"
-              disabled={busy || !enough || mexicanoBlocked}
-              onClick={generate}
-            >
-              {format === "americano"
-                ? roundsToGen === 1
-                  ? "Genereer Americano-ronde"
-                  : `Genereer ${roundsToGen} Americano-rondes`
-                : "Genereer Mexicano-ronde"}
-            </button>
-          </div>
-        )}
-
-        {!enough && (
-          <p className="msg msg--warn">
-            Minimaal 4 deelnemers nodig om teams te maken.
-          </p>
-        )}
-        {enough && mexicanoBlocked && (
-          <p className="msg msg--warn">
-            Vul eerst alle uitslagen van ronde {openRound!.round} in — Mexicano
-            paart op basis van de volledige stand.
-          </p>
-        )}
-      </section>
+      {/* "Speelformaat" (#1089): de vormkeuze was drie tabs in een kaartkop met
+          een losse alinea eronder — je koos zonder te zien wat de vorm met jouw
+          groep zou doen. Nu een omgekeerd paneel dat de belofte afmaakt
+          (spelers, banen, rondes) met één knop eronder. */}
+      <SpeelformaatKaart
+        vorm={format}
+        onVorm={setFormat}
+        aanwezig={selectedIds.length}
+        americanoRondes={roundsToGen}
+        onAmericanoRondes={setRoundsToGen}
+        bezig={busy}
+        blokkade={
+          !enough
+            ? "Minimaal 4 deelnemers nodig om teams te maken."
+            : mexicanoBlocked
+              ? `Vul eerst alle uitslagen van ronde ${openRound!.round} in — Mexicano paart op basis van de volledige stand.`
+              : null
+        }
+        onStart={() => {
+          // Eerlijk heeft geen generator maar een voorstel: de knop laat het
+          // voorstel verschijnen, en daar zit "Speel deze teams" onder.
+          if (format === "eerlijk") setEerlijkGevraagd(true);
+          else void generate();
+        }}
+      />
 
       {/* Eerlijk: het bestaande voorstel-met-voorbeeld, gevoed door de
-          deelnemers-selectie hierboven. */}
-      {format === "eerlijk" && enough && (
+          deelnemers-selectie hierboven en door de CTA van het paneel. */}
+      {format === "eerlijk" && enough && eerlijkGevraagd && (
         <FairTeamsCard
           groupId={groupId}
           playerIds={selectedIds}
           profiles={profiles}
           playedAt={startVanRonde(0)}
+          ingebed
         />
       )}
     </>
-  );
-}
-
-function SpelvormUitleg() {
-  return (
-    <details className="explainer">
-      <summary>Eerlijk, Americano of Mexicano — wat is het verschil?</summary>
-      <div className="explainer__body">
-        <dl>
-          <div>
-            <dt>Eerlijk</dt>
-            <dd>
-              Onze algoritmes puzzelen de meest <strong>evenwichtige duo's</strong> in elkaar op basis van jullie Elo. Sterk speelt met minder sterk, zodat elke match tot het einde spannend blijft. Je krijgt eerst een winstkans-prognose te zien voordat je de baan op gaat.
-            </dd>
-          </div>
-          <div>
-            <dt>Americano</dt>
-            <dd>
-              Iedereen wisselt constant door. De ideale mix-en-match vorm waarbij je elke ronde een <strong>nieuwe partner</strong> en andere tegenstanders treft. Geen tactisch gedoe met Elo of ranking, gewoon een ontspannen avond waarin je met iedereen een balletje slaat.
-            </dd>
-          </div>
-          <div>
-            <dt>Mexicano</dt>
-            <dd>
-              De stand bepaalt je lot. De ranglijst wordt na elke ronde opgemaakt, en per baan speelt de <strong>top met de subtop</strong> (1 met 4 tegen 2 met 3). Hoe beter je presteert, hoe sterker je tegenstanders. Zorg dat alle uitslagen binnen zijn voor je de volgende ronde start!
-            </dd>
-          </div>
-        </dl>
-      </div>
-    </details>
   );
 }
 
