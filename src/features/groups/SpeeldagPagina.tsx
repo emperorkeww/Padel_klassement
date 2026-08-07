@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -8,7 +8,9 @@ import { useBackTo } from "@/lib/hooks/useBackTo";
 import { ErrorRetry } from "@/ui/ErrorRetry";
 import { PollSkeleton } from "@/ui/Skeleton";
 import { getGroup, getGroupMembers } from "@/features/groups/api";
-import { getGroupMatches } from "@/features/matches/api";
+import { getGroupMatches, getTeamsMap } from "@/features/matches/api";
+import { getRatingHistoriesForMatches } from "@/features/standings/ratingsApi";
+import { upsetsByMatch } from "@/features/matches/upset";
 import { getProfilesMap } from "@/features/profiles/api";
 import {
   getGroupPollOptions,
@@ -17,10 +19,14 @@ import {
 } from "@/features/groups/pollsApi";
 import { pollOptions } from "@/features/groups/pollLogic";
 import {
-  roundsExistFor,
-  roundsMadeFor,
-} from "@/features/groups/planFlowLogic";
+  matchesVoorSpeeldag,
+  speeldagMoment,
+} from "@/features/groups/speeldagMatches";
+import { rondesOpDag } from "@/features/groups/speeldagRondes";
+import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
+import { RondeBlok } from "@/features/groups/components/RondeBlok";
+import type { Match } from "@/types";
 import "@/features/groups/Proposals.css";
 
 /* ------------------------------------------------------------------ */
@@ -31,9 +37,13 @@ import "@/features/groups/Proposals.css";
 /* agenda de ingang is, hoort de speeldag zelf adresseerbaar te zijn —  */
 /* een deel-link, een pushbericht en de feed wijzen allemaal hierheen.  */
 /*                                                                     */
-/* De pagina is met opzet dun: ze haalt op wat PollCard nodig heeft en  */
-/* zet die neer. Alle handelingen (kiezen, boeken, rondes, delen)       */
-/* wonen in PollCard en WinnerCard en blijven daar.                     */
+/* Alle handelingen rond de póll (kiezen, boeken, rondes klaarzetten,   */
+/* delen) wonen in PollCard en WinnerCard en blijven daar.              */
+/*                                                                     */
+/* Sinds #1133 staan de wedstrijden van die dag er ook (#1133). Ze      */
+/* stonden alleen op de Spelen-tab, en die filtert hard op vandaag:     */
+/* zette je vanuit de agenda de rondes klaar voor volgende week, dan    */
+/* waren ze nergens te zien — ook niet op de pagina waar je ze maakte.  */
 /* ------------------------------------------------------------------ */
 
 export function SpeeldagPagina() {
@@ -59,11 +69,42 @@ export function SpeeldagPagina() {
   const votes = useAsync(() => getGroupPollVotes(groupId), [groupId], {
     enabled: heeftGroep,
   });
-  // Alleen voor de Klaar-fase: staan er al rondes klaar voor deze speeldag?
+  // De volledige groepshistorie: waar de wedstrijden van deze dag uit komen,
+  // en tegelijk de context die de geplande kaarten gebruiken (rivaliteit,
+  // coach). De dagfilter zit hieronder, niet in de query.
   const matches = useAsync(() => getGroupMatches(groupId), [groupId], {
     enabled: heeftGroep,
   });
   const profiles = useAsync(getProfilesMap, []);
+
+  // Het vastgelegde moment bepaalt welke dag deze pagina laat zien. Zolang er
+  // niets vastligt (open of geannuleerd) is er geen dag en dus geen blok.
+  const moment = useMemo(() => {
+    const p = poll.data;
+    const o = options.data;
+    if (p == null || o == null) return null;
+    return speeldagMoment(p, pollOptions(p, o));
+  }, [poll.data, options.data]);
+
+  const dagMatches = useMemo(
+    () =>
+      moment
+        ? matchesVoorSpeeldag(matches.data ?? [], moment.dag, moment.tz)
+        : [],
+    [moment, matches.data],
+  );
+
+  // Teams en rating-historie horen bij de wedstrijdkaarten, dus ze hoeven pas
+  // te laden zodra die er zijn. Bewust `…ForMatches` en niet de "recente"
+  // historie: een speeldag uit het verleden valt daar buiten.
+  const heeftMatches = dagMatches.length > 0;
+  const teams = useAsync(getTeamsMap, [], { enabled: heeftMatches });
+  const matchIds = dagMatches.map((m) => m.id).join(",");
+  const histories = useAsync(
+    () => getRatingHistoriesForMatches(matchIds ? matchIds.split(",") : []),
+    [matchIds],
+    { enabled: heeftMatches },
+  );
 
   usePageTitle(group.data ? `Speeldag — ${group.data.name}` : null);
 
@@ -83,11 +124,31 @@ export function SpeeldagPagina() {
   // Klaar-fase tonen, nog vóór de matches-reload landt (zoals PlanTab deed).
   const [rondesGezet, setRondesGezet] = useState(false);
 
+  // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
+  // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
+  // uitslagen blijft open — zelfde afspraak als op de Spelen-tab.
+  const [geklapt, setGeklapt] = useState<Record<number, boolean>>({});
+  const rondeOpen = (round: number, list: Match[]) =>
+    geklapt[round] ?? list.some((m) => m.status !== "completed");
+
+  const upsets = useMemo(
+    () => upsetsByMatch(dagMatches, teams.data ?? {}, histories.data ?? {}),
+    [dagMatches, teams.data, histories.data],
+  );
+
   function herlaad() {
     poll.reload();
     options.reload();
     votes.reload();
     matches.reload();
+  }
+
+  /** Na een uitslag, correctie of verwijdering: de match zelf én alles wat
+   *  eruit volgt (teams bij een nieuwe combinatie, rating-historie). */
+  function herlaadMatches() {
+    herlaad();
+    teams.reload();
+    histories.reload();
   }
 
   const fout = poll.error ?? group.error ?? options.error ?? votes.error;
@@ -134,7 +195,14 @@ export function SpeeldagPagina() {
   }
 
   const eigenOpties = pollOptions(speeldag, alleOpties);
-  const alleMatches = matches.data ?? [];
+  // Rondes die op deze dag klaarstaan. Dit verving de oude afleiding uit
+  // planFlowLogic ("aangemaakt ná booked_at"), die twee speeldagen in dezelfde
+  // week door elkaar haalde; de dag zelf is een scherpere sleutel.
+  const rondesKlaar = moment
+    ? rondesOpDag(dagMatches, moment.tz, moment.dag)
+    : 0;
+  const rondes = groupByRound(dagMatches);
+  const intensiteit = groep.roast_intensiteit ?? "radioactief";
 
   return (
     <div>
@@ -165,10 +233,51 @@ export function SpeeldagPagina() {
         myId={myId}
         isOwner={groep.created_by === myId}
         onChanged={herlaad}
-        roundsExist={roundsExistFor(speeldag, alleMatches) || rondesGezet}
-        rondesVandaag={roundsMadeFor(speeldag, alleMatches)}
+        roundsExist={rondesKlaar > 0 || rondesGezet}
+        rondesVandaag={rondesKlaar}
         onRoundsMade={() => setRondesGezet(true)}
       />
+
+      {/* De wedstrijden van deze dag (#1133) — dezelfde rondeblokken als op de
+          Spelen-tab, zodat een uitslag invullen overal hetzelfde werkt. Losse
+          partijen van die dag staan er onder "Losse matches" bij: ze horen bij
+          de avond, precies zoals in de Spelen-tab. */}
+      {rondes.length > 0 && (
+        <section className="card" id="speeldag-wedstrijden">
+          <div className="card__head">
+            <h2 className="card__title card__title--tight">Wedstrijden</h2>
+          </div>
+          <p className="card__subtitle">
+            De wedstrijden van deze speeldag — vul de uitslagen in en de
+            groepsstand rekent mee.
+          </p>
+
+          <div className="rounds">
+            {rondes.map(({ round, list }) => (
+              <RondeBlok
+                key={round}
+                round={round}
+                list={list}
+                open={rondeOpen(round, list)}
+                onToggle={() =>
+                  setGeklapt((cur) => ({
+                    ...cur,
+                    [round]: !rondeOpen(round, list),
+                  }))
+                }
+                teams={teams.data ?? {}}
+                profiles={profiles.data ?? {}}
+                myId={myId}
+                isOwner={groep.created_by === myId}
+                matches={matches.data ?? []}
+                intensiteit={intensiteit}
+                upsets={upsets}
+                onMatches={herlaadMatches}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
