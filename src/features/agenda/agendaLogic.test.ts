@@ -3,13 +3,18 @@ import {
   buildMarkers,
   dagLabel,
   daysInMonth,
+  maandLabel,
   maandVan,
   markersByDay,
   monthGrid,
   schuifMaand,
   splitMarkers,
+  tijdvak,
+  toetsStap,
   weekVan,
   windowFor,
+  zelfdeDagAndereMaand,
+  zelfdeMaand,
 } from "./agendaLogic";
 import type { GroupSummary } from "@/features/groups/api";
 import type {
@@ -160,6 +165,54 @@ describe("maandvenster", () => {
     ]);
     // Een zondag hoort bij de wéék die eraan voorafgaat, niet aan de volgende.
     expect(weekVan("2026-08-16")[0]).toBe("2026-08-10");
+  });
+});
+
+describe("toetsStap", () => {
+  it("loopt met de pijltjes per dag en per week", () => {
+    expect(toetsStap("2026-08-13", "ArrowLeft")).toBe("2026-08-12");
+    expect(toetsStap("2026-08-13", "ArrowRight")).toBe("2026-08-14");
+    expect(toetsStap("2026-08-13", "ArrowUp")).toBe("2026-08-06");
+    expect(toetsStap("2026-08-13", "ArrowDown")).toBe("2026-08-20");
+  });
+
+  it("springt met Home/End naar de rand van de week", () => {
+    expect(toetsStap("2026-08-13", "Home")).toBe("2026-08-10");
+    expect(toetsStap("2026-08-13", "End")).toBe("2026-08-16");
+    // Op de randen zelf blijft de dag staan.
+    expect(toetsStap("2026-08-10", "Home")).toBe("2026-08-10");
+    expect(toetsStap("2026-08-16", "End")).toBe("2026-08-16");
+  });
+
+  it("stapt met PageUp/PageDown een maand, en kapt af op een kortere", () => {
+    expect(toetsStap("2026-08-13", "PageUp")).toBe("2026-07-13");
+    expect(toetsStap("2026-08-13", "PageDown")).toBe("2026-09-13");
+    expect(zelfdeDagAndereMaand("2026-03-31", 1)).toBe("2026-04-30");
+    expect(zelfdeDagAndereMaand("2026-03-30", -1)).toBe("2026-02-28");
+  });
+
+  it("laat onbekende toetsen met rust", () => {
+    expect(toetsStap("2026-08-13", "Enter")).toBeNull();
+    expect(toetsStap("2026-08-13", "a")).toBeNull();
+    expect(toetsStap("2026-08-13", "Tab")).toBeNull();
+  });
+
+  it("loopt over een maand- en jaargrens heen", () => {
+    expect(toetsStap("2026-08-31", "ArrowRight")).toBe("2026-09-01");
+    expect(toetsStap("2026-12-31", "ArrowDown")).toBe("2027-01-07");
+  });
+});
+
+describe("labels", () => {
+  it("noemt de maand voluit", () => {
+    expect(maandLabel({ jaar: 2026, maand: 8 })).toBe("augustus 2026");
+    expect(zelfdeMaand({ jaar: 2026, maand: 8 }, maandVan("2026-08-31"))).toBe(true);
+    expect(zelfdeMaand({ jaar: 2026, maand: 8 }, maandVan("2026-09-01"))).toBe(false);
+  });
+
+  it("rekent het tijdvak uit, ook over middernacht", () => {
+    expect(tijdvak("20:00", 90)).toBe("20:00 — 21:30");
+    expect(tijdvak("23:00", 120)).toBe("23:00 — 01:00");
   });
 });
 

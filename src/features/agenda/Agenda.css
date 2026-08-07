@@ -1,0 +1,586 @@
+/* Agenda (#1091): maandraster met de speeldagen van al je groepen.
+
+   Twee dingen sturen dit blad. De statusglyph draagt de status in zijn *vorm*
+   (vol / open / gestreept), zodat kleur nergens het enige onderscheid is
+   (WCAG 1.4.1). En de lege dag heeft een streepjesrand: dat is het signaal dat
+   er iets te plannen valt — het verschil tussen "hier staat niets" en "hier kan
+   iets". */
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ---- Maandnavigatie ---- */
+
+.agenda-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.agenda-nav__stap {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.agenda-nav__knop {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.agenda-nav__knop:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.agenda-nav__knop:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.agenda-nav__maand {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.agenda-nav__vandaag {
+  padding: 6px var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.agenda-nav__vandaag:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- Weekstrook ---- */
+
+.agenda-week {
+  padding: var(--sp-3);
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.agenda-week__label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.agenda-week__rij {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-week__dag {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 5px 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.agenda-week__dag.is-vandaag {
+  background: var(--accent-soft);
+  border: 1.5px solid var(--accent);
+}
+.agenda-week__dag.is-vandaag .agenda-week__nummer {
+  color: var(--accent);
+}
+
+.agenda-week__letter {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.agenda-week__nummer {
+  font-family: var(--font-rounded);
+  font-size: 0.9375rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Vaste plek, ook leeg: anders verspringt de rij per dag. */
+.agenda-week__glyph {
+  display: block;
+  height: 8px;
+}
+
+/* ---- Statusglyphs ---- */
+
+.agenda-glyph {
+  display: inline-block;
+  flex: none;
+  border-radius: 2px;
+}
+.agenda-glyph--booked {
+  background: var(--accent);
+}
+.agenda-glyph--locked {
+  border: 2px solid var(--accent);
+}
+.agenda-glyph--open {
+  border: 1.5px dashed var(--ink-soft);
+}
+.agenda-glyph--past {
+  background: var(--line-strong);
+}
+
+/* ---- Maandraster ---- */
+
+.agenda-raster__koppen {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: var(--sp-1);
+}
+
+.agenda-raster__kop {
+  text-align: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.agenda-raster__grid {
+  display: grid;
+  gap: 3px;
+}
+
+.agenda-raster__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.agenda-raster__cel {
+  display: grid;
+  min-width: 0;
+}
+
+.agenda-dag {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 78px;
+  padding: 4px 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+}
+.agenda-dag:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* De streepjesrand is het signaal "hier kun je iets plannen". */
+.agenda-dag--leeg {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+  box-shadow: none;
+}
+
+.agenda-dag--vandaag {
+  border: 1.5px solid var(--accent);
+}
+.agenda-dag--vandaag .agenda-dag__nummer {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.agenda-dag--buiten {
+  opacity: 0.35;
+  border-color: transparent;
+}
+
+.agenda-dag--verleden .agenda-dag__nummer {
+  color: var(--placeholder);
+}
+
+.agenda-dag__nummer {
+  font-family: var(--font-rounded);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 1px 2px;
+}
+
+.agenda-dag__meer {
+  padding-left: 2px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ---- Marker in een dagcel ---- */
+
+.agenda-marker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.agenda-marker--booked {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+.agenda-marker--locked {
+  background: var(--surface);
+  border: 1px solid var(--accent-line);
+}
+.agenda-marker--open {
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+}
+.agenda-marker--past {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.agenda-marker__tekst {
+  display: grid;
+  min-width: 0;
+}
+
+.agenda-marker__tijd {
+  font-family: var(--font-rounded);
+  font-size: 0.59375rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.agenda-marker__groep,
+.agenda-marker__hint {
+  font-size: 0.53125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Legenda ---- */
+
+.agenda-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.agenda-legenda__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Instap-kaart bij een lege maand ---- */
+
+.agenda-instap {
+  padding: var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.agenda-instap__titel {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  font-weight: 900;
+}
+
+.agenda-instap__tekst {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.agenda-instap__wijs {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.agenda-instap__cel {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 8px;
+}
+
+/* ---- Laadvorm ---- */
+
+.agenda-skelet-dag {
+  display: block;
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--skeleton-hi);
+}
+
+/* ---- Dag-sheet ---- */
+
+.dagsheet {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.dagsheet__datum {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.dagsheet__titel {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.375rem;
+  font-weight: 900;
+}
+
+.dagsheet__leeg {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.dagsheet__speeldag {
+  display: grid;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+}
+.dagsheet__speeldag:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.dagsheet__kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.dagsheet__tijd {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.375rem;
+  font-weight: 900;
+}
+
+.dagsheet__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px var(--sp-3);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dagsheet__badge--booked {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* Op het accentvlak moet de volle glyph juist wit zijn. */
+.dagsheet__badge--booked .agenda-glyph--booked {
+  background: var(--accent-ink);
+}
+.dagsheet__badge--locked {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+}
+.dagsheet__badge--open,
+.dagsheet__badge--past {
+  background: var(--surface-2);
+  color: var(--ink-soft-strong);
+}
+
+.dagsheet__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.dagsheet__chip {
+  padding: 4px var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.dagsheet__chip--groep {
+  font-weight: 700;
+}
+
+.dagsheet__tegels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-2);
+}
+
+.dagsheet__tegel {
+  display: grid;
+  gap: 2px;
+  padding: 10px var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.dagsheet__tegel-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.dagsheet__tegel-waarde {
+  font-weight: 700;
+}
+
+.dagsheet__code {
+  font-family: var(--font-rounded);
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.dagsheet__nogboeken {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft-strong);
+}
+
+.dagsheet__stemmers {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.dagsheet__avatars {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+}
+.dagsheet__avatars .avatar:not(:first-child) {
+  margin-left: -6px;
+}
+.dagsheet__avatars .avatar {
+  border: 2px solid var(--surface);
+}
+
+.dagsheet__rest {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.dagsheet__actie {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ---- Desktop: bredere cellen, volledige markertekst ---- */
+
+@media (min-width: 720px) {
+  .agenda-raster__koppen,
+  .agenda-raster__grid,
+  .agenda-raster__week {
+    gap: 6px;
+  }
+
+  .agenda-dag {
+    min-height: 96px;
+    padding: 6px;
+    gap: 3px;
+  }
+
+  .agenda-dag__nummer {
+    font-size: var(--fs-xs);
+  }
+
+  /* Op deze breedte past de hele regel: "20:00 · Vamos! · nog boeken". */
+  .agenda-marker {
+    padding: 4px 6px;
+  }
+  .agenda-marker__tekst {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .agenda-marker__tijd,
+  .agenda-marker__groep,
+  .agenda-marker__hint {
+    font-size: 0.71875rem;
+    font-weight: 700;
+  }
+  .agenda-marker__groep::before,
+  .agenda-marker__hint::before {
+    content: "· ";
+  }
+  .agenda-marker__hint:empty {
+    display: none;
+  }
+}

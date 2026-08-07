@@ -21,6 +21,7 @@ const PlayerProfile = lazy(() => import("@/features/profiles/PlayerProfile"));
 const MatchDetail = lazy(() => import("@/features/matches/MatchDetail"));
 const ProfileSettings = lazy(() => import("@/features/account/ProfileSettings"));
 const Availability = lazy(() => import("@/features/availability/Availability"));
+const Agenda = lazy(() => import("@/features/agenda/Agenda"));
 const Uitleg = lazy(() => import("@/features/uitleg/Uitleg"));
 const AdminPaneel = lazy(() => import("@/features/admin/AdminPaneel"));
 const NotFound = lazy(() => import("@/features/misc/NotFound"));
@@ -141,6 +142,8 @@ function App() {
               <Route path="/klassement" element={<Leaderboard />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/banen" element={<Availability />} />
+              {/* Agenda (#1091): de speeldagen van al je groepen in de tijd. */}
+              <Route path="/agenda" element={<Agenda />} />
               {/* "Hoe werkt het?" (#989): de centrale uitleg, bereikbaar via
                   de ?-knop in de shell op elk scherm. */}
               <Route path="/uitleg" element={<Uitleg />} />
