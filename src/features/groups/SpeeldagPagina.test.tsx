@@ -22,7 +22,7 @@ vi.mock("@/features/auth/AuthProvider", () => ({
 }));
 
 import { SpeeldagPagina } from "./SpeeldagPagina";
-import { GROUP_MEMBERS, GROUPS, PROFILES } from "@/test/fixtures";
+import { GROUP_MEMBERS, GROUPS, PROFILES, TEAMS } from "@/test/fixtures";
 
 const baseClub = {
   club_id: "91d8d419-3736-498e-90be-362de786d588",
@@ -74,6 +74,24 @@ const bookedOption = {
   date: "2030-01-10",
   start_time: "19:00",
 };
+
+/** Een wedstrijd van de geboekte speeldag: 19:00 clubtijd op 10 jan 2030. */
+const dagMatch = (overrides: Record<string, unknown> = {}) => ({
+  id: "m-dag",
+  team_a_id: "t-ab",
+  team_b_id: "t-cd",
+  status: "scheduled",
+  winner_team_id: null,
+  played_at: "2030-01-10T18:00:00.000Z",
+  created_by: "p1",
+  created_at: NOW,
+  group_id: "g1",
+  round_number: 1,
+  score_a: null,
+  score_b: null,
+  format: "2v2",
+  ...overrides,
+});
 
 const vote = (optionId: string, playerId: string, status = "yes") => ({
   option_id: optionId,
@@ -215,6 +233,46 @@ describe("<SpeeldagPagina />", () => {
     expect(
       screen.getByRole("button", { name: /genereer wedstrijden/i }),
     ).toBeInTheDocument();
+  });
+
+  // De kern van #1133: de wedstrijden van die dag horen op de pagina waar je
+  // ze klaarzet. Ze stonden alleen op de Spelen-tab, en die toont uitsluitend
+  // vandaag — een speeldag volgende week was dus nergens te zien.
+  it("toont de wedstrijden van deze speeldag", async () => {
+    tables.play_polls = [bookedPoll];
+    tables.teams = TEAMS;
+    tables.matches = [
+      dagMatch(),
+      dagMatch({ id: "m-los", round_number: null }),
+      // Een andere dag: hoort hier niet thuis, ook al zit hij in dezelfde groep.
+      dagMatch({ id: "m-andere-dag", played_at: "2030-01-11T18:00:00.000Z" }),
+    ];
+    renderPagina("poll-booked");
+
+    expect(
+      await screen.findByRole("heading", { name: /^wedstrijden$/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /ronde 1/i })).toBeInTheDocument();
+    // Losse partijen van diezelfde avond horen erbij, net als in de Spelen-tab.
+    expect(
+      screen.getByRole("heading", { name: /losse matches/i }),
+    ).toBeInTheDocument();
+    // Twee rondeblokken (ronde 1 + los), niet drie: de match van de dag erna
+    // valt buiten deze speeldag.
+    expect(screen.getAllByText(/0\/1 uitslagen/i)).toHaveLength(2);
+  });
+
+  // Zolang er geen moment vastligt is er geen dag, en dus ook geen dagfilter
+  // die zinnig is. Dan hoort er geen wedstrijdenblok te staan.
+  it("houdt het wedstrijdenblok weg zolang er niets vastligt", async () => {
+    tables.teams = TEAMS;
+    tables.matches = [dagMatch({ played_at: "2030-01-05T19:00:00.000Z" })];
+    renderPagina("poll-open");
+
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+    expect(
+      screen.queryByRole("heading", { name: /^wedstrijden$/i }),
+    ).not.toBeInTheDocument();
   });
 
   // RLS maakt een poll uit een vreemde groep onvindbaar; dat is hetzelfde

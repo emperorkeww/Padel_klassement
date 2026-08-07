@@ -12,9 +12,13 @@ import { formatTime } from "@/lib/utils/format";
 import { rondeWinnaars } from "../dagStatus";
 import type { Upset } from "@/features/matches/upset";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
+import "./RondeBlok.css";
 
 /* ------------------------------------------------------------------ */
-/* Eén ronde van vandaag (#839).                                       */
+/* Eén ronde van een speeldag (#839).                                  */
+/*                                                                     */
+/* Sinds #1133 niet meer per se vandaag: de speeldagpagina toont met   */
+/* dezelfde blokken de rondes van de dag die je uit de agenda opende.  */
 /*                                                                     */
 /* Twee dingen die het issue los benoemde, maar die in dezelfde lijst  */
 /* zitten:                                                             */
