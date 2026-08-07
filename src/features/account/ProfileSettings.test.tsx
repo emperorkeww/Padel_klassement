@@ -239,7 +239,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
     renderPage();
     await openTab(/meldingen & privacy/i);
     expect(
-      await screen.findByText(/in deze browser niet ondersteund/i),
+      await screen.findByText(/werken niet in deze browser/i),
     ).toBeInTheDocument();
   });
 
@@ -272,7 +272,7 @@ describe("<ProfileSettings /> — meldingen (#412)", () => {
     renderPage();
     await openTab(/meldingen & privacy/i);
     await userEvent.click(
-      await screen.findByRole("button", { name: /meldingen uitzetten/i }),
+      await screen.findByRole("button", { name: /pushmeldingen uitzetten/i }),
     );
     expect(disablePush).toHaveBeenCalled();
     expect(await screen.findByText(/uitgeschakeld/i)).toBeInTheDocument();
@@ -303,7 +303,7 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
     renderPage();
     await openTab(/meldingen & privacy/i);
     expect(
-      await screen.findByRole("heading", { name: /welke meldingen wil je/i }),
+      await screen.findByRole("heading", { name: /waarvoor mag je toestel piepen/i }),
     ).toBeInTheDocument();
     const toggles = [
       await screen.findByRole("switch", { name: /nieuwe ronde/i }),
@@ -322,7 +322,9 @@ describe("<ProfileSettings /> — notificatie-voorkeuren (#57)", () => {
     await userEvent.click(
       await screen.findByRole("switch", { name: /nieuwe ronde/i }),
     );
-    expect(await screen.findByText(/meldingen bijgewerkt/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/pushmeldingen bijgewerkt/i),
+    ).toBeInTheDocument();
   });
 });
 
@@ -395,14 +397,14 @@ describe("<ProfileSettings /> — tabs (#70)", () => {
     expect(await screen.findByText(PASSWORD_RULE)).toBeInTheDocument();
   });
 
-  it("splitst meldingen in dit apparaat en al je apparaten", async () => {
+  it("splitst push op dit apparaat en de voorkeuren voor al je apparaten", async () => {
     renderPage();
     await openTab(/meldingen & privacy/i);
     expect(
-      await screen.findByRole("heading", { name: /meldingen op dit apparaat/i }),
+      await screen.findByRole("heading", { name: /pushmeldingen op dit apparaat/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /welke meldingen wil je/i }),
+      screen.getByRole("heading", { name: /waarvoor mag je toestel piepen/i }),
     ).toBeInTheDocument();
   });
 
