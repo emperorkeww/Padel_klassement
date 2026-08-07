@@ -13,12 +13,16 @@
 // 4. Rondes klaarzetten: staat er op de ochtend van de speeldag nog geen
 //    enkele ronde, dan zet de cron er zelf een reeks klaar (#827/#846).
 //
+// De twee eigen pushes (laatste kans, speeldag) lopen via de gedeelde bezorger
+// (#1090, ../_shared/meldingenBezorger.ts) en belanden dus ook in de inbox; de
+// meldingen bij het locken en boeken komen van de webhook naar send-push.
+//
 // Deploy ZONDER JWT-verificatie en beveilig met het gedeelde geheim:
 //   supabase functions deploy poll-deadline --no-verify-jwt
 //   (CRON_SECRET, VAPID_* zijn dezelfde secrets als match-reminders.)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
+import { bezorg } from "../_shared/meldingenBezorger.ts";
 import { cronGuard } from "../_shared/cronAuth.ts";
 import { dagInZone } from "../_shared/klok.ts";
 import {
@@ -44,12 +48,6 @@ import {
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
-
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:beheer@vamos.example",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
 );
 
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
@@ -86,32 +84,6 @@ function clubEpoch(date: string, time: string, timeZone = TIME_ZONE): number {
     new Date(naive).toLocaleString("en-US", { timeZone: "UTC" }),
   ).getTime();
   return naive - (inZone - utc);
-}
-
-async function pushTo(recipients: string[], payload: unknown): Promise<number> {
-  if (recipients.length === 0) return 0;
-  const { data: subs } = await admin
-    .from("push_subscriptions")
-    .select("endpoint, p256dh, auth")
-    .in("user_id", recipients);
-  let sent = 0;
-  await Promise.all(
-    (subs ?? []).map(async (s) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify(payload),
-        );
-        sent += 1;
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode;
-        if (status === 404 || status === 410) {
-          await admin.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
-        }
-      }
-    }),
-  );
-  return sent;
 }
 
 type PollRow = {
@@ -308,12 +280,14 @@ Deno.serve(async (req) => {
         // Tekst en titel uit een pool (#189): deze push ging altijd woord voor
         // woord hetzelfde de deur uit. Geseed op de poll, zodat één poll bij
         // elke ontvanger dezelfde regel krijgt (het is één groepsmelding).
-        result.lastCall += await pushTo(silent, {
+        result.lastCall += (await bezorg(admin, [{
+          recipients: silent,
           title: kiesTitel(TITEL_LAATSTE_KANS, poll.id),
           body: kiesUit(POLL_LAATSTE_KANS, roastSeed(poll.id, "laatste-kans")),
           url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
+          soort: "poll",
           tag: `poll-${poll.id}`,
-        });
+        }])).sent;
         await admin
           .from("play_polls")
           .update({ deadline_notified_at: new Date().toISOString() })
@@ -391,7 +365,8 @@ Deno.serve(async (req) => {
       // Alleen bij een geboekte baan — een code zonder boeking zegt niets.
       const geboekt = poll.status === "booked";
       const code = geboekt ? poll.access_code : null;
-      result.dayOf += await pushTo(players, {
+      result.dayOf += (await bezorg(admin, [{
+        recipients: players,
         title: kiesTitel(TITEL_SPEELDAG, poll.id),
         body:
           `Jullie spelen om ${locked.start_time}` +
@@ -399,8 +374,13 @@ Deno.serve(async (req) => {
           (code ? ` · code ${code}` : "") +
           `. ${kiesUit(SPEELDAG_VANDAAG, roastSeed(poll.id, "speeldag"))}`,
         url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
+        // Bewust 'poll' en niet 'speeldag_herinnering': deze melding hangt aan
+        // de poll (zelfde tag, zelfde link) en had vóór #1090 geen enkele
+        // voorkeurfilter. 'speeldag_herinnering' zou hem stil onder
+        // notify_match_reminder schuiven.
+        soort: "poll",
         tag: `poll-${poll.id}`,
-      });
+      }])).sent;
       await admin
         .from("play_polls")
         .update({ dayof_notified_at: new Date().toISOString() })

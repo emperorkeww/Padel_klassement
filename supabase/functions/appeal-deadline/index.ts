@@ -1,6 +1,11 @@
 // Edge Function: sluit verlopen VAR-zaken (#1025). Bedoeld om elk uur door
 // pg_cron aangeroepen te worden (zie ../../snippets/appeal_deadline_cron.sql).
 //
+// Sinds #1090 is er een tweede, ongerelateerde taak: prune_notifications() ruimt
+// meldingen ouder dan 90 dagen op. Die hangt hier omdat dit de enige uurlijkse
+// cron is die verder niets in de weg zit, en omdat een eigen pg_cron-snippet pas
+// werkt als iemand hem met de hand in de SQL-editor plakt.
+//
 // Eén taak, en die zit al in de databank: expire_point_appeals() loopt de
 // openstaande beroepen af waarvan het stemvenster verlopen is en laat
 // resolve_point_appeal ze afhandelen. Zwijgen is geen instemming, dus zonder
@@ -41,7 +46,22 @@ Deno.serve(async (req) => {
 
   const gesloten = typeof data === "number" ? data : 0;
   if (gesloten > 0) console.log(`[appeal-deadline] ${gesloten} zaak/zaken gesloten`);
-  return new Response(JSON.stringify({ gesloten }), {
+
+  // Retentie van de meldingen-inbox (#1090). Liftt hier mee omdat dit de enige
+  // uurlijkse cron-functie zonder eigen werk in de weg is: een losse pg_cron-job
+  // zou je met de hand in de SQL-editor moeten zetten, en tot dat gebeurt groeit
+  // de tabel gewoon door. Een fout is niet fataal — het opruimen mag de
+  // VAR-afhandeling hierboven niet als mislukt laten ogen.
+  const { data: opgeruimd, error: pruneFout } = await admin.rpc(
+    "prune_notifications",
+  );
+  if (pruneFout) console.error("[appeal-deadline] opruimen faalde", pruneFout);
+  const geprund = typeof opgeruimd === "number" ? opgeruimd : 0;
+  if (geprund > 0) {
+    console.log(`[appeal-deadline] ${geprund} melding(en) opgeruimd`);
+  }
+
+  return new Response(JSON.stringify({ gesloten, geprund }), {
     headers: { "content-type": "application/json" },
   });
 });
