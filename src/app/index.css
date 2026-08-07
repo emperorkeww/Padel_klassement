@@ -130,10 +130,14 @@
      onder de aanwijzer op te lichten. Eén waarde voor beide thema's: --lime is
      zelf ook thema-onafhankelijk. */
   --lime-hover: #d5f04c;
-  /* Tekst op een vól lime vlak. Expres een eigen token en niet --ink: die kiest
-     per thema, terwijl lime dat niet doet — in het donkere thema levert --ink
-     bijna-wit op lime op, en dat is 1,4:1. Staat daarom alleen hier en wordt
-     bewust níét overschreven in het donkere blok. */
+  /* Tekst op een vól lime vlak. Expres een eigen token, want de gewone inkt
+     kiest per thema terwijl lime dat niet doet — in het donkere thema levert
+     die bijna-wit op lime op, en dat is 1,4:1. Staat daarom alleen hier en
+     wordt bewust níét overschreven in het donkere blok.
+     (Let op bij het herschrijven van deze regels: de scripts die dit bestand
+     lezen — contrast-check.mjs en mail-templates.test.mjs — pakken elk
+     "--naam: waarde;" op, óók binnen een comment. Een tokennaam mét dubbele
+     punt in commentaar overschaduwt daardoor stilletjes het echte token.) */
   --lime-ink: #1a2620;
 
   /* Lef (#804) — eigen violet, los van het groene toto/accent: het risicospel
@@ -616,7 +620,7 @@
   --paneel-om-ink: var(--ink);
   --paneel-om-ink-soft: var(--ink-soft);
   --paneel-om-label: var(--ink-soft);
-  --paneel-om-vlak: #244440; /* = --surface-hover: een stap boven het paneel */
+  --paneel-om-vlak: #244440; /* gelijk aan surface-hover — een stap hoger */
   --paneel-om-lijn: #2f4f4a;
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥10:1
