@@ -6,9 +6,9 @@ import { MATCH_DONE, PROFILES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
 
 // De effect-achtergrond op de matchkaart (#1151). De kaart zet per actief effect
-// één data-attribuut; de CSS hangt daar één kleurlaag aan. Deze tests bewaken
-// dat er voor élke combinatie precies de juiste attributen staan — want zodra
-// er ergens een samengestelde toestand insluipt, is het hele ontwerp weg.
+// één data-attribuut; de effect-surface rendert daar één SVG-ribbon voor. Deze
+// tests bewaken dat er voor élke combinatie precies de juiste losse lagen én
+// badges staan — zodra een samengestelde toestand insluipt is het ontwerp weg.
 
 const tmap = Object.fromEntries(TEAMS.map((t) => [t.id, t])) as Record<string, Team>;
 const pmap = Object.fromEntries(PROFILES.map((p) => [p.id, p])) as Record<
@@ -76,6 +76,20 @@ describe("<MatchCard /> — de acht effecttoestanden (#1151)", () => {
   it.each(gevallen)("%s", (_naam, opts, verwacht) => {
     const el = kaart(opts);
     expect(lagen(el)).toEqual(verwacht);
+    expect(
+      Array.from(el.querySelectorAll(".match-effect-ribbon")).map((ribbon) =>
+        (["lef", "joker", "inzet"] as const).find((naam) =>
+          ribbon.classList.contains(`match-effect-ribbon--${naam}`),
+        ),
+      ),
+    ).toEqual(verwacht);
+    expect(
+      Array.from(el.querySelectorAll(".match-effect-badge__part")).map((part) =>
+        (["lef", "joker", "inzet"] as const).find((naam) =>
+          part.classList.contains(`match-effect-badge__part--${naam}`),
+        ),
+      ),
+    ).toEqual(verwacht);
     // `data-fx` staat er zodra er íets ligt: dat schakelt de tekstkleur om.
     expect(el.hasAttribute("data-fx")).toBe(verwacht.length > 0);
   });
@@ -84,6 +98,8 @@ describe("<MatchCard /> — de acht effecttoestanden (#1151)", () => {
     const el = kaart({ match: KAAL });
     expect(el.hasAttribute("data-fx")).toBe(false);
     expect(lagen(el)).toEqual([]);
+    expect(el.querySelector(".match-effect-surface")).toBeNull();
+    expect(el.querySelector(".match-effect-badge")).toBeNull();
   });
 });
 
@@ -94,6 +110,8 @@ describe("<MatchCard /> — de effectlagen blijven los van elkaar", () => {
     // combinatie bijkomen, dan valt dit om — en dat is precies de bedoeling.
     expect(el.className).not.toMatch(/lef|joker|inzet/);
     expect(lagen(el)).toEqual(["lef", "joker", "inzet"]);
+    expect(el.querySelectorAll(".match-effect-ribbon")).toHaveLength(3);
+    expect(el.querySelectorAll(".match-effect-badge__part")).toHaveLength(3);
   });
 
   it("houdt de winnaarstyling los van de effectstyling", () => {

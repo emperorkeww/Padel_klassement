@@ -9,6 +9,10 @@ import type { MatchExtras } from "@/features/matches/useMatchEffecten";
 import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
 import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
+import {
+  MatchEffectBadge,
+  MatchEffectSurface,
+} from "@/features/matches/components/MatchEffectSurface";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
@@ -62,12 +66,16 @@ export function MatchCard({
           ? "match-card--draw"
           : "";
 
-  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie CSS-lagen
-  // die optellen. Bewust geen samengestelde klasse per combinatie — `data-fx`
-  // zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk zijn eigen
-  // laag aan. Bij een vierde effect komt er één attribuut en één regel CSS bij.
+  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie zelfstandige
+  // SVG-ribbons die optellen. Bewust geen samengestelde klasse per combinatie —
+  // `data-fx` zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk
+  // zijn eigen laag aan. Bij een vierde effect komt er één attribuut en ribbon bij.
   const fx = matchEffecten({ match: m, lef, joker });
   const vlag = (aan: boolean) => (aan ? "" : undefined);
+  const metaIsEffect =
+    meta?.sleutel === "lef" ||
+    meta?.sleutel === "joker" ||
+    meta?.sleutel === "traktatie";
 
   return (
     <Link
@@ -78,6 +86,7 @@ export function MatchCard({
       data-fx-joker={vlag(fx.joker)}
       data-fx-inzet={vlag(fx.inzet)}
     >
+      <MatchEffectSurface effecten={fx} />
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
       <span className="match-card__mid">
         <span className="match-card__score">
@@ -99,7 +108,10 @@ export function MatchCard({
             1v1
           </span>
         )}
-        {meta && (
+        {heeftEffect(fx) && (
+          <MatchEffectBadge match={m} effecten={fx} lef={lef} joker={joker} />
+        )}
+        {meta && !metaIsEffect && (
           <span
             className={`match-card__meta match-card__${meta.sleutel}`}
             title={

@@ -460,20 +460,22 @@ for (const [naam, omschrijving] of DIVISIES) {
 }
 
 // ---- Effect-swirls op de matchkaart (#1151) ----
-// De matchkaart legt per actief effect een doorschijnende kleurlaag over
-// --surface: lef paars, joker blauw, inzet amber. Die lagen stapelen — bij een
-// match met alle drie liggen er drie tinten over dezelfde tekst.
+// De matchkaart legt per actief effect een doorschijnende SVG-ribbon over
+// --surface: lef paars, joker blauw, inzet amber. De vier strokes van één
+// ribbon compositen in de smalle kern tot maximaal circa 13%; in donker dimt
+// de hele SVG naar 78% en resteert circa 10%. Bij een drievoudige kruising
+// liggen alle drie die maxima over dezelfde tekst.
 //
 // Dat is precies het soort tekort dat een tokenpaar níét vangt: elk paar los
 // (--ink-soft-strong op --surface) haalt AA met gemak, en pas de stapeling duwt
 // het eronder. Daarom rekenen we hier de samenstelling na in plaats van de
 // tokens: --surface, dan laag voor laag alpha-compositing, en dan de tekst.
 //
-// De drempel bewaakt de piek uit ui.css (--fx-piek). Staat die hier lager dan
-// in de CSS, dan meet dit niets; loopt de CSS erop vooruit, dan valt CI om — en
-// dat is de bedoeling, want dan is de kaart onleesbaar geworden.
-const SWIRL_PIEK = { licht: 0.06, donker: 0.05 };
-const SWIRL_LAGEN = ["lef", "joker", "dorst"];
+// De drempel bewaakt de samengestelde kern uit MatchEffectSurface.css. Staat
+// die hier lager dan de CSS, dan meet dit niets; loopt de CSS erop vooruit,
+// dan valt CI om — en dat is de bedoeling, want dan is de kaart onleesbaar.
+const SWIRL_PIEK = { licht: 0.13, donker: 0.1 };
+const SWIRL_LAGEN = ["effect-lef", "effect-joker", "effect-inzet"];
 
 /** --surface met N effectlagen erover, elk op de piekdekking. */
 function swirlVlak(tokens, lagen, alpha) {
@@ -497,12 +499,10 @@ for (const [naam, tokens] of [
   for (let n = 1; n <= SWIRL_LAGEN.length; n++) {
     const lagen = SWIRL_LAGEN.slice(0, n);
     const vlak = swirlVlak(tokens, lagen, alpha);
-    // --ink-soft-strong draagt de teamnamen op een effectkaart; --ink de score
-    // en de winnaarsnaam. --ink-soft staat er bewust niet bij: die haalt het
-    // getint niet meer, en dáárom schakelt de kaart naar -strong.
+    // --ink draagt op effectkaarten alle kleine tekst: juist op de kruising van
+    // twee of drie heldere kernen haalt de gewone gedempte tekst geen AA meer.
     for (const [fg, min, wat] of [
-      ["ink-soft-strong", 4.5, "teamnamen"],
-      ["ink", 4.5, "score en winnaar"],
+      ["ink", 4.5, "teamnamen, datum en score"],
     ]) {
       const c = contrast(tokens[fg], vlak);
       const ok = c >= min;
