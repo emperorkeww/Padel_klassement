@@ -274,11 +274,32 @@
 .glas--scrollbaar::after {
   display: none;
 }
+/* Die ruil kostte tot #1083 meer dan nodig. De vervanging was één *uniforme*
+   ring op --glas-rand-laag — de zwakste waarde uit het randverloop — en omdat
+   deze box-shadow die van `.glas` volledig overschrijft, verdween ook de
+   donkere buitenhaarlijn. Het grootste glasvlak van de app had daarmee als
+   enige geen verlopende rand en geen buitencontour.
+   De twee hoekschaduwen hieronder zetten het licht terug waar ::before het ook
+   zet: sterk in de linkerbovenhoek en de rechteronderhoek, zwak langs de
+   flanken. Een inset-schaduw blijft op de border-box staan, dus ze scrollen
+   niet weg — precies waarom deze variant bestaat. */
 .glas--scrollbaar {
   box-shadow:
-    inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
-    inset 0 0 0 1px var(--glas-rand-laag),
-    inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    /* Haarlijn naar buiten, zoals `.glas` die geeft: het randlicht is wit en
+       dus onzichtbaar op een lichte pagina; zonder deze lijn zweeft het vlak
+       nergens meer in. */
+    0 0 0 1px rgb(var(--glas-diep) / 0.07),
+    /* bovenlicht */ inset 0 1px 0
+      rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
+    /* de flanken: de zwakke kant van het randverloop */
+      inset 0 0 0 1px var(--glas-rand-laag),
+    /* refractie linksboven en rechtsonder */
+      inset 6px 6px 10px -8px var(--glas-rand-hoog),
+    inset -6px -6px 10px -8px var(--glas-rand-hoog),
+    /* binnengloed vanaf de bovenrand */
+      inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    /* diepte langs de onderrand, zoals `.glas` die ook heeft */
+      inset 0 -16px 26px -20px rgb(var(--glas-diep) / 0.38),
     var(--glas-schaduw);
 }
 

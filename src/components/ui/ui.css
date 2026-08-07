@@ -430,7 +430,12 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background-color: var(--overlay);
+  /* Lichter dan --overlay (#1083): hier komt nog een glazen paneel overheen,
+     en scrim plus materiaal dempten samen zo veel dat de pagina eronder alleen
+     nog als egale waas overbleef. De lightboxen elders houden --overlay.
+     --scrim is ook wat de keyframe hieronder aanhoudt. */
+  --scrim: var(--overlay-glas);
+  background-color: var(--scrim);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -456,6 +461,25 @@ textarea {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom, 0px));
   animation: sheet-up 0.2s ease-out;
+}
+/* Dunner en minder wazig dan `sterk` normaal geeft (#1083). Een sheet is het
+   grootste glasvlak van de app en las als een egale plaat: samen met de scrim
+   kwam er nog maar ~11% van de pagina doorheen op licht en ~7% op donker, en
+   op 22px blur was er van die rest toch geen vorm meer over. Met de lichtere
+   --overlay-glas en --glas-sheet-factor komt dat op ~23% en ~19%, en 16px laat
+   genoeg structuur staan om te herkennen dát er iets achter ligt — zonder dat
+   er iets van te lézen valt.
+
+   De factor staat per thema in index.css en niet hier, omdat de meting per
+   thema iets anders vraagt; de grens is dat --ink óók boven een FUT-kaart AA
+   haalt (5,4:1 op licht, 15:1 op donker).
+
+   Dit moet `.sheet.glas` zijn en niet `.sheet`: glas.css komt ná ui.css in de
+   cascade, dus op gelijke specificiteit wint `.glas--sterk` en zou hier niets
+   van aankomen. */
+.sheet.glas {
+  --glas-dekking: calc(var(--glas-dekking-basis) * var(--glas-sheet-factor));
+  --glas-blur: var(--glas-blur-basis);
 }
 .sheet--compact {
   max-width: 420px;
@@ -486,13 +510,18 @@ textarea {
    met opacity < 1 is een "backdrop root": alles daarbinnen kan niet meer door
    de scrim heen kijken. Zolang die animatie op opacity stond, deed de
    backdrop-filter van het paneel erin dus letterlijk niets — het paneel was
-   alleen doorschijnend, zonder blur, en de pagina las er dwars doorheen. */
+   alleen doorschijnend, zonder blur, en de pagina las er dwars doorheen.
+
+   Deze keyframe wordt gedeeld met de lightboxen (.kaart-preview,
+   .avatar-lightbox), en die houden sinds #1083 de zwaardere --overlay: daar
+   ligt geen glas overheen. Vandaar --scrim met een terugval, in plaats van
+   hier een vaste kleur. */
 @keyframes sheet-fade {
   from {
     background-color: transparent;
   }
   to {
-    background-color: var(--overlay);
+    background-color: var(--scrim, var(--overlay));
   }
 }
 @media (prefers-reduced-motion: reduce) {
