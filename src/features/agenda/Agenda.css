@@ -38,10 +38,6 @@
   font-size: var(--fs-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
-  /* "augustus 2026" → "Augustus 2026": als paginatitel draagt de maand een
-     hoofdletter, terwijl maandLabel de gewone Nederlandse schrijfwijze houdt
-     voor de plekken waar hij midden in een zin staat. */
-  text-transform: capitalize;
 }
 
 .agenda-kop__telling {
@@ -196,8 +192,9 @@
   font-weight: 800;
 }
 
-/* Vandaag is een ring, geen vulling: de vulling is straks van de gekozen dag
-   (#1112, PR 2) en die twee mogen niet op elkaar lijken. */
+/* Vandaag is een ring, de gekozen dag een vulling. Twee verschillende dingen —
+   welke dag het ís en waar je naar kijkt — dus twee verschillende signalen; op
+   de dag dat ze samenvallen wint de vulling. */
 .agenda-dag--vandaag {
   box-shadow: inset 0 0 0 1.5px var(--accent);
 }
@@ -219,6 +216,28 @@
 
 .agenda-dag--verleden .agenda-dag__nummer {
   color: var(--placeholder);
+}
+
+/* Als laatste, en dus winnend van --buiten en --verleden: een gekozen dag in
+   het verleden zou anders gedempte inkt op het accentvlak krijgen. */
+.agenda-dag--gekozen,
+.agenda-dag--gekozen:hover {
+  background: var(--accent);
+  box-shadow: none;
+}
+.agenda-dag--gekozen .agenda-dag__nummer {
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+/* Op het accentvlak zou een groene stip verdwijnen; de vorm blijft het
+   onderscheid dragen, alleen de kleur wisselt mee. */
+.agenda-dag--gekozen .agenda-glyph--booked,
+.agenda-dag--gekozen .agenda-glyph--open,
+.agenda-dag--gekozen .agenda-glyph--past {
+  background: var(--accent-ink);
+}
+.agenda-dag--gekozen .agenda-glyph--locked {
+  border-color: var(--accent-ink);
 }
 
 .agenda-dag__nummer {
@@ -258,28 +277,209 @@
   gap: 6px;
 }
 
-/* ---- Instap-kaart bij een lege maand ---- */
+/* ---- Dagpaneel onder het raster (#1112) ---- */
 
-.agenda-instap {
-  padding: var(--sp-4);
-  border: 1px solid var(--accent-line);
+/* Wat in het raster niet meer past. Dit is de leeslaag: hier staan de woorden
+   die de cel niet kon dragen. De kaarten zijn samenvattingen — aantikken opent
+   het dag-sheet dat er altijd al was. */
+.dagpaneel {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.dagpaneel__kop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.dagpaneel__datum {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+}
+
+.dagpaneel__vandaag {
+  color: var(--accent);
+}
+
+.dagpaneel__telling {
+  margin: 0;
+  flex: none;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.dagpaneel__lijst {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- Lege dag ---- */
+
+.dagpaneel__leeg {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-5) var(--sp-4);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+  text-align: center;
+}
+
+.dagpaneel__leeg-titel {
+  margin: 0;
+  font-weight: 700;
+}
+
+.dagpaneel__leeg-tekst {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.dagpaneel__plan {
+  margin-top: var(--sp-2);
+  /* Raakdoel (#374). */
+  min-height: 44px;
+}
+
+/* ---- Speeldagkaart ---- */
+
+.speeldag {
+  display: flex;
+  gap: 13px;
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+}
+.speeldag:hover {
+  box-shadow: var(--shadow-md);
+}
+.speeldag:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Hetzelfde statussignaal als de stip in het raster, zodat je de dag die je
+   aantikte hier terugherkent. */
+.speeldag__rail {
+  flex: none;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--line-strong);
+}
+.speeldag__rail--booked {
+  background: var(--accent);
+}
+.speeldag__rail--locked {
+  background: var(--accent-line);
+}
+.speeldag__rail--open {
+  background: var(--poll);
+}
+
+.speeldag__body {
   display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.speeldag__top {
+  display: flex;
+  align-items: center;
   gap: var(--sp-2);
 }
 
-.agenda-instap__titel {
-  margin: 0;
+.speeldag__tijd {
   font-family: var(--font-rounded);
-  font-size: 1.0625rem;
-  font-weight: 900;
+  font-size: var(--fs-base);
+  font-weight: 800;
 }
 
-.agenda-instap__tekst {
-  margin: 0;
+.speeldag__duur {
   font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.speeldag__chip {
+  margin-left: auto;
+  flex: none;
+  padding: 4px 9px;
+  border-radius: 9px;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.speeldag__chip--booked {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.speeldag__chip--locked,
+.speeldag__chip--past {
+  background: var(--surface-2);
   color: var(--ink-soft-strong);
+}
+.speeldag__chip--open {
+  background: var(--poll-soft);
+  color: var(--poll-diep);
+}
+
+.speeldag__titel {
+  margin-top: 3px;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speeldag__plek {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speeldag__spelers {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.speeldag__avatars {
+  display: flex;
+  align-items: center;
+}
+.speeldag__avatars .avatar {
+  border: 2px solid var(--surface);
+}
+.speeldag__avatars .avatar:not(:first-child) {
+  margin-left: -7px;
+}
+
+.speeldag__telling {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 
 /* ---- Laadvorm ---- */

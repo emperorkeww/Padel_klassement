@@ -26,6 +26,7 @@ export function MaandRaster({
   weeks,
   perDag,
   vandaag,
+  gekozenDag,
   focusDag,
   onFocusDag,
   onPick,
@@ -33,6 +34,9 @@ export function MaandRaster({
   weeks: RasterDag[][];
   perDag: Record<string, AgendaMarker[]>;
   vandaag: string;
+  /** De dag waar het paneel eronder over gaat (#1112). Los van `focusDag`: met
+   *  de pijltjes loop je door het raster zonder telkens iets te kiezen. */
+  gekozenDag: string;
   /** De dag die de tab-stop draagt; verplaatst met de pijltjes. */
   focusDag: string;
   /** `viaToetsenbord` bepaalt of de focus meeverhuist — muisklikken doen dat
@@ -84,9 +88,15 @@ export function MaandRaster({
               const markers = perDag[dag.date] ?? [];
               const { shown } = splitMarkers(markers, MAX_STIPPEN);
               const isVandaag = dag.date === vandaag;
+              const isGekozen = dag.date === gekozenDag;
               const dagnummer = Number(dag.date.slice(8));
               return (
-                <div role="gridcell" key={dag.date} className="agenda-raster__cel">
+                <div
+                  role="gridcell"
+                  key={dag.date}
+                  className="agenda-raster__cel"
+                  aria-selected={isGekozen}
+                >
                   <button
                     type="button"
                     ref={(el) => {
@@ -102,6 +112,7 @@ export function MaandRaster({
                     className={[
                       "agenda-dag",
                       markers.length > 0 && "agenda-dag--bezet",
+                      isGekozen && "agenda-dag--gekozen",
                       isVandaag && "agenda-dag--vandaag",
                       !dag.inMonth && "agenda-dag--buiten",
                       markers.length > 0 &&

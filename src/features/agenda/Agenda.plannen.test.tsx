@@ -101,6 +101,18 @@ function toon() {
   );
 }
 
+/**
+ * Een dag openen kost sinds #1112 twee tikken: de eerste kiest de dag (het
+ * paneel eronder werkt bij), de tweede opent het detail. Dat is precies waarom
+ * die tweede betekenis er is — anders was plannen van één tik naar twee gegaan.
+ */
+async function openDag(naam: RegExp) {
+  const dag = await screen.findByRole("button", { name: naam });
+  await userEvent.click(dag);
+  await userEvent.click(dag);
+  return dag;
+}
+
 describe("<Agenda /> — plannen op een bezette dag (#1104)", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -110,11 +122,10 @@ describe("<Agenda /> — plannen op een bezette dag (#1104)", () => {
 
   it("laat je vanaf een dag met een speeldag een tweede speeldag starten", async () => {
     toon();
-    const dag = await screen.findByRole("button", {
-      name: /donderdag 13 augustus, speeldag geboekt/,
-    });
-    await userEvent.click(dag);
-    expect(await screen.findByText("Padel De Panne")).toBeInTheDocument();
+    await openDag(/donderdag 13 augustus, speeldag geboekt/);
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: "Plan hier ook een speeldag" }),
@@ -133,13 +144,70 @@ describe("<Agenda /> — plannen op een bezette dag (#1104)", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: /vorige maand/i }),
     );
-    const dag = await screen.findByRole("button", {
-      name: /donderdag 13 augustus, speeldag gespeeld/,
-    });
-    await userEvent.click(dag);
-    expect(await screen.findByText("Padel De Panne")).toBeInTheDocument();
+    await openDag(/donderdag 13 augustus, speeldag gespeeld/);
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Plan hier ook een speeldag" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("<Agenda /> — dag kiezen en openen (#1112)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-07T09:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("begint op vandaag", async () => {
+    toon();
+    expect(
+      await screen.findByRole("heading", { name: /vandaag · vrijdag 7 augustus/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("laat de eerste tik de dag kiezen zonder iets te openen", async () => {
+    toon();
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: /donderdag 13 augustus, speeldag geboekt/,
+      }),
+    );
+    // Het paneel gaat over 13 augustus...
+    expect(
+      screen.getByRole("heading", { name: /donderdag 13 augustus/i }),
+    ).toBeInTheDocument();
+    // ...en er staat níets overheen. Eén tik is kijken, geen handeling.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opent bij de tweede tik op dezelfde dag", async () => {
+    toon();
+    await openDag(/donderdag 13 augustus, speeldag geboekt/);
+    expect(
+      await screen.findByRole("dialog", { name: /donderdag 13 augustus/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("stuurt de tweede tik op een lege dag naar het plan-sheet", async () => {
+    toon();
+    // 20 augustus is leeg en ligt in de toekomst: daar valt te plannen, en dat
+    // moet één tik blijven vanaf de dag die je al bekeek.
+    await openDag(/donderdag 20 augustus, niets gepland/);
+    expect(await screen.findByText("Plan een speeldag")).toBeInTheDocument();
+  });
+
+  it("bladert mee naar de maand van een aangetikte randdag", async () => {
+    toon();
+    // Het raster van augustus 2026 begint op maandag 27 juli.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /maandag 27 juli/ }),
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Juli 2026");
+    expect(
+      screen.getByRole("heading", { name: /maandag 27 juli/i }),
+    ).toBeInTheDocument();
   });
 });
