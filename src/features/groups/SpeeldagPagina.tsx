@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
@@ -123,6 +123,20 @@ export function SpeeldagPagina() {
   useRealtime("play_poll_options", options.reload, filter);
   useRealtime("play_poll_votes", votes.reload, filter);
 
+  /** Na een uitslag, correctie of verwijdering: de match zelf én alles wat
+   *  eruit volgt (teams bij een nieuwe combinatie, rating-historie). */
+  const herlaadMatches = useCallback(() => {
+    matches.reload();
+    teams.reload();
+    histories.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches.reload, teams.reload, histories.reload]);
+
+  // Wedstrijden van deze groep (#1141). De pagina luisterde alleen naar de
+  // poll: een uitslag die een ander invulde kwam niet binnen, en een ronde uit
+  // "Eerlijk" verscheen pas na een refresh — die kaart meldt zelf niets terug.
+  useRealtime("matches", herlaadMatches, filter);
+
   // Rondes die in deze sessie zijn klaargezet: laat de kaart meteen de
   // Klaar-fase tonen, nog vóór de matches-reload landt (zoals PlanTab deed).
   const [rondesGezet, setRondesGezet] = useState(false);
@@ -144,14 +158,6 @@ export function SpeeldagPagina() {
     options.reload();
     votes.reload();
     matches.reload();
-  }
-
-  /** Na een uitslag, correctie of verwijdering: de match zelf én alles wat
-   *  eruit volgt (teams bij een nieuwe combinatie, rating-historie). */
-  function herlaadMatches() {
-    herlaad();
-    teams.reload();
-    histories.reload();
   }
 
   const fout = poll.error ?? group.error ?? options.error ?? votes.error;

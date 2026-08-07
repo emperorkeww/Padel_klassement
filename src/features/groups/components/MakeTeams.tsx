@@ -288,8 +288,8 @@ export function MakeTeams({
         vorm={format}
         onVorm={setFormat}
         aanwezig={selectedIds.length}
-        americanoRondes={roundsToGen}
-        onAmericanoRondes={setRoundsToGen}
+        aantalRondes={roundsToGen}
+        onAantalRondes={setRoundsToGen}
         bezig={busy}
         blokkade={
           !enough
@@ -314,6 +314,9 @@ export function MakeTeams({
           playerIds={selectedIds}
           profiles={profiles}
           playedAt={startVanRonde(0)}
+          aantal={roundsToGen}
+          startVoor={startVanRonde}
+          onGenerated={onGenerated}
           ingebed
         />
       )}

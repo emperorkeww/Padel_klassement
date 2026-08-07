@@ -33,9 +33,14 @@ describe("rondes", () => {
     expect(rondes("americano", 7)).toBe(7);
   });
 
-  it("is er één bij Mexicano en Eerlijk, ongeacht de Americano-keuze", () => {
+  // Sinds #1141 ook bij Eerlijk: elke ronde krijgt een eigen verdeling, dus
+  // een hele avond in één tik herhaalt geen duo's.
+  it("volgt de keuze ook bij Eerlijk", () => {
+    expect(rondes("eerlijk", 7)).toBe(7);
+  });
+
+  it("is er één bij Mexicano, ongeacht de keuze", () => {
     expect(rondes("mexicano", 7)).toBe(1);
-    expect(rondes("eerlijk", 7)).toBe(1);
   });
 });
 
@@ -85,8 +90,14 @@ describe("ctaLabel met een aantal rondes", () => {
     expect(ctaLabel("americano", 4)).toBe("Start 4 Americano-rondes");
   });
 
-  it("laat de andere vormen ongemoeid", () => {
+  // Eerlijk zet er sinds #1141 net zoveel klaar als Americano — elke ronde met
+  // een eigen verdeling. Mexicano niet: die heeft de vorige uitslagen nodig.
+  it("noemt het aantal ook bij Eerlijk", () => {
+    expect(ctaLabel("eerlijk", 1)).toBe("Stel eerlijke teams voor");
+    expect(ctaLabel("eerlijk", 4)).toBe("Stel 4 eerlijke rondes voor");
+  });
+
+  it("laat Mexicano ongemoeid", () => {
     expect(ctaLabel("mexicano", 4)).toBe("Start Mexicano");
-    expect(ctaLabel("eerlijk", 4)).toBe("Stel eerlijke teams voor");
   });
 });

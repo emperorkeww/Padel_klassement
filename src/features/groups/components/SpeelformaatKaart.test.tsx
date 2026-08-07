@@ -21,8 +21,8 @@ function Harness({
       vorm={vorm}
       onVorm={setVorm}
       aanwezig={aanwezig}
-      americanoRondes={rondes}
-      onAmericanoRondes={setRondes}
+      aantalRondes={rondes}
+      onAantalRondes={setRondes}
       bezig={false}
       blokkade={blokkade}
       onStart={onStart}
@@ -74,9 +74,7 @@ describe("SpeelformaatKaart", () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // Eerlijk en Mexicano kunnen er maar één, dus daar valt niets te kiezen.
     expect(meta("Rondes")).toHaveTextContent("1");
-    expect(screen.queryByText("Hoeveel rondes?")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Americano" }));
     expect(screen.getByText("Hoeveel rondes?")).toBeInTheDocument();
@@ -89,6 +87,25 @@ describe("SpeelformaatKaart", () => {
     expect(
       screen.getByRole("button", { name: "Start 3 Americano-rondes" }),
     ).toBeInTheDocument();
+  });
+
+  // Sinds #1141 ook bij Eerlijk: de knop op de speeldagkaart die een hele avond
+  // ineens wegschreef is weg, dus deze keuze neemt dat over. Mexicano houdt er
+  // één — die deelt per ronde in op de laatste stand.
+  it("geeft Eerlijk dezelfde keuze en Mexicano niet", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    expect(screen.getByText("Hoeveel rondes?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Eén ronde meer" }));
+    expect(meta("Rondes")).toHaveTextContent("2");
+    expect(
+      screen.getByRole("button", { name: "Stel 2 eerlijke rondes voor" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Mexicano" }));
+    expect(screen.queryByText("Hoeveel rondes?")).not.toBeInTheDocument();
+    expect(meta("Rondes")).toHaveTextContent("1");
   });
 
   it("blijft tussen één en tien rondes", async () => {
