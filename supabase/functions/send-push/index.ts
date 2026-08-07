@@ -23,6 +23,11 @@
 // Notificatie-voorkeuren (#57): de notify_*-kolommen op profiles bepalen per
 // type wie een push krijgt (nieuwe ronde, uitslag, vriendschapsverzoek).
 //
+// Meldingen-inbox (#1090): elk bericht hieronder wordt eerst een rij in
+// public.notifications en pas daarna een push. Dat gebeurt in de gedeelde
+// bezorger (../_shared/meldingenBezorger.ts), die ook de voorkeurfilter en de
+// webpush-lus draagt — deze functie bepaalt alleen nog wát er gemeld wordt.
+//
 // Vereiste secrets (supabase secrets set):
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:…)
 //   CRON_SECRET — gedeeld geheim dat de webhook meestuurt als 'x-cron-secret'
@@ -31,7 +36,11 @@
 // SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY worden automatisch meegegeven.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
+import {
+  bezorg,
+  type Melding,
+  type Soort,
+} from "../_shared/meldingenBezorger.ts";
 import {
   AFDROGING_LOF,
   afdrogingLabel,
@@ -75,12 +84,6 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
-
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:beheer@vamos.example",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
 );
 
 type MatchRecord = {
@@ -136,25 +139,6 @@ type WebhookPayload = {
   table: string;
   record: Record<string, unknown>;
   old_record: Record<string, unknown> | null;
-};
-
-// Notificatie-types waarvoor de gebruiker een voorkeur kan zetten (#57);
-// de namen mappen op de notify_*-kolommen van profiles.
-type MessageKind = "new_round" | "result" | "friend_request" | "rank_change";
-
-type Message = {
-  recipients: string[];
-  title: string;
-  body: string;
-  url: string;
-  // null = altijd sturen: polls hebben (nog) geen voorkeur, en pias filtert
-  // zichzelf al via roast_schild in messagesFor.
-  kind: MessageKind | null;
-  /** Notificatie-tag (#189): meldingen met dezelfde tag vervangen elkaar op het
-   *  toestel. Bewust per gebeurtenis, niet per soort — zo vouwt een reeks
-   *  ineens gegenereerde rondes (#827) samen tot één melding, terwijl twee
-   *  verschillende matches gewoon los blijven staan. */
-  tag: string;
 };
 
 async function playersOf(match: MatchRecord): Promise<string[]> {
@@ -229,7 +213,7 @@ function mondayOfCurrentWeek(): string {
   return maandag.toISOString().slice(0, 10);
 }
 
-async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
+async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
   if (payload.table === "friendships" && payload.type === "INSERT") {
     const rec = payload.record as {
       requester_id: string;
@@ -248,7 +232,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       title: kiesTitel(TITEL_VRIENDSCHAP, rec.requester_id, rec.addressee_id),
       body: `${await nameOf(rec.requester_id)} wil met je padellen. ${quip}`,
       url: "/vrienden",
-      kind: "friend_request",
+      soort: "vriendschapsverzoek",
       tag: `vriendschap-${rec.requester_id}`,
     }];
   }
@@ -266,7 +250,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       seedKey: `nieuwe-match|${rec.id}`,
       titelPool: TITEL_NIEUWE_RONDE,
       url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
-      kind: "new_round",
+      soort: "nieuwe_ronde",
       // Eén tag per groep: worden er in één klap vier rondes klaargezet (#827),
       // dan houdt de speler één melding over in plaats van vier trillingen.
       tag: `nieuwe-ronde-${rec.group_id ?? rec.id}`,
@@ -297,7 +281,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         body:
           `${naam} betwist één punt (${APPEAL_REDEN[rec.reden] ?? rec.reden}). Jouw stem telt mee.`,
         url: `/matches/${rec.match_id}`,
-        kind: null,
+        soort: "var",
         tag: `var-${rec.id}`,
       }];
     }
@@ -325,7 +309,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         title: "📺 De VAR heeft gesproken",
         body: APPEAL_UITSLAG[rec.status] ?? "De zaak is afgehandeld.",
         url: `/matches/${rec.match_id}`,
-        kind: null,
+        soort: "var",
         tag: `var-${rec.id}`,
       }];
     }
@@ -358,7 +342,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
           kiesUit(POLL_NIEUW, roastSeed(rec.id, "poll-nieuw"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
-        kind: null,
+        soort: "poll",
         tag: `poll-${rec.id}`,
       }];
     }
@@ -378,7 +362,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
           kiesUit(POLL_MOMENT, roastSeed(rec.id, "locked"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
-        kind: null,
+        soort: "poll",
         tag: `poll-${rec.id}`,
       }];
     }
@@ -398,7 +382,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
           kiesUit(POLL_GEBOEKT, roastSeed(rec.id, "booked"))
         }`,
         url: `/groepen/${rec.group_id}?tab=plannen&poll=${rec.id}`,
-        kind: null,
+        soort: "poll",
         tag: `poll-${rec.id}`,
       }];
     }
@@ -433,7 +417,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       title: kiesTitel(TITEL_SNEER, rec.player_id, `${rec.iso_year}-W${rec.iso_week}`),
       body: `Jij bent de pias van de week. ${kiesUit(PIAS_SNEER[intensiteit], seed)}`,
       url: `/groepen/${rec.group_id}?tab=stand`,
-      kind: null,
+      soort: "pias",
       tag: `pias-${rec.group_id}-${rec.iso_year}-W${rec.iso_week}`,
     }];
   }
@@ -470,7 +454,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
         title: kiesTitel(TITEL_PROMOTIE, rec.player_id, rec.group_id, rec.tier),
         body: kiesUit(RANK_PROMOTIE[overgang.event], seed),
         url,
-        kind: "rank_change",
+        soort: "rangwissel",
         tag,
       }];
     }
@@ -486,7 +470,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Message[]> {
       title: kiesTitel(TITEL_SNEER, rec.player_id, rec.group_id, rec.tier),
       body,
       url,
-      kind: "rank_change",
+      soort: "rangwissel",
       tag,
     }];
   }
@@ -509,10 +493,10 @@ async function personalMessages(opts: {
   seedKey: string;
   titelPool: readonly string[];
   url: string;
-  kind: MessageKind | null;
+  soort: Soort;
   tag: string;
-}): Promise<Message[]> {
-  const { recipients, neutraal, pool, seedKey, titelPool, url, kind, tag } = opts;
+}): Promise<Melding[]> {
+  const { recipients, neutraal, pool, seedKey, titelPool, url, soort, tag } = opts;
   if (recipients.length === 0) return [];
   const { data: profielen } = await supabase
     .from("profiles")
@@ -533,7 +517,7 @@ async function personalMessages(opts: {
       title: kiesTitel(titelPool, seedKey, pid),
       body,
       url,
-      kind,
+      soort,
       tag,
     };
   });
@@ -548,7 +532,7 @@ async function personalMessages(opts: {
  * bekende winnaar of teamdata blijft het bij de neutrale melding voor iedereen.
  * Elke speler zit in precies één bericht: geen dubbele push voor dezelfde match.
  */
-async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
+async function matchResultMessages(rec: MatchRecord): Promise<Melding[]> {
   const url = `/matches/${rec.id}`;
   const tag = `uitslag-${rec.id}`;
   const heeftScore = rec.score_a != null && rec.score_b != null;
@@ -559,7 +543,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
   const winstZin = heeftScore ? `Gewonnen met ${hoog}–${laag}.` : "Gewonnen.";
   const verliesZin = heeftScore ? `Verloren met ${laag}–${hoog}.` : "Verloren.";
 
-  const neutraal = (recipients: string[]): Message => ({
+  const neutraal = (recipients: string[]): Melding => ({
     recipients,
     title: kiesTitel(TITEL_UITSLAG, rec.id),
     body: `${
@@ -568,7 +552,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
         : "Jouw match is afgerond."
     } ${kiesUit(UITSLAG_NEUTRAAL, roastSeed(rec.id, "uitslag"))}`,
     url,
-    kind: "result",
+    soort: "uitslag",
     tag,
   });
 
@@ -586,7 +570,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
   }
 
   const label = afdrogingLabel(rec);
-  const messages: Message[] = [];
+  const messages: Melding[] = [];
   // Winnaars: één schouderklopje voor beide, deterministisch op de match-id.
   // Positief commentaar op de zege, dus niet door het schild gedempt.
   if (winners.length > 0) {
@@ -600,7 +584,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
         ? kiesUit(AFDROGING_LOF, seed)
         : `${winstZin} ${kiesUit(WINST_LOF, seed)}`,
       url,
-      kind: "result",
+      soort: "uitslag",
       tag,
     });
   }
@@ -635,7 +619,7 @@ async function matchResultMessages(rec: MatchRecord): Promise<Message[]> {
         ? kiesUit(afdroging[intensiteit], seed)
         : `${verliesZin} ${kiesUit(VERLIES_SNEER[intensiteit], seed)}`,
       url,
-      kind: "result",
+      soort: "uitslag",
       tag,
     });
   }
@@ -686,34 +670,6 @@ async function optionYesVoters(optionId: string): Promise<string[]> {
   return [...new Set((data ?? []).map((v) => v.player_id))];
 }
 
-const PREF_COLUMN: Record<MessageKind, string> = {
-  new_round: "notify_new_round",
-  result: "notify_result",
-  friend_request: "notify_friend_request",
-  rank_change: "notify_rank_change",
-};
-
-/** Notificatie-voorkeuren (#57): laat alleen recipients over die dit
- *  push-type niet hebben uitgezet. Fail-open: bij een queryfout of een
- *  ontbrekend profiel sturen we gewoon, zoals vóór #57. */
-async function filterByPreference(
-  recipients: string[],
-  kind: MessageKind | null,
-): Promise<string[]> {
-  if (!kind || recipients.length === 0) return recipients;
-  const col = PREF_COLUMN[kind];
-  const { data } = await supabase
-    .from("profiles")
-    .select(`id, ${col}`)
-    .in("id", recipients);
-  const uit = new Set(
-    (data ?? [])
-      .filter((p) => (p as Record<string, unknown>)[col] === false)
-      .map((p) => (p as { id: string }).id),
-  );
-  return recipients.filter((id) => !uit.has(id));
-}
-
 Deno.serve(async (req) => {
   // Fail-closed authenticatie (#459): geen geconfigureerd geheim of een
   // verkeerde/ontbrekende header → weigeren. Voorkomt push-spoofing via de
@@ -735,58 +691,21 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Eén webhook kan nu meerdere berichten opleveren (#409: winnaars vs.
-  // verliezers van een afdroging krijgen elk een eigen tekst).
-  const messages = await messagesFor(payload);
-  let sent = 0;
-  let totalRecipients = 0;
-  for (const message of messages) {
-    const recipients = await filterByPreference(
-      message.recipients,
-      message.kind,
-    );
-    if (recipients.length === 0) continue;
-    totalRecipients += recipients.length;
+  // Eén webhook kan meerdere berichten opleveren (#409: winnaars vs. verliezers
+  // van een afdroging krijgen elk een eigen tekst). Schrijven, filteren en
+  // bezorgen doet de gedeelde bezorger (#1090) — in die volgorde, zodat de rij
+  // niet afhangt van een abonnement of van een uitgezette schakelaar.
+  const meldingen = await messagesFor(payload);
+  const { rijen, sent, ontvangers } = await bezorg(supabase, meldingen);
 
-    const { data: subs } = await supabase
-      .from("push_subscriptions")
-      .select("endpoint, p256dh, auth")
-      .in("user_id", recipients);
-
-    await Promise.all(
-      (subs ?? []).map(async (s) => {
-        try {
-          await webpush.sendNotification(
-            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            JSON.stringify({
-              title: message.title,
-              body: message.body,
-              url: message.url,
-              tag: message.tag,
-            }),
-          );
-          sent += 1;
-        } catch (err) {
-          // Verlopen/ingetrokken abonnementen opruimen.
-          const status = (err as { statusCode?: number }).statusCode;
-          if (status === 404 || status === 410) {
-            await supabase
-              .from("push_subscriptions")
-              .delete()
-              .eq("endpoint", s.endpoint);
-          }
-        }
-      }),
-    );
-  }
-
-  if (totalRecipients === 0) {
+  if (rijen === 0 && ontvangers === 0) {
     return new Response(JSON.stringify({ skipped: true }), {
       headers: { "content-type": "application/json" },
     });
   }
 
-  return new Response(JSON.stringify({ sent, recipients: totalRecipients }), {
-    headers: { "content-type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ rijen, sent, recipients: ontvangers }),
+    { headers: { "content-type": "application/json" } },
+  );
 });

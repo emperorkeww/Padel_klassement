@@ -1218,6 +1218,71 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_at: string | null
+          soort: string
+          tag: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          soort: string
+          tag: string
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          soort?: string
+          tag?: string
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "group_player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "group_prediction_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "player_standings"
+            referencedColumns: ["player_id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pias_of_week: {
         Row: {
           created_at: string
@@ -2691,6 +2756,7 @@ export type Database = {
         Args: { p_team_id: string; p_uid: string }
         Returns: boolean
       }
+      meldingen_schrijven: { Args: { p_meldingen: Json }; Returns: number }
       pech_streak: {
         Args: {
           p_created?: string
@@ -2705,6 +2771,7 @@ export type Database = {
         Args: { p_match: string; p_team: string }
         Returns: number
       }
+      prune_notifications: { Args: { p_dagen?: number }; Returns: number }
       ratings_as_of: {
         Args: { p_date: string }
         Returns: {
