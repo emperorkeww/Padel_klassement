@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Sheet } from "@/ui/Sheet";
 import { Avatar } from "@/ui/Avatar";
+import { downloadIcs, icsEvent } from "@/lib/utils/ics";
 import { courtsLabel, longDay } from "@/features/groups/planPollHelpers";
 import { pollSharePath } from "@/features/groups/pollsApi";
 import type { Profile } from "@/types";
@@ -43,15 +44,13 @@ export function DagSheet({
         <div className="dagsheet">
           <p className="dagsheet__datum">{longDay(datum)}</p>
           {markers.length === 0 ? (
+            // Alleen een dag in het verleden komt hier terecht: een lege dag
+            // vanaf vandaag opent het plan-sheet.
             <>
-              <p className="dagsheet__titel">Niets gepland</p>
+              <p className="dagsheet__titel">Niets gespeeld</p>
               <p className="dagsheet__leeg">
-                Op deze dag staat er nog geen speeldag. Een nieuwe begint bij je
-                groep.
+                Deze dag is geweest en er stond geen speeldag op.
               </p>
-              <Link className="btn btn--primary dagsheet__actie" to="/spelen">
-                Naar je groepen
-              </Link>
             </>
           ) : (
             markers.map((m) => (
@@ -139,13 +138,50 @@ function Speeldag({
         </div>
       )}
 
-      <Link
-        className="btn btn--primary dagsheet__actie"
-        to={pollSharePath(marker.groupId, marker.pollId)}
-      >
-        Open speeldag
-      </Link>
+      <div className="dagsheet__acties">
+        <Link
+          className="btn btn--primary dagsheet__actie"
+          to={pollSharePath(marker.groupId, marker.pollId)}
+        >
+          Open speeldag
+        </Link>
+        {/* Een geboekte speeldag is precies hetzelfde soort event als een
+            match (MatchCalendarButton/WinnerCard) — dus dezelfde helper. Een
+            open poll krijgt deze knop niet: er valt nog niets in je agenda te
+            zetten. */}
+        {!marker.past && marker.status !== "open" && (
+          <button
+            type="button"
+            className="btn dagsheet__actie"
+            onClick={() => zetInAgenda(marker)}
+          >
+            Zet in je agenda
+          </button>
+        )}
+      </div>
     </article>
+  );
+}
+
+function zetInAgenda(m: AgendaMarker) {
+  const details = [
+    m.groupName,
+    m.courts ? courtsLabel(m.courts) : null,
+    m.accessCode ? `Toegangscode ${m.accessCode}` : null,
+  ].filter(Boolean);
+  downloadIcs(
+    `speeldag-${m.date}.ics`,
+    icsEvent({
+      title: `Padel: ${m.groupName}`,
+      description: details.join(" · "),
+      location: m.clubName,
+      date: m.date,
+      startTime: m.startTime,
+      durationMin: m.duration,
+      // Stabiel per speeldag: opnieuw importeren werkt het event bij in plaats
+      // van er een tweede naast te zetten.
+      uid: `speeldag-${m.pollId}@vamos-padel`,
+    }),
   );
 }
 
