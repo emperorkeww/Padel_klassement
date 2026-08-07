@@ -6,13 +6,16 @@
 // in plaats van op vandaag. Zo ziet de pagina waarop je de rondes klaarzette ze
 // ook meteen staan, ook als die dag nog moet komen of al geweest is.
 //
-// Twee bekende en aanvaarde onnauwkeurigheden:
-//  - een losse partij op dezelfde dag telt mee. Dat is gewenst: precies zoals
-//    in de Spelen-tab hoort die bij de avond.
-//  - twee speeldagen op één kalenderdag (ochtend + avond) delen dezelfde lijst.
-//    Zeldzaam, en de vorm ("de wedstrijden van die dag") blijft waar.
+// Sinds #1146 is de kalenderdag niet meer het laatste woord. Een groep kan er
+// twee op één datum hebben — een ochtendsessie en een avondsessie — en dan
+// toonden beide pagina's elkaars wedstrijden. Gegenereerde rondes dragen sinds
+// #827 de echte starttijd, dus een match hoort bij het moment waar hij het
+// dichtst bij ligt. Met één speeldag per dag verandert dat niets.
+//
+// Blijft gewenst: een losse partij op dezelfde avond telt mee, precies zoals
+// in de Spelen-tab.
 
-import { dayInZone } from "@/lib/utils/time";
+import { clubEpoch, dayInZone } from "@/lib/utils/time";
 import type { Match } from "@/types";
 import type { PlayPoll, PollOption } from "./pollsApi";
 
@@ -44,16 +47,56 @@ export function speeldagMoment(
 }
 
 /**
- * De wedstrijden die op die kalenderdag vallen. `played_at` is de bron zodra
- * hij er is (#827 geeft gegenereerde rondes de echte starttijd mee); zonder
- * tijdstip valt het terug op het moment van aanmaken, net als overal elders.
+ * De vastgelegde momenten van álle speeldagen op één kalenderdag, op tijd
+ * gesorteerd. Meestal is dat er precies één; twee (ochtend + avond) is de reden
+ * dat deze functie bestaat.
+ */
+export function momentenOpDag(
+  polls: PlayPoll[],
+  options: PollOption[],
+  dag: string,
+): SpeeldagMoment[] {
+  return polls
+    .map((p) => speeldagMoment(p, options))
+    .filter((m): m is SpeeldagMoment => m != null && m.dag === dag)
+    .sort((a, b) => a.option.start_time.localeCompare(b.option.start_time));
+}
+
+/** Het moment van een speeldag als echt tijdstip (ms), DST-proof. */
+function startVan(moment: SpeeldagMoment): number {
+  return clubEpoch(moment.option.date, moment.option.start_time, moment.tz);
+}
+
+/**
+ * De wedstrijden die bij dit moment horen. `played_at` is de bron zodra hij er
+ * is (#827 geeft gegenereerde rondes de echte starttijd mee); zonder tijdstip
+ * valt het terug op het moment van aanmaken, net als overal elders.
+ *
+ * `andere` zijn de overige momenten van diezelfde dag. Staat daar niets in —
+ * het normale geval — dan is dit gewoon "alles van die kalenderdag". Anders
+ * wint het dichtstbijzijnde moment: een match om 10:30 hoort bij de sessie van
+ * 10:00 en niet bij die van 20:00.
  */
 export function matchesVoorSpeeldag(
   matches: Match[],
-  dag: string,
-  tz: string,
+  moment: SpeeldagMoment,
+  andere: SpeeldagMoment[] = [],
 ): Match[] {
-  return matches.filter(
+  const { dag, tz } = moment;
+  const opDeDag = matches.filter(
     (m) => dayInZone(m.played_at ?? m.created_at, tz) === dag,
   );
+  const concurrenten = andere.filter((m) => m.option.id !== moment.option.id);
+  if (concurrenten.length === 0) return opDeDag;
+
+  const mijn = startVan(moment);
+  const rest = concurrenten.map(startVan);
+  return opDeDag.filter((m) => {
+    const t = new Date(m.played_at ?? m.created_at).getTime();
+    const afstand = Math.abs(t - mijn);
+    // Precies middenin tussen twee momenten (praktisch onmogelijk, maar het
+    // kán): dan verschijnt hij op allebei. Liever twee keer zichtbaar dan
+    // nergens.
+    return rest.every((ander) => afstand <= Math.abs(t - ander));
+  });
 }
