@@ -34,9 +34,21 @@ describe("navigatiebalken op glas", () => {
   it("geeft beide balken hetzelfde materiaal", () => {
     for (const balk of ["topbar", "tabbar"]) {
       expect(tsx).toMatch(
-        new RegExp(`"${balk} glas glas--sterk glas--balk"`),
+        new RegExp(`"${balk} glas glas--sterk glas--balk glas--levend"`),
       );
     }
+  });
+
+  it("laat het licht op beide balken de scrollpositie volgen (#1083)", () => {
+    // Het aanwijzer-hooglicht hangt aan hover en bestaat op een telefoon dus
+    // niet, terwijl dit een mobile-first app is. Deze twee balken staan altijd
+    // in beeld en de pagina schuift eronderdoor: daar is de scrollpositie een
+    // bewegingsbron die élk apparaat heeft. `glas--levend` alleen zou een
+    // stilstaande glans geven; de hook laat 'm meelopen.
+    expect(tsx).toMatch(/const topbarRef = useGlasScrollLicht<HTMLElement>\(\)/);
+    expect(tsx).toMatch(/const tabbarRef = useGlasScrollLicht<HTMLElement>\(\)/);
+    expect(tsx).toMatch(/ref=\{topbarRef\}/);
+    expect(tsx).toMatch(/ref=\{tabbarRef\}/);
   });
 
   it("laadt glas.css vóór de eigen stylesheet", () => {

@@ -142,6 +142,20 @@
   opacity: 0;
 }
 
+/* Levend licht (#1083): een vlak dat zijn hooglicht óók zonder aanwijzer laat
+   zien. Het hooglicht hierboven hangt aan hover, en hover bestaat op een
+   telefoon niet — daar bleef van het materiaal alleen rand en blur over, en dat
+   is waar gewone glassmorphism ook stopt. Zwakker dan de hover-stand: dit staat
+   altijd aan en mag dus niet om aandacht vragen.
+
+   De positie komt van useGlasScrollLicht, die --glas-aanwijzer-x op de
+   voortgang door het document zet. Zonder die hook — of met een
+   bewegingsvoorkeur — blijft het licht op de rustpositie staan, en is dit
+   gewoon een stilstaande glans. Ook dat is meer materiaal dan niets. */
+.glas--levend::after {
+  opacity: 0.55;
+}
+
 /* De inhoud moet bóven de rand- en hooglichtlagen staan; daarvoor heeft ze een
    eigen positie nodig. Het is een <span> zodat het component ook in een knop of
    een link mag zitten, waar een <div> niet hoort. */
