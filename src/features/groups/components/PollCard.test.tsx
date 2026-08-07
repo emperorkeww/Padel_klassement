@@ -124,6 +124,11 @@ describe("<PollCard /> — speeldag uit de agenda halen (#1099)", () => {
     const download = vangDownload();
     renderCard(bookedPoll);
 
+    // Een geboekte kaart opent dichtgeklapt (#1141); annuleren hoort bij de
+    // details, niet bij de twee acties die overblijven.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /details/i }),
+    );
     const knop = await screen.findByRole("button", {
       name: /annuleer speeldag/i,
     });
@@ -149,6 +154,79 @@ describe("<PollCard /> — speeldag uit de agenda halen (#1099)", () => {
     await screen.findByRole("button", { name: /annuleer poll/i });
     expect(
       screen.queryByRole("button", { name: /haal uit je agenda/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// De kaart hield na het boeken elke fase open — deelnemers, twijfelaars,
+// boekgegevens, agenda, deelvinkjes, generator — terwijl alles waarvoor je de
+// pagina opende (de wedstrijden) daaronder stond.
+describe("<PollCard /> — geboekte speeldag klapt dicht (#1141)", () => {
+  beforeEach(() => {
+    tables.play_polls = [bookedPoll];
+    tables.play_poll_options = [option];
+    tables.play_poll_votes = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => [] })),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("toont dicht alleen het moment, de baan en de twee acties", async () => {
+    renderCard(bookedPoll);
+
+    // Wat je aan de deur nodig hebt blijft staan.
+    expect(
+      await screen.findByText(/donderdag 10 januari/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Baan 3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /🖼 delen/i })).toBeInTheDocument();
+
+    // De rest niet: die staat achter "Details".
+    expect(
+      screen.queryByRole("heading", { name: /^boeken$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /annuleer speeldag/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /wijzig baan & code/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("geeft met Details alles terug", async () => {
+    renderCard(bookedPoll);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /details ⌄/i }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /^boeken$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /wijzig baan & code/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /annuleer speeldag/i }),
+    ).toBeInTheDocument();
+  });
+
+  // Zolang er nog gekozen of geboekt wordt valt er niets weg te vouwen.
+  it("laat een poll die nog loopt gewoon openstaan", async () => {
+    renderCard({
+      ...bookedPoll,
+      status: "locked",
+      booked_at: null,
+    });
+
+    await screen.findByRole("heading", { name: /^boeken$/i });
+    expect(
+      screen.queryByRole("button", { name: /details/i }),
     ).not.toBeInTheDocument();
   });
 });

@@ -16,7 +16,7 @@ import {
   type PollOption,
 } from "@/features/groups/pollsApi";
 import { BookingSheet } from "./BookingSheet";
-import { ShareSpeeldag } from "./ShareSpeeldag";
+import { DeelSpeeldag } from "./DeelSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
 import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import type { Profile } from "@/types";
@@ -46,6 +46,7 @@ export function WinnerCard({
   busy,
   run,
   klaarzetActie,
+  compact = false,
 }: {
   poll: PlayPoll;
   option: PollOption;
@@ -57,6 +58,11 @@ export function WinnerCard({
   isManager: boolean;
   busy: boolean;
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
+  /** Dichtgeklapt (#1141): alleen de regel die je aan de deur nodig hebt en de
+   *  twee acties die er ná het boeken nog zijn. De rest — deelnemers,
+   *  twijfelaars, boekgegevens, agenda — staat achter "Details" op de kaart
+   *  eromheen. */
+  compact?: boolean;
   /** De knop die de wedstrijden van deze speeldag klaarzet (#1141). Komt van
    *  de pagina, want de generator heeft de leden, de teams en de historie van
    *  de groep nodig — dingen die deze kaart niet kent. Ontbreekt hij, dan
@@ -164,17 +170,86 @@ export function WinnerCard({
     }
   }
 
+  /** Kop: baangroene band met het moment + status. */
+  const kop = (
+    <div className="winner-card__head">
+      <span className="winner-card__when">
+        🎾 {longDay(o.date)} · {o.start_time}
+      </span>
+      <span className="winner-card__status">
+        {poll.status === "booked" ? "Geboekt ✓" : "Gekozen"}
+      </span>
+    </div>
+  );
+
+  /** Banen (#802) en toegangscode (#675): de plek waar je ze zoekt als je voor
+   *  de deur staat — tik op de code = klembord. Alleen groepsleden zien dit. */
+  const baanEnCode = (
+    <>
+      {banenGeboekt != null && (
+        <span className="winner-card__code winner-card__code--static">
+          🎾 <strong>{courtsLabel(banenGeboekt)}</strong>
+        </span>
+      )}
+      {code != null && (
+        <button
+          type="button"
+          className="winner-card__code"
+          onClick={copyCode}
+          title="Tik om te kopiëren"
+          aria-label={`Toegangscode ${code} kopiëren`}
+        >
+          <span aria-hidden="true">🔑</span> <strong>{code}</strong>
+        </button>
+      )}
+    </>
+  );
+
+  /** Delen en agenda-export, achter één knop (#1141). */
+  const deelKnop = (
+    <DeelSpeeldag
+      groupName={groupName}
+      moment={`${longDay(o.date)} · ${o.start_time}`}
+      // De baan hoort bij de plek en mag gewoon op de poster (#802): anders dan
+      // de toegangscode opent een baannummer geen deur, dus daar hoeft geen
+      // opt-in voor. Bij een lange clubnaam kapt de header-regel zichzelf af.
+      club={`${club.name} · ${o.duration} min${
+        banenGeboekt != null ? ` · ${courtsLabel(banenGeboekt)}` : ""
+      }`}
+      deelnemers={t.yes}
+      profiles={profiles}
+      bestand={`padel-${o.date}.png`}
+      accessCode={code}
+      shareUrl={pollShareUrl(poll.id)}
+      onShareText={shareWinner}
+      onAgenda={exportIcs}
+    />
+  );
+
+  // Dichtgeklapt (#1141): wanneer, waar, welke baan, welke code — en de twee
+  // dingen die er na het boeken nog te doen zijn. Alles wat hier niet staat
+  // komt terug achter "Details" op de kaart eromheen.
+  if (compact) {
+    return (
+      <li className="winner-card winner-card--compact">
+        {kop}
+        <div className="winner-card__body">
+          <p className="winner-card__meta">
+            {o.duration} min · {club.name}
+          </p>
+          <div className="winner-card__code-row">{baanEnCode}</div>
+          <div className="winner-card__actions">
+            {klaarzetActie}
+            {deelKnop}
+          </div>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li className="winner-card">
-      {/* Kop: baangroene band met het moment + status. */}
-      <div className="winner-card__head">
-        <span className="winner-card__when">
-          🎾 {longDay(o.date)} · {o.start_time}
-        </span>
-        <span className="winner-card__status">
-          {poll.status === "booked" ? "Geboekt ✓" : "Gekozen"}
-        </span>
-      </div>
+      {kop}
 
       <div className="winner-card__body">
         <p className="winner-card__meta">
@@ -236,26 +311,8 @@ export function WinnerCard({
               <p className="winner-card__section-done">
                 Geboekt ✓ · {club.name}
               </p>
-              {/* Banen (#802) en toegangscode (#675): de plek waar je ze zoekt
-                  als je voor de deur staat — tik op de code = klembord. Alleen
-                  groepsleden zien dit. */}
               <div className="winner-card__code-row">
-                {banenGeboekt != null && (
-                  <span className="winner-card__code winner-card__code--static">
-                    🎾 <strong>{courtsLabel(banenGeboekt)}</strong>
-                  </span>
-                )}
-                {code != null && (
-                  <button
-                    type="button"
-                    className="winner-card__code"
-                    onClick={copyCode}
-                    title="Tik om te kopiëren"
-                    aria-label={`Toegangscode ${code} kopiëren`}
-                  >
-                    <span aria-hidden="true">🔑</span> <strong>{code}</strong>
-                  </button>
-                )}
+                {baanEnCode}
                 {isManager && (
                   <button
                     type="button"
@@ -280,32 +337,8 @@ export function WinnerCard({
           <section
             className={`winner-card__section${t.yes.length < 4 || !klaarzetActie ? " is-current" : ""}`}
           >
-            <h3 className="winner-card__section-title">Agenda & delen</h3>
-            <div className="winner-card__actions">
-              <button className="btn btn--sm" onClick={exportIcs}>
-                📅 Zet in agenda
-              </button>
-            </div>
-            {/* Twee expliciete keuzes (#675), zoals ShareAvailability: de
-                tekstregels voor de groepschat, of de opstelling als poster
-                met de FUT-kaarten van de deelnemers. */}
-            <ShareSpeeldag
-              groupName={groupName}
-              moment={`${longDay(o.date)} · ${o.start_time}`}
-              // De baan hoort bij de plek en mag gewoon op de poster (#802):
-              // anders dan de toegangscode opent een baannummer geen deur, dus
-              // daar hoeft geen opt-in voor. Bij een lange clubnaam kapt de
-              // header-regel zichzelf af.
-              club={`${club.name} · ${o.duration} min${
-                banenGeboekt != null ? ` · ${courtsLabel(banenGeboekt)}` : ""
-              }`}
-              deelnemers={t.yes}
-              profiles={profiles}
-              bestand={`padel-${o.date}.png`}
-              accessCode={code}
-              shareUrl={pollShareUrl(poll.id)}
-              onShareText={shareWinner}
-            />
+            <h3 className="winner-card__section-title">Delen & agenda</h3>
+            <div className="winner-card__actions">{deelKnop}</div>
           </section>
         )}
 

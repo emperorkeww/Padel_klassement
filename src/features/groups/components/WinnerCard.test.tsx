@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -181,6 +181,8 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
       access_code: "1234",
       courts: "3 & 4",
     });
+    // Delen zit sinds #1141 achter één knop, met de opt-ins in de sheet.
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
     await userEvent.click(screen.getByRole("button", { name: /↗ tekst/i }));
 
     const arg = share.mock.calls[0][0];
@@ -210,6 +212,7 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
       access_code: "b3: 1234",
       courts: "3 & 4",
     });
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
     await userEvent.click(screen.getByRole("button", { name: /zet in agenda/i }));
 
     expect(click).toHaveBeenCalled();
@@ -255,6 +258,43 @@ const ACHT_YES: OptionTally = {
 };
 
 const GEBOEKT = { status: "booked" as const, booked_at: "2026-07-08T12:00:00Z" };
+
+describe("<WinnerCard /> delen & agenda (#1141)", () => {
+  // Twee knoppen, twee vinkjes en een agenda-knop stonden open in de kaart:
+  // vijf regels waarvan de vinkjes het meeste gewicht droegen. Achter één knop
+  // krijgen de keuzes juist ruimte om uit te leggen wat ze doen.
+  it("zet delen, de poster-opt-ins en de agenda-export in één sheet", async () => {
+    renderCard({
+      status: "booked",
+      booked_at: "2026-07-08T12:00:00Z",
+      access_code: "1234",
+    });
+
+    // Dicht in de kaart: alleen de knop.
+    expect(
+      screen.queryByRole("button", { name: /↗ tekst/i }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /🖼 delen/i }));
+    const sheet = await screen.findByRole("dialog", { name: /delen & agenda/i });
+
+    expect(
+      within(sheet).getByRole("button", { name: /↗ tekst/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("button", { name: /🖼 afbeelding/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("checkbox", { name: /toegangscode op de poster/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("checkbox", { name: /qr naar de speeldag/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole("button", { name: /zet in agenda/i }),
+    ).toBeInTheDocument();
+  });
+});
 
 describe("<WinnerCard /> klaarzetten (#1141)", () => {
   it("zet de meegegeven klaarzet-actie in een eigen sectie", () => {
