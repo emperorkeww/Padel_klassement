@@ -136,29 +136,10 @@
   color: var(--accent);
 }
 
-/* ---- Statusglyphs ---- */
-
-/* Rond voor wat vastligt, vierkant voor wat nog een vraag is. Bij zes pixels is
-   dat het enige vormverschil dat nog leest — een streepjesrand valt op die maat
-   uit elkaar. */
-.agenda-glyph {
-  display: inline-block;
-  flex: none;
-  border-radius: 50%;
-}
-.agenda-glyph--booked {
-  background: var(--accent);
-}
-.agenda-glyph--locked {
-  border: 1.5px solid var(--accent);
-}
-.agenda-glyph--open {
-  border-radius: 1px;
-  background: var(--poll);
-}
-.agenda-glyph--past {
-  background: var(--line-strong);
-}
+/* De statusglyphs zelf staan sinds #1123 in ui.css: de groepskeuze op de
+   Spelen-hub gebruikt dezelfde vormtaal, en dit blad laadt alleen wanneer de
+   agenda gemount is. De overrides verderop (gekozen dag, dagsheet-badge) blijven
+   hier — die scopen alleen. */
 
 /* ---- Maandraster ---- */
 

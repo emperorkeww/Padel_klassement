@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { dagLabel, splitMarkers, toetsStap, type AgendaMarker, type RasterDag } from "../agendaLogic";
-import { StatusGlyph } from "./StatusGlyph";
+import { StatusGlyph } from "@/ui/StatusGlyph";
 
 /* ------------------------------------------------------------------ */
 /* Het maandraster (#1091, hervormd in #1112).                         */

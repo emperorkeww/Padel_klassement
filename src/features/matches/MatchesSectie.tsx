@@ -47,6 +47,7 @@ export function MatchesSectie({
   onWisFilters,
   logDirect = false,
   onLogVerbruikt,
+  verbergActie = false,
 }: {
   /** "" = alle groepen. Komt sinds #1123 van de chipstrook op de hub; losse
    *  matches (zonder groep) vallen daarmee buiten een gekozen groep. */
@@ -59,6 +60,10 @@ export function MatchesSectie({
   logDirect?: boolean;
   /** Meldt dat `?log=1` verwerkt is, zodat de pagina hem uit de URL haalt. */
   onLogVerbruikt?: () => void;
+  /** Houdt de zwevende knop uit beeld zolang de pagina erboven zelf iets
+   *  belangrijkers open heeft staan (#1123): op telefoonbreedte ligt hij
+   *  anders precies over de knop van het aanmaakformulier. */
+  verbergActie?: boolean;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -288,7 +293,7 @@ export function MatchesSectie({
       <button
         type="button"
         className={`btn btn--primary matches__fab zwevende-actie${
-          fabVerborgen ? " is-verborgen" : ""
+          fabVerborgen || verbergActie ? " is-verborgen" : ""
         }`}
         onClick={() => openSheet()}
       >

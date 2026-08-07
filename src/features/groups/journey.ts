@@ -1,4 +1,5 @@
 import { activePolls } from "./pollLogic";
+import type { GlyphStatus } from "@/ui/StatusGlyph";
 import { shortDay } from "./planPollHelpers";
 import type { PlayPoll, PollOption } from "./pollsApi";
 
@@ -16,6 +17,11 @@ export type Journey = {
   label: string;
   /** "act" = actie nodig (accent), "info" = staat vast, "idle" = niets gepland. */
   tone: "act" | "info" | "idle";
+  /** De stand van de speeldag zelf, los van de urgentie: "act" dekt zowel een
+   *  lopende poll als een gekozen dag, en daar kan een statusglyph niets mee.
+   *  Null = er loopt niets. Zelfde waardes als het agendaraster (#1112), zodat
+   *  beide plekken dezelfde vormtaal spreken. */
+  status: GlyphStatus | null;
   tab: JourneyTab;
 };
 
@@ -40,6 +46,7 @@ export function journeyFor(
       icon: "📊",
       label: "Poll loopt — stem mee",
       tone: "act",
+      status: "open",
       tab: "plannen",
     };
   }
@@ -48,6 +55,7 @@ export function journeyFor(
       icon: "📆",
       label: `${shortDay(locked.date)} gekozen — boek de baan`,
       tone: "act",
+      status: "locked",
       tab: "plannen",
     };
   }
@@ -56,6 +64,7 @@ export function journeyFor(
       icon: "🎾",
       label: `${shortDay(locked.date)} · ${locked.start_time} geboekt`,
       tone: "info",
+      status: "booked",
       tab: locked.date === today ? "vandaag" : "plannen",
     };
   }
@@ -63,6 +72,7 @@ export function journeyFor(
     icon: null,
     label: "Plan een speeldag →",
     tone: "idle",
+    status: null,
     tab: "plannen",
   };
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
+import { StatusGlyph } from "@/ui/StatusGlyph";
+import type { Journey } from "../journey";
 import type { GroupSummary } from "../api";
 
 /**
@@ -21,6 +23,7 @@ export function GroepStrook({
   onKies,
   onNieuw,
   nieuwRef,
+  journeys,
 }: {
   groepen: GroupSummary[];
   /** "" = alle groepen. */
@@ -29,6 +32,8 @@ export function GroepStrook({
   onNieuw: () => void;
   /** Voor de focusteruggave als het aanmaakformulier sluit (#916). */
   nieuwRef?: RefObject<HTMLButtonElement | null>;
+  /** Reisstatus per groep-id; ontbreekt zolang die query nog loopt. */
+  journeys?: Record<string, Journey>;
 }) {
   const rijRef = useRef<HTMLDivElement>(null);
   const schaduw = useScrollSchaduw(rijRef);
@@ -60,17 +65,28 @@ export function GroepStrook({
         Alle
       </button>
 
-      {groepen.map((g) => (
-        <button
-          key={g.id}
-          type="button"
-          className={`tab ${gekozen === g.id ? "is-active" : ""}`}
-          aria-pressed={gekozen === g.id}
-          onClick={() => onKies(g.id)}
-        >
-          {g.name}
-        </button>
-      ))}
+      {groepen.map((g) => {
+        const journey = journeys?.[g.id] ?? null;
+        return (
+          <button
+            key={g.id}
+            type="button"
+            className={`tab ${gekozen === g.id ? "is-active" : ""}`}
+            aria-pressed={gekozen === g.id}
+            onClick={() => onKies(g.id)}
+          >
+            {/* De stip draagt de status in vórm (WCAG 1.4.1) en is decoratief;
+                de status zelf staat als tekst in de naam van de knop. De lege
+                huls houdt de breedte vast zolang de journeys nog laden — anders
+                verspringen de chips horizontaal zodra ze binnenvallen. */}
+            <span className="groep-strook__stip">
+              {journey?.status && <StatusGlyph status={journey.status} />}
+            </span>
+            {g.name}
+            {journey && <span className="sr-only">, {journey.label}</span>}
+          </button>
+        );
+      })}
 
       {/* Geen filter, dus geen aria-pressed: dit is een actie in dezelfde rij.
           Het label blijft voluit "Nieuwe groep" — de "+" alleen zou een knop

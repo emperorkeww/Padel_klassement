@@ -1830,3 +1830,31 @@ textarea {
   width: 100%;
   max-width: none;
 }
+/* ---- Statusglyphs (#1091/#1112, gedeeld sinds #1123) ---- */
+
+/* Gebruikt door het agendaraster en door de groepskeuze op de Spelen-hub. De
+   klassenamen houden hun "agenda"-voorvoegsel: MaandRaster.test.tsx leest ze
+   letterlijk, en hernoemen levert alleen ruis op. */
+
+/* Rond voor wat vastligt, vierkant voor wat nog een vraag is. Bij zes pixels is
+   dat het enige vormverschil dat nog leest — een streepjesrand valt op die maat
+   uit elkaar. */
+.agenda-glyph {
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+}
+.agenda-glyph--booked {
+  background: var(--accent);
+}
+.agenda-glyph--locked {
+  border: 1.5px solid var(--accent);
+}
+.agenda-glyph--open {
+  border-radius: 1px;
+  background: var(--poll);
+}
+.agenda-glyph--past {
+  background: var(--line-strong);
+}
+

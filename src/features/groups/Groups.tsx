@@ -13,13 +13,8 @@ import { useClub } from "@/features/availability/club";
 import { MatchesSectie } from "@/features/matches/MatchesSectie";
 import { useSpeelParams } from "@/features/matches/speelParams";
 import { getMyGroups, createGroup, type GroupSummary } from "./api";
-import {
-  getGroupPolls,
-  getGroupPollOptions,
-  type PlayPoll,
-  type PollOption,
-} from "./pollsApi";
-import { journeyFor } from "./journey";
+import { getPollsForGroups, getPollOptionsForGroups } from "./pollsApi";
+import { journeyFor, type Journey } from "./journey";
 import { ledenLabel } from "./groepHelpers";
 import { GroepStrook } from "./components/GroepStrook";
 import "./Groups.css";
@@ -28,22 +23,27 @@ import "./Groups.css";
 // matches staan. Bovenaan kies je een groep; alles daaronder — te spelen,
 // historie, loggen — kijkt naar die keuze. "Alle" is de standaard.
 
-// Per groep: alleen wat journeyFor echt gebruikt. De votes werden opgehaald
-// en nooit gelezen — bij 5 groepen 5 nutteloze queries (#674 C1). Het blijft
-// een N+1; één RPC per hub-load is de volgende stap als dat gaat knellen.
+// De reisstatus van álle groepen tegelijk: de strook toont per chip een stip,
+// dus dit is geen bijzaak meer die per kaart mag nadruppelen. Twee queries in
+// totaal in plaats van twee per groep (#674 C1 liet dat TODO staan; met de
+// chips is het moment daar). De votes blijven ongehaald — journeyFor leest ze
+// niet.
 async function loadJourneys(
   groups: GroupSummary[],
-): Promise<Record<string, { polls: PlayPoll[]; options: PollOption[] }>> {
-  const rows = await Promise.all(
-    groups.map(async (g) => {
-      const [polls, options] = await Promise.all([
-        getGroupPolls(g.id),
-        getGroupPollOptions(g.id),
-      ]);
-      return [g.id, { polls, options }] as const;
-    }),
+  today: string,
+  nowMs: number,
+): Promise<Record<string, Journey>> {
+  const ids = groups.map((g) => g.id);
+  const [polls, options] = await Promise.all([
+    getPollsForGroups(ids),
+    getPollOptionsForGroups(ids),
+  ]);
+  return Object.fromEntries(
+    ids.map((id) => [
+      id,
+      journeyFor(polls[id] ?? [], options[id] ?? [], today, nowMs),
+    ]),
   );
-  return Object.fromEntries(rows);
 }
 
 export function Groups() {
@@ -62,8 +62,8 @@ export function Groups() {
 
   const groupKey = (groups.data ?? []).map((g) => g.id).join(",");
   const journeys = useAsync(
-    () => loadJourneys(groups.data ?? []),
-
+    () => loadJourneys(groups.data ?? [], today, Date.now()),
+     
     [groupKey],
   );
 
@@ -73,10 +73,7 @@ export function Groups() {
   // rechtzetten door de URL te herschrijven — dat zou een tweede schrijver zijn
   // én een extra history-entry opleveren.
   const gekozen = list.find((g) => g.id === speel.groep) ?? null;
-  const gekozenJourney = (() => {
-    const j = gekozen ? journeys.data?.[gekozen.id] : null;
-    return j ? journeyFor(j.polls, j.options, today, Date.now()) : null;
-  })();
+  const gekozenJourney = gekozen ? (journeys.data?.[gekozen.id] ?? null) : null;
 
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -173,6 +170,7 @@ export function Groups() {
             onKies={speel.zetGroep}
             onNieuw={() => setNewOpen(true)}
             nieuwRef={nieuwKnopRef}
+            journeys={journeys.data ?? undefined}
           />
 
           {/* De regel onder de strook draagt wat niet in een chip past: hoe
@@ -256,6 +254,7 @@ export function Groups() {
         onWisFilters={speel.wisFilters}
         logDirect={speel.logDirect}
         onLogVerbruikt={speel.verbruikLog}
+        verbergActie={newOpen}
       />
 
       {/* Vrije banen blijft een rustige verwijzing: je komt hier niet om een

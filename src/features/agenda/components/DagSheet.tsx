@@ -31,7 +31,7 @@ import {
   volgendeStap,
   type AgendaMarker,
 } from "../agendaLogic";
-import { StatusGlyph } from "./StatusGlyph";
+import { StatusGlyph } from "@/ui/StatusGlyph";
 import { StemRij } from "./StemRij";
 // De stemknoppen zijn dezelfde als op de Plannen-tab en wonen in Proposals.css;
 // dezelfde weg die PlanTab, MakeTeams en SuggestionsCard nemen. Die regels
