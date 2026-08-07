@@ -93,14 +93,20 @@ describe("<MatchDetail />", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: /score aanpassen/i }),
     );
-    const inputA = screen.getByLabelText(/^score alice anders & bob boers$/i);
+    // Corrigeren gebeurt sinds #1144 in dezelfde sheet als invullen, met
+    // dezelfde previewtekst als de wizard.
+    const inputA = await screen.findByRole("spinbutton", {
+      name: /^score alice anders & bob boers$/i,
+    });
     await userEvent.clear(inputA);
     await userEvent.type(inputA, "2");
     // Live voorbeeld: team B wint nu.
     expect(
-      await screen.findByText(/carol claes & dave de vos wint/i),
+      await screen.findByText(/carol claes & dave de vos winnen/i),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /score opslaan/i }),
+    );
     expect(await screen.findByText(/score bijgewerkt/i)).toBeInTheDocument();
   });
 

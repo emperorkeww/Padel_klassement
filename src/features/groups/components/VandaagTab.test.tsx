@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openScoreSheets } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -579,19 +579,25 @@ describe("<VandaagTab />", () => {
       rounds: [{ round: 2, list: [PLANNED_TODAY] }],
     });
 
-    // De invoer zit sinds #941 achter de uitklapknop; findBy omdat die knop
-    // pas verschijnt zodra de sessie geladen is en de kijker
-    // aanmaker/deelnemer blijkt (#413).
-    await openPlannedCards();
+    // De invoer zit sinds #1144 in een sheet achter de primaire knop; die knop
+    // verschijnt pas zodra de sessie geladen is en de kijker
+    // aanmaker/deelnemer blijkt (#413), vandaar de wachtende helper.
+    await openScoreSheets();
     await userEvent.type(
-      await screen.findByLabelText(/^score alice anders & bob boers$/i),
+      await screen.findByRole("spinbutton", {
+        name: /^score alice anders & bob boers$/i,
+      }),
       "7",
     );
     await userEvent.type(
-      screen.getByLabelText(/^score carol claes & dave de vos$/i),
+      screen.getByRole("spinbutton", {
+        name: /^score carol claes & dave de vos$/i,
+      }),
       "5",
     );
-    await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /uitslag opslaan/i }),
+    );
 
     // Optimistisch: de kaart toont direct de uitslag; de parent herlaadt.
     expect(await screen.findByText("7–5")).toBeInTheDocument();

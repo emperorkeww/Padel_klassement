@@ -13,7 +13,7 @@ vi.mock("@/lib/supabase/client", async () => {
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { MATCH_PLANNED, PROFILES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openPlannedCards, openScoreSheets } from "@/test/plannedCard";
 
 // Alice (p1, de ingelogde gebruiker) bezit groep g1 maar speelt hier niet mee
 // en maakte de match niet aan: Carol tegen Dave, gepland door Bob. Precies de
@@ -69,8 +69,11 @@ describe("<PlannedMatchCard /> groepseigenaar", () => {
     expect(
       await screen.findByRole("button", { name: /^uitslag invullen$/i }),
     ).toBeInTheDocument();
-    await openPlannedCards();
-    expect(await screen.findByText(/opslaan/i)).toBeInTheDocument();
+    // …en achter die knop staat de uitslag-sheet met haar opslagknop (#1144).
+    await openScoreSheets();
+    expect(
+      await screen.findByRole("button", { name: /uitslag opslaan/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText(/alleen de spelers, de aanmaker of de groepseigenaar/i),
     ).not.toBeInTheDocument();
