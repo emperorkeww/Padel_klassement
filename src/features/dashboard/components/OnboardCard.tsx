@@ -82,7 +82,7 @@ export function OnboardCard({
         />
         <OnboardStep
           done={hasPlayed}
-          to="/matches"
+          to="/spelen?log=1"
           label="De kooi in!"
           hint="Log je eerste match of genereer direct evenwichtige teams om te knallen."
         />

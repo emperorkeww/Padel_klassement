@@ -1086,7 +1086,7 @@ export function Leaderboard() {
               icon="🏆"
               title="De trofeeënkast staat nog leeg."
               action={
-                <Link className="btn btn--primary" to="/matches">
+                <Link className="btn btn--primary" to="/spelen">
                   Naar matches
                 </Link>
               }

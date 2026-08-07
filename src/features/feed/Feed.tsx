@@ -567,7 +567,7 @@ export function Feed() {
               icon="😴"
               title="Iedereen zit stil."
               action={
-                <Link className="btn btn--primary" to="/matches">
+                <Link className="btn btn--primary" to="/spelen?log=1">
                   Uitslag invullen
                 </Link>
               }

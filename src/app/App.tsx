@@ -13,7 +13,6 @@ const AuthBevestigen = lazy(() => import("@/features/auth/AuthBevestigen"));
 const Dashboard = lazy(() => import("@/features/dashboard/Dashboard"));
 const Feed = lazy(() => import("@/features/feed/Feed"));
 const Leaderboard = lazy(() => import("@/features/standings/Leaderboard"));
-const Matches = lazy(() => import("@/features/matches/Matches"));
 const Groups = lazy(() => import("@/features/groups/Groups"));
 const GroupDetail = lazy(() => import("@/features/groups/GroupDetail"));
 const JoinGroup = lazy(() => import("@/features/groups/JoinGroup"));
@@ -143,7 +142,10 @@ function App() {
               <Route path="/clubblad" element={<Feed />} />
               <Route path="/feed" element={<Navigate to="/clubblad" replace />} />
               <Route path="/klassement" element={<Leaderboard />} />
-              <Route path="/matches" element={<Matches />} />
+              {/* De Matches-tab is opgegaan in Spelen (#1123). Deze redirect
+                  blijft permanent staan: al verstuurde pushmeldingen dragen
+                  "/matches" in hun payload, en die leven door op telefoons. */}
+              <Route path="/matches" element={<RedirectMetQuery to="/spelen" />} />
               <Route path="/banen" element={<Availability />} />
               {/* Agenda (#1091): de speeldagen van al je groepen in de tijd. */}
               <Route path="/agenda" element={<Agenda />} />

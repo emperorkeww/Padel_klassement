@@ -10,7 +10,6 @@ import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
-import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { MatchFilters } from "@/features/matches/components/MatchFilters";
 import {
@@ -44,16 +43,15 @@ const PAGINA = 100;
 export function MatchesSectie({
   groepId,
   periode,
-  onGroep,
   onPeriode,
   onWisFilters,
   logDirect = false,
   onLogVerbruikt,
 }: {
-  /** "" = alle groepen. */
+  /** "" = alle groepen. Komt sinds #1123 van de chipstrook op de hub; losse
+   *  matches (zonder groep) vallen daarmee buiten een gekozen groep. */
   groepId: string;
   periode: Periode;
-  onGroep: (id: string) => void;
   onPeriode: (p: Periode) => void;
   /** Wist groep én periode in één keer — bewust één callback, geen twee. */
   onWisFilters: () => void;
@@ -95,7 +93,6 @@ export function MatchesSectie({
   // achter. Minder betekent: dit is alles.
   const afgekapt = (matches.data?.length ?? 0) >= limiet;
   const teams = useAsync(getTeamsMap, []);
-  const groups = useAsync(getMyGroups, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
   // Upsets rekenen met de échte pre-match ratings van precies deze matches
@@ -179,12 +176,10 @@ export function MatchesSectie({
   return (
     <>
       <MatchFilters
-        groups={groups.data ?? []}
-        groupId={groepId}
-        onGroup={onGroep}
         periode={periode}
         onPeriode={onPeriode}
         onWis={onWisFilters}
+        extraFilterActief={!!groepId}
       />
 
       {/* Filteren op groep of periode herschikt de historie zonder dat iets

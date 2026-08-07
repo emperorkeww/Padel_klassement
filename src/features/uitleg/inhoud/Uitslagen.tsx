@@ -8,8 +8,8 @@ export function Uitslagen() {
     <>
       <p>
         Een uitslag invoeren gaat in twee stappen: eerst tik je aan wie er
-        speelden, dan vul je de score in. Dat kan vanaf{" "}
-        <Link to="/matches">Matches</Link>, of meteen bij de ronde op de
+        speelden, dan vul je de score in. Dat kan met de knop onderaan{" "}
+        <Link to="/spelen">Spelen</Link>, of meteen bij de ronde op de
         Vandaag-tab van je groep.
       </p>
       <p>

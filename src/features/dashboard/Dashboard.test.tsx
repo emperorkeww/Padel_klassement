@@ -250,7 +250,7 @@ describe("<Dashboard />", () => {
       ).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: /uitslag invullen/i }),
-      ).toHaveAttribute("href", "/matches");
+      ).toHaveAttribute("href", "/spelen?log=1");
       // Geen inklapper met lege kaarten eronder.
       expect(container.querySelector("details.dash-cijfers")).toBeNull();
     } finally {
