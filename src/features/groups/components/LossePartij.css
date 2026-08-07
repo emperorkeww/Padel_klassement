@@ -1,5 +1,5 @@
-/* Vandaag-tab (#377, sinds #674 ook de teamgenerator van de oude Teams-tab).
-   De dagkop bovenaan staat in DagKop.css. */
+/* Het blok "Losse partij" (#722). Verhuisd uit VandaagTab.css bij #1133:
+   ook de speeldagpagina zet dit blok, dus het hoort bij de component. */
 
 /* Losse match loggen/plannen binnen de groep. Stond als gedempte voetnoot
    onder de teamgenerator (#364) en verdween zodra de dag liep in de inklapper
@@ -45,10 +45,3 @@
   display: flex;
   gap: var(--sp-2);
 }
-
-/* De rondes met hun wedstrijdkaarten staan sinds #1133 in RondeBlok.css,
-   bij de component die ze zet: ook de speeldagpagina rendert die rondes. */
-
-/* De afsluitkaart die hier stond ging op in de dagkop (#839): de stand-CTA en
-   de deelposter staan nu in DagKop.css, zodat dezelfde actie niet verhuist
-   zodra de laatste uitslag binnen is. */

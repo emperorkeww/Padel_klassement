@@ -6,10 +6,7 @@ import { VolgendeRonde } from "./VolgendeRonde";
 import { RondeBlok } from "./RondeBlok";
 import { ShareEvening } from "./ShareEvening";
 import { VendettaCard } from "./VendettaCard";
-import {
-  NewMatchSheet,
-  type NewMatchMode,
-} from "@/features/matches/components/NewMatchSheet";
+import { LossePartij } from "./LossePartij";
 import type { ZwartePiet } from "@/features/groups/zwartePiet";
 import type { PlayPoll, PollOption } from "@/features/groups/pollsApi";
 import type { Upset } from "@/features/matches/upset";
@@ -21,7 +18,6 @@ import type {
   RatingPoint,
   Team,
 } from "@/types";
-import "./VandaagTab.css";
 
 // De Vandaag-tab van de groepspagina: één tab voor de hele speeldag (#674 A2).
 // Teams maken stond eerst op een aparte Teams-tab (#364) en spelen/uitslagen
@@ -109,10 +105,6 @@ export function VandaagTab({
   onGuestCreated,
   onShowStand,
 }: VandaagTabProps) {
-  // Losse match loggen/plannen binnen de groep (telt mee in stand + avondsamenvatting).
-  const [logOpen, setLogOpen] = useState(false);
-  const [logMode, setLogMode] = useState<NewMatchMode>("score");
-
   // Rondes die de gebruiker zelf open- of dichtklapte. Wat er niet in staat
   // volgt de dag: een afgeronde ronde klapt dicht, de ronde met openstaande
   // uitslagen blijft open — dáár hoor je te kijken.
@@ -157,45 +149,18 @@ export function VandaagTab({
     onGenerated: onMatches,
   };
 
-  // Kop en woordkeuze gelijk aan de Losse match-kaart op de hub (#674 B5):
-  // het bleef hetzelfde ding, maar het heette hier anders en had als enige
-  // blok geen titel. Sinds #722 het eerste blok van de tab: dit is de enige
-  // manier om binnen een groep een partij buiten de rondes om te loggen, dus
-  // hij hoort niet onder de generator of in een inklapper te liggen.
+  // Losse partij binnen de groep (#722): buiten de rondes om gespeeld of
+  // gepland. Sinds #1133 een eigen component, want de speeldagpagina zet
+  // hetzelfde blok — daar met het moment van die speeldag voorgevuld.
   const losseMatch = (
-    <section className="group-log" aria-labelledby="group-log-title">
-      <div className="group-log__intro">
-        <h3 className="group-log__title" id="group-log-title">
-          Losse partij
-        </h3>
-        <p className="group-log__hint">
-          Buiten de rondes om gespeeld of eentje inplannen? Telt gewoon mee in
-          de groepsstand en de avondsamenvatting.
-        </p>
-      </div>
-      <div className="group-log__actions">
-        <button
-          className="btn btn--sm"
-          disabled={busy}
-          onClick={() => {
-            setLogMode("score");
-            setLogOpen(true);
-          }}
-        >
-          + Match loggen
-        </button>
-        <button
-          className="btn btn--sm"
-          disabled={busy}
-          onClick={() => {
-            setLogMode("plan");
-            setLogOpen(true);
-          }}
-        >
-          Match plannen
-        </button>
-      </div>
-    </section>
+    <LossePartij
+      groupId={groupId}
+      players={groupPlayers}
+      intensiteit={intensiteit}
+      busy={busy}
+      onCreated={onMatches}
+      onGuestCreated={onGuestCreated}
+    />
   );
 
   return (
@@ -286,17 +251,6 @@ export function VandaagTab({
         zwartePiet={zwartePiet}
         today={today}
         timezone={timezone}
-      />
-
-      <NewMatchSheet
-        open={logOpen}
-        players={groupPlayers}
-        mode={logMode}
-        groupId={groupId}
-        intensiteit={intensiteit}
-        onClose={() => setLogOpen(false)}
-        onCreated={onMatches}
-        onGuestCreated={onGuestCreated}
       />
     </>
   );

@@ -55,6 +55,7 @@ export function NewMatchSheet({
   mode,
   groupId,
   intensiteit = "gemeen",
+  whenDefault = null,
   onClose,
   onCreated,
   onGuestCreated,
@@ -72,6 +73,11 @@ export function NewMatchSheet({
   /** Roast-toon van de groep waarin gelogd wordt (#183), voor Coach Rudy's
    *  reactie op je eigen uitslag. Buiten groepscontext valt hij op `gemeen`. */
   intensiteit?: RoastIntensiteit;
+  /** Voorgevuld tijdstip in het "Wanneer?"-veld, als datetime-local-waarde
+   *  ("YYYY-MM-DDTHH:MM"). Voor een sheet die bij een moment hoort — de
+   *  speeldagpagina vult het uur van die avond in (#1133). Een bewaard concept
+   *  wint: dat is invoer van de gebruiker zelf. */
+  whenDefault?: string | null;
   onClose: () => void;
   onCreated: () => void;
   /** Aangeroepen nadat een gastspeler is aangemaakt, zodat de ouder zijn
@@ -156,7 +162,9 @@ export function NewMatchSheet({
     setScoreB("");
     setShowSets(false);
     setSets([emptySet()]);
-    setWhen("");
+    // Leeg tenzij de aanroeper een moment meegaf: dan hoort de match op dat
+    // uur, niet "wanneer je dit invult" (#1133).
+    setWhen(whenDefault ?? "");
     setCourtType(null);
     setWagerDrink(null);
     setWagerQty(1);

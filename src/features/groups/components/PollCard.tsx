@@ -75,6 +75,7 @@ export function PollCard({
   spotlight,
   roundsExist,
   rondesVandaag,
+  wedstrijdenAnker,
   onRoundsMade,
 }: {
   poll: PlayPoll;
@@ -93,6 +94,9 @@ export function PollCard({
   roundsExist?: boolean;
   /** Aantal rondes dat al klaarstaat — bepaalt de starttijden (#827). */
   rondesVandaag?: number;
+  /** Anker naar het wedstrijdenblok op dezelfde pagina (#1133); doorgegeven
+   *  aan de winner-card, die er zijn CTA en toast op afstemt. */
+  wedstrijdenAnker?: string;
   /** Rondes klaargezet vanuit deze kaart — voedt de Klaar-fase (#349). */
   onRoundsMade?: () => void;
 }) {
@@ -442,6 +446,7 @@ export function PollCard({
                 run={run}
                 roundsExist={roundsExist}
                 rondesVandaag={rondesVandaag}
+                wedstrijdenAnker={wedstrijdenAnker}
                 onRoundsMade={onRoundsMade}
               />
             );

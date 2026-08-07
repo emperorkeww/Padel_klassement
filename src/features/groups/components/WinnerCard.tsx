@@ -49,6 +49,7 @@ export function WinnerCard({
   run,
   roundsExist = false,
   rondesVandaag = 0,
+  wedstrijdenAnker,
   onRoundsMade,
 }: {
   poll: PlayPoll;
@@ -66,6 +67,9 @@ export function WinnerCard({
   /** Rondes die op de dag van dit moment al klaarstaan: het vertrekpunt voor
    *  de starttijden van de volgende rondes (#827). */
   rondesVandaag?: number;
+  /** Anker naar het wedstrijdenblok op dezelfde pagina (#1133). Zonder waarde
+   *  wijst de CTA naar de Spelen-tab, zoals vanaf de groepspagina hoort. */
+  wedstrijdenAnker?: string;
   /** Rondes klaargezet — laat de tab-fasebalk meteen naar Klaar springen. */
   onRoundsMade?: () => void;
 }) {
@@ -215,10 +219,13 @@ export function WinnerCard({
       }
       setRoundsMade((n) => n + rondes);
       onRoundsMade?.();
+      // "Zie Vandaag" klopt alleen vanaf de groepspagina: op de speeldagpagina
+      // staan de wedstrijden hieronder, ook als die dag nog moet komen (#1133).
+      const waar = wedstrijdenAnker ? "zie hieronder" : "zie Vandaag";
       toast.success(
         total === 1
-          ? "Eerlijke match klaargezet — zie Vandaag."
-          : `${total} eerlijke matches klaargezet — zie Vandaag.`,
+          ? `Eerlijke match klaargezet — ${waar}.`
+          : `${total} eerlijke matches klaargezet — ${waar}.`,
       );
     });
   }
@@ -413,14 +420,22 @@ export function WinnerCard({
             {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. Mét
                 ?tab=spelen (#727) — het kale pad is de route waar je al op
                 staat, dus dat wisselt geen tab. */}
-            {roundsDone && (
-              <Link
-                className="btn btn--sm"
-                to={`/groepen/${poll.group_id}?tab=spelen`}
-              >
-                Bekijk de wedstrijden →
-              </Link>
-            )}
+            {roundsDone &&
+              (wedstrijdenAnker ? (
+                // Op de speeldagpagina staat het blok een stukje lager op
+                // dezelfde pagina; een link naar de Spelen-tab zou juist
+                // wegvoeren van waar de wedstrijden staan.
+                <a className="btn btn--sm" href={wedstrijdenAnker}>
+                  Bekijk de wedstrijden ↓
+                </a>
+              ) : (
+                <Link
+                  className="btn btn--sm"
+                  to={`/groepen/${poll.group_id}?tab=spelen`}
+                >
+                  Bekijk de wedstrijden →
+                </Link>
+              ))}
             {t.yes.length < 4 && (
               <span className="winner-card__rounds-hint">
                 Nog <strong>{4 - t.yes.length}</strong>{" "}
