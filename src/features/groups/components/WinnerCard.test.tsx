@@ -66,7 +66,6 @@ function renderCard(
   poll: Partial<PlayPoll> = {},
   extra: {
     tally?: OptionTally;
-    klaarzetActie?: React.ReactNode;
     profiles?: Record<string, Profile>;
   } = {},
 ) {
@@ -78,7 +77,6 @@ function renderCard(
             poll={{ ...POLL, ...poll }}
             option={OPTION}
             tally={extra.tally ?? TALLY}
-            klaarzetActie={extra.klaarzetActie}
             perPerson={null}
             club={CLUB}
             groupName="Vrijdagavond padel"
@@ -243,11 +241,10 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
   });
 });
 
-// ── Klaarzetten (#1141) ──────────────────────────────────────────────
-// De kaart had een eigen Elo-generator met een rondeteller (#727), los van het
-// speelformaat-paneel dat op Vandaag de indeling maakt. Twee generatoren op één
-// pagina, waarvan er één geen spelerselectie en geen vormkeuze had. De knop
-// komt nu van de pagina.
+// ── Klaarzetten (#1146) ──────────────────────────────────────────────
+// De kaart had een eigen Elo-generator (#727), daarna een slot voor de knop
+// van de pagina (#1141). Nu staat het speelformaat-paneel open op de pagina
+// zelf, dus de kaart heeft er niets meer over te zeggen.
 
 const ACHT_YES: OptionTally = {
   yes: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
@@ -296,28 +293,15 @@ describe("<WinnerCard /> delen & agenda (#1141)", () => {
   });
 });
 
-describe("<WinnerCard /> klaarzetten (#1141)", () => {
-  it("zet de meegegeven klaarzet-actie in een eigen sectie", () => {
-    renderCard(GEBOEKT, {
-      tally: ACHT_YES,
-      klaarzetActie: <button>⚡ Wedstrijden klaarzetten</button>,
-    });
-
-    expect(
-      screen.getByRole("heading", { name: /klaarzetten/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /wedstrijden klaarzetten/i }),
-    ).toBeInTheDocument();
-  });
-
-  // Zodra de wedstrijden er zijn geeft de pagina geen actie meer mee: dan staat
-  // "+ Volgende ronde" onder de rondes, waar je op dat moment kijkt.
-  it("laat de sectie weg zonder actie", () => {
+describe("<WinnerCard /> klaarzetten (#1146)", () => {
+  it("laat het indelen aan de pagina", () => {
     renderCard(GEBOEKT, { tally: ACHT_YES });
 
     expect(
       screen.queryByRole("heading", { name: /klaarzetten/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /wedstrijden klaarzetten/i }),
     ).not.toBeInTheDocument();
   });
 });

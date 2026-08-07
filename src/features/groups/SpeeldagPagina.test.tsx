@@ -231,8 +231,13 @@ describe("<SpeeldagPagina />", () => {
     expect(
       screen.getByRole("button", { name: /toegangscode 1234 kopiëren/i }),
     ).toBeInTheDocument();
+    // Indelen is waarvoor je hier bent zolang er niets staat, dus het paneel
+    // staat open op de pagina in plaats van achter een knop (#1146).
     expect(
-      screen.getByRole("button", { name: /wedstrijden klaarzetten/i }),
+      screen.getByRole("heading", { name: /wie speelt er mee/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /speelformaat/i }),
     ).toBeInTheDocument();
   });
 
@@ -309,8 +314,10 @@ describe("<SpeeldagPagina />", () => {
     expect(
       await screen.findByRole("button", { name: /\+ volgende ronde/i }),
     ).toBeInTheDocument();
+    // Het paneel staat dan niet meer open bovenaan: de wedstrijden zijn waar je
+    // naar kijkt, en de generator hoort daaronder.
     expect(
-      screen.queryByRole("button", { name: /wedstrijden klaarzetten/i }),
+      screen.queryByRole("heading", { name: /speelformaat/i }),
     ).not.toBeInTheDocument();
   });
 
