@@ -57,30 +57,44 @@ describe("<Groups />", () => {
     for (const [k, v] of Object.entries(TABLES)) tables[k] = [...v];
   });
 
-  // #1123: de groepen zijn een keuzestrook geworden. Kiezen scoopt de
-  // matchlijst eronder; de weg naar de groepspagina staat in de regel eronder.
-  it("toont de groepen als chips en scoopt de matches op je keuze", async () => {
+  // #1134: de groepen zijn kaarten die naar de groep gaan — geen chips die de
+  // lijst eronder filteren. Dat filteren doet het <select> in de matchsectie.
+  it("toont de groepen als kaarten die naar de groepspagina gaan", async () => {
     renderPage();
-    const chip = await screen.findByRole("button", {
+    const kaart = await screen.findByRole("link", {
       name: /vrijdagavond padel/i,
     });
-    expect(chip).toHaveAttribute("aria-pressed", "false");
-    // "Alle" is de standaard: geen groep in de URL, alles in de lijst.
-    expect(screen.getByRole("button", { name: /^alle$/i })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(kaart).toHaveAttribute("href", "/groepen/g1");
+    // Wat niet in een chip paste staat nu gewoon op de kaart.
+    expect(within(kaart).getByText(/eigenaar/i)).toBeInTheDocument();
+    expect(within(kaart).getByText(/4 leden/i)).toBeInTheDocument();
+  });
+
+  // Een kaart aantikken navigeert; hij mag de historie eronder niet stiekem
+  // scopen. De scope komt uit de URL, en die schrijft alleen het filter.
+  it("laat de matchsectie ongemoeid als je een kaart aantikt", async () => {
+    renderPage();
+    const kaart = await screen.findByRole("link", {
+      name: /vrijdagavond padel/i,
+    });
     expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:alle");
 
-    await userEvent.click(chip);
-    expect(chip).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:g1");
+    await userEvent.click(kaart);
+    expect(await screen.findByText(/detailpagina/i)).toBeInTheDocument();
+  });
 
-    // De regel onder de strook draagt wat niet in een chip past.
-    expect(screen.getByText(/eigenaar/i)).toBeInTheDocument();
-    expect(screen.getByText(/4 leden/i)).toBeInTheDocument();
-    const open = screen.getByRole("link", { name: /open groep/i });
-    expect(open).toHaveAttribute("href", "/groepen/g1");
+  // De groepsscope leeft in de URL en blijft daar werken, ook nu de kaarten hem
+  // niet meer zetten: gedeelde links en /matches?groep=… lopen hierlangs.
+  it("geeft ?groep= uit de URL door aan de matchsectie", async () => {
+    renderPage("/spelen?groep=g1");
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:g1");
+  });
+
+  it("valt terug op alle groepen bij een ?groep= die niet van jou is", async () => {
+    renderPage("/spelen?groep=onbekend");
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:alle");
   });
 
   // #674 A5: het aanmaakformulier stond altijd open en woog even zwaar als de
@@ -88,7 +102,7 @@ describe("<Groups />", () => {
   // actie van de pagina, dus dan staat het meteen open.
   it("verbergt het aanmaakformulier achter een knop zodra je een groep hebt", async () => {
     renderPage();
-    await screen.findByRole("button", { name: /vrijdagavond padel/i });
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
     expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
 
     await userEvent.click(
@@ -109,7 +123,7 @@ describe("<Groups />", () => {
 
   it("maakt een groep aan en gaat door naar de ledentab", async () => {
     renderPage();
-    await screen.findByRole("button", { name: /vrijdagavond padel/i });
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
     await userEvent.click(
       screen.getByRole("button", { name: /groep maken/i }),
     );
@@ -127,12 +141,14 @@ describe("<Groups />", () => {
   // #674 A5 zette losse match en vrije banen in een secundaire rij ónder de
   // groepen; #916 haalde "losse match" daar weer uit. Sinds #1123 is die kaart
   // helemaal overbodig: de matches staan hier zelf, met de logknop erbij.
-  it("zet de matches onder de groepskeuze", async () => {
+  it("zet de matches onder de groepen", async () => {
     const { container } = renderPage();
-    const strook = await screen.findByRole("group", { name: /groep kiezen/i });
+    const groepen = await screen.findByRole("region", {
+      name: /mijn groepen/i,
+    });
     const sectie = screen.getByTestId("matchsectie");
     expect(
-      strook.compareDocumentPosition(sectie) & Node.DOCUMENT_POSITION_FOLLOWING,
+      groepen.compareDocumentPosition(sectie) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     // De losse-matchkaart is weg; loggen loopt via de knop in de sectie.
     expect(container.querySelector(".hub-los")).toBeNull();
@@ -146,11 +162,14 @@ describe("<Groups />", () => {
   // label in de kop. Achteraan de filterrij was hij een naamloos plusje.
   it("zet 'Groep maken' als benoemde actie in de paginakop", async () => {
     const { container } = renderPage();
-    await screen.findByRole("button", { name: /vrijdagavond padel/i });
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
 
     const knop = screen.getByRole("button", { name: /groep maken/i });
     expect(container.querySelector(".page-head")).toContainElement(knop);
-    expect(container.querySelector(".groep-strook__nieuw")).toBeNull();
+    // En niet als naamloze knop tussen de groepen zelf.
+    expect(
+      container.querySelector(".mijn-groepen__rij")?.querySelector("button"),
+    ).toBeFalsy();
   });
 
   // De sectie mag de groepen niet zelf ophalen: de pagina heeft ze al, en een
@@ -169,7 +188,7 @@ describe("<Groups />", () => {
   it("blijft op de hub staan met één groep, inclusief nieuwe groep", async () => {
     renderPage("/spelen");
     expect(
-      await screen.findByRole("button", { name: /vrijdagavond padel/i }),
+      await screen.findByRole("link", { name: /vrijdagavond padel/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /groep maken/i }),
@@ -177,29 +196,25 @@ describe("<Groups />", () => {
     expect(screen.queryByText(/detailpagina/i)).not.toBeInTheDocument();
   });
 
-  // #674 B6 gaf een groep die op je stem wacht een eigen accent op de kaart.
-  // De kaarten zijn weg (#1123); de reisstatus staat nu voluit in de regel
-  // onder de strook, zodra je die groep kiest. De statusstip ín de chip volgt
-  // in een aparte stap.
-  it("toont de reisstatus van de gekozen groep", async () => {
-    const { container } = renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /vrijdagavond padel/i }),
-    );
-    // De fixture-poll staat open → er wordt een stem gevraagd. Het label staat
-    // zichtbaar in de regel onder de strook; in de chip zelf staat dezelfde
-    // status alleen voor de screenreader (#1123), vandaar de scope.
-    const regel = await screen.findByText(/4 leden/i).then((el) => el.closest(".groep-regel")!);
-    expect(within(regel as HTMLElement).getByText(/poll loopt — stem mee/i)).toBeInTheDocument();
-    // En in de chip hoor je hem, zonder hem twee keer te zien.
+  // #674 B6 gaf een groep die op je stem wacht een eigen accent. Sinds #1134
+  // staat die status op de kaart zelf — voor élke groep tegelijk, niet alleen
+  // voor de groep die je toevallig aangetikt had.
+  it("toont de reisstatus op de kaart zonder dat je hem eerst kiest", async () => {
+    renderPage();
+    const kaart = await screen.findByRole("link", {
+      name: /vrijdagavond padel/i,
+    });
+    // De fixture-poll staat open → er wordt een stem gevraagd.
     expect(
-      container.querySelectorAll(".groep-strook .sr-only"),
-    ).toHaveLength(1);
+      await within(kaart).findByText(/poll loopt — stem mee/i),
+    ).toBeInTheDocument();
+    // De stip draagt dezelfde status in vorm (WCAG 1.4.1) en is decoratief.
+    expect(kaart.querySelector(".agenda-glyph--open")).not.toBeNull();
   });
 
   it("laat het aanmaakformulier weer sluiten", async () => {
     renderPage();
-    await screen.findByRole("button", { name: /vrijdagavond padel/i });
+    await screen.findByRole("link", { name: /vrijdagavond padel/i });
 
     const openen = screen.getByRole("button", { name: /groep maken/i });
     await userEvent.click(openen);
