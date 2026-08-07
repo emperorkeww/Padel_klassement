@@ -232,7 +232,7 @@ describe("<SpeeldagPagina />", () => {
       screen.getByRole("button", { name: /toegangscode 1234 kopiëren/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /genereer wedstrijden/i }),
+      screen.getByRole("button", { name: /wedstrijden klaarzetten/i }),
     ).toBeInTheDocument();
   });
 
@@ -297,17 +297,21 @@ describe("<SpeeldagPagina />", () => {
     });
   });
 
-  // De CTA onder het klaarzetten zei "zie Vandaag" en linkte naar de
-  // Spelen-tab — precies wég van de wedstrijden die hier gewoon staan (#1133).
-  it("wijst de wedstrijden-CTA naar het blok op deze pagina", async () => {
+  // Eén knop tegelijk (#1141): zolang er niets staat is klaarzetten de actie
+  // van de kaart; zodra de wedstrijden er zijn verhuist dezelfde knop naar
+  // "+ Volgende ronde" onder die wedstrijden, waar je op dat moment kijkt.
+  it("verhuist de klaarzet-knop naar de wedstrijden zodra die er zijn", async () => {
     tables.play_polls = [bookedPoll];
     tables.teams = TEAMS;
     tables.matches = [dagMatch()];
     renderPagina("poll-booked");
 
     expect(
-      await screen.findByRole("link", { name: /bekijk de wedstrijden/i }),
-    ).toHaveAttribute("href", "#speeldag-wedstrijden");
+      await screen.findByRole("button", { name: /\+ volgende ronde/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /wedstrijden klaarzetten/i }),
+    ).not.toBeInTheDocument();
   });
 
   // Een losse partij hoort bij de avond waar je op staat. Op een speeldag die

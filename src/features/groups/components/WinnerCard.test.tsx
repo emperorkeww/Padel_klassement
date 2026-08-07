@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -14,24 +14,6 @@ vi.mock("@/features/groups/pollsApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/features/groups/pollsApi")>()),
   markPollBooked,
   setPollBookingDetails,
-}));
-
-// Rondes klaarzetten (#727) raakt twee endpoints; de indeling zelf komt uit
-// de echte fairTeams, zodat de test ook ziet dát elke ronde anders wordt.
-const createFairRound = vi.hoisted(() =>
-  vi.fn(async (_groupId: string, courts: unknown[]) =>
-    courts.map((_, i) => `m-${i}`),
-  ),
-);
-const getPlayerRatings = vi.hoisted(() => vi.fn(async () => ({})));
-
-vi.mock("@/features/groups/api", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/groups/api")>()),
-  createFairRound,
-}));
-vi.mock("@/features/standings/ratingsApi", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/standings/ratingsApi")>()),
-  getPlayerRatings,
 }));
 
 import { WinnerCard } from "./WinnerCard";
@@ -84,7 +66,7 @@ function renderCard(
   poll: Partial<PlayPoll> = {},
   extra: {
     tally?: OptionTally;
-    roundsExist?: boolean;
+    klaarzetActie?: React.ReactNode;
     profiles?: Record<string, Profile>;
   } = {},
 ) {
@@ -96,7 +78,7 @@ function renderCard(
             poll={{ ...POLL, ...poll }}
             option={OPTION}
             tally={extra.tally ?? TALLY}
-            roundsExist={extra.roundsExist}
+            klaarzetActie={extra.klaarzetActie}
             perPerson={null}
             club={CLUB}
             groupName="Vrijdagavond padel"
@@ -258,10 +240,11 @@ describe("<WinnerCard /> banen & toegangscode (#675, #802)", () => {
   });
 });
 
-// ── Wedstrijden klaarzetten (#727) ────────────────────────────────────
-// De reis-CTA linkte naar het kale groepspad, maar dat is de route waar je
-// al op staat — dus de tab wisselde niet. En een hele avond vooruit plannen
-// kostte evenveel tikken als rondes.
+// ── Klaarzetten (#1141) ──────────────────────────────────────────────
+// De kaart had een eigen Elo-generator met een rondeteller (#727), los van het
+// speelformaat-paneel dat op Vandaag de indeling maakt. Twee generatoren op één
+// pagina, waarvan er één geen spelerselectie en geen vormkeuze had. De knop
+// komt nu van de pagina.
 
 const ACHT_YES: OptionTally = {
   yes: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
@@ -273,48 +256,29 @@ const ACHT_YES: OptionTally = {
 
 const GEBOEKT = { status: "booked" as const, booked_at: "2026-07-08T12:00:00Z" };
 
-describe("<WinnerCard /> wedstrijden klaarzetten (#727)", () => {
-  beforeEach(() => {
-    createFairRound.mockClear();
-    getPlayerRatings.mockClear();
-  });
-
-  it("stuurt 'Bekijk de wedstrijden' naar de Vandaag-tab, niet naar het kale pad", () => {
-    renderCard(GEBOEKT, { tally: ACHT_YES, roundsExist: true });
+describe("<WinnerCard /> klaarzetten (#1141)", () => {
+  it("zet de meegegeven klaarzet-actie in een eigen sectie", () => {
+    renderCard(GEBOEKT, {
+      tally: ACHT_YES,
+      klaarzetActie: <button>⚡ Wedstrijden klaarzetten</button>,
+    });
 
     expect(
-      screen.getByRole("link", { name: /bekijk de wedstrijden/i }),
-    ).toHaveAttribute("href", "/groepen/g1?tab=spelen");
+      screen.getByRole("heading", { name: /klaarzetten/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /wedstrijden klaarzetten/i }),
+    ).toBeInTheDocument();
   });
 
-  it("laat het aantal rondes kiezen tot 10 en zet ze in één tik klaar", async () => {
+  // Zodra de wedstrijden er zijn geeft de pagina geen actie meer mee: dan staat
+  // "+ Volgende ronde" onder de rondes, waar je op dat moment kijkt.
+  it("laat de sectie weg zonder actie", () => {
     renderCard(GEBOEKT, { tally: ACHT_YES });
 
-    const keuze = screen.getByLabelText(/rondes/i);
-    expect(within(keuze).getAllByRole("option")).toHaveLength(10);
-
-    // Twee volle banen × drie rondes = zes matches; de knop zegt het ook.
-    await userEvent.selectOptions(keuze, "3");
-    const knop = screen.getByRole("button", { name: /genereer 3 rondes/i });
-    expect(knop).toHaveTextContent("6 matches");
-
-    await userEvent.click(knop);
-    expect(createFairRound).toHaveBeenCalledTimes(3);
-    // Elke ronde krijgt een eigen indeling (oplopende variant), anders zou
-    // je drie keer exact dezelfde teams op de baan zetten.
-    const indelingen = createFairRound.mock.calls.map(([, courts]) =>
-      JSON.stringify(courts),
-    );
-    expect(new Set(indelingen).size).toBeGreaterThan(1);
-  });
-
-  it("houdt één ronde de standaard", async () => {
-    renderCard(GEBOEKT, { tally: ACHT_YES });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: /genereer wedstrijden/i }),
-    );
-    expect(createFairRound).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("heading", { name: /klaarzetten/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

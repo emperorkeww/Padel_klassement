@@ -403,7 +403,7 @@ describe("<VandaagTab />", () => {
 
     await userEvent.click(knop);
     const sheet = await screen.findByRole("dialog", {
-      name: /volgende ronde/i,
+      name: /wedstrijden klaarzetten/i,
     });
     expect(
       within(sheet).getByRole("heading", { name: /speelformaat/i }),

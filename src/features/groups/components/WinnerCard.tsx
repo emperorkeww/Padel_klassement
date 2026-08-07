@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, type ReactNode } from "react";
 import { useToast } from "@/ui/ToastProvider";
 import { Avatar } from "@/ui/Avatar";
 import { errorMessage } from "@/lib/utils/errors";
-import { fairTeams } from "@/features/groups/fairTeamsLogic";
 import { downloadSpeeldagIcs } from "@/features/groups/speeldagIcs";
 import { bookingUrl } from "@/features/availability/api";
 import { useBookingUrl } from "@/features/availability/useBookingUrl";
@@ -20,21 +18,21 @@ import {
 import { BookingSheet } from "./BookingSheet";
 import { ShareSpeeldag } from "./ShareSpeeldag";
 import type { OptionTally } from "@/features/groups/pollLogic";
-import { createFairRound } from "@/features/groups/api";
-import { rondeStart } from "@/features/groups/speeldagRondes";
-import { getPlayerRatings } from "@/features/standings/ratingsApi";
 import { isPlaytomicClub, type Club } from "@/features/availability/club";
 import type { Profile } from "@/types";
 import { courtsLabel, longDay, shortDay } from "../planPollHelpers";
 
 /* ------------------------------------------------------------------ */
-/* Winner-card: het gekozen/geboekte moment met boeken, agenda, delen  */
-/* en het klaarzetten van eerlijke rondes.                             */
+/* Winner-card: het gekozen/geboekte moment met boeken, agenda en      */
+/* delen.                                                              */
+/*                                                                     */
+/* Klaarzetten zat hier ook, als eigen Elo-generator (#727): een       */
+/* rondeteller met een knop, los van het speelformaat-paneel dat op    */
+/* Vandaag de indeling maakt. Twee generatoren op één pagina, waarvan  */
+/* er één geen spelerselectie en geen vormkeuze had. Sinds #1141 komt  */
+/* de knop van buiten binnen als `klaarzetActie` — en dat is overal    */
+/* hetzelfde paneel.                                                   */
 /* ------------------------------------------------------------------ */
-
-/** Rondes die je in één keer kunt klaarzetten (#727). Tien is ruim boven een
- *  normale speelavond; meer is eerder een vergissing dan een wens. */
-const RONDE_KEUZES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function WinnerCard({
   poll,
@@ -47,10 +45,7 @@ export function WinnerCard({
   isManager,
   busy,
   run,
-  roundsExist = false,
-  rondesVandaag = 0,
-  wedstrijdenAnker,
-  onRoundsMade,
+  klaarzetActie,
 }: {
   poll: PlayPoll;
   option: PollOption;
@@ -62,31 +57,16 @@ export function WinnerCard({
   isManager: boolean;
   busy: boolean;
   run: (fn: () => Promise<void>, done?: string) => Promise<void>;
-  /** Er bestaan al rondes voor deze speeldag (uit de groep-matches, #349). */
-  roundsExist?: boolean;
-  /** Rondes die op de dag van dit moment al klaarstaan: het vertrekpunt voor
-   *  de starttijden van de volgende rondes (#827). */
-  rondesVandaag?: number;
-  /** Anker naar het wedstrijdenblok op dezelfde pagina (#1133). Zonder waarde
-   *  wijst de CTA naar de Spelen-tab, zoals vanaf de groepspagina hoort. */
-  wedstrijdenAnker?: string;
-  /** Rondes klaargezet — laat de tab-fasebalk meteen naar Klaar springen. */
-  onRoundsMade?: () => void;
+  /** De knop die de wedstrijden van deze speeldag klaarzet (#1141). Komt van
+   *  de pagina, want de generator heeft de leden, de teams en de historie van
+   *  de groep nodig — dingen die deze kaart niet kent. Ontbreekt hij, dan
+   *  toont de kaart die sectie niet. */
+  klaarzetActie?: ReactNode;
 }) {
   const toast = useToast();
   const name = (id: string) => displayName(profiles[id]);
   const canBook = isPlaytomicClub(club);
   const bookHref = useBookingUrl(club, o.date);
-
-  // Eén of meer rondes al gegenereerd vanuit deze kaart (sessie-lokaal);
-  // roundsExist dekt rondes die elders (of eerder) zijn klaargezet.
-  const [roundsMade, setRoundsMade] = useState(0);
-  const roundsDone = roundsExist || roundsMade > 0;
-  // Hoeveel rondes deze tik klaarzet (#727): een hele avond vooruit plannen
-  // kostte evenveel tikken als rondes.
-  const [rondes, setRondes] = useState(1);
-  /** Volle banen bij de huidige bevestigingen — één match per baan per ronde. */
-  const banen = Math.floor(t.yes.length / 4);
 
   // Boekgegevens-sheet (#675, #802). "boeken" hangt banen en code aan de
   // boekstap vast, "wijzigen" zet ze los achteraf — die gegevens komen vaak pas
@@ -182,52 +162,6 @@ export function WinnerCard({
       if (err instanceof DOMException && err.name === "AbortError") return;
       toast.error(errorMessage(err));
     }
-  }
-
-  /**
-   * Zet eerlijke rondes klaar met de ja-stemmers van het gekozen moment
-   * (Elo-gebalanceerd via create_fair_round). Expliciete actie: de gebruiker
-   * kiest zelf wanneer — zodra de datum vastligt en genoeg mensen bevestigden.
-   */
-  function generateRounds() {
-    return run(async () => {
-      const ratings = await getPlayerRatings();
-      let total = 0;
-      // Eén serverronde per gevraagde ronde, met een oplopende `variant`:
-      // precies wat herhaald op "Nog een ronde" tikken deed, maar in één
-      // handeling (#727). Zo krijgt elke ronde een eigen indeling.
-      for (let i = 0; i < rondes; i++) {
-        const teams = fairTeams(t.yes, ratings, roundsMade + i);
-        const courts = teams.courts.map((c) => ({
-          teamA: c.teamA.playerIds,
-          teamB: c.teamB.playerIds,
-        }));
-        if (courts.length === 0) {
-          if (total === 0) throw new Error("Geen volledige banen te vullen.");
-          break;
-        }
-        // Elke ronde krijgt de echte starttijd van de speeldag mee, tien
-        // minuten per ronde opschuivend (#827) — anders staan alle rondes op
-        // hetzelfde moment en valt de app terug op created_at.
-        const playedAt = rondeStart(
-          o,
-          poll.club_timezone ?? club.timezone,
-          rondesVandaag + roundsMade + i,
-        );
-        const ids = await createFairRound(poll.group_id, courts, playedAt);
-        total += ids.length;
-      }
-      setRoundsMade((n) => n + rondes);
-      onRoundsMade?.();
-      // "Zie Vandaag" klopt alleen vanaf de groepspagina: op de speeldagpagina
-      // staan de wedstrijden hieronder, ook als die dag nog moet komen (#1133).
-      const waar = wedstrijdenAnker ? "zie hieronder" : "zie Vandaag";
-      toast.success(
-        total === 1
-          ? `Eerlijke match klaargezet — ${waar}.`
-          : `${total} eerlijke matches klaargezet — ${waar}.`,
-      );
-    });
   }
 
   return (
@@ -339,9 +273,12 @@ export function WinnerCard({
           )}
         </section>
 
+        {/* Delen is de stap zolang er niets klaar te zetten valt: te weinig
+            bevestigingen, of de wedstrijden staan er al — dan geeft de pagina
+            geen klaarzet-actie meer mee. */}
         {poll.status === "booked" && (
           <section
-            className={`winner-card__section${t.yes.length < 4 || roundsDone ? " is-current" : ""}`}
+            className={`winner-card__section${t.yes.length < 4 || !klaarzetActie ? " is-current" : ""}`}
           >
             <h3 className="winner-card__section-title">Agenda & delen</h3>
             <div className="winner-card__actions">
@@ -372,81 +309,16 @@ export function WinnerCard({
           </section>
         )}
 
-        {/* Rondes genereren: expliciete actie zodra er genoeg
-            bevestigde spelers zijn (4 per baan). */}
-        <section
-          className={`winner-card__section${poll.status === "booked" && t.yes.length >= 4 && !roundsDone ? " is-current" : ""}`}
-        >
-          <h3 className="winner-card__section-title">Klaarzetten</h3>
-          <div className="winner-card__rounds">
-            {/* Aantal rondes vóór de knop: je kiest eerst hoeveel, dan zet je
-                ze klaar — en het label van de knop volgt de keuze. */}
-            {t.yes.length >= 4 && (
-              <label className="winner-card__rondes">
-                <span>Rondes</span>
-                <select
-                  className="select"
-                  value={rondes}
-                  disabled={busy}
-                  onChange={(e) => setRondes(Number(e.target.value))}
-                >
-                  {RONDE_KEUZES.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <button
-              className={`btn btn--sm${poll.status === "booked" && !roundsDone && t.yes.length >= 4 ? " btn--primary" : ""}`}
-              disabled={busy || t.yes.length < 4}
-              title={
-                t.yes.length < 4
-                  ? "Minstens 4 bevestigde spelers nodig"
-                  : "Elo-gebalanceerde teams per baan, als geplande matches"
-              }
-              onClick={generateRounds}
-            >
-              ⚡{" "}
-              {rondes > 1
-                ? `Genereer ${rondes} rondes`
-                : roundsMade === 0
-                  ? "Genereer wedstrijden"
-                  : "Nog een ronde"}
-              {t.yes.length >= 4 &&
-                ` (${banen * rondes} ${banen * rondes === 1 ? "match" : "matches"})`}
-            </button>
-            {/* Reis-CTA (#106): na het klaarzetten door naar Vandaag. Mét
-                ?tab=spelen (#727) — het kale pad is de route waar je al op
-                staat, dus dat wisselt geen tab. */}
-            {roundsDone &&
-              (wedstrijdenAnker ? (
-                // Op de speeldagpagina staat het blok een stukje lager op
-                // dezelfde pagina; een link naar de Spelen-tab zou juist
-                // wegvoeren van waar de wedstrijden staan.
-                <a className="btn btn--sm" href={wedstrijdenAnker}>
-                  Bekijk de wedstrijden ↓
-                </a>
-              ) : (
-                <Link
-                  className="btn btn--sm"
-                  to={`/groepen/${poll.group_id}?tab=spelen`}
-                >
-                  Bekijk de wedstrijden →
-                </Link>
-              ))}
-            {t.yes.length < 4 && (
-              <span className="winner-card__rounds-hint">
-                Nog <strong>{4 - t.yes.length}</strong>{" "}
-                {4 - t.yes.length === 1
-                  ? "bevestigde speler"
-                  : "bevestigde spelers"}{" "}
-                nodig voor wedstrijden
-              </span>
-            )}
-          </div>
-        </section>
+        {/* Klaarzetten (#1141): de knop komt van de pagina en opent overal
+            hetzelfde speelformaat-paneel — wie speelt er mee, en in welke
+            vorm. Deze kaart had daar een eigen Elo-generator voor staan,
+            zonder spelerselectie en zonder vormkeuze. */}
+        {klaarzetActie && (
+          <section className="winner-card__section is-current">
+            <h3 className="winner-card__section-title">Klaarzetten</h3>
+            <div className="winner-card__actions">{klaarzetActie}</div>
+          </section>
+        )}
       </div>
 
       {boekSheet !== null && (
