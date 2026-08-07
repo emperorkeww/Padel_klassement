@@ -28,6 +28,13 @@ create table public.admin_audit_log (
   actor_id uuid not null,
   action text not null,
   target_user_id uuid,
+  -- Waar de actie over ging, als het geen gebruiker was (#1159): 'match',
+  -- 'group' of 'poll'. Losse kolommen en geen sleutel in `details`, want dit is
+  -- het enige waarop je het logboek wilt kunnen doorzoeken — "wat is er met
+  -- déze match gebeurd" moet een index kunnen gebruiken en niet een jsonb-scan.
+  -- Null voor de accountacties uit #1036: daar is target_user_id het doel.
+  target_type text check (target_type is null or target_type in ('match', 'group', 'poll')),
+  target_id uuid,
   -- Context van de actie. NOOIT het uitgedeelde wachtwoord of de herstel-link
   -- zelf: enkel dát er één is uitgegeven, door wie en voor wie. De edge
   -- function is de enige schrijver en bewaakt dat.
@@ -38,3 +45,7 @@ create table public.admin_audit_log (
 -- De hoofdquery is "wat is er met deze gebruiker gebeurd", nieuwste eerst.
 create index admin_audit_log_target_idx
   on public.admin_audit_log (target_user_id, created_at desc);
+
+-- Idem voor de inhoudsacties (#1159): "wat is er met deze match gebeurd".
+create index admin_audit_log_object_idx
+  on public.admin_audit_log (target_type, target_id, created_at desc);

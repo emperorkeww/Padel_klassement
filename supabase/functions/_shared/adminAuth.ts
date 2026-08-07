@@ -45,12 +45,60 @@ export function isMuterend(actie: AdminActie): boolean {
   return MUTERENDE_ACTIES.includes(actie);
 }
 
-export type Toegang =
-  | { soort: "voer-uit"; actie: AdminActie; uid: string }
+/**
+ * De acties van de tweede beheerfunction, `admin-content` (#1159): matches,
+ * groepen en polls. Een eigen lijst en geen uitbreiding van ADMIN_ACTIES, want
+ * elke function kent alleen zijn eigen acties — vraag `admin-users` om
+ * `delete_group` en je krijgt terecht een 400.
+ *
+ * `whoami` staat hier niet: die hoort bij de gebruikersfunction en de client
+ * heeft er maar één nodig.
+ */
+export const ADMIN_INHOUD_ACTIES = [
+  "list_matches",
+  "list_polls",
+  "list_group_members",
+  "audit_recent",
+  // Muterend vanaf hier.
+  "update_match_score",
+  "move_match",
+  "delete_match",
+  "set_poll_status",
+  "delete_poll",
+  "set_group_owner",
+  "remove_group_member",
+  "delete_group",
+] as const;
+
+export type AdminInhoudActie = (typeof ADMIN_INHOUD_ACTIES)[number];
+
+/** Zie MUTERENDE_ACTIES: een losse lijst, zodat een nieuwe actie standaard
+ *  buiten het logboek valt en je bewust moet kiezen. */
+export const MUTERENDE_INHOUD_ACTIES: readonly AdminInhoudActie[] = [
+  "update_match_score",
+  "move_match",
+  "delete_match",
+  "set_poll_status",
+  "delete_poll",
+  "set_group_owner",
+  "remove_group_member",
+  "delete_group",
+];
+
+export function isInhoudMuterend(actie: AdminInhoudActie): boolean {
+  return MUTERENDE_INHOUD_ACTIES.includes(actie);
+}
+
+export type Toegang<A extends string = AdminActie> =
+  | { soort: "voer-uit"; actie: A; uid: string }
   | { soort: "weiger"; status: 400 | 401 | 403; fout: string };
 
 export function isAdminActie(actie: unknown): actie is AdminActie {
   return (ADMIN_ACTIES as readonly unknown[]).includes(actie);
+}
+
+export function isInhoudActie(actie: unknown): actie is AdminInhoudActie {
+  return (ADMIN_INHOUD_ACTIES as readonly unknown[]).includes(actie);
 }
 
 /**
@@ -69,23 +117,33 @@ export function isAdminActie(actie: unknown): actie is AdminActie {
  *
  * Het 403-antwoord is altijd letterlijk hetzelfde, ongeacht welke actie
  * gevraagd werd en ongeacht of het doelaccount bestaat.
+ *
+ * `bekend` zegt welke acties déze function kent; laat je hem weg, dan zijn dat
+ * de gebruikersacties (#1036). `admin-content` geeft ADMIN_INHOUD_ACTIES mee.
+ * De uitzondering voor `whoami` geldt alleen als die actie in `bekend` staat —
+ * anders zou de inhoudsfunction een niet-beheerder een "voer-uit" teruggeven
+ * voor een actie die ze niet eens heeft.
  */
-export function bepaalToegang(opties: {
+export function bepaalToegang<A extends string = AdminActie>(opties: {
   uid: string | null;
   isAdmin: boolean;
   actie: unknown;
-}): Toegang {
+  bekend?: readonly A[];
+}): Toegang<A> {
   const { uid, isAdmin, actie } = opties;
+  const bekend: readonly string[] = opties.bekend ?? ADMIN_ACTIES;
 
   if (!uid) return { soort: "weiger", status: 401, fout: "Niet ingelogd" };
 
-  if (actie === "whoami") return { soort: "voer-uit", actie: "whoami", uid };
+  if (actie === "whoami" && bekend.includes("whoami")) {
+    return { soort: "voer-uit", actie: "whoami" as A, uid };
+  }
 
   if (!isAdmin) return { soort: "weiger", status: 403, fout: "Geen toegang" };
 
-  if (!isAdminActie(actie)) {
+  if (typeof actie !== "string" || !bekend.includes(actie)) {
     return { soort: "weiger", status: 400, fout: "Onbekende actie" };
   }
 
-  return { soort: "voer-uit", actie, uid };
+  return { soort: "voer-uit", actie: actie as A, uid };
 }
