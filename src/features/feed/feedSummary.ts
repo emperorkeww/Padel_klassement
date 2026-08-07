@@ -90,7 +90,7 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
       return {
         icon: "🗳️",
         tekst: `Speeldag-poll gestart in ${e.groupName}`,
-        to: `/groepen/${e.groupId}?tab=plannen`,
+        to: "/agenda",
       };
     case "poll-locked":
     case "poll-booked": {
@@ -101,7 +101,7 @@ export function feedSummary(e: FeedEvent, ctx: FeedSummaryCtx): FeedRegel {
       return {
         icon: e.kind === "poll-locked" ? "📌" : "✅",
         tekst: `${wat}${wanneer} — ${e.groupName}`,
-        to: `/groepen/${e.groupId}?tab=plannen`,
+        to: "/agenda",
       };
     }
     case "evening":

@@ -43,10 +43,10 @@ describe("<Groups />", () => {
   it("toont de groep als klikbare kaart met eigenaar-badge en ledenaantal", async () => {
     renderPage();
     const kaart = await screen.findByRole("link", { name: /vrijdagavond padel/i });
-    // De href krijgt er asynchroon "?tab=plannen" bij zodra de open poll
-    // (fixtures) geladen is — alleen het pad is hier van belang, anders
-    // flaket de test op die race.
-    expect(kaart.getAttribute("href")).toMatch(/^\/groepen\/g1(\?|$)/);
+    // De href kan asynchroon naar /agenda springen zodra de open poll
+    // (fixtures) geladen is en de reis om een stem vraagt (#1121) — beide
+    // bestemmingen zijn goed, anders flaket de test op die race.
+    expect(kaart.getAttribute("href")).toMatch(/^(\/groepen\/g1|\/agenda)$/);
     expect(screen.getByText(/eigenaar/i)).toBeInTheDocument();
     expect(screen.getByText(/4 leden/i)).toBeInTheDocument();
   });

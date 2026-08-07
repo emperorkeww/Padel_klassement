@@ -142,7 +142,7 @@ export function VendettaCard({
             <div className="vendetta-wraak__acties">
               <Link
                 className="btn btn--sm"
-                to={`/groepen/${group.id}?tab=plannen`}
+                to="/agenda"
               >
                 Plan revanche
               </Link>

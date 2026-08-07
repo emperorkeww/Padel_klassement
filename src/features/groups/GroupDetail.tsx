@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useRealtime } from "@/lib/hooks/useRealtime";
@@ -26,7 +26,6 @@ import { getZwartePiet } from "./zwartePietApi";
 import { getMyFriendships, categorize, otherId } from "@/features/friends/api";
 import { MatchHistory } from "@/features/matches/components/MatchHistory";
 import { buildMatchRatings } from "@/features/groups/maandpias";
-import { PlanTab } from "@/features/groups/components/PlanTab";
 import { VandaagTab } from "@/features/groups/components/VandaagTab";
 import { computePlayerStandings, matchesInSeason } from "@/features/rating/standings";
 import { upsetsByMatch } from "@/features/matches/upset";
@@ -46,41 +45,56 @@ import { journeyFor } from "./journey";
 import { ledenLabel } from "./groepHelpers";
 import { MemberStack } from "./components/MemberStack";
 import { Avatar } from "@/ui/Avatar";
-import { getGroupPolls, getGroupPollOptions } from "./pollsApi";
+import { getGroupPolls, getGroupPollOptions, pollSharePath } from "./pollsApi";
 import { GroupStandTab } from "./components/GroupStandTab";
 import { GroupLedenTab } from "./components/GroupLedenTab";
 import { EregalerijTab } from "@/features/seizoen/components/EregalerijTab";
 import type { PlayerStanding } from "@/types";
 import "./GroupDetail.css";
 
-type View =
-  | "vandaag"
-  | "plannen"
-  | "matches"
-  | "stand"
-  | "eregalerij"
-  | "leden";
+type View = "vandaag" | "matches" | "stand" | "eregalerij" | "leden";
 
 /** URL-key → tab. De keys "spelen" (de oude Teams-tab) en "rondes" staan in
  *  pushberichten en edge functions die al de deur uit zijn; sinds #674 wijzen
- *  ze allebei naar de samengevoegde Vandaag-tab. */
+ *  ze allebei naar de samengevoegde Vandaag-tab. "plannen" hoort daar sinds
+ *  #1121 ook bij: die tab bestaat niet meer (zie GroupDetail hieronder, dat
+ *  een gedeelde poll eerst naar de speeldagpagina stuurt). */
 function viewFromParam(raw: string | null): View | null {
   if (
-    raw === "plannen" ||
     raw === "matches" ||
     raw === "stand" ||
     raw === "eregalerij" ||
     raw === "leden"
   )
     return raw;
-  if (raw === "spelen" || raw === "rondes") return "vandaag";
+  if (raw === "spelen" || raw === "rondes" || raw === "plannen")
+    return "vandaag";
   return null;
 }
 
 /** Prefix voor de tab-/paneel-id's van de groepspagina. */
 const TAB_ID = "groep";
 
+/**
+ * Oude links naar de Plannen-tab (#1121).
+ *
+ * `?tab=plannen&poll=<id>` staat in pushberichten en gedeelde links die al de
+ * deur uit zijn — die blijven jaren rondzwerven, dus de omleiding blijft staan.
+ * Mét poll-id gaat hij naar de speeldagpagina; zonder valt hij stil terug op de
+ * groepspagina zelf, waar `viewFromParam` "plannen" naar Vandaag stuurt.
+ *
+ * Bewust een wikkel om de pagina heen en geen `<Navigate>` middenin: dan zou de
+ * groepspagina eerst al zijn queries opstarten voor een bezoek dat meteen weer
+ * weg navigeert.
+ */
 export function GroupDetail() {
+  const [params] = useSearchParams();
+  const poll = params.get("poll");
+  if (poll) return <Navigate to={pollSharePath(poll)} replace />;
+  return <GroepPagina />;
+}
+
+function GroepPagina() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -89,11 +103,7 @@ export function GroupDetail() {
   // ("kijk even bij de stand"). Staat bewust vóór de queries: een directe
   // ?tab=stand moet de stand-data meteen aanzetten (zie standSeen).
   const [params, setParams] = useSearchParams();
-  // ?poll=<id> hoort bij de Plannen-tab: alleen PlanTab leest 'm. Een gedeelde
-  // link draagt ?tab=plannen zelf mee, maar een ingekorte of half doorgestuurde
-  // variant niet — en dan zou de landingslogica je op een tab zetten waar
-  // niemand naar de poll kijkt (#886).
-  const urlView = viewFromParam(params.get("tab")) ?? (params.get("poll") ? "plannen" : null);
+  const urlView = viewFromParam(params.get("tab"));
 
   // #674 C2 — de pagina deed dertien queries bij mount, ook als je alleen een
   // uitslag kwam invullen. Wat alleen de Stand-tab voedt wacht tot je die tab
@@ -149,9 +159,8 @@ export function GroupDetail() {
     { enabled: standSeen },
   );
 
-  // Speeldag-polls: voeden de Plannen-tab én de landingstab (#674 A3). Ze
-  // staan hier in plaats van in PlanTab zodat de reis-status bekend is vóór
-  // je een tab kiest — en zodat ze niet twee keer worden opgehaald.
+  // Speeldag-polls: voeden de reis-status in de kop (#917) en de speeldag-
+  // context op Vandaag. Het plannen zelf verhuisde naar de agenda (#1121).
   const polls = useAsync(() => getGroupPolls(id), [id]);
   const pollOpts = useAsync(() => getGroupPollOptions(id), [id]);
   useRealtime("play_polls", polls.reload, `group_id=eq.${id}`);
@@ -184,16 +193,11 @@ export function GroupDetail() {
 
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  // Zonder ?tab bepaalt de reis-status waar je landt (#674 A3) — voorheen was
-  // dat altijd Vandaag, ook op een dag zonder plan. Eén keer beslissen en
-  // vasthouden: daarna is de tab van de gebruiker.
-  const [landed, setLanded] = useState<View | null>(null);
   const setView = (v: View) => {
     const next = new URLSearchParams(params);
     if (v === "vandaag") next.delete("tab");
     else next.set("tab", v);
     setParams(next, { replace: true });
-    setLanded(v);
   };
   const pmap = useMemo(() => profiles.data ?? {}, [profiles.data]);
   const tmap = useMemo(() => teams.data ?? {}, [teams.data]);
@@ -315,22 +319,6 @@ export function GroupDetail() {
     list.some((m) => m.status !== "completed"),
   );
 
-  // #674 A3 — landingstab. journeyFor() wist al waar een groep in de reis zit,
-  // maar dat werd alleen gebruikt voor de links op de hub; direct landen gaf
-  // altijd Vandaag, óók op een dag zonder plan. We wachten met renderen tot de
-  // reis bekend is (alleen zonder ?tab, dus deelbare links raken dit niet) —
-  // liever één skeleton-tel langer dan een tab die onder je vinger wegspringt.
-  // De keuze valt tijdens de render, niet in een effect: anders zie je één
-  // frame lang Vandaag voordat hij naar Plannen springt.
-  const landingTab: View | null = (() => {
-    if (polls.loading || pollOpts.loading || matches.loading) return null;
-    // Wedstrijden van vandaag winnen het van de poll: wie ad hoc speelt heeft
-    // geen poll, maar hoort wel op Vandaag te landen. Bij een mislukte
-    // poll-query vallen we terug op het oude gedrag.
-    if (rounds.length > 0 || polls.error || pollOpts.error) return "vandaag";
-    const j = journeyFor(polls.data ?? [], pollOpts.data ?? [], today, Date.now());
-    return j.tab === "plannen" ? "plannen" : "vandaag";
-  })();
   // Reisstatus voor de kop (#917): dezelfde functie als de hub, zodat er niet
   // twee definities van "wanneer wordt er weer gespeeld" ontstaan. Null zolang
   // de polls laden — de rest van de kop staat er dan al.
@@ -338,14 +326,11 @@ export function GroupDetail() {
     polls.loading || pollOpts.loading
       ? null
       : journeyFor(polls.data ?? [], pollOpts.data ?? [], today, Date.now());
-  // Eigen keuze (?tab of een tik) gaat vóór de reis-status.
-  const view: View = urlView ?? landed ?? landingTab ?? "vandaag";
-  const landingPending = !urlView && landed === null && landingTab === null;
-  // Zodra de tab in beeld staat leggen we hem vast: een poll die verloopt of
-  // via realtime binnenkomt mag de tab niet meer onder je vinger wegtrekken.
-  useEffect(() => {
-    if (!urlView && landed === null && landingTab !== null) setLanded(landingTab);
-  }, [urlView, landed, landingTab]);
+  // De landingstab van #674 A3 koos tussen Plannen en Vandaag, en wachtte
+  // daarvoor met renderen tot de polls binnen waren. Met alleen Vandaag over
+  // (#1121) valt er niets te kiezen en hoeft die wachttijd er ook niet meer te
+  // zijn: wie een uitslag komt invullen ziet de pagina meteen.
+  const view: View = urlView ?? "vandaag";
 
   // Eenrichtingsschakelaar: vanaf het eerste bezoek aan Stand blijft de zware
   // klassement-data laden, ook als je later weer wegklikt (#674 C2).
@@ -353,11 +338,11 @@ export function GroupDetail() {
     if (view === "stand") setStandOpened(true);
   }, [view]);
 
-  // Tabs in reis-volgorde (#106, #674 A1): plannen → vandaag → stand.
+  // Tabs in reis-volgorde (#106, #674 A1): vandaag → stand. Het plannen zelf
+  // begint sinds #1121 op de agenda, over al je groepen heen.
   // Tellers alleen tonen als er iets te tellen valt; ze zitten in de
   // toegankelijke naam van de tab ("Leden, 6") — zie PageTabs.
   const tabs: PageTabItem<View>[] = [
-    { id: "plannen", label: "Plannen" },
     { id: "vandaag", label: "Vandaag", count: rounds.length || undefined },
     {
       id: "matches",
@@ -376,9 +361,6 @@ export function GroupDetail() {
     { id: "leden", label: "Leden", count: memberList.length || undefined },
   ];
 
-  // Alleen de kop wachtte niet op de reis-status; die hangt aan group+members
-  // (#917). Eerder blokkeerde `landingPending` de hele pagina, ook als je
-  // alleen een uitslag kwam invullen.
   if (group.loading)
     return (
       <div className="card">
@@ -498,19 +480,7 @@ export function GroupDetail() {
         </section>
       )}
 
-      {/* De reis-status bepaalt op welke tab je landt (#674 A3), en die mag
-          niet onder je vinger wegspringen — dus wachten tabbalk én paneel tot
-          hij bekend is. Sinds #917 wacht alleen dít stuk daarop: de kop
-          hierboven staat er meteen, zodat je ziet waar je bent en al kunt
-          uitnodigen of terug. */}
-      {landingPending ? (
-        <div className="card">
-          <Skeleton rows={1} />
-          <MatchListSkeleton count={2} />
-        </div>
-      ) : (
-      <>
-      {/* Tabs in reis-volgorde (#106): plannen → spelen → stand.
+      {/* Tabs in reis-volgorde (#106): spelen → stand.
           Labels ≠ URL-keys (#673): de keys (spelen/matches) staan in
           pushberichten en edge functions en blijven daarom ongewijzigd.
           Echte tab-semantiek + horizontaal schuivende balk sinds #674. */}
@@ -549,22 +519,6 @@ export function GroupDetail() {
             onMatches={onMatches}
             onGuestCreated={profiles.reload}
             onShowStand={() => setView("stand")}
-          />
-        )}
-
-        {view === "plannen" && (
-          /* Eén fase-gedreven flow (#349): fasebalk + suggesties + focus-poll
-             + secundaire speeldagen, met de wizard als bottom-sheet. */
-          <PlanTab
-            groupId={id}
-            groupName={group.data.name}
-            members={memberList}
-            profiles={pmap}
-            myId={myId}
-            isOwner={isOwner}
-            matches={matches.data ?? []}
-            polls={polls}
-            options={pollOpts}
           />
         )}
 
@@ -649,8 +603,6 @@ export function GroupDetail() {
           />
         )}
       </TabPanel>
-        </>
-      )}
     </div>
   );
 }

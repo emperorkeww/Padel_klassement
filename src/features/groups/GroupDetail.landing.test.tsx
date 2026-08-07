@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -44,6 +44,8 @@ function renderPage(entry = "/groepen/g1") {
         <ToastProvider>
           <Routes>
             <Route path="/groepen/:id" element={<GroupDetail />} />
+            {/* Waar een oude ?poll=-link sinds #1121 op uitkomt. */}
+            <Route path="/speeldag/:id" element={<p>speeldagpagina</p>} />
           </Routes>
         </ToastProvider>
       </AuthProvider>
@@ -66,15 +68,17 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("landt op Plannen als er een poll loopt en vandaag niets klaarstaat", async () => {
+  // Tot #1121 koos de reis-status tussen Plannen en Vandaag, en wachtte de
+  // pagina met renderen tot de polls binnen waren. Met alleen Vandaag over valt
+  // er niets te kiezen: het plannen woont nu op de agenda.
+  it("landt op Vandaag, ook met een lopende poll", async () => {
     renderPage();
-    // De fixture-poll staat open → de reis vraagt om een stem.
     expect(
-      await screen.findByRole("tab", { name: /^plannen$/i }),
+      await screen.findByRole("tab", { name: /^vandaag/i }),
     ).toHaveAttribute("aria-selected", "true");
     expect(
-      await screen.findByRole("heading", { name: /speeldag-poll/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("tab", { name: /^plannen$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("respecteert een expliciete ?tab boven de reis-status", async () => {
@@ -84,7 +88,7 @@ describe("<GroupDetail /> landingstab (#674)", () => {
       "true",
     );
     expect(
-      screen.getByRole("tab", { name: /^plannen$/i }),
+      screen.getByRole("tab", { name: /^vandaag/i }),
     ).toHaveAttribute("aria-selected", "false");
   });
 
@@ -93,7 +97,8 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   // omhoog — en die hoort er bij één groep net zo goed te staan.
   it("toont de terugknop naar het overzicht ook met één groep", async () => {
     renderPage();
-    await screen.findByRole("tablist");
+    // Vandaag heeft zelf ook een tabbalk, dus gericht op die van de groep.
+    await screen.findByRole("tablist", { name: "Groepsonderdelen" });
     // De pijl is sinds #946 decoratie (aria-hidden), dus hij zit niet meer in
     // de toegankelijke naam — een schermlezer las "← alle groepen" voor.
     const terug = await screen.findByRole("link", { name: /^alle groepen$/i });
@@ -122,7 +127,8 @@ describe("<GroupDetail /> landingstab (#674)", () => {
   // tab opent.
   it("haalt de klassement-data pas op als je de Stand opent", async () => {
     renderPage();
-    await screen.findByRole("tablist");
+    // Vandaag heeft zelf ook een tabbalk, dus gericht op die van de groep.
+    await screen.findByRole("tablist", { name: "Groepsonderdelen" });
     const tabellen = () =>
       (supabase.from as unknown as { mock: { calls: unknown[][] } }).mock.calls.map(
         (c) => c[0],
@@ -171,21 +177,24 @@ describe("<GroupDetail /> landingstab (#674)", () => {
     ).toBeInTheDocument();
   });
 
-  // #886: een gedeelde link draagt ?tab=plannen zelf mee, maar een ingekorte of
-  // half doorgestuurde variant niet. Alleen PlanTab leest ?poll=, dus zonder
-  // deze regel landde je met wedstrijden van vandaag op Vandaag — en keek je
-  // naar iets anders dan waarop je tikte.
-  it("dwingt Plannen af bij een ?poll= zonder ?tab", async () => {
-    const today = dateInZone("Europe/Brussels");
-    tables.matches = (TABLES.matches as { id: string }[]).map((m) => ({
-      ...m,
-      played_at: `${today}T12:00:00.000Z`,
-      created_at: `${today}T12:00:00.000Z`,
-    }));
+  // #886 gaf een gedeelde speeldag ?poll=<id> op de groepspagina; sinds #1121
+  // is dat een eigen pagina. Die links staan in pushberichten die al de deur
+  // uit zijn, dus de omleiding blijft staan — met én zonder ?tab.
+  it("stuurt een oude ?poll=-link door naar de speeldagpagina", async () => {
     renderPage("/groepen/g1?poll=poll-1");
+    expect(await screen.findByText("speeldagpagina")).toBeInTheDocument();
 
+    cleanup();
+    renderPage("/groepen/g1?tab=plannen&poll=poll-1");
+    expect(await screen.findByText("speeldagpagina")).toBeInTheDocument();
+  });
+
+  // Zonder poll-id valt hij terug op de groepspagina zelf: "plannen" is daar
+  // gewoon een sleutel die naar Vandaag wijst, zoals "spelen" en "rondes".
+  it("laat ?tab=plannen zonder poll op Vandaag landen", async () => {
+    renderPage("/groepen/g1?tab=plannen");
     expect(
-      await screen.findByRole("tab", { name: /^plannen$/i }),
+      await screen.findByRole("tab", { name: /^vandaag/i }),
     ).toHaveAttribute("aria-selected", "true");
   });
 });

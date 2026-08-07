@@ -9,7 +9,8 @@
 export type Speelvorm = "eerlijk" | "americano" | "mexicano";
 
 /** Grenzen van de rondekeuze bij Americano. Tien is gelijk aan de winner-card
- *  op de Plannen-tab (#727), zodat dezelfde keuze overal hetzelfde bereik heeft. */
+ *  bij het aanmaken van een speeldag (#727), zodat dezelfde keuze overal
+ *  hetzelfde bereik heeft. */
 export const RONDES_MIN = 1;
 export const RONDES_MAX = 10;
 

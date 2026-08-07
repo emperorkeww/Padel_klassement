@@ -123,7 +123,7 @@ export function SuggestionsCard({
         ],
       });
       onStarted();
-      toast.success("Poll gestart — de groep kan stemmen op de Plannen-tab.");
+      toast.success("Poll gestart — de groep kan stemmen in de agenda.");
     } catch (err) {
       toast.error(errorMessage(err));
     }
@@ -182,7 +182,7 @@ export function SuggestionsCard({
       {loading && <p className="empty">Opties berekenen…</p>}
       {!loading && suggestions.length === 0 && (
         <p className="empty">
-          Alle banen zitten dicht of er zijn geen geschikte match-momenten gevonden. Start zelf een poll op de Plannen-tab!
+          Alle banen zitten dicht of er zijn geen geschikte match-momenten gevonden. Start zelf een poll vanuit de agenda!
         </p>
       )}
 

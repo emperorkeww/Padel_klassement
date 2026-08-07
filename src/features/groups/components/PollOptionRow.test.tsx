@@ -129,12 +129,10 @@ describe("<PollOptionRow /> — status vs. actie (#946)", () => {
     );
   });
 
-  it("houdt de pijl bij de stap waar hij voor staat", () => {
-    // Als ::after op de vorige stap bleef de pijl bij een wrap op de vorige
-    // regel achter en begon "KLAAR" zonder pijl.
-    expect(PROPOSALS_CSS).toMatch(
-      /\.plan-phases__step:not\(:first-child\)::before\s*\{\s*content:\s*"→"/,
-    );
-    expect(PROPOSALS_CSS).not.toMatch(/\.plan-phases__step:not\(:last-child\)::after/);
+  // De fasebalk (#946 zette de pijl vóór de stap in plaats van erachter)
+  // verdween met de Plannen-tab (#1121). Haar stijlen horen dus ook weg te
+  // zijn — anders blijft er dode CSS in dit blad rondslingeren.
+  it("laat geen stijlen van de opgeheven fasebalk achter", () => {
+    expect(PROPOSALS_CSS).not.toMatch(/\.plan-phases__/);
   });
 });
