@@ -67,18 +67,55 @@ describe("SpeelformaatKaart", () => {
     expect(meta("Banen")).toHaveTextContent("1");
   });
 
-  it("maakt het rondegetal bij Americano de keuze zelf", async () => {
+  // De keuze zat eerst als klein keuzevakje ín de meta-rij, waar hij las als
+  // nóg een uitkomst in plaats van als iets wat je kunt zetten. Nu een eigen
+  // regel, en het aantal staat ook in de knop.
+  it("geeft Americano een eigen rondekeuze en zet die door in de knop", async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    // Eerlijk en Mexicano kunnen er maar één, dus daar staat het als feit.
+    // Eerlijk en Mexicano kunnen er maar één, dus daar valt niets te kiezen.
     expect(meta("Rondes")).toHaveTextContent("1");
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByText("Hoeveel rondes?")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Americano" }));
-    await user.selectOptions(screen.getByRole("combobox", { name: "Rondes" }), "3");
+    expect(screen.getByText("Hoeveel rondes?")).toBeInTheDocument();
 
-    expect(screen.getByRole("combobox", { name: "Rondes" })).toHaveValue("3");
+    const meer = screen.getByRole("button", { name: "Eén ronde meer" });
+    await user.click(meer);
+    await user.click(meer);
+
+    expect(meta("Rondes")).toHaveTextContent("3");
+    expect(
+      screen.getByRole("button", { name: "Start 3 Americano-rondes" }),
+    ).toBeInTheDocument();
+  });
+
+  it("blijft tussen één en tien rondes", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("tab", { name: "Americano" }));
+
+    expect(
+      screen.getByRole("button", { name: "Eén ronde minder" }),
+    ).toBeDisabled();
+
+    const meer = screen.getByRole("button", { name: "Eén ronde meer" });
+    for (let i = 0; i < 9; i++) await user.click(meer);
+
+    expect(meta("Rondes")).toHaveTextContent("10");
+    expect(meer).toBeDisabled();
+  });
+
+  it("klemt een ingetypt getal binnen het bereik", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("tab", { name: "Americano" }));
+
+    await user.type(screen.getByRole("spinbutton"), "9");
+
+    // "1" gevolgd door "9" wordt 19 en zakt terug naar het maximum.
+    expect(meta("Rondes")).toHaveTextContent("10");
   });
 
   it("toont de blokkade en zet de knop uit", async () => {

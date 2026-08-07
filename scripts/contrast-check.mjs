@@ -162,6 +162,7 @@ const PAIRS = [
   ["paneel-om-ink-soft", "paneel-om", 4.5, "beschrijving op het omgekeerde paneel"],
   ["paneel-om-label", "paneel-om", 4.5, "meta-label op het omgekeerde paneel"],
   ["paneel-om-ink-soft", "paneel-om-vlak", 4.5, "inactieve tab op het omgekeerde paneel"],
+  ["paneel-om-ink", "paneel-om-vlak", 4.5, "rondegetal en stappers op het geneste vlak"],
   ["lime", "paneel-om", 4.5, "aanbevolen-badge op het omgekeerde paneel"],
   ["lime-ink", "lime", 4.5, "knoptekst op de lime CTA"],
   ["lime-ink", "lime-hover", 4.5, "knoptekst op de lime CTA onder de aanwijzer"],
