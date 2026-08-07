@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Match, Profile, Team } from "@/types";
-import { deleteMatch, formatSetScores, readSetScores } from "@/features/matches/api";
+import { deleteMatch } from "@/features/matches/api";
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
-import { traktatieRegel } from "@/features/matches/drankkaart";
+import type { MatchExtras } from "@/features/matches/useMatchEffecten";
+import { matchEffecten, heeftEffect } from "@/features/matches/matchEffecten";
+import { historieMeta } from "@/features/matches/matchMeta";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useToast } from "@/ui/ToastProvider";
@@ -46,8 +48,9 @@ export function MatchCard({
   const bWon = done && m.winner_team_id === m.team_b_id;
   const drew = done && m.winner_team_id === null;
   const scored = m.score_a != null && m.score_b != null;
-  const setLine = formatSetScores(readSetScores(m));
-  const traktatie = traktatieRegel(m);
+  // Eén extra regel, met een teller voor de rest (#1144). De volgorde en het
+  // waarom staan in matchMeta.ts; hier alleen de weergave.
+  const meta = historieMeta({ match: m, upset, joker, lef });
 
   const outcome = perspectiveId ? outcomeFor(m, teams, perspectiveId) : null;
   const outcomeClass =
@@ -59,8 +62,22 @@ export function MatchCard({
           ? "match-card--draw"
           : "";
 
+  // Effect-swirls (#1151): drie vlaggen, drie data-attributen, drie CSS-lagen
+  // die optellen. Bewust geen samengestelde klasse per combinatie — `data-fx`
+  // zegt alleen "er ligt iets" (voor de tekstkleur), de rest zet elk zijn eigen
+  // laag aan. Bij een vierde effect komt er één attribuut en één regel CSS bij.
+  const fx = matchEffecten({ match: m, lef, joker });
+  const vlag = (aan: boolean) => (aan ? "" : undefined);
+
   return (
-    <Link className={`match-card ${outcomeClass}`} to={`/matches/${m.id}`}>
+    <Link
+      className={`match-card ${outcomeClass}`}
+      to={`/matches/${m.id}`}
+      data-fx={vlag(heeftEffect(fx))}
+      data-fx-lef={vlag(fx.lef)}
+      data-fx-joker={vlag(fx.joker)}
+      data-fx-inzet={vlag(fx.inzet)}
+    >
       <TeamSide team={teams[m.team_a_id]} profiles={profiles} won={aWon} />
       <span className="match-card__mid">
         <span className="match-card__score">
@@ -75,38 +92,27 @@ export function MatchCard({
                 ? `ronde ${m.round_number} · gepland`
                 : "gepland"}
         </span>
+        {/* Speelvorm blijft een eigen chipje en telt niet mee als "moment":
+            het zegt wát voor match dit is, niet wat er gebeurde. */}
         {m.format === "1v1" && (
           <span className="match-card__meta match-card__format" title="Singles">
             1v1
           </span>
         )}
-        {done && upset && (
+        {meta && (
           <span
-            className="match-card__meta match-card__upset"
-            title="Underdog won — winkans vooraf lager dan 35%"
+            className={`match-card__meta match-card__${meta.sleutel}`}
+            title={
+              meta.sleutel === "upset"
+                ? "Underdog won — winkans vooraf lager dan 35%"
+                : undefined
+            }
           >
-            🎯 upset · {Math.round(upset.chance * 100)}% kans
-          </span>
-        )}
-        {setLine && (
-          <span className="match-card__meta match-card__sets">{setLine}</span>
-        )}
-        {/* Lef-inzet (#981): blijft ook op de ingeklapte kaart staan, zodat
-            wie waar dubbel of niets speelde na de speeldag terug te lezen is. */}
-        {lef && <span className="match-card__meta match-card__lef">{lef}</span>}
-        {/* Joker (#1003): net als de lef-regel blijft de gespeelde kaart op de
-            ingeklapte kaart staan — een schild dat een nederlaag wegnam hoort
-            terug te lezen te zijn naast de uitslag die het niet veranderde. */}
-        {joker && (
-          <span className="match-card__meta match-card__joker">{joker}</span>
-        )}
-        {/* Drankje-inzet (#1004). Bewust hier afgeleid en niet als prop
-            doorgegeven zoals `lef`: die moet uit een aparte tabel komen, dit
-            staat al op de matchrij zelf. Zo verschijnt de traktatie overal waar
-            deze kaart hangt — historie, profiel, uitslagenfeed. */}
-        {traktatie && (
-          <span className="match-card__meta match-card__traktatie">
-            {traktatie}
+            {meta.tekst}
+            {/* Eerlijk over wat er niet past: tikken opent de volledige match. */}
+            {meta.rest > 0 && (
+              <span className="match-card__meer"> +{meta.rest}</span>
+            )}
           </span>
         )}
       </span>
@@ -228,6 +234,7 @@ export function MatchList({
   empty = "Nog geen matches.",
   perspectiveId,
   upsets,
+  extras,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -236,6 +243,10 @@ export function MatchList({
   perspectiveId?: string;
   /** Upsets per match-id (#85); ontbrekend = geen upset-chip. */
   upsets?: Map<string, Upset>;
+  /** Lef- en jokerregel per match (#1151), uit useMatchEffecten. Ontbrekend =
+   *  geen regels; die stonden hier tot dat issue helemaal niet, waardoor het
+   *  profiel dezelfde match zonder inzet toonde en de Spelen-pagina mét. */
+  extras?: (match: Match) => MatchExtras;
 }) {
   if (matches.length === 0) return <p className="empty">{empty}</p>;
 
@@ -249,6 +260,8 @@ export function MatchList({
             profiles={profiles}
             perspectiveId={perspectiveId}
             upset={upsets?.get(m.id) ?? null}
+            lef={extras?.(m).lef}
+            joker={extras?.(m).joker}
           />
         </li>
       ))}

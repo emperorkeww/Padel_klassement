@@ -27,7 +27,7 @@ import { invalidateAll } from "@/lib/supabase/queryCache";
 import { playDay } from "@/features/matches/stakes";
 import { MATCH_PLANNED, PROFILES, TABLES, TEAMS } from "@/test/fixtures";
 import type { Match, Profile, Team } from "@/types";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openMatchOptie, openPlannedCards } from "@/test/plannedCard";
 
 // Los 1v1-team van Bob, zodat er een match bestaat waarin Alice niet meespeelt.
 const T_B = {
@@ -104,7 +104,7 @@ beforeEach(() => {
 describe("<PlannedMatchCard /> lef-tip", () => {
   it("toont wat er op het spel staat en zet de inzet weg", async () => {
     renderCard();
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     // Open tegel binnen de uitgeklapte kaart: de uitleg staat er direct.
     expect(
       await screen.findByText(/verlies je, dan telt je verlies net zo hard/i),
@@ -119,7 +119,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
   it("trekt een bestaande inzet weer in", async () => {
     setTables({ match_stakes: [stakeRij(GEPLAND.id, "p1")] });
     renderCard();
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     // De kopregel van de tegel verraadt de eigen inzet meteen.
     expect(await screen.findByText(/jouw lef staat ingezet/i)).toBeInTheDocument();
     await userEvent.click(
@@ -135,7 +135,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       ),
     });
     renderCard();
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     // Specifiek op de lef-zin: sinds de jokers (#1003) staat dezelfde drempel
     // ook op de jokertegel eronder, met een eigen vervolg ("deze kaart kan …").
     expect(
@@ -154,7 +154,7 @@ describe("<PlannedMatchCard /> lef-tip", () => {
       match_stakes: [stakeRij(begonnen.id, "p2")],
     });
     renderCard(begonnen);
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     expect(
       await screen.findByText(/lef getoond door bob/i),
     ).toBeInTheDocument();
@@ -207,9 +207,10 @@ describe("<PlannedMatchCard /> lef-tip", () => {
     setTables({ matches: [anderen] });
     renderCard(anderen);
     await openPlannedCards();
-    // De toto-tegel hoort er wel te staan (het blijft een groepsmatch).
-    await screen.findByText(/🎯 toto/i);
-    expect(screen.queryByText(/🎲 lef/i)).not.toBeInTheDocument();
+    // De toto-rij hoort er wel te staan (het blijft een groepsmatch), maar er
+    // is geen lef-rij: die opent een blok dat zichzelf toch zou verbergen.
+    await screen.findByRole("button", { name: /toto/i });
+    expect(screen.queryByRole("button", { name: /lef/i })).toBeNull();
   });
 });
 
@@ -300,7 +301,7 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
 
   it("blokkeert de andere kaart zodra je ergens inzet, en geeft hem weer vrij zodra je intrekt", async () => {
     renderTwee();
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     const [a, b] = await tegels();
     await waitFor(() => expect(knop(b)).toBeEnabled());
 
@@ -350,7 +351,7 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
         </AuthProvider>
       </MemoryRouter>,
     );
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     const [, b] = await tegels();
     // Niet alleen "al vergeven": de voet noemt de match waar je lef wél staat.
     expect(
@@ -362,7 +363,7 @@ describe("lef-dagtegoed over twee matchkaarten (#907)", () => {
 
   it("laat de kaart waarop je inzet zelf ook meteen kloppen", async () => {
     renderTwee();
-    await openPlannedCards();
+    await openMatchOptie(/lef/i);
     const [a] = await tegels();
 
     await userEvent.click(knop(a));

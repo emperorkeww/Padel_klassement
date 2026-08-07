@@ -1,16 +1,20 @@
 import { readFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
 
 // De geplande matchkaart stond volledig uitgeklapt: steppers, sets, bounty,
 // toto, lef, coach, rivaliteit en Opslaan bij elkaar ~800px per kaart, en een
-// lijst met een handvol matches werd 10.000px hoog (#941). Deze suite bewaakt
-// wat er ingeklapt zichtbaar blijft, wat er achter de knop verdwijnt, en dat
-// die knop belooft wat je met de match mag.
+// lijst met een handvol matches werd 10.000px hoog (#941). Dat werd toen achter
+// één uitklapknop gezet.
+//
+// Sinds #1144 is het er twee: de uitslag opent in een sheet (de primaire
+// actie, één tik, en de lijst eronder verspringt niet) en de context — toto,
+// lef, joker, coach, rivaliteit — zit nog achter "Details". Deze suite bewaakt
+// wat er standaard zichtbaar blijft, waar de rest heen ging, en dat de knoppen
+// beloven wat je met de match mag.
 
 const OVER_2_DAGEN = new Date(Date.now() + 2 * 86400_000).toISOString();
 
@@ -26,7 +30,7 @@ vi.mock("@/lib/supabase/client", async () => {
 
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { MATCH_PLANNED, PROFILES, TABLES, TEAMS } from "@/test/fixtures";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openPlannedCards, openScoreSheets } from "@/test/plannedCard";
 import type { Match, Profile, Team } from "@/types";
 
 const CARD_CSS = readFileSync(
@@ -78,8 +82,8 @@ function renderCard(match: Match = GEPLAND) {
   );
 }
 
-describe("<PlannedMatchCard /> ingeklapt (#941)", () => {
-  it("toont kop, teams en één knop — en geen invulformulier", async () => {
+describe("<PlannedMatchCard /> ingeklapt (#941, #1144)", () => {
+  it("toont kop, teams en de acties — en geen invulformulier", async () => {
     renderCard();
     // Wanneer en wie: de essentie van een geplande match.
     expect(await screen.findByText(/alice anders/i)).toBeInTheDocument();
@@ -87,12 +91,16 @@ describe("<PlannedMatchCard /> ingeklapt (#941)", () => {
     expect(
       screen.getByRole("button", { name: /^uitslag invullen$/i }),
     ).toBeInTheDocument();
-    // Het formulier en zijn context zitten erachter.
+    // Het formulier zit in de sheet, de context achter "Details".
     expect(
-      screen.queryByLabelText(/^score alice anders & bob boers$/i),
+      screen.queryByRole("spinbutton", {
+        name: /^score alice anders & bob boers$/i,
+      }),
     ).toBeNull();
     expect(screen.queryByText(/sets per set invoeren/i)).toBeNull();
-    expect(screen.queryByRole("button", { name: /^opslaan$/i })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /uitslag opslaan/i }),
+    ).toBeNull();
     expect(screen.queryByText(/🎯 toto/i)).toBeNull();
   });
 
@@ -124,26 +132,41 @@ describe("<PlannedMatchCard /> ingeklapt (#941)", () => {
     ).toBeInTheDocument();
   });
 
-  it("klapt het formulier uit en weer in", async () => {
-    renderCard();
-    await openPlannedCards();
-    const stepper = await screen.findByLabelText(
-      /^score alice anders & bob boers$/i,
-    );
-    expect(stepper).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^opslaan$/i })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: /^inklappen$/i }));
+  it("opent de uitslag in een sheet, niet in de kaart", async () => {
+    const { container } = renderCard();
+    await openScoreSheets();
     expect(
-      screen.queryByLabelText(/^score alice anders & bob boers$/i),
+      await screen.findByRole("spinbutton", {
+        name: /^score alice anders & bob boers$/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /uitslag opslaan/i }),
+    ).toBeInTheDocument();
+    // Het punt van de sheet: het formulier ligt in een dialoog boven de lijst,
+    // niet in het kaartlichaam. De kaart groeit dus niet mee en de lijst
+    // eronder verspringt niet.
+    expect(
+      container.querySelector('[role="dialog"] .scoreform'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector(".planned-card__body .scoreform"),
     ).toBeNull();
   });
 
-  it("koppelt de knop aan het blok dat hij opent", async () => {
+  it("houdt de sets dicht tot je erom vraagt", async () => {
+    renderCard();
+    await openScoreSheets();
+    // Optioneel en decoratief: wel bereikbaar, niet in de weg.
+    expect(
+      await screen.findByRole("button", { name: /sets per set invoeren/i }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/^set 1$/i)).toBeNull();
+  });
+
+  it("koppelt de details-knop aan het blok dat hij opent", async () => {
     const { container } = renderCard();
-    const knop = await screen.findByRole("button", {
-      name: /^uitslag invullen$/i,
-    });
+    const knop = await screen.findByRole("button", { name: /^details$/i });
     expect(knop).toHaveAttribute("aria-expanded", "false");
     await openPlannedCards();
     const open = screen.getByRole("button", { name: /^inklappen$/i });
@@ -180,9 +203,11 @@ describe("teamnamen op de geplande kaart (#941)", () => {
     );
   });
 
-  it("zet de stepper op smalle schermen op een eigen regel", () => {
+  it("laat de teamrij wrappen op smalle schermen", () => {
+    // De stepper stond hier tot #1144 naast de namen en kreeg op 480px een
+    // eigen regel; hij zit nu in de sheet. Het wrappen zelf blijft nodig voor
+    // de serveerchip naast een lange naam.
     const smal = CARD_CSS.slice(CARD_CSS.indexOf("@media (max-width: 480px)"));
     expect(smal).toMatch(/\.planned-card__row\s*\{[^}]*flex-wrap:\s*wrap/);
-    expect(smal).toMatch(/\.planned-card__row \.stepper\s*\{[^}]*flex:\s*1 1 100%/);
   });
 });

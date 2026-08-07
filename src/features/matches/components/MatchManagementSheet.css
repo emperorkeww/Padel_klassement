@@ -1,0 +1,82 @@
+/* Het ene beheermenu (#1144). Rustige lijst met haarlijnen; de gevaarlijke
+   actie staat onderaan, achter een extra streep. */
+
+.beheer__lijst {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.beheer__lijst > li + li {
+  border-top: 1px solid var(--divider);
+}
+/* Verwijderen hoort niet tussen "tijd wijzigen" en "groep wijzigen": een
+   dikkere streep en wat lucht maken van de laatste stap een aparte stap. */
+.beheer__item--gevaarlijk {
+  margin-top: var(--sp-2);
+  border-top: 1px solid var(--line-strong) !important;
+  padding-top: var(--sp-2);
+}
+
+.beheer__actie {
+  width: 100%;
+  min-height: 52px; /* tap-target ≥44px (WCAG 2.5.5) */
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 var(--sp-2);
+  padding: var(--sp-2) var(--sp-1);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.beheer__actie:hover {
+  background: var(--surface-hover);
+}
+.beheer__actie:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+.beheer__label {
+  font-size: var(--fs-base);
+  font-weight: 650;
+}
+/* De hint zegt wat de actie doet of wie hem mag; hij hoort onder het label,
+   niet ernaast — anders wint hij het van de actie zelf. */
+.beheer__hint {
+  grid-column: 1 / 2;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+.beheer__pijl {
+  grid-row: 1 / 3;
+  grid-column: 2 / 3;
+  color: var(--ink-soft);
+  font-size: var(--fs-lg);
+  line-height: 1;
+}
+/* Rood is hier versterking: het woord "Verwijderen" draagt de betekenis al. */
+.beheer__actie.is-gevaarlijk .beheer__label {
+  color: var(--danger);
+}
+
+.beheer__paneel {
+  display: grid;
+  gap: var(--sp-3);
+}
+.beheer__terug {
+  justify-self: start;
+}
+/* De secties die hierin landen zijn losse kaarten op het matchdetail geweest;
+   binnen de sheet hoeven ze hun eigen omlijsting niet mee te nemen. */
+.beheer__paneel .card {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}

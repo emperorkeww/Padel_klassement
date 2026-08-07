@@ -264,65 +264,8 @@
   margin-top: 0;
 }
 
-/* ---------- Beheer & correcties, ingeklapt (#915) ----------
-   Zelfde rustige balk als het cijfer-blok van het overzicht (#911): de
-   administratie die je hooguit één keer per match doet, weg van de wedstrijd
-   zelf. Standaard dicht. */
-.md-beheer {
-  margin-top: var(--sp-5);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-.md-beheer__summary {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5);
-  cursor: pointer;
-  list-style: none;
-  font-weight: 700;
-  color: var(--ink);
-  border-radius: var(--radius);
-}
-.md-beheer__summary::-webkit-details-marker {
-  display: none;
-}
-.md-beheer__summary::after {
-  content: "";
-  margin-left: auto;
-  width: 9px;
-  height: 9px;
-  border-right: 2px solid var(--ink-soft);
-  border-bottom: 2px solid var(--ink-soft);
-  transform: rotate(45deg);
-  transition: transform 0.15s ease;
-}
-.md-beheer[open] .md-beheer__summary::after {
-  transform: rotate(-135deg);
-}
-.md-beheer__summary:hover {
-  background: var(--surface-hover);
-}
-.md-beheer__title {
-  font-size: 1rem;
-}
-.md-beheer__hint {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-.md-beheer__body {
-  display: grid;
-  gap: var(--sp-5);
-  padding: 0 var(--sp-5) var(--sp-5);
-}
 @media (prefers-reduced-motion: reduce) {
-  .md-beheer__summary::after {
-    transition: none;
   }
-}
 
 .md-editor {
   display: grid;
@@ -489,4 +432,41 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Kopacties naast "← Terug": delen en het ⋯-beheermenu (#1144). */
+.md-kopacties {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* Een geplande match toont geen scorebord meer maar de kaart zelf (#1144); de
+   metaregel met de groepsbadge staat erboven. */
+.md-gepland {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+/* Desktop: matchdetail in twee kolommen (#1144). Links de wedstrijd — scorebord
+   en opstelling — rechts wat je ermee kunt en wat eromheen speelt. Mobiel
+   blijft alles lineair in leesvolgorde; deze grid begint pas als er ruimte is
+   voor twee volwaardige kolommen naast de zijbalk. */
+@media (min-width: 1100px) {
+  .md-kolommen {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+    align-items: start;
+    gap: var(--sp-4);
+  }
+  /* De kolommen scrollen samen; sticky maken zou de opstelling laten zweven
+     terwijl je door de context leest. */
+  .md-kolommen > * {
+    min-width: 0;
+  }
+  .md-kolom {
+    display: grid;
+    gap: var(--sp-4);
+    align-content: start;
+  }
 }

@@ -188,6 +188,22 @@
   color: var(--ink-soft);
   opacity: 0.5;
 }
+/* De dag die je in de agenda aantikte, maar die voorbij het banenvenster ligt.
+   Hij hoort bij de rij, maar sluit er niet op aan — de streep en de
+   extra ruimte zeggen dat er dagen tussen zitten die de strip niet toont. */
+.day-chip--ver {
+  position: relative;
+  margin-left: var(--sp-2);
+  border-style: dashed;
+}
+.day-chip--ver::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--sp-1) - 1px);
+  top: 25%;
+  bottom: 25%;
+  border-left: 1px solid var(--line);
+}
 .poll-wizard__slots {
   display: flex;
   flex-wrap: wrap;

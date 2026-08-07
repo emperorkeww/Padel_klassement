@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openScoreSheets } from "@/test/plannedCard";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -364,17 +364,19 @@ describe("<GroupDetail />", () => {
 
   it("slaat een uitslag optimistisch op vanuit de rondekaart", async () => {
     renderPage();
-    // De invoer zit sinds #941 achter de uitklapknop van de kaart.
-    await openPlannedCards();
-    const inputA = await screen.findByLabelText(
-      /^score alice anders & bob boers$/i,
-    );
-    const inputB = await screen.findByLabelText(
-      /^score carol claes & dave de vos$/i,
-    );
+    // De invoer zit sinds #1144 in een sheet achter de primaire knop.
+    await openScoreSheets();
+    const inputA = await screen.findByRole("spinbutton", {
+      name: /^score alice anders & bob boers$/i,
+    });
+    const inputB = await screen.findByRole("spinbutton", {
+      name: /^score carol claes & dave de vos$/i,
+    });
     await userEvent.type(inputA, "7");
     await userEvent.type(inputB, "5");
-    await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /uitslag opslaan/i }),
+    );
     // Optimistisch: de kaart toont direct de uitslag.
     expect(await screen.findByText("7–5")).toBeInTheDocument();
     expect(await screen.findByText("opgeslagen ✓")).toBeInTheDocument();

@@ -1,13 +1,7 @@
 import { DeletableMatchCard } from "@/features/matches/components/MatchList";
 import { PlannedMatchCard } from "@/features/matches/components/PlannedMatchCard";
 import { teamLabel } from "@/features/matches/api";
-import { lefKaartRegel } from "@/features/matches/stakes";
-import { getStakesForMatches } from "@/features/matches/stakesApi";
-import { jokerKaartRegel } from "@/features/matches/jokers";
-import { getJokersForMatches } from "@/features/matches/jokersApi";
-import { displayName } from "@/features/profiles/api";
-import { useAsync } from "@/lib/hooks/useAsync";
-import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
+import { useMatchEffecten } from "@/features/matches/useMatchEffecten";
 import { formatTime } from "@/lib/utils/format";
 import { rondeWinnaars } from "../dagStatus";
 import type { Upset } from "@/features/matches/upset";
@@ -67,25 +61,11 @@ export function RondeBlok({
   const bodyId = `ronde-${round}-matches`;
   const winnaars = rondeWinnaars(list, (id) => teamLabel(teams[id], profiles));
 
-  // Lef op de afgeronde kaarten (#981): één bulk-query voor de hele ronde in
-  // plaats van een fetch per kaart. De cache-revisie trekt de regels bij als
-  // er elders wordt ingezet of ingetrokken (#907). De geplande kaarten halen
-  // hun eigen (gedeelde, gecachte) inzetten al op voor de kop-pil.
-  const stakesRev = useCacheRevision("match-stakes");
-  const ids = list
-    .filter((m) => m.group_id != null)
-    .map((m) => m.id)
-    .join(",");
-  const stakes = useAsync(
-    () => getStakesForMatches(ids ? ids.split(",") : []),
-    [ids, stakesRev],
-  );
-  // Jokers langs dezelfde route en om dezelfde reden (#1003).
-  const jokersRev = useCacheRevision("match-jokers");
-  const jokers = useAsync(
-    () => getJokersForMatches(ids ? ids.split(",") : []),
-    [ids, jokersRev],
-  );
+  // Lef en jokers op de afgeronde kaarten (#981/#1003), plus de effectvlaggen
+  // voor de achtergrond (#1151): één bulk-query per soort voor de hele ronde in
+  // plaats van een fetch per kaart. De geplande kaarten halen hun eigen
+  // (gedeelde, gecachte) inzetten al op voor de kop-pil.
+  const extras = useMatchEffecten({ matches: list, teams, profiles, myId });
 
   return (
     <div
@@ -140,19 +120,8 @@ export function RondeBlok({
                   profiles={profiles}
                   perspectiveId={myId}
                   upset={upsets.get(m.id) ?? null}
-                  lef={lefKaartRegel({
-                    match: m,
-                    stakes: stakes.data ?? [],
-                    teams,
-                    naam: (id) => displayName(profiles[id]),
-                  })}
-                  joker={jokerKaartRegel({
-                    match: m,
-                    jokers: jokers.data ?? [],
-                    teams,
-                    naam: (id) => displayName(profiles[id]),
-                    myId,
-                  })}
+                  lef={extras(m).lef}
+                  joker={extras(m).joker}
                   canManage={isOwner}
                   onDeleted={onMatches}
                 />

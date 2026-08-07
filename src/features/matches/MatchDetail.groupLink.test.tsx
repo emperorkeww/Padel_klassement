@@ -19,6 +19,7 @@ vi.mock("@/lib/supabase/client", async () => {
   };
 });
 
+import { openBeheer } from "@/test/matchBeheer";
 import MatchDetail from "./MatchDetail";
 
 function renderPage() {
@@ -38,6 +39,7 @@ function renderPage() {
 describe("<MatchDetail /> — losse match aan een groep koppelen (#648)", () => {
   it("koppelt een losse match aan een eigen groep", async () => {
     renderPage();
+    await openBeheer(/groep wijzigen/i);
     expect(await screen.findByText(/telt nergens mee/i)).toBeInTheDocument();
     const select = await screen.findByLabelText(/koppel aan groep/i);
     const opslaan = screen.getByRole("button", { name: /groep opslaan/i });

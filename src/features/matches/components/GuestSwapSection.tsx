@@ -105,9 +105,6 @@ export function GuestSwapSection({
 
   return (
     <section className="card">
-      <div className="card__head">
-        <h2 className="card__title">Gast vervangen</h2>
-      </div>
       <p className="card__subtitle">
         Speelde er iemand anders onder deze gastnaam? Zet de match op de juiste
         speler; de ratings worden daarna opnieuw berekend.

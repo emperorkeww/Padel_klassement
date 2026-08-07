@@ -459,13 +459,75 @@ for (const [naam, omschrijving] of DIVISIES) {
   }
 }
 
-if (darkFailures > 0 || islandFailures > 0 || divisieFailures > 0) {
+// ---- Effect-swirls op de matchkaart (#1151) ----
+// De matchkaart legt per actief effect een doorschijnende kleurlaag over
+// --surface: lef paars, joker blauw, inzet amber. Die lagen stapelen — bij een
+// match met alle drie liggen er drie tinten over dezelfde tekst.
+//
+// Dat is precies het soort tekort dat een tokenpaar níét vangt: elk paar los
+// (--ink-soft-strong op --surface) haalt AA met gemak, en pas de stapeling duwt
+// het eronder. Daarom rekenen we hier de samenstelling na in plaats van de
+// tokens: --surface, dan laag voor laag alpha-compositing, en dan de tekst.
+//
+// De drempel bewaakt de piek uit ui.css (--fx-piek). Staat die hier lager dan
+// in de CSS, dan meet dit niets; loopt de CSS erop vooruit, dan valt CI om — en
+// dat is de bedoeling, want dan is de kaart onleesbaar geworden.
+const SWIRL_PIEK = { licht: 0.06, donker: 0.05 };
+const SWIRL_LAGEN = ["lef", "joker", "dorst"];
+
+/** --surface met N effectlagen erover, elk op de piekdekking. */
+function swirlVlak(tokens, lagen, alpha) {
+  let bg = parseColor(tokens.surface);
+  for (const laag of lagen) {
+    const kleur = parseColor(tokens[laag]);
+    if (!kleur) continue;
+    bg = composite([kleur[0], kleur[1], kleur[2], alpha], bg);
+  }
+  return `rgb(${bg.slice(0, 3).map(Math.round).join(", ")})`;
+}
+
+let swirlFailures = 0;
+console.log("\n— Effect-swirls op de matchkaart (#1151) —");
+for (const [naam, tokens] of [
+  ["licht", light],
+  ["donker", dark],
+]) {
+  const alpha = SWIRL_PIEK[naam];
+  console.log(`  ${naam} (piek ${(alpha * 100).toFixed(0)}% per laag)`);
+  for (let n = 1; n <= SWIRL_LAGEN.length; n++) {
+    const lagen = SWIRL_LAGEN.slice(0, n);
+    const vlak = swirlVlak(tokens, lagen, alpha);
+    // --ink-soft-strong draagt de teamnamen op een effectkaart; --ink de score
+    // en de winnaarsnaam. --ink-soft staat er bewust niet bij: die haalt het
+    // getint niet meer, en dáárom schakelt de kaart naar -strong.
+    for (const [fg, min, wat] of [
+      ["ink-soft-strong", 4.5, "teamnamen"],
+      ["ink", 4.5, "score en winnaar"],
+    ]) {
+      const c = contrast(tokens[fg], vlak);
+      const ok = c >= min;
+      if (!ok) swirlFailures++;
+      console.log(
+        `    ${ok ? "  ok  " : "  FAIL"} ${c.toFixed(2).padStart(5)} ≥ ${min}  ${fg} op ${lagen.join("+")} (${wat}, ${n} ${n === 1 ? "laag" : "lagen"})`,
+      );
+    }
+  }
+}
+
+if (
+  darkFailures > 0 ||
+  islandFailures > 0 ||
+  divisieFailures > 0 ||
+  swirlFailures > 0
+) {
   if (darkFailures > 0)
     console.error(`\n${darkFailures} donkere contrastpa(a)r(en) onder de drempel.`);
   if (islandFailures > 0)
     console.error(`${islandFailures} kaart-eiland-pa(a)r(en) onder de drempel.`);
   if (divisieFailures > 0)
     console.error(`${divisieFailures} divisiepa(a)r(en) onder de drempel.`);
+  if (swirlFailures > 0)
+    console.error(`${swirlFailures} effect-swirl-pa(a)r(en) onder de drempel.`);
   process.exit(1);
 }
 console.log(

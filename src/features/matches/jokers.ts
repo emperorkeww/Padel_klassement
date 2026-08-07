@@ -108,6 +108,24 @@ export function jokerFactor(
 }
 
 /**
+ * Wat déze match met jouw rating doet, met lef-tip en joker samen verrekend.
+ * Spiegelt `round(k * (sa - ea) * f)` uit _apply_match_rating — één keer
+ * afronden, ná de vermenigvuldiging. hasWinner is hier true: een gelijkspel
+ * laat de verdubbeling vervallen, en dat is een aparte boodschap.
+ */
+export function eigenSwing(opts: {
+  mijnKans: number;
+  staked: boolean;
+  joker: JokerId | null;
+}): { winst: number; verlies: number } {
+  const f = effectFactor({ ...opts, hasWinner: true });
+  return {
+    winst: Math.round(K_FACTOR * (1 - opts.mijnKans) * f),
+    verlies: Math.round(K_FACTOR * -opts.mijnKans * f),
+  };
+}
+
+/**
  * De factor die werkelijk op je mutatie valt: lef-tip en joker samen. greatest
  * en geen product, precies zoals _effect_factor — twee keer verdubbelen bestaat
  * niet, en het schild wint van alles.

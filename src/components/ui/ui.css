@@ -1246,10 +1246,100 @@ textarea {
   padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  /* Kleur en tekening apart (#1151): de swirl-lagen hieronder leven in
+     background-image en liggen daardoor per definitie boven de vulkleur en
+     onder de tekst. Zonder die splitsing zou de shorthand ze wegvegen. */
+  background-color: var(--surface);
+  background-image: var(--fx-lef), var(--fx-joker), var(--fx-inzet);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+/* ---------- Effect-swirls op de matchkaart (#1151) ----------
+   Een match met lef, een joker of een drankje erop zag er precies uit als een
+   gewone match: alleen een regeltje gekleurde tekst onder de score, en in een
+   historie van honderd kaarten scant niemand meta-tekst.
+
+   Het uitgangspunt is dat effecten *onafhankelijke lagen* zijn. Elk effect zet
+   precies één custom property; `none` is een geldige lege laag, dus de drie
+   tellen letterlijk op. Er bestaat geen .match-card--lef-joker en er kán er ook
+   geen ontstaan — bij een vierde effect komt er één property en één blok bij.
+   Bij lef+joker ligt er dus echt paars én blauw, niet één lila gemiddelde.
+
+   Bewust background-image en geen ::before: geen extra element, geen
+   stacking-context, geen z-index, en het goedkoopste voor de compositor. Er
+   kunnen honderd van deze kaarten tegelijk in de DOM staan.
+
+   Bewust geen blur-filter, canvas of SVG: langgerekte radiale gradients met
+   veel transparant geven dezelfde zachte rand voor een fractie van de kost.
+
+   De piek is 6% en dat is geen smaak maar een plafond. Bij drie gestapelde
+   lagen halen de teamnamen dan 4,53:1 — net boven AA. Bij 8% is dat 4,19:1 en
+   is de kaart onleesbaar volgens de norm die de rest van de app wél haalt.
+   Daarom ook geen versterking op hover: er is geen ruimte meer. */
+.match-card {
+  --fx-lef: none;
+  --fx-joker: none;
+  --fx-inzet: none;
+  --fx-piek: 6%;
+}
+
+/* Vaste ankers, drie verschillende hoeken. Deterministisch en niet op match-id
+   gehasht: dezelfde match hoort twee keer identiek te renderen, en drie
+   uiteenlopende hoeken houden de kleuren ook bij overlap uit elkaar.
+
+   De kernen liggen bínnen de kaart. Buiten de rand geplaatst zag je alleen de
+   staart van het verloop — dan is de kleur er formeel wel, maar herkent niemand
+   hem, en dat is precies wat dit issue níét wilde. Het verloop houdt zijn piek
+   daarom ook even vast voor het uitdooft: een kern die meteen wegvalt leest als
+   een vlek, niet als een strook licht.
+
+   Elke laag komt afzonderlijk tot --fx-piek en niet verder. De rekensom achter
+   die grens gaat uit van het slechtste geval — alle drie de kernen op dezelfde
+   pixel — dus deze spreiding blijft er per definitie onder. */
+.match-card[data-fx-lef] {
+  --fx-lef: radial-gradient(
+    135% 125% at 4% 96%,
+    color-mix(in srgb, var(--lef) var(--fx-piek), transparent) 0%,
+    color-mix(in srgb, var(--lef) calc(var(--fx-piek) * 0.7), transparent) 30%,
+    color-mix(in srgb, var(--lef) calc(var(--fx-piek) * 0.25), transparent) 58%,
+    transparent 88%
+  );
+}
+.match-card[data-fx-joker] {
+  --fx-joker: radial-gradient(
+    130% 130% at 96% 6%,
+    color-mix(in srgb, var(--joker) var(--fx-piek), transparent) 0%,
+    color-mix(in srgb, var(--joker) calc(var(--fx-piek) * 0.7), transparent) 32%,
+    color-mix(in srgb, var(--joker) calc(var(--fx-piek) * 0.25), transparent) 60%,
+    transparent 90%
+  );
+}
+.match-card[data-fx-inzet] {
+  --fx-inzet: radial-gradient(
+    120% 140% at 74% 100%,
+    color-mix(in srgb, var(--dorst) var(--fx-piek), transparent) 0%,
+    color-mix(in srgb, var(--dorst) calc(var(--fx-piek) * 0.7), transparent) 28%,
+    color-mix(in srgb, var(--dorst) calc(var(--fx-piek) * 0.25), transparent) 56%,
+    transparent 86%
+  );
+}
+
+/* Op een getinte kaart haalt --ink-soft geen 4,5:1 meer (4,50 bij één laag,
+   3,84 bij drie). --ink-soft-strong bestaat precies voor dit geval en houdt het
+   tot ver voorbij onze piek. Alleen op kaarten mét een effect, zodat de gewone
+   kaart onaangeroerd blijft. */
+.match-card[data-fx] .match-card__names,
+.match-card[data-fx] .match-card__meta {
+  color: var(--ink-soft-strong);
+}
+
+/* Donker heeft ruimte zat qua contrast (7,5:1 bij 5%) — daar is de beperking
+   esthetisch. De donkere effecttokens zijn lichter dan hun ondergrond en
+   springen dus harder naar voren, dus iets minder in plaats van meer. */
+:root[data-theme="dark"] .match-card {
+  --fx-piek: 5%;
 }
 
 /* Verwijderbare matchkaart: de kaart reserveert rechts een eigen gutter
@@ -1328,6 +1418,13 @@ textarea {
   border-left: 3px solid var(--line-strong);
 }
 
+/* "+2" achter de ene metaregel (#1144): er is méér te zien op het matchdetail.
+   Gedempt en klein — het is een wegwijzer, geen mededeling. */
+.match-card__meer {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
 .match-card__side {
   display: flex;
   align-items: center;
@@ -1394,28 +1491,34 @@ textarea {
   color: var(--accent);
   font-weight: 700;
 }
-/* Lef-regel op de (ingeklapte) matchkaart (#981): wie er dubbel of niets
-   speelde blijft ook na de speeldag te lezen — in het lef-violet, zodat het
-   risicospel dezelfde kleur draagt als de inzet-tegel. */
+/* De drie effectregels als compacte chip (#981/#1003/#1004, chip sinds #1151).
+   Stonden als kale gekleurde tekst op de kaart. Boven een swirl haalt die kleur
+   AA niet meer — --dorst zakt op drie lagen naar 4,07:1 — en de kleur is óók de
+   drager van de betekenis, dus wegwerken is geen optie.
+
+   Een ondoorzichtige chip lost beide op: de swirl komt er niet onderdoor, en het
+   paar tekst-op-vlak (bv. --dorst op --dorst-soft) staat al in de bewaking van
+   npm run contrast. Meteen ook de vorm die het ontwerp voor ogen had. */
+.match-card__lef,
+.match-card__joker,
+.match-card__traktatie {
+  font-weight: 700;
+  padding: 0.1rem var(--sp-2);
+  border-radius: 999px;
+  /* De chip mag over meer regels: drie namen met hun kaart passen niet op één. */
+  white-space: normal;
+}
 .match-card__lef {
   color: var(--lef);
-  font-weight: 700;
+  background: var(--lef-soft);
 }
-/* Joker op de matchkaart (#1003): welke kaart er lag en hoe het afliep, in het
-   jokerblauw — dezelfde kleur als de jokertegel, zodat het spel herkenbaar
-   blijft. Mag over meer regels: drie namen met hun kaart passen niet op één. */
 .match-card__joker {
   color: var(--joker);
-  font-weight: 700;
-  white-space: normal;
+  background: var(--joker-soft);
 }
-/* Drankje-inzet op de matchkaart (#1004): wie wie nog een pint schuldig is,
-   in het dorst-amber. Ingelost of vervallen leest hier ook terug — de tekst
-   komt kant-en-klaar uit traktatieRegel(). */
 .match-card__traktatie {
   color: var(--dorst);
-  font-weight: 700;
-  white-space: normal;
+  background: var(--dorst-soft);
 }
 
 /* Compacte badge-strook (gelijk / ronde). */
@@ -1670,6 +1773,17 @@ textarea {
   .match-card {
     gap: var(--sp-1);
     padding: var(--sp-2) var(--sp-3);
+  }
+  /* De middenkolom is `auto` en groeide dus mee met de langste effectregel.
+     "Nog te betalen: 2× Duvel per winnaar" at op 375px de hele namenkolom op:
+     die hield 18px over, oftewel één letter per speler. Met een bovengrens
+     breekt de regel af in plaats van de kolom weg te duwen — bij drie effecten
+     scheelt dat ruim 60px aan namen. Bestond al vóór #1151; de chips maakten
+     het 16px erger, dus hoort de rem hier. */
+  .match-card__lef,
+  .match-card__joker,
+  .match-card__traktatie {
+    max-width: 20ch;
   }
   /* Smallere gutter voor de verwijderknop op smalle schermen. */
   .match-card-wrap .match-card {

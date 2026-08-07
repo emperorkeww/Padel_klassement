@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES }) };
 });
 
+import { openBeheer } from "@/test/matchBeheer";
 import MatchDetail from "./MatchDetail";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
@@ -39,12 +40,6 @@ function renderPage(id = "m-done") {
 /** Beheer & correcties zit sinds #915 achter een inklapper; jsdom toont de
  *  inhoud van een gesloten <details> gewoon, maar een echte browser niet — dus
  *  openen we hem net als een gebruiker. */
-async function openBeheer() {
-  await userEvent.click(
-    await screen.findByText(/beheer & correcties/i),
-  );
-}
-
 /** Vervangt tijdelijk wat de matches-tabel teruggeeft, en desgewenst ook de
  *  groepen-tabel. Dat laatste is nodig sinds #978: de kijker (p1) bezit g1 uit
  *  de fixtures, dus "iemand anders beheert deze groep" bestaat alleen als je
@@ -90,17 +85,21 @@ describe("<MatchDetail />", () => {
 
   it("laat de aanmaker de score corrigeren", async () => {
     renderPage();
-    await userEvent.click(
-      await screen.findByRole("button", { name: /score aanpassen/i }),
-    );
-    const inputA = screen.getByLabelText(/^score alice anders & bob boers$/i);
+    await openBeheer(/score corrigeren/i);
+    // Corrigeren gebeurt sinds #1144 in dezelfde sheet als invullen, met
+    // dezelfde previewtekst als de wizard.
+    const inputA = await screen.findByRole("spinbutton", {
+      name: /^score alice anders & bob boers$/i,
+    });
     await userEvent.clear(inputA);
     await userEvent.type(inputA, "2");
     // Live voorbeeld: team B wint nu.
     expect(
-      await screen.findByText(/carol claes & dave de vos wint/i),
+      await screen.findByText(/carol claes & dave de vos winnen/i),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /^opslaan$/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /score opslaan/i }),
+    );
     expect(await screen.findByText(/score bijgewerkt/i)).toBeInTheDocument();
   });
 
@@ -108,7 +107,7 @@ describe("<MatchDetail />", () => {
     renderPage();
     // Kijker p1 is lid van g1: de groepssectie toont de select met de huidige
     // groep; kies "Losse match" en sla op → de RPC ontkoppelt.
-    await openBeheer();
+    await openBeheer(/groep wijzigen/i);
     const select = await screen.findByLabelText(/^groep$/i);
     const opslaan = screen.getByRole("button", { name: /groep opslaan/i });
     // Ongewijzigd = niets op te slaan.
@@ -155,21 +154,20 @@ describe("<MatchDetail />", () => {
 
   // ── #915 ────────────────────────────────────────────────────────────────
 
-  it("stopt beheer & correcties achter één inklapper", async () => {
-    const { container } = renderPage();
+  // #915 stopte beheer in een inklapper op de pagina; #1144 maakte er één
+  // ⋯-menu van, zodat er niet langer twee beheerplekken naast elkaar staan.
+  it("stopt beheer & correcties achter één ⋯-menu", async () => {
+    renderPage();
     await screen.findByText(/eindstand/i);
 
-    const details = container.querySelector("details.md-beheer");
-    expect(details).not.toBeNull();
-    // De balk verbergt zichzelf tot een van de secties iets rendert; de
-    // groepskoppeling komt pas ná zijn eigen query.
-    await waitFor(() => expect(details).not.toHaveAttribute("hidden"));
-    // De groepskoppeling zit erin, niet los op de pagina.
+    // Niet los op de pagina: de groepskoppeling is er pas ná het menu.
+    expect(screen.queryByLabelText(/^groep$/i)).toBeNull();
+    await openBeheer(/groep wijzigen/i);
     const select = await screen.findByLabelText(/^groep$/i);
-    expect(select.closest("details.md-beheer")).toBe(details);
+    expect(select.closest('[role="dialog"]')).not.toBeNull();
     // Wat over de wedstrijd zelf gaat blijft er buiten.
     expect(
-      screen.getByText(/eindstand/i).closest("details.md-beheer"),
+      screen.getByText(/eindstand/i).closest('[role="dialog"]'),
     ).toBeNull();
   });
 
@@ -185,8 +183,9 @@ describe("<MatchDetail />", () => {
     try {
       renderPage();
       await screen.findByText(/eindstand/i);
+      await openBeheer();
       expect(
-        screen.queryByRole("button", { name: /score aanpassen/i }),
+        screen.queryByRole("button", { name: /score corrigeren/i }),
       ).toBeNull();
       // De naam komt uit de profielen van deze match; die laden apart.
       await waitFor(() =>
@@ -208,8 +207,9 @@ describe("<MatchDetail />", () => {
     try {
       renderPage();
       await screen.findByText(/eindstand/i);
+      await openBeheer();
       expect(
-        screen.queryByRole("button", { name: /score aanpassen/i }),
+        screen.queryByRole("button", { name: /score corrigeren/i }),
       ).toBeNull();
       await waitFor(() =>
         expect(
@@ -228,10 +228,11 @@ describe("<MatchDetail />", () => {
       renderPage();
       await screen.findByText(/eindstand/i);
       expect(
-        await screen.findByRole("button", { name: /score aanpassen/i }),
+        await screen.findByText(/jij beheert deze groep/i),
       ).toBeInTheDocument();
+      await openBeheer();
       expect(
-        screen.getByText(/jij beheert deze groep/i),
+        await screen.findByRole("button", { name: /score corrigeren/i }),
       ).toBeInTheDocument();
     } finally {
       herstel();
@@ -242,10 +243,11 @@ describe("<MatchDetail />", () => {
     renderPage();
     await screen.findByText(/eindstand/i);
     expect(
-      await screen.findByRole("button", { name: /score aanpassen/i }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByText(/jij voerde deze uitslag in/i),
+    ).toBeInTheDocument();
+    await openBeheer();
+    expect(
+      await screen.findByRole("button", { name: /score corrigeren/i }),
     ).toBeInTheDocument();
   });
 

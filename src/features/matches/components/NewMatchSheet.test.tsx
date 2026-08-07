@@ -284,8 +284,8 @@ describe("<NewMatchSheet /> speelvorm 1v1 (#279)", () => {
     await userEvent.click(screen.getByRole("button", { name: /carol claes/i }));
     await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
 
-    await userEvent.type(screen.getByLabelText("Score team A"), "6");
-    await userEvent.type(screen.getByLabelText("Score team B"), "4");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Alice/ }), "6");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Carol/ }), "4");
     await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
 
     expect(supabase.rpc).toHaveBeenCalledWith(
@@ -429,8 +429,8 @@ describe("<NewMatchSheet /> concept bewaren (#462)", () => {
       await userEvent.click(screen.getByRole("button", { name: naam }));
     }
     await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
-    await userEvent.type(screen.getByLabelText("Score team A"), "6");
-    await userEvent.type(screen.getByLabelText("Score team B"), "4");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Alice/ }), "6");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Carol/ }), "4");
 
     // Zorg dat er iets bewaard staat vóór het opslaan…
     await waitFor(() => expect(readDraft("score", "g1")).not.toBeNull());
@@ -465,8 +465,8 @@ describe("<NewMatchSheet /> offline opslaan (#462)", () => {
       await userEvent.click(screen.getByRole("button", { name: naam }));
     }
     await userEvent.click(screen.getByRole("button", { name: /naar de score/i }));
-    await userEvent.type(screen.getByLabelText("Score team A"), "6");
-    await userEvent.type(screen.getByLabelText("Score team B"), "4");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Alice/ }), "6");
+    await userEvent.type(screen.getByRole("spinbutton", { name: /^Score Carol/ }), "4");
     await userEvent.click(screen.getByRole("button", { name: /match opslaan/i }));
 
     // Geruststellende melding en geen RPC-poging: de match staat in de wachtrij.

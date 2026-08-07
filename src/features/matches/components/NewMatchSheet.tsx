@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ScoreStepper } from "@/ui/ScoreStepper";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { getMyGroups } from "@/features/groups/api";
 import { Sheet } from "@/ui/Sheet";
@@ -21,7 +20,7 @@ import {
   saveCompletedMatch,
   savePlannedMatch,
 } from "@/features/matches/outbox";
-import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
+import { ScoreForm } from "@/features/matches/components/ScoreForm";
 import { DrankPicker } from "@/features/matches/components/DrankPicker";
 import { JokerPicker } from "@/features/matches/components/JokerPicker";
 import { setJoker } from "@/features/matches/jokersApi";
@@ -338,11 +337,8 @@ export function NewMatchSheet({
   const sa = scoreA === "" ? null : Number(scoreA);
   const sb = scoreB === "" ? null : Number(scoreB);
   const scored = sa !== null && sb !== null && sa >= 0 && sb >= 0;
-  const preview = scored
-    ? sa === sb
-      ? "Gelijkspel — beide teams krijgen 1 punt."
-      : `${(sa > sb ? teamA : teamB).map(nameOf).join(" & ")} winnen — 3 punten.`
-    : null;
+  // De winnaar-preview zit sinds #1144 in ScoreForm, samen met de validatie en
+  // de sets — één plek voor alle drie de invoerschermen.
 
   /** Aantikken in het rooster: los een gekozen speler weer, of voeg hem toe aan
    *  het eerste team met plek (A, dan B). */
@@ -921,87 +917,37 @@ export function NewMatchSheet({
 
         {step === 2 && modus === "score" && (
           <>
-            <div className="score-entry">
-              <div
-                className={`score-entry__team ${
-                  scored && sa! > sb! ? "is-leading" : ""
-                }`}
-              >
-                <span className="pick-teams__label">Team A</span>
+            {/* Dezelfde uitslag-invoer als op de matchkaart en het detail
+                (#1144). De avatars blijven: hier kies je de spelers net zelf,
+                en dan is een gezicht bij de score de bevestiging dat je de
+                juiste kant invult. */}
+            <ScoreForm
+              labelA={teamA.map(nameOf).join(" & ") || "Team A"}
+              labelB={teamB.map(nameOf).join(" & ") || "Team B"}
+              scoreA={scoreA}
+              scoreB={scoreB}
+              onScoreA={setScoreA}
+              onScoreB={setScoreB}
+              sets={sets}
+              onSets={setSets}
+              setsOpen={showSets}
+              onSetsOpen={setShowSets}
+              autoFocus
+              aboveA={
                 <span className="avatar-pair">
                   {teamA.map((id) => (
                     <Avatar key={id} profile={byId(id)} size={26} short />
                   ))}
                 </span>
-                <span className="score-entry__names">
-                  {teamA.map(nameOf).join(" & ")}
-                </span>
-                <ScoreStepper
-                  value={scoreA}
-                  onChange={setScoreA}
-                  label="Score team A"
-                  autoFocus
-                />
-              </div>
-              <span className="score-entry__dash">–</span>
-              <div
-                className={`score-entry__team ${
-                  scored && sb! > sa! ? "is-leading" : ""
-                }`}
-              >
-                <span className="pick-teams__label">Team B</span>
+              }
+              aboveB={
                 <span className="avatar-pair">
                   {teamB.map((id) => (
                     <Avatar key={id} profile={byId(id)} size={26} short />
                   ))}
                 </span>
-                <span className="score-entry__names">
-                  {teamB.map(nameOf).join(" & ")}
-                </span>
-                <ScoreStepper
-                  value={scoreB}
-                  onChange={setScoreB}
-                  label="Score team B"
-                />
-              </div>
-            </div>
-            {preview ? (
-              <p
-                className={`sheet-preview ${
-                  sa === sb ? "sheet-preview--draw" : "sheet-preview--win"
-                }`}
-              >
-                <span aria-hidden="true">{sa === sb ? "🤝" : "🏆"}</span>{" "}
-                {preview}
-              </p>
-            ) : (
-              <p className="sheet__hint">
-                De hoogste score wint. Een gelijke score telt als gelijkspel.
-              </p>
-            )}
-
-            <div className="sheet-sets">
-              <button
-                type="button"
-                className="planned-card__sets-toggle"
-                aria-expanded={showSets}
-                onClick={() => setShowSets((s) => !s)}
-              >
-                {showSets
-                  ? "− Sets verbergen"
-                  : "+ Sets per set invoeren (optioneel)"}
-              </button>
-              {showSets && (
-                <div className="mt-4">
-                  <SetScoresInput
-                    sets={sets}
-                    onChange={setSets}
-                    labelA={teamA.map(nameOf).join(" & ") || "Team A"}
-                    labelB={teamB.map(nameOf).join(" & ") || "Team B"}
-                  />
-                </div>
-              )}
-            </div>
+              }
+            />
 
             <CourtPicker value={courtType} onChange={setCourtType} />
 

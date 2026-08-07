@@ -53,49 +53,37 @@
   color: var(--danger);
 }
 
-/* Lef op de kaartkop (#981): zelfde pilvorm als de deadline, in het
-   lef-violet. Vóór de aftrap ("jouw lef") open; vanaf de onthulling gevuld,
-   zodat "wie had er lef" ook op een dichte kaart in één oogopslag leest. */
-/* Jokerpil op de kaartkop (#1003): welke kaart er ligt, zonder uitklappen. */
-.planned-card__jokerpil {
+/* Eén modifier-pil in de kop (#1144), in de kleur van de feature die hem
+   vulde. Er stonden er drie naast elkaar — lef, joker en drankje — en die
+   wrapten op telefoonbreedte naar drie regels. Welke er staat beslist de kaart;
+   de rest is een optierij geworden. */
+.planned-card__pil {
   padding: 2px var(--sp-2);
-  border: 1px solid var(--joker-line);
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.planned-card__pil--joker {
+  border-color: var(--joker-line);
   background: var(--joker-soft);
-  font-size: var(--fs-xs);
-  font-weight: 700;
   color: var(--joker);
-  white-space: nowrap;
 }
-.planned-card__lefpil {
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--lef-line);
-  border-radius: 999px;
+.planned-card__pil--lef {
+  border-color: var(--lef-line);
   background: var(--lef-soft);
-  font-size: var(--fs-xs);
-  font-weight: 700;
   color: var(--lef);
-  white-space: nowrap;
 }
-.planned-card__lefpil--vol {
-  border-color: var(--lef);
-  background: var(--lef);
-  color: var(--lef-ink);
+.planned-card__pil--inzet {
+  border-color: var(--dorst-line);
+  background: var(--dorst-soft);
+  color: var(--dorst);
 }
 
 /* Drankje-inzet op de kaartkop (#1004): zelfde pilvorm, in het dorst-amber.
    Waar om gespeeld wordt is geen geheim, dus deze staat er meteen — anders dan
    de lef-pil, die pas na de aftrap onthult. */
-.planned-card__inzetpil {
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--dorst-line);
-  border-radius: 999px;
-  background: var(--dorst-soft);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--dorst);
-  white-space: nowrap;
-}
 
 /* Gedeelde winkansbalk tussen de twee teamrijen: één feit, één balk. */
 .planned-card__prob {
@@ -143,10 +131,6 @@
   gap: var(--sp-2);
   align-items: center;
 }
-.planned-card__actions .planned-card__save {
-  margin-left: auto;
-}
-
 /* Icoonknoppen in de kop (agenda, ⋯): comfortabel vierkant tapdoel. */
 .iconbtn {
   flex-shrink: 0;
@@ -169,17 +153,6 @@
   color: var(--ink);
 }
 
-/* Inzetten (toto + lef) als open tegels naast elkaar; op smal onder elkaar.
-   :empty vangt het geval waarin geen van beide tegels rendert. */
-.planned-card__bets {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: var(--sp-2);
-  align-items: stretch;
-}
-.planned-card__bets:empty {
-  display: none;
-}
 
 /* Gemeenschappelijke tegelvorm; de kleur maakt het spel herkenbaar:
    toto in het smaragd van het klassement, lef in violet. */
@@ -352,24 +325,6 @@
 }
 
 /* Uitklapbare optionele set-invoer, direct onder de score-rijen. */
-.planned-card__sets {
-  display: grid;
-  justify-items: start;
-  gap: var(--sp-1);
-}
-.planned-card__sets-toggle {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px; /* tap-target ≥44px (WCAG 2.5.5) */
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent);
-  font: inherit;
-  font-weight: 600;
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
 
 /* Tijd wijzigen. */
 .planned-card__time {
@@ -480,9 +435,5 @@
   }
   .planned-card__row .match-card__side {
     flex: 1 1 100%;
-  }
-  .planned-card__row .stepper {
-    flex: 1 1 100%;
-    justify-content: space-between;
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { openPlannedCards } from "@/test/plannedCard";
+import { openScoreSheets } from "@/test/plannedCard";
 import { MemoryRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ToastProvider } from "@/ui/ToastProvider";
@@ -84,14 +84,16 @@ const veelMatches = (n: number, groupId: string | null = null) =>
   });
 
 describe("<MatchesSectie />", () => {
-  it("toont Te spelen met inline invoer en de recente matches", async () => {
+  it("toont Te spelen met de uitslag-sheet en de recente matches", async () => {
     renderPage();
     expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
-    // De score-invoer zit sinds #941 achter de uitklapknop van de kaart.
-    await openPlannedCards();
-    // De geplande match heeft twee score-invoervelden met teamnamen als label.
+    // De score-invoer zit sinds #1144 in een sheet achter de primaire knop.
+    await openScoreSheets();
+    // De sheet heeft per team één invoerveld, met de teamnaam als label.
     expect(
-      await screen.findByLabelText(/^score alice anders & bob boers$/i),
+      await screen.findByRole("spinbutton", {
+        name: /^score alice anders & bob boers$/i,
+      }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/recente matches/i)).toBeInTheDocument();
     // De afgeronde match staat in de lijst met de eindscore.
@@ -152,8 +154,8 @@ describe("<MatchesSectie />", () => {
     expect(sheet.getByText(/team a/i)).toBeInTheDocument();
     await userEvent.click(sheet.getByRole("button", { name: /naar de score/i }));
 
-    await userEvent.type(sheet.getByLabelText("Score team A"), "6");
-    await userEvent.type(sheet.getByLabelText("Score team B"), "4");
+    await userEvent.type(sheet.getByRole("spinbutton", { name: /^Score Alice/ }), "6");
+    await userEvent.type(sheet.getByRole("spinbutton", { name: /^Score Carol/ }), "4");
     expect(sheet.getByText(/winnen — 3 punten/i)).toBeInTheDocument();
 
     await userEvent.click(sheet.getByRole("button", { name: /match opslaan/i }));
@@ -260,13 +262,12 @@ describe("<MatchesSectie />", () => {
     expect(screen.getByText(/te spelen/i)).toBeInTheDocument();
     expect(container.querySelector(".sk")).not.toBeNull();
     expect(
-      screen.queryByLabelText(/^score alice anders & bob boers$/i),
+      screen.queryByRole("button", { name: /uitslag invullen/i }),
     ).toBeNull();
 
-    // En zodra de data er is, staat de echte inhoud er.
-    await openPlannedCards();
+    // En zodra de data er is, staat de echte kaart er met haar primaire actie.
     expect(
-      await screen.findByLabelText(/^score alice anders & bob boers$/i),
+      await screen.findByRole("button", { name: /uitslag invullen/i }),
     ).toBeInTheDocument();
   });
 

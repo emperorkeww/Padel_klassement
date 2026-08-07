@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScoreStepper } from "@/ui/ScoreStepper";
-import { Sheet } from "@/ui/Sheet";
 import { useToast } from "@/ui/ToastProvider";
 import { useAsync } from "@/lib/hooks/useAsync";
 import { useCacheRevision } from "@/lib/hooks/useCacheRevision";
@@ -25,35 +23,53 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { predictionPoints } from "@/features/matches/predictions";
-import {
-  clearPrediction,
-  getMatchPredictions,
-  setPrediction,
-} from "@/features/matches/predictionsApi";
+import { getMatchPredictions } from "@/features/matches/predictionsApi";
 import type { Match, Profile, RoastIntensiteit, Team } from "@/types";
 import {
   deleteMatch,
-  emptySet,
   setMatchResult,
   teamLabel,
-  toSetScores,
   updatePlannedMatchTime,
-  type SetPair,
 } from "@/features/matches/api";
 import { serveerTeam } from "@/features/matches/serve";
 import { lefGestart, stakeSwing } from "@/features/matches/stakes";
 import { drankIcon, drankLabel } from "@/features/matches/drankkaart";
 import { getMatchStakes } from "@/features/matches/stakesApi";
-import { jokerIcoon, jokerLabel, zichtbareJokers } from "@/features/matches/jokers";
+import {
+  eigenSwing,
+  jokerIcoon,
+  jokerLabel,
+  zichtbareJokers,
+} from "@/features/matches/jokers";
 import { getMatchJokers } from "@/features/matches/jokersApi";
 import { BountyBanner } from "@/features/matches/components/BountyBanner";
 import { JokerBlock } from "@/features/matches/components/JokerBlock";
+import { TraktatieBlock } from "@/features/matches/components/TraktatieBlock";
+import {
+  MatchOptions,
+  type MatchOptie,
+} from "@/features/matches/components/MatchOptions";
+import {
+  TotoTegel,
+  totoSamenvatting,
+} from "@/features/matches/components/TotoTegel";
 import { LefTipBlock } from "@/features/matches/components/LefTipBlock";
 import { MatchCalendarButton } from "@/features/matches/components/MatchCalendarButton";
-import { SetScoresInput } from "@/features/matches/components/SetScoresInput";
+import { MatchManagementSheet } from "@/features/matches/components/MatchManagementSheet";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { MatchProbability } from "@/features/matches/components/MatchProbability";
-import { matchRechten } from "@/features/matches/matchState";
+import {
+  ACTIE_LABEL,
+  matchFase,
+  matchRechten,
+  primaireActie,
+  tippenOpen,
+} from "@/features/matches/matchState";
+import { RatingPreview } from "@/features/matches/components/RatingPreview";
+import {
+  ScoreSheet,
+  type ScoreInvoer,
+} from "@/features/matches/components/ScoreSheet";
 import "./PlannedMatchCard.css";
 
 const UNDO_MS = 6000;
@@ -118,8 +134,9 @@ export function PlannedMatchCard({
 }) {
   const toast = useToast();
   const club = useClub();
-  const [sa, setSa] = useState("");
-  const [sb, setSb] = useState("");
+  // De score-invoer zelf zit in ScoreSheet (#1144); hier blijft alleen of hij
+  // openstaat en wat er (optimistisch) is opgeslagen.
+  const [scoreOpen, setScoreOpen] = useState(false);
   const [saved, setSaved] = useState<{
     a: number;
     b: number;
@@ -128,23 +145,17 @@ export function PlannedMatchCard({
     rivalryLine?: string;
   } | null>(null);
 
-  // Het invulformulier zit achter één knop (#941). Uitgeklapt is deze kaart
-  // ~800px hoog — steppers, sets, inzetten, coach en rivaliteit bij elkaar — en
-  // met een handvol geplande matches was de lijst niet meer te overzien. Wat
-  // ingeklapt blijft staan is wat je zónder invullen wil weten: wanneer, wie,
-  // de winkans, en of er een bounty op het spel staat.
+  // De context achter de kaart — toto, lef, joker, coach, rivaliteit — zit nog
+  // achter één uitklapper. De score zat daar tot #1144 bij in; die is naar een
+  // sheet verhuisd, zodat de primaire actie één tik is en de lijst eronder niet
+  // meer verspringt.
   const [open, setOpen] = useState(false);
   const bodyId = `planned-body-${m.id}`;
-
-  // Optionele per-set invoer (uitklapbaar).
-  const [showSets, setShowSets] = useState(false);
-  const [sets, setSets] = useState<SetPair[]>([emptySet()]);
 
   // Beheeracties (tijd/verwijderen) zitten achter de ⋯-sheet in de kop.
   const [manageOpen, setManageOpen] = useState(false);
 
   // Tijd wijzigen (uitklapbaar).
-  const [editingTime, setEditingTime] = useState(false);
   const [timeVal, setTimeVal] = useState(() => toLocalInput(m.played_at));
   const [busyTime, setBusyTime] = useState(false);
 
@@ -280,6 +291,11 @@ export function PlannedMatchCard({
   const lefInzetters = (kaartStakes.data ?? []).map((s) =>
     displayName(profiles[s.player_id]),
   );
+  // Staat er lef van mij op deze match? Anders dan `mijnLefHier` (die de pil
+  // vóór de aftrap stuurt) geldt dit ook ná de aftrap — precies wanneer je de
+  // uitslag invult en de ratingpreview wil kloppen.
+  const mijnLefOpDezeMatch =
+    !!myId && (kaartStakes.data ?? []).some((s) => s.player_id === myId);
   // Joker op de kaartkop (#1003), langs dezelfde route als de lef-pil: vóór de
   // aftrap alleen je eigen kaart plus de sociale kaarten van anderen (die
   // veranderen hoe er gespeeld wordt), daarna alles. zichtbareJokers draagt die
@@ -289,6 +305,9 @@ export function PlannedMatchCard({
     () => (isGroupMatch ? getMatchJokers(m.id) : Promise.resolve([])),
     [m.id, isGroupMatch, jokersRev],
   );
+  // Mijn eigen kaart op deze match; die zie ik altijd, ook vóór de aftrap.
+  const mijnJoker =
+    (kaartJokers.data ?? []).find((j) => j.player_id === myId)?.joker ?? null;
   const zichtbareKaarten = zichtbareJokers({
     match: m,
     jokers: kaartJokers.data ?? [],
@@ -309,49 +328,7 @@ export function PlannedMatchCard({
     m.status === "scheduled" &&
     (!m.played_at || new Date(m.played_at).getTime() > Date.now());
   const showTips = isGroupMatch && !!myId && (tippingOpen || preds.length > 0);
-  const [busyTip, setBusyTip] = useState(false);
 
-  async function tip(teamId: string) {
-    if (!myId || !m.group_id || busyTip || !tippingOpen) return;
-    setBusyTip(true);
-    try {
-      if (myPrediction?.predicted_team_id === teamId) {
-        await clearPrediction(m.id, myId);
-        toast.success("Tip ingetrokken.");
-      } else {
-        await setPrediction({
-          matchId: m.id,
-          groupId: m.group_id,
-          playerId: myId,
-          predictedTeamId: teamId,
-        });
-        toast.success(`Tip geplaatst op ${teamLabel(teams[teamId], profiles)}.`);
-      }
-      tap();
-      predictions.reload();
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusyTip(false);
-    }
-  }
-
-  /** Chip-gegevens per team: tippers, of het mijn tip is en de te winnen
-   *  punten volgens de huidige winkans (de server bevriest de definitieve). */
-  function tipChipFor(teamId: string, teamChance: number | null) {
-    const tippers = preds.filter((p) => p.predicted_team_id === teamId);
-    return {
-      teamId,
-      mine: myPrediction?.predicted_team_id === teamId,
-      count: tippers.length,
-      names: tippers.map((p) => displayName(profiles[p.player_id])),
-      pts: teamChance != null ? predictionPoints(teamChance) : null,
-    };
-  }
-
-  const saNum = sa === "" ? null : Number(sa);
-  const sbNum = sb === "" ? null : Number(sb);
-  const valid = saNum !== null && sbNum !== null && saNum >= 0 && sbNum >= 0;
   // Wie wat mag, in één keer afgeleid (#1144). De regels zelf — en waarom
   // beheer op `perspectiveId` hangt en invullen op `myId` — staan in
   // matchState.ts, zodat kaart, detail en groepsronde niet uit elkaar lopen.
@@ -364,12 +341,133 @@ export function PlannedMatchCard({
   });
   const canManage = rechten.magBeheren;
   const canScore = rechten.magInvullen;
+  const mijnGames = (myId && ratings.data?.[myId]?.games) || 0;
 
-  async function save() {
-    if (!valid || saved) return;
-    const a = saNum!;
-    const b = sbNum!;
-    const setScores = toSetScores(sets);
+  // Matchopties (#1144): elke rij zegt hoe het ervoor staat en opent het
+  // bestaande blok in een sheet. Rijen die niet van toepassing zijn verschijnen
+  // niet — buiten een groep bestaan toto, lef en joker gewoon niet.
+  const opties: MatchOptie[] = [];
+  if (showTips) {
+    opties.push({
+      sleutel: "toto",
+      icoon: "🎯",
+      naam: "Toto",
+      waarde: totoSamenvatting({ preds, myId, teams, profiles, tippingOpen }),
+      inhoud: (
+        <TotoTegel
+          match={m}
+          teams={teams}
+          profiles={profiles}
+          myId={myId}
+          preds={preds}
+          chance={chance}
+          pctA={pctA}
+          tippingOpen={tippingOpen}
+          onChanged={predictions.reload}
+        />
+      ),
+    });
+  }
+  // Deelnemers zien deze twee altijd; anderen alleen als er iets te zien is —
+  // dezelfde regel die JokerBlock en LefTipBlock zelf hanteren. Zonder deze
+  // spiegel zou er een rij staan die een leeg blok opent.
+  if (isGroupMatch && (mijnTeam != null || zichtbareKaarten.length > 0)) {
+    opties.push({
+      sleutel: "joker",
+      icoon: "🃏",
+      naam: "Speciale kaart",
+      // Volgt zichtbareJokers: vóór de aftrap dus alleen je eigen kaart en de
+      // sociale kaarten van anderen. De anti-meelift-garantie mag hier niet
+      // alsnog uit lekken.
+      waarde: mijnJoker
+        ? jokerLabel(mijnJoker)
+        : zichtbareKaarten.length > 0
+          ? `${zichtbareKaarten.length} gespeeld`
+          : "Geen",
+      inhoud: (
+        <JokerBlock
+          match={m}
+          profiles={profiles}
+          myId={myId}
+          isDeelnemer={mijnTeam != null}
+          mijnKans={mijnKans}
+          games={mijnGames}
+        />
+      ),
+    });
+  }
+  if (isGroupMatch && (mijnTeam != null || lefOnthuld)) {
+    opties.push({
+      sleutel: "lef",
+      icoon: "🎲",
+      naam: "Lef",
+      waarde: mijnLefOpDezeMatch
+        ? "Jouw lef staat erop"
+        : lefOnthuld
+          ? `${lefInzetters.length} ${lefInzetters.length === 1 ? "inzet" : "inzetten"}`
+          : "Geen",
+      inhoud: (
+        <LefTipBlock
+          match={m}
+          profiles={profiles}
+          myId={myId}
+          isDeelnemer={mijnTeam != null}
+          mijnKans={mijnKans}
+          games={mijnGames}
+          matches={history}
+        />
+      ),
+    });
+  }
+  // TraktatieBlock verbergt zichzelf als er niets staat en jij er niets aan mag
+  // veranderen; de rij volgt dat.
+  if (m.wager_drink || canScore) {
+    opties.push({
+        sleutel: "inzet",
+      icoon: "🍻",
+      naam: "Inzet",
+      waarde: m.wager_drink
+        ? `${m.wager_drink_qty ?? 1}× ${drankLabel(m.wager_drink)}`
+        : "Nog niets afgesproken",
+      inhoud: (
+        <TraktatieBlock
+          match={m}
+          profiles={profiles}
+          magBeheren={canScore}
+          onSaved={() => onSaved?.()}
+        />
+      ),
+    });
+  }
+  if (mijnTeam != null && mijnKans != null) {
+    const swing = eigenSwing({
+      mijnKans,
+      staked: mijnLefOpDezeMatch,
+      joker: mijnJoker,
+    });
+    opties.push({
+      sleutel: "rating",
+      icoon: "📊",
+      naam: "Rating",
+      waarde: `+${swing.winst} / ${swing.verlies}`,
+      inhoud: (
+        <RatingPreview
+          mijnKans={mijnKans}
+          staked={mijnLefOpDezeMatch}
+          joker={mijnJoker}
+        />
+      ),
+    });
+  }
+
+  /** Slaat de uitslag op. Optimistisch: de kaart klapt meteen om naar de
+   *  uitslag — mét wat je toto-tip en lef-inzet opleverden — en draait alleen
+   *  terug als de server weigert (bv. al door een ander ingevuld). De fout
+   *  wordt doorgegooid zodat ScoreSheet hem meldt en openblijft. */
+  async function save(invoer: ScoreInvoer) {
+    if (saved) return;
+    const a = invoer.scoreA;
+    const b = invoer.scoreB;
 
     // Rivaliteitsmoment: wie van het rivalenpaar won dit duel (null = gelijk),
     // en hoe staat het daarna? Vastleggen vóór de herlaadde data binnenkomt.
@@ -396,7 +494,7 @@ export function PlannedMatchCard({
         winnerTeamId: a === b ? null : a > b ? m.team_a_id : m.team_b_id,
         scoreA: a,
         scoreB: b,
-        setScores: setScores.length > 0 ? setScores : null,
+        setScores: invoer.setScores,
       });
       const iWon =
         !!perspectiveId &&
@@ -417,7 +515,7 @@ export function PlannedMatchCard({
       onSaved?.();
     } catch (err) {
       setSaved(null); // terugdraaien; de kaart is weer invulbaar
-      toast.error(errorMessage(err));
+      throw err; // ScoreSheet meldt de fout en houdt je invoer vast
     }
   }
 
@@ -430,7 +528,6 @@ export function PlannedMatchCard({
       });
       tap();
       toast.success("Tijdstip bijgewerkt.");
-      setEditingTime(false);
       onSaved?.();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -555,14 +652,67 @@ export function PlannedMatchCard({
         }
       : null;
 
-  // Wat de knop belooft hangt af van wat je met deze match mag: invullen,
-  // tippen, of alleen kijken. "Details" op een kaart waar jij de uitslag kunt
-  // invullen zou de primaire actie verstoppen.
-  const uitklapLabel = canScore
-    ? "Uitslag invullen"
-    : showTips && tippingOpen
-      ? "Tippen"
-      : "Details";
+  // Eén dominante actie per staat (#1144); welke dat is beslist matchState.
+  // Invullen en corrigeren openen de sheet, een half klaargezette match opent
+  // het tijdstip. Tippen en kijken hebben geen eigen knop nodig — daarvoor is
+  // de uitklapper er al, en die belooft dan ook "Tippen".
+  const actie = primaireActie({
+    fase: matchFase(m),
+    rechten,
+    tippenOpen: tippenOpen(m, now),
+  });
+  const actieKnop =
+    actie === "uitslag-invullen" || actie === "score-invoeren"
+      ? { label: ACTIE_LABEL[actie], onClick: () => setScoreOpen(true) }
+      : actie === "match-vervolledigen"
+        ? { label: ACTIE_LABEL[actie], onClick: () => setManageOpen(true) }
+        : null;
+  const meerLabel = actie === "tippen" ? "Tippen" : "Details";
+
+  // Welke modifier de ene plek in de kop verdient. Volgorde: de joker weegt het
+  // zwaarst (één per maand, en "wissel van kant" verandert zelfs de opstelling),
+  // dan de lef-inzet (één per dag, verdubbelt je mutatie), dan het drankje —
+  // sociaal, en de enige die de rating niet raakt.
+  const modifierPil = (() => {
+    if (zichtbareKaarten.length > 0) {
+      const eerste = zichtbareKaarten[0];
+      return {
+        soort: "joker" as const,
+        tekst:
+          zichtbareKaarten.length === 1
+            ? `${jokerIcoon(eerste.joker)} ${jokerLabel(eerste.joker)}`
+            : `🃏 ${zichtbareKaarten.length} jokers`,
+        titel: zichtbareKaarten
+          .map(
+            (j) => `${displayName(profiles[j.player_id])}: ${jokerLabel(j.joker)}`,
+          )
+          .join(" · "),
+      };
+    }
+    if (mijnLefHier || lefOnthuld) {
+      return {
+        soort: "lef" as const,
+        tekst: lefOnthuld
+          ? `🎲 Lef: ${
+              lefInzetters.length > 1
+                ? `${lefInzetters[0]} +${lefInzetters.length - 1}`
+                : lefInzetters[0]
+            }`
+          : "🎲 jouw lef",
+        titel: lefOnthuld
+          ? `Lef getoond door ${lefInzetters.join(", ")}`
+          : "Jouw lef staat op deze match",
+      };
+    }
+    if (m.wager_drink) {
+      return {
+        soort: "inzet" as const,
+        tekst: `${drankIcon(m.wager_drink)} ${m.wager_drink_qty ?? 1}× ${drankLabel(m.wager_drink)}`,
+        titel: "De verliezers trakteren de winnaars",
+      };
+    }
+    return null;
+  })();
 
   // Scorebord-layout: per rij een team met zijn eigen stepper; de verwachte
   // winkans als één gedeelde balk tussen de twee rijen.
@@ -590,60 +740,19 @@ export function PlannedMatchCard({
                 {deadline.label}
               </span>
             )}
-            {/* Lef op de kop (#981): vóór de aftrap alleen je eigen inzet,
-                daarna de onthulling — zichtbaar terwijl de kaart dicht staat. */}
-            {(mijnLefHier || lefOnthuld) && (
+            {/* Hoogstens één modifier-pil (#1144). Er konden er drie naast
+                elkaar staan — lef, joker en drankje — die op telefoonbreedte
+                naar drie regels wrapten en de kop lieten concurreren met de
+                namen eronder. De rest staat als optierij achter "Details", dus
+                er verdwijnt niets; er staat alleen niet alles tegelijk. */}
+            {modifierPil && (
               <span
-                className={`planned-card__lefpil${
-                  lefOnthuld ? " planned-card__lefpil--vol" : ""
-                }`}
-                title={
-                  lefOnthuld
-                    ? `Lef getoond door ${lefInzetters.join(", ")}`
-                    : "Jouw lef staat op deze match"
-                }
+                className={`planned-card__pil planned-card__pil--${modifierPil.soort}`}
+                title={modifierPil.titel}
               >
-                🎲{" "}
-                {lefOnthuld
-                  ? `Lef: ${
-                      lefInzetters.length > 1
-                        ? `${lefInzetters[0]} +${lefInzetters.length - 1}`
-                        : lefInzetters[0]
-                    }`
-                  : "jouw lef"}
+                {modifierPil.tekst}
               </span>
-            )}
-            {/* Joker op de kop (#1003): dezelfde afweging als de lef-pil. Van
-                kant wisselen staat er dus meteen op — daar moet de tegenstander
-                zijn opstelling op aanpassen. */}
-            {zichtbareKaarten.length > 0 && (
-              <span
-                className="planned-card__jokerpil"
-                title={zichtbareKaarten
-                  .map(
-                    (j) =>
-                      `${displayName(profiles[j.player_id])}: ${jokerLabel(j.joker)}`,
-                  )
-                  .join(" · ")}
-              >
-                {zichtbareKaarten.length === 1
-                  ? `${jokerIcoon(zichtbareKaarten[0].joker)} ${jokerLabel(zichtbareKaarten[0].joker)}`
-                  : `🃏 ${zichtbareKaarten.length} jokers`}
-              </span>
-            )}
-            {/* Drankje-inzet (#1004): waar om gespeeld wordt hoort iedereen te
-                zien zonder de kaart uit te klappen — net als de lef-pil
-                hierboven. Wijzigen kan op de matchpagina. */}
-            {m.wager_drink && (
-              <span
-                className="planned-card__inzetpil"
-                title="De verliezers trakteren de winnaars"
-              >
-                {drankIcon(m.wager_drink)}{" "}
-                {m.wager_drink_qty ?? 1}× {drankLabel(m.wager_drink)}
-              </span>
-            )}
-          </span>
+            )}          </span>
           {whereLine && <span className="planned-card__where">{whereLine}</span>}
         </div>
         <MatchCalendarButton match={m} teams={teams} profiles={profiles} />
@@ -667,16 +776,7 @@ export function PlannedMatchCard({
           won={false}
           ratings={ratings.data ?? undefined}
         />
-        {serveKant === "a" && (
-          <ServeChip teamName={labelA} />
-        )}
-        {canScore && open && (
-          <ScoreStepper
-            value={sa}
-            onChange={setSa}
-            label={`Score ${labelA}`}
-          />
-        )}
+        {serveKant === "a" && <ServeChip teamName={labelA} />}
       </div>
 
       <MatchProbability pctA={pctA} labelA={labelA} labelB={labelB} />
@@ -688,16 +788,7 @@ export function PlannedMatchCard({
           won={false}
           ratings={ratings.data ?? undefined}
         />
-        {serveKant === "b" && (
-          <ServeChip teamName={labelB} />
-        )}
-        {canScore && open && (
-          <ScoreStepper
-            value={sb}
-            onChange={setSb}
-            label={`Score ${labelB}`}
-          />
-        )}
+        {serveKant === "b" && <ServeChip teamName={labelB} />}
       </div>
 
       {/* Bounty (#805): staat er een leider op het veld, dan hoort iedereen
@@ -709,30 +800,6 @@ export function PlannedMatchCard({
           blijft de kaart kop + teams + winkans + bounty + één knop (#941). */}
       {open && (
         <div className="planned-card__body" id={bodyId}>
-          {/* Sets horen bij de score-invoer: direct onder de team-rijen. */}
-          {canScore && (
-            <div className="planned-card__sets">
-              <button
-                type="button"
-                className="planned-card__sets-toggle"
-                aria-expanded={showSets}
-                onClick={() => setShowSets((s) => !s)}
-              >
-                {showSets
-                  ? "− Sets verbergen"
-                  : "+ Sets per set invoeren (optioneel)"}
-              </button>
-              {showSets && (
-                <SetScoresInput
-                  sets={sets}
-                  onChange={setSets}
-                  labelA={labelA}
-                  labelB={labelB}
-                />
-              )}
-            </div>
-          )}
-
           {/* Wie niet mag invullen krijgt uitleg in plaats van een stilletjes
               lege kaart; de toto hieronder blijft juist voor kijkers relevant. */}
           {!canScore && (
@@ -742,71 +809,10 @@ export function PlannedMatchCard({
             </p>
           )}
 
-          {/* Inzetten: toto (kijkersspel, smaragd) en lef (risicospel van de
-              spelers, violet) als twee open tegels naast elkaar — direct tikbaar,
-              zonder accordeons. */}
-          {isGroupMatch && (
-            <div className="planned-card__bets">
-              {showTips && (
-                <section className="bet-tile bet-tile--toto" aria-label="Toto">
-                  <header className="bet-tile__head">
-                    <span className="bet-tile__name">🎯 Toto</span>
-                    {!tippingOpen && (
-                      <span className="bet-tile__stat">
-                        {predictions.data == null
-                          ? "tippen gesloten"
-                          : `tippen gesloten · ${preds.length} ${preds.length === 1 ? "tip" : "tips"}`}
-                      </span>
-                    )}
-                  </header>
-                  <div className="bet-tile__options">
-                    <TipOption
-                      {...tipChipFor(m.team_a_id, chance)}
-                      teamName={labelA}
-                      pct={pctA}
-                      disabled={!tippingOpen || busyTip}
-                      onClick={() => tip(m.team_a_id)}
-                    />
-                    <TipOption
-                      {...tipChipFor(m.team_b_id, chance != null ? 1 - chance : null)}
-                      teamName={labelB}
-                      pct={pctA != null ? 100 - pctA : null}
-                      disabled={!tippingOpen || busyTip}
-                      onClick={() => tip(m.team_b_id)}
-                    />
-                  </div>
-                  {tippingOpen && (
-                    <p className="bet-tile__foot">
-                      {myPrediction
-                        ? "Je kunt je tip nog wijzigen tot de starttijd."
-                        : "Tip de winnaar — hoe kleiner de winkans, hoe meer punten (+1 tot +4). Tippen kan tot de starttijd."}
-                    </p>
-                  )}
-                </section>
-              )}
-              {/* Lef-tip (#804): dubbel-of-niets voor de spelers zelf, naast de
-                  toto voor de toeschouwers. */}
-              <LefTipBlock
-                match={m}
-                profiles={profiles}
-                myId={myId}
-                isDeelnemer={mijnTeam != null}
-                mijnKans={mijnKans}
-                games={(myId && ratings.data?.[myId]?.games) || 0}
-                matches={history}
-              />
-              {/* Joker (#1003): de kaart van de maand, onder de lef-tip. Eerst
-                  je dagelijkse zenuwspel, dan de zwaardere keuze. */}
-              <JokerBlock
-                match={m}
-                profiles={profiles}
-                myId={myId}
-                isDeelnemer={mijnTeam != null}
-                mijnKans={mijnKans}
-                games={(myId && ratings.data?.[myId]?.games) || 0}
-              />
-            </div>
-          )}
+          {/* Matchopties (#1144): toto, speciale kaart, inzet en rating als
+              compacte rijen in plaats van drie gekleurde tegels onder elkaar.
+              De blokken erachter zijn ongewijzigd — alleen hun verpakking. */}
+          <MatchOptions opties={opties} />
 
           {/* Coach en rivaliteit gegroepeerd als rustig tussenblok. */}
           {(coachPre || rivalry) && (
@@ -832,87 +838,96 @@ export function PlannedMatchCard({
         </div>
       )}
 
-      {canManage && editingTime && (
-        <div className="planned-card__time">
-          <input
-            className="input"
-            type="datetime-local"
-            value={timeVal}
-            onChange={(e) => setTimeVal(e.target.value)}
-            aria-label="Nieuw tijdstip"
-          />
-          <button
-            className="btn btn--sm"
-            onClick={() => setEditingTime(false)}
-            disabled={busyTime}
-          >
-            Annuleren
-          </button>
-          <button
-            className="btn btn--primary btn--sm"
-            onClick={saveTime}
-            disabled={busyTime}
-          >
-            {busyTime ? "Opslaan…" : "Tijd opslaan"}
-          </button>
-        </div>
-      )}
-
-      {/* Voet: de knop die de kaart opent, en zodra hij openstaat de primaire
-          actie ernaast. Agenda en ⋯ zitten in de kop, en de kop zegt al
-          wanneer/waar — geen meta-herhaling hier. */}
+      {/* Voet: links de ene primaire actie, rechts de uitklapper naar de rest.
+          Welke actie primair is bepaalt matchState (#1144), niet een ternary
+          hier — zo beloven kaart, detail en groepsronde hetzelfde.
+          Agenda en ⋯ zitten in de kop, en de kop zegt al wanneer/waar. */}
       <div className="planned-card__foot planned-card__actions">
+        {actieKnop && (
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={actieKnop.onClick}
+          >
+            {actieKnop.label}
+          </button>
+        )}
         <button
           type="button"
-          className={`btn btn--sm${!open && canScore ? " btn--primary" : ""}`}
+          className={`btn btn--sm${actieKnop ? " planned-card__meer" : " btn--primary"}`}
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen((o) => !o)}
         >
-          {open ? "Inklappen" : uitklapLabel}
+          {open ? "Inklappen" : meerLabel}
         </button>
-        {open && canScore && (
-          <button
-            className="btn btn--primary btn--sm planned-card__save"
-            disabled={!valid}
-            onClick={save}
-          >
-            Opslaan
-          </button>
-        )}
       </div>
 
-      {/* Beheeracties (de aanmaker en de groepseigenaar) in een compacte sheet
-          achter ⋯. */}
-      {canManage && (
-        <Sheet
-          open={manageOpen}
-          onClose={() => setManageOpen(false)}
-          title="Matchbeheer"
-          compact
-        >
-          <div className="planned-card__manage">
-            <button
-              className="btn"
-              onClick={() => {
-                setManageOpen(false);
-                setEditingTime(true);
-              }}
-            >
-              Tijd wijzigen
-            </button>
-            <button
-              className="btn btn--danger"
-              onClick={() => {
-                setManageOpen(false);
-                startDelete();
-              }}
-            >
-              Verwijderen
-            </button>
-          </div>
-        </Sheet>
+      {/* De uitslag zelf: één sheet, gedeeld met het matchdetail en de wizard.
+          Alleen voor wie mag invullen; de rechten worden serverzijdig
+          afgedwongen (#413, #978). */}
+      {canScore && (
+        <ScoreSheet
+          open={scoreOpen}
+          match={m}
+          labelA={labelA}
+          labelB={labelB}
+          onClose={() => setScoreOpen(false)}
+          onSave={save}
+          ratingPreview={
+            <RatingPreview
+              mijnKans={mijnTeam != null ? mijnKans : null}
+              staked={mijnLefOpDezeMatch}
+              joker={mijnJoker}
+            />
+          }
+        />
       )}
+
+      {/* Eén beheermenu (#1144), gedeeld met het matchdetail. Tijd wijzigen
+          klapt als paneel open; verwijderen valt meteen — met de undo-strook
+          als vangnet. */}
+      <MatchManagementSheet
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        acties={[
+          {
+            sleutel: "tijd",
+            label: "Tijd wijzigen",
+            hint: m.played_at
+              ? "Verzet deze match naar een ander moment."
+              : "Zet een starttijd; zonder tijd kan er geen lef of joker op.",
+            inhoud: (
+              <div className="planned-card__time">
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={timeVal}
+                  onChange={(e) => setTimeVal(e.target.value)}
+                  aria-label="Nieuw tijdstip"
+                />
+                <button
+                  className="btn btn--primary btn--sm"
+                  onClick={async () => {
+                    await saveTime();
+                    setManageOpen(false);
+                  }}
+                  disabled={busyTime}
+                >
+                  {busyTime ? "Opslaan…" : "Tijd opslaan"}
+                </button>
+              </div>
+            ),
+          },
+          {
+            sleutel: "verwijderen",
+            label: "Verwijderen",
+            hint: "Je kunt dit nog even ongedaan maken.",
+            gevaarlijk: true,
+            onClick: startDelete,
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -950,71 +965,6 @@ function LefSavedLine({
         </strong>
       )}
     </p>
-  );
-}
-
-/** Risico-etiket bij een winkans: de underdog levert de meeste toto-punten. */
-function tipTier(pct: number | null): string | null {
-  if (pct == null) return null;
-  if (pct >= 60) return "favoriet";
-  if (pct <= 40) return "underdog";
-  return "fifty-fifty";
-}
-
-/** Grote, tapbare tip-keuze per team: teamnaam, de te winnen punten met hun
- *  risico-etiket (favoriet/underdog), en hoeveel groepsleden dit team tippen.
- *  Nogmaals tikken op je eigen keuze trekt de tip in. */
-function TipOption({
-  teamName,
-  mine,
-  count,
-  names,
-  pts,
-  pct,
-  disabled,
-  onClick,
-}: {
-  teamName: string;
-  mine: boolean;
-  count: number;
-  names: string[];
-  pts: number | null;
-  pct: number | null;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  const tier = tipTier(pct);
-  return (
-    <button
-      type="button"
-      className={`toto-opt ${mine ? "toto-opt--mine" : ""}`}
-      disabled={disabled}
-      aria-pressed={mine}
-      aria-label={`Tip ${teamName}`}
-      onClick={onClick}
-      title={
-        count > 0
-          ? `Getipt door ${names.join(", ")}`
-          : `Tip ${teamName} als winnaar`
-      }
-    >
-      <span className="toto-opt__top">
-        <span className="toto-opt__team">{teamName}</span>
-        {mine && <span className="toto-opt__mine-flag">jouw tip ✓</span>}
-      </span>
-      <span className="toto-opt__reward">
-        {pts != null && (
-          <span className="toto-opt__pts">
-            +{pts}
-            <span className="toto-opt__pts-unit"> pt</span>
-          </span>
-        )}
-        {tier && <span className="toto-opt__tier">{tier}</span>}
-      </span>
-      <span className="toto-opt__count">
-        {count > 0 ? `${count}× getipt` : "nog niemand"}
-      </span>
-    </button>
   );
 }
 
