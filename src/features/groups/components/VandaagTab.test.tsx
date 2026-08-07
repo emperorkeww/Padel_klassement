@@ -68,7 +68,7 @@ function renderTab(
   const onMatches = vi.fn();
   const onGuestCreated = vi.fn();
   const onShowStand = vi.fn();
-  render(
+  const { unmount } = render(
     <MemoryRouter>
       <AuthProvider>
         <ToastProvider>
@@ -101,7 +101,7 @@ function renderTab(
       </AuthProvider>
     </MemoryRouter>,
   );
-  return { onMatches, onGuestCreated, onShowStand };
+  return { onMatches, onGuestCreated, onShowStand, unmount };
 }
 
 /** Wacht tot MakeTeams zijn default-selectie heeft gezet (#292). Sinds #1089
@@ -244,6 +244,27 @@ describe("<VandaagTab />", () => {
     expect(
       await screen.findByText(/deelnemers uit de poll van vandaag/i),
     ).toBeInTheDocument();
+  });
+
+  // #1089: de selectie werd bij elke mount opnieuw uit de poll afgeleid, dus
+  // wie vier namen had uitgetikt mocht na een refresh opnieuw beginnen.
+  it("houdt een uitgetikte speler uitgetikt na opnieuw laden", async () => {
+    const { unmount } = renderTab();
+    await waitForSelection();
+
+    await userEvent.click(screen.getByRole("switch", { name: /bob boers/i }));
+    expect(screen.getByRole("switch", { name: /bob boers/i })).not.toBeChecked();
+
+    unmount();
+    renderTab();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("switch", { name: /bob boers/i }),
+      ).not.toBeChecked(),
+    );
+    // De rest volgt nog gewoon de poll.
+    expect(screen.getByRole("switch", { name: /carol claes/i })).toBeChecked();
   });
 
   it("genereert een Americano-ronde en meldt dat via onMatches", async () => {

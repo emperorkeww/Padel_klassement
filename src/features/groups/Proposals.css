@@ -1141,8 +1141,9 @@
   align-items: center;
   gap: var(--sp-3);
 }
-/* Aantal rondes in één keer (#727): zelfde vorm als .gen-controls__rounds op
-   de Vandaag-tab, zodat dezelfde keuze er op beide plekken hetzelfde uitziet. */
+/* Aantal rondes in één keer (#727). Dezelfde keuze staat op de Vandaag-tab in
+   de meta-rij van de speelformaat-kaart (.speelvorm__rondes, #1089); die leeft
+   op een omgekeerd vlak en heeft daarom een eigen vorm. */
 .winner-card__rondes {
   display: inline-flex;
   align-items: center;
@@ -1190,15 +1191,6 @@
 }
 .plan-instap-lijn + .card.suggestions {
   margin-top: 0;
-}
-
-/* Maak teams: aan/uit te tikken deelnemers voor de teamgenerator. */
-.tonight__players {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  /* Ademruimte naar de waarschuwing/knoppen eronder (raakte elkaar). */
-  margin-bottom: var(--sp-3);
 }
 
 /* Heel smalle schermen (320px): de vier fase-stappen passen zonder
