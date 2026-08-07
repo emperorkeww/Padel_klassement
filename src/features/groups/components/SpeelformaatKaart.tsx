@@ -40,8 +40,8 @@ export function SpeelformaatKaart({
   vorm,
   onVorm,
   aanwezig,
-  americanoRondes,
-  onAmericanoRondes,
+  aantalRondes,
+  onAantalRondes,
   bezig,
   blokkade,
   onStart,
@@ -50,11 +50,11 @@ export function SpeelformaatKaart({
   onVorm: (v: Speelvorm) => void;
   /** Aantal aangevinkte spelers — voedt de beschrijving en de meta-rij. */
   aanwezig: number;
-  americanoRondes: number;
+  aantalRondes: number;
   /** Een state-setter, geen kale callback: de stappers rekenen vanuit de vorige
    *  waarde. Twee tikken vlak na elkaar landen anders in dezelfde render en
    *  lezen allebei hetzelfde getal, waarna er één verhoging verdwijnt. */
-  onAmericanoRondes: Dispatch<SetStateAction<number>>;
+  onAantalRondes: Dispatch<SetStateAction<number>>;
   bezig: boolean;
   /** Reden waarom starten nu niet kan, of null. Blokkeert ook de knop. */
   blokkade: string | null;
@@ -111,7 +111,7 @@ export function SpeelformaatKaart({
           </div>
           <div>
             <dt>Rondes</dt>
-            <dd>{rondes(vorm, americanoRondes)}</dd>
+            <dd>{rondes(vorm, aantalRondes)}</dd>
           </div>
         </dl>
 
@@ -120,10 +120,12 @@ export function SpeelformaatKaart({
             keuzevakje als nóg een uitkomst, niet als iets wat je kunt zetten.
             Nu een eigen regel met dezelfde ±-stappers als de score-invoer, en
             het aantal staat ook in de knop.
-            Alleen bij Americano: Mexicano deelt per ronde in op de laatste
-            stand en kan er dus maar één tegelijk, en bij Eerlijk staan de teams
-            vast — meer rondes zou daar hetzelfde duo herhalen. */}
-        {vorm === "americano" && (
+            Niet bij Mexicano: die deelt per ronde in op de laatste stand en
+            heeft de uitslagen van de vorige ronde dus nodig. Eerlijk kon dit
+            tot #1141 ook niet, terwijl de knop op de speeldagkaart een hele
+            avond ineens wegschreef; elke ronde krijgt daar een eigen
+            verdeling, dus het herhaalt geen duo's. */}
+        {vorm !== "mexicano" && (
           <div className="speelvorm__keuzerij">
             <label className="speelvorm__keuzelabel" htmlFor="speelvorm-rondes">
               Hoeveel rondes?
@@ -133,10 +135,10 @@ export function SpeelformaatKaart({
                 type="button"
                 className="stepper__btn"
                 aria-label="Eén ronde minder"
-                disabled={americanoRondes <= RONDES_MIN}
+                disabled={aantalRondes <= RONDES_MIN}
                 onClick={() => {
                   tap();
-                  onAmericanoRondes((n) => klemRondes(n - 1));
+                  onAantalRondes((n) => klemRondes(n - 1));
                 }}
               >
                 −
@@ -148,19 +150,19 @@ export function SpeelformaatKaart({
                 inputMode="numeric"
                 min={RONDES_MIN}
                 max={RONDES_MAX}
-                value={americanoRondes}
+                value={aantalRondes}
                 onChange={(e) =>
-                  onAmericanoRondes(klemRondes(Number(e.target.value)))
+                  onAantalRondes(klemRondes(Number(e.target.value)))
                 }
               />
               <button
                 type="button"
                 className="stepper__btn"
                 aria-label="Eén ronde meer"
-                disabled={americanoRondes >= RONDES_MAX}
+                disabled={aantalRondes >= RONDES_MAX}
                 onClick={() => {
                   tap();
-                  onAmericanoRondes((n) => klemRondes(n + 1));
+                  onAantalRondes((n) => klemRondes(n + 1));
                 }}
               >
                 +
@@ -180,7 +182,7 @@ export function SpeelformaatKaart({
             onStart();
           }}
         >
-          {bezig ? "Bezig…" : ctaLabel(vorm, americanoRondes)}
+          {bezig ? "Bezig…" : ctaLabel(vorm, aantalRondes)}
         </button>
       </TabPanel>
 

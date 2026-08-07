@@ -20,7 +20,10 @@ export function FairTeamsCard({
   playerIds,
   profiles,
   playedAt,
+  aantal = 1,
+  startVoor,
   ingebed = false,
+  onGenerated,
 }: {
   /** Groep waarbinnen de matches gepland worden. */
   groupId: string;
@@ -29,10 +32,20 @@ export function FairTeamsCard({
   profiles: Record<string, Profile>;
   /** Starttijd (ISO) van deze ronde (#827); null zonder speeldag-poll. */
   playedAt?: string | null;
+  /** Hoeveel rondes "Speel deze teams" wegschrijft (#1141). Elke ronde krijgt
+   *  een eigen verdeling — dezelfde lus die de knop op de speeldagkaart had. */
+  aantal?: number;
+  /** Starttijd van ronde `index` binnen deze reeks; zonder deze functie krijgen
+   *  alle rondes `playedAt` mee, zoals voorheen. */
+  startVoor?: (index: number) => string | null;
   /** Onder de speelformaat-kaart (#1089): daar staan de titel, de uitleg en de
    *  knop "Stel eerlijke teams voor" al, en de kaart ís de reactie op die knop.
    *  Herhaalt hij ze, dan lees je hetzelfde drie keer. */
   ingebed?: boolean;
+  /** Aangeroepen nadat de rondes weggeschreven zijn, zodat de pagina eromheen
+   *  ze meteen kan tonen. De speeldagpagina heeft dit nodig: die luisterde
+   *  nergens mee (#1141). */
+  onGenerated?: () => void;
 }) {
   const toast = useToast();
   const ratings = useAsync(getPlayerRatings, []);
@@ -67,22 +80,40 @@ export function FairTeamsCard({
   }
 
   async function play() {
-    if (!proposal) return;
+    if (!proposal || !ratings.data) return;
     setSaving(true);
     try {
-      const courts: FairCourt[] = proposal.courts.map((c) => ({
-        teamA: c.teamA.playerIds,
-        teamB: c.teamB.playerIds,
-      }));
-      const ids = await createFairRound(groupId, courts, playedAt);
-      if (ids.length === 0) throw new Error("Geen matches aangemaakt.");
+      let total = 0;
+      // Eén serverronde per gevraagde ronde, met een oplopende variant: het
+      // voorstel dat je ziet is ronde 1, de rondes erna krijgen een eigen
+      // verdeling. Precies wat de knop op de speeldagkaart deed (#727/#1141),
+      // maar nu vanuit de vorm die je zelf koos.
+      for (let i = 0; i < Math.max(1, aantal); i++) {
+        const ronde =
+          i === 0
+            ? proposal
+            : fairTeams(playerIds, ratings.data, (variant ?? 0) + i, { benched });
+        const courts: FairCourt[] = ronde.courts.map((c) => ({
+          teamA: c.teamA.playerIds,
+          teamB: c.teamB.playerIds,
+        }));
+        if (courts.length === 0) break;
+        const ids = await createFairRound(
+          groupId,
+          courts,
+          startVoor ? startVoor(i) : playedAt,
+        );
+        total += ids.length;
+      }
+      if (total === 0) throw new Error("Geen matches aangemaakt.");
       tap();
       toast.success(
-        ids.length === 1
+        total === 1
           ? "Match ingepland — vul straks de uitslag in."
-          : `${ids.length} matches ingepland — vul straks de uitslagen in.`,
+          : `${total} matches ingepland — vul straks de uitslagen in.`,
       );
       setVariant(null);
+      onGenerated?.();
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -126,7 +157,11 @@ export function FairTeamsCard({
             disabled={saving}
             onClick={play}
           >
-            {saving ? "Bezig…" : "Speel deze teams"}
+            {saving
+              ? "Bezig…"
+              : aantal > 1
+                ? `Speel deze ${aantal} rondes`
+                : "Speel deze teams"}
           </button>
         )}
       </div>
@@ -137,8 +172,9 @@ export function FairTeamsCard({
           gewone regel onder, waar iedereen ze ziet. */}
       {proposal && proposal.courts.length > 0 && (
         <p className="fair-teams__uitleg">
-          “Andere verdeling” laat de reserve rouleren; “Speel deze teams” zet ze
-          klaar als geplande matches.
+          {aantal > 1
+            ? `“Andere verdeling” laat de reserve rouleren; “Speel deze ${aantal} rondes” zet ze klaar als geplande matches — elke ronde met een eigen verdeling.`
+            : "“Andere verdeling” laat de reserve rouleren; “Speel deze teams” zet ze klaar als geplande matches."}
         </p>
       )}
 
