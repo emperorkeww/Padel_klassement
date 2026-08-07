@@ -60,6 +60,51 @@ describe("'Jouw positie'-chip", () => {
   });
 });
 
+describe("spelerspillen in het match-sheet (#1083)", () => {
+  const tsx = lees("src/features/matches/components/NewMatchSheet.tsx");
+  const css = lees("src/features/matches/Matches.css");
+  const blok = css.match(/\n\.pick-chip \{([\s\S]*?)\n\}/)![1];
+
+  it("draagt het interactieve materiaal in pilvorm", () => {
+    expect(tsx).toMatch(/pick-chip glas glas--interactief glas--pil/);
+  });
+
+  it("houdt de vulling dekkend en de blur uit", () => {
+    // Er staan er twintig-plus tegelijk in een scrollende lijst; twintig
+    // backdrop-filters op een telefoon is geen optie, en onder een dekkende
+    // vulling zou je er toch niets van zien. Zelfde afweging als .me-chip.
+    expect(blok).toMatch(/--glas-laag:\s*linear-gradient\(var\(--surface\) 0 0\)/);
+    expect(blok).toMatch(/backdrop-filter:\s*none/);
+  });
+
+  it("wisselt de teamkleur via de laag en niet via background", () => {
+    // Een `background` hier zou het hele materiaal eronder wegvegen.
+    for (const team of ["a", "b"]) {
+      const teamBlok = css.match(
+        new RegExp(`\\n\\.pick-chip--${team} \\{([\\s\\S]*?)\\n\\}`),
+      )![1];
+      expect(teamBlok).toMatch(/--glas-laag:\s*linear-gradient\(/);
+      expect(teamBlok).not.toMatch(/^\s*background:/m);
+    }
+  });
+
+  it("laat de pilvorm de afronding doen", () => {
+    expect(blok).not.toMatch(/border-radius/);
+  });
+});
+
+describe("keuzebanen in het match-sheet (#1083)", () => {
+  const tsx = lees("src/features/matches/components/NewMatchSheet.tsx");
+
+  it("zet de baan op glas, maar alleen binnen het sheet", () => {
+    // Speelvorm en baantype liggen op een glazen sheet; een dekkende
+    // --surface-2 las daar als een grijze plaat. Elders in de app ligt .tabs
+    // op een dichte pagina en blijft hij zoals hij is — vandaar per instantie
+    // en niet in de gedeelde .tabs-regel.
+    expect(tsx.match(/tabs[^"`]*glas glas--subtiel glas--pil/g) ?? []).toHaveLength(2);
+  });
+});
+
 describe("sticky selectiebalk van de poll-wizard (#1083)", () => {
   const tsx = lees("src/features/groups/components/PollWizard.tsx");
   const css = lees("src/features/groups/Proposals.css");

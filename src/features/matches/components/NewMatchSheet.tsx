@@ -577,8 +577,16 @@ export function NewMatchSheet({
 
         {step === 1 && (
           <>
-            {/* Speelvorm kiezen (#279): dubbel of singles. */}
-            <div className="tabs" role="radiogroup" aria-label="Speelvorm">
+            {/* Speelvorm kiezen (#279): dubbel of singles. De baan van de
+                keuze staat sinds #1083 op glas — dit sheet ís glas, en een
+                dekkende --surface-2 erop las als een grijze plaat. Elders in
+                de app ligt .tabs op een dichte pagina en blijft hij zoals
+                hij is. */}
+            <div
+              className="tabs glas glas--subtiel glas--pil"
+              role="radiogroup"
+              aria-label="Speelvorm"
+            >
               {(
                 [
                   { value: "2v2", label: "2 tegen 2" },
@@ -641,9 +649,11 @@ export function NewMatchSheet({
                   <button
                     key={p.id}
                     type="button"
-                    className={`pick-chip ${team ? `pick-chip--${team}` : ""} ${
-                      guest ? "pick-chip--guest" : ""
-                    } ${!team && full ? "is-dim" : ""}`}
+                    className={`pick-chip glas glas--interactief glas--pil ${
+                      team ? `pick-chip--${team}` : ""
+                    } ${guest ? "pick-chip--guest" : ""} ${
+                      !team && full ? "is-dim" : ""
+                    }`}
                     aria-pressed={team !== null}
                     onClick={() => toggle(p.id)}
                   >
@@ -971,7 +981,7 @@ function CourtPicker({
     <div className="court-picker">
       <span className="court-picker__label">Baantype (optioneel)</span>
       <div
-        className="tabs court-picker__opts"
+        className="tabs court-picker__opts glas glas--subtiel glas--pil"
         role="radiogroup"
         aria-label="Baantype"
       >

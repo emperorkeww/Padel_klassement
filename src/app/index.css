@@ -347,11 +347,12 @@
   --glas-diep: 20 40 28;
   --glas-dekking-basis: 0.86;
   --glas-blur-basis: 16px;
-  /* Terugval voor een `.glas` zonder variant; die zetten normaal allebei. */
+  --glas-saturatie-basis: 165%;
+  /* Terugval voor een `.glas` zonder variant; die zetten normaal alle drie. */
   --glas-dekking: var(--glas-dekking-basis);
   --glas-blur: var(--glas-blur-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-glans-kracht: 1;
-  --glas-saturatie: 165%;
   --glas-helderheid: 1.04;
   --glas-vast: var(--surface);
 }
