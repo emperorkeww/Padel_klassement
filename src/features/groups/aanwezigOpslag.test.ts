@@ -45,6 +45,40 @@ describe("bewaren en lezen", () => {
   });
 });
 
+// Een dag kan twee speeldagen dragen (ochtend + avond). Wie je 's ochtends
+// uitzet hoort 's avonds gewoon weer mee te doen (#1146).
+describe("twee speeldagen op één dag", () => {
+  it("houdt de momenten van dezelfde dag uit elkaar", () => {
+    bewaarKeuzes("g1", "2026-08-07", { p2: false }, "opt-ochtend");
+    bewaarKeuzes("g1", "2026-08-07", { p3: false }, "opt-avond");
+
+    expect(leesKeuzes("g1", "2026-08-07", "opt-ochtend")).toEqual({ p2: false });
+    expect(leesKeuzes("g1", "2026-08-07", "opt-avond")).toEqual({ p3: false });
+    // En de sleutel zonder moment (de Spelen-tab) staat er los van.
+    expect(leesKeuzes("g1", "2026-08-07")).toEqual({});
+  });
+
+  it("veegt de andere speeldag van vandaag niet weg bij het opruimen", () => {
+    bewaarKeuzes("g1", "2026-08-06", { p1: false }, "opt-gisteren");
+    bewaarKeuzes("g1", "2026-08-07", { p2: false }, "opt-ochtend");
+
+    bewaarKeuzes("g1", "2026-08-07", { p3: false }, "opt-avond");
+
+    // De ochtend van vandaag blijft; gisteren is opgeruimd zoals altijd.
+    expect(leesKeuzes("g1", "2026-08-07", "opt-ochtend")).toEqual({ p2: false });
+    expect(leesKeuzes("g1", "2026-08-06", "opt-gisteren")).toEqual({});
+  });
+
+  it("zet het moment in de sleutel", () => {
+    expect(aanwezigSleutel("g1", "2026-08-07", "opt-1")).toBe(
+      "groep:g1:aanwezig:2026-08-07@opt-1",
+    );
+    expect(aanwezigSleutel("g1", "2026-08-07")).toBe(
+      "groep:g1:aanwezig:2026-08-07",
+    );
+  });
+});
+
 describe("opruimen", () => {
   it("gooit de dagen van gisteren weg maar laat andere groepen staan", () => {
     bewaarKeuzes("g1", "2026-08-06", { p1: false });

@@ -67,6 +67,7 @@ export function MakeTeams({
   teams,
   openRound,
   speeldag,
+  rondesTotNu,
   onGenerated,
 }: {
   groupId: string;
@@ -80,6 +81,10 @@ export function MakeTeams({
   /** De speeldag waarvoor gegenereerd wordt (#1133). Zonder waarde zoekt de
    *  generator zelf de speeldag van vandaag op — het gedrag op de Spelen-tab. */
   speeldag?: GeneratorSpeeldag | null;
+  /** Rondes die voor dít moment al klaarstaan — het vertrekpunt voor de
+   *  starttijden (#827). Zonder waarde telt de generator de rondes van de hele
+   *  kalenderdag, wat klopt zolang die dag één speeldag draagt (#1146). */
+  rondesTotNu?: number;
   onGenerated: () => void;
 }) {
   const club = useClub();
@@ -89,6 +94,9 @@ export function MakeTeams({
   const zelfZoeken = speeldag == null;
   const today = dateInZone(club.timezone);
   const dag = speeldag?.dag ?? today;
+  // Twee speeldagen op één datum delen de dag maar niet de deelnemers: de
+  // handmatige correcties horen bij het moment, niet bij de kalender (#1146).
+  const momentId = speeldag?.option.id ?? null;
   const [format, setFormat] = useState<Format>("eerlijk");
   const [roundsToGen, setRoundsToGen] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -162,7 +170,8 @@ export function MakeTeams({
   const startVanRonde = (index: number): string | null => {
     if (!gekozen) return null;
     const tz = gekozen.poll?.club_timezone ?? club.timezone;
-    return rondeStart(gekozen.option, tz, rondesOpDag(matches, tz, dag) + index);
+    const klaar = rondesTotNu ?? rondesOpDag(matches, tz, dag);
+    return rondeStart(gekozen.option, tz, klaar + index);
   };
 
   // Handmatig bij te sturen selectie; nieuwe stemmen zijn de bron van
@@ -175,8 +184,8 @@ export function MakeTeams({
   const ledenKey = members.map((m) => m.player_id).join(",");
   const [keuzes, setKeuzes] = useState<AanwezigKeuzes>({});
   useEffect(() => {
-    setKeuzes(leesKeuzes(groupId, dag));
-  }, [groupId, dag]);
+    setKeuzes(leesKeuzes(groupId, dag, momentId));
+  }, [groupId, dag, momentId]);
 
   const selected = useMemo(
     () =>
@@ -191,7 +200,7 @@ export function MakeTeams({
   /** Eén plek waar een keuze zowel in beeld als in de opslag terechtkomt. */
   const kiesAnders = (volgende: AanwezigKeuzes) => {
     setKeuzes(volgende);
-    bewaarKeuzes(groupId, dag, volgende);
+    bewaarKeuzes(groupId, dag, volgende, momentId);
   };
 
   const toggle = (id: string) => {

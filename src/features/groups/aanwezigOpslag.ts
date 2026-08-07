@@ -12,7 +12,11 @@
 // avond op het moment dat je één naam aantikte.
 //
 // De sleutel draagt de dag, zodat morgen vanzelf schoon begint; oude sleutels
-// van dezelfde groep worden opgeruimd zodra er een nieuwe bijkomt.
+// van dezelfde groep worden opgeruimd zodra er een nieuwe bijkomt. Sinds #1146
+// mag er een moment achter: een dag kan twee speeldagen dragen (ochtend +
+// avond), en een correctie op de ene hoort de andere niet te raken. Het
+// opruimen kijkt daarom naar het dag-deel van de sleutel, zodat de twee
+// speeldagen van vandaag elkaar niet wegvegen.
 
 import { readFlag, writeFlag } from "@/lib/utils/localFlag";
 
@@ -22,12 +26,21 @@ export type AanwezigKeuzes = Record<string, boolean>;
 const PREFIX = "groep:";
 const MIDDEN = ":aanwezig:";
 
-export function aanwezigSleutel(groupId: string, dag: string): string {
-  return `${PREFIX}${groupId}${MIDDEN}${dag}`;
+export function aanwezigSleutel(
+  groupId: string,
+  dag: string,
+  moment?: string | null,
+): string {
+  const staart = moment ? `${dag}@${moment}` : dag;
+  return `${PREFIX}${groupId}${MIDDEN}${staart}`;
 }
 
-export function leesKeuzes(groupId: string, dag: string): AanwezigKeuzes {
-  const rauw = readFlag(aanwezigSleutel(groupId, dag));
+export function leesKeuzes(
+  groupId: string,
+  dag: string,
+  moment?: string | null,
+): AanwezigKeuzes {
+  const rauw = readFlag(aanwezigSleutel(groupId, dag, moment));
   if (!rauw) return {};
   try {
     const parsed: unknown = JSON.parse(rauw);
@@ -48,19 +61,23 @@ export function bewaarKeuzes(
   groupId: string,
   dag: string,
   keuzes: AanwezigKeuzes,
+  moment?: string | null,
 ): void {
   ruimOudeKeuzes(groupId, dag);
+  const sleutel = aanwezigSleutel(groupId, dag, moment);
   if (Object.keys(keuzes).length === 0) {
-    writeFlag(aanwezigSleutel(groupId, dag), null);
+    writeFlag(sleutel, null);
     return;
   }
-  writeFlag(aanwezigSleutel(groupId, dag), JSON.stringify(keuzes));
+  writeFlag(sleutel, JSON.stringify(keuzes));
 }
 
-/** Sleutels van deze groep voor andere dagen weggooien. */
+/** Sleutels van deze groep voor andere dagen weggooien. De speeldagen van
+ *  vandáág blijven staan, ook als het er twee zijn (#1146). */
 export function ruimOudeKeuzes(groupId: string, dag: string): void {
-  const houden = aanwezigSleutel(groupId, dag);
   const begin = `${PREFIX}${groupId}${MIDDEN}`;
+  // Alles wat met deze dag begint blijft: `<dag>` zelf en `<dag>@<moment>`.
+  const houdenBegin = `${begin}${dag}`;
   // Via length/key() en niet Object.keys(): dat laatste leest de eigenschappen
   // van het storage-object zelf, niet de opgeslagen sleutels — bij een shim
   // (jsdom, private mode) krijg je dan "getItem", "setItem", … terug.
@@ -74,7 +91,9 @@ export function ruimOudeKeuzes(groupId: string, dag: string): void {
     return; // geen storage (private mode) — niets op te ruimen
   }
   for (const sleutel of sleutels) {
-    if (sleutel.startsWith(begin) && sleutel !== houden) writeFlag(sleutel, null);
+    if (sleutel.startsWith(begin) && !sleutel.startsWith(houdenBegin)) {
+      writeFlag(sleutel, null);
+    }
   }
 }
 

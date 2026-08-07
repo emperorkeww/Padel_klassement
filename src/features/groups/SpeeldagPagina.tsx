@@ -14,14 +14,17 @@ import { upsetsByMatch } from "@/features/matches/upset";
 import { getProfilesMap } from "@/features/profiles/api";
 import {
   getGroupPollOptions,
+  getGroupPolls,
   getGroupPollVotes,
   getPoll,
 } from "@/features/groups/pollsApi";
 import { pollOptions, tallyOption } from "@/features/groups/pollLogic";
 import {
   matchesVoorSpeeldag,
+  momentenOpDag,
   speeldagMoment,
 } from "@/features/groups/speeldagMatches";
+import { rondesOpDag } from "@/features/groups/speeldagRondes";
 import { groupByRound } from "@/features/groups/groupDetailHelpers";
 import { PollCard } from "@/features/groups/components/PollCard";
 import { RondeBlok } from "@/features/groups/components/RondeBlok";
@@ -71,6 +74,12 @@ export function SpeeldagPagina() {
   const votes = useAsync(() => getGroupPollVotes(groupId), [groupId], {
     enabled: heeftGroep,
   });
+  // Alle speeldagen van de groep: nodig om te weten of er er nóg één op deze
+  // dag staat (#1146). Zonder die andere momenten valt niet te zeggen welke
+  // wedstrijden bij déze sessie horen.
+  const polls = useAsync(() => getGroupPolls(groupId), [groupId], {
+    enabled: heeftGroep,
+  });
   // De volledige groepshistorie: waar de wedstrijden van deze dag uit komen,
   // en tegelijk de context die de geplande kaarten gebruiken (rivaliteit,
   // coach). De dagfilter zit hieronder, niet in de query.
@@ -88,12 +97,22 @@ export function SpeeldagPagina() {
     return speeldagMoment(p, pollOptions(p, o));
   }, [poll.data, options.data]);
 
+  // De overige speeldagen van dezelfde datum. Meestal leeg; staat er wel een
+  // tweede sessie, dan verdeelt matchesVoorSpeeldag de wedstrijden over de twee
+  // op basis van hun starttijd.
+  const buren = useMemo(() => {
+    if (moment == null) return [];
+    return momentenOpDag(
+      polls.data ?? [],
+      options.data ?? [],
+      moment.dag,
+    ).filter((m) => m.option.id !== moment.option.id);
+  }, [moment, polls.data, options.data]);
+
   const dagMatches = useMemo(
     () =>
-      moment
-        ? matchesVoorSpeeldag(matches.data ?? [], moment.dag, moment.tz)
-        : [],
-    [moment, matches.data],
+      moment ? matchesVoorSpeeldag(matches.data ?? [], moment, buren) : [],
+    [moment, buren, matches.data],
   );
 
   // Teams en rating-historie horen bij de wedstrijdkaarten, dus ze hoeven pas
@@ -118,7 +137,14 @@ export function SpeeldagPagina() {
   // de groep niet en staat er geen filter op; dat duurt één ronde en de
   // reload die er dan uit volgt raakt alleen gecachte queries.
   const filter = heeftGroep ? `group_id=eq.${groupId}` : undefined;
-  useRealtime("play_polls", poll.reload, filter);
+  // Deze poll én de lijst waarin zijn buren zitten hangen aan dezelfde tabel,
+  // dus één abonnement met één callback in plaats van twee kanalen.
+  const herlaadPolls = useCallback(() => {
+    poll.reload();
+    polls.reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poll.reload, polls.reload]);
+  useRealtime("play_polls", herlaadPolls, filter);
   useRealtime("play_poll_options", options.reload, filter);
   useRealtime("play_poll_votes", votes.reload, filter);
 
@@ -235,6 +261,9 @@ export function SpeeldagPagina() {
     matches: matches.data ?? [],
     teams: teams.data ?? {},
     openRound: openRonde,
+    // Rondes van dít moment, niet van de hele dag: bij twee speeldagen op één
+    // datum zou de avondsessie anders na de ochtendrondes gaan tellen (#1146).
+    rondesTotNu: rondesOpDag(dagMatches, moment.tz, moment.dag),
     speeldag: {
       dag: moment.dag,
       option: moment.option,

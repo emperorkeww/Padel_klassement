@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { matchesVoorSpeeldag, speeldagMoment } from "./speeldagMatches";
+import {
+  matchesVoorSpeeldag,
+  momentenOpDag,
+  speeldagMoment,
+} from "./speeldagMatches";
 import type { PlayPoll, PollOption } from "./pollsApi";
 import type { Match } from "@/types";
 
@@ -87,15 +91,15 @@ describe("speeldagMoment", () => {
 });
 
 describe("matchesVoorSpeeldag", () => {
-  const dag = "2026-07-16";
-  const tz = "Europe/Brussels";
+  // De speeldag van 20:00 op 16 juli; hij is in elke test hetzelfde.
+  const avond = speeldagMoment(poll(), [option()])!;
 
   it("neemt de matches met een starttijd op die dag", () => {
     const list = [
       match({ id: "wel", played_at: "2026-07-16T18:00:00Z" }), // 20:00 clubtijd
       match({ id: "niet", played_at: "2026-07-17T18:00:00Z" }),
     ];
-    expect(matchesVoorSpeeldag(list, dag, tz).map((m) => m.id)).toEqual(["wel"]);
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual(["wel"]);
   });
 
   it("valt zonder starttijd terug op created_at", () => {
@@ -103,7 +107,7 @@ describe("matchesVoorSpeeldag", () => {
       match({ id: "wel", played_at: null, created_at: "2026-07-16T09:00:00Z" }),
       match({ id: "niet", played_at: null, created_at: "2026-07-15T09:00:00Z" }),
     ];
-    expect(matchesVoorSpeeldag(list, dag, tz).map((m) => m.id)).toEqual(["wel"]);
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual(["wel"]);
   });
 
   it("rekent in clubtijd, niet in UTC", () => {
@@ -113,7 +117,7 @@ describe("matchesVoorSpeeldag", () => {
       match({ id: "nacht-erin", played_at: "2026-07-15T22:30:00Z" }),
       match({ id: "nacht-eruit", played_at: "2026-07-16T23:00:00Z" }),
     ];
-    expect(matchesVoorSpeeldag(list, dag, tz).map((m) => m.id)).toEqual([
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual([
       "nacht-erin",
     ]);
   });
@@ -123,9 +127,66 @@ describe("matchesVoorSpeeldag", () => {
       match({ id: "ronde", round_number: 3, played_at: "2026-07-16T18:00:00Z" }),
       match({ id: "los", round_number: null, played_at: "2026-07-16T20:00:00Z" }),
     ];
-    expect(matchesVoorSpeeldag(list, dag, tz).map((m) => m.id)).toEqual([
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual([
       "ronde",
       "los",
     ]);
+  });
+});
+
+// Een groep kan er twee op één datum hebben: een ochtendsessie en een
+// avondsessie. Tot #1146 deelden die dezelfde lijst, dus toonde elke pagina
+// ook de wedstrijden van de andere.
+describe("twee speeldagen op één dag (#1146)", () => {
+  const ochtendOptie = option({ id: "opt-ochtend", start_time: "10:00" });
+  const avondOptie = option({ id: "opt-avond", start_time: "20:00" });
+  const ochtendPoll = poll({ id: "poll-ochtend", locked_option_id: "opt-ochtend" });
+  const avondPoll = poll({ id: "poll-avond", locked_option_id: "opt-avond" });
+
+  const ochtend = speeldagMoment(ochtendPoll, [ochtendOptie])!;
+  const avond = speeldagMoment(avondPoll, [avondOptie])!;
+
+  // 16 juli 2026, clubtijd Europe/Brussels (UTC+2).
+  const list = [
+    match({ id: "ochtend-1", played_at: "2026-07-16T08:00:00Z" }), // 10:00
+    match({ id: "ochtend-2", played_at: "2026-07-16T08:40:00Z" }), // 10:40
+    match({ id: "avond-1", played_at: "2026-07-16T18:00:00Z" }), // 20:00
+    match({ id: "avond-2", played_at: "2026-07-16T18:20:00Z" }), // 20:20
+  ];
+
+  it("geeft elk moment zijn eigen wedstrijden", () => {
+    expect(matchesVoorSpeeldag(list, ochtend, [avond]).map((m) => m.id)).toEqual([
+      "ochtend-1",
+      "ochtend-2",
+    ]);
+    expect(matchesVoorSpeeldag(list, avond, [ochtend]).map((m) => m.id)).toEqual([
+      "avond-1",
+      "avond-2",
+    ]);
+  });
+
+  // De uitloop hoort bij de sessie waar hij uit voortkomt, niet bij de klok:
+  // een ronde die om 11:30 nog loopt ligt dichter bij 10:00 dan bij 20:00.
+  it("rekent op afstand tot het moment, niet op een vast venster", () => {
+    const uitloop = [match({ id: "uitloop", played_at: "2026-07-16T09:30:00Z" })];
+    expect(
+      matchesVoorSpeeldag(uitloop, ochtend, [avond]).map((m) => m.id),
+    ).toEqual(["uitloop"]);
+    expect(matchesVoorSpeeldag(uitloop, avond, [ochtend])).toEqual([]);
+  });
+
+  it("verandert niets zonder buren", () => {
+    expect(matchesVoorSpeeldag(list, avond).map((m) => m.id)).toEqual(
+      list.map((m) => m.id),
+    );
+  });
+
+  it("vindt de momenten van een dag op tijd gesorteerd", () => {
+    const momenten = momentenOpDag(
+      [avondPoll, ochtendPoll, poll({ id: "poll-open", status: "open" })],
+      [avondOptie, ochtendOptie],
+      "2026-07-16",
+    );
+    expect(momenten.map((m) => m.option.start_time)).toEqual(["10:00", "20:00"]);
   });
 });

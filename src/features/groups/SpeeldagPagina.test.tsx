@@ -329,6 +329,43 @@ describe("<SpeeldagPagina />", () => {
     ]);
   });
 
+  // Een groep kan er twee op één datum hebben: een ochtendsessie en een
+  // avondsessie. Tot #1146 rekende de pagina met de kalenderdag, dus toonde ze
+  // elkaars wedstrijden — en begon de avondsessie zijn rondes na die van de
+  // ochtend.
+  it("houdt twee speeldagen op dezelfde datum uit elkaar", async () => {
+    const ochtendPoll = {
+      ...bookedPoll,
+      id: "poll-ochtend",
+      locked_option_id: "opt-ochtend",
+    };
+    const ochtendOptie = {
+      ...bookedOption,
+      id: "opt-ochtend",
+      poll_id: "poll-ochtend",
+      start_time: "10:00",
+    };
+    // De mock geeft voor `maybeSingle` de eerste rij terug, dus de poll waar
+    // deze test over gaat staat vooraan.
+    tables.play_polls = [bookedPoll, ochtendPoll];
+    tables.play_poll_options = [openOption, bookedOption, ochtendOptie];
+    tables.teams = TEAMS;
+    tables.matches = [
+      // 09:00 UTC = 11:00 clubtijd: bij de ochtendsessie van 10:00.
+      dagMatch({ id: "m-ochtend", played_at: "2030-01-10T09:00:00.000Z" }),
+      // 18:00 UTC = 19:00 clubtijd: de avondsessie zelf.
+      dagMatch({ id: "m-avond", round_number: 2 }),
+    ];
+    renderPagina("poll-booked");
+
+    await screen.findByRole("heading", { name: /^wedstrijden$/i });
+    // Alleen de eigen ronde: één blok, en dat is ronde 2.
+    expect(screen.getByRole("heading", { name: /ronde 2/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /ronde 1/i }),
+    ).not.toBeInTheDocument();
+  });
+
   // Zolang er geen moment vastligt is er geen dag, en dus ook geen dagfilter
   // die zinnig is. Dan hoort er geen wedstrijdenblok te staan.
   it("houdt het wedstrijdenblok weg zolang er niets vastligt", async () => {
