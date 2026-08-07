@@ -155,7 +155,9 @@ export function RatingChart({ history }: { history: RatingPoint[] }) {
         <div
           className="rating-chart__tip"
           style={{
-            left: `${(x(hover) / VW) * 100}%`,
+            // Clamp aan beide kaartzijden (#1120): het eerste en laatste punt
+            // mogen hun tooltip niet buiten een smalle viewport duwen.
+            left: `clamp(4.25rem, ${(x(hover) / VW) * 100}%, calc(100% - 4.25rem))`,
             top: `${(y(values[hover]) / VH) * 100}%`,
           }}
           role="status"

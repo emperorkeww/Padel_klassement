@@ -48,6 +48,22 @@
   --surface-hover: #eef3ee; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #e6f5ee; /* gekozen nav-item, pressed */
   --divider: #e4eae4; /* separator — zwakker dan een kaartrand */
+  /* Dashboardrollen (#1120): de bestaande korte tokens blijven de bron, deze
+     semantische namen leggen vast wáár een kleur voor dient. Zo kan de nieuwe
+     shell hiërarchie krijgen zonder een tweede lokaal palet te beginnen. */
+  --background-canvas: var(--bg);
+  --background-navigation: #031513;
+  --surface-primary: var(--surface);
+  --surface-secondary: var(--surface-2);
+  --surface-highlighted: var(--surface-elevated);
+  --foreground-primary: var(--ink);
+  --foreground-secondary: var(--ink-soft);
+  --border-subtle: var(--divider);
+  --brand-primary: var(--accent);
+  --brand-accent: var(--lime);
+  --navigation-ink: #f2f6f4;
+  --navigation-muted: #aec0b8;
+  --navigation-surface: rgba(31, 180, 126, 0.16);
   /* De voorgrond die bij --surface-active hoort: het label van een gekozen
      item, en de markering (icoon, accentstaafje) ernaast. Op licht zijn ze
      allebei smaragd — precies wat er stond — zodat er niets verschuift. */
@@ -64,12 +80,12 @@
      en blijft de rand een haarlijn; op donker doet de schaduw niets en moet de
      rand het werk doen. Vandaar een eigen rol i.p.v. --line/--line-strong. */
   --border-elevated: var(--line);
-  /* Grafiek (#1074). De lijn codeert of je rating steeg of daalde — dat is
-     informatie, geen sier, dus de twee kanten houden elk een eigen kleur. Op
-     licht blijven dat de statuskleuren die er stonden; het donkere thema mag
-     ervan afwijken zolang de positieve merkkleur nooit een daling voorstelt. */
-  --chart-up: var(--success);
-  --chart-down: var(--danger);
+  /* Grafiek (#1120). De reeks gebruikt één merklijn: ratingprogressie is geen
+     errorstate. De semantische up/down-tokens blijven bestaan voor tooltip- en
+     testlogica, maar wijzen voor het pad allebei naar dezelfde lijnkleur. */
+  --chart-line: var(--accent);
+  --chart-up: var(--chart-line);
+  --chart-down: var(--chart-line);
   /* Maat van de gloed om het actuele datapunt — géén complete drop-shadow(),
      want een var() binnen een custom property wordt opgelost dáár waar hij
      staat: `drop-shadow(… var(--chart-trend))` op :root verwijst naar een
@@ -430,6 +446,10 @@
   --surface-elevated: #1b3b37; /* hero, sheets, popovers */
   --surface-hover: #244440; /* hover op kaarten, nav-items, knoppen */
   --surface-active: #124634; /* gekozen nav-item — smaragd getint */
+  --background-navigation: #031513;
+  --navigation-ink: #f2f6f4;
+  --navigation-muted: #a8bab3;
+  --navigation-surface: rgba(168, 230, 63, 0.12);
   /* Gebroken wit i.p.v. bijna-wit: minder schittering op donker. */
   --ink: #f2f6f4;
   --ink-soft: #b4c2bd;
@@ -611,13 +631,11 @@
   --wash-cool: rgba(31, 180, 126, 0.12);
   --border-elevated: var(--line-strong);
 
-  /* Stijgen is lime — de energie van het merk, en het enige token dat op de
-     kaart fel mag zijn. Dalen krijgt koraal in plaats van het oude zalmroze
-     (--danger): dat botste met de groene huisstijl én las als "er is iets
-     stuk", terwijl een gezakte rating gewoon een gezakte rating is. Koraal
-     ligt ver genoeg van lime om ook naast elkaar herkenbaar te blijven. */
-  --chart-up: var(--lime);
-  --chart-down: #f0845f;
+  /* Op donker wordt dezelfde ononderbroken ratingreeks lime: helder genoeg op
+     petrol, maar zonder een dalend segment als fout of gevaar te coderen. */
+  --chart-line: var(--lime);
+  --chart-up: var(--chart-line);
+  --chart-down: var(--chart-line);
   --chart-point-glow: 0 0 5px;
 
   /* Het omkeren van het lichte thema pakte hier verkeerd uit: de tooltip werd

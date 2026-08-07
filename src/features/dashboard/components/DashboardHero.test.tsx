@@ -227,6 +227,10 @@ describe("<DashboardHero /> — decoratielagen", () => {
     expect(hero).toHaveClass("hero--divisie", "hero--div-zilver");
     expect(hero.querySelector(".hero__materiaal")).toBeInTheDocument();
     expect(hero.querySelector(".hero__watermerk")).toBeInTheDocument();
+    expect(hero.querySelector(".hero__court-watermark")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
     // De kleuren komen als custom properties uit het register (heroDivisie.ts).
     expect(hero.style.getPropertyValue("--hero-div-lijn")).not.toBe("");
   });
@@ -237,6 +241,7 @@ describe("<DashboardHero /> — decoratielagen", () => {
     const hero = renderKaart({ pias: true, thema: "pias" });
     expect(hero).not.toHaveClass("hero--divisie");
     expect(hero.querySelector(".hero__materiaal")).toBeNull();
+    expect(hero.querySelector(".hero__court-watermark")).toBeNull();
   });
 
   it("geeft Big Daddy de artwork-onderdelen van zijn FUT-master (#834)", () => {

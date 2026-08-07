@@ -66,6 +66,7 @@ import { HeroLijst } from "./HeroLijst";
 import { InformDecor } from "./inform/InformDecor";
 import { HeroSheen } from "./HeroSheen";
 import { HeroWatermerk } from "./HeroWatermerk";
+import { HeroCourtWatermark } from "./DashboardWatermarks";
 import {
   BigDaddyDecorAchter,
   BigDaddyDecorVoor,
@@ -294,6 +295,11 @@ export function HeroLagen({
             De kleuren komen als custom properties op .hero binnen (heroDivisie.ts);
             deze laag legt ze in een verloop. */}
         {basis && <span className="hero__materiaal" />}
+        {/* De neutrale/divisiekaart draagt naast zijn divisiegravure één helder
+            merkanker (#1120): racket, bal en court line. Speciale verdiende
+            skins hebben al een eigen beeldtaal en krijgen deze laag bewust
+            niet, zodat teddy, lauwer, storm of schande niet gaan stapelen. */}
+        {basis && !permanent && !overlay && <HeroCourtWatermark />}
         {/* Stap 5: het divisiemotief als watermerk, en voor de twee toptiers de
             statische stand van hun premium glans (#773). */}
         {basis?.watermerk && (

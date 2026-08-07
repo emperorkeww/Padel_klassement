@@ -15,7 +15,7 @@
 }
 .rating-chart__svg {
   width: 100%;
-  height: auto;
+  height: clamp(170px, 20vw, 225px);
   display: block;
   /* Vegen over de grafiek mag de pagina niet laten scrollen. */
   touch-action: none;
@@ -106,12 +106,15 @@
   color: var(--tip-ink);
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  max-width: min(15rem, calc(100% - 1rem));
+  white-space: normal;
+  text-align: center;
   pointer-events: none;
   box-shadow: var(--shadow-pop);
   display: inline-flex;
   gap: var(--sp-2);
   align-items: baseline;
+  justify-content: center;
 }
 .rating-chart__tip-delta.is-up {
   color: var(--lime);
@@ -120,4 +123,13 @@
 .rating-chart__tip-delta.is-down {
   color: var(--danger-bright);
   font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .rating-chart__svg {
+    height: 176px;
+  }
+  .rating-chart__tip {
+    font-size: var(--fs-xs);
+  }
 }

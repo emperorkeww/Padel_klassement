@@ -13,7 +13,8 @@
   z-index: 0;
   display: grid;
   align-content: start;
-  gap: var(--sp-5);
+  gap: var(--sp-6);
+  min-width: 0;
 }
 .dashboard > * {
   margin-bottom: 0;
@@ -35,17 +36,27 @@
 .dashboard::before {
   content: "";
   position: absolute;
-  inset: -2.25rem -2rem auto;
-  height: 300px;
-  background: radial-gradient(60% 100% at 50% 0%, var(--wash-warm) 0%, transparent 70%);
-  opacity: 0.5;
+  inset: -2rem -2rem auto;
+  height: 420px;
+  background:
+    radial-gradient(58% 105% at 74% 0%, var(--wash-warm) 0%, transparent 72%),
+    radial-gradient(48% 92% at 12% 10%, var(--wash-cool) 0%, transparent 76%);
+  opacity: 0.58;
   pointer-events: none;
   z-index: -1;
 }
 
 /* Lopende speeldag-poll op het overzicht. */
 .poll-banner {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 142px;
+  display: grid;
+  align-content: center;
   border-left: 3px solid var(--accent);
+  background:
+    linear-gradient(105deg, var(--surface) 0%, var(--surface) 57%, color-mix(in srgb, var(--accent-soft) 38%, var(--surface)) 100%);
 }
 .poll-banner--fixed {
   border-left-color: var(--success);
@@ -76,6 +87,54 @@
 }
 .poll-banner .btn {
   justify-self: start;
+}
+.poll-banner > :not(.poll-banner__watermark) {
+  position: relative;
+  z-index: 1;
+}
+.poll-banner__watermark {
+  position: absolute;
+  z-index: 0;
+  inset: auto -1.5rem -1.25rem auto;
+  width: min(47%, 440px);
+  height: 126%;
+  color: var(--accent);
+  opacity: 0.16;
+  pointer-events: none;
+  mask-image: linear-gradient(to left, #000 48%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, #000 48%, transparent 100%);
+}
+.poll-watermark__wash {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.poll-watermark__line,
+.poll-watermark__net,
+.poll-watermark__player path,
+.poll-watermark__player circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.poll-watermark__line {
+  stroke-width: 2.2;
+}
+.poll-watermark__net {
+  stroke-width: 3;
+  stroke-dasharray: 4 4;
+}
+.poll-watermark__player path {
+  stroke-width: 7;
+}
+.poll-watermark__player circle {
+  stroke-width: 5;
+}
+.poll-watermark__player .poll-watermark__racket {
+  stroke-width: 3;
+}
+:root[data-theme="dark"] .poll-banner__watermark {
+  color: var(--lime);
+  opacity: 0.11;
 }
 
 /* Padel Wrapped-banner in het eindejaarsvenster (#115). */
@@ -146,9 +205,9 @@
   font-weight: 700;
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-primary) 94%, var(--accent-soft));
+  box-shadow: none;
 }
 .dash-cijfers__summary::-webkit-details-marker {
   display: none;
@@ -196,10 +255,14 @@
 
 /* Rating: groot getal + delta boven de verloop-grafiek. */
 .rating-card__value {
-  margin: 0 0 var(--sp-4);
-  font-size: var(--fs-2xl);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: clamp(2rem, 4vw, 2.65rem);
+  font-weight: 850;
+  letter-spacing: -0.045em;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
@@ -287,7 +350,7 @@
 }
 .dash-zone__body {
   display: grid;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
 }
 /* De zone-inhoud brengt zijn eigen ritme mee; de generieke kaartafstanden
    zouden er een dubbele marge bovenop leggen. */
@@ -604,6 +667,11 @@
   align-items: center;
   column-gap: var(--sp-3);
   row-gap: var(--sp-2);
+  padding: var(--sp-2) 0 var(--sp-3);
+}
+.missions__item + .missions__item {
+  border-top: 1px solid var(--divider);
+  padding-top: var(--sp-4);
 }
 .missions__emoji {
   font-size: 1.5rem;
@@ -644,11 +712,11 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--lime));
   transition: width 0.3s ease;
 }
 .missions__item.is-done .missions__fill {
-  background: var(--success);
+  background: var(--lime);
 }
 .missions__perfect {
   margin: var(--sp-3) 0 0;
@@ -813,6 +881,86 @@
 .rating-card__next strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Premium dashboardfamilie (#1120) ---------- */
+.dashboard .card {
+  border-color: color-mix(in srgb, var(--line) 84%, var(--accent-line));
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(20, 40, 28, 0.045);
+}
+:root[data-theme="dark"] .dashboard .card {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+.dashboard .stats {
+  gap: var(--sp-3);
+  margin: 0;
+}
+.dashboard .stat {
+  min-height: 108px;
+  align-content: center;
+  border-radius: 18px;
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--surface-primary) 94%, var(--accent-soft)), var(--surface-primary));
+  box-shadow: none;
+}
+.dashboard .stat__value {
+  font-size: clamp(1.65rem, 3vw, 2.125rem);
+  font-weight: 850;
+}
+.dashboard .stat__label {
+  font-weight: 750;
+  letter-spacing: 0.075em;
+}
+.rating-card {
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-6) var(--sp-7);
+  background:
+    radial-gradient(80% 120% at 100% 100%, color-mix(in srgb, var(--accent-soft) 46%, transparent), transparent 72%),
+    var(--surface-primary);
+}
+.rating-card .card__head {
+  margin-bottom: var(--sp-2);
+}
+.rating-card .rating-chart {
+  margin-top: var(--sp-5);
+}
+.rating-card__next {
+  max-width: 46ch;
+}
+.week-missions {
+  background:
+    linear-gradient(145deg, var(--surface-primary), color-mix(in srgb, var(--lime-soft) 34%, var(--surface-primary)));
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    gap: var(--sp-5);
+  }
+  .dashboard .card {
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .poll-banner {
+    min-height: 128px;
+  }
+  .poll-banner__watermark {
+    right: -5rem;
+    bottom: -0.5rem;
+    width: 78%;
+    height: 112%;
+    opacity: 0.1;
+    mask-image: linear-gradient(to left, #000 28%, transparent 84%);
+    -webkit-mask-image: linear-gradient(to left, #000 28%, transparent 84%);
+  }
+  .dashboard .stat {
+    min-height: 94px;
+    padding: var(--sp-3);
+  }
+  .rating-card {
+    padding: var(--sp-5) var(--sp-4);
+  }
 }
 
 /* Onboarding: Coach Rudy verwelkomt (#301) */

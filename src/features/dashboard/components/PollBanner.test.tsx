@@ -62,11 +62,18 @@ function renderBanner(polls: PlayPoll[], options: PollOption[], votes: PollVote[
 
 describe("<PollBanner />", () => {
   it("linkt 'Stem nu' naar de poll waar de banner over gaat", () => {
-    renderBanner([poll({ id: "poll-open" })], [option({ poll_id: "poll-open" })]);
+    const { container } = renderBanner(
+      [poll({ id: "poll-open" })],
+      [option({ poll_id: "poll-open" })],
+    );
 
     expect(screen.getByRole("link", { name: /stem nu/i })).toHaveAttribute(
       "href",
       "/speeldag/poll-open",
+    );
+    expect(container.querySelector(".poll-banner__watermark")).toHaveAttribute(
+      "aria-hidden",
+      "true",
     );
   });
 
