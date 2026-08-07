@@ -378,8 +378,9 @@ export function PollWizard({
         </div>
       </details>
 
-      {/* Sticky selectiebalk: gekozen momenten + start-knop altijd in beeld. */}
-      <div className="wizard-footer">
+      {/* Sticky selectiebalk: gekozen momenten + start-knop altijd in beeld.
+          Draagt sinds #1083 het glasmateriaal als balk — zie Proposals.css. */}
+      <div className="wizard-footer glas glas--sterk glas--balk">
         <div className="wizard-footer__picked">
           {picked.size === 0 && (
             <span className="proposal__meta">Nog geen momenten gekozen.</span>

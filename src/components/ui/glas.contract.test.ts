@@ -100,6 +100,28 @@ describe("glas.css", () => {
     expect(blok(".glas::before {")).toMatch(/z-index:\s*-1/);
   });
 
+  it("laat het thema over de hoeveelheid materiaal gaan (#1083)", () => {
+    // Een custom property op het element wint van dezelfde property op :root.
+    // Zolang elke variant hier een kaal getal neerzette, kon een thema de
+    // dekking en de blur niet meer bijstellen — de donkere
+    // `--glas-dekking: 0.8` uit #1062 kwam nergens aan en donker draaide op de
+    // lichte dekking. Varianten mogen alleen nog een verhouding op de
+    // basis-tokens uitdrukken.
+    for (const variant of ["subtiel", "standaard", "sterk", "interactief"]) {
+      const regels = blok(`\n.glas--${variant} {`);
+      for (const eigenschap of ["dekking", "blur"]) {
+        const waarde = regels.match(
+          new RegExp(`--glas-${eigenschap}:\\s*([^;]+);`),
+        );
+        expect(waarde, `${variant} zet --glas-${eigenschap} niet`).not.toBeNull();
+        expect(
+          waarde![1],
+          `${variant} moet --glas-${eigenschap} van de basis afleiden`,
+        ).toMatch(new RegExp(`var\\(--glas-${eigenschap}-basis\\)`));
+      }
+    }
+  });
+
   it("houdt de rand overeind waar mask-compositing ontbreekt", () => {
     // De verlopende refractierand zit ín het @supports-blok; de gewone border
     // op `.glas` is wat er overblijft als dat niet kan.
