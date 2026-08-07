@@ -360,7 +360,7 @@ export function Dashboard() {
           {planned.length > 0 && (
             <Link
               className="todo-chip"
-              to={plannedGroupId ? `/groepen/${plannedGroupId}` : "/matches"}
+              to={plannedGroupId ? `/groepen/${plannedGroupId}` : "/spelen"}
             >
               <span className="todo-chip__count">{planned.length}</span>
               {planned.length === 1
@@ -515,7 +515,7 @@ export function Dashboard() {
             icon="📈"
             title="Je cijfers beginnen bij je eerste match."
             action={
-              <Link className="btn btn--primary" to="/matches">
+              <Link className="btn btn--primary" to="/spelen?log=1">
                 Uitslag invullen
               </Link>
             }

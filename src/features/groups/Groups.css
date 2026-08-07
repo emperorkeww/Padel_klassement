@@ -1,140 +1,63 @@
-/* Groepen als klikbare kaarten. */
-.group-grid {
-  display: grid;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-}
-@media (min-width: 640px) {
-  .group-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.group-card {
+/* De groepskeuze als strook chips (#1123). Was een stapel kaarten die alleen
+   kon navigeren; nu een filter over de matchlijst eronder. Losse pillen in
+   plaats van de dichte .tabs-balk: dit is een keuze over de pagina-inhoud, geen
+   paginanavigatie. Scrollen en de fade komen van .tabs--page. */
+.groep-strook {
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
+  flex-wrap: nowrap;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  margin-bottom: var(--sp-3);
+}
+.groep-strook .tab {
+  flex: 0 0 auto;
+  padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  text-decoration: none;
-  color: inherit;
-  min-width: 0;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  font-size: var(--fs-sm);
 }
-.group-card:hover {
+.groep-strook .tab:hover:not(.is-active) {
   border-color: var(--accent-line);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
-.group-card:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+/* De actieve chip is een vol accentvlak, net als de filterchips van het
+   clubblad. --accent-ink is de gemeten tegenhanger van --accent (zie
+   scripts/contrast-check.mjs); een kale #fff zou buiten die meting vallen. */
+.groep-strook .tab.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+/* De "+"-knop is geen groep: vierkanter, rustiger, en hij mag niet meegroeien
+   met een lange groepsnaam. */
+.groep-strook__nieuw {
+  min-width: 44px;
+  padding-inline: var(--sp-2);
+  color: var(--accent);
+  font-size: var(--fs-md);
+  font-weight: 700;
 }
 
-.group-card__body {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  gap: 0.125rem;
-}
-.group-card__top {
+/* De gekozen groep in één regel onder de strook: waar zit deze groep in de
+   kernreis, en hoe kom je er binnen (#1123). Bij "Alle" staat hier niets. */
+.groep-regel {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   flex-wrap: wrap;
-  min-width: 0;
-}
-.group-card__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
   font-size: var(--fs-sm);
   color: var(--ink-soft);
 }
-
-/* De overlappende ledenrij zit in MemberStack (#975); de kaart is het vlak
-   eronder, dus de standaard --stack-ring (--surface) klopt hier. */
-.group-card__name {
+.groep-regel__naam {
   font-weight: 700;
-  font-size: var(--fs-base);
-  letter-spacing: -0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--ink);
 }
-.group-card__chevron {
+.groep-regel__open {
+  margin-left: auto;
   flex-shrink: 0;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-/* Reis-status op de groepskaart: waar zit de groep in de kernreis?
-   De drie tonen verschilden alleen in tekstkleur (#674 B6) — een groep die op
-   jouw stem wacht zag er even zwaar uit als een groep waar alles vaststaat.
-   "act" is nu een echte pil met een zachte puls, "info" een rustige pil en
-   "idle" blijft platte tekst. */
-.group-card__journey {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  /* .group-card__body is een grid: zonder dit rekt de pil over de volle
-     kaartbreedte en leest hij als een balk in plaats van een label. */
-  justify-self: start;
-  margin-top: var(--sp-2);
-  padding: 0.125rem var(--sp-2);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-}
-.group-card__journey--act {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--accent);
-  animation: journey-nudge 2.6s ease-in-out infinite;
-}
-.group-card__journey--info {
-  background: var(--success-soft);
-  border-color: var(--success-line);
-  color: var(--success);
-}
-.group-card__journey--idle {
-  padding-left: 0;
-  padding-right: 0;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-/* De status komt uit een tweede query en viel dus ná de kaarten binnen (#916).
-   Deze placeholder houdt de plek vast zodat de lijst niet verspringt; hij is
-   even hoog als een echt label en verder onopvallend. */
-.group-card__journey--laadt {
-  width: 9rem;
-  max-width: 60%;
-  height: 1.15em;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border-color: var(--line);
-}
-
-/* Zachte pols op de rand — genoeg om het oog te trekken, niet genoeg om te
-   irriteren naast vier andere kaarten. */
-@keyframes journey-nudge {
-  0%,
-  70%,
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  35% {
-    box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .group-card__journey--act {
-    animation: none;
-  }
 }
 
 /* Nieuwe groep: zeldzame actie, dus een knop in plaats van een altijd open
@@ -142,15 +65,6 @@
 .hub-new {
   width: 100%;
   margin-bottom: var(--sp-5);
-}
-
-/* Losse match: een gewone actie in de hub-toon (#916). Stond als grijs kaartje
-   onder "Ook hier", terwijl loggen buiten een groep een veelgebruikt pad is. */
-.hub-los {
-  margin-bottom: var(--sp-4);
-}
-.hub-los .btn-row {
-  flex-shrink: 0;
 }
 
 /* Vrije banen blijft wél een rustige verwijzing: één regel onderaan. */

@@ -249,7 +249,7 @@ async function messagesFor(payload: WebhookPayload): Promise<Melding[]> {
       pool: NIEUWE_MATCH,
       seedKey: `nieuwe-match|${rec.id}`,
       titelPool: TITEL_NIEUWE_RONDE,
-      url: rec.group_id ? `/groepen/${rec.group_id}` : "/matches",
+      url: rec.group_id ? `/groepen/${rec.group_id}` : "/spelen",
       soort: "nieuwe_ronde",
       // Eén tag per groep: worden er in één klap vier rondes klaargezet (#827),
       // dan houdt de speler één melding over in plaats van vier trillingen.

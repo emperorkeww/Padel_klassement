@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
@@ -12,6 +12,14 @@ vi.mock("@/lib/supabase/client", async () => {
   const { SESSION } = await import("@/test/fixtures");
   return { supabase: makeSupabaseMock({ session: SESSION, tables }) };
 });
+
+// De matchsectie heeft zijn eigen suite (MatchesSectie.test.tsx); hier is
+// alleen interessant *dat* hij eronder staat en welke groep hij meekrijgt.
+vi.mock("@/features/matches/MatchesSectie", () => ({
+  MatchesSectie: ({ groepId }: { groepId: string }) => (
+    <div data-testid="matchsectie">groep:{groepId || "alle"}</div>
+  ),
+}));
 
 import Groups from "./Groups";
 import { supabase } from "@/lib/supabase/client";
@@ -40,15 +48,30 @@ describe("<Groups />", () => {
     for (const [k, v] of Object.entries(TABLES)) tables[k] = [...v];
   });
 
-  it("toont de groep als klikbare kaart met eigenaar-badge en ledenaantal", async () => {
+  // #1123: de groepen zijn een keuzestrook geworden. Kiezen scoopt de
+  // matchlijst eronder; de weg naar de groepspagina staat in de regel eronder.
+  it("toont de groepen als chips en scoopt de matches op je keuze", async () => {
     renderPage();
-    const kaart = await screen.findByRole("link", { name: /vrijdagavond padel/i });
-    // De href kan asynchroon naar /agenda springen zodra de open poll
-    // (fixtures) geladen is en de reis om een stem vraagt (#1121) — beide
-    // bestemmingen zijn goed, anders flaket de test op die race.
-    expect(kaart.getAttribute("href")).toMatch(/^(\/groepen\/g1|\/agenda)$/);
+    const chip = await screen.findByRole("button", {
+      name: /vrijdagavond padel/i,
+    });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    // "Alle" is de standaard: geen groep in de URL, alles in de lijst.
+    expect(screen.getByRole("button", { name: /^alle$/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:alle");
+
+    await userEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("matchsectie")).toHaveTextContent("groep:g1");
+
+    // De regel onder de strook draagt wat niet in een chip past.
     expect(screen.getByText(/eigenaar/i)).toBeInTheDocument();
     expect(screen.getByText(/4 leden/i)).toBeInTheDocument();
+    const open = screen.getByRole("link", { name: /open groep/i });
+    expect(open).toHaveAttribute("href", "/groepen/g1");
   });
 
   // #674 A5: het aanmaakformulier stond altijd open en woog even zwaar als de
@@ -56,7 +79,7 @@ describe("<Groups />", () => {
   // actie van de pagina, dus dan staat het meteen open.
   it("verbergt het aanmaakformulier achter een knop zodra je een groep hebt", async () => {
     renderPage();
-    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    await screen.findByRole("button", { name: /vrijdagavond padel/i });
     expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
 
     await userEvent.click(
@@ -77,7 +100,7 @@ describe("<Groups />", () => {
 
   it("maakt een groep aan en gaat door naar de ledentab", async () => {
     renderPage();
-    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    await screen.findByRole("button", { name: /vrijdagavond padel/i });
     await userEvent.click(
       screen.getByRole("button", { name: /nieuwe groep/i }),
     );
@@ -93,21 +116,17 @@ describe("<Groups />", () => {
   });
 
   // #674 A5 zette losse match en vrije banen in een secundaire rij ónder de
-  // groepen. #916 haalt "losse match" daar weer uit: het is een veelgebruikt
-  // pad, geen restcategorie. De groepen blijven wél bovenaan.
-  it("zet losse match onder de groepen, maar als gewone actie", async () => {
+  // groepen; #916 haalde "losse match" daar weer uit. Sinds #1123 is die kaart
+  // helemaal overbodig: de matches staan hier zelf, met de logknop erbij.
+  it("zet de matches onder de groepskeuze", async () => {
     const { container } = renderPage();
-    const kaart = await screen.findByRole("link", {
-      name: /vrijdagavond padel/i,
-    });
-    const los = container.querySelector(".hub-los")!;
+    const strook = await screen.findByRole("group", { name: /groep kiezen/i });
+    const sectie = screen.getByTestId("matchsectie");
     expect(
-      kaart.compareDocumentPosition(los) & Node.DOCUMENT_POSITION_FOLLOWING,
+      strook.compareDocumentPosition(sectie) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(within(los as HTMLElement).getByText(/^losse match$/i)).toBeInTheDocument();
-    expect(
-      within(los as HTMLElement).getByRole("link", { name: /match loggen/i }),
-    ).toHaveClass("btn--primary");
+    // De losse-matchkaart is weg; loggen loopt via de knop in de sectie.
+    expect(container.querySelector(".hub-los")).toBeNull();
     // Vrije banen blijft een rustige verwijzing, geen kaart.
     expect(
       screen.getByRole("link", { name: /bekijk de banen/i }),
@@ -121,7 +140,7 @@ describe("<Groups />", () => {
   it("blijft op de hub staan met één groep, inclusief nieuwe groep", async () => {
     renderPage("/spelen");
     expect(
-      await screen.findByRole("link", { name: /vrijdagavond padel/i }),
+      await screen.findByRole("button", { name: /vrijdagavond padel/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /nieuwe groep/i }),
@@ -129,40 +148,24 @@ describe("<Groups />", () => {
     expect(screen.queryByText(/detailpagina/i)).not.toBeInTheDocument();
   });
 
-  // #674 B6: "actie nodig" verschilde alleen in tekstkleur van "staat vast".
-  it("geeft een groep die op je stem wacht een eigen accent", async () => {
+  // #674 B6 gaf een groep die op je stem wacht een eigen accent op de kaart.
+  // De kaarten zijn weg (#1123); de reisstatus staat nu voluit in de regel
+  // onder de strook, zodra je die groep kiest. De statusstip ín de chip volgt
+  // in een aparte stap.
+  it("toont de reisstatus van de gekozen groep", async () => {
     renderPage();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /vrijdagavond padel/i }),
+    );
     // De fixture-poll staat open → er wordt een stem gevraagd.
-    const badge = await screen.findByText(/poll loopt — stem mee/i);
-    expect(badge).toHaveClass("group-card__journey--act");
-    // Het icoon staat los van de tekst, zodat de screenreader "Poll loopt"
-    // hoort en niet de naam van de emoji.
-    expect(badge.textContent).toContain("📊");
-    expect(
-      within(badge).getByText("📊", { selector: "[aria-hidden='true']" }),
-    ).toBeInTheDocument();
-  });
-
-  // ── #916 ────────────────────────────────────────────────────────────────
-
-  it("houdt de plek van het statuslabel vrij tijdens het laden", async () => {
-    // De journey komt uit een tweede query en viel ná de kaarten binnen,
-    // waardoor de lijst versprong.
-    const { container } = renderPage();
-    await screen.findByRole("link", { name: /vrijdagavond padel/i });
-    expect(
-      container.querySelector(".group-card__journey"),
-    ).not.toBeNull();
-
-    // En daarna staat op diezelfde plek het echte label.
     expect(
       await screen.findByText(/poll loopt — stem mee/i),
-    ).toHaveClass("group-card__journey");
+    ).toBeInTheDocument();
   });
 
   it("laat het aanmaakformulier weer sluiten", async () => {
     renderPage();
-    await screen.findByRole("link", { name: /vrijdagavond padel/i });
+    await screen.findByRole("button", { name: /vrijdagavond padel/i });
 
     const openen = screen.getByRole("button", { name: /nieuwe groep/i });
     await userEvent.click(openen);

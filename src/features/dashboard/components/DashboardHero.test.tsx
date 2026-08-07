@@ -116,7 +116,7 @@ describe("<DashboardHero /> — gedeelde basis", () => {
         "Vrije banen",
       ]);
       expect(acties.map((l) => l.getAttribute("href"))).toEqual([
-        "/matches",
+        "/spelen?log=1",
         "/groepen",
         "/banen",
       ]);
