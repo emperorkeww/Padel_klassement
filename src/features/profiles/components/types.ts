@@ -6,6 +6,7 @@ import type { TierProgress } from "@/features/rating/tiers";
 import type { Regeerduur } from "@/features/standings/dictatorApi";
 import type { Editie } from "@/features/standings/edities";
 import type { Upset } from "@/features/matches/upset";
+import type { MatchExtras } from "@/features/matches/useMatchEffecten";
 import type { PechMeter } from "@/features/rating/pechvogel";
 import type { Season } from "@/features/rating/seasons";
 import type { RatingChart } from "@/features/rating/components/RatingChart";
@@ -96,6 +97,10 @@ export interface ProfileData {
   matchesError: string | null;
   /** Herstelactie bij een mislukte matchfetch (#910). */
   matchesReload: () => void;
+  /** Lef- en jokerregel per match (#1151), uit useMatchEffecten. Tot dat issue
+   *  kreeg de profielpagina die niet — de historie en de groepsronde wel, dus
+   *  las je dezelfde match hier zonder en daar mét zijn inzet. */
+  matchExtras: (match: Match) => MatchExtras;
 
   // Badges
   badges: Badge[];

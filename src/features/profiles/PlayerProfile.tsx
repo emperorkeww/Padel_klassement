@@ -31,6 +31,7 @@ import {
 } from "@/features/standings/edities";
 import { useClub } from "@/features/availability/club";
 import { upsetsByMatch } from "@/features/matches/upset";
+import { useMatchEffecten } from "@/features/matches/useMatchEffecten";
 import { getPlayerMatches, getTeamsMap } from "@/features/matches/api";
 import { ProfileSkeleton, StatsSkeleton } from "@/ui/Skeleton";
 import { PageTabs, TabPanel } from "@/ui/PageTabs";
@@ -186,6 +187,17 @@ export function PlayerProfile() {
       upsetsByMatch(matches.data ?? [], teams.data ?? {}, upsetHistories.data ?? {}),
     [matches.data, teams.data, upsetHistories.data],
   );
+  // Lef- en jokerregels op de matchkaarten (#1151), langs dezelfde hook als de
+  // historie en de groepsronde. Tot dit issue kreeg het profiel ze niet: je las
+  // daar dezelfde match zónder inzet en op de Spelen-pagina mét. Ook een hook,
+  // dus vóór de vroege returns hieronder — vandaar de losse `.data`-vallen in
+  // plaats van de tmap/pmap die pas verderop staan.
+  const matchExtras = useMatchEffecten({
+    matches: matches.data ?? [],
+    teams: teams.data ?? {},
+    profiles: profiles.data ?? {},
+    myId: user?.id ?? null,
+  });
   // Pre-match ratings per match (#809): voedt de Choke-koning-badge. Dezelfde
   // bron als de upset-chips hierboven — die dekt precies alle afgewerkte
   // matches van deze speler, dus er komt geen extra query bij.
@@ -553,6 +565,7 @@ export function PlayerProfile() {
     matchesLoading: matches.loading,
     matchesError: matches.error,
     matchesReload: matches.reload,
+    matchExtras,
     badges,
     featuredBadges,
     featuredIds,

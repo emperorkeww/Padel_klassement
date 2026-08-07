@@ -174,6 +174,7 @@ export function ProfileOverview({
             profiles={pmap}
             perspectiveId={id}
             upsets={upsets}
+            extras={d.matchExtras}
             empty={
               season
                 ? "Geen matches in dit seizoen."

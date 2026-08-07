@@ -15,6 +15,7 @@ export function ProfileMatches({ d }: { d: ProfileData }) {
     matchesLoading,
     matchesError,
     matchesReload,
+    matchExtras,
   } = d;
   return (
     <section className="card">
@@ -36,6 +37,7 @@ export function ProfileMatches({ d }: { d: ProfileData }) {
           profiles={pmap}
           perspectiveId={id}
           upsets={upsets}
+          extras={matchExtras}
           empty={
             season
               ? "Geen matches in dit seizoen."

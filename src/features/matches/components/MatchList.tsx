@@ -5,6 +5,7 @@ import { deleteMatch, formatSetScores, readSetScores } from "@/features/matches/
 import { formatRelativeDay } from "@/lib/utils/format";
 import { outcomeFor } from "@/features/rating/results";
 import type { Upset } from "@/features/matches/upset";
+import type { MatchExtras } from "@/features/matches/useMatchEffecten";
 import { traktatieRegel } from "@/features/matches/drankkaart";
 import { TeamSide } from "@/features/matches/components/TeamSide";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -228,6 +229,7 @@ export function MatchList({
   empty = "Nog geen matches.",
   perspectiveId,
   upsets,
+  extras,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
@@ -236,6 +238,10 @@ export function MatchList({
   perspectiveId?: string;
   /** Upsets per match-id (#85); ontbrekend = geen upset-chip. */
   upsets?: Map<string, Upset>;
+  /** Lef- en jokerregel per match (#1151), uit useMatchEffecten. Ontbrekend =
+   *  geen regels; die stonden hier tot dat issue helemaal niet, waardoor het
+   *  profiel dezelfde match zonder inzet toonde en de Spelen-pagina mét. */
+  extras?: (match: Match) => MatchExtras;
 }) {
   if (matches.length === 0) return <p className="empty">{empty}</p>;
 
@@ -249,6 +255,8 @@ export function MatchList({
             profiles={profiles}
             perspectiveId={perspectiveId}
             upset={upsets?.get(m.id) ?? null}
+            lef={extras?.(m).lef}
+            joker={extras?.(m).joker}
           />
         </li>
       ))}
