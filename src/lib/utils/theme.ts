@@ -12,7 +12,7 @@ const STORAGE_KEY = "theme";
  *  bestand en faalt zodra de twee uit elkaar lopen (#1074). */
 export const THEME_COLOR: Record<"light" | "dark", string> = {
   light: "#0c8a5f", // smaragd, zoals de statische meta
-  dark: "#031513", // --sidebar-bg: sluit aan op de mobiele topbalk (#1074)
+  dark: "#06090d", // --sidebar-bg: sluit aan op de mobiele topbalk (#1074/#1128)
 };
 
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");
