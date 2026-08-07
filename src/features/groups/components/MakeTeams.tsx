@@ -22,6 +22,8 @@ import {
 import { tallyOption } from "@/features/groups/pollLogic";
 import { rondeStart, rondesOpDag } from "@/features/groups/speeldagRondes";
 import { FairTeamsCard } from "@/features/groups/components/FairTeams";
+import { SpelersKiezer } from "@/features/groups/components/SpelersKiezer";
+import type { KiesbareSpeler } from "@/features/groups/spelersKiezer";
 import type { GroupMember, Match, Profile, Team } from "@/types";
 import "@/features/groups/Proposals.css";
 
@@ -141,6 +143,20 @@ export function MakeTeams({
     });
   };
 
+  // De kiesbare spelers zoals ze in de chips komen te staan. De naam is ook
+  // waar de zoekterm op filtert, dus "(jij)" hoort erbij: zo vind je jezelf
+  // net zo goed terug als iedere ander.
+  const kiesbaar: KiesbareSpeler[] = useMemo(
+    () =>
+      members.map((m) => ({
+        id: m.player_id,
+        naam:
+          displayName(profiles[m.player_id]) +
+          (m.player_id === myId ? " (jij)" : ""),
+      })),
+    [members, profiles, myId],
+  );
+
   const selectedIds = [...selected];
   const enough = selectedIds.length >= 4;
   const mexicanoBlocked = format === "mexicano" && !!openRound;
@@ -181,6 +197,29 @@ export function MakeTeams({
 
   return (
     <>
+      {/* "Wie speelt er mee?" (#1089): de deelnemersselectie is een eigen kaart
+          geworden met teller, zoeken, filters en een afwezigen-voet. Hij stond
+          hiervoor als platte rij pillen middenin de generatorkaart, waar hij
+          bij een groep van twintig als een muur las. */}
+      <SpelersKiezer
+        spelers={kiesbaar}
+        profielen={profiles}
+        gekozen={selected}
+        moment={vanavond?.option.start_time ?? null}
+        herkomst={
+          tonightYes
+            ? "Deelnemers uit de poll van vandaag."
+            : "Geen poll voor vandaag — alle leden staan aan."
+        }
+        onToggle={toggle}
+        onAlles={(aan) =>
+          setSelected(new Set(aan ? members.map((m) => m.player_id) : []))
+        }
+        onHerstel={() =>
+          setSelected(new Set(members.map((m) => m.player_id)))
+        }
+      />
+
       <section className="card">
         <div className="card__head">
           <h2 className="card__title card__title--tight">Maak teams</h2>
@@ -206,29 +245,6 @@ export function MakeTeams({
         </p>
 
         <SpelvormUitleg />
-
-        <p className="proposals__hint">
-          {tonightYes
-            ? "Deelnemers uit de poll van vandaag; tik namen aan of uit om te corrigeren."
-            : "Geen poll voor vandaag — alle leden staan aan; tik namen uit die er niet bij zijn."}
-        </p>
-        <div className="tonight__players" role="group" aria-label="Deelnemers">
-          {members.map((m) => {
-            const on = selected.has(m.player_id);
-            return (
-              <button
-                key={m.player_id}
-                type="button"
-                className={`btn btn--sm attendance-btn ${on ? "is-active is-yes" : ""}`}
-                aria-pressed={on}
-                onClick={() => toggle(m.player_id)}
-              >
-                {displayName(profiles[m.player_id])}
-                {m.player_id === myId ? " (jij)" : ""}
-              </button>
-            );
-          })}
-        </div>
 
         {format !== "eerlijk" && (
           <div className="gen-controls">

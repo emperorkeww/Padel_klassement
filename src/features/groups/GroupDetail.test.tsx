@@ -161,12 +161,12 @@ describe("<GroupDetail />", () => {
       await screen.findByRole("heading", { name: /maak teams/i }),
     ).toBeInTheDocument();
     // De standaard-selectie (alle deelnemers aangetikt) wordt één tick ná het
-    // verschijnen van de "Maak teams"-kop gezet; wacht dus tot aria-pressed
+    // verschijnen van de "Maak teams"-kop gezet; wacht dus tot aria-checked
     // settelt i.p.v. het synchroon te lezen (voorheen flaky, #292).
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /alice anders \(jij\)/i }),
-      ).toHaveAttribute("aria-pressed", "true"),
+        screen.getByRole("switch", { name: /alice anders \(jij\)/i }),
+      ).toBeChecked(),
     );
     for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
       expect(screen.getByRole("button", { name: f })).toBeInTheDocument();

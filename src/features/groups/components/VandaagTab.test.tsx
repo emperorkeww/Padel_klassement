@@ -104,10 +104,11 @@ function renderTab(
   return { onMatches, onGuestCreated, onShowStand };
 }
 
-/** Wacht tot MakeTeams zijn default-selectie heeft gezet (#292). */
+/** Wacht tot MakeTeams zijn default-selectie heeft gezet (#292). Sinds #1089
+ *  zijn de deelnemers schakelaars (role="switch") in plaats van drukknoppen. */
 async function waitForSelection() {
   await waitFor(() => {
-    const toggles = screen.getAllByRole("button", { pressed: true });
+    const toggles = screen.getAllByRole("switch", { checked: true });
     expect(toggles.length).toBeGreaterThanOrEqual(4);
   });
 }

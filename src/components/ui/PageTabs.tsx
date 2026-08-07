@@ -28,6 +28,7 @@ export function PageTabs<K extends string>({
   onChange,
   ariaLabel,
   idPrefix,
+  variant = "pagina",
 }: {
   tabs: PageTabItem<K>[];
   value: K;
@@ -39,6 +40,12 @@ export function PageTabs<K extends string>({
    *  blijft `aria-controls` achterwege in plaats van naar een niet-bestaand
    *  paneel te wijzen. */
   idPrefix?: string;
+  /** `"pagina"` (standaard) is de paginabrede balk die horizontaal schuift.
+   *  `"segment"` is de compacte variant bínnen een kaart (#1089): drie gelijke
+   *  vakken die de volle breedte vullen en niet schuiven — dus ook geen
+   *  scroll-fade, want er valt niets te schuiven. De semantiek is identiek;
+   *  alleen de vorm verschilt. */
+  variant?: "pagina" | "segment";
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   // Zes tabs passen op telefoonbreedte niet naast elkaar; de balk schuift dan,
@@ -47,14 +54,17 @@ export function PageTabs<K extends string>({
   const schaduw = useScrollSchaduw(listRef);
 
   // Op smalle schermen scrollt de balk (.tabs--page); zorg dat de actieve tab
-  // in beeld staat als je ergens op landt (bv. ?tab=leden).
+  // in beeld staat als je ergens op landt (bv. ?tab=leden). De segment-variant
+  // schuift niet, dus daar valt er ook niets in beeld te brengen — en een
+  // scroll bij elke filterwissel zou de kaart onder je duim laten springen.
   useEffect(() => {
+    if (variant === "segment") return;
     const el = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
     // jsdom kent scrollIntoView niet.
     if (el && typeof el.scrollIntoView === "function") {
       el.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
-  }, [value]);
+  }, [value, variant]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const i = tabs.findIndex((t) => t.id === value);
@@ -76,8 +86,8 @@ export function PageTabs<K extends string>({
   return (
     <div
       ref={listRef}
-      className="tabs tabs--page"
-      data-schaduw={schaduw}
+      className={variant === "segment" ? "tabs tabs--segment" : "tabs tabs--page"}
+      data-schaduw={variant === "segment" ? undefined : schaduw}
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}

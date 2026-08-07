@@ -1083,6 +1083,37 @@ textarea {
   display: none;
 }
 
+/* Segment-variant (#1089): dezelfde tabsemantiek, maar bínnen een kaart. Drie
+   gelijke vakken over de volle breedte in plaats van een schuivende balk —
+   "Iedereen · Aanwezig · Afwezig" en "Eerlijk · Americano · Mexicano" zijn
+   keuzes over de inhoud van één kaart, geen paginanavigatie, en horen dus ook
+   niet de pill-vorm en de onderruimte van de paginabalk te dragen. */
+.tabs--segment {
+  display: flex;
+  width: 100%;
+  margin-bottom: 0;
+  border-radius: var(--radius);
+}
+.tabs--segment .tab {
+  flex: 1;
+  /* Zonder dit duwen lange labels ("Americano") de tab breder dan zijn deel. */
+  min-width: 0;
+  padding-inline: var(--sp-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.tabs--segment .tab.is-active {
+  color: var(--ink);
+}
+/* "Iedereen · 12": het scheidingsteken hoort bij de vorm van de teller, niet
+   bij het label — anders zou het ook in de toegankelijke naam belanden, die
+   PageTabs juist als "Iedereen, 12" opbouwt. */
+.tabs--segment .tab__count::before {
+  content: "·";
+  margin-right: var(--sp-1);
+}
+
 /* Teller achter een tablabel ("Leden · 6"). */
 .tab__count {
   margin-left: var(--sp-1);
@@ -1710,6 +1741,8 @@ textarea {
 .sidebar__user:focus-visible,
 .tabbar__link:focus-visible,
 .topbar__brand:focus-visible,
+.kiezer__alles:focus-visible,
+.kiezer__herstel:focus-visible,
 .match-card:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
@@ -1721,6 +1754,12 @@ textarea {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 50%;
+}
+/* Pil-targets: de outline volgt de chipvorm. */
+.kiezer__chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 /* ---------- Skip-link (spring naar de hoofdinhoud) ----------
