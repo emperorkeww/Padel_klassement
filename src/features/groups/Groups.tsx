@@ -177,7 +177,11 @@ export function Groups() {
                   <Link
                     key={g.id}
                     className="group-card"
-                    to={`/groepen/${g.id}${journey && journey.tab !== "vandaag" ? "?tab=plannen" : ""}`}
+                    /* Het reis-label is een aansporing ("stem mee", "boek de
+                       baan"), dus de kaart brengt je waar je dat kunt doen.
+                       Sinds #1121 is dat de agenda en niet meer een tab op de
+                       groepspagina. */
+                    to={journey?.tab === "agenda" ? "/agenda" : `/groepen/${g.id}`}
                   >
                     <Avatar name={g.name} size={44} />
                     <span className="group-card__body">

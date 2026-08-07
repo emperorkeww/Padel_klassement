@@ -138,11 +138,12 @@ describe("<GroupDetail />", () => {
     expect(await screen.findByText(/^afgerond$/i)).toBeInTheDocument();
   });
 
-  it("houdt de teamgenerator op Vandaag en de suggesties op Plannen", async () => {
+  it("houdt de teamgenerator op Vandaag, zonder de suggesties", async () => {
     renderPage();
     // De dag loopt (rondes van vandaag), dus de uitslagen staan bovenaan en de
     // teamgenerator zit achter "+ Volgende ronde" (#674 A2, #839). De
-    // suggesties horen bij Plannen (#342) en horen hier niet te staan.
+    // suggesties horen bij het plannen (#342) en dat is sinds #1121 de agenda,
+    // dus die staan hier sowieso niet meer.
     expect(
       await screen.findByRole("heading", { name: /^vandaag ·/i }),
     ).toBeInTheDocument();
@@ -171,12 +172,6 @@ describe("<GroupDetail />", () => {
     for (const f of [/^eerlijk$/i, /^americano$/i, /^mexicano$/i]) {
       expect(screen.getByRole("tab", { name: f })).toBeInTheDocument();
     }
-
-    // Op de Plannen-tab staan de suggesties nu bovenaan, boven de poll.
-    await userEvent.click(screen.getByRole("tab", { name: /^plannen$/i }));
-    expect(
-      await screen.findByRole("heading", { name: /suggesties/i }),
-    ).toBeInTheDocument();
   });
 
   it("stelt eerlijke teams voor uit de deelnemers van het voorstel van vandaag", async () => {
@@ -248,59 +243,6 @@ describe("<GroupDetail />", () => {
     const players = (call?.[1] as { p_players: string[] }).p_players;
     expect(players).toHaveLength(4);
     expect(new Set(players).size).toBe(4); // vier verschillende leden
-  });
-
-  it("toont de speeldag-poll op het plannen-tabblad met banen-balans", async () => {
-    renderPage();
-    await screen.findByRole("heading", { name: /^ronde 2$/i });
-    await userEvent.click(screen.getByRole("tab", { name: /^plannen$/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /speeldag-poll/i }),
-    ).toBeInTheDocument();
-    // Fase-verloop en de optie-rij uit de fixtures.
-    expect(screen.getByText(/^stemmen$/i)).toBeInTheDocument();
-    // De fasebalk + next-action-regel staan op tab-niveau (#349); in de
-    // fixtures stemde iedereen al, dus de maker mag het moment kiezen.
-    expect(
-      screen.getByRole("list", { name: /fase van de speeldag/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/alle stemmen zijn binnen — kies het moment/i),
-    ).toBeInTheDocument();
-    // De optie-rij én de "Kies …"-knop van de maker noemen het moment.
-    expect((await screen.findAllByText(/za 5 jan/i)).length).toBeGreaterThan(0);
-    // Stemmen via het ✓ ? ✗-segment.
-    expect(
-      screen.getAllByRole("button", { name: /^ik kan$/i }).length,
-    ).toBeGreaterThan(0);
-
-    // De haalbaarheids-knop klapt de banen-balans uit (2 kan → 1 baan nodig).
-    await userEvent.click(
-      screen.getAllByRole("button", { name: /haalbaarheid/i })[1],
-    );
-    expect(await screen.findByText(/1 baan nodig/i)).toBeInTheDocument();
-
-    // Alice is de maker: zij ziet de "Kies …"-knop voor de beste optie.
-    expect(
-      screen.getAllByRole("button", { name: /^kies /i }).length,
-    ).toBeGreaterThan(0);
-
-    // ... en kan de kandidaat-dagen aanpassen (#128): de wizard heropent
-    // met de bestaande momenten voorgeselecteerd.
-    await userEvent.click(
-      screen.getByRole("button", { name: /dagen aanpassen/i }),
-    );
-    expect(
-      await screen.findByRole("heading", { name: /dagen aanpassen/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /bewaar dagen \(2\)/i }),
-    ).toBeInTheDocument();
-    // De bestaande momenten staan als verwijderbare chips in de balk.
-    expect(
-      screen.getByRole("button", { name: /za 5 jan.*verwijderen/i }),
-    ).toBeInTheDocument();
   });
 
   it("toont het groepsklassement standaard op rating, met punten-toggle", async () => {
@@ -482,7 +424,7 @@ describe("<GroupDetail />", () => {
     );
   });
 
-  it("houdt de speeldag zichtbaar op een andere tab dan Plannen", async () => {
+  it("houdt de speeldag zichtbaar op elke tab van de groep", async () => {
     // Bevinding 5: wie op Historie of Stand stond, zag niet meer wanneer er
     // weer gespeeld wordt.
     const { container } = renderPage();
@@ -498,7 +440,7 @@ describe("<GroupDetail />", () => {
   });
 
   it("laat de tabbalk weten dat er meer tabs staan", async () => {
-    // Zes tabs passen niet op telefoonbreedte; jsdom heeft geen layout, dus we
+    // Vijf tabs passen niet op telefoonbreedte; jsdom heeft geen layout, dus we
     // voeren de breedtes op waar useScrollSchaduw naar kijkt.
     const proto = HTMLElement.prototype;
     const origScroll = Object.getOwnPropertyDescriptor(proto, "scrollWidth");

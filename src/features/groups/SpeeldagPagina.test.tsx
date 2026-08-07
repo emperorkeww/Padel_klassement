@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ToastProvider } from "@/ui/ToastProvider";
 
@@ -148,6 +149,34 @@ describe("<SpeeldagPagina />", () => {
     expect(
       screen.getByRole("link", { name: GROUPS[0].name }),
     ).toHaveAttribute("href", "/groepen/g1");
+  });
+
+  // Verhuisd uit GroupDetail.test toen de Plannen-tab verdween (#1121): dit is
+  // dezelfde kaart, alleen niet meer achter een tab.
+  it("klapt de banen-balans van een moment uit", async () => {
+    renderPagina("poll-open");
+    await screen.findByRole("heading", { name: /speeldag-poll/i });
+
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /haalbaarheid/i })[0],
+    );
+    // Twee ja-stemmen → één baan nodig.
+    expect(await screen.findByText(/1 baan nodig/i)).toBeInTheDocument();
+  });
+
+  it("laat de beheerder de kandidaat-dagen aanpassen", async () => {
+    renderPagina("poll-open");
+    await userEvent.click(
+      await screen.findByRole("button", { name: /dagen aanpassen/i }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /dagen aanpassen/i }),
+    ).toBeInTheDocument();
+    // Het bestaande moment staat voorgeselecteerd in de wizard.
+    expect(
+      screen.getByRole("button", { name: /bewaar dagen \(1\)/i }),
+    ).toBeInTheDocument();
   });
 
   // De reden dat deze pagina bestaat: de beheeracties zaten alleen op de

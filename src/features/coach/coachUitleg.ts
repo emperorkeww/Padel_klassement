@@ -49,12 +49,12 @@ export const UITLEG_REGELS: Record<UitlegSleutel, Pools> = {
   },
   speeldag: {
     zacht: [
-      "Een speeldag loopt van links naar rechts: eerst plannen, dan spelen, dan de stand.",
-      "De tabs op een groepspagina zijn de reis van een avond. Volg ze van links naar rechts.",
+      "Een speeldag begint op de agenda, gaat dan naar de groep: spelen, en dan de stand.",
+      "Plannen doe je op de agenda, de avond zelf op de groepspagina. Twee plekken, meer niet.",
       "Poll, rondes, teams, historie. In die volgorde gaat het vanzelf.",
     ],
     scherp: [
-      "Plannen, spelen, stand. Drie stappen, en toch gaat het elke week ergens mis.",
+      "Agenda, spelen, stand. Drie stappen, en toch gaat het elke week ergens mis.",
       "Zet die poll op tijd open. Anders staan er zaterdag vier man voor een dichte baan.",
       "De tabs lopen van links naar rechts. Net als jouw verdediging, maar dan wél volgens plan.",
     ],

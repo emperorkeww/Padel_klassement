@@ -1,25 +1,27 @@
 import { Link } from "react-router-dom";
 import { sectieHref } from "../secties";
 
-/** Sectie 2: de reis over de tabs van een groepspagina (#989). De tabnamen
- *  hieronder komen letterlijk overeen met GroupDetail; wijzigt daar een tab,
- *  dan hoort deze lijst mee te wijzigen. */
+/** Sectie 2: de reis van een speeldag (#989). Begint sinds #1121 op de Agenda;
+ *  de tabnamen daarna komen letterlijk overeen met GroupDetail, dus wijzigt
+ *  daar een tab, dan hoort deze lijst mee te wijzigen. */
 export function Speeldag() {
   return (
     <>
       <p>
-        Een speeldag loopt van links naar rechts over de tabs van je groep. Je
-        hoeft niet alles te gebruiken — een losse partij loggen mag ook — maar dit
-        is de volle route.
+        Een speeldag begint op de <strong>Agenda</strong> en loopt daarna van
+        links naar rechts over de tabs van je groep. Je hoeft niet alles te
+        gebruiken — een losse partij loggen mag ook — maar dit is de volle route.
       </p>
       <dl className="uitleg__lijst">
-        <dt>Plannen</dt>
+        <dt>Agenda</dt>
         <dd>
-          Zet een <strong>speelpoll</strong> open: een paar dagen en tijden,
+          Alle speeldagen van al je groepen in één kalender. Tik een dag aan en
+          zet een <strong>speelpoll</strong> open: een paar dagen en tijden,
           iedereen stemt. Je kunt er een deadline op zetten, zodat de groep op
-          tijd een seintje krijgt, en de baan of club alvast vastleggen. De poll
-          is deelbaar met een link, zodat je 'm gewoon in de groepsapp kunt
-          gooien.
+          tijd een seintje krijgt. Elke speeldag heeft een eigen pagina — daar
+          leg je het moment vast, boek je de baan en zet je de wedstrijden
+          klaar — en die is deelbaar met een link, zodat je 'm gewoon in de
+          groepsapp kunt gooien.
         </dd>
         <dt>Vandaag</dt>
         <dd>

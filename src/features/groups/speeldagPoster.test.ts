@@ -127,10 +127,10 @@ describe("speeldagPoster", () => {
   // 200px, dus boven de 42 modules zakt elke module onder de ~4px die een
   // telefooncamera nodig heeft. Een echte deel-link is het langste wat er in
   // gaat — die moet er dus met marge onder blijven.
-  it("houdt een echte deel-link met twee uuid's scanbaar klein", () => {
+  it("houdt een echte deel-link met een uuid scanbaar klein", () => {
     const echt =
-      "https://padel-klassement.pages.dev/groepen/91d8d419-3736-498e-90be-362de786d588" +
-      "?tab=plannen&poll=8f14e45f-ceea-467a-9575-2b4f4c6a4f0b";
+      "https://padel-klassement.pages.dev/speeldag/" +
+      "8f14e45f-ceea-467a-9575-2b4f4c6a4f0b";
     const p = speeldagPoster({ ...basis, spelers: [speler("Ann")], link: echt });
     expect(p.qr!.length).toBeLessThanOrEqual(42);
   });

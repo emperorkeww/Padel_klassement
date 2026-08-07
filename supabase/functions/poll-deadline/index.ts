@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
           recipients: silent,
           title: kiesTitel(TITEL_LAATSTE_KANS, poll.id),
           body: kiesUit(POLL_LAATSTE_KANS, roastSeed(poll.id, "laatste-kans")),
-          url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
+          url: `/speeldag/${poll.id}`,
           soort: "poll",
           tag: `poll-${poll.id}`,
         }])).sent;
@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
           (geboekt ? " — baan geboekt ✓" : " — vergeet de baan niet te boeken") +
           (code ? ` · code ${code}` : "") +
           `. ${kiesUit(SPEELDAG_VANDAAG, roastSeed(poll.id, "speeldag"))}`,
-        url: `/groepen/${poll.group_id}?tab=plannen&poll=${poll.id}`,
+        url: `/speeldag/${poll.id}`,
         // Bewust 'poll' en niet 'speeldag_herinnering': deze melding hangt aan
         // de poll (zelfde tag, zelfde link) en had vóór #1090 geen enkele
         // voorkeurfilter. 'speeldag_herinnering' zou hem stil onder

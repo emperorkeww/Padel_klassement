@@ -6,8 +6,12 @@ import type { PlayPoll, PollOption } from "./pollsApi";
 // Stond eerst alleen in Groups.tsx voor de badges op de hub; sinds #674 (A3)
 // bepaalt dezelfde logica ook waar je landt als je een groep rechtstreeks
 // opent — voorheen kwam je altijd op Vandaag, ook op een dag zonder plan.
+//
+// Sinds #1121 wijst alles wat over plannen gaat naar de agenda: de Plannen-tab
+// van de groepspagina bestaat niet meer. Het label is een aansporing ("stem
+// mee", "boek de baan"), dus het moet je brengen waar je dat kunt doen.
 
-export type JourneyTab = "plannen" | "vandaag";
+export type JourneyTab = "agenda" | "vandaag";
 
 export type Journey = {
   /** Decoratief icoon vóór het label; los van de tekst zodat de screenreader
@@ -40,7 +44,7 @@ export function journeyFor(
       icon: "📊",
       label: "Poll loopt — stem mee",
       tone: "act",
-      tab: "plannen",
+      tab: "agenda",
     };
   }
   if (active?.status === "locked" && locked) {
@@ -48,7 +52,7 @@ export function journeyFor(
       icon: "📆",
       label: `${shortDay(locked.date)} gekozen — boek de baan`,
       tone: "act",
-      tab: "plannen",
+      tab: "agenda",
     };
   }
   if (active?.status === "booked" && locked) {
@@ -56,13 +60,13 @@ export function journeyFor(
       icon: "🎾",
       label: `${shortDay(locked.date)} · ${locked.start_time} geboekt`,
       tone: "info",
-      tab: locked.date === today ? "vandaag" : "plannen",
+      tab: locked.date === today ? "vandaag" : "agenda",
     };
   }
   return {
     icon: null,
     label: "Plan een speeldag →",
     tone: "idle",
-    tab: "plannen",
+    tab: "agenda",
   };
 }
