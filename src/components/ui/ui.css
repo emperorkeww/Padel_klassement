@@ -1418,6 +1418,13 @@ textarea {
   border-left: 3px solid var(--line-strong);
 }
 
+/* "+2" achter de ene metaregel (#1144): er is méér te zien op het matchdetail.
+   Gedempt en klein — het is een wegwijzer, geen mededeling. */
+.match-card__meer {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
 .match-card__side {
   display: flex;
   align-items: center;

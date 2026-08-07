@@ -33,3 +33,20 @@ export async function openScoreSheets() {
   for (const knop of knoppen) await userEvent.click(knop);
   return knoppen.length;
 }
+
+/**
+ * Opent een matchoptie-rij (toto, speciale kaart, lef, inzet, rating).
+ *
+ * Sinds #1144 staan die blokken niet meer als open tegels op de kaart maar
+ * achter een rij die een sheet opent. Een test die het lef-blok nodig heeft
+ * klapt dus eerst de kaart uit en tikt dan de rij aan — net als een gebruiker.
+ *
+ * `naam` matcht op de toegankelijke naam van de rij, die icoon, naam én de
+ * samenvatting bevat (bv. /lef/i of /speciale kaart/i).
+ */
+export async function openMatchOptie(naam: RegExp) {
+  await openPlannedCards();
+  const rijen = await screen.findAllByRole("button", { name: naam });
+  for (const rij of rijen) await userEvent.click(rij);
+  return rijen.length;
+}

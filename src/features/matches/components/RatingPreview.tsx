@@ -1,6 +1,5 @@
-import { K_FACTOR } from "@/features/rating/elo";
 import {
-  effectFactor,
+  eigenSwing,
   jokerIcoon,
   jokerLabel,
   type JokerId,
@@ -33,12 +32,7 @@ export function RatingPreview({
 }) {
   if (mijnKans == null) return null;
 
-  // Spiegel van `round(k * (sa - ea) * f)` uit _apply_match_rating: één keer
-  // afronden, ná de vermenigvuldiging. hasWinner is hier true — bij een
-  // gelijkspel vervalt de verdubbeling, en dat zegt de regel eronder.
-  const factor = effectFactor({ joker, staked, hasWinner: true });
-  const winst = Math.round(K_FACTOR * (1 - mijnKans) * factor);
-  const verlies = Math.round(K_FACTOR * -mijnKans * factor);
+  const { winst, verlies } = eigenSwing({ mijnKans, staked, joker });
 
   const schild = joker === "schild";
   const modifier = joker
@@ -72,7 +66,7 @@ export function RatingPreview({
           </span>
         </div>
       )}
-      {!schild && factor > 1 && (
+      {!schild && (staked || joker === "dubbel_of_niets") && (
         <p className="ratingpreview__voet">
           Verdubbeld — bij een gelijkspel telt dat niet en blijft het bij de
           gewone mutatie.
