@@ -171,7 +171,7 @@ describe("<VandaagTab />", () => {
     renderTab();
 
     const generator = await screen.findByRole("heading", {
-      name: /maak teams/i,
+      name: /speelformaat/i,
     });
     // Geen doorverwijzing meer naar een andere tab, en geen lege
     // wedstrijdenkaart die erboven staat.
@@ -250,9 +250,9 @@ describe("<VandaagTab />", () => {
     const { onMatches } = renderTab();
     await waitForSelection();
 
-    await userEvent.click(screen.getByRole("button", { name: /^americano$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^americano$/i }));
     const genBtn = screen.getByRole("button", {
-      name: /genereer americano-ronde/i,
+      name: /start americano/i,
     });
     await waitFor(() => expect(genBtn).toBeEnabled());
     await userEvent.click(genBtn);
@@ -359,7 +359,7 @@ describe("<VandaagTab />", () => {
     const knop = screen.getByRole("button", { name: /volgende ronde/i });
     // Dicht: de generator staat niet in de weg van de uitslagen.
     expect(
-      screen.queryByRole("heading", { name: /maak teams/i }),
+      screen.queryByRole("heading", { name: /speelformaat/i }),
     ).not.toBeInTheDocument();
     // De actie sluit de wedstrijdenlijst af, dus staat hij eronder.
     expect(
@@ -385,7 +385,7 @@ describe("<VandaagTab />", () => {
       name: /volgende ronde/i,
     });
     expect(
-      within(sheet).getByRole("heading", { name: /maak teams/i }),
+      within(sheet).getByRole("heading", { name: /speelformaat/i }),
     ).toBeInTheDocument();
     // De sheet benoemt het verschil met de automaat (#827): drie routes naar
     // dezelfde ronde, met verschillende uitkomst.
@@ -401,9 +401,9 @@ describe("<VandaagTab />", () => {
       screen.getByRole("button", { name: /volgende ronde/i }),
     );
     await waitForSelection();
-    await userEvent.click(screen.getByRole("button", { name: /^mexicano$/i }));
+    await userEvent.click(screen.getByRole("tab", { name: /^mexicano$/i }));
     expect(
-      screen.getByRole("button", { name: /genereer mexicano-ronde/i }),
+      screen.getByRole("button", { name: /start mexicano/i }),
     ).toBeDisabled();
     expect(
       screen.getByText(/vul eerst alle uitslagen van ronde 2 in/i),

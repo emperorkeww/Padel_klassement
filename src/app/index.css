@@ -81,6 +81,22 @@
      op een lichte pagina) — precies wat er stond. */
   --tip-bg: var(--ink);
   --tip-ink: var(--surface);
+  /* ---- Omgekeerd paneel (#1089) ----
+     Een kaart die bewust tégen de pagina in gaat: op licht een donker vlak, op
+     donker juist een opgetild vlak. De speelformaat-kaart gebruikt hem om de
+     keuze-plus-CTA uit de rij witte kaarten te tillen — dat is de knop waar de
+     hele avond aan hangt.
+     Een eigen familie en niet --tip-bg hergebruikt: die tooltip is één regel
+     tekst, dit paneel draagt tabs, meta-labels en een knop, en heeft dus ook
+     rollen voor gedempte tekst, labels, een genest vlak en een scheiding.
+     Op donker mag het paneel níét donkerder worden dan de kaart eronder: een
+     omgekeerd vlak dat wegzakt in de pagina is geen accent maar een gat. */
+  --paneel-om: #14211d; /* het vlak zelf */
+  --paneel-om-ink: #f2f6f4; /* titel, waarden, actieve tab */
+  --paneel-om-ink-soft: #a9bdb4; /* beschrijving, inactieve tab */
+  --paneel-om-label: #90a49b; /* uppercase meta-labels */
+  --paneel-om-vlak: #223330; /* tabcontainer op het paneel */
+  --paneel-om-lijn: #2f423d; /* scheiding + de "?"-badge */
   --ink: #1a2620; /* tekst */
   --ink-soft: #64756c; /* gedempte tekst (≥AA op wit/bg) */
   /* Donkerdere gedempte tint voor kleine tekst op --surface-2 (badges e.d.),
@@ -109,6 +125,20 @@
   --lime: #c7e63a; /* padelbal */
   --lime-deep: #93b515; /* lime met genoeg contrast op licht */
   --lime-soft: #f4fadb;
+  /* Hover op een vól lime vlak (#1089). --lime-soft is daar geen hover maar een
+     ander vlak, en --lime-deep maakt de knop juist donkerder — een knop hoort
+     onder de aanwijzer op te lichten. Eén waarde voor beide thema's: --lime is
+     zelf ook thema-onafhankelijk. */
+  --lime-hover: #d5f04c;
+  /* Tekst op een vól lime vlak. Expres een eigen token, want de gewone inkt
+     kiest per thema terwijl lime dat niet doet — in het donkere thema levert
+     die bijna-wit op lime op, en dat is 1,4:1. Staat daarom alleen hier en
+     wordt bewust níét overschreven in het donkere blok.
+     (Let op bij het herschrijven van deze regels: de scripts die dit bestand
+     lezen — contrast-check.mjs en mail-templates.test.mjs — pakken elk
+     "--naam: waarde;" op, óók binnen een comment. Een tokennaam mét dubbele
+     punt in commentaar overschaduwt daardoor stilletjes het echte token.) */
+  --lime-ink: #1a2620;
 
   /* Lef (#804) — eigen violet, los van het groene toto/accent: het risicospel
      van de spelers naast het kijkersspel van de toto. */
@@ -581,6 +611,17 @@
      verhoogd vlak met gewone inkt, net als elke andere zwevende laag. */
   --tip-bg: var(--surface-elevated);
   --tip-ink: var(--ink);
+
+  /* Omgekeerd paneel (#1089). Op licht is dit een donkere doos op een lichte
+     pagina; hier kan dat niet — donkerder dan de kaart betekent hier wégzakken.
+     Het paneel wordt dus een verhoogd vlak: dezelfde bedoeling (dit blok staat
+     los van de rij kaarten), andere kant op. */
+  --paneel-om: var(--surface-elevated);
+  --paneel-om-ink: var(--ink);
+  --paneel-om-ink-soft: var(--ink-soft);
+  --paneel-om-label: var(--ink-soft);
+  --paneel-om-vlak: #244440; /* gelijk aan surface-hover — een stap hoger */
+  --paneel-om-lijn: #2f4f4a;
 
   /* Lime als focuskleur (#1074): op donker springt hij van élk vlak af (≥10:1
      op de kaart), waar het smaragd van de knoppen op een gekozen nav-item juist
