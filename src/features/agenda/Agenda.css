@@ -351,6 +351,74 @@
   min-height: 44px;
 }
 
+/* ---- "Hierna": de eerstvolgende speeldagen (#1112) ---- */
+
+.dagpaneel__kicker {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.hierna {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Compacter dan een speeldagkaart, en dat is het punt: dit gaat niet over de
+   gekozen dag, het is een wegwijzer ernaartoe. */
+.hierna__rij {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  /* Raakdoel (#374); zonder deze bodem blijft de rij onder de 44px. */
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+.hierna__rij:hover {
+  background: var(--surface-hover);
+}
+.hierna__rij:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Vaste breedte: zo staan de datums onder elkaar uitgelijnd, ook als de ene
+   "za 8 aug" is en de andere "wo 23 sep". */
+.hierna__dag {
+  flex: none;
+  width: 74px;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.hierna__wat {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierna__chevron {
+  flex: none;
+  color: var(--line-strong);
+}
+
 /* ---- Speeldagkaart ---- */
 
 .speeldag {

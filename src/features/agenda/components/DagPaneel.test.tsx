@@ -34,19 +34,22 @@ function marker(overrides: Partial<AgendaMarker> = {}): AgendaMarker {
 function toon(props: Partial<Parameters<typeof DagPaneel>[0]> = {}) {
   const onOpen = vi.fn();
   const onPlan = vi.fn();
+  const onKiesDag = vi.fn();
   render(
     <DagPaneel
       datum="2026-08-08"
       vandaag="2026-08-07"
       markers={[marker()]}
+      volgende={[]}
       ledenPerGroep={{ g1: 4 }}
       profielen={{}}
       onOpen={onOpen}
       onPlan={onPlan}
+      onKiesDag={onKiesDag}
       {...props}
     />,
   );
-  return { onOpen, onPlan };
+  return { onOpen, onPlan, onKiesDag };
 }
 
 describe("<DagPaneel />", () => {
@@ -96,6 +99,30 @@ describe("<DagPaneel />", () => {
     expect(screen.getByText("Nog niets gepland")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Speeldag plannen" }));
     expect(onPlan).toHaveBeenCalled();
+  });
+
+  it("wijst op een lege dag naar wat er hierna komt (#1112)", () => {
+    const { onKiesDag } = toon({
+      markers: [],
+      volgende: [
+        marker({ optionId: "v1", date: "2026-08-15", startTime: "11:00" }),
+        marker({ optionId: "v2", date: "2026-08-22", status: "open" }),
+      ],
+    });
+    const rij = screen.getByRole("button", { name: /za 15 aug, 11:00/ });
+    // De rij zegt zelf waar hij heen gaat: los van elkaar zeggen "za 15 aug" en
+    // "11:00 · Vrijdagavond Padel" te weinig.
+    expect(rij).toHaveAccessibleName(
+      "za 15 aug, 11:00, Vrijdagavond Padel, geboekt",
+    );
+    fireEvent.click(rij);
+    expect(onKiesDag).toHaveBeenCalledWith("2026-08-15");
+  });
+
+  it("houdt hierna weg zodra de dag zelf iets draagt", () => {
+    // Anders staat er van alles onder elkaar dat over verschillende dagen gaat.
+    toon({ volgende: [marker({ optionId: "v1", date: "2026-08-15" })] });
+    expect(screen.queryByText("Hierna")).not.toBeInTheDocument();
   });
 
   it("biedt op een lege dag die geweest is niets aan", () => {
