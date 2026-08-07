@@ -4,7 +4,7 @@ import { useAsync } from "@/lib/hooks/useAsync";
 import { useToast } from "@/ui/ToastProvider";
 import { errorMessage } from "@/lib/utils/errors";
 import { addDays } from "@/lib/utils/time";
-import { type WeekDay } from "@/features/availability/api";
+import type { WeekDay } from "@/features/availability/api";
 import { dayStarts, manualStarts, type FreeStart } from "@/features/availability/availabilityShare";
 import { getWeekWeather } from "@/features/availability/weatherApi";
 import { summarizeDay } from "@/features/availability/weatherLogic";
@@ -16,6 +16,7 @@ import {
   MAX_OPTIONS,
   floorHalfHour,
   fmtDate,
+  longDay,
   optKey,
   shortDay,
 } from "../planPollHelpers";
@@ -43,10 +44,9 @@ export function PollWizard({
   weekLoading: boolean;
   /** Club waarvoor deze wizard beschikbaarheid/weer toont (#322). */
   club: Club;
-  /** Dag waarop de wizard opent (#1091), bv. een dag uit de agenda. Binnen het
-   *  7-daagse beschikbaarheidsvenster wordt hij de gekozen dag in de navigator;
-   *  daarbuiten landt hij in het handmatige pad — daar bestaan geen vrije-banen-
-   *  gegevens, en een dag-navigator zonder die dag zou hem stil negeren.
+  /** Dag waarop de wizard opent (#1091), bv. een dag uit de agenda. Hij wordt
+   *  altijd de gekozen dag in de navigator — ook voorbij het 7-daagse
+   *  beschikbaarheidsvenster, want daar krijgt hij een eigen chip.
    *
    *  Bewust de dág en niet een moment: een poll-optie is dag plus tijd, en die
    *  tijd kan niemand voor de maker verzinnen. */
@@ -64,12 +64,18 @@ export function PollWizard({
 }) {
   const toast = useToast();
   const [duration, setDuration] = useState<number>(90);
-  // Valt de meegegeven dag binnen het venster waarvoor we vrije banen hebben?
-  const binnenVenster =
-    initialDay != null && initialDay >= today && initialDay <= addDays(today, 6);
-  const buitenVenster = initialDay != null && !binnenVenster && initialDay >= today;
+  const weekEnd = addDays(today, 6);
+  // Ligt de meegegeven dag voorbij het venster waarvoor we vrije banen hebben?
+  const buitenVenster = initialDay != null && initialDay > weekEnd;
+  // De gevraagde dag ís de gekozen dag — binnen én buiten het venster.
+  // Tot nu toe viel een dag daarbuiten stil terug op vandaag: de navigator kende
+  // hem niet, dus stonden de vrije uren van vandáág groot in beeld terwijl de
+  // gevraagde dag alleen nog in het handmatige paneel eronder leefde. Wie dan
+  // gewoon een uur aantikte, startte een poll op de verkeerde dag zonder dat er
+  // iets tegensprak. Een dag in het verleden blijft wél vandaag: daar valt niets
+  // meer te plannen.
   const [selectedDay, setSelectedDay] = useState(
-    binnenVenster ? (initialDay as string) : today,
+    initialDay != null && initialDay >= today ? initialDay : today,
   );
   const [wholeDay, setWholeDay] = useState(false);
   // Weericoontjes in de dag-navigator (#83-bonus): alleen bij buitenbanen,
@@ -122,16 +128,31 @@ export function PollWizard({
   // Twee-taps bevestiging wanneer de wijziging iets laat vervallen.
   const [armed, setArmed] = useState(false);
 
-  const weekEnd = addDays(today, 6);
-
   // Handmatige locatie (#322): geen Playtomic-data, maar wel dezelfde
   // selectie-flow via een synthetisch halfuur-raster.
   const manual = !isPlaytomicClub(club);
 
+  /**
+   * De dagen in de navigator: het opgehaalde venster, plus de gevraagde dag als
+   * die er voorbij ligt.
+   *
+   * Zonder banengegevens (`data: null`) toont die chip geen uren — bij een
+   * Playtomic-club wijst de lege staat naar het handmatige paneel eronder. Bij
+   * een handmatige locatie draait het synthetische halfuur-raster gewoon door,
+   * dus daar is de dag meteen kiesbaar.
+   */
+  const dagen = useMemo<WeekDay[]>(
+    () =>
+      buitenVenster
+        ? [...week, { date: initialDay as string, data: null, error: null }]
+        : week,
+    [week, buitenVenster, initialDay],
+  );
+
   // Vrije starttijden per dag, gefilterd op duur (en standaard op avond).
   const startsByDay = useMemo(() => {
     const map = new Map<string, FreeStart[] | null>();
-    for (const day of week) {
+    for (const day of dagen) {
       map.set(
         day.date,
         manual
@@ -142,7 +163,7 @@ export function PollWizard({
       );
     }
     return map;
-  }, [week, duration, manual, club.timezone]);
+  }, [dagen, duration, manual, club.timezone]);
 
   const visibleStarts = (date: string) => {
     const starts = startsByDay.get(date);
@@ -242,16 +263,22 @@ export function PollWizard({
 
       {/* Dag-navigator. */}
       <div className="day-strip" role="tablist" aria-label="Kies een dag">
-        {week.map((d) => {
+        {dagen.map((d) => {
           const starts = visibleStarts(d.date);
           const n = starts?.length ?? 0;
           const on = selectedDay === d.date;
+          // De chip voorbij het venster staat los van de week ernaast: alleen
+          // "do 20" leest daar als de dag erna, dus draagt hij de volle datum
+          // als naam (en een scheiding in de CSS).
+          const ver = buitenVenster && d.date === initialDay;
           return (
             <button
               key={d.date}
               role="tab"
               aria-selected={on}
-              className={`day-chip${on ? " is-active" : ""}${n === 0 ? " is-empty" : ""}`}
+              className={`day-chip${on ? " is-active" : ""}${n === 0 ? " is-empty" : ""}${ver ? " day-chip--ver" : ""}`}
+              title={ver ? longDay(d.date) : undefined}
+              aria-label={ver ? longDay(d.date) : undefined}
               onClick={() => setSelectedDay(d.date)}
             >
               <span className="day-chip__name">
@@ -294,7 +321,11 @@ export function PollWizard({
         )}
         {weekLoading && <p className="empty">Vrije banen laden…</p>}
         {!weekLoading && dayStartsVisible == null && (
-          <p className="empty">Geen beschikbaarheidsgegevens voor deze dag.</p>
+          <p className="empty">
+            {selectedDay === initialDay && buitenVenster
+              ? "Zo ver vooruit zijn de vrije banen nog niet bekend — zet het uur hieronder zelf vast."
+              : "Geen beschikbaarheidsgegevens voor deze dag."}
+          </p>
         )}
         {!weekLoading && dayStartsVisible != null && dayStartsVisible.length === 0 && (
           <p className="empty">
