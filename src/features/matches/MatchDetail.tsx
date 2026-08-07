@@ -80,7 +80,7 @@ export function MatchDetail() {
   // match bij hoort — dat is de context waar zo'n link vandaan komt (#915);
   // zonder groep valt hij terug op het matchoverzicht.
   const terug = useBackTo(
-    match.data?.group_id ? `/groepen/${match.data.group_id}` : "/matches",
+    match.data?.group_id ? `/groepen/${match.data.group_id}` : "/spelen",
   );
   // Tabtitel op de matchdatum (#910); blijft staan zolang de match laadt.
   usePageTitle(
@@ -209,7 +209,7 @@ export function MatchDetail() {
       <ErrorRetry
         melding="Deze match bestaat niet (meer) of is niet zichtbaar voor jou."
         actie={
-          <Link className="btn btn--sm" to="/matches">
+          <Link className="btn btn--sm" to="/spelen">
             Naar matches
           </Link>
         }
@@ -640,7 +640,7 @@ export function MatchDetail() {
             profiles={pmap}
             perspectiveId={user?.id}
             onSaved={() => match.reload()}
-            onDeleted={() => navigate("/matches", { replace: true })}
+            onDeleted={() => navigate("/spelen", { replace: true })}
           />
         </section>
       )}

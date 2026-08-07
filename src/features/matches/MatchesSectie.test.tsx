@@ -12,18 +12,36 @@ vi.mock("@/lib/supabase/client", async () => {
   return { supabase: makeSupabaseMock({ session: SESSION, tables: TABLES, rpc: "m-new" }) };
 });
 
-import Matches from "./Matches";
+import { MatchesSectie } from "./MatchesSectie";
+import { useSpeelParams } from "./speelParams";
 import { supabase } from "@/lib/supabase/client";
 import { makeQuery } from "@/test/supabaseMock";
 import { invalidateAll } from "@/lib/supabase/queryCache";
 import { MATCH_DONE } from "@/test/fixtures";
+
+/** De sectie zoals de Spelen-hub hem monteert (#1123): met de échte
+ *  URL-bedrading eromheen, zodat de filter- en ?log=1-tests toetsen wat er in
+ *  de app gebeurt en niet wat een testkopie van die bedrading doet. */
+function Harnas() {
+  const speel = useSpeelParams();
+  return (
+    <MatchesSectie
+      groepId={speel.groep}
+      periode={speel.periode}
+      onPeriode={speel.zetPeriode}
+      onWisFilters={speel.wisFilters}
+      logDirect={speel.logDirect}
+      onLogVerbruikt={speel.verbruikLog}
+    />
+  );
+}
 
 function renderPage(url = "/") {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <AuthProvider>
         <ToastProvider>
-          <Matches />
+          <Harnas />
         </ToastProvider>
       </AuthProvider>
     </MemoryRouter>,
@@ -63,7 +81,7 @@ const veelMatches = (n: number, groupId: string | null = null) =>
     };
   });
 
-describe("<Matches />", () => {
+describe("<MatchesSectie />", () => {
   it("toont Te spelen met inline invoer en de recente matches", async () => {
     renderPage();
     expect(await screen.findByText(/te spelen/i)).toBeInTheDocument();
@@ -210,7 +228,7 @@ describe("<Matches />", () => {
   // ── #914 ────────────────────────────────────────────────────────────────
 
   it("heeft één primaire actie: de zwevende knop, met de keuze in het sheet", async () => {
-    const { container } = renderPage();
+    renderPage();
     await screen.findByText(/recente matches/i);
 
     const knop = screen.getByRole("button", { name: /^match$/i });
@@ -218,11 +236,12 @@ describe("<Matches />", () => {
     // Plaatsing én uitwijkgedrag komen van de gedeelde klasse (#942): dezelfde
     // die de "Jouw positie"-chip van het klassement draagt.
     expect(knop).toHaveClass("zwevende-actie");
-    // De kop draagt geen actie meer (#1123): loggen én plannen lopen allebei
-    // via deze ene knop, zodat op telefoonbreedte niet twee knoppen om de
-    // hoofdrol concurreren.
-    const kop = container.querySelector(".page-head")!;
-    expect(within(kop as HTMLElement).queryByRole("button")).toBeNull();
+    // Loggen én plannen lopen allebei via deze ene knop (#1123), zodat op
+    // telefoonbreedte niet twee knoppen om de hoofdrol concurreren. De sectie
+    // draagt zelf geen tweede actie.
+    expect(
+      screen.queryByRole("button", { name: /^match plannen$/i }),
+    ).toBeNull();
 
     // De keuze tussen loggen en plannen staat in stap 1 van het sheet.
     await userEvent.click(knop);

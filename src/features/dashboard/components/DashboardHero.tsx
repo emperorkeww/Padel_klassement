@@ -311,7 +311,7 @@ export function DashboardHero({
           </Link>
         )}
         <div className="hero__actions">
-          <Link className="btn btn--primary" to="/matches">
+          <Link className="btn btn--primary" to="/spelen?log=1">
             + Match loggen
           </Link>
           <Link className="btn" to={generateCta.to}>

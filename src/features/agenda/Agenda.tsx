@@ -37,7 +37,7 @@ import { DagPaneel } from "./components/DagPaneel";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
-import { StatusGlyph } from "./components/StatusGlyph";
+import { StatusGlyph } from "@/ui/StatusGlyph";
 import { AgendaAbonnement } from "./components/AgendaAbonnement";
 import { GroepFilter } from "./components/GroepFilter";
 import { AgendaSuggesties } from "./components/AgendaSuggesties";

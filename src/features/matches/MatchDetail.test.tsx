@@ -25,8 +25,9 @@ function renderPage(id = "m-done") {
         <ToastProvider>
           <Routes>
             <Route path="/matches/:id" element={<MatchDetail />} />
-            {/* Waar "terug" bij een deeplink kan landen (#915). */}
-            <Route path="/matches" element={<p>matchoverzicht</p>} />
+            {/* Waar "terug" bij een deeplink kan landen (#915). Sinds #1123
+                is dat de Spelen-hub, want daar staan de matches. */}
+            <Route path="/spelen" element={<p>matchoverzicht</p>} />
             <Route path="/groepen/:gid" element={<p>groepspagina</p>} />
           </Routes>
         </ToastProvider>

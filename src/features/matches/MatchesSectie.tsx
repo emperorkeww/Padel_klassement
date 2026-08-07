@@ -10,7 +10,6 @@ import { useVerbergBijScrollen } from "@/lib/hooks/useVerbergBijScrollen";
 import { CoachAvatar } from "@/features/coach/components/CoachAvatar";
 import { coachEmptyState } from "@/features/coach/coachMoments";
 import { getRecentMatches, getTeamsMap } from "./api";
-import { getMyGroups } from "@/features/groups/api";
 import { useClub } from "@/features/availability/club";
 import { MatchFilters } from "@/features/matches/components/MatchFilters";
 import {
@@ -44,16 +43,16 @@ const PAGINA = 100;
 export function MatchesSectie({
   groepId,
   periode,
-  onGroep,
   onPeriode,
   onWisFilters,
   logDirect = false,
   onLogVerbruikt,
+  verbergActie = false,
 }: {
-  /** "" = alle groepen. */
+  /** "" = alle groepen. Komt sinds #1123 van de chipstrook op de hub; losse
+   *  matches (zonder groep) vallen daarmee buiten een gekozen groep. */
   groepId: string;
   periode: Periode;
-  onGroep: (id: string) => void;
   onPeriode: (p: Periode) => void;
   /** Wist groep én periode in één keer — bewust één callback, geen twee. */
   onWisFilters: () => void;
@@ -61,6 +60,10 @@ export function MatchesSectie({
   logDirect?: boolean;
   /** Meldt dat `?log=1` verwerkt is, zodat de pagina hem uit de URL haalt. */
   onLogVerbruikt?: () => void;
+  /** Houdt de zwevende knop uit beeld zolang de pagina erboven zelf iets
+   *  belangrijkers open heeft staan (#1123): op telefoonbreedte ligt hij
+   *  anders precies over de knop van het aanmaakformulier. */
+  verbergActie?: boolean;
 }) {
   const { user } = useAuth();
   const myId = user?.id ?? "";
@@ -95,7 +98,6 @@ export function MatchesSectie({
   // achter. Minder betekent: dit is alles.
   const afgekapt = (matches.data?.length ?? 0) >= limiet;
   const teams = useAsync(getTeamsMap, []);
-  const groups = useAsync(getMyGroups, []);
   const profiles = useAsync(getAllProfiles, []);
   const friendships = useAsync(getMyFriendships, []);
   // Upsets rekenen met de échte pre-match ratings van precies deze matches
@@ -179,12 +181,10 @@ export function MatchesSectie({
   return (
     <>
       <MatchFilters
-        groups={groups.data ?? []}
-        groupId={groepId}
-        onGroup={onGroep}
         periode={periode}
         onPeriode={onPeriode}
         onWis={onWisFilters}
+        extraFilterActief={!!groepId}
       />
 
       {/* Filteren op groep of periode herschikt de historie zonder dat iets
@@ -293,7 +293,7 @@ export function MatchesSectie({
       <button
         type="button"
         className={`btn btn--primary matches__fab zwevende-actie${
-          fabVerborgen ? " is-verborgen" : ""
+          fabVerborgen || verbergActie ? " is-verborgen" : ""
         }`}
         onClick={() => openSheet()}
       >

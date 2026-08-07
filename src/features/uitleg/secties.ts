@@ -142,6 +142,8 @@ export const SECTIE_IDS: readonly SectieId[] = SECTIES.map((s) => s.id);
 const ANKERS: ReadonlyArray<[pad: string, id: SectieId]> = [
   ["/klassement", "rating"],
   ["/banen", "banen"],
+  // "/matches" bestaat sinds #1123 alleen nog als redirect, maar /matches/:id
+  // (het matchdetail) leeft door en hoort bij "uitslagen".
   ["/matches", "uitslagen"],
   ["/spelen", "speeldag"],
   ["/groepen", "speeldag"],

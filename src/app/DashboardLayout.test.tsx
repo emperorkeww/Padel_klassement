@@ -88,6 +88,7 @@ function renderShell(pad = "/") {
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<div>pagina-inhoud</div>} />
               <Route path="/groepen/:id" element={<div>pagina-inhoud</div>} />
+              <Route path="/matches/:id" element={<div>pagina-inhoud</div>} />
             </Route>
           </Routes>
         </ToastProvider>
@@ -119,8 +120,11 @@ describe("<DashboardLayout />", () => {
     expect(screen.getAllByRole("link", { name: /^spelen$/i }).length).toBe(2);
     // #69: "Ik" (profiel) zit nu in de mobiele balk; Vrienden in de zijbalk.
     expect(screen.getAllByRole("link", { name: /^ik$/i }).length).toBeGreaterThan(0);
-    // #274: Matches is nu een vaste mobiele tab (zijbalk + onderbalk).
-    expect(screen.getAllByRole("link", { name: /^matches$/i }).length).toBe(2);
+    // #1123: Matches is opgegaan in Spelen en heeft geen eigen ingang meer.
+    expect(screen.queryAllByRole("link", { name: /^matches$/i }).length).toBe(0);
+    // De vrijgekomen mobiele tab gaat naar de Agenda, die tot dan als losse
+    // knop in de topbalk hing: nu zijbalk + onderbalk, net als de rest.
+    expect(screen.getAllByRole("link", { name: /^agenda$/i }).length).toBe(2);
     // #274: Vrienden schuift naar de zijbalk (niet meer in de onderbalk).
     expect(
       screen.getAllByRole("link", { name: /vrienden/i }).length,
@@ -148,6 +152,16 @@ describe("<DashboardLayout />", () => {
     // Andere secties blijven ongemarkeerd.
     for (const link of screen.getAllByRole("link", { name: /^clubblad$/i })) {
       expect(link).not.toHaveAttribute("aria-current");
+    }
+  });
+
+  // #1123: een matchdetail hoort bij Spelen, want daar staan de matches. Zonder
+  // "/matches" in matchPaths zou de balk op zo'n pagina helemaal leeg staan.
+  it("markeert Spelen ook op een matchdetail-pad", async () => {
+    renderShell("/matches/m1");
+    await screen.findByText("pagina-inhoud");
+    for (const link of screen.getAllByRole("link", { name: /^spelen$/i })) {
+      expect(link).toHaveAttribute("aria-current", "page");
     }
   });
 

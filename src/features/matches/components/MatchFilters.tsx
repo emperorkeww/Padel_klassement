@@ -1,54 +1,37 @@
 import { PERIODE_OPTIES, type Periode } from "../matchFilter";
-import type { GroupSummary } from "@/features/groups/api";
 
 /**
- * Groep- en periodefilter boven de matchhistorie (#914).
+ * Het periodefilter boven de matchhistorie (#914).
  *
  * De pagina toonde één ongefilterde lijst; bij een actieve club is daar binnen
  * een maand niets meer in terug te vinden. De keuze leeft in de URL, net als
  * elders in de app: deelbaar en refresh-bestendig.
+ *
+ * Het groepsfilter stond hier tot #1123 als tweede `<select>`. Dat is nu de
+ * chipstrook bovenaan de Spelen-hub — twee bedieningen voor dezelfde keuze was
+ * precies het probleem dat dat issue oploste. "Wis filters" blijft wél allebei
+ * wissen: de groep hoort net zo goed bij wat je ingesteld hebt staan.
  */
 export function MatchFilters({
-  groups,
-  groupId,
-  onGroup,
   periode,
   onPeriode,
   onWis,
+  /** Staat er buiten de periode nog een filter aan (de groepskeuze)? Bepaalt
+   *  samen met de periode of de wis-knop iets te doen heeft. */
+  extraFilterActief = false,
 }: {
-  groups: GroupSummary[];
-  groupId: string;
-  onGroup: (id: string) => void;
   periode: Periode;
   onPeriode: (p: Periode) => void;
-  /** Beide tegelijk wissen. Bewust géén twee losse aanroepen: die lezen elk
-   *  dezelfde URLSearchParams en zouden elkaars wijziging overschrijven. */
+  /** Wist groep én periode tegelijk. Bewust géén twee losse aanroepen: die
+   *  lezen elk dezelfde URLSearchParams en zouden elkaars wijziging
+   *  overschrijven (zie speelParams.ts). */
   onWis: () => void;
+  extraFilterActief?: boolean;
 }) {
-  const actief = !!groupId || !!periode;
+  const actief = !!periode || extraFilterActief;
 
   return (
     <div className="match-filters" role="group" aria-label="Matches filteren">
-      {/* Zonder groepen valt er niets te kiezen; dan alleen de periode. */}
-      {groups.length > 0 && (
-        <label className="match-filters__field">
-          <span>Groep</span>
-          <select
-            className="select select--filter"
-            aria-label="Groep"
-            value={groupId}
-            onChange={(e) => onGroup(e.target.value)}
-          >
-            <option value="">Alle groepen</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
       <label className="match-filters__field">
         <span>Periode</span>
         <select

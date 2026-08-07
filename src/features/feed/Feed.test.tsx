@@ -243,7 +243,7 @@ describe("<Feed />", () => {
       expect(await screen.findByText(/iedereen zit stil/i)).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: /uitslag invullen/i }),
-      ).toHaveAttribute("href", "/matches");
+      ).toHaveAttribute("href", "/spelen?log=1");
       expect(screen.queryByText(/nog niemand om te volgen/i)).toBeNull();
     } finally {
       metVrienden();
