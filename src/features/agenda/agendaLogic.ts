@@ -187,6 +187,26 @@ export function markersByDay(
   return out;
 }
 
+/**
+ * De eerstvolgende speeldagen ná een datum (#1112) — de "Hierna"-lijst onder een
+ * lege dag.
+ *
+ * Strikt ná: een speeldag op de gekozen dag zelf staat al in het paneel erboven,
+ * en die daar nog eens herhalen leest als twee verschillende afspraken. Een dag
+ * die geweest is valt weg, ook als hij later in de lijst zou vallen — je kunt er
+ * niet meer heen.
+ */
+export function volgendeSpeeldagen(
+  markers: AgendaMarker[],
+  na: string,
+  max = 3,
+): AgendaMarker[] {
+  return markers
+    .filter((m) => m.date > na && !m.past)
+    .sort((a, b) => a.date.localeCompare(b.date) || byTime(a, b))
+    .slice(0, max);
+}
+
 /* ------------------------------------------------------------------ */
 /* Het raster zelf.                                                    */
 /* ------------------------------------------------------------------ */
@@ -235,12 +255,34 @@ export function monthGrid(m: Maand): RasterDag[][] {
 }
 
 /**
- * Het datumvenster dat het raster nodig heeft — inclusief de rand-dagen, want
- * die tonen hun markers gewoon mee. Dit is wat `getPollWindow` opvraagt.
+ * De buitenste datums van het raster — inclusief de rand-dagen, want die tonen
+ * hun markers gewoon mee. Dit is wat je op het scherm ziet staan.
  */
 export function windowFor(m: Maand): { from: string; to: string } {
   const weeks = monthGrid(m);
   return { from: weeks[0][0].date, to: weeks[weeks.length - 1][6].date };
+}
+
+/** Hoeveel dagen we voorbij het raster ophalen. Zes weken: genoeg om in een
+ *  lege maand nog drie speeldagen te vinden, en klein genoeg om één query te
+ *  blijven. */
+const STAART_DAGEN = 42;
+
+/**
+ * Het datumvenster dat `getPollWindow` opvraagt (#1112).
+ *
+ * Ruimer dan het raster, want "Hierna" kijkt vooruit voorbij de laatste rij —
+ * in een lege maand staat de eerstvolgende speeldag per definitie buiten beeld.
+ * Wat in die staart valt komt nooit in een cel terecht (het raster tekent
+ * alleen zijn eigen weken) en telt ook niet mee in "activiteiten deze maand".
+ *
+ * Bewust een ánder venster dan `windowFor`: de toetsenbordnavigatie gebruikt de
+ * rastergrenzen om te weten wanneer ze een maand moet doorbladeren, en die vraag
+ * heeft niets te maken met hoeveel we ophalen.
+ */
+export function ophaalVenster(m: Maand): { from: string; to: string } {
+  const raster = windowFor(m);
+  return { from: raster.from, to: addDays(raster.to, STAART_DAGEN) };
 }
 
 /** De maand waarin een datum valt. */
@@ -257,18 +299,24 @@ export function schuifMaand({ jaar, maand }: Maand, delta: number): Maand {
 export const zelfdeMaand = (a: Maand, b: Maand) =>
   a.jaar === b.jaar && a.maand === b.maand;
 
+/**
+ * Hoeveel speeldagen er in de zichtbare maand staan (#1112) — de subregel onder
+ * de maandtitel.
+ *
+ * Telt op de máánd en niet op het venster: het raster toont ook de randdagen van
+ * de buurmaanden, en die horen niet mee in "3 activiteiten deze maand".
+ */
+export function telInMaand(markers: AgendaMarker[], m: Maand): number {
+  const prefix = `${m.jaar}-${pad(m.maand)}-`;
+  return markers.filter((x) => x.date.startsWith(prefix)).length;
+}
+
 /** "augustus 2026" — de kop boven het raster. */
 export function maandLabel({ jaar, maand }: Maand): string {
   return new Intl.DateTimeFormat("nl-BE", {
     month: "long",
     year: "numeric",
   }).format(new Date(`${jaar}-${pad(maand)}-01T12:00:00`));
-}
-
-/** De week (ma t/m zo) waarin een datum valt — voedt de weekstrook. */
-export function weekVan(date: string): string[] {
-  const start = addDays(date, -weekdayIndex(date));
-  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
 /** Zelfde dagnummer een maand verder of terug; een kortere maand kapt af
@@ -328,6 +376,33 @@ export function tijdvak(startTime: string, duration: number): string {
 export function statusLabel(status: AgendaStatus, past = false): string {
   if (past) return "gespeeld";
   return status === "locked" ? "vastgelegd" : STATUS_WOORD[status];
+}
+
+/**
+ * Alleen de eerste letter groot (#1112).
+ *
+ * Nadrukkelijk niet `text-transform: capitalize`: dat maakt van "open poll"
+ * "Open Poll" en van "zondag 9 augustus" "Zondag 9 Augustus" — in het
+ * Nederlands blijven maandnamen en het tweede woord gewoon klein.
+ */
+export function metHoofdletter(tekst: string): string {
+  return tekst.charAt(0).toUpperCase() + tekst.slice(1);
+}
+
+/** Het statuswoord zoals het in een chip of legenda staat: "Open poll". */
+export function statusChip(status: AgendaStatus, past = false): string {
+  return metHoofdletter(statusLabel(status, past));
+}
+
+/**
+ * Hoe lang een speeldag duurt, als losse regel naast de begintijd (#1112).
+ * Hele uren lezen als uren ("2 uur"), de rest blijft in minuten ("90 min") —
+ * "1,5 uur" is precies de omrekening die je niet wil moeten maken.
+ */
+export function duurLabel(duration: number): string {
+  if (duration % 60 !== 0) return `${duration} min`;
+  const uren = duration / 60;
+  return uren === 1 ? "1 uur" : `${uren} uur`;
 }
 
 /**

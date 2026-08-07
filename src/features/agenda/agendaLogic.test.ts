@@ -3,19 +3,25 @@ import {
   buildMarkers,
   dagLabel,
   daysInMonth,
+  duurLabel,
   maandLabel,
   maandVan,
   markersByDay,
+  metHoofdletter,
   monthGrid,
+  ophaalVenster,
   schuifMaand,
   splitMarkers,
+  statusChip,
+  telInMaand,
   tijdvak,
   toetsStap,
-  weekVan,
+  volgendeSpeeldagen,
   windowFor,
   zelfdeDagAndereMaand,
   zelfdeMaand,
 } from "./agendaLogic";
+import type { AgendaMarker } from "./agendaLogic";
 import type { GroupSummary } from "@/features/groups/api";
 import type {
   PlayPoll,
@@ -153,18 +159,117 @@ describe("maandvenster", () => {
     expect(maandVan("2026-08-13")).toEqual({ jaar: 2026, maand: 8 });
   });
 
-  it("geeft de week van maandag tot zondag", () => {
-    expect(weekVan("2026-08-13")).toEqual([
+});
+
+describe("ophaalVenster (#1112)", () => {
+  it("loopt zes weken voorbij het raster", () => {
+    // Het raster van augustus 2026 eindigt op 6 september; "Hierna" moet ook in
+    // een lege maand nog iets kunnen wijzen, dus we halen verder op.
+    expect(ophaalVenster({ jaar: 2026, maand: 8 })).toEqual({
+      from: "2026-07-27",
+      to: "2026-10-18",
+    });
+  });
+
+  it("begint waar het raster begint", () => {
+    // Achteruit is er geen staart: wat geweest is hoort niet in "Hierna", en
+    // een dag vóór het raster is er nooit een om naartoe te springen.
+    const m = { jaar: 2026, maand: 8 };
+    expect(ophaalVenster(m).from).toBe(windowFor(m).from);
+  });
+});
+
+describe("volgendeSpeeldagen (#1112)", () => {
+  const m = (date: string, extra: Partial<AgendaMarker> = {}) =>
+    ({ date, optionId: date, startTime: "20:00", groupName: "A", past: false, ...extra }) as AgendaMarker;
+
+  it("geeft de eerstvolgende drie, op volgorde", () => {
+    const uit = volgendeSpeeldagen(
+      [m("2026-09-01"), m("2026-08-20"), m("2026-08-25"), m("2026-08-30")],
       "2026-08-10",
-      "2026-08-11",
-      "2026-08-12",
-      "2026-08-13",
-      "2026-08-14",
-      "2026-08-15",
-      "2026-08-16",
+    );
+    expect(uit.map((x) => x.date)).toEqual([
+      "2026-08-20",
+      "2026-08-25",
+      "2026-08-30",
     ]);
-    // Een zondag hoort bij de wéék die eraan voorafgaat, niet aan de volgende.
-    expect(weekVan("2026-08-16")[0]).toBe("2026-08-10");
+  });
+
+  it("laat de gekozen dag zelf weg", () => {
+    // Die staat al in het paneel erboven; twee keer tonen leest als twee
+    // verschillende afspraken.
+    const uit = volgendeSpeeldagen([m("2026-08-10"), m("2026-08-20")], "2026-08-10");
+    expect(uit.map((x) => x.date)).toEqual(["2026-08-20"]);
+  });
+
+  it("laat wat geweest is weg, ook als de datum later valt", () => {
+    // `past` hangt aan de klok van de club, niet aan de kalender: een moment
+    // van vanochtend heeft een datum die nog "vooruit" oogt.
+    const uit = volgendeSpeeldagen(
+      [m("2026-08-20", { past: true }), m("2026-08-25")],
+      "2026-08-10",
+    );
+    expect(uit.map((x) => x.date)).toEqual(["2026-08-25"]);
+  });
+
+  it("sorteert twee speeldagen op dezelfde dag op tijd", () => {
+    const uit = volgendeSpeeldagen(
+      [
+        m("2026-08-20", { optionId: "laat", startTime: "20:00" }),
+        m("2026-08-20", { optionId: "vroeg", startTime: "11:00" }),
+      ],
+      "2026-08-10",
+    );
+    expect(uit.map((x) => x.optionId)).toEqual(["vroeg", "laat"]);
+  });
+
+  it("geeft een lege lijst als er niets meer komt", () => {
+    expect(volgendeSpeeldagen([m("2026-08-01")], "2026-08-10")).toEqual([]);
+  });
+});
+
+describe("labels van het dagpaneel (#1112)", () => {
+  it("zet alleen de eerste letter groot", () => {
+    // `text-transform: capitalize` maakte hier "Zondag 9 Augustus" van, en van
+    // de statuschip "Open Poll". In het Nederlands blijft dat tweede woord klein.
+    expect(metHoofdletter("zondag 9 augustus")).toBe("Zondag 9 augustus");
+    expect(metHoofdletter("augustus 2026")).toBe("Augustus 2026");
+    expect(metHoofdletter("")).toBe("");
+  });
+
+  it("geeft het statuswoord voor een chip", () => {
+    expect(statusChip("booked")).toBe("Geboekt");
+    expect(statusChip("locked")).toBe("Vastgelegd");
+    expect(statusChip("open")).toBe("Open poll");
+    expect(statusChip("booked", true)).toBe("Gespeeld");
+  });
+
+  it("leest hele uren als uren en de rest als minuten", () => {
+    expect(duurLabel(90)).toBe("90 min");
+    expect(duurLabel(60)).toBe("1 uur");
+    expect(duurLabel(120)).toBe("2 uur");
+    // Niet "1,5 uur": dat is precies de omrekening die je niet wil maken.
+    expect(duurLabel(45)).toBe("45 min");
+  });
+});
+
+describe("telInMaand", () => {
+  const inAug = (date: string) => ({ date }) as never;
+
+  it("telt de speeldagen van de zichtbare maand", () => {
+    const markers = [inAug("2026-08-03"), inAug("2026-08-08"), inAug("2026-08-08")];
+    expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(3);
+  });
+
+  it("telt de randdagen van de buurmaanden niet mee", () => {
+    // Het raster van augustus 2026 begint op 27 juli en eindigt op 6 september;
+    // die dagen tonen hun markers wel, maar horen niet in "deze maand".
+    const markers = [inAug("2026-07-27"), inAug("2026-08-08"), inAug("2026-09-06")];
+    expect(telInMaand(markers, { jaar: 2026, maand: 8 })).toBe(1);
+  });
+
+  it("verwart een maand niet met dezelfde maand in een ander jaar", () => {
+    expect(telInMaand([inAug("2025-08-08")], { jaar: 2026, maand: 8 })).toBe(0);
   });
 });
 

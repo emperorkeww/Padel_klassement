@@ -18,15 +18,20 @@ import {
   maandLabel,
   maandVan,
   markersByDay,
+  metHoofdletter,
   monthGrid,
+  ophaalVenster,
   schuifMaand,
+  statusChip,
+  telInMaand,
+  volgendeSpeeldagen,
   windowFor,
   zelfdeMaand,
   type AgendaMarker,
   type Maand,
 } from "./agendaLogic";
 import { MaandRaster } from "./components/MaandRaster";
-import { WeekStrook } from "./components/WeekStrook";
+import { DagPaneel } from "./components/DagPaneel";
 import { RasterSkeleton } from "./components/RasterSkeleton";
 import { DagSheet } from "./components/DagSheet";
 import { PlanDagSheet } from "./components/PlanDagSheet";
@@ -58,6 +63,10 @@ export function Agenda() {
   const vandaag = dateInZone(globaleClub.timezone);
 
   const [maand, setMaand] = useState<Maand>(() => maandVan(vandaag));
+  // De dag waar het paneel onder het raster over gaat (#1112). Los van
+  // `focusDag`: met de pijltjes loop je door het raster zonder telkens iets te
+  // kiezen, precies zoals je met de muis kunt rondkijken zonder te klikken.
+  const [gekozenDag, setGekozenDag] = useState(vandaag);
   const [focusDag, setFocusDag] = useState(vandaag);
   const [open, setOpen] = useState<string | null>(null);
   // De aangetikte lege dag; los van `open`, want het plan-sheet geeft het stokje
@@ -74,7 +83,12 @@ export function Agenda() {
   const lijst = useMemo(() => groepen.data ?? [], [groepen.data]);
   const groepSleutel = lijst.map((g) => g.id).join(",");
 
-  const { from, to } = windowFor(maand);
+  // Twee vensters, met opzet. `raster` is wat je ziet staan en bepaalt wanneer
+  // de toetsenbordnavigatie een maand doorbladert; `from`/`to` is wat we ophalen
+  // en loopt zes weken verder, zodat "Hierna" ook in een lege maand iets te
+  // wijzen heeft (#1112).
+  const raster = windowFor(maand);
+  const { from, to } = ophaalVenster(maand);
   const venster = useAsync<PollWindow>(
     () => getPollWindow(lijst.map((g) => g.id), from, to),
     [groepSleutel, from, to],
@@ -90,6 +104,11 @@ export function Agenda() {
     [venster.data, lijst, myId],
   );
   const perDag = useMemo(() => markersByDay(markers), [markers]);
+  const inMaand = useMemo(() => telInMaand(markers, maand), [markers, maand]);
+  const volgende = useMemo(
+    () => volgendeSpeeldagen(markers, gekozenDag),
+    [markers, gekozenDag],
+  );
   // Dezelfde markers, maar per poll: een poll strekt zich over meerdere dagen
   // uit, en in het dag-sheet beantwoord je hem in één keer (#1104).
   const perPoll = useMemo(() => {
@@ -109,12 +128,10 @@ export function Agenda() {
     lijst.find((g) => g.id === planGroep)?.id ??
     (lijst.length === 1 ? lijst[0].id : null);
 
-  const dezeMaand = zelfdeMaand(maand, maandVan(vandaag));
   // Alleen de eerste keer een skeleton. Bij het bladeren blijft het raster
   // staan en vullen de markers zich bij: een leeg raster laten flitsen is
   // erger dan de vorige maand nog even zien.
   const laadt = groepen.loading || (venster.loading && venster.data == null);
-  const bezig = groepen.loading || venster.loading;
   const geenGroepen = !groepen.loading && lijst.length === 0;
 
   /**
@@ -125,45 +142,95 @@ export function Agenda() {
    */
   function verplaatsFocus(date: string) {
     setFocusDag(date);
-    if (date < from || date > to) setMaand(maandVan(date));
+    if (date < raster.from || date > raster.to) setMaand(maandVan(date));
   }
 
   /**
-   * Een aangetikte dag. Staat er iets op, dan opent het detail; een lege dag
-   * vanaf vandaag is de uitnodiging om er een speeldag voor te starten. Een
-   * lege dag in het verleden valt terug op het detail, dat dan gewoon meldt
-   * dat er niets gespeeld is — plannen kan daar niet meer.
+   * Een aangetikte dag kiest die dag: het paneel eronder werkt bij (#1112).
+   *
+   * Tikken op de dag die al gekozen ís, opent meteen — het detail als er iets
+   * op staat, anders het plan-sheet. Zonder die tweede betekenis zou plannen
+   * van één tik naar twee gaan, en juist dat was de belofte van deze tab.
+   *
+   * Een randdag van een buurmaand laat het raster meebladeren; anders kies je
+   * een dag die je meteen daarna niet meer ziet staan.
    */
   function kiesDag(date: string) {
-    if ((perDag[date] ?? []).length === 0 && date >= vandaag) setPlanDag(date);
-    else setOpen(date);
+    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
+    if (date === gekozenDag) openDag(date);
+    else setGekozenDag(date);
+  }
+
+  /** Het sheet bij een dag met speeldagen, het plan-sheet bij een lege dag die
+   *  nog komt. Een lege dag die geweest is heeft niets te openen — het paneel
+   *  zegt daar al dat er niet gespeeld is. */
+  function openDag(date: string) {
+    if ((perDag[date] ?? []).length > 0) setOpen(date);
+    else if (date >= vandaag) setPlanDag(date);
+  }
+
+  /** Naar een dag springen vanuit "Hierna": de maand schuift mee en de tab-stop
+   *  blijft niet achter in de maand die je verlaat. */
+  function springNaar(date: string) {
+    if (!zelfdeMaand(maandVan(date), maand)) setMaand(maandVan(date));
+    setGekozenDag(date);
+    setFocusDag(date);
   }
 
   function naarMaand(delta: number) {
     const nieuw = schuifMaand(maand, delta);
     setMaand(nieuw);
     // De tab-stop mag niet achterblijven in een maand die je niet meer ziet.
-    setFocusDag(
-      zelfdeMaand(nieuw, maandVan(vandaag))
-        ? vandaag
-        : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`,
-    );
+    const doel = zelfdeMaand(nieuw, maandVan(vandaag))
+      ? vandaag
+      : `${nieuw.jaar}-${String(nieuw.maand).padStart(2, "0")}-01`;
+    setFocusDag(doel);
+    // En de gekozen dag schuift mee. Het ontwerp liet die staan bij het
+    // bladeren, maar dat kan hier niet: we halen per maand op, dus zodra de
+    // gekozen dag buiten het nieuwe venster valt kent het paneel zijn
+    // speeldagen niet meer en meldt het "Nog niets gepland" voor een dag die
+    // wél iets draagt. Een paneel dat over een dag praat die je niet ziet
+    // staan is bovendien sowieso raar — het staat er pal onder.
+    setGekozenDag(doel);
   }
 
   return (
     <div className="agenda">
-      <header className="page-head">
-        <h1 className="page-title">Agenda</h1>
-        <p className="page-subtitle">
-          Alle speeldagen van je groepen. Tik een lege dag om er een te plannen.
-        </p>
-      </header>
-
-      <div className="agenda-nav">
-        <div className="agenda-nav__stap">
+      {/* De maand ís de paginatitel (#1112). Een aparte "Agenda"-kop erboven
+          herhaalde alleen wat de tabbalk al zegt en kostte de hoogte die het
+          raster nodig heeft. */}
+      <header className="agenda-kop">
+        <div className="agenda-kop__titel">
+          {/* aria-live: met het toetsenbord bladeren zegt anders niets. */}
+          {/* maandLabel houdt de gewone Nederlandse schrijfwijze ("augustus
+              2026") voor de plekken waar hij midden in een zin staat; als
+              paginatitel krijgt hij een hoofdletter. */}
+          <h1 className="agenda-kop__maand" aria-live="polite">
+            {metHoofdletter(maandLabel(maand))}
+          </h1>
+          <p className="agenda-kop__telling">
+            {laadt
+              ? " "
+              : inMaand === 0
+                ? "Nog niets gepland"
+                : `${inMaand} ${inMaand === 1 ? "activiteit" : "activiteiten"} deze maand`}
+          </p>
+        </div>
+        <div className="agenda-kop__acties">
           <button
             type="button"
-            className="agenda-nav__knop"
+            className="agenda-kop__vandaag"
+            onClick={() => {
+              setMaand(maandVan(vandaag));
+              setFocusDag(vandaag);
+              setGekozenDag(vandaag);
+            }}
+          >
+            Vandaag
+          </button>
+          <button
+            type="button"
+            className="agenda-kop__stap"
             onClick={() => naarMaand(-1)}
             aria-label="Vorige maand"
           >
@@ -171,30 +238,14 @@ export function Agenda() {
           </button>
           <button
             type="button"
-            className="agenda-nav__knop"
+            className="agenda-kop__stap"
             onClick={() => naarMaand(1)}
             aria-label="Volgende maand"
           >
             <IconChevron kant="rechts" />
           </button>
         </div>
-        {/* aria-live: met het toetsenbord bladeren zegt anders niets. */}
-        <h2 className="agenda-nav__maand" aria-live="polite">
-          {maandLabel(maand)}
-        </h2>
-        {!dezeMaand && (
-          <button
-            type="button"
-            className="agenda-nav__vandaag"
-            onClick={() => {
-              setMaand(maandVan(vandaag));
-              setFocusDag(vandaag);
-            }}
-          >
-            Vandaag
-          </button>
-        )}
-      </div>
+      </header>
 
       {groepen.error && <ErrorRetry melding={groepen.error} onRetry={groepen.reload} />}
       {venster.error && <ErrorRetry melding={venster.error} onRetry={venster.reload} />}
@@ -214,24 +265,6 @@ export function Agenda() {
         </EmptyState>
       ) : (
         <>
-          {dezeMaand && !laadt && <WeekStrook vandaag={vandaag} perDag={perDag} />}
-
-          {!bezig && markers.length === 0 && (
-            <section className="agenda-instap">
-              <h2 className="agenda-instap__titel">Nog niets gepland</h2>
-              <p className="agenda-instap__tekst">
-                Deze maand staat er nog geen speeldag. Tik een dag met een
-                streepjesrand aan om er een te plannen.
-              </p>
-              <p className="agenda-instap__wijs">
-                <span className="agenda-instap__cel" aria-hidden="true">
-                  +
-                </span>
-                zoals hieronder
-              </p>
-            </section>
-          )}
-
           {laadt ? (
             <RasterSkeleton rijen={weeks.length} />
           ) : (
@@ -239,6 +272,7 @@ export function Agenda() {
               weeks={weeks}
               perDag={perDag}
               vandaag={vandaag}
+              gekozenDag={gekozenDag}
               focusDag={focusDag}
               onFocusDag={verplaatsFocus}
               onPick={kiesDag}
@@ -248,11 +282,30 @@ export function Agenda() {
           <ul className="agenda-legenda">
             {(["booked", "locked", "open"] as const).map((status) => (
               <li key={status} className="agenda-legenda__item">
-                <StatusGlyph status={status} size={9} />
-                {LEGENDA[status]}
+                <StatusGlyph status={status} size={8} />
+                {statusChip(status)}
               </li>
             ))}
           </ul>
+
+          {/* Wat er in het raster niet meer past (#1112). De instap-kaart die
+              hier stond legde uit dat je een dag kon aantikken; dit paneel
+              laat het gewoon zien. */}
+          {!laadt && (
+            <DagPaneel
+              datum={gekozenDag}
+              vandaag={vandaag}
+              markers={perDag[gekozenDag] ?? []}
+              volgende={volgende}
+              ledenPerGroep={ledenPerGroep}
+              profielen={profielen.data ?? {}}
+              onOpen={() => setOpen(gekozenDag)}
+              onPlan={
+                gekozenDag >= vandaag ? () => setPlanDag(gekozenDag) : undefined
+              }
+              onKiesDag={springNaar}
+            />
+          )}
 
           {/* Onder het raster: eerst zien wat er gepland staat, dan pas de
               vraag of je het in je eigen agenda wil (#1099). */}
@@ -327,12 +380,6 @@ export function Agenda() {
     </div>
   );
 }
-
-const LEGENDA = {
-  booked: "Geboekt",
-  locked: "Vastgelegd",
-  open: "Open poll",
-} as const;
 
 function IconChevron({ kant }: { kant: "links" | "rechts" }) {
   return (

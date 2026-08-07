@@ -117,6 +117,12 @@ const PAIRS = [
   ["danger", "danger-soft", 4.5, "verlies-tekst op verliesvlak"],
   ["warn", "warn-soft", 4.5, "waarschuwing op waarschuwingsvlak"],
   ["coach-diep", "coach-soft", 4.5, "coach/bounty-tekst op coachvlak (#941)"],
+  // De open-poll-stip in het maandraster (#1112). Grafisch merkteken, dus 3:1 —
+  // maar hij ligt op twee vlakken: een lege dag (--surface) en een dag met
+  // speeldagen (--surface-2). Beide moeten kloppen.
+  ["poll", "surface", 3.0, "open-poll-stip op de rasterkaart (#1112)"],
+  ["poll", "surface-2", 3.0, "open-poll-stip op een dag met speeldagen (#1112)"],
+  ["poll-diep", "poll-soft", 4.5, "tekst van de open-poll-chip (#1112)"],
   ["slof", "slof-soft", 3.0, "slof-tierbadge (groot/UI)"],
   ["karton", "karton-soft", 3.0, "karton-tierbadge (groot/UI)"],
   ["hout", "hout-soft", 3.0, "hout-tierbadge (groot/UI)"],
