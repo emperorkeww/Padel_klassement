@@ -258,7 +258,19 @@
   --shadow-up: 0 -6px 24px rgba(20, 40, 28, 0.1); /* mobiele onderbalk */
   --shadow-up-lg: 0 -8px 30px rgba(20, 40, 28, 0.25); /* bottom-sheets */
   --shadow-ball: 0 6px 18px rgba(20, 40, 28, 0.22); /* zwevende home-bal */
-  --overlay: rgba(20, 40, 28, 0.45); /* gedimde achtergrond (sheets/backdrops) */
+  --overlay: rgba(20, 40, 28, 0.45); /* gedimde achtergrond (lightboxen) */
+  /* Scrim achter een glazen paneel (#1083). Lichter dan --overlay, omdat daar
+     nog een glasvlak overheen komt: scrim én materiaal dempten allebei, en dan
+     blijft er van de pagina zo weinig over dat het glas een egale plaat wordt.
+     De lightboxen (kaart-preview, avatar) houden --overlay — die tonen juist
+     één ding op een donkere achtergrond en willen dat dempen wél. */
+  --overlay-glas: rgba(20, 40, 28, 0.28);
+  /* Hoeveel materiaal het sheet van de basis afneemt (#1083). Per thema, want
+     de meetuitkomst verschilt sterk: op donker is het materiaal zelf donker en
+     blijft de lichte inkt erop overal ver boven AA, ook bij veel doorkijk. Op
+     licht bepaalt de achtergrond het paneel veel meer, en 0,8 is de grens waar
+     --ink óók boven een FUT-kaart nog 5,4:1 haalt. */
+  --glas-sheet-factor: 0.8;
   --ring: 0 0 0 3px var(--accent-soft); /* focusring op invoervelden */
   /* Kleur van de focus-outline (#1074). Stond hardcoded als var(--accent) in
      het gedeelde focusblok van ui.css; als eigen rol kan het donkere thema er
@@ -320,14 +332,27 @@
      losse rgb-kanalen genoteerd, zodat elke variant er zijn eigen dekking op
      kan zetten zonder een tweede kleurtoken nodig te hebben.
      --glas-vast is de ondoorzichtige terugval voor browsers zonder
-     backdrop-filter en voor wie minder transparantie of meer contrast vraagt. */
+     backdrop-filter en voor wie minder transparantie of meer contrast vraagt.
+
+     Dekking en blur staan hier als *basis* (#1083). De varianten in glas.css
+     rekenen daar met een factor op door, in plaats van er een eigen getal voor
+     te zetten. Dat was namelijk stuk: een custom property die op het element
+     zelf staat wint altijd van dezelfde property op :root, dus zolang elke
+     variant `--glas-dekking` letterlijk zette, kon een thema er niets meer aan
+     veranderen — het donkere blok hieronder zette 0.8 en dat kwam nooit ergens
+     aan. Nu bepaalt het thema hoeveel materiaal er is en de variant alleen nog
+     de verhouding tussen de varianten onderling. */
   --glas-tint: 255 255 255;
   --glas-glans: 255 255 255;
   --glas-diep: 20 40 28;
-  --glas-dekking: 0.86;
+  --glas-dekking-basis: 0.86;
+  --glas-blur-basis: 16px;
+  --glas-saturatie-basis: 165%;
+  /* Terugval voor een `.glas` zonder variant; die zetten normaal alle drie. */
+  --glas-dekking: var(--glas-dekking-basis);
+  --glas-blur: var(--glas-blur-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-glans-kracht: 1;
-  --glas-blur: 16px;
-  --glas-saturatie: 165%;
   --glas-helderheid: 1.04;
   --glas-vast: var(--surface);
 }
@@ -511,6 +536,13 @@
   --shadow-up-lg: 0 -8px 30px rgba(0, 0, 0, 0.55);
   --shadow-ball: 0 6px 18px rgba(0, 0, 0, 0.5);
   --overlay: rgba(2, 8, 7, 0.66);
+  /* Zie het lichte blok. Op donker mag de scrim zwaarder blijven dan op licht:
+     het materiaal is er zelf donker, dus het verschil tussen paneel en pagina
+     moet ergens vandaan komen. */
+  --overlay-glas: rgba(2, 8, 7, 0.55);
+  /* Lager dan op licht (zie daar): donker glas mag dunner, want de inkt erop
+     houdt hoe dan ook ≥15:1 — wat er achter ligt maakt nauwelijks uit. */
+  --glas-sheet-factor: 0.72;
 
   /* Toasts: donkere tekst op de gedempte statuskleuren (die zijn hier licht
      genoeg als vlak), anders wit-op-licht bij --ink/--danger. */
@@ -561,7 +593,10 @@
   --glas-tint: 22 30 25;
   --glas-glans: 255 255 255;
   --glas-diep: 0 0 0;
-  --glas-dekking: 0.8;
+  /* Deze 0.8 stond er al sinds #1062, maar deed tot #1083 niets: elke variant
+     zette --glas-dekking op het element zelf en dat wint van :root. Donker
+     draaide dus gewoon op de lichte dekking. Nu telt hij weer mee. */
+  --glas-dekking-basis: 0.8;
   --glas-glans-kracht: 0.5;
   --glas-helderheid: 1.12;
 

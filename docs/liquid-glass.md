@@ -25,14 +25,32 @@ De grondstof staat als tokens in `src/app/index.css`, per thema:
 | `--glas-tint` | rgb-kanalen van het materiaal zelf |
 | `--glas-glans` | rgb-kanalen van rand- en aanwijzerlicht |
 | `--glas-diep` | rgb-kanalen van de binnenschaduw |
-| `--glas-dekking` | basisdekking van het materiaal |
+| `--glas-dekking-basis` | hoeveel materiaal dit thema wil |
+| `--glas-blur-basis` | hoe wazig dit thema wil |
 | `--glas-glans-kracht` | hoe hard het randlicht mag aanzetten (donker: zwakker) |
-| `--glas-blur`, `--glas-saturatie`, `--glas-helderheid` | de backdrop-filter |
+| `--glas-saturatie`, `--glas-helderheid` | de rest van de backdrop-filter |
+| `--glas-sheet-factor` | wat het sheet van de basisdekking afneemt |
+| `--overlay-glas` | de scrim onder een glazen paneel |
 | `--glas-vast` | ondoorzichtige terugval |
+
+**Dekking en blur zijn een basis, geen eindwaarde** (#1083). De varianten
+hieronder drukken er een *verhouding* op uit — `.glas--sterk` is
+`calc(var(--glas-dekking-basis) * 0.93)` en niet `0.8`. Dat is geen stijlkeuze
+maar een reparatie: een custom property die op het element zelf staat wint
+altijd van dezelfde property op `:root`. Zolang elke variant er een kaal getal
+neerzette, kon een thema het materiaal helemaal niet bijstellen — de donkere
+`--glas-dekking: 0.8` uit #1062 kwam nergens aan en donker draaide gewoon op de
+lichte dekking. Zet dus nooit een getal neer waar een basis-token bestaat;
+`glas.contract.test.ts` bewaakt dat.
+
+Om dezelfde reden heeft een vlak dat het materiaal bijstelt **gewicht** nodig:
+`glas.css` komt ná `ui.css` in de cascade, dus `.sheet { --glas-dekking: … }`
+verliest van `.glas--sterk` en doet niets. Het sheet stelt zichzelf daarom bij
+vanuit `.sheet.glas`.
 
 De lagen, van achter naar voor: geblurde backdrop → materiaalverloop →
 binnengloed en diepte (inset-schaduwen) → refractierand (`::before`) →
-aanwijzer-hooglicht (`::after`) → inhoud (`.glas__inhoud`).
+hooglicht (`::after`) → inhoud (`.glas__inhoud`).
 
 ## Gebruik
 
@@ -78,11 +96,41 @@ eigen hoeken.
 ### Extra modifiers
 
 - `glas--scrollbaar` — voor een vlak met `overflow-y: auto`. Absoluut
-  gepositioneerde lagen schuiven daar mee met de inhoud, dus het randlicht komt
-  uit een inset-schaduw die wél op de border-box blijft staan.
+  gepositioneerde lagen schuiven daar mee met de inhoud, dus `::before` en
+  `::after` gaan uit en het randlicht komt uit inset-schaduwen, die wél op de
+  border-box blijven staan. Twee hoekschaduwen benaderen het verloop van
+  `::before` — sterk linksboven en rechtsonder, zwak langs de flanken — en de
+  buitenhaarlijn staat er los bij, want deze `box-shadow` overschrijft die van
+  `.glas` volledig. Let op: hier werkt `glas--levend` dus niet.
 - `glas--balk` — voor een navigatiebalk van schermrand tot schermrand: geen
   afronding, geen zijranden, geen haarlijn rondom. De rand naar de pagina toe
   zet de balk zelf.
+- `glas--levend` — laat het hooglicht zien zónder aanwijzer. Het hooglicht van
+  `glas--interactief` hangt aan hover, en hover bestaat op een telefoon niet;
+  op een mobile-first app bleef daarmee alleen rand en blur over. Zwakker dan de
+  hover-stand, want dit staat altijd aan. Zonder verdere hulp is het een
+  stilstaande glans; met `useGlasScrollLicht` loopt hij mee (zie hieronder).
+
+### Licht dat op een telefoon ook bestaat
+
+`useGlasAanwijzer` laat het hooglicht de muis volgen en geeft op een grove
+aanwijzer lege handlers terug. `useGlasScrollLicht` is de tegenhanger voor
+vlakken die vaststaan terwijl de pagina eronderdoor schuift: hij zet
+`--glas-aanwijzer-x` op de voortgang door het document, zodat het licht één
+keer over het vlak trekt van boven naar beneden.
+
+```tsx
+const topbarRef = useGlasScrollLicht<HTMLElement>();
+
+<header className="topbar glas glas--sterk glas--balk glas--levend" ref={topbarRef}>
+```
+
+Zelfde afspraken als de aanwijzer-hook: rechtstreeks op het element schrijven
+(nul rerenders), hoogstens één keer per frame, passieve listener. Met
+`prefers-reduced-motion: reduce` komt er geen listener en blijft het licht op de
+rustpositie staan — `glas--levend` geeft dan nog steeds een stilstaande glans.
+Past de pagina in beeld, dan is er niets te volgen en hangt het licht in het
+midden; een licht dat dan in de hoek blijft staan zou als een fout lezen.
 
 ### Een eigen kleur meebrengen
 
@@ -127,9 +175,11 @@ over de achtergrond van het vlak, maar niet over die tekst.
   hetzelfde dichte vlak, en de decoratieve lagen gaan uit.
 - **`prefers-reduced-motion`**: alle overgangen staan achter
   `no-preference`, conform de rest van de repo. Er zijn geen keyframes.
-- **Focus**: `.glas--interactief:focus-visible` krijgt de gewone
-  `outline: 2px solid var(--accent)` uit `ui.css`, los van de glasrand — die
-  verandert namelijk al bij hover en is dus geen betrouwbaar focussignaal.
+- **Focus**: `.glas--interactief:focus-visible` krijgt een
+  `outline: 2px solid var(--focus-ring)`, los van de glasrand — die verandert
+  namelijk al bij hover en is dus geen betrouwbaar focussignaal. `--focus-ring`
+  en niet `--accent`: sinds #1074 wijst dat token op donker naar `--lime`, waar
+  het accent te weinig van het glas afsteekt.
 - **Uitgeschakeld**: `aria-disabled`, doffer materiaal, geen hooglicht, geen
   indrukbeweging.
 - Status wordt nooit alléén met transparantie aangegeven.
@@ -168,25 +218,45 @@ Moet er iets vervagen, doe het dan op een laag die het glas niet omsluit.
   `requestAnimationFrame`. Muisbewegingen kosten dus geen enkele rerender.
 - Op aanraakschermen (`(hover: hover) and (pointer: fine)` is onwaar) geeft de
   hook lege handlers terug: geen listener, geen werk.
+- `useGlasScrollLicht` doet hetzelfde voor de scrollpositie: één passieve
+  listener per vlak, gedempt op `requestAnimationFrame`, en met een
+  bewegingsvoorkeur helemaal geen listener. Hij hangt alleen op de twee vaste
+  balken, die tijdens scrollen tóch al opnieuw geschilderd worden.
 - `will-change` staat er bewust niet op. Dat pas toevoegen als een profiel laat
   zien dat het helpt.
 
 ### Wat de app er nu voor betaalt
 
-Zes glasvlakken, waarvan er hooguit drie tegelijk in beeld staan:
+Acht soorten glasvlak, waarvan er hooguit drie tegelijk écht blurren:
 
 | Vlak | Variant | Blur | Kost per frame? |
 |---|---|---|---|
-| `.topbar` (mobiel) | sterk | 14px | ja, plakt tijdens scrollen |
-| `.tabbar` (mobiel) | sterk | 14px | ja, staat vast tijdens scrollen |
-| `.sheet` | sterk + scrollbaar | 22px | alleen zolang hij open is |
+| `.topbar` (mobiel) | sterk + balk + levend | 14px | ja, plakt tijdens scrollen |
+| `.tabbar` (mobiel) | sterk + balk + levend | 14px | ja, staat vast tijdens scrollen |
+| `.sheet` | sterk + scrollbaar | 16px | alleen zolang hij open is |
+| `.wizard-footer` | sterk + balk | 22px | alleen in de poll-wizard |
+| `.tabs` in het match-sheet | subtiel + pil | 8px | alleen in dat sheet |
 | `.card--next` | standaard | 16px | nee, scrollt gewoon mee |
 | `.me-chip` | interactief + pil | uit | nee |
+| `.pick-chip` (×20) | interactief + pil | uit | nee |
 
 De twee balken zijn de enige die de blur elke scrollframe opnieuw laten
 uitrekenen; daarom staan ze op 14px in plaats van de 22px die `sterk` normaal
-geeft. Op de positie-chip staat de blur helemaal uit: die heeft een dekkende
-vulling, dus er zou toch niets van te zien zijn.
+geeft. Het sheet zakte in #1083 van 22 naar 16px, maar om een andere reden: op
+22px bleef er van de pagina eronder geen herkenbare vorm over.
+
+Op de positie-chip en de spelerspillen staat de blur helemaal uit: die hebben
+een dekkende vulling, dus er zou toch niets van te zien zijn — en bij de
+spelerspillen staan er twintig-plus tegelijk in een scrollende lijst, wat op een
+telefoon domweg te veel is. Dat is de regel voor chips: **glas in de rand, het
+licht en de indrukbeweging; niet in de doorkijk.**
+
+Er zijn twee geneste blurs, allebei binnen een sheet dat zelf al
+`backdrop-filter` draagt: de selectiebalk van de poll-wizard en de keuzebanen in
+het match-sheet. Dat is geen verspilde laag — een element met `backdrop-filter`
+is zelf een backdrop root, dus die vlakken frosten wat er binnen het sheet
+achter ze ligt, inclusief het sheetmateriaal zelf. Ze bestaan alleen zolang dat
+sheet open staat.
 
 Waar meerdere glasvlakken elkaar overlappen — een geopend sheet boven de
 balken — kost dat geen dubbele blur: de balken vallen onder de scrim en worden
@@ -212,8 +282,10 @@ Apple ontbreekt:
   onvoorspelbaar en duur, en op onze achtergronden (effen kleur en zachte
   verlopen) is er nauwelijks iets om te vervormen. Bewust niet gebouwd.
 - **Reactie op de omgeving.** Native glas reageert op de systeemverlichting en
-  op beweging van het toestel. Hier is er alleen een hooglicht dat de muis
-  volgt, en op mobiel dus niets.
+  op beweging van het toestel. Hier zijn er twee vervangers — de muispositie en,
+  sinds #1083, de scrollpositie — maar geen van beide is de omgeving. Van het
+  toestel zelf weten we niets: `deviceorientation` zou dichterbij komen, maar
+  vraagt op iOS een permissieprompt en is dat voor een glans niet waard.
 - **Specular highlights per rand.** De rand is één verlopende ring, geen
   per-hoek berekend lichtpunt.
 - **Compositor-integratie.** Het native materiaal is gratis voor de GPU omdat

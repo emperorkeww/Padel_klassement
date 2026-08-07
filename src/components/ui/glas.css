@@ -142,6 +142,20 @@
   opacity: 0;
 }
 
+/* Levend licht (#1083): een vlak dat zijn hooglicht óók zonder aanwijzer laat
+   zien. Het hooglicht hierboven hangt aan hover, en hover bestaat op een
+   telefoon niet — daar bleef van het materiaal alleen rand en blur over, en dat
+   is waar gewone glassmorphism ook stopt. Zwakker dan de hover-stand: dit staat
+   altijd aan en mag dus niet om aandacht vragen.
+
+   De positie komt van useGlasScrollLicht, die --glas-aanwijzer-x op de
+   voortgang door het document zet. Zonder die hook — of met een
+   bewegingsvoorkeur — blijft het licht op de rustpositie staan, en is dit
+   gewoon een stilstaande glans. Ook dat is meer materiaal dan niets. */
+.glas--levend::after {
+  opacity: 0.55;
+}
+
 /* De inhoud moet bóven de rand- en hooglichtlagen staan; daarvoor heeft ze een
    eigen positie nodig. Het is een <span> zodat het component ook in een knop of
    een link mag zitten, waar een <div> niet hoort. */
@@ -175,33 +189,54 @@
 }
 
 /* ---------- Varianten ---------- */
+/* Dekking, blur en saturatie zijn hier factoren op de basis-tokens uit
+   index.css, en geen kale getallen (#1083). Een custom property die op het
+   element zelf staat wint van dezelfde property op :root; zolang elke variant
+   hier een eigen getal neerzette, kon een thema het materiaal dus helemaal
+   niet bijstellen — de donkere `--glas-dekking: 0.8` uit #1062 kwam nergens
+   aan en donker draaide gewoon op de lichte dekking. Op het lichte thema geven
+   de factoren hieronder exact dezelfde waarden als voorheen; het verschil is
+   dat het thema nu bepaalt hoevéél materiaal er is en de variant alleen nog de
+   verhouding tussen de varianten onderling.
+
+   En élke variant zet alle drie, ook waar de basiswaarde ongewijzigd blijft.
+   Custom properties érven namelijk: een glasvlak ín een ander glasvlak — de
+   keuzebaan in het match-sheet, de selectiebalk van de poll-wizard — pikt
+   anders de waarde van zijn ouder op. Dat gebeurde met --glas-saturatie: een
+   `subtiel` vlak binnen een `sterk` paneel draaide op 185% in plaats van op de
+   165% van het thema. */
+
 /* Grote vlakken: net genoeg materiaal om zich van de pagina te scheiden. */
 .glas--subtiel {
-  --glas-blur: 8px;
-  --glas-dekking: 0.9;
+  --glas-blur: calc(var(--glas-blur-basis) * 0.5);
+  /* min(), want boven 1 is een dekking geen dekking meer. */
+  --glas-dekking: min(1, calc(var(--glas-dekking-basis) * 1.05));
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.3;
   --glas-schaduw: var(--shadow-sm);
 }
-/* Kaarten en panelen. */
+/* Kaarten en panelen: de basis zelf. */
 .glas--standaard {
-  --glas-blur: 16px;
-  --glas-dekking: 0.86;
+  --glas-blur: var(--glas-blur-basis);
+  --glas-dekking: var(--glas-dekking-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.55;
   --glas-schaduw: var(--shadow-md);
 }
 /* Overlays en zwevende navigatie: het materiaal moet duidelijk vóór de pagina
    liggen, dus meer blur, meer saturatie en een diepere slagschaduw. */
 .glas--sterk {
-  --glas-blur: 22px;
-  --glas-saturatie: 185%;
-  --glas-dekking: 0.8;
+  --glas-blur: calc(var(--glas-blur-basis) * 1.375);
+  --glas-saturatie: calc(var(--glas-saturatie-basis) * 1.12);
+  --glas-dekking: calc(var(--glas-dekking-basis) * 0.93);
   --glas-rand-kracht: 0.8;
   --glas-schaduw: var(--shadow-lg);
 }
 /* Knoppen en chips. */
 .glas--interactief {
-  --glas-blur: 16px;
-  --glas-dekking: 0.86;
+  --glas-blur: var(--glas-blur-basis);
+  --glas-dekking: var(--glas-dekking-basis);
+  --glas-saturatie: var(--glas-saturatie-basis);
   --glas-rand-kracht: 0.7;
   --glas-schaduw: var(--shadow-md);
 }
@@ -263,11 +298,32 @@
 .glas--scrollbaar::after {
   display: none;
 }
+/* Die ruil kostte tot #1083 meer dan nodig. De vervanging was één *uniforme*
+   ring op --glas-rand-laag — de zwakste waarde uit het randverloop — en omdat
+   deze box-shadow die van `.glas` volledig overschrijft, verdween ook de
+   donkere buitenhaarlijn. Het grootste glasvlak van de app had daarmee als
+   enige geen verlopende rand en geen buitencontour.
+   De twee hoekschaduwen hieronder zetten het licht terug waar ::before het ook
+   zet: sterk in de linkerbovenhoek en de rechteronderhoek, zwak langs de
+   flanken. Een inset-schaduw blijft op de border-box staan, dus ze scrollen
+   niet weg — precies waarom deze variant bestaat. */
 .glas--scrollbaar {
   box-shadow:
-    inset 0 1px 0 rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
-    inset 0 0 0 1px var(--glas-rand-laag),
-    inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    /* Haarlijn naar buiten, zoals `.glas` die geeft: het randlicht is wit en
+       dus onzichtbaar op een lichte pagina; zonder deze lijn zweeft het vlak
+       nergens meer in. */
+    0 0 0 1px rgb(var(--glas-diep) / 0.07),
+    /* bovenlicht */ inset 0 1px 0
+      rgb(var(--glas-glans) / calc(0.72 * var(--glas-glans-kracht))),
+    /* de flanken: de zwakke kant van het randverloop */
+      inset 0 0 0 1px var(--glas-rand-laag),
+    /* refractie linksboven en rechtsonder */
+      inset 6px 6px 10px -8px var(--glas-rand-hoog),
+    inset -6px -6px 10px -8px var(--glas-rand-hoog),
+    /* binnengloed vanaf de bovenrand */
+      inset 0 16px 30px -18px rgb(var(--glas-glans) / calc(0.55 * var(--glas-glans-kracht))),
+    /* diepte langs de onderrand, zoals `.glas` die ook heeft */
+      inset 0 -16px 26px -20px rgb(var(--glas-diep) / 0.38),
     var(--glas-schaduw);
 }
 

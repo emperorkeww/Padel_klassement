@@ -74,21 +74,43 @@
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: var(--sp-2);
 }
+/* Sinds #1083 dragen de spelerspillen het glasmateriaal (.glas
+   .glas--interactief .glas--pil): randlicht, binnengloed en een
+   indrukbeweging. Ze vullen het grootste deel van een glazen sheet, en als
+   dekkende witte pillen maakten ze van dat sheet één plaat met gewone UI erop.
+
+   Zelfde afweging als bij de "Jouw positie"-chip (Leaderboard.css): de vulling
+   blijft dekkend en gaat via --glas-laag, en de blur staat uit. Twee redenen.
+   Er staan er twintig-plus tegelijk in een scrollende lijst, en twintig
+   backdrop-filters op een telefoon is geen optie. En onder een dekkende
+   vulling zou je van die blur toch niets zien. Het glas zit hier dus in de
+   rand, het licht en de indrukbeweging — niet in de doorkijk.
+
+   De afronding komt van .glas--pil; de rand blijft --line-strong (Matches.css
+   laadt na glas.css), want die draagt hier de affordance én de teamkleur. */
 .pick-chip {
+  --glas-laag: linear-gradient(var(--surface) 0 0);
+  /* Twintig zwevende pillen naast elkaar is geen diepte maar ruis. */
+  --glas-schaduw: var(--shadow-sm);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   min-width: 0;
   padding: var(--sp-2);
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: var(--surface);
   color: var(--ink);
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+  /* `background` stond hier ook in; de vulling wisselt nu via --glas-laag, en
+     een custom property gaat niet door een transition heen. De kleurwissel is
+     daarmee een sprong — bij deze tikdoelen is dat prima, en het is dezelfde
+     afspraak als op .me-chip. */
+  transition: border-color 0.15s, opacity 0.15s;
 }
 .pick-chip__name {
   overflow: hidden;
@@ -107,20 +129,26 @@
   font-size: var(--fs-xs);
   font-weight: 800;
 }
+/* De teamvulling wisselt via dezelfde laag als de rustkleur; een `background`
+   hier zou het hele materiaal eronder wegvegen. Dekkend, dus het contrast van
+   de naam op de chip verandert niet ten opzichte van vóór #1083. */
 .pick-chip--a {
   border-color: var(--accent);
-  background: var(--accent-soft);
+  --glas-laag: linear-gradient(var(--accent-soft) 0 0);
 }
 .pick-chip--a .pick-chip__team {
   background: var(--accent);
 }
 .pick-chip--b {
   border-color: var(--lime-deep);
-  background: var(--lime-soft);
+  --glas-laag: linear-gradient(var(--lime-soft) 0 0);
 }
 .pick-chip--b .pick-chip__team {
   background: var(--lime-deep);
 }
+/* Opacity naast glas is normaal de valkuil uit docs/liquid-glass.md — een
+   element met opacity < 1 is een backdrop root. Hier mag het: op deze chips
+   staat de blur uit, dus er is niets dat voorbij die grens hoeft te kijken. */
 .pick-chip.is-dim {
   opacity: 0.45;
 }

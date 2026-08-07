@@ -296,6 +296,17 @@
      (44px = iOS-tikdoel). */
   min-height: 44px;
 }
+/* Sinds #1083 draagt deze balk het glasmateriaal (.glas .glas--sterk
+   .glas--balk) in plaats van een dekkende --surface-vulling. Die vulling loste
+   ooit terecht op dat scrollende inhoud onder de sticky balk doorschemerde,
+   maar sinds het sheet glas is (#1062) was het resultaat een wit blok met
+   rechte hoeken en een strook glas ernaast — een sticker op het paneel.
+   Frosten doet hetzelfde werk en hoort wél bij het materiaal.
+
+   En het frost echt iets: een element met backdrop-filter is zelf een backdrop
+   root, dus de blur van deze balk bemonstert de wizard-inhoud die eronderdoor
+   schuift én het materiaal van het sheet eromheen. Geen blur-in-blur die
+   niets doet. */
 .wizard-footer {
   position: sticky;
   bottom: 0;
@@ -303,8 +314,9 @@
   display: grid;
   gap: var(--sp-2);
   padding: var(--sp-3) 0 var(--sp-1);
-  border-top: 1px solid var(--line);
-  background: var(--surface);
+  /* Omhoog, richting de inhoud die eronder wegschuift — zelfde keuze als de
+     onderbalk van de app (DashboardLayout.css). */
+  --glas-schaduw: var(--shadow-up);
 }
 .wizard-footer__picked {
   display: flex;
@@ -330,6 +342,17 @@
 }
 .sheet--wizard .wizard-footer {
   padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  /* Tegen de zijpadding van .sheet in, zodat de balk van rand tot rand loopt.
+     Afronden hoeft niet: .sheet heeft overflow-y: auto en klipt hem al op zijn
+     eigen hoeken — recht onderaan op mobiel, rond op desktop. */
+  margin-inline: calc(var(--sp-5) * -1);
+  padding-inline: var(--sp-5);
+  /* .glas--balk laat als scheiding alleen een wit bovenlicht achter; op het
+     lichte thema is dat onzichtbaar. De onderrand van .glas hoort er onderaan
+     een sheet helemaal niet te staan. Deze twee moeten .glas overstemmen,
+     vandaar dat ze in deze zwaardere selector staan en niet hierboven. */
+  border-top: 1px solid rgb(var(--glas-diep) / 0.08);
+  border-bottom: 0;
 }
 /* Locatiekeuze voor een nieuwe poll, als rij onder de sheet-kop. */
 .wizard-sheet__club {
