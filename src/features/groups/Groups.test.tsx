@@ -16,8 +16,17 @@ vi.mock("@/lib/supabase/client", async () => {
 // De matchsectie heeft zijn eigen suite (MatchesSectie.test.tsx); hier is
 // alleen interessant *dat* hij eronder staat en welke groep hij meekrijgt.
 vi.mock("@/features/matches/MatchesSectie", () => ({
-  MatchesSectie: ({ groepId }: { groepId: string }) => (
-    <div data-testid="matchsectie">groep:{groepId || "alle"}</div>
+  MatchesSectie: ({
+    groepId,
+    groepen,
+  }: {
+    groepId: string;
+    groepen?: { id: string; name: string }[];
+  }) => (
+    <div data-testid="matchsectie">
+      groep:{groepId || "alle"} · keuze:
+      {(groepen ?? []).map((g) => g.name).join("|") || "-"}
+    </div>
   ),
 }));
 
@@ -83,7 +92,7 @@ describe("<Groups />", () => {
     expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: /nieuwe groep/i }),
+      screen.getByRole("button", { name: /groep maken/i }),
     );
     const veld = await screen.findByLabelText(/groepsnaam/i);
     expect(veld).toHaveFocus();
@@ -102,7 +111,7 @@ describe("<Groups />", () => {
     renderPage();
     await screen.findByRole("button", { name: /vrijdagavond padel/i });
     await userEvent.click(
-      screen.getByRole("button", { name: /nieuwe groep/i }),
+      screen.getByRole("button", { name: /groep maken/i }),
     );
     await userEvent.type(
       await screen.findByLabelText(/groepsnaam/i),
@@ -133,6 +142,26 @@ describe("<Groups />", () => {
     ).toHaveAttribute("href", "/banen");
   });
 
+  // #1134: "Groep maken" is de hoofdactie van de pagina en staat als knop mét
+  // label in de kop. Achteraan de filterrij was hij een naamloos plusje.
+  it("zet 'Groep maken' als benoemde actie in de paginakop", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: /vrijdagavond padel/i });
+
+    const knop = screen.getByRole("button", { name: /groep maken/i });
+    expect(container.querySelector(".page-head")).toContainElement(knop);
+    expect(container.querySelector(".groep-strook__nieuw")).toBeNull();
+  });
+
+  // De sectie mag de groepen niet zelf ophalen: de pagina heeft ze al, en een
+  // tweede lezer op dezelfde data is een tweede plek die kan verouderen (#1134).
+  it("geeft de groepenlijst door aan de matchsectie voor het filter", async () => {
+    renderPage();
+    expect(await screen.findByTestId("matchsectie")).toHaveTextContent(
+      "keuze:Vrijdagavond Padel",
+    );
+  });
+
   // #674 maakte van "één groep" een doorstuur naar die groep; #761 moest daar
   // een ?hub=1-uitzondering voor bouwen omdat "+ Nieuwe groep" anders alleen
   // via een knop diep in de groepskop te vinden was. Sinds #916 staat de hub
@@ -143,7 +172,7 @@ describe("<Groups />", () => {
       await screen.findByRole("button", { name: /vrijdagavond padel/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /nieuwe groep/i }),
+      screen.getByRole("button", { name: /groep maken/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/detailpagina/i)).not.toBeInTheDocument();
   });
@@ -172,7 +201,7 @@ describe("<Groups />", () => {
     renderPage();
     await screen.findByRole("button", { name: /vrijdagavond padel/i });
 
-    const openen = screen.getByRole("button", { name: /nieuwe groep/i });
+    const openen = screen.getByRole("button", { name: /groep maken/i });
     await userEvent.click(openen);
     await screen.findByLabelText(/groepsnaam/i);
 
@@ -182,7 +211,7 @@ describe("<Groups />", () => {
     );
     expect(screen.queryByLabelText(/groepsnaam/i)).not.toBeInTheDocument();
     // Focus komt terug op de knop waar je vandaan kwam.
-    expect(screen.getByRole("button", { name: /nieuwe groep/i })).toHaveFocus();
+    expect(screen.getByRole("button", { name: /groep maken/i })).toHaveFocus();
   });
 
   it("geeft de lege staat één knop die de groep echt aanmaakt", async () => {

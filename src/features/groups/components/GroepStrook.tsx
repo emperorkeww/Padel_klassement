@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 import { useScrollSchaduw } from "@/lib/hooks/useScrollSchaduw";
 import { StatusGlyph } from "@/ui/StatusGlyph";
 import type { Journey } from "../journey";
@@ -13,25 +13,24 @@ import type { GroupSummary } from "../api";
  *
  * Bewust `role="group"` met `aria-pressed`-knoppen en geen `tablist`: dit zijn
  * filters over de inhoud eronder, geen tabbladen (dezelfde afweging als in
- * FeedFilters, #912). Een `radiogroup` viel af omdat de "+"-knop daarin geen
- * geldig kind zou zijn — en die hoort juist in de rij, naast de groepen die hij
- * aanvult.
+ * FeedFilters, #912).
+ *
+ * De "+"-knop achteraan is met #1134 vertrokken naar de paginakop: een groep
+ * maken is de hoofdactie van de pagina en niet iets dat als naamloos plusje
+ * achter een filterrij hoort te hangen. Deze strook zelf verdwijnt in het
+ * vervolg van #1134 ten gunste van groepskaarten; het filteren neemt het
+ * `<select>` in `MatchFilters` dan over.
  */
 export function GroepStrook({
   groepen,
   gekozen,
   onKies,
-  onNieuw,
-  nieuwRef,
   journeys,
 }: {
   groepen: GroupSummary[];
   /** "" = alle groepen. */
   gekozen: string;
   onKies: (id: string) => void;
-  onNieuw: () => void;
-  /** Voor de focusteruggave als het aanmaakformulier sluit (#916). */
-  nieuwRef?: RefObject<HTMLButtonElement | null>;
   /** Reisstatus per groep-id; ontbreekt zolang die query nog loopt. */
   journeys?: Record<string, Journey>;
 }) {
@@ -87,19 +86,6 @@ export function GroepStrook({
           </button>
         );
       })}
-
-      {/* Geen filter, dus geen aria-pressed: dit is een actie in dezelfde rij.
-          Het label blijft voluit "Nieuwe groep" — de "+" alleen zou een knop
-          zonder naam zijn voor wie hem niet ziet. */}
-      <button
-        type="button"
-        ref={nieuwRef}
-        className="tab groep-strook__nieuw"
-        aria-label="Nieuwe groep"
-        onClick={onNieuw}
-      >
-        <span aria-hidden="true">+</span>
-      </button>
     </div>
   );
 }

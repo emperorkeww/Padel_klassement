@@ -87,7 +87,8 @@ export function Groups() {
   const noGroups = !groups.loading && !groups.error && list.length === 0;
   // Zelf uitklappen zet de cursor meteen in het naamveld; bij een lege hub
   // niet, want dan zou de pagina bij het laden je focus kapen. Sluiten geeft
-  // de focus terug aan de "+"-knop in de strook (#916).
+  // de focus terug aan de knop waar je vandaan kwam (#916) — sinds #1134 is dat
+  // "+ Groep maken" in de paginakop.
   const wasOpen = useRef(false);
   useEffect(() => {
     if (newOpen) nameRef.current?.focus();
@@ -115,11 +116,25 @@ export function Groups() {
     // De ruimte voor de zwevende knop hoort op de pagina-root, niet op de
     // matchsectie: anders landt de padding halverwege de pagina.
     <div className="heeft-zwevende-actie">
-      <header className="page-head">
-        <h1 className="page-title">Spelen</h1>
-        <p className="page-subtitle">
-          Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
-        </p>
+      <header className="page-head page-head--met-actie">
+        <div className="page-head__tekst">
+          <h1 className="page-title">Spelen</h1>
+          <p className="page-subtitle">
+            Je vaste padel-kringen, planningspolls en divisionaire heerschappij.
+          </p>
+        </div>
+        {/* Een groep maken is de hoofdactie van deze pagina en hoort dus in de
+            kop, niet als naamloze "+" achteraan een rij chips (#1134). Met nul
+            groepen staat het formulier al open in de lege staat; de knop zet dan
+            alleen de cursor in het naamveld. */}
+        <button
+          type="button"
+          ref={nieuwKnopRef}
+          className="btn btn--primary page-head__actie"
+          onClick={() => setNewOpen(true)}
+        >
+          <span aria-hidden="true">+</span> Groep maken
+        </button>
       </header>
 
       {groups.loading && <GroupListSkeleton count={2} />}
@@ -168,8 +183,6 @@ export function Groups() {
             groepen={list}
             gekozen={gekozen?.id ?? ""}
             onKies={speel.zetGroep}
-            onNieuw={() => setNewOpen(true)}
-            nieuwRef={nieuwKnopRef}
             journeys={journeys.data ?? undefined}
           />
 
@@ -206,7 +219,7 @@ export function Groups() {
       )}
 
       {/* Een groep erbij is zeldzaam; het formulier stond altijd open en woog
-          even zwaar als de groepen zelf (#674 A5). Achter de "+" in de strook
+          even zwaar als de groepen zelf (#674 A5). Achter de knop in de kop
           dus. Met nul groepen zit het formulier ín de lege staat hierboven. */}
       {!noGroups && newOpen && (
         <section className="card">
@@ -254,6 +267,8 @@ export function Groups() {
           filter die client-side gebeurt. */}
       <MatchesSectie
         groepId={gekozen?.id ?? ""}
+        onGroep={speel.zetGroep}
+        groepen={list}
         periode={speel.periode}
         onPeriode={speel.zetPeriode}
         onWisFilters={speel.wisFilters}

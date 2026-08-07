@@ -42,6 +42,8 @@ const PAGINA = 100;
  */
 export function MatchesSectie({
   groepId,
+  onGroep,
+  groepen = [],
   periode,
   onPeriode,
   onWisFilters,
@@ -49,9 +51,14 @@ export function MatchesSectie({
   onLogVerbruikt,
   verbergActie = false,
 }: {
-  /** "" = alle groepen. Komt sinds #1123 van de chipstrook op de hub; losse
-   *  matches (zonder groep) vallen daarmee buiten een gekozen groep. */
+  /** "" = alle groepen. Losse matches (zonder groep) vallen daarmee buiten een
+   *  gekozen groep. */
   groepId: string;
+  onGroep: (id: string) => void;
+  /** De groepen waaruit het filter kan kiezen. Komt van de pagina erboven, die
+   *  ze toch al laadt (#1134): de sectie zélf groepen laten ophalen zou een
+   *  tweede lezer op dezelfde data zijn. */
+  groepen?: { id: string; name: string }[];
   periode: Periode;
   onPeriode: (p: Periode) => void;
   /** Wist groep én periode in één keer — bewust één callback, geen twee. */
@@ -183,8 +190,10 @@ export function MatchesSectie({
       <MatchFilters
         periode={periode}
         onPeriode={onPeriode}
+        groep={groepId}
+        onGroep={onGroep}
+        groepen={groepen}
         onWis={onWisFilters}
-        extraFilterActief={!!groepId}
       />
 
       {/* Filteren op groep of periode herschikt de historie zonder dat iets

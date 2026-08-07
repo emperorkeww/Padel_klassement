@@ -12,17 +12,15 @@ const groepen = [
 
 function toon(gekozen = "", journeys?: Record<string, Journey>) {
   const onKies = vi.fn();
-  const onNieuw = vi.fn();
   const r = render(
     <GroepStrook
       groepen={groepen}
       gekozen={gekozen}
       onKies={onKies}
-      onNieuw={onNieuw}
       journeys={journeys}
     />,
   );
-  return { onKies, onNieuw, ...r };
+  return { onKies, ...r };
 }
 
 const journey = (over: Partial<Journey>): Journey => ({
@@ -75,16 +73,13 @@ describe("<GroepStrook /> (#1123)", () => {
     expect(onKies).toHaveBeenLastCalledWith("");
   });
 
-  // De "+" hoort in dezelfde rij als de groepen die hij aanvult, maar is geen
-  // filter — dus geen aria-pressed, wél een naam voor wie hem niet ziet.
-  it("heeft een nieuwe-groep-knop met een naam en zonder ingedrukt-staat", async () => {
-    const { onNieuw, onKies } = toon("");
-    const nieuw = screen.getByRole("button", { name: /nieuwe groep/i });
-    expect(nieuw).not.toHaveAttribute("aria-pressed");
-
-    await userEvent.click(nieuw);
-    expect(onNieuw).toHaveBeenCalled();
-    expect(onKies).not.toHaveBeenCalled();
+  // #1134: de strook draagt alleen nog de keuze. Een groep maken is de
+  // hoofdactie van de pagina en staat sindsdien als knop mét label in de kop —
+  // een naamloos plusje achter een filterrij was een actie die je moest raden.
+  it("draagt geen actieknoppen meer, alleen de groepen", () => {
+    toon("");
+    expect(screen.queryByRole("button", { name: /nieuwe groep/i })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(3); // Alle + 2 groepen
   });
 
   // ── #1123: de stip ────────────────────────────────────────────────────────

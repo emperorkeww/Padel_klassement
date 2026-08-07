@@ -52,16 +52,6 @@
   border-color: var(--accent-ink);
 }
 
-/* De "+"-knop is geen groep: vierkanter, rustiger, en hij mag niet meegroeien
-   met een lange groepsnaam. */
-.groep-strook__nieuw {
-  min-width: 44px;
-  padding-inline: var(--sp-2);
-  color: var(--accent);
-  font-size: var(--fs-md);
-  font-weight: 700;
-}
-
 /* De gekozen groep in één regel onder de strook: waar zit deze groep in de
    kernreis, en hoe kom je er binnen (#1123). Bij "Alle" staat hier niets. */
 .groep-regel {
@@ -80,13 +70,6 @@
 .groep-regel__open {
   margin-left: auto;
   flex-shrink: 0;
-}
-
-/* Nieuwe groep: zeldzame actie, dus een knop in plaats van een altijd open
-   formulier (#674 A5). */
-.hub-new {
-  width: 100%;
-  margin-bottom: var(--sp-5);
 }
 
 /* Vrije banen blijft wél een rustige verwijzing: één regel onderaan. */
